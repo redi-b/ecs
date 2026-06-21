@@ -1,0 +1,21 @@
+{
+  "name": "@ecs/storefront",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "ASTRO_TELEMETRY_DISABLED=1 astro dev --host 0.0.0.0 --port 4321",
+    "build": "ASTRO_TELEMETRY_DISABLED=1 astro build",
+    "typecheck": "ASTRO_TELEMETRY_DISABLED=1 astro check",
+    "test": "echo \"No storefront tests yet\"",
+    "preview": "ASTRO_TELEMETRY_DISABLED=1 astro preview --host 0.0.0.0 --port 4321"
+  },
+  "dependencies": {
+    "@astrojs/check": "^0.9.0",
+    "@astrojs/node": "^10.1.4",
+    "@ecs/contracts": "workspace:*",
+    "@ecs/storefront-templates": "workspace:*",
+    "astro": "^6.4.8",
+    "typescript": "^5.9.0"
+  }
+}

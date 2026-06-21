@@ -1,0 +1,28 @@
+{
+  auto_https off
+}
+
+http://api.lvh.me {
+  reverse_proxy host.docker.internal:3000
+}
+
+http://dashboard.lvh.me {
+  reverse_proxy host.docker.internal:3001
+}
+
+http://*.lvh.me {
+  @admin path /admin*
+  handle @admin {
+    reverse_proxy host.docker.internal:3001
+  }
+
+  @api path /api/*
+  handle @api {
+    uri strip_prefix /api
+    reverse_proxy host.docker.internal:3000
+  }
+
+  handle {
+    reverse_proxy host.docker.internal:4321
+  }
+}

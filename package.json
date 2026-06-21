@@ -1,0 +1,36 @@
+{
+  "name": "ecs",
+  "version": "0.0.0",
+  "private": true,
+  "packageManager": "pnpm@10.33.0",
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "dev:turbo": "turbo dev",
+    "dev:infra": "docker compose -f infra/compose/docker-compose.yml up -d --wait --wait-timeout 90 postgres redis caddy",
+    "dev:apps": "node scripts/dev-apps.mjs",
+    "dev:down": "docker compose -f infra/compose/docker-compose.yml down",
+    "dev:logs": "docker compose -f infra/compose/docker-compose.yml logs -f --tail=100",
+    "build": "turbo build",
+    "typecheck": "turbo typecheck",
+    "test": "turbo test",
+    "lint": "biome ci .",
+    "format": "biome format --write .",
+    "check:fix": "biome check --write .",
+    "db:generate": "pnpm --filter @ecs/db db:generate",
+    "db:migrate": "pnpm --filter @ecs/db db:migrate",
+    "db:studio": "pnpm --filter @ecs/db db:studio",
+    "medusa:migrate": "pnpm --filter @ecs/medusa db:migrate",
+    "seed": "pnpm --filter @ecs/platform-api seed"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.2.4",
+    "@types/node": "^24.0.0",
+    "concurrently": "^9.2.0",
+    "tsx": "^4.20.0",
+    "turbo": "^2.5.0",
+    "typescript": "^5.9.0"
+  }
+}

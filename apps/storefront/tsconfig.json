@@ -1,0 +1,11 @@
+{
+  "extends": "astro/tsconfigs/strict",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@ecs/contracts": ["../../packages/contracts/src/index.ts"],
+      "@ecs/storefront-templates": ["../../packages/storefront-templates/src/index.ts"]
+    }
+  },
+  "include": ["src", "astro.config.mjs"]
+}

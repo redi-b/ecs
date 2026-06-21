@@ -1,0 +1,28 @@
+{
+  "name": "@ecs/medusa",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "XDG_CONFIG_HOME=../../.cache/xdg MEDUSA_TELEMETRY_DISABLED=true DISABLE_MEDUSA_ADMIN=true WORKER_MODE=server medusa develop",
+    "dev:worker": "XDG_CONFIG_HOME=../../.cache/xdg MEDUSA_TELEMETRY_DISABLED=true DISABLE_MEDUSA_ADMIN=true WORKER_MODE=worker medusa develop",
+    "build": "XDG_CONFIG_HOME=../../.cache/xdg MEDUSA_TELEMETRY_DISABLED=true DISABLE_MEDUSA_ADMIN=true medusa build",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "echo \"No medusa tests yet\"",
+    "db:generate": "XDG_CONFIG_HOME=../../.cache/xdg MEDUSA_TELEMETRY_DISABLED=true DISABLE_MEDUSA_ADMIN=true medusa db:generate",
+    "db:migrate": "XDG_CONFIG_HOME=../../.cache/xdg MEDUSA_TELEMETRY_DISABLED=true DISABLE_MEDUSA_ADMIN=true medusa db:migrate",
+    "seed": "XDG_CONFIG_HOME=../../.cache/xdg MEDUSA_TELEMETRY_DISABLED=true DISABLE_MEDUSA_ADMIN=true medusa exec ./src/scripts/seed.ts",
+    "start": "XDG_CONFIG_HOME=../../.cache/xdg MEDUSA_TELEMETRY_DISABLED=true DISABLE_MEDUSA_ADMIN=true medusa start"
+  },
+  "dependencies": {
+    "@medusajs/admin-sdk": "2.16.0",
+    "@medusajs/cli": "2.16.0",
+    "@medusajs/framework": "2.16.0",
+    "@medusajs/medusa": "2.16.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.0"
+  }
+}
