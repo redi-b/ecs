@@ -17,6 +17,7 @@
     "@ecs/contracts": "workspace:*",
     "@ecs/db": "workspace:*",
     "@ecs/logger": "workspace:*",
+    "@ecs/storefront-templates": "workspace:*",
     "@hono/node-server": "^1.14.0",
     "drizzle-orm": "^0.44.7",
     "hono": "^4.7.0",
