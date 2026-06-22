@@ -88,15 +88,21 @@ export function createPlatformApp(options: PlatformAppOptions) {
       return context.json({ error: "domain_misconfigured" }, 409);
     }
 
-    const medusaResponse = await medusaStoreFetch(
-      new Request(getForwardUrl(context.req.raw, options.medusaInternalUrl), {
-        body: getForwardBody(context.req.raw),
-        duplex: "half",
-        headers: getForwardHeaders(context.req.raw, result.context.medusaPublishableKeyId),
-        method: context.req.raw.method,
-        redirect: "manual",
-      } as RequestInit),
-    );
+    let medusaResponse: Response;
+
+    try {
+      medusaResponse = await medusaStoreFetch(
+        new Request(getForwardUrl(context.req.raw, options.medusaInternalUrl), {
+          body: getForwardBody(context.req.raw),
+          duplex: "half",
+          headers: getForwardHeaders(context.req.raw, result.context.medusaPublishableKeyId),
+          method: context.req.raw.method,
+          redirect: "manual",
+        } as RequestInit),
+      );
+    } catch {
+      return context.json({ error: "commerce_backend_unavailable" }, 503);
+    }
 
     return new Response(medusaResponse.body, {
       headers: medusaResponse.headers,

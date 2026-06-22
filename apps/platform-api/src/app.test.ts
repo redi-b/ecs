@@ -176,4 +176,29 @@ describe("platform app", () => {
     });
     assert.equal(fetchCalls, 0);
   });
+
+  it("returns commerce_backend_unavailable when Medusa cannot be reached", async () => {
+    const app = appWithResolution(
+      {
+        ok: true,
+        context: resolvedTenantContext,
+      },
+      {
+        medusaStoreFetch: async () => {
+          throw new TypeError("fetch failed");
+        },
+      },
+    );
+
+    const response = await app.request("/store/products", {
+      headers: {
+        Host: "abebe.lvh.me",
+      },
+    });
+
+    assert.equal(response.status, 503);
+    assert.deepEqual(await response.json(), {
+      error: "commerce_backend_unavailable",
+    });
+  });
 });
