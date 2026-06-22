@@ -20,7 +20,7 @@ for (const [label, command] of steps) {
 }
 
 console.log("\n==> Starting app development processes");
-const result = spawnSync("pnpm", ["dev:apps"], {
+const result = spawnSync("pnpm", ["dev:apps", ...process.argv.slice(2)], {
   stdio: "inherit",
   shell: process.platform === "win32",
 });

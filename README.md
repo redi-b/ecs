@@ -77,10 +77,22 @@ Start app processes after infrastructure is ready:
 pnpm dev:apps
 ```
 
+Start app processes with grouped logs:
+
+```bash
+pnpm dev:apps:grouped
+```
+
 Run the full local startup flow:
 
 ```bash
 pnpm dev
+```
+
+Run the full local startup flow with grouped logs:
+
+```bash
+pnpm dev:grouped
 ```
 
 Stop local infrastructure:
@@ -117,13 +129,24 @@ Useful commands:
 
 ```bash
 pnpm --filter @ecs/medusa dev
+pnpm --filter @ecs/medusa dev:server
 pnpm --filter @ecs/medusa dev:worker
 pnpm --filter @ecs/medusa db:generate
 pnpm --filter @ecs/medusa db:migrate
 pnpm --filter @ecs/medusa seed
 ```
 
-The API process runs with `WORKER_MODE=server`. The worker process runs with `WORKER_MODE=worker`. Local shared mode is available through `WORKER_MODE=shared`.
+Local development runs Medusa in shared mode by default. Shared mode runs the Medusa server and worker in one process, which avoids local port conflicts and is enough for normal development.
+
+Split Medusa mode is still available when needed:
+
+```bash
+pnpm dev:apps:split-medusa
+```
+
+In split mode, the Medusa server uses port `9000` and the Medusa worker uses port `9001`.
+
+The local event bus and in-memory locking warnings from Medusa are expected in development. They should be replaced with production services before deployment.
 
 ## Project Rules
 

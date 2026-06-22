@@ -8,9 +8,12 @@
   },
   "scripts": {
     "dev": "node scripts/dev.mjs",
+    "dev:grouped": "node scripts/dev.mjs --grouped",
     "dev:turbo": "turbo dev",
     "dev:infra": "docker compose -f infra/compose/docker-compose.yml up -d --wait --wait-timeout 90 postgres redis caddy",
     "dev:apps": "node scripts/dev-apps.mjs",
+    "dev:apps:grouped": "node scripts/dev-apps.mjs --grouped",
+    "dev:apps:split-medusa": "node scripts/dev-apps.mjs --split-medusa",
     "dev:down": "docker compose -f infra/compose/docker-compose.yml down",
     "dev:logs": "docker compose -f infra/compose/docker-compose.yml logs -f --tail=100",
     "build": "turbo build",
