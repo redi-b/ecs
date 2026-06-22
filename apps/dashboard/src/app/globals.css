@@ -214,6 +214,69 @@ h2 {
   color: var(--danger);
 }
 
+.auth-shell {
+  align-items: center;
+  display: flex;
+  justify-content: center;
+}
+
+.auth-panel {
+  max-width: 440px;
+  width: min(100%, 440px);
+}
+
+.auth-form {
+  display: grid;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.field-label {
+  color: var(--muted);
+  display: grid;
+  font-size: 13px;
+  font-weight: 700;
+  gap: 6px;
+}
+
+.text-input {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--foreground);
+  font: inherit;
+  min-height: 44px;
+  padding: 10px 12px;
+  width: 100%;
+}
+
+.text-input:focus {
+  border-color: var(--accent);
+  outline: 3px solid #c7ebe5;
+}
+
+.primary-button {
+  background: var(--accent);
+  border: 0;
+  border-radius: 8px;
+  color: #fff;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 800;
+  min-height: 44px;
+  padding: 10px 14px;
+}
+
+.primary-button:hover {
+  background: var(--accent-strong);
+}
+
+.form-error {
+  color: var(--danger);
+  font-size: 14px;
+  margin: 0;
+}
+
 @media (max-width: 860px) {
   .dashboard-shell {
     padding: 18px;

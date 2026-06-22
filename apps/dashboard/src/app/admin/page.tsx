@@ -1,12 +1,28 @@
-import { headers } from "next/headers";
+import { cookies, headers } from "next/headers";
+import { redirect } from "next/navigation";
 
+import {
+  dashboardSessionCookieName,
+  getDashboardSessionSecret,
+  verifyDashboardSession,
+} from "../../lib/dashboard-session";
 import { getMerchantDashboardSummary } from "../../lib/merchant-dashboard";
 
 export default async function MerchantAdminPage() {
   const requestHeaders = await headers();
+  const cookieStore = await cookies();
+  const session = verifyDashboardSession({
+    cookieValue: cookieStore.get(dashboardSessionCookieName)?.value ?? null,
+    secret: getDashboardSessionSecret(),
+  });
+
+  if (!session) {
+    redirect("/admin/sign-in?next=/admin");
+  }
+
   const requestHost = requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host");
   const result = await getMerchantDashboardSummary({
-    actorEmail: process.env.DASHBOARD_DEV_ACTOR_EMAIL ?? "owner@abebe.local",
+    actorEmail: session.email,
     dashboardInternalSecret:
       process.env.DASHBOARD_INTERNAL_SECRET ?? "development-dashboard-secret",
     platformApiBaseUrl: process.env.PLATFORM_API_BASE_URL ?? "http://localhost:3000",
