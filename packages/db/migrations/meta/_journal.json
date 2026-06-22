@@ -15,6 +15,13 @@
       "when": 1782139160024,
       "tag": "0001_thin_steve_rogers",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1782158161215,
+      "tag": "0002_fluffy_morlocks",
+      "breakpoints": true
     }
   ]
 }

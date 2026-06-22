@@ -1,4 +1,4 @@
-import { integer, jsonb, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { integer, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 
 import { templateStatus } from "./enums.js";
 import { tenants } from "./tenants.js";
@@ -34,19 +34,23 @@ export const storefrontTemplateVersions = pgTable("storefront_template_versions"
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-export const storefrontConfigs = pgTable("storefront_configs", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  tenantId: uuid("tenant_id")
-    .notNull()
-    .references(() => tenants.id),
-  draftTemplateId: uuid("draft_template_id"),
-  draftTemplateVersion: integer("draft_template_version"),
-  draftData: jsonb("draft_data").notNull().default({}),
-  draftThemeTokens: jsonb("draft_theme_tokens").notNull().default({}),
-  publishedRevisionId: uuid("published_revision_id"),
-  publishedAt: timestamp("published_at", { withTimezone: true }),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
-});
+export const storefrontConfigs = pgTable(
+  "storefront_configs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id),
+    draftTemplateId: uuid("draft_template_id"),
+    draftTemplateVersion: integer("draft_template_version"),
+    draftData: jsonb("draft_data").notNull().default({}),
+    draftThemeTokens: jsonb("draft_theme_tokens").notNull().default({}),
+    publishedRevisionId: uuid("published_revision_id"),
+    publishedAt: timestamp("published_at", { withTimezone: true }),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [uniqueIndex("storefront_configs_tenant_id_unique").on(table.tenantId)],
+);
 
 export const storefrontRevisions = pgTable("storefront_revisions", {
   id: uuid("id").primaryKey().defaultRandom(),

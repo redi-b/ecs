@@ -19,6 +19,37 @@ export type PlatformSignInEmailResult = {
   response: unknown;
 };
 
+export type StorefrontTemplateCatalogItem = {
+  id: string;
+  slug: string;
+  name: string;
+  description: string;
+  previewAssetId: string | null;
+  tags: unknown;
+  minimumPlanId: string | null;
+  version: {
+    id: string;
+    version: number;
+    templateKey: string;
+    previewData: unknown;
+  };
+};
+
+export type StorefrontTemplateSelectionResult =
+  | {
+      ok: true;
+      draft: {
+        tenantId: string;
+        templateId: string;
+        templateVersion: number;
+        templateKey: string;
+      };
+    }
+  | {
+      ok: false;
+      error: "template_not_found" | "tenant_not_found" | "template_plan_unavailable";
+    };
+
 export type DashboardAuthorizationResult =
   | {
       ok: true;
@@ -39,6 +70,14 @@ export type PlatformAppOptions = {
     | undefined;
   authHandler?: ((request: Request) => Promise<Response>) | undefined;
   getSession?: ((headers: Headers) => Promise<PlatformSession | null>) | undefined;
+  listStorefrontTemplates?: (() => Promise<StorefrontTemplateCatalogItem[]>) | undefined;
+  selectStorefrontTemplate?:
+    | ((input: {
+        tenantId: string;
+        templateKey: string;
+        userId: string;
+      }) => Promise<StorefrontTemplateSelectionResult>)
+    | undefined;
   signInWithEmail?:
     | ((input: {
         email: string;
@@ -59,6 +98,12 @@ const storeErrorStatus = {
   shop_unpublished: 404,
   shop_suspended: 403,
   domain_misconfigured: 409,
+} as const;
+
+const templateSelectionErrorStatus = {
+  template_not_found: 404,
+  tenant_not_found: 404,
+  template_plan_unavailable: 403,
 } as const;
 
 function getRequestHost(host?: string): string | undefined {
@@ -153,6 +198,69 @@ export function createPlatformApp(options: PlatformAppOptions) {
 
     return context.json({
       user: session.user,
+    });
+  });
+
+  app.get("/platform/storefront/templates", async (context) => {
+    if (!options.listStorefrontTemplates) {
+      return context.json({ error: "storefront_templates_unavailable" }, 503);
+    }
+
+    const templates = await options.listStorefrontTemplates();
+
+    return context.json({
+      templates,
+    });
+  });
+
+  app.post("/platform/tenants/:tenantId/storefront/template/select", async (context) => {
+    if (!options.selectStorefrontTemplate) {
+      return context.json({ error: "storefront_templates_unavailable" }, 503);
+    }
+
+    const session = await options.getSession?.(context.req.raw.headers);
+
+    if (!session) {
+      return context.json({ error: "auth_required" }, 401);
+    }
+
+    const tenantId = context.req.param("tenantId");
+    const authorization = await options.authorizeDashboardForTenant?.({
+      tenantId,
+      userId: session.user.id,
+    });
+
+    if (!authorization?.ok) {
+      return context.json({ error: "dashboard_forbidden" }, 403);
+    }
+
+    let body: unknown;
+
+    try {
+      body = await context.req.json();
+    } catch {
+      return context.json({ error: "invalid_request" }, 400);
+    }
+
+    const templateKey =
+      typeof body === "object" && body !== null && "templateKey" in body ? body.templateKey : null;
+
+    if (typeof templateKey !== "string" || !templateKey.trim()) {
+      return context.json({ error: "missing_template_key" }, 400);
+    }
+
+    const result = await options.selectStorefrontTemplate({
+      tenantId,
+      templateKey: templateKey.trim(),
+      userId: session.user.id,
+    });
+
+    if (!result.ok) {
+      return context.json({ error: result.error }, templateSelectionErrorStatus[result.error]);
+    }
+
+    return context.json({
+      draft: result.draft,
     });
   });
 

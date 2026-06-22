@@ -1,6 +1,11 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import type { PlatformSession, PlatformSignInEmailResult } from "./app.js";
+import type {
+  PlatformSession,
+  PlatformSignInEmailResult,
+  StorefrontTemplateCatalogItem,
+  StorefrontTemplateSelectionResult,
+} from "./app.js";
 import { createPlatformApp } from "./app.js";
 import type { TenantContext, TenantResolutionResult } from "./tenancy/tenant-resolver.js";
 
@@ -38,7 +43,13 @@ function appWithResolution(
         }
     >;
     getSession?: (headers: Headers) => Promise<PlatformSession | null>;
+    listStorefrontTemplates?: () => Promise<StorefrontTemplateCatalogItem[]>;
     medusaStoreFetch?: typeof fetch;
+    selectStorefrontTemplate?: (input: {
+      tenantId: string;
+      templateKey: string;
+      userId: string;
+    }) => Promise<StorefrontTemplateSelectionResult>;
     signInWithEmail?: (input: {
       email: string;
       password: string;
@@ -51,7 +62,9 @@ function appWithResolution(
     authHandler: options?.authHandler,
     authorizeDashboardForTenant: options?.authorizeDashboardForTenant,
     getSession: options?.getSession,
+    listStorefrontTemplates: options?.listStorefrontTemplates,
     signInWithEmail: options?.signInWithEmail,
+    selectStorefrontTemplate: options?.selectStorefrontTemplate,
     serviceName: "platform-api",
     medusaInternalUrl: "http://medusa:9000",
     ...(options?.medusaStoreFetch ? { medusaStoreFetch: options.medusaStoreFetch } : {}),
@@ -147,6 +160,188 @@ describe("platform app", () => {
         name: "Abebe Owner",
       },
     });
+  });
+
+  it("lists active storefront templates", async () => {
+    const app = appWithResolution(
+      { ok: false, error: "shop_context_required" },
+      {
+        listStorefrontTemplates: async () => [
+          {
+            id: "template_1",
+            slug: "classic",
+            name: "Classic",
+            description: "A clean storefront.",
+            previewAssetId: null,
+            tags: ["default"],
+            minimumPlanId: null,
+            version: {
+              id: "template_version_1",
+              version: 1,
+              templateKey: "classic@1",
+              previewData: {
+                home: {},
+              },
+            },
+          },
+        ],
+      },
+    );
+
+    const response = await app.request("/platform/storefront/templates");
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), {
+      templates: [
+        {
+          id: "template_1",
+          slug: "classic",
+          name: "Classic",
+          description: "A clean storefront.",
+          previewAssetId: null,
+          tags: ["default"],
+          minimumPlanId: null,
+          version: {
+            id: "template_version_1",
+            version: 1,
+            templateKey: "classic@1",
+            previewData: {
+              home: {},
+            },
+          },
+        },
+      ],
+    });
+  });
+
+  it("requires a platform session before selecting a storefront template", async () => {
+    const app = appWithResolution(
+      { ok: false, error: "shop_context_required" },
+      {
+        selectStorefrontTemplate: async () => ({
+          ok: true,
+          draft: {
+            tenantId: "tenant_1",
+            templateId: "template_1",
+            templateVersion: 1,
+            templateKey: "classic@1",
+          },
+        }),
+      },
+    );
+
+    const response = await app.request("/platform/tenants/tenant_1/storefront/template/select", {
+      body: JSON.stringify({ templateKey: "classic@1" }),
+      headers: {
+        "content-type": "application/json",
+      },
+      method: "POST",
+    });
+
+    assert.equal(response.status, 401);
+    assert.deepEqual(await response.json(), {
+      error: "auth_required",
+    });
+  });
+
+  it("selects a storefront template draft for an authorized tenant member", async () => {
+    let selectionInput: { tenantId: string; templateKey: string; userId: string } | undefined;
+    const app = appWithResolution(
+      { ok: false, error: "shop_context_required" },
+      {
+        authorizeDashboardForTenant: async () => ({
+          ok: true,
+          actor: {
+            id: "user_1",
+            email: "owner@abebe.local",
+            name: "Abebe Owner",
+            role: "owner",
+          },
+        }),
+        getSession: async () => ({
+          user: {
+            id: "user_1",
+            email: "owner@abebe.local",
+            name: "Abebe Owner",
+          },
+        }),
+        selectStorefrontTemplate: async (input) => {
+          selectionInput = input;
+
+          return {
+            ok: true,
+            draft: {
+              tenantId: input.tenantId,
+              templateId: "template_1",
+              templateVersion: 1,
+              templateKey: input.templateKey,
+            },
+          };
+        },
+      },
+    );
+
+    const response = await app.request("/platform/tenants/tenant_1/storefront/template/select", {
+      body: JSON.stringify({ templateKey: " classic@1 " }),
+      headers: {
+        "content-type": "application/json",
+      },
+      method: "POST",
+    });
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(selectionInput, {
+      tenantId: "tenant_1",
+      templateKey: "classic@1",
+      userId: "user_1",
+    });
+    assert.deepEqual(await response.json(), {
+      draft: {
+        tenantId: "tenant_1",
+        templateId: "template_1",
+        templateVersion: 1,
+        templateKey: "classic@1",
+      },
+    });
+  });
+
+  it("rejects template selection for a tenant without active membership", async () => {
+    let selectCalls = 0;
+    const app = appWithResolution(
+      { ok: false, error: "shop_context_required" },
+      {
+        authorizeDashboardForTenant: async () => ({ ok: false }),
+        getSession: async () => ({
+          user: {
+            id: "user_2",
+            email: "stranger@example.com",
+            name: "Stranger",
+          },
+        }),
+        selectStorefrontTemplate: async () => {
+          selectCalls += 1;
+
+          return {
+            ok: false,
+            error: "template_not_found",
+          };
+        },
+      },
+    );
+
+    const response = await app.request("/platform/tenants/tenant_1/storefront/template/select", {
+      body: JSON.stringify({ templateKey: "classic@1" }),
+      headers: {
+        "content-type": "application/json",
+      },
+      method: "POST",
+    });
+
+    assert.equal(response.status, 403);
+    assert.deepEqual(await response.json(), {
+      error: "dashboard_forbidden",
+    });
+    assert.equal(selectCalls, 0);
   });
 
   it("signs in with the platform auth helper and forwards auth cookies", async () => {

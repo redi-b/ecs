@@ -7,6 +7,7 @@ import { createPlatformApp } from "./app.js";
 import { createDashboardAuthorizationLookup } from "./auth/dashboard-authorization.js";
 import { createPlatformAuth, parseTrustedOrigins } from "./auth/platform-auth.js";
 import { getSystemHosts } from "./config/hosts.js";
+import { createStorefrontTemplateService } from "./storefront/template-service.js";
 import { createDomainTenantLookup } from "./tenancy/domain-tenant-lookup.js";
 import { resolveTenantFromHost } from "./tenancy/tenant-resolver.js";
 
@@ -31,6 +32,7 @@ const platformDb = createPlatformDb({
 });
 const findDomainByHostname = createDomainTenantLookup(platformDb.db);
 const authorizeDashboardForTenant = createDashboardAuthorizationLookup(platformDb.db);
+const storefrontTemplateService = createStorefrontTemplateService(platformDb.db);
 const auth = createPlatformAuth({
   baseUrl: process.env.BETTER_AUTH_URL ?? "http://api.lvh.me",
   db: platformDb.db,
@@ -47,6 +49,8 @@ const app = createPlatformApp({
   authHandler: auth.handler,
   authorizeDashboardForTenant,
   getSession: (headers) => auth.api.getSession({ headers }),
+  listStorefrontTemplates: storefrontTemplateService.listStorefrontTemplates,
+  selectStorefrontTemplate: storefrontTemplateService.selectStorefrontTemplate,
   signInWithEmail: async ({ email, password, rememberMe, headers }) =>
     auth.api.signInEmail({
       body: {
