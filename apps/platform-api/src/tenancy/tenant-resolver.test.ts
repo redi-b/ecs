@@ -10,6 +10,7 @@ const activePublishedRecord: TenantDomainRecord = {
   domainStatus: "active",
   verificationStatus: "verified",
   tenantId: "tenant_1",
+  tenantName: "Abebe Market",
   tenantHandle: "abebe",
   tenantStatus: "active",
   medusaStoreId: "store_1",
@@ -98,6 +99,8 @@ describe("resolveTenantFromHost", () => {
       ok: true,
       context: {
         tenantId: "tenant_1",
+        tenantName: "Abebe Market",
+        tenantHandle: "abebe",
         hostname: "abebe.lvh.me",
         domainId: "domain_1",
         status: "active",

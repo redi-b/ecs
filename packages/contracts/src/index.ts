@@ -24,3 +24,29 @@ export const platformErrorSchema = z.object({
 });
 
 export type PlatformError = z.infer<typeof platformErrorSchema>;
+
+export const merchantDashboardSummarySchema = z.object({
+  tenant: z.object({
+    id: z.string().min(1),
+    name: z.string().min(1),
+    handle: z.string().min(1),
+    status: tenantStatusSchema,
+  }),
+  domain: z.object({
+    id: z.string().min(1),
+    hostname: z.string().min(1),
+  }),
+  commerce: z.object({
+    hasPublishableKey: z.boolean(),
+    hasSalesChannel: z.boolean(),
+    hasStore: z.boolean(),
+  }),
+  storefront: z.object({
+    isPublished: z.boolean(),
+    publishedRevisionId: z.string().min(1).nullable(),
+    templateId: z.string().min(1).nullable(),
+    templateVersion: z.number().int().positive().nullable(),
+  }),
+});
+
+export type MerchantDashboardSummary = z.infer<typeof merchantDashboardSummarySchema>;

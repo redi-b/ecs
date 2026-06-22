@@ -6,6 +6,8 @@ import type { TenantContext, TenantResolutionResult } from "./tenancy/tenant-res
 
 const resolvedTenantContext: TenantContext = {
   tenantId: "tenant_1",
+  tenantName: "Abebe Market",
+  tenantHandle: "abebe",
   hostname: "abebe.lvh.me",
   domainId: "domain_1",
   status: "active",
@@ -71,6 +73,44 @@ describe("platform app", () => {
     assert.equal(response.status, 404);
     assert.deepEqual(await response.json(), {
       error: "shop_not_found",
+    });
+  });
+
+  it("returns a merchant dashboard summary for the resolved shop host", async () => {
+    const app = appWithResolution({
+      ok: true,
+      context: resolvedTenantContext,
+    });
+
+    const response = await app.request("/platform/merchant/dashboard", {
+      headers: {
+        Host: "abebe.lvh.me",
+      },
+    });
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), {
+      tenant: {
+        id: "tenant_1",
+        name: "Abebe Market",
+        handle: "abebe",
+        status: "active",
+      },
+      domain: {
+        id: "domain_1",
+        hostname: "abebe.lvh.me",
+      },
+      commerce: {
+        hasPublishableKey: true,
+        hasSalesChannel: true,
+        hasStore: true,
+      },
+      storefront: {
+        isPublished: true,
+        publishedRevisionId: "revision_1",
+        templateId: "template_1",
+        templateVersion: 1,
+      },
     });
   });
 

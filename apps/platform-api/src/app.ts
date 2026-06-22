@@ -69,6 +69,46 @@ export function createPlatformApp(options: PlatformAppOptions) {
     }),
   );
 
+  app.get("/platform/merchant/dashboard", async (context) => {
+    const host = getRequestHost(
+      context.req.header("x-forwarded-host") ?? context.req.header("host"),
+    );
+    const result = await options.resolveTenantForHost(host);
+
+    if (!result.ok) {
+      return context.json(
+        {
+          error: result.error,
+        },
+        storeErrorStatus[result.error],
+      );
+    }
+
+    return context.json({
+      tenant: {
+        id: result.context.tenantId,
+        name: result.context.tenantName,
+        handle: result.context.tenantHandle,
+        status: result.context.status,
+      },
+      domain: {
+        id: result.context.domainId,
+        hostname: result.context.hostname,
+      },
+      commerce: {
+        hasPublishableKey: Boolean(result.context.medusaPublishableKeyId),
+        hasSalesChannel: Boolean(result.context.medusaSalesChannelId),
+        hasStore: Boolean(result.context.medusaStoreId),
+      },
+      storefront: {
+        isPublished: Boolean(result.context.publishedRevisionId),
+        publishedRevisionId: result.context.publishedRevisionId,
+        templateId: result.context.templateId,
+        templateVersion: result.context.templateVersion,
+      },
+    });
+  });
+
   app.all("/store/*", async (context) => {
     const host = getRequestHost(
       context.req.header("x-forwarded-host") ?? context.req.header("host"),

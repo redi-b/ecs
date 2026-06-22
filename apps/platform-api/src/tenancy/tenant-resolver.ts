@@ -10,6 +10,7 @@ export type TenantDomainRecord = {
   domainStatus: DomainStatus | string;
   verificationStatus: DomainVerificationStatus | string;
   tenantId: string;
+  tenantName: string;
   tenantHandle: string;
   tenantStatus: TenantStatus;
   medusaStoreId: string | null;
@@ -22,6 +23,8 @@ export type TenantDomainRecord = {
 
 export type TenantContext = {
   tenantId: string;
+  tenantName: string;
+  tenantHandle: string;
   hostname: string;
   domainId: string;
   status: TenantStatus;
@@ -97,6 +100,8 @@ export async function resolveTenantFromHost(
     ok: true,
     context: {
       tenantId: record.tenantId,
+      tenantName: record.tenantName,
+      tenantHandle: record.tenantHandle,
       hostname,
       domainId: record.domainId,
       status: record.tenantStatus,

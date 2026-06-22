@@ -4,10 +4,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "NEXT_TELEMETRY_DISABLED=1 next dev -p 3001",
+    "dev": "NODE_ENV=development NEXT_TELEMETRY_DISABLED=1 next dev -p 3001",
     "build": "NEXT_TELEMETRY_DISABLED=1 next build",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "echo \"No dashboard tests yet\"",
+    "test": "node --import tsx --test \"src/**/*.test.ts\"",
     "start": "NEXT_TELEMETRY_DISABLED=1 next start -p 3001"
   },
   "dependencies": {
@@ -24,6 +24,7 @@
     "@types/node": "^24.0.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
+    "tsx": "^4.20.0",
     "typescript": "^5.9.0"
   }
 }

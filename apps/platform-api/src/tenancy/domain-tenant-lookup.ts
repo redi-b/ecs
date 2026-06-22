@@ -17,6 +17,7 @@ export function createDomainTenantLookup(db: PlatformDb) {
         domainStatus: domains.status,
         verificationStatus: domains.verificationStatus,
         tenantId: tenants.id,
+        tenantName: tenants.name,
         tenantHandle: tenants.handle,
         tenantStatus: tenants.status,
         medusaStoreId: tenants.medusaStoreId,
