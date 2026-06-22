@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-
+import type { PlatformSession } from "./app.js";
 import { createPlatformApp } from "./app.js";
 import type { TenantContext, TenantResolutionResult } from "./tenancy/tenant-resolver.js";
 
@@ -22,7 +22,8 @@ const resolvedTenantContext: TenantContext = {
 function appWithResolution(
   result: TenantResolutionResult,
   options?: {
-    authorizeDashboardForTenant?: (input: { actorEmail: string; tenantId: string }) => Promise<
+    authHandler?: (request: Request) => Promise<Response>;
+    authorizeDashboardForTenant?: (input: { tenantId: string; userId: string }) => Promise<
       | {
           ok: true;
           actor: {
@@ -36,13 +37,14 @@ function appWithResolution(
           ok: false;
         }
     >;
-    dashboardInternalSecret?: string;
+    getSession?: (headers: Headers) => Promise<PlatformSession | null>;
     medusaStoreFetch?: typeof fetch;
   },
 ) {
   return createPlatformApp({
+    authHandler: options?.authHandler,
     authorizeDashboardForTenant: options?.authorizeDashboardForTenant,
-    dashboardInternalSecret: options?.dashboardInternalSecret ?? "test-dashboard-secret",
+    getSession: options?.getSession,
     serviceName: "platform-api",
     medusaInternalUrl: "http://medusa:9000",
     ...(options?.medusaStoreFetch ? { medusaStoreFetch: options.medusaStoreFetch } : {}),
@@ -93,20 +95,79 @@ describe("platform app", () => {
     });
   });
 
+  it("mounts platform auth routes", async () => {
+    const app = appWithResolution(
+      { ok: false, error: "shop_context_required" },
+      {
+        authHandler: async (request) =>
+          Response.json({
+            method: request.method,
+            path: new URL(request.url).pathname,
+          }),
+      },
+    );
+
+    const response = await app.request("/platform/auth/get-session");
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), {
+      method: "GET",
+      path: "/platform/auth/get-session",
+    });
+  });
+
+  it("returns the current platform session user", async () => {
+    const app = appWithResolution(
+      { ok: false, error: "shop_context_required" },
+      {
+        getSession: async () => ({
+          user: {
+            id: "user_1",
+            email: "owner@abebe.local",
+            name: "Abebe Owner",
+          },
+        }),
+      },
+    );
+
+    const response = await app.request("/platform/me");
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), {
+      user: {
+        id: "user_1",
+        email: "owner@abebe.local",
+        name: "Abebe Owner",
+      },
+    });
+  });
+
   it("returns a merchant dashboard summary for the resolved shop host", async () => {
+    let authorizationInput: { tenantId: string; userId: string } | undefined;
     const app = appWithResolution(
       {
         ok: true,
         context: resolvedTenantContext,
       },
       {
-        authorizeDashboardForTenant: async () => ({
-          ok: true,
-          actor: {
+        authorizeDashboardForTenant: async (input) => {
+          authorizationInput = input;
+
+          return {
+            ok: true,
+            actor: {
+              id: "user_1",
+              email: "owner@abebe.local",
+              name: "Abebe Owner",
+              role: "owner",
+            },
+          };
+        },
+        getSession: async () => ({
+          user: {
             id: "user_1",
             email: "owner@abebe.local",
             name: "Abebe Owner",
-            role: "owner",
           },
         }),
       },
@@ -115,12 +176,14 @@ describe("platform app", () => {
     const response = await app.request("/platform/merchant/dashboard", {
       headers: {
         Host: "abebe.lvh.me",
-        "x-ecs-actor-email": "owner@abebe.local",
-        "x-ecs-dashboard-secret": "test-dashboard-secret",
       },
     });
 
     assert.equal(response.status, 200);
+    assert.deepEqual(authorizationInput, {
+      tenantId: "tenant_1",
+      userId: "user_1",
+    });
     assert.deepEqual(await response.json(), {
       tenant: {
         id: "tenant_1",
@@ -152,7 +215,7 @@ describe("platform app", () => {
     });
   });
 
-  it("requires the dashboard internal secret for merchant dashboard access", async () => {
+  it("requires a platform session for merchant dashboard access", async () => {
     const app = appWithResolution({
       ok: true,
       context: resolvedTenantContext,
@@ -161,32 +224,12 @@ describe("platform app", () => {
     const response = await app.request("/platform/merchant/dashboard", {
       headers: {
         Host: "abebe.lvh.me",
-        "x-ecs-actor-email": "owner@abebe.local",
       },
     });
 
     assert.equal(response.status, 401);
     assert.deepEqual(await response.json(), {
-      error: "dashboard_unauthorized",
-    });
-  });
-
-  it("requires an actor email for merchant dashboard access", async () => {
-    const app = appWithResolution({
-      ok: true,
-      context: resolvedTenantContext,
-    });
-
-    const response = await app.request("/platform/merchant/dashboard", {
-      headers: {
-        Host: "abebe.lvh.me",
-        "x-ecs-dashboard-secret": "test-dashboard-secret",
-      },
-    });
-
-    assert.equal(response.status, 401);
-    assert.deepEqual(await response.json(), {
-      error: "dashboard_actor_required",
+      error: "auth_required",
     });
   });
 
@@ -198,14 +241,19 @@ describe("platform app", () => {
       },
       {
         authorizeDashboardForTenant: async () => ({ ok: false }),
+        getSession: async () => ({
+          user: {
+            id: "user_2",
+            email: "stranger@example.com",
+            name: "Stranger",
+          },
+        }),
       },
     );
 
     const response = await app.request("/platform/merchant/dashboard", {
       headers: {
         Host: "abebe.lvh.me",
-        "x-ecs-actor-email": "stranger@example.com",
-        "x-ecs-dashboard-secret": "test-dashboard-secret",
       },
     });
 

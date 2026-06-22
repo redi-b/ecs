@@ -8,8 +8,8 @@ type PlatformDb = ReturnType<typeof createPlatformDb>["db"];
 
 export function createDashboardAuthorizationLookup(db: PlatformDb) {
   return async function authorizeDashboardForTenant(input: {
-    actorEmail: string;
     tenantId: string;
+    userId: string;
   }): Promise<DashboardAuthorizationResult> {
     const [row] = await db
       .select({
@@ -24,7 +24,7 @@ export function createDashboardAuthorizationLookup(db: PlatformDb) {
         and(
           eq(tenantMemberships.tenantId, input.tenantId),
           eq(tenantMemberships.status, "active"),
-          eq(users.email, input.actorEmail.trim().toLowerCase()),
+          eq(users.id, input.userId),
           eq(users.status, "active"),
         ),
       )

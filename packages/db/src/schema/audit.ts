@@ -7,7 +7,7 @@ export const operatorNotes = pgTable("operator_notes", {
   tenantId: uuid("tenant_id")
     .notNull()
     .references(() => tenants.id),
-  operatorUserId: uuid("operator_user_id").notNull(),
+  operatorUserId: text("operator_user_id").notNull(),
   body: text("body").notNull(),
   visibility: text("visibility").notNull().default("internal"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
@@ -15,7 +15,7 @@ export const operatorNotes = pgTable("operator_notes", {
 
 export const auditLogs = pgTable("audit_logs", {
   id: uuid("id").primaryKey().defaultRandom(),
-  actorUserId: uuid("actor_user_id"),
+  actorUserId: text("actor_user_id"),
   tenantId: uuid("tenant_id"),
   action: text("action").notNull(),
   targetType: text("target_type").notNull(),

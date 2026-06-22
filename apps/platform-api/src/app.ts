@@ -4,6 +4,16 @@ import type { TenantResolutionResult } from "./tenancy/tenant-resolver.js";
 
 export type DashboardActorRole = "owner" | "manager" | "staff" | "operator";
 
+export type PlatformSessionUser = {
+  id: string;
+  email: string;
+  name: string;
+};
+
+export type PlatformSession = {
+  user: PlatformSessionUser;
+};
+
 export type DashboardAuthorizationResult =
   | {
       ok: true;
@@ -20,9 +30,10 @@ export type DashboardAuthorizationResult =
 
 export type PlatformAppOptions = {
   authorizeDashboardForTenant?:
-    | ((input: { actorEmail: string; tenantId: string }) => Promise<DashboardAuthorizationResult>)
+    | ((input: { tenantId: string; userId: string }) => Promise<DashboardAuthorizationResult>)
     | undefined;
-  dashboardInternalSecret?: string | undefined;
+  authHandler?: ((request: Request) => Promise<Response>) | undefined;
+  getSession?: ((headers: Headers) => Promise<PlatformSession | null>) | undefined;
   serviceName: string;
   medusaInternalUrl: string;
   medusaStoreFetch?: typeof fetch;
@@ -75,6 +86,12 @@ export function createPlatformApp(options: PlatformAppOptions) {
   const app = new Hono();
   const medusaStoreFetch = options.medusaStoreFetch ?? fetch;
 
+  if (options.authHandler) {
+    const authHandler = options.authHandler;
+
+    app.on(["GET", "POST"], "/platform/auth/*", (context) => authHandler(context.req.raw));
+  }
+
   app.get("/health", (context) =>
     context.json({
       ok: true,
@@ -89,17 +106,23 @@ export function createPlatformApp(options: PlatformAppOptions) {
     }),
   );
 
-  app.get("/platform/merchant/dashboard", async (context) => {
-    const dashboardSecret = context.req.header("x-ecs-dashboard-secret");
+  app.get("/platform/me", async (context) => {
+    const session = await options.getSession?.(context.req.raw.headers);
 
-    if (!options.dashboardInternalSecret || dashboardSecret !== options.dashboardInternalSecret) {
-      return context.json({ error: "dashboard_unauthorized" }, 401);
+    if (!session) {
+      return context.json({ error: "auth_required" }, 401);
     }
 
-    const actorEmail = context.req.header("x-ecs-actor-email")?.trim().toLowerCase();
+    return context.json({
+      user: session.user,
+    });
+  });
 
-    if (!actorEmail) {
-      return context.json({ error: "dashboard_actor_required" }, 401);
+  app.get("/platform/merchant/dashboard", async (context) => {
+    const session = await options.getSession?.(context.req.raw.headers);
+
+    if (!session) {
+      return context.json({ error: "auth_required" }, 401);
     }
 
     const host = getRequestHost(
@@ -117,8 +140,8 @@ export function createPlatformApp(options: PlatformAppOptions) {
     }
 
     const authorization = await options.authorizeDashboardForTenant?.({
-      actorEmail,
       tenantId: result.context.tenantId,
+      userId: session.user.id,
     });
 
     if (!authorization?.ok) {

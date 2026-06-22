@@ -19,7 +19,8 @@
     "@ecs/logger": "workspace:*",
     "@ecs/storefront-templates": "workspace:*",
     "@hono/node-server": "^1.14.0",
-    "drizzle-orm": "^0.44.7",
+    "better-auth": "^1.6.20",
+    "drizzle-orm": "^0.45.2",
     "hono": "^4.7.0",
     "zod": "^4.0.0"
   },

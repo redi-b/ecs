@@ -1,5 +1,6 @@
 import { loadServiceEnv } from "@ecs/config";
 import {
+  accounts,
   createPlatformDb,
   domains,
   storefrontConfigs,
@@ -11,6 +12,7 @@ import {
   users,
 } from "@ecs/db";
 import { storefrontTemplates } from "@ecs/storefront-templates";
+import { hashPassword } from "better-auth/crypto";
 
 import { buildPlatformSeed } from "./seed-data.js";
 
@@ -34,6 +36,7 @@ const seed = buildPlatformSeed({
   medusaPublishableKeyId: process.env.SEED_MEDUSA_PUBLISHABLE_KEY_ID ?? "pk_test_local_abebe",
   templates: storefrontTemplates,
 });
+const seedOwnerPassword = process.env.SEED_OWNER_PASSWORD ?? "password1234";
 
 try {
   const [template] = seed.templates;
@@ -115,9 +118,33 @@ try {
     .onConflictDoUpdate({
       target: users.email,
       set: {
+        emailVerified: seed.user.emailVerified,
+        image: seed.user.image,
         phone: seed.user.phone,
         name: seed.user.name,
         status: seed.user.status,
+        updatedAt: new Date(),
+      },
+    });
+
+  const passwordHash = await hashPassword(seedOwnerPassword);
+
+  await platformDb.db
+    .insert(accounts)
+    .values({
+      id: `${seed.user.id}:credential`,
+      accountId: seed.user.id,
+      providerId: "credential",
+      userId: seed.user.id,
+      password: passwordHash,
+    })
+    .onConflictDoUpdate({
+      target: accounts.id,
+      set: {
+        accountId: seed.user.id,
+        providerId: "credential",
+        userId: seed.user.id,
+        password: passwordHash,
         updatedAt: new Date(),
       },
     });

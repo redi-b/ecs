@@ -1,33 +1,21 @@
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 
-import {
-  dashboardSessionCookieName,
-  getDashboardSessionSecret,
-  verifyDashboardSession,
-} from "../../lib/dashboard-session";
 import { getMerchantDashboardSummary } from "../../lib/merchant-dashboard";
 
 export default async function MerchantAdminPage() {
   const requestHeaders = await headers();
   const cookieStore = await cookies();
-  const session = verifyDashboardSession({
-    cookieValue: cookieStore.get(dashboardSessionCookieName)?.value ?? null,
-    secret: getDashboardSessionSecret(),
-  });
-
-  if (!session) {
-    redirect("/admin/sign-in?next=/admin");
-  }
-
   const requestHost = requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host");
   const result = await getMerchantDashboardSummary({
-    actorEmail: session.email,
-    dashboardInternalSecret:
-      process.env.DASHBOARD_INTERNAL_SECRET ?? "development-dashboard-secret",
+    cookieHeader: cookieStore.toString(),
     platformApiBaseUrl: process.env.PLATFORM_API_BASE_URL ?? "http://localhost:3000",
     requestHost,
   });
+
+  if (!result.ok && result.status === 401) {
+    redirect("/admin/sign-in?next=/admin");
+  }
 
   if (!result.ok) {
     return (

@@ -8,6 +8,13 @@
       "when": 1782109013083,
       "tag": "0000_gray_storm",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1782139160024,
+      "tag": "0001_thin_steve_rogers",
+      "breakpoints": true
     }
   ]
 }

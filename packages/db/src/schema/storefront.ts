@@ -58,7 +58,7 @@ export const storefrontRevisions = pgTable("storefront_revisions", {
   templateKey: text("template_key").notNull(),
   data: jsonb("data").notNull(),
   themeTokens: jsonb("theme_tokens").notNull(),
-  publishedByUserId: uuid("published_by_user_id"),
+  publishedByUserId: text("published_by_user_id"),
   publishedAt: timestamp("published_at", { withTimezone: true }).notNull().defaultNow(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });

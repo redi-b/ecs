@@ -5,7 +5,7 @@ export default async function AdminSignInPage({
 }) {
   const params = await searchParams;
   const nextPath = getSafeNextPath(params?.next);
-  const hasError = params?.error === "missing_email";
+  const errorMessage = getErrorMessage(params?.error);
 
   return (
     <main className="dashboard-shell auth-shell">
@@ -26,7 +26,17 @@ export default async function AdminSignInPage({
               type="email"
             />
           </label>
-          {hasError ? <p className="form-error">Enter an email address.</p> : null}
+          <label className="field-label">
+            Password
+            <input
+              autoComplete="current-password"
+              className="text-input"
+              name="password"
+              required
+              type="password"
+            />
+          </label>
+          {errorMessage ? <p className="form-error">{errorMessage}</p> : null}
           <button className="primary-button" type="submit">
             Continue
           </button>
@@ -42,4 +52,19 @@ function getSafeNextPath(value: string | undefined) {
   }
 
   return value;
+}
+
+function getErrorMessage(value: string | undefined) {
+  switch (value) {
+    case "missing_email":
+      return "Enter an email address.";
+    case "missing_password":
+      return "Enter a password.";
+    case "invalid_credentials":
+      return "Email or password is incorrect.";
+    case "auth_unavailable":
+      return "Sign-in is temporarily unavailable.";
+    default:
+      return null;
+  }
 }

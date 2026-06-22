@@ -7,8 +7,7 @@ describe("getMerchantDashboardSummary", () => {
   it("fetches the merchant dashboard summary with the forwarded shop host", async () => {
     let forwardedRequest: Request | undefined;
     const result = await getMerchantDashboardSummary({
-      actorEmail: "Owner@Abebe.Local",
-      dashboardInternalSecret: "test-dashboard-secret",
+      cookieHeader: "better-auth.session_token=session_1",
       platformApiBaseUrl: "http://platform.local",
       requestHost: "abebe.lvh.me",
       fetcher: async (input, init) => {
@@ -49,14 +48,11 @@ describe("getMerchantDashboardSummary", () => {
     assert.equal(result.ok, true);
     assert.equal(forwardedRequest?.url, "http://platform.local/platform/merchant/dashboard");
     assert.equal(forwardedRequest?.headers.get("x-forwarded-host"), "abebe.lvh.me");
-    assert.equal(forwardedRequest?.headers.get("x-ecs-actor-email"), "owner@abebe.local");
-    assert.equal(forwardedRequest?.headers.get("x-ecs-dashboard-secret"), "test-dashboard-secret");
+    assert.equal(forwardedRequest?.headers.get("cookie"), "better-auth.session_token=session_1");
   });
 
   it("returns a dashboard error for invalid platform responses", async () => {
     const result = await getMerchantDashboardSummary({
-      actorEmail: "owner@abebe.local",
-      dashboardInternalSecret: "test-dashboard-secret",
       platformApiBaseUrl: "http://platform.local",
       fetcher: async () => Response.json({ tenant: null }),
     });

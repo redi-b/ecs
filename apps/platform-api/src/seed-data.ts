@@ -70,6 +70,8 @@ export function buildPlatformSeed(options: PlatformSeedOptions) {
     user: {
       id: localIds.user,
       email: "owner@abebe.local",
+      emailVerified: true,
+      image: null,
       phone: "+251911000000",
       name: "Abebe Owner",
       status: "active",
