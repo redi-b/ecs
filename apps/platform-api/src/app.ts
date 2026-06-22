@@ -14,6 +14,11 @@ export type PlatformSession = {
   user: PlatformSessionUser;
 };
 
+export type PlatformSignInEmailResult = {
+  headers: Headers;
+  response: unknown;
+};
+
 export type DashboardAuthorizationResult =
   | {
       ok: true;
@@ -34,6 +39,14 @@ export type PlatformAppOptions = {
     | undefined;
   authHandler?: ((request: Request) => Promise<Response>) | undefined;
   getSession?: ((headers: Headers) => Promise<PlatformSession | null>) | undefined;
+  signInWithEmail?:
+    | ((input: {
+        email: string;
+        password: string;
+        rememberMe: boolean;
+        headers: Headers;
+      }) => Promise<PlatformSignInEmailResult>)
+    | undefined;
   serviceName: string;
   medusaInternalUrl: string;
   medusaStoreFetch?: typeof fetch;
@@ -82,6 +95,31 @@ function getForwardBody(request: Request): BodyInit | undefined {
   return request.body ?? undefined;
 }
 
+function getSetCookieValues(headers: Headers) {
+  const headersWithSetCookie = headers as Headers & {
+    getSetCookie?: () => string[];
+  };
+  const cookies = headersWithSetCookie.getSetCookie?.();
+
+  if (cookies?.length) {
+    return cookies;
+  }
+
+  const cookie = headers.get("set-cookie");
+
+  return cookie ? [cookie] : [];
+}
+
+function getAuthErrorStatus(error: unknown): 401 | 503 {
+  if (typeof error !== "object" || error === null) {
+    return 503;
+  }
+
+  const status = "status" in error ? error.status : undefined;
+
+  return status === 401 ? 401 : 503;
+}
+
 export function createPlatformApp(options: PlatformAppOptions) {
   const app = new Hono();
   const medusaStoreFetch = options.medusaStoreFetch ?? fetch;
@@ -116,6 +154,55 @@ export function createPlatformApp(options: PlatformAppOptions) {
     return context.json({
       user: session.user,
     });
+  });
+
+  app.post("/platform/sessions/email-password", async (context) => {
+    if (!options.signInWithEmail) {
+      return context.json({ error: "auth_unavailable" }, 503);
+    }
+
+    let body: unknown;
+
+    try {
+      body = await context.req.json();
+    } catch {
+      return context.json({ error: "invalid_request" }, 400);
+    }
+
+    const email = typeof body === "object" && body !== null && "email" in body ? body.email : null;
+    const password =
+      typeof body === "object" && body !== null && "password" in body ? body.password : null;
+
+    if (typeof email !== "string" || !email.trim()) {
+      return context.json({ error: "missing_email" }, 400);
+    }
+
+    if (typeof password !== "string" || !password) {
+      return context.json({ error: "missing_password" }, 400);
+    }
+
+    try {
+      const result = await options.signInWithEmail({
+        email: email.trim().toLowerCase(),
+        password,
+        rememberMe: true,
+        headers: context.req.raw.headers,
+      });
+      const response = context.json(result.response ?? { ok: true });
+
+      for (const cookie of getSetCookieValues(result.headers)) {
+        response.headers.append("set-cookie", cookie);
+      }
+
+      return response;
+    } catch (error) {
+      const status = getAuthErrorStatus(error);
+
+      return context.json(
+        { error: status === 401 ? "invalid_credentials" : "auth_unavailable" },
+        status,
+      );
+    }
   });
 
   app.get("/platform/merchant/dashboard", async (context) => {

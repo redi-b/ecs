@@ -47,6 +47,16 @@ const app = createPlatformApp({
   authHandler: auth.handler,
   authorizeDashboardForTenant,
   getSession: (headers) => auth.api.getSession({ headers }),
+  signInWithEmail: async ({ email, password, rememberMe, headers }) =>
+    auth.api.signInEmail({
+      body: {
+        email,
+        password,
+        rememberMe,
+      },
+      headers,
+      returnHeaders: true,
+    }),
   serviceName: env.SERVICE_NAME,
   medusaInternalUrl: process.env.MEDUSA_INTERNAL_URL ?? "http://localhost:9000",
   resolveTenantForHost: (host) =>

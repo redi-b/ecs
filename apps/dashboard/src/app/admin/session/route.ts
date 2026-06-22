@@ -14,7 +14,7 @@ export async function POST(request: Request) {
     return redirectToSignIn(request, nextPath, "missing_password");
   }
 
-  const authResponse = await fetch(getPlatformAuthUrl("/sign-in/email"), {
+  const authResponse = await fetch(getPlatformSessionUrl(), {
     body: JSON.stringify({
       email: email.trim().toLowerCase(),
       password,
@@ -23,7 +23,6 @@ export async function POST(request: Request) {
     headers: {
       accept: "application/json",
       "content-type": "application/json",
-      origin: getRequestOrigin(request).toString().replace(/\/$/, ""),
       "x-forwarded-host":
         request.headers.get("x-forwarded-host") ?? request.headers.get("host") ?? "",
       "x-forwarded-proto": request.headers.get("x-forwarded-proto") ?? "http",
@@ -67,10 +66,10 @@ function redirectToSignIn(request: Request, nextPath: string, error: string) {
   return NextResponse.redirect(url, { status: 303 });
 }
 
-function getPlatformAuthUrl(path: string) {
+function getPlatformSessionUrl() {
   const baseUrl = process.env.PLATFORM_API_BASE_URL ?? "http://localhost:3000";
 
-  return new URL(`/platform/auth${path}`, normalizeBaseUrl(baseUrl));
+  return new URL("/platform/sessions/email-password", normalizeBaseUrl(baseUrl));
 }
 
 function getRedirectUrl(path: string, request: Request) {
