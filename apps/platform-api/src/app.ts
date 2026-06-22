@@ -2,7 +2,27 @@ import { Hono } from "hono";
 
 import type { TenantResolutionResult } from "./tenancy/tenant-resolver.js";
 
+export type DashboardActorRole = "owner" | "manager" | "staff" | "operator";
+
+export type DashboardAuthorizationResult =
+  | {
+      ok: true;
+      actor: {
+        id: string;
+        email: string;
+        name: string | null;
+        role: DashboardActorRole;
+      };
+    }
+  | {
+      ok: false;
+    };
+
 export type PlatformAppOptions = {
+  authorizeDashboardForTenant?:
+    | ((input: { actorEmail: string; tenantId: string }) => Promise<DashboardAuthorizationResult>)
+    | undefined;
+  dashboardInternalSecret?: string | undefined;
   serviceName: string;
   medusaInternalUrl: string;
   medusaStoreFetch?: typeof fetch;
@@ -70,6 +90,18 @@ export function createPlatformApp(options: PlatformAppOptions) {
   );
 
   app.get("/platform/merchant/dashboard", async (context) => {
+    const dashboardSecret = context.req.header("x-ecs-dashboard-secret");
+
+    if (!options.dashboardInternalSecret || dashboardSecret !== options.dashboardInternalSecret) {
+      return context.json({ error: "dashboard_unauthorized" }, 401);
+    }
+
+    const actorEmail = context.req.header("x-ecs-actor-email")?.trim().toLowerCase();
+
+    if (!actorEmail) {
+      return context.json({ error: "dashboard_actor_required" }, 401);
+    }
+
     const host = getRequestHost(
       context.req.header("x-forwarded-host") ?? context.req.header("host"),
     );
@@ -84,6 +116,15 @@ export function createPlatformApp(options: PlatformAppOptions) {
       );
     }
 
+    const authorization = await options.authorizeDashboardForTenant?.({
+      actorEmail,
+      tenantId: result.context.tenantId,
+    });
+
+    if (!authorization?.ok) {
+      return context.json({ error: "dashboard_forbidden" }, 403);
+    }
+
     return context.json({
       tenant: {
         id: result.context.tenantId,
@@ -95,6 +136,7 @@ export function createPlatformApp(options: PlatformAppOptions) {
         id: result.context.domainId,
         hostname: result.context.hostname,
       },
+      actor: authorization.actor,
       commerce: {
         hasPublishableKey: Boolean(result.context.medusaPublishableKeyId),
         hasSalesChannel: Boolean(result.context.medusaSalesChannelId),

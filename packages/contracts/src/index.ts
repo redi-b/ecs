@@ -36,6 +36,12 @@ export const merchantDashboardSummarySchema = z.object({
     id: z.string().min(1),
     hostname: z.string().min(1),
   }),
+  actor: z.object({
+    id: z.string().min(1),
+    email: z.string().email(),
+    name: z.string().min(1).nullable(),
+    role: z.enum(["owner", "manager", "staff", "operator"]),
+  }),
   commerce: z.object({
     hasPublishableKey: z.boolean(),
     hasSalesChannel: z.boolean(),

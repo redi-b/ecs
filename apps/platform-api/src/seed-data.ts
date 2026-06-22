@@ -26,6 +26,8 @@ const localIds = {
   templateVersion: "00000000-0000-4000-8000-000000000004",
   storefrontRevision: "00000000-0000-4000-8000-000000000005",
   storefrontConfig: "00000000-0000-4000-8000-000000000006",
+  user: "00000000-0000-4000-8000-000000000007",
+  tenantMembership: "00000000-0000-4000-8000-000000000008",
 } as const;
 
 export function buildPlatformSeed(options: PlatformSeedOptions) {
@@ -64,6 +66,20 @@ export function buildPlatformSeed(options: PlatformSeedOptions) {
       isPrimary: true,
       verificationStatus: "verified",
       sslStatus: "active",
+    },
+    user: {
+      id: localIds.user,
+      email: "owner@abebe.local",
+      phone: "+251911000000",
+      name: "Abebe Owner",
+      status: "active",
+    },
+    tenantMembership: {
+      id: localIds.tenantMembership,
+      tenantId: localIds.tenant,
+      userId: localIds.user,
+      role: "owner" as const,
+      status: "active",
     },
     templates: [
       {

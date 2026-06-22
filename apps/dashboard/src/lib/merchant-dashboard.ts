@@ -16,14 +16,20 @@ export type MerchantDashboardResult =
     };
 
 export async function getMerchantDashboardSummary(options: {
+  actorEmail: string;
+  dashboardInternalSecret: string;
   fetcher?: typeof fetch;
   platformApiBaseUrl: string;
-  requestHost?: string | null;
+  requestHost?: string | null | undefined;
 }): Promise<MerchantDashboardResult> {
   const fetcher = options.fetcher ?? fetch;
   const response = await fetcher(getMerchantDashboardUrl(options.platformApiBaseUrl), {
     cache: "no-store",
-    headers: getDashboardHeaders(options.requestHost),
+    headers: getDashboardHeaders({
+      actorEmail: options.actorEmail,
+      dashboardInternalSecret: options.dashboardInternalSecret,
+      requestHost: options.requestHost,
+    }),
   });
   const data = await response.json().catch(() => undefined);
 
@@ -61,11 +67,18 @@ function normalizeBaseUrl(value: string) {
   return value.endsWith("/") ? value : `${value}/`;
 }
 
-function getDashboardHeaders(requestHost?: string | null) {
+function getDashboardHeaders(options: {
+  actorEmail: string;
+  dashboardInternalSecret: string;
+  requestHost?: string | null | undefined;
+}) {
   const headers = new Headers();
 
-  if (requestHost?.trim()) {
-    headers.set("x-forwarded-host", requestHost.trim());
+  headers.set("x-ecs-actor-email", options.actorEmail.trim().toLowerCase());
+  headers.set("x-ecs-dashboard-secret", options.dashboardInternalSecret);
+
+  if (options.requestHost?.trim()) {
+    headers.set("x-forwarded-host", options.requestHost.trim());
   }
 
   return headers;

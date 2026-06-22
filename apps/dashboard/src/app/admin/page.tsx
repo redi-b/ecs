@@ -6,6 +6,9 @@ export default async function MerchantAdminPage() {
   const requestHeaders = await headers();
   const requestHost = requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host");
   const result = await getMerchantDashboardSummary({
+    actorEmail: process.env.DASHBOARD_DEV_ACTOR_EMAIL ?? "owner@abebe.local",
+    dashboardInternalSecret:
+      process.env.DASHBOARD_INTERNAL_SECRET ?? "development-dashboard-secret",
     platformApiBaseUrl: process.env.PLATFORM_API_BASE_URL ?? "http://localhost:3000",
     requestHost,
   });
@@ -42,7 +45,7 @@ export default async function MerchantAdminPage() {
             <h1>{summary.tenant.name}</h1>
             <p className="lede">
               Operational view for this shop. Storefront and commerce checks are resolved from the
-              current hostname.
+              current hostname and the active merchant session.
             </p>
           </div>
           <span className={`status-pill ${summary.tenant.status === "active" ? "" : "warning"}`}>
@@ -92,6 +95,12 @@ export default async function MerchantAdminPage() {
             <h2>Resolved context</h2>
             <table className="detail-table">
               <tbody>
+                <tr>
+                  <th scope="row">Signed in as</th>
+                  <td>
+                    {summary.actor.email} ({summary.actor.role})
+                  </td>
+                </tr>
                 <tr>
                   <th scope="row">Tenant ID</th>
                   <td>{summary.tenant.id}</td>

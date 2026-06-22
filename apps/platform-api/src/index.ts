@@ -4,6 +4,7 @@ import { createLogger } from "@ecs/logger";
 import { serve } from "@hono/node-server";
 
 import { createPlatformApp } from "./app.js";
+import { createDashboardAuthorizationLookup } from "./auth/dashboard-authorization.js";
 import { getSystemHosts } from "./config/hosts.js";
 import { createDomainTenantLookup } from "./tenancy/domain-tenant-lookup.js";
 import { resolveTenantFromHost } from "./tenancy/tenant-resolver.js";
@@ -28,8 +29,11 @@ const platformDb = createPlatformDb({
   ),
 });
 const findDomainByHostname = createDomainTenantLookup(platformDb.db);
+const authorizeDashboardForTenant = createDashboardAuthorizationLookup(platformDb.db);
 
 const app = createPlatformApp({
+  authorizeDashboardForTenant,
+  dashboardInternalSecret: process.env.DASHBOARD_INTERNAL_SECRET ?? "development-dashboard-secret",
   serviceName: env.SERVICE_NAME,
   medusaInternalUrl: process.env.MEDUSA_INTERNAL_URL ?? "http://localhost:9000",
   resolveTenantForHost: (host) =>

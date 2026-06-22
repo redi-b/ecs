@@ -22,10 +22,27 @@ const resolvedTenantContext: TenantContext = {
 function appWithResolution(
   result: TenantResolutionResult,
   options?: {
+    authorizeDashboardForTenant?: (input: { actorEmail: string; tenantId: string }) => Promise<
+      | {
+          ok: true;
+          actor: {
+            id: string;
+            email: string;
+            name: string | null;
+            role: "owner" | "manager" | "staff" | "operator";
+          };
+        }
+      | {
+          ok: false;
+        }
+    >;
+    dashboardInternalSecret?: string;
     medusaStoreFetch?: typeof fetch;
   },
 ) {
   return createPlatformApp({
+    authorizeDashboardForTenant: options?.authorizeDashboardForTenant,
+    dashboardInternalSecret: options?.dashboardInternalSecret ?? "test-dashboard-secret",
     serviceName: "platform-api",
     medusaInternalUrl: "http://medusa:9000",
     ...(options?.medusaStoreFetch ? { medusaStoreFetch: options.medusaStoreFetch } : {}),
@@ -77,14 +94,29 @@ describe("platform app", () => {
   });
 
   it("returns a merchant dashboard summary for the resolved shop host", async () => {
-    const app = appWithResolution({
-      ok: true,
-      context: resolvedTenantContext,
-    });
+    const app = appWithResolution(
+      {
+        ok: true,
+        context: resolvedTenantContext,
+      },
+      {
+        authorizeDashboardForTenant: async () => ({
+          ok: true,
+          actor: {
+            id: "user_1",
+            email: "owner@abebe.local",
+            name: "Abebe Owner",
+            role: "owner",
+          },
+        }),
+      },
+    );
 
     const response = await app.request("/platform/merchant/dashboard", {
       headers: {
         Host: "abebe.lvh.me",
+        "x-ecs-actor-email": "owner@abebe.local",
+        "x-ecs-dashboard-secret": "test-dashboard-secret",
       },
     });
 
@@ -100,6 +132,12 @@ describe("platform app", () => {
         id: "domain_1",
         hostname: "abebe.lvh.me",
       },
+      actor: {
+        id: "user_1",
+        email: "owner@abebe.local",
+        name: "Abebe Owner",
+        role: "owner",
+      },
       commerce: {
         hasPublishableKey: true,
         hasSalesChannel: true,
@@ -111,6 +149,69 @@ describe("platform app", () => {
         templateId: "template_1",
         templateVersion: 1,
       },
+    });
+  });
+
+  it("requires the dashboard internal secret for merchant dashboard access", async () => {
+    const app = appWithResolution({
+      ok: true,
+      context: resolvedTenantContext,
+    });
+
+    const response = await app.request("/platform/merchant/dashboard", {
+      headers: {
+        Host: "abebe.lvh.me",
+        "x-ecs-actor-email": "owner@abebe.local",
+      },
+    });
+
+    assert.equal(response.status, 401);
+    assert.deepEqual(await response.json(), {
+      error: "dashboard_unauthorized",
+    });
+  });
+
+  it("requires an actor email for merchant dashboard access", async () => {
+    const app = appWithResolution({
+      ok: true,
+      context: resolvedTenantContext,
+    });
+
+    const response = await app.request("/platform/merchant/dashboard", {
+      headers: {
+        Host: "abebe.lvh.me",
+        "x-ecs-dashboard-secret": "test-dashboard-secret",
+      },
+    });
+
+    assert.equal(response.status, 401);
+    assert.deepEqual(await response.json(), {
+      error: "dashboard_actor_required",
+    });
+  });
+
+  it("rejects actors without active membership for the resolved tenant", async () => {
+    const app = appWithResolution(
+      {
+        ok: true,
+        context: resolvedTenantContext,
+      },
+      {
+        authorizeDashboardForTenant: async () => ({ ok: false }),
+      },
+    );
+
+    const response = await app.request("/platform/merchant/dashboard", {
+      headers: {
+        Host: "abebe.lvh.me",
+        "x-ecs-actor-email": "stranger@example.com",
+        "x-ecs-dashboard-secret": "test-dashboard-secret",
+      },
+    });
+
+    assert.equal(response.status, 403);
+    assert.deepEqual(await response.json(), {
+      error: "dashboard_forbidden",
     });
   });
 

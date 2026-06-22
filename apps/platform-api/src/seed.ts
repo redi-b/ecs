@@ -6,7 +6,9 @@ import {
   storefrontRevisions,
   storefrontTemplates as storefrontTemplateRows,
   storefrontTemplateVersions,
+  tenantMemberships,
   tenants,
+  users,
 } from "@ecs/db";
 import { storefrontTemplates } from "@ecs/storefront-templates";
 
@@ -108,6 +110,32 @@ try {
     });
 
   await platformDb.db
+    .insert(users)
+    .values(seed.user)
+    .onConflictDoUpdate({
+      target: users.email,
+      set: {
+        phone: seed.user.phone,
+        name: seed.user.name,
+        status: seed.user.status,
+        updatedAt: new Date(),
+      },
+    });
+
+  await platformDb.db
+    .insert(tenantMemberships)
+    .values(seed.tenantMembership)
+    .onConflictDoUpdate({
+      target: tenantMemberships.id,
+      set: {
+        tenantId: seed.tenantMembership.tenantId,
+        userId: seed.tenantMembership.userId,
+        role: seed.tenantMembership.role,
+        status: seed.tenantMembership.status,
+      },
+    });
+
+  await platformDb.db
     .insert(storefrontRevisions)
     .values(seed.storefrontRevision)
     .onConflictDoUpdate({
@@ -146,6 +174,7 @@ try {
           service: env.SERVICE_NAME,
           tenant: seed.tenant.handle,
           domain: seed.domain.hostname,
+          user: seed.user.email,
           templates: seed.templateVersions.map((version) => version.templateKey),
         },
       },
