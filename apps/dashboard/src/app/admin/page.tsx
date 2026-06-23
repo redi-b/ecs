@@ -1,4 +1,5 @@
 import { cookies, headers } from "next/headers";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { getMerchantDashboardSummary } from "../../lib/merchant-dashboard";
@@ -135,6 +136,20 @@ export default async function MerchantAdminPage({
               </tbody>
             </table>
           </article>
+        </section>
+
+        <section className="panel action-panel" aria-label="Merchant workflows">
+          <div>
+            <p className="eyebrow">Workflows</p>
+            <h2>Manage catalog</h2>
+            <p className="lede">
+              Review the products connected to this shop through the internal Medusa Admin API
+              boundary.
+            </p>
+          </div>
+          <Link className="primary-button action-link" href="/admin/products">
+            Open products
+          </Link>
         </section>
 
         <section className="panel template-panel" aria-label="Storefront templates">

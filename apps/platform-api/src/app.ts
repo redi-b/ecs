@@ -19,6 +19,30 @@ export type PlatformSignInEmailResult = {
   response: unknown;
 };
 
+export type MerchantProduct = {
+  id: string;
+  title: string | null;
+  handle: string | null;
+  status: string | null;
+  thumbnail: string | null;
+  createdAt: string | null;
+  updatedAt: string | null;
+};
+
+export type MerchantProductsResult =
+  | {
+      ok: true;
+      count: number;
+      limit: number;
+      offset: number;
+      products: MerchantProduct[];
+    }
+  | {
+      ok: false;
+      error: "commerce_backend_unavailable" | "commerce_credentials_missing";
+      status: 401 | 503;
+    };
+
 export type StorefrontTemplateCatalogItem = {
   id: string;
   slug: string;
@@ -95,6 +119,13 @@ export type PlatformAppOptions = {
       }) => Promise<PublishedStorefrontConfigResult>)
     | undefined;
   listStorefrontTemplates?: (() => Promise<StorefrontTemplateCatalogItem[]>) | undefined;
+  listMerchantProducts?:
+    | ((input: {
+        limit: number;
+        offset: number;
+        salesChannelId: string;
+      }) => Promise<MerchantProductsResult>)
+    | undefined;
   selectStorefrontTemplate?:
     | ((input: {
         tenantId: string;
@@ -187,6 +218,16 @@ function getAuthErrorStatus(error: unknown): 401 | 503 {
   const status = "status" in error ? error.status : undefined;
 
   return status === 401 ? 401 : 503;
+}
+
+function getPaginationValue(value: string | undefined, fallback: number, max: number) {
+  const parsed = Number.parseInt(value ?? "", 10);
+
+  if (!Number.isFinite(parsed) || parsed < 0) {
+    return fallback;
+  }
+
+  return Math.min(parsed, max);
 }
 
 export function createPlatformApp(options: PlatformAppOptions) {
@@ -428,6 +469,57 @@ export function createPlatformApp(options: PlatformAppOptions) {
         templateId: result.context.templateId,
         templateVersion: result.context.templateVersion,
       },
+    });
+  });
+
+  app.get("/platform/merchant/products", async (context) => {
+    const session = await options.getSession?.(context.req.raw.headers);
+
+    if (!session) {
+      return context.json({ error: "auth_required" }, 401);
+    }
+
+    const host = getRequestHost(
+      context.req.header("x-forwarded-host") ?? context.req.header("host"),
+    );
+    const result = await options.resolveTenantForHost(host);
+
+    if (!result.ok) {
+      return context.json({ error: result.error }, storeErrorStatus[result.error]);
+    }
+
+    const authorization = await options.authorizeDashboardForTenant?.({
+      tenantId: result.context.tenantId,
+      userId: session.user.id,
+    });
+
+    if (!authorization?.ok) {
+      return context.json({ error: "dashboard_forbidden" }, 403);
+    }
+
+    if (!result.context.medusaSalesChannelId) {
+      return context.json({ error: "domain_misconfigured" }, 409);
+    }
+
+    if (!options.listMerchantProducts) {
+      return context.json({ error: "commerce_backend_unavailable" }, 503);
+    }
+
+    const products = await options.listMerchantProducts({
+      limit: getPaginationValue(context.req.query("limit"), 20, 100),
+      offset: getPaginationValue(context.req.query("offset"), 0, 10_000),
+      salesChannelId: result.context.medusaSalesChannelId,
+    });
+
+    if (!products.ok) {
+      return context.json({ error: products.error }, products.status);
+    }
+
+    return context.json({
+      products: products.products,
+      count: products.count,
+      limit: products.limit,
+      offset: products.offset,
     });
   });
 

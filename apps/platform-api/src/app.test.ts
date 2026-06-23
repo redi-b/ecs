@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import type {
+  MerchantProductsResult,
   PlatformSession,
   PlatformSignInEmailResult,
   PublishedStorefrontConfigResult,
@@ -48,6 +49,11 @@ function appWithResolution(
       tenantId: string;
     }) => Promise<PublishedStorefrontConfigResult>;
     getSession?: (headers: Headers) => Promise<PlatformSession | null>;
+    listMerchantProducts?: (input: {
+      limit: number;
+      offset: number;
+      salesChannelId: string;
+    }) => Promise<MerchantProductsResult>;
     listStorefrontTemplates?: () => Promise<StorefrontTemplateCatalogItem[]>;
     medusaStoreFetch?: typeof fetch;
     selectStorefrontTemplate?: (input: {
@@ -68,6 +74,7 @@ function appWithResolution(
     authorizeDashboardForTenant: options?.authorizeDashboardForTenant,
     getPublishedStorefrontConfig: options?.getPublishedStorefrontConfig,
     getSession: options?.getSession,
+    listMerchantProducts: options?.listMerchantProducts,
     listStorefrontTemplates: options?.listStorefrontTemplates,
     signInWithEmail: options?.signInWithEmail,
     selectStorefrontTemplate: options?.selectStorefrontTemplate,
@@ -674,6 +681,151 @@ describe("platform app", () => {
     assert.deepEqual(await response.json(), {
       error: "dashboard_forbidden",
     });
+  });
+
+  it("lists merchant products scoped to the resolved tenant sales channel", async () => {
+    let productsInput:
+      | {
+          limit: number;
+          offset: number;
+          salesChannelId: string;
+        }
+      | undefined;
+    const app = appWithResolution(
+      {
+        ok: true,
+        context: resolvedTenantContext,
+      },
+      {
+        authorizeDashboardForTenant: async () => ({
+          ok: true,
+          actor: {
+            id: "user_1",
+            email: "owner@abebe.local",
+            name: "Abebe Owner",
+            role: "owner",
+          },
+        }),
+        getSession: async () => ({
+          user: {
+            id: "user_1",
+            email: "owner@abebe.local",
+            name: "Abebe Owner",
+          },
+        }),
+        listMerchantProducts: async (input) => {
+          productsInput = input;
+
+          return {
+            ok: true,
+            count: 1,
+            limit: input.limit,
+            offset: input.offset,
+            products: [
+              {
+                id: "prod_1",
+                title: "Coffee",
+                handle: "coffee",
+                status: "published",
+                thumbnail: null,
+                createdAt: "2026-01-01T00:00:00.000Z",
+                updatedAt: "2026-01-02T00:00:00.000Z",
+              },
+            ],
+          };
+        },
+      },
+    );
+
+    const response = await app.request("/platform/merchant/products?limit=5&offset=10", {
+      headers: {
+        Host: "abebe.lvh.me",
+      },
+    });
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(productsInput, {
+      limit: 5,
+      offset: 10,
+      salesChannelId: "channel_1",
+    });
+    assert.deepEqual(await response.json(), {
+      products: [
+        {
+          id: "prod_1",
+          title: "Coffee",
+          handle: "coffee",
+          status: "published",
+          thumbnail: null,
+          createdAt: "2026-01-01T00:00:00.000Z",
+          updatedAt: "2026-01-02T00:00:00.000Z",
+        },
+      ],
+      count: 1,
+      limit: 5,
+      offset: 10,
+    });
+  });
+
+  it("requires a platform session for merchant product access", async () => {
+    const app = appWithResolution({
+      ok: true,
+      context: resolvedTenantContext,
+    });
+
+    const response = await app.request("/platform/merchant/products", {
+      headers: {
+        Host: "abebe.lvh.me",
+      },
+    });
+
+    assert.equal(response.status, 401);
+    assert.deepEqual(await response.json(), {
+      error: "auth_required",
+    });
+  });
+
+  it("rejects product access without active membership for the resolved tenant", async () => {
+    let productCalls = 0;
+    const app = appWithResolution(
+      {
+        ok: true,
+        context: resolvedTenantContext,
+      },
+      {
+        authorizeDashboardForTenant: async () => ({ ok: false }),
+        getSession: async () => ({
+          user: {
+            id: "user_2",
+            email: "stranger@example.com",
+            name: "Stranger",
+          },
+        }),
+        listMerchantProducts: async () => {
+          productCalls += 1;
+
+          return {
+            ok: true,
+            count: 0,
+            limit: 20,
+            offset: 0,
+            products: [],
+          };
+        },
+      },
+    );
+
+    const response = await app.request("/platform/merchant/products", {
+      headers: {
+        Host: "abebe.lvh.me",
+      },
+    });
+
+    assert.equal(response.status, 403);
+    assert.deepEqual(await response.json(), {
+      error: "dashboard_forbidden",
+    });
+    assert.equal(productCalls, 0);
   });
 
   it("forwards resolved store requests to Medusa with the tenant publishable key", async () => {

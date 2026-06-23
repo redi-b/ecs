@@ -25,6 +25,27 @@ export const platformErrorSchema = z.object({
 
 export type PlatformError = z.infer<typeof platformErrorSchema>;
 
+export const merchantProductSchema = z.object({
+  id: z.string().min(1),
+  title: z.string().min(1).nullable(),
+  handle: z.string().min(1).nullable(),
+  status: z.string().min(1).nullable(),
+  thumbnail: z.string().min(1).nullable(),
+  createdAt: z.string().min(1).nullable(),
+  updatedAt: z.string().min(1).nullable(),
+});
+
+export const merchantProductsSchema = z.object({
+  products: z.array(merchantProductSchema),
+  count: z.number().int().nonnegative(),
+  limit: z.number().int().positive(),
+  offset: z.number().int().nonnegative(),
+});
+
+export type MerchantProduct = z.infer<typeof merchantProductSchema>;
+
+export type MerchantProducts = z.infer<typeof merchantProductsSchema>;
+
 export const merchantDashboardSummarySchema = z.object({
   tenant: z.object({
     id: z.string().min(1),
