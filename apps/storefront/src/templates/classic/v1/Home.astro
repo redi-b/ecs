@@ -1,0 +1,345 @@
+---
+import { classicV1DataSchema, themeTokensSchema } from "@ecs/storefront-templates";
+
+import type {
+  StorefrontError,
+  StoreProduct,
+  StoreProductsResponse,
+} from "../../../lib/platform-store";
+
+// biome-ignore lint/correctness/noUnusedVariables: Astro uses Props for component prop typing.
+interface Props {
+  data: unknown;
+  productsResult: StoreProductsResponse | StorefrontError;
+  tenantName: string;
+  themeTokens: unknown;
+}
+
+const { data, productsResult, tenantName, themeTokens } = Astro.props;
+const parsedData = classicV1DataSchema.safeParse(data);
+const parsedTheme = themeTokensSchema.safeParse(themeTokens);
+// biome-ignore lint/correctness/noUnusedVariables: Used by the Astro template below.
+const templateData = parsedData.success
+  ? parsedData.data
+  : classicV1DataSchema.parse({
+      header: {
+        navigation: [],
+      },
+      home: {
+        hero: {
+          title: tenantName,
+          primaryCtaLabel: "Shop products",
+          primaryCtaHref: "#products",
+        },
+        featuredProducts: {
+          title: "Featured products",
+          productIds: [],
+        },
+      },
+      footer: {
+        socialLinks: [],
+      },
+    });
+const theme = parsedTheme.success
+  ? parsedTheme.data
+  : themeTokensSchema.parse({
+      colors: {
+        background: "#ffffff",
+        foreground: "#111827",
+        primary: "#0f766e",
+        muted: "#f3f4f6",
+      },
+      typography: {
+        headingFont: "Inter",
+        bodyFont: "Inter",
+      },
+      radius: "sm",
+    });
+// biome-ignore lint/correctness/noUnusedVariables: Used by the Astro template below.
+const products: StoreProduct[] = "products" in productsResult ? productsResult.products : [];
+// biome-ignore lint/correctness/noUnusedVariables: Used by the Astro template below.
+const storeError = "message" in productsResult ? productsResult : null;
+// biome-ignore lint/correctness/noUnusedVariables: Used by the Astro template below.
+const radius = theme.radius === "none" ? "0" : theme.radius === "md" ? "14px" : "8px";
+---
+
+<div
+  class="classic-storefront"
+  style={`--sf-bg: ${theme.colors.background}; --sf-fg: ${theme.colors.foreground}; --sf-primary: ${theme.colors.primary}; --sf-muted: ${theme.colors.muted}; --sf-radius: ${radius}; --sf-heading-font: ${theme.typography.headingFont}; --sf-body-font: ${theme.typography.bodyFont};`}
+>
+  {templateData.announcement?.enabled && (
+    <div class="announcement">{templateData.announcement.text}</div>
+  )}
+
+  <header class="site-header">
+    <a class="brand" href="/">{tenantName}</a>
+    <nav aria-label="Store navigation">
+      {templateData.header.navigation.map((item) => (
+        <a href={item.href}>{item.label}</a>
+      ))}
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div>
+        <p class="eyebrow">{tenantName}</p>
+        <h1>{templateData.home.hero.title}</h1>
+        {templateData.home.hero.subtitle && <p class="lede">{templateData.home.hero.subtitle}</p>}
+        <a class="primary-link" href={templateData.home.hero.primaryCtaHref}>
+          {templateData.home.hero.primaryCtaLabel}
+        </a>
+      </div>
+    </section>
+
+    <section id="products" class="products" aria-labelledby="products-title">
+      <div class="section-heading">
+        <h2 id="products-title">{templateData.home.featuredProducts.title}</h2>
+        {!storeError && <p>{products.length} available</p>}
+      </div>
+
+      {storeError ? (
+        <div class="notice" role="status">
+          <h3>Products are unavailable</h3>
+          <p>The shop is online, but the catalog could not load: {storeError.message}.</p>
+        </div>
+      ) : products.length > 0 ? (
+        <ul class="product-grid">
+          {products.map((product) => (
+            <li class="product">
+              {product.thumbnail ? (
+                <img src={product.thumbnail} alt="" loading="lazy" />
+              ) : (
+                <div class="product-image" aria-hidden="true" />
+              )}
+              <h3>{product.title ?? "Untitled product"}</h3>
+              {product.description && <p>{product.description}</p>}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <div class="notice" role="status">
+          <h3>No products yet</h3>
+          <p>This shop is published and ready for products.</p>
+        </div>
+      )}
+    </section>
+  </main>
+
+  <footer id="contact" class="site-footer">
+    <div>
+      <strong>{tenantName}</strong>
+      {templateData.footer.address && <p>{templateData.footer.address}</p>}
+      {templateData.footer.phone && <p>{templateData.footer.phone}</p>}
+    </div>
+    {templateData.footer.socialLinks.length > 0 && (
+      <nav aria-label="Social links">
+        {templateData.footer.socialLinks.map((item) => (
+          <a href={item.href}>{item.label}</a>
+        ))}
+      </nav>
+    )}
+  </footer>
+</div>
+
+<style>
+  .classic-storefront {
+    background: var(--sf-bg);
+    color: var(--sf-fg);
+    font-family:
+      var(--sf-body-font), ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+      sans-serif;
+    min-height: 100vh;
+  }
+
+  .announcement {
+    background: var(--sf-primary);
+    color: #fff;
+    font-size: 0.875rem;
+    font-weight: 800;
+    padding: 10px 20px;
+    text-align: center;
+  }
+
+  .site-header,
+  .site-footer,
+  main {
+    margin: 0 auto;
+    max-width: 1120px;
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+
+  .site-header {
+    align-items: center;
+    display: flex;
+    gap: 24px;
+    justify-content: space-between;
+    padding-bottom: 22px;
+    padding-top: 22px;
+  }
+
+  .brand {
+    color: inherit;
+    font-weight: 900;
+    text-decoration: none;
+  }
+
+  nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+
+  nav a {
+    color: inherit;
+    font-size: 0.925rem;
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  .hero {
+    display: grid;
+    min-height: 420px;
+    padding: 64px 0 72px;
+    place-items: center start;
+  }
+
+  .eyebrow {
+    color: var(--sf-primary);
+    font-size: 0.875rem;
+    font-weight: 900;
+    letter-spacing: 0;
+    margin: 0 0 12px;
+    text-transform: uppercase;
+  }
+
+  h1,
+  h2,
+  h3,
+  p {
+    margin-top: 0;
+  }
+
+  h1,
+  h2 {
+    font-family:
+      var(--sf-heading-font), ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+      "Segoe UI", sans-serif;
+  }
+
+  h1 {
+    font-size: clamp(2.75rem, 8vw, 5.5rem);
+    letter-spacing: 0;
+    line-height: 0.98;
+    margin-bottom: 20px;
+    max-width: 780px;
+  }
+
+  .lede {
+    color: color-mix(in srgb, var(--sf-fg) 68%, transparent);
+    font-size: 1.125rem;
+    line-height: 1.7;
+    max-width: 620px;
+  }
+
+  .primary-link {
+    background: var(--sf-primary);
+    border-radius: var(--sf-radius);
+    color: #fff;
+    display: inline-flex;
+    font-weight: 900;
+    margin-top: 10px;
+    min-height: 44px;
+    padding: 12px 18px;
+    text-decoration: none;
+  }
+
+  .products {
+    padding-bottom: 56px;
+  }
+
+  .section-heading {
+    align-items: end;
+    display: flex;
+    gap: 16px;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+
+  .section-heading h2 {
+    font-size: 1.5rem;
+    margin: 0;
+  }
+
+  .section-heading p {
+    color: color-mix(in srgb, var(--sf-fg) 60%, transparent);
+    margin: 0;
+  }
+
+  .product-grid {
+    display: grid;
+    gap: 16px;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .product,
+  .notice {
+    background: color-mix(in srgb, var(--sf-bg) 92%, #fff);
+    border: 1px solid color-mix(in srgb, var(--sf-fg) 14%, transparent);
+    border-radius: var(--sf-radius);
+    padding: 16px;
+  }
+
+  .product img,
+  .product-image {
+    aspect-ratio: 4 / 3;
+    background: var(--sf-muted);
+    border-radius: calc(var(--sf-radius) * 0.75);
+    display: block;
+    margin-bottom: 14px;
+    object-fit: cover;
+    width: 100%;
+  }
+
+  .product h3,
+  .notice h3 {
+    font-size: 1rem;
+    margin-bottom: 8px;
+  }
+
+  .product p,
+  .notice p,
+  .site-footer p {
+    color: color-mix(in srgb, var(--sf-fg) 65%, transparent);
+    line-height: 1.6;
+    margin-bottom: 0;
+  }
+
+  .site-footer {
+    align-items: flex-start;
+    border-top: 1px solid color-mix(in srgb, var(--sf-fg) 14%, transparent);
+    display: flex;
+    gap: 20px;
+    justify-content: space-between;
+    padding-bottom: 36px;
+    padding-top: 28px;
+  }
+
+  @media (max-width: 640px) {
+    .site-header,
+    .site-footer,
+    .section-heading {
+      align-items: start;
+      flex-direction: column;
+    }
+
+    .hero {
+      min-height: 360px;
+      padding-top: 40px;
+    }
+  }
+</style>

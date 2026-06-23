@@ -50,6 +50,24 @@ export type StorefrontTemplateSelectionResult =
       error: "template_not_found" | "tenant_not_found" | "template_plan_unavailable";
     };
 
+export type PublishedStorefrontConfigResult =
+  | {
+      ok: true;
+      config: {
+        publishedRevisionId: string;
+        templateId: string;
+        templateVersion: number;
+        templateKey: string;
+        data: unknown;
+        themeTokens: unknown;
+        publishedAt: string | null;
+      };
+    }
+  | {
+      ok: false;
+      error: "published_revision_not_found";
+    };
+
 export type DashboardAuthorizationResult =
   | {
       ok: true;
@@ -70,6 +88,12 @@ export type PlatformAppOptions = {
     | undefined;
   authHandler?: ((request: Request) => Promise<Response>) | undefined;
   getSession?: ((headers: Headers) => Promise<PlatformSession | null>) | undefined;
+  getPublishedStorefrontConfig?:
+    | ((input: {
+        publishedRevisionId: string;
+        tenantId: string;
+      }) => Promise<PublishedStorefrontConfigResult>)
+    | undefined;
   listStorefrontTemplates?: (() => Promise<StorefrontTemplateCatalogItem[]>) | undefined;
   selectStorefrontTemplate?:
     | ((input: {
@@ -210,6 +234,44 @@ export function createPlatformApp(options: PlatformAppOptions) {
 
     return context.json({
       templates,
+    });
+  });
+
+  app.get("/platform/storefront/config", async (context) => {
+    if (!options.getPublishedStorefrontConfig) {
+      return context.json({ error: "storefront_config_unavailable" }, 503);
+    }
+
+    const host = getRequestHost(
+      context.req.header("x-forwarded-host") ?? context.req.header("host"),
+    );
+    const result = await options.resolveTenantForHost(host);
+
+    if (!result.ok) {
+      return context.json({ error: result.error }, storeErrorStatus[result.error]);
+    }
+
+    const config = await options.getPublishedStorefrontConfig({
+      tenantId: result.context.tenantId,
+      publishedRevisionId: result.context.publishedRevisionId,
+    });
+
+    if (!config.ok) {
+      return context.json({ error: config.error }, 404);
+    }
+
+    return context.json({
+      tenant: {
+        id: result.context.tenantId,
+        name: result.context.tenantName,
+        handle: result.context.tenantHandle,
+        status: result.context.status,
+        domain: {
+          id: result.context.domainId,
+          hostname: result.context.hostname,
+        },
+      },
+      storefront: config.config,
     });
   });
 

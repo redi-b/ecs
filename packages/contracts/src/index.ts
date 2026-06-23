@@ -89,3 +89,27 @@ export const storefrontTemplateSelectionSchema = z.object({
 });
 
 export type StorefrontTemplateSelection = z.infer<typeof storefrontTemplateSelectionSchema>;
+
+export const publishedStorefrontConfigSchema = z.object({
+  tenant: z.object({
+    id: z.string().min(1),
+    name: z.string().min(1),
+    handle: z.string().min(1),
+    status: tenantStatusSchema,
+    domain: z.object({
+      id: z.string().min(1),
+      hostname: z.string().min(1),
+    }),
+  }),
+  storefront: z.object({
+    publishedRevisionId: z.string().min(1),
+    templateId: z.string().min(1),
+    templateVersion: z.number().int().positive(),
+    templateKey: z.string().min(1),
+    data: z.unknown(),
+    themeTokens: z.unknown(),
+    publishedAt: z.string().min(1).nullable(),
+  }),
+});
+
+export type PublishedStorefrontConfig = z.infer<typeof publishedStorefrontConfigSchema>;

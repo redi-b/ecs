@@ -1,18 +1,62 @@
 import type { createPlatformDb } from "@ecs/db";
 import {
   storefrontConfigs,
+  storefrontRevisions,
   storefrontTemplates,
   storefrontTemplateVersions,
   tenants,
 } from "@ecs/db";
 import { and, asc, eq } from "drizzle-orm";
-
-import type { StorefrontTemplateCatalogItem, StorefrontTemplateSelectionResult } from "../app.js";
+import type {
+  PublishedStorefrontConfigResult,
+  StorefrontTemplateCatalogItem,
+  StorefrontTemplateSelectionResult,
+} from "../app.js";
 
 type PlatformDb = ReturnType<typeof createPlatformDb>["db"];
 
 export function createStorefrontTemplateService(db: PlatformDb) {
   return {
+    getPublishedStorefrontConfig: async (input: {
+      publishedRevisionId: string;
+      tenantId: string;
+    }): Promise<PublishedStorefrontConfigResult> => {
+      const [revision] = await db
+        .select({
+          publishedRevisionId: storefrontRevisions.id,
+          templateId: storefrontRevisions.templateId,
+          templateVersion: storefrontRevisions.templateVersion,
+          templateKey: storefrontRevisions.templateKey,
+          data: storefrontRevisions.data,
+          themeTokens: storefrontRevisions.themeTokens,
+          publishedAt: storefrontRevisions.publishedAt,
+        })
+        .from(storefrontRevisions)
+        .where(
+          and(
+            eq(storefrontRevisions.id, input.publishedRevisionId),
+            eq(storefrontRevisions.tenantId, input.tenantId),
+          ),
+        )
+        .limit(1);
+
+      if (!revision) {
+        return { ok: false, error: "published_revision_not_found" };
+      }
+
+      return {
+        ok: true,
+        config: {
+          publishedRevisionId: revision.publishedRevisionId,
+          templateId: revision.templateId,
+          templateVersion: revision.templateVersion,
+          templateKey: revision.templateKey,
+          data: revision.data,
+          themeTokens: revision.themeTokens,
+          publishedAt: revision.publishedAt.toISOString(),
+        },
+      };
+    },
     listStorefrontTemplates: async (): Promise<StorefrontTemplateCatalogItem[]> => {
       const rows = await db
         .select({

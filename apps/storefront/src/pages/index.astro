@@ -1,74 +1,64 @@
 ---
-import type { StoreProduct } from "../lib/platform-store";
 import { listStoreProducts } from "../lib/platform-store";
+import { getPublishedStorefrontConfig } from "../lib/storefront-config";
+import { getStorefrontRenderer } from "../templates/registry";
 
+const platformApiBaseUrl = process.env.PLATFORM_API_BASE_URL ?? "http://localhost:3000";
 const requestHost =
   Astro.request.headers.get("x-forwarded-host") ?? Astro.request.headers.get("host");
-const storeResult = await listStoreProducts({
-  platformApiBaseUrl: process.env.PLATFORM_API_BASE_URL ?? "http://localhost:3000",
+const configResult = await getPublishedStorefrontConfig({
+  platformApiBaseUrl,
   requestHost,
 });
+
 // biome-ignore lint/correctness/noUnusedVariables: Used by the Astro template below.
-const storeError = "message" in storeResult ? storeResult : null;
-// biome-ignore lint/correctness/noUnusedVariables: Used by the Astro template below.
-const products: StoreProduct[] = "products" in storeResult ? storeResult.products : [];
+const productsResult = configResult.ok
+  ? await listStoreProducts({
+      platformApiBaseUrl,
+      requestHost,
+    })
+  : { ok: false as const, status: configResult.status, message: configResult.message };
+const renderer = configResult.ok
+  ? getStorefrontRenderer(configResult.config.storefront.templateKey)
+  : undefined;
+const Home = renderer?.Home;
+
+if (!configResult.ok) {
+  Astro.response.status = configResult.status;
+} else if (!Home) {
+  Astro.response.status = 500;
+}
 ---
 
 <html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width" />
-    <title>Abebe Market</title>
+    <title>{configResult.ok ? configResult.config.tenant.name : "Store unavailable"}</title>
   </head>
   <body>
-    <main>
-      <section class="hero">
-        <p class="eyebrow">Abebe Market</p>
-        <h1>Fresh products from a local shop</h1>
-        <p class="lede">
-          Browse the storefront through the platform facade. Tenant context is resolved from
-          the shop domain.
-        </p>
-      </section>
-
-      <section class="products" aria-labelledby="products-title">
-        <div class="section-heading">
-          <h2 id="products-title">Products</h2>
-          {!storeError && <p>{products.length} available</p>}
-        </div>
-
-        {
-          storeError ? (
-            <div class="notice" role="status">
-              <h3>Store API is not ready</h3>
-              <p>
-                The platform tenant resolved, but the commerce backend returned:{" "}
-                {storeError.message}.
-              </p>
-            </div>
-          ) : products.length > 0 ? (
-            <ul class="product-grid">
-              {products.map((product) => (
-                <li class="product">
-                  {product.thumbnail ? (
-                    <img src={product.thumbnail} alt="" loading="lazy" />
-                  ) : (
-                    <div class="product-image" aria-hidden="true" />
-                  )}
-                  <h3>{product.title ?? "Untitled product"}</h3>
-                  {product.description && <p>{product.description}</p>}
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <div class="notice" role="status">
-              <h3>No products yet</h3>
-              <p>The storefront connection is working, but Medusa returned an empty catalog.</p>
-            </div>
-          )
-        }
-      </section>
-    </main>
+    {
+      !configResult.ok ? (
+        <main class="unavailable">
+          <p class="eyebrow">Store unavailable</p>
+          <h1>This storefront is not available.</h1>
+          <p>{configResult.message}</p>
+        </main>
+      ) : Home ? (
+        <Home
+          data={configResult.config.storefront.data}
+          productsResult={productsResult}
+          tenantName={configResult.config.tenant.name}
+          themeTokens={configResult.config.storefront.themeTokens}
+        />
+      ) : (
+        <main class="unavailable">
+          <p class="eyebrow">Configuration error</p>
+          <h1>This storefront template is not supported.</h1>
+          <p>{configResult.config.storefront.templateKey}</p>
+        </main>
+      )
+    }
   </body>
 </html>
 
@@ -81,114 +71,36 @@ const products: StoreProduct[] = "products" in storeResult ? storeResult.product
       Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   }
 
-  main {
+  .unavailable {
     margin: 0 auto;
-    max-width: 1120px;
-    padding: 56px 20px;
-  }
-
-  .hero {
     max-width: 720px;
-    padding: 32px 0 48px;
+    padding: 72px 20px;
   }
 
   .eyebrow {
     color: #0f766e;
     font-size: 0.875rem;
-    font-weight: 700;
+    font-weight: 800;
     letter-spacing: 0;
     margin: 0 0 12px;
     text-transform: uppercase;
   }
 
   h1,
-  h2,
-  h3,
   p {
     margin-top: 0;
   }
 
   h1 {
     font-size: clamp(2.5rem, 8vw, 4.75rem);
-    line-height: 0.98;
     letter-spacing: 0;
+    line-height: 0.98;
     margin-bottom: 20px;
   }
 
-  .lede {
+  p {
     color: #4b5563;
     font-size: 1.125rem;
     line-height: 1.7;
-    max-width: 620px;
-  }
-
-  .section-heading {
-    align-items: end;
-    display: flex;
-    gap: 16px;
-    justify-content: space-between;
-    margin-bottom: 20px;
-  }
-
-  .section-heading h2 {
-    font-size: 1.5rem;
-    margin: 0;
-  }
-
-  .section-heading p {
-    color: #64748b;
-    margin: 0;
-  }
-
-  .product-grid {
-    display: grid;
-    gap: 16px;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    list-style: none;
-    margin: 0;
-    padding: 0;
-  }
-
-  .product,
-  .notice {
-    background: #ffffff;
-    border: 1px solid #e5e7eb;
-    border-radius: 8px;
-    padding: 16px;
-  }
-
-  .product img,
-  .product-image {
-    aspect-ratio: 4 / 3;
-    background: #dbeafe;
-    border-radius: 6px;
-    display: block;
-    margin-bottom: 14px;
-    object-fit: cover;
-    width: 100%;
-  }
-
-  .product h3,
-  .notice h3 {
-    font-size: 1rem;
-    margin-bottom: 8px;
-  }
-
-  .product p,
-  .notice p {
-    color: #4b5563;
-    line-height: 1.6;
-    margin-bottom: 0;
-  }
-
-  @media (max-width: 640px) {
-    main {
-      padding-top: 32px;
-    }
-
-    .section-heading {
-      align-items: start;
-      flex-direction: column;
-    }
   }
 </style>

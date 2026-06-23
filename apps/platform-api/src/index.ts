@@ -48,6 +48,7 @@ const auth = createPlatformAuth({
 const app = createPlatformApp({
   authHandler: auth.handler,
   authorizeDashboardForTenant,
+  getPublishedStorefrontConfig: storefrontTemplateService.getPublishedStorefrontConfig,
   getSession: (headers) => auth.api.getSession({ headers }),
   listStorefrontTemplates: storefrontTemplateService.listStorefrontTemplates,
   selectStorefrontTemplate: storefrontTemplateService.selectStorefrontTemplate,

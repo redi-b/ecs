@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 import type {
   PlatformSession,
   PlatformSignInEmailResult,
+  PublishedStorefrontConfigResult,
   StorefrontTemplateCatalogItem,
   StorefrontTemplateSelectionResult,
 } from "./app.js";
@@ -42,6 +43,10 @@ function appWithResolution(
           ok: false;
         }
     >;
+    getPublishedStorefrontConfig?: (input: {
+      publishedRevisionId: string;
+      tenantId: string;
+    }) => Promise<PublishedStorefrontConfigResult>;
     getSession?: (headers: Headers) => Promise<PlatformSession | null>;
     listStorefrontTemplates?: () => Promise<StorefrontTemplateCatalogItem[]>;
     medusaStoreFetch?: typeof fetch;
@@ -61,6 +66,7 @@ function appWithResolution(
   return createPlatformApp({
     authHandler: options?.authHandler,
     authorizeDashboardForTenant: options?.authorizeDashboardForTenant,
+    getPublishedStorefrontConfig: options?.getPublishedStorefrontConfig,
     getSession: options?.getSession,
     listStorefrontTemplates: options?.listStorefrontTemplates,
     signInWithEmail: options?.signInWithEmail,
@@ -212,6 +218,116 @@ describe("platform app", () => {
         },
       ],
     });
+  });
+
+  it("returns the published storefront config for the resolved host", async () => {
+    let configInput: { publishedRevisionId: string; tenantId: string } | undefined;
+    const app = appWithResolution(
+      {
+        ok: true,
+        context: resolvedTenantContext,
+      },
+      {
+        getPublishedStorefrontConfig: async (input) => {
+          configInput = input;
+
+          return {
+            ok: true,
+            config: {
+              publishedRevisionId: "revision_1",
+              templateId: "template_1",
+              templateVersion: 1,
+              templateKey: "classic@1",
+              data: {
+                home: {
+                  hero: {
+                    title: "Abebe Market",
+                  },
+                },
+              },
+              themeTokens: {
+                colors: {
+                  primary: "#0f766e",
+                },
+              },
+              publishedAt: "2026-01-01T00:00:00.000Z",
+            },
+          };
+        },
+      },
+    );
+
+    const response = await app.request("/platform/storefront/config", {
+      headers: {
+        Host: "abebe.lvh.me",
+      },
+    });
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(configInput, {
+      tenantId: "tenant_1",
+      publishedRevisionId: "revision_1",
+    });
+    assert.deepEqual(await response.json(), {
+      tenant: {
+        id: "tenant_1",
+        name: "Abebe Market",
+        handle: "abebe",
+        status: "active",
+        domain: {
+          id: "domain_1",
+          hostname: "abebe.lvh.me",
+        },
+      },
+      storefront: {
+        publishedRevisionId: "revision_1",
+        templateId: "template_1",
+        templateVersion: 1,
+        templateKey: "classic@1",
+        data: {
+          home: {
+            hero: {
+              title: "Abebe Market",
+            },
+          },
+        },
+        themeTokens: {
+          colors: {
+            primary: "#0f766e",
+          },
+        },
+        publishedAt: "2026-01-01T00:00:00.000Z",
+      },
+    });
+  });
+
+  it("does not return draft config for unresolved storefront hosts", async () => {
+    let configCalls = 0;
+    const app = appWithResolution(
+      { ok: false, error: "shop_unpublished" },
+      {
+        getPublishedStorefrontConfig: async () => {
+          configCalls += 1;
+
+          return {
+            ok: false,
+            error: "published_revision_not_found",
+          };
+        },
+      },
+    );
+
+    const response = await app.request("/platform/storefront/config", {
+      headers: {
+        Host: "draft.lvh.me",
+      },
+    });
+
+    assert.equal(response.status, 404);
+    assert.deepEqual(await response.json(), {
+      error: "shop_unpublished",
+    });
+    assert.equal(configCalls, 0);
   });
 
   it("requires a platform session before selecting a storefront template", async () => {
