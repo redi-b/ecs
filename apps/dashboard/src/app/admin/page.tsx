@@ -2,14 +2,22 @@ import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { getMerchantDashboardSummary } from "../../lib/merchant-dashboard";
+import { getStorefrontTemplates } from "../../lib/storefront-templates";
 
-export default async function MerchantAdminPage() {
+export default async function MerchantAdminPage({
+  searchParams,
+}: {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const resolvedSearchParams = await searchParams;
+  const templateStatus = getSearchParam(resolvedSearchParams, "templateStatus");
   const requestHeaders = await headers();
   const cookieStore = await cookies();
   const requestHost = requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host");
+  const platformApiBaseUrl = process.env.PLATFORM_API_BASE_URL ?? "http://localhost:3000";
   const result = await getMerchantDashboardSummary({
     cookieHeader: cookieStore.toString(),
-    platformApiBaseUrl: process.env.PLATFORM_API_BASE_URL ?? "http://localhost:3000",
+    platformApiBaseUrl,
     requestHost,
   });
 
@@ -33,6 +41,9 @@ export default async function MerchantAdminPage() {
   }
 
   const { summary } = result;
+  const templateCatalog = await getStorefrontTemplates({
+    platformApiBaseUrl,
+  });
   const setupItems = [
     ["Medusa store linked", summary.commerce.hasStore],
     ["Sales channel linked", summary.commerce.hasSalesChannel],
@@ -125,7 +136,98 @@ export default async function MerchantAdminPage() {
             </table>
           </article>
         </section>
+
+        <section className="panel template-panel" aria-label="Storefront templates">
+          <div>
+            <p className="eyebrow">Storefront setup</p>
+            <h2>Template selection</h2>
+            <p className="lede">
+              Choose the approved storefront template for this shop. Selection updates the editable
+              draft and does not replace the live published storefront until publishing exists.
+            </p>
+          </div>
+
+          {templateStatus ? (
+            <p className={`form-note ${templateStatus === "template_selected" ? "" : "error"}`}>
+              {getTemplateStatusMessage(templateStatus)}
+            </p>
+          ) : null}
+
+          {!templateCatalog.ok ? (
+            <p className="form-note error">
+              Template catalog unavailable: {templateCatalog.message}
+            </p>
+          ) : (
+            <div className="template-grid">
+              {templateCatalog.templates.map((template) => {
+                const isSelected =
+                  summary.storefront.templateId === template.id &&
+                  summary.storefront.templateVersion === template.version.version;
+
+                return (
+                  <article className="template-card" key={template.version.templateKey}>
+                    <div className="template-preview" aria-hidden="true">
+                      <span>{template.slug.slice(0, 2).toUpperCase()}</span>
+                    </div>
+                    <div className="template-card-body">
+                      <div>
+                        <h3>{template.name}</h3>
+                        <p>{template.description}</p>
+                      </div>
+                      <dl className="template-meta">
+                        <div>
+                          <dt>Version</dt>
+                          <dd>{template.version.version}</dd>
+                        </div>
+                        <div>
+                          <dt>Key</dt>
+                          <dd>{template.version.templateKey}</dd>
+                        </div>
+                      </dl>
+                      <form action="/admin/storefront/template" method="post">
+                        <input name="tenantId" type="hidden" value={summary.tenant.id} />
+                        <input
+                          name="templateKey"
+                          type="hidden"
+                          value={template.version.templateKey}
+                        />
+                        <button className="primary-button template-action" type="submit">
+                          {isSelected ? "Refresh draft" : "Select template"}
+                        </button>
+                      </form>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          )}
+        </section>
       </div>
     </main>
   );
+}
+
+function getSearchParam(
+  searchParams: Record<string, string | string[] | undefined> | undefined,
+  key: string,
+) {
+  const value = searchParams?.[key];
+
+  return Array.isArray(value) ? value[0] : value;
+}
+
+function getTemplateStatusMessage(status: string) {
+  if (status === "template_selected") {
+    return "Template draft updated.";
+  }
+
+  if (status === "missing_tenant") {
+    return "Template selection failed because the tenant was missing.";
+  }
+
+  if (status === "missing_template") {
+    return "Template selection failed because the template was missing.";
+  }
+
+  return `Template selection failed: ${status}`;
 }

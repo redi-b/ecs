@@ -152,6 +152,89 @@ h2 {
   margin-top: 14px;
 }
 
+.template-panel {
+  margin-top: 14px;
+}
+
+.template-grid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: 18px;
+}
+
+.template-card {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  display: grid;
+  grid-template-columns: 148px minmax(0, 1fr);
+  min-height: 184px;
+  overflow: hidden;
+}
+
+.template-preview {
+  align-items: center;
+  background:
+    linear-gradient(135deg, rgba(15, 118, 110, 0.18), rgba(203, 217, 214, 0.58)),
+    var(--panel-strong);
+  border-right: 1px solid var(--border);
+  color: var(--accent-strong);
+  display: flex;
+  font-size: 28px;
+  font-weight: 900;
+  justify-content: center;
+}
+
+.template-card-body {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+}
+
+.template-card h3 {
+  font-size: 18px;
+  line-height: 1.2;
+  margin: 0 0 8px;
+}
+
+.template-card p {
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.5;
+  margin-bottom: 0;
+}
+
+.template-meta {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 0;
+}
+
+.template-meta div {
+  min-width: 0;
+}
+
+.template-meta dt {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+  margin-bottom: 3px;
+  text-transform: uppercase;
+}
+
+.template-meta dd {
+  font-size: 14px;
+  font-weight: 700;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.template-action {
+  width: 100%;
+}
+
 .check-list {
   display: grid;
   gap: 10px;
@@ -277,6 +360,23 @@ h2 {
   margin: 0;
 }
 
+.form-note {
+  background: #d9f3ee;
+  border: 1px solid #9ed8ce;
+  border-radius: 8px;
+  color: var(--accent-strong);
+  font-size: 14px;
+  font-weight: 700;
+  margin: 18px 0 0;
+  padding: 12px;
+}
+
+.form-note.error {
+  background: #fee2e2;
+  border-color: #fecaca;
+  color: var(--danger);
+}
+
 @media (max-width: 860px) {
   .dashboard-shell {
     padding: 18px;
@@ -287,7 +387,15 @@ h2 {
   }
 
   .overview-grid,
-  .section-grid {
+  .section-grid,
+  .template-grid,
+  .template-card {
     grid-template-columns: 1fr;
+  }
+
+  .template-preview {
+    border-bottom: 1px solid var(--border);
+    border-right: 0;
+    min-height: 120px;
   }
 }

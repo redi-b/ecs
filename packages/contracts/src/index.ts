@@ -56,3 +56,36 @@ export const merchantDashboardSummarySchema = z.object({
 });
 
 export type MerchantDashboardSummary = z.infer<typeof merchantDashboardSummarySchema>;
+
+export const storefrontTemplateCatalogItemSchema = z.object({
+  id: z.string().min(1),
+  slug: z.string().min(1),
+  name: z.string().min(1),
+  description: z.string().min(1),
+  previewAssetId: z.string().min(1).nullable(),
+  tags: z.unknown(),
+  minimumPlanId: z.string().min(1).nullable(),
+  version: z.object({
+    id: z.string().min(1),
+    version: z.number().int().positive(),
+    templateKey: z.string().min(1),
+    previewData: z.unknown(),
+  }),
+});
+
+export const storefrontTemplateCatalogSchema = z.object({
+  templates: z.array(storefrontTemplateCatalogItemSchema),
+});
+
+export type StorefrontTemplateCatalogItem = z.infer<typeof storefrontTemplateCatalogItemSchema>;
+
+export const storefrontTemplateSelectionSchema = z.object({
+  draft: z.object({
+    tenantId: z.string().min(1),
+    templateId: z.string().min(1),
+    templateVersion: z.number().int().positive(),
+    templateKey: z.string().min(1),
+  }),
+});
+
+export type StorefrontTemplateSelection = z.infer<typeof storefrontTemplateSelectionSchema>;
