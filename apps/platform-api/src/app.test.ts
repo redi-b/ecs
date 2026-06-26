@@ -123,6 +123,23 @@ describe("platform app", () => {
     });
   });
 
+  it("adds request ids to platform responses and platform-owned errors", async () => {
+    const app = appWithResolution({ ok: false, error: "shop_context_required" });
+
+    const response = await app.request("/platform/me", {
+      headers: {
+        "x-request-id": "req_test_1",
+      },
+    });
+
+    assert.equal(response.status, 401);
+    assert.equal(response.headers.get("x-request-id"), "req_test_1");
+    assert.deepEqual(await response.json(), {
+      error: "auth_required",
+      requestId: "req_test_1",
+    });
+  });
+
   it("returns shop_context_required for central store requests without trusted shop context", async () => {
     const app = appWithResolution({ ok: false, error: "shop_context_required" });
 
