@@ -9,6 +9,8 @@ import { createPlatformAuth, parseTrustedOrigins } from "./auth/platform-auth.js
 import { createMedusaOrderService } from "./commerce/order-service.js";
 import { createMedusaProductService } from "./commerce/product-service.js";
 import { getSystemHosts } from "./config/hosts.js";
+import { createMedusaCommerceProvisioningClient } from "./provisioning/medusa-commerce-provisioning.js";
+import { createTenantShopProvisioningService } from "./provisioning/tenant-shop-provisioning.js";
 import { createStorefrontTemplateService } from "./storefront/template-service.js";
 import { createDomainTenantLookup } from "./tenancy/domain-tenant-lookup.js";
 import { resolveTenantFromHost } from "./tenancy/tenant-resolver.js";
@@ -36,6 +38,16 @@ const findDomainByHostname = createDomainTenantLookup(platformDb.db);
 const authorizeDashboardForTenant = createDashboardAuthorizationLookup(platformDb.db);
 const storefrontTemplateService = createStorefrontTemplateService(platformDb.db);
 const medusaInternalUrl = process.env.MEDUSA_INTERNAL_URL ?? "http://localhost:9000";
+const platformBaseDomain = process.env.STOREFRONT_PUBLIC_BASE_DOMAIN ?? "lvh.me";
+const provisionCommerceResources = createMedusaCommerceProvisioningClient({
+  internalApiToken: process.env.PLATFORM_INTERNAL_API_TOKEN,
+  medusaInternalUrl,
+});
+const createTenantShop = createTenantShopProvisioningService({
+  db: platformDb.db,
+  platformBaseDomain,
+  provisionCommerceResources,
+});
 const orderService = createMedusaOrderService({
   adminApiToken: process.env.MEDUSA_ADMIN_API_TOKEN,
   medusaInternalUrl,
@@ -60,6 +72,7 @@ const app = createPlatformApp({
   authHandler: auth.handler,
   authorizeDashboardForTenant,
   createMerchantProduct: productService.createMerchantProduct,
+  createTenantShop,
   getPublishedStorefrontConfig: storefrontTemplateService.getPublishedStorefrontConfig,
   getSession: (headers) => auth.api.getSession({ headers }),
   listMerchantOrders: orderService.listMerchantOrders,
@@ -82,7 +95,7 @@ const app = createPlatformApp({
   resolveTenantForHost: (host) =>
     resolveTenantFromHost({
       host,
-      platformBaseDomain: process.env.STOREFRONT_PUBLIC_BASE_DOMAIN ?? "lvh.me",
+      platformBaseDomain,
       systemHosts: getSystemHosts(process.env),
       findDomainByHostname,
     }),

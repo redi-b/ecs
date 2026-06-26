@@ -112,6 +112,30 @@ export type StorefrontTemplateSelectionResult =
       error: "template_not_found" | "tenant_not_found" | "template_plan_unavailable";
     };
 
+export type TenantShopProvisioningResult =
+  | {
+      ok: true;
+      tenant: {
+        id: string;
+        name: string;
+        handle: string;
+        status: string;
+        primaryDomain: {
+          hostname: string;
+        };
+      };
+    }
+  | {
+      ok: false;
+      error:
+        | "commerce_backend_unavailable"
+        | "handle_invalid"
+        | "handle_reserved"
+        | "handle_unavailable"
+        | "storefront_template_unavailable";
+      status: 400 | 409 | 503;
+    };
+
 export type PublishedStorefrontConfigResult =
   | {
       ok: true;
@@ -164,6 +188,13 @@ export type PlatformAppOptions = {
         thumbnail?: string | null | undefined;
         title: string;
       }) => Promise<MerchantProductWriteResult>)
+    | undefined;
+  createTenantShop?:
+    | ((input: {
+        handle: string;
+        name: string;
+        ownerUserId: string;
+      }) => Promise<TenantShopProvisioningResult>)
     | undefined;
   listStorefrontTemplates?: (() => Promise<StorefrontTemplateCatalogItem[]>) | undefined;
   listMerchantProducts?:
@@ -447,6 +478,47 @@ export function createPlatformApp(options: PlatformAppOptions) {
     return context.json({
       user: session.user,
     });
+  });
+
+  app.post("/platform/tenants", async (context) => {
+    if (!options.createTenantShop) {
+      return context.json({ error: "tenant_provisioning_unavailable" }, 503);
+    }
+
+    const session = await options.getSession?.(context.req.raw.headers);
+
+    if (!session) {
+      return context.json({ error: "auth_required" }, 401);
+    }
+
+    const body = await getJsonBody(context.req.raw);
+    const name = getRequiredBodyString(body, "name");
+    const handle = getRequiredBodyString(body, "handle");
+
+    if (!name) {
+      return context.json({ error: "missing_name" }, 400);
+    }
+
+    if (!handle) {
+      return context.json({ error: "missing_handle" }, 400);
+    }
+
+    const result = await options.createTenantShop({
+      handle,
+      name,
+      ownerUserId: session.user.id,
+    });
+
+    if (!result.ok) {
+      return context.json({ error: result.error }, result.status);
+    }
+
+    return context.json(
+      {
+        tenant: result.tenant,
+      },
+      201,
+    );
   });
 
   app.get("/platform/storefront/templates", async (context) => {

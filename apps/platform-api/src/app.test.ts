@@ -9,6 +9,7 @@ import type {
   PublishedStorefrontConfigResult,
   StorefrontTemplateCatalogItem,
   StorefrontTemplateSelectionResult,
+  TenantShopProvisioningResult,
 } from "./app.js";
 import { createPlatformApp } from "./app.js";
 import type { TenantContext, TenantResolutionResult } from "./tenancy/tenant-resolver.js";
@@ -58,6 +59,11 @@ function appWithResolution(
       thumbnail?: string | null | undefined;
       title: string;
     }) => Promise<MerchantProductWriteResult>;
+    createTenantShop?: (input: {
+      handle: string;
+      name: string;
+      ownerUserId: string;
+    }) => Promise<TenantShopProvisioningResult>;
     listMerchantProducts?: (input: {
       limit: number;
       offset: number;
@@ -95,6 +101,7 @@ function appWithResolution(
     authHandler: options?.authHandler,
     authorizeDashboardForTenant: options?.authorizeDashboardForTenant,
     createMerchantProduct: options?.createMerchantProduct,
+    createTenantShop: options?.createTenantShop,
     getPublishedStorefrontConfig: options?.getPublishedStorefrontConfig,
     getSession: options?.getSession,
     listMerchantProducts: options?.listMerchantProducts,
@@ -213,6 +220,117 @@ describe("platform app", () => {
         id: "user_1",
         email: "owner@abebe.local",
         name: "Abebe Owner",
+      },
+    });
+  });
+
+  it("requires a platform session before creating a tenant shop", async () => {
+    const app = appWithResolution(
+      { ok: false, error: "shop_context_required" },
+      {
+        createTenantShop: async () => {
+          throw new Error("should not create tenant shop without a session");
+        },
+      },
+    );
+
+    const response = await app.request("/platform/tenants", {
+      method: "POST",
+      body: JSON.stringify({
+        name: "New Shop",
+        handle: "new-shop",
+      }),
+      headers: {
+        "content-type": "application/json",
+      },
+    });
+
+    assert.equal(response.status, 401);
+    assert.deepEqual(await response.json(), {
+      error: "auth_required",
+    });
+  });
+
+  it("validates tenant shop creation input", async () => {
+    const app = appWithResolution(
+      { ok: false, error: "shop_context_required" },
+      {
+        getSession: async () => ({
+          user: { id: "user_1", email: "owner@example.com", name: "Owner" },
+        }),
+        createTenantShop: async () => {
+          throw new Error("should not create tenant shop with invalid input");
+        },
+      },
+    );
+
+    const response = await app.request("/platform/tenants", {
+      method: "POST",
+      body: JSON.stringify({
+        name: "New Shop",
+      }),
+      headers: {
+        "content-type": "application/json",
+      },
+    });
+
+    assert.equal(response.status, 400);
+    assert.deepEqual(await response.json(), {
+      error: "missing_handle",
+    });
+  });
+
+  it("creates a tenant shop for the current platform user", async () => {
+    const app = appWithResolution(
+      { ok: false, error: "shop_context_required" },
+      {
+        getSession: async () => ({
+          user: { id: "user_1", email: "owner@example.com", name: "Owner" },
+        }),
+        createTenantShop: async (input) => {
+          assert.deepEqual(input, {
+            name: "New Shop",
+            handle: "new-shop",
+            ownerUserId: "user_1",
+          });
+
+          return {
+            ok: true,
+            tenant: {
+              id: "tenant_2",
+              name: "New Shop",
+              handle: "new-shop",
+              status: "draft",
+              primaryDomain: {
+                hostname: "new-shop.lvh.me",
+              },
+            },
+          };
+        },
+      },
+    );
+
+    const response = await app.request("/platform/tenants", {
+      method: "POST",
+      body: JSON.stringify({
+        name: "New Shop",
+        handle: "new-shop",
+      }),
+      headers: {
+        "content-type": "application/json",
+      },
+    });
+
+    assert.equal(response.status, 201);
+    assert.deepEqual(await response.json(), {
+      tenant: {
+        id: "tenant_2",
+        name: "New Shop",
+        handle: "new-shop",
+        status: "draft",
+        primaryDomain: {
+          hostname: "new-shop.lvh.me",
+        },
       },
     });
   });
