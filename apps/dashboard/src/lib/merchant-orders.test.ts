@@ -1,0 +1,61 @@
+import assert from "node:assert/strict";
+import { describe, it } from "node:test";
+
+import { getMerchantOrders } from "./merchant-orders.js";
+
+describe("getMerchantOrders", () => {
+  it("fetches merchant orders with session and host context", async () => {
+    let forwardedRequest: Request | undefined;
+    const result = await getMerchantOrders({
+      cookieHeader: "better-auth.session_token=session_1",
+      platformApiBaseUrl: "http://platform.local",
+      requestHost: "abebe.lvh.me",
+      limit: 5,
+      offset: 10,
+      fetcher: async (input, init) => {
+        forwardedRequest = new Request(input, init);
+
+        return Response.json({
+          orders: [
+            {
+              id: "order_1",
+              displayId: 1001,
+              email: "customer@example.com",
+              status: "pending",
+              paymentStatus: "awaiting",
+              fulfillmentStatus: "not_fulfilled",
+              currencyCode: "etb",
+              total: 1250,
+              createdAt: "2026-01-01T00:00:00.000Z",
+              updatedAt: "2026-01-02T00:00:00.000Z",
+            },
+          ],
+          count: 1,
+          limit: 5,
+          offset: 10,
+        });
+      },
+    });
+
+    assert.equal(result.ok, true);
+    assert.equal(
+      forwardedRequest?.url,
+      "http://platform.local/platform/merchant/orders?limit=5&offset=10",
+    );
+    assert.equal(forwardedRequest?.headers.get("x-forwarded-host"), "abebe.lvh.me");
+    assert.equal(forwardedRequest?.headers.get("cookie"), "better-auth.session_token=session_1");
+  });
+
+  it("returns an error for invalid order responses", async () => {
+    const result = await getMerchantOrders({
+      platformApiBaseUrl: "http://platform.local",
+      fetcher: async () => Response.json({ orders: null }),
+    });
+
+    assert.deepEqual(result, {
+      ok: false,
+      status: 502,
+      message: "invalid_orders_response",
+    });
+  });
+});

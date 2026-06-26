@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import type {
+  MerchantOrdersResult,
   MerchantProductsResult,
   MerchantProductWriteResult,
   PlatformSession,
@@ -62,6 +63,11 @@ function appWithResolution(
       offset: number;
       salesChannelId: string;
     }) => Promise<MerchantProductsResult>;
+    listMerchantOrders?: (input: {
+      limit: number;
+      offset: number;
+      salesChannelId: string;
+    }) => Promise<MerchantOrdersResult>;
     listStorefrontTemplates?: () => Promise<StorefrontTemplateCatalogItem[]>;
     medusaStoreFetch?: typeof fetch;
     selectStorefrontTemplate?: (input: {
@@ -92,6 +98,7 @@ function appWithResolution(
     getPublishedStorefrontConfig: options?.getPublishedStorefrontConfig,
     getSession: options?.getSession,
     listMerchantProducts: options?.listMerchantProducts,
+    listMerchantOrders: options?.listMerchantOrders,
     listStorefrontTemplates: options?.listStorefrontTemplates,
     signInWithEmail: options?.signInWithEmail,
     selectStorefrontTemplate: options?.selectStorefrontTemplate,
@@ -698,6 +705,114 @@ describe("platform app", () => {
     assert.equal(response.status, 403);
     assert.deepEqual(await response.json(), {
       error: "dashboard_forbidden",
+    });
+  });
+
+  it("lists merchant orders scoped to the resolved tenant sales channel", async () => {
+    let ordersInput:
+      | {
+          limit: number;
+          offset: number;
+          salesChannelId: string;
+        }
+      | undefined;
+    const app = appWithResolution(
+      {
+        ok: true,
+        context: resolvedTenantContext,
+      },
+      {
+        authorizeDashboardForTenant: async () => ({
+          ok: true,
+          actor: {
+            id: "user_1",
+            email: "owner@abebe.local",
+            name: "Abebe Owner",
+            role: "owner",
+          },
+        }),
+        getSession: async () => ({
+          user: {
+            id: "user_1",
+            email: "owner@abebe.local",
+            name: "Abebe Owner",
+          },
+        }),
+        listMerchantOrders: async (input) => {
+          ordersInput = input;
+
+          return {
+            ok: true,
+            count: 1,
+            limit: input.limit,
+            offset: input.offset,
+            orders: [
+              {
+                id: "order_1",
+                displayId: 1001,
+                email: "customer@example.com",
+                status: "pending",
+                paymentStatus: "awaiting",
+                fulfillmentStatus: "not_fulfilled",
+                currencyCode: "etb",
+                total: 1250,
+                createdAt: "2026-01-01T00:00:00.000Z",
+                updatedAt: "2026-01-02T00:00:00.000Z",
+              },
+            ],
+          };
+        },
+      },
+    );
+
+    const response = await app.request("/platform/merchant/orders?limit=5&offset=10", {
+      headers: {
+        Host: "abebe.lvh.me",
+      },
+    });
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(ordersInput, {
+      limit: 5,
+      offset: 10,
+      salesChannelId: "channel_1",
+    });
+    assert.deepEqual(await response.json(), {
+      orders: [
+        {
+          id: "order_1",
+          displayId: 1001,
+          email: "customer@example.com",
+          status: "pending",
+          paymentStatus: "awaiting",
+          fulfillmentStatus: "not_fulfilled",
+          currencyCode: "etb",
+          total: 1250,
+          createdAt: "2026-01-01T00:00:00.000Z",
+          updatedAt: "2026-01-02T00:00:00.000Z",
+        },
+      ],
+      count: 1,
+      limit: 5,
+      offset: 10,
+    });
+  });
+
+  it("requires a platform session for merchant order access", async () => {
+    const app = appWithResolution({
+      ok: true,
+      context: resolvedTenantContext,
+    });
+
+    const response = await app.request("/platform/merchant/orders", {
+      headers: {
+        Host: "abebe.lvh.me",
+      },
+    });
+
+    assert.equal(response.status, 401);
+    assert.deepEqual(await response.json(), {
+      error: "auth_required",
     });
   });
 

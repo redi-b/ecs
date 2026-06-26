@@ -52,6 +52,30 @@ export type MerchantProductMutation = z.infer<typeof merchantProductMutationSche
 
 export type MerchantProducts = z.infer<typeof merchantProductsSchema>;
 
+export const merchantOrderSchema = z.object({
+  id: z.string().min(1),
+  displayId: z.number().int().nullable(),
+  email: z.string().min(1).nullable(),
+  status: z.string().min(1).nullable(),
+  paymentStatus: z.string().min(1).nullable(),
+  fulfillmentStatus: z.string().min(1).nullable(),
+  currencyCode: z.string().min(1).nullable(),
+  total: z.number().nullable(),
+  createdAt: z.string().min(1).nullable(),
+  updatedAt: z.string().min(1).nullable(),
+});
+
+export const merchantOrdersSchema = z.object({
+  orders: z.array(merchantOrderSchema),
+  count: z.number().int().nonnegative(),
+  limit: z.number().int().positive(),
+  offset: z.number().int().nonnegative(),
+});
+
+export type MerchantOrder = z.infer<typeof merchantOrderSchema>;
+
+export type MerchantOrders = z.infer<typeof merchantOrdersSchema>;
+
 export const merchantDashboardSummarySchema = z.object({
   tenant: z.object({
     id: z.string().min(1),

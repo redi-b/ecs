@@ -54,6 +54,33 @@ export type MerchantProductWriteResult =
       status: 401 | 404 | 503;
     };
 
+export type MerchantOrder = {
+  id: string;
+  displayId: number | null;
+  email: string | null;
+  status: string | null;
+  paymentStatus: string | null;
+  fulfillmentStatus: string | null;
+  currencyCode: string | null;
+  total: number | null;
+  createdAt: string | null;
+  updatedAt: string | null;
+};
+
+export type MerchantOrdersResult =
+  | {
+      ok: true;
+      count: number;
+      limit: number;
+      offset: number;
+      orders: MerchantOrder[];
+    }
+  | {
+      ok: false;
+      error: "commerce_backend_unavailable" | "commerce_credentials_missing";
+      status: 401 | 503;
+    };
+
 export type StorefrontTemplateCatalogItem = {
   id: string;
   slug: string;
@@ -145,6 +172,13 @@ export type PlatformAppOptions = {
         offset: number;
         salesChannelId: string;
       }) => Promise<MerchantProductsResult>)
+    | undefined;
+  listMerchantOrders?:
+    | ((input: {
+        limit: number;
+        offset: number;
+        salesChannelId: string;
+      }) => Promise<MerchantOrdersResult>)
     | undefined;
   selectStorefrontTemplate?:
     | ((input: {
@@ -586,6 +620,57 @@ export function createPlatformApp(options: PlatformAppOptions) {
 
     return context.json({
       product: product.product,
+    });
+  });
+
+  app.get("/platform/merchant/orders", async (context) => {
+    const session = await options.getSession?.(context.req.raw.headers);
+
+    if (!session) {
+      return context.json({ error: "auth_required" }, 401);
+    }
+
+    const host = getRequestHost(
+      context.req.header("x-forwarded-host") ?? context.req.header("host"),
+    );
+    const result = await options.resolveTenantForHost(host);
+
+    if (!result.ok) {
+      return context.json({ error: result.error }, storeErrorStatus[result.error]);
+    }
+
+    const authorization = await options.authorizeDashboardForTenant?.({
+      tenantId: result.context.tenantId,
+      userId: session.user.id,
+    });
+
+    if (!authorization?.ok) {
+      return context.json({ error: "dashboard_forbidden" }, 403);
+    }
+
+    if (!result.context.medusaSalesChannelId) {
+      return context.json({ error: "domain_misconfigured" }, 409);
+    }
+
+    if (!options.listMerchantOrders) {
+      return context.json({ error: "commerce_backend_unavailable" }, 503);
+    }
+
+    const orders = await options.listMerchantOrders({
+      limit: getPaginationValue(context.req.query("limit"), 20, 100),
+      offset: getPaginationValue(context.req.query("offset"), 0, 10_000),
+      salesChannelId: result.context.medusaSalesChannelId,
+    });
+
+    if (!orders.ok) {
+      return context.json({ error: orders.error }, orders.status);
+    }
+
+    return context.json({
+      orders: orders.orders,
+      count: orders.count,
+      limit: orders.limit,
+      offset: orders.offset,
     });
   });
 

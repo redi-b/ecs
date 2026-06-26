@@ -141,15 +141,19 @@ export default async function MerchantAdminPage({
         <section className="panel action-panel" aria-label="Merchant workflows">
           <div>
             <p className="eyebrow">Workflows</p>
-            <h2>Manage catalog</h2>
+            <h2>Manage shop</h2>
             <p className="lede">
-              Review the products connected to this shop through the internal Medusa Admin API
-              boundary.
+              Review products and orders through the internal Medusa Admin API boundary.
             </p>
           </div>
-          <Link className="primary-button action-link" href="/admin/products">
-            Open products
-          </Link>
+          <div className="action-links">
+            <Link className="primary-button action-link" href="/admin/products">
+              Open products
+            </Link>
+            <Link className="secondary-link" href="/admin/orders">
+              Open orders
+            </Link>
+          </div>
         </section>
 
         <section className="panel template-panel" aria-label="Storefront templates">

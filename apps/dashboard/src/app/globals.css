@@ -183,6 +183,14 @@ h2 {
   white-space: nowrap;
 }
 
+.action-links {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
 .template-grid {
   display: grid;
   gap: 14px;
@@ -487,6 +495,10 @@ h2 {
   text-transform: uppercase;
 }
 
+.strong-cell {
+  font-weight: 800;
+}
+
 .product-cell {
   align-items: center;
   display: flex;
@@ -542,6 +554,14 @@ h2 {
   .action-panel {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .action-links {
+    justify-content: stretch;
+  }
+
+  .action-links > * {
+    flex: 1 1 auto;
   }
 
   .overview-grid,

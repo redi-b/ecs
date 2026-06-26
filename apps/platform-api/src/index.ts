@@ -6,6 +6,7 @@ import { serve } from "@hono/node-server";
 import { createPlatformApp } from "./app.js";
 import { createDashboardAuthorizationLookup } from "./auth/dashboard-authorization.js";
 import { createPlatformAuth, parseTrustedOrigins } from "./auth/platform-auth.js";
+import { createMedusaOrderService } from "./commerce/order-service.js";
 import { createMedusaProductService } from "./commerce/product-service.js";
 import { getSystemHosts } from "./config/hosts.js";
 import { createStorefrontTemplateService } from "./storefront/template-service.js";
@@ -35,6 +36,10 @@ const findDomainByHostname = createDomainTenantLookup(platformDb.db);
 const authorizeDashboardForTenant = createDashboardAuthorizationLookup(platformDb.db);
 const storefrontTemplateService = createStorefrontTemplateService(platformDb.db);
 const medusaInternalUrl = process.env.MEDUSA_INTERNAL_URL ?? "http://localhost:9000";
+const orderService = createMedusaOrderService({
+  adminApiToken: process.env.MEDUSA_ADMIN_API_TOKEN,
+  medusaInternalUrl,
+});
 const productService = createMedusaProductService({
   adminApiToken: process.env.MEDUSA_ADMIN_API_TOKEN,
   medusaInternalUrl,
@@ -57,6 +62,7 @@ const app = createPlatformApp({
   createMerchantProduct: productService.createMerchantProduct,
   getPublishedStorefrontConfig: storefrontTemplateService.getPublishedStorefrontConfig,
   getSession: (headers) => auth.api.getSession({ headers }),
+  listMerchantOrders: orderService.listMerchantOrders,
   listMerchantProducts: productService.listMerchantProducts,
   listStorefrontTemplates: storefrontTemplateService.listStorefrontTemplates,
   selectStorefrontTemplate: storefrontTemplateService.selectStorefrontTemplate,
