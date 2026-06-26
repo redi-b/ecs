@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import type {
   MerchantProductsResult,
+  MerchantProductWriteResult,
   PlatformSession,
   PlatformSignInEmailResult,
   PublishedStorefrontConfigResult,
@@ -49,6 +50,13 @@ function appWithResolution(
       tenantId: string;
     }) => Promise<PublishedStorefrontConfigResult>;
     getSession?: (headers: Headers) => Promise<PlatformSession | null>;
+    createMerchantProduct?: (input: {
+      handle?: string | null | undefined;
+      salesChannelId: string;
+      status?: string | null | undefined;
+      thumbnail?: string | null | undefined;
+      title: string;
+    }) => Promise<MerchantProductWriteResult>;
     listMerchantProducts?: (input: {
       limit: number;
       offset: number;
@@ -61,6 +69,14 @@ function appWithResolution(
       templateKey: string;
       userId: string;
     }) => Promise<StorefrontTemplateSelectionResult>;
+    updateMerchantProduct?: (input: {
+      handle?: string | null | undefined;
+      productId: string;
+      salesChannelId: string;
+      status?: string | null | undefined;
+      thumbnail?: string | null | undefined;
+      title?: string | null | undefined;
+    }) => Promise<MerchantProductWriteResult>;
     signInWithEmail?: (input: {
       email: string;
       password: string;
@@ -72,12 +88,14 @@ function appWithResolution(
   return createPlatformApp({
     authHandler: options?.authHandler,
     authorizeDashboardForTenant: options?.authorizeDashboardForTenant,
+    createMerchantProduct: options?.createMerchantProduct,
     getPublishedStorefrontConfig: options?.getPublishedStorefrontConfig,
     getSession: options?.getSession,
     listMerchantProducts: options?.listMerchantProducts,
     listStorefrontTemplates: options?.listStorefrontTemplates,
     signInWithEmail: options?.signInWithEmail,
     selectStorefrontTemplate: options?.selectStorefrontTemplate,
+    updateMerchantProduct: options?.updateMerchantProduct,
     serviceName: "platform-api",
     medusaInternalUrl: "http://medusa:9000",
     ...(options?.medusaStoreFetch ? { medusaStoreFetch: options.medusaStoreFetch } : {}),
@@ -764,6 +782,232 @@ describe("platform app", () => {
       count: 1,
       limit: 5,
       offset: 10,
+    });
+  });
+
+  it("creates merchant products scoped to the resolved tenant sales channel", async () => {
+    let productInput:
+      | {
+          handle?: string | null | undefined;
+          salesChannelId: string;
+          status?: string | null | undefined;
+          thumbnail?: string | null | undefined;
+          title: string;
+        }
+      | undefined;
+    const app = appWithResolution(
+      {
+        ok: true,
+        context: resolvedTenantContext,
+      },
+      {
+        authorizeDashboardForTenant: async () => ({
+          ok: true,
+          actor: {
+            id: "user_1",
+            email: "owner@abebe.local",
+            name: "Abebe Owner",
+            role: "owner",
+          },
+        }),
+        getSession: async () => ({
+          user: {
+            id: "user_1",
+            email: "owner@abebe.local",
+            name: "Abebe Owner",
+          },
+        }),
+        createMerchantProduct: async (input) => {
+          productInput = input;
+
+          return {
+            ok: true,
+            product: {
+              id: "prod_1",
+              title: input.title,
+              handle: input.handle ?? null,
+              status: input.status ?? "draft",
+              thumbnail: input.thumbnail ?? null,
+              createdAt: "2026-01-01T00:00:00.000Z",
+              updatedAt: "2026-01-02T00:00:00.000Z",
+            },
+          };
+        },
+      },
+    );
+
+    const response = await app.request("/platform/merchant/products", {
+      body: JSON.stringify({
+        title: "Coffee",
+        handle: "coffee",
+        status: "draft",
+        thumbnail: "",
+      }),
+      headers: {
+        "content-type": "application/json",
+        Host: "abebe.lvh.me",
+      },
+      method: "POST",
+    });
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(productInput, {
+      title: "Coffee",
+      handle: "coffee",
+      status: "draft",
+      thumbnail: null,
+      salesChannelId: "channel_1",
+    });
+    assert.deepEqual(await response.json(), {
+      product: {
+        id: "prod_1",
+        title: "Coffee",
+        handle: "coffee",
+        status: "draft",
+        thumbnail: null,
+        createdAt: "2026-01-01T00:00:00.000Z",
+        updatedAt: "2026-01-02T00:00:00.000Z",
+      },
+    });
+  });
+
+  it("rejects merchant product creation without a title", async () => {
+    let productCalls = 0;
+    const app = appWithResolution(
+      {
+        ok: true,
+        context: resolvedTenantContext,
+      },
+      {
+        authorizeDashboardForTenant: async () => ({
+          ok: true,
+          actor: {
+            id: "user_1",
+            email: "owner@abebe.local",
+            name: "Abebe Owner",
+            role: "owner",
+          },
+        }),
+        getSession: async () => ({
+          user: {
+            id: "user_1",
+            email: "owner@abebe.local",
+            name: "Abebe Owner",
+          },
+        }),
+        createMerchantProduct: async () => {
+          productCalls += 1;
+
+          return {
+            ok: false,
+            error: "commerce_backend_unavailable",
+            status: 503,
+          };
+        },
+      },
+    );
+
+    const response = await app.request("/platform/merchant/products", {
+      body: JSON.stringify({ title: " " }),
+      headers: {
+        "content-type": "application/json",
+        Host: "abebe.lvh.me",
+      },
+      method: "POST",
+    });
+
+    assert.equal(response.status, 400);
+    assert.deepEqual(await response.json(), {
+      error: "missing_title",
+    });
+    assert.equal(productCalls, 0);
+  });
+
+  it("updates merchant products scoped to the resolved tenant sales channel", async () => {
+    let productInput:
+      | {
+          handle?: string | null | undefined;
+          productId: string;
+          salesChannelId: string;
+          status?: string | null | undefined;
+          thumbnail?: string | null | undefined;
+          title?: string | null | undefined;
+        }
+      | undefined;
+    const app = appWithResolution(
+      {
+        ok: true,
+        context: resolvedTenantContext,
+      },
+      {
+        authorizeDashboardForTenant: async () => ({
+          ok: true,
+          actor: {
+            id: "user_1",
+            email: "owner@abebe.local",
+            name: "Abebe Owner",
+            role: "owner",
+          },
+        }),
+        getSession: async () => ({
+          user: {
+            id: "user_1",
+            email: "owner@abebe.local",
+            name: "Abebe Owner",
+          },
+        }),
+        updateMerchantProduct: async (input) => {
+          productInput = input;
+
+          return {
+            ok: true,
+            product: {
+              id: input.productId,
+              title: input.title ?? null,
+              handle: input.handle ?? null,
+              status: input.status ?? null,
+              thumbnail: input.thumbnail ?? null,
+              createdAt: "2026-01-01T00:00:00.000Z",
+              updatedAt: "2026-01-03T00:00:00.000Z",
+            },
+          };
+        },
+      },
+    );
+
+    const response = await app.request("/platform/merchant/products/prod_1", {
+      body: JSON.stringify({
+        title: "Updated coffee",
+        handle: "updated-coffee",
+        status: "published",
+        thumbnail: "",
+      }),
+      headers: {
+        "content-type": "application/json",
+        Host: "abebe.lvh.me",
+      },
+      method: "POST",
+    });
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(productInput, {
+      productId: "prod_1",
+      title: "Updated coffee",
+      handle: "updated-coffee",
+      status: "published",
+      thumbnail: null,
+      salesChannelId: "channel_1",
+    });
+    assert.deepEqual(await response.json(), {
+      product: {
+        id: "prod_1",
+        title: "Updated coffee",
+        handle: "updated-coffee",
+        status: "published",
+        thumbnail: null,
+        createdAt: "2026-01-01T00:00:00.000Z",
+        updatedAt: "2026-01-03T00:00:00.000Z",
+      },
     });
   });
 

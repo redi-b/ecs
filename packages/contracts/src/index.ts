@@ -42,7 +42,13 @@ export const merchantProductsSchema = z.object({
   offset: z.number().int().nonnegative(),
 });
 
+export const merchantProductMutationSchema = z.object({
+  product: merchantProductSchema,
+});
+
 export type MerchantProduct = z.infer<typeof merchantProductSchema>;
+
+export type MerchantProductMutation = z.infer<typeof merchantProductMutationSchema>;
 
 export type MerchantProducts = z.infer<typeof merchantProductsSchema>;
 

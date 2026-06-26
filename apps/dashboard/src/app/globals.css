@@ -381,6 +381,22 @@ h2 {
   background: var(--accent-strong);
 }
 
+.secondary-button {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--foreground);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 800;
+  min-height: 40px;
+  padding: 8px 12px;
+}
+
+.secondary-button:hover {
+  border-color: var(--accent);
+}
+
 .form-error {
   color: var(--danger);
   font-size: 14px;
@@ -406,6 +422,26 @@ h2 {
 
 .table-panel {
   overflow-x: auto;
+}
+
+.product-form-panel {
+  display: grid;
+  gap: 18px;
+  margin-bottom: 14px;
+}
+
+.product-form-grid {
+  align-items: end;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: minmax(180px, 1.4fr) minmax(160px, 1fr) minmax(140px, 0.7fr) minmax(
+      180px,
+      1.2fr
+    ) auto;
+}
+
+.product-submit {
+  white-space: nowrap;
 }
 
 .section-heading {
@@ -458,6 +494,10 @@ h2 {
   gap: 10px;
 }
 
+.product-cell.editable {
+  min-width: 220px;
+}
+
 .product-thumb {
   background: var(--panel-strong);
   border: 1px solid var(--border);
@@ -479,6 +519,17 @@ h2 {
   padding: 6px 9px;
 }
 
+.table-input {
+  font-size: 14px;
+  min-height: 38px;
+  min-width: 130px;
+  padding: 8px 10px;
+}
+
+.table-action {
+  white-space: nowrap;
+}
+
 @media (max-width: 860px) {
   .dashboard-shell {
     padding: 18px;
@@ -495,6 +546,7 @@ h2 {
 
   .overview-grid,
   .section-grid,
+  .product-form-grid,
   .template-grid,
   .template-card {
     grid-template-columns: 1fr;

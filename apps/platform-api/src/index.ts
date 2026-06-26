@@ -54,11 +54,13 @@ const auth = createPlatformAuth({
 const app = createPlatformApp({
   authHandler: auth.handler,
   authorizeDashboardForTenant,
+  createMerchantProduct: productService.createMerchantProduct,
   getPublishedStorefrontConfig: storefrontTemplateService.getPublishedStorefrontConfig,
   getSession: (headers) => auth.api.getSession({ headers }),
   listMerchantProducts: productService.listMerchantProducts,
   listStorefrontTemplates: storefrontTemplateService.listStorefrontTemplates,
   selectStorefrontTemplate: storefrontTemplateService.selectStorefrontTemplate,
+  updateMerchantProduct: productService.updateMerchantProduct,
   signInWithEmail: async ({ email, password, rememberMe, headers }) =>
     auth.api.signInEmail({
       body: {

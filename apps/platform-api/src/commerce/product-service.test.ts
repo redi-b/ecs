@@ -4,6 +4,161 @@ import { describe, it } from "node:test";
 import { createMedusaProductService } from "./product-service.js";
 
 describe("createMedusaProductService", () => {
+  it("creates a product in the resolved tenant sales channel", async () => {
+    let forwardedRequest: Request | undefined;
+    const service = createMedusaProductService({
+      adminApiToken: "medusa_token",
+      medusaInternalUrl: "http://medusa:9000",
+      fetcher: async (input, init) => {
+        forwardedRequest = new Request(input, init);
+
+        return Response.json({
+          product: {
+            id: "prod_1",
+            title: "Coffee",
+            handle: "coffee",
+            status: "draft",
+            thumbnail: null,
+            created_at: "2026-01-01T00:00:00.000Z",
+            updated_at: "2026-01-02T00:00:00.000Z",
+          },
+        });
+      },
+    });
+
+    const result = await service.createMerchantProduct({
+      title: "Coffee",
+      handle: "coffee",
+      status: "draft",
+      thumbnail: null,
+      salesChannelId: "sc_1",
+    });
+
+    assert.equal(result.ok, true);
+    assert.ok(forwardedRequest);
+    assert.equal(forwardedRequest.method, "POST");
+    assert.equal(forwardedRequest.url, "http://medusa:9000/admin/products");
+    assert.equal(forwardedRequest.headers.get("x-medusa-access-token"), "medusa_token");
+    assert.equal(forwardedRequest.headers.get("content-type"), "application/json");
+    assert.deepEqual(await forwardedRequest.json(), {
+      title: "Coffee",
+      handle: "coffee",
+      status: "draft",
+      sales_channels: ["sc_1"],
+    });
+    assert.deepEqual(result, {
+      ok: true,
+      product: {
+        id: "prod_1",
+        title: "Coffee",
+        handle: "coffee",
+        status: "draft",
+        thumbnail: null,
+        createdAt: "2026-01-01T00:00:00.000Z",
+        updatedAt: "2026-01-02T00:00:00.000Z",
+      },
+    });
+  });
+
+  it("updates a product only when it belongs to the resolved tenant sales channel", async () => {
+    const forwardedRequests: Request[] = [];
+    const service = createMedusaProductService({
+      adminApiToken: "medusa_token",
+      medusaInternalUrl: "http://medusa:9000",
+      fetcher: async (input, init) => {
+        const request = new Request(input, init);
+        forwardedRequests.push(request);
+
+        if (request.method === "GET") {
+          return Response.json({
+            product: {
+              id: "prod_1",
+              sales_channels: [{ id: "sc_1" }],
+            },
+          });
+        }
+
+        return Response.json({
+          product: {
+            id: "prod_1",
+            title: "Updated coffee",
+            handle: "coffee",
+            status: "published",
+            thumbnail: "https://cdn.test/coffee.jpg",
+            created_at: "2026-01-01T00:00:00.000Z",
+            updated_at: "2026-01-03T00:00:00.000Z",
+          },
+        });
+      },
+    });
+
+    const result = await service.updateMerchantProduct({
+      productId: "prod_1",
+      title: "Updated coffee",
+      status: "published",
+      thumbnail: "https://cdn.test/coffee.jpg",
+      salesChannelId: "sc_1",
+    });
+
+    assert.equal(result.ok, true);
+    assert.equal(forwardedRequests.length, 2);
+    assert.equal(
+      forwardedRequests[0]?.url,
+      "http://medusa:9000/admin/products/prod_1?fields=id%2Csales_channels.id",
+    );
+    assert.equal(forwardedRequests[1]?.method, "POST");
+    assert.equal(forwardedRequests[1]?.url, "http://medusa:9000/admin/products/prod_1");
+    assert.deepEqual(await forwardedRequests[1]?.json(), {
+      title: "Updated coffee",
+      status: "published",
+      thumbnail: "https://cdn.test/coffee.jpg",
+    });
+    assert.deepEqual(result, {
+      ok: true,
+      product: {
+        id: "prod_1",
+        title: "Updated coffee",
+        handle: "coffee",
+        status: "published",
+        thumbnail: "https://cdn.test/coffee.jpg",
+        createdAt: "2026-01-01T00:00:00.000Z",
+        updatedAt: "2026-01-03T00:00:00.000Z",
+      },
+    });
+  });
+
+  it("does not update products outside the resolved tenant sales channel", async () => {
+    const forwardedRequests: Request[] = [];
+    const service = createMedusaProductService({
+      adminApiToken: "medusa_token",
+      medusaInternalUrl: "http://medusa:9000",
+      fetcher: async (input, init) => {
+        const request = new Request(input, init);
+        forwardedRequests.push(request);
+
+        return Response.json({
+          product: {
+            id: "prod_1",
+            sales_channels: [{ id: "sc_other" }],
+          },
+        });
+      },
+    });
+
+    const result = await service.updateMerchantProduct({
+      productId: "prod_1",
+      title: "Updated coffee",
+      salesChannelId: "sc_1",
+    });
+
+    assert.deepEqual(result, {
+      ok: false,
+      error: "product_not_found",
+      status: 404,
+    });
+    assert.equal(forwardedRequests.length, 1);
+  });
+
   it("lists products through the Medusa Admin API scoped by sales channel", async () => {
     let forwardedRequest: Request | undefined;
     const service = createMedusaProductService({
