@@ -1259,6 +1259,34 @@ describe("platform app", () => {
     assert.equal(await forwardedRequest.text(), JSON.stringify({ region_id: "reg_1" }));
   });
 
+  it("does not forward unsupported store facade routes", async () => {
+    let fetchCalls = 0;
+    const app = appWithResolution(
+      {
+        ok: true,
+        context: resolvedTenantContext,
+      },
+      {
+        medusaStoreFetch: async () => {
+          fetchCalls += 1;
+          return Response.json({});
+        },
+      },
+    );
+
+    const response = await app.request("/store/plugins/internal", {
+      headers: {
+        Host: "abebe.lvh.me",
+      },
+    });
+
+    assert.equal(response.status, 404);
+    assert.deepEqual(await response.json(), {
+      error: "store_route_not_allowed",
+    });
+    assert.equal(fetchCalls, 0);
+  });
+
   it("does not forward resolved tenants without a publishable key", async () => {
     let fetchCalls = 0;
     const app = appWithResolution(

@@ -259,6 +259,42 @@ function getForwardBody(request: Request): BodyInit | undefined {
   return request.body ?? undefined;
 }
 
+function isAllowedStoreFacadeRoute(request: Request) {
+  const url = new URL(request.url);
+  const path = url.pathname;
+  const method = request.method;
+
+  if (method === "GET" && path === "/store/products") {
+    return true;
+  }
+
+  if (method === "GET" && /^\/store\/products\/[^/]+$/.test(path)) {
+    return true;
+  }
+
+  if (method === "POST" && path === "/store/carts") {
+    return true;
+  }
+
+  if (method === "GET" && /^\/store\/carts\/[^/]+$/.test(path)) {
+    return true;
+  }
+
+  if (method === "POST" && /^\/store\/carts\/[^/]+\/line-items$/.test(path)) {
+    return true;
+  }
+
+  if (method === "POST" && /^\/store\/carts\/[^/]+\/line-items\/[^/]+$/.test(path)) {
+    return true;
+  }
+
+  if (method === "DELETE" && /^\/store\/carts\/[^/]+\/line-items\/[^/]+$/.test(path)) {
+    return true;
+  }
+
+  return false;
+}
+
 function getSetCookieValues(headers: Headers) {
   const headersWithSetCookie = headers as Headers & {
     getSetCookie?: () => string[];
@@ -794,6 +830,10 @@ export function createPlatformApp(options: PlatformAppOptions) {
 
     if (!result.context.medusaPublishableKeyId) {
       return context.json({ error: "domain_misconfigured" }, 409);
+    }
+
+    if (!isAllowedStoreFacadeRoute(context.req.raw)) {
+      return context.json({ error: "store_route_not_allowed" }, 404);
     }
 
     let medusaResponse: Response;
