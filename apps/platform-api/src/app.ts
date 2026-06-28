@@ -211,6 +211,17 @@ export type PaymentOnboardingSubmitResult =
       status: 400;
     };
 
+export type PaymentOnboardingReviewResult =
+  | {
+      ok: true;
+      paymentOnboarding: PaymentOnboarding;
+    }
+  | {
+      ok: false;
+      error: "payment_onboarding_not_found" | "payment_onboarding_status_invalid";
+      status: 400 | 404;
+    };
+
 export type TenantOnboardingResult =
   | {
       ok: true;
@@ -336,6 +347,16 @@ export type PlatformAppOptions = {
         tenantId: string;
         userId: string;
       }) => Promise<PaymentOnboardingSubmitResult>)
+    | undefined;
+  reviewPaymentOnboarding?:
+    | ((input: {
+        notes?: string | null | undefined;
+        operatorUserId: string;
+        paymentOnboardingId: string;
+        providerAccountRef?: string | null | undefined;
+        status: string;
+        tenantId: string;
+      }) => Promise<PaymentOnboardingReviewResult>)
     | undefined;
   setTenantPrimaryDomain?:
     | ((input: {

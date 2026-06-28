@@ -442,4 +442,53 @@ export function registerPlatformRoutes(
       paymentOnboarding: result.paymentOnboarding,
     });
   });
+
+  app.post(
+    "/platform/operator/tenants/:tenantId/payments/onboarding/:paymentOnboardingId/review",
+    async (context) => {
+      if (!options.reviewPaymentOnboarding) {
+        return context.json({ error: "payments_unavailable" }, 503);
+      }
+
+      const session = await options.getSession?.(context.req.raw.headers);
+
+      if (!session) {
+        return context.json({ error: "auth_required" }, 401);
+      }
+
+      const tenantId = context.req.param("tenantId");
+      const authorization = await options.authorizeDashboardForTenant?.({
+        tenantId,
+        userId: session.user.id,
+      });
+
+      if (!authorization?.ok || authorization.actor.role !== "operator") {
+        return context.json({ error: "operator_forbidden" }, 403);
+      }
+
+      const body = await getJsonBody(context.req.raw);
+      const status = getRequiredBodyString(body, "status");
+
+      if (!status) {
+        return context.json({ error: "missing_status" }, 400);
+      }
+
+      const result = await options.reviewPaymentOnboarding({
+        notes: getOptionalBodyString(body, "notes"),
+        operatorUserId: session.user.id,
+        paymentOnboardingId: context.req.param("paymentOnboardingId"),
+        providerAccountRef: getOptionalBodyString(body, "providerAccountRef"),
+        status,
+        tenantId,
+      });
+
+      if (!result.ok) {
+        return context.json({ error: result.error }, result.status);
+      }
+
+      return context.json({
+        paymentOnboarding: result.paymentOnboarding,
+      });
+    },
+  );
 }

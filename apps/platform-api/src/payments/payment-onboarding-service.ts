@@ -5,12 +5,14 @@ import { and, asc, eq } from "drizzle-orm";
 import type {
   PaymentOnboarding,
   PaymentOnboardingListResult,
+  PaymentOnboardingReviewResult,
   PaymentOnboardingSubmitResult,
 } from "../app.js";
 
 type PlatformDb = ReturnType<typeof createPlatformDb>["db"];
 
 const allowedOnboardingProviders = new Set(["chapa"]);
+const allowedReviewStatuses = new Set(["approved", "rejected", "needs_review"]);
 
 function normalizePaymentProvider(value: string) {
   return value.trim().toLowerCase();
@@ -115,6 +117,72 @@ export function createPaymentOnboardingService(db: PlatformDb) {
       return {
         ok: true,
         paymentOnboarding: submitted,
+      };
+    },
+    reviewPaymentOnboarding: async (input: {
+      notes?: string | null | undefined;
+      operatorUserId: string;
+      paymentOnboardingId: string;
+      providerAccountRef?: string | null | undefined;
+      status: string;
+      tenantId: string;
+    }): Promise<PaymentOnboardingReviewResult> => {
+      const status = input.status.trim().toLowerCase();
+
+      if (!allowedReviewStatuses.has(status)) {
+        return {
+          ok: false,
+          error: "payment_onboarding_status_invalid",
+          status: 400,
+        };
+      }
+
+      const reviewed = await db.transaction(async (transaction) => {
+        const [row] = await transaction
+          .update(paymentOnboarding)
+          .set({
+            notes: input.notes ?? null,
+            providerAccountRef: input.providerAccountRef ?? null,
+            status,
+          })
+          .where(
+            and(
+              eq(paymentOnboarding.id, input.paymentOnboardingId),
+              eq(paymentOnboarding.tenantId, input.tenantId),
+            ),
+          )
+          .returning(selectPaymentOnboardingFields());
+
+        if (!row) {
+          return null;
+        }
+
+        await transaction.insert(auditLogs).values({
+          actorUserId: input.operatorUserId,
+          tenantId: input.tenantId,
+          action: "payment_onboarding.reviewed",
+          targetType: "payment_onboarding",
+          targetId: row.id,
+          metadata: {
+            provider: row.provider,
+            status: row.status,
+          },
+        });
+
+        return row;
+      });
+
+      if (!reviewed) {
+        return {
+          ok: false,
+          error: "payment_onboarding_not_found",
+          status: 404,
+        };
+      }
+
+      return {
+        ok: true,
+        paymentOnboarding: reviewed,
       };
     },
   };

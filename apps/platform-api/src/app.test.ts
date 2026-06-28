@@ -6,6 +6,7 @@ import type {
   MerchantProductsResult,
   MerchantProductWriteResult,
   PaymentOnboardingListResult,
+  PaymentOnboardingReviewResult,
   PaymentOnboardingSubmitResult,
   PlatformSession,
   PublishedStorefrontConfigResult,
@@ -78,6 +79,14 @@ function appWithResolution(
     getBillingStatus?: (input: { tenantId: string }) => Promise<BillingStatusResult>;
     getTenantOnboarding?: (input: { tenantId: string }) => Promise<TenantOnboardingResult>;
     listPaymentOnboarding?: (input: { tenantId: string }) => Promise<PaymentOnboardingListResult>;
+    reviewPaymentOnboarding?: (input: {
+      notes?: string | null | undefined;
+      operatorUserId: string;
+      paymentOnboardingId: string;
+      providerAccountRef?: string | null | undefined;
+      status: string;
+      tenantId: string;
+    }) => Promise<PaymentOnboardingReviewResult>;
     listTenantDomains?: (input: { tenantId: string }) => Promise<TenantDomainListResult>;
     listMerchantProducts?: (input: {
       limit: number;
@@ -131,6 +140,7 @@ function appWithResolution(
     listMerchantProducts: options?.listMerchantProducts,
     listMerchantOrders: options?.listMerchantOrders,
     listPaymentOnboarding: options?.listPaymentOnboarding,
+    reviewPaymentOnboarding: options?.reviewPaymentOnboarding,
     listTenantDomains: options?.listTenantDomains,
     listStorefrontTemplates: options?.listStorefrontTemplates,
     selectStorefrontTemplate: options?.selectStorefrontTemplate,
@@ -1175,6 +1185,90 @@ describe("platform app", () => {
             createdAt: "2026-06-01T00:00:00.000Z",
           },
         ],
+      },
+    });
+  });
+
+  it("lets an operator review tenant payment onboarding", async () => {
+    let reviewInput:
+      | {
+          notes?: string | null | undefined;
+          operatorUserId: string;
+          paymentOnboardingId: string;
+          providerAccountRef?: string | null | undefined;
+          status: string;
+          tenantId: string;
+        }
+      | undefined;
+    const app = appWithResolution(
+      { ok: false, error: "shop_context_required" },
+      {
+        authorizeDashboardForTenant: async () => ({
+          ok: true,
+          actor: {
+            id: "operator_1",
+            email: "operator@ecs.local",
+            name: "Operator",
+            role: "operator",
+          },
+        }),
+        getSession: async () => ({
+          user: {
+            id: "operator_1",
+            email: "operator@ecs.local",
+            name: "Operator",
+          },
+        }),
+        reviewPaymentOnboarding: async (input) => {
+          reviewInput = input;
+
+          return {
+            ok: true,
+            paymentOnboarding: {
+              id: input.paymentOnboardingId,
+              provider: "chapa",
+              status: input.status,
+              requiredDocuments: ["business_license"],
+              notes: input.notes ?? null,
+              providerAccountRef: input.providerAccountRef ?? null,
+            },
+          };
+        },
+      },
+    );
+
+    const response = await app.request(
+      "/platform/operator/tenants/tenant_1/payments/onboarding/payment_onboarding_1/review",
+      {
+        body: JSON.stringify({
+          status: " approved ",
+          notes: " Approved after license check. ",
+          providerAccountRef: " chapa_subaccount_1 ",
+        }),
+        headers: {
+          "content-type": "application/json",
+        },
+        method: "POST",
+      },
+    );
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(reviewInput, {
+      tenantId: "tenant_1",
+      operatorUserId: "operator_1",
+      paymentOnboardingId: "payment_onboarding_1",
+      status: "approved",
+      notes: "Approved after license check.",
+      providerAccountRef: "chapa_subaccount_1",
+    });
+    assert.deepEqual(await response.json(), {
+      paymentOnboarding: {
+        id: "payment_onboarding_1",
+        provider: "chapa",
+        status: "approved",
+        requiredDocuments: ["business_license"],
+        notes: "Approved after license check.",
+        providerAccountRef: "chapa_subaccount_1",
       },
     });
   });

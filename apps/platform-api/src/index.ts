@@ -91,6 +91,7 @@ const app = createPlatformApp({
   listPaymentOnboarding: paymentOnboardingService.listPaymentOnboarding,
   listTenantDomains: domainManagementService.listTenantDomains,
   listStorefrontTemplates: storefrontTemplateService.listStorefrontTemplates,
+  reviewPaymentOnboarding: paymentOnboardingService.reviewPaymentOnboarding,
   selectStorefrontTemplate: storefrontTemplateService.selectStorefrontTemplate,
   setTenantPrimaryDomain: domainManagementService.setTenantPrimaryDomain,
   submitPaymentOnboarding: paymentOnboardingService.submitPaymentOnboarding,
