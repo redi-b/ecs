@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import type {
+  BillingStatusResult,
   MerchantOrdersResult,
   MerchantProductsResult,
   MerchantProductWriteResult,
@@ -74,6 +75,7 @@ function appWithResolution(
       tenantId: string;
       userId: string;
     }) => Promise<TenantDomainCreateResult>;
+    getBillingStatus?: (input: { tenantId: string }) => Promise<BillingStatusResult>;
     getTenantOnboarding?: (input: { tenantId: string }) => Promise<TenantOnboardingResult>;
     listPaymentOnboarding?: (input: { tenantId: string }) => Promise<PaymentOnboardingListResult>;
     listTenantDomains?: (input: { tenantId: string }) => Promise<TenantDomainListResult>;
@@ -122,6 +124,7 @@ function appWithResolution(
     createMerchantProduct: options?.createMerchantProduct,
     createTenantDomain: options?.createTenantDomain,
     createTenantShop: options?.createTenantShop,
+    getBillingStatus: options?.getBillingStatus,
     getPublishedStorefrontConfig: options?.getPublishedStorefrontConfig,
     getTenantOnboarding: options?.getTenantOnboarding,
     getSession: options?.getSession,
@@ -1063,6 +1066,115 @@ describe("platform app", () => {
         requiredDocuments: ["business_license"],
         notes: "License uploaded.",
         providerAccountRef: null,
+      },
+    });
+  });
+
+  it("returns billing status for an authorized tenant member", async () => {
+    let billingInput: { tenantId: string } | undefined;
+    const app = appWithResolution(
+      { ok: false, error: "shop_context_required" },
+      {
+        authorizeDashboardForTenant: async () => ({
+          ok: true,
+          actor: {
+            id: "user_1",
+            email: "owner@abebe.local",
+            name: "Abebe Owner",
+            role: "owner",
+          },
+        }),
+        getBillingStatus: async (input) => {
+          billingInput = input;
+
+          return {
+            ok: true,
+            billing: {
+              subscription: {
+                id: "subscription_1",
+                status: "active",
+                billingCycle: "monthly",
+                manualPaymentState: "paid",
+                currentPeriodStart: "2026-06-01T00:00:00.000Z",
+                currentPeriodEnd: "2026-07-01T00:00:00.000Z",
+              },
+              plan: {
+                id: "plan_1",
+                name: "Starter",
+                price: "999.00",
+                limits: {
+                  products: 100,
+                },
+                features: {
+                  customDomain: false,
+                },
+              },
+              invoices: [
+                {
+                  id: "invoice_1",
+                  amount: "999.00",
+                  currency: "ETB",
+                  status: "paid",
+                  dueAt: "2026-06-05T00:00:00.000Z",
+                  paidAt: "2026-06-02T00:00:00.000Z",
+                  provider: "manual",
+                  providerReference: "receipt_1",
+                  createdAt: "2026-06-01T00:00:00.000Z",
+                },
+              ],
+            },
+          };
+        },
+        getSession: async () => ({
+          user: {
+            id: "user_1",
+            email: "owner@abebe.local",
+            name: "Abebe Owner",
+          },
+        }),
+      },
+    );
+
+    const response = await app.request("/platform/tenants/tenant_1/billing");
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(billingInput, {
+      tenantId: "tenant_1",
+    });
+    assert.deepEqual(await response.json(), {
+      billing: {
+        subscription: {
+          id: "subscription_1",
+          status: "active",
+          billingCycle: "monthly",
+          manualPaymentState: "paid",
+          currentPeriodStart: "2026-06-01T00:00:00.000Z",
+          currentPeriodEnd: "2026-07-01T00:00:00.000Z",
+        },
+        plan: {
+          id: "plan_1",
+          name: "Starter",
+          price: "999.00",
+          limits: {
+            products: 100,
+          },
+          features: {
+            customDomain: false,
+          },
+        },
+        invoices: [
+          {
+            id: "invoice_1",
+            amount: "999.00",
+            currency: "ETB",
+            status: "paid",
+            dueAt: "2026-06-05T00:00:00.000Z",
+            paidAt: "2026-06-02T00:00:00.000Z",
+            provider: "manual",
+            providerReference: "receipt_1",
+            createdAt: "2026-06-01T00:00:00.000Z",
+          },
+        ],
       },
     });
   });

@@ -6,6 +6,7 @@ import { serve } from "@hono/node-server";
 import { createPlatformApp } from "./app.js";
 import { createDashboardAuthorizationLookup } from "./auth/dashboard-authorization.js";
 import { createPlatformAuth, parseTrustedOrigins } from "./auth/platform-auth.js";
+import { createBillingService } from "./billing/billing-service.js";
 import { createMedusaOrderService } from "./commerce/order-service.js";
 import { createMedusaProductService } from "./commerce/product-service.js";
 import { getSystemHosts } from "./config/hosts.js";
@@ -38,6 +39,7 @@ const platformDb = createPlatformDb({
   ),
 });
 const findDomainByHostname = createDomainTenantLookup(platformDb.db);
+const billingService = createBillingService(platformDb.db);
 const domainManagementService = createDomainManagementService(platformDb.db);
 const authorizeDashboardForTenant = createDashboardAuthorizationLookup(platformDb.db);
 const storefrontTemplateService = createStorefrontTemplateService(platformDb.db);
@@ -80,6 +82,7 @@ const app = createPlatformApp({
   createMerchantProduct: productService.createMerchantProduct,
   createTenantDomain: domainManagementService.createTenantDomain,
   createTenantShop,
+  getBillingStatus: billingService.getBillingStatus,
   getPublishedStorefrontConfig: storefrontTemplateService.getPublishedStorefrontConfig,
   getTenantOnboarding: tenantOnboardingService.getTenantOnboarding,
   getSession: (headers) => auth.api.getSession({ headers }),

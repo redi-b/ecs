@@ -220,6 +220,38 @@ export function registerPlatformRoutes(
     });
   });
 
+  app.get("/platform/tenants/:tenantId/billing", async (context) => {
+    if (!options.getBillingStatus) {
+      return context.json({ error: "billing_unavailable" }, 503);
+    }
+
+    const session = await options.getSession?.(context.req.raw.headers);
+
+    if (!session) {
+      return context.json({ error: "auth_required" }, 401);
+    }
+
+    const tenantId = context.req.param("tenantId");
+    const authorization = await options.authorizeDashboardForTenant?.({
+      tenantId,
+      userId: session.user.id,
+    });
+
+    if (!authorization?.ok) {
+      return context.json({ error: "dashboard_forbidden" }, 403);
+    }
+
+    const result = await options.getBillingStatus({ tenantId });
+
+    if (!result.ok) {
+      return context.json({ error: result.error }, 404);
+    }
+
+    return context.json({
+      billing: result.billing,
+    });
+  });
+
   app.get("/platform/tenants/:tenantId/domains", async (context) => {
     if (!options.listTenantDomains) {
       return context.json({ error: "domains_unavailable" }, 503);
