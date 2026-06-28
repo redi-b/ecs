@@ -5,7 +5,6 @@ import type {
   MerchantProductsResult,
   MerchantProductWriteResult,
   PlatformSession,
-  PlatformSignInEmailResult,
   PublishedStorefrontConfigResult,
   StorefrontTemplateCatalogItem,
   StorefrontTemplateSelectionResult,
@@ -91,12 +90,6 @@ function appWithResolution(
       thumbnail?: string | null | undefined;
       title?: string | null | undefined;
     }) => Promise<MerchantProductWriteResult>;
-    signInWithEmail?: (input: {
-      email: string;
-      password: string;
-      rememberMe: boolean;
-      headers: Headers;
-    }) => Promise<PlatformSignInEmailResult>;
   },
 ) {
   return createPlatformApp({
@@ -110,7 +103,6 @@ function appWithResolution(
     listMerchantProducts: options?.listMerchantProducts,
     listMerchantOrders: options?.listMerchantOrders,
     listStorefrontTemplates: options?.listStorefrontTemplates,
-    signInWithEmail: options?.signInWithEmail,
     selectStorefrontTemplate: options?.selectStorefrontTemplate,
     updateMerchantProduct: options?.updateMerchantProduct,
     serviceName: "platform-api",
@@ -689,101 +681,6 @@ describe("platform app", () => {
         currentStep: "storefront_review",
         completedSteps: ["commerce_resources_provisioned", "storefront_template_preselected"],
       },
-    });
-  });
-
-  it("signs in with the platform auth helper and forwards auth cookies", async () => {
-    let signInInput:
-      | {
-          email: string;
-          password: string;
-          rememberMe: boolean;
-          host: string | null;
-        }
-      | undefined;
-    const app = appWithResolution(
-      { ok: false, error: "shop_context_required" },
-      {
-        signInWithEmail: async (input) => {
-          signInInput = {
-            email: input.email,
-            password: input.password,
-            rememberMe: input.rememberMe,
-            host: input.headers.get("x-forwarded-host"),
-          };
-
-          return {
-            headers: new Headers({
-              "set-cookie": "better-auth.session_token=session_1; HttpOnly; SameSite=Lax",
-            }),
-            response: {
-              user: {
-                id: "user_1",
-                email: "owner@abebe.local",
-              },
-            },
-          };
-        },
-      },
-    );
-
-    const response = await app.request("/platform/sessions/email-password", {
-      body: JSON.stringify({
-        email: " OWNER@ABEBE.LOCAL ",
-        password: "password1234",
-      }),
-      headers: {
-        "content-type": "application/json",
-        "x-forwarded-host": "abebe.lvh.me",
-      },
-      method: "POST",
-    });
-
-    assert.equal(response.status, 200);
-    assert.deepEqual(signInInput, {
-      email: "owner@abebe.local",
-      password: "password1234",
-      rememberMe: true,
-      host: "abebe.lvh.me",
-    });
-    assert.equal(
-      response.headers.get("set-cookie"),
-      "better-auth.session_token=session_1; HttpOnly; SameSite=Lax",
-    );
-    assert.deepEqual(await response.json(), {
-      user: {
-        id: "user_1",
-        email: "owner@abebe.local",
-      },
-    });
-  });
-
-  it("maps helper auth failures to invalid credentials", async () => {
-    const app = appWithResolution(
-      { ok: false, error: "shop_context_required" },
-      {
-        signInWithEmail: async () => {
-          throw {
-            status: 401,
-          };
-        },
-      },
-    );
-
-    const response = await app.request("/platform/sessions/email-password", {
-      body: JSON.stringify({
-        email: "owner@abebe.local",
-        password: "wrong",
-      }),
-      headers: {
-        "content-type": "application/json",
-      },
-      method: "POST",
-    });
-
-    assert.equal(response.status, 401);
-    assert.deepEqual(await response.json(), {
-      error: "invalid_credentials",
     });
   });
 

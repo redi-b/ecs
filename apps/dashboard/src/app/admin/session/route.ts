@@ -1,3 +1,4 @@
+import { createAuthClient } from "better-auth/client";
 import { NextResponse } from "next/server";
 
 export async function POST(request: Request) {
@@ -14,36 +15,25 @@ export async function POST(request: Request) {
     return redirectToSignIn(request, nextPath, "missing_password");
   }
 
-  const authResponse = await fetch(getPlatformSessionUrl(), {
-    body: JSON.stringify({
-      email: email.trim().toLowerCase(),
-      password,
-      rememberMe: true,
-    }),
-    headers: {
-      accept: "application/json",
-      "content-type": "application/json",
-      "x-forwarded-host":
-        request.headers.get("x-forwarded-host") ?? request.headers.get("host") ?? "",
-      "x-forwarded-proto": request.headers.get("x-forwarded-proto") ?? "http",
-    },
-    method: "POST",
-    redirect: "manual",
+  const authResult = await signInWithPlatformAuth({
+    email: email.trim().toLowerCase(),
+    forwardedHost: request.headers.get("x-forwarded-host") ?? request.headers.get("host") ?? "",
+    forwardedProto: request.headers.get("x-forwarded-proto") ?? "http",
+    password,
   });
 
-  if (!authResponse.ok) {
+  if (!authResult.ok) {
     return redirectToSignIn(
       request,
       nextPath,
-      authResponse.status === 401 ? "invalid_credentials" : "auth_unavailable",
+      authResult.status === 401 ? "invalid_credentials" : "auth_unavailable",
     );
   }
 
   const response = NextResponse.redirect(getRedirectUrl(nextPath, request), { status: 303 });
-  const setCookie = authResponse.headers.get("set-cookie");
 
-  if (setCookie) {
-    response.headers.append("set-cookie", setCookie);
+  for (const cookie of authResult.cookies) {
+    response.headers.append("set-cookie", cookie);
   }
 
   return response;
@@ -66,12 +56,6 @@ function redirectToSignIn(request: Request, nextPath: string, error: string) {
   return NextResponse.redirect(url, { status: 303 });
 }
 
-function getPlatformSessionUrl() {
-  const baseUrl = process.env.PLATFORM_API_BASE_URL ?? "http://localhost:3000";
-
-  return new URL("/platform/sessions/email-password", normalizeBaseUrl(baseUrl));
-}
-
 function getRedirectUrl(path: string, request: Request) {
   return new URL(path, getRequestOrigin(request));
 }
@@ -89,5 +73,63 @@ function getRequestOrigin(request: Request) {
 }
 
 function normalizeBaseUrl(value: string) {
-  return value.endsWith("/") ? value : `${value}/`;
+  return value.endsWith("/") ? value.slice(0, -1) : value;
+}
+
+function getSetCookieValues(headers: Headers) {
+  const headersWithSetCookie = headers as Headers & {
+    getSetCookie?: () => string[];
+  };
+  const cookies = headersWithSetCookie.getSetCookie?.();
+
+  if (cookies?.length) {
+    return cookies;
+  }
+
+  const cookie = headers.get("set-cookie");
+
+  return cookie ? [cookie] : [];
+}
+
+async function signInWithPlatformAuth(input: {
+  email: string;
+  forwardedHost: string;
+  forwardedProto: string;
+  password: string;
+}) {
+  const baseUrl = process.env.PLATFORM_API_BASE_URL ?? "http://localhost:3000";
+  const client = createAuthClient({
+    basePath: "/platform/auth",
+    baseURL: normalizeBaseUrl(baseUrl),
+  });
+  const cookies: string[] = [];
+  const result = await client.signIn.email(
+    {
+      email: input.email,
+      password: input.password,
+      rememberMe: true,
+    },
+    {
+      headers: {
+        "x-forwarded-host": input.forwardedHost,
+        "x-forwarded-proto": input.forwardedProto,
+      },
+      onResponse: (context) => {
+        cookies.push(...getSetCookieValues(context.response.headers));
+      },
+      redirect: "manual",
+    },
+  );
+
+  if (result.error) {
+    return {
+      ok: false,
+      status: result.error.status === 401 ? 401 : 503,
+    } as const;
+  }
+
+  return {
+    cookies,
+    ok: true,
+  } as const;
 }

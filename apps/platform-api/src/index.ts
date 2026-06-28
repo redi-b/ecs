@@ -83,16 +83,6 @@ const app = createPlatformApp({
   listStorefrontTemplates: storefrontTemplateService.listStorefrontTemplates,
   selectStorefrontTemplate: storefrontTemplateService.selectStorefrontTemplate,
   updateMerchantProduct: productService.updateMerchantProduct,
-  signInWithEmail: async ({ email, password, rememberMe, headers }) =>
-    auth.api.signInEmail({
-      body: {
-        email,
-        password,
-        rememberMe,
-      },
-      headers,
-      returnHeaders: true,
-    }),
   serviceName: env.SERVICE_NAME,
   medusaInternalUrl,
   resolveTenantForHost: (host) =>
