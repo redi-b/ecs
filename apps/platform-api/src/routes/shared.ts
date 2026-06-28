@@ -67,7 +67,23 @@ export function isAllowedStoreFacadeRoute(request: Request) {
     return true;
   }
 
+  if (method === "POST" && /^\/store\/carts\/[^/]+$/.test(path)) {
+    return true;
+  }
+
+  if (method === "POST" && /^\/store\/carts\/[^/]+\/complete$/.test(path)) {
+    return true;
+  }
+
   if (method === "GET" && path === "/store/shipping-options") {
+    return true;
+  }
+
+  if (method === "GET" && path === "/store/payment-providers") {
+    return true;
+  }
+
+  if (method === "POST" && /^\/store\/payment-collections\/[^/]+\/payment-sessions$/.test(path)) {
     return true;
   }
 

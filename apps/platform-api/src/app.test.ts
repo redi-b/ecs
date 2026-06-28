@@ -2930,6 +2930,196 @@ describe("platform app", () => {
     );
   });
 
+  it("forwards cart contact and address updates to Medusa", async () => {
+    let forwardedRequest: Request | undefined;
+    const medusaStoreFetch: typeof fetch = async (request) => {
+      forwardedRequest = request instanceof Request ? request : new Request(request);
+
+      return Response.json({
+        cart: {
+          id: "cart_1",
+          email: "buyer@example.com",
+        },
+      });
+    };
+    const app = appWithResolution(
+      {
+        ok: true,
+        context: resolvedTenantContext,
+      },
+      { medusaStoreFetch },
+    );
+
+    const body = {
+      email: "buyer@example.com",
+      shipping_address: {
+        first_name: "Abebe",
+        phone: "+251911111111",
+        address_1: "Bole",
+        city: "Addis Ababa",
+        country_code: "et",
+      },
+      metadata: {
+        delivery_choice: "delivery",
+        landmark: "Near the mall",
+        customer_notes: "Call before delivery",
+      },
+    };
+
+    const response = await app.request("/store/carts/cart_1", {
+      body: JSON.stringify(body),
+      headers: {
+        "content-type": "application/json",
+        Host: "abebe.lvh.me",
+      },
+      method: "POST",
+    });
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), {
+      cart: {
+        id: "cart_1",
+        email: "buyer@example.com",
+      },
+    });
+    assert.ok(forwardedRequest);
+    assert.equal(forwardedRequest.method, "POST");
+    assert.equal(forwardedRequest.url, "http://medusa:9000/store/carts/cart_1");
+    assert.equal(await forwardedRequest.text(), JSON.stringify(body));
+  });
+
+  it("forwards payment provider reads to Medusa", async () => {
+    let forwardedRequest: Request | undefined;
+    const medusaStoreFetch: typeof fetch = async (request) => {
+      forwardedRequest = request instanceof Request ? request : new Request(request);
+
+      return Response.json({
+        payment_providers: [
+          {
+            id: "pp_system_default",
+          },
+        ],
+      });
+    };
+    const app = appWithResolution(
+      {
+        ok: true,
+        context: resolvedTenantContext,
+      },
+      { medusaStoreFetch },
+    );
+
+    const response = await app.request("/store/payment-providers?region_id=reg_1", {
+      headers: {
+        Host: "abebe.lvh.me",
+      },
+    });
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), {
+      payment_providers: [
+        {
+          id: "pp_system_default",
+        },
+      ],
+    });
+    assert.ok(forwardedRequest);
+    assert.equal(
+      forwardedRequest.url,
+      "http://medusa:9000/store/payment-providers?region_id=reg_1",
+    );
+    assert.equal(forwardedRequest.headers.get("x-publishable-api-key"), "pk_1");
+  });
+
+  it("forwards payment session initialization to Medusa", async () => {
+    let forwardedRequest: Request | undefined;
+    const medusaStoreFetch: typeof fetch = async (request) => {
+      forwardedRequest = request instanceof Request ? request : new Request(request);
+
+      return Response.json({
+        payment_collection: {
+          id: "paycol_1",
+        },
+      });
+    };
+    const app = appWithResolution(
+      {
+        ok: true,
+        context: resolvedTenantContext,
+      },
+      { medusaStoreFetch },
+    );
+
+    const response = await app.request("/store/payment-collections/paycol_1/payment-sessions", {
+      body: JSON.stringify({
+        provider_id: "pp_system_default",
+      }),
+      headers: {
+        "content-type": "application/json",
+        Host: "abebe.lvh.me",
+      },
+      method: "POST",
+    });
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), {
+      payment_collection: {
+        id: "paycol_1",
+      },
+    });
+    assert.ok(forwardedRequest);
+    assert.equal(forwardedRequest.method, "POST");
+    assert.equal(
+      forwardedRequest.url,
+      "http://medusa:9000/store/payment-collections/paycol_1/payment-sessions",
+    );
+    assert.equal(
+      await forwardedRequest.text(),
+      JSON.stringify({
+        provider_id: "pp_system_default",
+      }),
+    );
+  });
+
+  it("forwards cart completion to Medusa", async () => {
+    let forwardedRequest: Request | undefined;
+    const medusaStoreFetch: typeof fetch = async (request) => {
+      forwardedRequest = request instanceof Request ? request : new Request(request);
+
+      return Response.json({
+        type: "order",
+        order: {
+          id: "order_1",
+        },
+      });
+    };
+    const app = appWithResolution(
+      {
+        ok: true,
+        context: resolvedTenantContext,
+      },
+      { medusaStoreFetch },
+    );
+
+    const response = await app.request("/store/carts/cart_1/complete", {
+      headers: {
+        Host: "abebe.lvh.me",
+      },
+      method: "POST",
+    });
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), {
+      type: "order",
+      order: {
+        id: "order_1",
+      },
+    });
+    assert.ok(forwardedRequest);
+    assert.equal(forwardedRequest.method, "POST");
+    assert.equal(forwardedRequest.url, "http://medusa:9000/store/carts/cart_1/complete");
+  });
+
   it("does not forward unsupported store facade routes", async () => {
     let fetchCalls = 0;
     const app = appWithResolution(
