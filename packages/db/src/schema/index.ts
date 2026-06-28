@@ -5,5 +5,6 @@ export * from "./billing.js";
 export * from "./domains.js";
 export * from "./enums.js";
 export * from "./notifications.js";
+export * from "./onboarding.js";
 export * from "./storefront.js";
 export * from "./tenants.js";

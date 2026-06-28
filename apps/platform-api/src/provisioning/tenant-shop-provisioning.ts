@@ -7,6 +7,7 @@ import {
   storefrontTemplates,
   storefrontTemplateVersions,
   tenantMemberships,
+  tenantOnboarding,
   tenants,
 } from "@ecs/db";
 import { and, asc, desc, eq } from "drizzle-orm";
@@ -101,6 +102,14 @@ function requireRow<T>(value: T | undefined, message: string): T {
   }
 
   return value;
+}
+
+export function buildInitialTenantOnboardingState() {
+  return {
+    status: "in_progress",
+    currentStep: "storefront_review",
+    completedSteps: ["commerce_resources_provisioned", "storefront_template_preselected"],
+  };
 }
 
 export function createTenantShopProvisioner(options: TenantShopProvisionerOptions) {
@@ -280,6 +289,11 @@ export function createTenantShopProvisioningService(options: TenantShopProvision
           draftTemplateVersion: activeTemplate.templateVersion,
           draftData: activeTemplate.defaultData,
           draftThemeTokens: activeTemplate.defaultThemeTokens,
+        });
+
+        await transaction.insert(tenantOnboarding).values({
+          tenantId,
+          ...buildInitialTenantOnboardingState(),
         });
 
         await transaction.insert(auditLogs).values({

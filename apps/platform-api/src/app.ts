@@ -112,6 +112,21 @@ export type StorefrontTemplateSelectionResult =
       error: "template_not_found" | "tenant_not_found" | "template_plan_unavailable";
     };
 
+export type TenantOnboardingResult =
+  | {
+      ok: true;
+      onboarding: {
+        tenantId: string;
+        status: string;
+        currentStep: string;
+        completedSteps: unknown;
+      };
+    }
+  | {
+      ok: false;
+      error: "onboarding_not_found";
+    };
+
 export type TenantShopProvisioningResult =
   | {
       ok: true;
@@ -179,6 +194,9 @@ export type PlatformAppOptions = {
         publishedRevisionId: string;
         tenantId: string;
       }) => Promise<PublishedStorefrontConfigResult>)
+    | undefined;
+  getTenantOnboarding?:
+    | ((input: { tenantId: string }) => Promise<TenantOnboardingResult>)
     | undefined;
   createMerchantProduct?:
     | ((input: {
@@ -619,6 +637,38 @@ export function createPlatformApp(options: PlatformAppOptions) {
 
     return context.json({
       draft: result.draft,
+    });
+  });
+
+  app.get("/platform/tenants/:tenantId/onboarding", async (context) => {
+    if (!options.getTenantOnboarding) {
+      return context.json({ error: "onboarding_unavailable" }, 503);
+    }
+
+    const session = await options.getSession?.(context.req.raw.headers);
+
+    if (!session) {
+      return context.json({ error: "auth_required" }, 401);
+    }
+
+    const tenantId = context.req.param("tenantId");
+    const authorization = await options.authorizeDashboardForTenant?.({
+      tenantId,
+      userId: session.user.id,
+    });
+
+    if (!authorization?.ok) {
+      return context.json({ error: "dashboard_forbidden" }, 403);
+    }
+
+    const result = await options.getTenantOnboarding({ tenantId });
+
+    if (!result.ok) {
+      return context.json({ error: result.error }, 404);
+    }
+
+    return context.json({
+      onboarding: result.onboarding,
     });
   });
 

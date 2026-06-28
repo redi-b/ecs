@@ -9,6 +9,7 @@ import type {
   PublishedStorefrontConfigResult,
   StorefrontTemplateCatalogItem,
   StorefrontTemplateSelectionResult,
+  TenantOnboardingResult,
   TenantShopProvisioningResult,
 } from "./app.js";
 import { createPlatformApp } from "./app.js";
@@ -64,6 +65,7 @@ function appWithResolution(
       name: string;
       ownerUserId: string;
     }) => Promise<TenantShopProvisioningResult>;
+    getTenantOnboarding?: (input: { tenantId: string }) => Promise<TenantOnboardingResult>;
     listMerchantProducts?: (input: {
       limit: number;
       offset: number;
@@ -103,6 +105,7 @@ function appWithResolution(
     createMerchantProduct: options?.createMerchantProduct,
     createTenantShop: options?.createTenantShop,
     getPublishedStorefrontConfig: options?.getPublishedStorefrontConfig,
+    getTenantOnboarding: options?.getTenantOnboarding,
     getSession: options?.getSession,
     listMerchantProducts: options?.listMerchantProducts,
     listMerchantOrders: options?.listMerchantOrders,
@@ -625,6 +628,68 @@ describe("platform app", () => {
       error: "dashboard_forbidden",
     });
     assert.equal(selectCalls, 0);
+  });
+
+  it("returns onboarding state for an authorized tenant member", async () => {
+    let authorizationInput: { tenantId: string; userId: string } | undefined;
+    let onboardingInput: { tenantId: string } | undefined;
+    const app = appWithResolution(
+      { ok: false, error: "shop_context_required" },
+      {
+        authorizeDashboardForTenant: async (input) => {
+          authorizationInput = input;
+
+          return {
+            ok: true,
+            actor: {
+              id: "user_1",
+              email: "owner@abebe.local",
+              name: "Abebe Owner",
+              role: "owner",
+            },
+          };
+        },
+        getSession: async () => ({
+          user: {
+            id: "user_1",
+            email: "owner@abebe.local",
+            name: "Abebe Owner",
+          },
+        }),
+        getTenantOnboarding: async (input) => {
+          onboardingInput = input;
+
+          return {
+            ok: true,
+            onboarding: {
+              tenantId: input.tenantId,
+              status: "in_progress",
+              currentStep: "storefront_review",
+              completedSteps: ["commerce_resources_provisioned", "storefront_template_preselected"],
+            },
+          };
+        },
+      },
+    );
+
+    const response = await app.request("/platform/tenants/tenant_1/onboarding");
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(authorizationInput, {
+      tenantId: "tenant_1",
+      userId: "user_1",
+    });
+    assert.deepEqual(onboardingInput, {
+      tenantId: "tenant_1",
+    });
+    assert.deepEqual(await response.json(), {
+      onboarding: {
+        tenantId: "tenant_1",
+        status: "in_progress",
+        currentStep: "storefront_review",
+        completedSteps: ["commerce_resources_provisioned", "storefront_template_preselected"],
+      },
+    });
   });
 
   it("signs in with the platform auth helper and forwards auth cookies", async () => {

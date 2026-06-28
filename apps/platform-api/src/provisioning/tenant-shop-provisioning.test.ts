@@ -1,9 +1,20 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { createTenantShopProvisioner } from "./tenant-shop-provisioning.js";
+import {
+  buildInitialTenantOnboardingState,
+  createTenantShopProvisioner,
+} from "./tenant-shop-provisioning.js";
 
 describe("createTenantShopProvisioner", () => {
+  it("builds the initial tenant onboarding state after commerce and template provisioning", () => {
+    assert.deepEqual(buildInitialTenantOnboardingState(), {
+      status: "in_progress",
+      currentStep: "storefront_review",
+      completedSteps: ["commerce_resources_provisioned", "storefront_template_preselected"],
+    });
+  });
+
   it("returns the existing tenant for a same-owner handle retry without provisioning commerce again", async () => {
     let commerceCalls = 0;
     const createTenantShop = createTenantShopProvisioner({

@@ -28,6 +28,7 @@ const localIds = {
   storefrontConfig: "00000000-0000-4000-8000-000000000006",
   user: "00000000-0000-4000-8000-000000000007",
   tenantMembership: "00000000-0000-4000-8000-000000000008",
+  tenantOnboarding: "00000000-0000-4000-8000-000000000009",
 } as const;
 
 export function buildPlatformSeed(options: PlatformSeedOptions) {
@@ -82,6 +83,13 @@ export function buildPlatformSeed(options: PlatformSeedOptions) {
       userId: localIds.user,
       role: "owner" as const,
       status: "active",
+    },
+    tenantOnboarding: {
+      id: localIds.tenantOnboarding,
+      tenantId: localIds.tenant,
+      status: "in_progress",
+      currentStep: "storefront_review",
+      completedSteps: ["commerce_resources_provisioned", "storefront_template_preselected"],
     },
     templates: [
       {

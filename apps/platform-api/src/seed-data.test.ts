@@ -28,6 +28,13 @@ test("buildPlatformSeed creates the default local tenant context", () => {
   assert.equal(seed.tenant.medusaPublishableKeyId, "pk_test_local");
   assert.equal(seed.user.email, "owner@abebe.local");
   assert.equal(seed.tenantMembership.role, "owner");
+  assert.deepEqual(seed.tenantOnboarding, {
+    id: "00000000-0000-4000-8000-000000000009",
+    tenantId: "00000000-0000-4000-8000-000000000001",
+    status: "in_progress",
+    currentStep: "storefront_review",
+    completedSteps: ["commerce_resources_provisioned", "storefront_template_preselected"],
+  });
   assert.equal(seed.templateVersions[0]?.schema.type, "object");
   assert.deepEqual(seed.storefrontRevision.data, { title: "Hello" });
   assert.equal(seed.storefrontRevision.templateKey, "classic@1");

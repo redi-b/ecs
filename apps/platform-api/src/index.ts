@@ -9,6 +9,7 @@ import { createPlatformAuth, parseTrustedOrigins } from "./auth/platform-auth.js
 import { createMedusaOrderService } from "./commerce/order-service.js";
 import { createMedusaProductService } from "./commerce/product-service.js";
 import { getSystemHosts } from "./config/hosts.js";
+import { createTenantOnboardingService } from "./onboarding/onboarding-service.js";
 import { createMedusaCommerceProvisioningClient } from "./provisioning/medusa-commerce-provisioning.js";
 import { createTenantShopProvisioningService } from "./provisioning/tenant-shop-provisioning.js";
 import { createStorefrontTemplateService } from "./storefront/template-service.js";
@@ -37,6 +38,7 @@ const platformDb = createPlatformDb({
 const findDomainByHostname = createDomainTenantLookup(platformDb.db);
 const authorizeDashboardForTenant = createDashboardAuthorizationLookup(platformDb.db);
 const storefrontTemplateService = createStorefrontTemplateService(platformDb.db);
+const tenantOnboardingService = createTenantOnboardingService(platformDb.db);
 const medusaInternalUrl = process.env.MEDUSA_INTERNAL_URL ?? "http://localhost:9000";
 const platformBaseDomain = process.env.STOREFRONT_PUBLIC_BASE_DOMAIN ?? "lvh.me";
 const provisionCommerceResources = createMedusaCommerceProvisioningClient({
@@ -74,6 +76,7 @@ const app = createPlatformApp({
   createMerchantProduct: productService.createMerchantProduct,
   createTenantShop,
   getPublishedStorefrontConfig: storefrontTemplateService.getPublishedStorefrontConfig,
+  getTenantOnboarding: tenantOnboardingService.getTenantOnboarding,
   getSession: (headers) => auth.api.getSession({ headers }),
   listMerchantOrders: orderService.listMerchantOrders,
   listMerchantProducts: productService.listMerchantProducts,

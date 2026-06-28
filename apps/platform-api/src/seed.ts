@@ -8,6 +8,7 @@ import {
   storefrontTemplates as storefrontTemplateRows,
   storefrontTemplateVersions,
   tenantMemberships,
+  tenantOnboarding,
   tenants,
   users,
 } from "@ecs/db";
@@ -159,6 +160,19 @@ try {
         userId: seed.tenantMembership.userId,
         role: seed.tenantMembership.role,
         status: seed.tenantMembership.status,
+      },
+    });
+
+  await platformDb.db
+    .insert(tenantOnboarding)
+    .values(seed.tenantOnboarding)
+    .onConflictDoUpdate({
+      target: tenantOnboarding.tenantId,
+      set: {
+        status: seed.tenantOnboarding.status,
+        currentStep: seed.tenantOnboarding.currentStep,
+        completedSteps: seed.tenantOnboarding.completedSteps,
+        updatedAt: new Date(),
       },
     });
 
