@@ -11,6 +11,7 @@ import { createMedusaProductService } from "./commerce/product-service.js";
 import { getSystemHosts } from "./config/hosts.js";
 import { createDomainManagementService } from "./domains/domain-service.js";
 import { createTenantOnboardingService } from "./onboarding/onboarding-service.js";
+import { createPaymentOnboardingService } from "./payments/payment-onboarding-service.js";
 import { createMedusaCommerceProvisioningClient } from "./provisioning/medusa-commerce-provisioning.js";
 import { createTenantShopProvisioningService } from "./provisioning/tenant-shop-provisioning.js";
 import { createStorefrontTemplateService } from "./storefront/template-service.js";
@@ -41,6 +42,7 @@ const domainManagementService = createDomainManagementService(platformDb.db);
 const authorizeDashboardForTenant = createDashboardAuthorizationLookup(platformDb.db);
 const storefrontTemplateService = createStorefrontTemplateService(platformDb.db);
 const tenantOnboardingService = createTenantOnboardingService(platformDb.db);
+const paymentOnboardingService = createPaymentOnboardingService(platformDb.db);
 const medusaInternalUrl = process.env.MEDUSA_INTERNAL_URL ?? "http://localhost:9000";
 const platformBaseDomain = process.env.STOREFRONT_PUBLIC_BASE_DOMAIN ?? "lvh.me";
 const provisionCommerceResources = createMedusaCommerceProvisioningClient({
@@ -83,10 +85,12 @@ const app = createPlatformApp({
   getSession: (headers) => auth.api.getSession({ headers }),
   listMerchantOrders: orderService.listMerchantOrders,
   listMerchantProducts: productService.listMerchantProducts,
+  listPaymentOnboarding: paymentOnboardingService.listPaymentOnboarding,
   listTenantDomains: domainManagementService.listTenantDomains,
   listStorefrontTemplates: storefrontTemplateService.listStorefrontTemplates,
   selectStorefrontTemplate: storefrontTemplateService.selectStorefrontTemplate,
   setTenantPrimaryDomain: domainManagementService.setTenantPrimaryDomain,
+  submitPaymentOnboarding: paymentOnboardingService.submitPaymentOnboarding,
   updateMerchantProduct: productService.updateMerchantProduct,
   serviceName: env.SERVICE_NAME,
   medusaInternalUrl,

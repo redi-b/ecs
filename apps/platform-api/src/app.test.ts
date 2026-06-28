@@ -4,6 +4,8 @@ import type {
   MerchantOrdersResult,
   MerchantProductsResult,
   MerchantProductWriteResult,
+  PaymentOnboardingListResult,
+  PaymentOnboardingSubmitResult,
   PlatformSession,
   PublishedStorefrontConfigResult,
   StorefrontTemplateCatalogItem,
@@ -73,6 +75,7 @@ function appWithResolution(
       userId: string;
     }) => Promise<TenantDomainCreateResult>;
     getTenantOnboarding?: (input: { tenantId: string }) => Promise<TenantOnboardingResult>;
+    listPaymentOnboarding?: (input: { tenantId: string }) => Promise<PaymentOnboardingListResult>;
     listTenantDomains?: (input: { tenantId: string }) => Promise<TenantDomainListResult>;
     listMerchantProducts?: (input: {
       limit: number;
@@ -91,6 +94,13 @@ function appWithResolution(
       tenantId: string;
       userId: string;
     }) => Promise<TenantDomainPrimaryResult>;
+    submitPaymentOnboarding?: (input: {
+      notes?: string | null | undefined;
+      provider: string;
+      requiredDocuments: unknown[];
+      tenantId: string;
+      userId: string;
+    }) => Promise<PaymentOnboardingSubmitResult>;
     selectStorefrontTemplate?: (input: {
       tenantId: string;
       templateKey: string;
@@ -117,6 +127,7 @@ function appWithResolution(
     getSession: options?.getSession,
     listMerchantProducts: options?.listMerchantProducts,
     listMerchantOrders: options?.listMerchantOrders,
+    listPaymentOnboarding: options?.listPaymentOnboarding,
     listTenantDomains: options?.listTenantDomains,
     listStorefrontTemplates: options?.listStorefrontTemplates,
     selectStorefrontTemplate: options?.selectStorefrontTemplate,
@@ -125,6 +136,7 @@ function appWithResolution(
     medusaInternalUrl: "http://medusa:9000",
     ...(options?.medusaStoreFetch ? { medusaStoreFetch: options.medusaStoreFetch } : {}),
     setTenantPrimaryDomain: options?.setTenantPrimaryDomain,
+    submitPaymentOnboarding: options?.submitPaymentOnboarding,
     resolveTenantForHost: async () => result,
   });
 }
@@ -911,6 +923,146 @@ describe("platform app", () => {
         isPrimary: true,
         verificationStatus: "verified",
         sslStatus: "active",
+      },
+    });
+  });
+
+  it("lists payment onboarding records for an authorized tenant member", async () => {
+    let listInput: { tenantId: string } | undefined;
+    const app = appWithResolution(
+      { ok: false, error: "shop_context_required" },
+      {
+        authorizeDashboardForTenant: async () => ({
+          ok: true,
+          actor: {
+            id: "user_1",
+            email: "owner@abebe.local",
+            name: "Abebe Owner",
+            role: "owner",
+          },
+        }),
+        getSession: async () => ({
+          user: {
+            id: "user_1",
+            email: "owner@abebe.local",
+            name: "Abebe Owner",
+          },
+        }),
+        listPaymentOnboarding: async (input) => {
+          listInput = input;
+
+          return {
+            ok: true,
+            paymentOnboarding: [
+              {
+                id: "payment_onboarding_1",
+                provider: "chapa",
+                status: "needs_review",
+                requiredDocuments: ["business_license"],
+                notes: "License uploaded.",
+                providerAccountRef: null,
+              },
+            ],
+          };
+        },
+      },
+    );
+
+    const response = await app.request("/platform/tenants/tenant_1/payments");
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(listInput, {
+      tenantId: "tenant_1",
+    });
+    assert.deepEqual(await response.json(), {
+      paymentOnboarding: [
+        {
+          id: "payment_onboarding_1",
+          provider: "chapa",
+          status: "needs_review",
+          requiredDocuments: ["business_license"],
+          notes: "License uploaded.",
+          providerAccountRef: null,
+        },
+      ],
+    });
+  });
+
+  it("submits payment onboarding for operator review", async () => {
+    let submitInput:
+      | {
+          notes?: string | null | undefined;
+          provider: string;
+          requiredDocuments: unknown[];
+          tenantId: string;
+          userId: string;
+        }
+      | undefined;
+    const app = appWithResolution(
+      { ok: false, error: "shop_context_required" },
+      {
+        authorizeDashboardForTenant: async () => ({
+          ok: true,
+          actor: {
+            id: "user_1",
+            email: "owner@abebe.local",
+            name: "Abebe Owner",
+            role: "owner",
+          },
+        }),
+        getSession: async () => ({
+          user: {
+            id: "user_1",
+            email: "owner@abebe.local",
+            name: "Abebe Owner",
+          },
+        }),
+        submitPaymentOnboarding: async (input) => {
+          submitInput = input;
+
+          return {
+            ok: true,
+            paymentOnboarding: {
+              id: "payment_onboarding_1",
+              provider: "chapa",
+              status: "needs_review",
+              requiredDocuments: ["business_license"],
+              notes: input.notes ?? null,
+              providerAccountRef: null,
+            },
+          };
+        },
+      },
+    );
+
+    const response = await app.request("/platform/tenants/tenant_1/payments/onboarding", {
+      body: JSON.stringify({
+        provider: " Chapa ",
+        requiredDocuments: ["business_license"],
+        notes: " License uploaded. ",
+      }),
+      headers: {
+        "content-type": "application/json",
+      },
+      method: "POST",
+    });
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(submitInput, {
+      tenantId: "tenant_1",
+      userId: "user_1",
+      provider: "Chapa",
+      requiredDocuments: ["business_license"],
+      notes: "License uploaded.",
+    });
+    assert.deepEqual(await response.json(), {
+      paymentOnboarding: {
+        id: "payment_onboarding_1",
+        provider: "chapa",
+        status: "needs_review",
+        requiredDocuments: ["business_license"],
+        notes: "License uploaded.",
+        providerAccountRef: null,
       },
     });
   });

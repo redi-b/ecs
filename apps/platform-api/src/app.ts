@@ -147,6 +147,31 @@ export type TenantDomainPrimaryResult =
       status: 404 | 409;
     };
 
+export type PaymentOnboarding = {
+  id: string;
+  provider: string;
+  status: string;
+  requiredDocuments: unknown;
+  notes: string | null;
+  providerAccountRef: string | null;
+};
+
+export type PaymentOnboardingListResult = {
+  ok: true;
+  paymentOnboarding: PaymentOnboarding[];
+};
+
+export type PaymentOnboardingSubmitResult =
+  | {
+      ok: true;
+      paymentOnboarding: PaymentOnboarding;
+    }
+  | {
+      ok: false;
+      error: "payment_provider_invalid";
+      status: 400;
+    };
+
 export type TenantOnboardingResult =
   | {
       ok: true;
@@ -259,6 +284,18 @@ export type PlatformAppOptions = {
   listStorefrontTemplates?: (() => Promise<StorefrontTemplateCatalogItem[]>) | undefined;
   listTenantDomains?:
     | ((input: { tenantId: string }) => Promise<TenantDomainListResult>)
+    | undefined;
+  listPaymentOnboarding?:
+    | ((input: { tenantId: string }) => Promise<PaymentOnboardingListResult>)
+    | undefined;
+  submitPaymentOnboarding?:
+    | ((input: {
+        notes?: string | null | undefined;
+        provider: string;
+        requiredDocuments: unknown[];
+        tenantId: string;
+        userId: string;
+      }) => Promise<PaymentOnboardingSubmitResult>)
     | undefined;
   setTenantPrimaryDomain?:
     | ((input: {
