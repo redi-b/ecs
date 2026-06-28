@@ -540,4 +540,48 @@ export function registerPlatformRoutes(
       });
     },
   );
+
+  app.post("/platform/operator/tenants/:tenantId/status", async (context) => {
+    if (!options.updateTenantStatus) {
+      return context.json({ error: "tenant_status_unavailable" }, 503);
+    }
+
+    const session = await options.getSession?.(context.req.raw.headers);
+
+    if (!session) {
+      return context.json({ error: "auth_required" }, 401);
+    }
+
+    const tenantId = context.req.param("tenantId");
+    const authorization = await options.authorizeDashboardForTenant?.({
+      tenantId,
+      userId: session.user.id,
+    });
+
+    if (!authorization?.ok || authorization.actor.role !== "operator") {
+      return context.json({ error: "operator_forbidden" }, 403);
+    }
+
+    const body = await getJsonBody(context.req.raw);
+    const status = getRequiredBodyString(body, "status");
+
+    if (!status) {
+      return context.json({ error: "missing_status" }, 400);
+    }
+
+    const result = await options.updateTenantStatus({
+      operatorUserId: session.user.id,
+      reason: getOptionalBodyString(body, "reason"),
+      status,
+      tenantId,
+    });
+
+    if (!result.ok) {
+      return context.json({ error: result.error }, result.status);
+    }
+
+    return context.json({
+      tenant: result.tenant,
+    });
+  });
 }

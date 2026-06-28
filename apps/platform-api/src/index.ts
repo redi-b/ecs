@@ -18,6 +18,7 @@ import { createTenantShopProvisioningService } from "./provisioning/tenant-shop-
 import { createStorefrontTemplateService } from "./storefront/template-service.js";
 import { createDomainTenantLookup } from "./tenancy/domain-tenant-lookup.js";
 import { resolveTenantFromHost } from "./tenancy/tenant-resolver.js";
+import { createTenantStatusService } from "./tenants/tenant-status-service.js";
 
 const env = loadServiceEnv({
   ...process.env,
@@ -44,6 +45,7 @@ const domainManagementService = createDomainManagementService(platformDb.db);
 const authorizeDashboardForTenant = createDashboardAuthorizationLookup(platformDb.db);
 const storefrontTemplateService = createStorefrontTemplateService(platformDb.db);
 const tenantOnboardingService = createTenantOnboardingService(platformDb.db);
+const tenantStatusService = createTenantStatusService(platformDb.db);
 const paymentOnboardingService = createPaymentOnboardingService(platformDb.db);
 const medusaInternalUrl = process.env.MEDUSA_INTERNAL_URL ?? "http://localhost:9000";
 const platformBaseDomain = process.env.STOREFRONT_PUBLIC_BASE_DOMAIN ?? "lvh.me";
@@ -97,6 +99,7 @@ const app = createPlatformApp({
   submitPaymentOnboarding: paymentOnboardingService.submitPaymentOnboarding,
   updateBillingInvoiceStatus: billingService.updateBillingInvoiceStatus,
   updateMerchantProduct: productService.updateMerchantProduct,
+  updateTenantStatus: tenantStatusService.updateTenantStatus,
   serviceName: env.SERVICE_NAME,
   medusaInternalUrl,
   resolveTenantForHost: (host) =>

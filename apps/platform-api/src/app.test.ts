@@ -18,6 +18,7 @@ import type {
   TenantDomainPrimaryResult,
   TenantOnboardingResult,
   TenantShopProvisioningResult,
+  TenantStatusUpdateResult,
 } from "./app.js";
 import { createPlatformApp } from "./app.js";
 import type { TenantContext, TenantResolutionResult } from "./tenancy/tenant-resolver.js";
@@ -87,6 +88,12 @@ function appWithResolution(
       tenantId: string;
     }) => Promise<BillingInvoiceUpdateResult>;
     getTenantOnboarding?: (input: { tenantId: string }) => Promise<TenantOnboardingResult>;
+    updateTenantStatus?: (input: {
+      operatorUserId: string;
+      reason?: string | null | undefined;
+      status: string;
+      tenantId: string;
+    }) => Promise<TenantStatusUpdateResult>;
     listPaymentOnboarding?: (input: { tenantId: string }) => Promise<PaymentOnboardingListResult>;
     reviewPaymentOnboarding?: (input: {
       notes?: string | null | undefined;
@@ -160,6 +167,7 @@ function appWithResolution(
     setTenantPrimaryDomain: options?.setTenantPrimaryDomain,
     submitPaymentOnboarding: options?.submitPaymentOnboarding,
     updateBillingInvoiceStatus: options?.updateBillingInvoiceStatus,
+    updateTenantStatus: options?.updateTenantStatus,
     resolveTenantForHost: async () => result,
   });
 }
@@ -1369,6 +1377,78 @@ describe("platform app", () => {
         provider: "manual",
         providerReference: "receipt_1",
         createdAt: "2026-06-01T00:00:00.000Z",
+      },
+    });
+  });
+
+  it("lets an operator suspend a tenant", async () => {
+    let updateInput:
+      | {
+          operatorUserId: string;
+          reason?: string | null | undefined;
+          status: string;
+          tenantId: string;
+        }
+      | undefined;
+    const app = appWithResolution(
+      { ok: false, error: "shop_context_required" },
+      {
+        authorizeDashboardForTenant: async () => ({
+          ok: true,
+          actor: {
+            id: "operator_1",
+            email: "operator@ecs.local",
+            name: "Operator",
+            role: "operator",
+          },
+        }),
+        getSession: async () => ({
+          user: {
+            id: "operator_1",
+            email: "operator@ecs.local",
+            name: "Operator",
+          },
+        }),
+        updateTenantStatus: async (input) => {
+          updateInput = input;
+
+          return {
+            ok: true,
+            tenant: {
+              id: input.tenantId,
+              name: "Abebe Market",
+              handle: "abebe",
+              status: input.status,
+            },
+          };
+        },
+      },
+    );
+
+    const response = await app.request("/platform/operator/tenants/tenant_1/status", {
+      body: JSON.stringify({
+        status: " suspended ",
+        reason: " Past due billing. ",
+      }),
+      headers: {
+        "content-type": "application/json",
+      },
+      method: "POST",
+    });
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(updateInput, {
+      tenantId: "tenant_1",
+      operatorUserId: "operator_1",
+      status: "suspended",
+      reason: "Past due billing.",
+    });
+    assert.deepEqual(await response.json(), {
+      tenant: {
+        id: "tenant_1",
+        name: "Abebe Market",
+        handle: "abebe",
+        status: "suspended",
       },
     });
   });

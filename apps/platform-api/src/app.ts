@@ -7,6 +7,8 @@ import type { TenantResolutionResult } from "./tenancy/tenant-resolver.js";
 
 export type DashboardActorRole = "owner" | "manager" | "staff" | "operator";
 
+export type TenantStatus = "draft" | "active" | "suspended" | "cancelled";
+
 export type PlatformSessionUser = {
   id: string;
   email: string;
@@ -66,6 +68,22 @@ export type BillingInvoiceUpdateResult =
   | {
       ok: false;
       error: "billing_invoice_not_found" | "billing_invoice_status_invalid";
+      status: 400 | 404;
+    };
+
+export type TenantStatusUpdateResult =
+  | {
+      ok: true;
+      tenant: {
+        id: string;
+        name: string;
+        handle: string;
+        status: string;
+      };
+    }
+  | {
+      ok: false;
+      error: "tenant_not_found" | "tenant_status_invalid";
       status: 400 | 404;
     };
 
@@ -328,6 +346,14 @@ export type PlatformAppOptions = {
         status: string;
         tenantId: string;
       }) => Promise<BillingInvoiceUpdateResult>)
+    | undefined;
+  updateTenantStatus?:
+    | ((input: {
+        operatorUserId: string;
+        reason?: string | null | undefined;
+        status: string;
+        tenantId: string;
+      }) => Promise<TenantStatusUpdateResult>)
     | undefined;
   getTenantOnboarding?:
     | ((input: { tenantId: string }) => Promise<TenantOnboardingResult>)
