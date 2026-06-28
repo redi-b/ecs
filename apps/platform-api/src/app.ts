@@ -90,13 +90,7 @@ export type TenantStatusUpdateResult =
 export type SupportHistoryResult = {
   ok: true;
   history: {
-    notes: {
-      id: string;
-      operatorUserId: string;
-      body: string;
-      visibility: string;
-      createdAt: string;
-    }[];
+    notes: SupportNote[];
     auditLogs: {
       id: string;
       actorUserId: string | null;
@@ -107,6 +101,19 @@ export type SupportHistoryResult = {
       createdAt: string;
     }[];
   };
+};
+
+export type SupportNote = {
+  id: string;
+  operatorUserId: string;
+  body: string;
+  visibility: string;
+  createdAt: string;
+};
+
+export type SupportNoteCreateResult = {
+  ok: true;
+  note: SupportNote;
 };
 
 export type MerchantProduct = {
@@ -361,6 +368,14 @@ export type PlatformAppOptions = {
   getBillingStatus?: ((input: { tenantId: string }) => Promise<BillingStatusResult>) | undefined;
   getOperatorSupportHistory?:
     | ((input: { limit: number; tenantId: string }) => Promise<SupportHistoryResult>)
+    | undefined;
+  createOperatorSupportNote?:
+    | ((input: {
+        body: string;
+        operatorUserId: string;
+        tenantId: string;
+        visibility?: string | null | undefined;
+      }) => Promise<SupportNoteCreateResult>)
     | undefined;
   updateBillingInvoiceStatus?:
     | ((input: {

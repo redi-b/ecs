@@ -616,4 +616,47 @@ export function registerPlatformRoutes(
       history: result.history,
     });
   });
+
+  app.post("/platform/operator/tenants/:tenantId/support/notes", async (context) => {
+    if (!options.createOperatorSupportNote) {
+      return context.json({ error: "support_notes_unavailable" }, 503);
+    }
+
+    const session = await options.getSession?.(context.req.raw.headers);
+
+    if (!session) {
+      return context.json({ error: "auth_required" }, 401);
+    }
+
+    const tenantId = context.req.param("tenantId");
+    const authorization = await options.authorizeDashboardForTenant?.({
+      tenantId,
+      userId: session.user.id,
+    });
+
+    if (!authorization?.ok || authorization.actor.role !== "operator") {
+      return context.json({ error: "operator_forbidden" }, 403);
+    }
+
+    const body = await getJsonBody(context.req.raw);
+    const noteBody = getRequiredBodyString(body, "body");
+
+    if (!noteBody) {
+      return context.json({ error: "missing_body" }, 400);
+    }
+
+    const result = await options.createOperatorSupportNote({
+      body: noteBody,
+      operatorUserId: session.user.id,
+      tenantId,
+      visibility: getOptionalBodyString(body, "visibility"),
+    });
+
+    return context.json(
+      {
+        note: result.note,
+      },
+      201,
+    );
+  });
 }

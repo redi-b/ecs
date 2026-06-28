@@ -14,6 +14,7 @@ import type {
   StorefrontTemplateCatalogItem,
   StorefrontTemplateSelectionResult,
   SupportHistoryResult,
+  SupportNoteCreateResult,
   TenantDomainCreateResult,
   TenantDomainListResult,
   TenantDomainPrimaryResult,
@@ -93,6 +94,12 @@ function appWithResolution(
       limit: number;
       tenantId: string;
     }) => Promise<SupportHistoryResult>;
+    createOperatorSupportNote?: (input: {
+      body: string;
+      operatorUserId: string;
+      tenantId: string;
+      visibility?: string | null | undefined;
+    }) => Promise<SupportNoteCreateResult>;
     updateTenantStatus?: (input: {
       operatorUserId: string;
       reason?: string | null | undefined;
@@ -153,6 +160,7 @@ function appWithResolution(
     authorizeDashboardForTenant: options?.authorizeDashboardForTenant,
     createMerchantProduct: options?.createMerchantProduct,
     createTenantDomain: options?.createTenantDomain,
+    createOperatorSupportNote: options?.createOperatorSupportNote,
     createTenantShop: options?.createTenantShop,
     getBillingStatus: options?.getBillingStatus,
     getPublishedStorefrontConfig: options?.getPublishedStorefrontConfig,
@@ -1545,6 +1553,80 @@ describe("platform app", () => {
             createdAt: "2026-06-02T11:00:00.000Z",
           },
         ],
+      },
+    });
+  });
+
+  it("lets an operator add a tenant support note", async () => {
+    let noteInput:
+      | {
+          body: string;
+          operatorUserId: string;
+          tenantId: string;
+          visibility?: string | null | undefined;
+        }
+      | undefined;
+    const app = appWithResolution(
+      { ok: false, error: "shop_context_required" },
+      {
+        authorizeDashboardForTenant: async () => ({
+          ok: true,
+          actor: {
+            id: "operator_1",
+            email: "operator@ecs.local",
+            name: "Operator",
+            role: "operator",
+          },
+        }),
+        createOperatorSupportNote: async (input) => {
+          noteInput = input;
+
+          return {
+            ok: true,
+            note: {
+              id: "note_1",
+              operatorUserId: input.operatorUserId,
+              body: input.body,
+              visibility: input.visibility ?? "internal",
+              createdAt: "2026-06-02T10:00:00.000Z",
+            },
+          };
+        },
+        getSession: async () => ({
+          user: {
+            id: "operator_1",
+            email: "operator@ecs.local",
+            name: "Operator",
+          },
+        }),
+      },
+    );
+
+    const response = await app.request("/platform/operator/tenants/tenant_1/support/notes", {
+      body: JSON.stringify({
+        body: " Called merchant about billing. ",
+        visibility: " internal ",
+      }),
+      headers: {
+        "content-type": "application/json",
+      },
+      method: "POST",
+    });
+
+    assert.equal(response.status, 201);
+    assert.deepEqual(noteInput, {
+      tenantId: "tenant_1",
+      operatorUserId: "operator_1",
+      body: "Called merchant about billing.",
+      visibility: "internal",
+    });
+    assert.deepEqual(await response.json(), {
+      note: {
+        id: "note_1",
+        operatorUserId: "operator_1",
+        body: "Called merchant about billing.",
+        visibility: "internal",
+        createdAt: "2026-06-02T10:00:00.000Z",
       },
     });
   });

@@ -83,6 +83,7 @@ const auth = createPlatformAuth({
 const app = createPlatformApp({
   authHandler: auth.handler,
   authorizeDashboardForTenant,
+  createOperatorSupportNote: supportService.createOperatorSupportNote,
   createMerchantProduct: productService.createMerchantProduct,
   createTenantDomain: domainManagementService.createTenantDomain,
   createTenantShop,
