@@ -4,6 +4,7 @@ import type { PlatformAppOptions, PlatformAppVariables } from "../app.js";
 import {
   getJsonBody,
   getOptionalBodyString,
+  getPaginationValue,
   getRequestHost,
   getRequiredBodyString,
   storeErrorStatus,
@@ -582,6 +583,37 @@ export function registerPlatformRoutes(
 
     return context.json({
       tenant: result.tenant,
+    });
+  });
+
+  app.get("/platform/operator/tenants/:tenantId/support", async (context) => {
+    if (!options.getOperatorSupportHistory) {
+      return context.json({ error: "support_history_unavailable" }, 503);
+    }
+
+    const session = await options.getSession?.(context.req.raw.headers);
+
+    if (!session) {
+      return context.json({ error: "auth_required" }, 401);
+    }
+
+    const tenantId = context.req.param("tenantId");
+    const authorization = await options.authorizeDashboardForTenant?.({
+      tenantId,
+      userId: session.user.id,
+    });
+
+    if (!authorization?.ok || authorization.actor.role !== "operator") {
+      return context.json({ error: "operator_forbidden" }, 403);
+    }
+
+    const result = await options.getOperatorSupportHistory({
+      limit: getPaginationValue(context.req.query("limit"), 20, 100),
+      tenantId,
+    });
+
+    return context.json({
+      history: result.history,
     });
   });
 }

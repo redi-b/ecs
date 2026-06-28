@@ -13,6 +13,7 @@ import type {
   PublishedStorefrontConfigResult,
   StorefrontTemplateCatalogItem,
   StorefrontTemplateSelectionResult,
+  SupportHistoryResult,
   TenantDomainCreateResult,
   TenantDomainListResult,
   TenantDomainPrimaryResult,
@@ -88,6 +89,10 @@ function appWithResolution(
       tenantId: string;
     }) => Promise<BillingInvoiceUpdateResult>;
     getTenantOnboarding?: (input: { tenantId: string }) => Promise<TenantOnboardingResult>;
+    getOperatorSupportHistory?: (input: {
+      limit: number;
+      tenantId: string;
+    }) => Promise<SupportHistoryResult>;
     updateTenantStatus?: (input: {
       operatorUserId: string;
       reason?: string | null | undefined;
@@ -151,6 +156,7 @@ function appWithResolution(
     createTenantShop: options?.createTenantShop,
     getBillingStatus: options?.getBillingStatus,
     getPublishedStorefrontConfig: options?.getPublishedStorefrontConfig,
+    getOperatorSupportHistory: options?.getOperatorSupportHistory,
     getTenantOnboarding: options?.getTenantOnboarding,
     getSession: options?.getSession,
     listMerchantProducts: options?.listMerchantProducts,
@@ -1449,6 +1455,96 @@ describe("platform app", () => {
         name: "Abebe Market",
         handle: "abebe",
         status: "suspended",
+      },
+    });
+  });
+
+  it("returns operator support history for a tenant", async () => {
+    let historyInput: { limit: number; tenantId: string } | undefined;
+    const app = appWithResolution(
+      { ok: false, error: "shop_context_required" },
+      {
+        authorizeDashboardForTenant: async () => ({
+          ok: true,
+          actor: {
+            id: "operator_1",
+            email: "operator@ecs.local",
+            name: "Operator",
+            role: "operator",
+          },
+        }),
+        getOperatorSupportHistory: async (input) => {
+          historyInput = input;
+
+          return {
+            ok: true,
+            history: {
+              notes: [
+                {
+                  id: "note_1",
+                  operatorUserId: "operator_1",
+                  body: "Called merchant about billing.",
+                  visibility: "internal",
+                  createdAt: "2026-06-02T10:00:00.000Z",
+                },
+              ],
+              auditLogs: [
+                {
+                  id: "audit_1",
+                  actorUserId: "operator_1",
+                  action: "tenant.status_changed",
+                  targetType: "tenant",
+                  targetId: "tenant_1",
+                  metadata: {
+                    status: "suspended",
+                  },
+                  createdAt: "2026-06-02T11:00:00.000Z",
+                },
+              ],
+            },
+          };
+        },
+        getSession: async () => ({
+          user: {
+            id: "operator_1",
+            email: "operator@ecs.local",
+            name: "Operator",
+          },
+        }),
+      },
+    );
+
+    const response = await app.request("/platform/operator/tenants/tenant_1/support?limit=5");
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(historyInput, {
+      tenantId: "tenant_1",
+      limit: 5,
+    });
+    assert.deepEqual(await response.json(), {
+      history: {
+        notes: [
+          {
+            id: "note_1",
+            operatorUserId: "operator_1",
+            body: "Called merchant about billing.",
+            visibility: "internal",
+            createdAt: "2026-06-02T10:00:00.000Z",
+          },
+        ],
+        auditLogs: [
+          {
+            id: "audit_1",
+            actorUserId: "operator_1",
+            action: "tenant.status_changed",
+            targetType: "tenant",
+            targetId: "tenant_1",
+            metadata: {
+              status: "suspended",
+            },
+            createdAt: "2026-06-02T11:00:00.000Z",
+          },
+        ],
       },
     });
   });

@@ -16,6 +16,7 @@ import { createPaymentOnboardingService } from "./payments/payment-onboarding-se
 import { createMedusaCommerceProvisioningClient } from "./provisioning/medusa-commerce-provisioning.js";
 import { createTenantShopProvisioningService } from "./provisioning/tenant-shop-provisioning.js";
 import { createStorefrontTemplateService } from "./storefront/template-service.js";
+import { createSupportService } from "./support/support-service.js";
 import { createDomainTenantLookup } from "./tenancy/domain-tenant-lookup.js";
 import { resolveTenantFromHost } from "./tenancy/tenant-resolver.js";
 import { createTenantStatusService } from "./tenants/tenant-status-service.js";
@@ -44,6 +45,7 @@ const billingService = createBillingService(platformDb.db);
 const domainManagementService = createDomainManagementService(platformDb.db);
 const authorizeDashboardForTenant = createDashboardAuthorizationLookup(platformDb.db);
 const storefrontTemplateService = createStorefrontTemplateService(platformDb.db);
+const supportService = createSupportService(platformDb.db);
 const tenantOnboardingService = createTenantOnboardingService(platformDb.db);
 const tenantStatusService = createTenantStatusService(platformDb.db);
 const paymentOnboardingService = createPaymentOnboardingService(platformDb.db);
@@ -85,6 +87,7 @@ const app = createPlatformApp({
   createTenantDomain: domainManagementService.createTenantDomain,
   createTenantShop,
   getBillingStatus: billingService.getBillingStatus,
+  getOperatorSupportHistory: supportService.getOperatorSupportHistory,
   getPublishedStorefrontConfig: storefrontTemplateService.getPublishedStorefrontConfig,
   getTenantOnboarding: tenantOnboardingService.getTenantOnboarding,
   getSession: (headers) => auth.api.getSession({ headers }),

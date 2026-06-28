@@ -87,6 +87,28 @@ export type TenantStatusUpdateResult =
       status: 400 | 404;
     };
 
+export type SupportHistoryResult = {
+  ok: true;
+  history: {
+    notes: {
+      id: string;
+      operatorUserId: string;
+      body: string;
+      visibility: string;
+      createdAt: string;
+    }[];
+    auditLogs: {
+      id: string;
+      actorUserId: string | null;
+      action: string;
+      targetType: string;
+      targetId: string | null;
+      metadata: unknown;
+      createdAt: string;
+    }[];
+  };
+};
+
 export type MerchantProduct = {
   id: string;
   title: string | null;
@@ -337,6 +359,9 @@ export type PlatformAppOptions = {
       }) => Promise<PublishedStorefrontConfigResult>)
     | undefined;
   getBillingStatus?: ((input: { tenantId: string }) => Promise<BillingStatusResult>) | undefined;
+  getOperatorSupportHistory?:
+    | ((input: { limit: number; tenantId: string }) => Promise<SupportHistoryResult>)
+    | undefined;
   updateBillingInvoiceStatus?:
     | ((input: {
         invoiceId: string;
