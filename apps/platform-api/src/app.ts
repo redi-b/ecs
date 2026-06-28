@@ -136,6 +136,17 @@ export type TenantDomainCreateResult =
       status: 400 | 409;
     };
 
+export type TenantDomainPrimaryResult =
+  | {
+      ok: true;
+      domain: TenantDomain;
+    }
+  | {
+      ok: false;
+      error: "domain_not_found" | "domain_not_verified";
+      status: 404 | 409;
+    };
+
 export type TenantOnboardingResult =
   | {
       ok: true;
@@ -248,6 +259,13 @@ export type PlatformAppOptions = {
   listStorefrontTemplates?: (() => Promise<StorefrontTemplateCatalogItem[]>) | undefined;
   listTenantDomains?:
     | ((input: { tenantId: string }) => Promise<TenantDomainListResult>)
+    | undefined;
+  setTenantPrimaryDomain?:
+    | ((input: {
+        domainId: string;
+        tenantId: string;
+        userId: string;
+      }) => Promise<TenantDomainPrimaryResult>)
     | undefined;
   listMerchantProducts?:
     | ((input: {

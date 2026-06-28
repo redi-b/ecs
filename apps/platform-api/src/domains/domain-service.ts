@@ -1,8 +1,13 @@
 import type { createPlatformDb } from "@ecs/db";
-import { auditLogs, domains } from "@ecs/db";
-import { asc, desc, eq } from "drizzle-orm";
+import { auditLogs, domains, tenants } from "@ecs/db";
+import { and, asc, desc, eq } from "drizzle-orm";
 
-import type { TenantDomain, TenantDomainCreateResult, TenantDomainListResult } from "../app.js";
+import type {
+  TenantDomain,
+  TenantDomainCreateResult,
+  TenantDomainListResult,
+  TenantDomainPrimaryResult,
+} from "../app.js";
 
 type PlatformDb = ReturnType<typeof createPlatformDb>["db"];
 
@@ -116,6 +121,102 @@ export function createDomainManagementService(db: PlatformDb) {
       return {
         ok: true,
         domains: rows,
+      };
+    },
+    setTenantPrimaryDomain: async (input: {
+      domainId: string;
+      tenantId: string;
+      userId: string;
+    }): Promise<TenantDomainPrimaryResult> => {
+      const [domain] = await db
+        .select({
+          id: domains.id,
+          hostname: domains.hostname,
+          type: domains.type,
+          status: domains.status,
+          isPrimary: domains.isPrimary,
+          verificationStatus: domains.verificationStatus,
+          sslStatus: domains.sslStatus,
+        })
+        .from(domains)
+        .where(and(eq(domains.id, input.domainId), eq(domains.tenantId, input.tenantId)))
+        .limit(1);
+
+      if (!domain) {
+        return {
+          ok: false,
+          error: "domain_not_found",
+          status: 404,
+        };
+      }
+
+      if (
+        domain.status !== "active" ||
+        domain.verificationStatus !== "verified" ||
+        domain.sslStatus !== "active"
+      ) {
+        return {
+          ok: false,
+          error: "domain_not_verified",
+          status: 409,
+        };
+      }
+
+      const primaryDomain = await db.transaction(async (transaction) => {
+        await transaction
+          .update(domains)
+          .set({
+            isPrimary: false,
+            updatedAt: new Date(),
+          })
+          .where(eq(domains.tenantId, input.tenantId));
+
+        const [updatedDomain] = await transaction
+          .update(domains)
+          .set({
+            isPrimary: true,
+            updatedAt: new Date(),
+          })
+          .where(and(eq(domains.id, input.domainId), eq(domains.tenantId, input.tenantId)))
+          .returning({
+            id: domains.id,
+            hostname: domains.hostname,
+            type: domains.type,
+            status: domains.status,
+            isPrimary: domains.isPrimary,
+            verificationStatus: domains.verificationStatus,
+            sslStatus: domains.sslStatus,
+          });
+
+        if (!updatedDomain) {
+          throw new Error("Primary domain update returned no rows.");
+        }
+
+        await transaction
+          .update(tenants)
+          .set({
+            primaryDomainId: input.domainId,
+            updatedAt: new Date(),
+          })
+          .where(eq(tenants.id, input.tenantId));
+
+        await transaction.insert(auditLogs).values({
+          actorUserId: input.userId,
+          tenantId: input.tenantId,
+          action: "domain.primary_changed",
+          targetType: "domain",
+          targetId: updatedDomain.id,
+          metadata: {
+            hostname: updatedDomain.hostname,
+          },
+        });
+
+        return updatedDomain;
+      });
+
+      return {
+        ok: true,
+        domain: primaryDomain,
       };
     },
   };

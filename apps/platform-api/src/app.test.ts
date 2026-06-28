@@ -10,6 +10,7 @@ import type {
   StorefrontTemplateSelectionResult,
   TenantDomainCreateResult,
   TenantDomainListResult,
+  TenantDomainPrimaryResult,
   TenantOnboardingResult,
   TenantShopProvisioningResult,
 } from "./app.js";
@@ -85,6 +86,11 @@ function appWithResolution(
     }) => Promise<MerchantOrdersResult>;
     listStorefrontTemplates?: () => Promise<StorefrontTemplateCatalogItem[]>;
     medusaStoreFetch?: typeof fetch;
+    setTenantPrimaryDomain?: (input: {
+      domainId: string;
+      tenantId: string;
+      userId: string;
+    }) => Promise<TenantDomainPrimaryResult>;
     selectStorefrontTemplate?: (input: {
       tenantId: string;
       templateKey: string;
@@ -118,6 +124,7 @@ function appWithResolution(
     serviceName: "platform-api",
     medusaInternalUrl: "http://medusa:9000",
     ...(options?.medusaStoreFetch ? { medusaStoreFetch: options.medusaStoreFetch } : {}),
+    setTenantPrimaryDomain: options?.setTenantPrimaryDomain,
     resolveTenantForHost: async () => result,
   });
 }
@@ -835,6 +842,75 @@ describe("platform app", () => {
         isPrimary: false,
         verificationStatus: "pending",
         sslStatus: "pending",
+      },
+    });
+  });
+
+  it("sets a verified domain as the tenant primary domain", async () => {
+    let primaryInput:
+      | {
+          domainId: string;
+          tenantId: string;
+          userId: string;
+        }
+      | undefined;
+    const app = appWithResolution(
+      { ok: false, error: "shop_context_required" },
+      {
+        authorizeDashboardForTenant: async () => ({
+          ok: true,
+          actor: {
+            id: "user_1",
+            email: "owner@abebe.local",
+            name: "Abebe Owner",
+            role: "owner",
+          },
+        }),
+        getSession: async () => ({
+          user: {
+            id: "user_1",
+            email: "owner@abebe.local",
+            name: "Abebe Owner",
+          },
+        }),
+        setTenantPrimaryDomain: async (input) => {
+          primaryInput = input;
+
+          return {
+            ok: true,
+            domain: {
+              id: input.domainId,
+              hostname: "shop.example.com",
+              type: "custom_domain",
+              status: "active",
+              isPrimary: true,
+              verificationStatus: "verified",
+              sslStatus: "active",
+            },
+          };
+        },
+      },
+    );
+
+    const response = await app.request("/platform/tenants/tenant_1/domains/domain_2/primary", {
+      method: "POST",
+    });
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(primaryInput, {
+      domainId: "domain_2",
+      tenantId: "tenant_1",
+      userId: "user_1",
+    });
+    assert.deepEqual(await response.json(), {
+      domain: {
+        id: "domain_2",
+        hostname: "shop.example.com",
+        type: "custom_domain",
+        status: "active",
+        isPrimary: true,
+        verificationStatus: "verified",
+        sslStatus: "active",
       },
     });
   });
