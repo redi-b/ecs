@@ -2823,6 +2823,113 @@ describe("platform app", () => {
     });
   });
 
+  it("forwards cart shipping option reads to Medusa", async () => {
+    let forwardedRequest: Request | undefined;
+    const medusaStoreFetch: typeof fetch = async (request) => {
+      forwardedRequest = request instanceof Request ? request : new Request(request);
+
+      return Response.json({
+        shipping_options: [
+          {
+            id: "so_1",
+            name: "Local delivery",
+            amount: 50,
+          },
+        ],
+      });
+    };
+    const app = appWithResolution(
+      {
+        ok: true,
+        context: resolvedTenantContext,
+      },
+      { medusaStoreFetch },
+    );
+
+    const response = await app.request("/store/shipping-options?cart_id=cart_1", {
+      headers: {
+        Host: "abebe.lvh.me",
+      },
+    });
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), {
+      shipping_options: [
+        {
+          id: "so_1",
+          name: "Local delivery",
+          amount: 50,
+        },
+      ],
+    });
+    assert.ok(forwardedRequest);
+    assert.equal(forwardedRequest.url, "http://medusa:9000/store/shipping-options?cart_id=cart_1");
+    assert.equal(forwardedRequest.headers.get("x-publishable-api-key"), "pk_1");
+  });
+
+  it("forwards cart shipping method selection to Medusa", async () => {
+    let forwardedRequest: Request | undefined;
+    const medusaStoreFetch: typeof fetch = async (request) => {
+      forwardedRequest = request instanceof Request ? request : new Request(request);
+
+      return Response.json({
+        cart: {
+          id: "cart_1",
+          shipping_methods: [
+            {
+              shipping_option_id: "so_1",
+            },
+          ],
+        },
+      });
+    };
+    const app = appWithResolution(
+      {
+        ok: true,
+        context: resolvedTenantContext,
+      },
+      { medusaStoreFetch },
+    );
+
+    const response = await app.request("/store/carts/cart_1/shipping-methods", {
+      body: JSON.stringify({
+        option_id: "so_1",
+        data: {
+          delivery_choice: "delivery",
+        },
+      }),
+      headers: {
+        "content-type": "application/json",
+        Host: "abebe.lvh.me",
+      },
+      method: "POST",
+    });
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), {
+      cart: {
+        id: "cart_1",
+        shipping_methods: [
+          {
+            shipping_option_id: "so_1",
+          },
+        ],
+      },
+    });
+    assert.ok(forwardedRequest);
+    assert.equal(forwardedRequest.method, "POST");
+    assert.equal(forwardedRequest.url, "http://medusa:9000/store/carts/cart_1/shipping-methods");
+    assert.equal(
+      await forwardedRequest.text(),
+      JSON.stringify({
+        option_id: "so_1",
+        data: {
+          delivery_choice: "delivery",
+        },
+      }),
+    );
+  });
+
   it("does not forward unsupported store facade routes", async () => {
     let fetchCalls = 0;
     const app = appWithResolution(

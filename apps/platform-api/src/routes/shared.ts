@@ -67,6 +67,14 @@ export function isAllowedStoreFacadeRoute(request: Request) {
     return true;
   }
 
+  if (method === "GET" && path === "/store/shipping-options") {
+    return true;
+  }
+
+  if (method === "POST" && /^\/store\/carts\/[^/]+\/shipping-methods$/.test(path)) {
+    return true;
+  }
+
   if (method === "POST" && /^\/store\/carts\/[^/]+\/line-items$/.test(path)) {
     return true;
   }
