@@ -20,6 +20,9 @@ test("getPublishedStorefrontConfig calls platform config with host context", asy
             hostname: "abebe.lvh.me",
           },
         },
+        commerce: {
+          regionId: "reg_1",
+        },
         storefront: {
           publishedRevisionId: "revision_1",
           templateId: "template_1",

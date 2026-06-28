@@ -550,6 +550,9 @@ describe("platform app", () => {
           hostname: "abebe.lvh.me",
         },
       },
+      commerce: {
+        regionId: "reg_1",
+      },
       storefront: {
         publishedRevisionId: "revision_1",
         templateId: "template_1",
@@ -569,6 +572,34 @@ describe("platform app", () => {
         },
         publishedAt: "2026-01-01T00:00:00.000Z",
       },
+    });
+  });
+
+  it("does not return storefront config without a tenant commerce region", async () => {
+    const app = appWithResolution(
+      {
+        ok: true,
+        context: {
+          ...resolvedTenantContext,
+          medusaRegionId: null,
+        },
+      },
+      {
+        getPublishedStorefrontConfig: async () => {
+          throw new Error("should not load storefront config without a Medusa region");
+        },
+      },
+    );
+
+    const response = await app.request("/platform/storefront/config", {
+      headers: {
+        Host: "abebe.lvh.me",
+      },
+    });
+
+    assert.equal(response.status, 503);
+    assert.deepEqual(await response.json(), {
+      error: "commerce_region_unavailable",
     });
   });
 

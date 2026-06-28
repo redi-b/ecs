@@ -115,6 +115,10 @@ export function registerPlatformRoutes(
       return context.json({ error: result.error }, storeErrorStatus[result.error]);
     }
 
+    if (!result.context.medusaRegionId) {
+      return context.json({ error: "commerce_region_unavailable" }, 503);
+    }
+
     const config = await options.getPublishedStorefrontConfig({
       tenantId: result.context.tenantId,
       publishedRevisionId: result.context.publishedRevisionId,
@@ -134,6 +138,9 @@ export function registerPlatformRoutes(
           id: result.context.domainId,
           hostname: result.context.hostname,
         },
+      },
+      commerce: {
+        regionId: result.context.medusaRegionId,
       },
       storefront: config.config,
     });

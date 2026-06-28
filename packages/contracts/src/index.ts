@@ -153,6 +153,9 @@ export const publishedStorefrontConfigSchema = z.object({
       hostname: z.string().min(1),
     }),
   }),
+  commerce: z.object({
+    regionId: z.string().min(1),
+  }),
   storefront: z.object({
     publishedRevisionId: z.string().min(1),
     templateId: z.string().min(1),
