@@ -52,6 +52,7 @@ describe("createTenantShopProvisioner", () => {
             salesChannelId: "sc_1",
             stockLocationId: "sloc_1",
             publishableKeyId: "apk_1",
+            regionId: "reg_1",
           },
         };
       },

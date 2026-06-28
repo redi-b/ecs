@@ -40,6 +40,7 @@ const resolvedTenantContext: TenantContext = {
   medusaStoreId: "store_1",
   medusaSalesChannelId: "channel_1",
   medusaPublishableKeyId: "pk_1",
+  medusaRegionId: "reg_1",
   publishedRevisionId: "revision_1",
   templateId: "template_1",
   templateVersion: 1,

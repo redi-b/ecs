@@ -1,6 +1,7 @@
 import { createWorkflow, transform, WorkflowResponse } from "@medusajs/framework/workflows-sdk";
 import {
   createApiKeysWorkflow,
+  createRegionsWorkflow,
   createSalesChannelsWorkflow,
   createStockLocationsWorkflow,
   createStoresWorkflow,
@@ -20,6 +21,7 @@ export type ProvisionTenantCommerceResourcesOutput = {
   salesChannelId: string;
   stockLocationId: string;
   publishableKeyId: string;
+  regionId: string;
 };
 
 function requireFirst<T>(values: T[], resourceName: string): T {
@@ -55,6 +57,25 @@ export const provisionTenantCommerceResourcesWorkflow = createWorkflow(
 
     const stores = createStoresWorkflow.runAsStep({
       input: storeInput,
+    });
+
+    const regionInput = transform({ input }, (data) => ({
+      regions: [
+        {
+          name: `${data.input.name} Region`,
+          currency_code: "etb",
+          countries: ["et"],
+          payment_providers: ["pp_system"],
+          metadata: {
+            platform_tenant_id: data.input.platformTenantId,
+            platform_handle: data.input.handle,
+          },
+        },
+      ],
+    }));
+
+    const regions = createRegionsWorkflow.runAsStep({
+      input: regionInput,
     });
 
     const salesChannelInput = transform({ input }, (data) => ({
@@ -121,12 +142,13 @@ export const provisionTenantCommerceResourcesWorkflow = createWorkflow(
     });
 
     const result = transform(
-      { apiKeys, salesChannels, stockLocations, stores },
+      { apiKeys, regions, salesChannels, stockLocations, stores },
       (data): ProvisionTenantCommerceResourcesOutput => ({
         storeId: requireFirst(data.stores, "Store").id,
         salesChannelId: requireFirst(data.salesChannels, "Sales channel").id,
         stockLocationId: requireFirst(data.stockLocations, "Stock location").id,
         publishableKeyId: requireFirst(data.apiKeys, "API key").id,
+        regionId: requireFirst(data.regions, "Region").id,
       }),
     );
 

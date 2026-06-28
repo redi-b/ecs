@@ -93,6 +93,7 @@ try {
         medusaSalesChannelId: seed.tenant.medusaSalesChannelId,
         medusaPublishableKeyId: seed.tenant.medusaPublishableKeyId,
         medusaStockLocationId: seed.tenant.medusaStockLocationId,
+        medusaRegionId: seed.tenant.medusaRegionId,
         updatedAt: new Date(),
       },
     });

@@ -13,6 +13,7 @@ export const tenants = pgTable("tenants", {
   medusaSalesChannelId: text("medusa_sales_channel_id"),
   medusaPublishableKeyId: text("medusa_publishable_key_id"),
   medusaStockLocationId: text("medusa_stock_location_id"),
+  medusaRegionId: text("medusa_region_id"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });

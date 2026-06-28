@@ -23,6 +23,7 @@ export function createDomainTenantLookup(db: PlatformDb) {
         medusaStoreId: tenants.medusaStoreId,
         medusaSalesChannelId: tenants.medusaSalesChannelId,
         medusaPublishableKeyId: tenants.medusaPublishableKeyId,
+        medusaRegionId: tenants.medusaRegionId,
         publishedRevisionId: storefrontConfigs.publishedRevisionId,
         templateId: storefrontRevisions.templateId,
         templateVersion: storefrontRevisions.templateVersion,

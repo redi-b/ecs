@@ -54,6 +54,7 @@ type TenantShopProvisionerOptions = {
       salesChannelId: string;
       stockLocationId: string;
       publishableKeyId: string;
+      regionId: string;
     };
     handle: string;
     hostname: string;
@@ -241,6 +242,7 @@ export function createTenantShopProvisioningService(options: TenantShopProvision
             medusaSalesChannelId: commerceResources.salesChannelId,
             medusaPublishableKeyId: commerceResources.publishableKeyId,
             medusaStockLocationId: commerceResources.stockLocationId,
+            medusaRegionId: commerceResources.regionId,
           })
           .returning({
             id: tenants.id,
@@ -309,6 +311,7 @@ export function createTenantShopProvisioningService(options: TenantShopProvision
             medusaSalesChannelId: commerceResources.salesChannelId,
             medusaPublishableKeyId: commerceResources.publishableKeyId,
             medusaStockLocationId: commerceResources.stockLocationId,
+            medusaRegionId: commerceResources.regionId,
           },
         });
 

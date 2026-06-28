@@ -1,0 +1,1 @@
+ALTER TABLE "tenants" ADD COLUMN "medusa_region_id" text;

@@ -27,6 +27,7 @@ describe("createMedusaCommerceProvisioningClient", () => {
               salesChannelId: "sc_1",
               stockLocationId: "sloc_1",
               publishableKeyId: "apk_1",
+              regionId: "reg_1",
             },
           },
           {
@@ -50,6 +51,7 @@ describe("createMedusaCommerceProvisioningClient", () => {
         salesChannelId: "sc_1",
         stockLocationId: "sloc_1",
         publishableKeyId: "apk_1",
+        regionId: "reg_1",
       },
     });
     assert.equal(calls.length, 1);

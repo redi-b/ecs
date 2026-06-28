@@ -13,6 +13,7 @@ export type CommerceProvisioningResult =
         salesChannelId: string;
         stockLocationId: string;
         publishableKeyId: string;
+        regionId: string;
       };
     }
   | {
@@ -71,7 +72,8 @@ export function createMedusaCommerceProvisioningClient(
         typeof resources.storeId !== "string" ||
         typeof resources.salesChannelId !== "string" ||
         typeof resources.stockLocationId !== "string" ||
-        typeof resources.publishableKeyId !== "string"
+        typeof resources.publishableKeyId !== "string" ||
+        typeof resources.regionId !== "string"
       ) {
         return {
           ok: false,

@@ -16,6 +16,7 @@ export type TenantDomainRecord = {
   medusaStoreId: string | null;
   medusaSalesChannelId: string | null;
   medusaPublishableKeyId: string | null;
+  medusaRegionId: string | null;
   publishedRevisionId: string | null;
   templateId: string | null;
   templateVersion: number | null;
@@ -31,6 +32,7 @@ export type TenantContext = {
   medusaStoreId: string | null;
   medusaSalesChannelId: string | null;
   medusaPublishableKeyId: string | null;
+  medusaRegionId: string | null;
   publishedRevisionId: string;
   templateId: string | null;
   templateVersion: number | null;
@@ -108,6 +110,7 @@ export async function resolveTenantFromHost(
       medusaStoreId: record.medusaStoreId,
       medusaSalesChannelId: record.medusaSalesChannelId,
       medusaPublishableKeyId: record.medusaPublishableKeyId,
+      medusaRegionId: record.medusaRegionId,
       publishedRevisionId: record.publishedRevisionId,
       templateId: record.templateId,
       templateVersion: record.templateVersion,

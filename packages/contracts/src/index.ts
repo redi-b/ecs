@@ -12,6 +12,7 @@ export const tenantContextSchema = z.object({
   medusaStoreId: z.string().min(1),
   medusaSalesChannelId: z.string().min(1),
   medusaPublishableKey: z.string().min(1),
+  medusaRegionId: z.string().min(1),
   publishedRevisionId: z.string().min(1).optional(),
   templateKey: z.string().min(1).optional(),
 });
