@@ -1,6 +1,7 @@
 import type { Hono } from "hono";
 
 import type { PlatformAppOptions, PlatformAppVariables } from "../app.js";
+import { registerDeliveryRoutes } from "./delivery-routes.js";
 import {
   getJsonBody,
   getOptionalBodyString,
@@ -305,6 +306,8 @@ export function registerPlatformRoutes(
       storefront: result.storefront,
     });
   });
+
+  registerDeliveryRoutes(app, options);
 
   app.get("/platform/tenants/:tenantId/onboarding", async (context) => {
     if (!options.getTenantOnboarding) {

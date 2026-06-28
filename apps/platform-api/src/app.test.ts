@@ -3,6 +3,8 @@ import { describe, it } from "node:test";
 import type {
   BillingInvoiceUpdateResult,
   BillingStatusResult,
+  DeliverySettingsResult,
+  DeliverySettingsUpdateResult,
   MerchantOrdersResult,
   MerchantProductsResult,
   MerchantProductWriteResult,
@@ -84,6 +86,19 @@ function appWithResolution(
       userId: string;
     }) => Promise<TenantDomainCreateResult>;
     getBillingStatus?: (input: { tenantId: string }) => Promise<BillingStatusResult>;
+    getDeliverySettings?: (input: { tenantId: string }) => Promise<DeliverySettingsResult>;
+    updateDeliverySettings?: (input: {
+      currency: string;
+      defaultDeliveryFee: string;
+      deliveryEnabled: boolean;
+      landmarkRequired: boolean;
+      notesEnabled: boolean;
+      phoneConfirmationRequired: boolean;
+      pickupEnabled: boolean;
+      tenantId: string;
+      userId: string;
+      zones: unknown[];
+    }) => Promise<DeliverySettingsUpdateResult>;
     updateBillingInvoiceStatus?: (input: {
       invoiceId: string;
       operatorUserId: string;
@@ -177,6 +192,7 @@ function appWithResolution(
     createOperatorSupportNote: options?.createOperatorSupportNote,
     createTenantShop: options?.createTenantShop,
     getBillingStatus: options?.getBillingStatus,
+    getDeliverySettings: options?.getDeliverySettings,
     getPublishedStorefrontConfig: options?.getPublishedStorefrontConfig,
     getStorefrontDraft: options?.getStorefrontDraft,
     getOperatorSupportHistory: options?.getOperatorSupportHistory,
@@ -196,6 +212,7 @@ function appWithResolution(
     setTenantPrimaryDomain: options?.setTenantPrimaryDomain,
     submitPaymentOnboarding: options?.submitPaymentOnboarding,
     updateBillingInvoiceStatus: options?.updateBillingInvoiceStatus,
+    updateDeliverySettings: options?.updateDeliverySettings,
     publishStorefrontDraft: options?.publishStorefrontDraft,
     updateTenantStatus: options?.updateTenantStatus,
     updateStorefrontDraft: options?.updateStorefrontDraft,
@@ -892,6 +909,200 @@ describe("platform app", () => {
         templateVersion: 1,
         templateKey: "classic@1",
         publishedAt: "2026-06-02T10:00:00.000Z",
+      },
+    });
+  });
+
+  it("returns delivery settings for an authorized tenant member", async () => {
+    let deliveryInput: { tenantId: string } | undefined;
+    const app = appWithResolution(
+      { ok: false, error: "shop_context_required" },
+      {
+        authorizeDashboardForTenant: async () => ({
+          ok: true,
+          actor: {
+            id: "user_1",
+            email: "owner@abebe.local",
+            name: "Abebe Owner",
+            role: "owner",
+          },
+        }),
+        getSession: async () => ({
+          user: {
+            id: "user_1",
+            email: "owner@abebe.local",
+            name: "Abebe Owner",
+          },
+        }),
+        getDeliverySettings: async (input) => {
+          deliveryInput = input;
+
+          return {
+            ok: true,
+            delivery: {
+              tenantId: input.tenantId,
+              deliveryEnabled: true,
+              pickupEnabled: true,
+              phoneConfirmationRequired: true,
+              notesEnabled: true,
+              landmarkRequired: false,
+              defaultDeliveryFee: "50.00",
+              currency: "ETB",
+              zones: [
+                {
+                  name: "Bole",
+                  fee: "75.00",
+                },
+              ],
+              updatedAt: "2026-06-02T10:00:00.000Z",
+            },
+          };
+        },
+      },
+    );
+
+    const response = await app.request("/platform/tenants/tenant_1/delivery");
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(deliveryInput, {
+      tenantId: "tenant_1",
+    });
+    assert.deepEqual(await response.json(), {
+      delivery: {
+        tenantId: "tenant_1",
+        deliveryEnabled: true,
+        pickupEnabled: true,
+        phoneConfirmationRequired: true,
+        notesEnabled: true,
+        landmarkRequired: false,
+        defaultDeliveryFee: "50.00",
+        currency: "ETB",
+        zones: [
+          {
+            name: "Bole",
+            fee: "75.00",
+          },
+        ],
+        updatedAt: "2026-06-02T10:00:00.000Z",
+      },
+    });
+  });
+
+  it("updates delivery settings for an authorized tenant member", async () => {
+    let deliveryInput:
+      | {
+          currency: string;
+          defaultDeliveryFee: string;
+          deliveryEnabled: boolean;
+          landmarkRequired: boolean;
+          notesEnabled: boolean;
+          phoneConfirmationRequired: boolean;
+          pickupEnabled: boolean;
+          tenantId: string;
+          userId: string;
+          zones: unknown[];
+        }
+      | undefined;
+    const app = appWithResolution(
+      { ok: false, error: "shop_context_required" },
+      {
+        authorizeDashboardForTenant: async () => ({
+          ok: true,
+          actor: {
+            id: "user_1",
+            email: "owner@abebe.local",
+            name: "Abebe Owner",
+            role: "owner",
+          },
+        }),
+        getSession: async () => ({
+          user: {
+            id: "user_1",
+            email: "owner@abebe.local",
+            name: "Abebe Owner",
+          },
+        }),
+        updateDeliverySettings: async (input) => {
+          deliveryInput = input;
+
+          return {
+            ok: true,
+            delivery: {
+              tenantId: input.tenantId,
+              deliveryEnabled: input.deliveryEnabled,
+              pickupEnabled: input.pickupEnabled,
+              phoneConfirmationRequired: input.phoneConfirmationRequired,
+              notesEnabled: input.notesEnabled,
+              landmarkRequired: input.landmarkRequired,
+              defaultDeliveryFee: input.defaultDeliveryFee,
+              currency: input.currency,
+              zones: input.zones,
+              updatedAt: "2026-06-02T10:00:00.000Z",
+            },
+          };
+        },
+      },
+    );
+
+    const body = {
+      deliveryEnabled: true,
+      pickupEnabled: false,
+      phoneConfirmationRequired: true,
+      notesEnabled: true,
+      landmarkRequired: true,
+      defaultDeliveryFee: 75,
+      currency: " etb ",
+      zones: [
+        {
+          name: "Bole",
+          fee: "75.00",
+        },
+      ],
+    };
+
+    const response = await app.request("/platform/tenants/tenant_1/delivery", {
+      body: JSON.stringify(body),
+      headers: {
+        "content-type": "application/json",
+      },
+      method: "PUT",
+    });
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(deliveryInput, {
+      tenantId: "tenant_1",
+      userId: "user_1",
+      deliveryEnabled: true,
+      pickupEnabled: false,
+      phoneConfirmationRequired: true,
+      notesEnabled: true,
+      landmarkRequired: true,
+      defaultDeliveryFee: "75",
+      currency: "ETB",
+      zones: [
+        {
+          name: "Bole",
+          fee: "75.00",
+        },
+      ],
+    });
+    assert.deepEqual(await response.json(), {
+      delivery: {
+        tenantId: "tenant_1",
+        deliveryEnabled: true,
+        pickupEnabled: false,
+        phoneConfirmationRequired: true,
+        notesEnabled: true,
+        landmarkRequired: true,
+        defaultDeliveryFee: "75",
+        currency: "ETB",
+        zones: [
+          {
+            name: "Bole",
+            fee: "75.00",
+          },
+        ],
+        updatedAt: "2026-06-02T10:00:00.000Z",
       },
     });
   });

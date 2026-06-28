@@ -10,6 +10,7 @@ import { createBillingService } from "./billing/billing-service.js";
 import { createMedusaOrderService } from "./commerce/order-service.js";
 import { createMedusaProductService } from "./commerce/product-service.js";
 import { getSystemHosts } from "./config/hosts.js";
+import { createDeliverySettingsService } from "./delivery/delivery-service.js";
 import { createDomainManagementService } from "./domains/domain-service.js";
 import { createTenantOnboardingService } from "./onboarding/onboarding-service.js";
 import { createPaymentOnboardingService } from "./payments/payment-onboarding-service.js";
@@ -42,6 +43,7 @@ const platformDb = createPlatformDb({
 });
 const findDomainByHostname = createDomainTenantLookup(platformDb.db);
 const billingService = createBillingService(platformDb.db);
+const deliverySettingsService = createDeliverySettingsService(platformDb.db);
 const domainManagementService = createDomainManagementService(platformDb.db);
 const authorizeDashboardForTenant = createDashboardAuthorizationLookup(platformDb.db);
 const storefrontTemplateService = createStorefrontTemplateService(platformDb.db);
@@ -88,6 +90,7 @@ const app = createPlatformApp({
   createTenantDomain: domainManagementService.createTenantDomain,
   createTenantShop,
   getBillingStatus: billingService.getBillingStatus,
+  getDeliverySettings: deliverySettingsService.getDeliverySettings,
   getOperatorSupportHistory: supportService.getOperatorSupportHistory,
   getPublishedStorefrontConfig: storefrontTemplateService.getPublishedStorefrontConfig,
   getStorefrontDraft: storefrontTemplateService.getStorefrontDraft,
@@ -104,6 +107,7 @@ const app = createPlatformApp({
   setTenantPrimaryDomain: domainManagementService.setTenantPrimaryDomain,
   submitPaymentOnboarding: paymentOnboardingService.submitPaymentOnboarding,
   updateBillingInvoiceStatus: billingService.updateBillingInvoiceStatus,
+  updateDeliverySettings: deliverySettingsService.updateDeliverySettings,
   updateMerchantProduct: productService.updateMerchantProduct,
   updateStorefrontDraft: storefrontTemplateService.updateStorefrontDraft,
   updateTenantStatus: tenantStatusService.updateTenantStatus,

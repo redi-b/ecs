@@ -60,6 +60,26 @@ export type BillingStatusResult =
       error: "billing_not_found";
     };
 
+export type DeliverySettings = {
+  tenantId: string;
+  deliveryEnabled: boolean;
+  pickupEnabled: boolean;
+  phoneConfirmationRequired: boolean;
+  notesEnabled: boolean;
+  landmarkRequired: boolean;
+  defaultDeliveryFee: string;
+  currency: string;
+  zones: unknown[];
+  updatedAt: string;
+};
+
+export type DeliverySettingsResult = {
+  ok: true;
+  delivery: DeliverySettings;
+};
+
+export type DeliverySettingsUpdateResult = DeliverySettingsResult;
+
 export type BillingInvoiceUpdateResult =
   | {
       ok: true;
@@ -417,6 +437,23 @@ export type PlatformAppOptions = {
     | ((input: { tenantId: string; userId: string }) => Promise<StorefrontPublishResult>)
     | undefined;
   getBillingStatus?: ((input: { tenantId: string }) => Promise<BillingStatusResult>) | undefined;
+  getDeliverySettings?:
+    | ((input: { tenantId: string }) => Promise<DeliverySettingsResult>)
+    | undefined;
+  updateDeliverySettings?:
+    | ((input: {
+        currency: string;
+        defaultDeliveryFee: string;
+        deliveryEnabled: boolean;
+        landmarkRequired: boolean;
+        notesEnabled: boolean;
+        phoneConfirmationRequired: boolean;
+        pickupEnabled: boolean;
+        tenantId: string;
+        userId: string;
+        zones: unknown[];
+      }) => Promise<DeliverySettingsUpdateResult>)
+    | undefined;
   getOperatorSupportHistory?:
     | ((input: { limit: number; tenantId: string }) => Promise<SupportHistoryResult>)
     | undefined;
