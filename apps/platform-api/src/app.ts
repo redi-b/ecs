@@ -209,6 +209,43 @@ export type StorefrontTemplateSelectionResult =
       error: "template_not_found" | "tenant_not_found" | "template_plan_unavailable";
     };
 
+export type StorefrontDraftResult =
+  | {
+      ok: true;
+      draft: {
+        tenantId: string;
+        templateId: string;
+        templateVersion: number;
+        templateKey: string;
+        data: unknown;
+        themeTokens: unknown;
+        updatedAt: string;
+      };
+    }
+  | {
+      ok: false;
+      error: "storefront_draft_not_found";
+    };
+
+export type StorefrontDraftUpdateResult = StorefrontDraftResult;
+
+export type StorefrontPublishResult =
+  | {
+      ok: true;
+      storefront: {
+        tenantId: string;
+        publishedRevisionId: string;
+        templateId: string;
+        templateVersion: number;
+        templateKey: string;
+        publishedAt: string;
+      };
+    }
+  | {
+      ok: false;
+      error: "storefront_draft_not_found";
+    };
+
 export type TenantDomain = {
   id: string;
   hostname: string;
@@ -364,6 +401,20 @@ export type PlatformAppOptions = {
         publishedRevisionId: string;
         tenantId: string;
       }) => Promise<PublishedStorefrontConfigResult>)
+    | undefined;
+  getStorefrontDraft?:
+    | ((input: { tenantId: string }) => Promise<StorefrontDraftResult>)
+    | undefined;
+  updateStorefrontDraft?:
+    | ((input: {
+        data: unknown;
+        tenantId: string;
+        themeTokens: unknown;
+        userId: string;
+      }) => Promise<StorefrontDraftUpdateResult>)
+    | undefined;
+  publishStorefrontDraft?:
+    | ((input: { tenantId: string; userId: string }) => Promise<StorefrontPublishResult>)
     | undefined;
   getBillingStatus?: ((input: { tenantId: string }) => Promise<BillingStatusResult>) | undefined;
   getOperatorSupportHistory?:

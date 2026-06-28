@@ -189,6 +189,123 @@ export function registerPlatformRoutes(
     });
   });
 
+  app.get("/platform/tenants/:tenantId/storefront/draft", async (context) => {
+    if (!options.getStorefrontDraft) {
+      return context.json({ error: "storefront_draft_unavailable" }, 503);
+    }
+
+    const session = await options.getSession?.(context.req.raw.headers);
+
+    if (!session) {
+      return context.json({ error: "auth_required" }, 401);
+    }
+
+    const tenantId = context.req.param("tenantId");
+    const authorization = await options.authorizeDashboardForTenant?.({
+      tenantId,
+      userId: session.user.id,
+    });
+
+    if (!authorization?.ok) {
+      return context.json({ error: "dashboard_forbidden" }, 403);
+    }
+
+    const result = await options.getStorefrontDraft({ tenantId });
+
+    if (!result.ok) {
+      return context.json({ error: result.error }, 404);
+    }
+
+    return context.json({
+      draft: result.draft,
+    });
+  });
+
+  app.put("/platform/tenants/:tenantId/storefront/draft", async (context) => {
+    if (!options.updateStorefrontDraft) {
+      return context.json({ error: "storefront_draft_unavailable" }, 503);
+    }
+
+    const session = await options.getSession?.(context.req.raw.headers);
+
+    if (!session) {
+      return context.json({ error: "auth_required" }, 401);
+    }
+
+    const tenantId = context.req.param("tenantId");
+    const authorization = await options.authorizeDashboardForTenant?.({
+      tenantId,
+      userId: session.user.id,
+    });
+
+    if (!authorization?.ok) {
+      return context.json({ error: "dashboard_forbidden" }, 403);
+    }
+
+    const body = await getJsonBody(context.req.raw);
+
+    if (typeof body !== "object" || body === null) {
+      return context.json({ error: "invalid_request" }, 400);
+    }
+
+    const data = "data" in body ? body.data : undefined;
+    const themeTokens = "themeTokens" in body ? body.themeTokens : undefined;
+
+    if (data === undefined || themeTokens === undefined) {
+      return context.json({ error: "missing_draft_payload" }, 400);
+    }
+
+    const result = await options.updateStorefrontDraft({
+      data,
+      tenantId,
+      themeTokens,
+      userId: session.user.id,
+    });
+
+    if (!result.ok) {
+      return context.json({ error: result.error }, 404);
+    }
+
+    return context.json({
+      draft: result.draft,
+    });
+  });
+
+  app.post("/platform/tenants/:tenantId/storefront/publish", async (context) => {
+    if (!options.publishStorefrontDraft) {
+      return context.json({ error: "storefront_publish_unavailable" }, 503);
+    }
+
+    const session = await options.getSession?.(context.req.raw.headers);
+
+    if (!session) {
+      return context.json({ error: "auth_required" }, 401);
+    }
+
+    const tenantId = context.req.param("tenantId");
+    const authorization = await options.authorizeDashboardForTenant?.({
+      tenantId,
+      userId: session.user.id,
+    });
+
+    if (!authorization?.ok) {
+      return context.json({ error: "dashboard_forbidden" }, 403);
+    }
+
+    const result = await options.publishStorefrontDraft({
+      tenantId,
+      userId: session.user.id,
+    });
+
+    if (!result.ok) {
+      return context.json({ error: result.error }, 404);
+    }
+
+    return context.json({
+      storefront: result.storefront,
+    });
+  });
+
   app.get("/platform/tenants/:tenantId/onboarding", async (context) => {
     if (!options.getTenantOnboarding) {
       return context.json({ error: "onboarding_unavailable" }, 503);

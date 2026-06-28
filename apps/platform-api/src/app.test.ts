@@ -11,6 +11,9 @@ import type {
   PaymentOnboardingSubmitResult,
   PlatformSession,
   PublishedStorefrontConfigResult,
+  StorefrontDraftResult,
+  StorefrontDraftUpdateResult,
+  StorefrontPublishResult,
   StorefrontTemplateCatalogItem,
   StorefrontTemplateSelectionResult,
   SupportHistoryResult,
@@ -94,6 +97,17 @@ function appWithResolution(
       limit: number;
       tenantId: string;
     }) => Promise<SupportHistoryResult>;
+    getStorefrontDraft?: (input: { tenantId: string }) => Promise<StorefrontDraftResult>;
+    updateStorefrontDraft?: (input: {
+      data: unknown;
+      tenantId: string;
+      themeTokens: unknown;
+      userId: string;
+    }) => Promise<StorefrontDraftUpdateResult>;
+    publishStorefrontDraft?: (input: {
+      tenantId: string;
+      userId: string;
+    }) => Promise<StorefrontPublishResult>;
     createOperatorSupportNote?: (input: {
       body: string;
       operatorUserId: string;
@@ -164,6 +178,7 @@ function appWithResolution(
     createTenantShop: options?.createTenantShop,
     getBillingStatus: options?.getBillingStatus,
     getPublishedStorefrontConfig: options?.getPublishedStorefrontConfig,
+    getStorefrontDraft: options?.getStorefrontDraft,
     getOperatorSupportHistory: options?.getOperatorSupportHistory,
     getTenantOnboarding: options?.getTenantOnboarding,
     getSession: options?.getSession,
@@ -181,7 +196,9 @@ function appWithResolution(
     setTenantPrimaryDomain: options?.setTenantPrimaryDomain,
     submitPaymentOnboarding: options?.submitPaymentOnboarding,
     updateBillingInvoiceStatus: options?.updateBillingInvoiceStatus,
+    publishStorefrontDraft: options?.publishStorefrontDraft,
     updateTenantStatus: options?.updateTenantStatus,
+    updateStorefrontDraft: options?.updateStorefrontDraft,
     resolveTenantForHost: async () => result,
   });
 }
@@ -653,6 +670,228 @@ describe("platform app", () => {
         templateId: "template_1",
         templateVersion: 1,
         templateKey: "classic@1",
+      },
+    });
+  });
+
+  it("returns the storefront draft for an authorized tenant member", async () => {
+    let draftInput: { tenantId: string } | undefined;
+    const app = appWithResolution(
+      { ok: false, error: "shop_context_required" },
+      {
+        authorizeDashboardForTenant: async () => ({
+          ok: true,
+          actor: {
+            id: "user_1",
+            email: "owner@abebe.local",
+            name: "Abebe Owner",
+            role: "owner",
+          },
+        }),
+        getSession: async () => ({
+          user: {
+            id: "user_1",
+            email: "owner@abebe.local",
+            name: "Abebe Owner",
+          },
+        }),
+        getStorefrontDraft: async (input) => {
+          draftInput = input;
+
+          return {
+            ok: true,
+            draft: {
+              tenantId: input.tenantId,
+              templateId: "template_1",
+              templateVersion: 1,
+              templateKey: "classic@1",
+              data: {
+                heroTitle: "Abebe Market",
+              },
+              themeTokens: {
+                color: "green",
+              },
+              updatedAt: "2026-06-02T10:00:00.000Z",
+            },
+          };
+        },
+      },
+    );
+
+    const response = await app.request("/platform/tenants/tenant_1/storefront/draft");
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(draftInput, {
+      tenantId: "tenant_1",
+    });
+    assert.deepEqual(await response.json(), {
+      draft: {
+        tenantId: "tenant_1",
+        templateId: "template_1",
+        templateVersion: 1,
+        templateKey: "classic@1",
+        data: {
+          heroTitle: "Abebe Market",
+        },
+        themeTokens: {
+          color: "green",
+        },
+        updatedAt: "2026-06-02T10:00:00.000Z",
+      },
+    });
+  });
+
+  it("updates the storefront draft for an authorized tenant member", async () => {
+    let draftInput:
+      | {
+          data: unknown;
+          tenantId: string;
+          themeTokens: unknown;
+          userId: string;
+        }
+      | undefined;
+    const app = appWithResolution(
+      { ok: false, error: "shop_context_required" },
+      {
+        authorizeDashboardForTenant: async () => ({
+          ok: true,
+          actor: {
+            id: "user_1",
+            email: "owner@abebe.local",
+            name: "Abebe Owner",
+            role: "owner",
+          },
+        }),
+        getSession: async () => ({
+          user: {
+            id: "user_1",
+            email: "owner@abebe.local",
+            name: "Abebe Owner",
+          },
+        }),
+        updateStorefrontDraft: async (input) => {
+          draftInput = input;
+
+          return {
+            ok: true,
+            draft: {
+              tenantId: input.tenantId,
+              templateId: "template_1",
+              templateVersion: 1,
+              templateKey: "classic@1",
+              data: input.data,
+              themeTokens: input.themeTokens,
+              updatedAt: "2026-06-02T10:00:00.000Z",
+            },
+          };
+        },
+      },
+    );
+
+    const response = await app.request("/platform/tenants/tenant_1/storefront/draft", {
+      body: JSON.stringify({
+        data: {
+          heroTitle: "Updated Market",
+        },
+        themeTokens: {
+          color: "blue",
+        },
+      }),
+      headers: {
+        "content-type": "application/json",
+      },
+      method: "PUT",
+    });
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(draftInput, {
+      tenantId: "tenant_1",
+      userId: "user_1",
+      data: {
+        heroTitle: "Updated Market",
+      },
+      themeTokens: {
+        color: "blue",
+      },
+    });
+    assert.deepEqual(await response.json(), {
+      draft: {
+        tenantId: "tenant_1",
+        templateId: "template_1",
+        templateVersion: 1,
+        templateKey: "classic@1",
+        data: {
+          heroTitle: "Updated Market",
+        },
+        themeTokens: {
+          color: "blue",
+        },
+        updatedAt: "2026-06-02T10:00:00.000Z",
+      },
+    });
+  });
+
+  it("publishes the storefront draft for an authorized tenant member", async () => {
+    let publishInput:
+      | {
+          tenantId: string;
+          userId: string;
+        }
+      | undefined;
+    const app = appWithResolution(
+      { ok: false, error: "shop_context_required" },
+      {
+        authorizeDashboardForTenant: async () => ({
+          ok: true,
+          actor: {
+            id: "user_1",
+            email: "owner@abebe.local",
+            name: "Abebe Owner",
+            role: "owner",
+          },
+        }),
+        getSession: async () => ({
+          user: {
+            id: "user_1",
+            email: "owner@abebe.local",
+            name: "Abebe Owner",
+          },
+        }),
+        publishStorefrontDraft: async (input) => {
+          publishInput = input;
+
+          return {
+            ok: true,
+            storefront: {
+              publishedRevisionId: "revision_2",
+              tenantId: input.tenantId,
+              templateId: "template_1",
+              templateVersion: 1,
+              templateKey: "classic@1",
+              publishedAt: "2026-06-02T10:00:00.000Z",
+            },
+          };
+        },
+      },
+    );
+
+    const response = await app.request("/platform/tenants/tenant_1/storefront/publish", {
+      method: "POST",
+    });
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(publishInput, {
+      tenantId: "tenant_1",
+      userId: "user_1",
+    });
+    assert.deepEqual(await response.json(), {
+      storefront: {
+        tenantId: "tenant_1",
+        publishedRevisionId: "revision_2",
+        templateId: "template_1",
+        templateVersion: 1,
+        templateKey: "classic@1",
+        publishedAt: "2026-06-02T10:00:00.000Z",
       },
     });
   });

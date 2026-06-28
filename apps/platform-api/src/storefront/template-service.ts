@@ -1,5 +1,6 @@
 import type { createPlatformDb } from "@ecs/db";
 import {
+  auditLogs,
   storefrontConfigs,
   storefrontRevisions,
   storefrontTemplates,
@@ -9,6 +10,9 @@ import {
 import { and, asc, eq } from "drizzle-orm";
 import type {
   PublishedStorefrontConfigResult,
+  StorefrontDraftResult,
+  StorefrontDraftUpdateResult,
+  StorefrontPublishResult,
   StorefrontTemplateCatalogItem,
   StorefrontTemplateSelectionResult,
 } from "../app.js";
@@ -16,6 +20,49 @@ import type {
 type PlatformDb = ReturnType<typeof createPlatformDb>["db"];
 
 export function createStorefrontTemplateService(db: PlatformDb) {
+  async function getStorefrontDraft(input: { tenantId: string }): Promise<StorefrontDraftResult> {
+    const [draft] = await db
+      .select({
+        tenantId: storefrontConfigs.tenantId,
+        templateId: storefrontConfigs.draftTemplateId,
+        templateVersion: storefrontConfigs.draftTemplateVersion,
+        templateKey: storefrontTemplateVersions.templateKey,
+        data: storefrontConfigs.draftData,
+        themeTokens: storefrontConfigs.draftThemeTokens,
+        updatedAt: storefrontConfigs.updatedAt,
+      })
+      .from(storefrontConfigs)
+      .innerJoin(
+        storefrontTemplateVersions,
+        and(
+          eq(storefrontTemplateVersions.templateId, storefrontConfigs.draftTemplateId),
+          eq(storefrontTemplateVersions.version, storefrontConfigs.draftTemplateVersion),
+        ),
+      )
+      .where(eq(storefrontConfigs.tenantId, input.tenantId))
+      .limit(1);
+
+    if (!draft?.templateId || !draft.templateVersion) {
+      return {
+        ok: false,
+        error: "storefront_draft_not_found",
+      };
+    }
+
+    return {
+      ok: true,
+      draft: {
+        tenantId: draft.tenantId,
+        templateId: draft.templateId,
+        templateVersion: draft.templateVersion,
+        templateKey: draft.templateKey,
+        data: draft.data,
+        themeTokens: draft.themeTokens,
+        updatedAt: draft.updatedAt.toISOString(),
+      },
+    };
+  }
+
   return {
     getPublishedStorefrontConfig: async (input: {
       publishedRevisionId: string;
@@ -100,6 +147,146 @@ export function createStorefrontTemplateService(db: PlatformDb) {
           previewData: row.previewData,
         },
       }));
+    },
+    getStorefrontDraft,
+    updateStorefrontDraft: async (input: {
+      data: unknown;
+      tenantId: string;
+      themeTokens: unknown;
+      userId: string;
+    }): Promise<StorefrontDraftUpdateResult> => {
+      const updated = await db.transaction(async (transaction) => {
+        const [row] = await transaction
+          .update(storefrontConfigs)
+          .set({
+            draftData: input.data,
+            draftThemeTokens: input.themeTokens,
+            updatedAt: new Date(),
+          })
+          .where(eq(storefrontConfigs.tenantId, input.tenantId))
+          .returning({
+            tenantId: storefrontConfigs.tenantId,
+          });
+
+        if (!row) {
+          return false;
+        }
+
+        await transaction.insert(auditLogs).values({
+          actorUserId: input.userId,
+          tenantId: input.tenantId,
+          action: "storefront.draft_updated",
+          targetType: "storefront_config",
+          targetId: input.tenantId,
+          metadata: {},
+        });
+
+        return true;
+      });
+
+      if (!updated) {
+        return {
+          ok: false,
+          error: "storefront_draft_not_found",
+        };
+      }
+
+      return getStorefrontDraft({ tenantId: input.tenantId });
+    },
+    publishStorefrontDraft: async (input: {
+      tenantId: string;
+      userId: string;
+    }): Promise<StorefrontPublishResult> => {
+      const published = await db.transaction(async (transaction) => {
+        const [draft] = await transaction
+          .select({
+            tenantId: storefrontConfigs.tenantId,
+            templateId: storefrontConfigs.draftTemplateId,
+            templateVersion: storefrontConfigs.draftTemplateVersion,
+            templateKey: storefrontTemplateVersions.templateKey,
+            data: storefrontConfigs.draftData,
+            themeTokens: storefrontConfigs.draftThemeTokens,
+          })
+          .from(storefrontConfigs)
+          .innerJoin(
+            storefrontTemplateVersions,
+            and(
+              eq(storefrontTemplateVersions.templateId, storefrontConfigs.draftTemplateId),
+              eq(storefrontTemplateVersions.version, storefrontConfigs.draftTemplateVersion),
+            ),
+          )
+          .where(eq(storefrontConfigs.tenantId, input.tenantId))
+          .limit(1);
+
+        if (!draft?.templateId || !draft.templateVersion) {
+          return null;
+        }
+
+        const [revision] = await transaction
+          .insert(storefrontRevisions)
+          .values({
+            tenantId: input.tenantId,
+            templateId: draft.templateId,
+            templateVersion: draft.templateVersion,
+            templateKey: draft.templateKey,
+            data: draft.data,
+            themeTokens: draft.themeTokens,
+            publishedByUserId: input.userId,
+          })
+          .returning({
+            id: storefrontRevisions.id,
+            tenantId: storefrontRevisions.tenantId,
+            templateId: storefrontRevisions.templateId,
+            templateVersion: storefrontRevisions.templateVersion,
+            templateKey: storefrontRevisions.templateKey,
+            publishedAt: storefrontRevisions.publishedAt,
+          });
+
+        if (!revision) {
+          throw new Error("Storefront revision insert returned no rows.");
+        }
+
+        await transaction
+          .update(storefrontConfigs)
+          .set({
+            publishedRevisionId: revision.id,
+            publishedAt: revision.publishedAt,
+            updatedAt: new Date(),
+          })
+          .where(eq(storefrontConfigs.tenantId, input.tenantId));
+
+        await transaction.insert(auditLogs).values({
+          actorUserId: input.userId,
+          tenantId: input.tenantId,
+          action: "storefront.published",
+          targetType: "storefront_revision",
+          targetId: revision.id,
+          metadata: {
+            templateKey: revision.templateKey,
+          },
+        });
+
+        return revision;
+      });
+
+      if (!published) {
+        return {
+          ok: false,
+          error: "storefront_draft_not_found",
+        };
+      }
+
+      return {
+        ok: true,
+        storefront: {
+          tenantId: published.tenantId,
+          publishedRevisionId: published.id,
+          templateId: published.templateId,
+          templateVersion: published.templateVersion,
+          templateKey: published.templateKey,
+          publishedAt: published.publishedAt.toISOString(),
+        },
+      };
     },
     selectStorefrontTemplate: async (input: {
       tenantId: string;
