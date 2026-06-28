@@ -17,6 +17,18 @@ export type PlatformSession = {
   user: PlatformSessionUser;
 };
 
+export type BillingInvoice = {
+  id: string;
+  amount: string;
+  currency: string;
+  status: string;
+  dueAt: string | null;
+  paidAt: string | null;
+  provider: string | null;
+  providerReference: string | null;
+  createdAt: string;
+};
+
 export type BillingStatus = {
   subscription: {
     id: string;
@@ -33,17 +45,7 @@ export type BillingStatus = {
     limits: unknown;
     features: unknown;
   };
-  invoices: {
-    id: string;
-    amount: string;
-    currency: string;
-    status: string;
-    dueAt: string | null;
-    paidAt: string | null;
-    provider: string | null;
-    providerReference: string | null;
-    createdAt: string;
-  }[];
+  invoices: BillingInvoice[];
 };
 
 export type BillingStatusResult =
@@ -54,6 +56,17 @@ export type BillingStatusResult =
   | {
       ok: false;
       error: "billing_not_found";
+    };
+
+export type BillingInvoiceUpdateResult =
+  | {
+      ok: true;
+      invoice: BillingInvoice;
+    }
+  | {
+      ok: false;
+      error: "billing_invoice_not_found" | "billing_invoice_status_invalid";
+      status: 400 | 404;
     };
 
 export type MerchantProduct = {
@@ -306,6 +319,16 @@ export type PlatformAppOptions = {
       }) => Promise<PublishedStorefrontConfigResult>)
     | undefined;
   getBillingStatus?: ((input: { tenantId: string }) => Promise<BillingStatusResult>) | undefined;
+  updateBillingInvoiceStatus?:
+    | ((input: {
+        invoiceId: string;
+        operatorUserId: string;
+        provider?: string | null | undefined;
+        providerReference?: string | null | undefined;
+        status: string;
+        tenantId: string;
+      }) => Promise<BillingInvoiceUpdateResult>)
+    | undefined;
   getTenantOnboarding?:
     | ((input: { tenantId: string }) => Promise<TenantOnboardingResult>)
     | undefined;

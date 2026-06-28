@@ -95,6 +95,7 @@ const app = createPlatformApp({
   selectStorefrontTemplate: storefrontTemplateService.selectStorefrontTemplate,
   setTenantPrimaryDomain: domainManagementService.setTenantPrimaryDomain,
   submitPaymentOnboarding: paymentOnboardingService.submitPaymentOnboarding,
+  updateBillingInvoiceStatus: billingService.updateBillingInvoiceStatus,
   updateMerchantProduct: productService.updateMerchantProduct,
   serviceName: env.SERVICE_NAME,
   medusaInternalUrl,

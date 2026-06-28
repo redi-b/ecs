@@ -491,4 +491,53 @@ export function registerPlatformRoutes(
       });
     },
   );
+
+  app.post(
+    "/platform/operator/tenants/:tenantId/billing/invoices/:invoiceId/status",
+    async (context) => {
+      if (!options.updateBillingInvoiceStatus) {
+        return context.json({ error: "billing_unavailable" }, 503);
+      }
+
+      const session = await options.getSession?.(context.req.raw.headers);
+
+      if (!session) {
+        return context.json({ error: "auth_required" }, 401);
+      }
+
+      const tenantId = context.req.param("tenantId");
+      const authorization = await options.authorizeDashboardForTenant?.({
+        tenantId,
+        userId: session.user.id,
+      });
+
+      if (!authorization?.ok || authorization.actor.role !== "operator") {
+        return context.json({ error: "operator_forbidden" }, 403);
+      }
+
+      const body = await getJsonBody(context.req.raw);
+      const status = getRequiredBodyString(body, "status");
+
+      if (!status) {
+        return context.json({ error: "missing_status" }, 400);
+      }
+
+      const result = await options.updateBillingInvoiceStatus({
+        invoiceId: context.req.param("invoiceId"),
+        operatorUserId: session.user.id,
+        provider: getOptionalBodyString(body, "provider"),
+        providerReference: getOptionalBodyString(body, "providerReference"),
+        status,
+        tenantId,
+      });
+
+      if (!result.ok) {
+        return context.json({ error: result.error }, result.status);
+      }
+
+      return context.json({
+        invoice: result.invoice,
+      });
+    },
+  );
 }

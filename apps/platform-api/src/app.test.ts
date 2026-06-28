@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import type {
+  BillingInvoiceUpdateResult,
   BillingStatusResult,
   MerchantOrdersResult,
   MerchantProductsResult,
@@ -77,6 +78,14 @@ function appWithResolution(
       userId: string;
     }) => Promise<TenantDomainCreateResult>;
     getBillingStatus?: (input: { tenantId: string }) => Promise<BillingStatusResult>;
+    updateBillingInvoiceStatus?: (input: {
+      invoiceId: string;
+      operatorUserId: string;
+      provider?: string | null | undefined;
+      providerReference?: string | null | undefined;
+      status: string;
+      tenantId: string;
+    }) => Promise<BillingInvoiceUpdateResult>;
     getTenantOnboarding?: (input: { tenantId: string }) => Promise<TenantOnboardingResult>;
     listPaymentOnboarding?: (input: { tenantId: string }) => Promise<PaymentOnboardingListResult>;
     reviewPaymentOnboarding?: (input: {
@@ -150,6 +159,7 @@ function appWithResolution(
     ...(options?.medusaStoreFetch ? { medusaStoreFetch: options.medusaStoreFetch } : {}),
     setTenantPrimaryDomain: options?.setTenantPrimaryDomain,
     submitPaymentOnboarding: options?.submitPaymentOnboarding,
+    updateBillingInvoiceStatus: options?.updateBillingInvoiceStatus,
     resolveTenantForHost: async () => result,
   });
 }
@@ -1269,6 +1279,96 @@ describe("platform app", () => {
         requiredDocuments: ["business_license"],
         notes: "Approved after license check.",
         providerAccountRef: "chapa_subaccount_1",
+      },
+    });
+  });
+
+  it("lets an operator update a tenant billing invoice status", async () => {
+    let updateInput:
+      | {
+          invoiceId: string;
+          operatorUserId: string;
+          provider?: string | null | undefined;
+          providerReference?: string | null | undefined;
+          status: string;
+          tenantId: string;
+        }
+      | undefined;
+    const app = appWithResolution(
+      { ok: false, error: "shop_context_required" },
+      {
+        authorizeDashboardForTenant: async () => ({
+          ok: true,
+          actor: {
+            id: "operator_1",
+            email: "operator@ecs.local",
+            name: "Operator",
+            role: "operator",
+          },
+        }),
+        getSession: async () => ({
+          user: {
+            id: "operator_1",
+            email: "operator@ecs.local",
+            name: "Operator",
+          },
+        }),
+        updateBillingInvoiceStatus: async (input) => {
+          updateInput = input;
+
+          return {
+            ok: true,
+            invoice: {
+              id: input.invoiceId,
+              amount: "999.00",
+              currency: "ETB",
+              status: input.status,
+              dueAt: "2026-06-05T00:00:00.000Z",
+              paidAt: "2026-06-02T00:00:00.000Z",
+              provider: input.provider ?? null,
+              providerReference: input.providerReference ?? null,
+              createdAt: "2026-06-01T00:00:00.000Z",
+            },
+          };
+        },
+      },
+    );
+
+    const response = await app.request(
+      "/platform/operator/tenants/tenant_1/billing/invoices/invoice_1/status",
+      {
+        body: JSON.stringify({
+          status: " paid ",
+          provider: " manual ",
+          providerReference: " receipt_1 ",
+        }),
+        headers: {
+          "content-type": "application/json",
+        },
+        method: "POST",
+      },
+    );
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(updateInput, {
+      tenantId: "tenant_1",
+      operatorUserId: "operator_1",
+      invoiceId: "invoice_1",
+      status: "paid",
+      provider: "manual",
+      providerReference: "receipt_1",
+    });
+    assert.deepEqual(await response.json(), {
+      invoice: {
+        id: "invoice_1",
+        amount: "999.00",
+        currency: "ETB",
+        status: "paid",
+        dueAt: "2026-06-05T00:00:00.000Z",
+        paidAt: "2026-06-02T00:00:00.000Z",
+        provider: "manual",
+        providerReference: "receipt_1",
+        createdAt: "2026-06-01T00:00:00.000Z",
       },
     });
   });
