@@ -2756,7 +2756,7 @@ describe("platform app", () => {
     assert.equal(forwardedRequest.headers.get("host"), null);
   });
 
-  it("preserves method and body when forwarding store requests", async () => {
+  it("injects the resolved tenant region when forwarding cart creation", async () => {
     let forwardedRequest: Request | undefined;
     const medusaStoreFetch: typeof fetch = async (request) => {
       forwardedRequest = request instanceof Request ? request : new Request(request);
@@ -2772,7 +2772,7 @@ describe("platform app", () => {
 
     const response = await app.request("/store/carts", {
       method: "POST",
-      body: JSON.stringify({ region_id: "reg_1" }),
+      body: JSON.stringify({ region_id: "reg_other", email: "buyer@example.com" }),
       headers: {
         "content-type": "application/json",
         Host: "abebe.lvh.me",
@@ -2782,7 +2782,44 @@ describe("platform app", () => {
     assert.equal(response.status, 201);
     assert.ok(forwardedRequest);
     assert.equal(forwardedRequest.method, "POST");
-    assert.equal(await forwardedRequest.text(), JSON.stringify({ region_id: "reg_1" }));
+    assert.deepEqual(JSON.parse(await forwardedRequest.text()), {
+      region_id: "reg_1",
+      email: "buyer@example.com",
+    });
+  });
+
+  it("does not create carts for tenants without a commerce region", async () => {
+    let fetchCalls = 0;
+    const app = appWithResolution(
+      {
+        ok: true,
+        context: {
+          ...resolvedTenantContext,
+          medusaRegionId: null,
+        },
+      },
+      {
+        medusaStoreFetch: async () => {
+          fetchCalls += 1;
+          return Response.json({});
+        },
+      },
+    );
+
+    const response = await app.request("/store/carts", {
+      method: "POST",
+      body: JSON.stringify({ email: "buyer@example.com" }),
+      headers: {
+        "content-type": "application/json",
+        Host: "abebe.lvh.me",
+      },
+    });
+
+    assert.equal(response.status, 409);
+    assert.deepEqual(await response.json(), {
+      error: "commerce_region_unavailable",
+    });
+    assert.equal(fetchCalls, 0);
   });
 
   it("returns public delivery options for the resolved storefront host", async () => {
@@ -3020,7 +3057,7 @@ describe("platform app", () => {
     assert.equal(await forwardedRequest.text(), JSON.stringify(body));
   });
 
-  it("forwards payment provider reads to Medusa", async () => {
+  it("forwards payment provider reads to Medusa with the resolved tenant region", async () => {
     let forwardedRequest: Request | undefined;
     const medusaStoreFetch: typeof fetch = async (request) => {
       forwardedRequest = request instanceof Request ? request : new Request(request);
@@ -3041,7 +3078,7 @@ describe("platform app", () => {
       { medusaStoreFetch },
     );
 
-    const response = await app.request("/store/payment-providers?region_id=reg_1", {
+    const response = await app.request("/store/payment-providers?region_id=reg_other", {
       headers: {
         Host: "abebe.lvh.me",
       },
