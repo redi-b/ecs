@@ -8,6 +8,8 @@ import type {
   PublishedStorefrontConfigResult,
   StorefrontTemplateCatalogItem,
   StorefrontTemplateSelectionResult,
+  TenantDomainCreateResult,
+  TenantDomainListResult,
   TenantOnboardingResult,
   TenantShopProvisioningResult,
 } from "./app.js";
@@ -64,7 +66,13 @@ function appWithResolution(
       name: string;
       ownerUserId: string;
     }) => Promise<TenantShopProvisioningResult>;
+    createTenantDomain?: (input: {
+      hostname: string;
+      tenantId: string;
+      userId: string;
+    }) => Promise<TenantDomainCreateResult>;
     getTenantOnboarding?: (input: { tenantId: string }) => Promise<TenantOnboardingResult>;
+    listTenantDomains?: (input: { tenantId: string }) => Promise<TenantDomainListResult>;
     listMerchantProducts?: (input: {
       limit: number;
       offset: number;
@@ -96,12 +104,14 @@ function appWithResolution(
     authHandler: options?.authHandler,
     authorizeDashboardForTenant: options?.authorizeDashboardForTenant,
     createMerchantProduct: options?.createMerchantProduct,
+    createTenantDomain: options?.createTenantDomain,
     createTenantShop: options?.createTenantShop,
     getPublishedStorefrontConfig: options?.getPublishedStorefrontConfig,
     getTenantOnboarding: options?.getTenantOnboarding,
     getSession: options?.getSession,
     listMerchantProducts: options?.listMerchantProducts,
     listMerchantOrders: options?.listMerchantOrders,
+    listTenantDomains: options?.listTenantDomains,
     listStorefrontTemplates: options?.listStorefrontTemplates,
     selectStorefrontTemplate: options?.selectStorefrontTemplate,
     updateMerchantProduct: options?.updateMerchantProduct,
@@ -680,6 +690,151 @@ describe("platform app", () => {
         status: "in_progress",
         currentStep: "storefront_review",
         completedSteps: ["commerce_resources_provisioned", "storefront_template_preselected"],
+      },
+    });
+  });
+
+  it("lists domains for an authorized tenant member", async () => {
+    let authorizationInput: { tenantId: string; userId: string } | undefined;
+    let listInput: { tenantId: string } | undefined;
+    const app = appWithResolution(
+      { ok: false, error: "shop_context_required" },
+      {
+        authorizeDashboardForTenant: async (input) => {
+          authorizationInput = input;
+
+          return {
+            ok: true,
+            actor: {
+              id: "user_1",
+              email: "owner@abebe.local",
+              name: "Abebe Owner",
+              role: "owner",
+            },
+          };
+        },
+        getSession: async () => ({
+          user: {
+            id: "user_1",
+            email: "owner@abebe.local",
+            name: "Abebe Owner",
+          },
+        }),
+        listTenantDomains: async (input) => {
+          listInput = input;
+
+          return {
+            ok: true,
+            domains: [
+              {
+                id: "domain_1",
+                hostname: "abebe.lvh.me",
+                type: "platform_subdomain",
+                status: "active",
+                isPrimary: true,
+                verificationStatus: "verified",
+                sslStatus: "active",
+              },
+            ],
+          };
+        },
+      },
+    );
+
+    const response = await app.request("/platform/tenants/tenant_1/domains");
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(authorizationInput, {
+      tenantId: "tenant_1",
+      userId: "user_1",
+    });
+    assert.deepEqual(listInput, {
+      tenantId: "tenant_1",
+    });
+    assert.deepEqual(await response.json(), {
+      domains: [
+        {
+          id: "domain_1",
+          hostname: "abebe.lvh.me",
+          type: "platform_subdomain",
+          status: "active",
+          isPrimary: true,
+          verificationStatus: "verified",
+          sslStatus: "active",
+        },
+      ],
+    });
+  });
+
+  it("adds a custom domain for an authorized tenant member", async () => {
+    let createInput:
+      | {
+          hostname: string;
+          tenantId: string;
+          userId: string;
+        }
+      | undefined;
+    const app = appWithResolution(
+      { ok: false, error: "shop_context_required" },
+      {
+        authorizeDashboardForTenant: async () => ({
+          ok: true,
+          actor: {
+            id: "user_1",
+            email: "owner@abebe.local",
+            name: "Abebe Owner",
+            role: "owner",
+          },
+        }),
+        createTenantDomain: async (input) => {
+          createInput = input;
+
+          return {
+            ok: true,
+            domain: {
+              id: "domain_2",
+              hostname: "shop.example.com",
+              type: "custom_domain",
+              status: "pending_verification",
+              isPrimary: false,
+              verificationStatus: "pending",
+              sslStatus: "pending",
+            },
+          };
+        },
+        getSession: async () => ({
+          user: {
+            id: "user_1",
+            email: "owner@abebe.local",
+            name: "Abebe Owner",
+          },
+        }),
+      },
+    );
+
+    const response = await app.request("/platform/tenants/tenant_1/domains", {
+      body: JSON.stringify({ hostname: " Shop.Example.com " }),
+      headers: {
+        "content-type": "application/json",
+      },
+      method: "POST",
+    });
+
+    assert.equal(response.status, 201);
+    assert.deepEqual(createInput, {
+      hostname: "Shop.Example.com",
+      tenantId: "tenant_1",
+      userId: "user_1",
+    });
+    assert.deepEqual(await response.json(), {
+      domain: {
+        id: "domain_2",
+        hostname: "shop.example.com",
+        type: "custom_domain",
+        status: "pending_verification",
+        isPrimary: false,
+        verificationStatus: "pending",
+        sslStatus: "pending",
       },
     });
   });

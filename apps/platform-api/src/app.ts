@@ -110,6 +110,32 @@ export type StorefrontTemplateSelectionResult =
       error: "template_not_found" | "tenant_not_found" | "template_plan_unavailable";
     };
 
+export type TenantDomain = {
+  id: string;
+  hostname: string;
+  type: string;
+  status: string;
+  isPrimary: boolean;
+  verificationStatus: string;
+  sslStatus: string;
+};
+
+export type TenantDomainListResult = {
+  ok: true;
+  domains: TenantDomain[];
+};
+
+export type TenantDomainCreateResult =
+  | {
+      ok: true;
+      domain: TenantDomain;
+    }
+  | {
+      ok: false;
+      error: "domain_invalid" | "domain_unavailable";
+      status: 400 | 409;
+    };
+
 export type TenantOnboardingResult =
   | {
       ok: true;
@@ -212,7 +238,17 @@ export type PlatformAppOptions = {
         ownerUserId: string;
       }) => Promise<TenantShopProvisioningResult>)
     | undefined;
+  createTenantDomain?:
+    | ((input: {
+        hostname: string;
+        tenantId: string;
+        userId: string;
+      }) => Promise<TenantDomainCreateResult>)
+    | undefined;
   listStorefrontTemplates?: (() => Promise<StorefrontTemplateCatalogItem[]>) | undefined;
+  listTenantDomains?:
+    | ((input: { tenantId: string }) => Promise<TenantDomainListResult>)
+    | undefined;
   listMerchantProducts?:
     | ((input: {
         limit: number;

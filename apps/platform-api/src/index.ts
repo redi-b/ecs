@@ -9,6 +9,7 @@ import { createPlatformAuth, parseTrustedOrigins } from "./auth/platform-auth.js
 import { createMedusaOrderService } from "./commerce/order-service.js";
 import { createMedusaProductService } from "./commerce/product-service.js";
 import { getSystemHosts } from "./config/hosts.js";
+import { createDomainManagementService } from "./domains/domain-service.js";
 import { createTenantOnboardingService } from "./onboarding/onboarding-service.js";
 import { createMedusaCommerceProvisioningClient } from "./provisioning/medusa-commerce-provisioning.js";
 import { createTenantShopProvisioningService } from "./provisioning/tenant-shop-provisioning.js";
@@ -36,6 +37,7 @@ const platformDb = createPlatformDb({
   ),
 });
 const findDomainByHostname = createDomainTenantLookup(platformDb.db);
+const domainManagementService = createDomainManagementService(platformDb.db);
 const authorizeDashboardForTenant = createDashboardAuthorizationLookup(platformDb.db);
 const storefrontTemplateService = createStorefrontTemplateService(platformDb.db);
 const tenantOnboardingService = createTenantOnboardingService(platformDb.db);
@@ -74,12 +76,14 @@ const app = createPlatformApp({
   authHandler: auth.handler,
   authorizeDashboardForTenant,
   createMerchantProduct: productService.createMerchantProduct,
+  createTenantDomain: domainManagementService.createTenantDomain,
   createTenantShop,
   getPublishedStorefrontConfig: storefrontTemplateService.getPublishedStorefrontConfig,
   getTenantOnboarding: tenantOnboardingService.getTenantOnboarding,
   getSession: (headers) => auth.api.getSession({ headers }),
   listMerchantOrders: orderService.listMerchantOrders,
   listMerchantProducts: productService.listMerchantProducts,
+  listTenantDomains: domainManagementService.listTenantDomains,
   listStorefrontTemplates: storefrontTemplateService.listStorefrontTemplates,
   selectStorefrontTemplate: storefrontTemplateService.selectStorefrontTemplate,
   updateMerchantProduct: productService.updateMerchantProduct,

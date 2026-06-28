@@ -218,4 +218,78 @@ export function registerPlatformRoutes(
       onboarding: result.onboarding,
     });
   });
+
+  app.get("/platform/tenants/:tenantId/domains", async (context) => {
+    if (!options.listTenantDomains) {
+      return context.json({ error: "domains_unavailable" }, 503);
+    }
+
+    const session = await options.getSession?.(context.req.raw.headers);
+
+    if (!session) {
+      return context.json({ error: "auth_required" }, 401);
+    }
+
+    const tenantId = context.req.param("tenantId");
+    const authorization = await options.authorizeDashboardForTenant?.({
+      tenantId,
+      userId: session.user.id,
+    });
+
+    if (!authorization?.ok) {
+      return context.json({ error: "dashboard_forbidden" }, 403);
+    }
+
+    const result = await options.listTenantDomains({ tenantId });
+
+    return context.json({
+      domains: result.domains,
+    });
+  });
+
+  app.post("/platform/tenants/:tenantId/domains", async (context) => {
+    if (!options.createTenantDomain) {
+      return context.json({ error: "domains_unavailable" }, 503);
+    }
+
+    const session = await options.getSession?.(context.req.raw.headers);
+
+    if (!session) {
+      return context.json({ error: "auth_required" }, 401);
+    }
+
+    const tenantId = context.req.param("tenantId");
+    const authorization = await options.authorizeDashboardForTenant?.({
+      tenantId,
+      userId: session.user.id,
+    });
+
+    if (!authorization?.ok) {
+      return context.json({ error: "dashboard_forbidden" }, 403);
+    }
+
+    const body = await getJsonBody(context.req.raw);
+    const hostname = getRequiredBodyString(body, "hostname");
+
+    if (!hostname) {
+      return context.json({ error: "missing_hostname" }, 400);
+    }
+
+    const result = await options.createTenantDomain({
+      hostname,
+      tenantId,
+      userId: session.user.id,
+    });
+
+    if (!result.ok) {
+      return context.json({ error: result.error }, result.status);
+    }
+
+    return context.json(
+      {
+        domain: result.domain,
+      },
+      201,
+    );
+  });
 }
