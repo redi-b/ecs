@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { getStoreDeliveryOptions, listStoreProducts } from "./platform-store.js";
+import { createStoreCart, getStoreDeliveryOptions, listStoreProducts } from "./platform-store.js";
 
 test("listStoreProducts calls the platform store facade with host context", async () => {
   const requests: Request[] = [];
@@ -86,4 +86,51 @@ test("getStoreDeliveryOptions calls the platform store facade with host context"
   assert.equal(requests[0]?.url, "http://api.lvh.me/store/delivery");
   assert.equal(requests[0]?.headers.get("x-forwarded-host"), "abebe.lvh.me");
   assert.deepEqual(result, deliveryResponse);
+});
+
+test("createStoreCart creates a Medusa cart through the platform facade", async () => {
+  const requests: Request[] = [];
+  const result = await createStoreCart({
+    fetcher: async (request) => {
+      requests.push(request);
+
+      return Response.json(
+        {
+          cart: {
+            id: "cart_1",
+            region_id: "reg_1",
+            currency_code: "etb",
+            email: null,
+            item_total: 0,
+            total: 0,
+          },
+        },
+        {
+          status: 201,
+        },
+      );
+    },
+    platformApiBaseUrl: "http://api.lvh.me",
+    regionId: "reg_1",
+    requestHost: "abebe.lvh.me",
+  });
+
+  assert.equal(requests.length, 1);
+  assert.equal(requests[0]?.url, "http://api.lvh.me/store/carts");
+  assert.equal(requests[0]?.method, "POST");
+  assert.equal(requests[0]?.headers.get("content-type"), "application/json");
+  assert.equal(requests[0]?.headers.get("x-forwarded-host"), "abebe.lvh.me");
+  assert.deepEqual(JSON.parse(String(await requests[0]?.text())), {
+    region_id: "reg_1",
+  });
+  assert.deepEqual(result, {
+    cart: {
+      id: "cart_1",
+      regionId: "reg_1",
+      currencyCode: "etb",
+      email: null,
+      itemTotal: 0,
+      total: 0,
+    },
+  });
 });

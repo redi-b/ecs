@@ -28,6 +28,19 @@ export type StoreDeliveryOptionsResponse = {
   delivery: StoreDeliveryOptions;
 };
 
+export type StoreCart = {
+  id: string;
+  regionId?: string | null;
+  email?: string | null;
+  currencyCode?: string | null;
+  itemTotal?: number;
+  total?: number;
+};
+
+export type StoreCartResponse = {
+  cart: StoreCart;
+};
+
 export type StorefrontError = {
   ok: false;
   status: number;
@@ -91,6 +104,38 @@ export async function getStoreDeliveryOptions(
   };
 }
 
+export async function createStoreCart(options: {
+  fetcher?: StorefrontFetch;
+  platformApiBaseUrl: string;
+  regionId: string;
+  requestHost?: string | null;
+}): Promise<StoreCartResponse | StorefrontError> {
+  const fetcher = options.fetcher ?? fetch;
+  const request = new Request(getStoreCartsUrl(options.platformApiBaseUrl), {
+    body: JSON.stringify({
+      region_id: options.regionId,
+    }),
+    headers: getStoreHeaders(options.requestHost, {
+      "content-type": "application/json",
+    }),
+    method: "POST",
+  });
+  const response = await fetcher(request);
+  const data = await response.json().catch(() => undefined);
+
+  if (!response.ok) {
+    return {
+      ok: false,
+      status: response.status,
+      message: getErrorMessage(data, response.statusText),
+    };
+  }
+
+  return {
+    cart: normalizeCart(isRecord(data) ? data.cart : undefined),
+  };
+}
+
 function getStoreProductsUrl(platformApiBaseUrl: string) {
   const url = new URL("/store/products", normalizeBaseUrl(platformApiBaseUrl));
   url.searchParams.set("limit", "8");
@@ -101,15 +146,23 @@ function getStoreDeliveryUrl(platformApiBaseUrl: string) {
   return new URL("/store/delivery", normalizeBaseUrl(platformApiBaseUrl));
 }
 
+function getStoreCartsUrl(platformApiBaseUrl: string) {
+  return new URL("/store/carts", normalizeBaseUrl(platformApiBaseUrl));
+}
+
 function normalizeBaseUrl(value: string) {
   return value.endsWith("/") ? value : `${value}/`;
 }
 
-function getStoreHeaders(requestHost?: string | null) {
+function getStoreHeaders(requestHost?: string | null, values?: Record<string, string>) {
   const headers = new Headers();
 
   if (requestHost?.trim()) {
     headers.set("x-forwarded-host", requestHost.trim());
+  }
+
+  for (const [key, value] of Object.entries(values ?? {})) {
+    headers.set(key, value);
   }
 
   return headers;
@@ -141,6 +194,23 @@ function normalizeProduct(value: unknown): StoreProduct {
     id: getString(value.id) ?? "",
     thumbnail: getString(value.thumbnail),
     title: getString(value.title),
+  };
+}
+
+function normalizeCart(value: unknown): StoreCart {
+  if (!isRecord(value)) {
+    return {
+      id: "",
+    };
+  }
+
+  return {
+    currencyCode: getString(value.currency_code),
+    email: getString(value.email),
+    id: getString(value.id) ?? "",
+    itemTotal: getNumber(value.item_total),
+    regionId: getString(value.region_id),
+    total: getNumber(value.total),
   };
 }
 
