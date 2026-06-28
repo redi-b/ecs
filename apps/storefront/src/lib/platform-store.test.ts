@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { listStoreProducts } from "./platform-store.js";
+import { getStoreDeliveryOptions, listStoreProducts } from "./platform-store.js";
 
 test("listStoreProducts calls the platform store facade with host context", async () => {
   const requests: Request[] = [];
@@ -51,4 +51,39 @@ test("listStoreProducts returns an error result when platform response fails", a
   }
   assert.equal(result.status, 404);
   assert.equal(result.message, "shop_not_found");
+});
+
+test("getStoreDeliveryOptions calls the platform store facade with host context", async () => {
+  const requests: Request[] = [];
+  const deliveryResponse = {
+    delivery: {
+      deliveryEnabled: true,
+      pickupEnabled: true,
+      phoneConfirmationRequired: true,
+      notesEnabled: true,
+      landmarkRequired: false,
+      defaultDeliveryFee: "50.00",
+      currency: "ETB",
+      zones: [
+        {
+          name: "Bole",
+          fee: "75.00",
+        },
+      ],
+    },
+  };
+
+  const result = await getStoreDeliveryOptions({
+    fetcher: async (request) => {
+      requests.push(request);
+      return Response.json(deliveryResponse);
+    },
+    platformApiBaseUrl: "http://api.lvh.me",
+    requestHost: "abebe.lvh.me",
+  });
+
+  assert.equal(requests.length, 1);
+  assert.equal(requests[0]?.url, "http://api.lvh.me/store/delivery");
+  assert.equal(requests[0]?.headers.get("x-forwarded-host"), "abebe.lvh.me");
+  assert.deepEqual(result, deliveryResponse);
 });

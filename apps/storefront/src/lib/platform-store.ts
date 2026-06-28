@@ -13,6 +13,21 @@ export type StoreProductsResponse = {
   offset?: number;
 };
 
+export type StoreDeliveryOptions = {
+  deliveryEnabled: boolean;
+  pickupEnabled: boolean;
+  phoneConfirmationRequired: boolean;
+  notesEnabled: boolean;
+  landmarkRequired: boolean;
+  defaultDeliveryFee: string;
+  currency: string;
+  zones: unknown[];
+};
+
+export type StoreDeliveryOptionsResponse = {
+  delivery: StoreDeliveryOptions;
+};
+
 export type StorefrontError = {
   ok: false;
   status: number;
@@ -53,10 +68,37 @@ export async function listStoreProducts(
   };
 }
 
+export async function getStoreDeliveryOptions(
+  options: ListStoreProductsOptions,
+): Promise<StoreDeliveryOptionsResponse | StorefrontError> {
+  const fetcher = options.fetcher ?? fetch;
+  const request = new Request(getStoreDeliveryUrl(options.platformApiBaseUrl), {
+    headers: getStoreHeaders(options.requestHost),
+  });
+  const response = await fetcher(request);
+  const data = await response.json().catch(() => undefined);
+
+  if (!response.ok) {
+    return {
+      ok: false,
+      status: response.status,
+      message: getErrorMessage(data, response.statusText),
+    };
+  }
+
+  return {
+    delivery: normalizeDeliveryOptions(isRecord(data) ? data.delivery : undefined),
+  };
+}
+
 function getStoreProductsUrl(platformApiBaseUrl: string) {
   const url = new URL("/store/products", normalizeBaseUrl(platformApiBaseUrl));
   url.searchParams.set("limit", "8");
   return url;
+}
+
+function getStoreDeliveryUrl(platformApiBaseUrl: string) {
+  return new URL("/store/delivery", normalizeBaseUrl(platformApiBaseUrl));
 }
 
 function normalizeBaseUrl(value: string) {
@@ -108,6 +150,36 @@ function getString(value: unknown) {
 
 function getNumber(value: unknown) {
   return typeof value === "number" ? value : undefined;
+}
+
+function getBoolean(value: unknown) {
+  return typeof value === "boolean" ? value : false;
+}
+
+function normalizeDeliveryOptions(value: unknown): StoreDeliveryOptions {
+  if (!isRecord(value)) {
+    return {
+      deliveryEnabled: false,
+      pickupEnabled: false,
+      phoneConfirmationRequired: true,
+      notesEnabled: true,
+      landmarkRequired: false,
+      defaultDeliveryFee: "0",
+      currency: "ETB",
+      zones: [],
+    };
+  }
+
+  return {
+    deliveryEnabled: getBoolean(value.deliveryEnabled),
+    pickupEnabled: getBoolean(value.pickupEnabled),
+    phoneConfirmationRequired: getBoolean(value.phoneConfirmationRequired),
+    notesEnabled: getBoolean(value.notesEnabled),
+    landmarkRequired: getBoolean(value.landmarkRequired),
+    defaultDeliveryFee: getString(value.defaultDeliveryFee) ?? "0",
+    currency: getString(value.currency) ?? "ETB",
+    zones: Array.isArray(value.zones) ? value.zones : [],
+  };
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

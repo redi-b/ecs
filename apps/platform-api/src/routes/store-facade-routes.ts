@@ -30,6 +30,32 @@ export function registerStoreFacadeRoutes(
       );
     }
 
+    if (
+      context.req.raw.method === "GET" &&
+      new URL(context.req.raw.url).pathname === "/store/delivery"
+    ) {
+      if (!options.getDeliverySettings) {
+        return context.json({ error: "delivery_settings_unavailable" }, 503);
+      }
+
+      const delivery = await options.getDeliverySettings({
+        tenantId: result.context.tenantId,
+      });
+
+      return context.json({
+        delivery: {
+          deliveryEnabled: delivery.delivery.deliveryEnabled,
+          pickupEnabled: delivery.delivery.pickupEnabled,
+          phoneConfirmationRequired: delivery.delivery.phoneConfirmationRequired,
+          notesEnabled: delivery.delivery.notesEnabled,
+          landmarkRequired: delivery.delivery.landmarkRequired,
+          defaultDeliveryFee: delivery.delivery.defaultDeliveryFee,
+          currency: delivery.delivery.currency,
+          zones: delivery.delivery.zones,
+        },
+      });
+    }
+
     if (!result.context.medusaPublishableKeyId) {
       return context.json({ error: "domain_misconfigured" }, 409);
     }

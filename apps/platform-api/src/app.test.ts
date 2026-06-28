@@ -2753,6 +2753,76 @@ describe("platform app", () => {
     assert.equal(await forwardedRequest.text(), JSON.stringify({ region_id: "reg_1" }));
   });
 
+  it("returns public delivery options for the resolved storefront host", async () => {
+    let deliveryInput: { tenantId: string } | undefined;
+    let fetchCalls = 0;
+    const app = appWithResolution(
+      {
+        ok: true,
+        context: resolvedTenantContext,
+      },
+      {
+        getDeliverySettings: async (input) => {
+          deliveryInput = input;
+
+          return {
+            ok: true,
+            delivery: {
+              tenantId: input.tenantId,
+              deliveryEnabled: true,
+              pickupEnabled: true,
+              phoneConfirmationRequired: true,
+              notesEnabled: true,
+              landmarkRequired: false,
+              defaultDeliveryFee: "50.00",
+              currency: "ETB",
+              zones: [
+                {
+                  name: "Bole",
+                  fee: "75.00",
+                },
+              ],
+              updatedAt: "2026-06-02T10:00:00.000Z",
+            },
+          };
+        },
+        medusaStoreFetch: async () => {
+          fetchCalls += 1;
+          return Response.json({});
+        },
+      },
+    );
+
+    const response = await app.request("/store/delivery", {
+      headers: {
+        Host: "abebe.lvh.me",
+      },
+    });
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(deliveryInput, {
+      tenantId: "tenant_1",
+    });
+    assert.equal(fetchCalls, 0);
+    assert.deepEqual(await response.json(), {
+      delivery: {
+        deliveryEnabled: true,
+        pickupEnabled: true,
+        phoneConfirmationRequired: true,
+        notesEnabled: true,
+        landmarkRequired: false,
+        defaultDeliveryFee: "50.00",
+        currency: "ETB",
+        zones: [
+          {
+            name: "Bole",
+            fee: "75.00",
+          },
+        ],
+      },
+    });
+  });
+
   it("does not forward unsupported store facade routes", async () => {
     let fetchCalls = 0;
     const app = appWithResolution(
