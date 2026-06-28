@@ -94,6 +94,10 @@ try {
         medusaPublishableKeyId: seed.tenant.medusaPublishableKeyId,
         medusaStockLocationId: seed.tenant.medusaStockLocationId,
         medusaRegionId: seed.tenant.medusaRegionId,
+        medusaShippingProfileId: seed.tenant.medusaShippingProfileId,
+        medusaFulfillmentSetId: seed.tenant.medusaFulfillmentSetId,
+        medusaServiceZoneId: seed.tenant.medusaServiceZoneId,
+        medusaShippingOptionId: seed.tenant.medusaShippingOptionId,
         updatedAt: new Date(),
       },
     });

@@ -28,6 +28,10 @@ describe("createMedusaCommerceProvisioningClient", () => {
               stockLocationId: "sloc_1",
               publishableKeyId: "apk_1",
               regionId: "reg_1",
+              shippingProfileId: "shp_1",
+              fulfillmentSetId: "fuset_1",
+              serviceZoneId: "serzo_1",
+              shippingOptionId: "so_1",
             },
           },
           {
@@ -52,6 +56,10 @@ describe("createMedusaCommerceProvisioningClient", () => {
         stockLocationId: "sloc_1",
         publishableKeyId: "apk_1",
         regionId: "reg_1",
+        shippingProfileId: "shp_1",
+        fulfillmentSetId: "fuset_1",
+        serviceZoneId: "serzo_1",
+        shippingOptionId: "so_1",
       },
     });
     assert.equal(calls.length, 1);

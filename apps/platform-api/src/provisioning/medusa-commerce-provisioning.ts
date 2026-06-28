@@ -14,6 +14,10 @@ export type CommerceProvisioningResult =
         stockLocationId: string;
         publishableKeyId: string;
         regionId: string;
+        shippingProfileId: string;
+        fulfillmentSetId: string;
+        serviceZoneId: string;
+        shippingOptionId: string;
       };
     }
   | {
@@ -73,7 +77,11 @@ export function createMedusaCommerceProvisioningClient(
         typeof resources.salesChannelId !== "string" ||
         typeof resources.stockLocationId !== "string" ||
         typeof resources.publishableKeyId !== "string" ||
-        typeof resources.regionId !== "string"
+        typeof resources.regionId !== "string" ||
+        typeof resources.shippingProfileId !== "string" ||
+        typeof resources.fulfillmentSetId !== "string" ||
+        typeof resources.serviceZoneId !== "string" ||
+        typeof resources.shippingOptionId !== "string"
       ) {
         return {
           ok: false,

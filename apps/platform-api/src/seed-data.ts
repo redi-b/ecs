@@ -58,6 +58,10 @@ export function buildPlatformSeed(options: PlatformSeedOptions) {
       medusaPublishableKeyId,
       medusaStockLocationId: "sloc_local_abebe",
       medusaRegionId: "reg_local_abebe",
+      medusaShippingProfileId: "shp_local_abebe",
+      medusaFulfillmentSetId: "fuset_local_abebe",
+      medusaServiceZoneId: "serzo_local_abebe",
+      medusaShippingOptionId: "so_local_abebe",
     },
     domain: {
       id: localIds.domain,

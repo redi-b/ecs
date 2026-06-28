@@ -27,6 +27,7 @@ test("buildPlatformSeed creates the default local tenant context", () => {
   assert.equal(seed.domain.hostname, "abebe.lvh.me");
   assert.equal(seed.tenant.medusaPublishableKeyId, "pk_test_local");
   assert.equal(seed.tenant.medusaRegionId, "reg_local_abebe");
+  assert.equal(seed.tenant.medusaShippingOptionId, "so_local_abebe");
   assert.equal(seed.user.email, "owner@abebe.local");
   assert.equal(seed.tenantMembership.role, "owner");
   assert.deepEqual(seed.tenantOnboarding, {

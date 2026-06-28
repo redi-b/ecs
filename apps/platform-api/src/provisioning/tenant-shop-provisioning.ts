@@ -55,6 +55,10 @@ type TenantShopProvisionerOptions = {
       stockLocationId: string;
       publishableKeyId: string;
       regionId: string;
+      shippingProfileId: string;
+      fulfillmentSetId: string;
+      serviceZoneId: string;
+      shippingOptionId: string;
     };
     handle: string;
     hostname: string;
@@ -243,6 +247,10 @@ export function createTenantShopProvisioningService(options: TenantShopProvision
             medusaPublishableKeyId: commerceResources.publishableKeyId,
             medusaStockLocationId: commerceResources.stockLocationId,
             medusaRegionId: commerceResources.regionId,
+            medusaShippingProfileId: commerceResources.shippingProfileId,
+            medusaFulfillmentSetId: commerceResources.fulfillmentSetId,
+            medusaServiceZoneId: commerceResources.serviceZoneId,
+            medusaShippingOptionId: commerceResources.shippingOptionId,
           })
           .returning({
             id: tenants.id,
@@ -312,6 +320,10 @@ export function createTenantShopProvisioningService(options: TenantShopProvision
             medusaPublishableKeyId: commerceResources.publishableKeyId,
             medusaStockLocationId: commerceResources.stockLocationId,
             medusaRegionId: commerceResources.regionId,
+            medusaShippingProfileId: commerceResources.shippingProfileId,
+            medusaFulfillmentSetId: commerceResources.fulfillmentSetId,
+            medusaServiceZoneId: commerceResources.serviceZoneId,
+            medusaShippingOptionId: commerceResources.shippingOptionId,
           },
         });
 
