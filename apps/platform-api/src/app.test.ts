@@ -10,6 +10,8 @@ import type {
   MerchantProductWriteResult,
   NotificationEventRecordResult,
   NotificationEventType,
+  NotificationPreferenceListResult,
+  NotificationPreferenceUpsertResult,
   PaymentOnboardingListResult,
   PaymentOnboardingReviewResult,
   PaymentOnboardingSubmitResult,
@@ -158,6 +160,9 @@ function appWithResolution(
       offset: number;
       salesChannelId: string;
     }) => Promise<MerchantOrdersResult>;
+    listNotificationPreferences?: (input: {
+      tenantId: string;
+    }) => Promise<NotificationPreferenceListResult>;
     listStorefrontTemplates?: () => Promise<StorefrontTemplateCatalogItem[]>;
     medusaStoreFetch?: typeof fetch;
     recordNotificationEvent?: (input: {
@@ -182,6 +187,14 @@ function appWithResolution(
       templateKey: string;
       userId: string;
     }) => Promise<StorefrontTemplateSelectionResult>;
+    upsertNotificationPreference?: (input: {
+      channel: string;
+      enabled: boolean;
+      events: string[];
+      target: string;
+      tenantId: string;
+      userId: string;
+    }) => Promise<NotificationPreferenceUpsertResult>;
     updateMerchantProduct?: (input: {
       handle?: string | null | undefined;
       productId: string;
@@ -208,6 +221,7 @@ function appWithResolution(
     getSession: options?.getSession,
     listMerchantProducts: options?.listMerchantProducts,
     listMerchantOrders: options?.listMerchantOrders,
+    listNotificationPreferences: options?.listNotificationPreferences,
     listPaymentOnboarding: options?.listPaymentOnboarding,
     reviewPaymentOnboarding: options?.reviewPaymentOnboarding,
     listTenantDomains: options?.listTenantDomains,
@@ -223,6 +237,7 @@ function appWithResolution(
     updateDeliverySettings: options?.updateDeliverySettings,
     publishStorefrontDraft: options?.publishStorefrontDraft,
     recordNotificationEvent: options?.recordNotificationEvent,
+    upsertNotificationPreference: options?.upsertNotificationPreference,
     updateTenantStatus: options?.updateTenantStatus,
     updateStorefrontDraft: options?.updateStorefrontDraft,
     resolveTenantForHost: async () => result,
@@ -2209,6 +2224,148 @@ describe("platform app", () => {
     assert.equal(response.status, 401);
     assert.deepEqual(await response.json(), {
       error: "auth_required",
+    });
+  });
+
+  it("lists merchant notification preferences for the resolved tenant", async () => {
+    const app = appWithResolution(
+      {
+        ok: true,
+        context: resolvedTenantContext,
+      },
+      {
+        authorizeDashboardForTenant: async () => ({
+          ok: true,
+          actor: {
+            id: "member_1",
+            email: "owner@example.com",
+            name: "Owner",
+            role: "owner",
+          },
+        }),
+        getSession: async () => ({
+          user: { id: "user_1", email: "owner@example.com", name: "Owner" },
+        }),
+        listNotificationPreferences: async (input) => {
+          assert.equal(input.tenantId, "tenant_1");
+
+          return {
+            ok: true,
+            preferences: [
+              {
+                id: "np_1",
+                channel: "telegram",
+                enabled: true,
+                events: ["cod_order.created", "order.created"],
+                target: "@abebe_market",
+                updatedAt: "2026-06-02T10:00:00.000Z",
+              },
+            ],
+          };
+        },
+      },
+    );
+
+    const response = await app.request("/platform/merchant/notifications/preferences", {
+      headers: {
+        Host: "abebe.lvh.me",
+      },
+    });
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), {
+      preferences: [
+        {
+          id: "np_1",
+          channel: "telegram",
+          enabled: true,
+          events: ["cod_order.created", "order.created"],
+          target: "@abebe_market",
+          updatedAt: "2026-06-02T10:00:00.000Z",
+        },
+      ],
+    });
+  });
+
+  it("upserts merchant notification preferences for the resolved tenant", async () => {
+    const upserts: {
+      channel: string;
+      enabled: boolean;
+      events: string[];
+      target: string;
+      tenantId: string;
+      userId: string;
+    }[] = [];
+    const app = appWithResolution(
+      {
+        ok: true,
+        context: resolvedTenantContext,
+      },
+      {
+        authorizeDashboardForTenant: async () => ({
+          ok: true,
+          actor: {
+            id: "member_1",
+            email: "owner@example.com",
+            name: "Owner",
+            role: "owner",
+          },
+        }),
+        getSession: async () => ({
+          user: { id: "user_1", email: "owner@example.com", name: "Owner" },
+        }),
+        upsertNotificationPreference: async (input) => {
+          upserts.push(input);
+
+          return {
+            ok: true,
+            preference: {
+              id: "np_1",
+              channel: input.channel,
+              enabled: input.enabled,
+              events: input.events,
+              target: input.target,
+              updatedAt: "2026-06-02T10:00:00.000Z",
+            },
+          };
+        },
+      },
+    );
+
+    const response = await app.request("/platform/merchant/notifications/preferences", {
+      body: JSON.stringify({
+        channel: "telegram",
+        enabled: true,
+        events: ["cod_order.created", "order.created"],
+        target: "@abebe_market",
+      }),
+      headers: {
+        "content-type": "application/json",
+        Host: "abebe.lvh.me",
+      },
+      method: "POST",
+    });
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(upserts, [
+      {
+        channel: "telegram",
+        enabled: true,
+        events: ["cod_order.created", "order.created"],
+        target: "@abebe_market",
+        tenantId: "tenant_1",
+        userId: "user_1",
+      },
+    ]);
+    assert.deepEqual(await response.json(), {
+      preference: {
+        id: "np_1",
+        channel: "telegram",
+        enabled: true,
+        events: ["cod_order.created", "order.created"],
+        target: "@abebe_market",
+        updatedAt: "2026-06-02T10:00:00.000Z",
+      },
     });
   });
 
