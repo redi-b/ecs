@@ -3100,6 +3100,209 @@ describe("platform app", () => {
     assert.equal(forwardedRequest.headers.get("x-publishable-api-key"), "pk_1");
   });
 
+  it("completes a COD checkout through Medusa with tenant delivery metadata", async () => {
+    const forwardedRequests: Request[] = [];
+    const medusaStoreFetch: typeof fetch = async (request) => {
+      const forwardedRequest = request instanceof Request ? request : new Request(request);
+      forwardedRequests.push(forwardedRequest.clone());
+      const path = new URL(forwardedRequest.url).pathname;
+
+      if (path === "/store/payment-collections") {
+        return Response.json({
+          payment_collection: {
+            id: "paycol_1",
+          },
+        });
+      }
+
+      if (path === "/store/carts/cart_1/complete") {
+        return Response.json({
+          type: "order",
+          order: {
+            id: "order_1",
+          },
+        });
+      }
+
+      return Response.json({
+        cart: {
+          id: "cart_1",
+        },
+      });
+    };
+    const app = appWithResolution(
+      {
+        ok: true,
+        context: resolvedTenantContext,
+      },
+      {
+        getDeliverySettings: async (input) => ({
+          ok: true,
+          delivery: {
+            tenantId: input.tenantId,
+            deliveryEnabled: true,
+            pickupEnabled: true,
+            phoneConfirmationRequired: true,
+            notesEnabled: true,
+            landmarkRequired: true,
+            defaultDeliveryFee: "50.00",
+            currency: "ETB",
+            zones: [],
+            updatedAt: "2026-06-02T10:00:00.000Z",
+          },
+        }),
+        medusaStoreFetch,
+      },
+    );
+
+    const response = await app.request("/store/checkout/cod", {
+      body: JSON.stringify({
+        cartId: "cart_1",
+        shippingOptionId: "so_1",
+        deliveryChoice: "delivery",
+        customer: {
+          name: "Abebe Kebede",
+          phone: "+251911111111",
+          email: "buyer@example.com",
+        },
+        address: {
+          address1: "Bole Road",
+          city: "Addis Ababa",
+          landmark: "Near the mall",
+        },
+        notes: "Call before delivery",
+      }),
+      headers: {
+        "content-type": "application/json",
+        Host: "abebe.lvh.me",
+      },
+      method: "POST",
+    });
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), {
+      type: "order",
+      order: {
+        id: "order_1",
+      },
+    });
+    assert.equal(forwardedRequests.length, 5);
+    const updateCartRequest = forwardedRequests[0];
+    const shippingMethodRequest = forwardedRequests[1];
+    const paymentCollectionRequest = forwardedRequests[2];
+    const paymentSessionRequest = forwardedRequests[3];
+
+    assert.ok(updateCartRequest);
+    assert.ok(shippingMethodRequest);
+    assert.ok(paymentCollectionRequest);
+    assert.ok(paymentSessionRequest);
+    assert.deepEqual(
+      forwardedRequests.map((request) => [request.method, new URL(request.url).pathname]),
+      [
+        ["POST", "/store/carts/cart_1"],
+        ["POST", "/store/carts/cart_1/shipping-methods"],
+        ["POST", "/store/payment-collections"],
+        ["POST", "/store/payment-collections/paycol_1/payment-sessions"],
+        ["POST", "/store/carts/cart_1/complete"],
+      ],
+    );
+    assert.equal(updateCartRequest.headers.get("x-publishable-api-key"), "pk_1");
+    assert.deepEqual(JSON.parse(await updateCartRequest.text()), {
+      email: "buyer@example.com",
+      shipping_address: {
+        first_name: "Abebe Kebede",
+        phone: "+251911111111",
+        address_1: "Bole Road",
+        city: "Addis Ababa",
+        country_code: "et",
+      },
+      metadata: {
+        checkout_type: "cod",
+        payment_method: "cod",
+        delivery_choice: "delivery",
+        customer_name: "Abebe Kebede",
+        customer_phone: "+251911111111",
+        landmark: "Near the mall",
+        customer_notes: "Call before delivery",
+      },
+    });
+    assert.deepEqual(JSON.parse(await shippingMethodRequest.text()), {
+      option_id: "so_1",
+      data: {
+        delivery_choice: "delivery",
+        landmark: "Near the mall",
+        customer_notes: "Call before delivery",
+      },
+    });
+    assert.deepEqual(JSON.parse(await paymentCollectionRequest.text()), {
+      cart_id: "cart_1",
+    });
+    assert.deepEqual(JSON.parse(await paymentSessionRequest.text()), {
+      provider_id: "pp_system_default",
+      data: {
+        payment_method: "cod",
+      },
+    });
+  });
+
+  it("does not complete COD checkout when tenant delivery is disabled", async () => {
+    let fetchCalls = 0;
+    const app = appWithResolution(
+      {
+        ok: true,
+        context: resolvedTenantContext,
+      },
+      {
+        getDeliverySettings: async (input) => ({
+          ok: true,
+          delivery: {
+            tenantId: input.tenantId,
+            deliveryEnabled: false,
+            pickupEnabled: true,
+            phoneConfirmationRequired: true,
+            notesEnabled: true,
+            landmarkRequired: false,
+            defaultDeliveryFee: "50.00",
+            currency: "ETB",
+            zones: [],
+            updatedAt: "2026-06-02T10:00:00.000Z",
+          },
+        }),
+        medusaStoreFetch: async () => {
+          fetchCalls += 1;
+          return Response.json({});
+        },
+      },
+    );
+
+    const response = await app.request("/store/checkout/cod", {
+      body: JSON.stringify({
+        cartId: "cart_1",
+        shippingOptionId: "so_1",
+        deliveryChoice: "delivery",
+        customer: {
+          name: "Abebe Kebede",
+          phone: "+251911111111",
+        },
+        address: {
+          address1: "Bole Road",
+          city: "Addis Ababa",
+        },
+      }),
+      headers: {
+        "content-type": "application/json",
+        Host: "abebe.lvh.me",
+      },
+      method: "POST",
+    });
+
+    assert.equal(response.status, 409);
+    assert.deepEqual(await response.json(), {
+      error: "delivery_unavailable",
+    });
+    assert.equal(fetchCalls, 0);
+  });
+
   it("forwards payment session initialization to Medusa", async () => {
     let forwardedRequest: Request | undefined;
     const medusaStoreFetch: typeof fetch = async (request) => {

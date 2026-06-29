@@ -1,6 +1,7 @@
 import type { Hono } from "hono";
 
 import type { PlatformAppOptions, PlatformAppVariables } from "../app.js";
+import { completeCodCheckout } from "./cod-checkout.js";
 import {
   getForwardHeaders,
   getForwardUrl,
@@ -150,6 +151,32 @@ export function registerStoreFacadeRoutes(
 
     if (!result.context.medusaPublishableKeyId) {
       return context.json({ error: "domain_misconfigured" }, 409);
+    }
+
+    if (
+      context.req.raw.method === "POST" &&
+      new URL(context.req.raw.url).pathname === "/store/checkout/cod"
+    ) {
+      if (!result.context.medusaRegionId) {
+        return context.json({ error: "commerce_region_unavailable" }, 409);
+      }
+
+      if (!options.getDeliverySettings) {
+        return context.json({ error: "delivery_settings_unavailable" }, 503);
+      }
+
+      try {
+        return await completeCodCheckout({
+          delivery: options.getDeliverySettings,
+          medusaInternalUrl: options.medusaInternalUrl,
+          medusaPublishableKeyId: result.context.medusaPublishableKeyId,
+          medusaStoreFetch,
+          request: context.req.raw,
+          tenantId: result.context.tenantId,
+        });
+      } catch {
+        return context.json({ error: "commerce_backend_unavailable" }, 503);
+      }
     }
 
     if (!isAllowedStoreFacadeRoute(context.req.raw)) {
