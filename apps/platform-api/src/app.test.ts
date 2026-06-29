@@ -8,6 +8,8 @@ import type {
   MerchantOrdersResult,
   MerchantProductsResult,
   MerchantProductWriteResult,
+  NotificationEventRecordResult,
+  NotificationEventType,
   PaymentOnboardingListResult,
   PaymentOnboardingReviewResult,
   PaymentOnboardingSubmitResult,
@@ -158,6 +160,11 @@ function appWithResolution(
     }) => Promise<MerchantOrdersResult>;
     listStorefrontTemplates?: () => Promise<StorefrontTemplateCatalogItem[]>;
     medusaStoreFetch?: typeof fetch;
+    recordNotificationEvent?: (input: {
+      eventType: NotificationEventType;
+      payload?: unknown;
+      tenantId: string;
+    }) => Promise<NotificationEventRecordResult>;
     setTenantPrimaryDomain?: (input: {
       domainId: string;
       tenantId: string;
@@ -215,6 +222,7 @@ function appWithResolution(
     updateBillingInvoiceStatus: options?.updateBillingInvoiceStatus,
     updateDeliverySettings: options?.updateDeliverySettings,
     publishStorefrontDraft: options?.publishStorefrontDraft,
+    recordNotificationEvent: options?.recordNotificationEvent,
     updateTenantStatus: options?.updateTenantStatus,
     updateStorefrontDraft: options?.updateStorefrontDraft,
     resolveTenantForHost: async () => result,
@@ -3102,6 +3110,11 @@ describe("platform app", () => {
 
   it("completes a COD checkout through Medusa with tenant delivery metadata", async () => {
     const forwardedRequests: Request[] = [];
+    const notificationEvents: {
+      eventType: NotificationEventType;
+      payload?: unknown;
+      tenantId: string;
+    }[] = [];
     const medusaStoreFetch: typeof fetch = async (request) => {
       const forwardedRequest = request instanceof Request ? request : new Request(request);
       forwardedRequests.push(forwardedRequest.clone());
@@ -3152,6 +3165,14 @@ describe("platform app", () => {
           },
         }),
         medusaStoreFetch,
+        recordNotificationEvent: async (input) => {
+          notificationEvents.push(input);
+
+          return {
+            ok: true,
+            logCount: 1,
+          };
+        },
       },
     );
 
@@ -3243,6 +3264,27 @@ describe("platform app", () => {
         payment_method: "cod",
       },
     });
+    assert.deepEqual(notificationEvents, [
+      {
+        eventType: "cod_order.created",
+        payload: {
+          cartId: "cart_1",
+          deliveryChoice: "delivery",
+          orderId: "order_1",
+        },
+        tenantId: "tenant_1",
+      },
+      {
+        eventType: "order.created",
+        payload: {
+          cartId: "cart_1",
+          deliveryChoice: "delivery",
+          orderId: "order_1",
+          paymentMethod: "cod",
+        },
+        tenantId: "tenant_1",
+      },
+    ]);
   });
 
   it("does not complete COD checkout when tenant delivery is disabled", async () => {

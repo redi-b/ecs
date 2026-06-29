@@ -12,6 +12,7 @@ import { createMedusaProductService } from "./commerce/product-service.js";
 import { getSystemHosts } from "./config/hosts.js";
 import { createDeliverySettingsService } from "./delivery/delivery-service.js";
 import { createDomainManagementService } from "./domains/domain-service.js";
+import { createNotificationService } from "./notifications/notification-service.js";
 import { createTenantOnboardingService } from "./onboarding/onboarding-service.js";
 import { createPaymentOnboardingService } from "./payments/payment-onboarding-service.js";
 import { createMedusaCommerceProvisioningClient } from "./provisioning/medusa-commerce-provisioning.js";
@@ -45,6 +46,7 @@ const findDomainByHostname = createDomainTenantLookup(platformDb.db);
 const billingService = createBillingService(platformDb.db);
 const deliverySettingsService = createDeliverySettingsService(platformDb.db);
 const domainManagementService = createDomainManagementService(platformDb.db);
+const notificationService = createNotificationService(platformDb.db);
 const authorizeDashboardForTenant = createDashboardAuthorizationLookup(platformDb.db);
 const storefrontTemplateService = createStorefrontTemplateService(platformDb.db);
 const supportService = createSupportService(platformDb.db);
@@ -102,6 +104,7 @@ const app = createPlatformApp({
   listTenantDomains: domainManagementService.listTenantDomains,
   listStorefrontTemplates: storefrontTemplateService.listStorefrontTemplates,
   publishStorefrontDraft: storefrontTemplateService.publishStorefrontDraft,
+  recordNotificationEvent: notificationService.recordNotificationEvent,
   reviewPaymentOnboarding: paymentOnboardingService.reviewPaymentOnboarding,
   selectStorefrontTemplate: storefrontTemplateService.selectStorefrontTemplate,
   setTenantPrimaryDomain: domainManagementService.setTenantPrimaryDomain,

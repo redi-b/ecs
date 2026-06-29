@@ -124,6 +124,16 @@ function getPaymentCollectionId(data: unknown) {
   return getStringValue(paymentCollection?.id);
 }
 
+function getCompletedOrderId(data: unknown) {
+  const body = getObjectValue(data);
+
+  if (body?.type !== "order") {
+    return undefined;
+  }
+
+  return getStringValue(getObjectValue(body.order)?.id);
+}
+
 function getMedusaPassthroughResponse(response: Response) {
   return new Response(response.body, {
     headers: response.headers,
@@ -137,6 +147,7 @@ export async function completeCodCheckout(options: {
   medusaInternalUrl: string;
   medusaPublishableKeyId: string;
   medusaStoreFetch: typeof fetch;
+  recordNotificationEvent?: PlatformAppOptions["recordNotificationEvent"];
   request: Request;
   tenantId: string;
 }) {
@@ -272,5 +283,44 @@ export async function completeCodCheckout(options: {
     }),
   );
 
-  return getMedusaPassthroughResponse(completeCartResponse);
+  if (!completeCartResponse.ok) {
+    return getMedusaPassthroughResponse(completeCartResponse);
+  }
+
+  const completeCartBody = await getJsonResponseBody(completeCartResponse);
+  const orderId = getCompletedOrderId(completeCartBody);
+
+  if (orderId && options.recordNotificationEvent) {
+    try {
+      await Promise.all([
+        options.recordNotificationEvent({
+          eventType: "cod_order.created",
+          payload: {
+            cartId: input.cartId,
+            deliveryChoice: input.deliveryChoice,
+            orderId,
+          },
+          tenantId: options.tenantId,
+        }),
+        options.recordNotificationEvent({
+          eventType: "order.created",
+          payload: {
+            cartId: input.cartId,
+            deliveryChoice: input.deliveryChoice,
+            orderId,
+            paymentMethod: "cod",
+          },
+          tenantId: options.tenantId,
+        }),
+      ]);
+    } catch {
+      // Notification logging must not fail a completed checkout.
+    }
+  }
+
+  return Response.json(completeCartBody, {
+    headers: completeCartResponse.headers,
+    status: completeCartResponse.status,
+    statusText: completeCartResponse.statusText,
+  });
 }

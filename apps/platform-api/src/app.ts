@@ -80,6 +80,20 @@ export type DeliverySettingsResult = {
 
 export type DeliverySettingsUpdateResult = DeliverySettingsResult;
 
+export type NotificationEventType =
+  | "cod_order.created"
+  | "order.created"
+  | "order.cancelled"
+  | "payment.paid"
+  | "payment.failed"
+  | "shop.published"
+  | "shop.suspended";
+
+export type NotificationEventRecordResult = {
+  ok: true;
+  logCount: number;
+};
+
 export type BillingInvoiceUpdateResult =
   | {
       ok: true;
@@ -555,6 +569,13 @@ export type PlatformAppOptions = {
         offset: number;
         salesChannelId: string;
       }) => Promise<MerchantOrdersResult>)
+    | undefined;
+  recordNotificationEvent?:
+    | ((input: {
+        eventType: NotificationEventType;
+        payload?: unknown;
+        tenantId: string;
+      }) => Promise<NotificationEventRecordResult>)
     | undefined;
   selectStorefrontTemplate?:
     | ((input: {
