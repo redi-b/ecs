@@ -76,7 +76,7 @@ export const provisionTenantCommerceResourcesWorkflow = createWorkflow(
           name: `${data.input.name} Region`,
           currency_code: "etb",
           countries: ["et"],
-          payment_providers: ["pp_system"],
+          payment_providers: ["pp_system", "pp_chapa_chapa"],
           metadata: {
             platform_tenant_id: data.input.platformTenantId,
             platform_handle: data.input.handle,
