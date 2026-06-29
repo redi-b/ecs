@@ -107,6 +107,14 @@ function getTxRef(data: unknown) {
   return getString(paymentData.tx_ref);
 }
 
+function getCallbackUrl(data: unknown, fallback: string | undefined) {
+  return getString(getRecord(data).callback_url) ?? fallback;
+}
+
+function getReturnUrl(data: unknown, fallback: string | undefined) {
+  return getString(getRecord(data).return_url) ?? fallback;
+}
+
 function mapChapaStatus(status: string | undefined): PaymentSessionStatus {
   switch (status?.toLowerCase()) {
     case "success":
@@ -173,8 +181,8 @@ class ChapaPaymentProviderService extends AbstractPaymentProvider<ChapaPaymentOp
         last_name: customer.lastName,
         phone_number: customer.phone,
         tx_ref: txRef,
-        callback_url: this.options_.callbackUrl,
-        return_url: this.options_.returnUrl,
+        callback_url: getCallbackUrl(paymentData, this.options_.callbackUrl),
+        return_url: getReturnUrl(paymentData, this.options_.returnUrl),
         customization: {
           title: this.options_.customizationTitle ?? "ECS Store",
           description: this.options_.customizationDescription ?? "Order payment",

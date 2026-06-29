@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 import type {
   BillingInvoiceUpdateResult,
   BillingStatusResult,
+  ChapaPaymentCallbackResult,
   DeliverySettingsResult,
   DeliverySettingsUpdateResult,
   MerchantOrdersResult,
@@ -72,6 +73,12 @@ function appWithResolution(
       publishedRevisionId: string;
       tenantId: string;
     }) => Promise<PublishedStorefrontConfigResult>;
+    handleChapaPaymentCallback?: (input: {
+      providerReference?: string | null | undefined;
+      reportedStatus?: string | null | undefined;
+      tenantId?: string | null | undefined;
+      txRef?: string | null | undefined;
+    }) => Promise<ChapaPaymentCallbackResult>;
     getSession?: (headers: Headers) => Promise<PlatformSession | null>;
     createMerchantProduct?: (input: {
       handle?: string | null | undefined;
@@ -214,6 +221,7 @@ function appWithResolution(
     createTenantShop: options?.createTenantShop,
     getBillingStatus: options?.getBillingStatus,
     getDeliverySettings: options?.getDeliverySettings,
+    handleChapaPaymentCallback: options?.handleChapaPaymentCallback,
     getPublishedStorefrontConfig: options?.getPublishedStorefrontConfig,
     getStorefrontDraft: options?.getStorefrontDraft,
     getOperatorSupportHistory: options?.getOperatorSupportHistory,
@@ -271,6 +279,75 @@ describe("platform app", () => {
     assert.deepEqual(await response.json(), {
       error: "auth_required",
       requestId: "req_test_1",
+    });
+  });
+
+  it("handles Chapa payment callbacks with verified payment state", async () => {
+    let callbackInput:
+      | {
+          providerReference?: string | null | undefined;
+          reportedStatus?: string | null | undefined;
+          tenantId?: string | null | undefined;
+          txRef?: string | null | undefined;
+        }
+      | undefined;
+    const app = appWithResolution(
+      { ok: false, error: "shop_context_required" },
+      {
+        handleChapaPaymentCallback: async (input) => {
+          callbackInput = input;
+
+          return {
+            ok: true,
+            eventType: "payment.paid",
+            providerReference: "chapa_ref_1",
+            status: "success",
+            tenantId: "tenant_1",
+            txRef: "tx_1",
+          };
+        },
+      },
+    );
+
+    const response = await app.request(
+      "/platform/payments/chapa/callback?trx_ref=tx_1&ref_id=chapa_ref_1&status=success&tenant_id=tenant_1",
+    );
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(callbackInput, {
+      providerReference: "chapa_ref_1",
+      reportedStatus: "success",
+      tenantId: "tenant_1",
+      txRef: "tx_1",
+    });
+    assert.deepEqual(await response.json(), {
+      payment: {
+        eventType: "payment.paid",
+        providerReference: "chapa_ref_1",
+        status: "success",
+        tenantId: "tenant_1",
+        txRef: "tx_1",
+      },
+    });
+  });
+
+  it("rejects Chapa callbacks without tenant context", async () => {
+    const app = appWithResolution(
+      { ok: false, error: "shop_context_required" },
+      {
+        handleChapaPaymentCallback: async () => ({
+          ok: false,
+          error: "missing_tenant_context",
+          status: 400,
+        }),
+      },
+    );
+
+    const response = await app.request("/platform/payments/chapa/callback?trx_ref=tx_1");
+
+    assert.equal(response.status, 400);
+    assert.deepEqual(await response.json(), {
+      error: "missing_tenant_context",
     });
   });
 

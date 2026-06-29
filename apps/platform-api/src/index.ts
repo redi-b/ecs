@@ -14,6 +14,7 @@ import { createDeliverySettingsService } from "./delivery/delivery-service.js";
 import { createDomainManagementService } from "./domains/domain-service.js";
 import { createNotificationService } from "./notifications/notification-service.js";
 import { createTenantOnboardingService } from "./onboarding/onboarding-service.js";
+import { createChapaPaymentService } from "./payments/chapa-payment-service.js";
 import { createPaymentOnboardingService } from "./payments/payment-onboarding-service.js";
 import { createMedusaCommerceProvisioningClient } from "./provisioning/medusa-commerce-provisioning.js";
 import { createTenantShopProvisioningService } from "./provisioning/tenant-shop-provisioning.js";
@@ -53,6 +54,11 @@ const supportService = createSupportService(platformDb.db);
 const tenantOnboardingService = createTenantOnboardingService(platformDb.db);
 const tenantStatusService = createTenantStatusService(platformDb.db);
 const paymentOnboardingService = createPaymentOnboardingService(platformDb.db);
+const chapaPaymentService = createChapaPaymentService({
+  apiUrl: process.env.CHAPA_API_URL,
+  recordNotificationEvent: notificationService.recordNotificationEvent,
+  secretKey: process.env.CHAPA_SECRET_KEY,
+});
 const medusaInternalUrl = process.env.MEDUSA_INTERNAL_URL ?? "http://localhost:9000";
 const platformBaseDomain = process.env.STOREFRONT_PUBLIC_BASE_DOMAIN ?? "lvh.me";
 const provisionCommerceResources = createMedusaCommerceProvisioningClient({
@@ -93,6 +99,7 @@ const app = createPlatformApp({
   createTenantShop,
   getBillingStatus: billingService.getBillingStatus,
   getDeliverySettings: deliverySettingsService.getDeliverySettings,
+  handleChapaPaymentCallback: chapaPaymentService.handleChapaPaymentCallback,
   getOperatorSupportHistory: supportService.getOperatorSupportHistory,
   getPublishedStorefrontConfig: storefrontTemplateService.getPublishedStorefrontConfig,
   getStorefrontDraft: storefrontTemplateService.getStorefrontDraft,

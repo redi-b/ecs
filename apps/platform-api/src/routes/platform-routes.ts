@@ -12,6 +12,32 @@ import {
   templateSelectionErrorStatus,
 } from "./shared.js";
 
+function getRequestValue(body: unknown, url: URL, ...keys: string[]) {
+  for (const key of keys) {
+    const value = url.searchParams.get(key);
+
+    if (value) {
+      return value;
+    }
+  }
+
+  if (typeof body !== "object" || body === null) {
+    return undefined;
+  }
+
+  const record = body as Record<string, unknown>;
+
+  for (const key of keys) {
+    const value = record[key];
+
+    if (typeof value === "string" && value.trim()) {
+      return value;
+    }
+  }
+
+  return undefined;
+}
+
 export function registerPlatformRoutes(
   app: Hono<{ Variables: PlatformAppVariables }>,
   options: PlatformAppOptions,
@@ -35,6 +61,35 @@ export function registerPlatformRoutes(
       service: options.serviceName,
     }),
   );
+
+  app.on(["GET", "POST"], "/platform/payments/chapa/callback", async (context) => {
+    if (!options.handleChapaPaymentCallback) {
+      return context.json({ error: "payments_unavailable" }, 503);
+    }
+
+    const url = new URL(context.req.raw.url);
+    const body = context.req.raw.method === "POST" ? await getJsonBody(context.req.raw) : undefined;
+    const result = await options.handleChapaPaymentCallback({
+      providerReference: getRequestValue(body, url, "ref_id", "reference"),
+      reportedStatus: getRequestValue(body, url, "status"),
+      tenantId: getRequestValue(body, url, "tenant_id", "tenantId"),
+      txRef: getRequestValue(body, url, "trx_ref", "tx_ref", "txRef"),
+    });
+
+    if (!result.ok) {
+      return context.json({ error: result.error }, result.status);
+    }
+
+    return context.json({
+      payment: {
+        eventType: result.eventType,
+        providerReference: result.providerReference,
+        status: result.status,
+        tenantId: result.tenantId,
+        txRef: result.txRef,
+      },
+    });
+  });
 
   app.get("/platform/me", async (context) => {
     const session = await options.getSession?.(context.req.raw.headers);

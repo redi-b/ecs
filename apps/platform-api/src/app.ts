@@ -132,6 +132,25 @@ export type NotificationEventRecordResult = {
   logCount: number;
 };
 
+export type ChapaPaymentCallbackResult =
+  | {
+      ok: true;
+      eventType: "payment.failed" | "payment.paid";
+      providerReference: string | null;
+      status: string;
+      tenantId: string;
+      txRef: string;
+    }
+  | {
+      ok: false;
+      error:
+        | "chapa_payment_not_found"
+        | "chapa_verification_failed"
+        | "missing_tenant_context"
+        | "missing_tx_ref";
+      status: 400 | 404 | 502;
+    };
+
 export type BillingInvoiceUpdateResult =
   | {
       ok: true;
@@ -468,6 +487,14 @@ export type PlatformAppOptions = {
     | undefined;
   authHandler?: ((request: Request) => Promise<Response>) | undefined;
   getSession?: ((headers: Headers) => Promise<PlatformSession | null>) | undefined;
+  handleChapaPaymentCallback?:
+    | ((input: {
+        providerReference?: string | null | undefined;
+        reportedStatus?: string | null | undefined;
+        tenantId?: string | null | undefined;
+        txRef?: string | null | undefined;
+      }) => Promise<ChapaPaymentCallbackResult>)
+    | undefined;
   getPublishedStorefrontConfig?:
     | ((input: {
         publishedRevisionId: string;
