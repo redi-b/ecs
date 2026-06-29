@@ -60,6 +60,8 @@ const chapaPaymentService = createChapaPaymentService({
   secretKey: process.env.CHAPA_SECRET_KEY,
 });
 const medusaInternalUrl = process.env.MEDUSA_INTERNAL_URL ?? "http://localhost:9000";
+const platformPublicBaseUrl =
+  process.env.PLATFORM_PUBLIC_BASE_URL ?? process.env.BETTER_AUTH_URL ?? "http://api.lvh.me";
 const platformBaseDomain = process.env.STOREFRONT_PUBLIC_BASE_DOMAIN ?? "lvh.me";
 const provisionCommerceResources = createMedusaCommerceProvisioningClient({
   internalApiToken: process.env.PLATFORM_INTERNAL_API_TOKEN,
@@ -125,6 +127,7 @@ const app = createPlatformApp({
   updateTenantStatus: tenantStatusService.updateTenantStatus,
   serviceName: env.SERVICE_NAME,
   medusaInternalUrl,
+  platformPublicBaseUrl,
   resolveTenantForHost: (host) =>
     resolveTenantFromHost({
       host,

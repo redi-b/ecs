@@ -1,6 +1,7 @@
 import type { Hono } from "hono";
 
 import type { PlatformAppOptions, PlatformAppVariables } from "../app.js";
+import { initializeChapaCheckout } from "./chapa-checkout.js";
 import { completeCodCheckout } from "./cod-checkout.js";
 import {
   getForwardHeaders,
@@ -172,6 +173,28 @@ export function registerStoreFacadeRoutes(
           medusaPublishableKeyId: result.context.medusaPublishableKeyId,
           medusaStoreFetch,
           recordNotificationEvent: options.recordNotificationEvent,
+          request: context.req.raw,
+          tenantId: result.context.tenantId,
+        });
+      } catch {
+        return context.json({ error: "commerce_backend_unavailable" }, 503);
+      }
+    }
+
+    if (
+      context.req.raw.method === "POST" &&
+      new URL(context.req.raw.url).pathname === "/store/checkout/chapa"
+    ) {
+      if (!result.context.medusaRegionId) {
+        return context.json({ error: "commerce_region_unavailable" }, 409);
+      }
+
+      try {
+        return await initializeChapaCheckout({
+          medusaInternalUrl: options.medusaInternalUrl,
+          medusaPublishableKeyId: result.context.medusaPublishableKeyId,
+          medusaStoreFetch,
+          platformPublicBaseUrl: options.platformPublicBaseUrl,
           request: context.req.raw,
           tenantId: result.context.tenantId,
         });

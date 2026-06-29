@@ -674,6 +674,7 @@ export type PlatformAppOptions = {
     | undefined;
   serviceName: string;
   medusaInternalUrl: string;
+  platformPublicBaseUrl: string;
   medusaStoreFetch?: typeof fetch;
   resolveTenantForHost: (host?: string) => Promise<TenantResolutionResult>;
 };
