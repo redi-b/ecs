@@ -2,6 +2,22 @@ import { defineConfig, loadEnv } from "@medusajs/framework/utils";
 
 loadEnv(process.env.NODE_ENV || "development", process.cwd());
 
+const paymentProviders = [
+  {
+    resolve: "./src/modules/chapa-payment",
+    id: "chapa",
+    options: {
+      apiUrl: process.env.CHAPA_API_URL,
+      callbackUrl: process.env.CHAPA_CALLBACK_URL,
+      customizationDescription: process.env.CHAPA_CUSTOMIZATION_DESCRIPTION,
+      customizationTitle: process.env.CHAPA_CUSTOMIZATION_TITLE,
+      fallbackEmail: process.env.CHAPA_FALLBACK_EMAIL,
+      returnUrl: process.env.CHAPA_RETURN_URL,
+      secretKey: process.env.CHAPA_SECRET_KEY,
+    },
+  },
+];
+
 module.exports = defineConfig({
   admin: {
     disable: process.env.DISABLE_MEDUSA_ADMIN === "true",
@@ -20,4 +36,12 @@ module.exports = defineConfig({
       cookieSecret: process.env.COOKIE_SECRET || "development-cookie-secret",
     },
   },
+  modules: [
+    {
+      resolve: "@medusajs/medusa/payment",
+      options: {
+        providers: paymentProviders,
+      },
+    },
+  ],
 });
