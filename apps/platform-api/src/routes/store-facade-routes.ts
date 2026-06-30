@@ -232,6 +232,7 @@ export function registerStoreFacadeRoutes(
           medusaInternalUrl: options.medusaInternalUrl,
           medusaPublishableKeyId: result.context.medusaPublishableKeyId,
           medusaStoreFetch,
+          recordAnalyticsEvent: options.recordAnalyticsEvent,
           recordNotificationEvent: options.recordNotificationEvent,
           request: context.req.raw,
           tenantId: result.context.tenantId,

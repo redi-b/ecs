@@ -3446,6 +3446,15 @@ describe("platform app", () => {
       payload?: unknown;
       tenantId: string;
     }[] = [];
+    const analyticsEvents: {
+      eventType: string;
+      idempotencyKey?: string | null | undefined;
+      properties?: unknown;
+      source: "medusa" | "platform" | "storefront";
+      subjectId?: string | null | undefined;
+      subjectType?: string | null | undefined;
+      tenantId: string;
+    }[] = [];
     const medusaStoreFetch: typeof fetch = async (request) => {
       const forwardedRequest = request instanceof Request ? request : new Request(request);
       forwardedRequests.push(forwardedRequest.clone());
@@ -3502,6 +3511,21 @@ describe("platform app", () => {
           return {
             ok: true,
             logCount: 1,
+          };
+        },
+        recordAnalyticsEvent: async (input) => {
+          analyticsEvents.push(input);
+
+          return {
+            ok: true,
+            duplicate: false,
+            event: {
+              id: "event_1",
+              eventType: input.eventType,
+              occurredAt: "2026-01-01T12:00:00.000Z",
+              receivedAt: "2026-01-01T12:00:01.000Z",
+              source: input.source,
+            },
           };
         },
       },
@@ -3613,6 +3637,22 @@ describe("platform app", () => {
           orderId: "order_1",
           paymentMethod: "cod",
         },
+        tenantId: "tenant_1",
+      },
+    ]);
+    assert.deepEqual(analyticsEvents, [
+      {
+        eventType: "order.created",
+        idempotencyKey: "cod:cart_1:order.created",
+        properties: {
+          cartId: "cart_1",
+          deliveryChoice: "delivery",
+          orderId: "order_1",
+          paymentMethod: "cod",
+        },
+        source: "platform",
+        subjectId: "order_1",
+        subjectType: "order",
         tenantId: "tenant_1",
       },
     ]);

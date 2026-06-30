@@ -147,6 +147,7 @@ export async function completeCodCheckout(options: {
   medusaInternalUrl: string;
   medusaPublishableKeyId: string;
   medusaStoreFetch: typeof fetch;
+  recordAnalyticsEvent?: PlatformAppOptions["recordAnalyticsEvent"];
   recordNotificationEvent?: PlatformAppOptions["recordNotificationEvent"];
   request: Request;
   tenantId: string;
@@ -289,6 +290,27 @@ export async function completeCodCheckout(options: {
 
   const completeCartBody = await getJsonResponseBody(completeCartResponse);
   const orderId = getCompletedOrderId(completeCartBody);
+
+  if (orderId && options.recordAnalyticsEvent) {
+    try {
+      await options.recordAnalyticsEvent({
+        eventType: "order.created",
+        idempotencyKey: `cod:${input.cartId}:order.created`,
+        properties: {
+          cartId: input.cartId,
+          deliveryChoice: input.deliveryChoice,
+          orderId,
+          paymentMethod: "cod",
+        },
+        source: "platform",
+        subjectId: orderId,
+        subjectType: "order",
+        tenantId: options.tenantId,
+      });
+    } catch {
+      // Analytics logging must not fail a completed checkout.
+    }
+  }
 
   if (orderId && options.recordNotificationEvent) {
     try {
