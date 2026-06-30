@@ -8,6 +8,7 @@ import {
   storefrontTemplateVersions,
   tenantMemberships,
   tenantOnboarding,
+  tenantProvisioningAttempts,
   tenants,
 } from "@ecs/db";
 import { and, asc, desc, eq } from "drizzle-orm";
@@ -86,6 +87,15 @@ type TenantShopProvisionerOptions = {
     subjectType?: string | null | undefined;
     tenantId: string;
   }) => Promise<{ ok: boolean }>;
+  recordProvisioningAttempt?: (input: {
+    error?: string | null | undefined;
+    handle: string;
+    ownerUserId: string;
+    platformTenantId: string;
+    status: string;
+    step: string;
+    tenantId?: string | null | undefined;
+  }) => Promise<void>;
 };
 
 type TenantShopProvisioningOptions = {
@@ -95,6 +105,7 @@ type TenantShopProvisioningOptions = {
     input: CommerceProvisioningInput,
   ) => Promise<CommerceProvisioningResult>;
   recordAnalyticsEvent?: TenantShopProvisionerOptions["recordAnalyticsEvent"];
+  recordProvisioningAttempt?: TenantShopProvisionerOptions["recordProvisioningAttempt"];
 };
 
 const handlePattern = /^[a-z0-9](?:[a-z0-9-]{1,61}[a-z0-9])?$/;
@@ -117,6 +128,25 @@ function requireRow<T>(value: T | undefined, message: string): T {
   }
 
   return value;
+}
+
+async function recordProvisioningAttempt(
+  recorder: TenantShopProvisionerOptions["recordProvisioningAttempt"],
+  input: {
+    error?: string | null | undefined;
+    handle: string;
+    ownerUserId: string;
+    platformTenantId: string;
+    status: string;
+    step: string;
+    tenantId?: string | null | undefined;
+  },
+) {
+  try {
+    await recorder?.(input);
+  } catch {
+    // Provisioning attempt logging must not fail tenant provisioning.
+  }
 }
 
 export function buildInitialTenantOnboardingState() {
@@ -199,6 +229,16 @@ export function createTenantShopProvisioner(options: TenantShopProvisionerOption
     });
 
     if (!commerceResources.ok) {
+      await recordProvisioningAttempt(options.recordProvisioningAttempt, {
+        error: commerceResources.error,
+        handle,
+        ownerUserId: input.ownerUserId,
+        platformTenantId: tenantId,
+        status: "failed",
+        step: "commerce_resources",
+        tenantId: null,
+      });
+
       return {
         ok: false,
         error: commerceResources.error,
@@ -209,6 +249,16 @@ export function createTenantShopProvisioner(options: TenantShopProvisionerOption
     const activeTemplate = await options.findActiveStorefrontTemplate();
 
     if (!activeTemplate) {
+      await recordProvisioningAttempt(options.recordProvisioningAttempt, {
+        error: "storefront_template_unavailable",
+        handle,
+        ownerUserId: input.ownerUserId,
+        platformTenantId: tenantId,
+        status: "failed",
+        step: "storefront_template",
+        tenantId: null,
+      });
+
       return {
         ok: false,
         error: "storefront_template_unavailable",
@@ -224,6 +274,15 @@ export function createTenantShopProvisioner(options: TenantShopProvisionerOption
       name,
       ownerUserId: input.ownerUserId,
       tenantId,
+    });
+
+    await recordProvisioningAttempt(options.recordProvisioningAttempt, {
+      handle,
+      ownerUserId: input.ownerUserId,
+      platformTenantId: tenantId,
+      status: "completed",
+      step: "tenant_shop",
+      tenantId: tenant.id,
     });
 
     try {
@@ -446,10 +505,26 @@ export function createTenantShopProvisioningService(options: TenantShopProvision
     },
     platformBaseDomain: options.platformBaseDomain,
     provisionCommerceResources: options.provisionCommerceResources,
+    recordProvisioningAttempt: async (input) => {
+      await options.db.insert(tenantProvisioningAttempts).values({
+        tenantId: input.tenantId ?? null,
+        platformTenantId: input.platformTenantId,
+        handle: input.handle,
+        ownerUserId: input.ownerUserId,
+        step: input.step,
+        status: input.status,
+        error: input.error ?? null,
+        completedAt: new Date(),
+      });
+    },
   };
 
   if (options.recordAnalyticsEvent) {
     provisionerOptions.recordAnalyticsEvent = options.recordAnalyticsEvent;
+  }
+
+  if (options.recordProvisioningAttempt) {
+    provisionerOptions.recordProvisioningAttempt = options.recordProvisioningAttempt;
   }
 
   return createTenantShopProvisioner(provisionerOptions);

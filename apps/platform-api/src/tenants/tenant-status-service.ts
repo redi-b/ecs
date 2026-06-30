@@ -1,8 +1,15 @@
 import type { createPlatformDb } from "@ecs/db";
-import { auditLogs, domains, storefrontConfigs, tenants } from "@ecs/db";
-import { eq } from "drizzle-orm";
+import {
+  auditLogs,
+  domains,
+  storefrontConfigs,
+  tenantProvisioningAttempts,
+  tenants,
+} from "@ecs/db";
+import { desc, eq } from "drizzle-orm";
 
 import type {
+  TenantProvisioningAttemptSummary,
   TenantReadiness,
   TenantReadinessMissingReason,
   TenantReadinessResult,
@@ -43,6 +50,7 @@ type TenantReadinessRow = {
   medusaShippingOptionId: string | null;
   draftTemplateId: string | null;
   publishedRevisionId: string | null;
+  latestProvisioningAttempt?: TenantProvisioningAttemptSummary | null | undefined;
 };
 
 export function buildTenantReadiness(row: TenantReadinessRow): TenantReadiness {
@@ -73,7 +81,20 @@ export function buildTenantReadiness(row: TenantReadinessRow): TenantReadiness {
   appendMissing(storefrontMissing, !row.draftTemplateId, "storefront_draft_missing");
   appendMissing(storefrontMissing, !row.publishedRevisionId, "storefront_unpublished");
 
-  const missing = [...tenantMissing, ...domainMissing, ...commerceMissing, ...storefrontMissing];
+  const provisioningMissing: TenantReadinessMissingReason[] = [];
+  appendMissing(
+    provisioningMissing,
+    row.latestProvisioningAttempt?.status === "failed",
+    "provisioning_failed",
+  );
+
+  const missing = [
+    ...tenantMissing,
+    ...domainMissing,
+    ...commerceMissing,
+    ...storefrontMissing,
+    ...provisioningMissing,
+  ];
 
   return {
     ready: missing.length === 0,
@@ -111,6 +132,11 @@ export function buildTenantReadiness(row: TenantReadinessRow): TenantReadiness {
         missing: storefrontMissing,
         hasDraft: Boolean(row.draftTemplateId),
         isPublished: Boolean(row.publishedRevisionId),
+      },
+      provisioning: {
+        ready: provisioningMissing.length === 0,
+        missing: provisioningMissing,
+        latestAttempt: row.latestProvisioningAttempt ?? null,
       },
     },
   };
@@ -150,9 +176,30 @@ export function createTenantStatusService(db: PlatformDb) {
         };
       }
 
+      const [latestAttempt] = await db
+        .select({
+          id: tenantProvisioningAttempts.id,
+          completedAt: tenantProvisioningAttempts.completedAt,
+          error: tenantProvisioningAttempts.error,
+          status: tenantProvisioningAttempts.status,
+          step: tenantProvisioningAttempts.step,
+        })
+        .from(tenantProvisioningAttempts)
+        .where(eq(tenantProvisioningAttempts.tenantId, input.tenantId))
+        .orderBy(desc(tenantProvisioningAttempts.createdAt))
+        .limit(1);
+
       return {
         ok: true,
-        readiness: buildTenantReadiness(row),
+        readiness: buildTenantReadiness({
+          ...row,
+          latestProvisioningAttempt: latestAttempt
+            ? {
+                ...latestAttempt,
+                completedAt: latestAttempt.completedAt?.toISOString() ?? null,
+              }
+            : null,
+        }),
       };
     },
     updateTenantStatus: async (input: {

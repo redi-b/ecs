@@ -16,6 +16,7 @@ export const tenantReadinessMissingReasonSchema = z.enum([
   "commerce_shipping_option_missing",
   "storefront_draft_missing",
   "storefront_unpublished",
+  "provisioning_failed",
 ]);
 
 export type TenantReadinessMissingReason = z.infer<typeof tenantReadinessMissingReasonSchema>;
@@ -162,6 +163,19 @@ export const tenantReadinessSchema = z.object({
         missing: z.array(tenantReadinessMissingReasonSchema),
         hasDraft: z.boolean(),
         isPublished: z.boolean(),
+      }),
+      provisioning: z.object({
+        ready: z.boolean(),
+        missing: z.array(tenantReadinessMissingReasonSchema),
+        latestAttempt: z
+          .object({
+            id: z.string().min(1),
+            completedAt: z.string().min(1).nullable(),
+            error: z.string().min(1).nullable(),
+            status: z.string().min(1),
+            step: z.string().min(1),
+          })
+          .nullable(),
       }),
     }),
   }),

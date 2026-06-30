@@ -179,4 +179,58 @@ describe("createTenantShopProvisioner", () => {
       },
     ]);
   });
+
+  it("records a failed commerce provisioning attempt", async () => {
+    const attempts: {
+      error?: string | null | undefined;
+      handle: string;
+      ownerUserId: string;
+      platformTenantId: string;
+      status: string;
+      step: string;
+      tenantId?: string | null | undefined;
+    }[] = [];
+    const createTenantShop = createTenantShopProvisioner({
+      createTenantShopRecord: async () => {
+        throw new Error("should not create a tenant when commerce provisioning fails");
+      },
+      findActiveStorefrontTemplate: async () => {
+        throw new Error("should not load a template when commerce provisioning fails");
+      },
+      findExistingTenantByHandle: async () => undefined,
+      isDomainHostnameTaken: async () => false,
+      isHandleReserved: async () => false,
+      platformBaseDomain: "lvh.me",
+      provisionCommerceResources: async () => ({
+        ok: false,
+        error: "commerce_backend_unavailable",
+      }),
+      recordProvisioningAttempt: async (input) => {
+        attempts.push(input);
+      },
+    });
+
+    const result = await createTenantShop({
+      handle: " Failed-Shop ",
+      name: "Failed Shop",
+      ownerUserId: "user_1",
+    });
+
+    assert.deepEqual(result, {
+      ok: false,
+      error: "commerce_backend_unavailable",
+      status: 503,
+    });
+    assert.equal(attempts.length, 1);
+    assert.match(attempts[0]?.platformTenantId ?? "", /^[0-9a-f-]{36}$/);
+    assert.deepEqual(attempts[0], {
+      error: "commerce_backend_unavailable",
+      handle: "failed-shop",
+      ownerUserId: "user_1",
+      platformTenantId: attempts[0]?.platformTenantId,
+      status: "failed",
+      step: "commerce_resources",
+      tenantId: null,
+    });
+  });
 });

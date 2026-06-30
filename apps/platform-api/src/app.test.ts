@@ -2454,6 +2454,11 @@ describe("platform app", () => {
                   hasDraft: true,
                   isPublished: false,
                 },
+                provisioning: {
+                  ready: true,
+                  missing: [],
+                  latestAttempt: null,
+                },
               },
             },
           };
@@ -2512,6 +2517,11 @@ describe("platform app", () => {
             missing: ["storefront_unpublished"],
             hasDraft: true,
             isPublished: false,
+          },
+          provisioning: {
+            ready: true,
+            missing: [],
+            latestAttempt: null,
           },
         },
       },

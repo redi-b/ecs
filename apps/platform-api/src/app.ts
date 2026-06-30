@@ -195,7 +195,16 @@ export type TenantReadinessMissingReason =
   | "commerce_region_missing"
   | "commerce_shipping_option_missing"
   | "storefront_draft_missing"
-  | "storefront_unpublished";
+  | "storefront_unpublished"
+  | "provisioning_failed";
+
+export type TenantProvisioningAttemptSummary = {
+  id: string;
+  completedAt: string | null;
+  error: string | null;
+  status: string;
+  step: string;
+};
 
 export type TenantReadiness = {
   ready: boolean;
@@ -233,6 +242,11 @@ export type TenantReadiness = {
       missing: TenantReadinessMissingReason[];
       hasDraft: boolean;
       isPublished: boolean;
+    };
+    provisioning: {
+      ready: boolean;
+      missing: TenantReadinessMissingReason[];
+      latestAttempt: TenantProvisioningAttemptSummary | null;
     };
   };
 };
