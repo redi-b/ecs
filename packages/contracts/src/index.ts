@@ -70,6 +70,41 @@ export type PlatformTenants = z.infer<typeof platformTenantsSchema>;
 
 export type PlatformTenantDetail = z.infer<typeof platformTenantDetailSchema>;
 
+export const tenantInsightsSummarySchema = z.object({
+  summary: z.object({
+    tenantId: z.string().min(1),
+    range: z.object({
+      days: z.number().int().positive(),
+      from: z.string().min(1),
+      to: z.string().min(1),
+    }),
+    totals: z.object({
+      events: z.number().int().nonnegative(),
+      medusaEvents: z.number().int().nonnegative(),
+      platformEvents: z.number().int().nonnegative(),
+      storefrontEvents: z.number().int().nonnegative(),
+    }),
+    topEvents: z.array(
+      z.object({
+        eventType: z.string().min(1),
+        count: z.number().int().nonnegative(),
+      }),
+    ),
+    recentEvents: z.array(
+      z.object({
+        id: z.string().min(1),
+        eventType: z.string().min(1),
+        occurredAt: z.string().min(1),
+        source: z.enum(["medusa", "platform", "storefront"]),
+        subjectId: z.string().min(1).nullable(),
+        subjectType: z.string().min(1).nullable(),
+      }),
+    ),
+  }),
+});
+
+export type TenantInsightsSummary = z.infer<typeof tenantInsightsSummarySchema>;
+
 export const platformErrorSchema = z.object({
   error: z.string().min(1),
   requestId: z.string().min(1).optional(),

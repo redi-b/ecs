@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 
 import type { createPlatformDb } from "@ecs/db";
 import { analyticsEvents, type analyticsSource } from "@ecs/db";
-import { and, eq } from "drizzle-orm";
+import { and, count, desc, eq, gte, lte } from "drizzle-orm";
 
 type AnalyticsSource = (typeof analyticsSource.enumValues)[number];
 type PlatformDb = ReturnType<typeof createPlatformDb>["db"];
@@ -67,6 +67,58 @@ export type AnalyticsEventStore = {
     tenantId: string;
   }) => Promise<AnalyticsEventStoreRow | null>;
   insertEvent: (input: AnalyticsEventStoreInput) => Promise<AnalyticsEventStoreRow>;
+};
+
+export type TenantInsightsSummaryEvent = {
+  id: string;
+  eventType: string;
+  occurredAt: string;
+  source: AnalyticsSource;
+  subjectId: string | null;
+  subjectType: string | null;
+};
+
+export type TenantInsightsSummaryResult = {
+  ok: true;
+  summary: {
+    tenantId: string;
+    range: {
+      days: number;
+      from: string;
+      to: string;
+    };
+    totals: {
+      events: number;
+      medusaEvents: number;
+      platformEvents: number;
+      storefrontEvents: number;
+    };
+    topEvents: {
+      eventType: string;
+      count: number;
+    }[];
+    recentEvents: TenantInsightsSummaryEvent[];
+  };
+};
+
+export type AnalyticsInsightsStore = {
+  countEventsBySource: (input: {
+    from: Date;
+    tenantId: string;
+    to: Date;
+  }) => Promise<{ count: number; source: AnalyticsSource }[]>;
+  countEventsByType: (input: {
+    from: Date;
+    limit: number;
+    tenantId: string;
+    to: Date;
+  }) => Promise<{ count: number; eventType: string }[]>;
+  listRecentEvents: (input: {
+    from: Date;
+    limit: number;
+    tenantId: string;
+    to: Date;
+  }) => Promise<AnalyticsEventStoreRow[]>;
 };
 
 const allowedSources = new Set<AnalyticsSource>(["medusa", "platform", "storefront"]);
@@ -216,6 +268,70 @@ export function createAnalyticsService(store: AnalyticsEventStore) {
   };
 }
 
+export function createAnalyticsInsightsService(
+  store: AnalyticsInsightsStore,
+  options?: {
+    now?: () => Date;
+  },
+) {
+  const now = options?.now ?? (() => new Date());
+
+  return {
+    getTenantInsightsSummary: async (input: {
+      days: number;
+      tenantId: string;
+    }): Promise<TenantInsightsSummaryResult> => {
+      const to = now();
+      const from = new Date(to.getTime() - input.days * 24 * 60 * 60 * 1000);
+      const sourceCounts = await store.countEventsBySource({
+        from,
+        tenantId: input.tenantId,
+        to,
+      });
+      const topEvents = await store.countEventsByType({
+        from,
+        limit: 5,
+        tenantId: input.tenantId,
+        to,
+      });
+      const recentEvents = await store.listRecentEvents({
+        from,
+        limit: 10,
+        tenantId: input.tenantId,
+        to,
+      });
+      const totalsBySource = new Map(sourceCounts.map((row) => [row.source, row.count]));
+
+      return {
+        ok: true,
+        summary: {
+          tenantId: input.tenantId,
+          range: {
+            days: input.days,
+            from: from.toISOString(),
+            to: to.toISOString(),
+          },
+          totals: {
+            events: sourceCounts.reduce((total, row) => total + row.count, 0),
+            medusaEvents: totalsBySource.get("medusa") ?? 0,
+            platformEvents: totalsBySource.get("platform") ?? 0,
+            storefrontEvents: totalsBySource.get("storefront") ?? 0,
+          },
+          topEvents,
+          recentEvents: recentEvents.map((event) => ({
+            id: event.id,
+            eventType: event.eventType,
+            occurredAt: event.occurredAt.toISOString(),
+            source: event.source,
+            subjectId: event.subjectId,
+            subjectType: event.subjectType,
+          })),
+        },
+      };
+    },
+  };
+}
+
 function serializeAnalyticsEventRow(
   row: typeof analyticsEvents.$inferSelect,
 ): AnalyticsEventStoreRow {
@@ -279,6 +395,65 @@ export function createDrizzleAnalyticsEventStore(db: PlatformDb): AnalyticsEvent
       }
 
       return serializeAnalyticsEventRow(row);
+    },
+  };
+}
+
+export function createDrizzleAnalyticsInsightsStore(db: PlatformDb): AnalyticsInsightsStore {
+  return {
+    countEventsBySource: async (input) => {
+      const eventCount = count();
+
+      return db
+        .select({
+          source: analyticsEvents.source,
+          count: eventCount,
+        })
+        .from(analyticsEvents)
+        .where(
+          and(
+            eq(analyticsEvents.tenantId, input.tenantId),
+            gte(analyticsEvents.occurredAt, input.from),
+            lte(analyticsEvents.occurredAt, input.to),
+          ),
+        )
+        .groupBy(analyticsEvents.source);
+    },
+    countEventsByType: async (input) => {
+      const eventCount = count();
+
+      return db
+        .select({
+          eventType: analyticsEvents.eventType,
+          count: eventCount,
+        })
+        .from(analyticsEvents)
+        .where(
+          and(
+            eq(analyticsEvents.tenantId, input.tenantId),
+            gte(analyticsEvents.occurredAt, input.from),
+            lte(analyticsEvents.occurredAt, input.to),
+          ),
+        )
+        .groupBy(analyticsEvents.eventType)
+        .orderBy(desc(eventCount))
+        .limit(input.limit);
+    },
+    listRecentEvents: async (input) => {
+      const rows = await db
+        .select()
+        .from(analyticsEvents)
+        .where(
+          and(
+            eq(analyticsEvents.tenantId, input.tenantId),
+            gte(analyticsEvents.occurredAt, input.from),
+            lte(analyticsEvents.occurredAt, input.to),
+          ),
+        )
+        .orderBy(desc(analyticsEvents.occurredAt))
+        .limit(input.limit);
+
+      return rows.map(serializeAnalyticsEventRow);
     },
   };
 }

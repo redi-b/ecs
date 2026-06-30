@@ -3,8 +3,10 @@ import { createPlatformDb } from "@ecs/db";
 import { createLogger } from "@ecs/logger";
 import { serve } from "@hono/node-server";
 import {
+  createAnalyticsInsightsService,
   createAnalyticsService,
   createDrizzleAnalyticsEventStore,
+  createDrizzleAnalyticsInsightsStore,
 } from "./analytics/analytics-service.js";
 import { createPlatformApp } from "./app.js";
 import { createDashboardAuthorizationLookup } from "./auth/dashboard-authorization.js";
@@ -60,6 +62,9 @@ const deliverySettingsService = createDeliverySettingsService(platformDb.db);
 const domainManagementService = createDomainManagementService(platformDb.db);
 const notificationService = createNotificationService(platformDb.db);
 const analyticsService = createAnalyticsService(createDrizzleAnalyticsEventStore(platformDb.db));
+const analyticsInsightsService = createAnalyticsInsightsService(
+  createDrizzleAnalyticsInsightsStore(platformDb.db),
+);
 const authorizeDashboardForTenant = createDashboardAuthorizationLookup(platformDb.db);
 const storefrontTemplateService = createStorefrontTemplateService(platformDb.db);
 const supportService = createSupportService(platformDb.db);
@@ -127,6 +132,7 @@ const app = createPlatformApp({
   getPublishedStorefrontConfig: storefrontTemplateService.getPublishedStorefrontConfig,
   getStorefrontDraft: storefrontTemplateService.getStorefrontDraft,
   getTenantForUser,
+  getTenantInsightsSummary: analyticsInsightsService.getTenantInsightsSummary,
   getTenantOnboarding: tenantOnboardingService.getTenantOnboarding,
   getTenantReadiness: tenantStatusService.getTenantReadiness,
   getSession: (headers) => auth.api.getSession({ headers }),

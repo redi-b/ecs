@@ -30,6 +30,7 @@ import type {
   TenantDomainCreateResult,
   TenantDomainListResult,
   TenantDomainPrimaryResult,
+  TenantInsightsSummaryResult,
   TenantListResult,
   TenantOnboardingResult,
   TenantProvisioningAttemptListResult,
@@ -138,6 +139,10 @@ function appWithResolution(
     }) => Promise<BillingInvoiceUpdateResult>;
     getTenantOnboarding?: (input: { tenantId: string }) => Promise<TenantOnboardingResult>;
     getTenantForUser?: (input: { tenantId: string; userId: string }) => Promise<TenantDetailResult>;
+    getTenantInsightsSummary?: (input: {
+      days: number;
+      tenantId: string;
+    }) => Promise<TenantInsightsSummaryResult>;
     getTenantReadiness?: (input: { tenantId: string }) => Promise<TenantReadinessResult>;
     listTenantsForUser?: (input: {
       limit: number;
@@ -259,6 +264,7 @@ function appWithResolution(
     getStorefrontDraft: options?.getStorefrontDraft,
     getOperatorSupportHistory: options?.getOperatorSupportHistory,
     getTenantForUser: options?.getTenantForUser,
+    getTenantInsightsSummary: options?.getTenantInsightsSummary,
     getTenantReadiness: options?.getTenantReadiness,
     getTenantOnboarding: options?.getTenantOnboarding,
     getSession: options?.getSession,
@@ -842,6 +848,113 @@ describe("platform app", () => {
         events: ["cod_order.created"],
         target: "@abebe_market",
         updatedAt: "2026-06-02T10:00:00.000Z",
+      },
+    });
+  });
+
+  it("returns tenant insights summary for an authorized tenant member", async () => {
+    let authorizationInput: { tenantId: string; userId: string } | undefined;
+    let summaryInput: { days: number; tenantId: string } | undefined;
+    const app = appWithResolution(
+      { ok: false, error: "shop_context_required" },
+      {
+        authorizeDashboardForTenant: async (input) => {
+          authorizationInput = input;
+
+          return {
+            ok: true,
+            actor: {
+              id: "member_1",
+              email: "owner@example.com",
+              name: "Owner",
+              role: "owner",
+            },
+          };
+        },
+        getSession: async () => ({
+          user: { id: "user_1", email: "owner@example.com", name: "Owner" },
+        }),
+        getTenantInsightsSummary: async (input) => {
+          summaryInput = input;
+
+          return {
+            ok: true,
+            summary: {
+              tenantId: input.tenantId,
+              range: {
+                days: input.days,
+                from: "2026-06-23T00:00:00.000Z",
+                to: "2026-06-30T00:00:00.000Z",
+              },
+              totals: {
+                events: 12,
+                medusaEvents: 2,
+                platformEvents: 3,
+                storefrontEvents: 7,
+              },
+              topEvents: [
+                {
+                  eventType: "storefront.page_viewed",
+                  count: 7,
+                },
+              ],
+              recentEvents: [
+                {
+                  id: "event_1",
+                  eventType: "storefront.page_viewed",
+                  occurredAt: "2026-06-29T10:00:00.000Z",
+                  source: "storefront",
+                  subjectId: null,
+                  subjectType: null,
+                },
+              ],
+            },
+          };
+        },
+      },
+    );
+
+    const response = await app.request("/platform/tenants/tenant_1/insights/summary?days=7");
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(authorizationInput, {
+      tenantId: "tenant_1",
+      userId: "user_1",
+    });
+    assert.deepEqual(summaryInput, {
+      days: 7,
+      tenantId: "tenant_1",
+    });
+    assert.deepEqual(await response.json(), {
+      summary: {
+        tenantId: "tenant_1",
+        range: {
+          days: 7,
+          from: "2026-06-23T00:00:00.000Z",
+          to: "2026-06-30T00:00:00.000Z",
+        },
+        totals: {
+          events: 12,
+          medusaEvents: 2,
+          platformEvents: 3,
+          storefrontEvents: 7,
+        },
+        topEvents: [
+          {
+            eventType: "storefront.page_viewed",
+            count: 7,
+          },
+        ],
+        recentEvents: [
+          {
+            id: "event_1",
+            eventType: "storefront.page_viewed",
+            occurredAt: "2026-06-29T10:00:00.000Z",
+            source: "storefront",
+            subjectId: null,
+            subjectType: null,
+          },
+        ],
       },
     });
   });
