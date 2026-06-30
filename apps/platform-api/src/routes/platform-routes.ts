@@ -802,6 +802,31 @@ export function registerPlatformRoutes(
     });
   });
 
+  app.post("/platform/provisioning-attempts/:attemptId/retry", async (context) => {
+    if (!options.retryTenantShopProvisioningAttempt) {
+      return context.json({ error: "tenant_provisioning_retry_unavailable" }, 503);
+    }
+
+    const session = await options.getSession?.(context.req.raw.headers);
+
+    if (!session) {
+      return context.json({ error: "auth_required" }, 401);
+    }
+
+    const result = await options.retryTenantShopProvisioningAttempt({
+      attemptId: context.req.param("attemptId"),
+      userId: session.user.id,
+    });
+
+    if (!result.ok) {
+      return context.json({ error: result.error }, result.status);
+    }
+
+    return context.json({
+      tenant: result.tenant,
+    });
+  });
+
   app.get("/platform/operator/tenants/:tenantId/support", async (context) => {
     if (!options.getOperatorSupportHistory) {
       return context.json({ error: "support_history_unavailable" }, 503);

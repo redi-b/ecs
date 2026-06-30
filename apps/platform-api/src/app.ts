@@ -529,8 +529,10 @@ export type TenantShopProvisioningResult =
         | "handle_invalid"
         | "handle_reserved"
         | "handle_unavailable"
+        | "provisioning_attempt_not_found"
+        | "provisioning_attempt_not_retryable"
         | "storefront_template_unavailable";
-      status: 400 | 409 | 503;
+      status: 400 | 404 | 409 | 503;
     };
 
 export type PublishedStorefrontConfigResult =
@@ -670,6 +672,9 @@ export type PlatformAppOptions = {
         name: string;
         ownerUserId: string;
       }) => Promise<TenantShopProvisioningResult>)
+    | undefined;
+  retryTenantShopProvisioningAttempt?:
+    | ((input: { attemptId: string; userId: string }) => Promise<TenantShopProvisioningResult>)
     | undefined;
   createTenantDomain?:
     | ((input: {

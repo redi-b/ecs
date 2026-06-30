@@ -4,6 +4,7 @@ import { describe, it } from "node:test";
 import {
   buildInitialTenantOnboardingState,
   createTenantShopProvisioner,
+  createTenantShopProvisioningRetryService,
 } from "./tenant-shop-provisioning.js";
 
 describe("createTenantShopProvisioner", () => {
@@ -184,6 +185,7 @@ describe("createTenantShopProvisioner", () => {
     const attempts: {
       error?: string | null | undefined;
       handle: string;
+      name?: string | null | undefined;
       ownerUserId: string;
       platformTenantId: string;
       status: string;
@@ -226,11 +228,100 @@ describe("createTenantShopProvisioner", () => {
     assert.deepEqual(attempts[0], {
       error: "commerce_backend_unavailable",
       handle: "failed-shop",
+      name: "Failed Shop",
       ownerUserId: "user_1",
       platformTenantId: attempts[0]?.platformTenantId,
       status: "failed",
       step: "commerce_resources",
       tenantId: null,
     });
+  });
+});
+
+describe("createTenantShopProvisioningRetryService", () => {
+  it("retries a failed provisioning attempt for the original owner", async () => {
+    let createInput: { handle: string; name: string; ownerUserId: string } | undefined;
+    const retryProvisioning = createTenantShopProvisioningRetryService({
+      createTenantShop: async (input) => {
+        createInput = input;
+
+        return {
+          ok: true,
+          tenant: {
+            id: "tenant_1",
+            name: "Retry Shop",
+            handle: "retry-shop",
+            status: "draft",
+            primaryDomain: {
+              hostname: "retry-shop.lvh.me",
+            },
+          },
+        };
+      },
+      findProvisioningAttemptForRetry: async (attemptId) => {
+        assert.equal(attemptId, "attempt_1");
+
+        return {
+          id: "attempt_1",
+          handle: "retry-shop",
+          name: "Retry Shop",
+          ownerUserId: "user_1",
+          status: "failed",
+          tenantId: null,
+        };
+      },
+    });
+
+    assert.deepEqual(
+      await retryProvisioning({
+        attemptId: "attempt_1",
+        userId: "user_1",
+      }),
+      {
+        ok: true,
+        tenant: {
+          id: "tenant_1",
+          name: "Retry Shop",
+          handle: "retry-shop",
+          status: "draft",
+          primaryDomain: {
+            hostname: "retry-shop.lvh.me",
+          },
+        },
+      },
+    );
+    assert.deepEqual(createInput, {
+      handle: "retry-shop",
+      name: "Retry Shop",
+      ownerUserId: "user_1",
+    });
+  });
+
+  it("does not retry attempts owned by another user", async () => {
+    const retryProvisioning = createTenantShopProvisioningRetryService({
+      createTenantShop: async () => {
+        throw new Error("should not retry another user's provisioning attempt");
+      },
+      findProvisioningAttemptForRetry: async () => ({
+        id: "attempt_1",
+        handle: "retry-shop",
+        name: "Retry Shop",
+        ownerUserId: "user_2",
+        status: "failed",
+        tenantId: null,
+      }),
+    });
+
+    assert.deepEqual(
+      await retryProvisioning({
+        attemptId: "attempt_1",
+        userId: "user_1",
+      }),
+      {
+        ok: false,
+        error: "provisioning_attempt_not_found",
+        status: 404,
+      },
+    );
   });
 });

@@ -90,6 +90,7 @@ type TenantShopProvisionerOptions = {
   recordProvisioningAttempt?: (input: {
     error?: string | null | undefined;
     handle: string;
+    name?: string | null | undefined;
     ownerUserId: string;
     platformTenantId: string;
     status: string;
@@ -106,6 +107,25 @@ type TenantShopProvisioningOptions = {
   ) => Promise<CommerceProvisioningResult>;
   recordAnalyticsEvent?: TenantShopProvisionerOptions["recordAnalyticsEvent"];
   recordProvisioningAttempt?: TenantShopProvisionerOptions["recordProvisioningAttempt"];
+};
+
+type TenantShopProvisioningRetryOptions = {
+  createTenantShop: (input: {
+    handle: string;
+    name: string;
+    ownerUserId: string;
+  }) => Promise<TenantShopProvisioningResult>;
+  findProvisioningAttemptForRetry: (attemptId: string) => Promise<
+    | {
+        handle: string;
+        id: string;
+        name: string;
+        ownerUserId: string;
+        status: string;
+        tenantId: string | null;
+      }
+    | undefined
+  >;
 };
 
 const handlePattern = /^[a-z0-9](?:[a-z0-9-]{1,61}[a-z0-9])?$/;
@@ -139,6 +159,7 @@ async function recordProvisioningAttempt(
     platformTenantId: string;
     status: string;
     step: string;
+    name?: string | null | undefined;
     tenantId?: string | null | undefined;
   },
 ) {
@@ -232,6 +253,7 @@ export function createTenantShopProvisioner(options: TenantShopProvisionerOption
       await recordProvisioningAttempt(options.recordProvisioningAttempt, {
         error: commerceResources.error,
         handle,
+        name,
         ownerUserId: input.ownerUserId,
         platformTenantId: tenantId,
         status: "failed",
@@ -252,6 +274,7 @@ export function createTenantShopProvisioner(options: TenantShopProvisionerOption
       await recordProvisioningAttempt(options.recordProvisioningAttempt, {
         error: "storefront_template_unavailable",
         handle,
+        name,
         ownerUserId: input.ownerUserId,
         platformTenantId: tenantId,
         status: "failed",
@@ -278,6 +301,7 @@ export function createTenantShopProvisioner(options: TenantShopProvisionerOption
 
     await recordProvisioningAttempt(options.recordProvisioningAttempt, {
       handle,
+      name,
       ownerUserId: input.ownerUserId,
       platformTenantId: tenantId,
       status: "completed",
@@ -514,6 +538,9 @@ export function createTenantShopProvisioningService(options: TenantShopProvision
         step: input.step,
         status: input.status,
         error: input.error ?? null,
+        metadata: {
+          name: input.name ?? null,
+        },
         completedAt: new Date(),
       });
     },
@@ -528,4 +555,85 @@ export function createTenantShopProvisioningService(options: TenantShopProvision
   }
 
   return createTenantShopProvisioner(provisionerOptions);
+}
+
+export function createTenantShopProvisioningRetryService(
+  options: TenantShopProvisioningRetryOptions,
+) {
+  return async function retryTenantShopProvisioningAttempt(input: {
+    attemptId: string;
+    userId: string;
+  }): Promise<TenantShopProvisioningResult> {
+    const attempt = await options.findProvisioningAttemptForRetry(input.attemptId);
+
+    if (!attempt || attempt.ownerUserId !== input.userId) {
+      return {
+        ok: false,
+        error: "provisioning_attempt_not_found",
+        status: 404,
+      };
+    }
+
+    if (attempt.status !== "failed" || attempt.tenantId) {
+      return {
+        ok: false,
+        error: "provisioning_attempt_not_retryable",
+        status: 409,
+      };
+    }
+
+    return options.createTenantShop({
+      handle: attempt.handle,
+      name: attempt.name,
+      ownerUserId: input.userId,
+    });
+  };
+}
+
+function getRetryAttemptName(metadata: unknown, handle: string) {
+  if (typeof metadata === "object" && metadata !== null && "name" in metadata) {
+    const name = (metadata as { name?: unknown }).name;
+
+    if (typeof name === "string" && name.trim()) {
+      return name;
+    }
+  }
+
+  return handle;
+}
+
+export function createTenantShopProvisioningRetryServiceFromDb(options: {
+  createTenantShop: TenantShopProvisioningRetryOptions["createTenantShop"];
+  db: PlatformDb;
+}) {
+  return createTenantShopProvisioningRetryService({
+    createTenantShop: options.createTenantShop,
+    findProvisioningAttemptForRetry: async (attemptId) => {
+      const [attempt] = await options.db
+        .select({
+          id: tenantProvisioningAttempts.id,
+          handle: tenantProvisioningAttempts.handle,
+          metadata: tenantProvisioningAttempts.metadata,
+          ownerUserId: tenantProvisioningAttempts.ownerUserId,
+          status: tenantProvisioningAttempts.status,
+          tenantId: tenantProvisioningAttempts.tenantId,
+        })
+        .from(tenantProvisioningAttempts)
+        .where(eq(tenantProvisioningAttempts.id, attemptId))
+        .limit(1);
+
+      if (!attempt) {
+        return undefined;
+      }
+
+      return {
+        id: attempt.id,
+        handle: attempt.handle,
+        name: getRetryAttemptName(attempt.metadata, attempt.handle),
+        ownerUserId: attempt.ownerUserId,
+        status: attempt.status,
+        tenantId: attempt.tenantId,
+      };
+    },
+  });
 }

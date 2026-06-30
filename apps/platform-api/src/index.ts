@@ -20,7 +20,10 @@ import { createTenantOnboardingService } from "./onboarding/onboarding-service.j
 import { createChapaPaymentService } from "./payments/chapa-payment-service.js";
 import { createPaymentOnboardingService } from "./payments/payment-onboarding-service.js";
 import { createMedusaCommerceProvisioningClient } from "./provisioning/medusa-commerce-provisioning.js";
-import { createTenantShopProvisioningService } from "./provisioning/tenant-shop-provisioning.js";
+import {
+  createTenantShopProvisioningRetryServiceFromDb,
+  createTenantShopProvisioningService,
+} from "./provisioning/tenant-shop-provisioning.js";
 import { createStorefrontTemplateService } from "./storefront/template-service.js";
 import { createSupportService } from "./support/support-service.js";
 import { createDomainTenantLookup } from "./tenancy/domain-tenant-lookup.js";
@@ -78,6 +81,10 @@ const createTenantShop = createTenantShopProvisioningService({
   provisionCommerceResources,
   recordAnalyticsEvent: analyticsService.recordAnalyticsEvent,
 });
+const retryTenantShopProvisioningAttempt = createTenantShopProvisioningRetryServiceFromDb({
+  createTenantShop,
+  db: platformDb.db,
+});
 const orderService = createMedusaOrderService({
   adminApiToken: process.env.MEDUSA_ADMIN_API_TOKEN,
   medusaInternalUrl,
@@ -124,6 +131,7 @@ const app = createPlatformApp({
   recordAnalyticsEvent: analyticsService.recordAnalyticsEvent,
   recordNotificationEvent: notificationService.recordNotificationEvent,
   reviewPaymentOnboarding: paymentOnboardingService.reviewPaymentOnboarding,
+  retryTenantShopProvisioningAttempt,
   selectStorefrontTemplate: storefrontTemplateService.selectStorefrontTemplate,
   setTenantPrimaryDomain: domainManagementService.setTenantPrimaryDomain,
   submitPaymentOnboarding: paymentOnboardingService.submitPaymentOnboarding,

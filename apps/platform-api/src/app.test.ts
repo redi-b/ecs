@@ -135,6 +135,10 @@ function appWithResolution(
     }) => Promise<BillingInvoiceUpdateResult>;
     getTenantOnboarding?: (input: { tenantId: string }) => Promise<TenantOnboardingResult>;
     getTenantReadiness?: (input: { tenantId: string }) => Promise<TenantReadinessResult>;
+    retryTenantShopProvisioningAttempt?: (input: {
+      attemptId: string;
+      userId: string;
+    }) => Promise<TenantShopProvisioningResult>;
     getOperatorSupportHistory?: (input: {
       limit: number;
       tenantId: string;
@@ -263,6 +267,7 @@ function appWithResolution(
     publishStorefrontDraft: options?.publishStorefrontDraft,
     recordAnalyticsEvent: options?.recordAnalyticsEvent,
     recordNotificationEvent: options?.recordNotificationEvent,
+    retryTenantShopProvisioningAttempt: options?.retryTenantShopProvisioningAttempt,
     upsertNotificationPreference: options?.upsertNotificationPreference,
     updateTenantStatus: options?.updateTenantStatus,
     updateStorefrontDraft: options?.updateStorefrontDraft,
@@ -2523,6 +2528,62 @@ describe("platform app", () => {
             missing: [],
             latestAttempt: null,
           },
+        },
+      },
+    });
+  });
+
+  it("retries a failed tenant provisioning attempt for the current user", async () => {
+    let retryInput: { attemptId: string; userId: string } | undefined;
+    const app = appWithResolution(
+      { ok: false, error: "shop_context_required" },
+      {
+        getSession: async () => ({
+          user: {
+            id: "user_1",
+            email: "owner@abebe.local",
+            name: "Abebe Owner",
+          },
+        }),
+        retryTenantShopProvisioningAttempt: async (input) => {
+          retryInput = input;
+
+          return {
+            ok: true,
+            tenant: {
+              id: "tenant_2",
+              name: "Retry Shop",
+              handle: "retry-shop",
+              status: "draft",
+              primaryDomain: {
+                hostname: "retry-shop.lvh.me",
+              },
+            },
+          };
+        },
+      },
+    );
+
+    const response = await app.request("/platform/provisioning-attempts/attempt_1/retry", {
+      headers: {
+        Host: "api.lvh.me",
+      },
+      method: "POST",
+    });
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(retryInput, {
+      attemptId: "attempt_1",
+      userId: "user_1",
+    });
+    assert.deepEqual(await response.json(), {
+      tenant: {
+        id: "tenant_2",
+        name: "Retry Shop",
+        handle: "retry-shop",
+        status: "draft",
+        primaryDomain: {
+          hostname: "retry-shop.lvh.me",
         },
       },
     });
