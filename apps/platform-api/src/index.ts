@@ -29,6 +29,7 @@ import { createStorefrontTemplateService } from "./storefront/template-service.j
 import { createSupportService } from "./support/support-service.js";
 import { createDomainTenantLookup } from "./tenancy/domain-tenant-lookup.js";
 import { resolveTenantFromHost } from "./tenancy/tenant-resolver.js";
+import { createTenantListService } from "./tenants/tenant-list-service.js";
 import { createTenantStatusService } from "./tenants/tenant-status-service.js";
 
 const env = loadServiceEnv({
@@ -60,6 +61,7 @@ const authorizeDashboardForTenant = createDashboardAuthorizationLookup(platformD
 const storefrontTemplateService = createStorefrontTemplateService(platformDb.db);
 const supportService = createSupportService(platformDb.db);
 const tenantOnboardingService = createTenantOnboardingService(platformDb.db);
+const listTenantsForUser = createTenantListService(platformDb.db);
 const tenantStatusService = createTenantStatusService(platformDb.db);
 const paymentOnboardingService = createPaymentOnboardingService(platformDb.db);
 const chapaPaymentService = createChapaPaymentService({
@@ -126,6 +128,7 @@ const app = createPlatformApp({
   listMerchantOrders: orderService.listMerchantOrders,
   listMerchantProducts: productService.listMerchantProducts,
   listNotificationPreferences: notificationService.listNotificationPreferences,
+  listTenantsForUser,
   listTenantProvisioningAttempts,
   listPaymentOnboarding: paymentOnboardingService.listPaymentOnboarding,
   listTenantDomains: domainManagementService.listTenantDomains,

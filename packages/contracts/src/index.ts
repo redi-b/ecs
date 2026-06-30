@@ -4,6 +4,10 @@ export const tenantStatusSchema = z.enum(["draft", "active", "suspended", "cance
 
 export type TenantStatus = z.infer<typeof tenantStatusSchema>;
 
+export const tenantMemberRoleSchema = z.enum(["owner", "manager", "staff", "operator"]);
+
+export type TenantMemberRole = z.infer<typeof tenantMemberRoleSchema>;
+
 export const tenantReadinessMissingReasonSchema = z.enum([
   "tenant_inactive",
   "primary_domain_missing",
@@ -35,6 +39,30 @@ export const tenantContextSchema = z.object({
 });
 
 export type TenantContext = z.infer<typeof tenantContextSchema>;
+
+export const platformTenantSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  handle: z.string().min(1),
+  status: tenantStatusSchema,
+  role: tenantMemberRoleSchema,
+  primaryDomain: z.object({
+    hostname: z.string().min(1).nullable(),
+  }),
+  createdAt: z.string().min(1),
+  updatedAt: z.string().min(1),
+});
+
+export const platformTenantsSchema = z.object({
+  tenants: z.array(platformTenantSchema),
+  count: z.number().int().nonnegative(),
+  limit: z.number().int().positive(),
+  offset: z.number().int().nonnegative(),
+});
+
+export type PlatformTenant = z.infer<typeof platformTenantSchema>;
+
+export type PlatformTenants = z.infer<typeof platformTenantsSchema>;
 
 export const platformErrorSchema = z.object({
   error: z.string().min(1),

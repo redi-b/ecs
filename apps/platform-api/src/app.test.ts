@@ -29,6 +29,7 @@ import type {
   TenantDomainCreateResult,
   TenantDomainListResult,
   TenantDomainPrimaryResult,
+  TenantListResult,
   TenantOnboardingResult,
   TenantProvisioningAttemptListResult,
   TenantReadinessResult,
@@ -136,6 +137,11 @@ function appWithResolution(
     }) => Promise<BillingInvoiceUpdateResult>;
     getTenantOnboarding?: (input: { tenantId: string }) => Promise<TenantOnboardingResult>;
     getTenantReadiness?: (input: { tenantId: string }) => Promise<TenantReadinessResult>;
+    listTenantsForUser?: (input: {
+      limit: number;
+      offset: number;
+      userId: string;
+    }) => Promise<TenantListResult>;
     listTenantProvisioningAttempts?: (input: {
       limit: number;
       offset: number;
@@ -256,6 +262,7 @@ function appWithResolution(
     listMerchantProducts: options?.listMerchantProducts,
     listMerchantOrders: options?.listMerchantOrders,
     listNotificationPreferences: options?.listNotificationPreferences,
+    listTenantsForUser: options?.listTenantsForUser,
     listTenantProvisioningAttempts: options?.listTenantProvisioningAttempts,
     listPaymentOnboarding: options?.listPaymentOnboarding,
     reviewPaymentOnboarding: options?.reviewPaymentOnboarding,
@@ -537,6 +544,74 @@ describe("platform app", () => {
         email: "owner@abebe.local",
         name: "Abebe Owner",
       },
+    });
+  });
+
+  it("lists tenant shops for the current platform user", async () => {
+    let listInput: { limit: number; offset: number; userId: string } | undefined;
+    const app = appWithResolution(
+      { ok: false, error: "shop_context_required" },
+      {
+        getSession: async () => ({
+          user: {
+            id: "user_1",
+            email: "owner@abebe.local",
+            name: "Abebe Owner",
+          },
+        }),
+        listTenantsForUser: async (input) => {
+          listInput = input;
+
+          return {
+            ok: true,
+            count: 1,
+            limit: input.limit,
+            offset: input.offset,
+            tenants: [
+              {
+                id: "tenant_1",
+                name: "Abebe Market",
+                handle: "abebe",
+                status: "active",
+                role: "owner",
+                primaryDomain: {
+                  hostname: "abebe.lvh.me",
+                },
+                createdAt: "2026-06-30T08:00:00.000Z",
+                updatedAt: "2026-06-30T08:10:00.000Z",
+              },
+            ],
+          };
+        },
+      },
+    );
+
+    const response = await app.request("/platform/tenants?limit=5&offset=10");
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(listInput, {
+      limit: 5,
+      offset: 10,
+      userId: "user_1",
+    });
+    assert.deepEqual(await response.json(), {
+      tenants: [
+        {
+          id: "tenant_1",
+          name: "Abebe Market",
+          handle: "abebe",
+          status: "active",
+          role: "owner",
+          primaryDomain: {
+            hostname: "abebe.lvh.me",
+          },
+          createdAt: "2026-06-30T08:00:00.000Z",
+          updatedAt: "2026-06-30T08:10:00.000Z",
+        },
+      ],
+      count: 1,
+      limit: 5,
+      offset: 10,
     });
   });
 

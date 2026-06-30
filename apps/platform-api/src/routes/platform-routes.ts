@@ -103,6 +103,31 @@ export function registerPlatformRoutes(
     });
   });
 
+  app.get("/platform/tenants", async (context) => {
+    if (!options.listTenantsForUser) {
+      return context.json({ error: "tenant_list_unavailable" }, 503);
+    }
+
+    const session = await options.getSession?.(context.req.raw.headers);
+
+    if (!session) {
+      return context.json({ error: "auth_required" }, 401);
+    }
+
+    const result = await options.listTenantsForUser({
+      limit: getPaginationValue(context.req.query("limit"), 20, 100),
+      offset: getPaginationValue(context.req.query("offset"), 0, 10_000),
+      userId: session.user.id,
+    });
+
+    return context.json({
+      tenants: result.tenants,
+      count: result.count,
+      limit: result.limit,
+      offset: result.offset,
+    });
+  });
+
   app.post("/platform/tenants", async (context) => {
     if (!options.createTenantShop) {
       return context.json({ error: "tenant_provisioning_unavailable" }, 503);

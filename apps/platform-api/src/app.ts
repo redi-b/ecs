@@ -219,6 +219,27 @@ export type TenantProvisioningAttemptListResult = {
   offset: number;
 };
 
+export type TenantListItem = {
+  id: string;
+  name: string;
+  handle: string;
+  status: string;
+  role: DashboardActorRole;
+  primaryDomain: {
+    hostname: string | null;
+  };
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type TenantListResult = {
+  ok: true;
+  tenants: TenantListItem[];
+  count: number;
+  limit: number;
+  offset: number;
+};
+
 export type TenantReadiness = {
   ready: boolean;
   missing: TenantReadinessMissingReason[];
@@ -666,6 +687,9 @@ export type PlatformAppOptions = {
     | undefined;
   getTenantReadiness?:
     | ((input: { tenantId: string }) => Promise<TenantReadinessResult>)
+    | undefined;
+  listTenantsForUser?:
+    | ((input: { limit: number; offset: number; userId: string }) => Promise<TenantListResult>)
     | undefined;
   listTenantProvisioningAttempts?:
     | ((input: {
