@@ -2,6 +2,17 @@ import type { ChapaPaymentCallbackResult } from "../app.js";
 
 type ChapaPaymentServiceOptions = {
   apiUrl?: string | undefined;
+  recordAnalyticsEvent?: (input: {
+    eventType: string;
+    idempotencyKey?: string | null | undefined;
+    properties?: unknown;
+    source: "medusa" | "platform" | "storefront";
+    subjectId?: string | null | undefined;
+    subjectType?: string | null | undefined;
+    tenantId: string;
+  }) => Promise<{
+    ok: boolean;
+  }>;
   recordNotificationEvent?: (input: {
     eventType: "payment.failed" | "payment.paid" | "payment.webhook_failed";
     payload?: unknown;
@@ -33,6 +44,35 @@ function normalizeStatus(value: string | null | undefined) {
 
 function getEventType(status: string) {
   return status === "success" ? "payment.paid" : "payment.failed";
+}
+
+function getAnalyticsPaymentEventType(status: string) {
+  return status === "success" ? "payment.captured" : "payment.failed";
+}
+
+async function recordPaymentAnalyticsEvent(options: {
+  eventType: string;
+  properties: Record<string, unknown>;
+  recordAnalyticsEvent: ChapaPaymentServiceOptions["recordAnalyticsEvent"];
+  tenantId: string;
+  txRef: string;
+}) {
+  try {
+    await options.recordAnalyticsEvent?.({
+      eventType: options.eventType,
+      idempotencyKey: `chapa:${options.txRef}:${options.eventType}`,
+      properties: {
+        provider: "chapa",
+        ...options.properties,
+      },
+      source: "platform",
+      subjectId: options.txRef,
+      subjectType: "payment",
+      tenantId: options.tenantId,
+    });
+  } catch {
+    // Analytics should not block payment callback handling.
+  }
 }
 
 export function createChapaPaymentService(options: ChapaPaymentServiceOptions) {
@@ -90,6 +130,18 @@ export function createChapaPaymentService(options: ChapaPaymentServiceOptions) {
       try {
         verification = await verifyPayment(txRef);
       } catch {
+        await recordPaymentAnalyticsEvent({
+          eventType: "payment.webhook_failed",
+          properties: {
+            reason: "verification_request_failed",
+            reportedStatus: input.reportedStatus,
+            txRef,
+          },
+          recordAnalyticsEvent: options.recordAnalyticsEvent,
+          tenantId,
+          txRef,
+        });
+
         await options.recordNotificationEvent?.({
           eventType: "payment.webhook_failed",
           payload: {
@@ -108,6 +160,18 @@ export function createChapaPaymentService(options: ChapaPaymentServiceOptions) {
       }
 
       if (!verification) {
+        await recordPaymentAnalyticsEvent({
+          eventType: "payment.webhook_failed",
+          properties: {
+            reason: "verification_not_found",
+            reportedStatus: input.reportedStatus,
+            txRef,
+          },
+          recordAnalyticsEvent: options.recordAnalyticsEvent,
+          tenantId,
+          txRef,
+        });
+
         await options.recordNotificationEvent?.({
           eventType: "payment.webhook_failed",
           payload: {
@@ -130,11 +194,25 @@ export function createChapaPaymentService(options: ChapaPaymentServiceOptions) {
         normalizeStatus(verification.status) ??
         "pending";
       const eventType = getEventType(verifiedStatus);
+      const analyticsEventType = getAnalyticsPaymentEventType(verifiedStatus);
       const providerReference =
         getString(input.providerReference) ??
         getString(verification.data?.ref_id) ??
         getString(verification.data?.reference) ??
         null;
+
+      await recordPaymentAnalyticsEvent({
+        eventType: analyticsEventType,
+        properties: {
+          providerReference,
+          reportedStatus: input.reportedStatus,
+          status: verifiedStatus,
+          txRef,
+        },
+        recordAnalyticsEvent: options.recordAnalyticsEvent,
+        tenantId,
+        txRef,
+      });
 
       await options.recordNotificationEvent?.({
         eventType,

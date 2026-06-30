@@ -60,6 +60,7 @@ const tenantStatusService = createTenantStatusService(platformDb.db);
 const paymentOnboardingService = createPaymentOnboardingService(platformDb.db);
 const chapaPaymentService = createChapaPaymentService({
   apiUrl: process.env.CHAPA_API_URL,
+  recordAnalyticsEvent: analyticsService.recordAnalyticsEvent,
   recordNotificationEvent: notificationService.recordNotificationEvent,
   secretKey: process.env.CHAPA_SECRET_KEY,
 });
