@@ -702,6 +702,150 @@ describe("platform app", () => {
     });
   });
 
+  it("lists tenant notification preferences for an authorized tenant member", async () => {
+    let authorizationInput: { tenantId: string; userId: string } | undefined;
+    let listInput: { tenantId: string } | undefined;
+    const app = appWithResolution(
+      { ok: false, error: "shop_context_required" },
+      {
+        authorizeDashboardForTenant: async (input) => {
+          authorizationInput = input;
+
+          return {
+            ok: true,
+            actor: {
+              id: "member_1",
+              email: "owner@example.com",
+              name: "Owner",
+              role: "owner",
+            },
+          };
+        },
+        getSession: async () => ({
+          user: { id: "user_1", email: "owner@example.com", name: "Owner" },
+        }),
+        listNotificationPreferences: async (input) => {
+          listInput = input;
+
+          return {
+            ok: true,
+            preferences: [
+              {
+                id: "np_1",
+                channel: "telegram",
+                enabled: true,
+                events: ["cod_order.created", "order.created"],
+                target: "@abebe_market",
+                updatedAt: "2026-06-02T10:00:00.000Z",
+              },
+            ],
+          };
+        },
+      },
+    );
+
+    const response = await app.request("/platform/tenants/tenant_1/notifications/preferences");
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(authorizationInput, {
+      tenantId: "tenant_1",
+      userId: "user_1",
+    });
+    assert.deepEqual(listInput, {
+      tenantId: "tenant_1",
+    });
+    assert.deepEqual(await response.json(), {
+      preferences: [
+        {
+          id: "np_1",
+          channel: "telegram",
+          enabled: true,
+          events: ["cod_order.created", "order.created"],
+          target: "@abebe_market",
+          updatedAt: "2026-06-02T10:00:00.000Z",
+        },
+      ],
+    });
+  });
+
+  it("upserts tenant notification preferences for an authorized tenant member", async () => {
+    let upsertInput:
+      | {
+          channel: string;
+          enabled: boolean;
+          events: string[];
+          target: string;
+          tenantId: string;
+          userId: string;
+        }
+      | undefined;
+    const app = appWithResolution(
+      { ok: false, error: "shop_context_required" },
+      {
+        authorizeDashboardForTenant: async () => ({
+          ok: true,
+          actor: {
+            id: "member_1",
+            email: "owner@example.com",
+            name: "Owner",
+            role: "owner",
+          },
+        }),
+        getSession: async () => ({
+          user: { id: "user_1", email: "owner@example.com", name: "Owner" },
+        }),
+        upsertNotificationPreference: async (input) => {
+          upsertInput = input;
+
+          return {
+            ok: true,
+            preference: {
+              id: "np_1",
+              channel: input.channel,
+              enabled: input.enabled,
+              events: input.events,
+              target: input.target,
+              updatedAt: "2026-06-02T10:00:00.000Z",
+            },
+          };
+        },
+      },
+    );
+
+    const response = await app.request("/platform/tenants/tenant_1/notifications/preferences", {
+      body: JSON.stringify({
+        channel: "telegram",
+        enabled: false,
+        events: ["cod_order.created"],
+        target: "@abebe_market",
+      }),
+      headers: {
+        "content-type": "application/json",
+      },
+      method: "POST",
+    });
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(upsertInput, {
+      channel: "telegram",
+      enabled: false,
+      events: ["cod_order.created"],
+      target: "@abebe_market",
+      tenantId: "tenant_1",
+      userId: "user_1",
+    });
+    assert.deepEqual(await response.json(), {
+      preference: {
+        id: "np_1",
+        channel: "telegram",
+        enabled: false,
+        events: ["cod_order.created"],
+        target: "@abebe_market",
+        updatedAt: "2026-06-02T10:00:00.000Z",
+      },
+    });
+  });
+
   it("requires a platform session before creating a tenant shop", async () => {
     const app = appWithResolution(
       { ok: false, error: "shop_context_required" },
