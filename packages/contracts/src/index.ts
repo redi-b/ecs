@@ -60,9 +60,15 @@ export const platformTenantsSchema = z.object({
   offset: z.number().int().nonnegative(),
 });
 
+export const platformTenantDetailSchema = z.object({
+  tenant: platformTenantSchema,
+});
+
 export type PlatformTenant = z.infer<typeof platformTenantSchema>;
 
 export type PlatformTenants = z.infer<typeof platformTenantsSchema>;
+
+export type PlatformTenantDetail = z.infer<typeof platformTenantDetailSchema>;
 
 export const platformErrorSchema = z.object({
   error: z.string().min(1),

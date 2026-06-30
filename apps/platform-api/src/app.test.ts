@@ -26,6 +26,7 @@ import type {
   StorefrontTemplateSelectionResult,
   SupportHistoryResult,
   SupportNoteCreateResult,
+  TenantDetailResult,
   TenantDomainCreateResult,
   TenantDomainListResult,
   TenantDomainPrimaryResult,
@@ -136,6 +137,7 @@ function appWithResolution(
       tenantId: string;
     }) => Promise<BillingInvoiceUpdateResult>;
     getTenantOnboarding?: (input: { tenantId: string }) => Promise<TenantOnboardingResult>;
+    getTenantForUser?: (input: { tenantId: string; userId: string }) => Promise<TenantDetailResult>;
     getTenantReadiness?: (input: { tenantId: string }) => Promise<TenantReadinessResult>;
     listTenantsForUser?: (input: {
       limit: number;
@@ -256,6 +258,7 @@ function appWithResolution(
     getPublishedStorefrontConfig: options?.getPublishedStorefrontConfig,
     getStorefrontDraft: options?.getStorefrontDraft,
     getOperatorSupportHistory: options?.getOperatorSupportHistory,
+    getTenantForUser: options?.getTenantForUser,
     getTenantReadiness: options?.getTenantReadiness,
     getTenantOnboarding: options?.getTenantOnboarding,
     getSession: options?.getSession,
@@ -612,6 +615,90 @@ describe("platform app", () => {
       count: 1,
       limit: 5,
       offset: 10,
+    });
+  });
+
+  it("returns one tenant shop for the current platform user", async () => {
+    let detailInput: { tenantId: string; userId: string } | undefined;
+    const app = appWithResolution(
+      { ok: false, error: "shop_context_required" },
+      {
+        getSession: async () => ({
+          user: {
+            id: "user_1",
+            email: "owner@abebe.local",
+            name: "Abebe Owner",
+          },
+        }),
+        getTenantForUser: async (input) => {
+          detailInput = input;
+
+          return {
+            ok: true,
+            tenant: {
+              id: "tenant_1",
+              name: "Abebe Market",
+              handle: "abebe",
+              status: "active",
+              role: "owner",
+              primaryDomain: {
+                hostname: "abebe.lvh.me",
+              },
+              createdAt: "2026-06-30T08:00:00.000Z",
+              updatedAt: "2026-06-30T08:10:00.000Z",
+            },
+          };
+        },
+      },
+    );
+
+    const response = await app.request("/platform/tenants/tenant_1");
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(detailInput, {
+      tenantId: "tenant_1",
+      userId: "user_1",
+    });
+    assert.deepEqual(await response.json(), {
+      tenant: {
+        id: "tenant_1",
+        name: "Abebe Market",
+        handle: "abebe",
+        status: "active",
+        role: "owner",
+        primaryDomain: {
+          hostname: "abebe.lvh.me",
+        },
+        createdAt: "2026-06-30T08:00:00.000Z",
+        updatedAt: "2026-06-30T08:10:00.000Z",
+      },
+    });
+  });
+
+  it("does not return a tenant shop outside the current user's memberships", async () => {
+    const app = appWithResolution(
+      { ok: false, error: "shop_context_required" },
+      {
+        getSession: async () => ({
+          user: {
+            id: "user_1",
+            email: "owner@abebe.local",
+            name: "Abebe Owner",
+          },
+        }),
+        getTenantForUser: async () => ({
+          ok: false,
+          error: "tenant_not_found",
+          status: 404,
+        }),
+      },
+    );
+
+    const response = await app.request("/platform/tenants/tenant_2");
+
+    assert.equal(response.status, 404);
+    assert.deepEqual(await response.json(), {
+      error: "tenant_not_found",
     });
   });
 

@@ -128,6 +128,31 @@ export function registerPlatformRoutes(
     });
   });
 
+  app.get("/platform/tenants/:tenantId", async (context) => {
+    if (!options.getTenantForUser) {
+      return context.json({ error: "tenant_detail_unavailable" }, 503);
+    }
+
+    const session = await options.getSession?.(context.req.raw.headers);
+
+    if (!session) {
+      return context.json({ error: "auth_required" }, 401);
+    }
+
+    const result = await options.getTenantForUser({
+      tenantId: context.req.param("tenantId"),
+      userId: session.user.id,
+    });
+
+    if (!result.ok) {
+      return context.json({ error: result.error }, result.status);
+    }
+
+    return context.json({
+      tenant: result.tenant,
+    });
+  });
+
   app.post("/platform/tenants", async (context) => {
     if (!options.createTenantShop) {
       return context.json({ error: "tenant_provisioning_unavailable" }, 503);

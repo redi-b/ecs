@@ -240,6 +240,17 @@ export type TenantListResult = {
   offset: number;
 };
 
+export type TenantDetailResult =
+  | {
+      ok: true;
+      tenant: TenantListItem;
+    }
+  | {
+      ok: false;
+      error: "tenant_not_found";
+      status: 404;
+    };
+
 export type TenantReadiness = {
   ready: boolean;
   missing: TenantReadinessMissingReason[];
@@ -687,6 +698,9 @@ export type PlatformAppOptions = {
     | undefined;
   getTenantReadiness?:
     | ((input: { tenantId: string }) => Promise<TenantReadinessResult>)
+    | undefined;
+  getTenantForUser?:
+    | ((input: { tenantId: string; userId: string }) => Promise<TenantDetailResult>)
     | undefined;
   listTenantsForUser?:
     | ((input: { limit: number; offset: number; userId: string }) => Promise<TenantListResult>)

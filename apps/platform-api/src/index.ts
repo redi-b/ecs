@@ -29,7 +29,10 @@ import { createStorefrontTemplateService } from "./storefront/template-service.j
 import { createSupportService } from "./support/support-service.js";
 import { createDomainTenantLookup } from "./tenancy/domain-tenant-lookup.js";
 import { resolveTenantFromHost } from "./tenancy/tenant-resolver.js";
-import { createTenantListService } from "./tenants/tenant-list-service.js";
+import {
+  createTenantDetailService,
+  createTenantListService,
+} from "./tenants/tenant-list-service.js";
 import { createTenantStatusService } from "./tenants/tenant-status-service.js";
 
 const env = loadServiceEnv({
@@ -61,6 +64,7 @@ const authorizeDashboardForTenant = createDashboardAuthorizationLookup(platformD
 const storefrontTemplateService = createStorefrontTemplateService(platformDb.db);
 const supportService = createSupportService(platformDb.db);
 const tenantOnboardingService = createTenantOnboardingService(platformDb.db);
+const getTenantForUser = createTenantDetailService(platformDb.db);
 const listTenantsForUser = createTenantListService(platformDb.db);
 const tenantStatusService = createTenantStatusService(platformDb.db);
 const paymentOnboardingService = createPaymentOnboardingService(platformDb.db);
@@ -122,6 +126,7 @@ const app = createPlatformApp({
   getOperatorSupportHistory: supportService.getOperatorSupportHistory,
   getPublishedStorefrontConfig: storefrontTemplateService.getPublishedStorefrontConfig,
   getStorefrontDraft: storefrontTemplateService.getStorefrontDraft,
+  getTenantForUser,
   getTenantOnboarding: tenantOnboardingService.getTenantOnboarding,
   getTenantReadiness: tenantStatusService.getTenantReadiness,
   getSession: (headers) => auth.api.getSession({ headers }),
