@@ -77,6 +77,15 @@ type TenantShopProvisionerOptions = {
   provisionCommerceResources: (
     input: CommerceProvisioningInput,
   ) => Promise<CommerceProvisioningResult>;
+  recordAnalyticsEvent?: (input: {
+    eventType: string;
+    idempotencyKey?: string | null | undefined;
+    properties?: unknown;
+    source: "medusa" | "platform" | "storefront";
+    subjectId?: string | null | undefined;
+    subjectType?: string | null | undefined;
+    tenantId: string;
+  }) => Promise<{ ok: boolean }>;
 };
 
 type TenantShopProvisioningOptions = {
@@ -85,6 +94,7 @@ type TenantShopProvisioningOptions = {
   provisionCommerceResources: (
     input: CommerceProvisioningInput,
   ) => Promise<CommerceProvisioningResult>;
+  recordAnalyticsEvent?: TenantShopProvisionerOptions["recordAnalyticsEvent"];
 };
 
 const handlePattern = /^[a-z0-9](?:[a-z0-9-]{1,61}[a-z0-9])?$/;
@@ -216,6 +226,29 @@ export function createTenantShopProvisioner(options: TenantShopProvisionerOption
       tenantId,
     });
 
+    try {
+      await options.recordAnalyticsEvent?.({
+        eventType: "tenant.created",
+        idempotencyKey: `tenant:${tenant.id}:tenant.created`,
+        properties: {
+          handle,
+          hostname,
+          medusaPublishableKeyId: commerceResources.resources.publishableKeyId,
+          medusaRegionId: commerceResources.resources.regionId,
+          medusaSalesChannelId: commerceResources.resources.salesChannelId,
+          medusaShippingOptionId: commerceResources.resources.shippingOptionId,
+          medusaStoreId: commerceResources.resources.storeId,
+          ownerUserId: input.ownerUserId,
+        },
+        source: "platform",
+        subjectId: tenant.id,
+        subjectType: "tenant",
+        tenantId: tenant.id,
+      });
+    } catch {
+      // Analytics logging must not fail tenant provisioning.
+    }
+
     return {
       ok: true,
       tenant,
@@ -224,7 +257,7 @@ export function createTenantShopProvisioner(options: TenantShopProvisionerOption
 }
 
 export function createTenantShopProvisioningService(options: TenantShopProvisioningOptions) {
-  return createTenantShopProvisioner({
+  const provisionerOptions: TenantShopProvisionerOptions = {
     createTenantShopRecord: async ({
       activeTemplate,
       commerceResources,
@@ -413,5 +446,11 @@ export function createTenantShopProvisioningService(options: TenantShopProvision
     },
     platformBaseDomain: options.platformBaseDomain,
     provisionCommerceResources: options.provisionCommerceResources,
-  });
+  };
+
+  if (options.recordAnalyticsEvent) {
+    provisionerOptions.recordAnalyticsEvent = options.recordAnalyticsEvent;
+  }
+
+  return createTenantShopProvisioner(provisionerOptions);
 }

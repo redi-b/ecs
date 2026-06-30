@@ -83,4 +83,100 @@ describe("createTenantShopProvisioner", () => {
     );
     assert.equal(commerceCalls, 0);
   });
+
+  it("records tenant.created analytics after creating a new tenant shop", async () => {
+    let createdTenantId: string | undefined;
+    const analyticsEvents: {
+      eventType: string;
+      idempotencyKey?: string | null | undefined;
+      properties?: unknown;
+      source: "medusa" | "platform" | "storefront";
+      subjectId?: string | null | undefined;
+      subjectType?: string | null | undefined;
+      tenantId: string;
+    }[] = [];
+    const createTenantShop = createTenantShopProvisioner({
+      createTenantShopRecord: async (input) => {
+        createdTenantId = input.tenantId;
+
+        return {
+          id: input.tenantId,
+          name: input.name,
+          handle: input.handle,
+          status: "draft",
+          primaryDomain: {
+            hostname: input.hostname,
+          },
+        };
+      },
+      findActiveStorefrontTemplate: async () => ({
+        templateId: "template_1",
+        templateVersion: 1,
+        defaultData: {},
+        defaultThemeTokens: {},
+      }),
+      findExistingTenantByHandle: async () => undefined,
+      isDomainHostnameTaken: async () => false,
+      isHandleReserved: async () => false,
+      platformBaseDomain: "lvh.me",
+      provisionCommerceResources: async (input) => ({
+        ok: true,
+        resources: {
+          storeId: `store_${input.platformTenantId}`,
+          salesChannelId: "sc_1",
+          stockLocationId: "sloc_1",
+          publishableKeyId: "apk_1",
+          regionId: "reg_1",
+          shippingProfileId: "shp_1",
+          fulfillmentSetId: "fuset_1",
+          serviceZoneId: "serzo_1",
+          shippingOptionId: "so_1",
+        },
+      }),
+      recordAnalyticsEvent: async (input) => {
+        analyticsEvents.push(input);
+
+        return {
+          ok: true,
+          duplicate: false,
+          event: {
+            id: "event_1",
+            eventType: input.eventType,
+            occurredAt: "2026-01-01T12:00:00.000Z",
+            receivedAt: "2026-01-01T12:00:01.000Z",
+            source: input.source,
+          },
+        };
+      },
+    });
+
+    const result = await createTenantShop({
+      handle: " New-Shop ",
+      name: " New Shop ",
+      ownerUserId: "user_1",
+    });
+
+    assert.equal(result.ok, true);
+    assert.ok(createdTenantId);
+    assert.deepEqual(analyticsEvents, [
+      {
+        eventType: "tenant.created",
+        idempotencyKey: `tenant:${createdTenantId}:tenant.created`,
+        properties: {
+          handle: "new-shop",
+          hostname: "new-shop.lvh.me",
+          medusaPublishableKeyId: "apk_1",
+          medusaRegionId: "reg_1",
+          medusaSalesChannelId: "sc_1",
+          medusaShippingOptionId: "so_1",
+          medusaStoreId: `store_${createdTenantId}`,
+          ownerUserId: "user_1",
+        },
+        source: "platform",
+        subjectId: createdTenantId,
+        subjectType: "tenant",
+        tenantId: createdTenantId,
+      },
+    ]);
+  });
 });

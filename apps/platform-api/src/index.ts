@@ -76,6 +76,7 @@ const createTenantShop = createTenantShopProvisioningService({
   db: platformDb.db,
   platformBaseDomain,
   provisionCommerceResources,
+  recordAnalyticsEvent: analyticsService.recordAnalyticsEvent,
 });
 const orderService = createMedusaOrderService({
   adminApiToken: process.env.MEDUSA_ADMIN_API_TOKEN,
