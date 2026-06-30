@@ -112,6 +112,7 @@ const app = createPlatformApp({
   getPublishedStorefrontConfig: storefrontTemplateService.getPublishedStorefrontConfig,
   getStorefrontDraft: storefrontTemplateService.getStorefrontDraft,
   getTenantOnboarding: tenantOnboardingService.getTenantOnboarding,
+  getTenantReadiness: tenantStatusService.getTenantReadiness,
   getSession: (headers) => auth.api.getSession({ headers }),
   listMerchantOrders: orderService.listMerchantOrders,
   listMerchantProducts: productService.listMerchantProducts,

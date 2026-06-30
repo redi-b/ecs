@@ -30,6 +30,7 @@ import type {
   TenantDomainListResult,
   TenantDomainPrimaryResult,
   TenantOnboardingResult,
+  TenantReadinessResult,
   TenantShopProvisioningResult,
   TenantStatusUpdateResult,
 } from "./app.js";
@@ -133,6 +134,7 @@ function appWithResolution(
       tenantId: string;
     }) => Promise<BillingInvoiceUpdateResult>;
     getTenantOnboarding?: (input: { tenantId: string }) => Promise<TenantOnboardingResult>;
+    getTenantReadiness?: (input: { tenantId: string }) => Promise<TenantReadinessResult>;
     getOperatorSupportHistory?: (input: {
       limit: number;
       tenantId: string;
@@ -238,6 +240,7 @@ function appWithResolution(
     getPublishedStorefrontConfig: options?.getPublishedStorefrontConfig,
     getStorefrontDraft: options?.getStorefrontDraft,
     getOperatorSupportHistory: options?.getOperatorSupportHistory,
+    getTenantReadiness: options?.getTenantReadiness,
     getTenantOnboarding: options?.getTenantOnboarding,
     getSession: options?.getSession,
     listMerchantProducts: options?.listMerchantProducts,
@@ -2379,6 +2382,138 @@ describe("platform app", () => {
         publishedRevisionId: "revision_1",
         templateId: "template_1",
         templateVersion: 1,
+      },
+    });
+  });
+
+  it("returns tenant readiness for an authorized tenant member", async () => {
+    let authorizationInput: { tenantId: string; userId: string } | undefined;
+    let readinessInput: { tenantId: string } | undefined;
+    const app = appWithResolution(
+      { ok: false, error: "shop_context_required" },
+      {
+        authorizeDashboardForTenant: async (input) => {
+          authorizationInput = input;
+
+          return {
+            ok: true,
+            actor: {
+              id: "user_1",
+              email: "owner@abebe.local",
+              name: "Abebe Owner",
+              role: "owner",
+            },
+          };
+        },
+        getSession: async () => ({
+          user: {
+            id: "user_1",
+            email: "owner@abebe.local",
+            name: "Abebe Owner",
+          },
+        }),
+        getTenantReadiness: async (input) => {
+          readinessInput = input;
+
+          return {
+            ok: true,
+            readiness: {
+              ready: false,
+              missing: ["commerce_region_missing", "storefront_unpublished"],
+              tenant: {
+                id: input.tenantId,
+                name: "Abebe Market",
+                handle: "abebe",
+                status: "active",
+              },
+              checks: {
+                tenant: {
+                  ready: true,
+                  missing: [],
+                  isActive: true,
+                },
+                domain: {
+                  ready: true,
+                  missing: [],
+                  hasPrimaryDomain: true,
+                  isActive: true,
+                  isVerified: true,
+                },
+                commerce: {
+                  ready: false,
+                  missing: ["commerce_region_missing"],
+                  hasStore: true,
+                  hasSalesChannel: true,
+                  hasPublishableKey: true,
+                  hasRegion: false,
+                  hasShippingOption: true,
+                },
+                storefront: {
+                  ready: false,
+                  missing: ["storefront_unpublished"],
+                  hasDraft: true,
+                  isPublished: false,
+                },
+              },
+            },
+          };
+        },
+      },
+    );
+
+    const response = await app.request("/platform/tenants/tenant_1/readiness", {
+      headers: {
+        Host: "api.lvh.me",
+      },
+    });
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(authorizationInput, {
+      tenantId: "tenant_1",
+      userId: "user_1",
+    });
+    assert.deepEqual(readinessInput, {
+      tenantId: "tenant_1",
+    });
+    assert.deepEqual(await response.json(), {
+      readiness: {
+        ready: false,
+        missing: ["commerce_region_missing", "storefront_unpublished"],
+        tenant: {
+          id: "tenant_1",
+          name: "Abebe Market",
+          handle: "abebe",
+          status: "active",
+        },
+        checks: {
+          tenant: {
+            ready: true,
+            missing: [],
+            isActive: true,
+          },
+          domain: {
+            ready: true,
+            missing: [],
+            hasPrimaryDomain: true,
+            isActive: true,
+            isVerified: true,
+          },
+          commerce: {
+            ready: false,
+            missing: ["commerce_region_missing"],
+            hasStore: true,
+            hasSalesChannel: true,
+            hasPublishableKey: true,
+            hasRegion: false,
+            hasShippingOption: true,
+          },
+          storefront: {
+            ready: false,
+            missing: ["storefront_unpublished"],
+            hasDraft: true,
+            isPublished: false,
+          },
+        },
       },
     });
   });

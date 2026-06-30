@@ -768,6 +768,40 @@ export function registerPlatformRoutes(
     });
   });
 
+  app.get("/platform/tenants/:tenantId/readiness", async (context) => {
+    if (!options.getTenantReadiness) {
+      return context.json({ error: "tenant_readiness_unavailable" }, 503);
+    }
+
+    const session = await options.getSession?.(context.req.raw.headers);
+
+    if (!session) {
+      return context.json({ error: "auth_required" }, 401);
+    }
+
+    const tenantId = context.req.param("tenantId");
+    const authorization = await options.authorizeDashboardForTenant?.({
+      tenantId,
+      userId: session.user.id,
+    });
+
+    if (!authorization?.ok) {
+      return context.json({ error: "dashboard_forbidden" }, 403);
+    }
+
+    const result = await options.getTenantReadiness({
+      tenantId,
+    });
+
+    if (!result.ok) {
+      return context.json({ error: result.error }, result.status);
+    }
+
+    return context.json({
+      readiness: result.readiness,
+    });
+  });
+
   app.get("/platform/operator/tenants/:tenantId/support", async (context) => {
     if (!options.getOperatorSupportHistory) {
       return context.json({ error: "support_history_unavailable" }, 503);

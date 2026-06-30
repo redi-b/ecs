@@ -184,6 +184,70 @@ export type TenantStatusUpdateResult =
       status: 400 | 404;
     };
 
+export type TenantReadinessMissingReason =
+  | "tenant_inactive"
+  | "primary_domain_missing"
+  | "primary_domain_inactive"
+  | "primary_domain_unverified"
+  | "commerce_store_missing"
+  | "commerce_sales_channel_missing"
+  | "commerce_publishable_key_missing"
+  | "commerce_region_missing"
+  | "commerce_shipping_option_missing"
+  | "storefront_draft_missing"
+  | "storefront_unpublished";
+
+export type TenantReadiness = {
+  ready: boolean;
+  missing: TenantReadinessMissingReason[];
+  tenant: {
+    id: string;
+    name: string;
+    handle: string;
+    status: string;
+  };
+  checks: {
+    tenant: {
+      ready: boolean;
+      missing: TenantReadinessMissingReason[];
+      isActive: boolean;
+    };
+    domain: {
+      ready: boolean;
+      missing: TenantReadinessMissingReason[];
+      hasPrimaryDomain: boolean;
+      isActive: boolean;
+      isVerified: boolean;
+    };
+    commerce: {
+      ready: boolean;
+      missing: TenantReadinessMissingReason[];
+      hasStore: boolean;
+      hasSalesChannel: boolean;
+      hasPublishableKey: boolean;
+      hasRegion: boolean;
+      hasShippingOption: boolean;
+    };
+    storefront: {
+      ready: boolean;
+      missing: TenantReadinessMissingReason[];
+      hasDraft: boolean;
+      isPublished: boolean;
+    };
+  };
+};
+
+export type TenantReadinessResult =
+  | {
+      ok: true;
+      readiness: TenantReadiness;
+    }
+  | {
+      ok: false;
+      error: "tenant_not_found";
+      status: 404;
+    };
+
 export type SupportHistoryResult = {
   ok: true;
   history: {
@@ -570,6 +634,9 @@ export type PlatformAppOptions = {
         status: string;
         tenantId: string;
       }) => Promise<TenantStatusUpdateResult>)
+    | undefined;
+  getTenantReadiness?:
+    | ((input: { tenantId: string }) => Promise<TenantReadinessResult>)
     | undefined;
   getTenantOnboarding?:
     | ((input: { tenantId: string }) => Promise<TenantOnboardingResult>)

@@ -4,6 +4,22 @@ export const tenantStatusSchema = z.enum(["draft", "active", "suspended", "cance
 
 export type TenantStatus = z.infer<typeof tenantStatusSchema>;
 
+export const tenantReadinessMissingReasonSchema = z.enum([
+  "tenant_inactive",
+  "primary_domain_missing",
+  "primary_domain_inactive",
+  "primary_domain_unverified",
+  "commerce_store_missing",
+  "commerce_sales_channel_missing",
+  "commerce_publishable_key_missing",
+  "commerce_region_missing",
+  "commerce_shipping_option_missing",
+  "storefront_draft_missing",
+  "storefront_unpublished",
+]);
+
+export type TenantReadinessMissingReason = z.infer<typeof tenantReadinessMissingReasonSchema>;
+
 export const tenantContextSchema = z.object({
   tenantId: z.string().min(1),
   hostname: z.string().min(1),
@@ -108,6 +124,50 @@ export const merchantDashboardSummarySchema = z.object({
 });
 
 export type MerchantDashboardSummary = z.infer<typeof merchantDashboardSummarySchema>;
+
+export const tenantReadinessSchema = z.object({
+  readiness: z.object({
+    ready: z.boolean(),
+    missing: z.array(tenantReadinessMissingReasonSchema),
+    tenant: z.object({
+      id: z.string().min(1),
+      name: z.string().min(1),
+      handle: z.string().min(1),
+      status: tenantStatusSchema,
+    }),
+    checks: z.object({
+      tenant: z.object({
+        ready: z.boolean(),
+        missing: z.array(tenantReadinessMissingReasonSchema),
+        isActive: z.boolean(),
+      }),
+      domain: z.object({
+        ready: z.boolean(),
+        missing: z.array(tenantReadinessMissingReasonSchema),
+        hasPrimaryDomain: z.boolean(),
+        isActive: z.boolean(),
+        isVerified: z.boolean(),
+      }),
+      commerce: z.object({
+        ready: z.boolean(),
+        missing: z.array(tenantReadinessMissingReasonSchema),
+        hasStore: z.boolean(),
+        hasSalesChannel: z.boolean(),
+        hasPublishableKey: z.boolean(),
+        hasRegion: z.boolean(),
+        hasShippingOption: z.boolean(),
+      }),
+      storefront: z.object({
+        ready: z.boolean(),
+        missing: z.array(tenantReadinessMissingReasonSchema),
+        hasDraft: z.boolean(),
+        isPublished: z.boolean(),
+      }),
+    }),
+  }),
+});
+
+export type TenantReadiness = z.infer<typeof tenantReadinessSchema>;
 
 export const storefrontTemplateCatalogItemSchema = z.object({
   id: z.string().min(1),
