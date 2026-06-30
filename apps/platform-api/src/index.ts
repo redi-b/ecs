@@ -2,7 +2,10 @@ import { loadServiceEnv } from "@ecs/config";
 import { createPlatformDb } from "@ecs/db";
 import { createLogger } from "@ecs/logger";
 import { serve } from "@hono/node-server";
-
+import {
+  createAnalyticsService,
+  createDrizzleAnalyticsEventStore,
+} from "./analytics/analytics-service.js";
 import { createPlatformApp } from "./app.js";
 import { createDashboardAuthorizationLookup } from "./auth/dashboard-authorization.js";
 import { createPlatformAuth, parseTrustedOrigins } from "./auth/platform-auth.js";
@@ -48,6 +51,7 @@ const billingService = createBillingService(platformDb.db);
 const deliverySettingsService = createDeliverySettingsService(platformDb.db);
 const domainManagementService = createDomainManagementService(platformDb.db);
 const notificationService = createNotificationService(platformDb.db);
+const analyticsService = createAnalyticsService(createDrizzleAnalyticsEventStore(platformDb.db));
 const authorizeDashboardForTenant = createDashboardAuthorizationLookup(platformDb.db);
 const storefrontTemplateService = createStorefrontTemplateService(platformDb.db);
 const supportService = createSupportService(platformDb.db);
@@ -114,6 +118,7 @@ const app = createPlatformApp({
   listTenantDomains: domainManagementService.listTenantDomains,
   listStorefrontTemplates: storefrontTemplateService.listStorefrontTemplates,
   publishStorefrontDraft: storefrontTemplateService.publishStorefrontDraft,
+  recordAnalyticsEvent: analyticsService.recordAnalyticsEvent,
   recordNotificationEvent: notificationService.recordNotificationEvent,
   reviewPaymentOnboarding: paymentOnboardingService.reviewPaymentOnboarding,
   selectStorefrontTemplate: storefrontTemplateService.selectStorefrontTemplate,

@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import type {
+  AnalyticsEventRecordResult,
   BillingInvoiceUpdateResult,
   BillingStatusResult,
   ChapaPaymentCallbackResult,
@@ -79,6 +80,18 @@ function appWithResolution(
       tenantId?: string | null | undefined;
       txRef?: string | null | undefined;
     }) => Promise<ChapaPaymentCallbackResult>;
+    recordAnalyticsEvent?: (input: {
+      customerId?: string | null | undefined;
+      eventType: string;
+      idempotencyKey?: string | null | undefined;
+      occurredAt?: string | null | undefined;
+      properties?: unknown;
+      sessionId?: string | null | undefined;
+      source: "medusa" | "platform" | "storefront";
+      subjectId?: string | null | undefined;
+      subjectType?: string | null | undefined;
+      tenantId: string;
+    }) => Promise<AnalyticsEventRecordResult>;
     getSession?: (headers: Headers) => Promise<PlatformSession | null>;
     createMerchantProduct?: (input: {
       handle?: string | null | undefined;
@@ -245,6 +258,7 @@ function appWithResolution(
     updateBillingInvoiceStatus: options?.updateBillingInvoiceStatus,
     updateDeliverySettings: options?.updateDeliverySettings,
     publishStorefrontDraft: options?.publishStorefrontDraft,
+    recordAnalyticsEvent: options?.recordAnalyticsEvent,
     recordNotificationEvent: options?.recordNotificationEvent,
     upsertNotificationPreference: options?.upsertNotificationPreference,
     updateTenantStatus: options?.updateTenantStatus,
@@ -379,6 +393,88 @@ describe("platform app", () => {
     assert.equal(response.status, 404);
     assert.deepEqual(await response.json(), {
       error: "shop_not_found",
+    });
+  });
+
+  it("records storefront analytics events for the resolved host tenant", async () => {
+    let recordedEvent:
+      | {
+          customerId?: string | null | undefined;
+          eventType: string;
+          idempotencyKey?: string | null | undefined;
+          occurredAt?: string | null | undefined;
+          properties?: unknown;
+          sessionId?: string | null | undefined;
+          source: "medusa" | "platform" | "storefront";
+          subjectId?: string | null | undefined;
+          subjectType?: string | null | undefined;
+          tenantId: string;
+        }
+      | undefined;
+    const app = appWithResolution(
+      {
+        ok: true,
+        context: resolvedTenantContext,
+      },
+      {
+        recordAnalyticsEvent: async (input) => {
+          recordedEvent = input;
+
+          return {
+            ok: true,
+            duplicate: false,
+            event: {
+              id: "event_1",
+              eventType: "storefront.page_viewed",
+              occurredAt: "2026-01-01T12:00:00.000Z",
+              receivedAt: "2026-01-01T12:00:01.000Z",
+              source: "storefront",
+            },
+          };
+        },
+      },
+    );
+
+    const response = await app.request("/store/analytics/events", {
+      body: JSON.stringify({
+        eventType: "storefront.page_viewed",
+        idempotencyKey: "view-1",
+        occurredAt: "2026-01-01T12:00:00.000Z",
+        properties: {
+          path: "/products/coffee",
+          tenantId: "tenant_from_body_should_be_ignored",
+        },
+        sessionId: "anonymous-session-1",
+        tenantId: "tenant_from_body_should_be_ignored",
+      }),
+      headers: {
+        "content-type": "application/json",
+        Host: "abebe.lvh.me",
+      },
+      method: "POST",
+    });
+
+    assert.equal(response.status, 202);
+    assert.deepEqual(recordedEvent, {
+      customerId: null,
+      eventType: "storefront.page_viewed",
+      idempotencyKey: "view-1",
+      occurredAt: "2026-01-01T12:00:00.000Z",
+      properties: {
+        path: "/products/coffee",
+        tenantId: "tenant_from_body_should_be_ignored",
+      },
+      sessionId: "anonymous-session-1",
+      source: "storefront",
+      subjectId: null,
+      subjectType: null,
+      tenantId: "tenant_1",
+    });
+    assert.deepEqual(await response.json(), {
+      event: {
+        duplicate: false,
+        id: "event_1",
+      },
     });
   });
 

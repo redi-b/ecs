@@ -42,6 +42,51 @@ async function getOptionalJsonObjectBody(request: Request) {
   return parsed as Record<string, unknown>;
 }
 
+async function recordStorefrontAnalyticsEvent(options: {
+  recordAnalyticsEvent: NonNullable<PlatformAppOptions["recordAnalyticsEvent"]>;
+  request: Request;
+  tenantId: string;
+}) {
+  let body: Record<string, unknown>;
+
+  try {
+    body = await getOptionalJsonObjectBody(options.request);
+  } catch {
+    return Response.json({ error: "invalid_analytics_event" }, { status: 400 });
+  }
+
+  if (typeof body.eventType !== "string") {
+    return Response.json({ error: "analytics_event_type_required" }, { status: 400 });
+  }
+
+  const event = await options.recordAnalyticsEvent({
+    customerId: typeof body.customerId === "string" ? body.customerId : null,
+    eventType: body.eventType,
+    idempotencyKey: typeof body.idempotencyKey === "string" ? body.idempotencyKey : null,
+    occurredAt: typeof body.occurredAt === "string" ? body.occurredAt : null,
+    properties: body.properties,
+    sessionId: typeof body.sessionId === "string" ? body.sessionId : null,
+    source: "storefront",
+    subjectId: typeof body.subjectId === "string" ? body.subjectId : null,
+    subjectType: typeof body.subjectType === "string" ? body.subjectType : null,
+    tenantId: options.tenantId,
+  });
+
+  if (!event.ok) {
+    return Response.json({ error: event.error }, { status: event.status });
+  }
+
+  return Response.json(
+    {
+      event: {
+        duplicate: event.duplicate,
+        id: event.event.id,
+      },
+    },
+    { status: 202 },
+  );
+}
+
 async function getTenantScopedStoreForwardRequest(options: {
   medusaInternalUrl: string;
   medusaPublishableKeyId: string;
@@ -147,6 +192,21 @@ export function registerStoreFacadeRoutes(
           currency: delivery.delivery.currency,
           zones: delivery.delivery.zones,
         },
+      });
+    }
+
+    if (
+      context.req.raw.method === "POST" &&
+      new URL(context.req.raw.url).pathname === "/store/analytics/events"
+    ) {
+      if (!options.recordAnalyticsEvent) {
+        return context.json({ error: "analytics_unavailable" }, 503);
+      }
+
+      return recordStorefrontAnalyticsEvent({
+        recordAnalyticsEvent: options.recordAnalyticsEvent,
+        request: context.req.raw,
+        tenantId: result.context.tenantId,
       });
     }
 

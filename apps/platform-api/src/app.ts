@@ -1,9 +1,15 @@
 import { Hono } from "hono";
 
+import type {
+  AnalyticsEventRecordInput,
+  AnalyticsEventRecordResult,
+} from "./analytics/analytics-service.js";
 import { registerMerchantRoutes } from "./routes/merchant-routes.js";
 import { registerPlatformRoutes } from "./routes/platform-routes.js";
 import { registerStoreFacadeRoutes } from "./routes/store-facade-routes.js";
 import type { TenantResolutionResult } from "./tenancy/tenant-resolver.js";
+
+export type { AnalyticsEventRecordInput, AnalyticsEventRecordResult };
 
 export type DashboardActorRole = "owner" | "manager" | "staff" | "operator";
 
@@ -494,6 +500,9 @@ export type PlatformAppOptions = {
         tenantId?: string | null | undefined;
         txRef?: string | null | undefined;
       }) => Promise<ChapaPaymentCallbackResult>)
+    | undefined;
+  recordAnalyticsEvent?:
+    | ((input: AnalyticsEventRecordInput) => Promise<AnalyticsEventRecordResult>)
     | undefined;
   getPublishedStorefrontConfig?:
     | ((input: {

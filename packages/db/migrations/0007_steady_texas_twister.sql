@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "analytics_events_tenant_source_idempotency_key_idx" ON "analytics_events" USING btree ("tenant_id","source","idempotency_key");
