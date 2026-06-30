@@ -11,9 +11,9 @@ import {
   tenantProvisioningAttempts,
   tenants,
 } from "@ecs/db";
-import { and, asc, desc, eq } from "drizzle-orm";
+import { and, asc, count, desc, eq } from "drizzle-orm";
 
-import type { TenantShopProvisioningResult } from "../app.js";
+import type { TenantProvisioningAttemptListResult, TenantShopProvisioningResult } from "../app.js";
 import type {
   CommerceProvisioningInput,
   CommerceProvisioningResult,
@@ -636,4 +636,57 @@ export function createTenantShopProvisioningRetryServiceFromDb(options: {
       };
     },
   });
+}
+
+export function createTenantProvisioningAttemptListService(db: PlatformDb) {
+  return async function listTenantProvisioningAttempts(input: {
+    limit: number;
+    offset: number;
+    userId: string;
+  }): Promise<TenantProvisioningAttemptListResult> {
+    const rows = await db
+      .select({
+        id: tenantProvisioningAttempts.id,
+        completedAt: tenantProvisioningAttempts.completedAt,
+        createdAt: tenantProvisioningAttempts.createdAt,
+        error: tenantProvisioningAttempts.error,
+        handle: tenantProvisioningAttempts.handle,
+        metadata: tenantProvisioningAttempts.metadata,
+        platformTenantId: tenantProvisioningAttempts.platformTenantId,
+        status: tenantProvisioningAttempts.status,
+        step: tenantProvisioningAttempts.step,
+        tenantId: tenantProvisioningAttempts.tenantId,
+      })
+      .from(tenantProvisioningAttempts)
+      .where(eq(tenantProvisioningAttempts.ownerUserId, input.userId))
+      .orderBy(desc(tenantProvisioningAttempts.createdAt))
+      .limit(input.limit)
+      .offset(input.offset);
+
+    const [total] = await db
+      .select({
+        count: count(),
+      })
+      .from(tenantProvisioningAttempts)
+      .where(eq(tenantProvisioningAttempts.ownerUserId, input.userId));
+
+    return {
+      ok: true,
+      attempts: rows.map((row) => ({
+        id: row.id,
+        completedAt: row.completedAt?.toISOString() ?? null,
+        createdAt: row.createdAt.toISOString(),
+        error: row.error,
+        handle: row.handle,
+        name: getRetryAttemptName(row.metadata, row.handle),
+        platformTenantId: row.platformTenantId,
+        status: row.status,
+        step: row.step,
+        tenantId: row.tenantId,
+      })),
+      count: total?.count ?? 0,
+      limit: input.limit,
+      offset: input.offset,
+    };
+  };
 }

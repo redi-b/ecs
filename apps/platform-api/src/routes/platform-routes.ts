@@ -827,6 +827,31 @@ export function registerPlatformRoutes(
     });
   });
 
+  app.get("/platform/provisioning-attempts", async (context) => {
+    if (!options.listTenantProvisioningAttempts) {
+      return context.json({ error: "tenant_provisioning_attempts_unavailable" }, 503);
+    }
+
+    const session = await options.getSession?.(context.req.raw.headers);
+
+    if (!session) {
+      return context.json({ error: "auth_required" }, 401);
+    }
+
+    const result = await options.listTenantProvisioningAttempts({
+      limit: getPaginationValue(context.req.query("limit"), 20, 100),
+      offset: getPaginationValue(context.req.query("offset"), 0, 10_000),
+      userId: session.user.id,
+    });
+
+    return context.json({
+      attempts: result.attempts,
+      count: result.count,
+      limit: result.limit,
+      offset: result.offset,
+    });
+  });
+
   app.get("/platform/operator/tenants/:tenantId/support", async (context) => {
     if (!options.getOperatorSupportHistory) {
       return context.json({ error: "support_history_unavailable" }, 503);

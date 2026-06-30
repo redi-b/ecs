@@ -21,6 +21,7 @@ import { createChapaPaymentService } from "./payments/chapa-payment-service.js";
 import { createPaymentOnboardingService } from "./payments/payment-onboarding-service.js";
 import { createMedusaCommerceProvisioningClient } from "./provisioning/medusa-commerce-provisioning.js";
 import {
+  createTenantProvisioningAttemptListService,
   createTenantShopProvisioningRetryServiceFromDb,
   createTenantShopProvisioningService,
 } from "./provisioning/tenant-shop-provisioning.js";
@@ -85,6 +86,7 @@ const retryTenantShopProvisioningAttempt = createTenantShopProvisioningRetryServ
   createTenantShop,
   db: platformDb.db,
 });
+const listTenantProvisioningAttempts = createTenantProvisioningAttemptListService(platformDb.db);
 const orderService = createMedusaOrderService({
   adminApiToken: process.env.MEDUSA_ADMIN_API_TOKEN,
   medusaInternalUrl,
@@ -124,6 +126,7 @@ const app = createPlatformApp({
   listMerchantOrders: orderService.listMerchantOrders,
   listMerchantProducts: productService.listMerchantProducts,
   listNotificationPreferences: notificationService.listNotificationPreferences,
+  listTenantProvisioningAttempts,
   listPaymentOnboarding: paymentOnboardingService.listPaymentOnboarding,
   listTenantDomains: domainManagementService.listTenantDomains,
   listStorefrontTemplates: storefrontTemplateService.listStorefrontTemplates,

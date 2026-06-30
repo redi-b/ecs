@@ -183,6 +183,30 @@ export const tenantReadinessSchema = z.object({
 
 export type TenantReadiness = z.infer<typeof tenantReadinessSchema>;
 
+export const tenantProvisioningAttemptSchema = z.object({
+  id: z.string().min(1),
+  completedAt: z.string().min(1).nullable(),
+  createdAt: z.string().min(1),
+  error: z.string().min(1).nullable(),
+  handle: z.string().min(1),
+  name: z.string().min(1),
+  platformTenantId: z.string().min(1),
+  status: z.string().min(1),
+  step: z.string().min(1),
+  tenantId: z.string().min(1).nullable(),
+});
+
+export const tenantProvisioningAttemptsSchema = z.object({
+  attempts: z.array(tenantProvisioningAttemptSchema),
+  count: z.number().int().nonnegative(),
+  limit: z.number().int().positive(),
+  offset: z.number().int().nonnegative(),
+});
+
+export type TenantProvisioningAttempt = z.infer<typeof tenantProvisioningAttemptSchema>;
+
+export type TenantProvisioningAttempts = z.infer<typeof tenantProvisioningAttemptsSchema>;
+
 export const storefrontTemplateCatalogItemSchema = z.object({
   id: z.string().min(1),
   slug: z.string().min(1),

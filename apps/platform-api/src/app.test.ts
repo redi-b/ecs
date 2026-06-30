@@ -30,6 +30,7 @@ import type {
   TenantDomainListResult,
   TenantDomainPrimaryResult,
   TenantOnboardingResult,
+  TenantProvisioningAttemptListResult,
   TenantReadinessResult,
   TenantShopProvisioningResult,
   TenantStatusUpdateResult,
@@ -135,6 +136,11 @@ function appWithResolution(
     }) => Promise<BillingInvoiceUpdateResult>;
     getTenantOnboarding?: (input: { tenantId: string }) => Promise<TenantOnboardingResult>;
     getTenantReadiness?: (input: { tenantId: string }) => Promise<TenantReadinessResult>;
+    listTenantProvisioningAttempts?: (input: {
+      limit: number;
+      offset: number;
+      userId: string;
+    }) => Promise<TenantProvisioningAttemptListResult>;
     retryTenantShopProvisioningAttempt?: (input: {
       attemptId: string;
       userId: string;
@@ -250,6 +256,7 @@ function appWithResolution(
     listMerchantProducts: options?.listMerchantProducts,
     listMerchantOrders: options?.listMerchantOrders,
     listNotificationPreferences: options?.listNotificationPreferences,
+    listTenantProvisioningAttempts: options?.listTenantProvisioningAttempts,
     listPaymentOnboarding: options?.listPaymentOnboarding,
     reviewPaymentOnboarding: options?.reviewPaymentOnboarding,
     listTenantDomains: options?.listTenantDomains,
@@ -2586,6 +2593,78 @@ describe("platform app", () => {
           hostname: "retry-shop.lvh.me",
         },
       },
+    });
+  });
+
+  it("lists provisioning attempts for the current platform user", async () => {
+    let listInput: { limit: number; offset: number; userId: string } | undefined;
+    const app = appWithResolution(
+      { ok: false, error: "shop_context_required" },
+      {
+        getSession: async () => ({
+          user: {
+            id: "user_1",
+            email: "owner@abebe.local",
+            name: "Abebe Owner",
+          },
+        }),
+        listTenantProvisioningAttempts: async (input) => {
+          listInput = input;
+
+          return {
+            ok: true,
+            attempts: [
+              {
+                id: "attempt_1",
+                completedAt: "2026-06-30T08:00:00.000Z",
+                createdAt: "2026-06-30T07:59:59.000Z",
+                error: "commerce_backend_unavailable",
+                handle: "retry-shop",
+                name: "Retry Shop",
+                platformTenantId: "00000000-0000-4000-8000-000000000001",
+                status: "failed",
+                step: "commerce_resources",
+                tenantId: null,
+              },
+            ],
+            count: 1,
+            limit: input.limit,
+            offset: input.offset,
+          };
+        },
+      },
+    );
+
+    const response = await app.request("/platform/provisioning-attempts?limit=5&offset=10", {
+      headers: {
+        Host: "api.lvh.me",
+      },
+    });
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(listInput, {
+      limit: 5,
+      offset: 10,
+      userId: "user_1",
+    });
+    assert.deepEqual(await response.json(), {
+      attempts: [
+        {
+          id: "attempt_1",
+          completedAt: "2026-06-30T08:00:00.000Z",
+          createdAt: "2026-06-30T07:59:59.000Z",
+          error: "commerce_backend_unavailable",
+          handle: "retry-shop",
+          name: "Retry Shop",
+          platformTenantId: "00000000-0000-4000-8000-000000000001",
+          status: "failed",
+          step: "commerce_resources",
+          tenantId: null,
+        },
+      ],
+      count: 1,
+      limit: 5,
+      offset: 10,
     });
   });
 

@@ -201,9 +201,22 @@ export type TenantReadinessMissingReason =
 export type TenantProvisioningAttemptSummary = {
   id: string;
   completedAt: string | null;
+  createdAt?: string;
   error: string | null;
+  handle?: string;
+  name?: string;
+  platformTenantId?: string;
   status: string;
   step: string;
+  tenantId?: string | null;
+};
+
+export type TenantProvisioningAttemptListResult = {
+  ok: true;
+  attempts: Required<TenantProvisioningAttemptSummary>[];
+  count: number;
+  limit: number;
+  offset: number;
 };
 
 export type TenantReadiness = {
@@ -653,6 +666,13 @@ export type PlatformAppOptions = {
     | undefined;
   getTenantReadiness?:
     | ((input: { tenantId: string }) => Promise<TenantReadinessResult>)
+    | undefined;
+  listTenantProvisioningAttempts?:
+    | ((input: {
+        limit: number;
+        offset: number;
+        userId: string;
+      }) => Promise<TenantProvisioningAttemptListResult>)
     | undefined;
   getTenantOnboarding?:
     | ((input: { tenantId: string }) => Promise<TenantOnboardingResult>)
