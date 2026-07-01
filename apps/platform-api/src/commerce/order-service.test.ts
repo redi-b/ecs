@@ -100,6 +100,14 @@ describe("createMedusaOrderService", () => {
             currency_code: "etb",
             total: 1250,
             sales_channel_id: "sc_1",
+            fulfillments: [
+              {
+                id: "ful_1",
+                delivered_at: null,
+                shipped_at: "2026-01-02T10:00:00.000Z",
+                canceled_at: null,
+              },
+            ],
             items: [
               {
                 id: "item_1",
@@ -130,7 +138,7 @@ describe("createMedusaOrderService", () => {
     assert.equal(url.origin + url.pathname, "http://medusa:9000/admin/orders/order_1");
     assert.equal(
       url.searchParams.get("fields"),
-      "id,display_id,email,status,payment_status,fulfillment_status,currency_code,total,sales_channel_id,items.id,items.title,items.quantity,items.detail.fulfilled_quantity,items.unit_price,items.total,items.thumbnail,created_at,updated_at",
+      "id,display_id,email,status,payment_status,fulfillment_status,currency_code,total,sales_channel_id,fulfillments.id,fulfillments.delivered_at,fulfillments.shipped_at,fulfillments.canceled_at,items.id,items.title,items.quantity,items.detail.fulfilled_quantity,items.unit_price,items.total,items.thumbnail,created_at,updated_at",
     );
     assert.deepEqual(result, {
       ok: true,
@@ -143,6 +151,14 @@ describe("createMedusaOrderService", () => {
         fulfillmentStatus: "not_fulfilled",
         currencyCode: "etb",
         total: 1250,
+        fulfillments: [
+          {
+            id: "ful_1",
+            deliveredAt: null,
+            shippedAt: "2026-01-02T10:00:00.000Z",
+            canceledAt: null,
+          },
+        ],
         items: [
           {
             id: "item_1",
@@ -480,6 +496,148 @@ describe("createMedusaOrderService", () => {
       ok: false,
       error: "order_not_fulfillable",
       status: 409,
+    });
+    assert.equal(calls, 1);
+  });
+
+  it("marks one order fulfillment as delivered through the Medusa Admin API", async () => {
+    const forwardedRequests: Request[] = [];
+    const service = createMedusaOrderService({
+      adminApiToken: "medusa_token",
+      medusaInternalUrl: "http://medusa:9000",
+      fetcher: async (input, init) => {
+        const request = new Request(input, init);
+        forwardedRequests.push(request);
+
+        if (request.method === "POST") {
+          return Response.json({
+            order: {
+              id: "order_1",
+              display_id: 1001,
+              email: "customer@example.com",
+              status: "pending",
+              payment_status: "captured",
+              fulfillment_status: "delivered",
+              currency_code: "etb",
+              total: 1250,
+              sales_channel_id: "sc_1",
+              fulfillments: [
+                {
+                  id: "ful_1",
+                  delivered_at: "2026-01-03T00:00:00.000Z",
+                  shipped_at: null,
+                  canceled_at: null,
+                },
+              ],
+              items: [],
+              created_at: "2026-01-01T00:00:00.000Z",
+              updated_at: "2026-01-03T00:00:00.000Z",
+            },
+          });
+        }
+
+        return Response.json({
+          order: {
+            id: "order_1",
+            display_id: 1001,
+            email: "customer@example.com",
+            status: "pending",
+            payment_status: "captured",
+            fulfillment_status: "fulfilled",
+            currency_code: "etb",
+            total: 1250,
+            sales_channel_id: "sc_1",
+            fulfillments: [
+              {
+                id: "ful_1",
+                delivered_at: null,
+                shipped_at: null,
+                canceled_at: null,
+              },
+            ],
+            items: [],
+            created_at: "2026-01-01T00:00:00.000Z",
+            updated_at: "2026-01-02T00:00:00.000Z",
+          },
+        });
+      },
+    });
+
+    const result = await service.mutateMerchantOrder({
+      action: "deliver",
+      fulfillmentId: "ful_1",
+      orderId: "order_1",
+      salesChannelId: "sc_1",
+    });
+
+    assert.equal(result.ok, true);
+    assert.equal(forwardedRequests.length, 2);
+    assert.equal(forwardedRequests[0]?.method, "GET");
+    assert.equal(forwardedRequests[1]?.method, "POST");
+    assert.equal(
+      forwardedRequests[1]?.url,
+      "http://medusa:9000/admin/orders/order_1/fulfillments/ful_1/mark-as-delivered",
+    );
+    assert.equal(await forwardedRequests[1]?.text(), "{}");
+    assert.deepEqual(result, {
+      ok: true,
+      order: {
+        id: "order_1",
+        displayId: 1001,
+        email: "customer@example.com",
+        status: "pending",
+        paymentStatus: "captured",
+        fulfillmentStatus: "delivered",
+        currencyCode: "etb",
+        total: 1250,
+        fulfillments: [
+          {
+            id: "ful_1",
+            deliveredAt: "2026-01-03T00:00:00.000Z",
+            shippedAt: null,
+            canceledAt: null,
+          },
+        ],
+        items: [],
+        createdAt: "2026-01-01T00:00:00.000Z",
+        updatedAt: "2026-01-03T00:00:00.000Z",
+      },
+    });
+  });
+
+  it("does not deliver fulfillments outside the scoped order", async () => {
+    let calls = 0;
+    const service = createMedusaOrderService({
+      adminApiToken: "medusa_token",
+      medusaInternalUrl: "http://medusa:9000",
+      fetcher: async () => {
+        calls += 1;
+
+        return Response.json({
+          order: {
+            id: "order_1",
+            sales_channel_id: "sc_1",
+            fulfillments: [
+              {
+                id: "ful_1",
+              },
+            ],
+          },
+        });
+      },
+    });
+
+    const result = await service.mutateMerchantOrder({
+      action: "deliver",
+      fulfillmentId: "ful_other",
+      orderId: "order_1",
+      salesChannelId: "sc_1",
+    });
+
+    assert.deepEqual(result, {
+      ok: false,
+      error: "order_fulfillment_not_found",
+      status: 404,
     });
     assert.equal(calls, 1);
   });

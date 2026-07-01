@@ -69,6 +69,7 @@ export function createMedusaOrderService(options: {
 
     mutateMerchantOrder: async (input: {
       action: MerchantOrderAction;
+      fulfillmentId?: string | undefined;
       orderId: string;
       salesChannelId: string;
       stockLocationId?: string | undefined;
@@ -85,6 +86,13 @@ export function createMedusaOrderService(options: {
 
       if (input.action === "fulfill") {
         return fulfillMerchantOrder(fetcher, options, {
+          ...input,
+          order: existing.order,
+        });
+      }
+
+      if (input.action === "deliver") {
+        return deliverMerchantOrderFulfillment(fetcher, options, {
           ...input,
           order: existing.order,
         });
@@ -363,6 +371,94 @@ async function fulfillMerchantOrder(
   };
 }
 
+async function deliverMerchantOrderFulfillment(
+  fetcher: typeof fetch,
+  options: {
+    adminApiToken?: string | undefined;
+    medusaInternalUrl: string;
+  },
+  input: {
+    fulfillmentId?: string | undefined;
+    order: MerchantOrder;
+    orderId: string;
+    salesChannelId: string;
+  },
+): Promise<MerchantOrderActionResult> {
+  const fulfillmentId = input.fulfillmentId?.trim();
+
+  if (
+    !fulfillmentId ||
+    !input.order.fulfillments?.some((fulfillment) => fulfillment.id === fulfillmentId)
+  ) {
+    return {
+      ok: false,
+      error: "order_fulfillment_not_found",
+      status: 404,
+    };
+  }
+
+  const response = await requestMedusa(
+    fetcher,
+    getOrderFulfillmentDeliveryUrl(options.medusaInternalUrl, {
+      fulfillmentId,
+      orderId: input.orderId,
+    }),
+    {
+      body: JSON.stringify({}),
+      headers: getAdminHeaders(options.adminApiToken ?? ""),
+      method: "POST",
+    },
+  );
+
+  if (response.status === 401) {
+    return {
+      ok: false,
+      error: "commerce_credentials_missing",
+      status: 401,
+    };
+  }
+
+  if (response.status === 404) {
+    return {
+      ok: false,
+      error: "order_fulfillment_not_found",
+      status: 404,
+    };
+  }
+
+  if (response.status === 409) {
+    return {
+      ok: false,
+      error: "order_not_fulfillable",
+      status: 409,
+    };
+  }
+
+  if (!response.ok) {
+    return {
+      ok: false,
+      error: "commerce_backend_unavailable",
+      status: 503,
+    };
+  }
+
+  const data = await response.json().catch(() => undefined);
+  const order = normalizeOrder(data?.order, input.salesChannelId)[0];
+
+  if (!order) {
+    return {
+      ok: false,
+      error: "order_not_found",
+      status: 404,
+    };
+  }
+
+  return {
+    ok: true,
+    order,
+  };
+}
+
 function getOrdersUrl(
   medusaInternalUrl: string,
   input: { limit: number; offset: number; salesChannelId: string },
@@ -391,7 +487,7 @@ function getOrderUrl(
 
   url.searchParams.set(
     "fields",
-    "id,display_id,email,status,payment_status,fulfillment_status,currency_code,total,sales_channel_id,items.id,items.title,items.quantity,items.detail.fulfilled_quantity,items.unit_price,items.total,items.thumbnail,created_at,updated_at",
+    "id,display_id,email,status,payment_status,fulfillment_status,currency_code,total,sales_channel_id,fulfillments.id,fulfillments.delivered_at,fulfillments.shipped_at,fulfillments.canceled_at,items.id,items.title,items.quantity,items.detail.fulfilled_quantity,items.unit_price,items.total,items.thumbnail,created_at,updated_at",
   );
 
   return url;
@@ -400,6 +496,18 @@ function getOrderUrl(
 function getOrderFulfillmentUrl(medusaInternalUrl: string, input: { orderId: string }) {
   return new URL(
     `/admin/orders/${encodeURIComponent(input.orderId)}/fulfillments`,
+    normalizeBaseUrl(medusaInternalUrl),
+  );
+}
+
+function getOrderFulfillmentDeliveryUrl(
+  medusaInternalUrl: string,
+  input: { fulfillmentId: string; orderId: string },
+) {
+  return new URL(
+    `/admin/orders/${encodeURIComponent(input.orderId)}/fulfillments/${encodeURIComponent(
+      input.fulfillmentId,
+    )}/mark-as-delivered`,
     normalizeBaseUrl(medusaInternalUrl),
   );
 }
@@ -429,6 +537,8 @@ function normalizeOrder(value: unknown, salesChannelId: string): MerchantOrder[]
     return [];
   }
 
+  const fulfillments = getFulfillments(value.fulfillments);
+
   return [
     {
       id,
@@ -439,11 +549,39 @@ function normalizeOrder(value: unknown, salesChannelId: string): MerchantOrder[]
       fulfillmentStatus: getString(value.fulfillment_status),
       currencyCode: getString(value.currency_code),
       total: getNumber(value.total) ?? null,
+      ...(fulfillments.length === 0 ? {} : { fulfillments }),
       items: getLineItems(value.items),
       createdAt: getString(value.created_at),
       updatedAt: getString(value.updated_at),
     },
   ];
+}
+
+function getFulfillments(value: unknown) {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.flatMap((fulfillment) => {
+    if (!isRecord(fulfillment)) {
+      return [];
+    }
+
+    const id = getString(fulfillment.id);
+
+    if (!id) {
+      return [];
+    }
+
+    return [
+      {
+        id,
+        deliveredAt: getString(fulfillment.delivered_at),
+        shippedAt: getString(fulfillment.shipped_at),
+        canceledAt: getString(fulfillment.canceled_at),
+      },
+    ];
+  });
 }
 
 function getLineItems(value: unknown) {

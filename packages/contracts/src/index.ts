@@ -148,6 +148,16 @@ export const merchantOrderSchema = z.object({
   fulfillmentStatus: z.string().min(1).nullable(),
   currencyCode: z.string().min(1).nullable(),
   total: z.number().nullable(),
+  fulfillments: z
+    .array(
+      z.object({
+        id: z.string().min(1),
+        deliveredAt: z.string().min(1).nullable(),
+        shippedAt: z.string().min(1).nullable(),
+        canceledAt: z.string().min(1).nullable(),
+      }),
+    )
+    .optional(),
   createdAt: z.string().min(1).nullable(),
   updatedAt: z.string().min(1).nullable(),
 });

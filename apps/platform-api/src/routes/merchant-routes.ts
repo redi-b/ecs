@@ -376,13 +376,19 @@ export function registerMerchantRoutes(
     }
 
     const orderId = context.req.param("orderId");
+    const fulfillmentId = context.req.param("fulfillmentId");
 
     if (!orderId) {
       return context.json({ error: "order_not_found" }, 404);
     }
 
+    if (action === "deliver" && !fulfillmentId) {
+      return context.json({ error: "order_fulfillment_not_found" }, 404);
+    }
+
     const order = await options.mutateMerchantOrder({
       action,
+      ...(action === "deliver" ? { fulfillmentId } : {}),
       orderId,
       salesChannelId: merchant.result.context.medusaSalesChannelId,
       ...(action === "fulfill"
@@ -409,6 +415,10 @@ export function registerMerchantRoutes(
 
   app.post("/platform/merchant/orders/:orderId/fulfill", (context) =>
     mutateResolvedMerchantOrder(context, "fulfill"),
+  );
+
+  app.post("/platform/merchant/orders/:orderId/fulfillments/:fulfillmentId/deliver", (context) =>
+    mutateResolvedMerchantOrder(context, "deliver"),
   );
 
   app.get("/platform/merchant/products", async (context) => {

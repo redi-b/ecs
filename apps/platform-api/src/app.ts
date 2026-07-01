@@ -496,9 +496,17 @@ export type MerchantOrder = {
   fulfillmentStatus: string | null;
   currencyCode: string | null;
   total: number | null;
+  fulfillments?: MerchantOrderFulfillment[];
   items?: MerchantOrderLineItem[];
   createdAt: string | null;
   updatedAt: string | null;
+};
+
+export type MerchantOrderFulfillment = {
+  id: string;
+  deliveredAt: string | null;
+  shippedAt: string | null;
+  canceledAt: string | null;
 };
 
 export type MerchantOrderLineItem = {
@@ -536,12 +544,13 @@ export type MerchantOrderDetailResult =
         | "commerce_backend_unavailable"
         | "commerce_credentials_missing"
         | "inventory_location_unavailable"
+        | "order_fulfillment_not_found"
         | "order_not_found"
         | "order_not_fulfillable";
       status: 401 | 404 | 409 | 503;
     };
 
-export type MerchantOrderAction = "cancel" | "complete" | "fulfill";
+export type MerchantOrderAction = "cancel" | "complete" | "deliver" | "fulfill";
 
 export type MerchantOrderActionResult = MerchantOrderDetailResult;
 
@@ -1050,6 +1059,7 @@ export type PlatformAppOptions = {
   mutateMerchantOrder?:
     | ((input: {
         action: MerchantOrderAction;
+        fulfillmentId?: string | undefined;
         orderId: string;
         salesChannelId: string;
         stockLocationId?: string | undefined;

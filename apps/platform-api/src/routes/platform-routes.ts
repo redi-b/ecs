@@ -266,9 +266,14 @@ export function registerPlatformRoutes(
 
     const tenantId = context.req.param("tenantId");
     const orderId = context.req.param("orderId");
+    const fulfillmentId = context.req.param("fulfillmentId");
 
     if (!tenantId || !orderId) {
       return context.json({ error: "order_not_found" }, 404);
+    }
+
+    if (action === "deliver" && !fulfillmentId) {
+      return context.json({ error: "order_fulfillment_not_found" }, 404);
     }
 
     const commerce = await options.getTenantCommerceContext({
@@ -286,6 +291,7 @@ export function registerPlatformRoutes(
 
     const order = await options.mutateMerchantOrder({
       action,
+      ...(action === "deliver" ? { fulfillmentId } : {}),
       orderId,
       salesChannelId: commerce.context.medusaSalesChannelId,
       ...(action === "fulfill"
@@ -312,6 +318,11 @@ export function registerPlatformRoutes(
 
   app.post("/platform/tenants/:tenantId/orders/:orderId/fulfill", (context) =>
     mutateSelectedTenantOrder(context, "fulfill"),
+  );
+
+  app.post(
+    "/platform/tenants/:tenantId/orders/:orderId/fulfillments/:fulfillmentId/deliver",
+    (context) => mutateSelectedTenantOrder(context, "deliver"),
   );
 
   app.get("/platform/tenants/:tenantId/products", async (context) => {

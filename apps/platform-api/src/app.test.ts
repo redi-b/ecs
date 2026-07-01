@@ -181,6 +181,7 @@ function appWithResolution(
     }) => Promise<MerchantOrderDetailResult>;
     mutateMerchantOrder?: (input: {
       action: MerchantOrderAction;
+      fulfillmentId?: string | undefined;
       orderId: string;
       salesChannelId: string;
       stockLocationId?: string | undefined;
@@ -3830,6 +3831,110 @@ describe("platform app", () => {
     });
   });
 
+  it("marks merchant order fulfillments as delivered for the resolved tenant", async () => {
+    let orderInput:
+      | {
+          action: MerchantOrderAction;
+          fulfillmentId?: string | undefined;
+          orderId: string;
+          salesChannelId: string;
+        }
+      | undefined;
+    const app = appWithResolution(
+      {
+        ok: true,
+        context: resolvedTenantContext,
+      },
+      {
+        authorizeDashboardForTenant: async () => ({
+          ok: true,
+          actor: {
+            id: "user_1",
+            email: "owner@abebe.local",
+            name: "Abebe Owner",
+            role: "owner",
+          },
+        }),
+        getSession: async () => ({
+          user: {
+            id: "user_1",
+            email: "owner@abebe.local",
+            name: "Abebe Owner",
+          },
+        }),
+        mutateMerchantOrder: async (input) => {
+          orderInput = input;
+
+          return {
+            ok: true,
+            order: {
+              id: "order_1",
+              displayId: 1001,
+              email: "customer@example.com",
+              status: "pending",
+              paymentStatus: "captured",
+              fulfillmentStatus: "delivered",
+              currencyCode: "etb",
+              total: 1250,
+              fulfillments: [
+                {
+                  id: "ful_1",
+                  deliveredAt: "2026-01-03T00:00:00.000Z",
+                  shippedAt: null,
+                  canceledAt: null,
+                },
+              ],
+              items: [],
+              createdAt: "2026-01-01T00:00:00.000Z",
+              updatedAt: "2026-01-03T00:00:00.000Z",
+            },
+          };
+        },
+      },
+    );
+
+    const response = await app.request(
+      "/platform/merchant/orders/order_1/fulfillments/ful_1/deliver",
+      {
+        headers: {
+          Host: "abebe.lvh.me",
+        },
+        method: "POST",
+      },
+    );
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(orderInput, {
+      action: "deliver",
+      fulfillmentId: "ful_1",
+      orderId: "order_1",
+      salesChannelId: "channel_1",
+    });
+    assert.deepEqual(await response.json(), {
+      order: {
+        id: "order_1",
+        displayId: 1001,
+        email: "customer@example.com",
+        status: "pending",
+        paymentStatus: "captured",
+        fulfillmentStatus: "delivered",
+        currencyCode: "etb",
+        total: 1250,
+        fulfillments: [
+          {
+            id: "ful_1",
+            deliveredAt: "2026-01-03T00:00:00.000Z",
+            shippedAt: null,
+            canceledAt: null,
+          },
+        ],
+        items: [],
+        createdAt: "2026-01-01T00:00:00.000Z",
+        updatedAt: "2026-01-03T00:00:00.000Z",
+      },
+    });
+  });
+
   it("lists tenant orders scoped to the selected tenant sales channel", async () => {
     let commerceInput:
       | {
@@ -4229,6 +4334,122 @@ describe("platform app", () => {
         items: [],
         createdAt: "2026-01-01T00:00:00.000Z",
         updatedAt: "2026-01-02T00:00:00.000Z",
+      },
+    });
+  });
+
+  it("marks tenant order fulfillments as delivered for the selected tenant", async () => {
+    let commerceInput:
+      | {
+          tenantId: string;
+          userId: string;
+        }
+      | undefined;
+    let orderInput:
+      | {
+          action: MerchantOrderAction;
+          fulfillmentId?: string | undefined;
+          orderId: string;
+          salesChannelId: string;
+        }
+      | undefined;
+    const app = appWithResolution(
+      {
+        ok: false,
+        error: "shop_context_required",
+      },
+      {
+        getSession: async () => ({
+          user: {
+            id: "user_1",
+            email: "owner@abebe.local",
+            name: "Abebe Owner",
+          },
+        }),
+        getTenantCommerceContext: async (input) => {
+          commerceInput = input;
+
+          return {
+            ok: true,
+            context: {
+              tenantId: "tenant_1",
+              medusaStoreId: "store_1",
+              medusaSalesChannelId: "channel_1",
+              medusaPublishableKeyId: "pk_1",
+              medusaRegionId: "reg_1",
+            },
+          };
+        },
+        mutateMerchantOrder: async (input) => {
+          orderInput = input;
+
+          return {
+            ok: true,
+            order: {
+              id: "order_1",
+              displayId: 1001,
+              email: "customer@example.com",
+              status: "pending",
+              paymentStatus: "captured",
+              fulfillmentStatus: "delivered",
+              currencyCode: "etb",
+              total: 1250,
+              fulfillments: [
+                {
+                  id: "ful_1",
+                  deliveredAt: "2026-01-03T00:00:00.000Z",
+                  shippedAt: null,
+                  canceledAt: null,
+                },
+              ],
+              items: [],
+              createdAt: "2026-01-01T00:00:00.000Z",
+              updatedAt: "2026-01-03T00:00:00.000Z",
+            },
+          };
+        },
+      },
+    );
+
+    const response = await app.request(
+      "/platform/tenants/tenant_1/orders/order_1/fulfillments/ful_1/deliver",
+      {
+        method: "POST",
+      },
+    );
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(commerceInput, {
+      tenantId: "tenant_1",
+      userId: "user_1",
+    });
+    assert.deepEqual(orderInput, {
+      action: "deliver",
+      fulfillmentId: "ful_1",
+      orderId: "order_1",
+      salesChannelId: "channel_1",
+    });
+    assert.deepEqual(await response.json(), {
+      order: {
+        id: "order_1",
+        displayId: 1001,
+        email: "customer@example.com",
+        status: "pending",
+        paymentStatus: "captured",
+        fulfillmentStatus: "delivered",
+        currencyCode: "etb",
+        total: 1250,
+        fulfillments: [
+          {
+            id: "ful_1",
+            deliveredAt: "2026-01-03T00:00:00.000Z",
+            shippedAt: null,
+            canceledAt: null,
+          },
+        ],
+        items: [],
+        createdAt: "2026-01-01T00:00:00.000Z",
+        updatedAt: "2026-01-03T00:00:00.000Z",
       },
     });
   });
