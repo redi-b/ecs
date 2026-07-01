@@ -163,6 +163,82 @@ export function registerPlatformRoutes(
     });
   });
 
+  app.get("/platform/tenants/:tenantId/orders", async (context) => {
+    if (!options.getTenantCommerceContext || !options.listMerchantOrders) {
+      return context.json({ error: "commerce_backend_unavailable" }, 503);
+    }
+
+    const session = await options.getSession?.(context.req.raw.headers);
+
+    if (!session) {
+      return context.json({ error: "auth_required" }, 401);
+    }
+
+    const commerce = await options.getTenantCommerceContext({
+      tenantId: context.req.param("tenantId"),
+      userId: session.user.id,
+    });
+
+    if (!commerce.ok) {
+      return context.json({ error: commerce.error }, commerce.status);
+    }
+
+    const orders = await options.listMerchantOrders({
+      limit: getPaginationValue(context.req.query("limit"), 20, 100),
+      offset: getPaginationValue(context.req.query("offset"), 0, 10_000),
+      salesChannelId: commerce.context.medusaSalesChannelId,
+    });
+
+    if (!orders.ok) {
+      return context.json({ error: orders.error }, orders.status);
+    }
+
+    return context.json({
+      orders: orders.orders,
+      count: orders.count,
+      limit: orders.limit,
+      offset: orders.offset,
+    });
+  });
+
+  app.get("/platform/tenants/:tenantId/products", async (context) => {
+    if (!options.getTenantCommerceContext || !options.listMerchantProducts) {
+      return context.json({ error: "commerce_backend_unavailable" }, 503);
+    }
+
+    const session = await options.getSession?.(context.req.raw.headers);
+
+    if (!session) {
+      return context.json({ error: "auth_required" }, 401);
+    }
+
+    const commerce = await options.getTenantCommerceContext({
+      tenantId: context.req.param("tenantId"),
+      userId: session.user.id,
+    });
+
+    if (!commerce.ok) {
+      return context.json({ error: commerce.error }, commerce.status);
+    }
+
+    const products = await options.listMerchantProducts({
+      limit: getPaginationValue(context.req.query("limit"), 20, 100),
+      offset: getPaginationValue(context.req.query("offset"), 0, 10_000),
+      salesChannelId: commerce.context.medusaSalesChannelId,
+    });
+
+    if (!products.ok) {
+      return context.json({ error: products.error }, products.status);
+    }
+
+    return context.json({
+      products: products.products,
+      count: products.count,
+      limit: products.limit,
+      offset: products.offset,
+    });
+  });
+
   app.post("/platform/tenants", async (context) => {
     if (!options.createTenantShop) {
       return context.json({ error: "tenant_provisioning_unavailable" }, 503);

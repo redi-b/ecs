@@ -26,6 +26,7 @@ import type {
   StorefrontTemplateSelectionResult,
   SupportHistoryResult,
   SupportNoteCreateResult,
+  TenantCommerceContextResult,
   TenantDetailResult,
   TenantDomainCreateResult,
   TenantDomainListResult,
@@ -143,6 +144,10 @@ function appWithResolution(
       days: number;
       tenantId: string;
     }) => Promise<TenantInsightsSummaryResult>;
+    getTenantCommerceContext?: (input: {
+      tenantId: string;
+      userId: string;
+    }) => Promise<TenantCommerceContextResult>;
     getTenantReadiness?: (input: { tenantId: string }) => Promise<TenantReadinessResult>;
     listTenantsForUser?: (input: {
       limit: number;
@@ -264,6 +269,7 @@ function appWithResolution(
     getStorefrontDraft: options?.getStorefrontDraft,
     getOperatorSupportHistory: options?.getOperatorSupportHistory,
     getTenantForUser: options?.getTenantForUser,
+    getTenantCommerceContext: options?.getTenantCommerceContext,
     getTenantInsightsSummary: options?.getTenantInsightsSummary,
     getTenantReadiness: options?.getTenantReadiness,
     getTenantOnboarding: options?.getTenantOnboarding,
@@ -3385,6 +3391,107 @@ describe("platform app", () => {
     });
   });
 
+  it("lists tenant orders scoped to the selected tenant sales channel", async () => {
+    let commerceInput:
+      | {
+          tenantId: string;
+          userId: string;
+        }
+      | undefined;
+    let ordersInput:
+      | {
+          limit: number;
+          offset: number;
+          salesChannelId: string;
+        }
+      | undefined;
+    const app = appWithResolution(
+      {
+        ok: false,
+        error: "shop_context_required",
+      },
+      {
+        getSession: async () => ({
+          user: {
+            id: "user_1",
+            email: "owner@abebe.local",
+            name: "Abebe Owner",
+          },
+        }),
+        getTenantCommerceContext: async (input) => {
+          commerceInput = input;
+
+          return {
+            ok: true,
+            context: {
+              tenantId: "tenant_1",
+              medusaStoreId: "store_1",
+              medusaSalesChannelId: "channel_1",
+              medusaPublishableKeyId: "pk_1",
+              medusaRegionId: "reg_1",
+            },
+          };
+        },
+        listMerchantOrders: async (input) => {
+          ordersInput = input;
+
+          return {
+            ok: true,
+            count: 1,
+            limit: input.limit,
+            offset: input.offset,
+            orders: [
+              {
+                id: "order_1",
+                displayId: 1001,
+                email: "customer@example.com",
+                status: "pending",
+                paymentStatus: "awaiting",
+                fulfillmentStatus: "not_fulfilled",
+                currencyCode: "etb",
+                total: 1250,
+                createdAt: "2026-01-01T00:00:00.000Z",
+                updatedAt: "2026-01-02T00:00:00.000Z",
+              },
+            ],
+          };
+        },
+      },
+    );
+
+    const response = await app.request("/platform/tenants/tenant_1/orders?limit=5&offset=10");
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(commerceInput, {
+      tenantId: "tenant_1",
+      userId: "user_1",
+    });
+    assert.deepEqual(ordersInput, {
+      limit: 5,
+      offset: 10,
+      salesChannelId: "channel_1",
+    });
+    assert.deepEqual(await response.json(), {
+      orders: [
+        {
+          id: "order_1",
+          displayId: 1001,
+          email: "customer@example.com",
+          status: "pending",
+          paymentStatus: "awaiting",
+          fulfillmentStatus: "not_fulfilled",
+          currencyCode: "etb",
+          total: 1250,
+          createdAt: "2026-01-01T00:00:00.000Z",
+          updatedAt: "2026-01-02T00:00:00.000Z",
+        },
+      ],
+      count: 1,
+      limit: 5,
+      offset: 10,
+    });
+  });
+
   it("lists merchant products scoped to the resolved tenant sales channel", async () => {
     let productsInput:
       | {
@@ -3446,6 +3553,101 @@ describe("platform app", () => {
     });
 
     assert.equal(response.status, 200);
+    assert.deepEqual(productsInput, {
+      limit: 5,
+      offset: 10,
+      salesChannelId: "channel_1",
+    });
+    assert.deepEqual(await response.json(), {
+      products: [
+        {
+          id: "prod_1",
+          title: "Coffee",
+          handle: "coffee",
+          status: "published",
+          thumbnail: null,
+          createdAt: "2026-01-01T00:00:00.000Z",
+          updatedAt: "2026-01-02T00:00:00.000Z",
+        },
+      ],
+      count: 1,
+      limit: 5,
+      offset: 10,
+    });
+  });
+
+  it("lists tenant products scoped to the selected tenant sales channel", async () => {
+    let commerceInput:
+      | {
+          tenantId: string;
+          userId: string;
+        }
+      | undefined;
+    let productsInput:
+      | {
+          limit: number;
+          offset: number;
+          salesChannelId: string;
+        }
+      | undefined;
+    const app = appWithResolution(
+      {
+        ok: false,
+        error: "shop_context_required",
+      },
+      {
+        getSession: async () => ({
+          user: {
+            id: "user_1",
+            email: "owner@abebe.local",
+            name: "Abebe Owner",
+          },
+        }),
+        getTenantCommerceContext: async (input) => {
+          commerceInput = input;
+
+          return {
+            ok: true,
+            context: {
+              tenantId: "tenant_1",
+              medusaStoreId: "store_1",
+              medusaSalesChannelId: "channel_1",
+              medusaPublishableKeyId: "pk_1",
+              medusaRegionId: "reg_1",
+            },
+          };
+        },
+        listMerchantProducts: async (input) => {
+          productsInput = input;
+
+          return {
+            ok: true,
+            count: 1,
+            limit: input.limit,
+            offset: input.offset,
+            products: [
+              {
+                id: "prod_1",
+                title: "Coffee",
+                handle: "coffee",
+                status: "published",
+                thumbnail: null,
+                createdAt: "2026-01-01T00:00:00.000Z",
+                updatedAt: "2026-01-02T00:00:00.000Z",
+              },
+            ],
+          };
+        },
+      },
+    );
+
+    const response = await app.request("/platform/tenants/tenant_1/products?limit=5&offset=10");
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(commerceInput, {
+      tenantId: "tenant_1",
+      userId: "user_1",
+    });
     assert.deepEqual(productsInput, {
       limit: 5,
       offset: 10,

@@ -31,6 +31,7 @@ import { createStorefrontTemplateService } from "./storefront/template-service.j
 import { createSupportService } from "./support/support-service.js";
 import { createDomainTenantLookup } from "./tenancy/domain-tenant-lookup.js";
 import { resolveTenantFromHost } from "./tenancy/tenant-resolver.js";
+import { createTenantCommerceContextService } from "./tenants/tenant-commerce-context-service.js";
 import {
   createTenantDetailService,
   createTenantListService,
@@ -69,6 +70,7 @@ const authorizeDashboardForTenant = createDashboardAuthorizationLookup(platformD
 const storefrontTemplateService = createStorefrontTemplateService(platformDb.db);
 const supportService = createSupportService(platformDb.db);
 const tenantOnboardingService = createTenantOnboardingService(platformDb.db);
+const getTenantCommerceContext = createTenantCommerceContextService(platformDb.db);
 const getTenantForUser = createTenantDetailService(platformDb.db);
 const listTenantsForUser = createTenantListService(platformDb.db);
 const tenantStatusService = createTenantStatusService(platformDb.db);
@@ -131,6 +133,7 @@ const app = createPlatformApp({
   getOperatorSupportHistory: supportService.getOperatorSupportHistory,
   getPublishedStorefrontConfig: storefrontTemplateService.getPublishedStorefrontConfig,
   getStorefrontDraft: storefrontTemplateService.getStorefrontDraft,
+  getTenantCommerceContext,
   getTenantForUser,
   getTenantInsightsSummary: analyticsInsightsService.getTenantInsightsSummary,
   getTenantOnboarding: tenantOnboardingService.getTenantOnboarding,

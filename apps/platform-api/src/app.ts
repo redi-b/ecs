@@ -399,6 +399,23 @@ export type MerchantOrdersResult =
       status: 401 | 503;
     };
 
+export type TenantCommerceContextResult =
+  | {
+      ok: true;
+      context: {
+        tenantId: string;
+        medusaStoreId: string | null;
+        medusaSalesChannelId: string;
+        medusaPublishableKeyId: string | null;
+        medusaRegionId: string | null;
+      };
+    }
+  | {
+      ok: false;
+      error: "tenant_not_found" | "commerce_sales_channel_unavailable";
+      status: 404 | 503;
+    };
+
 export type StorefrontTemplateCatalogItem = {
   id: string;
   slug: string;
@@ -702,6 +719,9 @@ export type PlatformAppOptions = {
     | undefined;
   getTenantInsightsSummary?:
     | ((input: { days: number; tenantId: string }) => Promise<TenantInsightsSummaryResult>)
+    | undefined;
+  getTenantCommerceContext?:
+    | ((input: { tenantId: string; userId: string }) => Promise<TenantCommerceContextResult>)
     | undefined;
   getTenantForUser?:
     | ((input: { tenantId: string; userId: string }) => Promise<TenantDetailResult>)
