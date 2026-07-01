@@ -472,6 +472,35 @@ export function registerMerchantRoutes(
     });
   });
 
+  app.get("/platform/merchant/products/:productId", async (context) => {
+    const merchant = await getAuthorizedMerchantContext(context);
+
+    if (!merchant.ok) {
+      return merchant.response;
+    }
+
+    if (!merchant.result.context.medusaSalesChannelId) {
+      return context.json({ error: "domain_misconfigured" }, 409);
+    }
+
+    if (!options.getMerchantProduct) {
+      return context.json({ error: "commerce_backend_unavailable" }, 503);
+    }
+
+    const product = await options.getMerchantProduct({
+      productId: context.req.param("productId"),
+      salesChannelId: merchant.result.context.medusaSalesChannelId,
+    });
+
+    if (!product.ok) {
+      return context.json({ error: product.error }, product.status);
+    }
+
+    return context.json({
+      product: product.product,
+    });
+  });
+
   app.get("/platform/merchant/products/:productId/stock", async (context) => {
     const session = await options.getSession?.(context.req.raw.headers);
 

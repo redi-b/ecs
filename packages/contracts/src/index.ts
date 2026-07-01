@@ -114,10 +114,29 @@ export type PlatformError = z.infer<typeof platformErrorSchema>;
 
 export const merchantProductSchema = z.object({
   id: z.string().min(1),
+  categoryIds: z.array(z.string().min(1)).optional(),
+  collectionId: z.string().min(1).nullable().optional(),
+  description: z.string().min(1).nullable().optional(),
   title: z.string().min(1).nullable(),
   handle: z.string().min(1).nullable(),
   status: z.string().min(1).nullable(),
   thumbnail: z.string().min(1).nullable(),
+  variants: z
+    .array(
+      z.object({
+        id: z.string().min(1),
+        inventoryItemId: z.string().min(1).nullable().optional(),
+        title: z.string().min(1).nullable(),
+        sku: z.string().min(1).nullable(),
+        prices: z.array(
+          z.object({
+            amount: z.number().nullable(),
+            currencyCode: z.string().min(1).nullable(),
+          }),
+        ),
+      }),
+    )
+    .optional(),
   createdAt: z.string().min(1).nullable(),
   updatedAt: z.string().min(1).nullable(),
 });

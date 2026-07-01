@@ -182,6 +182,109 @@ describe("createMedusaProductService", () => {
     });
   });
 
+  it("gets a product only when it belongs to the resolved tenant sales channel", async () => {
+    let forwardedRequest: Request | undefined;
+    const service = createMedusaProductService({
+      adminApiToken: "medusa_token",
+      medusaInternalUrl: "http://medusa:9000",
+      fetcher: async (input, init) => {
+        forwardedRequest = new Request(input, init);
+
+        return Response.json({
+          product: {
+            id: "prod_1",
+            title: "Coffee",
+            description: "Roasted coffee beans",
+            handle: "coffee",
+            collection_id: "pcol_1",
+            categories: [{ id: "pcat_1" }],
+            sales_channels: [{ id: "sc_1" }],
+            variants: [
+              {
+                id: "variant_1",
+                title: "Default",
+                sku: "COF-1",
+                inventory_items: [{ inventory_item_id: "iitem_1" }],
+                prices: [{ amount: 350, currency_code: "etb" }],
+              },
+            ],
+            status: "published",
+            thumbnail: "https://cdn.test/coffee.jpg",
+            created_at: "2026-01-01T00:00:00.000Z",
+            updated_at: "2026-01-02T00:00:00.000Z",
+          },
+        });
+      },
+    });
+
+    const result = await service.getMerchantProduct({
+      productId: "prod_1",
+      salesChannelId: "sc_1",
+    });
+
+    assert.equal(result.ok, true);
+    assert.ok(forwardedRequest);
+    assert.equal(forwardedRequest.headers.get("x-medusa-access-token"), "medusa_token");
+    assert.equal(
+      forwardedRequest.url,
+      "http://medusa:9000/admin/products/prod_1?fields=id%2Ctitle%2Cdescription%2Chandle%2Cstatus%2Cthumbnail%2Ccollection_id%2Ccategories.id%2Cvariants.id%2Cvariants.title%2Cvariants.sku%2Cvariants.prices.amount%2Cvariants.prices.currency_code%2Cvariants.inventory_items.inventory_item_id%2Ccreated_at%2Cupdated_at%2Csales_channels.id",
+    );
+    assert.deepEqual(result, {
+      ok: true,
+      product: {
+        id: "prod_1",
+        categoryIds: ["pcat_1"],
+        collectionId: "pcol_1",
+        description: "Roasted coffee beans",
+        title: "Coffee",
+        handle: "coffee",
+        status: "published",
+        thumbnail: "https://cdn.test/coffee.jpg",
+        variants: [
+          {
+            id: "variant_1",
+            inventoryItemId: "iitem_1",
+            title: "Default",
+            sku: "COF-1",
+            prices: [
+              {
+                amount: 350,
+                currencyCode: "etb",
+              },
+            ],
+          },
+        ],
+        createdAt: "2026-01-01T00:00:00.000Z",
+        updatedAt: "2026-01-02T00:00:00.000Z",
+      },
+    });
+  });
+
+  it("does not get products outside the resolved tenant sales channel", async () => {
+    const service = createMedusaProductService({
+      adminApiToken: "medusa_token",
+      medusaInternalUrl: "http://medusa:9000",
+      fetcher: async () =>
+        Response.json({
+          product: {
+            id: "prod_1",
+            sales_channels: [{ id: "sc_other" }],
+          },
+        }),
+    });
+
+    const result = await service.getMerchantProduct({
+      productId: "prod_1",
+      salesChannelId: "sc_1",
+    });
+
+    assert.deepEqual(result, {
+      ok: false,
+      error: "product_not_found",
+      status: 404,
+    });
+  });
+
   it("does not update products outside the resolved tenant sales channel", async () => {
     const forwardedRequests: Request[] = [];
     const service = createMedusaProductService({

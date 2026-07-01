@@ -15,6 +15,7 @@ import type {
   MerchantProductCategoryWriteResult,
   MerchantProductCollectionsResult,
   MerchantProductCollectionWriteResult,
+  MerchantProductDetailResult,
   MerchantProductStockResult,
   MerchantProductStockUpdateResult,
   MerchantProductsResult,
@@ -179,6 +180,10 @@ function appWithResolution(
       orderId: string;
       salesChannelId: string;
     }) => Promise<MerchantOrderDetailResult>;
+    getMerchantProduct?: (input: {
+      productId: string;
+      salesChannelId: string;
+    }) => Promise<MerchantProductDetailResult>;
     mutateMerchantOrder?: (input: {
       action: MerchantOrderAction;
       fulfillmentId?: string | undefined;
@@ -336,6 +341,7 @@ function appWithResolution(
     getStorefrontDraft: options?.getStorefrontDraft,
     getOperatorSupportHistory: options?.getOperatorSupportHistory,
     getMerchantOrder: options?.getMerchantOrder,
+    getMerchantProduct: options?.getMerchantProduct,
     getMerchantProductStock: options?.getMerchantProductStock,
     getTenantForUser: options?.getTenantForUser,
     getTenantCommerceContext: options?.getTenantCommerceContext,
@@ -4574,6 +4580,102 @@ describe("platform app", () => {
     });
   });
 
+  it("returns merchant product details scoped to the resolved tenant sales channel", async () => {
+    let productInput:
+      | {
+          productId: string;
+          salesChannelId: string;
+        }
+      | undefined;
+    const app = appWithResolution(
+      {
+        ok: true,
+        context: resolvedTenantContext,
+      },
+      {
+        authorizeDashboardForTenant: async () => ({
+          ok: true,
+          actor: {
+            id: "user_1",
+            email: "owner@abebe.local",
+            name: "Abebe Owner",
+            role: "owner",
+          },
+        }),
+        getSession: async () => ({
+          user: {
+            id: "user_1",
+            email: "owner@abebe.local",
+            name: "Abebe Owner",
+          },
+        }),
+        getMerchantProduct: async (input) => {
+          productInput = input;
+
+          return {
+            ok: true,
+            product: {
+              id: input.productId,
+              categoryIds: ["pcat_1"],
+              collectionId: "pcol_1",
+              description: "Roasted coffee beans",
+              title: "Coffee",
+              handle: "coffee",
+              status: "published",
+              thumbnail: null,
+              variants: [
+                {
+                  id: "variant_1",
+                  inventoryItemId: "iitem_1",
+                  title: "Default",
+                  sku: "COF-1",
+                  prices: [{ amount: 350, currencyCode: "etb" }],
+                },
+              ],
+              createdAt: "2026-01-01T00:00:00.000Z",
+              updatedAt: "2026-01-02T00:00:00.000Z",
+            },
+          };
+        },
+      },
+    );
+
+    const response = await app.request("/platform/merchant/products/prod_1", {
+      headers: {
+        Host: "abebe.lvh.me",
+      },
+    });
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(productInput, {
+      productId: "prod_1",
+      salesChannelId: "channel_1",
+    });
+    assert.deepEqual(await response.json(), {
+      product: {
+        id: "prod_1",
+        categoryIds: ["pcat_1"],
+        collectionId: "pcol_1",
+        description: "Roasted coffee beans",
+        title: "Coffee",
+        handle: "coffee",
+        status: "published",
+        thumbnail: null,
+        variants: [
+          {
+            id: "variant_1",
+            inventoryItemId: "iitem_1",
+            title: "Default",
+            sku: "COF-1",
+            prices: [{ amount: 350, currencyCode: "etb" }],
+          },
+        ],
+        createdAt: "2026-01-01T00:00:00.000Z",
+        updatedAt: "2026-01-02T00:00:00.000Z",
+      },
+    });
+  });
+
   it("lists tenant product categories scoped to the selected tenant", async () => {
     let categoriesInput:
       | {
@@ -4972,6 +5074,97 @@ describe("platform app", () => {
       count: 1,
       limit: 5,
       offset: 10,
+    });
+  });
+
+  it("returns tenant product details scoped to the selected tenant sales channel", async () => {
+    let commerceInput:
+      | {
+          tenantId: string;
+          userId: string;
+        }
+      | undefined;
+    let productInput:
+      | {
+          productId: string;
+          salesChannelId: string;
+        }
+      | undefined;
+    const app = appWithResolution(
+      {
+        ok: false,
+        error: "shop_context_required",
+      },
+      {
+        getSession: async () => ({
+          user: {
+            id: "user_1",
+            email: "owner@abebe.local",
+            name: "Abebe Owner",
+          },
+        }),
+        getTenantCommerceContext: async (input) => {
+          commerceInput = input;
+
+          return {
+            ok: true,
+            context: {
+              tenantId: "tenant_1",
+              medusaStoreId: "store_1",
+              medusaSalesChannelId: "channel_1",
+              medusaPublishableKeyId: "pk_1",
+              medusaRegionId: "reg_1",
+            },
+          };
+        },
+        getMerchantProduct: async (input) => {
+          productInput = input;
+
+          return {
+            ok: true,
+            product: {
+              id: input.productId,
+              categoryIds: ["pcat_1"],
+              collectionId: "pcol_1",
+              description: "Roasted coffee beans",
+              title: "Coffee",
+              handle: "coffee",
+              status: "published",
+              thumbnail: null,
+              variants: [],
+              createdAt: "2026-01-01T00:00:00.000Z",
+              updatedAt: "2026-01-02T00:00:00.000Z",
+            },
+          };
+        },
+      },
+    );
+
+    const response = await app.request("/platform/tenants/tenant_1/products/prod_1");
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(commerceInput, {
+      tenantId: "tenant_1",
+      userId: "user_1",
+    });
+    assert.deepEqual(productInput, {
+      productId: "prod_1",
+      salesChannelId: "channel_1",
+    });
+    assert.deepEqual(await response.json(), {
+      product: {
+        id: "prod_1",
+        categoryIds: ["pcat_1"],
+        collectionId: "pcol_1",
+        description: "Roasted coffee beans",
+        title: "Coffee",
+        handle: "coffee",
+        status: "published",
+        thumbnail: null,
+        variants: [],
+        createdAt: "2026-01-01T00:00:00.000Z",
+        updatedAt: "2026-01-02T00:00:00.000Z",
+      },
     });
   });
 

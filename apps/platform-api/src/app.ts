@@ -378,6 +378,8 @@ export type MerchantProductsResult =
       status: 401 | 503;
     };
 
+export type MerchantProductDetailResult = MerchantProductWriteResult;
+
 export type MerchantProductWriteResult =
   | {
       ok: true;
@@ -1038,6 +1040,12 @@ export type PlatformAppOptions = {
         offset: number;
         salesChannelId: string;
       }) => Promise<MerchantProductsResult>)
+    | undefined;
+  getMerchantProduct?:
+    | ((input: {
+        productId: string;
+        salesChannelId: string;
+      }) => Promise<MerchantProductDetailResult>)
     | undefined;
   listMerchantProductCategories?:
     | ((input: {

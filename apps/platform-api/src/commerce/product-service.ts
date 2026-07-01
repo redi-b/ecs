@@ -6,6 +6,7 @@ import type {
   MerchantProductCollection,
   MerchantProductCollectionsResult,
   MerchantProductCollectionWriteResult,
+  MerchantProductDetailResult,
   MerchantProductStock,
   MerchantProductStockResult,
   MerchantProductStockUpdateResult,
@@ -177,6 +178,52 @@ export function createMedusaProductService(options: {
         limit: getNumber(data?.limit) ?? input.limit,
         offset: getNumber(data?.offset) ?? input.offset,
         products: Array.isArray(data?.products) ? data.products.flatMap(normalizeProduct) : [],
+      };
+    },
+
+    getMerchantProduct: async (input: {
+      productId: string;
+      salesChannelId: string;
+    }): Promise<MerchantProductDetailResult> => {
+      if (!options.adminApiToken?.trim()) {
+        return missingCredentials();
+      }
+
+      const response = await requestMedusa(
+        fetcher,
+        getProductDetailUrl(options.medusaInternalUrl, input.productId),
+        {
+          headers: getAdminHeaders(options.adminApiToken),
+        },
+      );
+
+      if (!response.ok) {
+        return getWriteError(response);
+      }
+
+      const data = await response.json().catch(() => undefined);
+
+      if (!productBelongsToSalesChannel(data?.product, input.salesChannelId)) {
+        return {
+          ok: false,
+          error: "product_not_found",
+          status: 404,
+        };
+      }
+
+      const product = normalizeProduct(data?.product)[0];
+
+      if (!product) {
+        return {
+          ok: false,
+          error: "product_not_found",
+          status: 404,
+        };
+      }
+
+      return {
+        ok: true,
+        product,
       };
     },
 
@@ -766,6 +813,17 @@ function getProductsUrl(
 
 function getProductsBaseUrl(medusaInternalUrl: string) {
   return new URL("/admin/products", normalizeBaseUrl(medusaInternalUrl));
+}
+
+function getProductDetailUrl(medusaInternalUrl: string, productId: string) {
+  const url = getProductUrl(medusaInternalUrl, productId);
+
+  url.searchParams.set(
+    "fields",
+    "id,title,description,handle,status,thumbnail,collection_id,categories.id,variants.id,variants.title,variants.sku,variants.prices.amount,variants.prices.currency_code,variants.inventory_items.inventory_item_id,created_at,updated_at,sales_channels.id",
+  );
+
+  return url;
 }
 
 function getProductCategoriesUrl(
