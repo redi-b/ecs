@@ -130,7 +130,7 @@ describe("createMedusaOrderService", () => {
     assert.equal(url.origin + url.pathname, "http://medusa:9000/admin/orders/order_1");
     assert.equal(
       url.searchParams.get("fields"),
-      "id,display_id,email,status,payment_status,fulfillment_status,currency_code,total,sales_channel_id,items.id,items.title,items.quantity,items.unit_price,items.total,items.thumbnail,created_at,updated_at",
+      "id,display_id,email,status,payment_status,fulfillment_status,currency_code,total,sales_channel_id,items.id,items.title,items.quantity,items.detail.fulfilled_quantity,items.unit_price,items.total,items.thumbnail,created_at,updated_at",
     );
     assert.deepEqual(result, {
       ok: true,
@@ -316,6 +316,172 @@ describe("createMedusaOrderService", () => {
         updatedAt: "2026-01-02T00:00:00.000Z",
       },
     });
+  });
+
+  it("fulfills remaining order items through the Medusa Admin API", async () => {
+    const forwardedRequests: Request[] = [];
+    const service = createMedusaOrderService({
+      adminApiToken: "medusa_token",
+      medusaInternalUrl: "http://medusa:9000",
+      fetcher: async (input, init) => {
+        const request = new Request(input, init);
+        forwardedRequests.push(request);
+
+        if (request.method === "POST") {
+          return Response.json({
+            order: {
+              id: "order_1",
+              display_id: 1001,
+              email: "customer@example.com",
+              status: "pending",
+              payment_status: "captured",
+              fulfillment_status: "fulfilled",
+              currency_code: "etb",
+              total: 1250,
+              sales_channel_id: "sc_1",
+              items: [
+                {
+                  id: "item_1",
+                  title: "Coffee",
+                  quantity: 2,
+                  detail: {
+                    fulfilled_quantity: 2,
+                  },
+                },
+              ],
+              created_at: "2026-01-01T00:00:00.000Z",
+              updated_at: "2026-01-02T00:00:00.000Z",
+            },
+          });
+        }
+
+        return Response.json({
+          order: {
+            id: "order_1",
+            display_id: 1001,
+            email: "customer@example.com",
+            status: "pending",
+            payment_status: "captured",
+            fulfillment_status: "not_fulfilled",
+            currency_code: "etb",
+            total: 1250,
+            sales_channel_id: "sc_1",
+            items: [
+              {
+                id: "item_1",
+                title: "Coffee",
+                quantity: 3,
+                detail: {
+                  fulfilled_quantity: 1,
+                },
+              },
+              {
+                id: "item_2",
+                title: "Tea",
+                quantity: 1,
+                detail: {
+                  fulfilled_quantity: 1,
+                },
+              },
+            ],
+            created_at: "2026-01-01T00:00:00.000Z",
+            updated_at: "2026-01-02T00:00:00.000Z",
+          },
+        });
+      },
+    });
+
+    const result = await service.mutateMerchantOrder({
+      action: "fulfill",
+      orderId: "order_1",
+      salesChannelId: "sc_1",
+      stockLocationId: "sloc_1",
+    });
+
+    assert.equal(result.ok, true);
+    assert.equal(forwardedRequests.length, 2);
+    assert.equal(forwardedRequests[0]?.method, "GET");
+    assert.equal(forwardedRequests[1]?.method, "POST");
+    assert.equal(forwardedRequests[1]?.url, "http://medusa:9000/admin/orders/order_1/fulfillments");
+    assert.deepEqual(await forwardedRequests[1]?.json(), {
+      items: [
+        {
+          id: "item_1",
+          quantity: 2,
+        },
+      ],
+      location_id: "sloc_1",
+      metadata: {
+        source: "platform",
+      },
+    });
+    assert.deepEqual(result, {
+      ok: true,
+      order: {
+        id: "order_1",
+        displayId: 1001,
+        email: "customer@example.com",
+        status: "pending",
+        paymentStatus: "captured",
+        fulfillmentStatus: "fulfilled",
+        currencyCode: "etb",
+        total: 1250,
+        items: [
+          {
+            id: "item_1",
+            title: "Coffee",
+            quantity: 2,
+            fulfilledQuantity: 2,
+            unitPrice: null,
+            total: null,
+            thumbnail: null,
+          },
+        ],
+        createdAt: "2026-01-01T00:00:00.000Z",
+        updatedAt: "2026-01-02T00:00:00.000Z",
+      },
+    });
+  });
+
+  it("does not fulfill orders without remaining fulfillable items", async () => {
+    let calls = 0;
+    const service = createMedusaOrderService({
+      adminApiToken: "medusa_token",
+      medusaInternalUrl: "http://medusa:9000",
+      fetcher: async () => {
+        calls += 1;
+
+        return Response.json({
+          order: {
+            id: "order_1",
+            sales_channel_id: "sc_1",
+            items: [
+              {
+                id: "item_1",
+                quantity: 1,
+                detail: {
+                  fulfilled_quantity: 1,
+                },
+              },
+            ],
+          },
+        });
+      },
+    });
+
+    const result = await service.mutateMerchantOrder({
+      action: "fulfill",
+      orderId: "order_1",
+      salesChannelId: "sc_1",
+      stockLocationId: "sloc_1",
+    });
+
+    assert.deepEqual(result, {
+      ok: false,
+      error: "order_not_fulfillable",
+      status: 409,
+    });
+    assert.equal(calls, 1);
   });
 
   it("does not mutate orders outside the resolved tenant sales channel", async () => {

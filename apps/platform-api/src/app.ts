@@ -505,6 +505,7 @@ export type MerchantOrderLineItem = {
   id: string;
   title: string | null;
   quantity: number | null;
+  fulfilledQuantity?: number | null;
   unitPrice: number | null;
   total: number | null;
   thumbnail: string | null;
@@ -531,11 +532,16 @@ export type MerchantOrderDetailResult =
     }
   | {
       ok: false;
-      error: "commerce_backend_unavailable" | "commerce_credentials_missing" | "order_not_found";
-      status: 401 | 404 | 503;
+      error:
+        | "commerce_backend_unavailable"
+        | "commerce_credentials_missing"
+        | "inventory_location_unavailable"
+        | "order_not_found"
+        | "order_not_fulfillable";
+      status: 401 | 404 | 409 | 503;
     };
 
-export type MerchantOrderAction = "cancel" | "complete";
+export type MerchantOrderAction = "cancel" | "complete" | "fulfill";
 
 export type MerchantOrderActionResult = MerchantOrderDetailResult;
 
@@ -1046,6 +1052,7 @@ export type PlatformAppOptions = {
         action: MerchantOrderAction;
         orderId: string;
         salesChannelId: string;
+        stockLocationId?: string | undefined;
       }) => Promise<MerchantOrderActionResult>)
     | undefined;
   listNotificationPreferences?:

@@ -280,10 +280,17 @@ export function registerPlatformRoutes(
       return context.json({ error: commerce.error }, commerce.status);
     }
 
+    if (action === "fulfill" && !commerce.context.medusaStockLocationId) {
+      return context.json({ error: "inventory_location_unavailable" }, 503);
+    }
+
     const order = await options.mutateMerchantOrder({
       action,
       orderId,
       salesChannelId: commerce.context.medusaSalesChannelId,
+      ...(action === "fulfill"
+        ? { stockLocationId: commerce.context.medusaStockLocationId ?? undefined }
+        : {}),
     });
 
     if (!order.ok) {
@@ -301,6 +308,10 @@ export function registerPlatformRoutes(
 
   app.post("/platform/tenants/:tenantId/orders/:orderId/complete", (context) =>
     mutateSelectedTenantOrder(context, "complete"),
+  );
+
+  app.post("/platform/tenants/:tenantId/orders/:orderId/fulfill", (context) =>
+    mutateSelectedTenantOrder(context, "fulfill"),
   );
 
   app.get("/platform/tenants/:tenantId/products", async (context) => {

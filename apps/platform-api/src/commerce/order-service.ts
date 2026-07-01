@@ -71,6 +71,7 @@ export function createMedusaOrderService(options: {
       action: MerchantOrderAction;
       orderId: string;
       salesChannelId: string;
+      stockLocationId?: string | undefined;
     }): Promise<MerchantOrderActionResult> => {
       if (!options.adminApiToken?.trim()) {
         return missingCredentials();
@@ -80,6 +81,13 @@ export function createMedusaOrderService(options: {
 
       if (!existing.ok) {
         return existing;
+      }
+
+      if (input.action === "fulfill") {
+        return fulfillMerchantOrder(fetcher, options, {
+          ...input,
+          order: existing.order,
+        });
       }
 
       const response = await requestMedusa(
@@ -193,6 +201,7 @@ async function requestMedusa(fetcher: typeof fetch, input: URL, init: RequestIni
 function getAdminHeaders(adminApiToken: string) {
   return {
     accept: "application/json",
+    "content-type": "application/json",
     "x-medusa-access-token": adminApiToken,
   };
 }
@@ -258,6 +267,102 @@ async function getMerchantOrderForAction(
   };
 }
 
+async function fulfillMerchantOrder(
+  fetcher: typeof fetch,
+  options: {
+    adminApiToken?: string | undefined;
+    medusaInternalUrl: string;
+  },
+  input: {
+    order: MerchantOrder;
+    orderId: string;
+    salesChannelId: string;
+    stockLocationId?: string | undefined;
+  },
+): Promise<MerchantOrderActionResult> {
+  if (!input.stockLocationId?.trim()) {
+    return {
+      ok: false,
+      error: "inventory_location_unavailable",
+      status: 503,
+    };
+  }
+
+  const items = getFulfillmentItems(input.order);
+
+  if (items.length === 0) {
+    return {
+      ok: false,
+      error: "order_not_fulfillable",
+      status: 409,
+    };
+  }
+
+  const response = await requestMedusa(
+    fetcher,
+    getOrderFulfillmentUrl(options.medusaInternalUrl, input),
+    {
+      body: JSON.stringify({
+        items,
+        location_id: input.stockLocationId,
+        metadata: {
+          source: "platform",
+        },
+      }),
+      headers: getAdminHeaders(options.adminApiToken ?? ""),
+      method: "POST",
+    },
+  );
+
+  if (response.status === 401) {
+    return {
+      ok: false,
+      error: "commerce_credentials_missing",
+      status: 401,
+    };
+  }
+
+  if (response.status === 404) {
+    return {
+      ok: false,
+      error: "order_not_found",
+      status: 404,
+    };
+  }
+
+  if (response.status === 409) {
+    return {
+      ok: false,
+      error: "order_not_fulfillable",
+      status: 409,
+    };
+  }
+
+  if (!response.ok) {
+    return {
+      ok: false,
+      error: "commerce_backend_unavailable",
+      status: 503,
+    };
+  }
+
+  const data = await response.json().catch(() => undefined);
+  const order = normalizeOrder(data?.order, input.salesChannelId)[0];
+
+  if (!order) {
+    return {
+      ok: false,
+      error: "order_not_found",
+      status: 404,
+    };
+  }
+
+  return {
+    ok: true,
+    order,
+  };
+}
+
 function getOrdersUrl(
   medusaInternalUrl: string,
   input: { limit: number; offset: number; salesChannelId: string },
@@ -286,10 +391,17 @@ function getOrderUrl(
 
   url.searchParams.set(
     "fields",
-    "id,display_id,email,status,payment_status,fulfillment_status,currency_code,total,sales_channel_id,items.id,items.title,items.quantity,items.unit_price,items.total,items.thumbnail,created_at,updated_at",
+    "id,display_id,email,status,payment_status,fulfillment_status,currency_code,total,sales_channel_id,items.id,items.title,items.quantity,items.detail.fulfilled_quantity,items.unit_price,items.total,items.thumbnail,created_at,updated_at",
   );
 
   return url;
+}
+
+function getOrderFulfillmentUrl(medusaInternalUrl: string, input: { orderId: string }) {
+  return new URL(
+    `/admin/orders/${encodeURIComponent(input.orderId)}/fulfillments`,
+    normalizeBaseUrl(medusaInternalUrl),
+  );
 }
 
 function getOrderActionUrl(
@@ -350,17 +462,53 @@ function getLineItems(value: unknown) {
       return [];
     }
 
+    const fulfilledQuantity = getItemFulfilledQuantity(item);
+
     return [
       {
         id,
         title: getString(item.title),
         quantity: getNumber(item.quantity) ?? null,
+        ...(fulfilledQuantity === null ? {} : { fulfilledQuantity }),
         unitPrice: getNumber(item.unit_price) ?? null,
         total: getNumber(item.total) ?? null,
         thumbnail: getString(item.thumbnail),
       },
     ];
   });
+}
+
+function getFulfillmentItems(order: MerchantOrder) {
+  return (order.items ?? []).flatMap((item) => {
+    const quantity = item.quantity ?? 0;
+    const fulfilledQuantity = item.fulfilledQuantity ?? 0;
+    const quantityToFulfill = quantity - fulfilledQuantity;
+
+    if (quantityToFulfill <= 0) {
+      return [];
+    }
+
+    return [
+      {
+        id: item.id,
+        quantity: quantityToFulfill,
+      },
+    ];
+  });
+}
+
+function getItemFulfilledQuantity(item: Record<string, unknown>) {
+  const direct = getNumber(item.fulfilled_quantity);
+
+  if (direct !== undefined) {
+    return direct;
+  }
+
+  if (isRecord(item.detail)) {
+    return getNumber(item.detail.fulfilled_quantity) ?? null;
+  }
+
+  return null;
 }
 
 function getString(value: unknown) {

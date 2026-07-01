@@ -371,6 +371,10 @@ export function registerMerchantRoutes(
       return context.json({ error: "domain_misconfigured" }, 409);
     }
 
+    if (action === "fulfill" && !merchant.result.context.medusaStockLocationId) {
+      return context.json({ error: "inventory_location_unavailable" }, 503);
+    }
+
     const orderId = context.req.param("orderId");
 
     if (!orderId) {
@@ -381,6 +385,9 @@ export function registerMerchantRoutes(
       action,
       orderId,
       salesChannelId: merchant.result.context.medusaSalesChannelId,
+      ...(action === "fulfill"
+        ? { stockLocationId: merchant.result.context.medusaStockLocationId ?? undefined }
+        : {}),
     });
 
     if (!order.ok) {
@@ -398,6 +405,10 @@ export function registerMerchantRoutes(
 
   app.post("/platform/merchant/orders/:orderId/complete", (context) =>
     mutateResolvedMerchantOrder(context, "complete"),
+  );
+
+  app.post("/platform/merchant/orders/:orderId/fulfill", (context) =>
+    mutateResolvedMerchantOrder(context, "fulfill"),
   );
 
   app.get("/platform/merchant/products", async (context) => {
