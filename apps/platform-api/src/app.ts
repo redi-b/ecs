@@ -496,10 +496,32 @@ export type MerchantOrder = {
   fulfillmentStatus: string | null;
   currencyCode: string | null;
   total: number | null;
+  delivery?: MerchantOrderDelivery;
   fulfillments?: MerchantOrderFulfillment[];
   items?: MerchantOrderLineItem[];
+  shippingAddress?: MerchantOrderAddress;
   createdAt: string | null;
   updatedAt: string | null;
+};
+
+export type MerchantOrderAddress = {
+  firstName: string | null;
+  lastName: string | null;
+  phone: string | null;
+  address1: string | null;
+  address2: string | null;
+  city: string | null;
+  province: string | null;
+  postalCode: string | null;
+  countryCode: string | null;
+};
+
+export type MerchantOrderDelivery = {
+  choice: string | null;
+  customerName: string | null;
+  customerPhone: string | null;
+  landmark: string | null;
+  notes: string | null;
 };
 
 export type MerchantOrderFulfillment = {

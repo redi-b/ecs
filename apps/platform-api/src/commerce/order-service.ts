@@ -487,7 +487,7 @@ function getOrderUrl(
 
   url.searchParams.set(
     "fields",
-    "id,display_id,email,status,payment_status,fulfillment_status,currency_code,total,sales_channel_id,fulfillments.id,fulfillments.delivered_at,fulfillments.shipped_at,fulfillments.canceled_at,items.id,items.title,items.quantity,items.detail.fulfilled_quantity,items.unit_price,items.total,items.thumbnail,created_at,updated_at",
+    "id,display_id,email,status,payment_status,fulfillment_status,currency_code,total,sales_channel_id,metadata,shipping_address.first_name,shipping_address.last_name,shipping_address.phone,shipping_address.address_1,shipping_address.address_2,shipping_address.city,shipping_address.province,shipping_address.postal_code,shipping_address.country_code,shipping_address.metadata,fulfillments.id,fulfillments.delivered_at,fulfillments.shipped_at,fulfillments.canceled_at,items.id,items.title,items.quantity,items.detail.fulfilled_quantity,items.unit_price,items.total,items.thumbnail,created_at,updated_at",
   );
 
   return url;
@@ -538,6 +538,8 @@ function normalizeOrder(value: unknown, salesChannelId: string): MerchantOrder[]
   }
 
   const fulfillments = getFulfillments(value.fulfillments);
+  const shippingAddress = getShippingAddress(value.shipping_address);
+  const delivery = getDeliveryDetails(value);
 
   return [
     {
@@ -549,8 +551,10 @@ function normalizeOrder(value: unknown, salesChannelId: string): MerchantOrder[]
       fulfillmentStatus: getString(value.fulfillment_status),
       currencyCode: getString(value.currency_code),
       total: getNumber(value.total) ?? null,
+      ...(delivery ? { delivery } : {}),
       ...(fulfillments.length === 0 ? {} : { fulfillments }),
       items: getLineItems(value.items),
+      ...(shippingAddress ? { shippingAddress } : {}),
       createdAt: getString(value.created_at),
       updatedAt: getString(value.updated_at),
     },
@@ -582,6 +586,46 @@ function getFulfillments(value: unknown) {
       },
     ];
   });
+}
+
+function getShippingAddress(value: unknown) {
+  if (!isRecord(value)) {
+    return undefined;
+  }
+
+  const address = {
+    firstName: getString(value.first_name),
+    lastName: getString(value.last_name),
+    phone: getString(value.phone),
+    address1: getString(value.address_1),
+    address2: getString(value.address_2),
+    city: getString(value.city),
+    province: getString(value.province),
+    postalCode: getString(value.postal_code),
+    countryCode: getString(value.country_code),
+  };
+
+  return hasAnyValue(address) ? address : undefined;
+}
+
+function getDeliveryDetails(order: Record<string, unknown>) {
+  const orderMetadata = isRecord(order.metadata) ? order.metadata : {};
+  const shippingAddress = isRecord(order.shipping_address) ? order.shipping_address : {};
+  const shippingMetadata = isRecord(shippingAddress.metadata) ? shippingAddress.metadata : {};
+
+  const delivery = {
+    choice: getString(orderMetadata.delivery_choice ?? shippingMetadata.delivery_choice),
+    customerName: getString(orderMetadata.customer_name ?? shippingMetadata.customer_name),
+    customerPhone: getString(orderMetadata.customer_phone ?? shippingMetadata.customer_phone),
+    landmark: getString(orderMetadata.landmark ?? shippingMetadata.landmark),
+    notes: getString(orderMetadata.customer_notes ?? shippingMetadata.customer_notes),
+  };
+
+  return hasAnyValue(delivery) ? delivery : undefined;
+}
+
+function hasAnyValue(value: Record<string, string | null>) {
+  return Object.values(value).some((item) => item !== null);
 }
 
 function getLineItems(value: unknown) {

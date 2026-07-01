@@ -148,6 +148,15 @@ export const merchantOrderSchema = z.object({
   fulfillmentStatus: z.string().min(1).nullable(),
   currencyCode: z.string().min(1).nullable(),
   total: z.number().nullable(),
+  delivery: z
+    .object({
+      choice: z.string().min(1).nullable(),
+      customerName: z.string().min(1).nullable(),
+      customerPhone: z.string().min(1).nullable(),
+      landmark: z.string().min(1).nullable(),
+      notes: z.string().min(1).nullable(),
+    })
+    .optional(),
   fulfillments: z
     .array(
       z.object({
@@ -157,6 +166,19 @@ export const merchantOrderSchema = z.object({
         canceledAt: z.string().min(1).nullable(),
       }),
     )
+    .optional(),
+  shippingAddress: z
+    .object({
+      firstName: z.string().min(1).nullable(),
+      lastName: z.string().min(1).nullable(),
+      phone: z.string().min(1).nullable(),
+      address1: z.string().min(1).nullable(),
+      address2: z.string().min(1).nullable(),
+      city: z.string().min(1).nullable(),
+      province: z.string().min(1).nullable(),
+      postalCode: z.string().min(1).nullable(),
+      countryCode: z.string().min(1).nullable(),
+    })
     .optional(),
   createdAt: z.string().min(1).nullable(),
   updatedAt: z.string().min(1).nullable(),

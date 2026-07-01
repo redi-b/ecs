@@ -3608,6 +3608,13 @@ describe("platform app", () => {
               fulfillmentStatus: "not_fulfilled",
               currencyCode: "etb",
               total: 1250,
+              delivery: {
+                choice: "delivery",
+                customerName: "Abebe Kebede",
+                customerPhone: "+251911111111",
+                landmark: "Blue gate",
+                notes: "Call before arrival",
+              },
               items: [
                 {
                   id: "item_1",
@@ -3618,6 +3625,17 @@ describe("platform app", () => {
                   thumbnail: null,
                 },
               ],
+              shippingAddress: {
+                firstName: "Abebe",
+                lastName: "Kebede",
+                phone: "+251911111111",
+                address1: "Bole Road",
+                address2: null,
+                city: "Addis Ababa",
+                province: null,
+                postalCode: null,
+                countryCode: "et",
+              },
               createdAt: "2026-01-01T00:00:00.000Z",
               updatedAt: "2026-01-02T00:00:00.000Z",
             },
@@ -3647,6 +3665,13 @@ describe("platform app", () => {
         fulfillmentStatus: "not_fulfilled",
         currencyCode: "etb",
         total: 1250,
+        delivery: {
+          choice: "delivery",
+          customerName: "Abebe Kebede",
+          customerPhone: "+251911111111",
+          landmark: "Blue gate",
+          notes: "Call before arrival",
+        },
         items: [
           {
             id: "item_1",
@@ -3657,6 +3682,17 @@ describe("platform app", () => {
             thumbnail: null,
           },
         ],
+        shippingAddress: {
+          firstName: "Abebe",
+          lastName: "Kebede",
+          phone: "+251911111111",
+          address1: "Bole Road",
+          address2: null,
+          city: "Addis Ababa",
+          province: null,
+          postalCode: null,
+          countryCode: "et",
+        },
         createdAt: "2026-01-01T00:00:00.000Z",
         updatedAt: "2026-01-02T00:00:00.000Z",
       },

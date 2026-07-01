@@ -100,6 +100,24 @@ describe("createMedusaOrderService", () => {
             currency_code: "etb",
             total: 1250,
             sales_channel_id: "sc_1",
+            metadata: {
+              delivery_choice: "delivery",
+              customer_name: "Abebe Kebede",
+              customer_phone: "+251911111111",
+              landmark: "Blue gate",
+              customer_notes: "Call before arrival",
+            },
+            shipping_address: {
+              first_name: "Abebe",
+              last_name: "Kebede",
+              phone: "+251911111111",
+              address_1: "Bole Road",
+              address_2: "Apartment 4",
+              city: "Addis Ababa",
+              province: "Addis Ababa",
+              postal_code: "1000",
+              country_code: "et",
+            },
             fulfillments: [
               {
                 id: "ful_1",
@@ -138,7 +156,7 @@ describe("createMedusaOrderService", () => {
     assert.equal(url.origin + url.pathname, "http://medusa:9000/admin/orders/order_1");
     assert.equal(
       url.searchParams.get("fields"),
-      "id,display_id,email,status,payment_status,fulfillment_status,currency_code,total,sales_channel_id,fulfillments.id,fulfillments.delivered_at,fulfillments.shipped_at,fulfillments.canceled_at,items.id,items.title,items.quantity,items.detail.fulfilled_quantity,items.unit_price,items.total,items.thumbnail,created_at,updated_at",
+      "id,display_id,email,status,payment_status,fulfillment_status,currency_code,total,sales_channel_id,metadata,shipping_address.first_name,shipping_address.last_name,shipping_address.phone,shipping_address.address_1,shipping_address.address_2,shipping_address.city,shipping_address.province,shipping_address.postal_code,shipping_address.country_code,shipping_address.metadata,fulfillments.id,fulfillments.delivered_at,fulfillments.shipped_at,fulfillments.canceled_at,items.id,items.title,items.quantity,items.detail.fulfilled_quantity,items.unit_price,items.total,items.thumbnail,created_at,updated_at",
     );
     assert.deepEqual(result, {
       ok: true,
@@ -151,6 +169,13 @@ describe("createMedusaOrderService", () => {
         fulfillmentStatus: "not_fulfilled",
         currencyCode: "etb",
         total: 1250,
+        delivery: {
+          choice: "delivery",
+          customerName: "Abebe Kebede",
+          customerPhone: "+251911111111",
+          landmark: "Blue gate",
+          notes: "Call before arrival",
+        },
         fulfillments: [
           {
             id: "ful_1",
@@ -169,6 +194,17 @@ describe("createMedusaOrderService", () => {
             thumbnail: null,
           },
         ],
+        shippingAddress: {
+          firstName: "Abebe",
+          lastName: "Kebede",
+          phone: "+251911111111",
+          address1: "Bole Road",
+          address2: "Apartment 4",
+          city: "Addis Ababa",
+          province: "Addis Ababa",
+          postalCode: "1000",
+          countryCode: "et",
+        },
         createdAt: "2026-01-01T00:00:00.000Z",
         updatedAt: "2026-01-02T00:00:00.000Z",
       },
