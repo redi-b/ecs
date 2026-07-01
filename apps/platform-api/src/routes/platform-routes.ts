@@ -1,6 +1,6 @@
-import type { Hono } from "hono";
+import type { Context, Hono } from "hono";
 
-import type { PlatformAppOptions, PlatformAppVariables } from "../app.js";
+import type { MerchantOrderAction, PlatformAppOptions, PlatformAppVariables } from "../app.js";
 import { registerDeliveryRoutes } from "./delivery-routes.js";
 import {
   getJsonBody,
@@ -176,8 +176,14 @@ export function registerPlatformRoutes(
       return context.json({ error: "auth_required" }, 401);
     }
 
+    const tenantId = context.req.param("tenantId");
+
+    if (!tenantId) {
+      return context.json({ error: "tenant_not_found" }, 404);
+    }
+
     const commerce = await options.getTenantCommerceContext({
-      tenantId: context.req.param("tenantId"),
+      tenantId,
       userId: session.user.id,
     });
 
@@ -214,8 +220,15 @@ export function registerPlatformRoutes(
       return context.json({ error: "auth_required" }, 401);
     }
 
+    const tenantId = context.req.param("tenantId");
+    const orderId = context.req.param("orderId");
+
+    if (!tenantId || !orderId) {
+      return context.json({ error: "order_not_found" }, 404);
+    }
+
     const commerce = await options.getTenantCommerceContext({
-      tenantId: context.req.param("tenantId"),
+      tenantId,
       userId: session.user.id,
     });
 
@@ -236,6 +249,59 @@ export function registerPlatformRoutes(
       order: order.order,
     });
   });
+
+  async function mutateSelectedTenantOrder(
+    context: Context<{ Variables: PlatformAppVariables }>,
+    action: MerchantOrderAction,
+  ) {
+    if (!options.getTenantCommerceContext || !options.mutateMerchantOrder) {
+      return context.json({ error: "commerce_backend_unavailable" }, 503);
+    }
+
+    const session = await options.getSession?.(context.req.raw.headers);
+
+    if (!session) {
+      return context.json({ error: "auth_required" }, 401);
+    }
+
+    const tenantId = context.req.param("tenantId");
+    const orderId = context.req.param("orderId");
+
+    if (!tenantId || !orderId) {
+      return context.json({ error: "order_not_found" }, 404);
+    }
+
+    const commerce = await options.getTenantCommerceContext({
+      tenantId,
+      userId: session.user.id,
+    });
+
+    if (!commerce.ok) {
+      return context.json({ error: commerce.error }, commerce.status);
+    }
+
+    const order = await options.mutateMerchantOrder({
+      action,
+      orderId,
+      salesChannelId: commerce.context.medusaSalesChannelId,
+    });
+
+    if (!order.ok) {
+      return context.json({ error: order.error }, order.status);
+    }
+
+    return context.json({
+      order: order.order,
+    });
+  }
+
+  app.post("/platform/tenants/:tenantId/orders/:orderId/cancel", (context) =>
+    mutateSelectedTenantOrder(context, "cancel"),
+  );
+
+  app.post("/platform/tenants/:tenantId/orders/:orderId/complete", (context) =>
+    mutateSelectedTenantOrder(context, "complete"),
+  );
 
   app.get("/platform/tenants/:tenantId/products", async (context) => {
     if (!options.getTenantCommerceContext || !options.listMerchantProducts) {

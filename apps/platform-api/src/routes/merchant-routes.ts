@@ -1,6 +1,6 @@
 import type { Context, Hono } from "hono";
 
-import type { PlatformAppOptions, PlatformAppVariables } from "../app.js";
+import type { MerchantOrderAction, PlatformAppOptions, PlatformAppVariables } from "../app.js";
 import {
   getJsonBody,
   getOptionalBodyNumber,
@@ -352,6 +352,53 @@ export function registerMerchantRoutes(
       order: order.order,
     });
   });
+
+  async function mutateResolvedMerchantOrder(
+    context: Context<{ Variables: PlatformAppVariables }>,
+    action: MerchantOrderAction,
+  ) {
+    if (!options.mutateMerchantOrder) {
+      return context.json({ error: "commerce_backend_unavailable" }, 503);
+    }
+
+    const merchant = await getAuthorizedMerchantContext(context);
+
+    if (!merchant.ok) {
+      return merchant.response;
+    }
+
+    if (!merchant.result.context.medusaSalesChannelId) {
+      return context.json({ error: "domain_misconfigured" }, 409);
+    }
+
+    const orderId = context.req.param("orderId");
+
+    if (!orderId) {
+      return context.json({ error: "order_not_found" }, 404);
+    }
+
+    const order = await options.mutateMerchantOrder({
+      action,
+      orderId,
+      salesChannelId: merchant.result.context.medusaSalesChannelId,
+    });
+
+    if (!order.ok) {
+      return context.json({ error: order.error }, order.status);
+    }
+
+    return context.json({
+      order: order.order,
+    });
+  }
+
+  app.post("/platform/merchant/orders/:orderId/cancel", (context) =>
+    mutateResolvedMerchantOrder(context, "cancel"),
+  );
+
+  app.post("/platform/merchant/orders/:orderId/complete", (context) =>
+    mutateResolvedMerchantOrder(context, "complete"),
+  );
 
   app.get("/platform/merchant/products", async (context) => {
     const session = await options.getSession?.(context.req.raw.headers);

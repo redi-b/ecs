@@ -1,4 +1,10 @@
-import type { MerchantOrder, MerchantOrderDetailResult, MerchantOrdersResult } from "../app.js";
+import type {
+  MerchantOrder,
+  MerchantOrderAction,
+  MerchantOrderActionResult,
+  MerchantOrderDetailResult,
+  MerchantOrdersResult,
+} from "../app.js";
 
 export function createMedusaOrderService(options: {
   adminApiToken?: string | undefined;
@@ -19,6 +25,72 @@ export function createMedusaOrderService(options: {
       const response = await requestMedusa(fetcher, getOrderUrl(options.medusaInternalUrl, input), {
         headers: getAdminHeaders(options.adminApiToken),
       });
+
+      if (response.status === 401) {
+        return {
+          ok: false,
+          error: "commerce_credentials_missing",
+          status: 401,
+        };
+      }
+
+      if (response.status === 404) {
+        return {
+          ok: false,
+          error: "order_not_found",
+          status: 404,
+        };
+      }
+
+      if (!response.ok) {
+        return {
+          ok: false,
+          error: "commerce_backend_unavailable",
+          status: 503,
+        };
+      }
+
+      const data = await response.json().catch(() => undefined);
+      const order = normalizeOrder(data?.order, input.salesChannelId)[0];
+
+      if (!order) {
+        return {
+          ok: false,
+          error: "order_not_found",
+          status: 404,
+        };
+      }
+
+      return {
+        ok: true,
+        order,
+      };
+    },
+
+    mutateMerchantOrder: async (input: {
+      action: MerchantOrderAction;
+      orderId: string;
+      salesChannelId: string;
+    }): Promise<MerchantOrderActionResult> => {
+      if (!options.adminApiToken?.trim()) {
+        return missingCredentials();
+      }
+
+      const existing = await getMerchantOrderForAction(fetcher, options, input);
+
+      if (!existing.ok) {
+        return existing;
+      }
+
+      const response = await requestMedusa(
+        fetcher,
+        getOrderActionUrl(options.medusaInternalUrl, input),
+        {
+          ...(input.action === "complete" ? { body: JSON.stringify({}) } : {}),
+          headers: getAdminHeaders(options.adminApiToken),
+          method: "POST",
+        },
+      );
 
       if (response.status === 401) {
         return {
@@ -133,6 +205,59 @@ function missingCredentials() {
   } as const;
 }
 
+async function getMerchantOrderForAction(
+  fetcher: typeof fetch,
+  options: {
+    adminApiToken?: string | undefined;
+    medusaInternalUrl: string;
+  },
+  input: { orderId: string; salesChannelId: string },
+): Promise<MerchantOrderDetailResult> {
+  const response = await requestMedusa(fetcher, getOrderUrl(options.medusaInternalUrl, input), {
+    headers: getAdminHeaders(options.adminApiToken ?? ""),
+  });
+
+  if (response.status === 401) {
+    return {
+      ok: false,
+      error: "commerce_credentials_missing",
+      status: 401,
+    };
+  }
+
+  if (response.status === 404) {
+    return {
+      ok: false,
+      error: "order_not_found",
+      status: 404,
+    };
+  }
+
+  if (!response.ok) {
+    return {
+      ok: false,
+      error: "commerce_backend_unavailable",
+      status: 503,
+    };
+  }
+
+  const data = await response.json().catch(() => undefined);
+  const order = normalizeOrder(data?.order, input.salesChannelId)[0];
+
+  if (!order) {
+    return {
+      ok: false,
+      error: "order_not_found",
+      status: 404,
+    };
+  }
+
+  return {
+    ok: true,
+    order,
+  };
+}
+
 function getOrdersUrl(
   medusaInternalUrl: string,
   input: { limit: number; offset: number; salesChannelId: string },
@@ -165,6 +290,16 @@ function getOrderUrl(
   );
 
   return url;
+}
+
+function getOrderActionUrl(
+  medusaInternalUrl: string,
+  input: { action: MerchantOrderAction; orderId: string },
+) {
+  return new URL(
+    `/admin/orders/${encodeURIComponent(input.orderId)}/${input.action}`,
+    normalizeBaseUrl(medusaInternalUrl),
+  );
 }
 
 function normalizeBaseUrl(value: string) {

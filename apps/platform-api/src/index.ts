@@ -158,6 +158,7 @@ const app = createPlatformApp({
   listPaymentOnboarding: paymentOnboardingService.listPaymentOnboarding,
   listTenantDomains: domainManagementService.listTenantDomains,
   listStorefrontTemplates: storefrontTemplateService.listStorefrontTemplates,
+  mutateMerchantOrder: orderService.mutateMerchantOrder,
   publishStorefrontDraft: storefrontTemplateService.publishStorefrontDraft,
   recordAnalyticsEvent: analyticsService.recordAnalyticsEvent,
   recordNotificationEvent: notificationService.recordNotificationEvent,

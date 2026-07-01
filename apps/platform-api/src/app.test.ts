@@ -7,6 +7,8 @@ import type {
   ChapaPaymentCallbackResult,
   DeliverySettingsResult,
   DeliverySettingsUpdateResult,
+  MerchantOrderAction,
+  MerchantOrderActionResult,
   MerchantOrderDetailResult,
   MerchantOrdersResult,
   MerchantProductCategoriesResult,
@@ -177,6 +179,11 @@ function appWithResolution(
       orderId: string;
       salesChannelId: string;
     }) => Promise<MerchantOrderDetailResult>;
+    mutateMerchantOrder?: (input: {
+      action: MerchantOrderAction;
+      orderId: string;
+      salesChannelId: string;
+    }) => Promise<MerchantOrderActionResult>;
     getMerchantProductStock?: (input: {
       productId: string;
       salesChannelId: string;
@@ -346,6 +353,7 @@ function appWithResolution(
     reviewPaymentOnboarding: options?.reviewPaymentOnboarding,
     listTenantDomains: options?.listTenantDomains,
     listStorefrontTemplates: options?.listStorefrontTemplates,
+    mutateMerchantOrder: options?.mutateMerchantOrder,
     selectStorefrontTemplate: options?.selectStorefrontTemplate,
     updateMerchantProduct: options?.updateMerchantProduct,
     updateMerchantProductStock: options?.updateMerchantProductStock,
@@ -3653,6 +3661,89 @@ describe("platform app", () => {
     });
   });
 
+  it("completes merchant orders scoped to the resolved tenant sales channel", async () => {
+    let orderInput:
+      | {
+          action: MerchantOrderAction;
+          orderId: string;
+          salesChannelId: string;
+        }
+      | undefined;
+    const app = appWithResolution(
+      {
+        ok: true,
+        context: resolvedTenantContext,
+      },
+      {
+        authorizeDashboardForTenant: async () => ({
+          ok: true,
+          actor: {
+            id: "user_1",
+            email: "owner@abebe.local",
+            name: "Abebe Owner",
+            role: "owner",
+          },
+        }),
+        getSession: async () => ({
+          user: {
+            id: "user_1",
+            email: "owner@abebe.local",
+            name: "Abebe Owner",
+          },
+        }),
+        mutateMerchantOrder: async (input) => {
+          orderInput = input;
+
+          return {
+            ok: true,
+            order: {
+              id: "order_1",
+              displayId: 1001,
+              email: "customer@example.com",
+              status: "completed",
+              paymentStatus: "captured",
+              fulfillmentStatus: "fulfilled",
+              currencyCode: "etb",
+              total: 1250,
+              items: [],
+              createdAt: "2026-01-01T00:00:00.000Z",
+              updatedAt: "2026-01-02T00:00:00.000Z",
+            },
+          };
+        },
+      },
+    );
+
+    const response = await app.request("/platform/merchant/orders/order_1/complete", {
+      headers: {
+        Host: "abebe.lvh.me",
+      },
+      method: "POST",
+    });
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(orderInput, {
+      action: "complete",
+      orderId: "order_1",
+      salesChannelId: "channel_1",
+    });
+    assert.deepEqual(await response.json(), {
+      order: {
+        id: "order_1",
+        displayId: 1001,
+        email: "customer@example.com",
+        status: "completed",
+        paymentStatus: "captured",
+        fulfillmentStatus: "fulfilled",
+        currencyCode: "etb",
+        total: 1250,
+        items: [],
+        createdAt: "2026-01-01T00:00:00.000Z",
+        updatedAt: "2026-01-02T00:00:00.000Z",
+      },
+    });
+  });
+
   it("lists tenant orders scoped to the selected tenant sales channel", async () => {
     let commerceInput:
       | {
@@ -3857,6 +3948,101 @@ describe("platform app", () => {
             thumbnail: null,
           },
         ],
+        createdAt: "2026-01-01T00:00:00.000Z",
+        updatedAt: "2026-01-02T00:00:00.000Z",
+      },
+    });
+  });
+
+  it("cancels tenant orders scoped to the selected tenant sales channel", async () => {
+    let commerceInput:
+      | {
+          tenantId: string;
+          userId: string;
+        }
+      | undefined;
+    let orderInput:
+      | {
+          action: MerchantOrderAction;
+          orderId: string;
+          salesChannelId: string;
+        }
+      | undefined;
+    const app = appWithResolution(
+      {
+        ok: false,
+        error: "shop_context_required",
+      },
+      {
+        getSession: async () => ({
+          user: {
+            id: "user_1",
+            email: "owner@abebe.local",
+            name: "Abebe Owner",
+          },
+        }),
+        getTenantCommerceContext: async (input) => {
+          commerceInput = input;
+
+          return {
+            ok: true,
+            context: {
+              tenantId: "tenant_1",
+              medusaStoreId: "store_1",
+              medusaSalesChannelId: "channel_1",
+              medusaPublishableKeyId: "pk_1",
+              medusaRegionId: "reg_1",
+            },
+          };
+        },
+        mutateMerchantOrder: async (input) => {
+          orderInput = input;
+
+          return {
+            ok: true,
+            order: {
+              id: "order_1",
+              displayId: 1001,
+              email: "customer@example.com",
+              status: "canceled",
+              paymentStatus: "canceled",
+              fulfillmentStatus: "not_fulfilled",
+              currencyCode: "etb",
+              total: 1250,
+              items: [],
+              createdAt: "2026-01-01T00:00:00.000Z",
+              updatedAt: "2026-01-02T00:00:00.000Z",
+            },
+          };
+        },
+      },
+    );
+
+    const response = await app.request("/platform/tenants/tenant_1/orders/order_1/cancel", {
+      method: "POST",
+    });
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(commerceInput, {
+      tenantId: "tenant_1",
+      userId: "user_1",
+    });
+    assert.deepEqual(orderInput, {
+      action: "cancel",
+      orderId: "order_1",
+      salesChannelId: "channel_1",
+    });
+    assert.deepEqual(await response.json(), {
+      order: {
+        id: "order_1",
+        displayId: 1001,
+        email: "customer@example.com",
+        status: "canceled",
+        paymentStatus: "canceled",
+        fulfillmentStatus: "not_fulfilled",
+        currencyCode: "etb",
+        total: 1250,
+        items: [],
         createdAt: "2026-01-01T00:00:00.000Z",
         updatedAt: "2026-01-02T00:00:00.000Z",
       },

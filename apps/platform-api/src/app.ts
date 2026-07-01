@@ -535,6 +535,10 @@ export type MerchantOrderDetailResult =
       status: 401 | 404 | 503;
     };
 
+export type MerchantOrderAction = "cancel" | "complete";
+
+export type MerchantOrderActionResult = MerchantOrderDetailResult;
+
 export type TenantCommerceContextResult =
   | {
       ok: true;
@@ -1036,6 +1040,13 @@ export type PlatformAppOptions = {
     | undefined;
   getMerchantOrder?:
     | ((input: { orderId: string; salesChannelId: string }) => Promise<MerchantOrderDetailResult>)
+    | undefined;
+  mutateMerchantOrder?:
+    | ((input: {
+        action: MerchantOrderAction;
+        orderId: string;
+        salesChannelId: string;
+      }) => Promise<MerchantOrderActionResult>)
     | undefined;
   listNotificationPreferences?:
     | ((input: { tenantId: string }) => Promise<NotificationPreferenceListResult>)
