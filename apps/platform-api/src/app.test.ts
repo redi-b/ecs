@@ -27,6 +27,7 @@ import type {
   SupportHistoryResult,
   SupportNoteCreateResult,
   TenantCommerceContextResult,
+  TenantDashboardSummaryResult,
   TenantDetailResult,
   TenantDomainCreateResult,
   TenantDomainListResult,
@@ -148,6 +149,9 @@ function appWithResolution(
       tenantId: string;
       userId: string;
     }) => Promise<TenantCommerceContextResult>;
+    getTenantDashboardSummary?: (input: {
+      tenantId: string;
+    }) => Promise<TenantDashboardSummaryResult>;
     getTenantReadiness?: (input: { tenantId: string }) => Promise<TenantReadinessResult>;
     listTenantsForUser?: (input: {
       limit: number;
@@ -270,6 +274,7 @@ function appWithResolution(
     getOperatorSupportHistory: options?.getOperatorSupportHistory,
     getTenantForUser: options?.getTenantForUser,
     getTenantCommerceContext: options?.getTenantCommerceContext,
+    getTenantDashboardSummary: options?.getTenantDashboardSummary,
     getTenantInsightsSummary: options?.getTenantInsightsSummary,
     getTenantReadiness: options?.getTenantReadiness,
     getTenantOnboarding: options?.getTenantOnboarding,
@@ -2791,6 +2796,106 @@ describe("platform app", () => {
     assert.deepEqual(authorizationInput, {
       tenantId: "tenant_1",
       userId: "user_1",
+    });
+    assert.deepEqual(await response.json(), {
+      tenant: {
+        id: "tenant_1",
+        name: "Abebe Market",
+        handle: "abebe",
+        status: "active",
+      },
+      domain: {
+        id: "domain_1",
+        hostname: "abebe.lvh.me",
+      },
+      actor: {
+        id: "user_1",
+        email: "owner@abebe.local",
+        name: "Abebe Owner",
+        role: "owner",
+      },
+      commerce: {
+        hasPublishableKey: true,
+        hasSalesChannel: true,
+        hasStore: true,
+      },
+      storefront: {
+        isPublished: true,
+        publishedRevisionId: "revision_1",
+        templateId: "template_1",
+        templateVersion: 1,
+      },
+    });
+  });
+
+  it("returns a merchant dashboard summary for the selected tenant", async () => {
+    let authorizationInput: { tenantId: string; userId: string } | undefined;
+    let summaryInput: { tenantId: string } | undefined;
+    const app = appWithResolution(
+      { ok: false, error: "shop_context_required" },
+      {
+        authorizeDashboardForTenant: async (input) => {
+          authorizationInput = input;
+
+          return {
+            ok: true,
+            actor: {
+              id: "user_1",
+              email: "owner@abebe.local",
+              name: "Abebe Owner",
+              role: "owner",
+            },
+          };
+        },
+        getSession: async () => ({
+          user: {
+            id: "user_1",
+            email: "owner@abebe.local",
+            name: "Abebe Owner",
+          },
+        }),
+        getTenantDashboardSummary: async (input) => {
+          summaryInput = input;
+
+          return {
+            ok: true,
+            summary: {
+              tenant: {
+                id: "tenant_1",
+                name: "Abebe Market",
+                handle: "abebe",
+                status: "active",
+              },
+              domain: {
+                id: "domain_1",
+                hostname: "abebe.lvh.me",
+              },
+              commerce: {
+                hasPublishableKey: true,
+                hasSalesChannel: true,
+                hasStore: true,
+              },
+              storefront: {
+                isPublished: true,
+                publishedRevisionId: "revision_1",
+                templateId: "template_1",
+                templateVersion: 1,
+              },
+            },
+          };
+        },
+      },
+    );
+
+    const response = await app.request("/platform/tenants/tenant_1/dashboard");
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(authorizationInput, {
+      tenantId: "tenant_1",
+      userId: "user_1",
+    });
+    assert.deepEqual(summaryInput, {
+      tenantId: "tenant_1",
     });
     assert.deepEqual(await response.json(), {
       tenant: {

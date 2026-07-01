@@ -416,6 +416,39 @@ export type TenantCommerceContextResult =
       status: 404 | 503;
     };
 
+export type TenantDashboardSummaryResult =
+  | {
+      ok: true;
+      summary: {
+        tenant: {
+          id: string;
+          name: string;
+          handle: string;
+          status: string;
+        };
+        domain: {
+          id: string;
+          hostname: string;
+        };
+        commerce: {
+          hasPublishableKey: boolean;
+          hasSalesChannel: boolean;
+          hasStore: boolean;
+        };
+        storefront: {
+          isPublished: boolean;
+          publishedRevisionId: string | null;
+          templateId: string | null;
+          templateVersion: number | null;
+        };
+      };
+    }
+  | {
+      ok: false;
+      error: "tenant_not_found";
+      status: 404;
+    };
+
 export type StorefrontTemplateCatalogItem = {
   id: string;
   slug: string;
@@ -722,6 +755,9 @@ export type PlatformAppOptions = {
     | undefined;
   getTenantCommerceContext?:
     | ((input: { tenantId: string; userId: string }) => Promise<TenantCommerceContextResult>)
+    | undefined;
+  getTenantDashboardSummary?:
+    | ((input: { tenantId: string }) => Promise<TenantDashboardSummaryResult>)
     | undefined;
   getTenantForUser?:
     | ((input: { tenantId: string; userId: string }) => Promise<TenantDetailResult>)

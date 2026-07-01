@@ -20,13 +20,14 @@ export async function getMerchantDashboardSummary(options: {
   fetcher?: typeof fetch;
   platformApiBaseUrl: string;
   requestHost?: string | null | undefined;
+  tenantId?: string | null | undefined;
 }): Promise<MerchantDashboardResult> {
   const fetcher = options.fetcher ?? fetch;
-  const response = await fetcher(getMerchantDashboardUrl(options.platformApiBaseUrl), {
+  const response = await fetcher(getMerchantDashboardUrl(options), {
     cache: "no-store",
     headers: getDashboardHeaders({
       cookieHeader: options.cookieHeader,
-      requestHost: options.requestHost,
+      requestHost: options.tenantId?.trim() ? undefined : options.requestHost,
     }),
   });
   const data = await response.json().catch(() => undefined);
@@ -57,8 +58,15 @@ export async function getMerchantDashboardSummary(options: {
   };
 }
 
-function getMerchantDashboardUrl(platformApiBaseUrl: string) {
-  return new URL("/platform/merchant/dashboard", normalizeBaseUrl(platformApiBaseUrl));
+function getMerchantDashboardUrl(options: {
+  platformApiBaseUrl: string;
+  tenantId?: string | null | undefined;
+}) {
+  const path = options.tenantId?.trim()
+    ? `/platform/tenants/${encodeURIComponent(options.tenantId.trim())}/dashboard`
+    : "/platform/merchant/dashboard";
+
+  return new URL(path, normalizeBaseUrl(options.platformApiBaseUrl));
 }
 
 function normalizeBaseUrl(value: string) {
