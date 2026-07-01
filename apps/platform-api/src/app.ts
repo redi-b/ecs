@@ -346,7 +346,16 @@ export type MerchantProduct = {
   handle: string | null;
   status: string | null;
   thumbnail: string | null;
+  images?: MerchantProductImage[];
   variants?: MerchantProductVariant[];
+  createdAt: string | null;
+  updatedAt: string | null;
+};
+
+export type MerchantProductImage = {
+  id: string;
+  url: string | null;
+  rank: number | null;
   createdAt: string | null;
   updatedAt: string | null;
 };
@@ -962,6 +971,7 @@ export type PlatformAppOptions = {
         currencyCode?: string | null | undefined;
         description?: string | null | undefined;
         handle?: string | null | undefined;
+        imageUrls?: string[] | undefined;
         priceAmount?: number | undefined;
         regionId?: string | null | undefined;
         salesChannelId: string;
@@ -1128,6 +1138,7 @@ export type PlatformAppOptions = {
         collectionId?: string | null | undefined;
         description?: string | null | undefined;
         handle?: string | null | undefined;
+        imageUrls?: string[] | undefined;
         productId: string;
         salesChannelId: string;
         status?: string | null | undefined;

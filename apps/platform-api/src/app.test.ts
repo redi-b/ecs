@@ -117,6 +117,7 @@ function appWithResolution(
       currencyCode?: string | null | undefined;
       description?: string | null | undefined;
       handle?: string | null | undefined;
+      imageUrls?: string[] | undefined;
       priceAmount?: number | undefined;
       regionId?: string | null | undefined;
       salesChannelId: string;
@@ -5398,6 +5399,7 @@ describe("platform app", () => {
           currencyCode?: string | null | undefined;
           description?: string | null | undefined;
           handle?: string | null | undefined;
+          imageUrls?: string[] | undefined;
           priceAmount?: number | undefined;
           regionId?: string | null | undefined;
           salesChannelId: string;
@@ -5454,6 +5456,7 @@ describe("platform app", () => {
         handle: "coffee",
         collectionId: "pcol_1",
         categoryIds: ["pcat_1"],
+        imageUrls: ["https://cdn.test/coffee-1.jpg"],
         priceAmount: 350,
         currencyCode: "etb",
         status: "draft",
@@ -5473,6 +5476,7 @@ describe("platform app", () => {
       handle: "coffee",
       collectionId: "pcol_1",
       categoryIds: ["pcat_1"],
+      imageUrls: ["https://cdn.test/coffee-1.jpg"],
       priceAmount: 350,
       currencyCode: "etb",
       regionId: "reg_1",
@@ -5507,6 +5511,7 @@ describe("platform app", () => {
           currencyCode?: string | null | undefined;
           description?: string | null | undefined;
           handle?: string | null | undefined;
+          imageUrls?: string[] | undefined;
           priceAmount?: number | undefined;
           regionId?: string | null | undefined;
           salesChannelId: string;
@@ -5568,6 +5573,7 @@ describe("platform app", () => {
         handle: "coffee",
         collectionId: "pcol_1",
         categoryIds: ["pcat_1"],
+        imageUrls: ["https://cdn.test/coffee-1.jpg"],
         priceAmount: 350,
         currencyCode: "etb",
         status: "draft",
@@ -5590,6 +5596,7 @@ describe("platform app", () => {
       handle: "coffee",
       collectionId: "pcol_1",
       categoryIds: ["pcat_1"],
+      imageUrls: ["https://cdn.test/coffee-1.jpg"],
       priceAmount: 350,
       currencyCode: "etb",
       regionId: "reg_1",
@@ -5669,6 +5676,7 @@ describe("platform app", () => {
           collectionId?: string | null | undefined;
           description?: string | null | undefined;
           handle?: string | null | undefined;
+          imageUrls?: string[] | undefined;
           productId: string;
           salesChannelId: string;
           status?: string | null | undefined;
@@ -5724,6 +5732,7 @@ describe("platform app", () => {
         handle: "updated-coffee",
         collectionId: "pcol_1",
         categoryIds: ["pcat_1", "pcat_2"],
+        imageUrls: ["https://cdn.test/coffee-2.jpg"],
         status: "published",
         thumbnail: "",
       }),
@@ -5742,6 +5751,7 @@ describe("platform app", () => {
       handle: "updated-coffee",
       collectionId: "pcol_1",
       categoryIds: ["pcat_1", "pcat_2"],
+      imageUrls: ["https://cdn.test/coffee-2.jpg"],
       status: "published",
       thumbnail: null,
       salesChannelId: "channel_1",
@@ -5772,6 +5782,7 @@ describe("platform app", () => {
           collectionId?: string | null | undefined;
           description?: string | null | undefined;
           handle?: string | null | undefined;
+          imageUrls?: string[] | undefined;
           productId: string;
           salesChannelId: string;
           status?: string | null | undefined;
@@ -5832,6 +5843,7 @@ describe("platform app", () => {
         handle: "updated-coffee",
         collectionId: "pcol_1",
         categoryIds: ["pcat_1", "pcat_2"],
+        imageUrls: ["https://cdn.test/coffee-2.jpg"],
         status: "published",
         thumbnail: "",
       }),
@@ -5853,6 +5865,7 @@ describe("platform app", () => {
       handle: "updated-coffee",
       collectionId: "pcol_1",
       categoryIds: ["pcat_1", "pcat_2"],
+      imageUrls: ["https://cdn.test/coffee-2.jpg"],
       status: "published",
       thumbnail: null,
       salesChannelId: "channel_1",

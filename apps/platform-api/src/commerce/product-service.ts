@@ -20,6 +20,7 @@ type ProductWriteInput = {
   currencyCode?: string | null | undefined;
   description?: string | null | undefined;
   handle?: string | null | undefined;
+  imageUrls?: string[] | undefined;
   priceAmount?: number | undefined;
   regionId?: string | null | undefined;
   salesChannelId: string;
@@ -611,6 +612,10 @@ function getProductWriteBody(input: ProductWriteInput) {
     body.categories = input.categoryIds.map((id) => ({ id }));
   }
 
+  if (input.imageUrls?.length) {
+    body.images = input.imageUrls.map((url) => ({ url }));
+  }
+
   if (input.priceAmount !== undefined) {
     body.variants = [
       {
@@ -804,7 +809,7 @@ function getProductsUrl(
   url.searchParams.set("order", "-created_at");
   url.searchParams.set(
     "fields",
-    "id,title,description,handle,status,thumbnail,collection_id,categories.id,variants.id,variants.title,variants.sku,variants.prices.amount,variants.prices.currency_code,created_at,updated_at,sales_channels.id",
+    "id,title,description,handle,status,thumbnail,collection_id,categories.id,images.id,images.url,images.rank,images.created_at,images.updated_at,variants.id,variants.title,variants.sku,variants.prices.amount,variants.prices.currency_code,created_at,updated_at,sales_channels.id",
   );
   url.searchParams.set("sales_channel_id[]", input.salesChannelId);
 
@@ -820,7 +825,7 @@ function getProductDetailUrl(medusaInternalUrl: string, productId: string) {
 
   url.searchParams.set(
     "fields",
-    "id,title,description,handle,status,thumbnail,collection_id,categories.id,variants.id,variants.title,variants.sku,variants.prices.amount,variants.prices.currency_code,variants.inventory_items.inventory_item_id,created_at,updated_at,sales_channels.id",
+    "id,title,description,handle,status,thumbnail,collection_id,categories.id,images.id,images.url,images.rank,images.created_at,images.updated_at,variants.id,variants.title,variants.sku,variants.prices.amount,variants.prices.currency_code,variants.inventory_items.inventory_item_id,created_at,updated_at,sales_channels.id",
   );
 
   return url;
@@ -937,6 +942,8 @@ function normalizeProduct(value: unknown): MerchantProduct[] {
     return [];
   }
 
+  const images = getProductImages(value.images);
+
   return [
     {
       id,
@@ -947,6 +954,7 @@ function normalizeProduct(value: unknown): MerchantProduct[] {
       handle: getString(value.handle),
       status: getString(value.status),
       thumbnail: getString(value.thumbnail),
+      ...(images.length === 0 ? {} : { images }),
       variants: getProductVariants(value.variants),
       createdAt: getString(value.created_at),
       updatedAt: getString(value.updated_at),
@@ -962,6 +970,34 @@ function getProductCategoryIds(value: unknown) {
   return value
     .map((category) => (isRecord(category) ? getString(category.id) : null))
     .filter((id): id is string => Boolean(id));
+}
+
+function getProductImages(value: unknown) {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.flatMap((image) => {
+    if (!isRecord(image)) {
+      return [];
+    }
+
+    const id = getString(image.id);
+
+    if (!id) {
+      return [];
+    }
+
+    return [
+      {
+        id,
+        url: getString(image.url),
+        rank: getNumber(image.rank) ?? null,
+        createdAt: getString(image.created_at),
+        updatedAt: getString(image.updated_at),
+      },
+    ];
+  });
 }
 
 function getProductVariants(value: unknown) {

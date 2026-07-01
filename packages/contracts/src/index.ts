@@ -121,6 +121,17 @@ export const merchantProductSchema = z.object({
   handle: z.string().min(1).nullable(),
   status: z.string().min(1).nullable(),
   thumbnail: z.string().min(1).nullable(),
+  images: z
+    .array(
+      z.object({
+        id: z.string().min(1),
+        url: z.string().min(1).nullable(),
+        rank: z.number().int().nullable(),
+        createdAt: z.string().min(1).nullable(),
+        updatedAt: z.string().min(1).nullable(),
+      }),
+    )
+    .optional(),
   variants: z
     .array(
       z.object({
