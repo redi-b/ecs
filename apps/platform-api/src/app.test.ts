@@ -13,6 +13,8 @@ import type {
   MerchantProductCategoryWriteResult,
   MerchantProductCollectionsResult,
   MerchantProductCollectionWriteResult,
+  MerchantProductStockResult,
+  MerchantProductStockUpdateResult,
   MerchantProductsResult,
   MerchantProductWriteResult,
   NotificationEventRecordResult,
@@ -57,6 +59,7 @@ const resolvedTenantContext: TenantContext = {
   status: "active",
   medusaStoreId: "store_1",
   medusaSalesChannelId: "channel_1",
+  medusaStockLocationId: "sloc_1",
   medusaPublishableKeyId: "pk_1",
   medusaRegionId: "reg_1",
   publishedRevisionId: "revision_1",
@@ -174,6 +177,11 @@ function appWithResolution(
       orderId: string;
       salesChannelId: string;
     }) => Promise<MerchantOrderDetailResult>;
+    getMerchantProductStock?: (input: {
+      productId: string;
+      salesChannelId: string;
+      stockLocationId: string;
+    }) => Promise<MerchantProductStockResult>;
     getTenantDashboardSummary?: (input: {
       tenantId: string;
     }) => Promise<TenantDashboardSummaryResult>;
@@ -295,6 +303,12 @@ function appWithResolution(
       thumbnail?: string | null | undefined;
       title?: string | null | undefined;
     }) => Promise<MerchantProductWriteResult>;
+    updateMerchantProductStock?: (input: {
+      productId: string;
+      salesChannelId: string;
+      stockLocationId: string;
+      stockedQuantity: number;
+    }) => Promise<MerchantProductStockUpdateResult>;
   },
 ) {
   return createPlatformApp({
@@ -313,6 +327,7 @@ function appWithResolution(
     getStorefrontDraft: options?.getStorefrontDraft,
     getOperatorSupportHistory: options?.getOperatorSupportHistory,
     getMerchantOrder: options?.getMerchantOrder,
+    getMerchantProductStock: options?.getMerchantProductStock,
     getTenantForUser: options?.getTenantForUser,
     getTenantCommerceContext: options?.getTenantCommerceContext,
     getTenantDashboardSummary: options?.getTenantDashboardSummary,
@@ -333,6 +348,7 @@ function appWithResolution(
     listStorefrontTemplates: options?.listStorefrontTemplates,
     selectStorefrontTemplate: options?.selectStorefrontTemplate,
     updateMerchantProduct: options?.updateMerchantProduct,
+    updateMerchantProductStock: options?.updateMerchantProductStock,
     serviceName: "platform-api",
     medusaInternalUrl: "http://medusa:9000",
     platformPublicBaseUrl: "http://api.lvh.me",
@@ -4329,6 +4345,228 @@ describe("platform app", () => {
       count: 1,
       limit: 5,
       offset: 10,
+    });
+  });
+
+  it("returns tenant product stock scoped to the selected tenant stock location", async () => {
+    let stockInput:
+      | {
+          productId: string;
+          salesChannelId: string;
+          stockLocationId: string;
+        }
+      | undefined;
+    const app = appWithResolution(
+      {
+        ok: false,
+        error: "shop_context_required",
+      },
+      {
+        getSession: async () => ({
+          user: {
+            id: "user_1",
+            email: "owner@abebe.local",
+            name: "Abebe Owner",
+          },
+        }),
+        getTenantCommerceContext: async () => ({
+          ok: true,
+          context: {
+            tenantId: "tenant_1",
+            medusaStoreId: "store_1",
+            medusaSalesChannelId: "channel_1",
+            medusaStockLocationId: "sloc_1",
+            medusaPublishableKeyId: "pk_1",
+            medusaRegionId: "reg_1",
+          },
+        }),
+        getMerchantProductStock: async (input) => {
+          stockInput = input;
+
+          return {
+            ok: true,
+            stock: {
+              productId: input.productId,
+              variantId: "variant_1",
+              inventoryItemId: "iitem_1",
+              locationId: input.stockLocationId,
+              stockedQuantity: 12,
+              reservedQuantity: 2,
+              incomingQuantity: 0,
+              availableQuantity: 10,
+            },
+          };
+        },
+      },
+    );
+
+    const response = await app.request("/platform/tenants/tenant_1/products/prod_1/stock");
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(stockInput, {
+      productId: "prod_1",
+      salesChannelId: "channel_1",
+      stockLocationId: "sloc_1",
+    });
+    assert.deepEqual(await response.json(), {
+      stock: {
+        productId: "prod_1",
+        variantId: "variant_1",
+        inventoryItemId: "iitem_1",
+        locationId: "sloc_1",
+        stockedQuantity: 12,
+        reservedQuantity: 2,
+        incomingQuantity: 0,
+        availableQuantity: 10,
+      },
+    });
+  });
+
+  it("updates tenant product stock scoped to the selected tenant stock location", async () => {
+    let stockInput:
+      | {
+          productId: string;
+          salesChannelId: string;
+          stockLocationId: string;
+          stockedQuantity: number;
+        }
+      | undefined;
+    const app = appWithResolution(
+      {
+        ok: false,
+        error: "shop_context_required",
+      },
+      {
+        getSession: async () => ({
+          user: {
+            id: "user_1",
+            email: "owner@abebe.local",
+            name: "Abebe Owner",
+          },
+        }),
+        getTenantCommerceContext: async () => ({
+          ok: true,
+          context: {
+            tenantId: "tenant_1",
+            medusaStoreId: "store_1",
+            medusaSalesChannelId: "channel_1",
+            medusaStockLocationId: "sloc_1",
+            medusaPublishableKeyId: "pk_1",
+            medusaRegionId: "reg_1",
+          },
+        }),
+        updateMerchantProductStock: async (input) => {
+          stockInput = input;
+
+          return {
+            ok: true,
+            stock: {
+              productId: input.productId,
+              variantId: "variant_1",
+              inventoryItemId: "iitem_1",
+              locationId: input.stockLocationId,
+              stockedQuantity: input.stockedQuantity,
+              reservedQuantity: 0,
+              incomingQuantity: 0,
+              availableQuantity: input.stockedQuantity,
+            },
+          };
+        },
+      },
+    );
+
+    const response = await app.request("/platform/tenants/tenant_1/products/prod_1/stock", {
+      body: JSON.stringify({
+        stockedQuantity: 15,
+      }),
+      headers: {
+        "content-type": "application/json",
+      },
+      method: "POST",
+    });
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(stockInput, {
+      productId: "prod_1",
+      salesChannelId: "channel_1",
+      stockLocationId: "sloc_1",
+      stockedQuantity: 15,
+    });
+    assert.deepEqual(await response.json(), {
+      stock: {
+        productId: "prod_1",
+        variantId: "variant_1",
+        inventoryItemId: "iitem_1",
+        locationId: "sloc_1",
+        stockedQuantity: 15,
+        reservedQuantity: 0,
+        incomingQuantity: 0,
+        availableQuantity: 15,
+      },
+    });
+  });
+
+  it("returns merchant product stock scoped to the resolved tenant stock location", async () => {
+    let stockInput:
+      | {
+          productId: string;
+          salesChannelId: string;
+          stockLocationId: string;
+        }
+      | undefined;
+    const app = appWithResolution(
+      {
+        ok: true,
+        context: resolvedTenantContext,
+      },
+      {
+        authorizeDashboardForTenant: async () => ({
+          ok: true,
+          actor: {
+            id: "user_1",
+            email: "owner@abebe.local",
+            name: "Abebe Owner",
+            role: "owner",
+          },
+        }),
+        getSession: async () => ({
+          user: {
+            id: "user_1",
+            email: "owner@abebe.local",
+            name: "Abebe Owner",
+          },
+        }),
+        getMerchantProductStock: async (input) => {
+          stockInput = input;
+
+          return {
+            ok: true,
+            stock: {
+              productId: input.productId,
+              variantId: "variant_1",
+              inventoryItemId: "iitem_1",
+              locationId: input.stockLocationId,
+              stockedQuantity: 12,
+              reservedQuantity: 2,
+              incomingQuantity: 0,
+              availableQuantity: 10,
+            },
+          };
+        },
+      },
+    );
+
+    const response = await app.request("/platform/merchant/products/prod_1/stock", {
+      headers: {
+        Host: "abebe.lvh.me",
+      },
+    });
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(stockInput, {
+      productId: "prod_1",
+      salesChannelId: "channel_1",
+      stockLocationId: "sloc_1",
     });
   });
 

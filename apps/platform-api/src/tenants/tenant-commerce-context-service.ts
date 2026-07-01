@@ -23,6 +23,7 @@ export function createTenantCommerceContextService(db: PlatformDb) {
         id: tenants.id,
         medusaStoreId: tenants.medusaStoreId,
         medusaSalesChannelId: tenants.medusaSalesChannelId,
+        medusaStockLocationId: tenants.medusaStockLocationId,
         medusaPublishableKeyId: tenants.medusaPublishableKeyId,
         medusaRegionId: tenants.medusaRegionId,
       })
@@ -61,6 +62,7 @@ export function createTenantCommerceContextService(db: PlatformDb) {
         tenantId: row.id,
         medusaStoreId: row.medusaStoreId,
         medusaSalesChannelId: row.medusaSalesChannelId,
+        medusaStockLocationId: row.medusaStockLocationId,
         medusaPublishableKeyId: row.medusaPublishableKeyId,
         medusaRegionId: row.medusaRegionId,
       },

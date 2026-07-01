@@ -6,6 +6,9 @@ import type {
   MerchantProductCollection,
   MerchantProductCollectionsResult,
   MerchantProductCollectionWriteResult,
+  MerchantProductStock,
+  MerchantProductStockResult,
+  MerchantProductStockUpdateResult,
   MerchantProductsResult,
   MerchantProductWriteResult,
 } from "../app.js";
@@ -38,6 +41,16 @@ type ProductCollectionWriteInput = {
   handle?: string | null | undefined;
   tenantId: string;
   title: string;
+};
+
+type ProductStockInput = {
+  productId: string;
+  salesChannelId: string;
+  stockLocationId: string;
+};
+
+type ProductStockUpdateInput = ProductStockInput & {
+  stockedQuantity: number;
 };
 
 export function createMedusaProductService(options: {
@@ -265,6 +278,83 @@ export function createMedusaProductService(options: {
       };
     },
 
+    getMerchantProductStock: async (
+      input: ProductStockInput,
+    ): Promise<MerchantProductStockResult> => {
+      if (!options.adminApiToken?.trim()) {
+        return missingCredentials();
+      }
+
+      const inventory = await getProductInventoryContext(fetcher, options, input);
+
+      if (!inventory.ok) {
+        return inventory;
+      }
+
+      return getInventoryItemStock(fetcher, options, {
+        inventoryItemId: inventory.inventoryItemId,
+        productId: input.productId,
+        stockLocationId: input.stockLocationId,
+        variantId: inventory.variantId,
+      });
+    },
+
+    updateMerchantProductStock: async (
+      input: ProductStockUpdateInput,
+    ): Promise<MerchantProductStockUpdateResult> => {
+      if (!options.adminApiToken?.trim()) {
+        return missingCredentials();
+      }
+
+      const inventory = await getProductInventoryContext(fetcher, options, input);
+
+      if (!inventory.ok) {
+        return inventory;
+      }
+
+      const response = await requestMedusa(
+        fetcher,
+        getInventoryItemLevelUrl(options.medusaInternalUrl, {
+          inventoryItemId: inventory.inventoryItemId,
+          stockLocationId: input.stockLocationId,
+        }),
+        {
+          body: JSON.stringify({
+            stocked_quantity: input.stockedQuantity,
+          }),
+          headers: getAdminHeaders(options.adminApiToken),
+          method: "POST",
+        },
+      );
+
+      if (!response.ok) {
+        return getStockWriteError(response);
+      }
+
+      const data = await response.json().catch(() => undefined);
+      const stock = normalizeProductStock({
+        inventoryItemId: inventory.inventoryItemId,
+        productId: input.productId,
+        stockLocationId: input.stockLocationId,
+        variantId: inventory.variantId,
+        value: data?.inventory_item,
+      });
+
+      return {
+        ok: true,
+        stock: stock ?? {
+          productId: input.productId,
+          variantId: inventory.variantId,
+          inventoryItemId: inventory.inventoryItemId,
+          locationId: input.stockLocationId,
+          stockedQuantity: input.stockedQuantity,
+          reservedQuantity: null,
+          incomingQuantity: null,
+          availableQuantity: null,
+        },
+      };
+    },
+
     updateMerchantProduct: async (
       input: ProductUpdateInput,
     ): Promise<MerchantProductWriteResult> => {
@@ -322,6 +412,139 @@ function getAdminHeaders(adminApiToken: string) {
     accept: "application/json",
     "content-type": "application/json",
     "x-medusa-access-token": adminApiToken,
+  };
+}
+
+async function getProductInventoryContext(
+  fetcher: typeof fetch,
+  options: {
+    adminApiToken?: string | undefined;
+    medusaInternalUrl: string;
+  },
+  input: ProductStockInput,
+): Promise<
+  | {
+      ok: true;
+      inventoryItemId: string;
+      variantId: string;
+    }
+  | Extract<MerchantProductStockResult, { ok: false }>
+> {
+  const response = await requestMedusa(
+    fetcher,
+    getProductInventoryUrl(options.medusaInternalUrl, input.productId),
+    {
+      headers: getAdminHeaders(options.adminApiToken ?? ""),
+    },
+  );
+
+  if (response.status === 401) {
+    return {
+      ok: false,
+      error: "commerce_credentials_missing",
+      status: 401,
+    };
+  }
+
+  if (response.status === 404) {
+    return {
+      ok: false,
+      error: "product_not_found",
+      status: 404,
+    };
+  }
+
+  if (!response.ok) {
+    return {
+      ok: false,
+      error: "commerce_backend_unavailable",
+      status: 503,
+    };
+  }
+
+  const data = await response.json().catch(() => undefined);
+
+  if (!productBelongsToSalesChannel(data?.product, input.salesChannelId)) {
+    return {
+      ok: false,
+      error: "product_not_found",
+      status: 404,
+    };
+  }
+
+  const inventory = getFirstProductInventoryItem(data?.product);
+
+  if (!inventory) {
+    return {
+      ok: false,
+      error: "product_inventory_unavailable",
+      status: 503,
+    };
+  }
+
+  return {
+    ok: true,
+    ...inventory,
+  };
+}
+
+async function getInventoryItemStock(
+  fetcher: typeof fetch,
+  options: {
+    adminApiToken?: string | undefined;
+    medusaInternalUrl: string;
+  },
+  input: {
+    inventoryItemId: string;
+    productId: string;
+    stockLocationId: string;
+    variantId: string;
+  },
+): Promise<MerchantProductStockResult> {
+  const response = await requestMedusa(
+    fetcher,
+    getInventoryItemUrl(options.medusaInternalUrl, input.inventoryItemId),
+    {
+      headers: getAdminHeaders(options.adminApiToken ?? ""),
+    },
+  );
+
+  if (response.status === 401) {
+    return {
+      ok: false,
+      error: "commerce_credentials_missing",
+      status: 401,
+    };
+  }
+
+  if (!response.ok) {
+    return {
+      ok: false,
+      error: "commerce_backend_unavailable",
+      status: 503,
+    };
+  }
+
+  const data = await response.json().catch(() => undefined);
+  const stock = normalizeProductStock({
+    inventoryItemId: input.inventoryItemId,
+    productId: input.productId,
+    stockLocationId: input.stockLocationId,
+    variantId: input.variantId,
+    value: data?.inventory_item,
+  });
+
+  if (!stock) {
+    return {
+      ok: false,
+      error: "product_inventory_unavailable",
+      status: 503,
+    };
+  }
+
+  return {
+    ok: true,
+    stock,
   };
 }
 
@@ -491,6 +714,30 @@ function getCollectionWriteError(response: Response): MerchantProductCollectionW
   };
 }
 
+function getStockWriteError(response: Response): MerchantProductStockUpdateResult {
+  if (response.status === 401) {
+    return {
+      ok: false,
+      error: "commerce_credentials_missing",
+      status: 401,
+    };
+  }
+
+  if (response.status === 404) {
+    return {
+      ok: false,
+      error: "product_inventory_unavailable",
+      status: 503,
+    };
+  }
+
+  return {
+    ok: false,
+    error: "commerce_backend_unavailable",
+    status: 503,
+  };
+}
+
 function missingCredentials() {
   return {
     ok: false,
@@ -563,6 +810,38 @@ function getProductCollectionsBaseUrl(medusaInternalUrl: string) {
 function getProductUrl(medusaInternalUrl: string, productId: string) {
   return new URL(
     `/admin/products/${encodeURIComponent(productId)}`,
+    normalizeBaseUrl(medusaInternalUrl),
+  );
+}
+
+function getProductInventoryUrl(medusaInternalUrl: string, productId: string) {
+  const url = getProductUrl(medusaInternalUrl, productId);
+
+  url.searchParams.set(
+    "fields",
+    "id,sales_channels.id,variants.id,variants.inventory_items.inventory_item_id",
+  );
+
+  return url;
+}
+
+function getInventoryItemUrl(medusaInternalUrl: string, inventoryItemId: string) {
+  const url = new URL(
+    `/admin/inventory-items/${encodeURIComponent(inventoryItemId)}`,
+    normalizeBaseUrl(medusaInternalUrl),
+  );
+
+  url.searchParams.set("fields", "id,*location_levels");
+
+  return url;
+}
+
+function getInventoryItemLevelUrl(
+  medusaInternalUrl: string,
+  input: { inventoryItemId: string; stockLocationId: string },
+) {
+  return new URL(
+    `/admin/inventory-items/${encodeURIComponent(input.inventoryItemId)}/location-levels/${encodeURIComponent(input.stockLocationId)}`,
     normalizeBaseUrl(medusaInternalUrl),
   );
 }
@@ -646,12 +925,89 @@ function getProductVariants(value: unknown) {
     return [
       {
         id,
+        inventoryItemId: getVariantInventoryItemId(variant),
         title: getString(variant.title),
         sku: getString(variant.sku),
         prices: getProductPrices(variant.prices),
       },
     ];
   });
+}
+
+function getFirstProductInventoryItem(product: unknown) {
+  if (!isRecord(product) || !Array.isArray(product.variants)) {
+    return undefined;
+  }
+
+  for (const variant of product.variants) {
+    if (!isRecord(variant)) {
+      continue;
+    }
+
+    const variantId = getString(variant.id);
+    const inventoryItemId = getVariantInventoryItemId(variant);
+
+    if (variantId && inventoryItemId) {
+      return {
+        variantId,
+        inventoryItemId,
+      };
+    }
+  }
+
+  return undefined;
+}
+
+function getVariantInventoryItemId(variant: Record<string, unknown>) {
+  if (!Array.isArray(variant.inventory_items)) {
+    return null;
+  }
+
+  for (const inventoryItem of variant.inventory_items) {
+    if (!isRecord(inventoryItem)) {
+      continue;
+    }
+
+    const inventoryItemId =
+      getString(inventoryItem.inventory_item_id) ?? getString(inventoryItem.id);
+
+    if (inventoryItemId) {
+      return inventoryItemId;
+    }
+  }
+
+  return null;
+}
+
+function normalizeProductStock(input: {
+  inventoryItemId: string;
+  productId: string;
+  stockLocationId: string;
+  value: unknown;
+  variantId: string;
+}): MerchantProductStock | undefined {
+  if (!isRecord(input.value) || !Array.isArray(input.value.location_levels)) {
+    return undefined;
+  }
+
+  const level = input.value.location_levels.find(
+    (candidate) => isRecord(candidate) && candidate.location_id === input.stockLocationId,
+  );
+
+  if (!isRecord(level)) {
+    return undefined;
+  }
+
+  return {
+    productId: input.productId,
+    variantId: input.variantId,
+    inventoryItemId: input.inventoryItemId,
+    locationId: input.stockLocationId,
+    stockedQuantity: getNumber(level.stocked_quantity) ?? null,
+    reservedQuantity: getNumber(level.reserved_quantity) ?? null,
+    incomingQuantity: getNumber(level.incoming_quantity) ?? null,
+    availableQuantity: getNumber(level.available_quantity) ?? null,
+  };
 }
 
 function getProductPrices(value: unknown) {

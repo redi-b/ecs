@@ -353,6 +353,7 @@ export type MerchantProduct = {
 
 export type MerchantProductVariant = {
   id: string;
+  inventoryItemId?: string | null;
   title: string | null;
   sku: string | null;
   prices: MerchantProductPrice[];
@@ -457,6 +458,35 @@ export type MerchantProductCollectionWriteResult =
       status: 401 | 503;
     };
 
+export type MerchantProductStock = {
+  productId: string;
+  variantId: string;
+  inventoryItemId: string;
+  locationId: string;
+  stockedQuantity: number | null;
+  reservedQuantity: number | null;
+  incomingQuantity: number | null;
+  availableQuantity: number | null;
+};
+
+export type MerchantProductStockResult =
+  | {
+      ok: true;
+      stock: MerchantProductStock;
+    }
+  | {
+      ok: false;
+      error:
+        | "commerce_backend_unavailable"
+        | "commerce_credentials_missing"
+        | "inventory_location_unavailable"
+        | "product_inventory_unavailable"
+        | "product_not_found";
+      status: 401 | 404 | 503;
+    };
+
+export type MerchantProductStockUpdateResult = MerchantProductStockResult;
+
 export type MerchantOrder = {
   id: string;
   displayId: number | null;
@@ -512,6 +542,7 @@ export type TenantCommerceContextResult =
         tenantId: string;
         medusaStoreId: string | null;
         medusaSalesChannelId: string;
+        medusaStockLocationId?: string | null;
         medusaPublishableKeyId: string | null;
         medusaRegionId: string | null;
       };
@@ -980,6 +1011,21 @@ export type PlatformAppOptions = {
         offset: number;
         tenantId: string;
       }) => Promise<MerchantProductCollectionsResult>)
+    | undefined;
+  getMerchantProductStock?:
+    | ((input: {
+        productId: string;
+        salesChannelId: string;
+        stockLocationId: string;
+      }) => Promise<MerchantProductStockResult>)
+    | undefined;
+  updateMerchantProductStock?:
+    | ((input: {
+        productId: string;
+        salesChannelId: string;
+        stockLocationId: string;
+        stockedQuantity: number;
+      }) => Promise<MerchantProductStockUpdateResult>)
     | undefined;
   listMerchantOrders?:
     | ((input: {

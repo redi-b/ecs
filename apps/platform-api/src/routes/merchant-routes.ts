@@ -404,6 +404,118 @@ export function registerMerchantRoutes(
     });
   });
 
+  app.get("/platform/merchant/products/:productId/stock", async (context) => {
+    const session = await options.getSession?.(context.req.raw.headers);
+
+    if (!session) {
+      return context.json({ error: "auth_required" }, 401);
+    }
+
+    const host = getRequestHost(
+      context.req.header("x-forwarded-host") ?? context.req.header("host"),
+    );
+    const result = await options.resolveTenantForHost(host);
+
+    if (!result.ok) {
+      return context.json({ error: result.error }, storeErrorStatus[result.error]);
+    }
+
+    const authorization = await options.authorizeDashboardForTenant?.({
+      tenantId: result.context.tenantId,
+      userId: session.user.id,
+    });
+
+    if (!authorization?.ok) {
+      return context.json({ error: "dashboard_forbidden" }, 403);
+    }
+
+    if (!result.context.medusaSalesChannelId) {
+      return context.json({ error: "domain_misconfigured" }, 409);
+    }
+
+    if (!result.context.medusaStockLocationId) {
+      return context.json({ error: "inventory_location_unavailable" }, 503);
+    }
+
+    if (!options.getMerchantProductStock) {
+      return context.json({ error: "commerce_backend_unavailable" }, 503);
+    }
+
+    const stock = await options.getMerchantProductStock({
+      productId: context.req.param("productId"),
+      salesChannelId: result.context.medusaSalesChannelId,
+      stockLocationId: result.context.medusaStockLocationId,
+    });
+
+    if (!stock.ok) {
+      return context.json({ error: stock.error }, stock.status);
+    }
+
+    return context.json({
+      stock: stock.stock,
+    });
+  });
+
+  app.post("/platform/merchant/products/:productId/stock", async (context) => {
+    const session = await options.getSession?.(context.req.raw.headers);
+
+    if (!session) {
+      return context.json({ error: "auth_required" }, 401);
+    }
+
+    const host = getRequestHost(
+      context.req.header("x-forwarded-host") ?? context.req.header("host"),
+    );
+    const result = await options.resolveTenantForHost(host);
+
+    if (!result.ok) {
+      return context.json({ error: result.error }, storeErrorStatus[result.error]);
+    }
+
+    const authorization = await options.authorizeDashboardForTenant?.({
+      tenantId: result.context.tenantId,
+      userId: session.user.id,
+    });
+
+    if (!authorization?.ok) {
+      return context.json({ error: "dashboard_forbidden" }, 403);
+    }
+
+    if (!result.context.medusaSalesChannelId) {
+      return context.json({ error: "domain_misconfigured" }, 409);
+    }
+
+    if (!result.context.medusaStockLocationId) {
+      return context.json({ error: "inventory_location_unavailable" }, 503);
+    }
+
+    if (!options.updateMerchantProductStock) {
+      return context.json({ error: "commerce_backend_unavailable" }, 503);
+    }
+
+    const body = await getJsonBody(context.req.raw);
+    const stockedQuantity = getOptionalBodyNumber(body, "stockedQuantity");
+
+    if (stockedQuantity === undefined || stockedQuantity < 0) {
+      return context.json({ error: "invalid_stocked_quantity" }, 400);
+    }
+
+    const stock = await options.updateMerchantProductStock({
+      productId: context.req.param("productId"),
+      salesChannelId: result.context.medusaSalesChannelId,
+      stockLocationId: result.context.medusaStockLocationId,
+      stockedQuantity,
+    });
+
+    if (!stock.ok) {
+      return context.json({ error: stock.error }, stock.status);
+    }
+
+    return context.json({
+      stock: stock.stock,
+    });
+  });
+
   app.post("/platform/merchant/products/:productId", async (context) => {
     const session = await options.getSession?.(context.req.raw.headers);
 
