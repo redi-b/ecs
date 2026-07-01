@@ -2,6 +2,7 @@ import { cookies, headers } from "next/headers";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
+import { getSelectedTenantId, getTenantScopedPath } from "../../../lib/dashboard-tenant-context";
 import { getMerchantProducts } from "../../../lib/merchant-products";
 
 export default async function MerchantProductsPage({
@@ -11,6 +12,7 @@ export default async function MerchantProductsPage({
 }) {
   const resolvedSearchParams = await searchParams;
   const productStatus = getSearchParam(resolvedSearchParams, "productStatus");
+  const tenantId = getSelectedTenantId(resolvedSearchParams);
   const requestHeaders = await headers();
   const cookieStore = await cookies();
   const requestHost = requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host");
@@ -18,12 +20,15 @@ export default async function MerchantProductsPage({
     cookieHeader: cookieStore.toString(),
     platformApiBaseUrl: process.env.PLATFORM_API_BASE_URL ?? "http://localhost:3000",
     requestHost,
+    tenantId,
     limit: 20,
     offset: 0,
   });
 
   if (!result.ok && result.status === 401) {
-    redirect("/admin/sign-in?next=/admin/products");
+    redirect(
+      `/admin/sign-in?next=${encodeURIComponent(getTenantScopedPath("/admin/products", tenantId))}`,
+    );
   }
 
   return (
@@ -38,7 +43,7 @@ export default async function MerchantProductsPage({
               current shop hostname and sales channel.
             </p>
           </div>
-          <Link className="secondary-link" href="/admin">
+          <Link className="secondary-link" href={getTenantScopedPath("/admin", tenantId)}>
             Back to dashboard
           </Link>
         </header>
@@ -54,7 +59,11 @@ export default async function MerchantProductsPage({
             <h2>Create product</h2>
             <p className="lede">Add a basic product to this shop sales channel.</p>
           </div>
-          <form action="/admin/products/create" className="product-form-grid" method="post">
+          <form
+            action={getTenantScopedPath("/admin/products/create", tenantId)}
+            className="product-form-grid"
+            method="post"
+          >
             <label className="field-label">
               Title
               <input className="text-input" name="title" placeholder="Coffee beans" required />
@@ -166,7 +175,10 @@ export default async function MerchantProductsPage({
                       <td>{formatDate(product.updatedAt)}</td>
                       <td>
                         <form
-                          action={`/admin/products/${encodeURIComponent(product.id)}`}
+                          action={getTenantScopedPath(
+                            `/admin/products/${encodeURIComponent(product.id)}`,
+                            tenantId,
+                          )}
                           id={formId}
                           method="post"
                         />

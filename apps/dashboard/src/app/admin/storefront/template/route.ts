@@ -13,7 +13,7 @@ export async function POST(request: Request) {
   }
 
   if (typeof templateKey !== "string" || !templateKey.trim()) {
-    return redirectToAdmin(request, "missing_template");
+    return redirectToAdmin(request, "missing_template", tenantId);
   }
 
   const cookieStore = await cookies();
@@ -25,16 +25,20 @@ export async function POST(request: Request) {
   });
 
   if (!result.ok) {
-    return redirectToAdmin(request, result.message);
+    return redirectToAdmin(request, result.message, tenantId);
   }
 
-  return redirectToAdmin(request, "template_selected");
+  return redirectToAdmin(request, "template_selected", tenantId);
 }
 
-function redirectToAdmin(request: Request, status: string) {
+function redirectToAdmin(request: Request, status: string, tenantId?: string | null) {
   const url = new URL("/admin", getRequestOrigin(request));
 
   url.searchParams.set("templateStatus", status);
+
+  if (tenantId?.trim()) {
+    url.searchParams.set("tenantId", tenantId.trim());
+  }
 
   return NextResponse.redirect(url, { status: 303 });
 }

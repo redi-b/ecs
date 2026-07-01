@@ -1,6 +1,7 @@
 import { cookies, headers } from "next/headers";
 import { NextResponse } from "next/server";
 
+import { appendTenantRedirectParams } from "../../../../lib/dashboard-tenant-context";
 import { updateMerchantProduct } from "../../../../lib/merchant-products";
 
 export async function POST(
@@ -22,6 +23,7 @@ export async function POST(
     },
     productId,
     requestHost: requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host"),
+    tenantId: new URL(request.url).searchParams.get("tenantId"),
   });
 
   return redirectToProducts(request, result.ok ? "product_updated" : result.message);
@@ -43,6 +45,7 @@ function redirectToProducts(request: Request, status: string) {
   const url = new URL("/admin/products", getRequestOrigin(request));
 
   url.searchParams.set("productStatus", status);
+  appendTenantRedirectParams(url, request);
 
   return NextResponse.redirect(url, { status: 303 });
 }

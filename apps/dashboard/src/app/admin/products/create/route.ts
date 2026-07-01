@@ -1,6 +1,7 @@
 import { cookies, headers } from "next/headers";
 import { NextResponse } from "next/server";
 
+import { appendTenantRedirectParams } from "../../../../lib/dashboard-tenant-context";
 import { createMerchantProduct } from "../../../../lib/merchant-products";
 
 export async function POST(request: Request) {
@@ -23,6 +24,7 @@ export async function POST(request: Request) {
       thumbnail: getFormString(formData, "thumbnail"),
     },
     requestHost: requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host"),
+    tenantId: new URL(request.url).searchParams.get("tenantId"),
   });
 
   return redirectToProducts(request, result.ok ? "product_created" : result.message);
@@ -44,6 +46,7 @@ function redirectToProducts(request: Request, status: string) {
   const url = new URL("/admin/products", getRequestOrigin(request));
 
   url.searchParams.set("productStatus", status);
+  appendTenantRedirectParams(url, request);
 
   return NextResponse.redirect(url, { status: 303 });
 }

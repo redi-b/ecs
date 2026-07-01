@@ -2,6 +2,7 @@ import { cookies, headers } from "next/headers";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
+import { getSelectedTenantId, getTenantScopedPath } from "../../lib/dashboard-tenant-context";
 import { getMerchantDashboardSummary } from "../../lib/merchant-dashboard";
 import { getStorefrontTemplates } from "../../lib/storefront-templates";
 
@@ -12,6 +13,7 @@ export default async function MerchantAdminPage({
 }) {
   const resolvedSearchParams = await searchParams;
   const templateStatus = getSearchParam(resolvedSearchParams, "templateStatus");
+  const tenantId = getSelectedTenantId(resolvedSearchParams);
   const requestHeaders = await headers();
   const cookieStore = await cookies();
   const requestHost = requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host");
@@ -20,10 +22,11 @@ export default async function MerchantAdminPage({
     cookieHeader: cookieStore.toString(),
     platformApiBaseUrl,
     requestHost,
+    tenantId,
   });
 
   if (!result.ok && result.status === 401) {
-    redirect("/admin/sign-in?next=/admin");
+    redirect(`/admin/sign-in?next=${encodeURIComponent(getTenantScopedPath("/admin", tenantId))}`);
   }
 
   if (!result.ok) {
@@ -147,10 +150,13 @@ export default async function MerchantAdminPage({
             </p>
           </div>
           <div className="action-links">
-            <Link className="primary-button action-link" href="/admin/products">
+            <Link
+              className="primary-button action-link"
+              href={getTenantScopedPath("/admin/products", tenantId)}
+            >
               Open products
             </Link>
-            <Link className="secondary-link" href="/admin/orders">
+            <Link className="secondary-link" href={getTenantScopedPath("/admin/orders", tenantId)}>
               Open orders
             </Link>
           </div>
