@@ -520,7 +520,15 @@ async function getProductInventoryContext(
     };
   }
 
-  const inventory = getFirstProductInventoryItem(data?.product);
+  const inventory = getSingleVariantInventoryItem(data?.product);
+
+  if (inventory === "multiple_variants") {
+    return {
+      ok: false,
+      error: "product_variant_unsupported",
+      status: 409,
+    };
+  }
 
   if (!inventory) {
     return {
@@ -1028,25 +1036,31 @@ function getProductVariants(value: unknown) {
   });
 }
 
-function getFirstProductInventoryItem(product: unknown) {
+function getSingleVariantInventoryItem(product: unknown) {
   if (!isRecord(product) || !Array.isArray(product.variants)) {
     return undefined;
   }
 
-  for (const variant of product.variants) {
-    if (!isRecord(variant)) {
-      continue;
-    }
+  const variants = product.variants.filter(isRecord);
 
-    const variantId = getString(variant.id);
-    const inventoryItemId = getVariantInventoryItemId(variant);
+  if (variants.length !== 1) {
+    return variants.length > 1 ? "multiple_variants" : undefined;
+  }
 
-    if (variantId && inventoryItemId) {
-      return {
-        variantId,
-        inventoryItemId,
-      };
-    }
+  const variant = variants[0];
+
+  if (!variant) {
+    return undefined;
+  }
+
+  const variantId = getString(variant.id);
+  const inventoryItemId = getVariantInventoryItemId(variant);
+
+  if (variantId && inventoryItemId) {
+    return {
+      variantId,
+      inventoryItemId,
+    };
   }
 
   return undefined;

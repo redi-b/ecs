@@ -148,6 +148,12 @@ In split mode, the Medusa server uses port `9000` and the Medusa worker uses por
 
 The local event bus and in-memory locking warnings from Medusa are expected in development. They should be replaced with production services before deployment.
 
+## Commerce MVP Scope
+
+The platform API supports tenant-scoped catalog, stock, checkout, payment, and order operations through Medusa.
+
+Product stock management currently supports single-variant products. If a product has multiple variants, stock read and update endpoints return `product_variant_unsupported` instead of choosing a variant automatically. Variant-level inventory management should be added before enabling multi-variant product editing in the dashboard.
+
 ## Project Rules
 
 - Do not expose Medusa Admin API publicly.

@@ -626,6 +626,89 @@ describe("createMedusaProductService", () => {
     });
   });
 
+  it("does not read stock for multi-variant products", async () => {
+    let calls = 0;
+    const service = createMedusaProductService({
+      adminApiToken: "medusa_token",
+      medusaInternalUrl: "http://medusa:9000",
+      fetcher: async () => {
+        calls += 1;
+
+        return Response.json({
+          product: {
+            id: "prod_1",
+            sales_channels: [{ id: "sc_1" }],
+            variants: [
+              {
+                id: "variant_1",
+                inventory_items: [{ inventory_item_id: "iitem_1" }],
+              },
+              {
+                id: "variant_2",
+                inventory_items: [{ inventory_item_id: "iitem_2" }],
+              },
+            ],
+          },
+        });
+      },
+    });
+
+    const result = await service.getMerchantProductStock({
+      productId: "prod_1",
+      salesChannelId: "sc_1",
+      stockLocationId: "sloc_1",
+    });
+
+    assert.equal(calls, 1);
+    assert.deepEqual(result, {
+      ok: false,
+      error: "product_variant_unsupported",
+      status: 409,
+    });
+  });
+
+  it("does not update stock for multi-variant products", async () => {
+    let calls = 0;
+    const service = createMedusaProductService({
+      adminApiToken: "medusa_token",
+      medusaInternalUrl: "http://medusa:9000",
+      fetcher: async () => {
+        calls += 1;
+
+        return Response.json({
+          product: {
+            id: "prod_1",
+            sales_channels: [{ id: "sc_1" }],
+            variants: [
+              {
+                id: "variant_1",
+                inventory_items: [{ inventory_item_id: "iitem_1" }],
+              },
+              {
+                id: "variant_2",
+                inventory_items: [{ inventory_item_id: "iitem_2" }],
+              },
+            ],
+          },
+        });
+      },
+    });
+
+    const result = await service.updateMerchantProductStock({
+      productId: "prod_1",
+      salesChannelId: "sc_1",
+      stockLocationId: "sloc_1",
+      stockedQuantity: 15,
+    });
+
+    assert.equal(calls, 1);
+    assert.deepEqual(result, {
+      ok: false,
+      error: "product_variant_unsupported",
+      status: 409,
+    });
+  });
+
   it("creates product categories with tenant metadata", async () => {
     let forwardedRequest: Request | undefined;
     const service = createMedusaProductService({

@@ -492,8 +492,9 @@ export type MerchantProductStockResult =
         | "commerce_credentials_missing"
         | "inventory_location_unavailable"
         | "product_inventory_unavailable"
-        | "product_not_found";
-      status: 401 | 404 | 503;
+        | "product_not_found"
+        | "product_variant_unsupported";
+      status: 401 | 404 | 409 | 503;
     };
 
 export type MerchantProductStockUpdateResult = MerchantProductStockResult;
