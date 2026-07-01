@@ -1,5 +1,11 @@
 import type {
   MerchantProduct,
+  MerchantProductCategoriesResult,
+  MerchantProductCategory,
+  MerchantProductCategoryWriteResult,
+  MerchantProductCollection,
+  MerchantProductCollectionsResult,
+  MerchantProductCollectionWriteResult,
   MerchantProductsResult,
   MerchantProductWriteResult,
 } from "../app.js";
@@ -14,6 +20,18 @@ type ProductWriteInput = {
 
 type ProductUpdateInput = ProductWriteInput & {
   productId: string;
+};
+
+type ProductCategoryWriteInput = {
+  handle?: string | null | undefined;
+  name: string;
+  tenantId: string;
+};
+
+type ProductCollectionWriteInput = {
+  handle?: string | null | undefined;
+  tenantId: string;
+  title: string;
 };
 
 export function createMedusaProductService(options: {
@@ -41,6 +59,56 @@ export function createMedusaProductService(options: {
       });
 
       return parseProductWriteResponse(response);
+    },
+
+    createMerchantProductCategory: async (
+      input: ProductCategoryWriteInput,
+    ): Promise<MerchantProductCategoryWriteResult> => {
+      if (!options.adminApiToken?.trim()) {
+        return missingCredentials();
+      }
+
+      const response = await requestMedusa(
+        fetcher,
+        getProductCategoriesBaseUrl(options.medusaInternalUrl),
+        {
+          body: JSON.stringify({
+            name: input.name,
+            ...(input.handle?.trim() ? { handle: input.handle } : {}),
+            is_active: true,
+            is_internal: false,
+            metadata: getTenantMetadata(input.tenantId),
+          }),
+          headers: getAdminHeaders(options.adminApiToken),
+          method: "POST",
+        },
+      );
+
+      return parseProductCategoryWriteResponse(response);
+    },
+
+    createMerchantProductCollection: async (
+      input: ProductCollectionWriteInput,
+    ): Promise<MerchantProductCollectionWriteResult> => {
+      if (!options.adminApiToken?.trim()) {
+        return missingCredentials();
+      }
+
+      const response = await requestMedusa(
+        fetcher,
+        getProductCollectionsBaseUrl(options.medusaInternalUrl),
+        {
+          body: JSON.stringify({
+            title: input.title,
+            ...(input.handle?.trim() ? { handle: input.handle } : {}),
+            metadata: getTenantMetadata(input.tenantId),
+          }),
+          headers: getAdminHeaders(options.adminApiToken),
+          method: "POST",
+        },
+      );
+
+      return parseProductCollectionWriteResponse(response);
     },
 
     listMerchantProducts: async (input: {
@@ -90,6 +158,104 @@ export function createMedusaProductService(options: {
         limit: getNumber(data?.limit) ?? input.limit,
         offset: getNumber(data?.offset) ?? input.offset,
         products: Array.isArray(data?.products) ? data.products.flatMap(normalizeProduct) : [],
+      };
+    },
+
+    listMerchantProductCategories: async (input: {
+      limit: number;
+      offset: number;
+      tenantId: string;
+    }): Promise<MerchantProductCategoriesResult> => {
+      if (!options.adminApiToken?.trim()) {
+        return missingCredentials();
+      }
+
+      const response = await requestMedusa(
+        fetcher,
+        getProductCategoriesUrl(options.medusaInternalUrl, input),
+        {
+          headers: getAdminHeaders(options.adminApiToken),
+        },
+      );
+
+      if (response.status === 401) {
+        return {
+          ok: false,
+          error: "commerce_credentials_missing",
+          status: 401,
+        };
+      }
+
+      if (!response.ok) {
+        return {
+          ok: false,
+          error: "commerce_backend_unavailable",
+          status: 503,
+        };
+      }
+
+      const data = await response.json().catch(() => undefined);
+      const categories = Array.isArray(data?.product_categories)
+        ? data.product_categories
+            .filter((category: unknown) => belongsToTenant(category, input.tenantId))
+            .flatMap(normalizeProductCategory)
+        : [];
+
+      return {
+        ok: true,
+        categories,
+        count: categories.length,
+        limit: getNumber(data?.limit) ?? input.limit,
+        offset: getNumber(data?.offset) ?? input.offset,
+      };
+    },
+
+    listMerchantProductCollections: async (input: {
+      limit: number;
+      offset: number;
+      tenantId: string;
+    }): Promise<MerchantProductCollectionsResult> => {
+      if (!options.adminApiToken?.trim()) {
+        return missingCredentials();
+      }
+
+      const response = await requestMedusa(
+        fetcher,
+        getProductCollectionsUrl(options.medusaInternalUrl, input),
+        {
+          headers: getAdminHeaders(options.adminApiToken),
+        },
+      );
+
+      if (response.status === 401) {
+        return {
+          ok: false,
+          error: "commerce_credentials_missing",
+          status: 401,
+        };
+      }
+
+      if (!response.ok) {
+        return {
+          ok: false,
+          error: "commerce_backend_unavailable",
+          status: 503,
+        };
+      }
+
+      const data = await response.json().catch(() => undefined);
+      const collections = Array.isArray(data?.collections)
+        ? data.collections
+            .filter((collection: unknown) => belongsToTenant(collection, input.tenantId))
+            .flatMap(normalizeProductCollection)
+        : [];
+
+      return {
+        ok: true,
+        collections,
+        count: collections.length,
+        limit: getNumber(data?.limit) ?? input.limit,
+        offset: getNumber(data?.offset) ?? input.offset,
       };
     },
 
@@ -186,6 +352,54 @@ async function parseProductWriteResponse(response: Response): Promise<MerchantPr
   };
 }
 
+async function parseProductCategoryWriteResponse(
+  response: Response,
+): Promise<MerchantProductCategoryWriteResult> {
+  if (!response.ok) {
+    return getCategoryWriteError(response);
+  }
+
+  const data = await response.json().catch(() => undefined);
+  const category = normalizeProductCategory(data?.product_category)[0];
+
+  if (!category) {
+    return {
+      ok: false,
+      error: "commerce_backend_unavailable",
+      status: 503,
+    };
+  }
+
+  return {
+    ok: true,
+    category,
+  };
+}
+
+async function parseProductCollectionWriteResponse(
+  response: Response,
+): Promise<MerchantProductCollectionWriteResult> {
+  if (!response.ok) {
+    return getCollectionWriteError(response);
+  }
+
+  const data = await response.json().catch(() => undefined);
+  const collection = normalizeProductCollection(data?.collection)[0];
+
+  if (!collection) {
+    return {
+      ok: false,
+      error: "commerce_backend_unavailable",
+      status: 503,
+    };
+  }
+
+  return {
+    ok: true,
+    collection,
+  };
+}
+
 function getWriteError(response: Response): MerchantProductWriteResult {
   if (response.status === 401) {
     return {
@@ -200,6 +414,38 @@ function getWriteError(response: Response): MerchantProductWriteResult {
       ok: false,
       error: "product_not_found",
       status: 404,
+    };
+  }
+
+  return {
+    ok: false,
+    error: "commerce_backend_unavailable",
+    status: 503,
+  };
+}
+
+function getCategoryWriteError(response: Response): MerchantProductCategoryWriteResult {
+  if (response.status === 401) {
+    return {
+      ok: false,
+      error: "commerce_credentials_missing",
+      status: 401,
+    };
+  }
+
+  return {
+    ok: false,
+    error: "commerce_backend_unavailable",
+    status: 503,
+  };
+}
+
+function getCollectionWriteError(response: Response): MerchantProductCollectionWriteResult {
+  if (response.status === 401) {
+    return {
+      ok: false,
+      error: "commerce_credentials_missing",
+      status: 401,
     };
   }
 
@@ -238,6 +484,45 @@ function getProductsUrl(
 
 function getProductsBaseUrl(medusaInternalUrl: string) {
   return new URL("/admin/products", normalizeBaseUrl(medusaInternalUrl));
+}
+
+function getProductCategoriesUrl(
+  medusaInternalUrl: string,
+  input: { limit: number; offset: number },
+) {
+  const url = getProductCategoriesBaseUrl(medusaInternalUrl);
+
+  url.searchParams.set("limit", String(input.limit));
+  url.searchParams.set("offset", String(input.offset));
+  url.searchParams.set("order", "-created_at");
+  url.searchParams.set(
+    "fields",
+    "id,name,handle,is_active,is_internal,parent_category_id,metadata,created_at,updated_at",
+  );
+
+  return url;
+}
+
+function getProductCategoriesBaseUrl(medusaInternalUrl: string) {
+  return new URL("/admin/product-categories", normalizeBaseUrl(medusaInternalUrl));
+}
+
+function getProductCollectionsUrl(
+  medusaInternalUrl: string,
+  input: { limit: number; offset: number },
+) {
+  const url = getProductCollectionsBaseUrl(medusaInternalUrl);
+
+  url.searchParams.set("limit", String(input.limit));
+  url.searchParams.set("offset", String(input.offset));
+  url.searchParams.set("order", "-created_at");
+  url.searchParams.set("fields", "id,title,handle,metadata,created_at,updated_at");
+
+  return url;
+}
+
+function getProductCollectionsBaseUrl(medusaInternalUrl: string) {
+  return new URL("/admin/collections", normalizeBaseUrl(medusaInternalUrl));
 }
 
 function getProductUrl(medusaInternalUrl: string, productId: string) {
@@ -293,12 +578,77 @@ function normalizeProduct(value: unknown): MerchantProduct[] {
   ];
 }
 
+function normalizeProductCategory(value: unknown): MerchantProductCategory[] {
+  if (!isRecord(value)) {
+    return [];
+  }
+
+  const id = getString(value.id);
+
+  if (!id) {
+    return [];
+  }
+
+  return [
+    {
+      id,
+      name: getString(value.name),
+      handle: getString(value.handle),
+      isActive: getBoolean(value.is_active),
+      isInternal: getBoolean(value.is_internal),
+      parentCategoryId: getString(value.parent_category_id),
+      createdAt: getString(value.created_at),
+      updatedAt: getString(value.updated_at),
+    },
+  ];
+}
+
+function normalizeProductCollection(value: unknown): MerchantProductCollection[] {
+  if (!isRecord(value)) {
+    return [];
+  }
+
+  const id = getString(value.id);
+
+  if (!id) {
+    return [];
+  }
+
+  return [
+    {
+      id,
+      title: getString(value.title),
+      handle: getString(value.handle),
+      createdAt: getString(value.created_at),
+      updatedAt: getString(value.updated_at),
+    },
+  ];
+}
+
+function belongsToTenant(value: unknown, tenantId: string) {
+  if (!isRecord(value) || !isRecord(value.metadata)) {
+    return false;
+  }
+
+  return value.metadata.platform_tenant_id === tenantId;
+}
+
+function getTenantMetadata(tenantId: string) {
+  return {
+    platform_tenant_id: tenantId,
+  };
+}
+
 function getString(value: unknown) {
   return typeof value === "string" ? value : null;
 }
 
 function getNumber(value: unknown) {
   return typeof value === "number" ? value : undefined;
+}
+
+function getBoolean(value: unknown) {
+  return typeof value === "boolean" ? value : null;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

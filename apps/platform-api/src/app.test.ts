@@ -8,6 +8,10 @@ import type {
   DeliverySettingsResult,
   DeliverySettingsUpdateResult,
   MerchantOrdersResult,
+  MerchantProductCategoriesResult,
+  MerchantProductCategoryWriteResult,
+  MerchantProductCollectionsResult,
+  MerchantProductCollectionWriteResult,
   MerchantProductsResult,
   MerchantProductWriteResult,
   NotificationEventRecordResult,
@@ -107,6 +111,16 @@ function appWithResolution(
       thumbnail?: string | null | undefined;
       title: string;
     }) => Promise<MerchantProductWriteResult>;
+    createMerchantProductCategory?: (input: {
+      handle?: string | null | undefined;
+      name: string;
+      tenantId: string;
+    }) => Promise<MerchantProductCategoryWriteResult>;
+    createMerchantProductCollection?: (input: {
+      handle?: string | null | undefined;
+      tenantId: string;
+      title: string;
+    }) => Promise<MerchantProductCollectionWriteResult>;
     createTenantShop?: (input: {
       handle: string;
       name: string;
@@ -209,6 +223,16 @@ function appWithResolution(
       offset: number;
       salesChannelId: string;
     }) => Promise<MerchantProductsResult>;
+    listMerchantProductCategories?: (input: {
+      limit: number;
+      offset: number;
+      tenantId: string;
+    }) => Promise<MerchantProductCategoriesResult>;
+    listMerchantProductCollections?: (input: {
+      limit: number;
+      offset: number;
+      tenantId: string;
+    }) => Promise<MerchantProductCollectionsResult>;
     listMerchantOrders?: (input: {
       limit: number;
       offset: number;
@@ -263,6 +287,8 @@ function appWithResolution(
     authHandler: options?.authHandler,
     authorizeDashboardForTenant: options?.authorizeDashboardForTenant,
     createMerchantProduct: options?.createMerchantProduct,
+    createMerchantProductCategory: options?.createMerchantProductCategory,
+    createMerchantProductCollection: options?.createMerchantProductCollection,
     createTenantDomain: options?.createTenantDomain,
     createOperatorSupportNote: options?.createOperatorSupportNote,
     createTenantShop: options?.createTenantShop,
@@ -280,6 +306,8 @@ function appWithResolution(
     getTenantOnboarding: options?.getTenantOnboarding,
     getSession: options?.getSession,
     listMerchantProducts: options?.listMerchantProducts,
+    listMerchantProductCategories: options?.listMerchantProductCategories,
+    listMerchantProductCollections: options?.listMerchantProductCollections,
     listMerchantOrders: options?.listMerchantOrders,
     listNotificationPreferences: options?.listNotificationPreferences,
     listTenantsForUser: options?.listTenantsForUser,
@@ -3678,6 +3706,312 @@ describe("platform app", () => {
       count: 1,
       limit: 5,
       offset: 10,
+    });
+  });
+
+  it("lists tenant product categories scoped to the selected tenant", async () => {
+    let categoriesInput:
+      | {
+          limit: number;
+          offset: number;
+          tenantId: string;
+        }
+      | undefined;
+    const app = appWithResolution(
+      { ok: false, error: "shop_context_required" },
+      {
+        getSession: async () => ({
+          user: {
+            id: "user_1",
+            email: "owner@abebe.local",
+            name: "Abebe Owner",
+          },
+        }),
+        getTenantCommerceContext: async () => ({
+          ok: true,
+          context: {
+            tenantId: "tenant_1",
+            medusaStoreId: "store_1",
+            medusaSalesChannelId: "channel_1",
+            medusaPublishableKeyId: "pk_1",
+            medusaRegionId: "reg_1",
+          },
+        }),
+        listMerchantProductCategories: async (input) => {
+          categoriesInput = input;
+
+          return {
+            ok: true,
+            count: 1,
+            limit: input.limit,
+            offset: input.offset,
+            categories: [
+              {
+                id: "pcat_1",
+                name: "Coffee",
+                handle: "coffee",
+                isActive: true,
+                isInternal: false,
+                parentCategoryId: null,
+                createdAt: "2026-01-01T00:00:00.000Z",
+                updatedAt: "2026-01-02T00:00:00.000Z",
+              },
+            ],
+          };
+        },
+      },
+    );
+
+    const response = await app.request("/platform/tenants/tenant_1/product-categories?limit=5");
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(categoriesInput, {
+      limit: 5,
+      offset: 0,
+      tenantId: "tenant_1",
+    });
+    assert.deepEqual(await response.json(), {
+      categories: [
+        {
+          id: "pcat_1",
+          name: "Coffee",
+          handle: "coffee",
+          isActive: true,
+          isInternal: false,
+          parentCategoryId: null,
+          createdAt: "2026-01-01T00:00:00.000Z",
+          updatedAt: "2026-01-02T00:00:00.000Z",
+        },
+      ],
+      count: 1,
+      limit: 5,
+      offset: 0,
+    });
+  });
+
+  it("creates tenant product categories scoped to the selected tenant", async () => {
+    let categoryInput:
+      | {
+          handle?: string | null | undefined;
+          name: string;
+          tenantId: string;
+        }
+      | undefined;
+    const app = appWithResolution(
+      { ok: false, error: "shop_context_required" },
+      {
+        getSession: async () => ({
+          user: {
+            id: "user_1",
+            email: "owner@abebe.local",
+            name: "Abebe Owner",
+          },
+        }),
+        getTenantCommerceContext: async () => ({
+          ok: true,
+          context: {
+            tenantId: "tenant_1",
+            medusaStoreId: "store_1",
+            medusaSalesChannelId: "channel_1",
+            medusaPublishableKeyId: "pk_1",
+            medusaRegionId: "reg_1",
+          },
+        }),
+        createMerchantProductCategory: async (input) => {
+          categoryInput = input;
+
+          return {
+            ok: true,
+            category: {
+              id: "pcat_1",
+              name: input.name,
+              handle: input.handle ?? null,
+              isActive: true,
+              isInternal: false,
+              parentCategoryId: null,
+              createdAt: "2026-01-01T00:00:00.000Z",
+              updatedAt: "2026-01-02T00:00:00.000Z",
+            },
+          };
+        },
+      },
+    );
+
+    const response = await app.request("/platform/tenants/tenant_1/product-categories", {
+      body: JSON.stringify({
+        name: "Coffee",
+        handle: "coffee",
+      }),
+      headers: {
+        "content-type": "application/json",
+      },
+      method: "POST",
+    });
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(categoryInput, {
+      name: "Coffee",
+      handle: "coffee",
+      tenantId: "tenant_1",
+    });
+    assert.deepEqual(await response.json(), {
+      category: {
+        id: "pcat_1",
+        name: "Coffee",
+        handle: "coffee",
+        isActive: true,
+        isInternal: false,
+        parentCategoryId: null,
+        createdAt: "2026-01-01T00:00:00.000Z",
+        updatedAt: "2026-01-02T00:00:00.000Z",
+      },
+    });
+  });
+
+  it("lists tenant product collections scoped to the selected tenant", async () => {
+    let collectionsInput:
+      | {
+          limit: number;
+          offset: number;
+          tenantId: string;
+        }
+      | undefined;
+    const app = appWithResolution(
+      { ok: false, error: "shop_context_required" },
+      {
+        getSession: async () => ({
+          user: {
+            id: "user_1",
+            email: "owner@abebe.local",
+            name: "Abebe Owner",
+          },
+        }),
+        getTenantCommerceContext: async () => ({
+          ok: true,
+          context: {
+            tenantId: "tenant_1",
+            medusaStoreId: "store_1",
+            medusaSalesChannelId: "channel_1",
+            medusaPublishableKeyId: "pk_1",
+            medusaRegionId: "reg_1",
+          },
+        }),
+        listMerchantProductCollections: async (input) => {
+          collectionsInput = input;
+
+          return {
+            ok: true,
+            count: 1,
+            limit: input.limit,
+            offset: input.offset,
+            collections: [
+              {
+                id: "pcol_1",
+                title: "Featured",
+                handle: "featured",
+                createdAt: "2026-01-01T00:00:00.000Z",
+                updatedAt: "2026-01-02T00:00:00.000Z",
+              },
+            ],
+          };
+        },
+      },
+    );
+
+    const response = await app.request("/platform/tenants/tenant_1/product-collections?limit=5");
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(collectionsInput, {
+      limit: 5,
+      offset: 0,
+      tenantId: "tenant_1",
+    });
+    assert.deepEqual(await response.json(), {
+      collections: [
+        {
+          id: "pcol_1",
+          title: "Featured",
+          handle: "featured",
+          createdAt: "2026-01-01T00:00:00.000Z",
+          updatedAt: "2026-01-02T00:00:00.000Z",
+        },
+      ],
+      count: 1,
+      limit: 5,
+      offset: 0,
+    });
+  });
+
+  it("creates tenant product collections scoped to the selected tenant", async () => {
+    let collectionInput:
+      | {
+          handle?: string | null | undefined;
+          tenantId: string;
+          title: string;
+        }
+      | undefined;
+    const app = appWithResolution(
+      { ok: false, error: "shop_context_required" },
+      {
+        getSession: async () => ({
+          user: {
+            id: "user_1",
+            email: "owner@abebe.local",
+            name: "Abebe Owner",
+          },
+        }),
+        getTenantCommerceContext: async () => ({
+          ok: true,
+          context: {
+            tenantId: "tenant_1",
+            medusaStoreId: "store_1",
+            medusaSalesChannelId: "channel_1",
+            medusaPublishableKeyId: "pk_1",
+            medusaRegionId: "reg_1",
+          },
+        }),
+        createMerchantProductCollection: async (input) => {
+          collectionInput = input;
+
+          return {
+            ok: true,
+            collection: {
+              id: "pcol_1",
+              title: input.title,
+              handle: input.handle ?? null,
+              createdAt: "2026-01-01T00:00:00.000Z",
+              updatedAt: "2026-01-02T00:00:00.000Z",
+            },
+          };
+        },
+      },
+    );
+
+    const response = await app.request("/platform/tenants/tenant_1/product-collections", {
+      body: JSON.stringify({
+        title: "Featured",
+        handle: "featured",
+      }),
+      headers: {
+        "content-type": "application/json",
+      },
+      method: "POST",
+    });
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(collectionInput, {
+      title: "Featured",
+      handle: "featured",
+      tenantId: "tenant_1",
+    });
+    assert.deepEqual(await response.json(), {
+      collection: {
+        id: "pcol_1",
+        title: "Featured",
+        handle: "featured",
+        createdAt: "2026-01-01T00:00:00.000Z",
+        updatedAt: "2026-01-02T00:00:00.000Z",
+      },
     });
   });
 

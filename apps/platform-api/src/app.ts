@@ -372,6 +372,75 @@ export type MerchantProductWriteResult =
       status: 401 | 404 | 503;
     };
 
+export type MerchantProductCategory = {
+  id: string;
+  name: string | null;
+  handle: string | null;
+  isActive: boolean | null;
+  isInternal: boolean | null;
+  parentCategoryId: string | null;
+  createdAt: string | null;
+  updatedAt: string | null;
+};
+
+export type MerchantProductCategoriesResult =
+  | {
+      ok: true;
+      categories: MerchantProductCategory[];
+      count: number;
+      limit: number;
+      offset: number;
+    }
+  | {
+      ok: false;
+      error: "commerce_backend_unavailable" | "commerce_credentials_missing";
+      status: 401 | 503;
+    };
+
+export type MerchantProductCategoryWriteResult =
+  | {
+      ok: true;
+      category: MerchantProductCategory;
+    }
+  | {
+      ok: false;
+      error: "commerce_backend_unavailable" | "commerce_credentials_missing";
+      status: 401 | 503;
+    };
+
+export type MerchantProductCollection = {
+  id: string;
+  title: string | null;
+  handle: string | null;
+  createdAt: string | null;
+  updatedAt: string | null;
+};
+
+export type MerchantProductCollectionsResult =
+  | {
+      ok: true;
+      collections: MerchantProductCollection[];
+      count: number;
+      limit: number;
+      offset: number;
+    }
+  | {
+      ok: false;
+      error: "commerce_backend_unavailable" | "commerce_credentials_missing";
+      status: 401 | 503;
+    };
+
+export type MerchantProductCollectionWriteResult =
+  | {
+      ok: true;
+      collection: MerchantProductCollection;
+    }
+  | {
+      ok: false;
+      error: "commerce_backend_unavailable" | "commerce_credentials_missing";
+      status: 401 | 503;
+    };
+
 export type MerchantOrder = {
   id: string;
   displayId: number | null;
@@ -784,6 +853,20 @@ export type PlatformAppOptions = {
         title: string;
       }) => Promise<MerchantProductWriteResult>)
     | undefined;
+  createMerchantProductCategory?:
+    | ((input: {
+        handle?: string | null | undefined;
+        name: string;
+        tenantId: string;
+      }) => Promise<MerchantProductCategoryWriteResult>)
+    | undefined;
+  createMerchantProductCollection?:
+    | ((input: {
+        handle?: string | null | undefined;
+        tenantId: string;
+        title: string;
+      }) => Promise<MerchantProductCollectionWriteResult>)
+    | undefined;
   createTenantShop?:
     | ((input: {
         handle: string;
@@ -840,6 +923,20 @@ export type PlatformAppOptions = {
         offset: number;
         salesChannelId: string;
       }) => Promise<MerchantProductsResult>)
+    | undefined;
+  listMerchantProductCategories?:
+    | ((input: {
+        limit: number;
+        offset: number;
+        tenantId: string;
+      }) => Promise<MerchantProductCategoriesResult>)
+    | undefined;
+  listMerchantProductCollections?:
+    | ((input: {
+        limit: number;
+        offset: number;
+        tenantId: string;
+      }) => Promise<MerchantProductCollectionsResult>)
     | undefined;
   listMerchantOrders?:
     | ((input: {
