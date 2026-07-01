@@ -4,12 +4,12 @@ import { describe, it } from "node:test";
 import { getMerchantOrders } from "./merchant-orders.js";
 
 describe("getMerchantOrders", () => {
-  it("fetches merchant orders with session and host context", async () => {
+  it("fetches merchant orders with session and tenant context", async () => {
     let forwardedRequest: Request | undefined;
     const result = await getMerchantOrders({
       cookieHeader: "better-auth.session_token=session_1",
       platformApiBaseUrl: "http://platform.local",
-      requestHost: "abebe.lvh.me",
+      tenantId: "tenant_1",
       limit: 5,
       offset: 10,
       fetcher: async (input, init) => {
@@ -40,9 +40,9 @@ describe("getMerchantOrders", () => {
     assert.equal(result.ok, true);
     assert.equal(
       forwardedRequest?.url,
-      "http://platform.local/platform/merchant/orders?limit=5&offset=10",
+      "http://platform.local/platform/tenants/tenant_1/orders?limit=5&offset=10",
     );
-    assert.equal(forwardedRequest?.headers.get("x-forwarded-host"), "abebe.lvh.me");
+    assert.equal(forwardedRequest?.headers.get("x-forwarded-host"), null);
     assert.equal(forwardedRequest?.headers.get("cookie"), "better-auth.session_token=session_1");
   });
 

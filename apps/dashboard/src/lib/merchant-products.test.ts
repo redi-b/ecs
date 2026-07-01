@@ -7,12 +7,12 @@ import {
 } from "./merchant-products.js";
 
 describe("getMerchantProducts", () => {
-  it("creates merchant products with session and host context", async () => {
+  it("creates merchant products with session and tenant context", async () => {
     let forwardedRequest: Request | undefined;
     const result = await createMerchantProduct({
       cookieHeader: "better-auth.session_token=session_1",
       platformApiBaseUrl: "http://platform.local",
-      requestHost: "abebe.lvh.me",
+      tenantId: "tenant_1",
       product: {
         title: "Coffee",
         handle: "coffee",
@@ -38,8 +38,8 @@ describe("getMerchantProducts", () => {
 
     assert.equal(result.ok, true);
     assert.equal(forwardedRequest?.method, "POST");
-    assert.equal(forwardedRequest?.url, "http://platform.local/platform/merchant/products");
-    assert.equal(forwardedRequest?.headers.get("x-forwarded-host"), "abebe.lvh.me");
+    assert.equal(forwardedRequest?.url, "http://platform.local/platform/tenants/tenant_1/products");
+    assert.equal(forwardedRequest?.headers.get("x-forwarded-host"), null);
     assert.equal(forwardedRequest?.headers.get("cookie"), "better-auth.session_token=session_1");
     assert.deepEqual(await forwardedRequest?.json(), {
       title: "Coffee",
@@ -49,12 +49,12 @@ describe("getMerchantProducts", () => {
     });
   });
 
-  it("updates merchant products with session and host context", async () => {
+  it("updates merchant products with session and tenant context", async () => {
     let forwardedRequest: Request | undefined;
     const result = await updateMerchantProduct({
       cookieHeader: "better-auth.session_token=session_1",
       platformApiBaseUrl: "http://platform.local",
-      requestHost: "abebe.lvh.me",
+      tenantId: "tenant_1",
       productId: "prod_1",
       product: {
         title: "Updated coffee",
@@ -81,8 +81,11 @@ describe("getMerchantProducts", () => {
 
     assert.equal(result.ok, true);
     assert.equal(forwardedRequest?.method, "POST");
-    assert.equal(forwardedRequest?.url, "http://platform.local/platform/merchant/products/prod_1");
-    assert.equal(forwardedRequest?.headers.get("x-forwarded-host"), "abebe.lvh.me");
+    assert.equal(
+      forwardedRequest?.url,
+      "http://platform.local/platform/tenants/tenant_1/products/prod_1",
+    );
+    assert.equal(forwardedRequest?.headers.get("x-forwarded-host"), null);
     assert.equal(forwardedRequest?.headers.get("cookie"), "better-auth.session_token=session_1");
     assert.deepEqual(await forwardedRequest?.json(), {
       title: "Updated coffee",
@@ -92,12 +95,12 @@ describe("getMerchantProducts", () => {
     });
   });
 
-  it("fetches merchant products with session and host context", async () => {
+  it("fetches merchant products with session and tenant context", async () => {
     let forwardedRequest: Request | undefined;
     const result = await getMerchantProducts({
       cookieHeader: "better-auth.session_token=session_1",
       platformApiBaseUrl: "http://platform.local",
-      requestHost: "abebe.lvh.me",
+      tenantId: "tenant_1",
       limit: 5,
       offset: 10,
       fetcher: async (input, init) => {
@@ -125,9 +128,9 @@ describe("getMerchantProducts", () => {
     assert.equal(result.ok, true);
     assert.equal(
       forwardedRequest?.url,
-      "http://platform.local/platform/merchant/products?limit=5&offset=10",
+      "http://platform.local/platform/tenants/tenant_1/products?limit=5&offset=10",
     );
-    assert.equal(forwardedRequest?.headers.get("x-forwarded-host"), "abebe.lvh.me");
+    assert.equal(forwardedRequest?.headers.get("x-forwarded-host"), null);
     assert.equal(forwardedRequest?.headers.get("cookie"), "better-auth.session_token=session_1");
   });
 

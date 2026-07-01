@@ -40,6 +40,7 @@ export async function createMerchantProduct(options: {
   platformApiBaseUrl: string;
   product: MerchantProductWriteInput;
   requestHost?: string | null | undefined;
+  tenantId?: string | null | undefined;
 }): Promise<MerchantProductMutationResult> {
   const response = await sendProductMutation({
     cookieHeader: options.cookieHeader,
@@ -47,6 +48,7 @@ export async function createMerchantProduct(options: {
     platformApiBaseUrl: options.platformApiBaseUrl,
     product: options.product,
     requestHost: options.requestHost,
+    tenantId: options.tenantId,
   });
 
   return parseProductMutationResponse(response);
@@ -59,13 +61,14 @@ export async function getMerchantProducts(options: {
   offset?: number | undefined;
   platformApiBaseUrl: string;
   requestHost?: string | null | undefined;
+  tenantId?: string | null | undefined;
 }): Promise<MerchantProductsResult> {
   const fetcher = options.fetcher ?? fetch;
   const response = await fetcher(getProductsUrl(options), {
     cache: "no-store",
     headers: getProductHeaders({
       cookieHeader: options.cookieHeader,
-      requestHost: options.requestHost,
+      requestHost: options.tenantId?.trim() ? undefined : options.requestHost,
     }),
   });
   const data = await response.json().catch(() => undefined);
@@ -103,6 +106,7 @@ export async function updateMerchantProduct(options: {
   product: MerchantProductWriteInput;
   productId: string;
   requestHost?: string | null | undefined;
+  tenantId?: string | null | undefined;
 }): Promise<MerchantProductMutationResult> {
   const response = await sendProductMutation({
     cookieHeader: options.cookieHeader,
@@ -111,6 +115,7 @@ export async function updateMerchantProduct(options: {
     product: options.product,
     productId: options.productId,
     requestHost: options.requestHost,
+    tenantId: options.tenantId,
   });
 
   return parseProductMutationResponse(response);
@@ -123,6 +128,7 @@ async function sendProductMutation(options: {
   product: MerchantProductWriteInput;
   productId?: string | undefined;
   requestHost?: string | null | undefined;
+  tenantId?: string | null | undefined;
 }) {
   const fetcher = options.fetcher ?? fetch;
 
@@ -132,7 +138,7 @@ async function sendProductMutation(options: {
     headers: getProductHeaders({
       cookieHeader: options.cookieHeader,
       contentType: true,
-      requestHost: options.requestHost,
+      requestHost: options.tenantId?.trim() ? undefined : options.requestHost,
     }),
     method: "POST",
   });
@@ -173,8 +179,12 @@ function getProductsUrl(options: {
   limit?: number | undefined;
   offset?: number | undefined;
   platformApiBaseUrl: string;
+  tenantId?: string | null | undefined;
 }) {
-  const url = new URL("/platform/merchant/products", normalizeBaseUrl(options.platformApiBaseUrl));
+  const path = options.tenantId?.trim()
+    ? `/platform/tenants/${encodeURIComponent(options.tenantId.trim())}/products`
+    : "/platform/merchant/products";
+  const url = new URL(path, normalizeBaseUrl(options.platformApiBaseUrl));
 
   if (typeof options.limit === "number") {
     url.searchParams.set("limit", String(options.limit));
@@ -190,10 +200,14 @@ function getProductsUrl(options: {
 function getProductMutationUrl(options: {
   platformApiBaseUrl: string;
   productId?: string | undefined;
+  tenantId?: string | null | undefined;
 }) {
-  const productPath = options.productId
-    ? `/platform/merchant/products/${encodeURIComponent(options.productId)}`
+  const basePath = options.tenantId?.trim()
+    ? `/platform/tenants/${encodeURIComponent(options.tenantId.trim())}/products`
     : "/platform/merchant/products";
+  const productPath = options.productId
+    ? `${basePath}/${encodeURIComponent(options.productId)}`
+    : basePath;
 
   return new URL(productPath, normalizeBaseUrl(options.platformApiBaseUrl));
 }

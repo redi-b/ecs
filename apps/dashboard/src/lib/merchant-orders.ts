@@ -19,13 +19,14 @@ export async function getMerchantOrders(options: {
   offset?: number | undefined;
   platformApiBaseUrl: string;
   requestHost?: string | null | undefined;
+  tenantId?: string | null | undefined;
 }): Promise<MerchantOrdersResult> {
   const fetcher = options.fetcher ?? fetch;
   const response = await fetcher(getOrdersUrl(options), {
     cache: "no-store",
     headers: getOrderHeaders({
       cookieHeader: options.cookieHeader,
-      requestHost: options.requestHost,
+      requestHost: options.tenantId?.trim() ? undefined : options.requestHost,
     }),
   });
   const data = await response.json().catch(() => undefined);
@@ -60,8 +61,12 @@ function getOrdersUrl(options: {
   limit?: number | undefined;
   offset?: number | undefined;
   platformApiBaseUrl: string;
+  tenantId?: string | null | undefined;
 }) {
-  const url = new URL("/platform/merchant/orders", normalizeBaseUrl(options.platformApiBaseUrl));
+  const path = options.tenantId?.trim()
+    ? `/platform/tenants/${encodeURIComponent(options.tenantId.trim())}/orders`
+    : "/platform/merchant/orders";
+  const url = new URL(path, normalizeBaseUrl(options.platformApiBaseUrl));
 
   if (typeof options.limit === "number") {
     url.searchParams.set("limit", String(options.limit));
