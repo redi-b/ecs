@@ -1,4 +1,4 @@
-import type { MerchantOrder, MerchantOrdersResult } from "../app.js";
+import type { MerchantOrder, MerchantOrderDetailResult, MerchantOrdersResult } from "../app.js";
 
 export function createMedusaOrderService(options: {
   adminApiToken?: string | undefined;
@@ -8,35 +8,75 @@ export function createMedusaOrderService(options: {
   const fetcher = options.fetcher ?? fetch;
 
   return {
-    listMerchantOrders: async (input: {
-      limit: number;
-      offset: number;
+    getMerchantOrder: async (input: {
+      orderId: string;
       salesChannelId: string;
-    }): Promise<MerchantOrdersResult> => {
+    }): Promise<MerchantOrderDetailResult> => {
       if (!options.adminApiToken?.trim()) {
+        return missingCredentials();
+      }
+
+      const response = await requestMedusa(fetcher, getOrderUrl(options.medusaInternalUrl, input), {
+        headers: getAdminHeaders(options.adminApiToken),
+      });
+
+      if (response.status === 401) {
         return {
           ok: false,
           error: "commerce_credentials_missing",
-          status: 503,
+          status: 401,
         };
       }
 
-      let response: Response;
+      if (response.status === 404) {
+        return {
+          ok: false,
+          error: "order_not_found",
+          status: 404,
+        };
+      }
 
-      try {
-        response = await fetcher(getOrdersUrl(options.medusaInternalUrl, input), {
-          headers: {
-            accept: "application/json",
-            "x-medusa-access-token": options.adminApiToken,
-          },
-        });
-      } catch {
+      if (!response.ok) {
         return {
           ok: false,
           error: "commerce_backend_unavailable",
           status: 503,
         };
       }
+
+      const data = await response.json().catch(() => undefined);
+      const order = normalizeOrder(data?.order, input.salesChannelId)[0];
+
+      if (!order) {
+        return {
+          ok: false,
+          error: "order_not_found",
+          status: 404,
+        };
+      }
+
+      return {
+        ok: true,
+        order,
+      };
+    },
+
+    listMerchantOrders: async (input: {
+      limit: number;
+      offset: number;
+      salesChannelId: string;
+    }): Promise<MerchantOrdersResult> => {
+      if (!options.adminApiToken?.trim()) {
+        return missingCredentials();
+      }
+
+      const response = await requestMedusa(
+        fetcher,
+        getOrdersUrl(options.medusaInternalUrl, input),
+        {
+          headers: getAdminHeaders(options.adminApiToken),
+        },
+      );
 
       if (response.status === 401) {
         return {
@@ -70,6 +110,29 @@ export function createMedusaOrderService(options: {
   };
 }
 
+async function requestMedusa(fetcher: typeof fetch, input: URL, init: RequestInit) {
+  try {
+    return await fetcher(input, init);
+  } catch {
+    return Response.json({}, { status: 503 });
+  }
+}
+
+function getAdminHeaders(adminApiToken: string) {
+  return {
+    accept: "application/json",
+    "x-medusa-access-token": adminApiToken,
+  };
+}
+
+function missingCredentials() {
+  return {
+    ok: false,
+    error: "commerce_credentials_missing",
+    status: 503,
+  } as const;
+}
+
 function getOrdersUrl(
   medusaInternalUrl: string,
   input: { limit: number; offset: number; salesChannelId: string },
@@ -82,6 +145,23 @@ function getOrdersUrl(
   url.searchParams.set(
     "fields",
     "id,display_id,email,status,payment_status,fulfillment_status,currency_code,total,sales_channel_id,created_at,updated_at",
+  );
+
+  return url;
+}
+
+function getOrderUrl(
+  medusaInternalUrl: string,
+  input: { orderId: string; salesChannelId: string },
+) {
+  const url = new URL(
+    `/admin/orders/${encodeURIComponent(input.orderId)}`,
+    normalizeBaseUrl(medusaInternalUrl),
+  );
+
+  url.searchParams.set(
+    "fields",
+    "id,display_id,email,status,payment_status,fulfillment_status,currency_code,total,sales_channel_id,items.id,items.title,items.quantity,items.unit_price,items.total,items.thumbnail,created_at,updated_at",
   );
 
   return url;
@@ -112,10 +192,40 @@ function normalizeOrder(value: unknown, salesChannelId: string): MerchantOrder[]
       fulfillmentStatus: getString(value.fulfillment_status),
       currencyCode: getString(value.currency_code),
       total: getNumber(value.total) ?? null,
+      items: getLineItems(value.items),
       createdAt: getString(value.created_at),
       updatedAt: getString(value.updated_at),
     },
   ];
+}
+
+function getLineItems(value: unknown) {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.flatMap((item) => {
+    if (!isRecord(item)) {
+      return [];
+    }
+
+    const id = getString(item.id);
+
+    if (!id) {
+      return [];
+    }
+
+    return [
+      {
+        id,
+        title: getString(item.title),
+        quantity: getNumber(item.quantity) ?? null,
+        unitPrice: getNumber(item.unit_price) ?? null,
+        total: getNumber(item.total) ?? null,
+        thumbnail: getString(item.thumbnail),
+      },
+    ];
+  });
 }
 
 function getString(value: unknown) {

@@ -145,6 +145,7 @@ const app = createPlatformApp({
   getTenantInsightsSummary: analyticsInsightsService.getTenantInsightsSummary,
   getTenantOnboarding: tenantOnboardingService.getTenantOnboarding,
   getTenantReadiness: tenantStatusService.getTenantReadiness,
+  getMerchantOrder: orderService.getMerchantOrder,
   getSession: (headers) => auth.api.getSession({ headers }),
   listMerchantOrders: orderService.listMerchantOrders,
   listMerchantProducts: productService.listMerchantProducts,

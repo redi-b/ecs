@@ -7,6 +7,7 @@ import type {
   ChapaPaymentCallbackResult,
   DeliverySettingsResult,
   DeliverySettingsUpdateResult,
+  MerchantOrderDetailResult,
   MerchantOrdersResult,
   MerchantProductCategoriesResult,
   MerchantProductCategoryWriteResult,
@@ -169,6 +170,10 @@ function appWithResolution(
       tenantId: string;
       userId: string;
     }) => Promise<TenantCommerceContextResult>;
+    getMerchantOrder?: (input: {
+      orderId: string;
+      salesChannelId: string;
+    }) => Promise<MerchantOrderDetailResult>;
     getTenantDashboardSummary?: (input: {
       tenantId: string;
     }) => Promise<TenantDashboardSummaryResult>;
@@ -307,6 +312,7 @@ function appWithResolution(
     getPublishedStorefrontConfig: options?.getPublishedStorefrontConfig,
     getStorefrontDraft: options?.getStorefrontDraft,
     getOperatorSupportHistory: options?.getOperatorSupportHistory,
+    getMerchantOrder: options?.getMerchantOrder,
     getTenantForUser: options?.getTenantForUser,
     getTenantCommerceContext: options?.getTenantCommerceContext,
     getTenantDashboardSummary: options?.getTenantDashboardSummary,
@@ -3533,6 +3539,104 @@ describe("platform app", () => {
     });
   });
 
+  it("returns merchant order details scoped to the resolved tenant sales channel", async () => {
+    let orderInput:
+      | {
+          orderId: string;
+          salesChannelId: string;
+        }
+      | undefined;
+    const app = appWithResolution(
+      {
+        ok: true,
+        context: resolvedTenantContext,
+      },
+      {
+        authorizeDashboardForTenant: async () => ({
+          ok: true,
+          actor: {
+            id: "user_1",
+            email: "owner@abebe.local",
+            name: "Abebe Owner",
+            role: "owner",
+          },
+        }),
+        getSession: async () => ({
+          user: {
+            id: "user_1",
+            email: "owner@abebe.local",
+            name: "Abebe Owner",
+          },
+        }),
+        getMerchantOrder: async (input) => {
+          orderInput = input;
+
+          return {
+            ok: true,
+            order: {
+              id: "order_1",
+              displayId: 1001,
+              email: "customer@example.com",
+              status: "pending",
+              paymentStatus: "awaiting",
+              fulfillmentStatus: "not_fulfilled",
+              currencyCode: "etb",
+              total: 1250,
+              items: [
+                {
+                  id: "item_1",
+                  title: "Coffee",
+                  quantity: 2,
+                  unitPrice: 500,
+                  total: 1000,
+                  thumbnail: null,
+                },
+              ],
+              createdAt: "2026-01-01T00:00:00.000Z",
+              updatedAt: "2026-01-02T00:00:00.000Z",
+            },
+          };
+        },
+      },
+    );
+
+    const response = await app.request("/platform/merchant/orders/order_1", {
+      headers: {
+        Host: "abebe.lvh.me",
+      },
+    });
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(orderInput, {
+      orderId: "order_1",
+      salesChannelId: "channel_1",
+    });
+    assert.deepEqual(await response.json(), {
+      order: {
+        id: "order_1",
+        displayId: 1001,
+        email: "customer@example.com",
+        status: "pending",
+        paymentStatus: "awaiting",
+        fulfillmentStatus: "not_fulfilled",
+        currencyCode: "etb",
+        total: 1250,
+        items: [
+          {
+            id: "item_1",
+            title: "Coffee",
+            quantity: 2,
+            unitPrice: 500,
+            total: 1000,
+            thumbnail: null,
+          },
+        ],
+        createdAt: "2026-01-01T00:00:00.000Z",
+        updatedAt: "2026-01-02T00:00:00.000Z",
+      },
+    });
+  });
+
   it("lists tenant orders scoped to the selected tenant sales channel", async () => {
     let commerceInput:
       | {
@@ -3631,6 +3735,115 @@ describe("platform app", () => {
       count: 1,
       limit: 5,
       offset: 10,
+    });
+  });
+
+  it("returns tenant order details scoped to the selected tenant sales channel", async () => {
+    let commerceInput:
+      | {
+          tenantId: string;
+          userId: string;
+        }
+      | undefined;
+    let orderInput:
+      | {
+          orderId: string;
+          salesChannelId: string;
+        }
+      | undefined;
+    const app = appWithResolution(
+      {
+        ok: false,
+        error: "shop_context_required",
+      },
+      {
+        getSession: async () => ({
+          user: {
+            id: "user_1",
+            email: "owner@abebe.local",
+            name: "Abebe Owner",
+          },
+        }),
+        getTenantCommerceContext: async (input) => {
+          commerceInput = input;
+
+          return {
+            ok: true,
+            context: {
+              tenantId: "tenant_1",
+              medusaStoreId: "store_1",
+              medusaSalesChannelId: "channel_1",
+              medusaPublishableKeyId: "pk_1",
+              medusaRegionId: "reg_1",
+            },
+          };
+        },
+        getMerchantOrder: async (input) => {
+          orderInput = input;
+
+          return {
+            ok: true,
+            order: {
+              id: "order_1",
+              displayId: 1001,
+              email: "customer@example.com",
+              status: "pending",
+              paymentStatus: "awaiting",
+              fulfillmentStatus: "not_fulfilled",
+              currencyCode: "etb",
+              total: 1250,
+              items: [
+                {
+                  id: "item_1",
+                  title: "Coffee",
+                  quantity: 2,
+                  unitPrice: 500,
+                  total: 1000,
+                  thumbnail: null,
+                },
+              ],
+              createdAt: "2026-01-01T00:00:00.000Z",
+              updatedAt: "2026-01-02T00:00:00.000Z",
+            },
+          };
+        },
+      },
+    );
+
+    const response = await app.request("/platform/tenants/tenant_1/orders/order_1");
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(commerceInput, {
+      tenantId: "tenant_1",
+      userId: "user_1",
+    });
+    assert.deepEqual(orderInput, {
+      orderId: "order_1",
+      salesChannelId: "channel_1",
+    });
+    assert.deepEqual(await response.json(), {
+      order: {
+        id: "order_1",
+        displayId: 1001,
+        email: "customer@example.com",
+        status: "pending",
+        paymentStatus: "awaiting",
+        fulfillmentStatus: "not_fulfilled",
+        currencyCode: "etb",
+        total: 1250,
+        items: [
+          {
+            id: "item_1",
+            title: "Coffee",
+            quantity: 2,
+            unitPrice: 500,
+            total: 1000,
+            thumbnail: null,
+          },
+        ],
+        createdAt: "2026-01-01T00:00:00.000Z",
+        updatedAt: "2026-01-02T00:00:00.000Z",
+      },
     });
   });
 

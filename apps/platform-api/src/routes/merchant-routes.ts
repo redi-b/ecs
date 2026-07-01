@@ -306,6 +306,53 @@ export function registerMerchantRoutes(
     });
   });
 
+  app.get("/platform/merchant/orders/:orderId", async (context) => {
+    const session = await options.getSession?.(context.req.raw.headers);
+
+    if (!session) {
+      return context.json({ error: "auth_required" }, 401);
+    }
+
+    const host = getRequestHost(
+      context.req.header("x-forwarded-host") ?? context.req.header("host"),
+    );
+    const result = await options.resolveTenantForHost(host);
+
+    if (!result.ok) {
+      return context.json({ error: result.error }, storeErrorStatus[result.error]);
+    }
+
+    const authorization = await options.authorizeDashboardForTenant?.({
+      tenantId: result.context.tenantId,
+      userId: session.user.id,
+    });
+
+    if (!authorization?.ok) {
+      return context.json({ error: "dashboard_forbidden" }, 403);
+    }
+
+    if (!result.context.medusaSalesChannelId) {
+      return context.json({ error: "domain_misconfigured" }, 409);
+    }
+
+    if (!options.getMerchantOrder) {
+      return context.json({ error: "commerce_backend_unavailable" }, 503);
+    }
+
+    const order = await options.getMerchantOrder({
+      orderId: context.req.param("orderId"),
+      salesChannelId: result.context.medusaSalesChannelId,
+    });
+
+    if (!order.ok) {
+      return context.json({ error: order.error }, order.status);
+    }
+
+    return context.json({
+      order: order.order,
+    });
+  });
+
   app.get("/platform/merchant/products", async (context) => {
     const session = await options.getSession?.(context.req.raw.headers);
 

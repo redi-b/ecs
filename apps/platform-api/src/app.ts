@@ -466,8 +466,18 @@ export type MerchantOrder = {
   fulfillmentStatus: string | null;
   currencyCode: string | null;
   total: number | null;
+  items?: MerchantOrderLineItem[];
   createdAt: string | null;
   updatedAt: string | null;
+};
+
+export type MerchantOrderLineItem = {
+  id: string;
+  title: string | null;
+  quantity: number | null;
+  unitPrice: number | null;
+  total: number | null;
+  thumbnail: string | null;
 };
 
 export type MerchantOrdersResult =
@@ -482,6 +492,17 @@ export type MerchantOrdersResult =
       ok: false;
       error: "commerce_backend_unavailable" | "commerce_credentials_missing";
       status: 401 | 503;
+    };
+
+export type MerchantOrderDetailResult =
+  | {
+      ok: true;
+      order: MerchantOrder;
+    }
+  | {
+      ok: false;
+      error: "commerce_backend_unavailable" | "commerce_credentials_missing" | "order_not_found";
+      status: 401 | 404 | 503;
     };
 
 export type TenantCommerceContextResult =
@@ -966,6 +987,9 @@ export type PlatformAppOptions = {
         offset: number;
         salesChannelId: string;
       }) => Promise<MerchantOrdersResult>)
+    | undefined;
+  getMerchantOrder?:
+    | ((input: { orderId: string; salesChannelId: string }) => Promise<MerchantOrderDetailResult>)
     | undefined;
   listNotificationPreferences?:
     | ((input: { tenantId: string }) => Promise<NotificationPreferenceListResult>)

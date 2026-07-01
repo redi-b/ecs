@@ -203,6 +203,40 @@ export function registerPlatformRoutes(
     });
   });
 
+  app.get("/platform/tenants/:tenantId/orders/:orderId", async (context) => {
+    if (!options.getTenantCommerceContext || !options.getMerchantOrder) {
+      return context.json({ error: "commerce_backend_unavailable" }, 503);
+    }
+
+    const session = await options.getSession?.(context.req.raw.headers);
+
+    if (!session) {
+      return context.json({ error: "auth_required" }, 401);
+    }
+
+    const commerce = await options.getTenantCommerceContext({
+      tenantId: context.req.param("tenantId"),
+      userId: session.user.id,
+    });
+
+    if (!commerce.ok) {
+      return context.json({ error: commerce.error }, commerce.status);
+    }
+
+    const order = await options.getMerchantOrder({
+      orderId: context.req.param("orderId"),
+      salesChannelId: commerce.context.medusaSalesChannelId,
+    });
+
+    if (!order.ok) {
+      return context.json({ error: order.error }, order.status);
+    }
+
+    return context.json({
+      order: order.order,
+    });
+  });
+
   app.get("/platform/tenants/:tenantId/products", async (context) => {
     if (!options.getTenantCommerceContext || !options.listMerchantProducts) {
       return context.json({ error: "commerce_backend_unavailable" }, 503);
