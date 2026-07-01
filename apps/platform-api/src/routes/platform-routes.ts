@@ -239,6 +239,89 @@ export function registerPlatformRoutes(
     });
   });
 
+  app.post("/platform/tenants/:tenantId/products", async (context) => {
+    if (!options.getTenantCommerceContext || !options.createMerchantProduct) {
+      return context.json({ error: "commerce_backend_unavailable" }, 503);
+    }
+
+    const session = await options.getSession?.(context.req.raw.headers);
+
+    if (!session) {
+      return context.json({ error: "auth_required" }, 401);
+    }
+
+    const commerce = await options.getTenantCommerceContext({
+      tenantId: context.req.param("tenantId"),
+      userId: session.user.id,
+    });
+
+    if (!commerce.ok) {
+      return context.json({ error: commerce.error }, commerce.status);
+    }
+
+    const body = await getJsonBody(context.req.raw);
+    const title = getRequiredBodyString(body, "title");
+
+    if (!title) {
+      return context.json({ error: "missing_title" }, 400);
+    }
+
+    const product = await options.createMerchantProduct({
+      title,
+      handle: getOptionalBodyString(body, "handle"),
+      status: getOptionalBodyString(body, "status"),
+      thumbnail: getOptionalBodyString(body, "thumbnail"),
+      salesChannelId: commerce.context.medusaSalesChannelId,
+    });
+
+    if (!product.ok) {
+      return context.json({ error: product.error }, product.status);
+    }
+
+    return context.json({
+      product: product.product,
+    });
+  });
+
+  app.post("/platform/tenants/:tenantId/products/:productId", async (context) => {
+    if (!options.getTenantCommerceContext || !options.updateMerchantProduct) {
+      return context.json({ error: "commerce_backend_unavailable" }, 503);
+    }
+
+    const session = await options.getSession?.(context.req.raw.headers);
+
+    if (!session) {
+      return context.json({ error: "auth_required" }, 401);
+    }
+
+    const commerce = await options.getTenantCommerceContext({
+      tenantId: context.req.param("tenantId"),
+      userId: session.user.id,
+    });
+
+    if (!commerce.ok) {
+      return context.json({ error: commerce.error }, commerce.status);
+    }
+
+    const body = await getJsonBody(context.req.raw);
+    const product = await options.updateMerchantProduct({
+      productId: context.req.param("productId"),
+      title: getOptionalBodyString(body, "title"),
+      handle: getOptionalBodyString(body, "handle"),
+      status: getOptionalBodyString(body, "status"),
+      thumbnail: getOptionalBodyString(body, "thumbnail"),
+      salesChannelId: commerce.context.medusaSalesChannelId,
+    });
+
+    if (!product.ok) {
+      return context.json({ error: product.error }, product.status);
+    }
+
+    return context.json({
+      product: product.product,
+    });
+  });
+
   app.post("/platform/tenants", async (context) => {
     if (!options.createTenantShop) {
       return context.json({ error: "tenant_provisioning_unavailable" }, 503);

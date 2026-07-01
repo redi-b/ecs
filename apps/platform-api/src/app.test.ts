@@ -3757,6 +3757,106 @@ describe("platform app", () => {
     });
   });
 
+  it("creates tenant products scoped to the selected tenant sales channel", async () => {
+    let commerceInput:
+      | {
+          tenantId: string;
+          userId: string;
+        }
+      | undefined;
+    let productInput:
+      | {
+          handle?: string | null | undefined;
+          salesChannelId: string;
+          status?: string | null | undefined;
+          thumbnail?: string | null | undefined;
+          title: string;
+        }
+      | undefined;
+    const app = appWithResolution(
+      {
+        ok: false,
+        error: "shop_context_required",
+      },
+      {
+        getSession: async () => ({
+          user: {
+            id: "user_1",
+            email: "owner@abebe.local",
+            name: "Abebe Owner",
+          },
+        }),
+        getTenantCommerceContext: async (input) => {
+          commerceInput = input;
+
+          return {
+            ok: true,
+            context: {
+              tenantId: "tenant_1",
+              medusaStoreId: "store_1",
+              medusaSalesChannelId: "channel_1",
+              medusaPublishableKeyId: "pk_1",
+              medusaRegionId: "reg_1",
+            },
+          };
+        },
+        createMerchantProduct: async (input) => {
+          productInput = input;
+
+          return {
+            ok: true,
+            product: {
+              id: "prod_1",
+              title: input.title,
+              handle: input.handle ?? null,
+              status: input.status ?? "draft",
+              thumbnail: input.thumbnail ?? null,
+              createdAt: "2026-01-01T00:00:00.000Z",
+              updatedAt: "2026-01-02T00:00:00.000Z",
+            },
+          };
+        },
+      },
+    );
+
+    const response = await app.request("/platform/tenants/tenant_1/products", {
+      body: JSON.stringify({
+        title: "Coffee",
+        handle: "coffee",
+        status: "draft",
+        thumbnail: "",
+      }),
+      headers: {
+        "content-type": "application/json",
+      },
+      method: "POST",
+    });
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(commerceInput, {
+      tenantId: "tenant_1",
+      userId: "user_1",
+    });
+    assert.deepEqual(productInput, {
+      title: "Coffee",
+      handle: "coffee",
+      status: "draft",
+      thumbnail: null,
+      salesChannelId: "channel_1",
+    });
+    assert.deepEqual(await response.json(), {
+      product: {
+        id: "prod_1",
+        title: "Coffee",
+        handle: "coffee",
+        status: "draft",
+        thumbnail: null,
+        createdAt: "2026-01-01T00:00:00.000Z",
+        updatedAt: "2026-01-02T00:00:00.000Z",
+      },
+    });
+  });
+
   it("rejects merchant product creation without a title", async () => {
     let productCalls = 0;
     const app = appWithResolution(
@@ -3876,6 +3976,108 @@ describe("platform app", () => {
     });
 
     assert.equal(response.status, 200);
+    assert.deepEqual(productInput, {
+      productId: "prod_1",
+      title: "Updated coffee",
+      handle: "updated-coffee",
+      status: "published",
+      thumbnail: null,
+      salesChannelId: "channel_1",
+    });
+    assert.deepEqual(await response.json(), {
+      product: {
+        id: "prod_1",
+        title: "Updated coffee",
+        handle: "updated-coffee",
+        status: "published",
+        thumbnail: null,
+        createdAt: "2026-01-01T00:00:00.000Z",
+        updatedAt: "2026-01-03T00:00:00.000Z",
+      },
+    });
+  });
+
+  it("updates tenant products scoped to the selected tenant sales channel", async () => {
+    let commerceInput:
+      | {
+          tenantId: string;
+          userId: string;
+        }
+      | undefined;
+    let productInput:
+      | {
+          handle?: string | null | undefined;
+          productId: string;
+          salesChannelId: string;
+          status?: string | null | undefined;
+          thumbnail?: string | null | undefined;
+          title?: string | null | undefined;
+        }
+      | undefined;
+    const app = appWithResolution(
+      {
+        ok: false,
+        error: "shop_context_required",
+      },
+      {
+        getSession: async () => ({
+          user: {
+            id: "user_1",
+            email: "owner@abebe.local",
+            name: "Abebe Owner",
+          },
+        }),
+        getTenantCommerceContext: async (input) => {
+          commerceInput = input;
+
+          return {
+            ok: true,
+            context: {
+              tenantId: "tenant_1",
+              medusaStoreId: "store_1",
+              medusaSalesChannelId: "channel_1",
+              medusaPublishableKeyId: "pk_1",
+              medusaRegionId: "reg_1",
+            },
+          };
+        },
+        updateMerchantProduct: async (input) => {
+          productInput = input;
+
+          return {
+            ok: true,
+            product: {
+              id: input.productId,
+              title: input.title ?? null,
+              handle: input.handle ?? null,
+              status: input.status ?? null,
+              thumbnail: input.thumbnail ?? null,
+              createdAt: "2026-01-01T00:00:00.000Z",
+              updatedAt: "2026-01-03T00:00:00.000Z",
+            },
+          };
+        },
+      },
+    );
+
+    const response = await app.request("/platform/tenants/tenant_1/products/prod_1", {
+      body: JSON.stringify({
+        title: "Updated coffee",
+        handle: "updated-coffee",
+        status: "published",
+        thumbnail: "",
+      }),
+      headers: {
+        "content-type": "application/json",
+      },
+      method: "POST",
+    });
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(commerceInput, {
+      tenantId: "tenant_1",
+      userId: "user_1",
+    });
     assert.deepEqual(productInput, {
       productId: "prod_1",
       title: "Updated coffee",
