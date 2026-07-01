@@ -105,7 +105,13 @@ function appWithResolution(
     }) => Promise<AnalyticsEventRecordResult>;
     getSession?: (headers: Headers) => Promise<PlatformSession | null>;
     createMerchantProduct?: (input: {
+      categoryIds?: string[] | undefined;
+      collectionId?: string | null | undefined;
+      currencyCode?: string | null | undefined;
+      description?: string | null | undefined;
       handle?: string | null | undefined;
+      priceAmount?: number | undefined;
+      regionId?: string | null | undefined;
       salesChannelId: string;
       status?: string | null | undefined;
       thumbnail?: string | null | undefined;
@@ -274,6 +280,9 @@ function appWithResolution(
       userId: string;
     }) => Promise<NotificationPreferenceUpsertResult>;
     updateMerchantProduct?: (input: {
+      categoryIds?: string[] | undefined;
+      collectionId?: string | null | undefined;
+      description?: string | null | undefined;
       handle?: string | null | undefined;
       productId: string;
       salesChannelId: string;
@@ -4113,7 +4122,13 @@ describe("platform app", () => {
   it("creates merchant products scoped to the resolved tenant sales channel", async () => {
     let productInput:
       | {
+          categoryIds?: string[] | undefined;
+          collectionId?: string | null | undefined;
+          currencyCode?: string | null | undefined;
+          description?: string | null | undefined;
           handle?: string | null | undefined;
+          priceAmount?: number | undefined;
+          regionId?: string | null | undefined;
           salesChannelId: string;
           status?: string | null | undefined;
           thumbnail?: string | null | undefined;
@@ -4164,7 +4179,12 @@ describe("platform app", () => {
     const response = await app.request("/platform/merchant/products", {
       body: JSON.stringify({
         title: "Coffee",
+        description: "Roasted coffee beans",
         handle: "coffee",
+        collectionId: "pcol_1",
+        categoryIds: ["pcat_1"],
+        priceAmount: 350,
+        currencyCode: "etb",
         status: "draft",
         thumbnail: "",
       }),
@@ -4178,7 +4198,13 @@ describe("platform app", () => {
     assert.equal(response.status, 200);
     assert.deepEqual(productInput, {
       title: "Coffee",
+      description: "Roasted coffee beans",
       handle: "coffee",
+      collectionId: "pcol_1",
+      categoryIds: ["pcat_1"],
+      priceAmount: 350,
+      currencyCode: "etb",
+      regionId: "reg_1",
       status: "draft",
       thumbnail: null,
       salesChannelId: "channel_1",
@@ -4205,7 +4231,13 @@ describe("platform app", () => {
       | undefined;
     let productInput:
       | {
+          categoryIds?: string[] | undefined;
+          collectionId?: string | null | undefined;
+          currencyCode?: string | null | undefined;
+          description?: string | null | undefined;
           handle?: string | null | undefined;
+          priceAmount?: number | undefined;
+          regionId?: string | null | undefined;
           salesChannelId: string;
           status?: string | null | undefined;
           thumbnail?: string | null | undefined;
@@ -4261,7 +4293,12 @@ describe("platform app", () => {
     const response = await app.request("/platform/tenants/tenant_1/products", {
       body: JSON.stringify({
         title: "Coffee",
+        description: "Roasted coffee beans",
         handle: "coffee",
+        collectionId: "pcol_1",
+        categoryIds: ["pcat_1"],
+        priceAmount: 350,
+        currencyCode: "etb",
         status: "draft",
         thumbnail: "",
       }),
@@ -4278,7 +4315,13 @@ describe("platform app", () => {
     });
     assert.deepEqual(productInput, {
       title: "Coffee",
+      description: "Roasted coffee beans",
       handle: "coffee",
+      collectionId: "pcol_1",
+      categoryIds: ["pcat_1"],
+      priceAmount: 350,
+      currencyCode: "etb",
+      regionId: "reg_1",
       status: "draft",
       thumbnail: null,
       salesChannelId: "channel_1",
@@ -4351,6 +4394,9 @@ describe("platform app", () => {
   it("updates merchant products scoped to the resolved tenant sales channel", async () => {
     let productInput:
       | {
+          categoryIds?: string[] | undefined;
+          collectionId?: string | null | undefined;
+          description?: string | null | undefined;
           handle?: string | null | undefined;
           productId: string;
           salesChannelId: string;
@@ -4403,7 +4449,10 @@ describe("platform app", () => {
     const response = await app.request("/platform/merchant/products/prod_1", {
       body: JSON.stringify({
         title: "Updated coffee",
+        description: "Updated roasted coffee beans",
         handle: "updated-coffee",
+        collectionId: "pcol_1",
+        categoryIds: ["pcat_1", "pcat_2"],
         status: "published",
         thumbnail: "",
       }),
@@ -4418,7 +4467,10 @@ describe("platform app", () => {
     assert.deepEqual(productInput, {
       productId: "prod_1",
       title: "Updated coffee",
+      description: "Updated roasted coffee beans",
       handle: "updated-coffee",
+      collectionId: "pcol_1",
+      categoryIds: ["pcat_1", "pcat_2"],
       status: "published",
       thumbnail: null,
       salesChannelId: "channel_1",
@@ -4445,6 +4497,9 @@ describe("platform app", () => {
       | undefined;
     let productInput:
       | {
+          categoryIds?: string[] | undefined;
+          collectionId?: string | null | undefined;
+          description?: string | null | undefined;
           handle?: string | null | undefined;
           productId: string;
           salesChannelId: string;
@@ -4502,7 +4557,10 @@ describe("platform app", () => {
     const response = await app.request("/platform/tenants/tenant_1/products/prod_1", {
       body: JSON.stringify({
         title: "Updated coffee",
+        description: "Updated roasted coffee beans",
         handle: "updated-coffee",
+        collectionId: "pcol_1",
+        categoryIds: ["pcat_1", "pcat_2"],
         status: "published",
         thumbnail: "",
       }),
@@ -4520,7 +4578,10 @@ describe("platform app", () => {
     assert.deepEqual(productInput, {
       productId: "prod_1",
       title: "Updated coffee",
+      description: "Updated roasted coffee beans",
       handle: "updated-coffee",
+      collectionId: "pcol_1",
+      categoryIds: ["pcat_1", "pcat_2"],
       status: "published",
       thumbnail: null,
       salesChannelId: "channel_1",

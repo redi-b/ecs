@@ -16,7 +16,18 @@ describe("createMedusaProductService", () => {
           product: {
             id: "prod_1",
             title: "Coffee",
+            description: "Roasted coffee beans",
             handle: "coffee",
+            collection_id: "pcol_1",
+            categories: [{ id: "pcat_1" }],
+            variants: [
+              {
+                id: "variant_1",
+                title: "Default",
+                sku: null,
+                prices: [{ amount: 350, currency_code: "etb" }],
+              },
+            ],
             status: "draft",
             thumbnail: null,
             created_at: "2026-01-01T00:00:00.000Z",
@@ -28,7 +39,13 @@ describe("createMedusaProductService", () => {
 
     const result = await service.createMerchantProduct({
       title: "Coffee",
+      description: "Roasted coffee beans",
       handle: "coffee",
+      collectionId: "pcol_1",
+      categoryIds: ["pcat_1"],
+      priceAmount: 350,
+      currencyCode: "ETB",
+      regionId: "reg_1",
       status: "draft",
       thumbnail: null,
       salesChannelId: "sc_1",
@@ -42,7 +59,24 @@ describe("createMedusaProductService", () => {
     assert.equal(forwardedRequest.headers.get("content-type"), "application/json");
     assert.deepEqual(await forwardedRequest.json(), {
       title: "Coffee",
+      description: "Roasted coffee beans",
       handle: "coffee",
+      collection_id: "pcol_1",
+      categories: [{ id: "pcat_1" }],
+      variants: [
+        {
+          title: "Default",
+          prices: [
+            {
+              amount: 350,
+              currency_code: "etb",
+              rules: {
+                region_id: "reg_1",
+              },
+            },
+          ],
+        },
+      ],
       status: "draft",
       sales_channels: ["sc_1"],
     });
@@ -50,10 +84,26 @@ describe("createMedusaProductService", () => {
       ok: true,
       product: {
         id: "prod_1",
+        categoryIds: ["pcat_1"],
+        collectionId: "pcol_1",
+        description: "Roasted coffee beans",
         title: "Coffee",
         handle: "coffee",
         status: "draft",
         thumbnail: null,
+        variants: [
+          {
+            id: "variant_1",
+            title: "Default",
+            sku: null,
+            prices: [
+              {
+                amount: 350,
+                currencyCode: "etb",
+              },
+            ],
+          },
+        ],
         createdAt: "2026-01-01T00:00:00.000Z",
         updatedAt: "2026-01-02T00:00:00.000Z",
       },
@@ -117,10 +167,14 @@ describe("createMedusaProductService", () => {
       ok: true,
       product: {
         id: "prod_1",
+        categoryIds: [],
+        collectionId: null,
+        description: null,
         title: "Updated coffee",
         handle: "coffee",
         status: "published",
         thumbnail: "https://cdn.test/coffee.jpg",
+        variants: [],
         createdAt: "2026-01-01T00:00:00.000Z",
         updatedAt: "2026-01-03T00:00:00.000Z",
       },
@@ -172,7 +226,18 @@ describe("createMedusaProductService", () => {
             {
               id: "prod_1",
               title: "Coffee",
+              description: "Roasted coffee beans",
               handle: "coffee",
+              collection_id: "pcol_1",
+              categories: [{ id: "pcat_1" }],
+              variants: [
+                {
+                  id: "variant_1",
+                  title: "Default",
+                  sku: "COFFEE-1",
+                  prices: [{ amount: 350, currency_code: "etb" }],
+                },
+              ],
               status: "published",
               thumbnail: null,
               created_at: "2026-01-01T00:00:00.000Z",
@@ -199,17 +264,33 @@ describe("createMedusaProductService", () => {
     const url = new URL(forwardedRequest.url);
     assert.equal(
       url.href,
-      "http://medusa:9000/admin/products?limit=5&offset=10&order=-created_at&fields=id%2Ctitle%2Chandle%2Cstatus%2Cthumbnail%2Ccreated_at%2Cupdated_at%2Csales_channels.id&sales_channel_id%5B%5D=sc_1",
+      "http://medusa:9000/admin/products?limit=5&offset=10&order=-created_at&fields=id%2Ctitle%2Cdescription%2Chandle%2Cstatus%2Cthumbnail%2Ccollection_id%2Ccategories.id%2Cvariants.id%2Cvariants.title%2Cvariants.sku%2Cvariants.prices.amount%2Cvariants.prices.currency_code%2Ccreated_at%2Cupdated_at%2Csales_channels.id&sales_channel_id%5B%5D=sc_1",
     );
     assert.deepEqual(result, {
       ok: true,
       products: [
         {
           id: "prod_1",
+          categoryIds: ["pcat_1"],
+          collectionId: "pcol_1",
+          description: "Roasted coffee beans",
           title: "Coffee",
           handle: "coffee",
           status: "published",
           thumbnail: null,
+          variants: [
+            {
+              id: "variant_1",
+              title: "Default",
+              sku: "COFFEE-1",
+              prices: [
+                {
+                  amount: 350,
+                  currencyCode: "etb",
+                },
+              ],
+            },
+          ],
           createdAt: "2026-01-01T00:00:00.000Z",
           updatedAt: "2026-01-02T00:00:00.000Z",
         },

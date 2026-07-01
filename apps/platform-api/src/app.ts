@@ -339,12 +339,28 @@ export type SupportNoteCreateResult = {
 
 export type MerchantProduct = {
   id: string;
+  categoryIds?: string[];
+  collectionId?: string | null;
+  description?: string | null;
   title: string | null;
   handle: string | null;
   status: string | null;
   thumbnail: string | null;
+  variants?: MerchantProductVariant[];
   createdAt: string | null;
   updatedAt: string | null;
+};
+
+export type MerchantProductVariant = {
+  id: string;
+  title: string | null;
+  sku: string | null;
+  prices: MerchantProductPrice[];
+};
+
+export type MerchantProductPrice = {
+  amount: number | null;
+  currencyCode: string | null;
 };
 
 export type MerchantProductsResult =
@@ -846,7 +862,13 @@ export type PlatformAppOptions = {
     | undefined;
   createMerchantProduct?:
     | ((input: {
+        categoryIds?: string[] | undefined;
+        collectionId?: string | null | undefined;
+        currencyCode?: string | null | undefined;
+        description?: string | null | undefined;
         handle?: string | null | undefined;
+        priceAmount?: number | undefined;
+        regionId?: string | null | undefined;
         salesChannelId: string;
         status?: string | null | undefined;
         thumbnail?: string | null | undefined;
@@ -974,6 +996,9 @@ export type PlatformAppOptions = {
     | undefined;
   updateMerchantProduct?:
     | ((input: {
+        categoryIds?: string[] | undefined;
+        collectionId?: string | null | undefined;
+        description?: string | null | undefined;
         handle?: string | null | undefined;
         productId: string;
         salesChannelId: string;

@@ -4,7 +4,9 @@ import type { PlatformAppOptions, PlatformAppVariables } from "../app.js";
 import { registerDeliveryRoutes } from "./delivery-routes.js";
 import {
   getJsonBody,
+  getOptionalBodyNumber,
   getOptionalBodyString,
+  getOptionalBodyStringArray,
   getPaginationValue,
   getRequestHost,
   getRequiredBodyString,
@@ -461,7 +463,13 @@ export function registerPlatformRoutes(
 
     const product = await options.createMerchantProduct({
       title,
+      description: getOptionalBodyString(body, "description"),
       handle: getOptionalBodyString(body, "handle"),
+      collectionId: getOptionalBodyString(body, "collectionId"),
+      categoryIds: getOptionalBodyStringArray(body, "categoryIds"),
+      priceAmount: getOptionalBodyNumber(body, "priceAmount"),
+      currencyCode: getOptionalBodyString(body, "currencyCode") ?? "etb",
+      regionId: commerce.context.medusaRegionId,
       status: getOptionalBodyString(body, "status"),
       thumbnail: getOptionalBodyString(body, "thumbnail"),
       salesChannelId: commerce.context.medusaSalesChannelId,
@@ -500,7 +508,10 @@ export function registerPlatformRoutes(
     const product = await options.updateMerchantProduct({
       productId: context.req.param("productId"),
       title: getOptionalBodyString(body, "title"),
+      description: getOptionalBodyString(body, "description"),
       handle: getOptionalBodyString(body, "handle"),
+      collectionId: getOptionalBodyString(body, "collectionId"),
+      categoryIds: getOptionalBodyStringArray(body, "categoryIds"),
       status: getOptionalBodyString(body, "status"),
       thumbnail: getOptionalBodyString(body, "thumbnail"),
       salesChannelId: commerce.context.medusaSalesChannelId,

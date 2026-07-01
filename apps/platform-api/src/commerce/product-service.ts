@@ -11,7 +11,13 @@ import type {
 } from "../app.js";
 
 type ProductWriteInput = {
+  categoryIds?: string[] | undefined;
+  collectionId?: string | null | undefined;
+  currencyCode?: string | null | undefined;
+  description?: string | null | undefined;
   handle?: string | null | undefined;
+  priceAmount?: number | undefined;
+  regionId?: string | null | undefined;
   salesChannelId: string;
   status?: string | null | undefined;
   thumbnail?: string | null | undefined;
@@ -320,14 +326,43 @@ function getAdminHeaders(adminApiToken: string) {
 }
 
 function getProductWriteBody(input: ProductWriteInput) {
-  return Object.fromEntries(
+  const body = Object.fromEntries(
     [
       ["title", input.title],
+      ["description", input.description],
       ["handle", input.handle],
+      ["collection_id", input.collectionId],
       ["status", input.status],
       ["thumbnail", input.thumbnail],
     ].filter(([, value]) => typeof value === "string" && value.trim()),
   );
+
+  if (input.categoryIds?.length) {
+    body.categories = input.categoryIds.map((id) => ({ id }));
+  }
+
+  if (input.priceAmount !== undefined) {
+    body.variants = [
+      {
+        title: "Default",
+        prices: [
+          {
+            amount: input.priceAmount,
+            currency_code: input.currencyCode?.trim().toLowerCase() || "etb",
+            ...(input.regionId?.trim()
+              ? {
+                  rules: {
+                    region_id: input.regionId,
+                  },
+                }
+              : {}),
+          },
+        ],
+      },
+    ];
+  }
+
+  return body;
 }
 
 async function parseProductWriteResponse(response: Response): Promise<MerchantProductWriteResult> {
@@ -475,7 +510,7 @@ function getProductsUrl(
   url.searchParams.set("order", "-created_at");
   url.searchParams.set(
     "fields",
-    "id,title,handle,status,thumbnail,created_at,updated_at,sales_channels.id",
+    "id,title,description,handle,status,thumbnail,collection_id,categories.id,variants.id,variants.title,variants.sku,variants.prices.amount,variants.prices.currency_code,created_at,updated_at,sales_channels.id",
   );
   url.searchParams.set("sales_channel_id[]", input.salesChannelId);
 
@@ -568,14 +603,74 @@ function normalizeProduct(value: unknown): MerchantProduct[] {
   return [
     {
       id,
+      categoryIds: getProductCategoryIds(value.categories),
+      collectionId: getString(value.collection_id),
+      description: getString(value.description),
       title: getString(value.title),
       handle: getString(value.handle),
       status: getString(value.status),
       thumbnail: getString(value.thumbnail),
+      variants: getProductVariants(value.variants),
       createdAt: getString(value.created_at),
       updatedAt: getString(value.updated_at),
     },
   ];
+}
+
+function getProductCategoryIds(value: unknown) {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .map((category) => (isRecord(category) ? getString(category.id) : null))
+    .filter((id): id is string => Boolean(id));
+}
+
+function getProductVariants(value: unknown) {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.flatMap((variant) => {
+    if (!isRecord(variant)) {
+      return [];
+    }
+
+    const id = getString(variant.id);
+
+    if (!id) {
+      return [];
+    }
+
+    return [
+      {
+        id,
+        title: getString(variant.title),
+        sku: getString(variant.sku),
+        prices: getProductPrices(variant.prices),
+      },
+    ];
+  });
+}
+
+function getProductPrices(value: unknown) {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.flatMap((price) => {
+    if (!isRecord(price)) {
+      return [];
+    }
+
+    return [
+      {
+        amount: getNumber(price.amount) ?? null,
+        currencyCode: getString(price.currency_code),
+      },
+    ];
+  });
 }
 
 function normalizeProductCategory(value: unknown): MerchantProductCategory[] {

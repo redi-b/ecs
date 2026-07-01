@@ -3,7 +3,9 @@ import type { Context, Hono } from "hono";
 import type { PlatformAppOptions, PlatformAppVariables } from "../app.js";
 import {
   getJsonBody,
+  getOptionalBodyNumber,
   getOptionalBodyString,
+  getOptionalBodyStringArray,
   getPaginationValue,
   getRequestHost,
   getRequiredBodyString,
@@ -232,7 +234,13 @@ export function registerMerchantRoutes(
 
     const product = await options.createMerchantProduct({
       title,
+      description: getOptionalBodyString(body, "description"),
       handle: getOptionalBodyString(body, "handle"),
+      collectionId: getOptionalBodyString(body, "collectionId"),
+      categoryIds: getOptionalBodyStringArray(body, "categoryIds"),
+      priceAmount: getOptionalBodyNumber(body, "priceAmount"),
+      currencyCode: getOptionalBodyString(body, "currencyCode") ?? "etb",
+      regionId: result.context.medusaRegionId,
       status: getOptionalBodyString(body, "status"),
       thumbnail: getOptionalBodyString(body, "thumbnail"),
       salesChannelId: result.context.medusaSalesChannelId,
@@ -386,7 +394,10 @@ export function registerMerchantRoutes(
     const product = await options.updateMerchantProduct({
       productId: context.req.param("productId"),
       title: getOptionalBodyString(body, "title"),
+      description: getOptionalBodyString(body, "description"),
       handle: getOptionalBodyString(body, "handle"),
+      collectionId: getOptionalBodyString(body, "collectionId"),
+      categoryIds: getOptionalBodyStringArray(body, "categoryIds"),
       status: getOptionalBodyString(body, "status"),
       thumbnail: getOptionalBodyString(body, "thumbnail"),
       salesChannelId: result.context.medusaSalesChannelId,

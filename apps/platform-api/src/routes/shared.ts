@@ -132,6 +132,32 @@ export function getOptionalBodyString(body: unknown, key: string) {
   return trimmed ? trimmed : null;
 }
 
+export function getOptionalBodyNumber(body: unknown, key: string) {
+  if (typeof body !== "object" || body === null || !(key in body)) {
+    return undefined;
+  }
+
+  const value = (body as Record<string, unknown>)[key];
+
+  return typeof value === "number" && Number.isFinite(value) ? value : undefined;
+}
+
+export function getOptionalBodyStringArray(body: unknown, key: string) {
+  if (typeof body !== "object" || body === null || !(key in body)) {
+    return undefined;
+  }
+
+  const value = (body as Record<string, unknown>)[key];
+
+  if (!Array.isArray(value)) {
+    return undefined;
+  }
+
+  return value
+    .filter((item): item is string => typeof item === "string" && Boolean(item.trim()))
+    .map((item) => item.trim());
+}
+
 export function getRequiredBodyString(body: unknown, key: string) {
   const value = getOptionalBodyString(body, key);
 
