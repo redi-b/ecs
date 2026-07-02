@@ -58,4 +58,19 @@ describe("getMerchantOrders", () => {
       message: "invalid_orders_response",
     });
   });
+
+  it("returns an error when the order request fails", async () => {
+    const result = await getMerchantOrders({
+      platformApiBaseUrl: "http://platform.local",
+      fetcher: async () => {
+        throw new TypeError("fetch failed");
+      },
+    });
+
+    assert.deepEqual(result, {
+      ok: false,
+      status: 503,
+      message: "platform_request_failed",
+    });
+  });
 });

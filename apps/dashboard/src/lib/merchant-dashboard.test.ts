@@ -66,4 +66,19 @@ describe("getMerchantDashboardSummary", () => {
       message: "invalid_dashboard_response",
     });
   });
+
+  it("returns a dashboard error when the platform request fails", async () => {
+    const result = await getMerchantDashboardSummary({
+      platformApiBaseUrl: "http://platform.local",
+      fetcher: async () => {
+        throw new TypeError("fetch failed");
+      },
+    });
+
+    assert.deepEqual(result, {
+      ok: false,
+      status: 503,
+      message: "platform_request_failed",
+    });
+  });
 });
