@@ -1,12 +1,8 @@
 import type { AppIcon } from "@/components/app/icons";
 import { AppIcons } from "@/components/app/icons";
-import { dashboardRoutes, type DashboardRouteHref } from "@/lib/routes";
+import { type DashboardRouteHref, dashboardRoutes } from "@/lib/routes";
 
-export type AppRouteSection =
-  | "commerce"
-  | "storefront"
-  | "business"
-  | "system";
+export type AppRouteSection = "commerce" | "storefront" | "business" | "system";
 
 export type AppRoute = {
   id: string;
