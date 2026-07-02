@@ -16,7 +16,13 @@ export type SearchParamsInput =
 
 export function parseListSearchParams(input: SearchParamsInput): ListSearchParams {
   if (input instanceof URLSearchParams) {
-    return listSearchParamsSchema.parse(Object.fromEntries(input.entries()));
+    const normalized: Record<string, string> = {};
+
+    for (const [key, value] of input.entries()) {
+      normalized[key] ??= value;
+    }
+
+    return listSearchParamsSchema.parse(normalized);
   }
 
   const normalized = Object.fromEntries(
