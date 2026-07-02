@@ -141,6 +141,16 @@
   }
 }
 
+@keyframes theme-ink-fill {
+  from {
+    clip-path: circle(0 at var(--theme-x, 50%) var(--theme-y, 50%));
+  }
+
+  to {
+    clip-path: circle(140vmax at var(--theme-x, 50%) var(--theme-y, 50%));
+  }
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -167,6 +177,21 @@
 }
 
 @layer components {
+  .theme-transition-overlay {
+    pointer-events: none;
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: var(--background);
+    clip-path: circle(0 at var(--theme-x, 50%) var(--theme-y, 50%));
+    opacity: 0;
+  }
+
+  .theme-transition-overlay[data-active="true"] {
+    animation: theme-ink-fill var(--motion-slow) var(--ease-dashboard) forwards;
+    opacity: 1;
+  }
+
   .dashboard-shell {
     min-height: 100vh;
     background: var(--background);
