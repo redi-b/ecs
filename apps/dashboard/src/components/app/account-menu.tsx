@@ -34,10 +34,10 @@ export function AccountMenu() {
               aria-label="Open account menu"
               className={cn(
                 "rounded-full",
-                "group-data-[collapsible=icon]:size-10! group-data-[collapsible=icon]:p-0!",
+                "group-data-[collapsible=icon]:size-8! group-data-[collapsible=icon]:p-0!",
               )}
             >
-              <Avatar size={collapsed ? "lg" : "sm"} className={cn(collapsed && "size-10")}>
+              <Avatar size={collapsed ? "default" : "sm"}>
                 <AvatarFallback>EC</AvatarFallback>
               </Avatar>
               <span className="truncate">Merchant account</span>
@@ -45,8 +45,9 @@ export function AccountMenu() {
           </DropdownMenuTrigger>
           <DropdownMenuContent
             side={collapsed ? "right" : "top"}
-            align="center"
-            sideOffset={collapsed ? 12 : 16}
+            align={collapsed ? "end" : "center"}
+            sideOffset={collapsed ? 10 : 16}
+            collisionPadding={12}
             className="w-56 rounded-2xl p-1.5"
           >
             <DropdownMenuLabel>Merchant account</DropdownMenuLabel>
