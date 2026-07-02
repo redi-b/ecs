@@ -88,15 +88,27 @@ The root layout should stay server-rendered where possible. Interactive provider
 
 ## Shadcn And Visual System
 
-Initialize shadcn inside `apps/dashboard`. Before implementation, verify the current CLI flags for preset handling, `--pointer`, base selection, and icon-library support.
+Initialize shadcn inside `apps/dashboard`. "Preset" means this project should define its own shadcn base/preset direction for a custom look. It does not assume the user already has a preset code.
 
-Intended CLI shape:
+Before implementation, verify the current CLI flags for preset handling, `--pointer`, base selection, custom registry/base support, and icon-library support.
+
+Intended CLI shape if a local/custom preset code or registry item exists before initialization:
 
 ```bash
-pnpm dlx shadcn@latest init --template next --base radix --preset <chosen-code> --pointer
+pnpm dlx shadcn@latest init --template next --base radix --preset <custom-preset-code-or-registry-item> --pointer
 ```
 
-If `--pointer` is not supported by the installed CLI, document the mismatch and use the current supported equivalent.
+If the custom preset cannot be applied directly at initialization time, initialize shadcn with the closest supported base, then immediately apply the project's custom token/component decisions in a controlled follow-up step. If `--pointer` is not supported by the installed CLI, document the mismatch and use the current supported equivalent.
+
+The custom preset/base should define:
+
+- blue primary accent and ring tokens
+- tinted neutral background and foreground tokens
+- light and dark theme CSS variables
+- radius scale
+- app motion tokens where shadcn globals can own them
+- default font choices
+- supported icon library choice, if the CLI supports it cleanly
 
 Use official shadcn components first. The shell should be built from shadcn primitives, not custom one-off widgets.
 
@@ -170,6 +182,16 @@ Sidebar behavior:
 - Widths and rail sizing should be constants or tokens, not scattered class strings.
 - Start with: Overview, Products, Orders, Storefront Editor, Insights, Billing, Settings.
 - Do not include a fake shop switcher.
+- Account for future nested navigation groups without rendering speculative submenu UI too early.
+
+Initial navigation should stay flat unless a route has real child pages. Product Management can later grow child routes such as Products, Collections, Categories, Inventory, or attributes if the backend/API shape supports them. Storefront Editor can later grow child routes for templates, pages, themes, and publish history. The navigation metadata should support `children`, but the first shell should only render submenus for implemented routes.
+
+Submenu behavior:
+
+- Use shadcn `collapsible` or the sidebar component's documented nested pattern.
+- Animate submenu open/close with the shared motion tokens.
+- Use `data-state` and `data-collapsible` attributes where possible.
+- Keep nested depth to one level unless a future workflow proves deeper hierarchy is necessary.
 
 Account and theme controls:
 
@@ -313,6 +335,26 @@ Accessibility:
 - Color cannot be the only status indicator.
 - Keyboard navigation must work for command center, menus, sidebar, and forms.
 
+## Auth And Onboarding Surface
+
+Auth and onboarding should be designed with the same visual system, but they are not part of the first shell implementation.
+
+Reason:
+
+- The dev docs define platform-owned auth, tenant memberships, roles, and possible operator status.
+- Building auth/onboarding screens before those flows are finalized would create attractive but likely-wrong UI.
+- The dashboard shell should not mix authenticated app chrome with unauthenticated entry and setup flows.
+
+Documented future direction:
+
+- Auth pages should be custom and polished, not default/basic forms.
+- Onboarding should help a merchant reach a usable shop quickly: shop identity, storefront basics, product setup, payment/delivery readiness, and publish readiness.
+- Auth and onboarding should reuse the same tokens, typography, blue accent, Remix icon direction, and motion language.
+- Auth/onboarding routes should not use the full dashboard sidebar shell.
+- They may use a lighter unauthenticated layout that still feels part of the same product.
+
+Implementation should wait until the auth and tenant membership plan is ready. The foundation pass may reserve layout conventions and document the intent, but should not build these pages.
+
 ## Implementation Phases
 
 ### Phase 1: Clean Foundation
@@ -395,7 +437,7 @@ pnpm --filter @ecs/dashboard typecheck
 pnpm --filter @ecs/dashboard build
 ```
 
-Visual QA after implementation:
+Manual visual QA after implementation:
 
 - desktop screenshot
 - mobile screenshot
@@ -406,6 +448,8 @@ Visual QA after implementation:
 - theme transition sanity check
 - no overlapping text
 - no broken hydration
+
+The user prefers to perform final visual QA manually and provide feedback. The implementation agent can still run technical checks, inspect screenshots if requested, and use browser tooling for debugging, but final visual approval should be manual.
 
 ### Phase 6: Documentation
 
@@ -420,10 +464,12 @@ Document:
 
 - visual principles
 - shadcn preset and config choices
+- custom preset/base creation and update process
 - component ownership boundaries
 - navigation metadata pattern
 - data, query, table, and form rules
 - motion and theme rules
+- auth and onboarding design direction
 - how to add a new dashboard feature page
 
 ## Explicit Non-Goals
@@ -431,13 +477,14 @@ Document:
 - Do not implement real product, order, editor, insights, billing, or settings workflows in this foundation pass.
 - Do not introduce a fake shop switcher.
 - Do not build platform-operator workflows into this merchant shell.
+- Do not build auth or onboarding pages in the shell foundation pass.
 - Do not create a broad generic table abstraction before feature needs prove it.
 - Do not use mock metrics or fake operational data as if they are real.
 
 ## Open Implementation Checks
 
 - Confirm exact shadcn CLI support for `--pointer`.
-- Confirm exact shadcn preset code or custom registry item to apply.
+- Decide whether to create a local shadcn custom base/registry item before initialization or initialize first and apply custom tokens immediately after.
 - Confirm whether the CLI can configure Remix icons directly.
 - Confirm final blue OKLCH values against light and dark contrast.
 - Confirm whether React Query Devtools should be installed in the first pass.
