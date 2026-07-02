@@ -64,6 +64,14 @@ Start infrastructure only:
 pnpm dev:infra
 ```
 
+If another PostgreSQL server is already using port `5432`, use a different local port:
+
+```bash
+POSTGRES_HOST_PORT=5433 pnpm dev:infra
+```
+
+When using a different PostgreSQL port, update the local database URLs in `.env`, `apps/platform-api/.env`, and `apps/medusa/.env` to use the same port.
+
 Run migrations:
 
 ```bash
@@ -71,28 +79,42 @@ pnpm db:migrate
 pnpm medusa:migrate
 ```
 
+Seed Medusa first:
+
+```bash
+pnpm --filter @ecs/medusa seed
+```
+
+The Medusa seed prints a local Admin API token. Keep that token in your local shell or local env file as `MEDUSA_ADMIN_API_TOKEN`. Do not commit it.
+
+Seed platform data:
+
+```bash
+pnpm seed
+```
+
 Start app processes after infrastructure is ready:
 
 ```bash
-pnpm dev:apps
+MEDUSA_ADMIN_API_TOKEN=<token-from-medusa-seed> pnpm dev:apps
 ```
 
 Start app processes with grouped logs:
 
 ```bash
-pnpm dev:apps:grouped
+MEDUSA_ADMIN_API_TOKEN=<token-from-medusa-seed> pnpm dev:apps:grouped
 ```
 
 Run the full local startup flow:
 
 ```bash
-pnpm dev
+MEDUSA_ADMIN_API_TOKEN=<token-from-medusa-seed> pnpm dev
 ```
 
 Run the full local startup flow with grouped logs:
 
 ```bash
-pnpm dev:grouped
+MEDUSA_ADMIN_API_TOKEN=<token-from-medusa-seed> pnpm dev:grouped
 ```
 
 Stop local infrastructure:
@@ -119,7 +141,18 @@ pnpm db:generate
 pnpm db:migrate
 pnpm medusa:migrate
 pnpm seed
+pnpm smoke:commerce
 ```
+
+`pnpm smoke:commerce` signs in with the seeded owner account, creates a tenant, creates a category, creates a collection, creates a product, reads product detail, and reads stock. It expects the platform API and Medusa to already be running.
+
+The smoke script uses these defaults:
+
+- `PLATFORM_API_URL=http://localhost:3000`
+- `SMOKE_OWNER_EMAIL=owner@abebe.local`
+- `SMOKE_OWNER_PASSWORD=password1234`
+
+Override those values in the shell if your local setup is different.
 
 ## Medusa
 

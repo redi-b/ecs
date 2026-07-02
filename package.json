@@ -26,7 +26,8 @@
     "db:migrate": "pnpm --filter @ecs/db db:migrate",
     "db:studio": "pnpm --filter @ecs/db db:studio",
     "medusa:migrate": "pnpm --filter @ecs/medusa db:migrate",
-    "seed": "pnpm --filter @ecs/platform-api seed"
+    "seed": "pnpm --filter @ecs/platform-api seed",
+    "smoke:commerce": "node scripts/smoke-commerce.mjs"
   },
   "devDependencies": {
     "@biomejs/biome": "2.2.4",
