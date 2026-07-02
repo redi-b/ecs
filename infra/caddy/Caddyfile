@@ -11,6 +11,11 @@ http://dashboard.lvh.me {
 }
 
 http://*.lvh.me {
+  @dashboardAssets path /_next/*
+  handle @dashboardAssets {
+    reverse_proxy host.docker.internal:3001
+  }
+
   @admin path /admin*
   handle @admin {
     reverse_proxy host.docker.internal:3001
