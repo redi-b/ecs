@@ -54,19 +54,32 @@ export function AppSidebar() {
             <SidebarMenu>
               {appRoutes.map((route) => {
                 const Icon = route.icon;
+                const content = (
+                  <>
+                    <Icon />
+                    <span>{route.title}</span>
+                  </>
+                );
 
                 return (
                   <SidebarMenuItem key={route.id}>
-                    <SidebarMenuButton
-                      asChild
-                      isActive={isRouteActive(pathname, route)}
-                      tooltip={route.title}
-                    >
-                      <Link href={route.href}>
-                        <Icon />
-                        <span>{route.title}</span>
-                      </Link>
-                    </SidebarMenuButton>
+                    {route.disabled ? (
+                      <SidebarMenuButton
+                        disabled
+                        isActive={false}
+                        tooltip={route.title}
+                      >
+                        {content}
+                      </SidebarMenuButton>
+                    ) : (
+                      <SidebarMenuButton
+                        asChild
+                        isActive={isRouteActive(pathname, route)}
+                        tooltip={route.title}
+                      >
+                        <Link href={route.href}>{content}</Link>
+                      </SidebarMenuButton>
+                    )}
                   </SidebarMenuItem>
                 );
               })}

@@ -1,7 +1,5 @@
 "use client";
 
-import Link from "next/link";
-
 import { AppIcons } from "@/components/app/icons";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -18,7 +16,6 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { dashboardRoutes } from "@/lib/routes";
 
 export function AccountMenu() {
   return (
@@ -41,11 +38,9 @@ export function AccountMenu() {
                 <AppIcons.user />
                 Profile
               </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link href={dashboardRoutes.settings}>
-                  <AppIcons.settings />
-                  Settings
-                </Link>
+              <DropdownMenuItem disabled>
+                <AppIcons.settings />
+                Settings
               </DropdownMenuItem>
             </DropdownMenuGroup>
           </DropdownMenuContent>
