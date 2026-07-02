@@ -4,7 +4,6 @@ import {
   batchLinksWorkflow,
   createApiKeysWorkflow,
   createFulfillmentSets,
-  createRegionsWorkflow,
   createSalesChannelsWorkflow,
   createServiceZonesWorkflow,
   createShippingOptionsWorkflow,
@@ -13,6 +12,7 @@ import {
   createStoresWorkflow,
   linkSalesChannelsToApiKeyWorkflow,
   linkSalesChannelsToStockLocationWorkflow,
+  useQueryGraphStep,
 } from "@medusajs/medusa/core-flows";
 
 export type ProvisionTenantCommerceResourcesInput = {
@@ -70,23 +70,12 @@ export const provisionTenantCommerceResourcesWorkflow = createWorkflow(
       input: storeInput,
     });
 
-    const regionInput = transform({ input }, (data) => ({
-      regions: [
-        {
-          name: `${data.input.name} Region`,
-          currency_code: "etb",
-          countries: ["et"],
-          payment_providers: ["pp_system", "pp_chapa_chapa"],
-          metadata: {
-            platform_tenant_id: data.input.platformTenantId,
-            platform_handle: data.input.handle,
-          },
-        },
-      ],
-    }));
-
-    const regions = createRegionsWorkflow.runAsStep({
-      input: regionInput,
+    const { data: regions } = useQueryGraphStep({
+      entity: "region",
+      fields: ["id"],
+      filters: {
+        currency_code: "etb",
+      },
     });
 
     const salesChannelInput = transform({ input }, (data) => ({
@@ -105,7 +94,7 @@ export const provisionTenantCommerceResourcesWorkflow = createWorkflow(
     const stockLocationInput = transform({ input }, (data) => ({
       locations: [
         {
-          name: `${data.input.name} Stock`,
+          name: `${data.input.name} (${data.input.handle}) Stock`,
           metadata: {
             platform_tenant_id: data.input.platformTenantId,
             platform_handle: data.input.handle,
@@ -121,7 +110,7 @@ export const provisionTenantCommerceResourcesWorkflow = createWorkflow(
     const shippingProfileInput = transform({ input }, (data) => ({
       data: [
         {
-          name: `${data.input.name} Standard`,
+          name: `${data.input.name} (${data.input.handle}) Standard`,
           type: "default",
         },
       ],
@@ -133,7 +122,7 @@ export const provisionTenantCommerceResourcesWorkflow = createWorkflow(
 
     const fulfillmentSetInput = transform({ input }, (data) => [
       {
-        name: `${data.input.name} Shipping`,
+        name: `${data.input.name} (${data.input.handle}) Shipping`,
         type: "shipping",
       },
     ]);
@@ -168,10 +157,10 @@ export const provisionTenantCommerceResourcesWorkflow = createWorkflow(
       input: stockLocationFulfillmentLinkInput,
     });
 
-    const serviceZoneInput = transform({ fulfillmentSets }, (data) => ({
+    const serviceZoneInput = transform({ fulfillmentSets, input }, (data) => ({
       data: [
         {
-          name: "Ethiopia",
+          name: `${data.input.name} (${data.input.handle}) Ethiopia`,
           fulfillment_set_id: requireFirst(data.fulfillmentSets, "Fulfillment set").id,
           geo_zones: [
             {

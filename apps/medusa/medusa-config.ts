@@ -2,6 +2,8 @@ import { defineConfig, loadEnv } from "@medusajs/framework/utils";
 
 loadEnv(process.env.NODE_ENV || "development", process.cwd());
 
+const redisUrl = process.env.REDIS_URL || "redis://localhost:6379";
+
 const paymentProviders = [
   {
     resolve: "./src/modules/chapa-payment",
@@ -24,6 +26,7 @@ module.exports = defineConfig({
   },
   projectConfig: {
     databaseUrl: process.env.DATABASE_URL || "postgres://ecs:ecs@localhost:5432/medusa_db",
+    redisUrl,
     workerMode: (process.env.MEDUSA_WORKER_MODE || process.env.WORKER_MODE || "shared") as
       | "server"
       | "worker"
@@ -37,6 +40,35 @@ module.exports = defineConfig({
     },
   },
   modules: [
+    {
+      resolve: "@medusajs/medusa/event-bus-redis",
+      options: {
+        redisUrl,
+      },
+    },
+    {
+      resolve: "@medusajs/medusa/workflow-engine-redis",
+      options: {
+        redis: {
+          redisUrl,
+        },
+      },
+    },
+    {
+      resolve: "@medusajs/medusa/locking",
+      options: {
+        providers: [
+          {
+            resolve: "@medusajs/medusa/locking-redis",
+            id: "locking-redis",
+            is_default: true,
+            options: {
+              redisUrl,
+            },
+          },
+        ],
+      },
+    },
     {
       resolve: "@medusajs/medusa/payment",
       options: {

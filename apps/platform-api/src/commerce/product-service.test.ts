@@ -65,7 +65,7 @@ describe("createMedusaProductService", () => {
     assert.ok(forwardedRequest);
     assert.equal(forwardedRequest.method, "POST");
     assert.equal(forwardedRequest.url, "http://medusa:9000/admin/products");
-    assert.equal(forwardedRequest.headers.get("x-medusa-access-token"), "medusa_token");
+    assert.equal(forwardedRequest.headers.get("authorization"), "Basic medusa_token");
     assert.equal(forwardedRequest.headers.get("content-type"), "application/json");
     assert.deepEqual(await forwardedRequest.json(), {
       title: "Coffee",
@@ -74,9 +74,18 @@ describe("createMedusaProductService", () => {
       collection_id: "pcol_1",
       categories: [{ id: "pcat_1" }],
       images: [{ url: "https://cdn.test/coffee-1.jpg" }],
+      options: [
+        {
+          title: "Default",
+          values: ["Default"],
+        },
+      ],
       variants: [
         {
           title: "Default",
+          options: {
+            Default: "Default",
+          },
           prices: [
             {
               amount: 350,
@@ -89,7 +98,7 @@ describe("createMedusaProductService", () => {
         },
       ],
       status: "draft",
-      sales_channels: ["sc_1"],
+      sales_channels: [{ id: "sc_1" }],
     });
     assert.deepEqual(result, {
       ok: true,
@@ -253,7 +262,7 @@ describe("createMedusaProductService", () => {
 
     assert.equal(result.ok, true);
     assert.ok(forwardedRequest);
-    assert.equal(forwardedRequest.headers.get("x-medusa-access-token"), "medusa_token");
+    assert.equal(forwardedRequest.headers.get("authorization"), "Basic medusa_token");
     assert.equal(
       forwardedRequest.url,
       "http://medusa:9000/admin/products/prod_1?fields=id%2Ctitle%2Cdescription%2Chandle%2Cstatus%2Cthumbnail%2Ccollection_id%2Ccategories.id%2Cimages.id%2Cimages.url%2Cimages.rank%2Cimages.created_at%2Cimages.updated_at%2Cvariants.id%2Cvariants.title%2Cvariants.sku%2Cvariants.prices.amount%2Cvariants.prices.currency_code%2Cvariants.inventory_items.inventory_item_id%2Ccreated_at%2Cupdated_at%2Csales_channels.id",
@@ -401,7 +410,7 @@ describe("createMedusaProductService", () => {
 
     assert.equal(result.ok, true);
     assert.ok(forwardedRequest);
-    assert.equal(forwardedRequest.headers.get("x-medusa-access-token"), "medusa_token");
+    assert.equal(forwardedRequest.headers.get("authorization"), "Basic medusa_token");
 
     const url = new URL(forwardedRequest.url);
     assert.equal(url.origin + url.pathname, "http://medusa:9000/admin/products");

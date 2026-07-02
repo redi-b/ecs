@@ -9,6 +9,13 @@ function getInternalToken(request: MedusaRequest) {
   return request.headers["x-platform-internal-token"];
 }
 
+function getExpectedInternalToken() {
+  return (
+    process.env.PLATFORM_INTERNAL_API_TOKEN ??
+    (process.env.NODE_ENV === "production" ? undefined : "development-platform-internal-token")
+  );
+}
+
 function isProvisionInput(value: unknown): value is ProvisionTenantCommerceResourcesInput {
   if (typeof value !== "object" || value === null) {
     return false;
@@ -29,7 +36,7 @@ function isProvisionInput(value: unknown): value is ProvisionTenantCommerceResou
 }
 
 export async function POST(req: MedusaRequest, res: MedusaResponse) {
-  const expectedToken = process.env.PLATFORM_INTERNAL_API_TOKEN;
+  const expectedToken = getExpectedInternalToken();
 
   if (!expectedToken || getInternalToken(req) !== expectedToken) {
     return res.status(401).json({

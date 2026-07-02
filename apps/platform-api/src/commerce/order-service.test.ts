@@ -47,7 +47,7 @@ describe("createMedusaOrderService", () => {
 
     assert.equal(result.ok, true);
     assert.ok(forwardedRequest);
-    assert.equal(forwardedRequest.headers.get("x-medusa-access-token"), "medusa_token");
+    assert.equal(forwardedRequest.headers.get("authorization"), "Basic medusa_token");
 
     const url = new URL(forwardedRequest.url);
     assert.equal(url.origin + url.pathname, "http://medusa:9000/admin/orders");
@@ -150,7 +150,7 @@ describe("createMedusaOrderService", () => {
 
     assert.equal(result.ok, true);
     assert.ok(forwardedRequest);
-    assert.equal(forwardedRequest.headers.get("x-medusa-access-token"), "medusa_token");
+    assert.equal(forwardedRequest.headers.get("authorization"), "Basic medusa_token");
 
     const url = new URL(forwardedRequest.url);
     assert.equal(url.origin + url.pathname, "http://medusa:9000/admin/orders/order_1");
@@ -293,7 +293,7 @@ describe("createMedusaOrderService", () => {
     assert.equal(forwardedRequests.length, 2);
     assert.equal(forwardedRequests[0]?.method, "GET");
     assert.equal(forwardedRequests[1]?.method, "POST");
-    assert.equal(forwardedRequests[1]?.headers.get("x-medusa-access-token"), "medusa_token");
+    assert.equal(forwardedRequests[1]?.headers.get("authorization"), "Basic medusa_token");
     assert.equal(forwardedRequests[1]?.url, "http://medusa:9000/admin/orders/order_1/cancel");
     assert.deepEqual(result, {
       ok: true,

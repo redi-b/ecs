@@ -89,8 +89,11 @@ const medusaInternalUrl = process.env.MEDUSA_INTERNAL_URL ?? "http://localhost:9
 const platformPublicBaseUrl =
   process.env.PLATFORM_PUBLIC_BASE_URL ?? process.env.BETTER_AUTH_URL ?? "http://api.lvh.me";
 const platformBaseDomain = process.env.STOREFRONT_PUBLIC_BASE_DOMAIN ?? "lvh.me";
+const platformInternalApiToken =
+  process.env.PLATFORM_INTERNAL_API_TOKEN ??
+  (process.env.NODE_ENV === "production" ? undefined : "development-platform-internal-token");
 const provisionCommerceResources = createMedusaCommerceProvisioningClient({
-  internalApiToken: process.env.PLATFORM_INTERNAL_API_TOKEN,
+  internalApiToken: platformInternalApiToken,
   medusaInternalUrl,
 });
 const createTenantShop = createTenantShopProvisioningService({
@@ -146,6 +149,7 @@ const app = createPlatformApp({
   getTenantOnboarding: tenantOnboardingService.getTenantOnboarding,
   getTenantReadiness: tenantStatusService.getTenantReadiness,
   getMerchantOrder: orderService.getMerchantOrder,
+  getMerchantProduct: productService.getMerchantProduct,
   getMerchantProductStock: productService.getMerchantProductStock,
   getSession: (headers) => auth.api.getSession({ headers }),
   listMerchantOrders: orderService.listMerchantOrders,

@@ -5481,6 +5481,7 @@ describe("platform app", () => {
       currencyCode: "etb",
       regionId: "reg_1",
       status: "draft",
+      stockLocationId: "sloc_1",
       thumbnail: null,
       salesChannelId: "channel_1",
     });

@@ -714,6 +714,9 @@ export function registerPlatformRoutes(
       currencyCode: getOptionalBodyString(body, "currencyCode") ?? "etb",
       regionId: commerce.context.medusaRegionId,
       status: getOptionalBodyString(body, "status"),
+      ...(commerce.context.medusaStockLocationId
+        ? { stockLocationId: commerce.context.medusaStockLocationId }
+        : {}),
       thumbnail: getOptionalBodyString(body, "thumbnail"),
       salesChannelId: commerce.context.medusaSalesChannelId,
     });

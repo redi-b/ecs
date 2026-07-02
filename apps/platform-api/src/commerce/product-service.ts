@@ -25,6 +25,7 @@ type ProductWriteInput = {
   regionId?: string | null | undefined;
   salesChannelId: string;
   status?: string | null | undefined;
+  stockLocationId?: string | null | undefined;
   thumbnail?: string | null | undefined;
   title?: string | null | undefined;
 };
@@ -73,13 +74,33 @@ export function createMedusaProductService(options: {
       const response = await requestMedusa(fetcher, getProductsBaseUrl(options.medusaInternalUrl), {
         body: JSON.stringify({
           ...getProductWriteBody(input),
-          sales_channels: [input.salesChannelId],
+          sales_channels: [{ id: input.salesChannelId }],
         }),
         headers: getAdminHeaders(options.adminApiToken),
         method: "POST",
       });
 
-      return parseProductWriteResponse(response);
+      const result = await parseProductWriteResponse(response);
+
+      if (!result.ok || !input.stockLocationId?.trim()) {
+        return result;
+      }
+
+      const initialized = await initializeProductStockLevel(fetcher, options, {
+        productId: result.product.id,
+        salesChannelId: input.salesChannelId,
+        stockLocationId: input.stockLocationId,
+      });
+
+      if (!initialized) {
+        return {
+          ok: false,
+          error: "commerce_backend_unavailable",
+          status: 503,
+        };
+      }
+
+      return result;
     },
 
     createMerchantProductCategory: async (
@@ -458,8 +479,8 @@ async function requestMedusa(fetcher: typeof fetch, input: URL, init: RequestIni
 function getAdminHeaders(adminApiToken: string) {
   return {
     accept: "application/json",
+    authorization: `Basic ${adminApiToken}`,
     "content-type": "application/json",
-    "x-medusa-access-token": adminApiToken,
   };
 }
 
@@ -604,6 +625,44 @@ async function getInventoryItemStock(
   };
 }
 
+async function initializeProductStockLevel(
+  fetcher: typeof fetch,
+  options: {
+    adminApiToken?: string | undefined;
+    medusaInternalUrl: string;
+  },
+  input: {
+    productId: string;
+    salesChannelId: string;
+    stockLocationId: string;
+  },
+) {
+  const inventory = await getProductInventoryContext(fetcher, options, {
+    productId: input.productId,
+    salesChannelId: input.salesChannelId,
+    stockLocationId: input.stockLocationId,
+  });
+
+  if (!inventory.ok) {
+    return false;
+  }
+
+  const response = await requestMedusa(
+    fetcher,
+    getInventoryItemLevelsUrl(options.medusaInternalUrl, inventory.inventoryItemId),
+    {
+      body: JSON.stringify({
+        location_id: input.stockLocationId,
+        stocked_quantity: 0,
+      }),
+      headers: getAdminHeaders(options.adminApiToken ?? ""),
+      method: "POST",
+    },
+  );
+
+  return response.ok;
+}
+
 function getProductWriteBody(input: ProductWriteInput) {
   const body = Object.fromEntries(
     [
@@ -625,9 +684,18 @@ function getProductWriteBody(input: ProductWriteInput) {
   }
 
   if (input.priceAmount !== undefined) {
+    body.options = [
+      {
+        title: "Default",
+        values: ["Default"],
+      },
+    ];
     body.variants = [
       {
         title: "Default",
+        options: {
+          Default: "Default",
+        },
         prices: [
           {
             amount: input.priceAmount,
@@ -905,6 +973,13 @@ function getInventoryItemUrl(medusaInternalUrl: string, inventoryItemId: string)
   url.searchParams.set("fields", "id,*location_levels");
 
   return url;
+}
+
+function getInventoryItemLevelsUrl(medusaInternalUrl: string, inventoryItemId: string) {
+  return new URL(
+    `/admin/inventory-items/${encodeURIComponent(inventoryItemId)}/location-levels`,
+    normalizeBaseUrl(medusaInternalUrl),
+  );
 }
 
 function getInventoryItemLevelUrl(

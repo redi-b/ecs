@@ -209,8 +209,8 @@ async function requestMedusa(fetcher: typeof fetch, input: URL, init: RequestIni
 function getAdminHeaders(adminApiToken: string) {
   return {
     accept: "application/json",
+    authorization: `Basic ${adminApiToken}`,
     "content-type": "application/json",
-    "x-medusa-access-token": adminApiToken,
   };
 }
 

@@ -243,6 +243,9 @@ export function registerMerchantRoutes(
       currencyCode: getOptionalBodyString(body, "currencyCode") ?? "etb",
       regionId: result.context.medusaRegionId,
       status: getOptionalBodyString(body, "status"),
+      ...(result.context.medusaStockLocationId
+        ? { stockLocationId: result.context.medusaStockLocationId }
+        : {}),
       thumbnail: getOptionalBodyString(body, "thumbnail"),
       salesChannelId: result.context.medusaSalesChannelId,
     });
