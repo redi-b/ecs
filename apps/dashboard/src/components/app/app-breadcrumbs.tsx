@@ -16,17 +16,25 @@ import { dashboardRoutes } from "@/lib/routes";
 
 export function AppBreadcrumbs() {
   const pathname = usePathname();
-  const route =
+  const trail =
     appRoutes
-      .filter((item) => pathname === item.href || pathname.startsWith(`${item.href}/`))
-      .sort((a, b) => b.href.length - a.href.length)[0] ?? null;
+      .flatMap((item) => {
+        const children = item.children ?? [];
+        return [
+          { route: item, trail: [item] },
+          ...children.map((child) => ({ route: child, trail: [item, child] })),
+        ];
+      })
+      .filter(({ route }) => pathname === route.href || pathname.startsWith(`${route.href}/`))
+      .sort((a, b) => b.route.href.length - a.route.href.length)[0]?.trail ?? [];
+  const currentRoute = trail.at(-1);
 
-  if (!route || route.href === dashboardRoutes.overview) {
+  if (!currentRoute || currentRoute.href === dashboardRoutes.overview || trail.length === 1) {
     return (
       <Breadcrumb>
         <BreadcrumbList>
           <BreadcrumbItem>
-            <BreadcrumbPage>{route?.title ?? "Dashboard"}</BreadcrumbPage>
+            <BreadcrumbPage>{currentRoute?.title ?? "Dashboard"}</BreadcrumbPage>
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
@@ -36,14 +44,16 @@ export function AppBreadcrumbs() {
   return (
     <Breadcrumb>
       <BreadcrumbList className="flex-nowrap">
-        <BreadcrumbItem className="hidden sm:inline-flex">
-          <BreadcrumbLink asChild>
-            <Link href={dashboardRoutes.overview}>Overview</Link>
-          </BreadcrumbLink>
-        </BreadcrumbItem>
+        {trail.slice(0, -1).map((route) => (
+          <BreadcrumbItem className="hidden sm:inline-flex" key={route.id}>
+            <BreadcrumbLink asChild>
+              <Link href={route.href}>{route.title}</Link>
+            </BreadcrumbLink>
+          </BreadcrumbItem>
+        ))}
         <BreadcrumbSeparator className="hidden sm:inline-flex" />
         <BreadcrumbItem className="min-w-0">
-          <BreadcrumbPage className="truncate">{route.title}</BreadcrumbPage>
+          <BreadcrumbPage className="truncate">{currentRoute.title}</BreadcrumbPage>
         </BreadcrumbItem>
       </BreadcrumbList>
     </Breadcrumb>

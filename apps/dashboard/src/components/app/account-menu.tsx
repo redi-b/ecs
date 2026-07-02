@@ -17,6 +17,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { cn } from "@/lib/utils";
 
 export function AccountMenu() {
   const { state } = useSidebar();
@@ -31,9 +32,12 @@ export function AccountMenu() {
               size="lg"
               tooltip="Account"
               aria-label="Open account menu"
-              className="rounded-full"
+              className={cn(
+                "rounded-full",
+                "group-data-[collapsible=icon]:size-10! group-data-[collapsible=icon]:p-0!",
+              )}
             >
-              <Avatar size="sm">
+              <Avatar size={collapsed ? "lg" : "sm"} className={cn(collapsed && "size-10")}>
                 <AvatarFallback>EC</AvatarFallback>
               </Avatar>
               <span className="truncate">Merchant account</span>
@@ -41,9 +45,9 @@ export function AccountMenu() {
           </DropdownMenuTrigger>
           <DropdownMenuContent
             side={collapsed ? "right" : "top"}
-            align={collapsed ? "center" : "start"}
-            sideOffset={10}
-            className="w-56 rounded-3xl p-2"
+            align="center"
+            sideOffset={collapsed ? 12 : 16}
+            className="w-56 rounded-2xl p-1.5"
           >
             <DropdownMenuLabel>Merchant account</DropdownMenuLabel>
             <DropdownMenuSeparator />
