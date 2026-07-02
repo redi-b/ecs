@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import { AccountMenu } from "@/components/app/account-menu";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   Sidebar,
   SidebarContent,
@@ -15,6 +16,9 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
   SidebarRail,
 } from "@/components/ui/sidebar";
 import { type AppRoute, appRoutes } from "@/lib/navigation";
@@ -54,12 +58,41 @@ export function AppSidebar() {
             <SidebarMenu>
               {appRoutes.map((route) => {
                 const Icon = route.icon;
+                const active = isRouteActive(pathname, route);
                 const content = (
                   <>
                     <Icon />
                     <span>{route.title}</span>
                   </>
                 );
+
+                if (route.children?.length) {
+                  return (
+                    <Collapsible key={route.id} asChild defaultOpen={active}>
+                      <SidebarMenuItem>
+                        <CollapsibleTrigger asChild>
+                          <SidebarMenuButton isActive={active} tooltip={route.title}>
+                            {content}
+                          </SidebarMenuButton>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down">
+                          <SidebarMenuSub>
+                            {route.children.map((child) => (
+                              <SidebarMenuSubItem key={child.id}>
+                                <SidebarMenuSubButton
+                                  asChild
+                                  isActive={isRouteActive(pathname, child)}
+                                >
+                                  <Link href={child.href}>{child.title}</Link>
+                                </SidebarMenuSubButton>
+                              </SidebarMenuSubItem>
+                            ))}
+                          </SidebarMenuSub>
+                        </CollapsibleContent>
+                      </SidebarMenuItem>
+                    </Collapsible>
+                  );
+                }
 
                 return (
                   <SidebarMenuItem key={route.id}>
@@ -68,11 +101,7 @@ export function AppSidebar() {
                         {content}
                       </SidebarMenuButton>
                     ) : (
-                      <SidebarMenuButton
-                        asChild
-                        isActive={isRouteActive(pathname, route)}
-                        tooltip={route.title}
-                      >
+                      <SidebarMenuButton asChild isActive={active} tooltip={route.title}>
                         <Link href={route.href}>{content}</Link>
                       </SidebarMenuButton>
                     )}
