@@ -7,13 +7,24 @@ import { useEffect, useRef, useState } from "react";
 import { AppIcons } from "@/components/app/icons";
 import { Button } from "@/components/ui/button";
 
-const THEME_SWAP_DELAY_MS = 90;
-const THEME_TRANSITION_DURATION_MS = 320;
+const THEME_SWAP_DELAY_MS = 280;
+const THEME_TRANSITION_DURATION_MS = 380;
+const THEME_BACKGROUND = {
+  dark: "oklch(0.184 0.027 255)",
+  light: "oklch(0.987 0.008 248)",
+} as const;
+
+type ThemeName = keyof typeof THEME_BACKGROUND;
+type TransitionPoint = {
+  x: number;
+  y: number;
+  color: (typeof THEME_BACKGROUND)[ThemeName];
+};
 
 export function ThemeToggle() {
   const { resolvedTheme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
-  const [transitionPoint, setTransitionPoint] = useState<{ x: number; y: number } | null>(null);
+  const [transitionPoint, setTransitionPoint] = useState<TransitionPoint | null>(null);
   const swapTimeoutRef = useRef<number | null>(null);
   const clearTimeoutRef = useRef<number | null>(null);
 
@@ -37,11 +48,12 @@ export function ThemeToggle() {
     ? ({
         "--theme-x": `${transitionPoint.x}px`,
         "--theme-y": `${transitionPoint.y}px`,
+        "--theme-overlay-color": transitionPoint.color,
       } as CSSProperties)
     : undefined;
 
   function toggleTheme(event: MouseEvent<HTMLButtonElement>) {
-    const nextTheme = isDark ? "light" : "dark";
+    const nextTheme: ThemeName = isDark ? "light" : "dark";
     const prefersReducedMotion =
       typeof window.matchMedia === "function" &&
       window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -51,7 +63,11 @@ export function ThemeToggle() {
       return;
     }
 
-    setTransitionPoint({ x: event.clientX, y: event.clientY });
+    setTransitionPoint({
+      x: event.clientX,
+      y: event.clientY,
+      color: THEME_BACKGROUND[nextTheme],
+    });
 
     swapTimeoutRef.current = window.setTimeout(() => {
       setTheme(nextTheme);
