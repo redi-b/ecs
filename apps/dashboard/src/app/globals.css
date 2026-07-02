@@ -182,7 +182,7 @@
     position: fixed;
     inset: 0;
     z-index: 9999;
-    background: var(--background);
+    background: var(--theme-overlay-color, var(--background));
     clip-path: circle(0 at var(--theme-x, 50%) var(--theme-y, 50%));
     opacity: 0;
   }
