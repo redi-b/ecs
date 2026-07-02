@@ -18,14 +18,14 @@ Create or modify these files:
 - Create: `apps/dashboard/components.json` via shadcn initialization.
 - Modify: `apps/dashboard/src/app/layout.tsx` to add font variables, hydration suppression, and app providers.
 - Replace: `apps/dashboard/src/app/globals.css` with shadcn/Tailwind variables, custom blue visual system, motion tokens, and reduced-motion handling.
-- Create: `apps/dashboard/src/app/(dashboard)/layout.tsx` for authenticated dashboard shell layout.
-- Create: `apps/dashboard/src/app/(dashboard)/page.tsx` for merchant overview placeholder.
-- Create: `apps/dashboard/src/app/(dashboard)/products/page.tsx`.
-- Create: `apps/dashboard/src/app/(dashboard)/orders/page.tsx`.
-- Create: `apps/dashboard/src/app/(dashboard)/editor/page.tsx`.
-- Create: `apps/dashboard/src/app/(dashboard)/insights/page.tsx`.
-- Create: `apps/dashboard/src/app/(dashboard)/billing/page.tsx`.
-- Create: `apps/dashboard/src/app/(dashboard)/settings/page.tsx`.
+- Create or modify: `apps/dashboard/src/app/admin/(dashboard)/layout.tsx` for authenticated dashboard shell layout.
+- Create or modify: `apps/dashboard/src/app/admin/(dashboard)/page.tsx` for merchant overview placeholder at `/admin`.
+- Create or modify: `apps/dashboard/src/app/admin/(dashboard)/products/page.tsx`.
+- Create or modify: `apps/dashboard/src/app/admin/(dashboard)/orders/page.tsx`.
+- Create: `apps/dashboard/src/app/admin/(dashboard)/editor/page.tsx`.
+- Create: `apps/dashboard/src/app/admin/(dashboard)/insights/page.tsx`.
+- Create: `apps/dashboard/src/app/admin/(dashboard)/billing/page.tsx`.
+- Create: `apps/dashboard/src/app/admin/(dashboard)/settings/page.tsx`.
 - Create: `apps/dashboard/src/components/providers/app-providers.tsx`.
 - Create: `apps/dashboard/src/components/providers/query-provider.tsx`.
 - Create: `apps/dashboard/src/components/providers/theme-provider.tsx`.
