@@ -1,11 +1,11 @@
 export const dashboardRoutes = {
-  overview: "/",
-  products: "/products",
-  orders: "/orders",
-  editor: "/editor",
-  insights: "/insights",
-  billing: "/billing",
-  settings: "/settings",
+  overview: "/admin",
+  products: "/admin/products",
+  orders: "/admin/orders",
+  editor: "/admin/editor",
+  insights: "/admin/insights",
+  billing: "/admin/billing",
+  settings: "/admin/settings",
 } as const;
 
 export type DashboardRouteHref =

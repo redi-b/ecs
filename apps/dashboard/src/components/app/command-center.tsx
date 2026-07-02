@@ -44,6 +44,7 @@ export function CommandCenter() {
         <Button
           type="button"
           variant="outline"
+          aria-label="Open command center"
           className="justify-start text-muted-foreground"
         >
           <AppIcons.search data-icon="inline-start" />
