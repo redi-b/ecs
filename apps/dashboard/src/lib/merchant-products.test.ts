@@ -146,4 +146,19 @@ describe("getMerchantProducts", () => {
       message: "invalid_products_response",
     });
   });
+
+  it("returns an error when the product request fails", async () => {
+    const result = await getMerchantProducts({
+      platformApiBaseUrl: "http://platform.local",
+      fetcher: async () => {
+        throw new TypeError("fetch failed");
+      },
+    });
+
+    assert.deepEqual(result, {
+      ok: false,
+      status: 503,
+      message: "platform_request_failed",
+    });
+  });
 });

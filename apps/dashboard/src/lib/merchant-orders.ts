@@ -28,7 +28,16 @@ export async function getMerchantOrders(options: {
       cookieHeader: options.cookieHeader,
       requestHost: options.tenantId?.trim() ? undefined : options.requestHost,
     }),
-  });
+  }).catch(() => null);
+
+  if (!response) {
+    return {
+      ok: false,
+      status: 503,
+      message: "platform_request_failed",
+    };
+  }
+
   const data = await response.json().catch(() => undefined);
 
   if (!response.ok) {
