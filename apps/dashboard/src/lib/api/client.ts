@@ -3,7 +3,11 @@ import { DashboardApiError, apiErrorKindFromStatus } from "@/lib/api/errors";
 function createDashboardHeaders(init?: RequestInit) {
   const headers = new Headers(init?.headers);
 
-  if (!headers.has("content-type") && !(init?.body instanceof FormData)) {
+  if (
+    init?.body !== undefined &&
+    !headers.has("content-type") &&
+    !(init.body instanceof FormData)
+  ) {
     headers.set("content-type", "application/json");
   }
 
