@@ -47,7 +47,6 @@ export const appRoutes: AppRoute[] = [
     icon: AppIcons.editor,
     section: "storefront",
     keywords: ["storefront", "theme", "pages", "templates"],
-    disabled: true,
   },
   {
     id: "insights",
@@ -56,7 +55,6 @@ export const appRoutes: AppRoute[] = [
     icon: AppIcons.insights,
     section: "business",
     keywords: ["analytics", "reports", "sales"],
-    disabled: true,
   },
   {
     id: "billing",
@@ -65,7 +63,6 @@ export const appRoutes: AppRoute[] = [
     icon: AppIcons.billing,
     section: "business",
     keywords: ["plan", "subscription", "payments"],
-    disabled: true,
   },
   {
     id: "settings",
@@ -74,7 +71,6 @@ export const appRoutes: AppRoute[] = [
     icon: AppIcons.settings,
     section: "system",
     keywords: ["shop", "account", "preferences"],
-    disabled: true,
   },
 ];
 
