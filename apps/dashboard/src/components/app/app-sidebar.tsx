@@ -17,7 +17,7 @@ import {
   SidebarMenuItem,
   SidebarRail,
 } from "@/components/ui/sidebar";
-import { appRoutes, type AppRoute } from "@/lib/navigation";
+import { type AppRoute, appRoutes } from "@/lib/navigation";
 import { dashboardRoutes } from "@/lib/routes";
 
 function isRouteActive(pathname: string, route: AppRoute) {
@@ -64,11 +64,7 @@ export function AppSidebar() {
                 return (
                   <SidebarMenuItem key={route.id}>
                     {route.disabled ? (
-                      <SidebarMenuButton
-                        disabled
-                        isActive={false}
-                        tooltip={route.title}
-                      >
+                      <SidebarMenuButton disabled isActive={false} tooltip={route.title}>
                         {content}
                       </SidebarMenuButton>
                     ) : (

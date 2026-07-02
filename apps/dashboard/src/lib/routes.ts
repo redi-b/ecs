@@ -8,5 +8,4 @@ export const dashboardRoutes = {
   settings: "/admin/settings",
 } as const;
 
-export type DashboardRouteHref =
-  (typeof dashboardRoutes)[keyof typeof dashboardRoutes];
+export type DashboardRouteHref = (typeof dashboardRoutes)[keyof typeof dashboardRoutes];
