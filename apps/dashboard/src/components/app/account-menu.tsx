@@ -11,22 +11,40 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar";
+import {
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  useSidebar,
+} from "@/components/ui/sidebar";
 
 export function AccountMenu() {
+  const { state } = useSidebar();
+  const collapsed = state === "collapsed";
+
   return (
     <SidebarMenu>
       <SidebarMenuItem>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <SidebarMenuButton tooltip="Account" aria-label="Open account menu">
+            <SidebarMenuButton
+              size="lg"
+              tooltip="Account"
+              aria-label="Open account menu"
+              className="rounded-full"
+            >
               <Avatar size="sm">
                 <AvatarFallback>EC</AvatarFallback>
               </Avatar>
-              <span>Merchant account</span>
+              <span className="truncate">Merchant account</span>
             </SidebarMenuButton>
           </DropdownMenuTrigger>
-          <DropdownMenuContent side="right" align="end" className="w-56">
+          <DropdownMenuContent
+            side={collapsed ? "right" : "top"}
+            align={collapsed ? "center" : "start"}
+            sideOffset={10}
+            className="w-56 rounded-3xl p-2"
+          >
             <DropdownMenuLabel>Merchant account</DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>

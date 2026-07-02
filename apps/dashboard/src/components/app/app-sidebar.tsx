@@ -36,26 +36,26 @@ export function AppSidebar() {
   const pathname = usePathname();
 
   return (
-    <Sidebar collapsible="icon">
-      <SidebarHeader>
+    <Sidebar collapsible="icon" className="border-r">
+      <SidebarHeader className="p-3 group-data-[collapsible=icon]:p-2">
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton asChild tooltip="ECS">
+            <SidebarMenuButton size="lg" asChild tooltip="ECS" className="rounded-xl">
               <Link href={dashboardRoutes.overview}>
-                <span className="grid size-7 place-items-center rounded-md bg-primary text-sm font-semibold text-primary-foreground">
+                <span className="grid size-8 shrink-0 place-items-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
                   E
                 </span>
-                <span className="font-semibold">ECS</span>
+                <span className="truncate font-semibold">ECS</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <SidebarGroup>
+        <SidebarGroup className="px-3 group-data-[collapsible=icon]:px-2">
           <SidebarGroupLabel>Merchant</SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className="gap-1">
               {appRoutes.map((route) => {
                 const Icon = route.icon;
                 const active = isRouteActive(pathname, route);
@@ -71,7 +71,11 @@ export function AppSidebar() {
                     <Collapsible key={route.id} asChild defaultOpen={active}>
                       <SidebarMenuItem>
                         <CollapsibleTrigger asChild>
-                          <SidebarMenuButton isActive={active} tooltip={route.title}>
+                          <SidebarMenuButton
+                            isActive={active}
+                            tooltip={route.title}
+                            className="rounded-xl"
+                          >
                             {content}
                           </SidebarMenuButton>
                         </CollapsibleTrigger>
@@ -97,11 +101,21 @@ export function AppSidebar() {
                 return (
                   <SidebarMenuItem key={route.id}>
                     {route.disabled ? (
-                      <SidebarMenuButton disabled isActive={false} tooltip={route.title}>
+                      <SidebarMenuButton
+                        disabled
+                        isActive={false}
+                        tooltip={route.title}
+                        className="rounded-xl"
+                      >
                         {content}
                       </SidebarMenuButton>
                     ) : (
-                      <SidebarMenuButton asChild isActive={active} tooltip={route.title}>
+                      <SidebarMenuButton
+                        asChild
+                        isActive={active}
+                        tooltip={route.title}
+                        className="rounded-xl"
+                      >
                         <Link href={route.href}>{content}</Link>
                       </SidebarMenuButton>
                     )}
@@ -112,7 +126,7 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter>
+      <SidebarFooter className="p-3 group-data-[collapsible=icon]:p-2">
         <AccountMenu />
       </SidebarFooter>
       <SidebarRail />

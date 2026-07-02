@@ -11,19 +11,22 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
-import { findRouteByHref } from "@/lib/navigation";
+import { appRoutes } from "@/lib/navigation";
 import { dashboardRoutes } from "@/lib/routes";
 
 export function AppBreadcrumbs() {
   const pathname = usePathname();
-  const route = findRouteByHref(pathname);
+  const route =
+    appRoutes
+      .filter((item) => pathname === item.href || pathname.startsWith(`${item.href}/`))
+      .sort((a, b) => b.href.length - a.href.length)[0] ?? null;
 
   if (!route || route.href === dashboardRoutes.overview) {
     return (
       <Breadcrumb>
         <BreadcrumbList>
           <BreadcrumbItem>
-            <BreadcrumbPage>Overview</BreadcrumbPage>
+            <BreadcrumbPage>{route?.title ?? "Dashboard"}</BreadcrumbPage>
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
