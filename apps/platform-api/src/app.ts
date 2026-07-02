@@ -602,7 +602,13 @@ export type TenantCommerceContextResult =
     }
   | {
       ok: false;
-      error: "tenant_not_found" | "commerce_sales_channel_unavailable";
+      error:
+        | "tenant_not_found"
+        | "commerce_store_unavailable"
+        | "commerce_sales_channel_unavailable"
+        | "inventory_location_unavailable"
+        | "commerce_publishable_key_unavailable"
+        | "commerce_region_unavailable";
       status: 404 | 503;
     };
 

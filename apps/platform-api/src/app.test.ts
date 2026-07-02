@@ -5902,6 +5902,117 @@ describe("platform app", () => {
     });
   });
 
+  it("returns a commerce setup error when merchant product routes lack a sales channel", async () => {
+    let productCalls = 0;
+    const app = appWithResolution(
+      {
+        ok: true,
+        context: {
+          ...resolvedTenantContext,
+          medusaSalesChannelId: null,
+        },
+      },
+      {
+        authorizeDashboardForTenant: async () => ({
+          ok: true,
+          actor: {
+            id: "user_1",
+            email: "owner@abebe.local",
+            name: "Abebe Owner",
+            role: "owner",
+          },
+        }),
+        getSession: async () => ({
+          user: {
+            id: "user_1",
+            email: "owner@abebe.local",
+            name: "Abebe Owner",
+          },
+        }),
+        listMerchantProducts: async () => {
+          productCalls += 1;
+
+          return {
+            ok: true,
+            count: 0,
+            limit: 20,
+            offset: 0,
+            products: [],
+          };
+        },
+      },
+    );
+
+    const response = await app.request("/platform/merchant/products", {
+      headers: {
+        Host: "abebe.lvh.me",
+      },
+    });
+
+    assert.equal(response.status, 503);
+    assert.deepEqual(await response.json(), {
+      error: "commerce_sales_channel_unavailable",
+    });
+    assert.equal(productCalls, 0);
+  });
+
+  it("returns a commerce setup error when merchant product creation lacks a region", async () => {
+    let productCalls = 0;
+    const app = appWithResolution(
+      {
+        ok: true,
+        context: {
+          ...resolvedTenantContext,
+          medusaRegionId: null,
+        },
+      },
+      {
+        authorizeDashboardForTenant: async () => ({
+          ok: true,
+          actor: {
+            id: "user_1",
+            email: "owner@abebe.local",
+            name: "Abebe Owner",
+            role: "owner",
+          },
+        }),
+        getSession: async () => ({
+          user: {
+            id: "user_1",
+            email: "owner@abebe.local",
+            name: "Abebe Owner",
+          },
+        }),
+        createMerchantProduct: async () => {
+          productCalls += 1;
+
+          return {
+            ok: false,
+            error: "commerce_backend_unavailable",
+            status: 503,
+          };
+        },
+      },
+    );
+
+    const response = await app.request("/platform/merchant/products", {
+      body: JSON.stringify({
+        title: "Coffee",
+      }),
+      headers: {
+        "content-type": "application/json",
+        Host: "abebe.lvh.me",
+      },
+      method: "POST",
+    });
+
+    assert.equal(response.status, 503);
+    assert.deepEqual(await response.json(), {
+      error: "commerce_region_unavailable",
+    });
+    assert.equal(productCalls, 0);
+  });
+
   it("rejects product access without active membership for the resolved tenant", async () => {
     let productCalls = 0;
     const app = appWithResolution(

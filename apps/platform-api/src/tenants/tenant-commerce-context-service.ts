@@ -13,6 +13,79 @@ import type { TenantCommerceContextResult, TenantDashboardSummaryResult } from "
 
 type PlatformDb = ReturnType<typeof createPlatformDb>["db"];
 
+type TenantCommerceContextRow = {
+  id: string;
+  medusaStoreId: string | null;
+  medusaSalesChannelId: string | null;
+  medusaStockLocationId: string | null;
+  medusaPublishableKeyId: string | null;
+  medusaRegionId: string | null;
+};
+
+export function buildTenantCommerceContext(
+  row: TenantCommerceContextRow | undefined,
+): TenantCommerceContextResult {
+  if (!row) {
+    return {
+      ok: false,
+      error: "tenant_not_found",
+      status: 404,
+    };
+  }
+
+  if (!row.medusaStoreId) {
+    return {
+      ok: false,
+      error: "commerce_store_unavailable",
+      status: 503,
+    };
+  }
+
+  if (!row.medusaSalesChannelId) {
+    return {
+      ok: false,
+      error: "commerce_sales_channel_unavailable",
+      status: 503,
+    };
+  }
+
+  if (!row.medusaStockLocationId) {
+    return {
+      ok: false,
+      error: "inventory_location_unavailable",
+      status: 503,
+    };
+  }
+
+  if (!row.medusaPublishableKeyId) {
+    return {
+      ok: false,
+      error: "commerce_publishable_key_unavailable",
+      status: 503,
+    };
+  }
+
+  if (!row.medusaRegionId) {
+    return {
+      ok: false,
+      error: "commerce_region_unavailable",
+      status: 503,
+    };
+  }
+
+  return {
+    ok: true,
+    context: {
+      tenantId: row.id,
+      medusaStoreId: row.medusaStoreId,
+      medusaSalesChannelId: row.medusaSalesChannelId,
+      medusaStockLocationId: row.medusaStockLocationId,
+      medusaPublishableKeyId: row.medusaPublishableKeyId,
+      medusaRegionId: row.medusaRegionId,
+    },
+  };
+}
+
 export function createTenantCommerceContextService(db: PlatformDb) {
   return async function getTenantCommerceContext(input: {
     tenantId: string;
@@ -40,33 +113,7 @@ export function createTenantCommerceContextService(db: PlatformDb) {
       )
       .limit(1);
 
-    if (!row) {
-      return {
-        ok: false,
-        error: "tenant_not_found",
-        status: 404,
-      };
-    }
-
-    if (!row.medusaSalesChannelId) {
-      return {
-        ok: false,
-        error: "commerce_sales_channel_unavailable",
-        status: 503,
-      };
-    }
-
-    return {
-      ok: true,
-      context: {
-        tenantId: row.id,
-        medusaStoreId: row.medusaStoreId,
-        medusaSalesChannelId: row.medusaSalesChannelId,
-        medusaStockLocationId: row.medusaStockLocationId,
-        medusaPublishableKeyId: row.medusaPublishableKeyId,
-        medusaRegionId: row.medusaRegionId,
-      },
-    };
+    return buildTenantCommerceContext(row);
   };
 }
 

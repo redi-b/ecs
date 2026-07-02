@@ -60,6 +60,65 @@ export function registerMerchantRoutes(
     };
   }
 
+  type ResolvedMerchantCommerceContext = {
+    medusaStoreId: string;
+    medusaSalesChannelId: string;
+    medusaStockLocationId: string | null;
+    medusaRegionId: string | null;
+  };
+
+  function getResolvedCommerce(
+    context: {
+      medusaStoreId: string | null;
+      medusaSalesChannelId: string | null;
+      medusaStockLocationId: string | null;
+      medusaRegionId: string | null;
+    },
+    requirements?: {
+      requireRegion?: boolean | undefined;
+      requireStockLocation?: boolean | undefined;
+    },
+  ):
+    | {
+        ok: true;
+        context: ResolvedMerchantCommerceContext;
+      }
+    | {
+        ok: false;
+        error:
+          | "commerce_store_unavailable"
+          | "commerce_sales_channel_unavailable"
+          | "inventory_location_unavailable"
+          | "commerce_region_unavailable";
+        status: 503;
+      } {
+    if (!context.medusaStoreId) {
+      return { ok: false, error: "commerce_store_unavailable", status: 503 };
+    }
+
+    if (!context.medusaSalesChannelId) {
+      return { ok: false, error: "commerce_sales_channel_unavailable", status: 503 };
+    }
+
+    if (requirements?.requireStockLocation && !context.medusaStockLocationId) {
+      return { ok: false, error: "inventory_location_unavailable", status: 503 };
+    }
+
+    if (requirements?.requireRegion && !context.medusaRegionId) {
+      return { ok: false, error: "commerce_region_unavailable", status: 503 };
+    }
+
+    return {
+      ok: true,
+      context: {
+        medusaStoreId: context.medusaStoreId,
+        medusaSalesChannelId: context.medusaSalesChannelId,
+        medusaStockLocationId: context.medusaStockLocationId,
+        medusaRegionId: context.medusaRegionId,
+      },
+    };
+  }
+
   app.get("/platform/merchant/dashboard", async (context) => {
     const session = await options.getSession?.(context.req.raw.headers);
 
@@ -217,8 +276,12 @@ export function registerMerchantRoutes(
       return context.json({ error: "dashboard_forbidden" }, 403);
     }
 
-    if (!result.context.medusaSalesChannelId) {
-      return context.json({ error: "domain_misconfigured" }, 409);
+    const commerce = getResolvedCommerce(result.context, {
+      requireRegion: true,
+    });
+
+    if (!commerce.ok) {
+      return context.json({ error: commerce.error }, commerce.status);
     }
 
     if (!options.createMerchantProduct) {
@@ -241,13 +304,13 @@ export function registerMerchantRoutes(
       imageUrls: getOptionalBodyStringArray(body, "imageUrls"),
       priceAmount: getOptionalBodyNumber(body, "priceAmount"),
       currencyCode: getOptionalBodyString(body, "currencyCode") ?? "etb",
-      regionId: result.context.medusaRegionId,
+      regionId: commerce.context.medusaRegionId,
       status: getOptionalBodyString(body, "status"),
       ...(result.context.medusaStockLocationId
         ? { stockLocationId: result.context.medusaStockLocationId }
         : {}),
       thumbnail: getOptionalBodyString(body, "thumbnail"),
-      salesChannelId: result.context.medusaSalesChannelId,
+      salesChannelId: commerce.context.medusaSalesChannelId,
     });
 
     if (!product.ok) {
@@ -284,8 +347,10 @@ export function registerMerchantRoutes(
       return context.json({ error: "dashboard_forbidden" }, 403);
     }
 
-    if (!result.context.medusaSalesChannelId) {
-      return context.json({ error: "domain_misconfigured" }, 409);
+    const commerce = getResolvedCommerce(result.context);
+
+    if (!commerce.ok) {
+      return context.json({ error: commerce.error }, commerce.status);
     }
 
     if (!options.listMerchantOrders) {
@@ -295,7 +360,7 @@ export function registerMerchantRoutes(
     const orders = await options.listMerchantOrders({
       limit: getPaginationValue(context.req.query("limit"), 20, 100),
       offset: getPaginationValue(context.req.query("offset"), 0, 10_000),
-      salesChannelId: result.context.medusaSalesChannelId,
+      salesChannelId: commerce.context.medusaSalesChannelId,
     });
 
     if (!orders.ok) {
@@ -335,8 +400,10 @@ export function registerMerchantRoutes(
       return context.json({ error: "dashboard_forbidden" }, 403);
     }
 
-    if (!result.context.medusaSalesChannelId) {
-      return context.json({ error: "domain_misconfigured" }, 409);
+    const commerce = getResolvedCommerce(result.context);
+
+    if (!commerce.ok) {
+      return context.json({ error: commerce.error }, commerce.status);
     }
 
     if (!options.getMerchantOrder) {
@@ -345,7 +412,7 @@ export function registerMerchantRoutes(
 
     const order = await options.getMerchantOrder({
       orderId: context.req.param("orderId"),
-      salesChannelId: result.context.medusaSalesChannelId,
+      salesChannelId: commerce.context.medusaSalesChannelId,
     });
 
     if (!order.ok) {
@@ -371,12 +438,12 @@ export function registerMerchantRoutes(
       return merchant.response;
     }
 
-    if (!merchant.result.context.medusaSalesChannelId) {
-      return context.json({ error: "domain_misconfigured" }, 409);
-    }
+    const commerce = getResolvedCommerce(merchant.result.context, {
+      requireStockLocation: action === "fulfill",
+    });
 
-    if (action === "fulfill" && !merchant.result.context.medusaStockLocationId) {
-      return context.json({ error: "inventory_location_unavailable" }, 503);
+    if (!commerce.ok) {
+      return context.json({ error: commerce.error }, commerce.status);
     }
 
     const orderId = context.req.param("orderId");
@@ -394,9 +461,9 @@ export function registerMerchantRoutes(
       action,
       ...(action === "deliver" ? { fulfillmentId } : {}),
       orderId,
-      salesChannelId: merchant.result.context.medusaSalesChannelId,
+      salesChannelId: commerce.context.medusaSalesChannelId,
       ...(action === "fulfill"
-        ? { stockLocationId: merchant.result.context.medusaStockLocationId ?? undefined }
+        ? { stockLocationId: commerce.context.medusaStockLocationId ?? undefined }
         : {}),
     });
 
@@ -450,8 +517,10 @@ export function registerMerchantRoutes(
       return context.json({ error: "dashboard_forbidden" }, 403);
     }
 
-    if (!result.context.medusaSalesChannelId) {
-      return context.json({ error: "domain_misconfigured" }, 409);
+    const commerce = getResolvedCommerce(result.context);
+
+    if (!commerce.ok) {
+      return context.json({ error: commerce.error }, commerce.status);
     }
 
     if (!options.listMerchantProducts) {
@@ -461,7 +530,7 @@ export function registerMerchantRoutes(
     const products = await options.listMerchantProducts({
       limit: getPaginationValue(context.req.query("limit"), 20, 100),
       offset: getPaginationValue(context.req.query("offset"), 0, 10_000),
-      salesChannelId: result.context.medusaSalesChannelId,
+      salesChannelId: commerce.context.medusaSalesChannelId,
     });
 
     if (!products.ok) {
@@ -483,8 +552,10 @@ export function registerMerchantRoutes(
       return merchant.response;
     }
 
-    if (!merchant.result.context.medusaSalesChannelId) {
-      return context.json({ error: "domain_misconfigured" }, 409);
+    const commerce = getResolvedCommerce(merchant.result.context);
+
+    if (!commerce.ok) {
+      return context.json({ error: commerce.error }, commerce.status);
     }
 
     if (!options.getMerchantProduct) {
@@ -493,7 +564,7 @@ export function registerMerchantRoutes(
 
     const product = await options.getMerchantProduct({
       productId: context.req.param("productId"),
-      salesChannelId: merchant.result.context.medusaSalesChannelId,
+      salesChannelId: commerce.context.medusaSalesChannelId,
     });
 
     if (!product.ok) {
@@ -530,22 +601,28 @@ export function registerMerchantRoutes(
       return context.json({ error: "dashboard_forbidden" }, 403);
     }
 
-    if (!result.context.medusaSalesChannelId) {
-      return context.json({ error: "domain_misconfigured" }, 409);
-    }
+    const commerce = getResolvedCommerce(result.context, {
+      requireStockLocation: true,
+    });
 
-    if (!result.context.medusaStockLocationId) {
-      return context.json({ error: "inventory_location_unavailable" }, 503);
+    if (!commerce.ok) {
+      return context.json({ error: commerce.error }, commerce.status);
     }
 
     if (!options.getMerchantProductStock) {
       return context.json({ error: "commerce_backend_unavailable" }, 503);
     }
 
+    const stockLocationId = commerce.context.medusaStockLocationId;
+
+    if (!stockLocationId) {
+      return context.json({ error: "inventory_location_unavailable" }, 503);
+    }
+
     const stock = await options.getMerchantProductStock({
       productId: context.req.param("productId"),
-      salesChannelId: result.context.medusaSalesChannelId,
-      stockLocationId: result.context.medusaStockLocationId,
+      salesChannelId: commerce.context.medusaSalesChannelId,
+      stockLocationId,
     });
 
     if (!stock.ok) {
@@ -582,12 +659,12 @@ export function registerMerchantRoutes(
       return context.json({ error: "dashboard_forbidden" }, 403);
     }
 
-    if (!result.context.medusaSalesChannelId) {
-      return context.json({ error: "domain_misconfigured" }, 409);
-    }
+    const commerce = getResolvedCommerce(result.context, {
+      requireStockLocation: true,
+    });
 
-    if (!result.context.medusaStockLocationId) {
-      return context.json({ error: "inventory_location_unavailable" }, 503);
+    if (!commerce.ok) {
+      return context.json({ error: commerce.error }, commerce.status);
     }
 
     if (!options.updateMerchantProductStock) {
@@ -601,10 +678,16 @@ export function registerMerchantRoutes(
       return context.json({ error: "invalid_stocked_quantity" }, 400);
     }
 
+    const stockLocationId = commerce.context.medusaStockLocationId;
+
+    if (!stockLocationId) {
+      return context.json({ error: "inventory_location_unavailable" }, 503);
+    }
+
     const stock = await options.updateMerchantProductStock({
       productId: context.req.param("productId"),
-      salesChannelId: result.context.medusaSalesChannelId,
-      stockLocationId: result.context.medusaStockLocationId,
+      salesChannelId: commerce.context.medusaSalesChannelId,
+      stockLocationId,
       stockedQuantity,
     });
 
@@ -642,8 +725,10 @@ export function registerMerchantRoutes(
       return context.json({ error: "dashboard_forbidden" }, 403);
     }
 
-    if (!result.context.medusaSalesChannelId) {
-      return context.json({ error: "domain_misconfigured" }, 409);
+    const commerce = getResolvedCommerce(result.context);
+
+    if (!commerce.ok) {
+      return context.json({ error: commerce.error }, commerce.status);
     }
 
     if (!options.updateMerchantProduct) {
@@ -661,7 +746,7 @@ export function registerMerchantRoutes(
       imageUrls: getOptionalBodyStringArray(body, "imageUrls"),
       status: getOptionalBodyString(body, "status"),
       thumbnail: getOptionalBodyString(body, "thumbnail"),
-      salesChannelId: result.context.medusaSalesChannelId,
+      salesChannelId: commerce.context.medusaSalesChannelId,
     });
 
     if (!product.ok) {
