@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+
 import { AppIcons } from "@/components/app/icons";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -22,16 +24,33 @@ import { cn } from "@/lib/utils";
 export function AccountMenu() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [suppressTooltip, setSuppressTooltip] = useState(false);
+
+  function handleMenuOpenChange(open: boolean) {
+    setMenuOpen(open);
+
+    if (open) {
+      setSuppressTooltip(true);
+      return;
+    }
+
+    if (collapsed) {
+      setSuppressTooltip(true);
+    }
+  }
 
   return (
     <SidebarMenu>
       <SidebarMenuItem>
-        <DropdownMenu>
+        <DropdownMenu open={menuOpen} onOpenChange={handleMenuOpenChange}>
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton
               size="lg"
-              tooltip="Account"
               aria-label="Open account menu"
+              onPointerLeave={() => setSuppressTooltip(false)}
+              onBlur={() => setSuppressTooltip(false)}
+              {...(suppressTooltip ? {} : { tooltip: "Account" })}
               className={cn(
                 "rounded-full",
                 "group-data-[collapsible=icon]:size-8! group-data-[collapsible=icon]:p-0!",
