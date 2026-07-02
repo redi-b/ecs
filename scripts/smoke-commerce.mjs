@@ -1,4 +1,5 @@
 const platformApiUrl = normalizeBaseUrl(process.env.PLATFORM_API_URL ?? "http://localhost:3000");
+const platformOrigin = process.env.PLATFORM_ORIGIN ?? "http://dashboard.lvh.me";
 const ownerEmail = process.env.SMOKE_OWNER_EMAIL ?? "owner@abebe.local";
 const ownerPassword = process.env.SMOKE_OWNER_PASSWORD ?? "password1234";
 const runId = process.env.SMOKE_RUN_ID ?? Date.now().toString(36);
@@ -117,6 +118,7 @@ async function requestJson(method, path, body) {
     body: body === undefined ? undefined : JSON.stringify(body),
     headers: {
       ...(body === undefined ? {} : { "content-type": "application/json" }),
+      origin: platformOrigin,
       ...cookieHeader(),
     },
     method,

@@ -149,6 +149,7 @@ pnpm smoke:commerce
 The smoke script uses these defaults:
 
 - `PLATFORM_API_URL=http://localhost:3000`
+- `PLATFORM_ORIGIN=http://dashboard.lvh.me`
 - `SMOKE_OWNER_EMAIL=owner@abebe.local`
 - `SMOKE_OWNER_PASSWORD=password1234`
 
