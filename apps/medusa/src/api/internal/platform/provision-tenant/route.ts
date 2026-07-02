@@ -4,6 +4,7 @@ import {
   type ProvisionTenantCommerceResourcesInput,
   provisionTenantCommerceResourcesWorkflow,
 } from "../../../../workflows/provision-tenant-commerce-resources";
+import { findExistingTenantCommerceResources } from "./idempotency";
 
 function getInternalToken(request: MedusaRequest) {
   return request.headers["x-platform-internal-token"];
@@ -50,14 +51,25 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
     });
   }
 
-  const { result } = await provisionTenantCommerceResourcesWorkflow(req.scope).run({
-    input: {
-      handle: req.body.handle.trim(),
-      name: req.body.name.trim(),
-      platformTenantId: req.body.platformTenantId.trim(),
-      requestedByUserId: req.body.requestedByUserId.trim(),
-    },
+  const input = {
+    handle: req.body.handle.trim(),
+    name: req.body.name.trim(),
+    platformTenantId: req.body.platformTenantId.trim(),
+    requestedByUserId: req.body.requestedByUserId.trim(),
+  };
+
+  const existingResources = await findExistingTenantCommerceResources({
+    input,
+    query: req.scope.resolve("query"),
   });
+
+  if (existingResources) {
+    return res.status(200).json({
+      resources: existingResources,
+    });
+  }
+
+  const { result } = await provisionTenantCommerceResourcesWorkflow(req.scope).run({ input });
 
   return res.status(201).json({
     resources: result,

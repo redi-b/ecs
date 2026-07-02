@@ -114,6 +114,7 @@ type TenantShopProvisioningRetryOptions = {
     handle: string;
     name: string;
     ownerUserId: string;
+    platformTenantId?: string | undefined;
   }) => Promise<TenantShopProvisioningResult>;
   findProvisioningAttemptForRetry: (attemptId: string) => Promise<
     | {
@@ -121,6 +122,7 @@ type TenantShopProvisioningRetryOptions = {
         id: string;
         name: string;
         ownerUserId: string;
+        platformTenantId: string;
         status: string;
         tenantId: string | null;
       }
@@ -183,6 +185,7 @@ export function createTenantShopProvisioner(options: TenantShopProvisionerOption
     handle: string;
     name: string;
     ownerUserId: string;
+    platformTenantId?: string | undefined;
   }): Promise<TenantShopProvisioningResult> {
     const handle = normalizeHandle(input.handle);
     const name = input.name.trim();
@@ -241,7 +244,7 @@ export function createTenantShopProvisioner(options: TenantShopProvisionerOption
       };
     }
 
-    const tenantId = crypto.randomUUID();
+    const tenantId = input.platformTenantId ?? crypto.randomUUID();
     const commerceResources = await options.provisionCommerceResources({
       handle,
       name,
@@ -586,6 +589,7 @@ export function createTenantShopProvisioningRetryService(
       handle: attempt.handle,
       name: attempt.name,
       ownerUserId: input.userId,
+      platformTenantId: attempt.platformTenantId,
     });
   };
 }
@@ -615,6 +619,7 @@ export function createTenantShopProvisioningRetryServiceFromDb(options: {
           handle: tenantProvisioningAttempts.handle,
           metadata: tenantProvisioningAttempts.metadata,
           ownerUserId: tenantProvisioningAttempts.ownerUserId,
+          platformTenantId: tenantProvisioningAttempts.platformTenantId,
           status: tenantProvisioningAttempts.status,
           tenantId: tenantProvisioningAttempts.tenantId,
         })
@@ -631,6 +636,7 @@ export function createTenantShopProvisioningRetryServiceFromDb(options: {
         handle: attempt.handle,
         name: getRetryAttemptName(attempt.metadata, attempt.handle),
         ownerUserId: attempt.ownerUserId,
+        platformTenantId: attempt.platformTenantId,
         status: attempt.status,
         tenantId: attempt.tenantId,
       };

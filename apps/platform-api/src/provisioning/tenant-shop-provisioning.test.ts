@@ -181,6 +181,65 @@ describe("createTenantShopProvisioner", () => {
     ]);
   });
 
+  it("uses a supplied platform tenant id when provisioning a shop", async () => {
+    let createdTenantId: string | undefined;
+    let commercePlatformTenantId: string | undefined;
+    const createTenantShop = createTenantShopProvisioner({
+      createTenantShopRecord: async (input) => {
+        createdTenantId = input.tenantId;
+
+        return {
+          id: input.tenantId,
+          name: input.name,
+          handle: input.handle,
+          status: "draft",
+          primaryDomain: {
+            hostname: input.hostname,
+          },
+        };
+      },
+      findActiveStorefrontTemplate: async () => ({
+        templateId: "template_1",
+        templateVersion: 1,
+        defaultData: {},
+        defaultThemeTokens: {},
+      }),
+      findExistingTenantByHandle: async () => undefined,
+      isDomainHostnameTaken: async () => false,
+      isHandleReserved: async () => false,
+      platformBaseDomain: "lvh.me",
+      provisionCommerceResources: async (input) => {
+        commercePlatformTenantId = input.platformTenantId;
+
+        return {
+          ok: true,
+          resources: {
+            storeId: "store_1",
+            salesChannelId: "sc_1",
+            stockLocationId: "sloc_1",
+            publishableKeyId: "apk_1",
+            regionId: "reg_1",
+            shippingProfileId: "shp_1",
+            fulfillmentSetId: "fuset_1",
+            serviceZoneId: "serzo_1",
+            shippingOptionId: "so_1",
+          },
+        };
+      },
+    });
+
+    const result = await createTenantShop({
+      handle: "retry-shop",
+      name: "Retry Shop",
+      ownerUserId: "user_1",
+      platformTenantId: "00000000-0000-4000-8000-000000000001",
+    });
+
+    assert.equal(result.ok, true);
+    assert.equal(createdTenantId, "00000000-0000-4000-8000-000000000001");
+    assert.equal(commercePlatformTenantId, "00000000-0000-4000-8000-000000000001");
+  });
+
   it("records a failed commerce provisioning attempt", async () => {
     const attempts: {
       error?: string | null | undefined;
@@ -240,7 +299,14 @@ describe("createTenantShopProvisioner", () => {
 
 describe("createTenantShopProvisioningRetryService", () => {
   it("retries a failed provisioning attempt for the original owner", async () => {
-    let createInput: { handle: string; name: string; ownerUserId: string } | undefined;
+    let createInput:
+      | {
+          handle: string;
+          name: string;
+          ownerUserId: string;
+          platformTenantId?: string | undefined;
+        }
+      | undefined;
     const retryProvisioning = createTenantShopProvisioningRetryService({
       createTenantShop: async (input) => {
         createInput = input;
@@ -266,6 +332,7 @@ describe("createTenantShopProvisioningRetryService", () => {
           handle: "retry-shop",
           name: "Retry Shop",
           ownerUserId: "user_1",
+          platformTenantId: "00000000-0000-4000-8000-000000000001",
           status: "failed",
           tenantId: null,
         };
@@ -294,6 +361,7 @@ describe("createTenantShopProvisioningRetryService", () => {
       handle: "retry-shop",
       name: "Retry Shop",
       ownerUserId: "user_1",
+      platformTenantId: "00000000-0000-4000-8000-000000000001",
     });
   });
 
@@ -307,6 +375,7 @@ describe("createTenantShopProvisioningRetryService", () => {
         handle: "retry-shop",
         name: "Retry Shop",
         ownerUserId: "user_2",
+        platformTenantId: "00000000-0000-4000-8000-000000000001",
         status: "failed",
         tenantId: null,
       }),

@@ -8,7 +8,7 @@
     "dev:worker": "XDG_CONFIG_HOME=../../.cache/xdg MEDUSA_TELEMETRY_DISABLED=true DISABLE_MEDUSA_ADMIN=true MEDUSA_WORKER_MODE=worker PORT=9001 medusa develop",
     "build": "XDG_CONFIG_HOME=../../.cache/xdg MEDUSA_TELEMETRY_DISABLED=true DISABLE_MEDUSA_ADMIN=true medusa build",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "echo \"No medusa tests yet\"",
+    "test": "node --import tsx --test \"src/**/*.test.ts\"",
     "db:generate": "XDG_CONFIG_HOME=../../.cache/xdg MEDUSA_TELEMETRY_DISABLED=true DISABLE_MEDUSA_ADMIN=true medusa db:generate",
     "db:migrate": "XDG_CONFIG_HOME=../../.cache/xdg MEDUSA_TELEMETRY_DISABLED=true DISABLE_MEDUSA_ADMIN=true medusa db:migrate",
     "seed": "XDG_CONFIG_HOME=../../.cache/xdg MEDUSA_TELEMETRY_DISABLED=true DISABLE_MEDUSA_ADMIN=true medusa exec ./src/scripts/seed.ts",
