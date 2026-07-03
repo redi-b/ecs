@@ -175,7 +175,7 @@ export const merchantProductCategorySchema = z.object({
 });
 
 export const merchantProductCategoriesSchema = z.object({
-  productCategories: z.array(merchantProductCategorySchema),
+  categories: z.array(merchantProductCategorySchema),
   count: z.number().int().nonnegative(),
   limit: z.number().int().positive(),
   offset: z.number().int().nonnegative(),
@@ -190,7 +190,7 @@ export const merchantProductCollectionSchema = z.object({
 });
 
 export const merchantProductCollectionsSchema = z.object({
-  productCollections: z.array(merchantProductCollectionSchema),
+  collections: z.array(merchantProductCollectionSchema),
   count: z.number().int().nonnegative(),
   limit: z.number().int().positive(),
   offset: z.number().int().nonnegative(),
