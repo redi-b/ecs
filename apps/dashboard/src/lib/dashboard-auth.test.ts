@@ -45,6 +45,8 @@ describe("getSafeDashboardPath", () => {
   it("rejects external and non-admin paths", () => {
     assert.equal(getSafeDashboardPath("https://evil.test/admin"), "/admin");
     assert.equal(getSafeDashboardPath("//evil.test/admin"), "/admin");
+    assert.equal(getSafeDashboardPath("/admin/../store"), "/admin");
+    assert.equal(getSafeDashboardPath("/admin/%2e%2e/store"), "/admin");
     assert.equal(getSafeDashboardPath("/store"), "/admin");
     assert.equal(getSafeDashboardPath(""), "/admin");
   });
