@@ -1,10 +1,12 @@
 import { headers } from "next/headers";
 
 import { ListSummary, PaginationControls } from "@/components/app/list-page-controls";
+import { ListSetupState } from "@/components/app/list-error-state";
 import { PageShell } from "@/components/app/page-shell";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { OrdersTable } from "@/features/orders/orders-table";
 import { type DashboardSearchParams, getSelectedTenantId } from "@/lib/dashboard-tenant-context";
+import { getListErrorState } from "@/lib/list-error-state";
 import { getMerchantOrders } from "@/lib/merchant-orders";
 import { dashboardRoutes } from "@/lib/routes";
 import { parseListSearchParams } from "@/lib/url-state";
@@ -27,6 +29,7 @@ export default async function MerchantOrdersPage({ searchParams }: MerchantOrder
     requestHost: requestHeaders.get("host"),
     tenantId,
   });
+  const errorState = result.ok ? null : getListErrorState("orders", result.message);
 
   return (
     <PageShell
@@ -45,10 +48,12 @@ export default async function MerchantOrdersPage({ searchParams }: MerchantOrder
             searchParams={resolvedSearchParams}
           />
         </>
+      ) : errorState?.kind === "setup" || errorState?.kind === "service" ? (
+        <ListSetupState state={errorState} />
       ) : (
         <Alert variant="destructive">
-          <AlertTitle>Orders could not be loaded</AlertTitle>
-          <AlertDescription>{result.message}</AlertDescription>
+          <AlertTitle>{errorState?.title ?? "Orders could not be loaded"}</AlertTitle>
+          <AlertDescription>{errorState?.description ?? result.message}</AlertDescription>
         </Alert>
       )}
     </PageShell>

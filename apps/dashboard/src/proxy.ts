@@ -8,7 +8,7 @@ const excludedAdminPrefixes = [
   "/admin/storefront/template",
 ] as const;
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
 
   if (!isAdminPath(pathname) || isExcludedAdminPath(pathname)) {

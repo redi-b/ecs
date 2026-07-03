@@ -111,6 +111,7 @@ async function signInWithPlatformAuth(input: {
     },
     {
       headers: {
+        origin: `${input.forwardedProto}://${input.forwardedHost}`,
         "x-forwarded-host": input.forwardedHost,
         "x-forwarded-proto": input.forwardedProto,
       },
