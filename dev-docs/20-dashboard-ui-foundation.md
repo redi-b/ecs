@@ -65,13 +65,9 @@ Use TanStack Form for complex forms and Zod for validation, typed parsing, and s
 
 ## Auth And Onboarding Direction
 
-Auth, onboarding, and operator workflows are future coordinated work. Do not fold them into the merchant shell foundation.
+The merchant dashboard now has a coordinated server-side auth boundary. Routes under `/admin` render the merchant shell only after Platform API confirms the Better Auth session and tenant membership. `/admin/sign-in` and `/admin/session` remain outside the shell.
 
-Expected future direction:
-
-- Auth routes remain outside the merchant shell unless a signed-in merchant session is already established.
-- Onboarding should have explicit product states and route ownership instead of being hidden in shell chrome.
-- Operator administration should use a separate shell boundary or a separate dashboard app if the workflows diverge from merchant operations.
+Onboarding and polished auth screens are still future coordinated work. Do not hide onboarding state in shell chrome, and do not mix operator administration into the merchant dashboard shell.
 
 ## Manual Visual QA
 

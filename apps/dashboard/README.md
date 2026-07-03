@@ -21,6 +21,17 @@ Merchant-first Next.js dashboard for ECS shops.
 - API route handlers under `src/app/admin/**/route.ts` are not shell pages.
 - `src/lib/navigation.ts` is the source of truth for sidebar, breadcrumb, command-center, and future page metadata.
 
+## Merchant Auth
+
+Merchant dashboard pages under `/admin` are protected by the server-side dashboard layout. Unauthenticated users are redirected to `/admin/sign-in?next=<path>`.
+
+Local development seed credentials:
+
+- Email: `owner@abebe.local`
+- Password: `password1234`
+
+The dashboard signs in through `POST /admin/session`, which proxies Better Auth email sign-in to Platform API and forwards the Better Auth session cookie back to the browser.
+
 ## Verification
 
 Run targeted checks before committing dashboard foundation changes:
