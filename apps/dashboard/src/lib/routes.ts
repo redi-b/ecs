@@ -1,6 +1,8 @@
 export const dashboardRoutes = {
   overview: "/admin",
   products: "/admin/products",
+  productsNew: "/admin/products/new",
+  productDetail: (productId: string) => `/admin/products/${encodeURIComponent(productId)}`,
   orders: "/admin/orders",
   editor: "/admin/editor",
   insights: "/admin/insights",
@@ -8,4 +10,4 @@ export const dashboardRoutes = {
   settings: "/admin/settings",
 } as const;
 
-export type DashboardRouteHref = (typeof dashboardRoutes)[keyof typeof dashboardRoutes];
+export type DashboardRouteHref = Extract<(typeof dashboardRoutes)[keyof typeof dashboardRoutes], string>;
