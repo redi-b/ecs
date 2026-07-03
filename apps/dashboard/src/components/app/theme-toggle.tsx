@@ -29,8 +29,8 @@ export function ThemeToggle() {
       variant="ghost"
       size="icon"
       aria-label="Toggle theme"
-      disabled={!mounted}
       onClick={toggleTheme}
+      suppressHydrationWarning
     >
       <Icon />
     </Button>

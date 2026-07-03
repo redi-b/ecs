@@ -1,33 +1,33 @@
 {
-  auto_https off
+	auto_https off
 }
 
 http://api.lvh.me {
-  reverse_proxy host.docker.internal:3000
+	reverse_proxy host.docker.internal:3000
 }
 
 http://dashboard.lvh.me {
-  reverse_proxy host.docker.internal:3001
+	reverse_proxy host.docker.internal:3001
 }
 
 http://*.lvh.me {
-  @dashboardAssets path /_next/*
-  handle @dashboardAssets {
-    reverse_proxy host.docker.internal:3001
-  }
+	@dashboardAssets path /_next/* /__nextjs* /favicon.ico
+	handle @dashboardAssets {
+		reverse_proxy host.docker.internal:3001
+	}
 
-  @admin path /admin*
-  handle @admin {
-    reverse_proxy host.docker.internal:3001
-  }
+	@admin path /admin*
+	handle @admin {
+		reverse_proxy host.docker.internal:3001
+	}
 
-  @api path /api/*
-  handle @api {
-    uri strip_prefix /api
-    reverse_proxy host.docker.internal:3000
-  }
+	@api path /api/*
+	handle @api {
+		uri strip_prefix /api
+		reverse_proxy host.docker.internal:3000
+	}
 
-  handle {
-    reverse_proxy host.docker.internal:4321
-  }
+	handle {
+		reverse_proxy host.docker.internal:4321
+	}
 }

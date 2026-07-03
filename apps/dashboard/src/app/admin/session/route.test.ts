@@ -72,6 +72,7 @@ test("POST /admin/session signs in through the Better Auth email endpoint and fo
     password: "password1234",
     rememberMe: true,
   });
+  assert.equal(forwardedRequest?.headers.get("origin"), "http://dashboard.lvh.me");
   assert.equal(forwardedRequest?.headers.get("x-forwarded-host"), "dashboard.lvh.me");
   assert.equal(forwardedRequest?.headers.get("x-forwarded-proto"), "http");
 });

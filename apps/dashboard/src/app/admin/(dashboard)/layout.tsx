@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { cookies } from "next/headers";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
@@ -14,9 +15,12 @@ import {
 } from "@/lib/dashboard-auth";
 import { getSelectedTenantId } from "@/lib/dashboard-tenant-context";
 import { getMerchantDashboardSummary } from "@/lib/merchant-dashboard";
+import { getSidebarDefaultOpen, SIDEBAR_COOKIE_NAME } from "@/lib/sidebar-state";
 
 export default async function AdminDashboardLayout({ children }: { children: ReactNode }) {
   const requestHeaders = await headers();
+  const cookieStore = await cookies();
+  const sidebarDefaultOpen = getSidebarDefaultOpen(cookieStore.get(SIDEBAR_COOKIE_NAME)?.value);
   const currentPath = requestHeaders.get(DASHBOARD_PATH_HEADER) ?? "/admin";
   const tenantId = new URL(currentPath, "http://dashboard.local").searchParams.get("tenantId");
   const access = await getMerchantDashboardAccess({
@@ -55,8 +59,8 @@ export default async function AdminDashboardLayout({ children }: { children: Rea
 
   return (
     <TooltipProvider>
-      <SidebarProvider>
-        <AppSidebar />
+      <SidebarProvider defaultOpen={sidebarDefaultOpen}>
+        <AppSidebar actor={access.summary.actor} />
         <SidebarInset>
           <AppHeader />
           {children}

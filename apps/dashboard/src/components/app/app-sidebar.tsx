@@ -1,5 +1,6 @@
 "use client";
 
+import type { MerchantDashboardSummary } from "@ecs/contracts";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -32,7 +33,7 @@ function isRouteActive(pathname: string, route: AppRoute) {
   return pathname === route.href || pathname.startsWith(`${route.href}/`);
 }
 
-export function AppSidebar() {
+export function AppSidebar({ actor }: { actor: MerchantDashboardSummary["actor"] }) {
   const pathname = usePathname();
 
   return (
@@ -127,7 +128,7 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter className="p-3 group-data-[collapsible=icon]:p-2">
-        <AccountMenu />
+        <AccountMenu actor={actor} />
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>

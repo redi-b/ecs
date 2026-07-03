@@ -3,12 +3,12 @@ import { describe, it } from "node:test";
 import { NextRequest } from "next/server";
 
 import { DASHBOARD_PATH_HEADER } from "./lib/dashboard-auth.js";
-import { middleware } from "./middleware.js";
+import { proxy } from "./proxy.js";
 
-describe("dashboard middleware", () => {
+describe("dashboard proxy", () => {
   it("adds the dashboard path header for protected admin pages", () => {
     const request = new NextRequest("http://abebe.lvh.me/admin/products?page=2");
-    const response = middleware(request);
+    const response = proxy(request);
 
     assert.equal(response.headers.get("x-middleware-next"), "1");
     assert.equal(
@@ -25,7 +25,7 @@ describe("dashboard middleware", () => {
 
   it("does not add the dashboard path header for admin-like prefixes", () => {
     const request = new NextRequest("http://abebe.lvh.me/adminish/products");
-    const response = middleware(request);
+    const response = proxy(request);
 
     assert.equal(response.headers.get("x-middleware-next"), "1");
     assertNoDashboardPathOverride(response);
@@ -38,7 +38,7 @@ describe("dashboard middleware", () => {
   ]) {
     it(`does not add the dashboard path header for ${pathname}`, () => {
       const request = new NextRequest(`http://abebe.lvh.me${pathname}`);
-      const response = middleware(request);
+      const response = proxy(request);
 
       assert.equal(response.headers.get("x-middleware-next"), "1");
       assertNoDashboardPathOverride(response);

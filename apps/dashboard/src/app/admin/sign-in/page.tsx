@@ -1,3 +1,14 @@
+import { SignInForm } from "@/components/app/sign-in-form";
+import { ThemeToggle } from "@/components/app/theme-toggle";
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+
 export default async function AdminSignInPage({
   searchParams,
 }: {
@@ -8,40 +19,24 @@ export default async function AdminSignInPage({
   const errorMessage = getErrorMessage(params?.error);
 
   return (
-    <main className="dashboard-shell auth-shell">
-      <section className="auth-panel panel">
-        <p className="eyebrow">Merchant dashboard</p>
-        <h1>Sign in</h1>
-        <p className="lede">Use an email that belongs to this shop.</p>
-        <form action="/admin/session" className="auth-form" method="post">
-          <input name="next" type="hidden" value={nextPath} />
-          <label className="field-label">
-            Email
-            <input
-              autoComplete="email"
-              className="text-input"
-              defaultValue="owner@abebe.local"
-              name="email"
-              required
-              type="email"
-            />
-          </label>
-          <label className="field-label">
-            Password
-            <input
-              autoComplete="current-password"
-              className="text-input"
-              name="password"
-              required
-              type="password"
-            />
-          </label>
-          {errorMessage ? <p className="form-error">{errorMessage}</p> : null}
-          <button className="primary-button" type="submit">
-            Continue
-          </button>
-        </form>
-      </section>
+    <main className="min-h-screen bg-background px-5 py-8 text-foreground">
+      <div className="mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-md items-center">
+        <Card className="w-full rounded-3xl border border-border/70 bg-card/95 shadow-xl shadow-primary/5 backdrop-blur [--card-spacing:--spacing(5)]">
+          <CardHeader className="gap-1.5">
+            <div className="text-xs font-bold tracking-normal text-muted-foreground uppercase">
+              Merchant dashboard
+            </div>
+            <CardTitle className="text-xl font-semibold">Sign in</CardTitle>
+            <CardDescription>Use an email that belongs to this shop.</CardDescription>
+            <CardAction>
+              <ThemeToggle />
+            </CardAction>
+          </CardHeader>
+          <CardContent className="pt-1">
+            <SignInForm errorMessage={errorMessage} nextPath={nextPath} />
+          </CardContent>
+        </Card>
+      </div>
     </main>
   );
 }
