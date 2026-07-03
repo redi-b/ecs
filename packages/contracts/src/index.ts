@@ -163,7 +163,48 @@ export const merchantProductMutationSchema = z.object({
   product: merchantProductSchema,
 });
 
+export const merchantProductCategorySchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1).nullable(),
+  handle: z.string().min(1).nullable(),
+  isActive: z.boolean(),
+  isInternal: z.boolean(),
+  parentCategoryId: z.string().min(1).nullable(),
+  createdAt: z.string().min(1).nullable(),
+  updatedAt: z.string().min(1).nullable(),
+});
+
+export const merchantProductCategoriesSchema = z.object({
+  productCategories: z.array(merchantProductCategorySchema),
+  count: z.number().int().nonnegative(),
+  limit: z.number().int().positive(),
+  offset: z.number().int().nonnegative(),
+});
+
+export const merchantProductCollectionSchema = z.object({
+  id: z.string().min(1),
+  title: z.string().min(1).nullable(),
+  handle: z.string().min(1).nullable(),
+  createdAt: z.string().min(1).nullable(),
+  updatedAt: z.string().min(1).nullable(),
+});
+
+export const merchantProductCollectionsSchema = z.object({
+  productCollections: z.array(merchantProductCollectionSchema),
+  count: z.number().int().nonnegative(),
+  limit: z.number().int().positive(),
+  offset: z.number().int().nonnegative(),
+});
+
 export type MerchantProduct = z.infer<typeof merchantProductSchema>;
+
+export type MerchantProductCategories = z.infer<typeof merchantProductCategoriesSchema>;
+
+export type MerchantProductCategory = z.infer<typeof merchantProductCategorySchema>;
+
+export type MerchantProductCollection = z.infer<typeof merchantProductCollectionSchema>;
+
+export type MerchantProductCollections = z.infer<typeof merchantProductCollectionsSchema>;
 
 export type MerchantProductMutation = z.infer<typeof merchantProductMutationSchema>;
 
