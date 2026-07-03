@@ -4,7 +4,7 @@
 
 The dashboard foundation is the merchant-first shell for ECS shops. It provides app chrome, route structure, navigation metadata, providers, visual-system rules, and implementation conventions for future dashboard features.
 
-This foundation does not implement product management, order operations, analytics workflows, auth, onboarding, or operator administration. Those workflows must be added as coordinated feature work with their own routes, data contracts, and verification.
+This foundation does not implement product management, order operations, analytics workflows, onboarding, polished auth screens, or operator administration. The server-side merchant auth boundary is coordinated platform work and remains outside the shell.
 
 ## Routing
 

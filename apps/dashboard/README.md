@@ -12,7 +12,7 @@ Merchant-first Next.js dashboard for ECS shops.
 - Use TanStack Query for server state, TanStack Table for data-heavy tables, TanStack Form for complex forms, and Zod for validation schemas and typed parsing.
 - List and table state that affects shareable views must be backed by the URL through shared parsing/serialization helpers.
 - Do not add a fake shop switcher. The dashboard starts with one active shop until real multi-shop capability exists.
-- Do not build auth, onboarding, or operator workflows into the merchant shell foundation. Treat those as future coordinated product and platform work.
+- Do not build onboarding or operator workflows into the merchant shell foundation. Auth boundaries live outside the shell and must remain coordinated with Platform API.
 
 ## Routing And Ownership
 
