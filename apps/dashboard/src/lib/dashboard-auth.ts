@@ -63,15 +63,22 @@ export function getSafeDashboardPath(value: string | null | undefined) {
     return "/admin";
   }
 
-  if (value !== "/admin" && !value.startsWith("/admin/") && !value.startsWith("/admin?")) {
+  const url = new URL(value, "https://dashboard.local");
+
+  if (url.pathname !== "/admin" && !url.pathname.startsWith("/admin/")) {
     return "/admin";
   }
 
-  if (value.startsWith("/admin/sign-in") || value.startsWith("/admin/session")) {
+  if (
+    url.pathname === "/admin/sign-in" ||
+    url.pathname.startsWith("/admin/sign-in/") ||
+    url.pathname === "/admin/session" ||
+    url.pathname.startsWith("/admin/session/")
+  ) {
     return "/admin";
   }
 
-  return value;
+  return `${url.pathname}${url.search}${url.hash}`;
 }
 
 export function getDashboardAuthRedirectPath(nextPath: string | null | undefined) {
