@@ -126,7 +126,7 @@ describe("getMerchantProducts", () => {
         forwardedRequest = new Request(input, init);
 
         return Response.json({
-          productCategories: [
+          categories: [
             {
               id: "pcat_1",
               name: "Coffee",
@@ -152,7 +152,7 @@ describe("getMerchantProducts", () => {
     );
     assert.deepEqual(result, {
       ok: true,
-      productCategories: [
+      categories: [
         {
           id: "pcat_1",
           name: "Coffee",
@@ -170,6 +170,25 @@ describe("getMerchantProducts", () => {
     });
   });
 
+  it("returns an error for product categories without tenant context", async () => {
+    let fetchCalled = false;
+    const result = await getMerchantProductCategories({
+      platformApiBaseUrl: "http://platform.local",
+      fetcher: async () => {
+        fetchCalled = true;
+
+        return Response.json({});
+      },
+    });
+
+    assert.equal(fetchCalled, false);
+    assert.deepEqual(result, {
+      ok: false,
+      status: 400,
+      message: "tenant_required",
+    });
+  });
+
   it("fetches merchant product collections with tenant context", async () => {
     let forwardedRequest: Request | undefined;
     const result = await getMerchantProductCollections({
@@ -179,7 +198,7 @@ describe("getMerchantProducts", () => {
         forwardedRequest = new Request(input, init);
 
         return Response.json({
-          productCollections: [
+          collections: [
             {
               id: "pcol_1",
               title: "Featured",
@@ -202,7 +221,7 @@ describe("getMerchantProducts", () => {
     );
     assert.deepEqual(result, {
       ok: true,
-      productCollections: [
+      collections: [
         {
           id: "pcol_1",
           title: "Featured",
@@ -214,6 +233,25 @@ describe("getMerchantProducts", () => {
       count: 1,
       limit: 100,
       offset: 0,
+    });
+  });
+
+  it("returns an error for product collections without tenant context", async () => {
+    let fetchCalled = false;
+    const result = await getMerchantProductCollections({
+      platformApiBaseUrl: "http://platform.local",
+      fetcher: async () => {
+        fetchCalled = true;
+
+        return Response.json({});
+      },
+    });
+
+    assert.equal(fetchCalled, false);
+    assert.deepEqual(result, {
+      ok: false,
+      status: 400,
+      message: "tenant_required",
     });
   });
 
