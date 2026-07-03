@@ -3,12 +3,13 @@ import { NextResponse } from "next/server";
 
 import { appendTenantRedirectParams } from "../../../../lib/dashboard-tenant-context";
 import { createMerchantProduct } from "../../../../lib/merchant-products";
+import { getProductFormInput } from "../../../../lib/product-form-data";
 
 export async function POST(request: Request) {
   const formData = await request.formData();
-  const title = getFormString(formData, "title");
+  const product = getProductFormInput(formData);
 
-  if (!title) {
+  if (!product.title) {
     return redirectToProducts(request, "missing_title");
   }
 
@@ -17,29 +18,12 @@ export async function POST(request: Request) {
   const result = await createMerchantProduct({
     cookieHeader: cookieStore.toString(),
     platformApiBaseUrl: process.env.PLATFORM_API_BASE_URL ?? "http://localhost:3000",
-    product: {
-      title,
-      handle: getFormString(formData, "handle"),
-      status: getFormString(formData, "status"),
-      thumbnail: getFormString(formData, "thumbnail"),
-    },
+    product,
     requestHost: requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host"),
     tenantId: new URL(request.url).searchParams.get("tenantId"),
   });
 
   return redirectToProducts(request, result.ok ? "product_created" : result.message);
-}
-
-function getFormString(formData: FormData, key: string) {
-  const value = formData.get(key);
-
-  if (typeof value !== "string") {
-    return null;
-  }
-
-  const trimmed = value.trim();
-
-  return trimmed ? trimmed : null;
 }
 
 function redirectToProducts(request: Request, status: string) {
