@@ -7,9 +7,36 @@ describe("getListErrorState", () => {
   it("maps missing commerce credentials to a setup state", () => {
     assert.deepEqual(getListErrorState("products", "commerce_credentials_missing"), {
       description:
-        "Product sync needs the Medusa Admin API token before live catalog data can be loaded.",
+        "Start Platform API with MEDUSA_ADMIN_API_TOKEN from the Medusa seed before loading live product data.",
       kind: "setup",
-      title: "Commerce credentials are not configured",
+      title: "Medusa admin token is not configured",
+    });
+  });
+
+  it("maps missing sales channel configuration to a setup state", () => {
+    assert.deepEqual(getListErrorState("products", "commerce_sales_channel_unavailable"), {
+      description:
+        "This tenant is missing its Medusa sales channel mapping. Re-run provisioning or seed data, then reload products.",
+      kind: "setup",
+      title: "Product sales channel is not configured",
+    });
+  });
+
+  it("maps missing region configuration to a setup state", () => {
+    assert.deepEqual(getListErrorState("products", "commerce_region_unavailable"), {
+      description:
+        "This tenant is missing its Medusa region mapping. Re-run provisioning or seed data, then reload products.",
+      kind: "setup",
+      title: "Commerce region is not configured",
+    });
+  });
+
+  it("maps missing commerce resources to a setup state", () => {
+    assert.deepEqual(getListErrorState("products", "commerce_resource_missing"), {
+      description:
+        "The tenant has Medusa resource IDs, but Medusa did not return the expected resources. Re-run local commerce provisioning or seed data.",
+      kind: "setup",
+      title: "Commerce resources are out of sync",
     });
   });
 
@@ -19,6 +46,15 @@ describe("getListErrorState", () => {
         "The commerce backend could not be reached. Start Medusa or check the commerce service connection, then reload orders.",
       kind: "service",
       title: "Commerce backend is unavailable",
+    });
+  });
+
+  it("maps platform request failures to a service state", () => {
+    assert.deepEqual(getListErrorState("products", "platform_request_failed"), {
+      description:
+        "The dashboard could not reach Platform API. Start the API service, then reload products.",
+      kind: "service",
+      title: "Platform API is unavailable",
     });
   });
 
