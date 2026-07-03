@@ -11,7 +11,7 @@ const excludedAdminPrefixes = [
 export function middleware(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
 
-  if (!pathname.startsWith("/admin") || isExcludedAdminPath(pathname)) {
+  if (!isAdminPath(pathname) || isExcludedAdminPath(pathname)) {
     return NextResponse.next();
   }
 
@@ -23,6 +23,10 @@ export function middleware(request: NextRequest) {
       headers: requestHeaders,
     },
   });
+}
+
+function isAdminPath(pathname: string) {
+  return pathname === "/admin" || pathname.startsWith("/admin/");
 }
 
 function isExcludedAdminPath(pathname: string) {
