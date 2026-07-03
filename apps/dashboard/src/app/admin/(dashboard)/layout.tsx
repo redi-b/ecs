@@ -24,7 +24,7 @@ export default async function AdminDashboardLayout({ children }: { children: Rea
       getMerchantDashboardSummary({
         cookieHeader: requestHeaders.get("cookie"),
         platformApiBaseUrl: process.env.PLATFORM_API_BASE_URL ?? "http://localhost:3000",
-        requestHost: requestHeaders.get("host"),
+        requestHost: requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host"),
         tenantId: getSelectedTenantId({ tenantId: tenantId ?? undefined }),
       }),
   });
