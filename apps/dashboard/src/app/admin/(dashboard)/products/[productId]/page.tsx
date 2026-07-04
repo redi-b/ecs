@@ -88,7 +88,7 @@ export default async function MerchantProductDetailPage({
           {optionErrors.length ? null : (
             <ProductForm
               action={getTenantScopedPath(
-                dashboardRoutes.productDetail(productResult.product.id),
+                dashboardRoutes.productUpdateAction(productResult.product.id),
                 tenantId,
               )}
               categories={categoriesResult.ok ? categoriesResult.categories : []}

@@ -1,9 +1,9 @@
 import { cookies, headers } from "next/headers";
 import { NextResponse } from "next/server";
 
-import { appendTenantRedirectParams } from "../../../../lib/dashboard-tenant-context";
-import { createMerchantProduct } from "../../../../lib/merchant-products";
-import { getProductFormInput } from "../../../../lib/product-form-data";
+import { appendTenantRedirectParams } from "../../../../../lib/dashboard-tenant-context";
+import { createMerchantProduct } from "../../../../../lib/merchant-products";
+import { getProductFormInput } from "../../../../../lib/product-form-data";
 
 export async function POST(request: Request) {
   const formData = await request.formData();

@@ -2,7 +2,10 @@ export const dashboardRoutes = {
   overview: "/admin",
   products: "/admin/products",
   productsNew: "/admin/products/new",
+  productCreateAction: "/admin/products/actions/create",
   productDetail: (productId: string) => `/admin/products/${encodeURIComponent(productId)}`,
+  productUpdateAction: (productId: string) =>
+    `/admin/products/actions/${encodeURIComponent(productId)}`,
   orders: "/admin/orders",
   editor: "/admin/editor",
   insights: "/admin/insights",

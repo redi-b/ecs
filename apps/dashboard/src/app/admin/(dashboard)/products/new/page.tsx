@@ -14,6 +14,7 @@ import {
   getMerchantProductCategories,
   getMerchantProductCollections,
 } from "@/lib/merchant-products";
+import { dashboardRoutes } from "@/lib/routes";
 
 type MerchantProductCreatePageProps = {
   searchParams?: Promise<DashboardSearchParams>;
@@ -54,7 +55,7 @@ export default async function MerchantProductCreatePage({
   const optionErrors = referenceDataErrors.filter((error) => error.state.kind === "error");
   const categories = categoriesResult.ok ? categoriesResult.categories : [];
   const collections = collectionsResult.ok ? collectionsResult.collections : [];
-  const action = getTenantScopedPath("/admin/products/create", tenantId);
+  const action = getTenantScopedPath(dashboardRoutes.productCreateAction, tenantId);
 
   return (
     <PageShell
