@@ -22,7 +22,15 @@ const products: MerchantProduct[] = [
     thumbnail: "https://cdn.example.com/coffee.jpg",
     collectionId: null,
     categoryIds: [],
-    images: [{ id: "img_1", url: "https://cdn.example.com/coffee.jpg", rank: 0 }],
+    images: [
+      {
+        id: "img_1",
+        url: "https://cdn.example.com/coffee.jpg",
+        rank: 0,
+        createdAt: "2026-01-01T00:00:00.000Z",
+        updatedAt: "2026-01-02T00:00:00.000Z",
+      },
+    ],
     variants: [
       {
         id: "var_1",
@@ -49,6 +57,12 @@ const products: MerchantProduct[] = [
     updatedAt: "2026-01-04T00:00:00.000Z",
   },
 ];
+
+const coffeeProduct = products[0];
+const teaProduct = products[1];
+
+assert.ok(coffeeProduct);
+assert.ok(teaProduct);
 
 describe("product table state", () => {
   it("searches product title, handle, status, and id", () => {
@@ -104,15 +118,15 @@ describe("product table state", () => {
   });
 
   it("derives price, media, thumbnail, and filtered counts", () => {
-    assert.equal(getProductPriceSortValue(products[0]), 250);
-    assert.equal(getProductPriceSortValue(products[1]), null);
-    assert.equal(getProductMediaCount(products[0]), 1);
-    assert.equal(getProductMediaCount(products[1]), 0);
-    assert.deepEqual(getProductThumbnail(products[0]), {
+    assert.equal(getProductPriceSortValue(coffeeProduct), 250);
+    assert.equal(getProductPriceSortValue(teaProduct), null);
+    assert.equal(getProductMediaCount(coffeeProduct), 1);
+    assert.equal(getProductMediaCount(teaProduct), 0);
+    assert.deepEqual(getProductThumbnail(coffeeProduct), {
       kind: "image",
       url: "https://cdn.example.com/coffee.jpg",
     });
-    assert.deepEqual(getProductThumbnail(products[1]), {
+    assert.deepEqual(getProductThumbnail(teaProduct), {
       initials: "BT",
       kind: "fallback",
     });
@@ -135,19 +149,57 @@ describe("product table state", () => {
   it("counts distinct thumbnail and image URLs as product media", () => {
     assert.equal(
       getProductMediaCount({
-        ...products[0],
-        images: [{ id: "img_1", rank: 0, url: "https://cdn.example.com/coffee.jpg" }],
+        ...coffeeProduct,
+        images: [
+          {
+            id: "img_1",
+            rank: 0,
+            url: "https://cdn.example.com/coffee.jpg",
+            createdAt: "2026-01-01T00:00:00.000Z",
+            updatedAt: "2026-01-02T00:00:00.000Z",
+          },
+        ],
         thumbnail: "https://cdn.example.com/coffee.jpg",
       }),
       1,
     );
     assert.equal(
       getProductMediaCount({
-        ...products[0],
-        images: [{ id: "img_2", rank: 0, url: "https://cdn.example.com/coffee-side.jpg" }],
+        ...coffeeProduct,
+        images: [
+          {
+            id: "img_2",
+            rank: 0,
+            url: "https://cdn.example.com/coffee-side.jpg",
+            createdAt: "2026-01-01T00:00:00.000Z",
+            updatedAt: "2026-01-02T00:00:00.000Z",
+          },
+        ],
         thumbnail: "https://cdn.example.com/coffee.jpg",
       }),
       2,
+    );
+    assert.equal(
+      getProductMediaCount({
+        ...teaProduct,
+        images: [
+          {
+            id: "img_3",
+            rank: 0,
+            url: null,
+            createdAt: "2026-01-01T00:00:00.000Z",
+            updatedAt: "2026-01-02T00:00:00.000Z",
+          },
+          {
+            id: "img_4",
+            rank: 1,
+            url: "",
+            createdAt: "2026-01-01T00:00:00.000Z",
+            updatedAt: "2026-01-02T00:00:00.000Z",
+          },
+        ],
+      }),
+      0,
     );
   });
 
@@ -199,7 +251,7 @@ describe("product table state", () => {
   it("derives fallback thumbnail initials from handle or id when title is missing", () => {
     assert.deepEqual(
       getProductThumbnail({
-        ...products[1],
+        ...teaProduct,
         handle: "green-tea",
         id: "prod_green_tea",
         title: null,
@@ -211,7 +263,7 @@ describe("product table state", () => {
     );
     assert.deepEqual(
       getProductThumbnail({
-        ...products[1],
+        ...teaProduct,
         handle: null,
         id: "prod_mint_tea",
         title: null,

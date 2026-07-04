@@ -71,7 +71,11 @@ export function getProductMediaCount(product: MerchantProduct) {
   }
 
   for (const image of product.images ?? []) {
-    mediaUrls.add(image.url);
+    const imageUrl = image.url?.trim();
+
+    if (imageUrl) {
+      mediaUrls.add(imageUrl);
+    }
   }
 
   return mediaUrls.size;
