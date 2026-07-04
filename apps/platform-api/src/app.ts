@@ -383,7 +383,10 @@ export type MerchantProductsResult =
     }
   | {
       ok: false;
-      error: "commerce_backend_unavailable" | "commerce_credentials_missing";
+      error:
+        | "commerce_backend_unavailable"
+        | "commerce_credentials_missing"
+        | "commerce_resource_missing";
       status: 401 | 503;
     };
 
