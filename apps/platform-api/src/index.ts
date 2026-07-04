@@ -1,4 +1,4 @@
-import { loadServiceEnv } from "@ecs/config";
+import { loadServiceEnv, loadServiceEnvFiles } from "@ecs/config";
 import { createPlatformDb } from "@ecs/db";
 import { createLogger } from "@ecs/logger";
 import { serve } from "@hono/node-server";
@@ -40,6 +40,8 @@ import {
   createTenantListService,
 } from "./tenants/tenant-list-service.js";
 import { createTenantStatusService } from "./tenants/tenant-status-service.js";
+
+loadServiceEnvFiles();
 
 const env = loadServiceEnv({
   ...process.env,
