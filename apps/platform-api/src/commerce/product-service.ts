@@ -1304,10 +1304,12 @@ async function isMissingCommerceResourceResponse(response: Response) {
   const normalized = message.toLowerCase();
 
   return (
-    /(sales channel|sales_channel|sales-channel).*(not found|does not exist|missing)/.test(
+    /(sales channel|sales_channel|sales-channel|product category|category|collection|inventory item|inventory_item|stock location|location|price list|price_list|price set|price_set|product|price).*(not found|does not exist|missing)/.test(
       normalized,
     ) ||
-    /(resource|commerce resource).*(not found|does not exist|missing)/.test(normalized)
+    /(not found|does not exist|missing).*(sales channel|sales_channel|sales-channel|product category|category|collection|inventory item|inventory_item|stock location|location|price list|price_list|price set|price_set|product|price)/.test(
+      normalized,
+    )
   );
 }
 
