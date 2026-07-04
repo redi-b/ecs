@@ -46,7 +46,7 @@ export function getProductSearchText(product: MerchantProduct) {
 }
 
 export function normalizeProductStatus(status: string | null): ProductStatusFilter {
-  const normalized = status?.toLowerCase();
+  const normalized = status?.trim().toLowerCase();
 
   if (normalized === "published" || normalized === "draft") {
     return normalized;
@@ -84,10 +84,12 @@ export function getProductMediaCount(product: MerchantProduct) {
 }
 
 export function getProductThumbnail(product: MerchantProduct): ProductThumbnail {
-  if (product.thumbnail) {
+  const thumbnailUrl = product.thumbnail?.trim();
+
+  if (thumbnailUrl) {
     return {
       kind: "image",
-      url: product.thumbnail,
+      url: thumbnailUrl,
     };
   }
 
