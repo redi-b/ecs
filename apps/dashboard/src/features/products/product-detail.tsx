@@ -152,9 +152,15 @@ function formatDateTime(value: string | null) {
     return "Never";
   }
 
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "Unknown";
+  }
+
   return new Intl.DateTimeFormat("en", {
     dateStyle: "medium",
     timeStyle: "short",
     timeZone: "UTC",
-  }).format(new Date(value));
+  }).format(date);
 }
