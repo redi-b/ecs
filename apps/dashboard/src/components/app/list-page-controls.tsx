@@ -69,7 +69,7 @@ function getPageHref(basePath: string, searchParams: DashboardSearchParams, page
   const params = new URLSearchParams();
 
   for (const [key, value] of Object.entries(searchParams ?? {})) {
-    if (key === "page" || value === undefined) {
+    if (key === "page" || key === "productStatus" || value === undefined) {
       continue;
     }
 
