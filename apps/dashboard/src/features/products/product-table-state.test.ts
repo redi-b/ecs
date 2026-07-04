@@ -113,6 +113,7 @@ describe("product table state", () => {
   it("normalizes statuses case-insensitively and maps unexpected statuses to unknown", () => {
     assert.equal(normalizeProductStatus("PUBLISHED"), "published");
     assert.equal(normalizeProductStatus("Draft"), "draft");
+    assert.equal(normalizeProductStatus(" published "), "published");
     assert.equal(normalizeProductStatus("archived"), "unknown");
     assert.equal(normalizeProductStatus(null), "unknown");
   });
@@ -130,6 +131,26 @@ describe("product table state", () => {
       initials: "BT",
       kind: "fallback",
     });
+    assert.deepEqual(
+      getProductThumbnail({
+        ...teaProduct,
+        thumbnail: "   ",
+      }),
+      {
+        initials: "BT",
+        kind: "fallback",
+      },
+    );
+    assert.deepEqual(
+      getProductThumbnail({
+        ...coffeeProduct,
+        thumbnail: " https://cdn.example.com/coffee.jpg ",
+      }),
+      {
+        kind: "image",
+        url: "https://cdn.example.com/coffee.jpg",
+      },
+    );
     assert.deepEqual(
       getProductTableCounts({
         filteredCount: 1,
