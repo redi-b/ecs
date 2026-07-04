@@ -498,6 +498,26 @@ describe("createMedusaProductService", () => {
     });
   });
 
+  it("keeps generic Medusa resource 404s as backend unavailable", async () => {
+    const service = createMedusaProductService({
+      adminApiToken: "medusa_token",
+      medusaInternalUrl: "http://medusa:9000",
+      fetcher: async () => Response.json({ message: "Resource not found" }, { status: 404 }),
+    });
+
+    const result = await service.listMerchantProducts({
+      limit: 20,
+      offset: 0,
+      salesChannelId: "sc_1",
+    });
+
+    assert.deepEqual(result, {
+      ok: false,
+      error: "commerce_backend_unavailable",
+      status: 503,
+    });
+  });
+
   it("gets product stock through the default variant inventory item", async () => {
     const forwardedRequests: Request[] = [];
     const service = createMedusaProductService({
