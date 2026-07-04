@@ -1,5 +1,7 @@
-import { loadServiceEnv } from "@ecs/config";
+import { loadServiceEnv, loadServiceEnvFiles } from "@ecs/config";
 import { createLogger } from "@ecs/logger";
+
+loadServiceEnvFiles();
 
 const env = loadServiceEnv({
   ...process.env,
