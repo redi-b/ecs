@@ -9,6 +9,7 @@ import {
   getProductPriceSortValue,
   getProductTableCounts,
   getProductThumbnail,
+  normalizeProductStatus,
 } from "./product-table-state.js";
 
 const products: MerchantProduct[] = [
@@ -71,6 +72,15 @@ describe("product table state", () => {
     );
   });
 
+  it("keeps all products for whitespace-only queries", () => {
+    assert.deepEqual(
+      filterProductsForTable(products, { query: "   ", status: "all" }).map(
+        (product) => product.id,
+      ),
+      ["prod_coffee", "prod_tea"],
+    );
+  });
+
   it("filters products by normalized status", () => {
     assert.deepEqual(
       filterProductsForTable(products, { query: "", status: "published" }).map(
@@ -86,6 +96,13 @@ describe("product table state", () => {
     );
   });
 
+  it("normalizes statuses case-insensitively and maps unexpected statuses to unknown", () => {
+    assert.equal(normalizeProductStatus("PUBLISHED"), "published");
+    assert.equal(normalizeProductStatus("Draft"), "draft");
+    assert.equal(normalizeProductStatus("archived"), "unknown");
+    assert.equal(normalizeProductStatus(null), "unknown");
+  });
+
   it("derives price, media, thumbnail, and filtered counts", () => {
     assert.equal(getProductPriceSortValue(products[0]), 250);
     assert.equal(getProductPriceSortValue(products[1]), null);
@@ -99,11 +116,110 @@ describe("product table state", () => {
       initials: "BT",
       kind: "fallback",
     });
-    assert.deepEqual(getProductTableCounts({ filteredCount: 1, pageCount: 2, totalCount: 9 }), {
-      filteredCount: 1,
-      hasActiveFilter: true,
-      pageCount: 2,
-      totalCount: 9,
-    });
+    assert.deepEqual(
+      getProductTableCounts({
+        filteredCount: 1,
+        filters: { query: "coffee", status: "all" },
+        pageCount: 2,
+        totalCount: 9,
+      }),
+      {
+        filteredCount: 1,
+        hasActiveFilter: true,
+        pageCount: 2,
+        totalCount: 9,
+      },
+    );
+  });
+
+  it("counts distinct thumbnail and image URLs as product media", () => {
+    assert.equal(
+      getProductMediaCount({
+        ...products[0],
+        images: [{ id: "img_1", rank: 0, url: "https://cdn.example.com/coffee.jpg" }],
+        thumbnail: "https://cdn.example.com/coffee.jpg",
+      }),
+      1,
+    );
+    assert.equal(
+      getProductMediaCount({
+        ...products[0],
+        images: [{ id: "img_2", rank: 0, url: "https://cdn.example.com/coffee-side.jpg" }],
+        thumbnail: "https://cdn.example.com/coffee.jpg",
+      }),
+      2,
+    );
+  });
+
+  it("derives active filter state from filter input", () => {
+    assert.deepEqual(
+      getProductTableCounts({
+        filteredCount: 2,
+        filters: { query: "   ", status: "all" },
+        pageCount: 2,
+        totalCount: 2,
+      }),
+      {
+        filteredCount: 2,
+        hasActiveFilter: false,
+        pageCount: 2,
+        totalCount: 2,
+      },
+    );
+    assert.deepEqual(
+      getProductTableCounts({
+        filteredCount: 2,
+        filters: { query: "tea", status: "all" },
+        pageCount: 2,
+        totalCount: 2,
+      }),
+      {
+        filteredCount: 2,
+        hasActiveFilter: true,
+        pageCount: 2,
+        totalCount: 2,
+      },
+    );
+    assert.deepEqual(
+      getProductTableCounts({
+        filteredCount: 2,
+        filters: { query: "", status: "draft" },
+        pageCount: 2,
+        totalCount: 2,
+      }),
+      {
+        filteredCount: 2,
+        hasActiveFilter: true,
+        pageCount: 2,
+        totalCount: 2,
+      },
+    );
+  });
+
+  it("derives fallback thumbnail initials from handle or id when title is missing", () => {
+    assert.deepEqual(
+      getProductThumbnail({
+        ...products[1],
+        handle: "green-tea",
+        id: "prod_green_tea",
+        title: null,
+      }),
+      {
+        initials: "GT",
+        kind: "fallback",
+      },
+    );
+    assert.deepEqual(
+      getProductThumbnail({
+        ...products[1],
+        handle: null,
+        id: "prod_mint_tea",
+        title: null,
+      }),
+      {
+        initials: "PM",
+        kind: "fallback",
+      },
+    );
   });
 });

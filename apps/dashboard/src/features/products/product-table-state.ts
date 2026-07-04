@@ -64,9 +64,17 @@ export function getProductPriceSortValue(product: MerchantProduct) {
 }
 
 export function getProductMediaCount(product: MerchantProduct) {
-  const imageCount = product.images?.length ?? 0;
+  const mediaUrls = new Set<string>();
 
-  return product.thumbnail ? Math.max(1, imageCount) : imageCount;
+  if (product.thumbnail) {
+    mediaUrls.add(product.thumbnail);
+  }
+
+  for (const image of product.images ?? []) {
+    mediaUrls.add(image.url);
+  }
+
+  return mediaUrls.size;
 }
 
 export function getProductThumbnail(product: MerchantProduct): ProductThumbnail {
@@ -92,12 +100,15 @@ export function getProductThumbnail(product: MerchantProduct): ProductThumbnail 
 }
 
 export function getProductTableCounts(input: {
+  filters: ProductTableFilterInput;
   filteredCount: number;
   pageCount: number;
   totalCount: number;
 }) {
+  const { filters, ...counts } = input;
+
   return {
-    ...input,
-    hasActiveFilter: input.filteredCount !== input.pageCount,
+    ...counts,
+    hasActiveFilter: filters.query.trim().length > 0 || filters.status !== "all",
   };
 }
