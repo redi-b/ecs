@@ -13,6 +13,15 @@ describe("getListErrorState", () => {
     });
   });
 
+  it("maps invalid commerce credentials to a setup state", () => {
+    assert.deepEqual(getListErrorState("products", "commerce_credentials_invalid"), {
+      description:
+        "Medusa rejected the configured MEDUSA_ADMIN_API_TOKEN. Re-run the Medusa seed for the active Medusa database, copy the new secret token into Platform API, restart Platform API, then reload products.",
+      kind: "setup",
+      title: "Medusa admin token is invalid",
+    });
+  });
+
   it("maps missing sales channel configuration to a setup state", () => {
     assert.deepEqual(getListErrorState("products", "commerce_sales_channel_unavailable"), {
       description:

@@ -179,7 +179,7 @@ export function createMedusaProductService(options: {
       if (response.status === 401) {
         return {
           ok: false,
-          error: "commerce_credentials_missing",
+          error: "commerce_credentials_invalid",
           status: 401,
         };
       }
@@ -277,7 +277,7 @@ export function createMedusaProductService(options: {
       if (response.status === 401) {
         return {
           ok: false,
-          error: "commerce_credentials_missing",
+          error: "commerce_credentials_invalid",
           status: 401,
         };
       }
@@ -326,7 +326,7 @@ export function createMedusaProductService(options: {
       if (response.status === 401) {
         return {
           ok: false,
-          error: "commerce_credentials_missing",
+          error: "commerce_credentials_invalid",
           status: 401,
         };
       }
@@ -518,7 +518,7 @@ async function getProductInventoryContext(
   if (response.status === 401) {
     return {
       ok: false,
-      error: "commerce_credentials_missing",
+      error: "commerce_credentials_invalid",
       status: 401,
     };
   }
@@ -597,7 +597,7 @@ async function getInventoryItemStock(
   if (response.status === 401) {
     return {
       ok: false,
-      error: "commerce_credentials_missing",
+      error: "commerce_credentials_invalid",
       status: 401,
     };
   }
@@ -798,7 +798,7 @@ function getWriteError(response: Response): MerchantProductWriteResult {
   if (response.status === 401) {
     return {
       ok: false,
-      error: "commerce_credentials_missing",
+      error: "commerce_credentials_invalid",
       status: 401,
     };
   }
@@ -822,7 +822,7 @@ function getCategoryWriteError(response: Response): MerchantProductCategoryWrite
   if (response.status === 401) {
     return {
       ok: false,
-      error: "commerce_credentials_missing",
+      error: "commerce_credentials_invalid",
       status: 401,
     };
   }
@@ -838,7 +838,7 @@ function getCollectionWriteError(response: Response): MerchantProductCollectionW
   if (response.status === 401) {
     return {
       ok: false,
-      error: "commerce_credentials_missing",
+      error: "commerce_credentials_invalid",
       status: 401,
     };
   }
@@ -854,7 +854,7 @@ function getStockWriteError(response: Response): MerchantProductStockUpdateResul
   if (response.status === 401) {
     return {
       ok: false,
-      error: "commerce_credentials_missing",
+      error: "commerce_credentials_invalid",
       status: 401,
     };
   }

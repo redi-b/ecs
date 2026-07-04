@@ -29,7 +29,7 @@ export function createMedusaOrderService(options: {
       if (response.status === 401) {
         return {
           ok: false,
-          error: "commerce_credentials_missing",
+          error: "commerce_credentials_invalid",
           status: 401,
         };
       }
@@ -111,7 +111,7 @@ export function createMedusaOrderService(options: {
       if (response.status === 401) {
         return {
           ok: false,
-          error: "commerce_credentials_missing",
+          error: "commerce_credentials_invalid",
           status: 401,
         };
       }
@@ -169,7 +169,7 @@ export function createMedusaOrderService(options: {
       if (response.status === 401) {
         return {
           ok: false,
-          error: "commerce_credentials_missing",
+          error: "commerce_credentials_invalid",
           status: 401,
         };
       }
@@ -237,7 +237,7 @@ async function getMerchantOrderForAction(
   if (response.status === 401) {
     return {
       ok: false,
-      error: "commerce_credentials_missing",
+      error: "commerce_credentials_invalid",
       status: 401,
     };
   }
@@ -325,7 +325,7 @@ async function fulfillMerchantOrder(
   if (response.status === 401) {
     return {
       ok: false,
-      error: "commerce_credentials_missing",
+      error: "commerce_credentials_invalid",
       status: 401,
     };
   }
@@ -413,7 +413,7 @@ async function deliverMerchantOrderFulfillment(
   if (response.status === 401) {
     return {
       ok: false,
-      error: "commerce_credentials_missing",
+      error: "commerce_credentials_invalid",
       status: 401,
     };
   }

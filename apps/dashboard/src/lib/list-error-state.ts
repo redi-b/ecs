@@ -18,6 +18,14 @@ export function getListErrorState(kind: ListKind, message: string): ListErrorSta
     };
   }
 
+  if (message === "commerce_credentials_invalid") {
+    return {
+      kind: "setup",
+      title: "Medusa admin token is invalid",
+      description: `Medusa rejected the configured MEDUSA_ADMIN_API_TOKEN. Re-run the Medusa seed for the active Medusa database, copy the new secret token into Platform API, restart Platform API, then reload ${kind}.`,
+    };
+  }
+
   if (message === "commerce_sales_channel_unavailable") {
     return {
       kind: "setup",

@@ -385,6 +385,7 @@ export type MerchantProductsResult =
       ok: false;
       error:
         | "commerce_backend_unavailable"
+        | "commerce_credentials_invalid"
         | "commerce_credentials_missing"
         | "commerce_resource_missing";
       status: 401 | 503;
@@ -399,7 +400,11 @@ export type MerchantProductWriteResult =
     }
   | {
       ok: false;
-      error: "commerce_backend_unavailable" | "commerce_credentials_missing" | "product_not_found";
+      error:
+        | "commerce_backend_unavailable"
+        | "commerce_credentials_invalid"
+        | "commerce_credentials_missing"
+        | "product_not_found";
       status: 401 | 404 | 503;
     };
 
@@ -424,7 +429,7 @@ export type MerchantProductCategoriesResult =
     }
   | {
       ok: false;
-      error: "commerce_backend_unavailable" | "commerce_credentials_missing";
+      error: "commerce_backend_unavailable" | "commerce_credentials_invalid" | "commerce_credentials_missing";
       status: 401 | 503;
     };
 
@@ -435,7 +440,7 @@ export type MerchantProductCategoryWriteResult =
     }
   | {
       ok: false;
-      error: "commerce_backend_unavailable" | "commerce_credentials_missing";
+      error: "commerce_backend_unavailable" | "commerce_credentials_invalid" | "commerce_credentials_missing";
       status: 401 | 503;
     };
 
@@ -457,7 +462,7 @@ export type MerchantProductCollectionsResult =
     }
   | {
       ok: false;
-      error: "commerce_backend_unavailable" | "commerce_credentials_missing";
+      error: "commerce_backend_unavailable" | "commerce_credentials_invalid" | "commerce_credentials_missing";
       status: 401 | 503;
     };
 
@@ -468,7 +473,7 @@ export type MerchantProductCollectionWriteResult =
     }
   | {
       ok: false;
-      error: "commerce_backend_unavailable" | "commerce_credentials_missing";
+      error: "commerce_backend_unavailable" | "commerce_credentials_invalid" | "commerce_credentials_missing";
       status: 401 | 503;
     };
 
@@ -492,6 +497,7 @@ export type MerchantProductStockResult =
       ok: false;
       error:
         | "commerce_backend_unavailable"
+        | "commerce_credentials_invalid"
         | "commerce_credentials_missing"
         | "inventory_location_unavailable"
         | "product_inventory_unavailable"
@@ -566,7 +572,7 @@ export type MerchantOrdersResult =
     }
   | {
       ok: false;
-      error: "commerce_backend_unavailable" | "commerce_credentials_missing";
+      error: "commerce_backend_unavailable" | "commerce_credentials_invalid" | "commerce_credentials_missing";
       status: 401 | 503;
     };
 
@@ -579,6 +585,7 @@ export type MerchantOrderDetailResult =
       ok: false;
       error:
         | "commerce_backend_unavailable"
+        | "commerce_credentials_invalid"
         | "commerce_credentials_missing"
         | "inventory_location_unavailable"
         | "order_fulfillment_not_found"

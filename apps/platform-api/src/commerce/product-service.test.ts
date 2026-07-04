@@ -1045,4 +1045,24 @@ describe("createMedusaProductService", () => {
     });
     assert.equal(calls, 0);
   });
+
+  it("returns invalid credentials when Medusa rejects the configured admin token", async () => {
+    const service = createMedusaProductService({
+      adminApiToken: "stale_medusa_token",
+      medusaInternalUrl: "http://medusa:9000",
+      fetcher: async () => Response.json({}, { status: 401 }),
+    });
+
+    const result = await service.listMerchantProducts({
+      limit: 20,
+      offset: 0,
+      salesChannelId: "sc_1",
+    });
+
+    assert.deepEqual(result, {
+      ok: false,
+      error: "commerce_credentials_invalid",
+      status: 401,
+    });
+  });
 });
