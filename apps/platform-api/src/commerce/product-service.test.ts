@@ -445,6 +445,55 @@ describe("createMedusaProductService", () => {
     assert.equal(forwardedRequests.length, 1);
   });
 
+  it("updates a product when ownership is verified by a scoped product list fallback", async () => {
+    const forwardedRequests: Request[] = [];
+    const service = createMedusaProductService({
+      adminApiToken: "medusa_token",
+      medusaInternalUrl: "http://medusa:9000",
+      fetcher: async (input, init) => {
+        const request = new Request(input, init);
+        forwardedRequests.push(request);
+
+        if (request.method === "POST") {
+          return Response.json({
+            product: {
+              id: "prod_1",
+              title: "Updated coffee",
+              handle: "updated-coffee",
+              status: "draft",
+              thumbnail: null,
+              created_at: "2026-01-01T00:00:00.000Z",
+              updated_at: "2026-01-02T00:00:00.000Z",
+            },
+          });
+        }
+
+        if (request.url.includes("/admin/products?")) {
+          return Response.json({
+            products: [{ id: "prod_1" }],
+          });
+        }
+
+        return Response.json({
+          product: {
+            id: "prod_1",
+            sales_channels: [{}],
+          },
+        });
+      },
+    });
+
+    const result = await service.updateMerchantProduct({
+      productId: "prod_1",
+      title: "Updated coffee",
+      salesChannelId: "sc_1",
+    });
+
+    assert.equal(result.ok, true);
+    assert.equal(forwardedRequests.length, 3);
+    assert.equal(forwardedRequests[2]?.method, "POST");
+  });
+
   it("lists products through the Medusa Admin API scoped by sales channel", async () => {
     let forwardedRequest: Request | undefined;
     const service = createMedusaProductService({

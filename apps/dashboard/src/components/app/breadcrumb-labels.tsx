@@ -6,18 +6,15 @@ import {
   useCallback,
   useContext,
   useEffect,
-  useMemo,
   useState,
 } from "react";
 
 import type { DashboardBreadcrumbLabels } from "@/lib/dashboard-breadcrumbs";
 
-type BreadcrumbLabelsContextValue = {
-  labels: DashboardBreadcrumbLabels;
-  setLabel: (id: string, label: string | null) => void;
-};
+type BreadcrumbLabelSetter = (id: string, label: string | null) => void;
 
-const BreadcrumbLabelsContext = createContext<BreadcrumbLabelsContextValue | null>(null);
+const BreadcrumbLabelsContext = createContext<DashboardBreadcrumbLabels>({});
+const BreadcrumbLabelSetterContext = createContext<BreadcrumbLabelSetter | null>(null);
 
 export function BreadcrumbLabelsProvider({ children }: { children: ReactNode }) {
   const [labels, setLabels] = useState<DashboardBreadcrumbLabels>({});
@@ -39,31 +36,26 @@ export function BreadcrumbLabelsProvider({ children }: { children: ReactNode }) 
       };
     });
   }, []);
-  const value = useMemo<BreadcrumbLabelsContextValue>(
-    () => ({
-      labels,
-      setLabel,
-    }),
-    [labels, setLabel],
-  );
 
   return (
-    <BreadcrumbLabelsContext.Provider value={value}>{children}</BreadcrumbLabelsContext.Provider>
+    <BreadcrumbLabelSetterContext.Provider value={setLabel}>
+      <BreadcrumbLabelsContext.Provider value={labels}>{children}</BreadcrumbLabelsContext.Provider>
+    </BreadcrumbLabelSetterContext.Provider>
   );
 }
 
 export function useBreadcrumbLabels() {
-  return useContext(BreadcrumbLabelsContext)?.labels ?? {};
+  return useContext(BreadcrumbLabelsContext);
 }
 
 export function DashboardBreadcrumbLabel({ id, label }: { id: string; label: string | null }) {
-  const context = useContext(BreadcrumbLabelsContext);
+  const setLabel = useContext(BreadcrumbLabelSetterContext);
 
   useEffect(() => {
-    context?.setLabel(id, label);
+    setLabel?.(id, label);
 
-    return () => context?.setLabel(id, null);
-  }, [context, id, label]);
+    return () => setLabel?.(id, null);
+  }, [id, label, setLabel]);
 
   return null;
 }
