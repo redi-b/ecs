@@ -66,6 +66,16 @@ Products table should support:
 - Filtered empty state for no matching rows.
 - Current-page result summary that makes filtered counts clear.
 
+Entity references should be link-aware. When a table cell names another dashboard entity and the destination route exists, the cell should link to it instead of rendering inert text. Examples:
+
+- Product rows link to product details.
+- Future product category cells link to category detail or filtered category pages.
+- Future product collection cells link to collection detail or filtered collection pages.
+- Future order rows can link purchased products to product details.
+- Future customer, fulfillment, or payment references can link to their dashboard surfaces when those routes exist.
+
+When a destination route does not exist yet, render the value as plain text or a disabled-looking secondary signal. Do not create dead links.
+
 Initial bulk action support should be intentionally conservative:
 
 - Clear selection.
@@ -125,6 +135,7 @@ The reusable table API should let Orders later provide:
 - row actions,
 - selected-row bulk actions,
 - status badges,
+- cross-entity links from orders to products and other related records,
 - current page data from the existing order endpoint.
 
 The implementation should avoid product-specific assumptions in `DataTable`. Product-specific behavior belongs in product table files.
