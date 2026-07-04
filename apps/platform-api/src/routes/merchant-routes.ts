@@ -576,6 +576,64 @@ export function registerMerchantRoutes(
     });
   });
 
+  app.get("/platform/merchant/product-categories", async (context) => {
+    const merchant = await getAuthorizedMerchantContext(context);
+
+    if (!merchant.ok) {
+      return merchant.response;
+    }
+
+    if (!options.listMerchantProductCategories) {
+      return context.json({ error: "commerce_backend_unavailable" }, 503);
+    }
+
+    const categories = await options.listMerchantProductCategories({
+      limit: getPaginationValue(context.req.query("limit"), 100, 100),
+      offset: getPaginationValue(context.req.query("offset"), 0, 10_000),
+      tenantId: merchant.result.context.tenantId,
+    });
+
+    if (!categories.ok) {
+      return context.json({ error: categories.error }, categories.status);
+    }
+
+    return context.json({
+      categories: categories.categories,
+      count: categories.count,
+      limit: categories.limit,
+      offset: categories.offset,
+    });
+  });
+
+  app.get("/platform/merchant/product-collections", async (context) => {
+    const merchant = await getAuthorizedMerchantContext(context);
+
+    if (!merchant.ok) {
+      return merchant.response;
+    }
+
+    if (!options.listMerchantProductCollections) {
+      return context.json({ error: "commerce_backend_unavailable" }, 503);
+    }
+
+    const collections = await options.listMerchantProductCollections({
+      limit: getPaginationValue(context.req.query("limit"), 100, 100),
+      offset: getPaginationValue(context.req.query("offset"), 0, 10_000),
+      tenantId: merchant.result.context.tenantId,
+    });
+
+    if (!collections.ok) {
+      return context.json({ error: collections.error }, collections.status);
+    }
+
+    return context.json({
+      collections: collections.collections,
+      count: collections.count,
+      limit: collections.limit,
+      offset: collections.offset,
+    });
+  });
+
   app.get("/platform/merchant/products/:productId/stock", async (context) => {
     const session = await options.getSession?.(context.req.raw.headers);
 

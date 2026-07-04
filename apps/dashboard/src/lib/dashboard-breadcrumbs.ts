@@ -7,7 +7,12 @@ export type DashboardBreadcrumb = {
   title: string;
 };
 
-export function getDashboardBreadcrumbTrail(pathname: string): DashboardBreadcrumb[] {
+export type DashboardBreadcrumbLabels = Partial<Record<string, string>>;
+
+export function getDashboardBreadcrumbTrail(
+  pathname: string,
+  labels: DashboardBreadcrumbLabels = {},
+): DashboardBreadcrumb[] {
   const productsRoute = appRoutes.find((route) => route.href === dashboardRoutes.products);
 
   if (productsRoute && pathname === dashboardRoutes.productsNew) {
@@ -31,7 +36,7 @@ export function getDashboardBreadcrumbTrail(pathname: string): DashboardBreadcru
       {
         href: pathname,
         id: "product-details",
-        title: "Product details",
+        title: labels["product-details"] ?? "Product details",
       },
     ];
   }

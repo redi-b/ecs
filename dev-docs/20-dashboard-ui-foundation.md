@@ -63,6 +63,17 @@ Use TanStack Table for data-heavy tables. Table state that changes a shareable l
 
 Use TanStack Form for complex forms and Zod for validation, typed parsing, and schema-backed constraints. Feature code should own its schemas and form definitions under `src/features/*` unless a contract is shared across applications.
 
+## Error Copy And Diagnostics
+
+Merchant-facing production UI must not expose internal service names, environment variable names, seed instructions, backend IDs, stack details, raw platform error codes, or Medusa-specific recovery steps.
+
+Use a two-tier error model:
+
+- Development/local mode may show actionable setup diagnostics, such as missing or invalid commerce credentials, missing Medusa resource mappings, or local service startup instructions.
+- Production merchant UI must show generic, support-safe copy, such as "Catalog data is temporarily unavailable. Try again or contact support."
+
+Preserve detailed causes in server logs, structured error codes, and future operator-only tooling. Before any production dashboard release, audit list/detail/action error states and route-handler responses to ensure merchant screens only receive sanitized user-facing messages while operators can still diagnose the underlying issue.
+
 ## Auth And Onboarding Direction
 
 The merchant dashboard now has a coordinated server-side auth boundary. Routes under `/admin` render the merchant shell only after Platform API confirms the Better Auth session and tenant membership. `/admin/sign-in` and `/admin/session` remain outside the shell.

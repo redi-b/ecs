@@ -1,5 +1,6 @@
 import { cookies, headers } from "next/headers";
 
+import { DashboardBreadcrumbLabel } from "@/components/app/breadcrumb-labels";
 import { ListSetupState } from "@/components/app/list-error-state";
 import { PageShell } from "@/components/app/page-shell";
 import { RefreshButton } from "@/components/app/refresh-button";
@@ -85,6 +86,10 @@ export default async function MerchantProductDetailPage({
         <ListSetupState state={setupError} />
       ) : productResult.ok ? (
         <>
+          <DashboardBreadcrumbLabel
+            id="product-details"
+            label={productResult.product.title ?? productResult.product.handle ?? null}
+          />
           {optionErrors.length ? <ReferenceDataAlert errors={optionErrors} /> : null}
           <ProductDetail product={productResult.product} />
           {optionErrors.length ? null : (

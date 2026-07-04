@@ -31,6 +31,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 type ProductFormProps = {
   action: string;
@@ -97,7 +98,7 @@ export function ProductForm({
 
             <Field>
               <FieldLabel htmlFor="handle">Handle</FieldLabel>
-              <InputGroup>
+              <InputGroup className="pr-1">
                 <InputGroupInput
                   id="handle"
                   name="handle"
@@ -106,21 +107,37 @@ export function ProductForm({
                   readOnly={isHandleLocked}
                   value={handle}
                 />
-                <InputGroupAddon align="inline-end">
-                  <InputGroupButton
-                    aria-label={isHandleLocked ? "Unlock handle editing" : "Lock handle editing"}
-                    onClick={() => setIsHandleLocked((current) => !current)}
-                    title={isHandleLocked ? "Unlock handle editing" : "Lock handle editing"}
-                  >
-                    <HandleLockIcon data-icon="inline-start" />
-                  </InputGroupButton>
-                  <InputGroupButton
-                    aria-label="Regenerate handle from title"
-                    onClick={regenerateHandle}
-                    title="Regenerate handle from title"
-                  >
-                    <AppIcons.refresh data-icon="inline-start" />
-                  </InputGroupButton>
+                <InputGroupAddon align="inline-end" className="gap-1 pr-1">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <InputGroupButton
+                        aria-label={
+                          isHandleLocked ? "Unlock handle editing" : "Lock handle editing"
+                        }
+                        onClick={() => setIsHandleLocked((current) => !current)}
+                        size="icon-xs"
+                      >
+                        <HandleLockIcon data-icon="inline-start" />
+                      </InputGroupButton>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" sideOffset={6}>
+                      {isHandleLocked ? "Unlock handle editing" : "Lock handle editing"}
+                    </TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <InputGroupButton
+                        aria-label="Regenerate handle from title"
+                        onClick={regenerateHandle}
+                        size="icon-xs"
+                      >
+                        <AppIcons.refresh data-icon="inline-start" />
+                      </InputGroupButton>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" sideOffset={6}>
+                      Regenerate from title
+                    </TooltipContent>
+                  </Tooltip>
                 </InputGroupAddon>
               </InputGroup>
               <FieldDescription>
