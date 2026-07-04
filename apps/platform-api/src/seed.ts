@@ -1,4 +1,4 @@
-import { loadServiceEnv, loadServiceEnvFiles } from "@ecs/config";
+import { loadServiceEnv } from "@ecs/config";
 import {
   accounts,
   createPlatformDb,
@@ -16,8 +16,9 @@ import { storefrontTemplates } from "@ecs/storefront-templates";
 import { hashPassword } from "better-auth/crypto";
 
 import { buildPlatformSeed } from "./seed-data.js";
+import { loadPlatformApiEnvFiles } from "./config/env.js";
 
-loadServiceEnvFiles();
+loadPlatformApiEnvFiles();
 
 const env = loadServiceEnv({
   ...process.env,
