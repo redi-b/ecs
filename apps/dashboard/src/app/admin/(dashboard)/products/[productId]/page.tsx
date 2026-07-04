@@ -85,16 +85,18 @@ export default async function MerchantProductDetailPage({
         <>
           {optionErrors.length ? <ReferenceDataAlert errors={optionErrors} /> : null}
           <ProductDetail product={productResult.product} />
-          <ProductForm
-            action={getTenantScopedPath(
-              dashboardRoutes.productDetail(productResult.product.id),
-              tenantId,
-            )}
-            categories={categoriesResult.ok ? categoriesResult.categories : []}
-            collections={collectionsResult.ok ? collectionsResult.collections : []}
-            product={productResult.product}
-            submitLabel="Save product"
-          />
+          {optionErrors.length ? null : (
+            <ProductForm
+              action={getTenantScopedPath(
+                dashboardRoutes.productDetail(productResult.product.id),
+                tenantId,
+              )}
+              categories={categoriesResult.ok ? categoriesResult.categories : []}
+              collections={collectionsResult.ok ? collectionsResult.collections : []}
+              product={productResult.product}
+              submitLabel="Save product"
+            />
+          )}
         </>
       ) : (
         <ProductLoadAlert state={productErrorState} />
@@ -126,7 +128,7 @@ function ReferenceDataAlert({ errors }: { errors: ReferenceDataError[] }) {
     <Alert variant="destructive">
       <AlertTitle>Product options could not be loaded</AlertTitle>
       <AlertDescription>
-        {`Could not load ${labels}. You can still edit the product with empty option lists.`}
+        {`Could not load ${labels}. Editing is disabled until reference data loads to avoid clearing existing relationships.`}
       </AlertDescription>
     </Alert>
   );
