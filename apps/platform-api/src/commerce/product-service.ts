@@ -1041,13 +1041,21 @@ function productBelongsToSalesChannel(product: unknown, salesChannelId: string) 
     return undefined;
   }
 
-  if (product.sales_channels.length === 0) {
+  const salesChannelIds = product.sales_channels.flatMap((salesChannel) => {
+    if (!isRecord(salesChannel)) {
+      return [];
+    }
+
+    const id = getString(salesChannel.id);
+
+    return id ? [id] : [];
+  });
+
+  if (salesChannelIds.length === 0) {
     return undefined;
   }
 
-  return product.sales_channels.some(
-    (salesChannel) => isRecord(salesChannel) && salesChannel.id === salesChannelId,
-  );
+  return salesChannelIds.includes(salesChannelId);
 }
 
 async function productExistsInSalesChannel(

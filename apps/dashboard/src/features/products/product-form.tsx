@@ -18,7 +18,6 @@ import {
 import {
   InputGroup,
   InputGroupAddon,
-  InputGroupButton,
   InputGroupInput,
 } from "@/components/ui/input-group";
 import { Input } from "@/components/ui/input";
@@ -107,18 +106,21 @@ export function ProductForm({
                   readOnly={isHandleLocked}
                   value={handle}
                 />
-                <InputGroupAddon align="inline-end" className="gap-1 pr-1">
+                <InputGroupAddon align="inline-end" className="gap-1 py-0 pr-0">
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <InputGroupButton
+                      <Button
                         aria-label={
                           isHandleLocked ? "Unlock handle editing" : "Lock handle editing"
                         }
+                        className="rounded-full"
                         onClick={() => setIsHandleLocked((current) => !current)}
-                        size="icon-xs"
+                        size="icon-sm"
+                        type="button"
+                        variant="ghost"
                       >
                         <HandleLockIcon data-icon="inline-start" />
-                      </InputGroupButton>
+                      </Button>
                     </TooltipTrigger>
                     <TooltipContent side="top" sideOffset={6}>
                       {isHandleLocked ? "Unlock handle editing" : "Lock handle editing"}
@@ -126,13 +128,16 @@ export function ProductForm({
                   </Tooltip>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <InputGroupButton
+                      <Button
                         aria-label="Regenerate handle from title"
+                        className="rounded-full"
                         onClick={regenerateHandle}
-                        size="icon-xs"
+                        size="icon-sm"
+                        type="button"
+                        variant="ghost"
                       >
                         <AppIcons.refresh data-icon="inline-start" />
-                      </InputGroupButton>
+                      </Button>
                     </TooltipTrigger>
                     <TooltipContent side="top" sideOffset={6}>
                       Regenerate from title
