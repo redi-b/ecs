@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import { ListSummary, PaginationControls } from "@/components/app/list-page-controls";
 import { ListSetupState } from "@/components/app/list-error-state";
 import { PageShell } from "@/components/app/page-shell";
+import { RefreshButton } from "@/components/app/refresh-button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { OrdersTable } from "@/features/orders/orders-table";
 import { type DashboardSearchParams, getSelectedTenantId } from "@/lib/dashboard-tenant-context";
@@ -33,6 +34,7 @@ export default async function MerchantOrdersPage({ searchParams }: MerchantOrder
 
   return (
     <PageShell
+      actions={<RefreshButton />}
       description="Track merchant-scoped order data from the Platform API. Fulfillment and payment actions will build on this list foundation."
       title="Orders"
     >

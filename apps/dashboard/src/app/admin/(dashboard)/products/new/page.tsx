@@ -2,6 +2,7 @@ import { cookies, headers } from "next/headers";
 
 import { ListSetupState } from "@/components/app/list-error-state";
 import { PageShell } from "@/components/app/page-shell";
+import { RefreshButton } from "@/components/app/refresh-button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ProductForm } from "@/features/products/product-form";
 import {
@@ -59,6 +60,7 @@ export default async function MerchantProductCreatePage({
 
   return (
     <PageShell
+      actions={<RefreshButton label="Reload options" />}
       description="Create a merchant catalog item and publish it when the product data is ready."
       title="Create product"
     >

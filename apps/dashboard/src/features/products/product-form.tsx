@@ -1,7 +1,12 @@
-import type { MerchantProduct } from "@ecs/contracts";
+"use client";
 
+import type { MerchantProduct } from "@ecs/contracts";
+import { useMemo, useState } from "react";
+
+import { AppIcons } from "@/components/app/icons";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Field,
   FieldDescription,
@@ -10,9 +15,22 @@ import {
   FieldLegend,
   FieldSet,
 } from "@/components/ui/field";
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupButton,
+  InputGroupInput,
+} from "@/components/ui/input-group";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { cn } from "@/lib/utils";
 
 type ProductFormProps = {
   action: string;
@@ -22,8 +40,7 @@ type ProductFormProps = {
   submitLabel: string;
 };
 
-const nativeControlClassName =
-  "h-8 w-full rounded-lg border border-input bg-transparent px-2.5 py-1 text-base transition-colors outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:bg-input/50 disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 md:text-sm dark:bg-input/30 dark:disabled:bg-input/80 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40";
+const NO_COLLECTION_VALUE = "__none";
 
 export function ProductForm({
   action,
@@ -34,6 +51,32 @@ export function ProductForm({
 }: ProductFormProps) {
   const selectedCategoryIds = new Set(product?.categoryIds ?? []);
   const firstPrice = getFirstVariantPrice(product);
+  const initialTitle = product?.title ?? "";
+  const initialGeneratedHandle = slugifyProductHandle(initialTitle);
+  const initialHandle = product?.handle ?? initialGeneratedHandle;
+  const [title, setTitle] = useState(initialTitle);
+  const [handle, setHandle] = useState(initialHandle);
+  const [isHandleLocked, setIsHandleLocked] = useState(
+    !product?.handle || product.handle === initialGeneratedHandle,
+  );
+  const [status, setStatus] = useState(normalizeStatus(product?.status));
+  const [collectionId, setCollectionId] = useState(product?.collectionId ?? NO_COLLECTION_VALUE);
+  const hasCollections = collections.length > 0;
+  const HandleLockIcon = isHandleLocked ? AppIcons.lock : AppIcons.lockUnlock;
+  const generatedHandle = useMemo(() => slugifyProductHandle(title), [title]);
+
+  function updateTitle(nextTitle: string) {
+    setTitle(nextTitle);
+
+    if (isHandleLocked) {
+      setHandle(slugifyProductHandle(nextTitle));
+    }
+  }
+
+  function regenerateHandle() {
+    setHandle(generatedHandle);
+    setIsHandleLocked(true);
+  }
 
   return (
     <form action={action} className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_20rem]" method="post">
@@ -43,23 +86,48 @@ export function ProductForm({
             <Field>
               <FieldLabel htmlFor="title">Title</FieldLabel>
               <Input
-                defaultValue={product?.title ?? ""}
                 id="title"
                 name="title"
+                onChange={(event) => updateTitle(event.target.value)}
                 placeholder="Coffee beans"
                 required
+                value={title}
               />
             </Field>
 
             <Field>
               <FieldLabel htmlFor="handle">Handle</FieldLabel>
-              <Input
-                defaultValue={product?.handle ?? ""}
-                id="handle"
-                name="handle"
-                placeholder="coffee-beans"
-              />
-              <FieldDescription>Used as the product URL slug when provided.</FieldDescription>
+              <InputGroup>
+                <InputGroupInput
+                  id="handle"
+                  name="handle"
+                  onChange={(event) => setHandle(slugifyProductHandle(event.target.value))}
+                  placeholder="coffee-beans"
+                  readOnly={isHandleLocked}
+                  value={handle}
+                />
+                <InputGroupAddon align="inline-end">
+                  <InputGroupButton
+                    aria-label={isHandleLocked ? "Unlock handle editing" : "Lock handle editing"}
+                    onClick={() => setIsHandleLocked((current) => !current)}
+                    title={isHandleLocked ? "Unlock handle editing" : "Lock handle editing"}
+                  >
+                    <HandleLockIcon data-icon="inline-start" />
+                  </InputGroupButton>
+                  <InputGroupButton
+                    aria-label="Regenerate handle from title"
+                    onClick={regenerateHandle}
+                    title="Regenerate handle from title"
+                  >
+                    <AppIcons.refresh data-icon="inline-start" />
+                  </InputGroupButton>
+                </InputGroupAddon>
+              </InputGroup>
+              <FieldDescription>
+                {isHandleLocked
+                  ? "The handle follows the title automatically."
+                  : "Handle editing is unlocked for a custom storefront slug."}
+              </FieldDescription>
             </Field>
 
             <Field>
@@ -108,15 +176,18 @@ export function ProductForm({
             <FieldGroup>
               <Field>
                 <FieldLabel htmlFor="status">Status</FieldLabel>
-                <select
-                  className={nativeControlClassName}
-                  defaultValue={normalizeStatus(product?.status)}
-                  id="status"
-                  name="status"
-                >
-                  <option value="draft">Draft</option>
-                  <option value="published">Published</option>
-                </select>
+                <input name="status" type="hidden" value={status} />
+                <Select onValueChange={setStatus} value={status}>
+                  <SelectTrigger className="w-full" id="status">
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      <SelectItem value="draft">Draft</SelectItem>
+                      <SelectItem value="published">Published</SelectItem>
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
               </Field>
 
               <Field>
@@ -135,28 +206,40 @@ export function ProductForm({
               <Field>
                 <FieldLabel htmlFor="currencyCode">Currency code</FieldLabel>
                 <Input
-                  defaultValue={firstPrice?.currencyCode ?? "etb"}
                   id="currencyCode"
                   name="currencyCode"
-                  placeholder="etb"
+                  readOnly
+                  value="etb"
                 />
+                <FieldDescription>Catalog prices are fixed to ETB for this merchant market.</FieldDescription>
               </Field>
 
               <Field>
                 <FieldLabel htmlFor="collectionId">Collection</FieldLabel>
-                <select
-                  className={nativeControlClassName}
-                  defaultValue={product?.collectionId ?? ""}
-                  id="collectionId"
+                <input
                   name="collectionId"
+                  type="hidden"
+                  value={collectionId === NO_COLLECTION_VALUE ? "" : collectionId}
+                />
+                <Select
+                  disabled={!hasCollections}
+                  onValueChange={setCollectionId}
+                  value={collectionId}
                 >
-                  <option value="">No collection</option>
-                  {collections.map((collection) => (
-                    <option key={collection.id} value={collection.id}>
-                      {getCollectionLabel(collection)}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger className="w-full" id="collectionId">
+                    <SelectValue placeholder="Select collection" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      <SelectItem value={NO_COLLECTION_VALUE}>No collection</SelectItem>
+                      {collections.map((collection) => (
+                        <SelectItem key={collection.id} value={collection.id}>
+                          {getCollectionLabel(collection)}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
               </Field>
             </FieldGroup>
           </CardContent>
@@ -174,15 +257,10 @@ export function ProductForm({
 
                     return (
                       <Field key={category.id} orientation="horizontal">
-                        <input
-                          className={cn(
-                            "size-4 shrink-0 accent-primary rounded border border-input bg-transparent outline-none transition-colors",
-                            "focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50",
-                          )}
+                        <Checkbox
                           defaultChecked={selectedCategoryIds.has(category.id)}
                           id={categoryInputId}
                           name="categoryIds"
-                          type="checkbox"
                           value={category.id}
                         />
                         <FieldLabel className="font-normal" htmlFor={categoryInputId}>
@@ -217,13 +295,21 @@ function getFirstVariantPrice(product: MerchantProduct | undefined) {
       if (price.amount !== null || price.currencyCode) {
         return {
           amount: price.amount ?? "",
-          currencyCode: price.currencyCode ?? "etb",
         };
       }
     }
   }
 
   return undefined;
+}
+
+function slugifyProductHandle(value: string) {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 80);
 }
 
 function getCollectionLabel(collection: ProductFormProps["collections"][number]) {

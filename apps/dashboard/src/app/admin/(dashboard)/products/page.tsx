@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ListSummary, PaginationControls } from "@/components/app/list-page-controls";
 import { ListSetupState } from "@/components/app/list-error-state";
 import { PageShell } from "@/components/app/page-shell";
+import { RefreshButton } from "@/components/app/refresh-button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { ProductsTable } from "@/features/products/products-table";
@@ -42,9 +43,12 @@ export default async function MerchantProductsPage({ searchParams }: MerchantPro
   return (
     <PageShell
       actions={
-        <Button asChild>
-          <Link href={createProductHref}>Create product</Link>
-        </Button>
+        <>
+          <RefreshButton />
+          <Button asChild>
+            <Link href={createProductHref}>Create product</Link>
+          </Button>
+        </>
       }
       description="Review merchant-scoped catalog data from the Platform API. Product creation and editing controls will build on this list foundation."
       title="Products"

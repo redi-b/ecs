@@ -2,6 +2,7 @@ import { cookies, headers } from "next/headers";
 
 import { ListSetupState } from "@/components/app/list-error-state";
 import { PageShell } from "@/components/app/page-shell";
+import { RefreshButton } from "@/components/app/refresh-button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ProductDetail } from "@/features/products/product-detail";
 import { ProductForm } from "@/features/products/product-form";
@@ -76,6 +77,7 @@ export default async function MerchantProductDetailPage({
 
   return (
     <PageShell
+      actions={<RefreshButton />}
       description="Review merchant-scoped product details and update storefront product data."
       title="Product details"
     >

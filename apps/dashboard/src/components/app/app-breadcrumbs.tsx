@@ -11,22 +11,12 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
-import { appRoutes } from "@/lib/navigation";
+import { getDashboardBreadcrumbTrail } from "@/lib/dashboard-breadcrumbs";
 import { dashboardRoutes } from "@/lib/routes";
 
 export function AppBreadcrumbs() {
   const pathname = usePathname();
-  const trail =
-    appRoutes
-      .flatMap((item) => {
-        const children = item.children ?? [];
-        return [
-          { route: item, trail: [item] },
-          ...children.map((child) => ({ route: child, trail: [item, child] })),
-        ];
-      })
-      .filter(({ route }) => pathname === route.href || pathname.startsWith(`${route.href}/`))
-      .sort((a, b) => b.route.href.length - a.route.href.length)[0]?.trail ?? [];
+  const trail = getDashboardBreadcrumbTrail(pathname);
   const currentRoute = trail.at(-1);
 
   if (!currentRoute || currentRoute.href === dashboardRoutes.overview || trail.length === 1) {
