@@ -52,7 +52,7 @@ export function ProductMediaCell({ product }: { product: MerchantProduct }) {
   }
 
   return (
-    <div className="grid size-11 shrink-0 place-items-center rounded-2xl border bg-primary/10 text-xs font-semibold text-primary">
+    <div className="grid size-11 shrink-0 place-items-center rounded-2xl border bg-muted/70 text-xs font-semibold text-muted-foreground ring-1 ring-border/60 dark:bg-muted/40">
       {thumbnail.initials || <AppIcons.image data-icon="inline-start" />}
     </div>
   );

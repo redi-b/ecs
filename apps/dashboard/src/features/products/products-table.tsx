@@ -47,6 +47,14 @@ type ProductsTableProps = {
   totalCount: number;
 };
 
+function copyToClipboard(value: string) {
+  if (!value || typeof navigator === "undefined" || !navigator.clipboard) {
+    return;
+  }
+
+  void navigator.clipboard.writeText(value).catch(() => undefined);
+}
+
 function getProductColumns(tenantId?: string): ColumnDef<MerchantProduct>[] {
   return [
     {
@@ -124,13 +132,13 @@ function getProductColumns(tenantId?: string): ColumnDef<MerchantProduct>[] {
               { type: "separator" },
               {
                 label: "Copy product ID",
-                onSelect: () => void navigator.clipboard?.writeText(product.id),
+                onSelect: () => copyToClipboard(product.id),
                 type: "button",
               },
               {
                 disabled: !product.handle,
                 label: "Copy handle",
-                onSelect: () => void navigator.clipboard?.writeText(product.handle ?? ""),
+                onSelect: () => copyToClipboard(product.handle ?? ""),
                 type: "button",
               },
             ]}
@@ -199,11 +207,7 @@ export function ProductsTable({ pageSize, products, tenantId, totalCount }: Prod
     <DataTable
       bulkActions={(selectedProducts) => (
         <Button
-          onClick={() =>
-            void navigator.clipboard?.writeText(
-              selectedProducts.map((product) => product.id).join("\n"),
-            )
-          }
+          onClick={() => copyToClipboard(selectedProducts.map((product) => product.id).join("\n"))}
           size="sm"
           type="button"
           variant="outline"
@@ -217,7 +221,7 @@ export function ProductsTable({ pageSize, products, tenantId, totalCount }: Prod
       emptyMessage="No products have been synced for this merchant yet."
       filteredEmptyMessage="No products match the current search or filters."
       getRowId={(product) => product.id}
-      selectedSummaryLabel="products selected"
+      selectedSummaryLabel={(count) => `product${count === 1 ? "" : "s"} selected`}
       toolbar={toolbar}
     />
   );
