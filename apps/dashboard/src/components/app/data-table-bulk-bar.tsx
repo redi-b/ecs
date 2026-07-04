@@ -11,6 +11,7 @@ type DataTableBulkBarProps = {
   className?: string;
   onClearSelection: () => void;
   selectedCount: number;
+  summaryLabel?: string;
 };
 
 export function DataTableBulkBar({
@@ -18,6 +19,7 @@ export function DataTableBulkBar({
   className,
   onClearSelection,
   selectedCount,
+  summaryLabel = "selected",
 }: DataTableBulkBarProps) {
   if (selectedCount < 1) {
     return null;
@@ -31,7 +33,7 @@ export function DataTableBulkBar({
       )}
     >
       <span className="rounded-full bg-primary/10 px-3 py-1 font-medium text-primary">
-        {selectedCount} selected
+        {selectedCount} {summaryLabel}
       </span>
       {actions ? <div className="flex items-center gap-1">{actions}</div> : null}
       <Button
