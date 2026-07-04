@@ -184,12 +184,12 @@ export function createMedusaProductService(options: {
         };
       }
 
-      if (response.status === 404) {
+      if (response.status === 404 && (await isMissingCommerceResourceResponse(response))) {
         return {
           ok: false,
           error: "commerce_resource_missing",
           status: 503,
-        } as MerchantProductsResult;
+        };
       }
 
       if (!response.ok) {
@@ -1291,6 +1291,41 @@ function getNumber(value: unknown) {
 
 function getBoolean(value: unknown) {
   return typeof value === "boolean" ? value : null;
+}
+
+async function isMissingCommerceResourceResponse(response: Response) {
+  const data = await response.json().catch(() => undefined);
+  const message = getErrorMessage(data);
+
+  if (!message) {
+    return false;
+  }
+
+  const normalized = message.toLowerCase();
+
+  return (
+    /(sales channel|sales_channel|sales-channel).*(not found|does not exist|missing)/.test(
+      normalized,
+    ) ||
+    /(resource|commerce resource).*(not found|does not exist|missing)/.test(normalized)
+  );
+}
+
+function getErrorMessage(value: unknown) {
+  if (typeof value === "string") {
+    return value;
+  }
+
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  return (
+    getString(value.message) ??
+    getString(value.error) ??
+    getString(value.type) ??
+    getString(value.code)
+  );
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
