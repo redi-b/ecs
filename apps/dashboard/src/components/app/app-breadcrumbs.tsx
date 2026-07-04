@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
+import { useBreadcrumbLabels } from "@/components/app/breadcrumb-labels";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -16,7 +17,8 @@ import { dashboardRoutes } from "@/lib/routes";
 
 export function AppBreadcrumbs() {
   const pathname = usePathname();
-  const trail = getDashboardBreadcrumbTrail(pathname);
+  const labels = useBreadcrumbLabels();
+  const trail = getDashboardBreadcrumbTrail(pathname, labels);
   const currentRoute = trail.at(-1);
 
   if (!currentRoute || currentRoute.href === dashboardRoutes.overview || trail.length === 1) {

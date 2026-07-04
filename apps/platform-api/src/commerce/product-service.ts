@@ -233,7 +233,16 @@ export function createMedusaProductService(options: {
 
       const data = await response.json().catch(() => undefined);
 
-      if (!productBelongsToSalesChannel(data?.product, input.salesChannelId)) {
+      const ownership = productBelongsToSalesChannel(data?.product, input.salesChannelId);
+
+      if (
+        ownership === false ||
+        (ownership === undefined &&
+          !(await productExistsInSalesChannel(fetcher, options, {
+            productId: input.productId,
+            salesChannelId: input.salesChannelId,
+          })))
+      ) {
         return {
           ok: false,
           error: "product_not_found",
@@ -1008,18 +1017,64 @@ function getProductOwnershipUrl(medusaInternalUrl: string, productId: string) {
   return url;
 }
 
+function getProductOwnershipListUrl(
+  medusaInternalUrl: string,
+  input: { productId: string; salesChannelId: string },
+) {
+  const url = getProductsBaseUrl(medusaInternalUrl);
+
+  url.searchParams.set("limit", "1");
+  url.searchParams.set("offset", "0");
+  url.searchParams.set("fields", "id");
+  url.searchParams.set("id[]", input.productId);
+  url.searchParams.set("sales_channel_id[]", input.salesChannelId);
+
+  return url;
+}
+
 function normalizeBaseUrl(value: string) {
   return value.endsWith("/") ? value : `${value}/`;
 }
 
 function productBelongsToSalesChannel(product: unknown, salesChannelId: string) {
   if (!isRecord(product) || !Array.isArray(product.sales_channels)) {
-    return false;
+    return undefined;
+  }
+
+  if (product.sales_channels.length === 0) {
+    return undefined;
   }
 
   return product.sales_channels.some(
     (salesChannel) => isRecord(salesChannel) && salesChannel.id === salesChannelId,
   );
+}
+
+async function productExistsInSalesChannel(
+  fetcher: typeof fetch,
+  options: {
+    adminApiToken?: string | undefined;
+    medusaInternalUrl: string;
+  },
+  input: { productId: string; salesChannelId: string },
+) {
+  const response = await requestMedusa(
+    fetcher,
+    getProductOwnershipListUrl(options.medusaInternalUrl, input),
+    {
+      headers: getAdminHeaders(options.adminApiToken ?? ""),
+    },
+  );
+
+  if (!response.ok) {
+    return false;
+  }
+
+  const data = await response.json().catch(() => undefined);
+
+  return Array.isArray(data?.products)
+    ? data.products.some((product: unknown) => isRecord(product) && product.id === input.productId)
+    : false;
 }
 
 function normalizeProduct(value: unknown): MerchantProduct[] {

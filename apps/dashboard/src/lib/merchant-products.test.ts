@@ -190,23 +190,31 @@ describe("getMerchantProducts", () => {
     });
   });
 
-  it("returns an error for product categories without tenant context", async () => {
-    let fetchCalled = false;
+  it("fetches merchant product categories with resolved shop host context", async () => {
+    let forwardedRequest: Request | undefined;
     const result = await getMerchantProductCategories({
+      cookieHeader: "better-auth.session_token=session_1",
       platformApiBaseUrl: "http://platform.local",
-      fetcher: async () => {
-        fetchCalled = true;
+      requestHost: "abebe.lvh.me",
+      fetcher: async (input, init) => {
+        forwardedRequest = new Request(input, init);
 
-        return Response.json({});
+        return Response.json({
+          categories: [],
+          count: 0,
+          limit: 100,
+          offset: 0,
+        });
       },
     });
 
-    assert.equal(fetchCalled, false);
-    assert.deepEqual(result, {
-      ok: false,
-      status: 400,
-      message: "tenant_required",
-    });
+    assert.equal(result.ok, true);
+    assert.equal(
+      forwardedRequest?.url,
+      "http://platform.local/platform/merchant/product-categories?limit=100&offset=0",
+    );
+    assert.equal(forwardedRequest?.headers.get("x-forwarded-host"), "abebe.lvh.me");
+    assert.equal(forwardedRequest?.headers.get("cookie"), "better-auth.session_token=session_1");
   });
 
   it("fetches merchant product collections with tenant context", async () => {
@@ -256,23 +264,31 @@ describe("getMerchantProducts", () => {
     });
   });
 
-  it("returns an error for product collections without tenant context", async () => {
-    let fetchCalled = false;
+  it("fetches merchant product collections with resolved shop host context", async () => {
+    let forwardedRequest: Request | undefined;
     const result = await getMerchantProductCollections({
+      cookieHeader: "better-auth.session_token=session_1",
       platformApiBaseUrl: "http://platform.local",
-      fetcher: async () => {
-        fetchCalled = true;
+      requestHost: "abebe.lvh.me",
+      fetcher: async (input, init) => {
+        forwardedRequest = new Request(input, init);
 
-        return Response.json({});
+        return Response.json({
+          collections: [],
+          count: 0,
+          limit: 100,
+          offset: 0,
+        });
       },
     });
 
-    assert.equal(fetchCalled, false);
-    assert.deepEqual(result, {
-      ok: false,
-      status: 400,
-      message: "tenant_required",
-    });
+    assert.equal(result.ok, true);
+    assert.equal(
+      forwardedRequest?.url,
+      "http://platform.local/platform/merchant/product-collections?limit=100&offset=0",
+    );
+    assert.equal(forwardedRequest?.headers.get("x-forwarded-host"), "abebe.lvh.me");
+    assert.equal(forwardedRequest?.headers.get("cookie"), "better-auth.session_token=session_1");
   });
 
   it("fetches merchant products with session and tenant context", async () => {

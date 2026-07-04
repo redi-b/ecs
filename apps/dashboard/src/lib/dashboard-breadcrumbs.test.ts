@@ -18,6 +18,18 @@ describe("getDashboardBreadcrumbTrail", () => {
     ]);
   });
 
+  it("uses product detail label overrides when available", () => {
+    assert.deepEqual(
+      getDashboardBreadcrumbTrail("/admin/products/prod_1", {
+        "product-details": "Coffee beans",
+      }),
+      [
+        { href: "/admin/products", id: "products", title: "Products" },
+        { href: "/admin/products/prod_1", id: "product-details", title: "Coffee beans" },
+      ],
+    );
+  });
+
   it("keeps static app routes as single-page breadcrumbs", () => {
     assert.deepEqual(getDashboardBreadcrumbTrail("/admin/orders"), [
       { href: "/admin/orders", id: "orders", title: "Orders" },

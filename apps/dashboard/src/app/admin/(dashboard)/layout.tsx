@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 
 import { AppHeader } from "@/components/app/app-header";
 import { AppSidebar } from "@/components/app/app-sidebar";
+import { BreadcrumbLabelsProvider } from "@/components/app/breadcrumb-labels";
 import { DashboardAccessState } from "@/components/app/dashboard-access-state";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -62,8 +63,10 @@ export default async function AdminDashboardLayout({ children }: { children: Rea
       <SidebarProvider defaultOpen={sidebarDefaultOpen}>
         <AppSidebar actor={access.summary.actor} />
         <SidebarInset>
-          <AppHeader />
-          {children}
+          <BreadcrumbLabelsProvider>
+            <AppHeader />
+            {children}
+          </BreadcrumbLabelsProvider>
         </SidebarInset>
       </SidebarProvider>
     </TooltipProvider>

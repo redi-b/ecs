@@ -247,21 +247,12 @@ async function fetchProductResource(options: {
   tenantId?: string | null | undefined;
 }) {
   const tenantId = options.tenantId?.trim();
-
-  if (!tenantId) {
-    return {
-      ok: false as const,
-      status: 400,
-      message: "tenant_required",
-    };
-  }
-
   const fetcher = options.fetcher ?? fetch;
   const response = await fetcher(getProductResourceUrl({ ...options, tenantId }), {
     cache: "no-store",
     headers: getProductHeaders({
       cookieHeader: options.cookieHeader,
-      requestHost: undefined,
+      requestHost: tenantId ? undefined : options.requestHost,
     }),
   }).catch(() => null);
 
@@ -472,9 +463,11 @@ function getProductResourceUrl(options: {
   offset?: number | undefined;
   platformApiBaseUrl: string;
   resource: "product-categories" | "product-collections";
-  tenantId: string;
+  tenantId?: string | null | undefined;
 }) {
-  const path = `/platform/tenants/${encodeURIComponent(options.tenantId)}/${options.resource}`;
+  const path = options.tenantId?.trim()
+    ? `/platform/tenants/${encodeURIComponent(options.tenantId.trim())}/${options.resource}`
+    : `/platform/merchant/${options.resource}`;
   const url = new URL(path, normalizeBaseUrl(options.platformApiBaseUrl));
 
   url.searchParams.set("limit", String(options.limit ?? 100));

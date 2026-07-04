@@ -332,6 +332,48 @@ describe("createMedusaProductService", () => {
     });
   });
 
+  it("gets a product when ownership is verified by a scoped product list fallback", async () => {
+    const forwardedRequests: Request[] = [];
+    const service = createMedusaProductService({
+      adminApiToken: "medusa_token",
+      medusaInternalUrl: "http://medusa:9000",
+      fetcher: async (input, init) => {
+        const request = new Request(input, init);
+        forwardedRequests.push(request);
+
+        if (request.url.includes("/admin/products?")) {
+          return Response.json({
+            products: [{ id: "prod_1" }],
+          });
+        }
+
+        return Response.json({
+          product: {
+            id: "prod_1",
+            title: "Coffee",
+            handle: "coffee",
+            status: "published",
+            thumbnail: null,
+            created_at: "2026-01-01T00:00:00.000Z",
+            updated_at: "2026-01-02T00:00:00.000Z",
+          },
+        });
+      },
+    });
+
+    const result = await service.getMerchantProduct({
+      productId: "prod_1",
+      salesChannelId: "sc_1",
+    });
+
+    assert.equal(result.ok, true);
+    assert.equal(forwardedRequests.length, 2);
+    assert.equal(
+      forwardedRequests[1]?.url,
+      "http://medusa:9000/admin/products?limit=1&offset=0&fields=id&id%5B%5D=prod_1&sales_channel_id%5B%5D=sc_1",
+    );
+  });
+
   it("does not update products outside the resolved tenant sales channel", async () => {
     const forwardedRequests: Request[] = [];
     const service = createMedusaProductService({
