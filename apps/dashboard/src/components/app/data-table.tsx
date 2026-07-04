@@ -45,6 +45,7 @@ export function DataTable<TData>({
   getRowId,
   globalFilter,
   onGlobalFilterChange,
+  selectedSummaryLabel = "selected",
   toolbar,
 }: DataTableProps<TData>) {
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
@@ -74,6 +75,7 @@ export function DataTable<TData>({
 
   const rows = table.getRowModel().rows;
   const selectedRows = table.getFilteredSelectedRowModel().rows;
+  const visibleColumnCount = table.getVisibleLeafColumns().length || columns.length;
   const emptyStateMessage =
     data.length > 0 && rows.length === 0 ? (filteredEmptyMessage ?? emptyMessage) : emptyMessage;
 
@@ -116,7 +118,7 @@ export function DataTable<TData>({
               <TableRow>
                 <TableCell
                   className="h-40 px-4 text-center text-sm text-muted-foreground"
-                  colSpan={columns.length}
+                  colSpan={visibleColumnCount}
                 >
                   {emptyStateMessage}
                 </TableCell>
@@ -129,6 +131,7 @@ export function DataTable<TData>({
         actions={bulkActions?.(selectedRows.map((row) => row.original))}
         onClearSelection={() => table.resetRowSelection()}
         selectedCount={selectedRows.length}
+        summaryLabel={selectedSummaryLabel}
       />
     </div>
   );

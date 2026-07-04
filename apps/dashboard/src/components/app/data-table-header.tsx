@@ -33,7 +33,7 @@ export function DataTableHeader<TData, TValue>({
     <Button
       aria-label={`Sort by ${title}`}
       className={cn("-ml-2 h-8 rounded-full px-2 text-xs font-medium text-muted-foreground", className)}
-      onClick={() => column.toggleSorting(sorted === "asc")}
+      onClick={column.getToggleSortingHandler()}
       type="button"
       variant="ghost"
     >
