@@ -32,7 +32,7 @@ type DataTableProps<TData> = {
   getRowId?: (row: TData) => string;
   globalFilter?: string;
   onGlobalFilterChange?: (value: string) => void;
-  selectedSummaryLabel?: string;
+  selectedSummaryLabel?: string | ((selectedCount: number) => string);
   toolbar?: React.ReactNode;
 };
 
@@ -78,9 +78,13 @@ export function DataTable<TData>({
   const visibleColumnCount = table.getVisibleLeafColumns().length || columns.length;
   const emptyStateMessage =
     data.length > 0 && rows.length === 0 ? (filteredEmptyMessage ?? emptyMessage) : emptyMessage;
+  const selectedSummary =
+    typeof selectedSummaryLabel === "function"
+      ? selectedSummaryLabel(selectedRows.length)
+      : selectedSummaryLabel;
 
   return (
-    <div className="overflow-hidden rounded-[1.35rem] border bg-card/95 shadow-sm shadow-primary/5">
+    <div className="mb-4 overflow-hidden rounded-[1.35rem] border bg-card/95 shadow-sm shadow-primary/5 lg:mb-6">
       {toolbar ? <div className="border-b bg-muted/20 p-3">{toolbar}</div> : null}
       <div className="overflow-x-auto">
         <Table>
@@ -104,6 +108,7 @@ export function DataTable<TData>({
             {rows.length ? (
               rows.map((row) => (
                 <TableRow
+                  className="transition-colors hover:bg-muted/40 data-[state=selected]:bg-primary/5 data-[state=selected]:hover:bg-primary/10"
                   data-state={row.getIsSelected() ? "selected" : undefined}
                   key={row.id}
                 >
@@ -131,7 +136,7 @@ export function DataTable<TData>({
         actions={bulkActions?.(selectedRows.map((row) => row.original))}
         onClearSelection={() => table.resetRowSelection()}
         selectedCount={selectedRows.length}
-        summaryLabel={selectedSummaryLabel}
+        summaryLabel={selectedSummary}
       />
     </div>
   );
