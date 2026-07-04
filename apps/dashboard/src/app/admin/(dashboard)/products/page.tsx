@@ -62,7 +62,12 @@ export default async function MerchantProductsPage({ searchParams }: MerchantPro
       {result.ok ? (
         <>
           <ListSummary count={result.products.count} label="products" />
-          <ProductsTable products={result.products.products} tenantId={tenantId} />
+          <ProductsTable
+            pageSize={result.products.limit}
+            products={result.products.products}
+            tenantId={tenantId}
+            totalCount={result.products.count}
+          />
           <PaginationControls
             basePath={dashboardRoutes.products}
             count={result.products.count}

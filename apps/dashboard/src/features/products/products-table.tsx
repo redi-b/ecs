@@ -41,10 +41,10 @@ import { getTenantScopedPath } from "@/lib/dashboard-tenant-context";
 import { dashboardRoutes } from "@/lib/routes";
 
 type ProductsTableProps = {
-  pageSize?: number;
+  pageSize: number;
   products: MerchantProduct[];
   tenantId?: string | undefined;
-  totalCount?: number;
+  totalCount: number;
 };
 
 function getProductColumns(tenantId?: string): ColumnDef<MerchantProduct>[] {
@@ -144,9 +144,10 @@ function getProductColumns(tenantId?: string): ColumnDef<MerchantProduct>[] {
   ];
 }
 
-export function ProductsTable({ products, tenantId, totalCount = products.length }: ProductsTableProps) {
+export function ProductsTable({ pageSize, products, tenantId, totalCount }: ProductsTableProps) {
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<ProductStatusFilter>("all");
+  void pageSize;
   const filteredProducts = useMemo(
     () => filterProductsForTable(products, { query, status }),
     [products, query, status],
