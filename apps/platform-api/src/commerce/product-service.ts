@@ -184,6 +184,14 @@ export function createMedusaProductService(options: {
         };
       }
 
+      if (response.status === 404) {
+        return {
+          ok: false,
+          error: "commerce_resource_missing",
+          status: 503,
+        } as MerchantProductsResult;
+      }
+
       if (!response.ok) {
         return {
           ok: false,

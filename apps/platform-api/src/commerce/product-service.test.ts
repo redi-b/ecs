@@ -458,6 +458,26 @@ describe("createMedusaProductService", () => {
     });
   });
 
+  it("maps missing Medusa product list resources to a commerce resource setup error", async () => {
+    const service = createMedusaProductService({
+      adminApiToken: "medusa_token",
+      medusaInternalUrl: "http://medusa:9000",
+      fetcher: async () => Response.json({ message: "Sales channel not found" }, { status: 404 }),
+    });
+
+    const result = await service.listMerchantProducts({
+      limit: 20,
+      offset: 0,
+      salesChannelId: "sc_missing",
+    });
+
+    assert.deepEqual(result, {
+      ok: false,
+      error: "commerce_resource_missing",
+      status: 503,
+    });
+  });
+
   it("gets product stock through the default variant inventory item", async () => {
     const forwardedRequests: Request[] = [];
     const service = createMedusaProductService({
