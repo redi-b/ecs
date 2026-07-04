@@ -66,8 +66,10 @@ export function getProductPriceSortValue(product: MerchantProduct) {
 export function getProductMediaCount(product: MerchantProduct) {
   const mediaUrls = new Set<string>();
 
-  if (product.thumbnail) {
-    mediaUrls.add(product.thumbnail);
+  const thumbnailUrl = product.thumbnail?.trim();
+
+  if (thumbnailUrl) {
+    mediaUrls.add(thumbnailUrl);
   }
 
   for (const image of product.images ?? []) {

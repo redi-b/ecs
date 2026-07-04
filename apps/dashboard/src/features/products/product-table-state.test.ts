@@ -201,6 +201,29 @@ describe("product table state", () => {
       }),
       0,
     );
+    assert.equal(
+      getProductMediaCount({
+        ...teaProduct,
+        thumbnail: "   ",
+      }),
+      0,
+    );
+    assert.equal(
+      getProductMediaCount({
+        ...coffeeProduct,
+        images: [
+          {
+            id: "img_5",
+            rank: 0,
+            url: "https://cdn.example.com/coffee.jpg",
+            createdAt: "2026-01-01T00:00:00.000Z",
+            updatedAt: "2026-01-02T00:00:00.000Z",
+          },
+        ],
+        thumbnail: " https://cdn.example.com/coffee.jpg ",
+      }),
+      1,
+    );
   });
 
   it("derives active filter state from filter input", () => {
