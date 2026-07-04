@@ -105,9 +105,11 @@ function formatDate(value: string | null) {
 }
 
 function formatFirstPrice(product: MerchantProduct) {
-  const price = product.variants?.flatMap((variant) => variant.prices)[0];
+  const price = product.variants
+    ?.flatMap((variant) => variant.prices)
+    .find((variantPrice) => typeof variantPrice.amount === "number" && variantPrice.currencyCode);
 
-  if (price?.amount == null || !price.currencyCode) {
+  if (!price || typeof price.amount !== "number" || !price.currencyCode) {
     return "No price";
   }
 
