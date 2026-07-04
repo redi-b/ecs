@@ -233,15 +233,12 @@ export function createMedusaProductService(options: {
 
       const data = await response.json().catch(() => undefined);
 
-      const ownership = productBelongsToSalesChannel(data?.product, input.salesChannelId);
-
       if (
-        ownership === false ||
-        (ownership === undefined &&
-          !(await productExistsInSalesChannel(fetcher, options, {
-            productId: input.productId,
-            salesChannelId: input.salesChannelId,
-          })))
+        !(await productIsInSalesChannel(fetcher, options, {
+          product: data?.product,
+          productId: input.productId,
+          salesChannelId: input.salesChannelId,
+        }))
       ) {
         return {
           ok: false,
@@ -462,7 +459,13 @@ export function createMedusaProductService(options: {
 
       const retrieveData = await retrieveResponse.json().catch(() => undefined);
 
-      if (!productBelongsToSalesChannel(retrieveData?.product, input.salesChannelId)) {
+      if (
+        !(await productIsInSalesChannel(fetcher, options, {
+          product: retrieveData?.product,
+          productId: input.productId,
+          salesChannelId: input.salesChannelId,
+        }))
+      ) {
         return {
           ok: false,
           error: "product_not_found",
@@ -1056,6 +1059,26 @@ function productBelongsToSalesChannel(product: unknown, salesChannelId: string) 
   }
 
   return salesChannelIds.includes(salesChannelId);
+}
+
+async function productIsInSalesChannel(
+  fetcher: typeof fetch,
+  options: {
+    adminApiToken?: string | undefined;
+    medusaInternalUrl: string;
+  },
+  input: { product: unknown; productId: string; salesChannelId: string },
+) {
+  const ownership = productBelongsToSalesChannel(input.product, input.salesChannelId);
+
+  if (ownership !== undefined) {
+    return ownership;
+  }
+
+  return productExistsInSalesChannel(fetcher, options, {
+    productId: input.productId,
+    salesChannelId: input.salesChannelId,
+  });
 }
 
 async function productExistsInSalesChannel(
