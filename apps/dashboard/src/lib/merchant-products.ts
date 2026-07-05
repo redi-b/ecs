@@ -1,11 +1,15 @@
 import type {
   MerchantProduct,
   MerchantProductCategories,
+  MerchantProductCategory,
+  MerchantProductCollection,
   MerchantProductCollections,
   MerchantProducts,
 } from "@ecs/contracts";
 import {
   merchantProductCategoriesSchema,
+  merchantProductCategorySchema,
+  merchantProductCollectionSchema,
   merchantProductCollectionsSchema,
   merchantProductMutationSchema,
   merchantProductsSchema,
@@ -65,6 +69,28 @@ export type MerchantProductCollectionsResult =
       status: number;
     };
 
+export type MerchantProductCategoryMutationResult =
+  | {
+      ok: true;
+      category: MerchantProductCategory;
+    }
+  | {
+      ok: false;
+      message: string;
+      status: number;
+    };
+
+export type MerchantProductCollectionMutationResult =
+  | {
+      ok: true;
+      collection: MerchantProductCollection;
+    }
+  | {
+      ok: false;
+      message: string;
+      status: number;
+    };
+
 export type MerchantProductWriteInput = {
   categoryIds?: string[] | undefined;
   collectionId?: string | null | undefined;
@@ -96,6 +122,56 @@ export async function createMerchantProduct(options: {
   });
 
   return parseProductMutationResponse(response);
+}
+
+export async function createMerchantProductCategory(options: {
+  cookieHeader?: string | null | undefined;
+  fetcher?: typeof fetch;
+  handle?: string | null | undefined;
+  name: string;
+  platformApiBaseUrl: string;
+  requestHost?: string | null | undefined;
+  tenantId?: string | null | undefined;
+}): Promise<MerchantProductCategoryMutationResult> {
+  const response = await sendTaxonomyMutation({
+    body: {
+      name: options.name,
+      handle: options.handle,
+    },
+    cookieHeader: options.cookieHeader,
+    fetcher: options.fetcher,
+    platformApiBaseUrl: options.platformApiBaseUrl,
+    requestHost: options.requestHost,
+    resource: "product-categories",
+    tenantId: options.tenantId,
+  });
+
+  return parseProductCategoryMutationResponse(response);
+}
+
+export async function createMerchantProductCollection(options: {
+  cookieHeader?: string | null | undefined;
+  fetcher?: typeof fetch;
+  handle?: string | null | undefined;
+  platformApiBaseUrl: string;
+  requestHost?: string | null | undefined;
+  tenantId?: string | null | undefined;
+  title: string;
+}): Promise<MerchantProductCollectionMutationResult> {
+  const response = await sendTaxonomyMutation({
+    body: {
+      title: options.title,
+      handle: options.handle,
+    },
+    cookieHeader: options.cookieHeader,
+    fetcher: options.fetcher,
+    platformApiBaseUrl: options.platformApiBaseUrl,
+    requestHost: options.requestHost,
+    resource: "product-collections",
+    tenantId: options.tenantId,
+  });
+
+  return parseProductCollectionMutationResponse(response);
 }
 
 export async function getMerchantProduct(options: {
@@ -290,6 +366,39 @@ async function sendProductMutation(options: {
   });
 }
 
+async function sendTaxonomyMutation(options: {
+  body: Record<string, string | null | undefined>;
+  cookieHeader?: string | null | undefined;
+  fetcher?: typeof fetch | undefined;
+  platformApiBaseUrl: string;
+  requestHost?: string | null | undefined;
+  resource: "product-categories" | "product-collections";
+  tenantId?: string | null | undefined;
+}) {
+  const tenantId = options.tenantId?.trim();
+  const fetcher = options.fetcher ?? fetch;
+  const response = await fetcher(getProductResourceMutationUrl({ ...options, tenantId }), {
+    body: JSON.stringify(options.body),
+    cache: "no-store",
+    headers: getProductHeaders({
+      cookieHeader: options.cookieHeader,
+      contentType: true,
+      requestHost: tenantId ? undefined : options.requestHost,
+    }),
+    method: "POST",
+  }).catch(() => null);
+
+  if (!response) {
+    return {
+      ok: false as const,
+      status: 503,
+      message: "platform_request_failed",
+    };
+  }
+
+  return response;
+}
+
 async function parseProductResponse(response: Response): Promise<MerchantProductResult> {
   const data = await response.json().catch(() => undefined);
 
@@ -347,6 +456,100 @@ async function parseProductMutationResponse(
   return {
     ok: true,
     product: parsed.data.product,
+  };
+}
+
+async function parseProductCategoryMutationResponse(
+  response:
+    | Response
+    | {
+        ok: false;
+        message: string;
+        status: number;
+      },
+): Promise<MerchantProductCategoryMutationResult> {
+  if (!response.ok) {
+    if (!(response instanceof Response)) {
+      return response;
+    }
+
+    const data = await response.json().catch(() => undefined);
+    const error = platformErrorSchema.safeParse(data);
+
+    return {
+      ok: false,
+      status: response.status,
+      message:
+        error.success ? error.data.error : response.statusText || "Product category request failed",
+    };
+  }
+
+  const data = await response.json().catch(() => undefined);
+  const parsed = merchantProductCategorySchema.safeParse(
+    typeof data === "object" && data !== null && "category" in data
+      ? (data as { category?: unknown }).category
+      : undefined,
+  );
+
+  if (!parsed.success) {
+    return {
+      ok: false,
+      status: 502,
+      message: "invalid_product_category_response",
+    };
+  }
+
+  return {
+    ok: true,
+    category: parsed.data,
+  };
+}
+
+async function parseProductCollectionMutationResponse(
+  response:
+    | Response
+    | {
+        ok: false;
+        message: string;
+        status: number;
+      },
+): Promise<MerchantProductCollectionMutationResult> {
+  if (!response.ok) {
+    if (!(response instanceof Response)) {
+      return response;
+    }
+
+    const data = await response.json().catch(() => undefined);
+    const error = platformErrorSchema.safeParse(data);
+
+    return {
+      ok: false,
+      status: response.status,
+      message:
+        error.success
+          ? error.data.error
+          : response.statusText || "Product collection request failed",
+    };
+  }
+
+  const data = await response.json().catch(() => undefined);
+  const parsed = merchantProductCollectionSchema.safeParse(
+    typeof data === "object" && data !== null && "collection" in data
+      ? (data as { collection?: unknown }).collection
+      : undefined,
+  );
+
+  if (!parsed.success) {
+    return {
+      ok: false,
+      status: 502,
+      message: "invalid_product_collection_response",
+    };
+  }
+
+  return {
+    ok: true,
+    collection: parsed.data,
   };
 }
 
@@ -474,6 +677,18 @@ function getProductResourceUrl(options: {
   url.searchParams.set("offset", String(options.offset ?? 0));
 
   return url;
+}
+
+function getProductResourceMutationUrl(options: {
+  platformApiBaseUrl: string;
+  resource: "product-categories" | "product-collections";
+  tenantId?: string | null | undefined;
+}) {
+  const path = options.tenantId?.trim()
+    ? `/platform/tenants/${encodeURIComponent(options.tenantId.trim())}/${options.resource}`
+    : `/platform/merchant/${options.resource}`;
+
+  return new URL(path, normalizeBaseUrl(options.platformApiBaseUrl));
 }
 
 function getProductMutationUrl(options: {

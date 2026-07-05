@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
+  createMerchantProductCategory,
+  createMerchantProductCollection,
   createMerchantProduct,
   getMerchantProduct,
   getMerchantProductCategories,
@@ -18,6 +20,25 @@ const merchantProduct = {
   categoryIds: ["pcat_1"],
   status: "draft",
   thumbnail: "https://cdn.test/thumb.jpg",
+  createdAt: "2026-01-01T00:00:00.000Z",
+  updatedAt: "2026-01-02T00:00:00.000Z",
+};
+
+const merchantProductCategory = {
+  id: "pcat_1",
+  name: "Coffee",
+  handle: "coffee",
+  isActive: true,
+  isInternal: false,
+  parentCategoryId: null,
+  createdAt: "2026-01-01T00:00:00.000Z",
+  updatedAt: "2026-01-02T00:00:00.000Z",
+};
+
+const merchantProductCollection = {
+  id: "pcol_1",
+  title: "Featured",
+  handle: "featured",
   createdAt: "2026-01-01T00:00:00.000Z",
   updatedAt: "2026-01-02T00:00:00.000Z",
 };
@@ -58,6 +79,188 @@ describe("getMerchantProducts", () => {
     assert.equal(forwardedRequest?.headers.get("x-forwarded-host"), null);
     assert.equal(forwardedRequest?.headers.get("cookie"), "better-auth.session_token=session_1");
     assert.deepEqual(await forwardedRequest?.json(), productWriteBody);
+  });
+
+  it("creates merchant product categories with tenant context", async () => {
+    let forwardedRequest: Request | undefined;
+    const result = await createMerchantProductCategory({
+      cookieHeader: "better-auth.session_token=session_1",
+      platformApiBaseUrl: "http://platform.local",
+      tenantId: "tenant_1",
+      name: "Coffee",
+      handle: "coffee",
+      fetcher: async (input, init) => {
+        forwardedRequest = new Request(input, init);
+
+        return Response.json({
+          category: merchantProductCategory,
+        });
+      },
+    });
+
+    assert.deepEqual(result, {
+      ok: true,
+      category: merchantProductCategory,
+    });
+    assert.equal(forwardedRequest?.method, "POST");
+    assert.equal(
+      forwardedRequest?.url,
+      "http://platform.local/platform/tenants/tenant_1/product-categories",
+    );
+    assert.equal(forwardedRequest?.headers.get("x-forwarded-host"), null);
+    assert.equal(forwardedRequest?.headers.get("cookie"), "better-auth.session_token=session_1");
+    assert.equal(forwardedRequest?.headers.get("content-type"), "application/json");
+    assert.deepEqual(await forwardedRequest?.json(), {
+      name: "Coffee",
+      handle: "coffee",
+    });
+  });
+
+  it("creates merchant product categories with resolved shop host context", async () => {
+    let forwardedRequest: Request | undefined;
+    const result = await createMerchantProductCategory({
+      cookieHeader: "better-auth.session_token=session_1",
+      platformApiBaseUrl: "http://platform.local",
+      requestHost: "abebe.lvh.me",
+      name: "Coffee",
+      handle: "coffee",
+      fetcher: async (input, init) => {
+        forwardedRequest = new Request(input, init);
+
+        return Response.json({
+          category: merchantProductCategory,
+        });
+      },
+    });
+
+    assert.equal(result.ok, true);
+    assert.equal(
+      forwardedRequest?.url,
+      "http://platform.local/platform/merchant/product-categories",
+    );
+    assert.equal(forwardedRequest?.headers.get("x-forwarded-host"), "abebe.lvh.me");
+    assert.equal(forwardedRequest?.headers.get("cookie"), "better-auth.session_token=session_1");
+  });
+
+  it("returns an error for invalid merchant product category create responses", async () => {
+    const result = await createMerchantProductCategory({
+      platformApiBaseUrl: "http://platform.local",
+      name: "Coffee",
+      fetcher: async () => Response.json({ category: null }),
+    });
+
+    assert.deepEqual(result, {
+      ok: false,
+      status: 502,
+      message: "invalid_product_category_response",
+    });
+  });
+
+  it("returns an error when merchant product category create requests fail", async () => {
+    const result = await createMerchantProductCategory({
+      platformApiBaseUrl: "http://platform.local",
+      name: "Coffee",
+      fetcher: async () => {
+        throw new TypeError("fetch failed");
+      },
+    });
+
+    assert.deepEqual(result, {
+      ok: false,
+      status: 503,
+      message: "platform_request_failed",
+    });
+  });
+
+  it("creates merchant product collections with tenant context", async () => {
+    let forwardedRequest: Request | undefined;
+    const result = await createMerchantProductCollection({
+      cookieHeader: "better-auth.session_token=session_1",
+      platformApiBaseUrl: "http://platform.local",
+      tenantId: "tenant_1",
+      title: "Featured",
+      handle: "featured",
+      fetcher: async (input, init) => {
+        forwardedRequest = new Request(input, init);
+
+        return Response.json({
+          collection: merchantProductCollection,
+        });
+      },
+    });
+
+    assert.deepEqual(result, {
+      ok: true,
+      collection: merchantProductCollection,
+    });
+    assert.equal(forwardedRequest?.method, "POST");
+    assert.equal(
+      forwardedRequest?.url,
+      "http://platform.local/platform/tenants/tenant_1/product-collections",
+    );
+    assert.equal(forwardedRequest?.headers.get("x-forwarded-host"), null);
+    assert.equal(forwardedRequest?.headers.get("cookie"), "better-auth.session_token=session_1");
+    assert.equal(forwardedRequest?.headers.get("content-type"), "application/json");
+    assert.deepEqual(await forwardedRequest?.json(), {
+      title: "Featured",
+      handle: "featured",
+    });
+  });
+
+  it("creates merchant product collections with resolved shop host context", async () => {
+    let forwardedRequest: Request | undefined;
+    const result = await createMerchantProductCollection({
+      cookieHeader: "better-auth.session_token=session_1",
+      platformApiBaseUrl: "http://platform.local",
+      requestHost: "abebe.lvh.me",
+      title: "Featured",
+      handle: "featured",
+      fetcher: async (input, init) => {
+        forwardedRequest = new Request(input, init);
+
+        return Response.json({
+          collection: merchantProductCollection,
+        });
+      },
+    });
+
+    assert.equal(result.ok, true);
+    assert.equal(
+      forwardedRequest?.url,
+      "http://platform.local/platform/merchant/product-collections",
+    );
+    assert.equal(forwardedRequest?.headers.get("x-forwarded-host"), "abebe.lvh.me");
+    assert.equal(forwardedRequest?.headers.get("cookie"), "better-auth.session_token=session_1");
+  });
+
+  it("returns an error for invalid merchant product collection create responses", async () => {
+    const result = await createMerchantProductCollection({
+      platformApiBaseUrl: "http://platform.local",
+      title: "Featured",
+      fetcher: async () => Response.json({ collection: null }),
+    });
+
+    assert.deepEqual(result, {
+      ok: false,
+      status: 502,
+      message: "invalid_product_collection_response",
+    });
+  });
+
+  it("returns an error when merchant product collection create requests fail", async () => {
+    const result = await createMerchantProductCollection({
+      platformApiBaseUrl: "http://platform.local",
+      title: "Featured",
+      fetcher: async () => {
+        throw new TypeError("fetch failed");
+      },
+    });
+
+    assert.deepEqual(result, {
+      ok: false,
+      status: 503,
+      message: "platform_request_failed",
+    });
   });
 
   it("updates merchant products with session and tenant context", async () => {

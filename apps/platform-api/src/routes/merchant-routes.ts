@@ -605,6 +605,39 @@ export function registerMerchantRoutes(
     });
   });
 
+  app.post("/platform/merchant/product-categories", async (context) => {
+    const merchant = await getAuthorizedMerchantContext(context);
+
+    if (!merchant.ok) {
+      return merchant.response;
+    }
+
+    if (!options.createMerchantProductCategory) {
+      return context.json({ error: "commerce_backend_unavailable" }, 503);
+    }
+
+    const body = await getJsonBody(context.req.raw);
+    const name = getRequiredBodyString(body, "name");
+
+    if (!name) {
+      return context.json({ error: "missing_name" }, 400);
+    }
+
+    const category = await options.createMerchantProductCategory({
+      name,
+      handle: getOptionalBodyString(body, "handle"),
+      tenantId: merchant.result.context.tenantId,
+    });
+
+    if (!category.ok) {
+      return context.json({ error: category.error }, category.status);
+    }
+
+    return context.json({
+      category: category.category,
+    });
+  });
+
   app.get("/platform/merchant/product-collections", async (context) => {
     const merchant = await getAuthorizedMerchantContext(context);
 
@@ -631,6 +664,39 @@ export function registerMerchantRoutes(
       count: collections.count,
       limit: collections.limit,
       offset: collections.offset,
+    });
+  });
+
+  app.post("/platform/merchant/product-collections", async (context) => {
+    const merchant = await getAuthorizedMerchantContext(context);
+
+    if (!merchant.ok) {
+      return merchant.response;
+    }
+
+    if (!options.createMerchantProductCollection) {
+      return context.json({ error: "commerce_backend_unavailable" }, 503);
+    }
+
+    const body = await getJsonBody(context.req.raw);
+    const title = getRequiredBodyString(body, "title");
+
+    if (!title) {
+      return context.json({ error: "missing_title" }, 400);
+    }
+
+    const collection = await options.createMerchantProductCollection({
+      title,
+      handle: getOptionalBodyString(body, "handle"),
+      tenantId: merchant.result.context.tenantId,
+    });
+
+    if (!collection.ok) {
+      return context.json({ error: collection.error }, collection.status);
+    }
+
+    return context.json({
+      collection: collection.collection,
     });
   });
 
