@@ -1,7 +1,7 @@
 import { cookies, headers } from "next/headers";
 import { NextResponse } from "next/server";
 
-import { deleteMerchantProductCategoriesBatch } from "../../../../../../lib/merchant-products";
+import { deleteMerchantProductCategoriesBatch } from "@/lib/merchant-products";
 
 export async function POST(request: Request) {
   const body = (await request.json().catch(() => ({}))) as {
@@ -12,7 +12,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "invalid_category_ids" }, { status: 400 });
   }
 
-  const categoryIds = body.categoryIds.filter((id): id is string => typeof id === "string");
+  const categoryIds = body.categoryIds.filter(
+    (id): id is string => typeof id === "string" && id.trim().length > 0,
+  );
+
+  if (categoryIds.length === 0) {
+    return NextResponse.json({ error: "invalid_category_ids" }, { status: 400 });
+  }
 
   const cookieStore = await cookies();
   const requestHeaders = await headers();

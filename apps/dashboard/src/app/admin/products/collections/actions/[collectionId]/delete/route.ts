@@ -1,7 +1,7 @@
 import { cookies, headers } from "next/headers";
 import { NextResponse } from "next/server";
 
-import { deleteMerchantProductCollection } from "../../../../../../../lib/merchant-products";
+import { deleteMerchantProductCollection } from "@/lib/merchant-products";
 
 export async function POST(
   request: Request,
