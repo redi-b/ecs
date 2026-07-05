@@ -14,6 +14,7 @@ export function getDashboardBreadcrumbTrail(
   labels: DashboardBreadcrumbLabels = {},
 ): DashboardBreadcrumb[] {
   const productsRoute = appRoutes.find((route) => route.href === dashboardRoutes.products);
+  const ordersRoute = appRoutes.find((route) => route.href === dashboardRoutes.orders);
 
   if (productsRoute && pathname === dashboardRoutes.productsNew) {
     return [
@@ -37,6 +38,17 @@ export function getDashboardBreadcrumbTrail(
         href: pathname,
         id: "product-details",
         title: labels["product-details"] ?? "Product details",
+      },
+    ];
+  }
+
+  if (ordersRoute && pathname.startsWith(`${dashboardRoutes.orders}/`)) {
+    return [
+      toBreadcrumb(ordersRoute),
+      {
+        href: pathname,
+        id: "order-details",
+        title: labels["order-details"] ?? "Order details",
       },
     ];
   }

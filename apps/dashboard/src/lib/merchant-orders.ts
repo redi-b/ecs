@@ -1,10 +1,21 @@
-import type { MerchantOrders } from "@ecs/contracts";
-import { merchantOrdersSchema, platformErrorSchema } from "@ecs/contracts";
+import type { MerchantOrder, MerchantOrders } from "@ecs/contracts";
+import { merchantOrderSchema, merchantOrdersSchema, platformErrorSchema } from "@ecs/contracts";
 
 export type MerchantOrdersResult =
   | {
       ok: true;
       orders: MerchantOrders;
+    }
+  | {
+      ok: false;
+      message: string;
+      status: number;
+    };
+
+export type MerchantOrderResult =
+  | {
+      ok: true;
+      order: MerchantOrder;
     }
   | {
       ok: false;
@@ -66,6 +77,59 @@ export async function getMerchantOrders(options: {
   };
 }
 
+export async function getMerchantOrder(options: {
+  cookieHeader?: string | null | undefined;
+  fetcher?: typeof fetch;
+  orderId: string;
+  platformApiBaseUrl: string;
+  requestHost?: string | null | undefined;
+  tenantId?: string | null | undefined;
+}): Promise<MerchantOrderResult> {
+  const fetcher = options.fetcher ?? fetch;
+  const response = await fetcher(getOrderUrl(options), {
+    cache: "no-store",
+    headers: getOrderHeaders({
+      cookieHeader: options.cookieHeader,
+      requestHost: options.tenantId?.trim() ? undefined : options.requestHost,
+    }),
+  }).catch(() => null);
+
+  if (!response) {
+    return {
+      ok: false,
+      status: 503,
+      message: "platform_request_failed",
+    };
+  }
+
+  const data = await response.json().catch(() => undefined);
+
+  if (!response.ok) {
+    const error = platformErrorSchema.safeParse(data);
+
+    return {
+      ok: false,
+      status: response.status,
+      message: error.success ? error.data.error : response.statusText || "Order request failed",
+    };
+  }
+
+  const parsed = merchantOrderSchema.safeParse(data?.order);
+
+  if (!parsed.success) {
+    return {
+      ok: false,
+      status: 502,
+      message: "invalid_order_response",
+    };
+  }
+
+  return {
+    ok: true,
+    order: parsed.data,
+  };
+}
+
 function getOrdersUrl(options: {
   limit?: number | undefined;
   offset?: number | undefined;
@@ -86,6 +150,20 @@ function getOrdersUrl(options: {
   }
 
   return url;
+}
+
+function getOrderUrl(options: {
+  orderId: string;
+  platformApiBaseUrl: string;
+  tenantId?: string | null | undefined;
+}) {
+  const tenantId = options.tenantId?.trim();
+  const encodedOrderId = encodeURIComponent(options.orderId);
+  const path = tenantId
+    ? `/platform/tenants/${encodeURIComponent(tenantId)}/orders/${encodedOrderId}`
+    : `/platform/merchant/orders/${encodedOrderId}`;
+
+  return new URL(path, normalizeBaseUrl(options.platformApiBaseUrl));
 }
 
 function getOrderHeaders(options: {
