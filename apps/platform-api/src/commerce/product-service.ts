@@ -507,18 +507,7 @@ export function createMedusaProductService(options: {
       );
 
       if (!retrieveResponse.ok) {
-        if (retrieveResponse.status === 401) {
-          return {
-            ok: false,
-            error: "commerce_credentials_invalid",
-            status: 401,
-          };
-        }
-        return {
-          ok: false,
-          error: "product_not_found",
-          status: 404,
-        };
+        return getDeleteError(retrieveResponse, "product");
       }
 
       const retrieveData = await retrieveResponse.json().catch(() => undefined);
@@ -638,16 +627,10 @@ export function createMedusaProductService(options: {
         )
       );
 
-      // Check if any returned credentials error
-      const credentialsInvalid = results.find(
-        (r) => typeof r === "object" && !r.ok && r.error === "commerce_credentials_invalid"
-      );
-      if (credentialsInvalid && typeof credentialsInvalid === "object") {
-        return {
-          ok: false,
-          error: "commerce_credentials_invalid",
-          status: 401,
-        };
+      for (const r of results) {
+        if (typeof r === "object") {
+          return r;
+        }
       }
 
       const verifiedIds = input.categoryIds.filter((_, idx) => {
@@ -679,6 +662,23 @@ export function createMedusaProductService(options: {
           return parseDeleteResponse(response, "category");
         })
       );
+
+      for (const r of deleteResults) {
+        if (!r.ok) {
+          if (r.error === "commerce_credentials_invalid") {
+            return {
+              ok: false,
+              error: "commerce_credentials_invalid",
+              status: 401,
+            };
+          }
+          return {
+            ok: false,
+            error: "commerce_backend_unavailable",
+            status: 503,
+          };
+        }
+      }
 
       const successfulIds = deleteResults
         .filter((r): r is Extract<MerchantDeleteResult, { ok: true }> => r.ok)
@@ -740,16 +740,10 @@ export function createMedusaProductService(options: {
         )
       );
 
-      // Check if any returned credentials error
-      const credentialsInvalid = results.find(
-        (r) => typeof r === "object" && !r.ok && r.error === "commerce_credentials_invalid"
-      );
-      if (credentialsInvalid && typeof credentialsInvalid === "object") {
-        return {
-          ok: false,
-          error: "commerce_credentials_invalid",
-          status: 401,
-        };
+      for (const r of results) {
+        if (typeof r === "object") {
+          return r;
+        }
       }
 
       const verifiedIds = input.collectionIds.filter((_, idx) => {
@@ -781,6 +775,23 @@ export function createMedusaProductService(options: {
           return parseDeleteResponse(response, "collection");
         })
       );
+
+      for (const r of deleteResults) {
+        if (!r.ok) {
+          if (r.error === "commerce_credentials_invalid") {
+            return {
+              ok: false,
+              error: "commerce_credentials_invalid",
+              status: 401,
+            };
+          }
+          return {
+            ok: false,
+            error: "commerce_backend_unavailable",
+            status: 503,
+          };
+        }
+      }
 
       const successfulIds = deleteResults
         .filter((r): r is Extract<MerchantDeleteResult, { ok: true }> => r.ok)
@@ -1931,6 +1942,33 @@ async function filterProductIdsBySalesChannel(
   return data.products
     .map((p: any) => getString(p.id))
     .filter((id: string | null): id is string => Boolean(id));
+}
+
+function getDeleteError(
+  response: Response,
+  resourceName: "product" | "category" | "collection",
+): Extract<MerchantDeleteResult, { ok: false }> {
+  if (response.status === 401) {
+    return {
+      ok: false,
+      error: "commerce_credentials_invalid",
+      status: 401,
+    };
+  }
+
+  if (response.status === 404) {
+    return {
+      ok: false,
+      error: `${resourceName}_not_found` as const,
+      status: 404,
+    };
+  }
+
+  return {
+    ok: false,
+    error: "commerce_backend_unavailable",
+    status: 503,
+  };
 }
 
 async function parseDeleteResponse(
