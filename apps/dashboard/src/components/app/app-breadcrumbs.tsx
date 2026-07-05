@@ -1,5 +1,6 @@
 "use client";
 
+import { Fragment } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -37,13 +38,15 @@ export function AppBreadcrumbs() {
     <Breadcrumb>
       <BreadcrumbList className="flex-nowrap">
         {trail.slice(0, -1).map((route) => (
-          <BreadcrumbItem className="hidden sm:inline-flex" key={route.id}>
-            <BreadcrumbLink asChild>
-              <Link href={route.href}>{route.title}</Link>
-            </BreadcrumbLink>
-          </BreadcrumbItem>
+          <Fragment key={route.id}>
+            <BreadcrumbItem className="hidden sm:inline-flex">
+              <BreadcrumbLink asChild>
+                <Link href={route.href}>{route.title}</Link>
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator className="hidden sm:inline-flex" />
+          </Fragment>
         ))}
-        <BreadcrumbSeparator className="hidden sm:inline-flex" />
         <BreadcrumbItem className="min-w-0">
           <BreadcrumbPage className="truncate">{currentRoute.title}</BreadcrumbPage>
         </BreadcrumbItem>

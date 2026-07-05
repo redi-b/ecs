@@ -335,13 +335,9 @@ function slugifyProductHandle(value: string) {
 }
 
 function getCollectionLabel(collection: ProductFormProps["collections"][number]) {
-  const label = collection.title ?? collection.handle ?? collection.id;
-
-  return collection.handle && collection.handle !== label ? `${label} /${collection.handle}` : label;
+  return collection.title ?? collection.handle ?? collection.id;
 }
 
 function getCategoryLabel(category: ProductFormProps["categories"][number]) {
-  const label = category.name ?? category.handle ?? category.id;
-
-  return category.handle && category.handle !== label ? `${label} /${category.handle}` : label;
+  return category.name ?? category.handle ?? category.id;
 }

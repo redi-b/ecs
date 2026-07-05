@@ -91,7 +91,12 @@ export default async function MerchantProductDetailPage({
             label={productResult.product.title ?? productResult.product.handle ?? null}
           />
           {optionErrors.length ? <ReferenceDataAlert errors={optionErrors} /> : null}
-          <ProductDetail product={productResult.product} />
+          <ProductDetail
+            categories={categoriesResult.ok ? categoriesResult.categories : []}
+            collections={collectionsResult.ok ? collectionsResult.collections : []}
+            product={productResult.product}
+            tenantId={tenantId}
+          />
           {optionErrors.length ? null : (
             <ProductForm
               action={getTenantScopedPath(
