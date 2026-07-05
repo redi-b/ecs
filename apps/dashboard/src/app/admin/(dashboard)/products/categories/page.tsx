@@ -1,13 +1,19 @@
 import { headers } from "next/headers";
+import Link from "next/link";
 
 import { ListSummary, PaginationControls } from "@/components/app/list-page-controls";
 import { ListSetupState } from "@/components/app/list-error-state";
 import { PageShell } from "@/components/app/page-shell";
 import { RefreshButton } from "@/components/app/refresh-button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 import { ProductCategoriesTable } from "@/features/catalog-taxonomy/product-categories-table";
 import { getTaxonomyListErrorState } from "@/features/catalog-taxonomy/taxonomy-list-error-state";
-import { type DashboardSearchParams, getSelectedTenantId } from "@/lib/dashboard-tenant-context";
+import {
+  type DashboardSearchParams,
+  getSelectedTenantId,
+  getTenantScopedPath,
+} from "@/lib/dashboard-tenant-context";
 import { getMerchantProductCategories } from "@/lib/merchant-products";
 import { dashboardRoutes } from "@/lib/routes";
 import { parseListSearchParams } from "@/lib/url-state";
@@ -24,6 +30,11 @@ export default async function MerchantProductCategoriesPage({
   const tenantId = getSelectedTenantId(resolvedSearchParams);
   const requestHeaders = await headers();
   const offset = (listParams.page - 1) * listParams.pageSize;
+  const createCategoryHref = getTenantScopedPath(
+    dashboardRoutes.productCategoriesNew,
+    tenantId,
+  );
+  const categoryNotice = getCategoryNotice(resolvedSearchParams.categoryStatus);
   const result = await getMerchantProductCategories({
     cookieHeader: requestHeaders.get("cookie"),
     limit: listParams.pageSize,
@@ -36,10 +47,23 @@ export default async function MerchantProductCategoriesPage({
 
   return (
     <PageShell
-      actions={<RefreshButton />}
+      actions={
+        <>
+          <RefreshButton />
+          <Button asChild>
+            <Link href={createCategoryHref}>New category</Link>
+          </Button>
+        </>
+      }
       description="Review merchant-scoped product categories from the catalog taxonomy."
       title="Product categories"
     >
+      {categoryNotice ? (
+        <Alert variant={categoryNotice.variant}>
+          <AlertTitle>{categoryNotice.title}</AlertTitle>
+          <AlertDescription>{categoryNotice.description}</AlertDescription>
+        </Alert>
+      ) : null}
       {result.ok ? (
         <>
           <ListSummary count={result.count} label="product categories" />
@@ -66,4 +90,40 @@ export default async function MerchantProductCategoriesPage({
       )}
     </PageShell>
   );
+}
+
+function getCategoryNotice(categoryStatus: string | string[] | undefined) {
+  const status = Array.isArray(categoryStatus) ? categoryStatus[0] : categoryStatus;
+
+  if (!status) {
+    return null;
+  }
+
+  if (status === "category_created") {
+    return {
+      variant: "default" as const,
+      title: "Category created",
+      description: "The product category is now available for catalog organization.",
+    };
+  }
+
+  if (status === "missing_name") {
+    return {
+      variant: "destructive" as const,
+      title: "Category could not be created",
+      description: "Enter a category name before continuing.",
+    };
+  }
+
+  const mutationError = getTaxonomyListErrorState("categories", status);
+
+  if (mutationError.kind === "setup" || mutationError.kind === "service") {
+    return null;
+  }
+
+  return {
+    variant: "destructive" as const,
+    title: "Category could not be created",
+    description: mutationError.description,
+  };
 }

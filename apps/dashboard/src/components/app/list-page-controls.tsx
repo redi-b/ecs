@@ -3,6 +3,8 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import type { DashboardSearchParams } from "@/lib/dashboard-tenant-context";
 
+const TRANSIENT_STATUS_PARAMS = new Set(["categoryStatus", "collectionStatus", "productStatus"]);
+
 type ListSummaryProps = {
   count: number;
   label: string;
@@ -69,7 +71,7 @@ function getPageHref(basePath: string, searchParams: DashboardSearchParams, page
   const params = new URLSearchParams();
 
   for (const [key, value] of Object.entries(searchParams ?? {})) {
-    if (key === "page" || key === "productStatus" || value === undefined) {
+    if (key === "page" || TRANSIENT_STATUS_PARAMS.has(key) || value === undefined) {
       continue;
     }
 
