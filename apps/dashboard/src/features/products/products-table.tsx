@@ -221,6 +221,7 @@ export function ProductsTable({ pageSize, products, tenantId, totalCount }: Prod
       emptyMessage="No products have been synced for this merchant yet."
       filteredEmptyMessage="No products match the current search or filters."
       getRowId={(product) => product.id}
+      isFiltered={counts.hasActiveFilter}
       selectedSummaryLabel={(count) => `product${count === 1 ? "" : "s"} selected`}
       toolbar={toolbar}
     />
