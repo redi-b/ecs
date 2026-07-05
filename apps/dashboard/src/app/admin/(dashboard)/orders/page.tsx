@@ -41,7 +41,12 @@ export default async function MerchantOrdersPage({ searchParams }: MerchantOrder
       {result.ok ? (
         <>
           <ListSummary count={result.orders.count} label="orders" />
-          <OrdersTable orders={result.orders.orders} />
+          <OrdersTable
+            orders={result.orders.orders}
+            pageSize={result.orders.limit}
+            tenantId={tenantId}
+            totalCount={result.orders.count}
+          />
           <PaginationControls
             basePath={dashboardRoutes.orders}
             count={result.orders.count}
