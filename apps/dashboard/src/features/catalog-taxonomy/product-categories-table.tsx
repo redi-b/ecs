@@ -2,7 +2,23 @@
 
 import type { MerchantProductCategory } from "@ecs/contracts";
 import type { ColumnDef } from "@tanstack/react-table";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
+import { toast } from "sonner";
+
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { getTenantScopedPath } from "@/lib/dashboard-tenant-context";
+import { dashboardRoutes } from "@/lib/routes";
 
 import { DataTable } from "@/components/app/data-table";
 import { DataTableHeader } from "@/components/app/data-table-header";
@@ -27,11 +43,7 @@ import {
   getTaxonomyTableCounts,
 } from "@/features/catalog-taxonomy/taxonomy-table-state";
 
-type ProductCategoriesTableProps = {
-  categories: MerchantProductCategory[];
-  pageSize: number;
-  totalCount: number;
-};
+
 
 function copyToClipboard(value: string) {
   if (!value || typeof navigator === "undefined" || !navigator.clipboard) {
@@ -43,6 +55,7 @@ function copyToClipboard(value: string) {
 
 function getCategoryColumns(
   categoriesById: Map<string, MerchantProductCategory>,
+  onDelete: (categoryId: string) => void,
 ): ColumnDef<MerchantProductCategory>[] {
   return [
     {
@@ -122,6 +135,13 @@ function getCategoryColumns(
                 onSelect: () => copyToClipboard(category.handle ?? ""),
                 type: "button",
               },
+              { type: "separator" },
+              {
+                label: "Delete category",
+                onSelect: () => onDelete(category.id),
+                type: "button",
+                variant: "destructive",
+              },
             ]}
             label={`Open actions for ${getCategoryDisplayName(category)}`}
           />
@@ -133,21 +153,91 @@ function getCategoryColumns(
   ];
 }
 
+type ProductCategoriesTableProps = {
+  categories: MerchantProductCategory[];
+  pageSize: number;
+  totalCount: number;
+  tenantId?: string | undefined;
+};
+
 export function ProductCategoriesTable({
   categories,
   pageSize,
   totalCount,
+  tenantId,
 }: ProductCategoriesTableProps) {
+  const router = useRouter();
+  const queryClient = useQueryClient();
   const [query, setQuery] = useState("");
   void pageSize;
+
+  const [deleteCategoryId, setDeleteCategoryId] = useState<string | null>(null);
+  const [selectedCategoryIdsForDelete, setSelectedCategoryIdsForDelete] = useState<string[]>([]);
+  const [showBatchDeleteDialog, setShowBatchDeleteDialog] = useState(false);
+
+  const categoriesById = useMemo(
+    () => new Map(categories.map((category) => [category.id, category])),
+    [categories],
+  );
+
+  const columns = useMemo(
+    () => getCategoryColumns(categoriesById, (id) => setDeleteCategoryId(id)),
+    [categoriesById],
+  );
+
+  const deleteCategoryMutation = useMutation({
+    mutationFn: async (categoryId: string) => {
+      const url = getTenantScopedPath(
+        dashboardRoutes.productCategoryDeleteAction(categoryId),
+        tenantId,
+      );
+      const res = await fetch(url, { method: "POST" });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Failed to delete product category.");
+      }
+      return categoryId;
+    },
+    onSuccess: () => {
+      toast.success("Product category deleted successfully.");
+      queryClient.invalidateQueries({ queryKey: ["product-categories"] });
+      setDeleteCategoryId(null);
+      router.refresh();
+    },
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : "Failed to delete product category.");
+    },
+  });
+
+  const batchDeleteCategoriesMutation = useMutation({
+    mutationFn: async (categoryIds: string[]) => {
+      const url = getTenantScopedPath(dashboardRoutes.productCategoriesBatchDeleteAction, tenantId);
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ categoryIds }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Failed to delete product categories.");
+      }
+      return categoryIds;
+    },
+    onSuccess: () => {
+      toast.success("Selected product categories deleted successfully.");
+      queryClient.invalidateQueries({ queryKey: ["product-categories"] });
+      setSelectedCategoryIdsForDelete([]);
+      setShowBatchDeleteDialog(false);
+      router.refresh();
+    },
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : "Failed to delete product categories.");
+    },
+  });
 
   const filteredCategories = useMemo(
     () => filterCategoriesForTable(categories, { query }),
     [categories, query],
-  );
-  const categoriesById = useMemo(
-    () => new Map(categories.map((category) => [category.id, category])),
-    [categories],
   );
   const counts = getTaxonomyTableCounts({
     filteredCount: filteredCategories.length,
@@ -177,29 +267,101 @@ export function ProductCategoriesTable({
     </div>
   );
 
+  const categoryToDelete = categories.find((c) => c.id === deleteCategoryId);
+
   return (
-    <DataTable
-      bulkActions={(selectedCategories) => (
-        <Button
-          onClick={() =>
-            copyToClipboard(selectedCategories.map((category) => category.id).join("\n"))
-          }
-          size="sm"
-          type="button"
-          variant="outline"
-        >
-          <AppIcons.copy data-icon="inline-start" />
-          Copy IDs
-        </Button>
-      )}
-      columns={getCategoryColumns(categoriesById)}
-      data={filteredCategories}
-      emptyMessage="No product categories have been synced for this merchant yet."
-      filteredEmptyMessage="No product categories match the current search."
-      getRowId={(category) => category.id}
-      isFiltered={counts.hasActiveFilter}
-      selectedSummaryLabel={(count) => `categor${count === 1 ? "y" : "ies"} selected`}
-      toolbar={toolbar}
-    />
+    <>
+      <DataTable
+        bulkActions={(selectedCategories) => (
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={() =>
+                copyToClipboard(selectedCategories.map((category) => category.id).join("\n"))
+              }
+              size="sm"
+              type="button"
+              variant="outline"
+            >
+              <AppIcons.copy data-icon="inline-start" />
+              Copy IDs
+            </Button>
+            <Button
+              onClick={() => {
+                setSelectedCategoryIdsForDelete(selectedCategories.map((c) => c.id));
+                setShowBatchDeleteDialog(true);
+              }}
+              size="sm"
+              type="button"
+              variant="destructive"
+            >
+              Delete selected
+            </Button>
+          </div>
+        )}
+        columns={columns}
+        data={filteredCategories}
+        emptyMessage="No product categories have been synced for this merchant yet."
+        filteredEmptyMessage="No product categories match the current search."
+        getRowId={(category) => category.id}
+        isFiltered={counts.hasActiveFilter}
+        selectedSummaryLabel={(count) => `categor${count === 1 ? "y" : "ies"} selected`}
+        toolbar={toolbar}
+      />
+
+      <AlertDialog
+        open={deleteCategoryId !== null}
+        onOpenChange={(open) => !open && setDeleteCategoryId(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete product category</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete &ldquo;{categoryToDelete ? getCategoryDisplayName(categoryToDelete) : "this category"}&rdquo;?
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteCategoryMutation.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+              disabled={deleteCategoryMutation.isPending}
+              onClick={(e) => {
+                e.preventDefault();
+                if (deleteCategoryId) deleteCategoryMutation.mutate(deleteCategoryId);
+              }}
+            >
+              {deleteCategoryMutation.isPending ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={showBatchDeleteDialog} onOpenChange={setShowBatchDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete product categories</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete {selectedCategoryIdsForDelete.length} selected categories?
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={batchDeleteCategoriesMutation.isPending}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+              disabled={batchDeleteCategoriesMutation.isPending}
+              onClick={(e) => {
+                e.preventDefault();
+                batchDeleteCategoriesMutation.mutate(selectedCategoryIdsForDelete);
+              }}
+            >
+              {batchDeleteCategoriesMutation.isPending ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }

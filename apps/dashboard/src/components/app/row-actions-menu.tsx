@@ -25,6 +25,7 @@ export type RowAction =
       label: string;
       onSelect: () => void;
       type: "button";
+      variant?: "default" | "destructive";
     }
   | {
       type: "separator";
@@ -59,10 +60,10 @@ export function RowActionsMenu({ actions, label }: RowActionsMenuProps) {
             if (action.type === "link") {
               return (
                 <DropdownMenuItem
-                  asChild
-                  className="rounded-xl px-2 py-2"
-                  disabled={action.disabled ?? false}
-                  key={action.label}
+                   asChild
+                   className="rounded-xl px-2 py-2"
+                   disabled={action.disabled ?? false}
+                   key={action.label}
                 >
                   <Link href={action.href}>{action.label}</Link>
                 </DropdownMenuItem>
@@ -71,7 +72,11 @@ export function RowActionsMenu({ actions, label }: RowActionsMenuProps) {
 
             return (
               <DropdownMenuItem
-                className="rounded-xl px-2 py-2"
+                className={`rounded-xl px-2 py-2 ${
+                  action.variant === "destructive"
+                    ? "text-destructive focus:bg-destructive/10 focus:text-destructive"
+                    : ""
+                }`}
                 disabled={action.disabled ?? false}
                 key={action.label}
                 onSelect={action.onSelect}

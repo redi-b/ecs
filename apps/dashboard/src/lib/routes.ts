@@ -14,6 +14,15 @@ export const dashboardRoutes = {
     `/admin/products/actions/${encodeURIComponent(productId)}/stock`,
   productUpdateAction: (productId: string) =>
     `/admin/products/actions/${encodeURIComponent(productId)}`,
+  productDeleteAction: (productId: string) =>
+    `/admin/products/actions/${encodeURIComponent(productId)}/delete`,
+  productsBatchDeleteAction: "/admin/products/actions/batch-delete",
+  productCategoryDeleteAction: (categoryId: string) =>
+    `/admin/products/categories/actions/${encodeURIComponent(categoryId)}/delete`,
+  productCategoriesBatchDeleteAction: "/admin/products/categories/actions/batch-delete",
+  productCollectionDeleteAction: (collectionId: string) =>
+    `/admin/products/collections/actions/${encodeURIComponent(collectionId)}/delete`,
+  productCollectionsBatchDeleteAction: "/admin/products/collections/actions/batch-delete",
   orders: "/admin/orders",
   orderAction: (orderId: string) => `/admin/orders/actions/${encodeURIComponent(orderId)}`,
   orderDetail: (orderId: string) => `/admin/orders/${encodeURIComponent(orderId)}`,
@@ -23,4 +32,7 @@ export const dashboardRoutes = {
   settings: "/admin/settings",
 } as const;
 
-export type DashboardRouteHref = Extract<(typeof dashboardRoutes)[keyof typeof dashboardRoutes], string>;
+export type DashboardRouteHref = Extract<
+  (typeof dashboardRoutes)[keyof typeof dashboardRoutes],
+  string
+>;
