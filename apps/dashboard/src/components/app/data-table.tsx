@@ -31,6 +31,7 @@ type DataTableProps<TData> = {
   filteredEmptyMessage?: string;
   getRowId?: (row: TData) => string;
   globalFilter?: string;
+  isFiltered?: boolean;
   onGlobalFilterChange?: (value: string) => void;
   selectedSummaryLabel?: string | ((selectedCount: number) => string);
   toolbar?: React.ReactNode;
@@ -44,6 +45,7 @@ export function DataTable<TData>({
   filteredEmptyMessage,
   getRowId,
   globalFilter,
+  isFiltered = false,
   onGlobalFilterChange,
   selectedSummaryLabel = "selected",
   toolbar,
@@ -77,7 +79,7 @@ export function DataTable<TData>({
   const selectedRows = table.getFilteredSelectedRowModel().rows;
   const visibleColumnCount = table.getVisibleLeafColumns().length || columns.length;
   const emptyStateMessage =
-    data.length > 0 && rows.length === 0 ? (filteredEmptyMessage ?? emptyMessage) : emptyMessage;
+    isFiltered && rows.length === 0 ? (filteredEmptyMessage ?? emptyMessage) : emptyMessage;
   const selectedSummary =
     typeof selectedSummaryLabel === "function"
       ? selectedSummaryLabel(selectedRows.length)
