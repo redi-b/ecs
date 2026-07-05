@@ -100,8 +100,24 @@ export const appRoutes: AppRoute[] = [
   },
 ];
 
+export function getNavigableAppRoutes() {
+  const routes = new Map<DashboardRouteHref, AppRoute>();
+
+  for (const route of appRoutes) {
+    if (!routes.has(route.href)) {
+      routes.set(route.href, route);
+    }
+
+    for (const child of route.children ?? []) {
+      if (!routes.has(child.href)) {
+        routes.set(child.href, child);
+      }
+    }
+  }
+
+  return [...routes.values()];
+}
+
 export function findRouteByHref(pathname: string) {
-  return appRoutes
-    .flatMap((route) => [route, ...(route.children ?? [])])
-    .find((route) => route.href === pathname);
+  return getNavigableAppRoutes().find((route) => route.href === pathname);
 }
