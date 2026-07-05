@@ -11,6 +11,12 @@ import {
   getMerchantProducts,
   updateMerchantProductStock,
   updateMerchantProduct,
+  deleteMerchantProduct,
+  deleteMerchantProductsBatch,
+  deleteMerchantProductCategory,
+  deleteMerchantProductCategoriesBatch,
+  deleteMerchantProductCollection,
+  deleteMerchantProductCollectionsBatch,
 } from "./merchant-products.js";
 
 const merchantProduct = {
@@ -646,6 +652,132 @@ describe("getMerchantProducts", () => {
       ok: false,
       status: 502,
       message: "invalid_product_stock_response",
+    });
+  });
+
+  describe("delete merchant catalog resources", () => {
+    it("deletes a single product with tenant context", async () => {
+      let forwardedRequest: Request | undefined;
+      const result = await deleteMerchantProduct({
+        cookieHeader: "better-auth.session_token=session_1",
+        platformApiBaseUrl: "http://platform.local",
+        productId: "prod_1",
+        tenantId: "tenant_1",
+        fetcher: async (input, init) => {
+          forwardedRequest = new Request(input, init);
+          return Response.json({ id: "prod_1", deleted: true });
+        },
+      });
+
+      assert.deepEqual(result, { ok: true, id: "prod_1", deleted: true });
+      assert.equal(forwardedRequest?.method, "DELETE");
+      assert.equal(
+        forwardedRequest?.url,
+        "http://platform.local/platform/tenants/tenant_1/products/prod_1",
+      );
+      assert.equal(forwardedRequest?.headers.get("cookie"), "better-auth.session_token=session_1");
+    });
+
+    it("batch deletes products with host context", async () => {
+      let forwardedRequest: Request | undefined;
+      const result = await deleteMerchantProductsBatch({
+        cookieHeader: "better-auth.session_token=session_1",
+        platformApiBaseUrl: "http://platform.local",
+        productIds: ["prod_1", "prod_2"],
+        requestHost: "abebe.lvh.me",
+        fetcher: async (input, init) => {
+          forwardedRequest = new Request(input, init);
+          return Response.json({ ids: ["prod_1", "prod_2"], deleted: true });
+        },
+      });
+
+      assert.deepEqual(result, { ok: true, ids: ["prod_1", "prod_2"], deleted: true });
+      assert.equal(forwardedRequest?.method, "POST");
+      assert.equal(
+        forwardedRequest?.url,
+        "http://platform.local/platform/merchant/products/batch-delete",
+      );
+      assert.equal(forwardedRequest?.headers.get("x-forwarded-host"), "abebe.lvh.me");
+      assert.deepEqual(await forwardedRequest?.json(), { productIds: ["prod_1", "prod_2"] });
+    });
+
+    it("deletes a single product category", async () => {
+      let forwardedRequest: Request | undefined;
+      const result = await deleteMerchantProductCategory({
+        platformApiBaseUrl: "http://platform.local",
+        categoryId: "pcat_1",
+        fetcher: async (input, init) => {
+          forwardedRequest = new Request(input, init);
+          return Response.json({ id: "pcat_1", deleted: true });
+        },
+      });
+
+      assert.deepEqual(result, { ok: true, id: "pcat_1", deleted: true });
+      assert.equal(forwardedRequest?.method, "DELETE");
+      assert.equal(
+        forwardedRequest?.url,
+        "http://platform.local/platform/merchant/product-categories/pcat_1",
+      );
+    });
+
+    it("batch deletes product categories", async () => {
+      let forwardedRequest: Request | undefined;
+      const result = await deleteMerchantProductCategoriesBatch({
+        platformApiBaseUrl: "http://platform.local",
+        categoryIds: ["pcat_1", "pcat_2"],
+        tenantId: "tenant_1",
+        fetcher: async (input, init) => {
+          forwardedRequest = new Request(input, init);
+          return Response.json({ ids: ["pcat_1", "pcat_2"], deleted: true });
+        },
+      });
+
+      assert.deepEqual(result, { ok: true, ids: ["pcat_1", "pcat_2"], deleted: true });
+      assert.equal(forwardedRequest?.method, "POST");
+      assert.equal(
+        forwardedRequest?.url,
+        "http://platform.local/platform/tenants/tenant_1/product-categories/batch-delete",
+      );
+      assert.deepEqual(await forwardedRequest?.json(), { categoryIds: ["pcat_1", "pcat_2"] });
+    });
+
+    it("deletes a single product collection", async () => {
+      let forwardedRequest: Request | undefined;
+      const result = await deleteMerchantProductCollection({
+        platformApiBaseUrl: "http://platform.local",
+        collectionId: "pcol_1",
+        fetcher: async (input, init) => {
+          forwardedRequest = new Request(input, init);
+          return Response.json({ id: "pcol_1", deleted: true });
+        },
+      });
+
+      assert.deepEqual(result, { ok: true, id: "pcol_1", deleted: true });
+      assert.equal(forwardedRequest?.method, "DELETE");
+      assert.equal(
+        forwardedRequest?.url,
+        "http://platform.local/platform/merchant/product-collections/pcol_1",
+      );
+    });
+
+    it("batch deletes product collections", async () => {
+      let forwardedRequest: Request | undefined;
+      const result = await deleteMerchantProductCollectionsBatch({
+        platformApiBaseUrl: "http://platform.local",
+        collectionIds: ["pcol_1", "pcol_2"],
+        fetcher: async (input, init) => {
+          forwardedRequest = new Request(input, init);
+          return Response.json({ ids: ["pcol_1", "pcol_2"], deleted: true });
+        },
+      });
+
+      assert.deepEqual(result, { ok: true, ids: ["pcol_1", "pcol_2"], deleted: true });
+      assert.equal(forwardedRequest?.method, "POST");
+      assert.equal(
+        forwardedRequest?.url,
+        "http://platform.local/platform/merchant/product-collections/batch-delete",
+      );
+      assert.deepEqual(await forwardedRequest?.json(), { collectionIds: ["pcol_1", "pcol_2"] });
     });
   });
 });
