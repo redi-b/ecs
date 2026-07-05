@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import { AccountMenu } from "@/components/app/account-menu";
+import { AppIcons } from "@/components/app/icons";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   Sidebar,
@@ -31,6 +32,32 @@ function isRouteActive(pathname: string, route: AppRoute) {
   }
 
   return pathname === route.href || pathname.startsWith(`${route.href}/`);
+}
+
+function isProductListActive(pathname: string) {
+  if (pathname === dashboardRoutes.products || pathname === dashboardRoutes.productsNew) {
+    return true;
+  }
+
+  if (
+    pathname === dashboardRoutes.productCategories ||
+    pathname.startsWith(`${dashboardRoutes.productCategories}/`) ||
+    pathname === dashboardRoutes.productCollections ||
+    pathname.startsWith(`${dashboardRoutes.productCollections}/`) ||
+    pathname.startsWith(`${dashboardRoutes.products}/actions/`)
+  ) {
+    return false;
+  }
+
+  return pathname.startsWith(`${dashboardRoutes.products}/`);
+}
+
+function isChildRouteActive(pathname: string, route: AppRoute) {
+  if (route.href === dashboardRoutes.products) {
+    return isProductListActive(pathname);
+  }
+
+  return isRouteActive(pathname, route);
 }
 
 export function AppSidebar({ actor }: { actor: MerchantDashboardSummary["actor"] }) {
@@ -68,8 +95,15 @@ export function AppSidebar({ actor }: { actor: MerchantDashboardSummary["actor"]
                 );
 
                 if (route.children?.length) {
+                  const ChevronIcon = AppIcons.arrowDown;
+
                   return (
-                    <Collapsible key={route.id} asChild defaultOpen={active}>
+                    <Collapsible
+                      key={route.id}
+                      asChild
+                      defaultOpen={active}
+                      className="group/collapsible"
+                    >
                       <SidebarMenuItem>
                         <CollapsibleTrigger asChild>
                           <SidebarMenuButton
@@ -78,6 +112,7 @@ export function AppSidebar({ actor }: { actor: MerchantDashboardSummary["actor"]
                             className="rounded-xl"
                           >
                             {content}
+                            <ChevronIcon className="ml-auto size-4 transition-transform group-data-[collapsible=icon]:hidden group-data-[state=open]/collapsible:rotate-180" />
                           </SidebarMenuButton>
                         </CollapsibleTrigger>
                         <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down">
@@ -86,7 +121,7 @@ export function AppSidebar({ actor }: { actor: MerchantDashboardSummary["actor"]
                               <SidebarMenuSubItem key={child.id}>
                                 <SidebarMenuSubButton
                                   asChild
-                                  isActive={isRouteActive(pathname, child)}
+                                  isActive={isChildRouteActive(pathname, child)}
                                 >
                                   <Link href={child.href}>{child.title}</Link>
                                 </SidebarMenuSubButton>

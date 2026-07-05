@@ -1,4 +1,10 @@
-import type { MerchantProduct } from "@ecs/contracts";
+import type {
+  MerchantProduct,
+  MerchantProductCategory,
+  MerchantProductCollection,
+} from "@ecs/contracts";
+import type { ReactNode } from "react";
+import Link from "next/link";
 
 import { Badge } from "@/components/ui/badge";
 import {
@@ -8,13 +14,28 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { getTenantScopedPath } from "@/lib/dashboard-tenant-context";
+import { dashboardRoutes } from "@/lib/routes";
 
 type ProductDetailProps = {
+  categories: MerchantProductCategory[];
+  collections: MerchantProductCollection[];
   product: MerchantProduct;
+  tenantId?: string | undefined;
 };
 
-export function ProductDetail({ product }: ProductDetailProps) {
+export function ProductDetail({
+  categories,
+  collections,
+  product,
+  tenantId,
+}: ProductDetailProps) {
   const images = product.images?.filter((image) => image.url) ?? [];
+  const collection = collections.find((item) => item.id === product.collectionId);
+  const productCategories = (product.categoryIds ?? []).map((categoryId) => ({
+    category: categories.find((item) => item.id === categoryId),
+    id: categoryId,
+  }));
 
   return (
     <Card>
@@ -47,10 +68,19 @@ export function ProductDetail({ product }: ProductDetailProps) {
         </section>
 
         <section className="grid gap-4 md:grid-cols-2">
-          <DetailField label="Collection ID" value={product.collectionId ?? "No collection"} />
           <DetailField
-            label="Category IDs"
-            value={product.categoryIds?.length ? product.categoryIds.join(", ") : "No categories"}
+            label="Collection"
+            value={
+              <CollectionValue
+                collection={collection}
+                product={product}
+                tenantId={tenantId}
+              />
+            }
+          />
+          <DetailField
+            label="Categories"
+            value={<CategoryValue categories={productCategories} tenantId={tenantId} />}
           />
           <DetailField label="Created" value={formatDateTime(product.createdAt)} />
           <DetailField label="Updated" value={formatDateTime(product.updatedAt)} />
@@ -126,13 +156,77 @@ function DetailMetric({ label, value }: { label: string; value: string }) {
   );
 }
 
-function DetailField({ label, value }: { label: string; value: string }) {
+function DetailField({ label, value }: { label: string; value: ReactNode }) {
   return (
     <div className="space-y-1 rounded-lg border px-4 py-3">
       <div className="text-xs font-medium text-muted-foreground">{label}</div>
       <div className="break-words text-sm">{value}</div>
     </div>
   );
+}
+
+function CollectionValue({
+  collection,
+  product,
+  tenantId,
+}: {
+  collection: MerchantProductCollection | undefined;
+  product: MerchantProduct;
+  tenantId?: string | undefined;
+}) {
+  if (!product.collectionId) {
+    return <span className="text-muted-foreground">No collection</span>;
+  }
+
+  return (
+    <TaxonomyLink href={getTenantScopedPath(dashboardRoutes.productCollections, tenantId)}>
+      {collection ? getCollectionLabel(collection) : product.collectionId}
+    </TaxonomyLink>
+  );
+}
+
+function CategoryValue({
+  categories,
+  tenantId,
+}: {
+  categories: Array<{ category: MerchantProductCategory | undefined; id: string }>;
+  tenantId?: string | undefined;
+}) {
+  if (!categories.length) {
+    return <span className="text-muted-foreground">No categories</span>;
+  }
+
+  return (
+    <div className="flex flex-wrap gap-2">
+      {categories.map(({ category, id }) => (
+        <TaxonomyLink
+          href={getTenantScopedPath(dashboardRoutes.productCategories, tenantId)}
+          key={id}
+        >
+          {category ? getCategoryLabel(category) : id}
+        </TaxonomyLink>
+      ))}
+    </div>
+  );
+}
+
+function TaxonomyLink({ children, href }: { children: ReactNode; href: string }) {
+  return (
+    <Link
+      className="rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-foreground transition-colors hover:bg-primary/10 hover:text-primary"
+      href={href}
+    >
+      {children}
+    </Link>
+  );
+}
+
+function getCollectionLabel(collection: MerchantProductCollection) {
+  return collection.title ?? collection.handle ?? collection.id;
+}
+
+function getCategoryLabel(category: MerchantProductCategory) {
+  return category.name ?? category.handle ?? category.id;
 }
 
 function formatFirstPrice(product: MerchantProduct) {
