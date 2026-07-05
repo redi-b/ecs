@@ -17,7 +17,7 @@ type TaxonomyIdentityCellProps = {
 export function TaxonomyIdentityCell({ entity, label }: TaxonomyIdentityCellProps) {
   return (
     <div className="min-w-48">
-      <div className="font-medium text-primary underline-offset-4">{label}</div>
+      <div className="font-medium text-card-foreground">{label}</div>
       <div className="mt-1 max-w-64 truncate font-mono text-xs text-muted-foreground">
         {entity.id}
       </div>
@@ -61,7 +61,7 @@ export function CategoryParentCell({
   return (
     <div className="min-w-44">
       <div className="font-medium text-card-foreground">
-        {parentCategory ? getCategoryDisplayName(parentCategory) : "Parent category"}
+        {parentCategory ? getCategoryDisplayName(parentCategory) : "Parent ID"}
       </div>
       <div className="mt-1 max-w-56 truncate font-mono text-xs text-muted-foreground">
         {parentCategoryId}

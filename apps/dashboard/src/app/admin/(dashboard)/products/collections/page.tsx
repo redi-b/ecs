@@ -1,19 +1,13 @@
 import { headers } from "next/headers";
-import Link from "next/link";
 
 import { ListSummary, PaginationControls } from "@/components/app/list-page-controls";
 import { ListSetupState } from "@/components/app/list-error-state";
 import { PageShell } from "@/components/app/page-shell";
 import { RefreshButton } from "@/components/app/refresh-button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
 import { ProductCollectionsTable } from "@/features/catalog-taxonomy/product-collections-table";
 import { getTaxonomyListErrorState } from "@/features/catalog-taxonomy/taxonomy-list-error-state";
-import {
-  type DashboardSearchParams,
-  getSelectedTenantId,
-  getTenantScopedPath,
-} from "@/lib/dashboard-tenant-context";
+import { type DashboardSearchParams, getSelectedTenantId } from "@/lib/dashboard-tenant-context";
 import { getMerchantProductCollections } from "@/lib/merchant-products";
 import { dashboardRoutes } from "@/lib/routes";
 import { parseListSearchParams } from "@/lib/url-state";
@@ -30,10 +24,6 @@ export default async function MerchantProductCollectionsPage({
   const tenantId = getSelectedTenantId(resolvedSearchParams);
   const requestHeaders = await headers();
   const offset = (listParams.page - 1) * listParams.pageSize;
-  const createCollectionHref = getTenantScopedPath(
-    dashboardRoutes.productCollectionsNew,
-    tenantId,
-  );
   const result = await getMerchantProductCollections({
     cookieHeader: requestHeaders.get("cookie"),
     limit: listParams.pageSize,
@@ -48,14 +38,7 @@ export default async function MerchantProductCollectionsPage({
 
   return (
     <PageShell
-      actions={
-        <>
-          <RefreshButton />
-          <Button asChild>
-            <Link href={createCollectionHref}>New collection</Link>
-          </Button>
-        </>
-      }
+      actions={<RefreshButton />}
       description="Review merchant-scoped product collections from the catalog taxonomy."
       title="Product collections"
     >

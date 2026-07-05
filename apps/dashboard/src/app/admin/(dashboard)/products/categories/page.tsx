@@ -1,19 +1,13 @@
 import { headers } from "next/headers";
-import Link from "next/link";
 
 import { ListSummary, PaginationControls } from "@/components/app/list-page-controls";
 import { ListSetupState } from "@/components/app/list-error-state";
 import { PageShell } from "@/components/app/page-shell";
 import { RefreshButton } from "@/components/app/refresh-button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
 import { ProductCategoriesTable } from "@/features/catalog-taxonomy/product-categories-table";
 import { getTaxonomyListErrorState } from "@/features/catalog-taxonomy/taxonomy-list-error-state";
-import {
-  type DashboardSearchParams,
-  getSelectedTenantId,
-  getTenantScopedPath,
-} from "@/lib/dashboard-tenant-context";
+import { type DashboardSearchParams, getSelectedTenantId } from "@/lib/dashboard-tenant-context";
 import { getMerchantProductCategories } from "@/lib/merchant-products";
 import { dashboardRoutes } from "@/lib/routes";
 import { parseListSearchParams } from "@/lib/url-state";
@@ -30,10 +24,6 @@ export default async function MerchantProductCategoriesPage({
   const tenantId = getSelectedTenantId(resolvedSearchParams);
   const requestHeaders = await headers();
   const offset = (listParams.page - 1) * listParams.pageSize;
-  const createCategoryHref = getTenantScopedPath(
-    dashboardRoutes.productCategoriesNew,
-    tenantId,
-  );
   const result = await getMerchantProductCategories({
     cookieHeader: requestHeaders.get("cookie"),
     limit: listParams.pageSize,
@@ -46,14 +36,7 @@ export default async function MerchantProductCategoriesPage({
 
   return (
     <PageShell
-      actions={
-        <>
-          <RefreshButton />
-          <Button asChild>
-            <Link href={createCategoryHref}>New category</Link>
-          </Button>
-        </>
-      }
+      actions={<RefreshButton />}
       description="Review merchant-scoped product categories from the catalog taxonomy."
       title="Product categories"
     >
