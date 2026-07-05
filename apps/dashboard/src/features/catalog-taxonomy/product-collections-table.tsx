@@ -2,7 +2,23 @@
 
 import type { MerchantProductCollection } from "@ecs/contracts";
 import type { ColumnDef } from "@tanstack/react-table";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
+import { toast } from "sonner";
+
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { getTenantScopedPath } from "@/lib/dashboard-tenant-context";
+import { dashboardRoutes } from "@/lib/routes";
 
 import { DataTable } from "@/components/app/data-table";
 import { DataTableHeader } from "@/components/app/data-table-header";
@@ -30,6 +46,7 @@ type ProductCollectionsTableProps = {
   collections: MerchantProductCollection[];
   pageSize: number;
   totalCount: number;
+  tenantId?: string | undefined;
 };
 
 function copyToClipboard(value: string) {
@@ -40,7 +57,9 @@ function copyToClipboard(value: string) {
   void navigator.clipboard.writeText(value).catch(() => undefined);
 }
 
-function getCollectionColumns(): ColumnDef<MerchantProductCollection>[] {
+function getCollectionColumns(
+  onDelete: (collectionId: string) => void,
+): ColumnDef<MerchantProductCollection>[] {
   return [
     {
       id: "select",
@@ -104,6 +123,13 @@ function getCollectionColumns(): ColumnDef<MerchantProductCollection>[] {
                 onSelect: () => copyToClipboard(collection.handle ?? ""),
                 type: "button",
               },
+              { type: "separator" },
+              {
+                label: "Delete collection",
+                onSelect: () => onDelete(collection.id),
+                type: "button",
+                variant: "destructive",
+              },
             ]}
             label={`Open actions for ${getCollectionDisplayName(collection)}`}
           />
@@ -119,9 +145,76 @@ export function ProductCollectionsTable({
   collections,
   pageSize,
   totalCount,
+  tenantId,
 }: ProductCollectionsTableProps) {
+  const router = useRouter();
+  const queryClient = useQueryClient();
   const [query, setQuery] = useState("");
   void pageSize;
+
+  const [deleteCollectionId, setDeleteCollectionId] = useState<string | null>(null);
+  const [selectedCollectionIdsForDelete, setSelectedCollectionIdsForDelete] = useState<string[]>(
+    [],
+  );
+  const [showBatchDeleteDialog, setShowBatchDeleteDialog] = useState(false);
+
+  const columns = useMemo(
+    () => getCollectionColumns((id) => setDeleteCollectionId(id)),
+    [],
+  );
+
+  const deleteCollectionMutation = useMutation({
+    mutationFn: async (collectionId: string) => {
+      const url = getTenantScopedPath(
+        dashboardRoutes.productCollectionDeleteAction(collectionId),
+        tenantId,
+      );
+      const res = await fetch(url, { method: "POST" });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Failed to delete product collection.");
+      }
+      return collectionId;
+    },
+    onSuccess: () => {
+      toast.success("Product collection deleted successfully.");
+      queryClient.invalidateQueries({ queryKey: ["product-collections"] });
+      setDeleteCollectionId(null);
+      router.refresh();
+    },
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : "Failed to delete product collection.");
+    },
+  });
+
+  const batchDeleteCollectionsMutation = useMutation({
+    mutationFn: async (collectionIds: string[]) => {
+      const url = getTenantScopedPath(
+        dashboardRoutes.productCollectionsBatchDeleteAction,
+        tenantId,
+      );
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ collectionIds }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Failed to delete product collections.");
+      }
+      return collectionIds;
+    },
+    onSuccess: () => {
+      toast.success("Selected product collections deleted successfully.");
+      queryClient.invalidateQueries({ queryKey: ["product-collections"] });
+      setSelectedCollectionIdsForDelete([]);
+      setShowBatchDeleteDialog(false);
+      router.refresh();
+    },
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : "Failed to delete product collections.");
+    },
+  });
 
   const filteredCollections = useMemo(
     () => filterCollectionsForTable(collections, { query }),
@@ -155,29 +248,101 @@ export function ProductCollectionsTable({
     </div>
   );
 
+  const collectionToDelete = collections.find((c) => c.id === deleteCollectionId);
+
   return (
-    <DataTable
-      bulkActions={(selectedCollections) => (
-        <Button
-          onClick={() =>
-            copyToClipboard(selectedCollections.map((collection) => collection.id).join("\n"))
-          }
-          size="sm"
-          type="button"
-          variant="outline"
-        >
-          <AppIcons.copy data-icon="inline-start" />
-          Copy IDs
-        </Button>
-      )}
-      columns={getCollectionColumns()}
-      data={filteredCollections}
-      emptyMessage="No product collections have been synced for this merchant yet."
-      filteredEmptyMessage="No product collections match the current search."
-      getRowId={(collection) => collection.id}
-      isFiltered={counts.hasActiveFilter}
-      selectedSummaryLabel={(count) => `collection${count === 1 ? "" : "s"} selected`}
-      toolbar={toolbar}
-    />
+    <>
+      <DataTable
+        bulkActions={(selectedCollections) => (
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={() =>
+                copyToClipboard(selectedCollections.map((collection) => collection.id).join("\n"))
+              }
+              size="sm"
+              type="button"
+              variant="outline"
+            >
+              <AppIcons.copy data-icon="inline-start" />
+              Copy IDs
+            </Button>
+            <Button
+              onClick={() => {
+                setSelectedCollectionIdsForDelete(selectedCollections.map((c) => c.id));
+                setShowBatchDeleteDialog(true);
+              }}
+              size="sm"
+              type="button"
+              variant="destructive"
+            >
+              Delete selected
+            </Button>
+          </div>
+        )}
+        columns={columns}
+        data={filteredCollections}
+        emptyMessage="No product collections have been synced for this merchant yet."
+        filteredEmptyMessage="No product collections match the current search."
+        getRowId={(collection) => collection.id}
+        isFiltered={counts.hasActiveFilter}
+        selectedSummaryLabel={(count) => `collection${count === 1 ? "" : "s"} selected`}
+        toolbar={toolbar}
+      />
+
+      <AlertDialog
+        open={deleteCollectionId !== null}
+        onOpenChange={(open) => !open && setDeleteCollectionId(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete product collection</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete &ldquo;{collectionToDelete ? getCollectionDisplayName(collectionToDelete) : "this collection"}&rdquo;?
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteCollectionMutation.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+              disabled={deleteCollectionMutation.isPending}
+              onClick={(e) => {
+                e.preventDefault();
+                if (deleteCollectionId) deleteCollectionMutation.mutate(deleteCollectionId);
+              }}
+            >
+              {deleteCollectionMutation.isPending ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={showBatchDeleteDialog} onOpenChange={setShowBatchDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete product collections</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete {selectedCollectionIdsForDelete.length} selected collections?
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={batchDeleteCollectionsMutation.isPending}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+              disabled={batchDeleteCollectionsMutation.isPending}
+              onClick={(e) => {
+                e.preventDefault();
+                batchDeleteCollectionsMutation.mutate(selectedCollectionIdsForDelete);
+              }}
+            >
+              {batchDeleteCollectionsMutation.isPending ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }

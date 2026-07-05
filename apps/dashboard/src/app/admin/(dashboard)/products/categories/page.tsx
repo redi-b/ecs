@@ -71,6 +71,7 @@ export default async function MerchantProductCategoriesPage({
             categories={result.categories}
             pageSize={result.limit}
             totalCount={result.count}
+            tenantId={tenantId}
           />
           <PaginationControls
             basePath={dashboardRoutes.productCategories}

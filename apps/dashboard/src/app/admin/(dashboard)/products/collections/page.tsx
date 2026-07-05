@@ -73,6 +73,7 @@ export default async function MerchantProductCollectionsPage({
             collections={result.collections}
             pageSize={result.limit}
             totalCount={result.count}
+            tenantId={tenantId}
           />
           <PaginationControls
             basePath={dashboardRoutes.productCollections}

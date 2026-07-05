@@ -1,10 +1,27 @@
+"use client";
+
 import type {
   MerchantProduct,
   MerchantProductCategory,
   MerchantProductCollection,
 } from "@ecs/contracts";
-import type { ReactNode } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
+import { type ReactNode, useState } from "react";
 import Link from "next/link";
+import { toast } from "sonner";
+
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
 
 import { Badge } from "@/components/ui/badge";
 import {
@@ -350,4 +367,73 @@ function formatDateTime(value: string | null) {
     timeStyle: "short",
     timeZone: "UTC",
   }).format(date);
+}
+
+export function ProductDeleteButton({
+  productId,
+  productTitle,
+  tenantId,
+}: {
+  productId: string;
+  productTitle: string;
+  tenantId?: string | undefined;
+}) {
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const [showConfirm, setShowConfirm] = useState(false);
+
+  const deleteMutation = useMutation({
+    mutationFn: async () => {
+      const url = getTenantScopedPath(dashboardRoutes.productDeleteAction(productId), tenantId);
+      const res = await fetch(url, { method: "POST" });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Failed to delete product.");
+      }
+      return productId;
+    },
+    onSuccess: () => {
+      toast.success("Product deleted successfully.");
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+      setShowConfirm(false);
+      router.push(getTenantScopedPath(dashboardRoutes.products, tenantId));
+      router.refresh();
+    },
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : "Failed to delete product.");
+    },
+  });
+
+  return (
+    <>
+      <Button variant="destructive" onClick={() => setShowConfirm(true)} type="button">
+        Delete product
+      </Button>
+
+      <AlertDialog open={showConfirm} onOpenChange={setShowConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete product</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete &ldquo;{productTitle}&rdquo;? This action cannot be
+              undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteMutation.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+              disabled={deleteMutation.isPending}
+              onClick={(e) => {
+                e.preventDefault();
+                deleteMutation.mutate();
+              }}
+            >
+              {deleteMutation.isPending ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  );
 }

@@ -5,7 +5,7 @@ import { ListSetupState } from "@/components/app/list-error-state";
 import { PageShell } from "@/components/app/page-shell";
 import { RefreshButton } from "@/components/app/refresh-button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { ProductDetail } from "@/features/products/product-detail";
+import { ProductDetail, ProductDeleteButton } from "@/features/products/product-detail";
 import { ProductEditDialog } from "@/features/products/product-edit-dialog";
 import { ProductStockPanel } from "@/features/products/product-stock-panel";
 import {
@@ -87,19 +87,26 @@ export default async function MerchantProductDetailPage({
       actions={
         <div className="flex items-center gap-2">
           {productResult.ok && !optionErrors.length ? (
-            <ProductEditDialog
-              action={getTenantScopedPath(
-                dashboardRoutes.productUpdateAction(productResult.product.id),
-                tenantId,
-              )}
-              categories={categoriesResult.ok ? categoriesResult.categories : []}
-              collections={collectionsResult.ok ? collectionsResult.collections : []}
-              product={productResult.product}
-              returnHref={getTenantScopedPath(
-                dashboardRoutes.productDetail(productResult.product.id),
-                tenantId,
-              )}
-            />
+            <>
+              <ProductEditDialog
+                action={getTenantScopedPath(
+                  dashboardRoutes.productUpdateAction(productResult.product.id),
+                  tenantId,
+                )}
+                categories={categoriesResult.ok ? categoriesResult.categories : []}
+                collections={collectionsResult.ok ? collectionsResult.collections : []}
+                product={productResult.product}
+                returnHref={getTenantScopedPath(
+                  dashboardRoutes.productDetail(productResult.product.id),
+                  tenantId,
+                )}
+              />
+              <ProductDeleteButton
+                productId={productResult.product.id}
+                productTitle={productResult.product.title ?? "this product"}
+                tenantId={tenantId}
+              />
+            </>
           ) : null}
           <RefreshButton />
         </div>

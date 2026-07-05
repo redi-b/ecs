@@ -2,7 +2,21 @@
 
 import type { MerchantProduct } from "@ecs/contracts";
 import type { ColumnDef } from "@tanstack/react-table";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
+
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 import { DataTable } from "@/components/app/data-table";
 import {
@@ -63,7 +77,10 @@ function copyToClipboard(value: string) {
   void navigator.clipboard.writeText(value).catch(() => undefined);
 }
 
-function getProductColumns(tenantId?: string): ColumnDef<MerchantProduct>[] {
+function getProductColumns(
+  tenantId: string | null | undefined,
+  onDelete: (productId: string) => void,
+): ColumnDef<MerchantProduct>[] {
   return [
     {
       id: "select",
@@ -90,7 +107,7 @@ function getProductColumns(tenantId?: string): ColumnDef<MerchantProduct>[] {
     {
       accessorKey: "title",
       header: ({ column }) => <DataTableHeader column={column} title="Product" />,
-      cell: ({ row }) => <ProductIdentityCell product={row.original} tenantId={tenantId} />,
+      cell: ({ row }) => <ProductIdentityCell product={row.original} tenantId={tenantId ?? undefined} />,
     },
     {
       accessorKey: "status",
@@ -148,6 +165,13 @@ function getProductColumns(tenantId?: string): ColumnDef<MerchantProduct>[] {
                 onSelect: () => copyToClipboard(product.handle ?? ""),
                 type: "button",
               },
+              { type: "separator" },
+              {
+                label: "Delete product",
+                onSelect: () => onDelete(product.id),
+                type: "button",
+                variant: "destructive",
+              },
             ]}
             label={`Open actions for ${product.title ?? product.id}`}
           />
@@ -167,10 +191,69 @@ export function ProductsTable({
   tenantId,
   totalCount,
 }: ProductsTableProps) {
+  const router = useRouter();
+  const queryClient = useQueryClient();
   const [query, setQuery] = useState(initialQuery);
   const [status, setStatus] = useState<ProductStatusFilter>(initialStatus);
   const hasSyncedInitialUrlState = useRef(false);
   void pageSize;
+
+  const [deleteProductId, setDeleteProductId] = useState<string | null>(null);
+  const [selectedProductIdsForDelete, setSelectedProductIdsForDelete] = useState<string[]>([]);
+  const [showBatchDeleteDialog, setShowBatchDeleteDialog] = useState(false);
+
+  const columns = useMemo(
+    () => getProductColumns(tenantId, (id) => setDeleteProductId(id)),
+    [tenantId],
+  );
+
+  const deleteProductMutation = useMutation({
+    mutationFn: async (productId: string) => {
+      const url = getTenantScopedPath(dashboardRoutes.productDeleteAction(productId), tenantId);
+      const res = await fetch(url, { method: "POST" });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Failed to delete product.");
+      }
+      return productId;
+    },
+    onSuccess: () => {
+      toast.success("Product deleted successfully.");
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+      setDeleteProductId(null);
+      router.refresh();
+    },
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : "Failed to delete product.");
+    },
+  });
+
+  const batchDeleteProductsMutation = useMutation({
+    mutationFn: async (productIds: string[]) => {
+      const url = getTenantScopedPath(dashboardRoutes.productsBatchDeleteAction, tenantId);
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ productIds }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Failed to delete products.");
+      }
+      return productIds;
+    },
+    onSuccess: () => {
+      toast.success("Selected products deleted successfully.");
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+      setSelectedProductIdsForDelete([]);
+      setShowBatchDeleteDialog(false);
+      router.refresh();
+    },
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : "Failed to delete products.");
+    },
+  });
+
   const filteredProducts = useMemo(
     () => filterProductsForTable(products, { query, status }),
     [products, query, status],
@@ -262,29 +345,103 @@ export function ProductsTable({
     </div>
   );
 
+  const productToDelete = products.find((p) => p.id === deleteProductId);
+
   return (
-    <DataTable
-      bulkActions={(selectedProducts) => (
-        <Button
-          onClick={() => copyToClipboard(selectedProducts.map((product) => product.id).join("\n"))}
-          size="sm"
-          type="button"
-          variant="outline"
-        >
-          <AppIcons.copy data-icon="inline-start" />
-          Copy IDs
-        </Button>
-      )}
-      columns={getProductColumns(tenantId)}
-      data={filteredProducts}
-      emptyMessage="No products have been synced for this merchant yet."
-      emptyTitle="No products yet"
-      filteredEmptyMessage="No products match the current search or filters."
-      filteredEmptyTitle="No matching products"
-      getRowId={(product) => product.id}
-      isFiltered={counts.hasActiveFilter}
-      selectedSummaryLabel={(count) => `product${count === 1 ? "" : "s"} selected`}
-      toolbar={toolbar}
-    />
+    <>
+      <DataTable
+        bulkActions={(selectedProducts) => (
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={() =>
+                copyToClipboard(selectedProducts.map((product) => product.id).join("\n"))
+              }
+              size="sm"
+              type="button"
+              variant="outline"
+            >
+              <AppIcons.copy data-icon="inline-start" />
+              Copy IDs
+            </Button>
+            <Button
+              onClick={() => {
+                setSelectedProductIdsForDelete(selectedProducts.map((p) => p.id));
+                setShowBatchDeleteDialog(true);
+              }}
+              size="sm"
+              type="button"
+              variant="destructive"
+            >
+              Delete selected
+            </Button>
+          </div>
+        )}
+        columns={columns}
+        data={filteredProducts}
+        emptyMessage="No products have been synced for this merchant yet."
+        emptyTitle="No products yet"
+        filteredEmptyMessage="No products match the current search or filters."
+        filteredEmptyTitle="No matching products"
+        getRowId={(product) => product.id}
+        isFiltered={counts.hasActiveFilter}
+        selectedSummaryLabel={(count) => `product${count === 1 ? "" : "s"} selected`}
+        toolbar={toolbar}
+      />
+
+      <AlertDialog
+        open={deleteProductId !== null}
+        onOpenChange={(open) => !open && setDeleteProductId(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete product</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete &ldquo;{productToDelete?.title || "this product"}&rdquo;?
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteProductMutation.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+              disabled={deleteProductMutation.isPending}
+              onClick={(e) => {
+                e.preventDefault();
+                if (deleteProductId) deleteProductMutation.mutate(deleteProductId);
+              }}
+            >
+              {deleteProductMutation.isPending ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={showBatchDeleteDialog} onOpenChange={setShowBatchDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete products</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete {selectedProductIdsForDelete.length} selected products?
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={batchDeleteProductsMutation.isPending}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+              disabled={batchDeleteProductsMutation.isPending}
+              onClick={(e) => {
+                e.preventDefault();
+                batchDeleteProductsMutation.mutate(selectedProductIdsForDelete);
+              }}
+            >
+              {batchDeleteProductsMutation.isPending ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
