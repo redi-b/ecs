@@ -88,8 +88,8 @@ export function OrderDetail({ order }: OrderDetailProps) {
           >
             <div className="rounded-lg border px-4 py-3">
               <div className="space-y-1 text-sm">
-                {formatShippingAddress(order.shippingAddress).map((line) => (
-                  <div key={line} className="break-words">
+                {formatShippingAddress(order.shippingAddress).map((line, index) => (
+                  <div key={`${line}-${index}`} className="break-words">
                     {line}
                   </div>
                 ))}
@@ -276,7 +276,10 @@ function getLatestFulfillmentSignal(fulfillments: NonNullable<MerchantOrder["ful
     { label: "Canceled", value: fulfillment.canceledAt },
   ]);
   const latest = signals
-    .filter((signal): signal is { label: string; value: string } => Boolean(signal.value))
+    .filter(
+      (signal): signal is { label: string; value: string } =>
+        typeof signal.value === "string" && !Number.isNaN(new Date(signal.value).getTime()),
+    )
     .sort((a, b) => new Date(b.value).getTime() - new Date(a.value).getTime())[0];
 
   if (!latest) {
