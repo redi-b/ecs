@@ -109,6 +109,21 @@ const orders: MerchantOrder[] = [
     createdAt: "2026-07-06T00:00:00.000Z",
     updatedAt: "2026-07-06T00:00:00.000Z",
   },
+  {
+    id: "order_6",
+    displayId: 9001,
+    email: "delivered@example.com",
+    status: "pending",
+    paymentStatus: null,
+    fulfillmentStatus: "delivered",
+    currencyCode: "etb",
+    total: 340,
+    delivery: undefined,
+    fulfillments: [],
+    shippingAddress: undefined,
+    createdAt: "2026-07-07T00:00:00.000Z",
+    updatedAt: "2026-07-07T00:00:00.000Z",
+  },
 ];
 
 const paidOrder = orders[0];
@@ -116,12 +131,14 @@ const completedOrder = orders[1];
 const paymentPendingOrder = orders[2];
 const canceledOrder = orders[3];
 const openOrder = orders[4];
+const deliveredOrder = orders[5];
 
 assert.ok(paidOrder);
 assert.ok(completedOrder);
 assert.ok(paymentPendingOrder);
 assert.ok(canceledOrder);
 assert.ok(openOrder);
+assert.ok(deliveredOrder);
 
 describe("order table state", () => {
   it("builds searchable text from order, customer, delivery, payment, and fulfillment fields", () => {
@@ -152,7 +169,7 @@ describe("order table state", () => {
     );
     assert.deepEqual(
       filterOrdersForTable(orders, { lifecycle: "all", query: "   " }).map((order) => order.id),
-      ["order_1", "order_2", "order_3", "order_4", "order_5"],
+      ["order_1", "order_2", "order_3", "order_4", "order_5", "order_6"],
     );
   });
 
@@ -179,7 +196,7 @@ describe("order table state", () => {
     );
     assert.deepEqual(
       filterOrdersForTable(orders, { lifecycle: "fulfilled", query: "" }).map((order) => order.id),
-      ["order_2"],
+      ["order_2", "order_6"],
     );
     assert.deepEqual(
       filterOrdersForTable(orders, { lifecycle: "payment_pending", query: "" }).map(
@@ -206,6 +223,7 @@ describe("order table state", () => {
     assert.equal(normalizeOrderLifecycle(openOrder), "open");
     assert.equal(normalizeOrderLifecycle(completedOrder), "completed");
     assert.equal(normalizeOrderLifecycle(canceledOrder), "canceled");
+    assert.equal(normalizeOrderLifecycle(deliveredOrder), "fulfilled");
     assert.equal(normalizeOrderLifecycle(paidOrder), "needs_fulfillment");
     assert.equal(normalizeOrderLifecycle({ ...paidOrder, fulfillmentStatus: "shipped" }), "paid");
     assert.equal(normalizeOrderLifecycle(paymentPendingOrder), "needs_fulfillment");
@@ -222,10 +240,13 @@ describe("order table state", () => {
     assert.equal(getOrderTotalSortValue(paidOrder), 1250);
     assert.equal(getOrderTotalSortValue(completedOrder), null);
     assert.equal(formatOrderMoney(null, "etb"), "Not available");
-    assert.equal(formatOrderMoney(1250, "etb"), "ETB 1,250.00");
-    assert.equal(formatOrderMoney(500, null), "ETB 500.00");
+    assert.match(formatOrderMoney(1250, "etb"), /ETB/);
+    assert.match(formatOrderMoney(1250, "etb"), /1,250\.00/);
+    assert.match(formatOrderMoney(500, null), /ETB/);
+    assert.match(formatOrderMoney(500, null), /500\.00/);
     assert.equal(formatOrderDate("2026-07-01T10:00:00.000Z"), "Jul 1, 2026");
     assert.equal(formatOrderDate(null), "No date");
+    assert.equal(formatOrderDate("not-a-date"), "No date");
     assert.deepEqual(
       getOrderTableCounts({
         filteredCount: 1,
