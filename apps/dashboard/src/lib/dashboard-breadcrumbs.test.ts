@@ -2,13 +2,88 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import { getDashboardBreadcrumbTrail } from "./dashboard-breadcrumbs.js";
+import { appRoutes } from "./navigation.js";
 import { dashboardRoutes } from "./routes.js";
 
 describe("getDashboardBreadcrumbTrail", () => {
+  it("exposes taxonomy route constants", () => {
+    assert.equal(dashboardRoutes.productCategories, "/admin/products/categories");
+    assert.equal(dashboardRoutes.productCategoriesNew, "/admin/products/categories/new");
+    assert.equal(
+      dashboardRoutes.productCategoryCreateAction,
+      "/admin/product-categories/actions/create",
+    );
+    assert.equal(dashboardRoutes.productCollections, "/admin/products/collections");
+    assert.equal(dashboardRoutes.productCollectionsNew, "/admin/products/collections/new");
+    assert.equal(
+      dashboardRoutes.productCollectionCreateAction,
+      "/admin/product-collections/actions/create",
+    );
+  });
+
+  it("exposes product taxonomy routes as products navigation children", () => {
+    const productsRoute = appRoutes.find((route) => route.id === "products");
+
+    assert.deepEqual(
+      productsRoute?.children?.map((route) => [route.title, route.href]),
+      [
+        ["Products", "/admin/products"],
+        ["Categories", "/admin/products/categories"],
+        ["Collections", "/admin/products/collections"],
+      ],
+    );
+  });
+
   it("labels product creation as a child of products", () => {
     assert.deepEqual(getDashboardBreadcrumbTrail("/admin/products/new"), [
       { href: "/admin/products", id: "products", title: "Products" },
       { href: "/admin/products/new", id: "products-new", title: "New product" },
+    ]);
+  });
+
+  it("labels product category routes as nested products breadcrumbs", () => {
+    assert.deepEqual(getDashboardBreadcrumbTrail("/admin/products/categories"), [
+      { href: "/admin/products", id: "products", title: "Products" },
+      { href: "/admin/products/categories", id: "product-categories", title: "Categories" },
+    ]);
+  });
+
+  it("labels product category creation as a nested taxonomy breadcrumb", () => {
+    assert.deepEqual(getDashboardBreadcrumbTrail("/admin/products/categories/new"), [
+      { href: "/admin/products", id: "products", title: "Products" },
+      { href: "/admin/products/categories", id: "product-categories", title: "Categories" },
+      {
+        href: "/admin/products/categories/new",
+        id: "product-categories-new",
+        title: "New category",
+      },
+    ]);
+  });
+
+  it("labels product collection routes as nested products breadcrumbs", () => {
+    assert.deepEqual(getDashboardBreadcrumbTrail("/admin/products/collections"), [
+      { href: "/admin/products", id: "products", title: "Products" },
+      {
+        href: "/admin/products/collections",
+        id: "product-collections",
+        title: "Collections",
+      },
+    ]);
+  });
+
+  it("labels product collection creation as a nested taxonomy breadcrumb", () => {
+    assert.deepEqual(getDashboardBreadcrumbTrail("/admin/products/collections/new"), [
+      { href: "/admin/products", id: "products", title: "Products" },
+      {
+        href: "/admin/products/collections",
+        id: "product-collections",
+        title: "Collections",
+      },
+      {
+        href: "/admin/products/collections/new",
+        id: "product-collections-new",
+        title: "New collection",
+      },
     ]);
   });
 
