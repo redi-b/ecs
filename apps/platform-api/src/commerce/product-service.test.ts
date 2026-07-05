@@ -1389,4 +1389,423 @@ describe("createMedusaProductService", () => {
       status: 401,
     });
   });
+
+  describe("delete merchant catalog resources", () => {
+    it("deletes a single product after verifying sales channel ownership", async () => {
+      const forwardedRequests: Request[] = [];
+      const service = createMedusaProductService({
+        adminApiToken: "medusa_token",
+        medusaInternalUrl: "http://medusa:9000",
+        fetcher: async (input, init) => {
+          const request = new Request(input, init);
+          forwardedRequests.push(request);
+
+          if (request.method === "GET") {
+            return Response.json({
+              product: {
+                id: "prod_1",
+                sales_channels: [{ id: "sc_1" }],
+              },
+            });
+          }
+
+          if (request.method === "DELETE") {
+            return Response.json({
+              id: "prod_1",
+              object: "product",
+              deleted: true,
+            });
+          }
+
+          return Response.json({}, { status: 400 });
+        },
+      });
+
+      const result = await (service as any).deleteMerchantProduct({
+        productId: "prod_1",
+        salesChannelId: "sc_1",
+      });
+
+      assert.deepEqual(result, {
+        ok: true,
+        id: "prod_1",
+        deleted: true,
+      });
+
+      assert.equal(forwardedRequests.length, 2);
+      assert.equal(
+        forwardedRequests[0]?.url,
+        "http://medusa:9000/admin/products/prod_1?fields=id%2Csales_channels.id"
+      );
+      assert.equal(forwardedRequests[0]?.method, "GET");
+      assert.equal(forwardedRequests[0]?.headers.get("authorization"), "Basic medusa_token");
+
+      assert.equal(
+        forwardedRequests[1]?.url,
+        "http://medusa:9000/admin/products/prod_1"
+      );
+      assert.equal(forwardedRequests[1]?.method, "DELETE");
+      assert.equal(forwardedRequests[1]?.headers.get("authorization"), "Basic medusa_token");
+    });
+
+    it("does not delete a product outside the sales channel", async () => {
+      const forwardedRequests: Request[] = [];
+      const service = createMedusaProductService({
+        adminApiToken: "medusa_token",
+        medusaInternalUrl: "http://medusa:9000",
+        fetcher: async (input, init) => {
+          const request = new Request(input, init);
+          forwardedRequests.push(request);
+
+          return Response.json({
+            product: {
+              id: "prod_1",
+              sales_channels: [{ id: "sc_other" }],
+            },
+          });
+        },
+      });
+
+      const result = await (service as any).deleteMerchantProduct({
+        productId: "prod_1",
+        salesChannelId: "sc_1",
+      });
+
+      assert.deepEqual(result, {
+        ok: false,
+        error: "product_not_found",
+        status: 404,
+      });
+      assert.equal(forwardedRequests.length, 1);
+    });
+
+    it("batch deletes products scoped to the sales channel", async () => {
+      const forwardedRequests: Request[] = [];
+      const service = createMedusaProductService({
+        adminApiToken: "medusa_token",
+        medusaInternalUrl: "http://medusa:9000",
+        fetcher: async (input, init) => {
+          const request = new Request(input, init);
+          forwardedRequests.push(request);
+
+          if (request.method === "GET") {
+            return Response.json({
+              products: [
+                { id: "prod_1" },
+                { id: "prod_2" },
+              ],
+            });
+          }
+
+          if (request.method === "POST") {
+            return Response.json({
+              deleted: ["prod_1", "prod_2"],
+            });
+          }
+
+          return Response.json({}, { status: 400 });
+        },
+      });
+
+      const result = await (service as any).deleteMerchantProductsBatch({
+        productIds: ["prod_1", "prod_2", "prod_other"],
+        salesChannelId: "sc_1",
+      });
+
+      assert.deepEqual(result, {
+        ok: true,
+        ids: ["prod_1", "prod_2"],
+        deleted: true,
+      });
+
+      assert.equal(forwardedRequests.length, 2);
+      assert.equal(forwardedRequests[0]?.method, "GET");
+      const filterUrl = new URL(forwardedRequests[0]!.url);
+      assert.equal(filterUrl.searchParams.get("sales_channel_id[]"), "sc_1");
+      assert.deepEqual(filterUrl.searchParams.getAll("id[]"), ["prod_1", "prod_2", "prod_other"]);
+
+      assert.equal(forwardedRequests[1]?.method, "POST");
+      assert.equal(forwardedRequests[1]?.url, "http://medusa:9000/admin/products/batch");
+      assert.deepEqual(await forwardedRequests[1]!.json(), {
+        delete: ["prod_1", "prod_2"],
+      });
+    });
+
+    it("deletes a product category after verifying tenant ownership", async () => {
+      const forwardedRequests: Request[] = [];
+      const service = createMedusaProductService({
+        adminApiToken: "medusa_token",
+        medusaInternalUrl: "http://medusa:9000",
+        fetcher: async (input, init) => {
+          const request = new Request(input, init);
+          forwardedRequests.push(request);
+
+          if (request.method === "GET") {
+            return Response.json({
+              product_category: {
+                id: "pcat_1",
+                metadata: {
+                  platform_tenant_id: "tenant_1",
+                },
+              },
+            });
+          }
+
+          if (request.method === "DELETE") {
+            return Response.json({
+              id: "pcat_1",
+              object: "product-category",
+              deleted: true,
+            });
+          }
+
+          return Response.json({}, { status: 400 });
+        },
+      });
+
+      const result = await (service as any).deleteMerchantProductCategory({
+        categoryId: "pcat_1",
+        tenantId: "tenant_1",
+      });
+
+      assert.deepEqual(result, {
+        ok: true,
+        id: "pcat_1",
+        deleted: true,
+      });
+
+      assert.equal(forwardedRequests.length, 2);
+      assert.equal(
+        forwardedRequests[0]?.url,
+        "http://medusa:9000/admin/product-categories/pcat_1?fields=id%2Cmetadata"
+      );
+      assert.equal(
+        forwardedRequests[1]?.url,
+        "http://medusa:9000/admin/product-categories/pcat_1"
+      );
+      assert.equal(forwardedRequests[1]?.method, "DELETE");
+    });
+
+    it("does not delete category belonging to another tenant", async () => {
+      const forwardedRequests: Request[] = [];
+      const service = createMedusaProductService({
+        adminApiToken: "medusa_token",
+        medusaInternalUrl: "http://medusa:9000",
+        fetcher: async (input, init) => {
+          const request = new Request(input, init);
+          forwardedRequests.push(request);
+
+          return Response.json({
+            product_category: {
+              id: "pcat_1",
+              metadata: {
+                platform_tenant_id: "tenant_other",
+              },
+            },
+          });
+        },
+      });
+
+      const result = await (service as any).deleteMerchantProductCategory({
+        categoryId: "pcat_1",
+        tenantId: "tenant_1",
+      });
+
+      assert.deepEqual(result, {
+        ok: false,
+        error: "category_not_found",
+        status: 404,
+      });
+      assert.equal(forwardedRequests.length, 1);
+    });
+
+    it("batch deletes categories in parallel via Promise.all", async () => {
+      const forwardedRequests: Request[] = [];
+      const service = createMedusaProductService({
+        adminApiToken: "medusa_token",
+        medusaInternalUrl: "http://medusa:9000",
+        fetcher: async (input, init) => {
+          const request = new Request(input, init);
+          forwardedRequests.push(request);
+
+          if (request.method === "GET") {
+            const url = new URL(request.url);
+            const id = url.pathname.split("/").pop();
+            return Response.json({
+              product_category: {
+                id,
+                metadata: {
+                  platform_tenant_id: "tenant_1",
+                },
+              },
+            });
+          }
+
+          if (request.method === "DELETE") {
+            const url = new URL(request.url);
+            const id = url.pathname.split("/").pop();
+            return Response.json({
+              id,
+              object: "product-category",
+              deleted: true,
+            });
+          }
+
+          return Response.json({}, { status: 400 });
+        },
+      });
+
+      const result = await (service as any).deleteMerchantProductCategoriesBatch({
+        categoryIds: ["pcat_1", "pcat_2"],
+        tenantId: "tenant_1",
+      });
+
+      assert.deepEqual(result, {
+        ok: true,
+        ids: ["pcat_1", "pcat_2"],
+        deleted: true,
+      });
+
+      assert.equal(forwardedRequests.length, 4); // 2 GETs + 2 DELETEs
+    });
+
+    it("deletes a product collection after verifying tenant ownership", async () => {
+      const forwardedRequests: Request[] = [];
+      const service = createMedusaProductService({
+        adminApiToken: "medusa_token",
+        medusaInternalUrl: "http://medusa:9000",
+        fetcher: async (input, init) => {
+          const request = new Request(input, init);
+          forwardedRequests.push(request);
+
+          if (request.method === "GET") {
+            return Response.json({
+              collection: {
+                id: "pcol_1",
+                metadata: {
+                  platform_tenant_id: "tenant_1",
+                },
+              },
+            });
+          }
+
+          if (request.method === "DELETE") {
+            return Response.json({
+              id: "pcol_1",
+              object: "product-collection",
+              deleted: true,
+            });
+          }
+
+          return Response.json({}, { status: 400 });
+        },
+      });
+
+      const result = await (service as any).deleteMerchantProductCollection({
+        collectionId: "pcol_1",
+        tenantId: "tenant_1",
+      });
+
+      assert.deepEqual(result, {
+        ok: true,
+        id: "pcol_1",
+        deleted: true,
+      });
+
+      assert.equal(forwardedRequests.length, 2);
+      assert.equal(
+        forwardedRequests[0]?.url,
+        "http://medusa:9000/admin/collections/pcol_1?fields=id%2Cmetadata"
+      );
+      assert.equal(
+        forwardedRequests[1]?.url,
+        "http://medusa:9000/admin/collections/pcol_1"
+      );
+      assert.equal(forwardedRequests[1]?.method, "DELETE");
+    });
+
+    it("does not delete collection belonging to another tenant", async () => {
+      const forwardedRequests: Request[] = [];
+      const service = createMedusaProductService({
+        adminApiToken: "medusa_token",
+        medusaInternalUrl: "http://medusa:9000",
+        fetcher: async (input, init) => {
+          const request = new Request(input, init);
+          forwardedRequests.push(request);
+
+          return Response.json({
+            collection: {
+              id: "pcol_1",
+              metadata: {
+                platform_tenant_id: "tenant_other",
+              },
+            },
+          });
+        },
+      });
+
+      const result = await (service as any).deleteMerchantProductCollection({
+        collectionId: "pcol_1",
+        tenantId: "tenant_1",
+      });
+
+      assert.deepEqual(result, {
+        ok: false,
+        error: "collection_not_found",
+        status: 404,
+      });
+      assert.equal(forwardedRequests.length, 1);
+    });
+
+    it("batch deletes collections in parallel via Promise.all", async () => {
+      const forwardedRequests: Request[] = [];
+      const service = createMedusaProductService({
+        adminApiToken: "medusa_token",
+        medusaInternalUrl: "http://medusa:9000",
+        fetcher: async (input, init) => {
+          const request = new Request(input, init);
+          forwardedRequests.push(request);
+
+          if (request.method === "GET") {
+            const url = new URL(request.url);
+            const id = url.pathname.split("/").pop();
+            return Response.json({
+              collection: {
+                id,
+                metadata: {
+                  platform_tenant_id: "tenant_1",
+                },
+              },
+            });
+          }
+
+          if (request.method === "DELETE") {
+            const url = new URL(request.url);
+            const id = url.pathname.split("/").pop();
+            return Response.json({
+              id,
+              object: "product-collection",
+              deleted: true,
+            });
+          }
+
+          return Response.json({}, { status: 400 });
+        },
+      });
+
+      const result = await (service as any).deleteMerchantProductCollectionsBatch({
+        collectionIds: ["pcol_1", "pcol_2"],
+        tenantId: "tenant_1",
+      });
+
+      assert.deepEqual(result, {
+        ok: true,
+        ids: ["pcol_1", "pcol_2"],
+        deleted: true,
+      });
+
+      assert.equal(forwardedRequests.length, 4); // 2 GETs + 2 DELETEs
+    });
+  });
 });
+

@@ -12,6 +12,8 @@ import type {
   MerchantProductStockUpdateResult,
   MerchantProductsResult,
   MerchantProductWriteResult,
+  MerchantDeleteResult,
+  MerchantBatchDeleteResult,
 } from "../app.js";
 
 type ProductWriteInput = {
@@ -486,6 +488,309 @@ export function createMedusaProductService(options: {
       );
 
       return parseProductWriteResponse(updateResponse);
+    },
+
+    deleteMerchantProduct: async (input: {
+      productId: string;
+      salesChannelId: string;
+    }): Promise<MerchantDeleteResult> => {
+      if (!options.adminApiToken?.trim()) {
+        return missingCredentials();
+      }
+
+      const retrieveResponse = await requestMedusa(
+        fetcher,
+        getProductOwnershipUrl(options.medusaInternalUrl, input.productId),
+        {
+          headers: getAdminHeaders(options.adminApiToken!),
+        },
+      );
+
+      if (!retrieveResponse.ok) {
+        if (retrieveResponse.status === 401) {
+          return {
+            ok: false,
+            error: "commerce_credentials_invalid",
+            status: 401,
+          };
+        }
+        return {
+          ok: false,
+          error: "product_not_found",
+          status: 404,
+        };
+      }
+
+      const retrieveData = await retrieveResponse.json().catch(() => undefined);
+
+      if (
+        !(await productIsInSalesChannel(fetcher, options, {
+          product: retrieveData?.product,
+          productId: input.productId,
+          salesChannelId: input.salesChannelId,
+        }))
+      ) {
+        return {
+          ok: false,
+          error: "product_not_found",
+          status: 404,
+        };
+      }
+
+      const response = await requestMedusa(
+        fetcher,
+        new URL(`/admin/products/${encodeURIComponent(input.productId)}`, normalizeBaseUrl(options.medusaInternalUrl)),
+        {
+          headers: getAdminHeaders(options.adminApiToken!),
+          method: "DELETE",
+        }
+      );
+
+      return parseDeleteResponse(response, "product");
+    },
+
+    deleteMerchantProductsBatch: async (input: {
+      productIds: string[];
+      salesChannelId: string;
+    }): Promise<MerchantBatchDeleteResult> => {
+      if (!options.adminApiToken?.trim()) {
+        return missingCredentials();
+      }
+
+      const verifiedIds = await filterProductIdsBySalesChannel(
+        fetcher,
+        options,
+        input.productIds,
+        input.salesChannelId
+      );
+
+      if (!Array.isArray(verifiedIds)) {
+        return verifiedIds;
+      }
+
+      if (verifiedIds.length === 0) {
+        return {
+          ok: true,
+          ids: [],
+          deleted: true,
+        };
+      }
+
+      const response = await requestMedusa(
+        fetcher,
+        new URL(`/admin/products/batch`, normalizeBaseUrl(options.medusaInternalUrl)),
+        {
+          body: JSON.stringify({ delete: verifiedIds }),
+          headers: getAdminHeaders(options.adminApiToken!),
+          method: "POST",
+        }
+      );
+
+      return parseBatchDeleteResponse(response, verifiedIds);
+    },
+
+    deleteMerchantProductCategory: async (input: {
+      categoryId: string;
+      tenantId: string;
+    }): Promise<MerchantDeleteResult> => {
+      if (!options.adminApiToken?.trim()) {
+        return missingCredentials();
+      }
+
+      const ownership = await categoryBelongsToTenantById(fetcher, options, input.categoryId, input.tenantId);
+      if (typeof ownership === "object") {
+        return ownership;
+      }
+      if (!ownership) {
+        return {
+          ok: false,
+          error: "category_not_found",
+          status: 404,
+        };
+      }
+
+      const response = await requestMedusa(
+        fetcher,
+        new URL(
+          `/admin/product-categories/${encodeURIComponent(input.categoryId)}`,
+          normalizeBaseUrl(options.medusaInternalUrl)
+        ),
+        {
+          headers: getAdminHeaders(options.adminApiToken!),
+          method: "DELETE",
+        }
+      );
+
+      return parseDeleteResponse(response, "category");
+    },
+
+    deleteMerchantProductCategoriesBatch: async (input: {
+      categoryIds: string[];
+      tenantId: string;
+    }): Promise<MerchantBatchDeleteResult> => {
+      if (!options.adminApiToken?.trim()) {
+        return missingCredentials();
+      }
+
+      const results = await Promise.all(
+        input.categoryIds.map((id) =>
+          categoryBelongsToTenantById(fetcher, options, id, input.tenantId)
+        )
+      );
+
+      // Check if any returned credentials error
+      const credentialsInvalid = results.find(
+        (r) => typeof r === "object" && !r.ok && r.error === "commerce_credentials_invalid"
+      );
+      if (credentialsInvalid && typeof credentialsInvalid === "object") {
+        return {
+          ok: false,
+          error: "commerce_credentials_invalid",
+          status: 401,
+        };
+      }
+
+      const verifiedIds = input.categoryIds.filter((_, idx) => {
+        const r = results[idx];
+        return typeof r === "boolean" && r === true;
+      });
+
+      if (verifiedIds.length === 0) {
+        return {
+          ok: true,
+          ids: [],
+          deleted: true,
+        };
+      }
+
+      const deleteResults = await Promise.all(
+        verifiedIds.map(async (id) => {
+          const response = await requestMedusa(
+            fetcher,
+            new URL(
+              `/admin/product-categories/${encodeURIComponent(id)}`,
+              normalizeBaseUrl(options.medusaInternalUrl)
+            ),
+            {
+              headers: getAdminHeaders(options.adminApiToken!),
+              method: "DELETE",
+            }
+          );
+          return parseDeleteResponse(response, "category");
+        })
+      );
+
+      const successfulIds = deleteResults
+        .filter((r): r is Extract<MerchantDeleteResult, { ok: true }> => r.ok)
+        .map((r) => r.id);
+
+      return {
+        ok: true,
+        ids: successfulIds,
+        deleted: true,
+      };
+    },
+
+    deleteMerchantProductCollection: async (input: {
+      collectionId: string;
+      tenantId: string;
+    }): Promise<MerchantDeleteResult> => {
+      if (!options.adminApiToken?.trim()) {
+        return missingCredentials();
+      }
+
+      const ownership = await collectionBelongsToTenantById(fetcher, options, input.collectionId, input.tenantId);
+      if (typeof ownership === "object") {
+        return ownership;
+      }
+      if (!ownership) {
+        return {
+          ok: false,
+          error: "collection_not_found",
+          status: 404,
+        };
+      }
+
+      const response = await requestMedusa(
+        fetcher,
+        new URL(
+          `/admin/collections/${encodeURIComponent(input.collectionId)}`,
+          normalizeBaseUrl(options.medusaInternalUrl)
+        ),
+        {
+          headers: getAdminHeaders(options.adminApiToken!),
+          method: "DELETE",
+        }
+      );
+
+      return parseDeleteResponse(response, "collection");
+    },
+
+    deleteMerchantProductCollectionsBatch: async (input: {
+      collectionIds: string[];
+      tenantId: string;
+    }): Promise<MerchantBatchDeleteResult> => {
+      if (!options.adminApiToken?.trim()) {
+        return missingCredentials();
+      }
+
+      const results = await Promise.all(
+        input.collectionIds.map((id) =>
+          collectionBelongsToTenantById(fetcher, options, id, input.tenantId)
+        )
+      );
+
+      // Check if any returned credentials error
+      const credentialsInvalid = results.find(
+        (r) => typeof r === "object" && !r.ok && r.error === "commerce_credentials_invalid"
+      );
+      if (credentialsInvalid && typeof credentialsInvalid === "object") {
+        return {
+          ok: false,
+          error: "commerce_credentials_invalid",
+          status: 401,
+        };
+      }
+
+      const verifiedIds = input.collectionIds.filter((_, idx) => {
+        const r = results[idx];
+        return typeof r === "boolean" && r === true;
+      });
+
+      if (verifiedIds.length === 0) {
+        return {
+          ok: true,
+          ids: [],
+          deleted: true,
+        };
+      }
+
+      const deleteResults = await Promise.all(
+        verifiedIds.map(async (id) => {
+          const response = await requestMedusa(
+            fetcher,
+            new URL(
+              `/admin/collections/${encodeURIComponent(id)}`,
+              normalizeBaseUrl(options.medusaInternalUrl)
+            ),
+            {
+              headers: getAdminHeaders(options.adminApiToken!),
+              method: "DELETE",
+            }
+          );
+          return parseDeleteResponse(response, "collection");
+        })
+      );
+
+      const successfulIds = deleteResults
+        .filter((r): r is Extract<MerchantDeleteResult, { ok: true }> => r.ok)
+        .map((r) => r.id);
+
+      return {
+        ok: true,
+        ids: successfulIds,
+        deleted: true,
+      };
     },
   };
 }
@@ -1488,4 +1793,221 @@ function getErrorMessage(value: unknown) {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
+}
+
+async function categoryBelongsToTenantById(
+  fetcher: typeof fetch,
+  options: { adminApiToken?: string | undefined; medusaInternalUrl: string },
+  categoryId: string,
+  tenantId: string,
+): Promise<
+  | boolean
+  | { ok: false; error: "commerce_credentials_invalid" | "commerce_backend_unavailable"; status: 401 | 503 }
+> {
+  const url = new URL(
+    `/admin/product-categories/${encodeURIComponent(categoryId)}`,
+    normalizeBaseUrl(options.medusaInternalUrl),
+  );
+  url.searchParams.set("fields", "id,metadata");
+
+  const response = await requestMedusa(fetcher, url, {
+    headers: getAdminHeaders(options.adminApiToken ?? ""),
+  });
+
+  if (response.status === 401) {
+    return {
+      ok: false,
+      error: "commerce_credentials_invalid",
+      status: 401,
+    };
+  }
+
+  if (response.status === 404) {
+    return false;
+  }
+
+  if (!response.ok) {
+    return {
+      ok: false,
+      error: "commerce_backend_unavailable",
+      status: 503,
+    };
+  }
+
+  const data = await response.json().catch(() => undefined);
+  return belongsToTenant(data?.product_category, tenantId);
+}
+
+async function collectionBelongsToTenantById(
+  fetcher: typeof fetch,
+  options: { adminApiToken?: string | undefined; medusaInternalUrl: string },
+  collectionId: string,
+  tenantId: string,
+): Promise<
+  | boolean
+  | { ok: false; error: "commerce_credentials_invalid" | "commerce_backend_unavailable"; status: 401 | 503 }
+> {
+  const url = new URL(
+    `/admin/collections/${encodeURIComponent(collectionId)}`,
+    normalizeBaseUrl(options.medusaInternalUrl),
+  );
+  url.searchParams.set("fields", "id,metadata");
+
+  const response = await requestMedusa(fetcher, url, {
+    headers: getAdminHeaders(options.adminApiToken ?? ""),
+  });
+
+  if (response.status === 401) {
+    return {
+      ok: false,
+      error: "commerce_credentials_invalid",
+      status: 401,
+    };
+  }
+
+  if (response.status === 404) {
+    return false;
+  }
+
+  if (!response.ok) {
+    return {
+      ok: false,
+      error: "commerce_backend_unavailable",
+      status: 503,
+    };
+  }
+
+  const data = await response.json().catch(() => undefined);
+  return belongsToTenant(data?.collection, tenantId);
+}
+
+async function filterProductIdsBySalesChannel(
+  fetcher: typeof fetch,
+  options: { adminApiToken?: string | undefined; medusaInternalUrl: string },
+  productIds: string[],
+  salesChannelId: string,
+): Promise<
+  | string[]
+  | { ok: false; error: "commerce_credentials_invalid" | "commerce_backend_unavailable"; status: 401 | 503 }
+> {
+  if (productIds.length === 0) {
+    return [];
+  }
+
+  const url = getProductsBaseUrl(options.medusaInternalUrl);
+  url.searchParams.set("limit", String(productIds.length));
+  url.searchParams.set("offset", "0");
+  url.searchParams.set("fields", "id");
+  url.searchParams.set("sales_channel_id[]", salesChannelId);
+  for (const id of productIds) {
+    url.searchParams.append("id[]", id);
+  }
+
+  const response = await requestMedusa(fetcher, url, {
+    headers: getAdminHeaders(options.adminApiToken ?? ""),
+  });
+
+  if (response.status === 401) {
+    return {
+      ok: false,
+      error: "commerce_credentials_invalid",
+      status: 401,
+    };
+  }
+
+  if (!response.ok) {
+    return {
+      ok: false,
+      error: "commerce_backend_unavailable",
+      status: 503,
+    };
+  }
+
+  const data = await response.json().catch(() => undefined);
+  if (!data || !Array.isArray(data.products)) {
+    return [];
+  }
+
+  return data.products
+    .map((p: any) => getString(p.id))
+    .filter((id: string | null): id is string => Boolean(id));
+}
+
+async function parseDeleteResponse(
+  response: Response,
+  resourceName: "product" | "category" | "collection",
+): Promise<MerchantDeleteResult> {
+  if (response.status === 401) {
+    return {
+      ok: false,
+      error: "commerce_credentials_invalid",
+      status: 401,
+    };
+  }
+
+  if (response.status === 404) {
+    return {
+      ok: false,
+      error: `${resourceName}_not_found` as const,
+      status: 404,
+    };
+  }
+
+  if (!response.ok) {
+    return {
+      ok: false,
+      error: "commerce_backend_unavailable",
+      status: 503,
+    };
+  }
+
+  const data = await response.json().catch(() => undefined);
+  const id = getString(data?.id);
+  const deleted = getBoolean(data?.deleted) ?? false;
+
+  if (!id) {
+    return {
+      ok: false,
+      error: "commerce_backend_unavailable",
+      status: 503,
+    };
+  }
+
+  return {
+    ok: true,
+    id,
+    deleted,
+  };
+}
+
+async function parseBatchDeleteResponse(
+  response: Response,
+  requestedIds: string[],
+): Promise<MerchantBatchDeleteResult> {
+  if (response.status === 401) {
+    return {
+      ok: false,
+      error: "commerce_credentials_invalid",
+      status: 401,
+    };
+  }
+
+  if (!response.ok) {
+    return {
+      ok: false,
+      error: "commerce_backend_unavailable",
+      status: 503,
+    };
+  }
+
+  const data = await response.json().catch(() => undefined);
+  const deletedIds = Array.isArray(data?.deleted)
+    ? data.deleted.filter((id: unknown): id is string => typeof id === "string")
+    : requestedIds;
+
+  return {
+    ok: true,
+    ids: deletedIds,
+    deleted: true,
+  };
 }

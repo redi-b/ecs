@@ -516,6 +516,39 @@ export type MerchantProductStockResult =
 
 export type MerchantProductStockUpdateResult = MerchantProductStockResult;
 
+export type MerchantDeleteResult =
+  | {
+      ok: true;
+      id: string;
+      deleted: boolean;
+    }
+  | {
+      ok: false;
+      error:
+        | "commerce_backend_unavailable"
+        | "commerce_credentials_invalid"
+        | "commerce_credentials_missing"
+        | "product_not_found"
+        | "category_not_found"
+        | "collection_not_found";
+      status: 401 | 404 | 503;
+    };
+
+export type MerchantBatchDeleteResult =
+  | {
+      ok: true;
+      ids: string[];
+      deleted: boolean;
+    }
+  | {
+      ok: false;
+      error:
+        | "commerce_backend_unavailable"
+        | "commerce_credentials_invalid"
+        | "commerce_credentials_missing";
+      status: 401 | 503;
+    };
+
 export type MerchantOrder = {
   id: string;
   displayId: number | null;
