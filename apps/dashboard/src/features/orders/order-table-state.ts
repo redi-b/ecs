@@ -117,10 +117,16 @@ export function formatOrderDate(value: string | null) {
     return "No date";
   }
 
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "No date";
+  }
+
   return new Intl.DateTimeFormat("en", {
     dateStyle: "medium",
     timeZone: "UTC",
-  }).format(new Date(value));
+  }).format(date);
 }
 
 function orderMatchesLifecycle(order: MerchantOrder, lifecycle: OrderLifecycleFilter) {
@@ -163,7 +169,11 @@ function isCompletedStatus(status: string) {
 }
 
 function isFulfilledStatus(fulfillmentStatus: string) {
-  return fulfillmentStatus === "fulfilled" || fulfillmentStatus.includes("fully_fulfilled");
+  return (
+    fulfillmentStatus === "fulfilled" ||
+    fulfillmentStatus === "delivered" ||
+    fulfillmentStatus.includes("fully_fulfilled")
+  );
 }
 
 function isNeedsFulfillmentStatus(fulfillmentStatus: string) {
