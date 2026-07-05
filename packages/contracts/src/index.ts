@@ -503,3 +503,16 @@ export const publishedStorefrontConfigSchema = z.object({
 });
 
 export type PublishedStorefrontConfig = z.infer<typeof publishedStorefrontConfigSchema>;
+
+export const merchantDeleteResultSchema = z.object({
+  id: z.string().min(1),
+  deleted: z.boolean(),
+});
+export type MerchantDeleteResult = z.infer<typeof merchantDeleteResultSchema>;
+
+export const merchantBatchDeleteResultSchema = z.object({
+  ids: z.array(z.string().min(1)),
+  deleted: z.boolean(),
+});
+export type MerchantBatchDeleteResult = z.infer<typeof merchantBatchDeleteResultSchema>;
+
