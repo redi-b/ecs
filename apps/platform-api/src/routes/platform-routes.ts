@@ -732,6 +732,32 @@ export function registerPlatformRoutes(
     });
   });
 
+  app.post("/platform/tenants/:tenantId/products/batch-delete", async (context) => {
+    if (!options.getTenantCommerceContext || !options.deleteMerchantProductsBatch) {
+      return context.json({ error: "commerce_backend_unavailable" }, 503);
+    }
+
+    const session = await options.getSession?.(context.req.raw.headers);
+    if (!session) return context.json({ error: "auth_required" }, 401);
+
+    const commerce = await options.getTenantCommerceContext({
+      tenantId: context.req.param("tenantId"),
+      userId: session.user.id,
+    });
+    if (!commerce.ok) return context.json({ error: commerce.error }, commerce.status);
+
+    const body = await getJsonBody(context.req.raw);
+    const productIds = getOptionalBodyStringArray(body, "productIds");
+    if (!productIds || productIds.length === 0) return context.json({ error: "invalid_product_ids" }, 400);
+
+    const result = await options.deleteMerchantProductsBatch({
+      productIds,
+      salesChannelId: commerce.context.medusaSalesChannelId,
+    });
+    if (!result.ok) return context.json({ error: result.error }, result.status);
+    return context.json(result);
+  });
+
   app.post("/platform/tenants/:tenantId/products/:productId", async (context) => {
     if (!options.getTenantCommerceContext || !options.updateMerchantProduct) {
       return context.json({ error: "commerce_backend_unavailable" }, 503);
@@ -791,32 +817,6 @@ export function registerPlatformRoutes(
 
     const result = await options.deleteMerchantProduct({
       productId: context.req.param("productId"),
-      salesChannelId: commerce.context.medusaSalesChannelId,
-    });
-    if (!result.ok) return context.json({ error: result.error }, result.status);
-    return context.json(result);
-  });
-
-  app.post("/platform/tenants/:tenantId/products/batch-delete", async (context) => {
-    if (!options.getTenantCommerceContext || !options.deleteMerchantProductsBatch) {
-      return context.json({ error: "commerce_backend_unavailable" }, 503);
-    }
-
-    const session = await options.getSession?.(context.req.raw.headers);
-    if (!session) return context.json({ error: "auth_required" }, 401);
-
-    const commerce = await options.getTenantCommerceContext({
-      tenantId: context.req.param("tenantId"),
-      userId: session.user.id,
-    });
-    if (!commerce.ok) return context.json({ error: commerce.error }, commerce.status);
-
-    const body = await getJsonBody(context.req.raw);
-    const productIds = getOptionalBodyStringArray(body, "productIds");
-    if (!productIds || productIds.length === 0) return context.json({ error: "invalid_product_ids" }, 400);
-
-    const result = await options.deleteMerchantProductsBatch({
-      productIds,
       salesChannelId: commerce.context.medusaSalesChannelId,
     });
     if (!result.ok) return context.json({ error: result.error }, result.status);

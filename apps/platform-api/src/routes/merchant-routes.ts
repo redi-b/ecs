@@ -826,6 +826,25 @@ export function registerMerchantRoutes(
     });
   });
 
+  app.post("/platform/merchant/products/batch-delete", async (context) => {
+    const merchant = await getAuthorizedMerchantContext(context);
+    if (!merchant.ok) return merchant.response;
+    const commerce = getResolvedCommerce(merchant.result.context);
+    if (!commerce.ok) return context.json({ error: commerce.error }, commerce.status);
+    if (!options.deleteMerchantProductsBatch) return context.json({ error: "commerce_backend_unavailable" }, 503);
+
+    const body = await getJsonBody(context.req.raw);
+    const productIds = getOptionalBodyStringArray(body, "productIds");
+    if (!productIds || productIds.length === 0) return context.json({ error: "invalid_product_ids" }, 400);
+
+    const result = await options.deleteMerchantProductsBatch({
+      productIds,
+      salesChannelId: commerce.context.medusaSalesChannelId,
+    });
+    if (!result.ok) return context.json({ error: result.error }, result.status);
+    return context.json(result);
+  });
+
   app.post("/platform/merchant/products/:productId", async (context) => {
     const session = await options.getSession?.(context.req.raw.headers);
 
@@ -893,25 +912,6 @@ export function registerMerchantRoutes(
 
     const result = await options.deleteMerchantProduct({
       productId: context.req.param("productId"),
-      salesChannelId: commerce.context.medusaSalesChannelId,
-    });
-    if (!result.ok) return context.json({ error: result.error }, result.status);
-    return context.json(result);
-  });
-
-  app.post("/platform/merchant/products/batch-delete", async (context) => {
-    const merchant = await getAuthorizedMerchantContext(context);
-    if (!merchant.ok) return merchant.response;
-    const commerce = getResolvedCommerce(merchant.result.context);
-    if (!commerce.ok) return context.json({ error: commerce.error }, commerce.status);
-    if (!options.deleteMerchantProductsBatch) return context.json({ error: "commerce_backend_unavailable" }, 503);
-
-    const body = await getJsonBody(context.req.raw);
-    const productIds = getOptionalBodyStringArray(body, "productIds");
-    if (!productIds || productIds.length === 0) return context.json({ error: "invalid_product_ids" }, 400);
-
-    const result = await options.deleteMerchantProductsBatch({
-      productIds,
       salesChannelId: commerce.context.medusaSalesChannelId,
     });
     if (!result.ok) return context.json({ error: result.error }, result.status);
