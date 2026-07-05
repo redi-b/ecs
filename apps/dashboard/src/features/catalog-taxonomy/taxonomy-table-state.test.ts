@@ -162,7 +162,7 @@ describe("taxonomy table state", () => {
   });
 
   it("formats valid dates and falls back for null or invalid dates", () => {
-    assert.equal(formatTaxonomyDate("2026-07-01T10:00:00.000Z"), "Jul 1, 2026");
+    assert.equal(formatTaxonomyDate("2026-07-01T00:00:00.000Z"), "Jul 1, 2026");
     assert.equal(formatTaxonomyDate(null), "No date");
     assert.equal(formatTaxonomyDate("not-a-date"), "No date");
   });

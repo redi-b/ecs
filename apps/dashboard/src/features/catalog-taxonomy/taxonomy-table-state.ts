@@ -69,6 +69,7 @@ export function formatTaxonomyDate(value: string | null) {
 
   return new Intl.DateTimeFormat("en", {
     dateStyle: "medium",
+    timeZone: "UTC",
   }).format(date);
 }
 
