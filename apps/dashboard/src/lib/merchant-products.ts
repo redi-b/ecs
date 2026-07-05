@@ -6,6 +6,8 @@ import type {
   MerchantProductCollections,
   MerchantProductStock,
   MerchantProducts,
+  MerchantDeleteResult,
+  MerchantBatchDeleteResult,
 } from "@ecs/contracts";
 import {
   merchantProductCategoriesSchema,
@@ -16,6 +18,8 @@ import {
   merchantProductStockResponseSchema,
   merchantProductsSchema,
   platformErrorSchema,
+  merchantDeleteResultSchema,
+  merchantBatchDeleteResultSchema,
 } from "@ecs/contracts";
 
 export type MerchantProductsResult =
@@ -379,6 +383,281 @@ export async function updateMerchantProductStock(options: {
   }
 
   return parseProductStockResponse(response);
+}
+
+export async function deleteMerchantProduct(options: {
+  cookieHeader?: string | null | undefined;
+  fetcher?: typeof fetch | undefined;
+  platformApiBaseUrl: string;
+  productId: string;
+  requestHost?: string | null | undefined;
+  tenantId?: string | null | undefined;
+}): Promise<MerchantDeleteResult> {
+  const tenantId = options.tenantId?.trim();
+  const fetcher = options.fetcher ?? fetch;
+  const response = await fetcher(
+    getProductMutationUrl({
+      platformApiBaseUrl: options.platformApiBaseUrl,
+      productId: options.productId,
+      tenantId,
+    }),
+    {
+      cache: "no-store",
+      headers: getProductHeaders({
+        cookieHeader: options.cookieHeader,
+        requestHost: tenantId ? undefined : options.requestHost,
+      }),
+      method: "DELETE",
+    },
+  ).catch(() => null);
+
+  if (!response) {
+    return {
+      ok: false,
+      status: 503,
+      message: "platform_request_failed",
+    };
+  }
+
+  return parseDeleteResponse(response, "product");
+}
+
+export async function deleteMerchantProductsBatch(options: {
+  cookieHeader?: string | null | undefined;
+  fetcher?: typeof fetch | undefined;
+  platformApiBaseUrl: string;
+  productIds: string[];
+  requestHost?: string | null | undefined;
+  tenantId?: string | null | undefined;
+}): Promise<MerchantBatchDeleteResult> {
+  const tenantId = options.tenantId?.trim();
+  const fetcher = options.fetcher ?? fetch;
+  const basePath = tenantId
+    ? `/platform/tenants/${encodeURIComponent(tenantId)}/products`
+    : "/platform/merchant/products";
+  const url = new URL(`${basePath}/batch-delete`, normalizeBaseUrl(options.platformApiBaseUrl));
+
+  const response = await fetcher(url, {
+    body: JSON.stringify({ productIds: options.productIds }),
+    cache: "no-store",
+    headers: getProductHeaders({
+      cookieHeader: options.cookieHeader,
+      contentType: true,
+      requestHost: tenantId ? undefined : options.requestHost,
+    }),
+    method: "POST",
+  }).catch(() => null);
+
+  if (!response) {
+    return {
+      ok: false,
+      status: 503,
+      message: "platform_request_failed",
+    };
+  }
+
+  return parseBatchDeleteResponse(response);
+}
+
+export async function deleteMerchantProductCategory(options: {
+  categoryId: string;
+  cookieHeader?: string | null | undefined;
+  fetcher?: typeof fetch | undefined;
+  platformApiBaseUrl: string;
+  requestHost?: string | null | undefined;
+  tenantId?: string | null | undefined;
+}): Promise<MerchantDeleteResult> {
+  const tenantId = options.tenantId?.trim();
+  const fetcher = options.fetcher ?? fetch;
+  const basePath = tenantId
+    ? `/platform/tenants/${encodeURIComponent(tenantId)}/product-categories`
+    : "/platform/merchant/product-categories";
+  const url = new URL(`${basePath}/${encodeURIComponent(options.categoryId)}`, normalizeBaseUrl(options.platformApiBaseUrl));
+
+  const response = await fetcher(url, {
+    cache: "no-store",
+    headers: getProductHeaders({
+      cookieHeader: options.cookieHeader,
+      requestHost: tenantId ? undefined : options.requestHost,
+    }),
+    method: "DELETE",
+  }).catch(() => null);
+
+  if (!response) {
+    return {
+      ok: false,
+      status: 503,
+      message: "platform_request_failed",
+    };
+  }
+
+  return parseDeleteResponse(response, "category");
+}
+
+export async function deleteMerchantProductCategoriesBatch(options: {
+  categoryIds: string[];
+  cookieHeader?: string | null | undefined;
+  fetcher?: typeof fetch | undefined;
+  platformApiBaseUrl: string;
+  requestHost?: string | null | undefined;
+  tenantId?: string | null | undefined;
+}): Promise<MerchantBatchDeleteResult> {
+  const tenantId = options.tenantId?.trim();
+  const fetcher = options.fetcher ?? fetch;
+  const basePath = tenantId
+    ? `/platform/tenants/${encodeURIComponent(tenantId)}/product-categories`
+    : "/platform/merchant/product-categories";
+  const url = new URL(`${basePath}/batch-delete`, normalizeBaseUrl(options.platformApiBaseUrl));
+
+  const response = await fetcher(url, {
+    body: JSON.stringify({ categoryIds: options.categoryIds }),
+    cache: "no-store",
+    headers: getProductHeaders({
+      cookieHeader: options.cookieHeader,
+      contentType: true,
+      requestHost: tenantId ? undefined : options.requestHost,
+    }),
+    method: "POST",
+  }).catch(() => null);
+
+  if (!response) {
+    return {
+      ok: false,
+      status: 503,
+      message: "platform_request_failed",
+    };
+  }
+
+  return parseBatchDeleteResponse(response);
+}
+
+export async function deleteMerchantProductCollection(options: {
+  collectionId: string;
+  cookieHeader?: string | null | undefined;
+  fetcher?: typeof fetch | undefined;
+  platformApiBaseUrl: string;
+  requestHost?: string | null | undefined;
+  tenantId?: string | null | undefined;
+}): Promise<MerchantDeleteResult> {
+  const tenantId = options.tenantId?.trim();
+  const fetcher = options.fetcher ?? fetch;
+  const basePath = tenantId
+    ? `/platform/tenants/${encodeURIComponent(tenantId)}/product-collections`
+    : "/platform/merchant/product-collections";
+  const url = new URL(`${basePath}/${encodeURIComponent(options.collectionId)}`, normalizeBaseUrl(options.platformApiBaseUrl));
+
+  const response = await fetcher(url, {
+    cache: "no-store",
+    headers: getProductHeaders({
+      cookieHeader: options.cookieHeader,
+      requestHost: tenantId ? undefined : options.requestHost,
+    }),
+    method: "DELETE",
+  }).catch(() => null);
+
+  if (!response) {
+    return {
+      ok: false,
+      status: 503,
+      message: "platform_request_failed",
+    };
+  }
+
+  return parseDeleteResponse(response, "collection");
+}
+
+export async function deleteMerchantProductCollectionsBatch(options: {
+  collectionIds: string[];
+  cookieHeader?: string | null | undefined;
+  fetcher?: typeof fetch | undefined;
+  platformApiBaseUrl: string;
+  requestHost?: string | null | undefined;
+  tenantId?: string | null | undefined;
+}): Promise<MerchantBatchDeleteResult> {
+  const tenantId = options.tenantId?.trim();
+  const fetcher = options.fetcher ?? fetch;
+  const basePath = tenantId
+    ? `/platform/tenants/${encodeURIComponent(tenantId)}/product-collections`
+    : "/platform/merchant/product-collections";
+  const url = new URL(`${basePath}/batch-delete`, normalizeBaseUrl(options.platformApiBaseUrl));
+
+  const response = await fetcher(url, {
+    body: JSON.stringify({ collectionIds: options.collectionIds }),
+    cache: "no-store",
+    headers: getProductHeaders({
+      cookieHeader: options.cookieHeader,
+      contentType: true,
+      requestHost: tenantId ? undefined : options.requestHost,
+    }),
+    method: "POST",
+  }).catch(() => null);
+
+  if (!response) {
+    return {
+      ok: false,
+      status: 503,
+      message: "platform_request_failed",
+    };
+  }
+
+  return parseBatchDeleteResponse(response);
+}
+
+async function parseDeleteResponse(
+  response: Response,
+  resource: string,
+): Promise<MerchantDeleteResult> {
+  const data = await response.json().catch(() => undefined);
+  if (!response.ok) {
+    const error = platformErrorSchema.safeParse(data);
+    return {
+      ok: false,
+      status: response.status,
+      message: error.success ? error.data.error : response.statusText || `Failed to delete ${resource}.`,
+    };
+  }
+
+  const parsed = merchantDeleteResultSchema.safeParse(data);
+  if (!parsed.success) {
+    return {
+      ok: false,
+      status: 502,
+      message: `invalid_${resource}_delete_response`,
+    };
+  }
+
+  return {
+    ok: true,
+    id: parsed.data.id,
+    deleted: parsed.data.deleted,
+  };
+}
+
+async function parseBatchDeleteResponse(response: Response): Promise<MerchantBatchDeleteResult> {
+  const data = await response.json().catch(() => undefined);
+  if (!response.ok) {
+    const error = platformErrorSchema.safeParse(data);
+    return {
+      ok: false,
+      status: response.status,
+      message: error.success ? error.data.error : response.statusText || "Failed to batch delete resources.",
+    };
+  }
+
+  const parsed = merchantBatchDeleteResultSchema.safeParse(data);
+  if (!parsed.success) {
+    return {
+      ok: false,
+      status: 502,
+      message: "invalid_batch_delete_response",
+    };
+  }
+
+  return {
+    ok: true,
+    ids: parsed.data.ids,
+    deleted: parsed.data.deleted,
+  };
 }
 
 async function fetchProductResource(options: {
