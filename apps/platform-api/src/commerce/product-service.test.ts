@@ -1806,6 +1806,127 @@ describe("createMedusaProductService", () => {
 
       assert.equal(forwardedRequests.length, 4); // 2 GETs + 2 DELETEs
     });
+
+    it("deleteMerchantProduct propagates retrieval errors directly (like 503)", async () => {
+      const service = createMedusaProductService({
+        adminApiToken: "medusa_token",
+        medusaInternalUrl: "http://medusa:9000",
+        fetcher: async () => Response.json({}, { status: 503 }),
+      });
+
+      const result = await (service as any).deleteMerchantProduct({
+        productId: "prod_1",
+        salesChannelId: "sc_1",
+      });
+
+      assert.deepEqual(result, {
+        ok: false,
+        error: "commerce_backend_unavailable",
+        status: 503,
+      });
+    });
+
+    it("deleteMerchantProductCategoriesBatch propagates verification errors directly (like 503)", async () => {
+      const service = createMedusaProductService({
+        adminApiToken: "medusa_token",
+        medusaInternalUrl: "http://medusa:9000",
+        fetcher: async () => Response.json({}, { status: 503 }),
+      });
+
+      const result = await (service as any).deleteMerchantProductCategoriesBatch({
+        categoryIds: ["pcat_1", "pcat_2"],
+        tenantId: "tenant_1",
+      });
+
+      assert.deepEqual(result, {
+        ok: false,
+        error: "commerce_backend_unavailable",
+        status: 503,
+      });
+    });
+
+    it("deleteMerchantProductCategoriesBatch propagates individual deletion errors directly (like 503)", async () => {
+      const service = createMedusaProductService({
+        adminApiToken: "medusa_token",
+        medusaInternalUrl: "http://medusa:9000",
+        fetcher: async (input, init) => {
+          const request = new Request(input, init);
+          if (request.method === "GET") {
+            return Response.json({
+              product_category: {
+                id: "pcat_1",
+                metadata: {
+                  platform_tenant_id: "tenant_1",
+                },
+              },
+            });
+          }
+          return Response.json({}, { status: 503 });
+        },
+      });
+
+      const result = await (service as any).deleteMerchantProductCategoriesBatch({
+        categoryIds: ["pcat_1"],
+        tenantId: "tenant_1",
+      });
+
+      assert.deepEqual(result, {
+        ok: false,
+        error: "commerce_backend_unavailable",
+        status: 503,
+      });
+    });
+
+    it("deleteMerchantProductCollectionsBatch propagates verification errors directly (like 503)", async () => {
+      const service = createMedusaProductService({
+        adminApiToken: "medusa_token",
+        medusaInternalUrl: "http://medusa:9000",
+        fetcher: async () => Response.json({}, { status: 503 }),
+      });
+
+      const result = await (service as any).deleteMerchantProductCollectionsBatch({
+        collectionIds: ["pcol_1", "pcol_2"],
+        tenantId: "tenant_1",
+      });
+
+      assert.deepEqual(result, {
+        ok: false,
+        error: "commerce_backend_unavailable",
+        status: 503,
+      });
+    });
+
+    it("deleteMerchantProductCollectionsBatch propagates individual deletion errors directly (like 503)", async () => {
+      const service = createMedusaProductService({
+        adminApiToken: "medusa_token",
+        medusaInternalUrl: "http://medusa:9000",
+        fetcher: async (input, init) => {
+          const request = new Request(input, init);
+          if (request.method === "GET") {
+            return Response.json({
+              collection: {
+                id: "pcol_1",
+                metadata: {
+                  platform_tenant_id: "tenant_1",
+                },
+              },
+            });
+          }
+          return Response.json({}, { status: 503 });
+        },
+      });
+
+      const result = await (service as any).deleteMerchantProductCollectionsBatch({
+        collectionIds: ["pcol_1"],
+        tenantId: "tenant_1",
+      });
+
+      assert.deepEqual(result, {
+        ok: false,
+        error: "commerce_backend_unavailable",
+        status: 503,
+      });
+    });
   });
 });
 
