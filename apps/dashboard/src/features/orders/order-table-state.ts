@@ -109,7 +109,7 @@ export function formatOrderMoney(total: number | null, currencyCode: string | nu
   return new Intl.NumberFormat("en", {
     currency: currencyCode?.toUpperCase() || "ETB",
     style: "currency",
-  }).format(total);
+  }).format(total / 100);
 }
 
 export function formatOrderDate(value: string | null) {

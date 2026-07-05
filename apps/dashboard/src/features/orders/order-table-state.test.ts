@@ -241,9 +241,9 @@ describe("order table state", () => {
     assert.equal(getOrderTotalSortValue(completedOrder), null);
     assert.equal(formatOrderMoney(null, "etb"), "Not available");
     assert.match(formatOrderMoney(1250, "etb"), /ETB/);
-    assert.match(formatOrderMoney(1250, "etb"), /1,250\.00/);
+    assert.match(formatOrderMoney(1250, "etb"), /12\.50/);
     assert.match(formatOrderMoney(500, null), /ETB/);
-    assert.match(formatOrderMoney(500, null), /500\.00/);
+    assert.match(formatOrderMoney(500, null), /5\.00/);
     assert.equal(formatOrderDate("2026-07-01T10:00:00.000Z"), "Jul 1, 2026");
     assert.equal(formatOrderDate(null), "No date");
     assert.equal(formatOrderDate("not-a-date"), "No date");
