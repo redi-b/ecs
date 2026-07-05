@@ -108,6 +108,30 @@ export type MerchantProductStockResult =
       status: number;
     };
 
+export type MerchantDeleteActionResult =
+  | {
+      ok: true;
+      id: string;
+      deleted: boolean;
+    }
+  | {
+      ok: false;
+      message: string;
+      status: number;
+    };
+
+export type MerchantBatchDeleteActionResult =
+  | {
+      ok: true;
+      ids: string[];
+      deleted: boolean;
+    }
+  | {
+      ok: false;
+      message: string;
+      status: number;
+    };
+
 export type MerchantProductWriteInput = {
   categoryIds?: string[] | undefined;
   collectionId?: string | null | undefined;
@@ -392,7 +416,7 @@ export async function deleteMerchantProduct(options: {
   productId: string;
   requestHost?: string | null | undefined;
   tenantId?: string | null | undefined;
-}): Promise<MerchantDeleteResult> {
+}): Promise<MerchantDeleteActionResult> {
   const tenantId = options.tenantId?.trim();
   const fetcher = options.fetcher ?? fetch;
   const response = await fetcher(
@@ -429,7 +453,7 @@ export async function deleteMerchantProductsBatch(options: {
   productIds: string[];
   requestHost?: string | null | undefined;
   tenantId?: string | null | undefined;
-}): Promise<MerchantBatchDeleteResult> {
+}): Promise<MerchantBatchDeleteActionResult> {
   const tenantId = options.tenantId?.trim();
   const fetcher = options.fetcher ?? fetch;
   const basePath = tenantId
@@ -466,7 +490,7 @@ export async function deleteMerchantProductCategory(options: {
   platformApiBaseUrl: string;
   requestHost?: string | null | undefined;
   tenantId?: string | null | undefined;
-}): Promise<MerchantDeleteResult> {
+}): Promise<MerchantDeleteActionResult> {
   const tenantId = options.tenantId?.trim();
   const fetcher = options.fetcher ?? fetch;
   const basePath = tenantId
@@ -501,7 +525,7 @@ export async function deleteMerchantProductCategoriesBatch(options: {
   platformApiBaseUrl: string;
   requestHost?: string | null | undefined;
   tenantId?: string | null | undefined;
-}): Promise<MerchantBatchDeleteResult> {
+}): Promise<MerchantBatchDeleteActionResult> {
   const tenantId = options.tenantId?.trim();
   const fetcher = options.fetcher ?? fetch;
   const basePath = tenantId
@@ -538,7 +562,7 @@ export async function deleteMerchantProductCollection(options: {
   platformApiBaseUrl: string;
   requestHost?: string | null | undefined;
   tenantId?: string | null | undefined;
-}): Promise<MerchantDeleteResult> {
+}): Promise<MerchantDeleteActionResult> {
   const tenantId = options.tenantId?.trim();
   const fetcher = options.fetcher ?? fetch;
   const basePath = tenantId
@@ -573,7 +597,7 @@ export async function deleteMerchantProductCollectionsBatch(options: {
   platformApiBaseUrl: string;
   requestHost?: string | null | undefined;
   tenantId?: string | null | undefined;
-}): Promise<MerchantBatchDeleteResult> {
+}): Promise<MerchantBatchDeleteActionResult> {
   const tenantId = options.tenantId?.trim();
   const fetcher = options.fetcher ?? fetch;
   const basePath = tenantId
@@ -606,7 +630,7 @@ export async function deleteMerchantProductCollectionsBatch(options: {
 async function parseDeleteResponse(
   response: Response,
   resource: string,
-): Promise<MerchantDeleteResult> {
+): Promise<MerchantDeleteActionResult> {
   const data = await response.json().catch(() => undefined);
   if (!response.ok) {
     const error = platformErrorSchema.safeParse(data);
@@ -633,7 +657,9 @@ async function parseDeleteResponse(
   };
 }
 
-async function parseBatchDeleteResponse(response: Response): Promise<MerchantBatchDeleteResult> {
+async function parseBatchDeleteResponse(
+  response: Response,
+): Promise<MerchantBatchDeleteActionResult> {
   const data = await response.json().catch(() => undefined);
   if (!response.ok) {
     const error = platformErrorSchema.safeParse(data);
