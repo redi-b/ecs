@@ -173,7 +173,7 @@ function getProductColumns(
                 variant: "destructive",
               },
             ]}
-            label={`Open actions for ${product.title ?? product.id}`}
+            label={`Open actions for ${product.title || "unnamed product"}`}
           />
         );
       },
@@ -181,6 +181,20 @@ function getProductColumns(
       enableSorting: false,
     },
   ];
+}
+
+function getDeletionErrorMessage(error: unknown, resourceName: string) {
+  const code = error instanceof Error ? error.message : String(error);
+  if (code === "commerce_backend_unavailable") {
+    return "Catalog changes are temporarily unavailable. Try again.";
+  }
+  if (code === "commerce_credentials_missing" || code === "commerce_credentials_invalid") {
+    return "Catalog changes are temporarily unavailable. Contact support.";
+  }
+  if (code === "product_not_found" || code === "category_not_found" || code === "collection_not_found") {
+    return `${resourceName} not found.`;
+  }
+  return `Failed to delete ${resourceName.toLowerCase()}. Try again.`;
 }
 
 export function ProductsTable({
@@ -224,7 +238,7 @@ export function ProductsTable({
       router.refresh();
     },
     onError: (error) => {
-      toast.error(error instanceof Error ? error.message : "Failed to delete product.");
+      toast.error(getDeletionErrorMessage(error, "Product"));
     },
   });
 
@@ -250,7 +264,7 @@ export function ProductsTable({
       router.refresh();
     },
     onError: (error) => {
-      toast.error(error instanceof Error ? error.message : "Failed to delete products.");
+      toast.error(getDeletionErrorMessage(error, "Products"));
     },
   });
 
