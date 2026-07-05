@@ -7,6 +7,7 @@ export const dashboardRoutes = {
   productUpdateAction: (productId: string) =>
     `/admin/products/actions/${encodeURIComponent(productId)}`,
   orders: "/admin/orders",
+  orderDetail: (orderId: string) => `/admin/orders/${encodeURIComponent(orderId)}`,
   editor: "/admin/editor",
   insights: "/admin/insights",
   billing: "/admin/billing",
