@@ -31,6 +31,32 @@ export const appRoutes: AppRoute[] = [
     icon: AppIcons.products,
     section: "commerce",
     keywords: ["catalog", "items", "inventory", "collections", "categories"],
+    children: [
+      {
+        id: "products-list",
+        title: "Products",
+        href: dashboardRoutes.products,
+        icon: AppIcons.products,
+        section: "commerce",
+        keywords: ["catalog", "items", "inventory"],
+      },
+      {
+        id: "product-categories",
+        title: "Categories",
+        href: dashboardRoutes.productCategories,
+        icon: AppIcons.products,
+        section: "commerce",
+        keywords: ["catalog", "taxonomy", "categories"],
+      },
+      {
+        id: "product-collections",
+        title: "Collections",
+        href: dashboardRoutes.productCollections,
+        icon: AppIcons.image,
+        section: "commerce",
+        keywords: ["catalog", "taxonomy", "collections"],
+      },
+    ],
   },
   {
     id: "orders",
@@ -75,5 +101,7 @@ export const appRoutes: AppRoute[] = [
 ];
 
 export function findRouteByHref(pathname: string) {
-  return appRoutes.find((route) => route.href === pathname);
+  return appRoutes
+    .flatMap((route) => [route, ...(route.children ?? [])])
+    .find((route) => route.href === pathname);
 }

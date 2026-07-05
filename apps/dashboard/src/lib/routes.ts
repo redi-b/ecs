@@ -3,6 +3,12 @@ export const dashboardRoutes = {
   products: "/admin/products",
   productsNew: "/admin/products/new",
   productCreateAction: "/admin/products/actions/create",
+  productCategories: "/admin/products/categories",
+  productCategoriesNew: "/admin/products/categories/new",
+  productCategoryCreateAction: "/admin/product-categories/actions/create",
+  productCollections: "/admin/products/collections",
+  productCollectionsNew: "/admin/products/collections/new",
+  productCollectionCreateAction: "/admin/product-collections/actions/create",
   productDetail: (productId: string) => `/admin/products/${encodeURIComponent(productId)}`,
   productUpdateAction: (productId: string) =>
     `/admin/products/actions/${encodeURIComponent(productId)}`,

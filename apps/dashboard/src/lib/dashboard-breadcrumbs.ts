@@ -15,6 +15,48 @@ export function getDashboardBreadcrumbTrail(
 ): DashboardBreadcrumb[] {
   const productsRoute = appRoutes.find((route) => route.href === dashboardRoutes.products);
   const ordersRoute = appRoutes.find((route) => route.href === dashboardRoutes.orders);
+  const productCategoriesRoute = productsRoute?.children?.find(
+    (route) => route.href === dashboardRoutes.productCategories,
+  );
+  const productCollectionsRoute = productsRoute?.children?.find(
+    (route) => route.href === dashboardRoutes.productCollections,
+  );
+
+  if (productsRoute && productCategoriesRoute) {
+    if (pathname === dashboardRoutes.productCategories) {
+      return [toBreadcrumb(productsRoute), toBreadcrumb(productCategoriesRoute)];
+    }
+
+    if (pathname === dashboardRoutes.productCategoriesNew) {
+      return [
+        toBreadcrumb(productsRoute),
+        toBreadcrumb(productCategoriesRoute),
+        {
+          href: dashboardRoutes.productCategoriesNew,
+          id: "product-categories-new",
+          title: "New category",
+        },
+      ];
+    }
+  }
+
+  if (productsRoute && productCollectionsRoute) {
+    if (pathname === dashboardRoutes.productCollections) {
+      return [toBreadcrumb(productsRoute), toBreadcrumb(productCollectionsRoute)];
+    }
+
+    if (pathname === dashboardRoutes.productCollectionsNew) {
+      return [
+        toBreadcrumb(productsRoute),
+        toBreadcrumb(productCollectionsRoute),
+        {
+          href: dashboardRoutes.productCollectionsNew,
+          id: "product-collections-new",
+          title: "New collection",
+        },
+      ];
+    }
+  }
 
   if (productsRoute && pathname === dashboardRoutes.productsNew) {
     return [
