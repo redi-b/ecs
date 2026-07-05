@@ -20,7 +20,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { appRoutes } from "@/lib/navigation";
+import { getNavigableAppRoutes } from "@/lib/navigation";
 
 export function CommandCenter() {
   const router = useRouter();
@@ -64,7 +64,7 @@ export function CommandCenter() {
           <CommandList>
             <CommandEmpty>No results found.</CommandEmpty>
             <CommandGroup heading="Navigation">
-              {appRoutes
+              {getNavigableAppRoutes()
                 .filter((route) => !route.disabled)
                 .map((route) => {
                   const Icon = route.icon;

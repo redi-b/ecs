@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import { getDashboardBreadcrumbTrail } from "./dashboard-breadcrumbs.js";
-import { appRoutes } from "./navigation.js";
+import { appRoutes, getNavigableAppRoutes } from "./navigation.js";
 import { dashboardRoutes } from "./routes.js";
 
 describe("getDashboardBreadcrumbTrail", () => {
@@ -30,6 +30,24 @@ describe("getDashboardBreadcrumbTrail", () => {
         ["Products", "/admin/products"],
         ["Categories", "/admin/products/categories"],
         ["Collections", "/admin/products/collections"],
+      ],
+    );
+  });
+
+  it("exposes taxonomy routes as direct command navigation targets", () => {
+    const commandRoutes = getNavigableAppRoutes();
+
+    assert.equal(
+      commandRoutes.filter((route) => route.href === dashboardRoutes.products).length,
+      1,
+    );
+    assert.deepEqual(
+      commandRoutes
+        .filter((route) => route.id.startsWith("product-"))
+        .map((route) => [route.id, route.href]),
+      [
+        ["product-categories", "/admin/products/categories"],
+        ["product-collections", "/admin/products/collections"],
       ],
     );
   });
