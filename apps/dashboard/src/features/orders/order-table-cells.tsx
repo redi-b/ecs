@@ -15,7 +15,10 @@ type OrderStatusTone = "fulfillment" | "order" | "payment";
 
 export function OrderIdentityCell({ href, order }: { href: string; order: MerchantOrder }) {
   return (
-    <Link className="group flex min-w-36 flex-col gap-1 outline-none" href={href}>
+    <Link
+      className="group flex min-w-36 flex-col gap-1 rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+      href={href}
+    >
       <span className="font-medium text-foreground transition-colors group-hover:text-primary">
         {formatOrderDisplayId(order)}
       </span>
