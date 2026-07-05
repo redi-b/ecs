@@ -779,5 +779,56 @@ describe("getMerchantProducts", () => {
       );
       assert.deepEqual(await forwardedRequest?.json(), { collectionIds: ["pcol_1", "pcol_2"] });
     });
+
+    it("handles non-2xx platform errors", async () => {
+      const result = await deleteMerchantProduct({
+        platformApiBaseUrl: "http://platform.local",
+        productId: "prod_1",
+        fetcher: async () => {
+          return new Response(JSON.stringify({ error: "product_not_found" }), {
+            status: 404,
+            statusText: "Not Found",
+          });
+        },
+      });
+
+      assert.deepEqual(result, {
+        ok: false,
+        status: 404,
+        message: "product_not_found",
+      });
+    });
+
+    it("handles fetch network failure", async () => {
+      const result = await deleteMerchantProduct({
+        platformApiBaseUrl: "http://platform.local",
+        productId: "prod_1",
+        fetcher: async () => {
+          throw new TypeError("Failed to fetch");
+        },
+      });
+
+      assert.deepEqual(result, {
+        ok: false,
+        status: 503,
+        message: "platform_request_failed",
+      });
+    });
+
+    it("handles invalid response schema parsing failure", async () => {
+      const result = await deleteMerchantProduct({
+        platformApiBaseUrl: "http://platform.local",
+        productId: "prod_1",
+        fetcher: async () => {
+          return Response.json({ wrong_key: "abc" });
+        },
+      });
+
+      assert.deepEqual(result, {
+        ok: false,
+        status: 502,
+        message: "invalid_product_delete_response",
+      });
+    });
   });
 });
