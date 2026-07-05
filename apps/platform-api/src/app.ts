@@ -1207,6 +1207,42 @@ export type PlatformAppOptions = {
         title?: string | null | undefined;
       }) => Promise<MerchantProductWriteResult>)
     | undefined;
+  deleteMerchantProduct?:
+    | ((input: {
+        productId: string;
+        salesChannelId: string;
+      }) => Promise<MerchantDeleteResult>)
+    | undefined;
+  deleteMerchantProductsBatch?:
+    | ((input: {
+        productIds: string[];
+        salesChannelId: string;
+      }) => Promise<MerchantBatchDeleteResult>)
+    | undefined;
+  deleteMerchantProductCategory?:
+    | ((input: {
+        categoryId: string;
+        tenantId: string;
+      }) => Promise<MerchantDeleteResult>)
+    | undefined;
+  deleteMerchantProductCategoriesBatch?:
+    | ((input: {
+        categoryIds: string[];
+        tenantId: string;
+      }) => Promise<MerchantBatchDeleteResult>)
+    | undefined;
+  deleteMerchantProductCollection?:
+    | ((input: {
+        collectionId: string;
+        tenantId: string;
+      }) => Promise<MerchantDeleteResult>)
+    | undefined;
+  deleteMerchantProductCollectionsBatch?:
+    | ((input: {
+        collectionIds: string[];
+        tenantId: string;
+      }) => Promise<MerchantBatchDeleteResult>)
+    | undefined;
   serviceName: string;
   medusaInternalUrl: string;
   platformPublicBaseUrl: string;

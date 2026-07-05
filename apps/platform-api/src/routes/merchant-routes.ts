@@ -883,6 +883,108 @@ export function registerMerchantRoutes(
       product: product.product,
     });
   });
+
+  app.delete("/platform/merchant/products/:productId", async (context) => {
+    const merchant = await getAuthorizedMerchantContext(context);
+    if (!merchant.ok) return merchant.response;
+    const commerce = getResolvedCommerce(merchant.result.context);
+    if (!commerce.ok) return context.json({ error: commerce.error }, commerce.status);
+    if (!options.deleteMerchantProduct) return context.json({ error: "commerce_backend_unavailable" }, 503);
+
+    const result = await options.deleteMerchantProduct({
+      productId: context.req.param("productId"),
+      salesChannelId: commerce.context.medusaSalesChannelId,
+    });
+    if (!result.ok) return context.json({ error: result.error }, result.status);
+    return context.json(result);
+  });
+
+  app.post("/platform/merchant/products/batch-delete", async (context) => {
+    const merchant = await getAuthorizedMerchantContext(context);
+    if (!merchant.ok) return merchant.response;
+    const commerce = getResolvedCommerce(merchant.result.context);
+    if (!commerce.ok) return context.json({ error: commerce.error }, commerce.status);
+    if (!options.deleteMerchantProductsBatch) return context.json({ error: "commerce_backend_unavailable" }, 503);
+
+    const body = await getJsonBody(context.req.raw);
+    const productIds = getOptionalBodyStringArray(body, "productIds");
+    if (!productIds || productIds.length === 0) return context.json({ error: "invalid_product_ids" }, 400);
+
+    const result = await options.deleteMerchantProductsBatch({
+      productIds,
+      salesChannelId: commerce.context.medusaSalesChannelId,
+    });
+    if (!result.ok) return context.json({ error: result.error }, result.status);
+    return context.json(result);
+  });
+
+  app.delete("/platform/merchant/product-categories/:categoryId", async (context) => {
+    const merchant = await getAuthorizedMerchantContext(context);
+    if (!merchant.ok) return merchant.response;
+    const commerce = getResolvedCommerce(merchant.result.context);
+    if (!commerce.ok) return context.json({ error: commerce.error }, commerce.status);
+    if (!options.deleteMerchantProductCategory) return context.json({ error: "commerce_backend_unavailable" }, 503);
+
+    const result = await options.deleteMerchantProductCategory({
+      categoryId: context.req.param("categoryId"),
+      tenantId: merchant.result.context.tenantId,
+    });
+    if (!result.ok) return context.json({ error: result.error }, result.status);
+    return context.json(result);
+  });
+
+  app.post("/platform/merchant/product-categories/batch-delete", async (context) => {
+    const merchant = await getAuthorizedMerchantContext(context);
+    if (!merchant.ok) return merchant.response;
+    const commerce = getResolvedCommerce(merchant.result.context);
+    if (!commerce.ok) return context.json({ error: commerce.error }, commerce.status);
+    if (!options.deleteMerchantProductCategoriesBatch) return context.json({ error: "commerce_backend_unavailable" }, 503);
+
+    const body = await getJsonBody(context.req.raw);
+    const categoryIds = getOptionalBodyStringArray(body, "categoryIds");
+    if (!categoryIds || categoryIds.length === 0) return context.json({ error: "invalid_category_ids" }, 400);
+
+    const result = await options.deleteMerchantProductCategoriesBatch({
+      categoryIds,
+      tenantId: merchant.result.context.tenantId,
+    });
+    if (!result.ok) return context.json({ error: result.error }, result.status);
+    return context.json(result);
+  });
+
+  app.delete("/platform/merchant/product-collections/:collectionId", async (context) => {
+    const merchant = await getAuthorizedMerchantContext(context);
+    if (!merchant.ok) return merchant.response;
+    const commerce = getResolvedCommerce(merchant.result.context);
+    if (!commerce.ok) return context.json({ error: commerce.error }, commerce.status);
+    if (!options.deleteMerchantProductCollection) return context.json({ error: "commerce_backend_unavailable" }, 503);
+
+    const result = await options.deleteMerchantProductCollection({
+      collectionId: context.req.param("collectionId"),
+      tenantId: merchant.result.context.tenantId,
+    });
+    if (!result.ok) return context.json({ error: result.error }, result.status);
+    return context.json(result);
+  });
+
+  app.post("/platform/merchant/product-collections/batch-delete", async (context) => {
+    const merchant = await getAuthorizedMerchantContext(context);
+    if (!merchant.ok) return merchant.response;
+    const commerce = getResolvedCommerce(merchant.result.context);
+    if (!commerce.ok) return context.json({ error: commerce.error }, commerce.status);
+    if (!options.deleteMerchantProductCollectionsBatch) return context.json({ error: "commerce_backend_unavailable" }, 503);
+
+    const body = await getJsonBody(context.req.raw);
+    const collectionIds = getOptionalBodyStringArray(body, "collectionIds");
+    if (!collectionIds || collectionIds.length === 0) return context.json({ error: "invalid_collection_ids" }, 400);
+
+    const result = await options.deleteMerchantProductCollectionsBatch({
+      collectionIds,
+      tenantId: merchant.result.context.tenantId,
+    });
+    if (!result.ok) return context.json({ error: result.error }, result.status);
+    return context.json(result);
+  });
 }
 
 function getOptionalBodyProductOptions(body: unknown) {
