@@ -2,9 +2,13 @@
 
 import type { MerchantOrder } from "@ecs/contracts";
 import type { ColumnDef } from "@tanstack/react-table";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { DataTable } from "@/components/app/data-table";
+import {
+  DataTableFilters,
+  type DataTableFilterDefinition,
+} from "@/components/app/data-table-filters";
 import { DataTableHeader } from "@/components/app/data-table-header";
 import { AppIcons } from "@/components/app/icons";
 import { RowActionsMenu } from "@/components/app/row-actions-menu";
@@ -15,14 +19,6 @@ import {
   InputGroupAddon,
   InputGroupInput,
 } from "@/components/ui/input-group";
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   OrderCustomerCell,
   OrderIdentityCell,
@@ -40,11 +36,27 @@ import { getTenantScopedPath } from "@/lib/dashboard-tenant-context";
 import { dashboardRoutes } from "@/lib/routes";
 
 type OrdersTableProps = {
+  initialLifecycle?: OrderLifecycleFilter | undefined;
+  initialQuery?: string | undefined;
   orders: MerchantOrder[];
   pageSize: number;
   tenantId?: string | undefined;
   totalCount: number;
 };
+
+const orderLifecycleFilterOptions: Array<{
+  label: string;
+  value: OrderLifecycleFilter;
+}> = [
+  { label: "All orders", value: "all" },
+  { label: "Open", value: "open" },
+  { label: "Completed", value: "completed" },
+  { label: "Canceled", value: "canceled" },
+  { label: "Needs fulfillment", value: "needs_fulfillment" },
+  { label: "Fulfilled", value: "fulfilled" },
+  { label: "Payment pending", value: "payment_pending" },
+  { label: "Paid", value: "paid" },
+];
 
 function copyToClipboard(value: string) {
   if (!value || typeof navigator === "undefined" || !navigator.clipboard) {
@@ -157,9 +169,17 @@ function getOrderColumns(tenantId?: string): ColumnDef<MerchantOrder>[] {
   ];
 }
 
-export function OrdersTable({ orders, pageSize, tenantId, totalCount }: OrdersTableProps) {
-  const [query, setQuery] = useState("");
-  const [lifecycle, setLifecycle] = useState<OrderLifecycleFilter>("all");
+export function OrdersTable({
+  initialLifecycle = "all",
+  initialQuery = "",
+  orders,
+  pageSize,
+  tenantId,
+  totalCount,
+}: OrdersTableProps) {
+  const [query, setQuery] = useState(initialQuery);
+  const [lifecycle, setLifecycle] = useState<OrderLifecycleFilter>(initialLifecycle);
+  const hasSyncedInitialUrlState = useRef(false);
   void pageSize;
 
   const filteredOrders = useMemo(
@@ -172,9 +192,53 @@ export function OrdersTable({ orders, pageSize, tenantId, totalCount }: OrdersTa
     pageCount: orders.length,
     totalCount,
   });
+  const filters: DataTableFilterDefinition[] = [
+    {
+      defaultValue: "all",
+      id: "lifecycle",
+      label: "Lifecycle",
+      onChange: (value) => setLifecycle(value as OrderLifecycleFilter),
+      options: orderLifecycleFilterOptions,
+      value: lifecycle,
+    },
+  ];
+
+  function clearFilters() {
+    setQuery("");
+    setLifecycle("all");
+  }
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    if (!hasSyncedInitialUrlState.current) {
+      hasSyncedInitialUrlState.current = true;
+      return;
+    }
+
+    const url = new URL(window.location.href);
+
+    if (query.trim()) {
+      url.searchParams.set("q", query.trim());
+    } else {
+      url.searchParams.delete("q");
+    }
+
+    if (lifecycle !== "all") {
+      url.searchParams.set("lifecycle", lifecycle);
+    } else {
+      url.searchParams.delete("lifecycle");
+    }
+
+    url.searchParams.delete("page");
+    window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}`);
+  }, [lifecycle, query]);
+
   const toolbar = (
-    <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-      <div className="flex flex-1 flex-col gap-2 sm:flex-row sm:items-center">
+    <div className="flex flex-col gap-3">
+      <DataTableFilters filters={filters} onClearAll={clearFilters}>
         <InputGroup className="h-10 rounded-full bg-background/70 px-1 sm:max-w-sm">
           <InputGroupAddon>
             <AppIcons.search data-icon="inline-start" />
@@ -185,25 +249,22 @@ export function OrdersTable({ orders, pageSize, tenantId, totalCount }: OrdersTa
             placeholder="Search orders"
             value={query}
           />
+          {query.trim() ? (
+            <InputGroupAddon align="inline-end">
+              <Button
+                aria-label="Clear order search"
+                className="rounded-full"
+                onClick={() => setQuery("")}
+                size="icon-sm"
+                type="button"
+                variant="ghost"
+              >
+                <AppIcons.close data-icon="inline-start" />
+              </Button>
+            </InputGroupAddon>
+          ) : null}
         </InputGroup>
-        <Select onValueChange={(value) => setLifecycle(value as OrderLifecycleFilter)} value={lifecycle}>
-          <SelectTrigger aria-label="Filter orders by lifecycle" className="h-10 rounded-full sm:w-52">
-            <SelectValue placeholder="Lifecycle" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectGroup>
-              <SelectItem value="all">All orders</SelectItem>
-              <SelectItem value="open">Open</SelectItem>
-              <SelectItem value="completed">Completed</SelectItem>
-              <SelectItem value="canceled">Canceled</SelectItem>
-              <SelectItem value="needs_fulfillment">Needs fulfillment</SelectItem>
-              <SelectItem value="fulfilled">Fulfilled</SelectItem>
-              <SelectItem value="payment_pending">Payment pending</SelectItem>
-              <SelectItem value="paid">Paid</SelectItem>
-            </SelectGroup>
-          </SelectContent>
-        </Select>
-      </div>
+      </DataTableFilters>
       <p className="text-sm text-muted-foreground">
         {counts.hasActiveFilter
           ? `${counts.filteredCount} of ${counts.pageCount} on this page`
@@ -228,7 +289,9 @@ export function OrdersTable({ orders, pageSize, tenantId, totalCount }: OrdersTa
       columns={getOrderColumns(tenantId)}
       data={filteredOrders}
       emptyMessage="No orders have been placed for this merchant yet."
+      emptyTitle="No orders yet"
       filteredEmptyMessage="No orders match the current search or filters."
+      filteredEmptyTitle="No matching orders"
       getRowId={(order) => order.id}
       isFiltered={counts.hasActiveFilter}
       selectedSummaryLabel={(count) => `order${count === 1 ? "" : "s"} selected`}

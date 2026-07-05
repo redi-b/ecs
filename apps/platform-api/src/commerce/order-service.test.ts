@@ -156,7 +156,7 @@ describe("createMedusaOrderService", () => {
     assert.equal(url.origin + url.pathname, "http://medusa:9000/admin/orders/order_1");
     assert.equal(
       url.searchParams.get("fields"),
-      "id,display_id,email,status,payment_status,fulfillment_status,currency_code,total,sales_channel_id,metadata,shipping_address.first_name,shipping_address.last_name,shipping_address.phone,shipping_address.address_1,shipping_address.address_2,shipping_address.city,shipping_address.province,shipping_address.postal_code,shipping_address.country_code,shipping_address.metadata,fulfillments.id,fulfillments.delivered_at,fulfillments.shipped_at,fulfillments.canceled_at,items.id,items.title,items.quantity,items.detail.fulfilled_quantity,items.unit_price,items.total,items.thumbnail,created_at,updated_at",
+      "id,display_id,email,status,payment_status,fulfillment_status,currency_code,total,sales_channel_id,metadata,shipping_address.first_name,shipping_address.last_name,shipping_address.phone,shipping_address.address_1,shipping_address.address_2,shipping_address.city,shipping_address.province,shipping_address.postal_code,shipping_address.country_code,shipping_address.metadata,fulfillments.id,fulfillments.delivered_at,fulfillments.shipped_at,fulfillments.canceled_at,items.id,items.product_id,items.variant_id,items.title,items.quantity,items.detail.fulfilled_quantity,items.unit_price,items.total,items.thumbnail,created_at,updated_at",
     );
     assert.deepEqual(result, {
       ok: true,

@@ -52,11 +52,8 @@ describe("getDashboardBreadcrumbTrail", () => {
     );
   });
 
-  it("labels product creation as a child of products", () => {
-    assert.deepEqual(getDashboardBreadcrumbTrail("/admin/products/new"), [
-      { href: "/admin/products", id: "products", title: "Products" },
-      { href: "/admin/products/new", id: "products-new", title: "New product" },
-    ]);
+  it("does not reserve a standalone product creation breadcrumb", () => {
+    assert.notEqual(getDashboardBreadcrumbTrail("/admin/products/new").at(-1)?.id, "products-new");
   });
 
   it("labels product category routes as nested products breadcrumbs", () => {
@@ -110,6 +107,20 @@ describe("getDashboardBreadcrumbTrail", () => {
       { href: "/admin/products", id: "products", title: "Products" },
       { href: "/admin/products/prod_1", id: "product-details", title: "Product details" },
     ]);
+  });
+
+  it("labels product edit pages as a child of the product detail page", () => {
+    assert.equal(dashboardRoutes.productEdit("prod 1/2"), "/admin/products/prod%201%2F2/edit");
+    assert.deepEqual(
+      getDashboardBreadcrumbTrail("/admin/products/prod_1/edit", {
+        "product-details": "Coffee beans",
+      }),
+      [
+        { href: "/admin/products", id: "products", title: "Products" },
+        { href: "/admin/products/prod_1", id: "product-details", title: "Coffee beans" },
+        { href: "/admin/products/prod_1/edit", id: "product-edit", title: "Edit product" },
+      ],
+    );
   });
 
   it("uses product detail label overrides when available", () => {

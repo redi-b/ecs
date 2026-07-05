@@ -10,6 +10,7 @@ import {
   getProductTableCounts,
   getProductThumbnail,
   normalizeProductStatus,
+  parseProductStatusFilter,
 } from "./product-table-state.js";
 
 const products: MerchantProduct[] = [
@@ -116,6 +117,16 @@ describe("product table state", () => {
     assert.equal(normalizeProductStatus(" published "), "published");
     assert.equal(normalizeProductStatus("archived"), "unknown");
     assert.equal(normalizeProductStatus(null), "unknown");
+  });
+
+  it("parses URL-backed product status filters safely", () => {
+    assert.equal(parseProductStatusFilter("published"), "published");
+    assert.equal(parseProductStatusFilter(" Draft "), "draft");
+    assert.equal(parseProductStatusFilter("unknown"), "unknown");
+    assert.equal(parseProductStatusFilter("all"), "all");
+    assert.equal(parseProductStatusFilter("archived"), "all");
+    assert.equal(parseProductStatusFilter(undefined), "all");
+    assert.equal(parseProductStatusFilter(["published", "draft"]), "published");
   });
 
   it("derives price, media, thumbnail, and filtered counts", () => {

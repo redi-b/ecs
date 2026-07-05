@@ -2,9 +2,13 @@
 
 import type { MerchantProduct } from "@ecs/contracts";
 import type { ColumnDef } from "@tanstack/react-table";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { DataTable } from "@/components/app/data-table";
+import {
+  DataTableFilters,
+  type DataTableFilterDefinition,
+} from "@/components/app/data-table-filters";
 import { DataTableHeader } from "@/components/app/data-table-header";
 import { AppIcons } from "@/components/app/icons";
 import { RowActionsMenu } from "@/components/app/row-actions-menu";
@@ -15,14 +19,6 @@ import {
   InputGroupAddon,
   InputGroupInput,
 } from "@/components/ui/input-group";
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   formatProductDate,
   formatProductFirstPrice,
@@ -41,11 +37,23 @@ import { getTenantScopedPath } from "@/lib/dashboard-tenant-context";
 import { dashboardRoutes } from "@/lib/routes";
 
 type ProductsTableProps = {
+  initialQuery?: string | undefined;
+  initialStatus?: ProductStatusFilter | undefined;
   pageSize: number;
   products: MerchantProduct[];
   tenantId?: string | undefined;
   totalCount: number;
 };
+
+const productStatusFilterOptions: Array<{
+  label: string;
+  value: ProductStatusFilter;
+}> = [
+  { label: "All statuses", value: "all" },
+  { label: "Published", value: "published" },
+  { label: "Draft", value: "draft" },
+  { label: "Unknown", value: "unknown" },
+];
 
 function copyToClipboard(value: string) {
   if (!value || typeof navigator === "undefined" || !navigator.clipboard) {
@@ -128,7 +136,6 @@ function getProductColumns(tenantId?: string): ColumnDef<MerchantProduct>[] {
           <RowActionsMenu
             actions={[
               { href, label: "View details", type: "link" },
-              { href, label: "Edit product", type: "link" },
               { type: "separator" },
               {
                 label: "Copy product ID",
@@ -152,9 +159,17 @@ function getProductColumns(tenantId?: string): ColumnDef<MerchantProduct>[] {
   ];
 }
 
-export function ProductsTable({ pageSize, products, tenantId, totalCount }: ProductsTableProps) {
-  const [query, setQuery] = useState("");
-  const [status, setStatus] = useState<ProductStatusFilter>("all");
+export function ProductsTable({
+  initialQuery = "",
+  initialStatus = "all",
+  pageSize,
+  products,
+  tenantId,
+  totalCount,
+}: ProductsTableProps) {
+  const [query, setQuery] = useState(initialQuery);
+  const [status, setStatus] = useState<ProductStatusFilter>(initialStatus);
+  const hasSyncedInitialUrlState = useRef(false);
   void pageSize;
   const filteredProducts = useMemo(
     () => filterProductsForTable(products, { query, status }),
@@ -166,10 +181,53 @@ export function ProductsTable({ pageSize, products, tenantId, totalCount }: Prod
     totalCount,
     filters: { query, status },
   });
+  const filters: DataTableFilterDefinition[] = [
+    {
+      defaultValue: "all",
+      id: "status",
+      label: "Status",
+      onChange: (value) => setStatus(value as ProductStatusFilter),
+      options: productStatusFilterOptions,
+      value: status,
+    },
+  ];
+
+  function clearFilters() {
+    setQuery("");
+    setStatus("all");
+  }
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    if (!hasSyncedInitialUrlState.current) {
+      hasSyncedInitialUrlState.current = true;
+      return;
+    }
+
+    const url = new URL(window.location.href);
+
+    if (query.trim()) {
+      url.searchParams.set("q", query.trim());
+    } else {
+      url.searchParams.delete("q");
+    }
+
+    if (status !== "all") {
+      url.searchParams.set("status", status);
+    } else {
+      url.searchParams.delete("status");
+    }
+
+    url.searchParams.delete("page");
+    window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}`);
+  }, [query, status]);
 
   const toolbar = (
-    <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-      <div className="flex flex-1 flex-col gap-2 sm:flex-row sm:items-center">
+    <div className="flex flex-col gap-3">
+      <DataTableFilters filters={filters} onClearAll={clearFilters}>
         <InputGroup className="h-10 rounded-full bg-background/70 px-1 sm:max-w-sm">
           <InputGroupAddon>
             <AppIcons.search data-icon="inline-start" />
@@ -180,21 +238,22 @@ export function ProductsTable({ pageSize, products, tenantId, totalCount }: Prod
             placeholder="Search products"
             value={query}
           />
+          {query.trim() ? (
+            <InputGroupAddon align="inline-end">
+              <Button
+                aria-label="Clear product search"
+                className="rounded-full"
+                onClick={() => setQuery("")}
+                size="icon-sm"
+                type="button"
+                variant="ghost"
+              >
+                <AppIcons.close data-icon="inline-start" />
+              </Button>
+            </InputGroupAddon>
+          ) : null}
         </InputGroup>
-        <Select onValueChange={(value) => setStatus(value as ProductStatusFilter)} value={status}>
-          <SelectTrigger aria-label="Filter products by status" className="h-10 rounded-full sm:w-44">
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectGroup>
-              <SelectItem value="all">All statuses</SelectItem>
-              <SelectItem value="published">Published</SelectItem>
-              <SelectItem value="draft">Draft</SelectItem>
-              <SelectItem value="unknown">Unknown</SelectItem>
-            </SelectGroup>
-          </SelectContent>
-        </Select>
-      </div>
+      </DataTableFilters>
       <p className="text-sm text-muted-foreground">
         {counts.hasActiveFilter
           ? `${counts.filteredCount} of ${counts.pageCount} on this page`
@@ -219,7 +278,9 @@ export function ProductsTable({ pageSize, products, tenantId, totalCount }: Prod
       columns={getProductColumns(tenantId)}
       data={filteredProducts}
       emptyMessage="No products have been synced for this merchant yet."
+      emptyTitle="No products yet"
       filteredEmptyMessage="No products match the current search or filters."
+      filteredEmptyTitle="No matching products"
       getRowId={(product) => product.id}
       isFiltered={counts.hasActiveFilter}
       selectedSummaryLabel={(count) => `product${count === 1 ? "" : "s"} selected`}

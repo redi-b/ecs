@@ -21,6 +21,7 @@ type ProductWriteInput = {
   description?: string | null | undefined;
   handle?: string | null | undefined;
   imageUrls?: string[] | undefined;
+  options?: ProductOptionInput[] | undefined;
   priceAmount?: number | undefined;
   regionId?: string | null | undefined;
   salesChannelId: string;
@@ -28,6 +29,11 @@ type ProductWriteInput = {
   stockLocationId?: string | null | undefined;
   thumbnail?: string | null | undefined;
   title?: string | null | undefined;
+};
+
+type ProductOptionInput = {
+  title: string;
+  values: string[];
 };
 
 type ProductUpdateInput = ProductWriteInput & {
@@ -93,11 +99,7 @@ export function createMedusaProductService(options: {
       });
 
       if (!initialized) {
-        return {
-          ok: false,
-          error: "commerce_backend_unavailable",
-          status: 503,
-        };
+        return result;
       }
 
       return result;
@@ -704,36 +706,57 @@ function getProductWriteBody(input: ProductWriteInput) {
   }
 
   if (input.priceAmount !== undefined) {
-    body.options = [
-      {
-        title: "Default",
-        values: ["Default"],
-      },
-    ];
-    body.variants = [
-      {
-        title: "Default",
-        options: {
-          Default: "Default",
+    const productOptions = getProductOptionsForWrite(input.options);
+
+    body.options = productOptions;
+    body.variants = getProductVariantCombinations(productOptions).map((combination) => ({
+      title: combination.map((option) => option.value).join(" / "),
+      options: Object.fromEntries(combination.map((option) => [option.title, option.value])),
+      prices: [
+        {
+          amount: input.priceAmount,
+          currency_code: input.currencyCode?.trim().toLowerCase() || "etb",
+          ...(input.regionId?.trim()
+            ? {
+                rules: {
+                  region_id: input.regionId,
+                },
+              }
+            : {}),
         },
-        prices: [
-          {
-            amount: input.priceAmount,
-            currency_code: input.currencyCode?.trim().toLowerCase() || "etb",
-            ...(input.regionId?.trim()
-              ? {
-                  rules: {
-                    region_id: input.regionId,
-                  },
-                }
-              : {}),
-          },
-        ],
-      },
-    ];
+      ],
+    }));
   }
 
   return body;
+}
+
+function getProductOptionsForWrite(options: ProductOptionInput[] | undefined) {
+  const normalized = (options ?? [])
+    .map((option) => ({
+      title: option.title.trim(),
+      values: [...new Set(option.values.map((value) => value.trim()).filter(Boolean))],
+    }))
+    .filter((option) => option.title && option.values.length);
+
+  return normalized.length
+    ? normalized
+    : [
+        {
+          title: "Default",
+          values: ["Default"],
+        },
+      ];
+}
+
+function getProductVariantCombinations(options: ProductOptionInput[]) {
+  return options.reduce<Array<Array<{ title: string; value: string }>>>(
+    (combinations, option) =>
+      combinations.flatMap((combination) =>
+        option.values.map((value) => [...combination, { title: option.title, value }]),
+      ),
+    [[]],
+  );
 }
 
 async function parseProductWriteResponse(response: Response): Promise<MerchantProductWriteResult> {
@@ -823,6 +846,22 @@ function getWriteError(response: Response): MerchantProductWriteResult {
     };
   }
 
+  if (response.status === 409) {
+    return {
+      ok: false,
+      error: "product_conflict",
+      status: 409,
+    };
+  }
+
+  if (response.status === 400 || response.status === 422) {
+    return {
+      ok: false,
+      error: "product_write_invalid",
+      status: response.status,
+    };
+  }
+
   return {
     ok: false,
     error: "commerce_backend_unavailable",
@@ -905,7 +944,7 @@ function getProductsUrl(
   url.searchParams.set("order", "-created_at");
   url.searchParams.set(
     "fields",
-    "id,title,description,handle,status,thumbnail,collection_id,categories.id,images.id,images.url,images.rank,images.created_at,images.updated_at,variants.id,variants.title,variants.sku,variants.prices.amount,variants.prices.currency_code,created_at,updated_at,sales_channels.id",
+    "id,title,description,handle,status,thumbnail,collection_id,categories.id,images.id,images.url,images.rank,images.created_at,images.updated_at,variants.id,variants.title,variants.sku,variants.options.value,variants.options.option.title,variants.prices.amount,variants.prices.currency_code,created_at,updated_at,sales_channels.id",
   );
   url.searchParams.set("sales_channel_id[]", input.salesChannelId);
 
@@ -921,7 +960,7 @@ function getProductDetailUrl(medusaInternalUrl: string, productId: string) {
 
   url.searchParams.set(
     "fields",
-    "id,title,description,handle,status,thumbnail,collection_id,categories.id,images.id,images.url,images.rank,images.created_at,images.updated_at,variants.id,variants.title,variants.sku,variants.prices.amount,variants.prices.currency_code,variants.inventory_items.inventory_item_id,created_at,updated_at,sales_channels.id",
+    "id,title,description,handle,status,thumbnail,collection_id,categories.id,images.id,images.url,images.rank,images.created_at,images.updated_at,variants.id,variants.title,variants.sku,variants.options.value,variants.options.option.title,variants.prices.amount,variants.prices.currency_code,variants.inventory_items.inventory_item_id,created_at,updated_at,sales_channels.id",
   );
 
   return url;
@@ -1193,13 +1232,44 @@ function getProductVariants(value: unknown) {
       return [];
     }
 
+    const optionValues = getProductVariantOptionValues(variant.options);
+
     return [
       {
         id,
         inventoryItemId: getVariantInventoryItemId(variant),
         title: getString(variant.title),
         sku: getString(variant.sku),
+        ...(optionValues.length === 0 ? {} : { optionValues }),
         prices: getProductPrices(variant.prices),
+      },
+    ];
+  });
+}
+
+function getProductVariantOptionValues(value: unknown) {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.flatMap((optionValue) => {
+    if (!isRecord(optionValue)) {
+      return [];
+    }
+
+    const value = getString(optionValue.value);
+    const optionTitle = isRecord(optionValue.option)
+      ? getString(optionValue.option.title)
+      : getString(optionValue.option_title);
+
+    if (!value && !optionTitle) {
+      return [];
+    }
+
+    return [
+      {
+        optionTitle,
+        value,
       },
     ];
   });

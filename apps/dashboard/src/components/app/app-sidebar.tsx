@@ -35,7 +35,7 @@ function isRouteActive(pathname: string, route: AppRoute) {
 }
 
 function isProductListActive(pathname: string) {
-  if (pathname === dashboardRoutes.products || pathname === dashboardRoutes.productsNew) {
+  if (pathname === dashboardRoutes.products) {
     return true;
   }
 

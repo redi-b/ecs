@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { getMerchantOrder, getMerchantOrders } from "./merchant-orders.js";
+import { getMerchantOrder, getMerchantOrders, mutateMerchantOrder } from "./merchant-orders.js";
 
 describe("getMerchantOrders", () => {
   it("fetches merchant orders with session and tenant context", async () => {
@@ -176,5 +176,96 @@ describe("getMerchantOrder", () => {
       status: 503,
       message: "platform_request_failed",
     });
+  });
+});
+
+describe("mutateMerchantOrder", () => {
+  it("forwards fulfill actions through the selected tenant route", async () => {
+    let forwardedRequest: Request | undefined;
+    const result = await mutateMerchantOrder({
+      action: "fulfill",
+      cookieHeader: "better-auth.session_token=session_1",
+      platformApiBaseUrl: "http://platform.local",
+      tenantId: "tenant_1",
+      orderId: "order_1",
+      fetcher: async (input, init) => {
+        forwardedRequest = new Request(input, init);
+
+        return Response.json({
+          order: {
+            id: "order_1",
+            displayId: 1001,
+            email: "customer@example.com",
+            status: "pending",
+            paymentStatus: "captured",
+            fulfillmentStatus: "fulfilled",
+            currencyCode: "etb",
+            total: 1250,
+            items: [
+              {
+                id: "item_1",
+                productId: "prod_1",
+                variantId: "variant_1",
+                title: "Coffee",
+                quantity: 2,
+                fulfilledQuantity: 2,
+                unitPrice: 625,
+                total: 1250,
+                thumbnail: null,
+              },
+            ],
+            createdAt: "2026-01-01T00:00:00.000Z",
+            updatedAt: "2026-01-02T00:00:00.000Z",
+          },
+        });
+      },
+    });
+
+    assert.equal(result.ok, true);
+    assert.equal(
+      forwardedRequest?.url,
+      "http://platform.local/platform/tenants/tenant_1/orders/order_1/fulfill",
+    );
+    assert.equal(forwardedRequest?.method, "POST");
+    assert.equal(forwardedRequest?.headers.get("content-type"), "application/json");
+    assert.equal(forwardedRequest?.headers.get("cookie"), "better-auth.session_token=session_1");
+    assert.equal(forwardedRequest?.headers.get("x-forwarded-host"), null);
+  });
+
+  it("forwards delivery actions with fulfillment id through the merchant host route", async () => {
+    let forwardedRequest: Request | undefined;
+    const result = await mutateMerchantOrder({
+      action: "deliver",
+      cookieHeader: "better-auth.session_token=session_1",
+      fulfillmentId: "ful_1",
+      platformApiBaseUrl: "http://platform.local",
+      requestHost: "abebe.lvh.me",
+      orderId: "order_1",
+      fetcher: async (input, init) => {
+        forwardedRequest = new Request(input, init);
+
+        return Response.json({
+          order: {
+            id: "order_1",
+            displayId: 1001,
+            email: "customer@example.com",
+            status: "pending",
+            paymentStatus: "captured",
+            fulfillmentStatus: "delivered",
+            currencyCode: "etb",
+            total: 1250,
+            createdAt: "2026-01-01T00:00:00.000Z",
+            updatedAt: "2026-01-02T00:00:00.000Z",
+          },
+        });
+      },
+    });
+
+    assert.equal(result.ok, true);
+    assert.equal(
+      forwardedRequest?.url,
+      "http://platform.local/platform/merchant/orders/order_1/fulfillments/ful_1/deliver",
+    );
+    assert.equal(forwardedRequest?.headers.get("x-forwarded-host"), "abebe.lvh.me");
   });
 });

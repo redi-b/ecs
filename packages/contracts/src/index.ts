@@ -139,6 +139,14 @@ export const merchantProductSchema = z.object({
         inventoryItemId: z.string().min(1).nullable().optional(),
         title: z.string().min(1).nullable(),
         sku: z.string().min(1).nullable(),
+        optionValues: z
+          .array(
+            z.object({
+              optionTitle: z.string().min(1).nullable(),
+              value: z.string().min(1).nullable(),
+            }),
+          )
+          .optional(),
         prices: z.array(
           z.object({
             amount: z.number().nullable(),
@@ -161,6 +169,21 @@ export const merchantProductsSchema = z.object({
 
 export const merchantProductMutationSchema = z.object({
   product: merchantProductSchema,
+});
+
+export const merchantProductStockSchema = z.object({
+  productId: z.string().min(1),
+  variantId: z.string().min(1),
+  inventoryItemId: z.string().min(1),
+  locationId: z.string().min(1),
+  stockedQuantity: z.number().nullable(),
+  reservedQuantity: z.number().nullable(),
+  incomingQuantity: z.number().nullable(),
+  availableQuantity: z.number().nullable(),
+});
+
+export const merchantProductStockResponseSchema = z.object({
+  stock: merchantProductStockSchema,
 });
 
 export const merchantProductCategorySchema = z.object({
@@ -210,6 +233,10 @@ export type MerchantProductMutation = z.infer<typeof merchantProductMutationSche
 
 export type MerchantProducts = z.infer<typeof merchantProductsSchema>;
 
+export type MerchantProductStock = z.infer<typeof merchantProductStockSchema>;
+
+export type MerchantProductStockResponse = z.infer<typeof merchantProductStockResponseSchema>;
+
 export const merchantOrderSchema = z.object({
   id: z.string().min(1),
   displayId: z.number().int().nullable(),
@@ -235,6 +262,21 @@ export const merchantOrderSchema = z.object({
         deliveredAt: z.string().min(1).nullable(),
         shippedAt: z.string().min(1).nullable(),
         canceledAt: z.string().min(1).nullable(),
+      }),
+    )
+    .optional(),
+  items: z
+    .array(
+      z.object({
+        id: z.string().min(1),
+        productId: z.string().min(1).nullable().optional(),
+        variantId: z.string().min(1).nullable().optional(),
+        title: z.string().min(1).nullable(),
+        quantity: z.number().nullable(),
+        fulfilledQuantity: z.number().nullable().optional(),
+        unitPrice: z.number().nullable(),
+        total: z.number().nullable(),
+        thumbnail: z.string().min(1).nullable(),
       }),
     )
     .optional(),

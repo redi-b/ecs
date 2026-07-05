@@ -4,6 +4,7 @@ import type {
   MerchantProductCategory,
   MerchantProductCollection,
   MerchantProductCollections,
+  MerchantProductStock,
   MerchantProducts,
 } from "@ecs/contracts";
 import {
@@ -12,6 +13,7 @@ import {
   merchantProductCollectionSchema,
   merchantProductCollectionsSchema,
   merchantProductMutationSchema,
+  merchantProductStockResponseSchema,
   merchantProductsSchema,
   platformErrorSchema,
 } from "@ecs/contracts";
@@ -91,6 +93,17 @@ export type MerchantProductCollectionMutationResult =
       status: number;
     };
 
+export type MerchantProductStockResult =
+  | {
+      ok: true;
+      stock: MerchantProductStock;
+    }
+  | {
+      ok: false;
+      message: string;
+      status: number;
+    };
+
 export type MerchantProductWriteInput = {
   categoryIds?: string[] | undefined;
   collectionId?: string | null | undefined;
@@ -98,6 +111,7 @@ export type MerchantProductWriteInput = {
   description?: string | null | undefined;
   handle?: string | null | undefined;
   imageUrls?: string[] | undefined;
+  options?: Array<{ title: string; values: string[] }> | undefined;
   priceAmount?: number | undefined;
   status?: string | null | undefined;
   thumbnail?: string | null | undefined;
@@ -200,6 +214,19 @@ export async function getMerchantProduct(options: {
   }
 
   return parseProductResponse(response);
+}
+
+export async function getMerchantProductStock(options: {
+  cookieHeader?: string | null | undefined;
+  fetcher?: typeof fetch;
+  platformApiBaseUrl: string;
+  productId: string;
+  requestHost?: string | null | undefined;
+  tenantId?: string | null | undefined;
+}): Promise<MerchantProductStockResult> {
+  const response = await fetchProductStockResource(options);
+
+  return parseProductStockResponse(response);
 }
 
 export async function getMerchantProductCategories(options: {
@@ -312,6 +339,48 @@ export async function updateMerchantProduct(options: {
   return parseProductMutationResponse(response);
 }
 
+export async function updateMerchantProductStock(options: {
+  cookieHeader?: string | null | undefined;
+  fetcher?: typeof fetch;
+  platformApiBaseUrl: string;
+  productId: string;
+  requestHost?: string | null | undefined;
+  stockedQuantity: number;
+  tenantId?: string | null | undefined;
+}): Promise<MerchantProductStockResult> {
+  const tenantId = options.tenantId?.trim();
+  const fetcher = options.fetcher ?? fetch;
+  const response = await fetcher(
+    getProductStockUrl({
+      platformApiBaseUrl: options.platformApiBaseUrl,
+      productId: options.productId,
+      tenantId,
+    }),
+    {
+      body: JSON.stringify({
+        stockedQuantity: options.stockedQuantity,
+      }),
+      cache: "no-store",
+      headers: getProductHeaders({
+        cookieHeader: options.cookieHeader,
+        contentType: true,
+        requestHost: tenantId ? undefined : options.requestHost,
+      }),
+      method: "POST",
+    },
+  ).catch(() => null);
+
+  if (!response) {
+    return {
+      ok: false,
+      status: 503,
+      message: "platform_request_failed",
+    };
+  }
+
+  return parseProductStockResponse(response);
+}
+
 async function fetchProductResource(options: {
   cookieHeader?: string | null | undefined;
   fetcher?: typeof fetch;
@@ -331,6 +400,42 @@ async function fetchProductResource(options: {
       requestHost: tenantId ? undefined : options.requestHost,
     }),
   }).catch(() => null);
+
+  if (!response) {
+    return {
+      ok: false as const,
+      status: 503,
+      message: "platform_request_failed",
+    };
+  }
+
+  return response;
+}
+
+async function fetchProductStockResource(options: {
+  cookieHeader?: string | null | undefined;
+  fetcher?: typeof fetch;
+  platformApiBaseUrl: string;
+  productId: string;
+  requestHost?: string | null | undefined;
+  tenantId?: string | null | undefined;
+}) {
+  const tenantId = options.tenantId?.trim();
+  const fetcher = options.fetcher ?? fetch;
+  const response = await fetcher(
+    getProductStockUrl({
+      platformApiBaseUrl: options.platformApiBaseUrl,
+      productId: options.productId,
+      tenantId,
+    }),
+    {
+      cache: "no-store",
+      headers: getProductHeaders({
+        cookieHeader: options.cookieHeader,
+        requestHost: tenantId ? undefined : options.requestHost,
+      }),
+    },
+  ).catch(() => null);
 
   if (!response) {
     return {
@@ -456,6 +561,49 @@ async function parseProductMutationResponse(
   return {
     ok: true,
     product: parsed.data.product,
+  };
+}
+
+async function parseProductStockResponse(
+  response:
+    | Response
+    | {
+        ok: false;
+        message: string;
+        status: number;
+      },
+): Promise<MerchantProductStockResult> {
+  if (!(response instanceof Response)) {
+    return response;
+  }
+
+  const data = await response.json().catch(() => undefined);
+
+  if (!response.ok) {
+    const error = platformErrorSchema.safeParse(data);
+
+    return {
+      ok: false,
+      status: response.status,
+      message: error.success
+        ? error.data.error
+        : response.statusText || "Product stock request failed",
+    };
+  }
+
+  const parsed = merchantProductStockResponseSchema.safeParse(data);
+
+  if (!parsed.success) {
+    return {
+      ok: false,
+      status: 502,
+      message: "invalid_product_stock_response",
+    };
+  }
+
+  return {
+    ok: true,
+    stock: parsed.data.stock,
   };
 }
 
@@ -704,6 +852,21 @@ function getProductMutationUrl(options: {
     : basePath;
 
   return new URL(productPath, normalizeBaseUrl(options.platformApiBaseUrl));
+}
+
+function getProductStockUrl(options: {
+  platformApiBaseUrl: string;
+  productId: string;
+  tenantId?: string | null | undefined;
+}) {
+  const basePath = options.tenantId?.trim()
+    ? `/platform/tenants/${encodeURIComponent(options.tenantId.trim())}/products`
+    : "/platform/merchant/products";
+
+  return new URL(
+    `${basePath}/${encodeURIComponent(options.productId)}/stock`,
+    normalizeBaseUrl(options.platformApiBaseUrl),
+  );
 }
 
 function getProductHeaders(options: {

@@ -290,6 +290,7 @@ export function registerMerchantRoutes(
 
     const body = await getJsonBody(context.req.raw);
     const title = getRequiredBodyString(body, "title");
+    const productOptions = getOptionalBodyProductOptions(body);
 
     if (!title) {
       return context.json({ error: "missing_title" }, 400);
@@ -302,6 +303,7 @@ export function registerMerchantRoutes(
       collectionId: getOptionalBodyString(body, "collectionId"),
       categoryIds: getOptionalBodyStringArray(body, "categoryIds"),
       imageUrls: getOptionalBodyStringArray(body, "imageUrls"),
+      ...(productOptions ? { options: productOptions } : {}),
       priceAmount: getOptionalBodyNumber(body, "priceAmount"),
       currencyCode: getOptionalBodyString(body, "currencyCode") ?? "etb",
       regionId: commerce.context.medusaRegionId,
@@ -880,5 +882,35 @@ export function registerMerchantRoutes(
     return context.json({
       product: product.product,
     });
+  });
+}
+
+function getOptionalBodyProductOptions(body: unknown) {
+  if (!body || typeof body !== "object" || !("options" in body)) {
+    return undefined;
+  }
+
+  const options = (body as { options?: unknown }).options;
+
+  if (!Array.isArray(options)) {
+    return undefined;
+  }
+
+  return options.flatMap((option) => {
+    if (!option || typeof option !== "object") {
+      return [];
+    }
+
+    const title = typeof (option as { title?: unknown }).title === "string"
+      ? (option as { title: string }).title.trim()
+      : "";
+    const values = Array.isArray((option as { values?: unknown }).values)
+      ? (option as { values: unknown[] }).values
+          .filter((value): value is string => typeof value === "string")
+          .map((value) => value.trim())
+          .filter(Boolean)
+      : [];
+
+    return title && values.length ? [{ title, values }] : [];
   });
 }

@@ -5,6 +5,7 @@ import { ListSetupState } from "@/components/app/list-error-state";
 import { PageShell } from "@/components/app/page-shell";
 import { RefreshButton } from "@/components/app/refresh-button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { parseOrderLifecycleFilter } from "@/features/orders/order-table-state";
 import { OrdersTable } from "@/features/orders/orders-table";
 import { type DashboardSearchParams, getSelectedTenantId } from "@/lib/dashboard-tenant-context";
 import { getListErrorState } from "@/lib/list-error-state";
@@ -42,6 +43,8 @@ export default async function MerchantOrdersPage({ searchParams }: MerchantOrder
         <>
           <ListSummary count={result.orders.count} label="orders" />
           <OrdersTable
+            initialLifecycle={parseOrderLifecycleFilter(resolvedSearchParams.lifecycle)}
+            initialQuery={listParams.q}
             orders={result.orders.orders}
             pageSize={result.orders.limit}
             tenantId={tenantId}

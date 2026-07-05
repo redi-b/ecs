@@ -1,20 +1,24 @@
 import { headers } from "next/headers";
-import Link from "next/link";
 
 import { ListSummary, PaginationControls } from "@/components/app/list-page-controls";
 import { ListSetupState } from "@/components/app/list-error-state";
 import { PageShell } from "@/components/app/page-shell";
 import { RefreshButton } from "@/components/app/refresh-button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
+import { ProductCreateDialog } from "@/features/products/product-create-dialog";
 import { ProductsTable } from "@/features/products/products-table";
+import { parseProductStatusFilter } from "@/features/products/product-table-state";
 import {
   type DashboardSearchParams,
   getSelectedTenantId,
   getTenantScopedPath,
 } from "@/lib/dashboard-tenant-context";
-import { getListErrorState } from "@/lib/list-error-state";
-import { getMerchantProducts } from "@/lib/merchant-products";
+import { getListErrorState, type ListErrorState } from "@/lib/list-error-state";
+import {
+  getMerchantProductCategories,
+  getMerchantProductCollections,
+  getMerchantProducts,
+} from "@/lib/merchant-products";
 import { dashboardRoutes } from "@/lib/routes";
 import { parseListSearchParams } from "@/lib/url-state";
 
@@ -22,22 +26,55 @@ type MerchantProductsPageProps = {
   searchParams?: Promise<DashboardSearchParams>;
 };
 
+type ReferenceDataError = {
+  label: string;
+  state: ListErrorState;
+};
+
 export default async function MerchantProductsPage({ searchParams }: MerchantProductsPageProps) {
   const resolvedSearchParams = (await searchParams) ?? {};
   const listParams = parseListSearchParams(resolvedSearchParams);
   const tenantId = getSelectedTenantId(resolvedSearchParams);
   const requestHeaders = await headers();
+  const cookieHeader = requestHeaders.get("cookie");
+  const requestHost = requestHeaders.get("host");
+  const platformApiBaseUrl = process.env.PLATFORM_API_BASE_URL ?? "http://localhost:3000";
   const offset = (listParams.page - 1) * listParams.pageSize;
-  const createProductHref = getTenantScopedPath(dashboardRoutes.productsNew, tenantId);
   const productNotice = getProductNotice(resolvedSearchParams.productStatus);
-  const result = await getMerchantProducts({
-    cookieHeader: requestHeaders.get("cookie"),
-    limit: listParams.pageSize,
-    offset,
-    platformApiBaseUrl: process.env.PLATFORM_API_BASE_URL ?? "http://localhost:3000",
-    requestHost: requestHeaders.get("host"),
-    tenantId,
-  });
+  const [result, categoriesResult, collectionsResult] = await Promise.all([
+    getMerchantProducts({
+      cookieHeader,
+      limit: listParams.pageSize,
+      offset,
+      platformApiBaseUrl,
+      requestHost,
+      tenantId,
+    }),
+    getMerchantProductCategories({
+      cookieHeader,
+      limit: 100,
+      offset: 0,
+      platformApiBaseUrl,
+      requestHost,
+      tenantId,
+    }),
+    getMerchantProductCollections({
+      cookieHeader,
+      limit: 100,
+      offset: 0,
+      platformApiBaseUrl,
+      requestHost,
+      tenantId,
+    }),
+  ]);
+  const referenceDataErrors = [
+    getReferenceDataError("Categories", categoriesResult),
+    getReferenceDataError("Collections", collectionsResult),
+  ].filter((error): error is ReferenceDataError => Boolean(error));
+  const setupError = referenceDataErrors.find(
+    (error) => error.state.kind === "setup" || error.state.kind === "service",
+  );
+  const optionErrors = referenceDataErrors.filter((error) => error.state.kind === "error");
   const errorState = result.ok ? null : getListErrorState("products", result.message);
 
   return (
@@ -45,12 +82,16 @@ export default async function MerchantProductsPage({ searchParams }: MerchantPro
       actions={
         <>
           <RefreshButton />
-          <Button asChild>
-            <Link href={createProductHref}>Create product</Link>
-          </Button>
+          <ProductCreateDialog
+            action={getTenantScopedPath(dashboardRoutes.productCreateAction, tenantId)}
+            categories={categoriesResult.ok ? categoriesResult.categories : []}
+            collections={collectionsResult.ok ? collectionsResult.collections : []}
+            disabledReason={setupError?.state.description}
+            optionErrorLabels={optionErrors.map((error) => error.label.toLowerCase())}
+          />
         </>
       }
-      description="Review merchant-scoped catalog data from the Platform API. Product creation and editing controls will build on this list foundation."
+      description="Create, review, and manage merchant-scoped catalog products."
       title="Products"
     >
       {productNotice ? (
@@ -63,6 +104,8 @@ export default async function MerchantProductsPage({ searchParams }: MerchantPro
         <>
           <ListSummary count={result.products.count} label="products" />
           <ProductsTable
+            initialQuery={listParams.q}
+            initialStatus={parseProductStatusFilter(listParams.status)}
             pageSize={result.products.limit}
             products={result.products.products}
             tenantId={tenantId}
@@ -86,6 +129,22 @@ export default async function MerchantProductsPage({ searchParams }: MerchantPro
       )}
     </PageShell>
   );
+}
+
+function getReferenceDataError(
+  label: string,
+  result:
+    | Awaited<ReturnType<typeof getMerchantProductCategories>>
+    | Awaited<ReturnType<typeof getMerchantProductCollections>>,
+): ReferenceDataError | null {
+  if (result.ok) {
+    return null;
+  }
+
+  return {
+    label,
+    state: getListErrorState("products", result.message),
+  };
 }
 
 function getProductNotice(productStatus: string | string[] | undefined) {

@@ -79,6 +79,24 @@ export function normalizeOrderLifecycle(order: MerchantOrder): OrderLifecycleFil
   return "open";
 }
 
+export function parseOrderLifecycleFilter(value: string | string[] | null | undefined) {
+  const normalized = (Array.isArray(value) ? value[0] : value)?.trim().toLowerCase();
+
+  if (
+    normalized === "open" ||
+    normalized === "completed" ||
+    normalized === "canceled" ||
+    normalized === "needs_fulfillment" ||
+    normalized === "fulfilled" ||
+    normalized === "payment_pending" ||
+    normalized === "paid"
+  ) {
+    return normalized;
+  }
+
+  return "all";
+}
+
 export function getOrderTableCounts(input: {
   filteredCount: number;
   filters: OrderTableFilterInput;

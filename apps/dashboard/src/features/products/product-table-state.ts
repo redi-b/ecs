@@ -55,6 +55,16 @@ export function normalizeProductStatus(status: string | null): ProductStatusFilt
   return "unknown";
 }
 
+export function parseProductStatusFilter(value: string | string[] | null | undefined) {
+  const normalized = (Array.isArray(value) ? value[0] : value)?.trim().toLowerCase();
+
+  if (normalized === "published" || normalized === "draft" || normalized === "unknown") {
+    return normalized;
+  }
+
+  return "all";
+}
+
 export function getProductPriceSortValue(product: MerchantProduct) {
   const price = product.variants
     ?.flatMap((variant) => variant.prices)

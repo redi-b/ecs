@@ -14,6 +14,14 @@ import {
 } from "@tanstack/react-table";
 
 import { DataTableBulkBar } from "@/components/app/data-table-bulk-bar";
+import { AppIcons } from "@/components/app/icons";
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
 import {
   Table,
   TableBody,
@@ -28,7 +36,9 @@ type DataTableProps<TData> = {
   columns: ColumnDef<TData>[];
   data: TData[];
   emptyMessage: string;
+  emptyTitle?: string;
   filteredEmptyMessage?: string;
+  filteredEmptyTitle?: string;
   getRowId?: (row: TData) => string;
   globalFilter?: string;
   isFiltered?: boolean;
@@ -42,7 +52,9 @@ export function DataTable<TData>({
   columns,
   data,
   emptyMessage,
+  emptyTitle = "No rows yet",
   filteredEmptyMessage,
+  filteredEmptyTitle = "No matching rows",
   getRowId,
   globalFilter,
   isFiltered = false,
@@ -80,6 +92,8 @@ export function DataTable<TData>({
   const visibleColumnCount = table.getVisibleLeafColumns().length || columns.length;
   const emptyStateMessage =
     isFiltered && rows.length === 0 ? (filteredEmptyMessage ?? emptyMessage) : emptyMessage;
+  const emptyStateTitle =
+    isFiltered && rows.length === 0 ? filteredEmptyTitle : emptyTitle;
   const selectedSummary =
     typeof selectedSummaryLabel === "function"
       ? selectedSummaryLabel(selectedRows.length)
@@ -124,10 +138,18 @@ export function DataTable<TData>({
             ) : (
               <TableRow>
                 <TableCell
-                  className="h-40 px-4 text-center text-sm text-muted-foreground"
+                  className="h-52 px-4"
                   colSpan={visibleColumnCount}
                 >
-                  {emptyStateMessage}
+                  <Empty className="border-0">
+                    <EmptyHeader>
+                      <EmptyMedia variant="icon">
+                        <AppIcons.search data-icon="inline-start" />
+                      </EmptyMedia>
+                      <EmptyTitle>{emptyStateTitle}</EmptyTitle>
+                      <EmptyDescription>{emptyStateMessage}</EmptyDescription>
+                    </EmptyHeader>
+                  </Empty>
                 </TableCell>
               </TableRow>
             )}

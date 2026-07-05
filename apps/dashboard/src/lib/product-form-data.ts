@@ -8,11 +8,32 @@ export function getProductFormInput(formData: FormData): MerchantProductWriteInp
     collectionId: getOptionalString(formData, "collectionId"),
     categoryIds: getStringList(formData, "categoryIds"),
     imageUrls: getImageUrls(formData),
+    options: getProductOptions(formData),
     priceAmount: getPriceAmount(formData),
     currencyCode: getOptionalString(formData, "currencyCode"),
     status: getOptionalString(formData, "status"),
     thumbnail: getOptionalString(formData, "thumbnail"),
   };
+}
+
+function getProductOptions(formData: FormData) {
+  const title = getOptionalString(formData, "optionTitle");
+  const values = getOptionValues(formData);
+
+  return title && values.length ? [{ title, values }] : undefined;
+}
+
+function getOptionValues(formData: FormData) {
+  const value = formData.get("optionValues");
+
+  if (typeof value !== "string") {
+    return [];
+  }
+
+  return value
+    .split(/[\n,]/)
+    .map((row) => row.trim())
+    .filter(Boolean);
 }
 
 function getOptionalString(formData: FormData, key: string) {

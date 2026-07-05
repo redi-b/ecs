@@ -1,16 +1,38 @@
 "use client";
 
-import type { MerchantProduct } from "@ecs/contracts";
-import { useMemo, useState } from "react";
+import type {
+  MerchantProduct,
+  MerchantProductCategory,
+  MerchantProductCollection,
+} from "@ecs/contracts";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useForm } from "@tanstack/react-form";
+import { useRouter } from "next/navigation";
+import { type ReactNode, useMemo, useState } from "react";
+import { z } from "zod";
 
 import { AppIcons } from "@/components/app/icons";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Field,
   FieldDescription,
-  FieldGroup,
   FieldLabel,
   FieldLegend,
   FieldSet,
@@ -29,285 +51,990 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  CategoryPicker,
+  CollectionPicker,
+  ComposerSection,
+  FieldError,
+  hasFieldError,
+  NO_COLLECTION_VALUE,
+  StepDot,
+} from "@/features/products/product-form-fields";
+import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 type ProductFormProps = {
   action: string;
-  categories: Array<{ id: string; name: string | null; handle: string | null }>;
-  collections: Array<{ id: string; title: string | null; handle: string | null }>;
+  categories: MerchantProductCategory[];
+  collections: MerchantProductCollection[];
+  notice?: ReactNode;
+  onClose?: (() => void) | undefined;
+  open?: boolean | undefined;
   product?: MerchantProduct | undefined;
+  returnHref?: string | undefined;
   submitLabel: string;
 };
 
-const NO_COLLECTION_VALUE = "__none";
+type ProductFormValues = {
+  title: string;
+  description: string;
+  handle: string;
+  thumbnail: string;
+  imageUrls: string;
+  status: "draft" | "published";
+  priceAmount: string;
+  currencyCode: "etb";
+  optionTitle: string;
+  optionValues: string;
+  collectionId: string;
+  categoryIds: string[];
+};
+
+type ComposerStep = {
+  id: "details" | "organize" | "pricing";
+  label: string;
+};
+
+const PRODUCT_STEPS: ComposerStep[] = [
+  { id: "details", label: "Details" },
+  { id: "organize", label: "Organize" },
+  { id: "pricing", label: "Pricing" },
+];
+
+const productPayloadSchema = z.object({
+  title: z.string().trim().min(1, "Enter a product title."),
+  description: z.string().trim().nullable(),
+  handle: z.string().trim().nullable(),
+  thumbnail: z.string().trim().nullable(),
+  imageUrls: z
+    .array(z.string().trim().url("Use full image URLs that start with http:// or https://."))
+    .optional(),
+  status: z.enum(["draft", "published"]),
+  priceAmount: z.number().int().nonnegative("Price cannot be negative."),
+  currencyCode: z.literal("etb"),
+  options: z
+    .array(
+      z.object({
+        title: z.string().trim().min(1, "Enter an option name."),
+        values: z.array(z.string().trim().min(1)).min(1, "Enter at least one option value."),
+      }),
+    )
+    .optional(),
+  collectionId: z.string().trim().nullable(),
+  categoryIds: z.array(z.string().min(1)),
+});
 
 export function ProductForm({
   action,
   categories,
   collections,
+  notice,
+  onClose,
+  open = true,
   product,
+  returnHref,
   submitLabel,
 }: ProductFormProps) {
-  const selectedCategoryIds = new Set(product?.categoryIds ?? []);
-  const firstPrice = getFirstVariantPrice(product);
-  const initialTitle = product?.title ?? "";
-  const initialGeneratedHandle = slugifyProductHandle(initialTitle);
-  const initialHandle = product?.handle ?? initialGeneratedHandle;
-  const [title, setTitle] = useState(initialTitle);
-  const [handle, setHandle] = useState(initialHandle);
-  const [isHandleLocked, setIsHandleLocked] = useState(
-    !product?.handle || product.handle === initialGeneratedHandle,
-  );
-  const [status, setStatus] = useState(normalizeStatus(product?.status));
-  const [collectionId, setCollectionId] = useState(product?.collectionId ?? NO_COLLECTION_VALUE);
-  const hasCollections = collections.length > 0;
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const [activeStep, setActiveStep] = useState<ComposerStep["id"]>("details");
+  const [completedSteps, setCompletedSteps] = useState<ComposerStep["id"][]>([]);
+  const [isHandleLocked, setIsHandleLocked] = useState(isInitialHandleLocked(product));
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [exitIntent, setExitIntent] = useState<(() => void) | null>(null);
+  const defaultValues = useMemo(() => getProductDefaultValues(product), [product]);
+  const form = useForm({
+    defaultValues,
+    onSubmit: async ({ value }) => {
+      try {
+        setActionError(null);
+        const payload = getProductPayload(value, { includeOptions: !product });
+
+        await submitMutation.mutateAsync(payload);
+      } catch (error) {
+        const message = getErrorMessage(error);
+
+        if (error instanceof ProductMutationError && error.step) {
+          setActiveStep(error.step);
+        }
+
+        setActionError(message);
+      }
+    },
+  });
+  const submitMutation = useMutation({
+    mutationFn: async (payload: z.infer<typeof productPayloadSchema>) => {
+      const response = await fetch(action, {
+        body: JSON.stringify(payload),
+        headers: {
+          accept: "application/json",
+          "content-type": "application/json",
+        },
+        method: "POST",
+      });
+      const data = (await response.json().catch(() => ({}))) as {
+        error?: string;
+        product?: MerchantProduct;
+      };
+
+      if (!response.ok || !data.product) {
+        throw getProductMutationError(data.error, response.status);
+      }
+
+      return data.product;
+    },
+    onSuccess: async (savedProduct) => {
+      await queryClient.invalidateQueries({ queryKey: ["products"] });
+      await queryClient.invalidateQueries({ queryKey: ["product", savedProduct.id] });
+      toast.success(product ? "Product updated." : "Product created.");
+      if (onClose) {
+        onClose();
+      } else {
+        router.push(getProductSuccessPath(action, savedProduct.id, Boolean(product)));
+      }
+      router.refresh();
+    },
+  });
   const HandleLockIcon = isHandleLocked ? AppIcons.lock : AppIcons.lockUnlock;
-  const generatedHandle = useMemo(() => slugifyProductHandle(title), [title]);
+
+  function requestExit(next: () => void) {
+    if (form.state.isDirty && !submitMutation.isSuccess) {
+      setExitIntent(() => next);
+      return;
+    }
+
+    next();
+  }
+
+  function confirmExit() {
+    const next = exitIntent;
+
+    setExitIntent(null);
+    next?.();
+  }
+
+  function cancelExit() {
+    setExitIntent(null);
+  }
+
+  function closeComposer() {
+    requestExit(() => {
+      if (onClose) {
+        onClose();
+        return;
+      }
+
+      router.push(returnHref ?? getProductSuccessPath(action, product?.id ?? "", Boolean(product)));
+    });
+  }
+
+  function moveToStep(stepId: ComposerStep["id"]) {
+    if (stepId === activeStep) {
+      return;
+    }
+
+    const currentIndex = PRODUCT_STEPS.findIndex((step) => step.id === activeStep);
+    const targetIndex = PRODUCT_STEPS.findIndex((step) => step.id === stepId);
+
+    if (targetIndex < currentIndex) {
+      setActiveStep(stepId);
+      return;
+    }
+
+    const invalidField = getFirstInvalidFieldForStep(activeStep, form.state.values);
+
+    if (invalidField) {
+      form.validateField(invalidField, "submit");
+      return;
+    }
+
+    setCompletedSteps((current) =>
+      current.includes(activeStep) ? current : [...current, activeStep],
+    );
+    setActiveStep(stepId);
+  }
+
+  function nextStep() {
+    const currentIndex = PRODUCT_STEPS.findIndex((step) => step.id === activeStep);
+    const next = PRODUCT_STEPS[currentIndex + 1];
+
+    if (!next) {
+      const invalidField = getFirstInvalidFieldForStep(activeStep, form.state.values);
+
+      if (invalidField) {
+        form.validateField(invalidField, "submit");
+        return;
+      }
+
+      setCompletedSteps((current) =>
+        current.includes(activeStep) ? current : [...current, activeStep],
+      );
+      form.handleSubmit();
+      return;
+    }
+
+    moveToStep(next.id);
+  }
 
   function updateTitle(nextTitle: string) {
-    setTitle(nextTitle);
+    form.setFieldValue("title", nextTitle);
 
     if (isHandleLocked) {
-      setHandle(slugifyProductHandle(nextTitle));
+      form.setFieldValue("handle", slugifyProductHandle(nextTitle));
     }
   }
 
   function regenerateHandle() {
-    setHandle(generatedHandle);
+    form.setFieldValue("handle", slugifyProductHandle(form.state.values.title));
     setIsHandleLocked(true);
   }
 
   return (
-    <form action={action} className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_20rem]" method="post">
-      <Card>
-        <CardContent>
-          <FieldGroup>
-            <Field>
-              <FieldLabel htmlFor="title">Title</FieldLabel>
-              <Input
-                id="title"
-                name="title"
-                onChange={(event) => updateTitle(event.target.value)}
-                placeholder="Coffee beans"
-                required
-                value={title}
-              />
-            </Field>
-
-            <Field>
-              <FieldLabel htmlFor="handle">Handle</FieldLabel>
-              <InputGroup className="pr-1">
-                <InputGroupInput
-                  id="handle"
-                  name="handle"
-                  onChange={(event) => setHandle(slugifyProductHandle(event.target.value))}
-                  placeholder="coffee-beans"
-                  readOnly={isHandleLocked}
-                  value={handle}
-                />
-                <InputGroupAddon align="inline-end" className="gap-1 py-0 pr-0">
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        aria-label={
-                          isHandleLocked ? "Unlock handle editing" : "Lock handle editing"
-                        }
-                        className="rounded-full"
-                        onClick={() => setIsHandleLocked((current) => !current)}
-                        size="icon-sm"
-                        type="button"
-                        variant="ghost"
-                      >
-                        <HandleLockIcon data-icon="inline-start" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent side="top" sideOffset={6}>
-                      {isHandleLocked ? "Unlock handle editing" : "Lock handle editing"}
-                    </TooltipContent>
-                  </Tooltip>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        aria-label="Regenerate handle from title"
-                        className="rounded-full"
-                        onClick={regenerateHandle}
-                        size="icon-sm"
-                        type="button"
-                        variant="ghost"
-                      >
-                        <AppIcons.refresh data-icon="inline-start" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent side="top" sideOffset={6}>
-                      Regenerate from title
-                    </TooltipContent>
-                  </Tooltip>
-                </InputGroupAddon>
-              </InputGroup>
-              <FieldDescription>
-                {isHandleLocked
-                  ? "The handle follows the title automatically."
-                  : "Handle editing is unlocked for a custom storefront slug."}
-              </FieldDescription>
-            </Field>
-
-            <Field>
-              <FieldLabel htmlFor="description">Description</FieldLabel>
-              <Textarea
-                className="min-h-32"
-                defaultValue={product?.description ?? ""}
-                id="description"
-                name="description"
-                placeholder="Describe the product for the storefront."
-              />
-            </Field>
-
-            <Field>
-              <FieldLabel htmlFor="thumbnail">Thumbnail URL</FieldLabel>
-              <Input
-                defaultValue={product?.thumbnail ?? ""}
-                id="thumbnail"
-                name="thumbnail"
-                placeholder="https://cdn.example.com/product.jpg"
-                type="url"
-              />
-            </Field>
-
-            <Field>
-              <FieldLabel htmlFor="imageUrls">Image URLs</FieldLabel>
-              <Textarea
-                className="min-h-36"
-                defaultValue={(product?.images ?? [])
-                  .map((image) => image.url)
-                  .filter(Boolean)
-                  .join("\n")}
-                id="imageUrls"
-                name="imageUrls"
-                placeholder={"https://cdn.example.com/front.jpg\nhttps://cdn.example.com/back.jpg"}
-              />
-              <FieldDescription>Enter one image URL per line.</FieldDescription>
-            </Field>
-          </FieldGroup>
-        </CardContent>
-      </Card>
-
-      <div className="flex flex-col gap-5">
-        <Card>
-          <CardContent>
-            <FieldGroup>
-              <Field>
-                <FieldLabel htmlFor="status">Status</FieldLabel>
-                <input name="status" type="hidden" value={status} />
-                <Select onValueChange={setStatus} value={status}>
-                  <SelectTrigger className="w-full" id="status">
-                    <SelectValue placeholder="Select status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectGroup>
-                      <SelectItem value="draft">Draft</SelectItem>
-                      <SelectItem value="published">Published</SelectItem>
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
-              </Field>
-
-              <Field>
-                <FieldLabel htmlFor="priceAmount">Price amount</FieldLabel>
-                <Input
-                  defaultValue={firstPrice?.amount ?? ""}
-                  id="priceAmount"
-                  min="0"
-                  name="priceAmount"
-                  placeholder="0"
-                  step="1"
-                  type="number"
-                />
-              </Field>
-
-              <Field>
-                <FieldLabel htmlFor="currencyCode">Currency code</FieldLabel>
-                <Input
-                  id="currencyCode"
-                  name="currencyCode"
-                  readOnly
-                  value="etb"
-                />
-                <FieldDescription>Catalog prices are fixed to ETB for this merchant market.</FieldDescription>
-              </Field>
-
-              <Field>
-                <FieldLabel htmlFor="collectionId">Collection</FieldLabel>
-                <input
-                  name="collectionId"
-                  type="hidden"
-                  value={collectionId === NO_COLLECTION_VALUE ? "" : collectionId}
-                />
-                <Select
-                  disabled={!hasCollections}
-                  onValueChange={setCollectionId}
-                  value={collectionId}
+    <>
+      <Dialog
+        onOpenChange={(nextOpen) => {
+          if (!nextOpen) {
+            closeComposer();
+          }
+        }}
+        open={open}
+      >
+        <DialogContent
+          className="top-0 left-0 flex h-dvh max-h-dvh w-screen max-w-none translate-x-0 translate-y-0 flex-col gap-0 overflow-hidden rounded-none p-0 duration-200 ease-out data-open:slide-in-from-bottom-2 sm:top-3 sm:left-3 sm:h-[calc(100dvh-1.5rem)] sm:max-h-[calc(100dvh-1.5rem)] sm:w-[calc(100vw-1.5rem)] sm:max-w-none sm:rounded-2xl sm:data-open:slide-in-from-bottom-0"
+          onEscapeKeyDown={(event) => {
+            event.preventDefault();
+            closeComposer();
+          }}
+          onInteractOutside={(event) => event.preventDefault()}
+          showCloseButton={false}
+        >
+          <DialogTitle className="sr-only">
+            {product ? "Edit product" : "Create product"}
+          </DialogTitle>
+          <DialogDescription className="sr-only">
+            Complete product details, organization, and pricing before saving.
+          </DialogDescription>
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-background">
+            <div className="grid shrink-0 border-b bg-background/95 backdrop-blur lg:grid-cols-[18rem_1fr_18rem]">
+              <div className="flex items-center gap-2 border-b p-3 lg:border-r lg:border-b-0">
+                <Button
+                  aria-label="Close product composer"
+                  onClick={closeComposer}
+                  size="icon-sm"
+                  type="button"
+                  variant="ghost"
                 >
-                  <SelectTrigger className="w-full" id="collectionId">
-                    <SelectValue placeholder="Select collection" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectGroup>
-                      <SelectItem value={NO_COLLECTION_VALUE}>No collection</SelectItem>
-                      {collections.map((collection) => (
-                        <SelectItem key={collection.id} value={collection.id}>
-                          {getCollectionLabel(collection)}
-                        </SelectItem>
-                      ))}
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
-              </Field>
-            </FieldGroup>
-          </CardContent>
-        </Card>
+                  <AppIcons.close data-icon="inline-start" />
+                </Button>
+                <Badge className="h-6 rounded-md px-2" variant="outline">
+                  esc
+                </Badge>
+                <span className="text-sm text-muted-foreground">
+                  {product ? "Edit product" : "Create product"}
+                </span>
+              </div>
 
-        <Card>
-          <CardContent>
-            <FieldSet>
-              <FieldLegend variant="label">Categories</FieldLegend>
-              <FieldDescription>Select all categories that apply.</FieldDescription>
-              {categories.length ? (
-                <FieldGroup data-slot="checkbox-group">
-                  {categories.map((category) => {
-                    const categoryInputId = `product-category-${category.id}`;
+              <div className="grid grid-cols-3">
+                {PRODUCT_STEPS.map((step) => (
+                  <button
+                    className={cn(
+                      "flex min-h-12 items-center justify-center gap-2 border-r px-3 text-sm text-muted-foreground transition-colors last:border-r-0 hover:bg-muted/60 hover:text-foreground",
+                      activeStep === step.id && "bg-muted text-foreground",
+                    )}
+                    key={step.id}
+                    onClick={() => moveToStep(step.id)}
+                    type="button"
+                  >
+                    <StepDot
+                      status={
+                        activeStep === step.id
+                          ? "active"
+                          : completedSteps.includes(step.id)
+                            ? "complete"
+                            : "idle"
+                      }
+                    />
+                    <span className="truncate">{step.label}</span>
+                  </button>
+                ))}
+              </div>
 
-                    return (
-                      <Field key={category.id} orientation="horizontal">
-                        <Checkbox
-                          defaultChecked={selectedCategoryIds.has(category.id)}
-                          id={categoryInputId}
-                          name="categoryIds"
-                          value={category.id}
+              <div className="hidden items-center justify-end border-l p-3 lg:flex">
+                <form.Subscribe selector={(state) => state.values.status}>
+                  {(status) => (
+                    <Badge variant={status === "published" ? "default" : "secondary"}>
+                      {status === "published" ? "Published" : "Draft"}
+                    </Badge>
+                  )}
+                </form.Subscribe>
+              </div>
+            </div>
+
+            <form
+              className="flex min-h-0 flex-1 flex-col"
+              onSubmit={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                form.handleSubmit();
+              }}
+            >
+              <div className="min-h-0 flex-1 overflow-y-auto">
+                <div className="mx-auto flex min-h-full w-full max-w-4xl flex-col gap-8 px-5 py-10 md:px-8">
+                  {notice}
+            {activeStep === "details" ? (
+              <section className="flex flex-col gap-5">
+                <ComposerSection
+                  description="Start with the information shoppers will recognize first."
+                  title="General"
+                />
+
+                <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+                  <form.Field
+                    name="title"
+                    validators={{
+                      onBlur: ({ value }) => validateTitle(value),
+                      onSubmit: ({ value }) => validateTitle(value),
+                    }}
+                  >
+                    {(field) => (
+                      <Field data-invalid={hasFieldError(field)}>
+                        <FieldLabel htmlFor={field.name}>Title</FieldLabel>
+                        <Input
+                          aria-invalid={hasFieldError(field)}
+                          id={field.name}
+                          name={field.name}
+                          onBlur={field.handleBlur}
+                          onChange={(event) => updateTitle(event.target.value)}
+                          placeholder="Coffee beans"
+                          value={field.state.value}
                         />
-                        <FieldLabel className="font-normal" htmlFor={categoryInputId}>
-                          {getCategoryLabel(category)}
-                        </FieldLabel>
+                        <FieldError errors={field.state.meta.errors} touched={field.state.meta.isTouched} />
                       </Field>
-                    );
-                  })}
-                </FieldGroup>
-              ) : (
-                <FieldDescription>No categories are available.</FieldDescription>
-              )}
-            </FieldSet>
-          </CardContent>
-        </Card>
+                    )}
+                  </form.Field>
 
-        <div className="flex justify-end">
-          <Button type="submit">{submitLabel}</Button>
-        </div>
-      </div>
-    </form>
+                  <form.Field name="handle">
+                    {(field) => (
+                      <Field>
+                        <FieldLabel htmlFor={field.name}>Handle</FieldLabel>
+                        <InputGroup className="pr-1">
+                          <InputGroupInput
+                            id={field.name}
+                            name={field.name}
+                            onBlur={field.handleBlur}
+                            onChange={(event) =>
+                              field.handleChange(slugifyProductHandle(event.target.value))
+                            }
+                            placeholder="coffee-beans"
+                            readOnly={isHandleLocked}
+                            value={field.state.value}
+                          />
+                          <InputGroupAddon align="inline-end" className="gap-1 py-0 pr-0">
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  aria-label={
+                                    isHandleLocked ? "Unlock handle editing" : "Lock handle editing"
+                                  }
+                                  className="rounded-full"
+                                  onClick={() => setIsHandleLocked((current) => !current)}
+                                  size="icon-sm"
+                                  type="button"
+                                  variant="ghost"
+                                >
+                                  <HandleLockIcon data-icon="inline-start" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent side="top" sideOffset={6}>
+                                {isHandleLocked ? "Unlock handle editing" : "Lock handle editing"}
+                              </TooltipContent>
+                            </Tooltip>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  aria-label="Regenerate handle from title"
+                                  className="rounded-full"
+                                  onClick={regenerateHandle}
+                                  size="icon-sm"
+                                  type="button"
+                                  variant="ghost"
+                                >
+                                  <AppIcons.refresh data-icon="inline-start" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent side="top" sideOffset={6}>
+                                Regenerate from title
+                              </TooltipContent>
+                            </Tooltip>
+                          </InputGroupAddon>
+                        </InputGroup>
+                        <FieldDescription>
+                          {isHandleLocked
+                            ? "The handle follows the title automatically."
+                            : "Handle editing is unlocked for a custom storefront slug."}
+                        </FieldDescription>
+                      </Field>
+                    )}
+                  </form.Field>
+                </div>
+
+                <form.Field name="description">
+                  {(field) => (
+                    <Field>
+                      <FieldLabel htmlFor={field.name}>Description</FieldLabel>
+                      <Textarea
+                        className="min-h-28"
+                        id={field.name}
+                        name={field.name}
+                        onBlur={field.handleBlur}
+                        onChange={(event) => field.handleChange(event.target.value)}
+                        placeholder="Describe the product for the storefront."
+                        value={field.state.value}
+                      />
+                    </Field>
+                  )}
+                </form.Field>
+
+                <Separator />
+
+                <ComposerSection
+                  description="Use image URLs for now. Upload support can replace this without changing the composer shape."
+                  title="Media"
+                />
+
+                <div className="grid gap-4 md:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
+                  <form.Field name="thumbnail">
+                    {(field) => (
+                      <Field>
+                        <FieldLabel htmlFor={field.name}>Thumbnail URL</FieldLabel>
+                        <Input
+                          id={field.name}
+                          name={field.name}
+                          onBlur={field.handleBlur}
+                          onChange={(event) => field.handleChange(event.target.value)}
+                          placeholder="https://cdn.example.com/product.jpg"
+                          type="url"
+                          value={field.state.value}
+                        />
+                      </Field>
+                    )}
+                  </form.Field>
+
+                  <form.Field
+                    name="imageUrls"
+                    validators={{
+                      onBlur: ({ value }) => validateImageUrls(value),
+                      onSubmit: ({ value }) => validateImageUrls(value),
+                    }}
+                  >
+                    {(field) => (
+                      <Field data-invalid={hasFieldError(field)}>
+                        <FieldLabel htmlFor={field.name}>Image URLs</FieldLabel>
+                        <Textarea
+                          aria-invalid={hasFieldError(field)}
+                          className="min-h-28"
+                          id={field.name}
+                          name={field.name}
+                          onBlur={field.handleBlur}
+                          onChange={(event) => field.handleChange(event.target.value)}
+                          placeholder={"https://cdn.example.com/front.jpg\nhttps://cdn.example.com/back.jpg"}
+                          value={field.state.value}
+                        />
+                        <FieldDescription>Enter one image URL per line.</FieldDescription>
+                        <FieldError errors={field.state.meta.errors} touched={field.state.meta.isTouched} />
+                      </Field>
+                    )}
+                  </form.Field>
+                </div>
+              </section>
+            ) : null}
+
+            {activeStep === "organize" ? (
+              <section className="flex flex-col gap-5">
+                <ComposerSection
+                  description="Keep products easy to find in the dashboard and storefront."
+                  title="Organize"
+                />
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  <form.Field name="status">
+                    {(field) => (
+                      <Field>
+                        <FieldLabel htmlFor={field.name}>Status</FieldLabel>
+                        <Select
+                          onValueChange={(value) =>
+                            field.handleChange(value === "published" ? "published" : "draft")
+                          }
+                          value={field.state.value}
+                        >
+                          <SelectTrigger className="w-full" id={field.name}>
+                            <SelectValue placeholder="Select status" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectGroup>
+                              <SelectItem value="draft">Draft</SelectItem>
+                              <SelectItem value="published">Published</SelectItem>
+                            </SelectGroup>
+                          </SelectContent>
+                        </Select>
+                      </Field>
+                    )}
+                  </form.Field>
+
+                  <form.Field name="collectionId">
+                    {(field) => (
+                      <Field>
+                        <FieldLabel>Collection</FieldLabel>
+                        <CollectionPicker
+                          collections={collections}
+                          onChange={field.handleChange}
+                          selectedCollection={collections.find(
+                            (collection) => collection.id === field.state.value,
+                          )}
+                          value={field.state.value}
+                        />
+                      </Field>
+                    )}
+                  </form.Field>
+                </div>
+
+                <form.Field name="categoryIds">
+                  {(field) => (
+                    <FieldSet>
+                      <FieldLegend variant="label">Categories</FieldLegend>
+                      <FieldDescription>Select all categories that apply.</FieldDescription>
+                      <CategoryPicker
+                        categories={categories}
+                        onChange={field.handleChange}
+                        selectedCategories={categories.filter((category) =>
+                          field.state.value.includes(category.id),
+                        )}
+                        value={field.state.value}
+                      />
+                    </FieldSet>
+                  )}
+                </form.Field>
+              </section>
+            ) : null}
+
+            {activeStep === "pricing" ? (
+              <section className="flex flex-col gap-5">
+                <ComposerSection
+                  description="Set the basic selling price for this merchant market."
+                  title="Pricing"
+                />
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  <form.Field
+                    name="priceAmount"
+                    validators={{
+                      onBlur: ({ value }) => validatePriceAmount(value),
+                      onSubmit: ({ value }) => validatePriceAmount(value),
+                    }}
+                  >
+                    {(field) => (
+                      <Field data-invalid={hasFieldError(field)}>
+                        <FieldLabel htmlFor={field.name}>Price amount</FieldLabel>
+                        <Input
+                          aria-invalid={hasFieldError(field)}
+                          id={field.name}
+                          inputMode="numeric"
+                          min="0"
+                          name={field.name}
+                          onBlur={field.handleBlur}
+                          onChange={(event) => field.handleChange(event.target.value)}
+                          placeholder="0"
+                          type="text"
+                          value={field.state.value}
+                        />
+                        <FieldError errors={field.state.meta.errors} touched={field.state.meta.isTouched} />
+                      </Field>
+                    )}
+                  </form.Field>
+
+                  <form.Field name="currencyCode">
+                    {(field) => (
+                      <Field data-disabled>
+                        <FieldLabel htmlFor={field.name}>Currency</FieldLabel>
+                        <Input
+                          id={field.name}
+                          name={field.name}
+                          readOnly
+                          value={field.state.value.toUpperCase()}
+                        />
+                        <FieldDescription>
+                          Catalog prices are fixed to ETB for this merchant market.
+                        </FieldDescription>
+                      </Field>
+                    )}
+                  </form.Field>
+                </div>
+
+                {!product ? (
+                  <>
+                    <Separator />
+
+                    <ComposerSection
+                      description="Create simple variants such as Size or Color. Stock for multiple variants is managed after creation."
+                      title="Product options"
+                    />
+
+                    <div className="grid gap-4 md:grid-cols-[minmax(0,0.75fr)_minmax(0,1.25fr)]">
+                      <form.Field
+                        name="optionTitle"
+                        validators={{
+                          onBlur: ({ fieldApi }) =>
+                            validateProductOption(
+                              fieldApi.form.getFieldValue("optionTitle"),
+                              fieldApi.form.getFieldValue("optionValues"),
+                            )?.optionTitle,
+                          onSubmit: ({ fieldApi }) =>
+                            validateProductOption(
+                              fieldApi.form.getFieldValue("optionTitle"),
+                              fieldApi.form.getFieldValue("optionValues"),
+                            )?.optionTitle,
+                        }}
+                      >
+                        {(field) => (
+                          <Field data-invalid={hasFieldError(field)}>
+                            <FieldLabel htmlFor={field.name}>Option name</FieldLabel>
+                            <Input
+                              aria-invalid={hasFieldError(field)}
+                              id={field.name}
+                              name={field.name}
+                              onBlur={field.handleBlur}
+                              onChange={(event) => field.handleChange(event.target.value)}
+                              placeholder="Size"
+                              value={field.state.value}
+                            />
+                            <FieldError
+                              errors={field.state.meta.errors}
+                              touched={field.state.meta.isTouched}
+                            />
+                          </Field>
+                        )}
+                      </form.Field>
+
+                      <form.Field
+                        name="optionValues"
+                        validators={{
+                          onBlur: ({ fieldApi }) =>
+                            validateProductOption(
+                              fieldApi.form.getFieldValue("optionTitle"),
+                              fieldApi.form.getFieldValue("optionValues"),
+                            )?.optionValues,
+                          onSubmit: ({ fieldApi }) =>
+                            validateProductOption(
+                              fieldApi.form.getFieldValue("optionTitle"),
+                              fieldApi.form.getFieldValue("optionValues"),
+                            )?.optionValues,
+                        }}
+                      >
+                        {(field) => (
+                          <Field data-invalid={hasFieldError(field)}>
+                            <FieldLabel htmlFor={field.name}>Option values</FieldLabel>
+                            <Textarea
+                              aria-invalid={hasFieldError(field)}
+                              className="min-h-24"
+                              id={field.name}
+                              name={field.name}
+                              onBlur={field.handleBlur}
+                              onChange={(event) => field.handleChange(event.target.value)}
+                              placeholder={"Small\nMedium\nLarge"}
+                              value={field.state.value}
+                            />
+                            <FieldDescription>
+                              Enter one value per line or separate values with commas.
+                            </FieldDescription>
+                            <FieldError
+                              errors={field.state.meta.errors}
+                              touched={field.state.meta.isTouched}
+                            />
+                          </Field>
+                        )}
+                      </form.Field>
+                    </div>
+                  </>
+                ) : null}
+              </section>
+            ) : null}
+                </div>
+              </div>
+
+              <div className="z-20 flex shrink-0 flex-col gap-3 border-t bg-background/95 p-4 backdrop-blur sm:flex-row sm:items-center sm:justify-between">
+                <form.Subscribe selector={(state) => state.isDirty}>
+                  {(isDirty) => (
+                    actionError ? (
+                      <p className="flex items-center gap-2 text-sm font-medium text-destructive">
+                        <AppIcons.error data-icon="inline-start" />
+                        {actionError}
+                      </p>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">
+                        {isDirty ? "Unsaved changes" : "No unsaved changes"}
+                      </p>
+                    )
+                  )}
+                </form.Subscribe>
+                <div className="flex justify-end gap-2">
+                  <Button onClick={closeComposer} type="button" variant="outline">
+                    Cancel
+                  </Button>
+                  <Button disabled={submitMutation.isPending} onClick={nextStep} type="button">
+                    {submitMutation.isPending
+                      ? "Saving..."
+                      : activeStep === "pricing"
+                        ? submitLabel
+                        : "Continue"}
+                  </Button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog
+        onOpenChange={(open) => (!open ? cancelExit() : undefined)}
+        open={Boolean(exitIntent)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Leave without saving?</AlertDialogTitle>
+            <AlertDialogDescription>Changes you made will be lost.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={cancelExit}>Stay</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmExit} variant="destructive">
+              Leave
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
 
-function normalizeStatus(status: string | null | undefined) {
+function getProductDefaultValues(product: MerchantProduct | undefined): ProductFormValues {
+  const firstPrice = getFirstVariantPrice(product);
+  const title = product?.title ?? "";
+  const generatedHandle = slugifyProductHandle(title);
+
+  return {
+    title,
+    description: product?.description ?? "",
+    handle: product?.handle ?? generatedHandle,
+    thumbnail: product?.thumbnail ?? "",
+    imageUrls: (product?.images ?? [])
+      .map((image) => image.url)
+      .filter(Boolean)
+      .join("\n"),
+    status: normalizeStatus(product?.status),
+    priceAmount: firstPrice?.amount ?? "",
+    currencyCode: "etb",
+    optionTitle: getInitialOptionTitle(product),
+    optionValues: getInitialOptionValues(product).join("\n"),
+    collectionId: product?.collectionId ?? NO_COLLECTION_VALUE,
+    categoryIds: product?.categoryIds ?? [],
+  };
+}
+
+function getProductPayload(values: ProductFormValues, options: { includeOptions: boolean }) {
+  const parsed = productPayloadSchema.safeParse({
+    title: values.title,
+    description: getNullableString(values.description),
+    handle: getNullableString(values.handle),
+    thumbnail: getNullableString(values.thumbnail),
+    imageUrls: values.imageUrls
+      .split("\n")
+      .map((row) => row.trim())
+      .filter(Boolean),
+    status: values.status,
+    priceAmount: /^\d+$/.test(values.priceAmount.trim())
+      ? Number.parseInt(values.priceAmount.trim(), 10)
+      : undefined,
+    currencyCode: values.currencyCode,
+    options: options.includeOptions ? getProductOptionsPayload(values) : undefined,
+    collectionId:
+      values.collectionId && values.collectionId !== NO_COLLECTION_VALUE ? values.collectionId : null,
+    categoryIds: values.categoryIds,
+  });
+
+  if (!parsed.success) {
+    throw new Error(parsed.error.issues[0]?.message ?? "Review the product fields and try again.");
+  }
+
+  return parsed.data;
+}
+
+function getProductSuccessPath(action: string, productId: string, isEdit: boolean) {
+  const path = isEdit ? `/admin/products/${encodeURIComponent(productId)}` : "/admin/products";
+
+  if (typeof window === "undefined") {
+    return path;
+  }
+
+  const tenantId = new URL(action, window.location.origin).searchParams.get("tenantId");
+
+  if (!tenantId) {
+    return path;
+  }
+
+  const url = new URL(path, window.location.origin);
+
+  url.searchParams.set("tenantId", tenantId);
+
+  return `${url.pathname}${url.search}`;
+}
+
+function getFirstInvalidFieldForStep(
+  step: ComposerStep["id"],
+  values: ProductFormValues,
+): keyof ProductFormValues | null {
+  if (step === "details") {
+    if (validateTitle(values.title)) {
+      return "title";
+    }
+
+    if (validateImageUrls(values.imageUrls)) {
+      return "imageUrls";
+    }
+  }
+
+  if (step === "pricing" && validatePriceAmount(values.priceAmount)) {
+    return "priceAmount";
+  }
+
+  if (step === "pricing") {
+    const optionError = validateProductOption(values.optionTitle, values.optionValues);
+
+    if (optionError?.optionTitle) {
+      return "optionTitle";
+    }
+
+    if (optionError?.optionValues) {
+      return "optionValues";
+    }
+  }
+
+  return null;
+}
+
+function getNullableString(value: string) {
+  const trimmed = value.trim();
+
+  return trimmed ? trimmed : null;
+}
+
+function validateTitle(value: string) {
+  return value.trim() ? undefined : "Enter a product title.";
+}
+
+function validatePriceAmount(value: string) {
+  const trimmed = value.trim();
+
+  if (!trimmed) {
+    return "Enter a price.";
+  }
+
+  if (!/^\d+$/.test(trimmed)) {
+    return /[a-zA-Z]/.test(trimmed)
+      ? "Use numbers only."
+      : "Use a whole number price without decimals or symbols.";
+  }
+
+  return undefined;
+}
+
+function validateProductOption(optionTitle: string, optionValues: string) {
+  const hasTitle = Boolean(optionTitle.trim());
+  const values = parseOptionValues(optionValues);
+
+  if (!hasTitle && !optionValues.trim()) {
+    return null;
+  }
+
+  if (!hasTitle) {
+    return { optionTitle: "Enter an option name.", optionValues: undefined };
+  }
+
+  if (!values.length) {
+    return { optionTitle: undefined, optionValues: "Enter at least one option value." };
+  }
+
+  return null;
+}
+
+function getProductOptionsPayload(values: ProductFormValues) {
+  const title = values.optionTitle.trim();
+  const optionValues = parseOptionValues(values.optionValues);
+
+  return title && optionValues.length ? [{ title, values: optionValues }] : undefined;
+}
+
+function parseOptionValues(value: string) {
+  return [...new Set(value.split(/[\n,]/).map((row) => row.trim()).filter(Boolean))];
+}
+
+class ProductMutationError extends Error {
+  step: ComposerStep["id"] | null;
+
+  constructor(message: string, step: ComposerStep["id"] | null = null) {
+    super(message);
+    this.name = "ProductMutationError";
+    this.step = step;
+  }
+}
+
+function getProductMutationError(error: string | undefined, status: number) {
+  if (error === "product_conflict" || status === 409) {
+    return new ProductMutationError(
+      "A product with this handle may already exist. Change the handle and try again.",
+      "details",
+    );
+  }
+
+  if (error === "product_write_invalid" || status === 400 || status === 422) {
+    return new ProductMutationError(
+      "This product could not be saved. Review the highlighted fields and try again.",
+      "details",
+    );
+  }
+
+  if (error === "commerce_backend_unavailable") {
+    return new ProductMutationError("Catalog changes are temporarily unavailable. Try again.");
+  }
+
+  if (error === "commerce_credentials_missing" || error === "commerce_credentials_invalid") {
+    return new ProductMutationError("Catalog changes are temporarily unavailable. Contact support.");
+  }
+
+  return new ProductMutationError("Product could not be saved. Try again.");
+}
+
+function getErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : "Product could not be saved. Try again.";
+}
+
+function validateImageUrls(value: string) {
+  const urls = value
+    .split("\n")
+    .map((row) => row.trim())
+    .filter(Boolean);
+
+  for (const url of urls) {
+    if (!z.string().url().safeParse(url).success) {
+      return "Use full image URLs that start with http:// or https://.";
+    }
+  }
+
+  return undefined;
+}
+
+function normalizeStatus(status: string | null | undefined): ProductFormValues["status"] {
   return status === "published" ? "published" : "draft";
 }
 
@@ -316,13 +1043,39 @@ function getFirstVariantPrice(product: MerchantProduct | undefined) {
     for (const price of variant.prices) {
       if (price.amount !== null || price.currencyCode) {
         return {
-          amount: price.amount ?? "",
+          amount: price.amount === null ? "" : String(price.amount),
         };
       }
     }
   }
 
   return undefined;
+}
+
+function getInitialOptionTitle(product: MerchantProduct | undefined) {
+  for (const variant of product?.variants ?? []) {
+    const option = variant.optionValues?.find((value) => value.optionTitle);
+
+    if (option?.optionTitle) {
+      return option.optionTitle;
+    }
+  }
+
+  return "";
+}
+
+function getInitialOptionValues(product: MerchantProduct | undefined) {
+  const values = new Set<string>();
+
+  for (const variant of product?.variants ?? []) {
+    for (const option of variant.optionValues ?? []) {
+      if (option.value) {
+        values.add(option.value);
+      }
+    }
+  }
+
+  return Array.from(values);
 }
 
 function slugifyProductHandle(value: string) {
@@ -334,10 +1087,10 @@ function slugifyProductHandle(value: string) {
     .slice(0, 80);
 }
 
-function getCollectionLabel(collection: ProductFormProps["collections"][number]) {
-  return collection.title ?? collection.handle ?? collection.id;
-}
+function isInitialHandleLocked(product: MerchantProduct | undefined) {
+  if (!product?.handle) {
+    return true;
+  }
 
-function getCategoryLabel(category: ProductFormProps["categories"][number]) {
-  return category.name ?? category.handle ?? category.id;
+  return product.handle === slugifyProductHandle(product.title ?? "");
 }

@@ -15,9 +15,14 @@ import {
 } from "@/components/ui/empty";
 import { OrderDetail } from "@/features/orders/order-detail";
 import { formatOrderDisplayId } from "@/features/orders/order-table-state";
-import { type DashboardSearchParams, getSelectedTenantId } from "@/lib/dashboard-tenant-context";
+import {
+  type DashboardSearchParams,
+  getSelectedTenantId,
+  getTenantScopedPath,
+} from "@/lib/dashboard-tenant-context";
 import { getListErrorState } from "@/lib/list-error-state";
 import { getMerchantOrder } from "@/lib/merchant-orders";
+import { dashboardRoutes } from "@/lib/routes";
 
 type MerchantOrderDetailPageProps = {
   params: Promise<{ orderId: string }>;
@@ -58,7 +63,11 @@ export default async function MerchantOrderDetailPage({
       {setupError ? (
         <ListSetupState state={setupError} />
       ) : result.ok ? (
-        <OrderDetail order={result.order} />
+        <OrderDetail
+          action={getTenantScopedPath(dashboardRoutes.orderAction(result.order.id), tenantId)}
+          order={result.order}
+          tenantId={tenantId}
+        />
       ) : result.message === "order_not_found" || result.status === 404 ? (
         <OrderNotFoundState />
       ) : (
