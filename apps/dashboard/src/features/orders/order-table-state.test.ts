@@ -12,6 +12,7 @@ import {
   getOrderTableCounts,
   getOrderTotalSortValue,
   normalizeOrderLifecycle,
+  parseOrderLifecycleFilter,
 } from "./order-table-state.js";
 
 const orders: MerchantOrder[] = [
@@ -232,6 +233,16 @@ describe("order table state", () => {
       "payment_pending",
     );
     assert.equal(normalizeOrderLifecycle({ ...openOrder, status: " Open " }), "open");
+  });
+
+  it("parses URL-backed order lifecycle filters safely", () => {
+    assert.equal(parseOrderLifecycleFilter("open"), "open");
+    assert.equal(parseOrderLifecycleFilter(" Needs_Fulfillment "), "needs_fulfillment");
+    assert.equal(parseOrderLifecycleFilter("paid"), "paid");
+    assert.equal(parseOrderLifecycleFilter("all"), "all");
+    assert.equal(parseOrderLifecycleFilter("refunded"), "all");
+    assert.equal(parseOrderLifecycleFilter(undefined), "all");
+    assert.equal(parseOrderLifecycleFilter(["fulfilled", "paid"]), "fulfilled");
   });
 
   it("formats display ids, totals, money, dates, and counts", () => {

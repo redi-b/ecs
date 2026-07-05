@@ -58,13 +58,24 @@ export function getDashboardBreadcrumbTrail(
     }
   }
 
-  if (productsRoute && pathname === dashboardRoutes.productsNew) {
+  if (
+    productsRoute &&
+    pathname.startsWith(`${dashboardRoutes.products}/`) &&
+    pathname.endsWith("/edit")
+  ) {
+    const productHref = pathname.slice(0, -"/edit".length);
+
     return [
       toBreadcrumb(productsRoute),
       {
-        href: dashboardRoutes.productsNew,
-        id: "products-new",
-        title: "New product",
+        href: productHref,
+        id: "product-details",
+        title: labels["product-details"] ?? "Product details",
+      },
+      {
+        href: pathname,
+        id: "product-edit",
+        title: "Edit product",
       },
     ];
   }

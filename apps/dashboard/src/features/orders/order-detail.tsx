@@ -1,5 +1,6 @@
 import type { MerchantOrder } from "@ecs/contracts";
 import type { ReactNode } from "react";
+import Link from "next/link";
 
 import {
   Card,
@@ -14,12 +15,25 @@ import {
   formatOrderDisplayId,
   formatOrderMoney,
 } from "@/features/orders/order-table-state";
+import { OrderActions } from "@/features/orders/order-actions";
+import { getTenantScopedPath } from "@/lib/dashboard-tenant-context";
+import { dashboardRoutes } from "@/lib/routes";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 type OrderDetailProps = {
+  action: string;
   order: MerchantOrder;
+  tenantId?: string | undefined;
 };
 
-export function OrderDetail({ order }: OrderDetailProps) {
+export function OrderDetail({ action, order, tenantId }: OrderDetailProps) {
   const fulfillments = order.fulfillments ?? [];
   const latestFulfillmentSignal = getLatestFulfillmentSignal(fulfillments);
 
@@ -98,16 +112,25 @@ export function OrderDetail({ order }: OrderDetailProps) {
           </DetailSection>
 
           <DetailSection
-            description="Item-level detail will appear here when the order contract includes items."
+            description="Products and quantities included in this order."
             title="Items"
           >
-            <div className="rounded-lg border border-dashed px-4 py-6 text-sm text-muted-foreground">
-              This order response does not include line items yet.
-            </div>
+            <OrderItemsTable
+              currencyCode={order.currencyCode}
+              items={order.items ?? []}
+              tenantId={tenantId}
+            />
           </DetailSection>
         </div>
 
         <div className="space-y-6">
+          <DetailSection
+            description="Safe order actions for the current order state."
+            title="Actions"
+          >
+            <OrderActions action={action} order={order} />
+          </DetailSection>
+
           <DetailSection
             description="Current order, payment, and fulfillment states."
             title="Payment and fulfillment"
@@ -179,6 +202,111 @@ export function OrderDetail({ order }: OrderDetailProps) {
         </div>
       </div>
     </div>
+  );
+}
+
+function OrderItemsTable({
+  currencyCode,
+  items,
+  tenantId,
+}: {
+  currencyCode: string | null;
+  items: NonNullable<MerchantOrder["items"]>;
+  tenantId?: string | undefined;
+}) {
+  if (!items.length) {
+    return (
+      <div className="rounded-lg border border-dashed px-4 py-6 text-sm text-muted-foreground">
+        No line items were returned for this order.
+      </div>
+    );
+  }
+
+  return (
+    <div className="overflow-hidden rounded-xl border">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Item</TableHead>
+            <TableHead className="text-right">Qty</TableHead>
+            <TableHead className="text-right">Fulfilled</TableHead>
+            <TableHead className="text-right">Unit price</TableHead>
+            <TableHead className="text-right">Total</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {items.map((item) => (
+            <TableRow key={item.id}>
+              <TableCell className="min-w-56 whitespace-normal">
+                <div className="flex items-center gap-3">
+                  <LineItemThumbnail src={item.thumbnail} title={item.title} />
+                  <div className="min-w-0">
+                    {item.productId ? (
+                      <Link
+                        className="font-medium text-foreground underline-offset-4 hover:text-primary hover:underline"
+                        href={getTenantScopedPath(
+                          dashboardRoutes.productDetail(item.productId),
+                          tenantId,
+                        )}
+                      >
+                        {item.title ?? "Untitled item"}
+                      </Link>
+                    ) : (
+                      <div className="font-medium">{item.title ?? "Untitled item"}</div>
+                    )}
+                    <div className="break-all text-xs text-muted-foreground">
+                      {item.variantId ?? item.id}
+                    </div>
+                  </div>
+                </div>
+              </TableCell>
+              <TableCell className="text-right">{formatQuantity(item.quantity)}</TableCell>
+              <TableCell className="text-right">
+                {formatQuantity(item.fulfilledQuantity ?? 0)}
+              </TableCell>
+              <TableCell className="text-right">
+                {formatOrderMoney(item.unitPrice, currencyCode)}
+              </TableCell>
+              <TableCell className="text-right">
+                {formatOrderMoney(item.total, currencyCode)}
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}
+
+function LineItemThumbnail({ src, title }: { src: string | null; title: string | null }) {
+  if (!src) {
+    return (
+      <div className="flex size-10 shrink-0 items-center justify-center rounded-lg border border-dashed bg-muted text-xs font-medium text-muted-foreground">
+        {getInitials(title)}
+      </div>
+    );
+  }
+
+  return (
+    <div className="size-10 shrink-0 overflow-hidden rounded-lg border bg-muted">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img alt={title ?? "Order item"} className="size-full object-cover" src={src} />
+    </div>
+  );
+}
+
+function formatQuantity(value: number | null | undefined) {
+  return typeof value === "number" ? String(value) : "-";
+}
+
+function getInitials(value: string | null) {
+  return (
+    value
+      ?.split(/\s+/)
+      .map((part) => part[0])
+      .join("")
+      .slice(0, 2)
+      .toUpperCase() || "IT"
   );
 }
 

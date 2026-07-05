@@ -5,6 +5,7 @@ export const listSearchParamsSchema = z.object({
   pageSize: z.coerce.number().int().min(10).max(100).catch(20),
   q: z.string().trim().catch(""),
   sort: z.string().trim().catch(""),
+  status: z.string().trim().catch(""),
   view: z.string().trim().catch(""),
 });
 

@@ -6,10 +6,17 @@ import { createMerchantProduct } from "../../../../../lib/merchant-products";
 import { getProductFormInput } from "../../../../../lib/product-form-data";
 
 export async function POST(request: Request) {
-  const formData = await request.formData();
-  const product = getProductFormInput(formData);
+  const wantsJson = request.headers.get("accept")?.includes("application/json");
+  const product = await getProductInput(request);
 
   if (!product.title) {
+    if (wantsJson) {
+      return NextResponse.json(
+        { error: "A product title is required before saving." },
+        { status: 400 },
+      );
+    }
+
     return redirectToProducts(request, "missing_title");
   }
 
@@ -23,7 +30,23 @@ export async function POST(request: Request) {
     tenantId: new URL(request.url).searchParams.get("tenantId"),
   });
 
+  if (wantsJson) {
+    if (!result.ok) {
+      return NextResponse.json({ error: result.message }, { status: result.status });
+    }
+
+    return NextResponse.json({ product: result.product });
+  }
+
   return redirectToProducts(request, result.ok ? "product_created" : result.message);
+}
+
+async function getProductInput(request: Request) {
+  if (request.headers.get("content-type")?.includes("application/json")) {
+    return (await request.json().catch(() => ({}))) as ReturnType<typeof getProductFormInput>;
+  }
+
+  return getProductFormInput(await request.formData());
 }
 
 function redirectToProducts(request: Request, status: string) {

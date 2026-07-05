@@ -7,7 +7,9 @@ import {
   getMerchantProduct,
   getMerchantProductCategories,
   getMerchantProductCollections,
+  getMerchantProductStock,
   getMerchantProducts,
+  updateMerchantProductStock,
   updateMerchantProduct,
 } from "./merchant-products.js";
 
@@ -54,6 +56,17 @@ const productWriteBody = {
   currencyCode: "etb",
   status: "draft",
   thumbnail: "https://cdn.test/thumb.jpg",
+};
+
+const merchantProductStock = {
+  productId: "prod_1",
+  variantId: "variant_1",
+  inventoryItemId: "iitem_1",
+  locationId: "sloc_1",
+  stockedQuantity: 12,
+  reservedQuantity: 2,
+  incomingQuantity: 0,
+  availableQuantity: 10,
 };
 
 describe("getMerchantProducts", () => {
@@ -558,6 +571,81 @@ describe("getMerchantProducts", () => {
       ok: false,
       status: 503,
       message: "platform_request_failed",
+    });
+  });
+
+  it("fetches merchant product stock with tenant context", async () => {
+    let forwardedRequest: Request | undefined;
+    const result = await getMerchantProductStock({
+      cookieHeader: "better-auth.session_token=session_1",
+      platformApiBaseUrl: "http://platform.local",
+      productId: "prod_1",
+      tenantId: "tenant_1",
+      fetcher: async (input, init) => {
+        forwardedRequest = new Request(input, init);
+
+        return Response.json({
+          stock: merchantProductStock,
+        });
+      },
+    });
+
+    assert.deepEqual(result, {
+      ok: true,
+      stock: merchantProductStock,
+    });
+    assert.equal(
+      forwardedRequest?.url,
+      "http://platform.local/platform/tenants/tenant_1/products/prod_1/stock",
+    );
+    assert.equal(forwardedRequest?.headers.get("cookie"), "better-auth.session_token=session_1");
+    assert.equal(forwardedRequest?.headers.get("x-forwarded-host"), null);
+  });
+
+  it("updates merchant product stock with resolved shop host context", async () => {
+    let forwardedRequest: Request | undefined;
+    const result = await updateMerchantProductStock({
+      cookieHeader: "better-auth.session_token=session_1",
+      platformApiBaseUrl: "http://platform.local",
+      productId: "prod_1",
+      requestHost: "abebe.lvh.me",
+      stockedQuantity: 15,
+      fetcher: async (input, init) => {
+        forwardedRequest = new Request(input, init);
+
+        return Response.json({
+          stock: {
+            ...merchantProductStock,
+            stockedQuantity: 15,
+            availableQuantity: 13,
+          },
+        });
+      },
+    });
+
+    assert.equal(result.ok, true);
+    assert.equal(
+      forwardedRequest?.url,
+      "http://platform.local/platform/merchant/products/prod_1/stock",
+    );
+    assert.equal(forwardedRequest?.method, "POST");
+    assert.equal(forwardedRequest?.headers.get("x-forwarded-host"), "abebe.lvh.me");
+    assert.deepEqual(await forwardedRequest?.json(), {
+      stockedQuantity: 15,
+    });
+  });
+
+  it("returns an error for invalid merchant product stock responses", async () => {
+    const result = await getMerchantProductStock({
+      platformApiBaseUrl: "http://platform.local",
+      productId: "prod_1",
+      fetcher: async () => Response.json({ stock: null }),
+    });
+
+    assert.deepEqual(result, {
+      ok: false,
+      status: 502,
+      message: "invalid_product_stock_response",
     });
   });
 });

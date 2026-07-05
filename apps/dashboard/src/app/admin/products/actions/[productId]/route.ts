@@ -10,8 +10,8 @@ export async function POST(
   { params }: { params: Promise<{ productId: string }> },
 ) {
   const { productId } = await params;
-  const formData = await request.formData();
-  const product = getProductFormInput(formData);
+  const wantsJson = request.headers.get("accept")?.includes("application/json");
+  const product = await getProductInput(request);
   const cookieStore = await cookies();
   const requestHeaders = await headers();
   const result = await updateMerchantProduct({
@@ -23,7 +23,23 @@ export async function POST(
     tenantId: new URL(request.url).searchParams.get("tenantId"),
   });
 
+  if (wantsJson) {
+    if (!result.ok) {
+      return NextResponse.json({ error: result.message }, { status: result.status });
+    }
+
+    return NextResponse.json({ product: result.product });
+  }
+
   return redirectToProducts(request, result.ok ? "product_updated" : result.message);
+}
+
+async function getProductInput(request: Request) {
+  if (request.headers.get("content-type")?.includes("application/json")) {
+    return (await request.json().catch(() => ({}))) as ReturnType<typeof getProductFormInput>;
+  }
+
+  return getProductFormInput(await request.formData());
 }
 
 function redirectToProducts(request: Request, status: string) {

@@ -14,6 +14,14 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { getTenantScopedPath } from "@/lib/dashboard-tenant-context";
 import { dashboardRoutes } from "@/lib/routes";
 
@@ -113,8 +121,81 @@ export function ProductDetail({
             </p>
           )}
         </section>
+
+        <section className="space-y-3">
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="text-sm font-medium">Product options and variants</h2>
+            <span className="text-sm text-muted-foreground">
+              {product.variants?.length ?? 0} variants
+            </span>
+          </div>
+          <ProductVariantsTable product={product} />
+        </section>
       </CardContent>
     </Card>
+  );
+}
+
+function ProductVariantsTable({ product }: { product: MerchantProduct }) {
+  const variants = product.variants ?? [];
+
+  if (!variants.length) {
+    return (
+      <p className="rounded-lg border border-dashed px-4 py-6 text-sm text-muted-foreground">
+        No variants have been configured for this product.
+      </p>
+    );
+  }
+
+  return (
+    <div className="overflow-hidden rounded-xl border">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Variant</TableHead>
+            <TableHead>Options</TableHead>
+            <TableHead>SKU</TableHead>
+            <TableHead className="text-right">Price</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {variants.map((variant) => (
+            <TableRow key={variant.id}>
+              <TableCell className="min-w-52 whitespace-normal">
+                <div className="font-medium">{variant.title ?? "Untitled variant"}</div>
+                <div className="break-all text-xs text-muted-foreground">{variant.id}</div>
+              </TableCell>
+              <TableCell className="min-w-52 whitespace-normal">
+                <VariantOptionBadges options={variant.optionValues ?? []} />
+              </TableCell>
+              <TableCell>{variant.sku ?? "No SKU"}</TableCell>
+              <TableCell className="text-right">{formatVariantPrice(variant)}</TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}
+
+function VariantOptionBadges({
+  options,
+}: {
+  options: NonNullable<NonNullable<MerchantProduct["variants"]>[number]["optionValues"]>;
+}) {
+  if (!options.length) {
+    return <span className="text-muted-foreground">Default option</span>;
+  }
+
+  return (
+    <div className="flex flex-wrap gap-2">
+      {options.map((option, index) => (
+        <Badge key={`${option.optionTitle}-${option.value}-${index}`} variant="secondary">
+          {option.optionTitle ? `${option.optionTitle}: ` : ""}
+          {option.value ?? "Unset"}
+        </Badge>
+      ))}
+    </div>
   );
 }
 
@@ -233,6 +314,18 @@ function formatFirstPrice(product: MerchantProduct) {
   const price = product.variants
     ?.flatMap((variant) => variant.prices)
     .find((variantPrice) => typeof variantPrice.amount === "number" && variantPrice.currencyCode);
+
+  if (!price || typeof price.amount !== "number" || !price.currencyCode) {
+    return "No price";
+  }
+
+  return `${price.currencyCode.toUpperCase()} ${price.amount}`;
+}
+
+function formatVariantPrice(variant: NonNullable<MerchantProduct["variants"]>[number]) {
+  const price = variant.prices.find(
+    (variantPrice) => typeof variantPrice.amount === "number" && variantPrice.currencyCode,
+  );
 
   if (!price || typeof price.amount !== "number" || !price.currencyCode) {
     return "No price";

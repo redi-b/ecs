@@ -5,9 +5,7 @@ import { ListSetupState } from "@/components/app/list-error-state";
 import { PageShell } from "@/components/app/page-shell";
 import { RefreshButton } from "@/components/app/refresh-button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { ProductDetail } from "@/features/products/product-detail";
-import { ProductEditDialog } from "@/features/products/product-edit-dialog";
-import { ProductStockPanel } from "@/features/products/product-stock-panel";
+import { ProductForm } from "@/features/products/product-form";
 import {
   type DashboardSearchParams,
   getSelectedTenantId,
@@ -18,11 +16,10 @@ import {
   getMerchantProduct,
   getMerchantProductCategories,
   getMerchantProductCollections,
-  getMerchantProductStock,
 } from "@/lib/merchant-products";
 import { dashboardRoutes } from "@/lib/routes";
 
-type MerchantProductDetailPageProps = {
+type MerchantProductEditPageProps = {
   params: Promise<{ productId: string }>;
   searchParams?: Promise<DashboardSearchParams>;
 };
@@ -32,10 +29,10 @@ type ReferenceDataError = {
   state: ListErrorState;
 };
 
-export default async function MerchantProductDetailPage({
+export default async function MerchantProductEditPage({
   params,
   searchParams,
-}: MerchantProductDetailPageProps) {
+}: MerchantProductEditPageProps) {
   const [{ productId }, resolvedSearchParams] = await Promise.all([params, searchParams]);
   const tenantId = getSelectedTenantId(resolvedSearchParams ?? {});
   const cookieStore = await cookies();
@@ -47,7 +44,7 @@ export default async function MerchantProductDetailPage({
     requestHost: requestHeaders.get("host"),
     tenantId,
   };
-  const [productResult, categoriesResult, collectionsResult, stockResult] = await Promise.all([
+  const [productResult, categoriesResult, collectionsResult] = await Promise.all([
     getMerchantProduct({
       ...requestOptions,
       productId,
@@ -61,10 +58,6 @@ export default async function MerchantProductDetailPage({
       ...requestOptions,
       limit: 100,
       offset: 0,
-    }),
-    getMerchantProductStock({
-      ...requestOptions,
-      productId,
     }),
   ]);
   const productErrorState = productResult.ok
@@ -84,10 +77,21 @@ export default async function MerchantProductDetailPage({
 
   return (
     <PageShell
-      actions={
-        <div className="flex items-center gap-2">
-          {productResult.ok && !optionErrors.length ? (
-            <ProductEditDialog
+      actions={<RefreshButton />}
+      description="Update storefront product data with a guided product composer."
+      title="Edit product"
+    >
+      {setupError ? (
+        <ListSetupState state={setupError} />
+      ) : productResult.ok ? (
+        <>
+          <DashboardBreadcrumbLabel
+            id="product-details"
+            label={productResult.product.title ?? productResult.product.handle ?? null}
+          />
+          {optionErrors.length ? <ReferenceDataAlert errors={optionErrors} /> : null}
+          {optionErrors.length ? null : (
+            <ProductForm
               action={getTenantScopedPath(
                 dashboardRoutes.productUpdateAction(productResult.product.id),
                 tenantId,
@@ -99,38 +103,9 @@ export default async function MerchantProductDetailPage({
                 dashboardRoutes.productDetail(productResult.product.id),
                 tenantId,
               )}
+              submitLabel="Save product"
             />
-          ) : null}
-          <RefreshButton />
-        </div>
-      }
-      description="Review merchant-scoped product details and update storefront product data."
-      title="Product details"
-    >
-      {setupError ? (
-        <ListSetupState state={setupError} />
-      ) : productResult.ok ? (
-        <>
-          <DashboardBreadcrumbLabel
-            id="product-details"
-            label={productResult.product.title ?? productResult.product.handle ?? null}
-          />
-          {optionErrors.length ? <ReferenceDataAlert errors={optionErrors} /> : null}
-          <ProductDetail
-            categories={categoriesResult.ok ? categoriesResult.categories : []}
-            collections={collectionsResult.ok ? collectionsResult.collections : []}
-            product={productResult.product}
-            tenantId={tenantId}
-          />
-          <ProductStockPanel
-            action={getTenantScopedPath(
-              dashboardRoutes.productStockAction(productResult.product.id),
-              tenantId,
-            )}
-            initialStock={stockResult.ok ? stockResult.stock : undefined}
-            productId={productResult.product.id}
-            stockError={stockResult.ok ? undefined : stockResult.message}
-          />
+          )}
         </>
       ) : (
         <ProductLoadAlert state={productErrorState} />

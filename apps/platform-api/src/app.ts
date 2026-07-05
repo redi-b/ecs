@@ -365,7 +365,13 @@ export type MerchantProductVariant = {
   inventoryItemId?: string | null;
   title: string | null;
   sku: string | null;
+  optionValues?: MerchantProductVariantOptionValue[];
   prices: MerchantProductPrice[];
+};
+
+export type MerchantProductVariantOptionValue = {
+  optionTitle: string | null;
+  value: string | null;
 };
 
 export type MerchantProductPrice = {
@@ -404,8 +410,10 @@ export type MerchantProductWriteResult =
         | "commerce_backend_unavailable"
         | "commerce_credentials_invalid"
         | "commerce_credentials_missing"
+        | "product_conflict"
+        | "product_write_invalid"
         | "product_not_found";
-      status: 401 | 404 | 503;
+      status: 400 | 401 | 404 | 409 | 422 | 503;
     };
 
 export type MerchantProductCategory = {
@@ -554,6 +562,8 @@ export type MerchantOrderFulfillment = {
 
 export type MerchantOrderLineItem = {
   id: string;
+  productId?: string | null;
+  variantId?: string | null;
   title: string | null;
   quantity: number | null;
   fulfilledQuantity?: number | null;
@@ -989,6 +999,7 @@ export type PlatformAppOptions = {
         description?: string | null | undefined;
         handle?: string | null | undefined;
         imageUrls?: string[] | undefined;
+        options?: Array<{ title: string; values: string[] }> | undefined;
         priceAmount?: number | undefined;
         regionId?: string | null | undefined;
         salesChannelId: string;

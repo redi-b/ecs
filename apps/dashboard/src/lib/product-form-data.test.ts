@@ -15,6 +15,8 @@ describe("getProductFormInput", () => {
     formData.append("categoryIds", "pcat_2");
     formData.set("imageUrls", "https://cdn.test/1.jpg\nhttps://cdn.test/2.jpg");
     formData.set("priceAmount", "350");
+    formData.set("optionTitle", "Size");
+    formData.set("optionValues", "Small, Medium\nLarge");
     formData.set("currencyCode", "etb");
     formData.set("status", "draft");
     formData.set("thumbnail", "https://cdn.test/thumb.jpg");
@@ -26,6 +28,7 @@ describe("getProductFormInput", () => {
       collectionId: "pcol_1",
       categoryIds: ["pcat_1", "pcat_2"],
       imageUrls: ["https://cdn.test/1.jpg", "https://cdn.test/2.jpg"],
+      options: [{ title: "Size", values: ["Small", "Medium", "Large"] }],
       priceAmount: 350,
       currencyCode: "etb",
       status: "draft",
@@ -54,6 +57,7 @@ describe("getProductFormInput", () => {
       collectionId: null,
       categoryIds: [],
       imageUrls: [],
+      options: undefined,
       priceAmount: undefined,
       currencyCode: null,
       status: null,
