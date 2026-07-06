@@ -1,12 +1,15 @@
 "use client";
 
 import type { MerchantProductCategory } from "@ecs/contracts";
-import type { ColumnDef } from "@tanstack/react-table";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import type { ColumnDef } from "@tanstack/react-table";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-
+import { DataTable } from "@/components/app/data-table";
+import { DataTableHeader } from "@/components/app/data-table-header";
+import { AppIcons } from "@/components/app/icons";
+import { RowActionsMenu } from "@/components/app/row-actions-menu";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -17,20 +20,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { getTenantScopedPath } from "@/lib/dashboard-tenant-context";
-import { dashboardRoutes } from "@/lib/routes";
-
-import { DataTable } from "@/components/app/data-table";
-import { DataTableHeader } from "@/components/app/data-table-header";
-import { AppIcons } from "@/components/app/icons";
-import { RowActionsMenu } from "@/components/app/row-actions-menu";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupInput,
-} from "@/components/ui/input-group";
+import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
 import {
   CategoryIdentityCell,
   CategoryParentCell,
@@ -42,8 +34,8 @@ import {
   getCategoryDisplayName,
   getTaxonomyTableCounts,
 } from "@/features/catalog-taxonomy/taxonomy-table-state";
-
-
+import { getTenantScopedPath } from "@/lib/dashboard-tenant-context";
+import { dashboardRoutes } from "@/lib/routes";
 
 function copyToClipboard(value: string) {
   if (!value || typeof navigator === "undefined" || !navigator.clipboard) {
@@ -135,7 +127,7 @@ function getCategoryColumns(
                 onSelect: () => copyToClipboard(category.handle ?? ""),
                 type: "button",
               },
-              { type: "separator" },
+              { id: "danger", type: "separator" },
               {
                 label: "Delete category",
                 onSelect: () => onDelete(category.id),
@@ -168,7 +160,11 @@ function getDeletionErrorMessage(error: unknown, resourceName: string) {
   if (code === "commerce_credentials_missing" || code === "commerce_credentials_invalid") {
     return "Catalog changes are temporarily unavailable. Contact support.";
   }
-  if (code === "product_not_found" || code === "category_not_found" || code === "collection_not_found") {
+  if (
+    code === "product_not_found" ||
+    code === "category_not_found" ||
+    code === "collection_not_found"
+  ) {
     return `${resourceName} not found.`;
   }
   return `Failed to delete ${resourceName.toLowerCase()}. Try again.`;
@@ -330,12 +326,15 @@ export function ProductCategoriesTable({
           <AlertDialogHeader>
             <AlertDialogTitle>Delete product category</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete &ldquo;{categoryToDelete ? getCategoryDisplayName(categoryToDelete) : "this category"}&rdquo;?
-              This action cannot be undone.
+              Are you sure you want to delete &ldquo;
+              {categoryToDelete ? getCategoryDisplayName(categoryToDelete) : "this category"}
+              &rdquo;? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleteCategoryMutation.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={deleteCategoryMutation.isPending}>
+              Cancel
+            </AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
               disabled={deleteCategoryMutation.isPending}
@@ -355,8 +354,8 @@ export function ProductCategoriesTable({
           <AlertDialogHeader>
             <AlertDialogTitle>Delete product categories</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete {selectedCategoryIdsForDelete.length} selected categories?
-              This action cannot be undone.
+              Are you sure you want to delete {selectedCategoryIdsForDelete.length} selected
+              categories? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

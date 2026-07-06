@@ -6,19 +6,15 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import { DataTable } from "@/components/app/data-table";
 import {
-  DataTableFilters,
   type DataTableFilterDefinition,
+  DataTableFilters,
 } from "@/components/app/data-table-filters";
 import { DataTableHeader } from "@/components/app/data-table-header";
 import { AppIcons } from "@/components/app/icons";
 import { RowActionsMenu } from "@/components/app/row-actions-menu";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupInput,
-} from "@/components/ui/input-group";
+import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
 import {
   OrderCustomerCell,
   OrderIdentityCell,
@@ -146,7 +142,7 @@ function getOrderColumns(tenantId?: string): ColumnDef<MerchantOrder>[] {
           <RowActionsMenu
             actions={[
               { href, label: "View details", type: "link" },
-              { type: "separator" },
+              { id: "identity", type: "separator" },
               {
                 label: "Copy order ID",
                 onSelect: () => copyToClipboard(order.id),

@@ -329,20 +329,23 @@ export function ShopOnboardingForm({
       <aside className="space-y-4">
         <Card className="rounded-2xl border-border/80 bg-card/95 shadow-sm">
           <CardHeader>
-            <CardTitle className="text-base">Provisioning</CardTitle>
-            <CardDescription>Created after this step.</CardDescription>
+            <CardTitle className="text-base">What happens next</CardTitle>
+            <CardDescription>We create the workspace and storefront starter.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
-            {["Tenant shop", "Storefront draft", "Admin redirect", "Dashboard checklist"].map(
-              (item) => (
-                <div className="flex items-center gap-2 text-sm" key={item}>
-                  <span className="flex size-6 items-center justify-center rounded-full bg-primary/10 text-primary">
-                    <AppIcons.check className="size-4" />
-                  </span>
-                  {item}
-                </div>
-              ),
-            )}
+            {[
+              "Shop workspace",
+              "Storefront starting point",
+              "Secure dashboard",
+              "Launch assistant",
+            ].map((item) => (
+              <div className="flex items-center gap-2 text-sm" key={item}>
+                <span className="flex size-6 items-center justify-center rounded-full bg-primary/10 text-primary">
+                  <AppIcons.check className="size-4" />
+                </span>
+                {item}
+              </div>
+            ))}
           </CardContent>
         </Card>
 
@@ -366,9 +369,7 @@ export function ShopOnboardingForm({
         <Card className="rounded-2xl border-border/80 bg-card/95 shadow-sm">
           <CardHeader>
             <CardTitle className="text-base">After setup</CardTitle>
-            <CardDescription>
-              Payments and fulfillment finish inside the dashboard checklist.
-            </CardDescription>
+            <CardDescription>Finish payments and fulfillment from the dashboard.</CardDescription>
           </CardHeader>
         </Card>
       </aside>

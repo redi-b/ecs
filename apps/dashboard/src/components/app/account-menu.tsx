@@ -1,6 +1,7 @@
 "use client";
 
 import type { MerchantDashboardSummary } from "@ecs/contracts";
+import Link from "next/link";
 import { useState } from "react";
 
 import { AppIcons } from "@/components/app/icons";
@@ -70,7 +71,7 @@ export function AccountMenu({ actor }: { actor: MerchantDashboardSummary["actor"
             align={collapsed ? "end" : "center"}
             sideOffset={collapsed ? 10 : 16}
             collisionPadding={12}
-            className="w-56 rounded-2xl p-2"
+            className="w-56"
           >
             <DropdownMenuLabel className="px-2 py-1.5">
               <span className="block truncate text-sm font-medium text-popover-foreground">
@@ -85,18 +86,22 @@ export function AccountMenu({ actor }: { actor: MerchantDashboardSummary["actor"
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem className="rounded-xl px-2 py-2" disabled>
-                <AppIcons.user />
-                Profile
+              <DropdownMenuItem asChild>
+                <Link href="/admin/settings?tab=account">
+                  <AppIcons.user />
+                  Account
+                </Link>
               </DropdownMenuItem>
-              <DropdownMenuItem className="rounded-xl px-2 py-2" disabled>
-                <AppIcons.settings />
-                Settings
+              <DropdownMenuItem asChild>
+                <Link href="/admin/settings">
+                  <AppIcons.settings />
+                  Shop settings
+                </Link>
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <form action="/admin/sign-out" method="post">
-              <DropdownMenuItem asChild className="rounded-xl px-2 py-2">
+              <DropdownMenuItem asChild variant="destructive">
                 <button className="w-full" type="submit">
                   <AppIcons.logout />
                   Sign out

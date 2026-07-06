@@ -4,19 +4,8 @@ import Link from "next/link";
 import { PageShell } from "@/components/app/page-shell";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Empty,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyTitle,
-} from "@/components/ui/empty";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
 import { Separator } from "@/components/ui/separator";
 import { type DashboardSearchParams, getSelectedTenantId } from "@/lib/dashboard-tenant-context";
 import { getMerchantDashboardSummary } from "@/lib/merchant-dashboard";
@@ -39,7 +28,7 @@ export default async function BillingPage({ searchParams }: BillingPageProps) {
 
   return (
     <PageShell
-      description="Tenant billing status, plan information, and recent invoices from the Platform API."
+      description="Review plan details, subscription status, and recent invoices."
       title="Billing"
     >
       {!result.ok ? (
@@ -64,7 +53,10 @@ export default async function BillingPage({ searchParams }: BillingPageProps) {
               <CardDescription>{result.summary.tenant.name}</CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-3">
-              <BillingRow label="Price" value={result.summary.billing?.plan?.price ?? "Unavailable"} />
+              <BillingRow
+                label="Price"
+                value={result.summary.billing?.plan?.price ?? "Unavailable"}
+              />
               <BillingRow
                 label="Cycle"
                 value={result.summary.billing?.subscription?.billingCycle ?? "Unavailable"}
@@ -78,7 +70,10 @@ export default async function BillingPage({ searchParams }: BillingPageProps) {
                 value={result.summary.billing?.subscription?.manualPaymentState ?? "Unavailable"}
               />
               <Separator />
-              <Link className="text-sm text-muted-foreground hover:text-foreground" href={dashboardRoutes.settings}>
+              <Link
+                className="text-sm text-muted-foreground hover:text-foreground"
+                href={dashboardRoutes.settings}
+              >
                 Manage shop settings
               </Link>
             </CardContent>
@@ -87,7 +82,7 @@ export default async function BillingPage({ searchParams }: BillingPageProps) {
           <Card>
             <CardHeader>
               <CardTitle>Invoices</CardTitle>
-              <CardDescription>Recent tenant invoices and payment state.</CardDescription>
+              <CardDescription>Recent invoices and payment state.</CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-2">
               {(result.summary.billing?.invoices.length ?? 0) > 0 ? (
