@@ -1,9 +1,11 @@
-import { NextResponse, type NextRequest } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 
 import { DASHBOARD_PATH_HEADER } from "@/lib/dashboard-auth";
 
 const excludedAdminPrefixes = [
+  "/admin/onboarding",
   "/admin/sign-in",
+  "/admin/sign-up",
   "/admin/session",
   "/admin/storefront/template",
 ] as const;

@@ -1,7 +1,6 @@
-import type { ReactNode } from "react";
-import { cookies } from "next/headers";
-import { headers } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
+import type { ReactNode } from "react";
 
 import { AppHeader } from "@/components/app/app-header";
 import { AppSidebar } from "@/components/app/app-sidebar";
@@ -14,8 +13,10 @@ import {
   getDashboardAuthRedirectPath,
   getMerchantDashboardAccess,
 } from "@/lib/dashboard-auth";
+import { isCentralDashboardHost } from "@/lib/dashboard-hosts";
 import { getSelectedTenantId } from "@/lib/dashboard-tenant-context";
 import { getMerchantDashboardSummary } from "@/lib/merchant-dashboard";
+import { getPlatformOnboardingState } from "@/lib/platform-onboarding";
 import { getSidebarDefaultOpen, SIDEBAR_COOKIE_NAME } from "@/lib/sidebar-state";
 
 export default async function AdminDashboardLayout({ children }: { children: ReactNode }) {
@@ -24,12 +25,41 @@ export default async function AdminDashboardLayout({ children }: { children: Rea
   const sidebarDefaultOpen = getSidebarDefaultOpen(cookieStore.get(SIDEBAR_COOKIE_NAME)?.value);
   const currentPath = requestHeaders.get(DASHBOARD_PATH_HEADER) ?? "/admin";
   const tenantId = new URL(currentPath, "http://dashboard.local").searchParams.get("tenantId");
+  const requestHost = requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host");
+  const platformApiBaseUrl = process.env.PLATFORM_API_BASE_URL ?? "http://localhost:3000";
+
+  if (isCentralDashboardHost(requestHost)) {
+    const onboarding = await getPlatformOnboardingState({
+      cookieHeader: requestHeaders.get("cookie"),
+      platformApiBaseUrl,
+    });
+
+    if (!onboarding.ok) {
+      if (onboarding.status === 401) {
+        redirect(getDashboardAuthRedirectPath(currentPath));
+      }
+
+      return (
+        <DashboardAccessState
+          description="We could not load your account workspace. Try again in a moment."
+          title="Dashboard could not be loaded"
+        />
+      );
+    }
+
+    if (!onboarding.state.primaryTenant) {
+      redirect("/admin/onboarding");
+    }
+
+    redirect(onboarding.state.primaryTenant.dashboardUrl);
+  }
+
   const access = await getMerchantDashboardAccess({
     getSummary: () =>
       getMerchantDashboardSummary({
         cookieHeader: requestHeaders.get("cookie"),
-        platformApiBaseUrl: process.env.PLATFORM_API_BASE_URL ?? "http://localhost:3000",
-        requestHost: requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host"),
+        platformApiBaseUrl,
+        requestHost,
         tenantId: getSelectedTenantId({ tenantId: tenantId ?? undefined }),
       }),
   });

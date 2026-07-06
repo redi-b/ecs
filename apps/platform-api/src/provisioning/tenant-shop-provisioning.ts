@@ -22,12 +22,14 @@ import type {
 type PlatformDb = ReturnType<typeof createPlatformDb>["db"];
 
 type ExistingTenantShop = {
+  createdAt: Date;
   id: string;
   name: string;
   handle: string;
   status: string;
   primaryDomainHostname: string | null;
   ownerUserId: string | null;
+  updatedAt: Date;
 };
 
 type ActiveStorefrontTemplate = {
@@ -38,13 +40,16 @@ type ActiveStorefrontTemplate = {
 };
 
 type CreatedTenantShop = {
+  createdAt: string;
   id: string;
   name: string;
   handle: string;
+  role: "owner";
   status: string;
   primaryDomain: {
     hostname: string;
   };
+  updatedAt: string;
 };
 
 type TenantShopProvisionerOptions = {
@@ -67,7 +72,10 @@ type TenantShopProvisionerOptions = {
     ownerUserId: string;
     tenantId: string;
   }) => Promise<CreatedTenantShop>;
-  findActiveStorefrontTemplate: () => Promise<ActiveStorefrontTemplate | undefined>;
+  findActiveStorefrontTemplate: (input?: {
+    templateId?: string | undefined;
+    templateKey?: string | undefined;
+  }) => Promise<ActiveStorefrontTemplate | undefined>;
   findExistingTenantByHandle: (
     handle: string,
     ownerUserId: string,
@@ -96,6 +104,8 @@ type TenantShopProvisionerOptions = {
     status: string;
     step: string;
     tenantId?: string | null | undefined;
+    templateId?: string | null | undefined;
+    templateKey?: string | null | undefined;
   }) => Promise<void>;
 };
 
@@ -115,11 +125,14 @@ type TenantShopProvisioningRetryOptions = {
     name: string;
     ownerUserId: string;
     platformTenantId?: string | undefined;
+    templateId?: string | undefined;
+    templateKey?: string | undefined;
   }) => Promise<TenantShopProvisioningResult>;
   findProvisioningAttemptForRetry: (attemptId: string) => Promise<
     | {
         handle: string;
         id: string;
+        metadata: unknown;
         name: string;
         ownerUserId: string;
         platformTenantId: string;
@@ -163,6 +176,8 @@ async function recordProvisioningAttempt(
     step: string;
     name?: string | null | undefined;
     tenantId?: string | null | undefined;
+    templateId?: string | null | undefined;
+    templateKey?: string | null | undefined;
   },
 ) {
   try {
@@ -186,6 +201,8 @@ export function createTenantShopProvisioner(options: TenantShopProvisionerOption
     name: string;
     ownerUserId: string;
     platformTenantId?: string | undefined;
+    templateId?: string | undefined;
+    templateKey?: string | undefined;
   }): Promise<TenantShopProvisioningResult> {
     const handle = normalizeHandle(input.handle);
     const name = input.name.trim();
@@ -218,13 +235,16 @@ export function createTenantShopProvisioner(options: TenantShopProvisionerOption
         return {
           ok: true,
           tenant: {
+            createdAt: existingTenant.createdAt.toISOString(),
             id: existingTenant.id,
             name: existingTenant.name,
             handle: existingTenant.handle,
+            role: "owner",
             status: existingTenant.status,
             primaryDomain: {
               hostname: existingTenant.primaryDomainHostname,
             },
+            updatedAt: existingTenant.updatedAt.toISOString(),
           },
         };
       }
@@ -261,6 +281,8 @@ export function createTenantShopProvisioner(options: TenantShopProvisionerOption
         platformTenantId: tenantId,
         status: "failed",
         step: "commerce_resources",
+        ...(input.templateId ? { templateId: input.templateId } : {}),
+        ...(input.templateKey ? { templateKey: input.templateKey } : {}),
         tenantId: null,
       });
 
@@ -271,7 +293,10 @@ export function createTenantShopProvisioner(options: TenantShopProvisionerOption
       };
     }
 
-    const activeTemplate = await options.findActiveStorefrontTemplate();
+    const activeTemplate = await options.findActiveStorefrontTemplate({
+      ...(input.templateId ? { templateId: input.templateId } : {}),
+      ...(input.templateKey ? { templateKey: input.templateKey } : {}),
+    });
 
     if (!activeTemplate) {
       await recordProvisioningAttempt(options.recordProvisioningAttempt, {
@@ -282,13 +307,18 @@ export function createTenantShopProvisioner(options: TenantShopProvisionerOption
         platformTenantId: tenantId,
         status: "failed",
         step: "storefront_template",
+        ...(input.templateId ? { templateId: input.templateId } : {}),
+        ...(input.templateKey ? { templateKey: input.templateKey } : {}),
         tenantId: null,
       });
 
       return {
         ok: false,
-        error: "storefront_template_unavailable",
-        status: 503,
+        error:
+          input.templateId || input.templateKey
+            ? "template_unavailable"
+            : "storefront_template_unavailable",
+        status: input.templateId || input.templateKey ? 400 : 503,
       };
     }
 
@@ -309,6 +339,8 @@ export function createTenantShopProvisioner(options: TenantShopProvisionerOption
       platformTenantId: tenantId,
       status: "completed",
       step: "tenant_shop",
+      ...(input.templateId ? { templateId: input.templateId } : {}),
+      ...(input.templateKey ? { templateKey: input.templateKey } : {}),
       tenantId: tenant.id,
     });
 
@@ -372,10 +404,12 @@ export function createTenantShopProvisioningService(options: TenantShopProvision
             medusaShippingOptionId: commerceResources.shippingOptionId,
           })
           .returning({
+            createdAt: tenants.createdAt,
             id: tenants.id,
             name: tenants.name,
             handle: tenants.handle,
             status: tenants.status,
+            updatedAt: tenants.updatedAt,
           });
 
         const createdTenantRow = requireRow(createdTenant, "Tenant insert returned no rows.");
@@ -453,16 +487,32 @@ export function createTenantShopProvisioningService(options: TenantShopProvision
       });
 
       return {
+        createdAt: tenant.createdAt.toISOString(),
         id: tenant.id,
         name: tenant.name,
         handle: tenant.handle,
+        role: "owner",
         status: tenant.status,
         primaryDomain: {
           hostname: tenant.primaryDomain.hostname,
         },
+        updatedAt: tenant.updatedAt.toISOString(),
       };
     },
-    findActiveStorefrontTemplate: async () => {
+    findActiveStorefrontTemplate: async (input) => {
+      const filters = [
+        eq(storefrontTemplates.status, "active"),
+        eq(storefrontTemplateVersions.status, "active"),
+      ];
+
+      if (input?.templateId?.trim()) {
+        filters.push(eq(storefrontTemplates.id, input.templateId.trim()));
+      }
+
+      if (input?.templateKey?.trim()) {
+        filters.push(eq(storefrontTemplateVersions.templateKey, input.templateKey.trim()));
+      }
+
       const [activeTemplate] = await options.db
         .select({
           templateId: storefrontTemplates.id,
@@ -475,12 +525,7 @@ export function createTenantShopProvisioningService(options: TenantShopProvision
           storefrontTemplateVersions,
           eq(storefrontTemplateVersions.templateId, storefrontTemplates.id),
         )
-        .where(
-          and(
-            eq(storefrontTemplates.status, "active"),
-            eq(storefrontTemplateVersions.status, "active"),
-          ),
-        )
+        .where(and(...filters))
         .orderBy(asc(storefrontTemplates.sortOrder), desc(storefrontTemplateVersions.version))
         .limit(1);
 
@@ -489,12 +534,14 @@ export function createTenantShopProvisioningService(options: TenantShopProvision
     findExistingTenantByHandle: async (handle, ownerUserId) => {
       const [existingTenant] = await options.db
         .select({
+          createdAt: tenants.createdAt,
           id: tenants.id,
           name: tenants.name,
           handle: tenants.handle,
           status: tenants.status,
           primaryDomainHostname: domains.hostname,
           ownerUserId: tenantMemberships.userId,
+          updatedAt: tenants.updatedAt,
         })
         .from(tenants)
         .leftJoin(domains, eq(domains.id, tenants.primaryDomainId))
@@ -543,6 +590,8 @@ export function createTenantShopProvisioningService(options: TenantShopProvision
         error: input.error ?? null,
         metadata: {
           name: input.name ?? null,
+          templateId: "templateId" in input ? (input.templateId ?? null) : null,
+          templateKey: "templateKey" in input ? (input.templateKey ?? null) : null,
         },
         completedAt: new Date(),
       });
@@ -585,11 +634,16 @@ export function createTenantShopProvisioningRetryService(
       };
     }
 
+    const templateId = getRetryAttemptTemplateId(attempt.metadata);
+    const templateKey = getRetryAttemptTemplateKey(attempt.metadata);
+
     return options.createTenantShop({
       handle: attempt.handle,
       name: attempt.name,
       ownerUserId: input.userId,
       platformTenantId: attempt.platformTenantId,
+      ...(templateId ? { templateId } : {}),
+      ...(templateKey ? { templateKey } : {}),
     });
   };
 }
@@ -604,6 +658,30 @@ function getRetryAttemptName(metadata: unknown, handle: string) {
   }
 
   return handle;
+}
+
+function getRetryAttemptTemplateId(metadata: unknown) {
+  if (typeof metadata === "object" && metadata !== null && "templateId" in metadata) {
+    const templateId = (metadata as { templateId?: unknown }).templateId;
+
+    if (typeof templateId === "string" && templateId.trim()) {
+      return templateId;
+    }
+  }
+
+  return undefined;
+}
+
+function getRetryAttemptTemplateKey(metadata: unknown) {
+  if (typeof metadata === "object" && metadata !== null && "templateKey" in metadata) {
+    const templateKey = (metadata as { templateKey?: unknown }).templateKey;
+
+    if (typeof templateKey === "string" && templateKey.trim()) {
+      return templateKey;
+    }
+  }
+
+  return undefined;
 }
 
 export function createTenantShopProvisioningRetryServiceFromDb(options: {
@@ -634,6 +712,7 @@ export function createTenantShopProvisioningRetryServiceFromDb(options: {
       return {
         id: attempt.id,
         handle: attempt.handle,
+        metadata: attempt.metadata,
         name: getRetryAttemptName(attempt.metadata, attempt.handle),
         ownerUserId: attempt.ownerUserId,
         platformTenantId: attempt.platformTenantId,

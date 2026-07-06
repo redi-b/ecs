@@ -39,8 +39,7 @@ test("POST /admin/sign-out signs out through Platform auth and forwards clearing
       { success: true },
       {
         headers: {
-          "set-cookie":
-            "better-auth.session_token=; Max-Age=0; Path=/; HttpOnly; SameSite=Lax",
+          "set-cookie": "better-auth.session_token=; Max-Age=0; Path=/; HttpOnly; SameSite=Lax",
         },
       },
     );
@@ -59,9 +58,23 @@ test("POST /admin/sign-out signs out through Platform auth and forwards clearing
 
   assert.equal(response.status, 303);
   assert.equal(response.headers.get("location"), "http://abebe.lvh.me/admin/sign-in");
-  assert.equal(
-    response.headers.get("set-cookie"),
-    "better-auth.session_token=; Max-Age=0; Path=/; HttpOnly; SameSite=Lax",
+  const setCookie = response.headers.get("set-cookie") ?? "";
+
+  assert.match(
+    setCookie,
+    /better-auth\.session_token=; Max-Age=0; HttpOnly; SameSite=Lax; Domain=\.lvh\.me; Path=\//,
+  );
+  assert.match(
+    setCookie,
+    /better-auth\.session_token=; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly; SameSite=Lax; Domain=\.lvh\.me; Path=\//,
+  );
+  assert.match(
+    setCookie,
+    /__Secure-better-auth\.session_token=; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly; SameSite=Lax; Domain=\.lvh\.me; Path=\//,
+  );
+  assert.notEqual(
+    setCookie,
+    "better-auth.session_token=; Max-Age=0; HttpOnly; SameSite=Lax; Domain=.lvh.me; Path=/",
   );
   assert.equal(forwardedRequest?.method, "POST");
   assert.equal(forwardedRequest?.url, "http://platform.test/platform/auth/sign-out");

@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 
+import { getSharedAuthCookie, getSharedAuthCookieClears } from "@/lib/auth-cookies";
+
 export async function POST(request: Request) {
   const signOutResult = await signOutWithPlatformAuth({
     cookieHeader: request.headers.get("cookie"),
@@ -11,6 +13,10 @@ export async function POST(request: Request) {
   });
 
   for (const cookie of signOutResult.cookies) {
+    response.headers.append("set-cookie", getSharedAuthCookie(cookie));
+  }
+
+  for (const cookie of getSharedAuthCookieClears()) {
     response.headers.append("set-cookie", cookie);
   }
 

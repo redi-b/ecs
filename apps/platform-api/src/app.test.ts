@@ -27,6 +27,7 @@ import type {
   PaymentOnboardingListResult,
   PaymentOnboardingReviewResult,
   PaymentOnboardingSubmitResult,
+  PlatformOnboardingStateResult,
   PlatformSession,
   PublishedStorefrontConfigResult,
   StorefrontDraftResult,
@@ -42,12 +43,14 @@ import type {
   TenantDomainCreateResult,
   TenantDomainListResult,
   TenantDomainPrimaryResult,
+  TenantHandleAvailabilityResult,
   TenantInsightsSummaryResult,
   TenantListResult,
   TenantOnboardingResult,
   TenantProvisioningAttemptListResult,
   TenantReadinessResult,
   TenantShopProvisioningResult,
+  TenantShopSettingsUpdateResult,
   TenantStatusUpdateResult,
 } from "./app.js";
 import { createPlatformApp } from "./app.js";
@@ -67,6 +70,7 @@ const resolvedTenantContext: TenantContext = {
   medusaRegionId: "reg_1",
   publishedRevisionId: "revision_1",
   templateId: "template_1",
+  templateKey: "classic@1",
   templateVersion: 1,
 };
 
@@ -140,7 +144,12 @@ function appWithResolution(
       handle: string;
       name: string;
       ownerUserId: string;
+      templateId?: string | undefined;
+      templateKey?: string | undefined;
     }) => Promise<TenantShopProvisioningResult>;
+    checkTenantHandleAvailability?: (input: {
+      handle: string;
+    }) => Promise<TenantHandleAvailabilityResult>;
     createTenantDomain?: (input: {
       hostname: string;
       tenantId: string;
@@ -170,6 +179,12 @@ function appWithResolution(
     }) => Promise<BillingInvoiceUpdateResult>;
     getTenantOnboarding?: (input: { tenantId: string }) => Promise<TenantOnboardingResult>;
     getTenantForUser?: (input: { tenantId: string; userId: string }) => Promise<TenantDetailResult>;
+    updateTenantShopSettings?: (input: {
+      handle: string;
+      name: string;
+      tenantId: string;
+      userId: string;
+    }) => Promise<TenantShopSettingsUpdateResult>;
     getTenantInsightsSummary?: (input: {
       days: number;
       tenantId: string;
@@ -202,6 +217,7 @@ function appWithResolution(
       tenantId: string;
     }) => Promise<TenantDashboardSummaryResult>;
     getTenantReadiness?: (input: { tenantId: string }) => Promise<TenantReadinessResult>;
+    getOnboardingState?: (input: { userId: string }) => Promise<PlatformOnboardingStateResult>;
     listTenantsForUser?: (input: {
       limit: number;
       offset: number;
@@ -330,6 +346,7 @@ function appWithResolution(
   return createPlatformApp({
     authHandler: options?.authHandler,
     authorizeDashboardForTenant: options?.authorizeDashboardForTenant,
+    checkTenantHandleAvailability: options?.checkTenantHandleAvailability,
     createMerchantProduct: options?.createMerchantProduct,
     createMerchantProductCategory: options?.createMerchantProductCategory,
     createMerchantProductCollection: options?.createMerchantProductCollection,
@@ -346,10 +363,12 @@ function appWithResolution(
     getMerchantProduct: options?.getMerchantProduct,
     getMerchantProductStock: options?.getMerchantProductStock,
     getTenantForUser: options?.getTenantForUser,
+    updateTenantShopSettings: options?.updateTenantShopSettings,
     getTenantCommerceContext: options?.getTenantCommerceContext,
     getTenantDashboardSummary: options?.getTenantDashboardSummary,
     getTenantInsightsSummary: options?.getTenantInsightsSummary,
     getTenantReadiness: options?.getTenantReadiness,
+    getOnboardingState: options?.getOnboardingState,
     getTenantOnboarding: options?.getTenantOnboarding,
     getSession: options?.getSession,
     listMerchantProducts: options?.listMerchantProducts,
@@ -709,6 +728,86 @@ describe("platform app", () => {
       count: 1,
       limit: 5,
       offset: 10,
+    });
+  });
+
+  it("returns onboarding state for the current platform user", async () => {
+    let stateInput: { userId: string } | undefined;
+    const app = appWithResolution(
+      { ok: false, error: "shop_context_required" },
+      {
+        getSession: async () => ({
+          user: {
+            id: "user_1",
+            email: "owner@abebe.local",
+            name: "Abebe Owner",
+          },
+        }),
+        getOnboardingState: async (input) => {
+          stateInput = input;
+
+          return {
+            ok: true,
+            state: {
+              user: {
+                id: "user_1",
+                email: "owner@abebe.local",
+                name: "Abebe Owner",
+              },
+              tenants: [],
+              primaryTenant: null,
+              latestProvisioningAttempt: null,
+            },
+          };
+        },
+      },
+    );
+
+    const response = await app.request("/platform/onboarding/state");
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(stateInput, {
+      userId: "user_1",
+    });
+    assert.deepEqual(await response.json(), {
+      user: {
+        id: "user_1",
+        email: "owner@abebe.local",
+        name: "Abebe Owner",
+      },
+      tenants: [],
+      primaryTenant: null,
+      latestProvisioningAttempt: null,
+    });
+  });
+
+  it("checks tenant handle availability", async () => {
+    let availabilityInput: { handle: string } | undefined;
+    const app = appWithResolution(
+      { ok: false, error: "shop_context_required" },
+      {
+        checkTenantHandleAvailability: async (input) => {
+          availabilityInput = input;
+
+          return {
+            handle: "new-shop",
+            available: true,
+            hostname: "new-shop.lvh.me",
+          };
+        },
+      },
+    );
+
+    const response = await app.request("/platform/tenants/handle-availability?handle=new-shop");
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(availabilityInput, {
+      handle: "new-shop",
+    });
+    assert.deepEqual(await response.json(), {
+      handle: "new-shop",
+      available: true,
+      hostname: "new-shop.lvh.me",
     });
   });
 
@@ -1115,18 +1214,22 @@ describe("platform app", () => {
             name: "New Shop",
             handle: "new-shop",
             ownerUserId: "user_1",
+            templateKey: "classic@1",
           });
 
           return {
             ok: true,
             tenant: {
+              createdAt: "2026-07-06T08:00:00.000Z",
               id: "tenant_2",
               name: "New Shop",
               handle: "new-shop",
+              role: "owner",
               status: "draft",
               primaryDomain: {
                 hostname: "new-shop.lvh.me",
               },
+              updatedAt: "2026-07-06T08:00:00.000Z",
             },
           };
         },
@@ -1138,6 +1241,7 @@ describe("platform app", () => {
       body: JSON.stringify({
         name: "New Shop",
         handle: "new-shop",
+        templateKey: "classic@1",
       }),
       headers: {
         "content-type": "application/json",
@@ -1146,14 +1250,18 @@ describe("platform app", () => {
 
     assert.equal(response.status, 201);
     assert.deepEqual(await response.json(), {
+      redirectTo: "http://new-shop.lvh.me/admin",
       tenant: {
+        createdAt: "2026-07-06T08:00:00.000Z",
         id: "tenant_2",
         name: "New Shop",
         handle: "new-shop",
+        role: "owner",
         status: "draft",
         primaryDomain: {
           hostname: "new-shop.lvh.me",
         },
+        updatedAt: "2026-07-06T08:00:00.000Z",
       },
     });
   });
@@ -2900,7 +3008,60 @@ describe("platform app", () => {
         isPublished: true,
         publishedRevisionId: "revision_1",
         templateId: "template_1",
+        templateKey: "classic@1",
         templateVersion: 1,
+      },
+      operations: {
+        range: {
+          label: "Recent orders",
+          days: 90,
+          sampledOrderCount: 0,
+        },
+        totals: {
+          revenue: 0,
+          orders: null,
+          products: null,
+          customers: null,
+          currencyCode: null,
+        },
+        attention: {
+          unfulfilledOrders: null,
+          unpaidOrders: null,
+          draftProducts: null,
+        },
+        customers: {
+          unique: null,
+          repeat: null,
+        },
+        breakdowns: {
+          orderStatus: [],
+          paymentStatus: [],
+          fulfillmentStatus: [],
+        },
+        series: [],
+        recentOrders: [],
+        unavailable: ["orders", "products"],
+      },
+      analytics: {
+        range: {
+          days: 30,
+          from: "1970-01-01T00:00:00.000Z",
+          to: "1970-01-01T00:00:00.000Z",
+        },
+        totals: {
+          events: 0,
+          storefrontEvents: 0,
+          platformEvents: 0,
+          medusaEvents: 0,
+        },
+        topEvents: [],
+        unavailable: true,
+      },
+      billing: {
+        subscription: null,
+        plan: null,
+        invoices: [],
+        unavailable: true,
       },
     });
   });
@@ -2956,6 +3117,7 @@ describe("platform app", () => {
                 isPublished: true,
                 publishedRevisionId: "revision_1",
                 templateId: "template_1",
+                templateKey: "classic@1",
                 templateVersion: 1,
               },
             },
@@ -3000,7 +3162,97 @@ describe("platform app", () => {
         isPublished: true,
         publishedRevisionId: "revision_1",
         templateId: "template_1",
+        templateKey: "classic@1",
         templateVersion: 1,
+      },
+    });
+  });
+
+  it("updates merchant shop settings for the resolved tenant", async () => {
+    let settingsInput:
+      | {
+          handle: string;
+          name: string;
+          tenantId: string;
+          userId: string;
+        }
+      | undefined;
+    const app = appWithResolution(
+      {
+        ok: true,
+        context: resolvedTenantContext,
+      },
+      {
+        authorizeDashboardForTenant: async () => ({
+          ok: true,
+          actor: {
+            id: "user_1",
+            email: "owner@abebe.local",
+            name: "Abebe Owner",
+            role: "owner",
+          },
+        }),
+        getSession: async () => ({
+          user: {
+            id: "user_1",
+            email: "owner@abebe.local",
+            name: "Abebe Owner",
+          },
+        }),
+        updateTenantShopSettings: async (input) => {
+          settingsInput = input;
+
+          return {
+            ok: true,
+            redirectTo: "//new-abebe.lvh.me/admin/settings",
+            tenant: {
+              id: "tenant_1",
+              name: input.name,
+              handle: input.handle,
+              status: "active",
+              role: "owner",
+              primaryDomain: {
+                hostname: "new-abebe.lvh.me",
+              },
+              createdAt: "2026-01-01T00:00:00.000Z",
+              updatedAt: "2026-01-02T00:00:00.000Z",
+            },
+          };
+        },
+      },
+    );
+
+    const response = await app.request("/platform/merchant/settings", {
+      headers: {
+        Host: "abebe.lvh.me",
+      },
+      body: JSON.stringify({
+        name: "New Abebe Market",
+        handle: "new-abebe",
+      }),
+      method: "POST",
+    });
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(settingsInput, {
+      handle: "new-abebe",
+      name: "New Abebe Market",
+      tenantId: "tenant_1",
+      userId: "user_1",
+    });
+    assert.deepEqual(await response.json(), {
+      redirectTo: "//new-abebe.lvh.me/admin/settings",
+      tenant: {
+        id: "tenant_1",
+        name: "New Abebe Market",
+        handle: "new-abebe",
+        status: "active",
+        role: "owner",
+        primaryDomain: {
+          hostname: "new-abebe.lvh.me",
+        },
+        createdAt: "2026-01-01T00:00:00.000Z",
+        updatedAt: "2026-01-02T00:00:00.000Z",
       },
     });
   });
@@ -3165,13 +3417,16 @@ describe("platform app", () => {
           return {
             ok: true,
             tenant: {
+              createdAt: "2026-07-06T08:00:00.000Z",
               id: "tenant_2",
               name: "Retry Shop",
               handle: "retry-shop",
+              role: "owner",
               status: "draft",
               primaryDomain: {
                 hostname: "retry-shop.lvh.me",
               },
+              updatedAt: "2026-07-06T08:00:00.000Z",
             },
           };
         },
@@ -3192,13 +3447,16 @@ describe("platform app", () => {
     });
     assert.deepEqual(await response.json(), {
       tenant: {
+        createdAt: "2026-07-06T08:00:00.000Z",
         id: "tenant_2",
         name: "Retry Shop",
         handle: "retry-shop",
+        role: "owner",
         status: "draft",
         primaryDomain: {
           hostname: "retry-shop.lvh.me",
         },
+        updatedAt: "2026-07-06T08:00:00.000Z",
       },
     });
   });

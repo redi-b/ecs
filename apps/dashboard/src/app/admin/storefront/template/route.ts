@@ -7,13 +7,15 @@ export async function POST(request: Request) {
   const formData = await request.formData();
   const tenantId = formData.get("tenantId");
   const templateKey = formData.get("templateKey");
+  const returnTo = formData.get("returnTo");
+  const safeReturnTo = typeof returnTo === "string" ? getSafeReturnTo(returnTo) : "/admin";
 
   if (typeof tenantId !== "string" || !tenantId.trim()) {
-    return redirectToAdmin(request, "missing_tenant");
+    return redirectToAdmin(request, "missing_tenant", null, safeReturnTo);
   }
 
   if (typeof templateKey !== "string" || !templateKey.trim()) {
-    return redirectToAdmin(request, "missing_template", tenantId);
+    return redirectToAdmin(request, "missing_template", tenantId, safeReturnTo);
   }
 
   const cookieStore = await cookies();
@@ -25,14 +27,19 @@ export async function POST(request: Request) {
   });
 
   if (!result.ok) {
-    return redirectToAdmin(request, result.message, tenantId);
+    return redirectToAdmin(request, result.message, tenantId, safeReturnTo);
   }
 
-  return redirectToAdmin(request, "template_selected", tenantId);
+  return redirectToAdmin(request, "template_selected", tenantId, safeReturnTo);
 }
 
-function redirectToAdmin(request: Request, status: string, tenantId?: string | null) {
-  const url = new URL("/admin", getRequestOrigin(request));
+function redirectToAdmin(
+  request: Request,
+  status: string,
+  tenantId?: string | null,
+  path = "/admin",
+) {
+  const url = new URL(path, getRequestOrigin(request));
 
   url.searchParams.set("templateStatus", status);
 
@@ -41,6 +48,18 @@ function redirectToAdmin(request: Request, status: string, tenantId?: string | n
   }
 
   return NextResponse.redirect(url, { status: 303 });
+}
+
+function getSafeReturnTo(value: string) {
+  if (!value.startsWith("/admin")) {
+    return "/admin";
+  }
+
+  if (value.startsWith("//") || value.includes("://")) {
+    return "/admin";
+  }
+
+  return value;
 }
 
 function getRequestOrigin(request: Request) {

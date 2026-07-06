@@ -18,7 +18,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "ECS Dashboard",
-  description: "Merchant dashboard for ECS commerce operations",
+  description: "Merchant console for commerce operations",
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

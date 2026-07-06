@@ -1,6 +1,6 @@
 import type { createPlatformDb } from "@ecs/db";
-import { domains, storefrontConfigs, storefrontRevisions, tenants } from "@ecs/db";
-import { eq } from "drizzle-orm";
+import { domains, storefrontConfigs, storefrontTemplateVersions, tenants } from "@ecs/db";
+import { and, eq } from "drizzle-orm";
 
 import type { TenantDomainRecord } from "./tenant-resolver.js";
 
@@ -26,15 +26,19 @@ export function createDomainTenantLookup(db: PlatformDb) {
         medusaPublishableKeyId: tenants.medusaPublishableKeyId,
         medusaRegionId: tenants.medusaRegionId,
         publishedRevisionId: storefrontConfigs.publishedRevisionId,
-        templateId: storefrontRevisions.templateId,
-        templateVersion: storefrontRevisions.templateVersion,
+        templateId: storefrontConfigs.draftTemplateId,
+        templateKey: storefrontTemplateVersions.templateKey,
+        templateVersion: storefrontConfigs.draftTemplateVersion,
       })
       .from(domains)
       .innerJoin(tenants, eq(domains.tenantId, tenants.id))
       .leftJoin(storefrontConfigs, eq(storefrontConfigs.tenantId, tenants.id))
       .leftJoin(
-        storefrontRevisions,
-        eq(storefrontConfigs.publishedRevisionId, storefrontRevisions.id),
+        storefrontTemplateVersions,
+        and(
+          eq(storefrontTemplateVersions.templateId, storefrontConfigs.draftTemplateId),
+          eq(storefrontTemplateVersions.version, storefrontConfigs.draftTemplateVersion),
+        ),
       )
       .where(eq(domains.hostname, hostname))
       .limit(1);

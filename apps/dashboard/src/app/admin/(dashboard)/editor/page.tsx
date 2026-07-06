@@ -12,7 +12,7 @@ import {
 export default function StorefrontEditorPage() {
   return (
     <PageShell
-      description="Storefront editing will manage templates, pages, theme settings, and publish history once the storefront draft API is ready."
+      description="Edit storefront content, theme, and publishing."
       title="Editor"
     >
       <Empty className="min-h-96 border">
@@ -20,10 +20,9 @@ export default function StorefrontEditorPage() {
           <EmptyMedia variant="icon">
             <RiLayoutMasonryLine />
           </EmptyMedia>
-          <EmptyTitle>No editor integration yet</EmptyTitle>
+          <EmptyTitle>Storefront editor is coming soon</EmptyTitle>
           <EmptyDescription>
-            This route exists for navigation and shell validation. It does not edit storefront
-            content yet.
+            Storefront changes will be managed here.
           </EmptyDescription>
         </EmptyHeader>
       </Empty>

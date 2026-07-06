@@ -20,6 +20,7 @@ const activePublishedRecord: TenantDomainRecord = {
   medusaRegionId: "reg_1",
   publishedRevisionId: "revision_1",
   templateId: "template_1",
+  templateKey: "classic@1",
   templateVersion: 1,
 };
 
@@ -85,13 +86,32 @@ describe("resolveTenantFromHost", () => {
     assert.deepEqual(result, { ok: false, error: "shop_suspended" });
   });
 
-  it("blocks active tenants without a published storefront revision", async () => {
+  it("resolves active tenants without a published storefront revision", async () => {
     const result = await resolverFor({
       ...activePublishedRecord,
       publishedRevisionId: null,
     });
 
-    assert.deepEqual(result, { ok: false, error: "shop_unpublished" });
+    assert.equal(result.ok, true);
+
+    if (result.ok) {
+      assert.equal(result.context.publishedRevisionId, null);
+    }
+  });
+
+  it("resolves draft tenants for merchant admin access", async () => {
+    const result = await resolverFor({
+      ...activePublishedRecord,
+      tenantStatus: "draft",
+      publishedRevisionId: null,
+    });
+
+    assert.equal(result.ok, true);
+
+    if (result.ok) {
+      assert.equal(result.context.status, "draft");
+      assert.equal(result.context.publishedRevisionId, null);
+    }
   });
 
   it("returns tenant context for an active verified published shop", async () => {
@@ -113,6 +133,7 @@ describe("resolveTenantFromHost", () => {
         medusaRegionId: "reg_1",
         publishedRevisionId: "revision_1",
         templateId: "template_1",
+        templateKey: "classic@1",
         templateVersion: 1,
       },
     });
