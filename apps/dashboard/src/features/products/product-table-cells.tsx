@@ -1,0 +1,104 @@
+"use client";
+
+import type { MerchantProduct } from "@ecs/contracts";
+import Link from "next/link";
+
+import { AppIcons } from "@/components/app/icons";
+import { Badge } from "@/components/ui/badge";
+import {
+  getProductMediaCount,
+  getProductThumbnail,
+  normalizeProductStatus,
+} from "@/features/products/product-table-state";
+import { getTenantScopedPath } from "@/lib/dashboard-tenant-context";
+import { dashboardRoutes } from "@/lib/routes";
+
+export function ProductIdentityCell({
+  product,
+  tenantId,
+}: {
+  product: MerchantProduct;
+  tenantId?: string | undefined;
+}) {
+  const href = getTenantScopedPath(dashboardRoutes.productDetail(product.id), tenantId);
+
+  return (
+    <div className="flex min-w-72 items-center gap-3">
+      <ProductMediaCell product={product} />
+      <div className="flex min-w-0 flex-col gap-1">
+        <Link
+          className="truncate font-medium text-foreground transition-colors hover:text-primary"
+          href={href}
+        >
+          {product.title ?? "Untitled product"}
+        </Link>
+        <span className="truncate text-xs text-muted-foreground">
+          {product.handle ? `/${product.handle}` : product.id}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+export function ProductMediaCell({ product }: { product: MerchantProduct }) {
+  const thumbnail = getProductThumbnail(product);
+
+  if (thumbnail.kind === "image") {
+    return (
+      <div className="grid size-11 shrink-0 place-items-center overflow-hidden rounded-2xl border bg-muted/40">
+        <img alt="" className="size-full object-cover" src={thumbnail.url} />
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid size-11 shrink-0 place-items-center rounded-2xl border bg-muted/70 text-xs font-semibold text-muted-foreground ring-1 ring-border/60 dark:bg-muted/40">
+      {thumbnail.initials || <AppIcons.image data-icon="inline-start" />}
+    </div>
+  );
+}
+
+export function ProductStatusBadge({ status }: { status: string | null }) {
+  const normalized = normalizeProductStatus(status);
+  const variant =
+    normalized === "published" ? "default" : normalized === "draft" ? "secondary" : "outline";
+
+  return (
+    <Badge className="rounded-full px-2.5 capitalize" variant={variant}>
+      {normalized.replaceAll("_", " ")}
+    </Badge>
+  );
+}
+
+export function ProductMediaSignal({ product }: { product: MerchantProduct }) {
+  const count = getProductMediaCount(product);
+
+  return (
+    <span className="text-muted-foreground">
+      {count ? `${count} asset${count === 1 ? "" : "s"}` : "No media"}
+    </span>
+  );
+}
+
+export function formatProductDate(value: string | null) {
+  if (!value) {
+    return "Never";
+  }
+
+  return new Intl.DateTimeFormat("en", {
+    dateStyle: "medium",
+    timeZone: "UTC",
+  }).format(new Date(value));
+}
+
+export function formatProductFirstPrice(product: MerchantProduct) {
+  const price = product.variants
+    ?.flatMap((variant) => variant.prices)
+    .find((variantPrice) => typeof variantPrice.amount === "number" && variantPrice.currencyCode);
+
+  if (!price || typeof price.amount !== "number" || !price.currencyCode) {
+    return "No price";
+  }
+
+  return `${price.currencyCode.toUpperCase()} ${price.amount}`;
+}

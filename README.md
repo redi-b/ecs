@@ -64,6 +64,14 @@ Start infrastructure only:
 pnpm dev:infra
 ```
 
+If another PostgreSQL server is already using port `5432`, use a different local port:
+
+```bash
+POSTGRES_HOST_PORT=5433 pnpm dev:infra
+```
+
+When using a different PostgreSQL port, update the local database URLs in `.env`, `apps/platform-api/.env`, and `apps/medusa/.env` to use the same port.
+
 Run migrations:
 
 ```bash
@@ -71,16 +79,42 @@ pnpm db:migrate
 pnpm medusa:migrate
 ```
 
+Seed Medusa first:
+
+```bash
+pnpm --filter @ecs/medusa seed
+```
+
+The Medusa seed prints a local Admin API token. Keep that token in your local shell or local env file as `MEDUSA_ADMIN_API_TOKEN`. Do not commit it.
+
+Seed platform data:
+
+```bash
+pnpm seed
+```
+
 Start app processes after infrastructure is ready:
 
 ```bash
-pnpm dev:apps
+MEDUSA_ADMIN_API_TOKEN=<token-from-medusa-seed> pnpm dev:apps
+```
+
+Start app processes with grouped logs:
+
+```bash
+MEDUSA_ADMIN_API_TOKEN=<token-from-medusa-seed> pnpm dev:apps:grouped
 ```
 
 Run the full local startup flow:
 
 ```bash
-pnpm dev
+MEDUSA_ADMIN_API_TOKEN=<token-from-medusa-seed> pnpm dev
+```
+
+Run the full local startup flow with grouped logs:
+
+```bash
+MEDUSA_ADMIN_API_TOKEN=<token-from-medusa-seed> pnpm dev:grouped
 ```
 
 Stop local infrastructure:
@@ -107,7 +141,19 @@ pnpm db:generate
 pnpm db:migrate
 pnpm medusa:migrate
 pnpm seed
+pnpm smoke:commerce
 ```
+
+`pnpm smoke:commerce` signs in with the seeded owner account, creates a tenant, creates a category, creates a collection, creates a product, reads product detail, and reads stock. It expects the platform API and Medusa to already be running.
+
+The smoke script uses these defaults:
+
+- `PLATFORM_API_URL=http://localhost:3000`
+- `PLATFORM_ORIGIN=http://dashboard.lvh.me`
+- `SMOKE_OWNER_EMAIL=owner@abebe.local`
+- `SMOKE_OWNER_PASSWORD=password1234`
+
+Override those values in the shell if your local setup is different.
 
 ## Medusa
 
@@ -117,13 +163,30 @@ Useful commands:
 
 ```bash
 pnpm --filter @ecs/medusa dev
+pnpm --filter @ecs/medusa dev:server
 pnpm --filter @ecs/medusa dev:worker
 pnpm --filter @ecs/medusa db:generate
 pnpm --filter @ecs/medusa db:migrate
 pnpm --filter @ecs/medusa seed
 ```
 
-The API process runs with `WORKER_MODE=server`. The worker process runs with `WORKER_MODE=worker`. Local shared mode is available through `WORKER_MODE=shared`.
+Local development runs Medusa in shared mode by default. Shared mode runs the Medusa server and worker in one process, which avoids local port conflicts and is enough for normal development.
+
+Split Medusa mode is still available when needed:
+
+```bash
+pnpm dev:apps:split-medusa
+```
+
+In split mode, the Medusa server uses port `9000` and the Medusa worker uses port `9001`.
+
+The local event bus and in-memory locking warnings from Medusa are expected in development. They should be replaced with production services before deployment.
+
+## Commerce MVP Scope
+
+The platform API supports tenant-scoped catalog, stock, checkout, payment, and order operations through Medusa.
+
+Product stock management currently supports single-variant products. If a product has multiple variants, stock read and update endpoints return `product_variant_unsupported` instead of choosing a variant automatically. Variant-level inventory management should be added before enabling multi-variant product editing in the dashboard.
 
 ## Project Rules
 

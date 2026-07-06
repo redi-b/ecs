@@ -6,4 +6,9 @@ export default defineConfig({
     mode: "standalone",
   }),
   output: "server",
+  vite: {
+    server: {
+      allowedHosts: [".lvh.me"],
+    },
+  },
 });
