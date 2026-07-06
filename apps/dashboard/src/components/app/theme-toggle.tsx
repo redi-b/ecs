@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 
 import { AppIcons } from "@/components/app/icons";
 import { Button } from "@/components/ui/button";
+import { setSharedThemeCookie } from "@/lib/shared-theme";
 import { changeThemeWithTransition } from "@/lib/theme-transition";
 
 export function ThemeToggle() {
@@ -20,7 +21,10 @@ export function ThemeToggle() {
   const Icon = isDark ? AppIcons.sun : AppIcons.moon;
 
   function toggleTheme(event: MouseEvent<HTMLButtonElement>) {
-    changeThemeWithTransition(setTheme, isDark ? "light" : "dark", event);
+    const nextTheme = isDark ? "light" : "dark";
+
+    setSharedThemeCookie(nextTheme);
+    changeThemeWithTransition(setTheme, nextTheme, event);
   }
 
   return (
