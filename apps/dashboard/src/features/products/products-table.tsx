@@ -1,12 +1,19 @@
 "use client";
 
 import type { MerchantProduct } from "@ecs/contracts";
-import type { ColumnDef } from "@tanstack/react-table";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import type { ColumnDef } from "@tanstack/react-table";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-
+import { DataTable } from "@/components/app/data-table";
+import {
+  type DataTableFilterDefinition,
+  DataTableFilters,
+} from "@/components/app/data-table-filters";
+import { DataTableHeader } from "@/components/app/data-table-header";
+import { AppIcons } from "@/components/app/icons";
+import { RowActionsMenu } from "@/components/app/row-actions-menu";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -17,22 +24,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-
-import { DataTable } from "@/components/app/data-table";
-import {
-  DataTableFilters,
-  type DataTableFilterDefinition,
-} from "@/components/app/data-table-filters";
-import { DataTableHeader } from "@/components/app/data-table-header";
-import { AppIcons } from "@/components/app/icons";
-import { RowActionsMenu } from "@/components/app/row-actions-menu";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupInput,
-} from "@/components/ui/input-group";
+import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
 import {
   formatProductDate,
   formatProductFirstPrice,
@@ -107,7 +101,9 @@ function getProductColumns(
     {
       accessorKey: "title",
       header: ({ column }) => <DataTableHeader column={column} title="Product" />,
-      cell: ({ row }) => <ProductIdentityCell product={row.original} tenantId={tenantId ?? undefined} />,
+      cell: ({ row }) => (
+        <ProductIdentityCell product={row.original} tenantId={tenantId ?? undefined} />
+      ),
     },
     {
       accessorKey: "status",
@@ -153,7 +149,7 @@ function getProductColumns(
           <RowActionsMenu
             actions={[
               { href, label: "View details", type: "link" },
-              { type: "separator" },
+              { id: "identity", type: "separator" },
               {
                 label: "Copy product ID",
                 onSelect: () => copyToClipboard(product.id),
@@ -165,7 +161,7 @@ function getProductColumns(
                 onSelect: () => copyToClipboard(product.handle ?? ""),
                 type: "button",
               },
-              { type: "separator" },
+              { id: "danger", type: "separator" },
               {
                 label: "Delete product",
                 onSelect: () => onDelete(product.id),
@@ -191,7 +187,11 @@ function getDeletionErrorMessage(error: unknown, resourceName: string) {
   if (code === "commerce_credentials_missing" || code === "commerce_credentials_invalid") {
     return "Catalog changes are temporarily unavailable. Contact support.";
   }
-  if (code === "product_not_found" || code === "category_not_found" || code === "collection_not_found") {
+  if (
+    code === "product_not_found" ||
+    code === "category_not_found" ||
+    code === "collection_not_found"
+  ) {
     return `${resourceName} not found.`;
   }
   return `Failed to delete ${resourceName.toLowerCase()}. Try again.`;
@@ -410,8 +410,8 @@ export function ProductsTable({
           <AlertDialogHeader>
             <AlertDialogTitle>Delete product</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete &ldquo;{productToDelete?.title || "this product"}&rdquo;?
-              This action cannot be undone.
+              Are you sure you want to delete &ldquo;{productToDelete?.title || "this product"}
+              &rdquo;? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -435,8 +435,8 @@ export function ProductsTable({
           <AlertDialogHeader>
             <AlertDialogTitle>Delete products</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete {selectedProductIdsForDelete.length} selected products?
-              This action cannot be undone.
+              Are you sure you want to delete {selectedProductIdsForDelete.length} selected
+              products? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

@@ -74,7 +74,7 @@ export default async function AdminDashboardLayout({ children }: { children: Rea
         <DashboardAccessState
           actionHref="/admin/sign-in"
           actionLabel="Use another account"
-          description="This account is signed in, but it does not have access to this merchant dashboard."
+          description="This account does not have access to this shop."
           title="Dashboard access denied"
         />
       );
@@ -82,7 +82,7 @@ export default async function AdminDashboardLayout({ children }: { children: Rea
 
     return (
       <DashboardAccessState
-        description="The dashboard could not reach the Platform API. Start the local Platform API or try again when the service is available."
+        description="We could not load this dashboard. Try again in a moment."
         title="Dashboard temporarily unavailable"
       />
     );

@@ -6,64 +6,57 @@ import { getListErrorState } from "./list-error-state.js";
 describe("getListErrorState", () => {
   it("maps missing commerce credentials to a setup state", () => {
     assert.deepEqual(getListErrorState("products", "commerce_credentials_missing"), {
-      description:
-        "Start Platform API with MEDUSA_ADMIN_API_TOKEN from the Medusa seed before loading live product data.",
+      description: "Product data is not ready yet. Check the shop setup or contact support.",
       kind: "setup",
-      title: "Medusa admin token is not configured",
+      title: "Commerce connection needs attention",
     });
   });
 
   it("maps invalid commerce credentials to a setup state", () => {
     assert.deepEqual(getListErrorState("products", "commerce_credentials_invalid"), {
-      description:
-        "Medusa rejected the configured MEDUSA_ADMIN_API_TOKEN. Re-run the Medusa seed for the active Medusa database, copy the new secret token into Platform API, restart Platform API, then reload products.",
+      description: "Products are temporarily unavailable. Check the shop setup or contact support.",
       kind: "setup",
-      title: "Medusa admin token is invalid",
+      title: "Commerce connection needs attention",
     });
   });
 
   it("maps missing sales channel configuration to a setup state", () => {
     assert.deepEqual(getListErrorState("products", "commerce_sales_channel_unavailable"), {
-      description:
-        "This tenant is missing its Medusa sales channel mapping. Re-run provisioning or seed data, then reload products.",
+      description: "Products will appear after sales setup is complete.",
       kind: "setup",
-      title: "Product sales channel is not configured",
+      title: "Product channel is not ready",
     });
   });
 
   it("maps missing region configuration to a setup state", () => {
     assert.deepEqual(getListErrorState("products", "commerce_region_unavailable"), {
-      description:
-        "This tenant is missing its Medusa region mapping. Re-run provisioning or seed data, then reload products.",
+      description: "Products will appear after regional checkout setup is complete.",
       kind: "setup",
-      title: "Commerce region is not configured",
+      title: "Shop region is not ready",
     });
   });
 
   it("maps missing commerce resources to a setup state", () => {
     assert.deepEqual(getListErrorState("products", "commerce_resource_missing"), {
-      description:
-        "The tenant has Medusa resource IDs, but Medusa did not return the expected resources. Re-run local commerce provisioning or seed data.",
+      description: "Some shop resources are not ready yet. Try again or contact support.",
       kind: "setup",
-      title: "Commerce resources are out of sync",
+      title: "Commerce setup needs attention",
     });
   });
 
   it("maps commerce backend failures to a service state", () => {
     assert.deepEqual(getListErrorState("orders", "commerce_backend_unavailable"), {
-      description:
-        "The commerce backend could not be reached. Start Medusa or check the commerce service connection, then reload orders.",
+      description: "We could not load orders. Try again in a moment.",
       kind: "service",
-      title: "Commerce backend is unavailable",
+      title: "Commerce service is temporarily unavailable",
     });
   });
 
   it("maps platform request failures to a service state", () => {
     assert.deepEqual(getListErrorState("products", "platform_request_failed"), {
-      description:
-        "The dashboard could not reach Platform API. Start the API service, then reload products.",
+      description: "We could not load products. Try again in a moment.",
       kind: "service",
-      title: "Platform API is unavailable",
+      title: "Dashboard service is temporarily unavailable",
     });
   });
 
