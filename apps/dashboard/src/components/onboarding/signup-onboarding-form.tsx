@@ -200,6 +200,7 @@ export function ShopOnboardingForm({
                   <FieldLabel htmlFor={`${fieldId}-shopName`}>Shop name</FieldLabel>
                   <Input
                     autoComplete="organization"
+                    className="h-11 rounded-full px-3"
                     id={`${fieldId}-shopName`}
                     name="shopName"
                     onChange={(event) => setShopName(event.target.value)}
@@ -208,39 +209,43 @@ export function ShopOnboardingForm({
                     value={shopName}
                   />
                 </Field>
-                <div className="grid gap-4 sm:grid-cols-[1fr_12rem]">
+                <div className="grid gap-2">
                   <Field data-invalid={handleState.status === "unavailable" ? true : undefined}>
                     <FieldLabel htmlFor={`${fieldId}-handle`}>Shop address</FieldLabel>
-                    <Input
-                      id={`${fieldId}-handle`}
-                      name="handle"
-                      onChange={(event) => {
-                        setHandleTouched(true);
-                        setHandle(event.target.value);
-                      }}
-                      pattern="[a-z0-9][a-z0-9-]{1,38}[a-z0-9]"
-                      required
-                      value={handle}
-                    />
+                    <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_13rem] sm:items-center">
+                      <Input
+                        className="h-11 rounded-full px-3"
+                        id={`${fieldId}-handle`}
+                        name="handle"
+                        onChange={(event) => {
+                          setHandleTouched(true);
+                          setHandle(event.target.value);
+                        }}
+                        pattern="[a-z0-9][a-z0-9-]{1,38}[a-z0-9]"
+                        required
+                        value={handle}
+                      />
+                      <div className="flex h-11 items-center justify-between gap-3 rounded-full border bg-muted/30 px-4 text-sm">
+                        <span className="text-xs text-muted-foreground">Preview</span>
+                        <span className="min-w-0 truncate font-medium">
+                          {handleState.status === "available"
+                            ? handleState.hostname
+                            : `${handle || "shop"}.lvh.me`}
+                        </span>
+                      </div>
+                    </div>
                     {handleState.status === "unavailable" ? (
                       <FieldError>{handleState.message}</FieldError>
                     ) : (
                       <FieldDescription>{handleState.message}</FieldDescription>
                     )}
                   </Field>
-                  <div className="rounded-xl border bg-muted/30 p-3">
-                    <p className="text-xs text-muted-foreground">Preview</p>
-                    <p className="mt-2 break-all text-sm font-medium">
-                      {handleState.status === "available"
-                        ? handleState.hostname
-                        : `${handle || "shop"}.lvh.me`}
-                    </p>
-                  </div>
                 </div>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <Field>
                     <FieldLabel htmlFor={`${fieldId}-businessCategory`}>Category</FieldLabel>
                     <Input
+                      className="h-11 rounded-full px-3"
                       defaultValue={defaultValues.businessCategory}
                       id={`${fieldId}-businessCategory`}
                       name="businessCategory"
@@ -251,6 +256,7 @@ export function ShopOnboardingForm({
                     <FieldLabel htmlFor={`${fieldId}-contactPhone`}>Contact phone</FieldLabel>
                     <Input
                       autoComplete="tel"
+                      className="h-11 rounded-full px-3"
                       defaultValue={defaultValues.contactPhone}
                       id={`${fieldId}-contactPhone`}
                       name="contactPhone"

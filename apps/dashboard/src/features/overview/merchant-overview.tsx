@@ -44,9 +44,11 @@ import {
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import {
+  getLaunchAssistantOpenPreference,
   isLaunchAssistantHidden,
   LAUNCH_ASSISTANT_PREFERENCE_EVENT,
   setLaunchAssistantHidden,
+  setLaunchAssistantOpenPreference,
 } from "@/lib/launch-assistant-preferences";
 import { dashboardRoutes } from "@/lib/routes";
 import { cn } from "@/lib/utils";
@@ -731,9 +733,10 @@ function LaunchAssistant({ summary }: { summary: MerchantDashboardSummary }) {
 
   useEffect(() => {
     const nextHidden = isLaunchAssistantHidden(summary.tenant.id);
+    const nextOpen = getLaunchAssistantOpenPreference(summary.tenant.id);
 
     setHidden(nextHidden);
-    setOpen(nextHidden ? false : !complete);
+    setOpen(nextHidden ? false : (nextOpen ?? !complete));
     setHydrated(true);
 
     function handlePreferenceChange(event: Event) {
@@ -744,7 +747,9 @@ function LaunchAssistant({ summary }: { summary: MerchantDashboardSummary }) {
       }
 
       setHidden(detail.hidden);
-      setOpen(detail.hidden ? false : !complete);
+      setOpen(
+        detail.hidden ? false : (getLaunchAssistantOpenPreference(summary.tenant.id) ?? !complete),
+      );
     }
 
     window.addEventListener(LAUNCH_ASSISTANT_PREFERENCE_EVENT, handlePreferenceChange);
@@ -762,7 +767,13 @@ function LaunchAssistant({ summary }: { summary: MerchantDashboardSummary }) {
   }
 
   function openAssistant() {
-    setOpen((value) => !value);
+    setOpen((value) => {
+      const nextOpen = !value;
+
+      setLaunchAssistantOpenPreference(summary.tenant.id, nextOpen);
+
+      return nextOpen;
+    });
   }
 
   if (!hydrated || hidden) {
@@ -793,7 +804,10 @@ function LaunchAssistant({ summary }: { summary: MerchantDashboardSummary }) {
             size="icon"
             type="button"
             variant="ghost"
-            onClick={() => setOpen(false)}
+            onClick={() => {
+              setLaunchAssistantOpenPreference(summary.tenant.id, false);
+              setOpen(false);
+            }}
           >
             ×
           </Button>
