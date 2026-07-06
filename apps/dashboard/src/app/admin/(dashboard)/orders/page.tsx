@@ -1,7 +1,6 @@
 import { headers } from "next/headers";
-
-import { ListSummary, PaginationControls } from "@/components/app/list-page-controls";
 import { ListSetupState } from "@/components/app/list-error-state";
+import { ListSummary, PaginationControls } from "@/components/app/list-page-controls";
 import { PageShell } from "@/components/app/page-shell";
 import { RefreshButton } from "@/components/app/refresh-button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -36,7 +35,7 @@ export default async function MerchantOrdersPage({ searchParams }: MerchantOrder
   return (
     <PageShell
       actions={<RefreshButton />}
-      description="Track merchant-scoped order data from the Platform API. Fulfillment and payment actions will build on this list foundation."
+      description="Review orders, payment status, and fulfillment progress."
       title="Orders"
     >
       {result.ok ? (

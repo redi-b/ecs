@@ -15,11 +15,11 @@ export default async function DashboardHome() {
   return (
     <main className="dashboard-shell">
       <section className="dashboard-main panel">
-        <p className="eyebrow">ECS dashboard</p>
-        <h1>Operator access</h1>
+        <p className="eyebrow">Merchant console</p>
+        <h1>Manage your shops</h1>
         <p className="lede">
-          Merchant dashboards are resolved from each shop hostname. For local testing, open{" "}
-          <a href="http://abebe.lvh.me/admin">abebe.lvh.me/admin</a>.
+          Sign in from your shop address or continue through the central console. For local testing,
+          open <a href="http://abebe.lvh.me/admin">abebe.lvh.me/admin</a>.
         </p>
       </section>
     </main>
