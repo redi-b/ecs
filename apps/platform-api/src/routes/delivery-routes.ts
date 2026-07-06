@@ -1,4 +1,4 @@
-import type { Hono } from "hono";
+import type { Context, Hono } from "hono";
 
 import type { PlatformAppOptions, PlatformAppVariables } from "../app.js";
 import { getJsonBody, getRequiredBodyString } from "./shared.js";
@@ -62,6 +62,11 @@ export function registerDeliveryRoutes(
     }
 
     const tenantId = context.req.param("tenantId");
+
+    if (!tenantId) {
+      return context.json({ error: "missing_tenant_id" }, 400);
+    }
+
     const authorization = await options.authorizeDashboardForTenant?.({
       tenantId,
       userId: session.user.id,
@@ -78,7 +83,9 @@ export function registerDeliveryRoutes(
     });
   });
 
-  app.put("/platform/tenants/:tenantId/delivery", async (context) => {
+  async function updateTenantDeliverySettings(
+    context: Context<{ Variables: PlatformAppVariables }>,
+  ) {
     if (!options.updateDeliverySettings) {
       return context.json({ error: "delivery_settings_unavailable" }, 503);
     }
@@ -90,6 +97,11 @@ export function registerDeliveryRoutes(
     }
 
     const tenantId = context.req.param("tenantId");
+
+    if (!tenantId) {
+      return context.json({ error: "missing_tenant_id" }, 400);
+    }
+
     const authorization = await options.authorizeDashboardForTenant?.({
       tenantId,
       userId: session.user.id,
@@ -123,7 +135,7 @@ export function registerDeliveryRoutes(
     }
 
     const result = await options.updateDeliverySettings({
-      currency,
+      currency: currency,
       defaultDeliveryFee,
       deliveryEnabled,
       landmarkRequired,
@@ -138,5 +150,8 @@ export function registerDeliveryRoutes(
     return context.json({
       delivery: result.delivery,
     });
-  });
+  }
+
+  app.post("/platform/tenants/:tenantId/delivery", updateTenantDeliverySettings);
+  app.put("/platform/tenants/:tenantId/delivery", updateTenantDeliverySettings);
 }

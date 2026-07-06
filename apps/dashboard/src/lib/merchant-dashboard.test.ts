@@ -39,6 +39,7 @@ describe("getMerchantDashboardSummary", () => {
             isPublished: true,
             publishedRevisionId: "revision_1",
             templateId: "template_1",
+            templateKey: "classic@1",
             templateVersion: 1,
           },
         });

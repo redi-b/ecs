@@ -1,6 +1,9 @@
 import { createAuthClient } from "better-auth/client";
 import { NextResponse } from "next/server";
 
+import { getSharedAuthCookie } from "@/lib/auth-cookies";
+import { isCentralDashboardHost } from "@/lib/dashboard-hosts";
+
 export async function POST(request: Request) {
   const formData = await request.formData();
   const email = formData.get("email");
@@ -15,10 +18,23 @@ export async function POST(request: Request) {
     return redirectToSignIn(request, nextPath, "missing_password");
   }
 
+  const forwardedHost =
+    request.headers.get("x-forwarded-host") ?? request.headers.get("host") ?? "";
+  const forwardedProto = request.headers.get("x-forwarded-proto") ?? "http";
+  const hostResult = isCentralDashboardHost(forwardedHost)
+    ? ({ ok: true } as const)
+    : await validateShopHost({
+        forwardedHost,
+      });
+
+  if (!hostResult.ok) {
+    return redirectToSignIn(request, nextPath, hostResult.error);
+  }
+
   const authResult = await signInWithPlatformAuth({
     email: email.trim().toLowerCase(),
-    forwardedHost: request.headers.get("x-forwarded-host") ?? request.headers.get("host") ?? "",
-    forwardedProto: request.headers.get("x-forwarded-proto") ?? "http",
+    forwardedHost,
+    forwardedProto,
     password,
   });
 
@@ -30,13 +46,87 @@ export async function POST(request: Request) {
     );
   }
 
-  const response = NextResponse.redirect(getRedirectUrl(nextPath, request), { status: 303 });
+  const redirectPath = await getPostSignInRedirectPath({
+    cookies: authResult.cookies,
+    forwardedHost,
+    nextPath,
+  });
+  const response = NextResponse.redirect(getRedirectUrl(redirectPath, request), { status: 303 });
 
   for (const cookie of authResult.cookies) {
-    response.headers.append("set-cookie", cookie);
+    response.headers.append("set-cookie", getSharedAuthCookie(cookie));
   }
 
   return response;
+}
+
+async function getPostSignInRedirectPath(input: {
+  cookies: string[];
+  forwardedHost: string;
+  nextPath: string;
+}) {
+  if (!isCentralDashboardHost(input.forwardedHost) || input.nextPath !== "/admin") {
+    return input.nextPath;
+  }
+
+  const cookieHeader = getCookieHeader(input.cookies);
+
+  if (!cookieHeader) {
+    return "/admin/onboarding";
+  }
+
+  const response = await fetch(new URL("/platform/onboarding/state", getPlatformBaseUrl()), {
+    cache: "no-store",
+    headers: {
+      accept: "application/json",
+      cookie: cookieHeader,
+    },
+  }).catch(() => null);
+
+  if (!response?.ok) {
+    return "/admin/onboarding";
+  }
+
+  const body = (await response.json().catch(() => ({}))) as {
+    primaryTenant?: {
+      dashboardUrl?: string;
+    } | null;
+  };
+
+  return body.primaryTenant?.dashboardUrl ?? "/admin/onboarding";
+}
+
+async function validateShopHost(input: { forwardedHost: string }) {
+  const response = await fetch(new URL("/platform/merchant/host", getPlatformBaseUrl()), {
+    cache: "no-store",
+    headers: {
+      "x-forwarded-host": input.forwardedHost,
+    },
+  }).catch(() => null);
+
+  if (!response) {
+    return {
+      ok: false,
+      error: "auth_unavailable",
+    } as const;
+  }
+
+  if (!response.ok) {
+    const body = (await response.json().catch(() => ({}))) as { error?: string };
+
+    return {
+      ok: false,
+      error: body.error === "shop_not_found" ? "shop_not_found" : "shop_unavailable",
+    } as const;
+  }
+
+  return {
+    ok: true,
+  } as const;
+}
+
+function getPlatformBaseUrl() {
+  return normalizeBaseUrl(process.env.PLATFORM_API_BASE_URL ?? "http://localhost:3000");
 }
 
 function getSafeNextPath(value: FormDataEntryValue | null) {
@@ -89,6 +179,13 @@ function getSetCookieValues(headers: Headers) {
   const cookie = headers.get("set-cookie");
 
   return cookie ? [cookie] : [];
+}
+
+function getCookieHeader(cookies: string[]) {
+  return cookies
+    .map((cookie) => cookie.split(";")[0]?.trim())
+    .filter(Boolean)
+    .join("; ");
 }
 
 async function signInWithPlatformAuth(input: {

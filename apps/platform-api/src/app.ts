@@ -67,6 +67,30 @@ export type BillingStatusResult =
       error: "billing_not_found";
     };
 
+export type DashboardMetricsResult = {
+  ok: true;
+  metrics: {
+    attention: {
+      draftProducts: number | null;
+      unfulfilledOrders: number | null;
+      unpaidOrders: number | null;
+    };
+    breakdowns: {
+      fulfillmentStatus: Array<{ count: number; label: string }>;
+      orderStatus: Array<{ count: number; label: string }>;
+      paymentStatus: Array<{ count: number; label: string }>;
+    };
+    currencyCode: string;
+    products: number | null;
+    series: Array<{
+      customers: number;
+      date: string;
+      orders: number;
+      revenue: number;
+    }>;
+  };
+};
+
 export type DeliverySettings = {
   tenantId: string;
   deliveryEnabled: boolean;
@@ -241,6 +265,45 @@ export type TenantListResult = {
   offset: number;
 };
 
+export type TenantHandleAvailabilityResult = {
+  handle: string;
+  available: boolean;
+  reason?: "invalid" | "reserved" | "taken";
+  hostname?: string;
+};
+
+export type PlatformOnboardingStateResult =
+  | {
+      ok: true;
+      state: {
+        user: {
+          id: string;
+          email: string;
+          name: string | null;
+        };
+        tenants: TenantListItem[];
+        primaryTenant: {
+          id: string;
+          handle: string;
+          primaryDomain: string;
+          dashboardUrl: string;
+        } | null;
+        latestProvisioningAttempt: {
+          id: string;
+          handle: string;
+          name: string | null;
+          status: string;
+          step: string;
+          error: string | null;
+        } | null;
+      };
+    }
+  | {
+      ok: false;
+      error: string;
+      status: number;
+    };
+
 export type TenantDetailResult =
   | {
       ok: true;
@@ -250,6 +313,23 @@ export type TenantDetailResult =
       ok: false;
       error: "tenant_not_found";
       status: 404;
+    };
+
+export type TenantShopSettingsUpdateResult =
+  | {
+      ok: true;
+      tenant: TenantListItem;
+      redirectTo: string | null;
+    }
+  | {
+      ok: false;
+      error:
+        | "handle_invalid"
+        | "handle_reserved"
+        | "handle_unavailable"
+        | "tenant_name_invalid"
+        | "tenant_not_found";
+      status: 400 | 404 | 409;
     };
 
 export type TenantReadiness = {
@@ -437,7 +517,10 @@ export type MerchantProductCategoriesResult =
     }
   | {
       ok: false;
-      error: "commerce_backend_unavailable" | "commerce_credentials_invalid" | "commerce_credentials_missing";
+      error:
+        | "commerce_backend_unavailable"
+        | "commerce_credentials_invalid"
+        | "commerce_credentials_missing";
       status: 401 | 503;
     };
 
@@ -448,7 +531,10 @@ export type MerchantProductCategoryWriteResult =
     }
   | {
       ok: false;
-      error: "commerce_backend_unavailable" | "commerce_credentials_invalid" | "commerce_credentials_missing";
+      error:
+        | "commerce_backend_unavailable"
+        | "commerce_credentials_invalid"
+        | "commerce_credentials_missing";
       status: 401 | 503;
     };
 
@@ -470,7 +556,10 @@ export type MerchantProductCollectionsResult =
     }
   | {
       ok: false;
-      error: "commerce_backend_unavailable" | "commerce_credentials_invalid" | "commerce_credentials_missing";
+      error:
+        | "commerce_backend_unavailable"
+        | "commerce_credentials_invalid"
+        | "commerce_credentials_missing";
       status: 401 | 503;
     };
 
@@ -481,7 +570,10 @@ export type MerchantProductCollectionWriteResult =
     }
   | {
       ok: false;
-      error: "commerce_backend_unavailable" | "commerce_credentials_invalid" | "commerce_credentials_missing";
+      error:
+        | "commerce_backend_unavailable"
+        | "commerce_credentials_invalid"
+        | "commerce_credentials_missing";
       status: 401 | 503;
     };
 
@@ -615,7 +707,10 @@ export type MerchantOrdersResult =
     }
   | {
       ok: false;
-      error: "commerce_backend_unavailable" | "commerce_credentials_invalid" | "commerce_credentials_missing";
+      error:
+        | "commerce_backend_unavailable"
+        | "commerce_credentials_invalid"
+        | "commerce_credentials_missing";
       status: 401 | 503;
     };
 
@@ -688,6 +783,7 @@ export type TenantDashboardSummaryResult =
           isPublished: boolean;
           publishedRevisionId: string | null;
           templateId: string | null;
+          templateKey: string | null;
           templateVersion: number | null;
         };
       };
@@ -858,13 +954,16 @@ export type TenantShopProvisioningResult =
   | {
       ok: true;
       tenant: {
+        createdAt: string;
         id: string;
         name: string;
         handle: string;
+        role: "owner";
         status: string;
         primaryDomain: {
           hostname: string;
         };
+        updatedAt: string;
       };
     }
   | {
@@ -876,6 +975,7 @@ export type TenantShopProvisioningResult =
         | "handle_unavailable"
         | "provisioning_attempt_not_found"
         | "provisioning_attempt_not_retryable"
+        | "template_unavailable"
         | "storefront_template_unavailable";
       status: 400 | 404 | 409 | 503;
     };
@@ -950,6 +1050,9 @@ export type PlatformAppOptions = {
     | ((input: { tenantId: string; userId: string }) => Promise<StorefrontPublishResult>)
     | undefined;
   getBillingStatus?: ((input: { tenantId: string }) => Promise<BillingStatusResult>) | undefined;
+  getDashboardMetrics?:
+    | ((input: { days: number; tenantId: string }) => Promise<DashboardMetricsResult>)
+    | undefined;
   getDeliverySettings?:
     | ((input: { tenantId: string }) => Promise<DeliverySettingsResult>)
     | undefined;
@@ -1011,8 +1114,22 @@ export type PlatformAppOptions = {
   getTenantForUser?:
     | ((input: { tenantId: string; userId: string }) => Promise<TenantDetailResult>)
     | undefined;
+  updateTenantShopSettings?:
+    | ((input: {
+        handle: string;
+        name: string;
+        tenantId: string;
+        userId: string;
+      }) => Promise<TenantShopSettingsUpdateResult>)
+    | undefined;
   listTenantsForUser?:
     | ((input: { limit: number; offset: number; userId: string }) => Promise<TenantListResult>)
+    | undefined;
+  checkTenantHandleAvailability?:
+    | ((input: { handle: string }) => Promise<TenantHandleAvailabilityResult>)
+    | undefined;
+  getOnboardingState?:
+    | ((input: { userId: string }) => Promise<PlatformOnboardingStateResult>)
     | undefined;
   listTenantProvisioningAttempts?:
     | ((input: {
@@ -1060,6 +1177,8 @@ export type PlatformAppOptions = {
         handle: string;
         name: string;
         ownerUserId: string;
+        templateId?: string | undefined;
+        templateKey?: string | undefined;
       }) => Promise<TenantShopProvisioningResult>)
     | undefined;
   retryTenantShopProvisioningAttempt?:
@@ -1208,10 +1327,7 @@ export type PlatformAppOptions = {
       }) => Promise<MerchantProductWriteResult>)
     | undefined;
   deleteMerchantProduct?:
-    | ((input: {
-        productId: string;
-        salesChannelId: string;
-      }) => Promise<MerchantDeleteResult>)
+    | ((input: { productId: string; salesChannelId: string }) => Promise<MerchantDeleteResult>)
     | undefined;
   deleteMerchantProductsBatch?:
     | ((input: {
@@ -1220,28 +1336,16 @@ export type PlatformAppOptions = {
       }) => Promise<MerchantBatchDeleteResult>)
     | undefined;
   deleteMerchantProductCategory?:
-    | ((input: {
-        categoryId: string;
-        tenantId: string;
-      }) => Promise<MerchantDeleteResult>)
+    | ((input: { categoryId: string; tenantId: string }) => Promise<MerchantDeleteResult>)
     | undefined;
   deleteMerchantProductCategoriesBatch?:
-    | ((input: {
-        categoryIds: string[];
-        tenantId: string;
-      }) => Promise<MerchantBatchDeleteResult>)
+    | ((input: { categoryIds: string[]; tenantId: string }) => Promise<MerchantBatchDeleteResult>)
     | undefined;
   deleteMerchantProductCollection?:
-    | ((input: {
-        collectionId: string;
-        tenantId: string;
-      }) => Promise<MerchantDeleteResult>)
+    | ((input: { collectionId: string; tenantId: string }) => Promise<MerchantDeleteResult>)
     | undefined;
   deleteMerchantProductCollectionsBatch?:
-    | ((input: {
-        collectionIds: string[];
-        tenantId: string;
-      }) => Promise<MerchantBatchDeleteResult>)
+    | ((input: { collectionIds: string[]; tenantId: string }) => Promise<MerchantBatchDeleteResult>)
     | undefined;
   serviceName: string;
   medusaInternalUrl: string;

@@ -115,6 +115,28 @@ export function registerPlatformRoutes(
     });
   });
 
+  app.get("/platform/onboarding/state", async (context) => {
+    if (!options.getOnboardingState) {
+      return context.json({ error: "onboarding_state_unavailable" }, 503);
+    }
+
+    const session = await options.getSession?.(context.req.raw.headers);
+
+    if (!session) {
+      return context.json({ error: "auth_required" }, 401);
+    }
+
+    const result = await options.getOnboardingState({
+      userId: session.user.id,
+    });
+
+    if (!result.ok) {
+      return context.json({ error: result.error }, result.status === 401 ? 401 : 503);
+    }
+
+    return context.json(result.state);
+  });
+
   app.get("/platform/tenants", async (context) => {
     if (!options.listTenantsForUser) {
       return context.json({ error: "tenant_list_unavailable" }, 503);
@@ -138,6 +160,18 @@ export function registerPlatformRoutes(
       limit: result.limit,
       offset: result.offset,
     });
+  });
+
+  app.get("/platform/tenants/handle-availability", async (context) => {
+    if (!options.checkTenantHandleAvailability) {
+      return context.json({ error: "handle_availability_unavailable" }, 503);
+    }
+
+    const result = await options.checkTenantHandleAvailability({
+      handle: context.req.query("handle") ?? "",
+    });
+
+    return context.json(result);
   });
 
   app.get("/platform/tenants/:tenantId", async (context) => {
@@ -676,6 +710,55 @@ export function registerPlatformRoutes(
     });
   });
 
+  app.post("/platform/tenants/:tenantId/settings", async (context) => {
+    if (!options.updateTenantShopSettings) {
+      return context.json({ error: "settings_unavailable" }, 503);
+    }
+
+    const session = await options.getSession?.(context.req.raw.headers);
+
+    if (!session) {
+      return context.json({ error: "auth_required" }, 401);
+    }
+
+    const tenantId = context.req.param("tenantId");
+    const authorization = await options.authorizeDashboardForTenant?.({
+      tenantId,
+      userId: session.user.id,
+    });
+
+    if (!authorization?.ok) {
+      return context.json({ error: "dashboard_forbidden" }, 403);
+    }
+
+    const body = await getJsonBody(context.req.raw);
+    const name = getRequiredBodyString(body, "name");
+    const handle = getRequiredBodyString(body, "handle");
+
+    if (!name) {
+      return context.json({ error: "missing_name" }, 400);
+    }
+
+    if (!handle) {
+      return context.json({ error: "missing_handle" }, 400);
+    }
+
+    const result = await options.updateTenantShopSettings({
+      handle,
+      name,
+      tenantId,
+      userId: session.user.id,
+    });
+
+    if (!result.ok) {
+      return context.json({ error: result.error }, result.status);
+    }
+
+    return context.json({
+      tenant: result.tenant,
+    });
+  });
+
   app.post("/platform/tenants/:tenantId/products", async (context) => {
     if (!options.getTenantCommerceContext || !options.createMerchantProduct) {
       return context.json({ error: "commerce_backend_unavailable" }, 503);
@@ -748,7 +831,8 @@ export function registerPlatformRoutes(
 
     const body = await getJsonBody(context.req.raw);
     const productIds = getOptionalBodyStringArray(body, "productIds");
-    if (!productIds || productIds.length === 0) return context.json({ error: "invalid_product_ids" }, 400);
+    if (!productIds || productIds.length === 0)
+      return context.json({ error: "invalid_product_ids" }, 400);
 
     const result = await options.deleteMerchantProductsBatch({
       productIds,
@@ -861,7 +945,8 @@ export function registerPlatformRoutes(
 
     const body = await getJsonBody(context.req.raw);
     const categoryIds = getOptionalBodyStringArray(body, "categoryIds");
-    if (!categoryIds || categoryIds.length === 0) return context.json({ error: "invalid_category_ids" }, 400);
+    if (!categoryIds || categoryIds.length === 0)
+      return context.json({ error: "invalid_category_ids" }, 400);
 
     const result = await options.deleteMerchantProductCategoriesBatch({
       categoryIds,
@@ -909,7 +994,8 @@ export function registerPlatformRoutes(
 
     const body = await getJsonBody(context.req.raw);
     const collectionIds = getOptionalBodyStringArray(body, "collectionIds");
-    if (!collectionIds || collectionIds.length === 0) return context.json({ error: "invalid_collection_ids" }, 400);
+    if (!collectionIds || collectionIds.length === 0)
+      return context.json({ error: "invalid_collection_ids" }, 400);
 
     const result = await options.deleteMerchantProductCollectionsBatch({
       collectionIds,
@@ -933,6 +1019,8 @@ export function registerPlatformRoutes(
     const body = await getJsonBody(context.req.raw);
     const name = getRequiredBodyString(body, "name");
     const handle = getRequiredBodyString(body, "handle");
+    const templateId = getOptionalBodyString(body, "templateId");
+    const templateKey = getOptionalBodyString(body, "templateKey");
 
     if (!name) {
       return context.json({ error: "missing_name" }, 400);
@@ -946,6 +1034,8 @@ export function registerPlatformRoutes(
       handle,
       name,
       ownerUserId: session.user.id,
+      ...(templateId ? { templateId } : {}),
+      ...(templateKey ? { templateKey } : {}),
     });
 
     if (!result.ok) {
@@ -954,6 +1044,7 @@ export function registerPlatformRoutes(
 
     return context.json(
       {
+        redirectTo: `http://${result.tenant.primaryDomain.hostname}/admin`,
         tenant: result.tenant,
       },
       201,
@@ -988,6 +1079,10 @@ export function registerPlatformRoutes(
 
     if (!result.context.medusaRegionId) {
       return context.json({ error: "commerce_region_unavailable" }, 503);
+    }
+
+    if (result.context.status !== "active" || !result.context.publishedRevisionId) {
+      return context.json({ error: "shop_unpublished" }, 404);
     }
 
     const config = await options.getPublishedStorefrontConfig({
@@ -1877,9 +1972,10 @@ function getOptionalBodyProductOptions(body: unknown) {
       return [];
     }
 
-    const title = typeof (option as { title?: unknown }).title === "string"
-      ? (option as { title: string }).title.trim()
-      : "";
+    const title =
+      typeof (option as { title?: unknown }).title === "string"
+        ? (option as { title: string }).title.trim()
+        : "";
     const values = Array.isArray((option as { values?: unknown }).values)
       ? (option as { values: unknown[] }).values
           .filter((value): value is string => typeof value === "string")

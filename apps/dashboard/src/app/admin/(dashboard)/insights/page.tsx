@@ -12,7 +12,7 @@ import {
 export default function InsightsPage() {
   return (
     <PageShell
-      description="Insights will use verified commerce and storefront events after analytics ingestion exists."
+      description="Deeper reports for traffic, products, and customers."
       title="Insights"
     >
       <Empty className="min-h-96 border">
@@ -20,10 +20,9 @@ export default function InsightsPage() {
           <EmptyMedia variant="icon">
             <RiBarChartGroupedLine />
           </EmptyMedia>
-          <EmptyTitle>No analytics integration yet</EmptyTitle>
+          <EmptyTitle>Audience insights are coming soon</EmptyTitle>
           <EmptyDescription>
-            This page avoids placeholder charts or synthetic KPIs until real reporting data is
-            available.
+            Use Overview for current sales and storefront signals.
           </EmptyDescription>
         </EmptyHeader>
       </Empty>

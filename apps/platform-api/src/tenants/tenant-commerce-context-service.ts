@@ -2,7 +2,7 @@ import type { createPlatformDb } from "@ecs/db";
 import {
   domains,
   storefrontConfigs,
-  storefrontRevisions,
+  storefrontTemplateVersions,
   tenantMemberships,
   tenants,
   users,
@@ -133,15 +133,19 @@ export function createTenantDashboardSummaryService(db: PlatformDb) {
         medusaSalesChannelId: tenants.medusaSalesChannelId,
         medusaPublishableKeyId: tenants.medusaPublishableKeyId,
         publishedRevisionId: storefrontConfigs.publishedRevisionId,
-        templateId: storefrontRevisions.templateId,
-        templateVersion: storefrontRevisions.templateVersion,
+        templateId: storefrontConfigs.draftTemplateId,
+        templateKey: storefrontTemplateVersions.templateKey,
+        templateVersion: storefrontConfigs.draftTemplateVersion,
       })
       .from(tenants)
       .innerJoin(domains, eq(tenants.primaryDomainId, domains.id))
       .leftJoin(storefrontConfigs, eq(storefrontConfigs.tenantId, tenants.id))
       .leftJoin(
-        storefrontRevisions,
-        eq(storefrontConfigs.publishedRevisionId, storefrontRevisions.id),
+        storefrontTemplateVersions,
+        and(
+          eq(storefrontTemplateVersions.templateId, storefrontConfigs.draftTemplateId),
+          eq(storefrontTemplateVersions.version, storefrontConfigs.draftTemplateVersion),
+        ),
       )
       .where(eq(tenants.id, input.tenantId))
       .limit(1);
@@ -176,6 +180,7 @@ export function createTenantDashboardSummaryService(db: PlatformDb) {
           isPublished: Boolean(row.publishedRevisionId),
           publishedRevisionId: row.publishedRevisionId,
           templateId: row.templateId,
+          templateKey: row.templateKey,
           templateVersion: row.templateVersion,
         },
       },

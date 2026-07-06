@@ -30,12 +30,14 @@ describe("createTenantShopProvisioner", () => {
         assert.equal(ownerUserId, "user_1");
 
         return {
+          createdAt: new Date("2026-07-06T08:00:00.000Z"),
           id: "tenant_1",
           name: "Retry Shop",
           handle: "retry-shop",
           status: "draft",
           primaryDomainHostname: "retry-shop.lvh.me",
           ownerUserId: "user_1",
+          updatedAt: new Date("2026-07-06T08:00:00.000Z"),
         };
       },
       isDomainHostnameTaken: async () => {
@@ -72,13 +74,16 @@ describe("createTenantShopProvisioner", () => {
       {
         ok: true,
         tenant: {
+          createdAt: "2026-07-06T08:00:00.000Z",
           id: "tenant_1",
           name: "Retry Shop",
           handle: "retry-shop",
+          role: "owner",
           status: "draft",
           primaryDomain: {
             hostname: "retry-shop.lvh.me",
           },
+          updatedAt: "2026-07-06T08:00:00.000Z",
         },
       },
     );
@@ -101,13 +106,16 @@ describe("createTenantShopProvisioner", () => {
         createdTenantId = input.tenantId;
 
         return {
+          createdAt: "2026-07-06T08:00:00.000Z",
           id: input.tenantId,
           name: input.name,
           handle: input.handle,
+          role: "owner",
           status: "draft",
           primaryDomain: {
             hostname: input.hostname,
           },
+          updatedAt: "2026-07-06T08:00:00.000Z",
         };
       },
       findActiveStorefrontTemplate: async () => ({
@@ -189,13 +197,16 @@ describe("createTenantShopProvisioner", () => {
         createdTenantId = input.tenantId;
 
         return {
+          createdAt: "2026-07-06T08:00:00.000Z",
           id: input.tenantId,
           name: input.name,
           handle: input.handle,
+          role: "owner",
           status: "draft",
           primaryDomain: {
             hostname: input.hostname,
           },
+          updatedAt: "2026-07-06T08:00:00.000Z",
         };
       },
       findActiveStorefrontTemplate: async () => ({
@@ -314,13 +325,16 @@ describe("createTenantShopProvisioningRetryService", () => {
         return {
           ok: true,
           tenant: {
+            createdAt: "2026-07-06T08:00:00.000Z",
             id: "tenant_1",
             name: "Retry Shop",
             handle: "retry-shop",
+            role: "owner",
             status: "draft",
             primaryDomain: {
               hostname: "retry-shop.lvh.me",
             },
+            updatedAt: "2026-07-06T08:00:00.000Z",
           },
         };
       },
@@ -330,6 +344,7 @@ describe("createTenantShopProvisioningRetryService", () => {
         return {
           id: "attempt_1",
           handle: "retry-shop",
+          metadata: {},
           name: "Retry Shop",
           ownerUserId: "user_1",
           platformTenantId: "00000000-0000-4000-8000-000000000001",
@@ -347,13 +362,16 @@ describe("createTenantShopProvisioningRetryService", () => {
       {
         ok: true,
         tenant: {
+          createdAt: "2026-07-06T08:00:00.000Z",
           id: "tenant_1",
           name: "Retry Shop",
           handle: "retry-shop",
+          role: "owner",
           status: "draft",
           primaryDomain: {
             hostname: "retry-shop.lvh.me",
           },
+          updatedAt: "2026-07-06T08:00:00.000Z",
         },
       },
     );
@@ -373,6 +391,7 @@ describe("createTenantShopProvisioningRetryService", () => {
       findProvisioningAttemptForRetry: async () => ({
         id: "attempt_1",
         handle: "retry-shop",
+        metadata: {},
         name: "Retry Shop",
         ownerUserId: "user_2",
         platformTenantId: "00000000-0000-4000-8000-000000000001",

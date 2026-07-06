@@ -20,6 +20,7 @@ export type TenantDomainRecord = {
   medusaRegionId: string | null;
   publishedRevisionId: string | null;
   templateId: string | null;
+  templateKey: string | null;
   templateVersion: number | null;
 };
 
@@ -35,8 +36,9 @@ export type TenantContext = {
   medusaStockLocationId: string | null;
   medusaPublishableKeyId: string | null;
   medusaRegionId: string | null;
-  publishedRevisionId: string;
+  publishedRevisionId: string | null;
   templateId: string | null;
+  templateKey: string | null;
   templateVersion: number | null;
 };
 
@@ -96,7 +98,7 @@ export async function resolveTenantFromHost(
     return { ok: false, error: "shop_suspended" };
   }
 
-  if (record.tenantStatus !== "active" || !record.publishedRevisionId) {
+  if (record.tenantStatus !== "active" && record.tenantStatus !== "draft") {
     return { ok: false, error: "shop_unpublished" };
   }
 
@@ -116,6 +118,7 @@ export async function resolveTenantFromHost(
       medusaRegionId: record.medusaRegionId,
       publishedRevisionId: record.publishedRevisionId,
       templateId: record.templateId,
+      templateKey: record.templateKey,
       templateVersion: record.templateVersion,
     },
   };

@@ -8,12 +8,14 @@ import {
   createDrizzleAnalyticsEventStore,
   createDrizzleAnalyticsInsightsStore,
 } from "./analytics/analytics-service.js";
+import { createDashboardMetricsService } from "./analytics/dashboard-metrics-service.js";
 import { createPlatformApp } from "./app.js";
 import { createDashboardAuthorizationLookup } from "./auth/dashboard-authorization.js";
 import { createPlatformAuth, parseTrustedOrigins } from "./auth/platform-auth.js";
 import { createBillingService } from "./billing/billing-service.js";
 import { createMedusaOrderService } from "./commerce/order-service.js";
 import { createMedusaProductService } from "./commerce/product-service.js";
+import { loadPlatformApiEnvFiles } from "./config/env.js";
 import { getSystemHosts } from "./config/hosts.js";
 import { createDeliverySettingsService } from "./delivery/delivery-service.js";
 import { createDomainManagementService } from "./domains/domain-service.js";
@@ -36,11 +38,13 @@ import {
   createTenantDashboardSummaryService,
 } from "./tenants/tenant-commerce-context-service.js";
 import {
+  createPlatformOnboardingStateService,
   createTenantDetailService,
+  createTenantHandleAvailabilityService,
   createTenantListService,
+  createTenantShopSettingsService,
 } from "./tenants/tenant-list-service.js";
 import { createTenantStatusService } from "./tenants/tenant-status-service.js";
-import { loadPlatformApiEnvFiles } from "./config/env.js";
 
 loadPlatformApiEnvFiles();
 
@@ -72,6 +76,7 @@ const analyticsService = createAnalyticsService(createDrizzleAnalyticsEventStore
 const analyticsInsightsService = createAnalyticsInsightsService(
   createDrizzleAnalyticsInsightsStore(platformDb.db),
 );
+const dashboardMetricsService = createDashboardMetricsService(platformDb.db);
 const authorizeDashboardForTenant = createDashboardAuthorizationLookup(platformDb.db);
 const storefrontTemplateService = createStorefrontTemplateService(platformDb.db);
 const supportService = createSupportService(platformDb.db);
@@ -92,6 +97,18 @@ const medusaInternalUrl = process.env.MEDUSA_INTERNAL_URL ?? "http://localhost:9
 const platformPublicBaseUrl =
   process.env.PLATFORM_PUBLIC_BASE_URL ?? process.env.BETTER_AUTH_URL ?? "http://api.lvh.me";
 const platformBaseDomain = process.env.STOREFRONT_PUBLIC_BASE_DOMAIN ?? "lvh.me";
+const updateTenantShopSettings = createTenantShopSettingsService({
+  db: platformDb.db,
+  platformBaseDomain,
+});
+const checkTenantHandleAvailability = createTenantHandleAvailabilityService({
+  db: platformDb.db,
+  platformBaseDomain,
+});
+const getOnboardingState = createPlatformOnboardingStateService({
+  db: platformDb.db,
+  listTenantsForUser,
+});
 const platformInternalApiToken =
   process.env.PLATFORM_INTERNAL_API_TOKEN ??
   (process.env.NODE_ENV === "production" ? undefined : "development-platform-internal-token");
@@ -145,10 +162,13 @@ const app = createPlatformApp({
   deleteMerchantProductCollectionsBatch: productService.deleteMerchantProductCollectionsBatch,
   createTenantDomain: domainManagementService.createTenantDomain,
   createTenantShop,
+  checkTenantHandleAvailability,
   getBillingStatus: billingService.getBillingStatus,
+  getDashboardMetrics: dashboardMetricsService,
   getDeliverySettings: deliverySettingsService.getDeliverySettings,
   handleChapaPaymentCallback: chapaPaymentService.handleChapaPaymentCallback,
   getOperatorSupportHistory: supportService.getOperatorSupportHistory,
+  getOnboardingState,
   getPublishedStorefrontConfig: storefrontTemplateService.getPublishedStorefrontConfig,
   getStorefrontDraft: storefrontTemplateService.getStorefrontDraft,
   getTenantCommerceContext,
@@ -182,6 +202,7 @@ const app = createPlatformApp({
   submitPaymentOnboarding: paymentOnboardingService.submitPaymentOnboarding,
   updateBillingInvoiceStatus: billingService.updateBillingInvoiceStatus,
   updateDeliverySettings: deliverySettingsService.updateDeliverySettings,
+  updateTenantShopSettings,
   updateMerchantProduct: productService.updateMerchantProduct,
   updateMerchantProductStock: productService.updateMerchantProductStock,
   upsertNotificationPreference: notificationService.upsertNotificationPreference,

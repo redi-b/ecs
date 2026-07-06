@@ -27,6 +27,8 @@
     "db:studio": "pnpm --filter @ecs/db db:studio",
     "medusa:migrate": "pnpm --filter @ecs/medusa db:migrate",
     "seed": "pnpm --filter @ecs/platform-api seed",
+    "seed:demo": "pnpm --filter @ecs/platform-api seed:demo",
+    "seed:demo:clean": "pnpm --filter @ecs/platform-api seed:demo:clean",
     "smoke:commerce": "node scripts/smoke-commerce.mjs"
   },
   "devDependencies": {

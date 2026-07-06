@@ -1,4 +1,17 @@
-export default function DashboardHome() {
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
+
+import { isCentralDashboardHost } from "@/lib/dashboard-hosts";
+
+export default async function DashboardHome() {
+  const requestHeaders = await headers();
+
+  if (
+    isCentralDashboardHost(requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host"))
+  ) {
+    redirect("/admin");
+  }
+
   return (
     <main className="dashboard-shell">
       <section className="dashboard-main panel">
