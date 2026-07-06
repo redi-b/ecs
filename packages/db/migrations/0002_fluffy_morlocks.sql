@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "storefront_configs_tenant_id_unique" ON "storefront_configs" USING btree ("tenant_id");
