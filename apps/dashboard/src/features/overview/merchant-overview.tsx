@@ -112,7 +112,7 @@ const statusRingColors = [
 ] as const;
 
 const commerceItems = [
-  { key: "hasStore", label: "Sales backend" },
+  { key: "hasStore", label: "Sales setup" },
   { key: "hasSalesChannel", label: "Sales channel" },
 ] as const;
 
@@ -180,7 +180,7 @@ export function MerchantOverview({ summary }: MerchantOverviewProps) {
           className="xl:col-span-2"
           href={dashboardRoutes.orders}
           label="Revenue"
-          note={operations?.range.label ?? "Commerce data unavailable"}
+          note={operations?.range.label ?? "No sales data yet"}
           value={formatMoney(operations?.totals.revenue, currencyCode)}
         />
         <MetricCard
@@ -331,7 +331,7 @@ export function MerchantOverview({ summary }: MerchantOverviewProps) {
             )}
             <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
               <span>{String(metricLabel)} view</span>
-              <span>{operations?.range.label ?? "No sampled commerce range"}</span>
+              <span>{operations?.range.label ?? "No sales data yet"}</span>
             </div>
           </CardContent>
         </Card>
@@ -481,7 +481,7 @@ export function MerchantOverview({ summary }: MerchantOverviewProps) {
         <Card className="self-start">
           <CardHeader>
             <CardTitle>Order Lifecycle</CardTitle>
-            <CardDescription>Current lifecycle state for sampled orders.</CardDescription>
+            <CardDescription>Current lifecycle state for recent orders.</CardDescription>
           </CardHeader>
           <CardContent>
             <StatusDonutChart rows={operations?.breakdowns.orderStatus ?? []} title="Orders" />
@@ -491,7 +491,7 @@ export function MerchantOverview({ summary }: MerchantOverviewProps) {
         <Card className="self-start">
           <CardHeader>
             <CardTitle>Customer Mix</CardTitle>
-            <CardDescription>Repeat behavior across the sampled customer base.</CardDescription>
+            <CardDescription>Repeat behavior across recent customers.</CardDescription>
           </CardHeader>
           <CardContent>
             <StatusDonutChart rows={customerRows} title="Customers" subject="customers" />
@@ -505,7 +505,7 @@ export function MerchantOverview({ summary }: MerchantOverviewProps) {
             <CardTitle>Storefront Signals</CardTitle>
             <CardDescription>
               {summary.analytics?.unavailable
-                ? "Analytics service is not available for this tenant yet."
+                ? "Storefront activity will appear after customers visit your shop."
                 : "Top tracked events from the last 30 days."}
             </CardDescription>
           </CardHeader>
@@ -525,7 +525,7 @@ export function MerchantOverview({ summary }: MerchantOverviewProps) {
             <CardTitle>Billing Snapshot</CardTitle>
             <CardDescription>
               {summary.billing?.unavailable
-                ? "Billing state is not configured for this tenant."
+                ? "Billing setup is not complete yet."
                 : "Current subscription and recent invoice state."}
             </CardDescription>
           </CardHeader>
@@ -545,7 +545,7 @@ export function MerchantOverview({ summary }: MerchantOverviewProps) {
         <Card className="self-start">
           <CardHeader>
             <CardTitle>Recent Orders</CardTitle>
-            <CardDescription>Latest orders returned by the commerce backend.</CardDescription>
+            <CardDescription>Latest orders for this shop.</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-2">
             {(operations?.recentOrders.length ?? 0) > 0 ? (
@@ -609,7 +609,7 @@ function MetricCard({
 
 function StatusDonutChart({
   rows,
-  subject = "sampled orders",
+  subject = "orders",
   title,
 }: {
   rows: Array<{ count: number; label: string }>;
@@ -880,7 +880,7 @@ function getLaunchChecklistItems(summary: MerchantDashboardSummary) {
       href: dashboardRoutes.settings,
     },
     {
-      label: "Sales backend",
+      label: "Sales setup",
       description: "Store and channel",
       ready: hasSalesBackend,
       href: dashboardRoutes.settings,
@@ -893,7 +893,7 @@ function getLaunchChecklistItems(summary: MerchantDashboardSummary) {
     },
     {
       label: "Storefront design",
-      description: hasStorefrontDraft ? "Draft selected" : "Choose a storefront",
+      description: hasStorefrontDraft ? "Storefront selected" : "Choose a storefront",
       ready: hasStorefrontDraft,
       href: `${dashboardRoutes.settings}?tab=storefront`,
     },
@@ -998,8 +998,8 @@ function getDemandRhythmRows(series: Array<{ date: string; orders: number }>) {
 
 function sampleNote(value: number | undefined) {
   if (typeof value !== "number") {
-    return "Commerce data unavailable";
+    return "No sales data yet";
   }
 
-  return `${value.toLocaleString()} records sampled`;
+  return `${value.toLocaleString()} records reviewed`;
 }

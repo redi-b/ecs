@@ -357,7 +357,7 @@ export function SettingsWorkspace({
               <CardHeader>
                 <CardTitle>Storefront Design</CardTitle>
                 <CardDescription>
-                  Choose the storefront draft customers will see after publishing.
+                  Choose the storefront starting point customers will see after publishing.
                 </CardDescription>
               </CardHeader>
               <CardContent className="flex flex-col gap-4">
@@ -386,7 +386,7 @@ export function SettingsWorkspace({
             <Card className="self-start">
               <CardHeader>
                 <CardTitle>Storefront Status</CardTitle>
-                <CardDescription>Current draft and publishing state.</CardDescription>
+                <CardDescription>Selected design and publishing state.</CardDescription>
               </CardHeader>
               <CardContent className="flex flex-col gap-3">
                 <div className="flex items-center justify-between gap-3 text-sm">
@@ -396,7 +396,7 @@ export function SettingsWorkspace({
                   </Badge>
                 </div>
                 <SettingsRow
-                  label="Draft template"
+                  label="Selected design"
                   value={getSelectedTemplateName(storefrontTemplates, summary)}
                 />
                 <SettingsRow
@@ -549,7 +549,7 @@ function StorefrontTemplateOption({
         ) : null}
       </div>
       <Button disabled={selected} type="submit" variant={selected ? "secondary" : "default"}>
-        {selected ? "Current draft" : "Use this storefront"}
+        {selected ? "Selected" : "Use this storefront"}
       </Button>
     </form>
   );
@@ -607,7 +607,7 @@ function statusCopy(value: string) {
   }
 
   if (value === "template_selected") {
-    return "Storefront draft selected.";
+    return "Storefront selected.";
   }
 
   if (value === "missing_template" || value === "missing_template_key") {

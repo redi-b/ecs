@@ -10,63 +10,59 @@ export function getListErrorState(kind: ListKind, message: string): ListErrorSta
   if (message === "commerce_credentials_missing") {
     return {
       kind: "setup",
-      title: "Medusa admin token is not configured",
+      title: "Commerce connection needs attention",
       description:
         kind === "products"
-          ? "Start Platform API with MEDUSA_ADMIN_API_TOKEN from the Medusa seed before loading live product data."
-          : "Start Platform API with MEDUSA_ADMIN_API_TOKEN from the Medusa seed before loading live order data.",
+          ? "Product data is not ready yet. Check the shop setup or contact support."
+          : "Order data is not ready yet. Check the shop setup or contact support.",
     };
   }
 
   if (message === "commerce_credentials_invalid") {
     return {
       kind: "setup",
-      title: "Medusa admin token is invalid",
-      description: `Medusa rejected the configured MEDUSA_ADMIN_API_TOKEN. Re-run the Medusa seed for the active Medusa database, copy the new secret token into Platform API, restart Platform API, then reload ${kind}.`,
+      title: "Commerce connection needs attention",
+      description: `${capitalize(kind)} are temporarily unavailable. Check the shop setup or contact support.`,
     };
   }
 
   if (message === "commerce_sales_channel_unavailable") {
     return {
       kind: "setup",
-      title:
-        kind === "products"
-          ? "Product sales channel is not configured"
-          : "Order sales channel is not configured",
-      description: `This tenant is missing its Medusa sales channel mapping. Re-run provisioning or seed data, then reload ${kind}.`,
+      title: kind === "products" ? "Product channel is not ready" : "Order channel is not ready",
+      description: `${capitalize(kind)} will appear after sales setup is complete.`,
     };
   }
 
   if (message === "commerce_region_unavailable") {
     return {
       kind: "setup",
-      title: "Commerce region is not configured",
-      description: `This tenant is missing its Medusa region mapping. Re-run provisioning or seed data, then reload ${kind}.`,
+      title: "Shop region is not ready",
+      description: `${capitalize(kind)} will appear after regional checkout setup is complete.`,
     };
   }
 
   if (message === "commerce_resource_missing") {
     return {
       kind: "setup",
-      title: "Commerce resources are out of sync",
-      description:
-        "The tenant has Medusa resource IDs, but Medusa did not return the expected resources. Re-run local commerce provisioning or seed data.",
+      title: "Commerce setup needs attention",
+      description: "Some shop resources are not ready yet. Try again or contact support.",
     };
   }
 
   if (message === "commerce_backend_unavailable") {
     return {
       kind: "service",
-      title: "Commerce backend is unavailable",
-      description: `The commerce backend could not be reached. Start Medusa or check the commerce service connection, then reload ${kind}.`,
+      title: "Commerce service is temporarily unavailable",
+      description: `We could not load ${kind}. Try again in a moment.`,
     };
   }
 
   if (message === "platform_request_failed") {
     return {
       kind: "service",
-      title: "Platform API is unavailable",
-      description: `The dashboard could not reach Platform API. Start the API service, then reload ${kind}.`,
+      title: "Dashboard service is temporarily unavailable",
+      description: `We could not load ${kind}. Try again in a moment.`,
     };
   }
 

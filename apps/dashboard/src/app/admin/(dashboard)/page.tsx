@@ -36,7 +36,7 @@ export default async function MerchantAdminPage({ searchParams }: MerchantAdminP
           </Button>
         </div>
       }
-      description="Merchant dashboard foundation for operational commerce workflows. The overview reflects live tenant, commerce, storefront, and operator readiness from the Platform API."
+      description="Track sales, orders, storefront activity, and setup progress in one place."
       title="Overview"
     >
       {result.ok ? (

@@ -20,6 +20,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { Kbd, KbdGroup } from "@/components/ui/kbd";
 import { getNavigableAppRoutes } from "@/lib/navigation";
 
 export function CommandCenter() {
@@ -49,9 +50,10 @@ export function CommandCenter() {
         >
           <AppIcons.search data-icon="inline-start" />
           <span className="hidden sm:inline">Search or jump...</span>
-          <kbd className="ml-2 hidden rounded-full border bg-muted px-2 py-0.5 text-[11px] text-muted-foreground sm:inline">
-            Cmd K
-          </kbd>
+          <KbdGroup className="ml-2 hidden sm:inline-flex">
+            <Kbd>Ctrl</Kbd>
+            <Kbd>K</Kbd>
+          </KbdGroup>
         </Button>
       </DialogTrigger>
       <DialogContent className="overflow-hidden p-0" showCloseButton={false}>
