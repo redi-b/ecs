@@ -1081,7 +1081,7 @@ export function registerPlatformRoutes(
       return context.json({ error: "commerce_region_unavailable" }, 503);
     }
 
-    if (result.context.status !== "active" || !result.context.publishedRevisionId) {
+    if (!result.context.publishedRevisionId) {
       return context.json({ error: "shop_unpublished" }, 404);
     }
 
@@ -1187,7 +1187,10 @@ export function registerPlatformRoutes(
     const result = await options.getStorefrontDraft({ tenantId });
 
     if (!result.ok) {
-      return context.json({ error: result.error }, 404);
+      return context.json(
+        { error: result.error },
+        result.error === "invalid_storefront_draft" ? 400 : 404,
+      );
     }
 
     return context.json({
@@ -1195,7 +1198,7 @@ export function registerPlatformRoutes(
     });
   });
 
-  app.put("/platform/tenants/:tenantId/storefront/draft", async (context) => {
+  app.post("/platform/tenants/:tenantId/storefront/draft", async (context) => {
     if (!options.updateStorefrontDraft) {
       return context.json({ error: "storefront_draft_unavailable" }, 503);
     }
@@ -1222,8 +1225,14 @@ export function registerPlatformRoutes(
       return context.json({ error: "invalid_request" }, 400);
     }
 
-    const data = "data" in body ? body.data : undefined;
-    const themeTokens = "themeTokens" in body ? body.themeTokens : undefined;
+    const data =
+      "data" in body ? body.data : "draftData" in body ? body.draftData : undefined;
+    const themeTokens =
+      "themeTokens" in body
+        ? body.themeTokens
+        : "draftThemeTokens" in body
+          ? body.draftThemeTokens
+          : undefined;
 
     if (data === undefined || themeTokens === undefined) {
       return context.json({ error: "missing_draft_payload" }, 400);
@@ -1237,7 +1246,10 @@ export function registerPlatformRoutes(
     });
 
     if (!result.ok) {
-      return context.json({ error: result.error }, 404);
+      return context.json(
+        { error: result.error },
+        result.error === "invalid_storefront_draft" ? 400 : 404,
+      );
     }
 
     return context.json({

@@ -676,6 +676,42 @@ export const storefrontTemplateSelectionSchema = z.object({
 
 export type StorefrontTemplateSelection = z.infer<typeof storefrontTemplateSelectionSchema>;
 
+export const storefrontDraftSchema = z.object({
+  draft: z.object({
+    tenantId: z.string().min(1),
+    templateId: z.string().min(1),
+    templateVersion: z.number().int().positive(),
+    templateKey: z.string().min(1),
+    data: z.unknown(),
+    themeTokens: z.unknown(),
+    updatedAt: z.string().min(1),
+    published: z
+      .object({
+        revisionId: z.string().min(1),
+        publishedAt: z.string().min(1),
+        data: z.unknown(),
+        themeTokens: z.unknown(),
+      })
+      .nullable()
+      .optional(),
+  }),
+});
+
+export type StorefrontDraft = z.infer<typeof storefrontDraftSchema>;
+
+export const storefrontPublishSchema = z.object({
+  storefront: z.object({
+    tenantId: z.string().min(1),
+    publishedRevisionId: z.string().min(1),
+    templateId: z.string().min(1),
+    templateVersion: z.number().int().positive(),
+    templateKey: z.string().min(1),
+    publishedAt: z.string().min(1),
+  }),
+});
+
+export type StorefrontPublish = z.infer<typeof storefrontPublishSchema>;
+
 export const publishedStorefrontConfigSchema = z.object({
   tenant: z.object({
     id: z.string().min(1),

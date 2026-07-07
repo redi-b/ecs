@@ -52,6 +52,7 @@ const seed = buildPlatformSeed({
   templates: storefrontTemplates,
 });
 const seedOwnerPassword = process.env.SEED_OWNER_PASSWORD ?? "password1234";
+const allowPartialDemoSeed = process.env.SEED_DEMO_ALLOW_PARTIAL === "true";
 const storefrontBaseDomain = (process.env.STOREFRONT_PUBLIC_BASE_DOMAIN ?? "lvh.me")
   .trim()
   .replace(/\.$/, "")
@@ -118,7 +119,7 @@ const studioOrderIdempotencyKeys = Array.from(
   (_, index) => `demo:studio:order:${index}`,
 );
 
-try {
+async function main() {
   if (process.argv.includes("--clean")) {
     await cleanDemoData();
     console.log(
@@ -146,8 +147,6 @@ try {
       ),
     );
   }
-} finally {
-  await platformDb.pool.end();
 }
 
 async function seedDemoData() {
@@ -265,6 +264,27 @@ async function seedDemoData() {
   await platformDb.db.insert(dailyMetrics).values(buildDemoMetricRows(seed.tenant.id, now));
   await platformDb.db.insert(analyticsEvents).values(buildDemoEvents(seed.tenant.id, now));
   const secondShop = await seedSecondDemoShop({ now, periodEnd, periodStart });
+  const commerceResults: Array<[string, DemoCommerceSeedResult]> = [
+    ["primary", commerce],
+    ["secondary", secondShop.commerce],
+  ];
+  const skippedCommerce = commerceResults.filter(
+    (entry): entry is [string, Extract<DemoCommerceSeedResult, { skipped: true }>] => {
+      const result = entry[1];
+
+      return result.skipped;
+    },
+  );
+
+  if (skippedCommerce.length > 0 && !allowPartialDemoSeed) {
+    throw new Error(
+      `Demo commerce seed incomplete: ${skippedCommerce
+        .map(([label, result]) => `${label}: ${result.reason}`)
+        .join(
+          "; ",
+        )}. Start Medusa on ${medusaInternalUrl} or set SEED_DEMO_ALLOW_PARTIAL=true for platform-only seed data.`,
+    );
+  }
 
   return {
     primary: commerce,
@@ -286,8 +306,8 @@ async function cleanDemoData() {
     );
   await platformDb.db.delete(invoices).where(inArray(invoices.id, Object.values(demoIds).slice(2)));
   await platformDb.db.delete(subscriptions).where(eq(subscriptions.id, demoIds.subscription));
-  await platformDb.db.delete(plans).where(eq(plans.id, demoIds.plan));
   await cleanSecondDemoShop();
+  await platformDb.db.delete(plans).where(eq(plans.id, demoIds.plan));
 }
 
 async function seedSecondDemoShop(input: { now: Date; periodEnd: Date; periodStart: Date }) {
@@ -607,22 +627,27 @@ async function seedCommerceDemoData(context: DemoCommerceContext) {
     return {
       skipped: true,
       reason: "MEDUSA_ADMIN_API_TOKEN is not set",
-    };
+    } satisfies DemoCommerceSeedResult;
   }
 
   const resources = await ensureTenantCommerceResources(context);
 
-  if (!resources) {
+  if (!resources.ok) {
     return {
       skipped: true,
-      reason: "Medusa tenant commerce resources could not be provisioned",
-    };
+      reason: resources.reason,
+    } satisfies DemoCommerceSeedResult;
   }
 
   const categories = await createDemoCategories(context);
   const collections = await createDemoCollections(context);
-  const products = await createDemoProducts({ categories, collections, context, resources });
-  const orders = await createDemoOrders({ context, products, resources });
+  const products = await createDemoProducts({
+    categories,
+    collections,
+    context,
+    resources: resources.resources,
+  });
+  const orders = await createDemoOrders({ context, products, resources: resources.resources });
 
   return {
     skipped: false,
@@ -630,7 +655,7 @@ async function seedCommerceDemoData(context: DemoCommerceContext) {
     collections: collections.length,
     orders,
     products: products.length,
-  };
+  } satisfies DemoCommerceSeedResult;
 }
 
 async function cleanCommerceDemoData(context: DemoCommerceContext) {
@@ -693,7 +718,10 @@ async function cleanCommerceDemoData(context: DemoCommerceContext) {
 
 async function ensureTenantCommerceResources(context: DemoCommerceContext) {
   if (!platformInternalApiToken?.trim()) {
-    return null;
+    return {
+      ok: false,
+      reason: "PLATFORM_INTERNAL_API_TOKEN is not set",
+    } satisfies TenantCommerceResourceResult;
   }
 
   const response = await fetch(`${medusaInternalUrl}/internal/platform/provision-tenant`, {
@@ -708,10 +736,24 @@ async function ensureTenantCommerceResources(context: DemoCommerceContext) {
       "x-platform-internal-token": platformInternalApiToken,
     },
     method: "POST",
-  }).catch(() => null);
+  }).catch((error: unknown) => ({
+    error: error instanceof Error ? error.message : "unknown network error",
+  }));
 
-  if (!response?.ok) {
-    return null;
+  if (!("ok" in response)) {
+    return {
+      ok: false,
+      reason: `Medusa is not reachable at ${medusaInternalUrl}: ${response.error}`,
+    } satisfies TenantCommerceResourceResult;
+  }
+
+  if (!response.ok) {
+    const body = await response.text().catch(() => "");
+
+    return {
+      ok: false,
+      reason: `Medusa provisioning returned ${response.status}${body ? `: ${body.slice(0, 240)}` : ""}`,
+    } satisfies TenantCommerceResourceResult;
   }
 
   const body = (await response.json().catch(() => undefined)) as
@@ -722,7 +764,10 @@ async function ensureTenantCommerceResources(context: DemoCommerceContext) {
   const resources = body?.resources;
 
   if (!resources) {
-    return null;
+    return {
+      ok: false,
+      reason: "Medusa provisioning returned an invalid response body",
+    } satisfies TenantCommerceResourceResult;
   }
 
   await platformDb.db
@@ -741,7 +786,10 @@ async function ensureTenantCommerceResources(context: DemoCommerceContext) {
     })
     .where(eq(tenants.id, context.tenantId));
 
-  return resources;
+  return {
+    ok: true,
+    resources,
+  } satisfies TenantCommerceResourceResult;
 }
 
 async function createDemoCategories(context: DemoCommerceContext) {
@@ -1196,6 +1244,29 @@ type TenantCommerceResources = {
   storeId: string;
 };
 
+type TenantCommerceResourceResult =
+  | {
+      ok: true;
+      resources: TenantCommerceResources;
+    }
+  | {
+      ok: false;
+      reason: string;
+    };
+
+type DemoCommerceSeedResult =
+  | {
+      skipped: false;
+      categories: number;
+      collections: number;
+      orders: number;
+      products: number;
+    }
+  | {
+      skipped: true;
+      reason: string;
+    };
+
 type MedusaProductSeedResult = {
   id: string;
   title: string;
@@ -1455,4 +1526,10 @@ function productSeed(
       price: basePrice + index * Math.round(basePrice * 0.45),
     })),
   };
+}
+
+try {
+  await main();
+} finally {
+  await platformDb.pool.end();
 }

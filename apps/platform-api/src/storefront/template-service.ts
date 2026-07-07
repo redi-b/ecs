@@ -1,9 +1,10 @@
+import { storefrontTemplates as templateRegistry, themeTokensSchema } from "@ecs/storefront-templates";
 import type { createPlatformDb } from "@ecs/db";
 import {
   auditLogs,
   storefrontConfigs,
   storefrontRevisions,
-  storefrontTemplates,
+  storefrontTemplates as dbStorefrontTemplates,
   storefrontTemplateVersions,
   tenants,
 } from "@ecs/db";
@@ -19,7 +20,76 @@ import type {
 
 type PlatformDb = ReturnType<typeof createPlatformDb>["db"];
 
+type StorefrontTemplateDefinition = (typeof templateRegistry)[number];
+
+export function mergeStorefrontTemplateDefaults(defaultValue: unknown, value: unknown): unknown {
+  if (Array.isArray(defaultValue)) {
+    if (!Array.isArray(value)) {
+      return cloneJson(defaultValue);
+    }
+
+    return value.map((item, index) =>
+      mergeStorefrontTemplateDefaults(defaultValue[index] ?? {}, item),
+    );
+  }
+
+  if (isPlainObject(defaultValue)) {
+    const valueRecord = isPlainObject(value) ? value : {};
+    const merged: Record<string, unknown> = {};
+    const keys = new Set([...Object.keys(defaultValue), ...Object.keys(valueRecord)]);
+
+    for (const key of keys) {
+      merged[key] = mergeStorefrontTemplateDefaults(defaultValue[key], valueRecord[key]);
+    }
+
+    return merged;
+  }
+
+  if (
+    value === undefined ||
+    value === null ||
+    (value === "" && defaultValue !== undefined && defaultValue !== null)
+  ) {
+    return cloneJson(defaultValue);
+  }
+
+  return value;
+}
+
 export function createStorefrontTemplateService(db: PlatformDb) {
+  function getTemplate(templateKey: string): StorefrontTemplateDefinition | undefined {
+    return templateRegistry.find((item) => item.templateKey === templateKey);
+  }
+
+  function normalizeDraftPayload(input: {
+    data: unknown;
+    templateKey: string;
+    themeTokens: unknown;
+  }) {
+    const template = getTemplate(input.templateKey);
+
+    if (!template) {
+      return undefined;
+    }
+
+    const data = mergeStorefrontTemplateDefaults(template.defaultData, input.data);
+    const themeTokens = mergeStorefrontTemplateDefaults(
+      template.defaultThemeTokens,
+      input.themeTokens,
+    );
+    const parsedData = template.schema.safeParse(data);
+    const parsedThemeTokens = themeTokensSchema.safeParse(themeTokens);
+
+    if (!parsedData.success || !parsedThemeTokens.success) {
+      return undefined;
+    }
+
+    return {
+      data: parsedData.data,
+      themeTokens: parsedThemeTokens.data,
+    };
+  }
+
   async function getStorefrontDraft(input: { tenantId: string }): Promise<StorefrontDraftResult> {
     const [draft] = await db
       .select({
@@ -30,6 +100,10 @@ export function createStorefrontTemplateService(db: PlatformDb) {
         data: storefrontConfigs.draftData,
         themeTokens: storefrontConfigs.draftThemeTokens,
         updatedAt: storefrontConfigs.updatedAt,
+        publishedRevisionId: storefrontConfigs.publishedRevisionId,
+        publishedAt: storefrontConfigs.publishedAt,
+        publishedData: storefrontRevisions.data,
+        publishedThemeTokens: storefrontRevisions.themeTokens,
       })
       .from(storefrontConfigs)
       .innerJoin(
@@ -39,6 +113,7 @@ export function createStorefrontTemplateService(db: PlatformDb) {
           eq(storefrontTemplateVersions.version, storefrontConfigs.draftTemplateVersion),
         ),
       )
+      .leftJoin(storefrontRevisions, eq(storefrontRevisions.id, storefrontConfigs.publishedRevisionId))
       .where(eq(storefrontConfigs.tenantId, input.tenantId))
       .limit(1);
 
@@ -59,6 +134,15 @@ export function createStorefrontTemplateService(db: PlatformDb) {
         data: draft.data,
         themeTokens: draft.themeTokens,
         updatedAt: draft.updatedAt.toISOString(),
+        published:
+          draft.publishedRevisionId && draft.publishedAt
+            ? {
+                revisionId: draft.publishedRevisionId,
+                publishedAt: draft.publishedAt.toISOString(),
+                data: draft.publishedData,
+                themeTokens: draft.publishedThemeTokens,
+              }
+            : null,
       },
     };
   }
@@ -105,15 +189,15 @@ export function createStorefrontTemplateService(db: PlatformDb) {
       };
     },
     listStorefrontTemplates: async (): Promise<StorefrontTemplateCatalogItem[]> => {
-      const rows = await db
+        const rows = await db
         .select({
-          id: storefrontTemplates.id,
-          slug: storefrontTemplates.slug,
-          name: storefrontTemplates.name,
-          description: storefrontTemplates.description,
-          previewAssetId: storefrontTemplates.previewAssetId,
-          tags: storefrontTemplates.tags,
-          minimumPlanId: storefrontTemplates.minimumPlanId,
+          id: dbStorefrontTemplates.id,
+          slug: dbStorefrontTemplates.slug,
+          name: dbStorefrontTemplates.name,
+          description: dbStorefrontTemplates.description,
+          previewAssetId: dbStorefrontTemplates.previewAssetId,
+          tags: dbStorefrontTemplates.tags,
+          minimumPlanId: dbStorefrontTemplates.minimumPlanId,
           versionId: storefrontTemplateVersions.id,
           version: storefrontTemplateVersions.version,
           templateKey: storefrontTemplateVersions.templateKey,
@@ -121,16 +205,16 @@ export function createStorefrontTemplateService(db: PlatformDb) {
         })
         .from(storefrontTemplateVersions)
         .innerJoin(
-          storefrontTemplates,
-          eq(storefrontTemplateVersions.templateId, storefrontTemplates.id),
+          dbStorefrontTemplates,
+          eq(storefrontTemplateVersions.templateId, dbStorefrontTemplates.id),
         )
         .where(
           and(
-            eq(storefrontTemplates.status, "active"),
+            eq(dbStorefrontTemplates.status, "active"),
             eq(storefrontTemplateVersions.status, "active"),
           ),
         )
-        .orderBy(asc(storefrontTemplates.sortOrder), asc(storefrontTemplateVersions.version));
+        .orderBy(asc(dbStorefrontTemplates.sortOrder), asc(storefrontTemplateVersions.version));
 
       return rows.map((row) => ({
         id: row.id,
@@ -155,12 +239,31 @@ export function createStorefrontTemplateService(db: PlatformDb) {
       themeTokens: unknown;
       userId: string;
     }): Promise<StorefrontDraftUpdateResult> => {
+      const currentDraft = await getStorefrontDraft({ tenantId: input.tenantId });
+
+      if (!currentDraft.ok) {
+        return currentDraft;
+      }
+
+      const normalizedDraft = normalizeDraftPayload({
+        data: input.data,
+        templateKey: currentDraft.draft.templateKey,
+        themeTokens: input.themeTokens,
+      });
+
+      if (!normalizedDraft) {
+        return {
+          ok: false,
+          error: "invalid_storefront_draft",
+        };
+      }
+
       const updated = await db.transaction(async (transaction) => {
         const [row] = await transaction
           .update(storefrontConfigs)
           .set({
-            draftData: input.data,
-            draftThemeTokens: input.themeTokens,
+            draftData: normalizedDraft.data,
+            draftThemeTokens: normalizedDraft.themeTokens,
             updatedAt: new Date(),
           })
           .where(eq(storefrontConfigs.tenantId, input.tenantId))
@@ -222,6 +325,16 @@ export function createStorefrontTemplateService(db: PlatformDb) {
           return null;
         }
 
+        const normalizedDraft = normalizeDraftPayload({
+          data: draft.data,
+          templateKey: draft.templateKey,
+          themeTokens: draft.themeTokens,
+        });
+
+        if (!normalizedDraft) {
+          return "invalid";
+        }
+
         const [revision] = await transaction
           .insert(storefrontRevisions)
           .values({
@@ -229,8 +342,8 @@ export function createStorefrontTemplateService(db: PlatformDb) {
             templateId: draft.templateId,
             templateVersion: draft.templateVersion,
             templateKey: draft.templateKey,
-            data: draft.data,
-            themeTokens: draft.themeTokens,
+            data: normalizedDraft.data,
+            themeTokens: normalizedDraft.themeTokens,
             publishedByUserId: input.userId,
           })
           .returning({
@@ -249,6 +362,8 @@ export function createStorefrontTemplateService(db: PlatformDb) {
         await transaction
           .update(storefrontConfigs)
           .set({
+            draftData: normalizedDraft.data,
+            draftThemeTokens: normalizedDraft.themeTokens,
             publishedRevisionId: revision.id,
             publishedAt: revision.publishedAt,
             updatedAt: new Date(),
@@ -273,6 +388,13 @@ export function createStorefrontTemplateService(db: PlatformDb) {
         return {
           ok: false,
           error: "storefront_draft_not_found",
+        };
+      }
+
+      if (published === "invalid") {
+        return {
+          ok: false,
+          error: "invalid_storefront_draft",
         };
       }
 
@@ -308,8 +430,8 @@ export function createStorefrontTemplateService(db: PlatformDb) {
 
       const [template] = await db
         .select({
-          id: storefrontTemplates.id,
-          minimumPlanId: storefrontTemplates.minimumPlanId,
+          id: dbStorefrontTemplates.id,
+          minimumPlanId: dbStorefrontTemplates.minimumPlanId,
           version: storefrontTemplateVersions.version,
           templateKey: storefrontTemplateVersions.templateKey,
           defaultData: storefrontTemplateVersions.defaultData,
@@ -317,13 +439,13 @@ export function createStorefrontTemplateService(db: PlatformDb) {
         })
         .from(storefrontTemplateVersions)
         .innerJoin(
-          storefrontTemplates,
-          eq(storefrontTemplateVersions.templateId, storefrontTemplates.id),
+          dbStorefrontTemplates,
+          eq(storefrontTemplateVersions.templateId, dbStorefrontTemplates.id),
         )
         .where(
           and(
             eq(storefrontTemplateVersions.templateKey, input.templateKey),
-            eq(storefrontTemplates.status, "active"),
+            eq(dbStorefrontTemplates.status, "active"),
             eq(storefrontTemplateVersions.status, "active"),
           ),
         )
@@ -378,4 +500,12 @@ export function createStorefrontTemplateService(db: PlatformDb) {
       };
     },
   };
+}
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function cloneJson(value: unknown) {
+  return JSON.parse(JSON.stringify(value ?? {})) as unknown;
 }
