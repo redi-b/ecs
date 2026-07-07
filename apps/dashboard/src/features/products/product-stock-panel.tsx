@@ -1,9 +1,9 @@
 "use client";
 
-import type { MerchantProductStock } from "@ecs/contracts";
+import type { MerchantProduct, MerchantProductStock } from "@ecs/contracts";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -18,20 +18,67 @@ import {
 } from "@/components/ui/card";
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { getTenantScopedPath } from "@/lib/dashboard-tenant-context";
+import { dashboardRoutes } from "@/lib/routes";
 
 type ProductStockPanelProps = {
   action: string;
   initialStock?: MerchantProductStock | undefined;
+  product: MerchantProduct;
   productId: string;
   stockError?: string | undefined;
+  tenantId?: string | undefined;
 };
 
 export function ProductStockPanel({
   action,
   initialStock,
+  product,
   productId,
   stockError,
+  tenantId,
 }: ProductStockPanelProps) {
+  const variants = product.variants ?? [];
+
+  if (variants.length > 1) {
+    return (
+      <VariantStockPanel
+        productId={productId}
+        tenantId={tenantId}
+        variants={variants}
+      />
+    );
+  }
+
+  return (
+    <SingleVariantStockPanel
+      action={action}
+      initialStock={initialStock}
+      productId={productId}
+      stockError={stockError}
+    />
+  );
+}
+
+function SingleVariantStockPanel({
+  action,
+  initialStock,
+  productId,
+  stockError,
+}: {
+  action: string;
+  initialStock?: MerchantProductStock | undefined;
+  productId: string;
+  stockError?: string | undefined;
+}) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [stock, setStock] = useState(initialStock);
@@ -154,6 +201,231 @@ export function ProductStockPanel({
   );
 }
 
+function VariantStockPanel({
+  productId,
+  tenantId,
+  variants,
+}: {
+  productId: string;
+  tenantId?: string | undefined;
+  variants: NonNullable<MerchantProduct["variants"]>;
+}) {
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const [stockByVariantId, setStockByVariantId] = useState<Record<string, MerchantProductStock>>(
+    {},
+  );
+  const [stockedQuantityByVariantId, setStockedQuantityByVariantId] = useState<
+    Record<string, string>
+  >({});
+  const [errorByVariantId, setErrorByVariantId] = useState<Record<string, string>>({});
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadVariantStock() {
+      setIsLoading(true);
+      const results = await Promise.all(
+        variants.map(async (variant) => {
+          const response = await fetch(getVariantStockAction(productId, variant.id, tenantId), {
+            headers: {
+              accept: "application/json",
+            },
+          }).catch(() => null);
+          const data = (await response?.json().catch(() => ({}))) as {
+            error?: string;
+            stock?: MerchantProductStock;
+          };
+
+          return {
+            error: response?.ok && data.stock ? null : getStockErrorMessage(data.error),
+            stock: data.stock,
+            variantId: variant.id,
+          };
+        }),
+      );
+
+      if (cancelled) {
+        return;
+      }
+
+      setStockByVariantId(
+        Object.fromEntries(
+          results.flatMap((result) => (result.stock ? [[result.variantId, result.stock]] : [])),
+        ),
+      );
+      setStockedQuantityByVariantId(
+        Object.fromEntries(
+          results.flatMap((result) =>
+            result.stock?.stockedQuantity === null || result.stock?.stockedQuantity === undefined
+              ? []
+              : [[result.variantId, String(result.stock.stockedQuantity)]],
+          ),
+        ),
+      );
+      setErrorByVariantId(
+        Object.fromEntries(
+          results.flatMap((result) =>
+            result.error ? [[result.variantId, result.error]] : [],
+          ),
+        ),
+      );
+      setIsLoading(false);
+    }
+
+    void loadVariantStock();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [productId, tenantId, variants]);
+
+  const mutation = useMutation({
+    mutationFn: async (variantId: string) => {
+      const rawQuantity = stockedQuantityByVariantId[variantId] ?? "";
+      const parsedQuantity = Number.parseInt(rawQuantity, 10);
+
+      if (!Number.isInteger(parsedQuantity) || parsedQuantity < 0) {
+        throw new Error("Enter a whole number stock quantity.");
+      }
+
+      const response = await fetch(getVariantStockAction(productId, variantId, tenantId), {
+        body: JSON.stringify({
+          stockedQuantity: parsedQuantity,
+        }),
+        headers: {
+          accept: "application/json",
+          "content-type": "application/json",
+        },
+        method: "POST",
+      });
+      const data = (await response.json().catch(() => ({}))) as {
+        error?: string;
+        stock?: MerchantProductStock;
+      };
+
+      if (!response.ok || !data.stock) {
+        throw new Error(getStockErrorMessage(data.error));
+      }
+
+      return data.stock;
+    },
+    onSuccess: async (nextStock) => {
+      setStockByVariantId((current) => ({
+        ...current,
+        [nextStock.variantId]: nextStock,
+      }));
+      setStockedQuantityByVariantId((current) => ({
+        ...current,
+        [nextStock.variantId]:
+          nextStock.stockedQuantity === null || nextStock.stockedQuantity === undefined
+            ? ""
+            : String(nextStock.stockedQuantity),
+      }));
+      setErrorByVariantId((current) => {
+        const { [nextStock.variantId]: _removed, ...rest } = current;
+
+        return rest;
+      });
+      await queryClient.invalidateQueries({ queryKey: ["product", productId] });
+      toast.success("Variant stock updated.");
+      router.refresh();
+    },
+    onError: (error, variantId) => {
+      const message = error instanceof Error ? error.message : "Stock could not be updated.";
+
+      setErrorByVariantId((current) => ({
+        ...current,
+        [variantId]: message,
+      }));
+    },
+  });
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <CardTitle>Variant stock</CardTitle>
+            <CardDescription>Stock at the merchant location for each product variant.</CardDescription>
+          </div>
+          <Badge variant="secondary">{variants.length} variants</Badge>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="overflow-hidden rounded-xl border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Variant</TableHead>
+                <TableHead>SKU</TableHead>
+                <TableHead className="text-right">Available</TableHead>
+                <TableHead className="text-right">Reserved</TableHead>
+                <TableHead className="w-56">Stocked quantity</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {variants.map((variant) => {
+                const stock = stockByVariantId[variant.id];
+                const error = errorByVariantId[variant.id];
+                const isSaving = mutation.isPending && mutation.variables === variant.id;
+
+                return (
+                  <TableRow key={variant.id}>
+                    <TableCell className="min-w-56 whitespace-normal">
+                      <div className="font-medium">{variant.title ?? "Untitled variant"}</div>
+                      <div className="break-all text-xs text-muted-foreground">{variant.id}</div>
+                      <VariantOptionSummary variant={variant} />
+                      {error ? (
+                        <div className="mt-2 text-xs text-destructive">{error}</div>
+                      ) : null}
+                    </TableCell>
+                    <TableCell>{variant.sku ?? "No SKU"}</TableCell>
+                    <TableCell className="text-right">
+                      {isLoading ? "Loading..." : formatQuantity(stock?.availableQuantity ?? null)}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {isLoading ? "Loading..." : formatQuantity(stock?.reservedQuantity ?? null)}
+                    </TableCell>
+                    <TableCell>
+                      <form
+                        className="flex items-center gap-2"
+                        onSubmit={(event) => {
+                          event.preventDefault();
+                          mutation.mutate(variant.id);
+                        }}
+                      >
+                        <Input
+                          aria-label={`Stocked quantity for ${variant.title ?? variant.id}`}
+                          className="w-24"
+                          min="0"
+                          onChange={(event) =>
+                            setStockedQuantityByVariantId((current) => ({
+                              ...current,
+                              [variant.id]: event.target.value,
+                            }))
+                          }
+                          step="1"
+                          type="number"
+                          value={stockedQuantityByVariantId[variant.id] ?? ""}
+                        />
+                        <Button disabled={isSaving || isLoading} size="sm" type="submit">
+                          {isSaving ? "Saving..." : "Save"}
+                        </Button>
+                      </form>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 function StockMetric({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-lg border bg-background px-3 py-2">
@@ -161,6 +433,33 @@ function StockMetric({ label, value }: { label: string; value: string }) {
       <div className="text-sm font-medium">{value}</div>
     </div>
   );
+}
+
+function VariantOptionSummary({
+  variant,
+}: {
+  variant: NonNullable<MerchantProduct["variants"]>[number];
+}) {
+  const options = variant.optionValues ?? [];
+
+  if (!options.length) {
+    return null;
+  }
+
+  return (
+    <div className="mt-2 flex flex-wrap gap-1.5">
+      {options.map((option, index) => (
+        <Badge key={`${option.optionTitle}-${option.value}-${index}`} variant="outline">
+          {option.optionTitle ? `${option.optionTitle}: ` : ""}
+          {option.value ?? "Unset"}
+        </Badge>
+      ))}
+    </div>
+  );
+}
+
+function getVariantStockAction(productId: string, variantId: string, tenantId?: string) {
+  return getTenantScopedPath(dashboardRoutes.productVariantStockAction(productId, variantId), tenantId);
 }
 
 function StockAlert({ error }: { error?: string | undefined }) {

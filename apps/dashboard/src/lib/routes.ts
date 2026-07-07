@@ -12,6 +12,10 @@ export const dashboardRoutes = {
   productEdit: (productId: string) => `/admin/products/${encodeURIComponent(productId)}/edit`,
   productStockAction: (productId: string) =>
     `/admin/products/actions/${encodeURIComponent(productId)}/stock`,
+  productVariantStockAction: (productId: string, variantId: string) =>
+    `/admin/products/actions/${encodeURIComponent(productId)}/variants/${encodeURIComponent(
+      variantId,
+    )}/stock`,
   productUpdateAction: (productId: string) =>
     `/admin/products/actions/${encodeURIComponent(productId)}`,
   productDeleteAction: (productId: string) =>

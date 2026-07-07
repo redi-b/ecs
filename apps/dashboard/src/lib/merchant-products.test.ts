@@ -8,8 +8,10 @@ import {
   getMerchantProductCategories,
   getMerchantProductCollections,
   getMerchantProductStock,
+  getMerchantProductVariantStock,
   getMerchantProducts,
   updateMerchantProductStock,
+  updateMerchantProductVariantStock,
   updateMerchantProduct,
   deleteMerchantProduct,
   deleteMerchantProductsBatch,
@@ -638,6 +640,69 @@ describe("getMerchantProducts", () => {
     assert.equal(forwardedRequest?.headers.get("x-forwarded-host"), "abebe.lvh.me");
     assert.deepEqual(await forwardedRequest?.json(), {
       stockedQuantity: 15,
+    });
+  });
+
+  it("fetches merchant product variant stock with tenant context", async () => {
+    let forwardedRequest: Request | undefined;
+    const result = await getMerchantProductVariantStock({
+      cookieHeader: "better-auth.session_token=session_1",
+      platformApiBaseUrl: "http://platform.local",
+      productId: "prod_1",
+      tenantId: "tenant_1",
+      variantId: "variant_1",
+      fetcher: async (input, init) => {
+        forwardedRequest = new Request(input, init);
+
+        return Response.json({
+          stock: merchantProductStock,
+        });
+      },
+    });
+
+    assert.deepEqual(result, {
+      ok: true,
+      stock: merchantProductStock,
+    });
+    assert.equal(
+      forwardedRequest?.url,
+      "http://platform.local/platform/tenants/tenant_1/products/prod_1/variants/variant_1/stock",
+    );
+    assert.equal(forwardedRequest?.headers.get("cookie"), "better-auth.session_token=session_1");
+    assert.equal(forwardedRequest?.headers.get("x-forwarded-host"), null);
+  });
+
+  it("updates merchant product variant stock with resolved shop host context", async () => {
+    let forwardedRequest: Request | undefined;
+    const result = await updateMerchantProductVariantStock({
+      cookieHeader: "better-auth.session_token=session_1",
+      platformApiBaseUrl: "http://platform.local",
+      productId: "prod_1",
+      requestHost: "abebe.lvh.me",
+      stockedQuantity: 18,
+      variantId: "variant_1",
+      fetcher: async (input, init) => {
+        forwardedRequest = new Request(input, init);
+
+        return Response.json({
+          stock: {
+            ...merchantProductStock,
+            stockedQuantity: 18,
+            availableQuantity: 16,
+          },
+        });
+      },
+    });
+
+    assert.equal(result.ok, true);
+    assert.equal(
+      forwardedRequest?.url,
+      "http://platform.local/platform/merchant/products/prod_1/variants/variant_1/stock",
+    );
+    assert.equal(forwardedRequest?.method, "POST");
+    assert.equal(forwardedRequest?.headers.get("x-forwarded-host"), "abebe.lvh.me");
+    assert.deepEqual(await forwardedRequest?.json(), {
+      stockedQuantity: 18,
     });
   });
 

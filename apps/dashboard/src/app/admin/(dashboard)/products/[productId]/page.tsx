@@ -135,8 +135,10 @@ export default async function MerchantProductDetailPage({
               tenantId,
             )}
             initialStock={stockResult.ok ? stockResult.stock : undefined}
+            product={productResult.product}
             productId={productResult.product.id}
             stockError={stockResult.ok ? undefined : stockResult.message}
+            tenantId={tenantId}
           />
         </>
       ) : (
