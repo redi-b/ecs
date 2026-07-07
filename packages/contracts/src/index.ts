@@ -185,6 +185,50 @@ export const platformErrorSchema = z.object({
 
 export type PlatformError = z.infer<typeof platformErrorSchema>;
 
+export const merchantProductVariantWriteSchema = z.object({
+  optionValues: z.record(z.string().min(1), z.string().min(1)),
+  sku: z.string().min(1).nullable().optional(),
+  priceAmount: z.number().nonnegative(),
+  currencyCode: z.string().min(1),
+  stockedQuantity: z.number().int().nonnegative().optional(),
+});
+
+export const merchantProductWriteSchema = z.object({
+  categoryIds: z.array(z.string().min(1)).optional(),
+  collectionId: z.string().min(1).nullable().optional(),
+  currencyCode: z.string().min(1).nullable().optional(),
+  description: z.string().min(1).nullable().optional(),
+  handle: z.string().min(1).nullable().optional(),
+  imageUrls: z.array(z.string().min(1)).optional(),
+  options: z
+    .array(
+      z.object({
+        title: z.string().min(1),
+        values: z.array(z.string().min(1)).min(1),
+      }),
+    )
+    .optional(),
+  priceAmount: z.number().nonnegative().optional(),
+  status: z.string().min(1).nullable().optional(),
+  thumbnail: z.string().min(1).nullable().optional(),
+  title: z.string().min(1).nullable().optional(),
+  variants: z.array(merchantProductVariantWriteSchema).optional(),
+});
+
+export type MerchantProductVariantWrite = z.infer<typeof merchantProductVariantWriteSchema>;
+export type MerchantProductWrite = z.infer<typeof merchantProductWriteSchema>;
+
+export const merchantProductStockSchema = z.object({
+  productId: z.string().min(1),
+  variantId: z.string().min(1),
+  inventoryItemId: z.string().min(1),
+  locationId: z.string().min(1),
+  stockedQuantity: z.number().nullable(),
+  reservedQuantity: z.number().nullable(),
+  incomingQuantity: z.number().nullable(),
+  availableQuantity: z.number().nullable(),
+});
+
 export const merchantProductSchema = z.object({
   id: z.string().min(1),
   categoryIds: z.array(z.string().min(1)).optional(),
@@ -226,6 +270,14 @@ export const merchantProductSchema = z.object({
             currencyCode: z.string().min(1).nullable(),
           }),
         ),
+        stock: merchantProductStockSchema
+          .omit({
+            productId: true,
+            variantId: true,
+            inventoryItemId: true,
+          })
+          .nullable()
+          .optional(),
       }),
     )
     .optional(),
@@ -242,17 +294,6 @@ export const merchantProductsSchema = z.object({
 
 export const merchantProductMutationSchema = z.object({
   product: merchantProductSchema,
-});
-
-export const merchantProductStockSchema = z.object({
-  productId: z.string().min(1),
-  variantId: z.string().min(1),
-  inventoryItemId: z.string().min(1),
-  locationId: z.string().min(1),
-  stockedQuantity: z.number().nullable(),
-  reservedQuantity: z.number().nullable(),
-  incomingQuantity: z.number().nullable(),
-  availableQuantity: z.number().nullable(),
 });
 
 export const merchantProductStockResponseSchema = z.object({

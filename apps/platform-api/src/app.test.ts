@@ -213,6 +213,12 @@ function appWithResolution(
       salesChannelId: string;
       stockLocationId: string;
     }) => Promise<MerchantProductStockResult>;
+    getMerchantProductVariantStock?: (input: {
+      productId: string;
+      salesChannelId: string;
+      stockLocationId: string;
+      variantId: string;
+    }) => Promise<MerchantProductStockResult>;
     getTenantDashboardSummary?: (input: {
       tenantId: string;
     }) => Promise<TenantDashboardSummaryResult>;
@@ -341,6 +347,13 @@ function appWithResolution(
       stockLocationId: string;
       stockedQuantity: number;
     }) => Promise<MerchantProductStockUpdateResult>;
+    updateMerchantProductVariantStock?: (input: {
+      productId: string;
+      salesChannelId: string;
+      stockLocationId: string;
+      stockedQuantity: number;
+      variantId: string;
+    }) => Promise<MerchantProductStockUpdateResult>;
   },
 ) {
   return createPlatformApp({
@@ -362,6 +375,7 @@ function appWithResolution(
     getMerchantOrder: options?.getMerchantOrder,
     getMerchantProduct: options?.getMerchantProduct,
     getMerchantProductStock: options?.getMerchantProductStock,
+    getMerchantProductVariantStock: options?.getMerchantProductVariantStock,
     getTenantForUser: options?.getTenantForUser,
     updateTenantShopSettings: options?.updateTenantShopSettings,
     getTenantCommerceContext: options?.getTenantCommerceContext,
@@ -386,6 +400,7 @@ function appWithResolution(
     selectStorefrontTemplate: options?.selectStorefrontTemplate,
     updateMerchantProduct: options?.updateMerchantProduct,
     updateMerchantProductStock: options?.updateMerchantProductStock,
+    updateMerchantProductVariantStock: options?.updateMerchantProductVariantStock,
     serviceName: "platform-api",
     medusaInternalUrl: "http://medusa:9000",
     platformPublicBaseUrl: "http://api.lvh.me",
@@ -6090,6 +6105,175 @@ describe("platform app", () => {
       productId: "prod_1",
       salesChannelId: "channel_1",
       stockLocationId: "sloc_1",
+    });
+  });
+
+  it("returns merchant product variant stock scoped to the resolved tenant stock location", async () => {
+    let stockInput:
+      | {
+          productId: string;
+          salesChannelId: string;
+          stockLocationId: string;
+          variantId: string;
+        }
+      | undefined;
+    const app = appWithResolution(
+      {
+        ok: true,
+        context: resolvedTenantContext,
+      },
+      {
+        authorizeDashboardForTenant: async () => ({
+          ok: true,
+          actor: {
+            id: "user_1",
+            email: "owner@abebe.local",
+            name: "Abebe Owner",
+            role: "owner",
+          },
+        }),
+        getSession: async () => ({
+          user: {
+            id: "user_1",
+            email: "owner@abebe.local",
+            name: "Abebe Owner",
+          },
+        }),
+        getMerchantProductVariantStock: async (input) => {
+          stockInput = input;
+
+          return {
+            ok: true,
+            stock: {
+              productId: input.productId,
+              variantId: input.variantId,
+              inventoryItemId: "iitem_1",
+              locationId: input.stockLocationId,
+              stockedQuantity: 12,
+              reservedQuantity: 2,
+              incomingQuantity: 0,
+              availableQuantity: 10,
+            },
+          };
+        },
+      },
+    );
+
+    const response = await app.request(
+      "/platform/merchant/products/prod_1/variants/variant_1/stock",
+      {
+        headers: {
+          Host: "abebe.lvh.me",
+        },
+      },
+    );
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(stockInput, {
+      productId: "prod_1",
+      salesChannelId: "channel_1",
+      stockLocationId: "sloc_1",
+      variantId: "variant_1",
+    });
+    assert.deepEqual(await response.json(), {
+      stock: {
+        productId: "prod_1",
+        variantId: "variant_1",
+        inventoryItemId: "iitem_1",
+        locationId: "sloc_1",
+        stockedQuantity: 12,
+        reservedQuantity: 2,
+        incomingQuantity: 0,
+        availableQuantity: 10,
+      },
+    });
+  });
+
+  it("updates merchant product variant stock scoped to the resolved tenant stock location", async () => {
+    let stockInput:
+      | {
+          productId: string;
+          salesChannelId: string;
+          stockLocationId: string;
+          stockedQuantity: number;
+          variantId: string;
+        }
+      | undefined;
+    const app = appWithResolution(
+      {
+        ok: true,
+        context: resolvedTenantContext,
+      },
+      {
+        authorizeDashboardForTenant: async () => ({
+          ok: true,
+          actor: {
+            id: "user_1",
+            email: "owner@abebe.local",
+            name: "Abebe Owner",
+            role: "owner",
+          },
+        }),
+        getSession: async () => ({
+          user: {
+            id: "user_1",
+            email: "owner@abebe.local",
+            name: "Abebe Owner",
+          },
+        }),
+        updateMerchantProductVariantStock: async (input) => {
+          stockInput = input;
+
+          return {
+            ok: true,
+            stock: {
+              productId: input.productId,
+              variantId: input.variantId,
+              inventoryItemId: "iitem_1",
+              locationId: input.stockLocationId,
+              stockedQuantity: input.stockedQuantity,
+              reservedQuantity: 0,
+              incomingQuantity: 0,
+              availableQuantity: input.stockedQuantity,
+            },
+          };
+        },
+      },
+    );
+
+    const response = await app.request(
+      "/platform/merchant/products/prod_1/variants/variant_1/stock",
+      {
+        body: JSON.stringify({
+          stockedQuantity: 24,
+        }),
+        headers: {
+          "content-type": "application/json",
+          Host: "abebe.lvh.me",
+        },
+        method: "POST",
+      },
+    );
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(stockInput, {
+      productId: "prod_1",
+      salesChannelId: "channel_1",
+      stockLocationId: "sloc_1",
+      stockedQuantity: 24,
+      variantId: "variant_1",
+    });
+    assert.deepEqual(await response.json(), {
+      stock: {
+        productId: "prod_1",
+        variantId: "variant_1",
+        inventoryItemId: "iitem_1",
+        locationId: "sloc_1",
+        stockedQuantity: 24,
+        reservedQuantity: 0,
+        incomingQuantity: 0,
+        availableQuantity: 24,
+      },
     });
   });
 
