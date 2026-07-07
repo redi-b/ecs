@@ -1264,12 +1264,29 @@ export type PlatformAppOptions = {
         stockLocationId: string;
       }) => Promise<MerchantProductStockResult>)
     | undefined;
+  getMerchantProductVariantStock?:
+    | ((input: {
+        productId: string;
+        salesChannelId: string;
+        stockLocationId: string;
+        variantId: string;
+      }) => Promise<MerchantProductStockResult>)
+    | undefined;
   updateMerchantProductStock?:
     | ((input: {
         productId: string;
         salesChannelId: string;
         stockLocationId: string;
         stockedQuantity: number;
+      }) => Promise<MerchantProductStockUpdateResult>)
+    | undefined;
+  updateMerchantProductVariantStock?:
+    | ((input: {
+        productId: string;
+        salesChannelId: string;
+        stockLocationId: string;
+        stockedQuantity: number;
+        variantId: string;
       }) => Promise<MerchantProductStockUpdateResult>)
     | undefined;
   listMerchantOrders?:

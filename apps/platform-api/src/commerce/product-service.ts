@@ -64,6 +64,14 @@ type ProductStockUpdateInput = ProductStockInput & {
   stockedQuantity: number;
 };
 
+type ProductVariantStockInput = ProductStockInput & {
+  variantId: string;
+};
+
+type ProductVariantStockUpdateInput = ProductVariantStockInput & {
+  stockedQuantity: number;
+};
+
 export function createMedusaProductService(options: {
   adminApiToken?: string | undefined;
   fetcher?: typeof fetch;
@@ -386,6 +394,27 @@ export function createMedusaProductService(options: {
       });
     },
 
+    getMerchantProductVariantStock: async (
+      input: ProductVariantStockInput,
+    ): Promise<MerchantProductStockResult> => {
+      if (!options.adminApiToken?.trim()) {
+        return missingCredentials();
+      }
+
+      const inventory = await getProductVariantInventoryContext(fetcher, options, input);
+
+      if (!inventory.ok) {
+        return inventory;
+      }
+
+      return getInventoryItemStock(fetcher, options, {
+        inventoryItemId: inventory.inventoryItemId,
+        productId: input.productId,
+        stockLocationId: input.stockLocationId,
+        variantId: inventory.variantId,
+      });
+    },
+
     updateMerchantProductStock: async (
       input: ProductStockUpdateInput,
     ): Promise<MerchantProductStockUpdateResult> => {
@@ -394,6 +423,62 @@ export function createMedusaProductService(options: {
       }
 
       const inventory = await getProductInventoryContext(fetcher, options, input);
+
+      if (!inventory.ok) {
+        return inventory;
+      }
+
+      const response = await requestMedusa(
+        fetcher,
+        getInventoryItemLevelUrl(options.medusaInternalUrl, {
+          inventoryItemId: inventory.inventoryItemId,
+          stockLocationId: input.stockLocationId,
+        }),
+        {
+          body: JSON.stringify({
+            stocked_quantity: input.stockedQuantity,
+          }),
+          headers: getAdminHeaders(options.adminApiToken),
+          method: "POST",
+        },
+      );
+
+      if (!response.ok) {
+        return getStockWriteError(response);
+      }
+
+      const data = await response.json().catch(() => undefined);
+      const stock = normalizeProductStock({
+        inventoryItemId: inventory.inventoryItemId,
+        productId: input.productId,
+        stockLocationId: input.stockLocationId,
+        variantId: inventory.variantId,
+        value: data?.inventory_item,
+      });
+
+      return {
+        ok: true,
+        stock: stock ?? {
+          productId: input.productId,
+          variantId: inventory.variantId,
+          inventoryItemId: inventory.inventoryItemId,
+          locationId: input.stockLocationId,
+          stockedQuantity: input.stockedQuantity,
+          reservedQuantity: null,
+          incomingQuantity: null,
+          availableQuantity: null,
+        },
+      };
+    },
+
+    updateMerchantProductVariantStock: async (
+      input: ProductVariantStockUpdateInput,
+    ): Promise<MerchantProductStockUpdateResult> => {
+      if (!options.adminApiToken?.trim()) {
+        return missingCredentials();
+      }
+
+      const inventory = await getProductVariantInventoryContext(fetcher, options, input);
 
       if (!inventory.ok) {
         return inventory;
@@ -888,6 +973,79 @@ async function getProductInventoryContext(
       status: 409,
     };
   }
+
+  if (!inventory) {
+    return {
+      ok: false,
+      error: "product_inventory_unavailable",
+      status: 503,
+    };
+  }
+
+  return {
+    ok: true,
+    ...inventory,
+  };
+}
+
+async function getProductVariantInventoryContext(
+  fetcher: typeof fetch,
+  options: {
+    adminApiToken?: string | undefined;
+    medusaInternalUrl: string;
+  },
+  input: ProductVariantStockInput,
+): Promise<
+  | {
+      ok: true;
+      inventoryItemId: string;
+      variantId: string;
+    }
+  | Extract<MerchantProductStockResult, { ok: false }>
+> {
+  const response = await requestMedusa(
+    fetcher,
+    getProductInventoryUrl(options.medusaInternalUrl, input.productId),
+    {
+      headers: getAdminHeaders(options.adminApiToken ?? ""),
+    },
+  );
+
+  if (response.status === 401) {
+    return {
+      ok: false,
+      error: "commerce_credentials_invalid",
+      status: 401,
+    };
+  }
+
+  if (response.status === 404) {
+    return {
+      ok: false,
+      error: "product_not_found",
+      status: 404,
+    };
+  }
+
+  if (!response.ok) {
+    return {
+      ok: false,
+      error: "commerce_backend_unavailable",
+      status: 503,
+    };
+  }
+
+  const data = await response.json().catch(() => undefined);
+
+  if (!productBelongsToSalesChannel(data?.product, input.salesChannelId)) {
+    return {
+      ok: false,
+      error: "product_not_found",
+      status: 404,
+    };
+  }
+
+  const inventory = getVariantInventoryItem(data?.product, input.variantId);
 
   if (!inventory) {
     return {
@@ -1619,6 +1777,31 @@ function getSingleVariantInventoryItem(product: unknown) {
   }
 
   return undefined;
+}
+
+function getVariantInventoryItem(product: unknown, variantId: string) {
+  if (!isRecord(product) || !Array.isArray(product.variants)) {
+    return undefined;
+  }
+
+  const variant = product.variants
+    .filter(isRecord)
+    .find((candidate) => getString(candidate.id) === variantId);
+
+  if (!variant) {
+    return undefined;
+  }
+
+  const inventoryItemId = getVariantInventoryItemId(variant);
+
+  if (!inventoryItemId) {
+    return undefined;
+  }
+
+  return {
+    variantId,
+    inventoryItemId,
+  };
 }
 
 function getVariantInventoryItemId(variant: Record<string, unknown>) {

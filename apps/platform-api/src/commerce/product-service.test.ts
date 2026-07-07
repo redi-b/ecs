@@ -1102,6 +1102,161 @@ describe("createMedusaProductService", () => {
     });
   });
 
+  it("gets stock for a specific multi-variant product variant", async () => {
+    const forwardedRequests: Request[] = [];
+    const service = createMedusaProductService({
+      adminApiToken: "medusa_token",
+      medusaInternalUrl: "http://medusa:9000",
+      fetcher: async (input, init) => {
+        const request = new Request(input, init);
+        forwardedRequests.push(request);
+
+        if (request.url.includes("/admin/products/prod_1")) {
+          return Response.json({
+            product: {
+              id: "prod_1",
+              sales_channels: [{ id: "sc_1" }],
+              variants: [
+                {
+                  id: "variant_1",
+                  inventory_items: [{ inventory_item_id: "iitem_1" }],
+                },
+                {
+                  id: "variant_2",
+                  inventory_items: [{ inventory_item_id: "iitem_2" }],
+                },
+              ],
+            },
+          });
+        }
+
+        return Response.json({
+          inventory_item: {
+            id: "iitem_2",
+            location_levels: [
+              {
+                location_id: "sloc_1",
+                stocked_quantity: 22,
+                reserved_quantity: 3,
+                incoming_quantity: 1,
+                available_quantity: 19,
+              },
+            ],
+          },
+        });
+      },
+    });
+
+    const result = await service.getMerchantProductVariantStock({
+      productId: "prod_1",
+      salesChannelId: "sc_1",
+      stockLocationId: "sloc_1",
+      variantId: "variant_2",
+    });
+
+    assert.equal(result.ok, true);
+    assert.equal(forwardedRequests.length, 2);
+    assert.equal(
+      forwardedRequests[0]?.url,
+      "http://medusa:9000/admin/products/prod_1?fields=id%2Csales_channels.id%2Cvariants.id%2Cvariants.inventory_items.inventory_item_id",
+    );
+    assert.equal(
+      forwardedRequests[1]?.url,
+      "http://medusa:9000/admin/inventory-items/iitem_2?fields=id%2C*location_levels",
+    );
+    assert.deepEqual(result, {
+      ok: true,
+      stock: {
+        productId: "prod_1",
+        variantId: "variant_2",
+        inventoryItemId: "iitem_2",
+        locationId: "sloc_1",
+        stockedQuantity: 22,
+        reservedQuantity: 3,
+        incomingQuantity: 1,
+        availableQuantity: 19,
+      },
+    });
+  });
+
+  it("updates stock for a specific multi-variant product variant", async () => {
+    const forwardedRequests: Request[] = [];
+    const service = createMedusaProductService({
+      adminApiToken: "medusa_token",
+      medusaInternalUrl: "http://medusa:9000",
+      fetcher: async (input, init) => {
+        const request = new Request(input, init);
+        forwardedRequests.push(request);
+
+        if (request.url.includes("/admin/products/prod_1")) {
+          return Response.json({
+            product: {
+              id: "prod_1",
+              sales_channels: [{ id: "sc_1" }],
+              variants: [
+                {
+                  id: "variant_1",
+                  inventory_items: [{ inventory_item_id: "iitem_1" }],
+                },
+                {
+                  id: "variant_2",
+                  inventory_items: [{ inventory_item_id: "iitem_2" }],
+                },
+              ],
+            },
+          });
+        }
+
+        return Response.json({
+          inventory_item: {
+            id: "iitem_2",
+            location_levels: [
+              {
+                location_id: "sloc_1",
+                stocked_quantity: 18,
+                reserved_quantity: 0,
+                incoming_quantity: 0,
+                available_quantity: 18,
+              },
+            ],
+          },
+        });
+      },
+    });
+
+    const result = await service.updateMerchantProductVariantStock({
+      productId: "prod_1",
+      salesChannelId: "sc_1",
+      stockLocationId: "sloc_1",
+      stockedQuantity: 18,
+      variantId: "variant_2",
+    });
+
+    assert.equal(result.ok, true);
+    assert.equal(forwardedRequests.length, 2);
+    assert.equal(forwardedRequests[1]?.method, "POST");
+    assert.equal(
+      forwardedRequests[1]?.url,
+      "http://medusa:9000/admin/inventory-items/iitem_2/location-levels/sloc_1",
+    );
+    assert.deepEqual(await forwardedRequests[1]?.json(), {
+      stocked_quantity: 18,
+    });
+    assert.deepEqual(result, {
+      ok: true,
+      stock: {
+        productId: "prod_1",
+        variantId: "variant_2",
+        inventoryItemId: "iitem_2",
+        locationId: "sloc_1",
+        stockedQuantity: 18,
+        reservedQuantity: 0,
+        incomingQuantity: 0,
+        availableQuantity: 18,
+      },
+    });
+  });
+
   it("creates product categories with tenant metadata", async () => {
     let forwardedRequest: Request | undefined;
     const service = createMedusaProductService({
@@ -1929,4 +2084,3 @@ describe("createMedusaProductService", () => {
     });
   });
 });
-
