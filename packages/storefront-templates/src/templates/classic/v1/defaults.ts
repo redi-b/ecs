@@ -1,4 +1,4 @@
-import type { ClassicV1Data, ThemeTokens } from "./schema.js";
+import type { ClassicV1Data, ThemeTokens } from "./schema";
 
 export const classicV1Defaults: ClassicV1Data = {
   announcement: {

@@ -1,5 +1,5 @@
-import { classicV1Defaults, classicV1ThemeTokens } from "./templates/classic/v1/defaults.js";
-import { classicV1DataSchema } from "./templates/classic/v1/schema.js";
+import { classicV1Defaults, classicV1ThemeTokens } from "./templates/classic/v1/defaults";
+import { classicV1DataSchema } from "./templates/classic/v1/schema";
 
 export const storefrontTemplates = [
   {
