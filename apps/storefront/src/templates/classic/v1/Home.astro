@@ -61,6 +61,20 @@ const products: StoreProduct[] = "products" in productsResult ? productsResult.p
 const storeError = "message" in productsResult ? productsResult : null;
 // biome-ignore lint/correctness/noUnusedVariables: Used by the Astro template below.
 const radius = theme.radius === "none" ? "0" : theme.radius === "md" ? "14px" : "8px";
+const logoUrl = isRenderableImageUrl(templateData.header.logoAssetId)
+  ? templateData.header.logoAssetId
+  : null;
+const heroImageUrl = isRenderableImageUrl(templateData.home.hero.imageAssetId)
+  ? templateData.home.hero.imageAssetId
+  : null;
+
+function isRenderableImageUrl(value: string | undefined) {
+  if (!value) {
+    return false;
+  }
+
+  return /^https?:\/\//i.test(value) || /^data:image\//i.test(value);
+}
 ---
 
 <div
@@ -72,7 +86,10 @@ const radius = theme.radius === "none" ? "0" : theme.radius === "md" ? "14px" : 
   )}
 
   <header class="site-header">
-    <a class="brand" href="/">{tenantName}</a>
+    <a class="brand" href="/">
+      {logoUrl && <img src={logoUrl} alt="" loading="eager" />}
+      <span>{tenantName}</span>
+    </a>
     <nav aria-label="Store navigation">
       {templateData.header.navigation.map((item) => (
         <a href={item.href}>{item.label}</a>
@@ -90,6 +107,11 @@ const radius = theme.radius === "none" ? "0" : theme.radius === "md" ? "14px" : 
           {templateData.home.hero.primaryCtaLabel}
         </a>
       </div>
+      {heroImageUrl && (
+        <figure class="hero-media">
+          <img src={heroImageUrl} alt="" loading="eager" />
+        </figure>
+      )}
     </section>
 
     <section id="products" class="products" aria-labelledby="products-title">
@@ -180,9 +202,19 @@ const radius = theme.radius === "none" ? "0" : theme.radius === "md" ? "14px" : 
   }
 
   .brand {
+    align-items: center;
     color: inherit;
+    display: inline-flex;
+    gap: 12px;
     font-weight: 900;
     text-decoration: none;
+  }
+
+  .brand img {
+    border-radius: calc(var(--sf-radius) * 0.75);
+    height: 40px;
+    object-fit: cover;
+    width: 40px;
   }
 
   nav {
@@ -199,10 +231,34 @@ const radius = theme.radius === "none" ? "0" : theme.radius === "md" ? "14px" : 
   }
 
   .hero {
+    align-items: center;
     display: grid;
+    gap: 48px;
+    grid-template-columns: minmax(0, 1fr);
     min-height: 420px;
     padding: 64px 0 72px;
-    place-items: center start;
+  }
+
+  @media (min-width: 860px) {
+    .hero {
+      grid-template-columns: minmax(0, 1.05fr) minmax(280px, 0.95fr);
+    }
+  }
+
+  .hero-media {
+    aspect-ratio: 4 / 3;
+    border: 1px solid color-mix(in srgb, var(--sf-fg) 12%, transparent);
+    border-radius: calc(var(--sf-radius) * 1.5);
+    margin: 0;
+    overflow: hidden;
+    width: 100%;
+  }
+
+  .hero-media img {
+    display: block;
+    height: 100%;
+    object-fit: cover;
+    width: 100%;
   }
 
   .eyebrow {
