@@ -63,6 +63,11 @@ import {
   NO_COLLECTION_VALUE,
   StepDot,
 } from "@/features/products/product-form-fields";
+import {
+  buildVariantMatrix,
+  type ProductOptionDraft,
+  type VariantMatrixRow,
+} from "@/features/products/product-variant-matrix";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -87,21 +92,31 @@ type ProductFormValues = {
   status: "draft" | "published";
   priceAmount: string;
   currencyCode: "etb";
-  optionTitle: string;
-  optionValues: string;
+  initialStock: string;
+  options: ProductOptionDraft[];
+  skuPrefix: string;
+  variantOverrides: Record<
+    string,
+    {
+      priceAmount?: string | undefined;
+      sku?: string | undefined;
+      stockedQuantity?: string | undefined;
+    }
+  >;
   collectionId: string;
   categoryIds: string[];
 };
 
 type ComposerStep = {
-  id: "details" | "organize" | "pricing";
+  id: "details" | "organize" | "variants" | "review";
   label: string;
 };
 
 const PRODUCT_STEPS: ComposerStep[] = [
   { id: "details", label: "Details" },
   { id: "organize", label: "Organize" },
-  { id: "pricing", label: "Pricing" },
+  { id: "variants", label: "Variants" },
+  { id: "review", label: "Review" },
 ];
 
 const productPayloadSchema = z.object({
@@ -120,6 +135,17 @@ const productPayloadSchema = z.object({
       z.object({
         title: z.string().trim().min(1, "Enter an option name."),
         values: z.array(z.string().trim().min(1)).min(1, "Enter at least one option value."),
+      }),
+    )
+    .optional(),
+  variants: z
+    .array(
+      z.object({
+        optionValues: z.record(z.string().min(1), z.string().min(1)),
+        sku: z.string().trim().nullable(),
+        priceAmount: z.number().int().nonnegative("Price cannot be negative."),
+        currencyCode: z.literal("etb"),
+        stockedQuantity: z.number().int().nonnegative("Stock cannot be negative."),
       }),
     )
     .optional(),
@@ -199,6 +225,7 @@ export function ProductForm({
     },
   });
   const HandleLockIcon = isHandleLocked ? AppIcons.lock : AppIcons.lockUnlock;
+  const variantRows = getVariantRows(form.state.values);
 
   function requestExit(next: () => void) {
     if (form.state.isDirty && !submitMutation.isSuccess) {
@@ -315,7 +342,7 @@ export function ProductForm({
             {product ? "Edit product" : "Create product"}
           </DialogTitle>
           <DialogDescription className="sr-only">
-            Complete product details, organization, and pricing before saving.
+            Complete product details, organization, variants, and review before saving.
           </DialogDescription>
           <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-background">
             <div className="grid shrink-0 border-b bg-background/95 backdrop-blur lg:grid-cols-[18rem_1fr_18rem]">
@@ -337,7 +364,7 @@ export function ProductForm({
                 </span>
               </div>
 
-              <div className="grid grid-cols-3">
+              <div className="grid grid-cols-4">
                 {PRODUCT_STEPS.map((step) => (
                   <button
                     className={cn(
@@ -620,14 +647,27 @@ export function ProductForm({
               </section>
             ) : null}
 
-            {activeStep === "pricing" ? (
+            {activeStep === "variants" ? (
               <section className="flex flex-col gap-5">
                 <ComposerSection
-                  description="Set the basic selling price for this merchant market."
-                  title="Pricing"
+                  description="Define option groups, then apply default price, SKU, and stock values to every generated variant."
+                  title="Variants"
                 />
 
-                <div className="grid gap-4 md:grid-cols-2">
+                {!product ? (
+                  <form.Field name="options">
+                    {(field) => (
+                      <ProductOptionsBuilder
+                        onChange={field.handleChange}
+                        options={field.state.value}
+                      />
+                    )}
+                  </form.Field>
+                ) : null}
+
+                <Separator />
+
+                <div className="grid gap-4 md:grid-cols-4">
                   <form.Field
                     name="priceAmount"
                     validators={{
@@ -637,7 +677,7 @@ export function ProductForm({
                   >
                     {(field) => (
                       <Field data-invalid={hasFieldError(field)}>
-                        <FieldLabel htmlFor={field.name}>Price amount</FieldLabel>
+                        <FieldLabel htmlFor={field.name}>Default price</FieldLabel>
                         <Input
                           aria-invalid={hasFieldError(field)}
                           id={field.name}
@@ -651,6 +691,52 @@ export function ProductForm({
                           value={field.state.value}
                         />
                         <FieldError errors={field.state.meta.errors} touched={field.state.meta.isTouched} />
+                      </Field>
+                    )}
+                  </form.Field>
+
+                  <form.Field
+                    name="initialStock"
+                    validators={{
+                      onBlur: ({ value }) => validateInitialStock(value),
+                      onSubmit: ({ value }) => validateInitialStock(value),
+                    }}
+                  >
+                    {(field) => (
+                      <Field data-invalid={hasFieldError(field)}>
+                        <FieldLabel htmlFor={field.name}>Default stock</FieldLabel>
+                        <Input
+                          aria-invalid={hasFieldError(field)}
+                          id={field.name}
+                          inputMode="numeric"
+                          min="0"
+                          name={field.name}
+                          onBlur={field.handleBlur}
+                          onChange={(event) => field.handleChange(event.target.value)}
+                          placeholder="0"
+                          type="text"
+                          value={field.state.value}
+                        />
+                        <FieldError
+                          errors={field.state.meta.errors}
+                          touched={field.state.meta.isTouched}
+                        />
+                      </Field>
+                    )}
+                  </form.Field>
+
+                  <form.Field name="skuPrefix">
+                    {(field) => (
+                      <Field>
+                        <FieldLabel htmlFor={field.name}>SKU prefix</FieldLabel>
+                        <Input
+                          id={field.name}
+                          name={field.name}
+                          onBlur={field.handleBlur}
+                          onChange={(event) => field.handleChange(event.target.value)}
+                          placeholder="TEE"
+                          value={field.state.value}
+                        />
                       </Field>
                     )}
                   </form.Field>
@@ -673,92 +759,34 @@ export function ProductForm({
                   </form.Field>
                 </div>
 
-                {!product ? (
-                  <>
-                    <Separator />
+                <VariantMatrixTable
+                  onOverrideChange={(key, override) => {
+                    form.setFieldValue("variantOverrides", {
+                      ...form.state.values.variantOverrides,
+                      [key]: {
+                        ...form.state.values.variantOverrides[key],
+                        ...override,
+                      },
+                    });
+                  }}
+                  rows={variantRows}
+                  values={form.state.values.variantOverrides}
+                />
+              </section>
+            ) : null}
 
-                    <ComposerSection
-                      description="Create simple variants such as Size or Color. Stock for multiple variants is managed after creation."
-                      title="Product options"
-                    />
-
-                    <div className="grid gap-4 md:grid-cols-[minmax(0,0.75fr)_minmax(0,1.25fr)]">
-                      <form.Field
-                        name="optionTitle"
-                        validators={{
-                          onBlur: ({ fieldApi }) =>
-                            validateProductOption(
-                              fieldApi.form.getFieldValue("optionTitle"),
-                              fieldApi.form.getFieldValue("optionValues"),
-                            )?.optionTitle,
-                          onSubmit: ({ fieldApi }) =>
-                            validateProductOption(
-                              fieldApi.form.getFieldValue("optionTitle"),
-                              fieldApi.form.getFieldValue("optionValues"),
-                            )?.optionTitle,
-                        }}
-                      >
-                        {(field) => (
-                          <Field data-invalid={hasFieldError(field)}>
-                            <FieldLabel htmlFor={field.name}>Option name</FieldLabel>
-                            <Input
-                              aria-invalid={hasFieldError(field)}
-                              id={field.name}
-                              name={field.name}
-                              onBlur={field.handleBlur}
-                              onChange={(event) => field.handleChange(event.target.value)}
-                              placeholder="Size"
-                              value={field.state.value}
-                            />
-                            <FieldError
-                              errors={field.state.meta.errors}
-                              touched={field.state.meta.isTouched}
-                            />
-                          </Field>
-                        )}
-                      </form.Field>
-
-                      <form.Field
-                        name="optionValues"
-                        validators={{
-                          onBlur: ({ fieldApi }) =>
-                            validateProductOption(
-                              fieldApi.form.getFieldValue("optionTitle"),
-                              fieldApi.form.getFieldValue("optionValues"),
-                            )?.optionValues,
-                          onSubmit: ({ fieldApi }) =>
-                            validateProductOption(
-                              fieldApi.form.getFieldValue("optionTitle"),
-                              fieldApi.form.getFieldValue("optionValues"),
-                            )?.optionValues,
-                        }}
-                      >
-                        {(field) => (
-                          <Field data-invalid={hasFieldError(field)}>
-                            <FieldLabel htmlFor={field.name}>Option values</FieldLabel>
-                            <Textarea
-                              aria-invalid={hasFieldError(field)}
-                              className="min-h-24"
-                              id={field.name}
-                              name={field.name}
-                              onBlur={field.handleBlur}
-                              onChange={(event) => field.handleChange(event.target.value)}
-                              placeholder={"Small\nMedium\nLarge"}
-                              value={field.state.value}
-                            />
-                            <FieldDescription>
-                              Enter one value per line or separate values with commas.
-                            </FieldDescription>
-                            <FieldError
-                              errors={field.state.meta.errors}
-                              touched={field.state.meta.isTouched}
-                            />
-                          </Field>
-                        )}
-                      </form.Field>
-                    </div>
-                  </>
-                ) : null}
+            {activeStep === "review" ? (
+              <section className="flex flex-col gap-5">
+                <ComposerSection
+                  description="Review the generated product variants before saving."
+                  title="Review"
+                />
+                <div className="rounded-lg border p-4">
+                  <p className="text-sm text-muted-foreground">
+                    {variantRows.length} variant{variantRows.length === 1 ? "" : "s"} will be saved
+                    with default price, SKU, and stock settings.
+                  </p>
+                </div>
               </section>
             ) : null}
                 </div>
@@ -786,7 +814,7 @@ export function ProductForm({
                   <Button disabled={submitMutation.isPending} onClick={nextStep} type="button">
                     {submitMutation.isPending
                       ? "Saving..."
-                      : activeStep === "pricing"
+                      : activeStep === "review"
                         ? submitLabel
                         : "Continue"}
                   </Button>
@@ -818,6 +846,184 @@ export function ProductForm({
   );
 }
 
+function ProductOptionsBuilder({
+  onChange,
+  options,
+}: {
+  onChange: (options: ProductOptionDraft[]) => void;
+  options: ProductOptionDraft[];
+}) {
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <h3 className="font-medium text-sm">Product options</h3>
+          <p className="text-muted-foreground text-sm">
+            Add option groups like Size, Color, or Material. Values generate sellable variants.
+          </p>
+        </div>
+        <Button
+          onClick={() => onChange([...options, { title: "", values: [] }])}
+          size="sm"
+          type="button"
+          variant="outline"
+        >
+          Add option
+        </Button>
+      </div>
+
+      {options.length ? (
+        options.map((option, index) => (
+          <div className="grid gap-3 rounded-lg border p-3 md:grid-cols-[0.65fr_1fr_auto]" key={index}>
+            <Field>
+              <FieldLabel>Option name</FieldLabel>
+              <Input
+                onChange={(event) => {
+                  const next = [...options];
+                  next[index] = { ...option, title: event.target.value };
+                  onChange(next);
+                }}
+                placeholder="Size"
+                value={option.title}
+              />
+            </Field>
+            <Field>
+              <FieldLabel>Values</FieldLabel>
+              <Textarea
+                className="min-h-20"
+                onChange={(event) => {
+                  const next = [...options];
+                  next[index] = {
+                    ...option,
+                    values: event.target.value
+                      .split(/[\n,]/)
+                      .map((value) => value.trim())
+                      .filter(Boolean),
+                  };
+                  onChange(next);
+                }}
+                placeholder={"Small\nMedium\nLarge"}
+                value={option.values.join("\n")}
+              />
+              <FieldDescription>Enter one value per line or separate values with commas.</FieldDescription>
+            </Field>
+            <div className="flex items-end">
+              <Button
+                onClick={() => onChange(options.filter((_, optionIndex) => optionIndex !== index))}
+                size="sm"
+                type="button"
+                variant="outline"
+              >
+                Remove
+              </Button>
+            </div>
+          </div>
+        ))
+      ) : (
+        <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+          No options yet. Add an option group to create a multi-variant product.
+        </div>
+      )}
+    </div>
+  );
+}
+
+function VariantMatrixTable({
+  onOverrideChange,
+  rows,
+  values,
+}: {
+  onOverrideChange: (
+    key: string,
+    override: {
+      priceAmount?: string | undefined;
+      sku?: string | undefined;
+      stockedQuantity?: string | undefined;
+    },
+  ) => void;
+  rows: VariantMatrixRow[];
+  values: ProductFormValues["variantOverrides"];
+}) {
+  return (
+    <div className="flex flex-col gap-3">
+      <div>
+        <h3 className="font-medium text-sm">Generated variants</h3>
+        <p className="text-muted-foreground text-sm">
+          Defaults apply to all rows. Override SKU, price, or stock where needed.
+        </p>
+      </div>
+      <div className="overflow-x-auto rounded-lg border">
+        <table className="w-full min-w-[48rem] text-sm">
+          <thead className="bg-muted/50 text-muted-foreground">
+            <tr>
+              <th className="px-3 py-2 text-left font-medium">Variant</th>
+              <th className="px-3 py-2 text-left font-medium">SKU</th>
+              <th className="px-3 py-2 text-left font-medium">Price</th>
+              <th className="px-3 py-2 text-left font-medium">Stock</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row) => {
+              const override = values[row.key] ?? {};
+
+              return (
+                <tr className="border-t" key={row.key}>
+                  <td className="px-3 py-2">
+                    <div className="flex flex-wrap gap-1">
+                      {Object.entries(row.optionValues).length ? (
+                        Object.entries(row.optionValues).map(([title, value]) => (
+                          <Badge key={`${title}:${value}`} variant="secondary">
+                            {title}: {value}
+                          </Badge>
+                        ))
+                      ) : (
+                        <Badge variant="secondary">Default variant</Badge>
+                      )}
+                    </div>
+                  </td>
+                  <td className="px-3 py-2">
+                    <Input
+                      aria-label={`SKU for ${row.key}`}
+                      onChange={(event) =>
+                        onOverrideChange(row.key, { sku: event.target.value })
+                      }
+                      value={override.sku ?? row.sku}
+                    />
+                  </td>
+                  <td className="px-3 py-2">
+                    <Input
+                      aria-label={`Price for ${row.key}`}
+                      inputMode="numeric"
+                      min="0"
+                      onChange={(event) =>
+                        onOverrideChange(row.key, { priceAmount: event.target.value })
+                      }
+                      type="text"
+                      value={override.priceAmount ?? String(row.priceAmount)}
+                    />
+                  </td>
+                  <td className="px-3 py-2">
+                    <Input
+                      aria-label={`Stock for ${row.key}`}
+                      inputMode="numeric"
+                      min="0"
+                      onChange={(event) =>
+                        onOverrideChange(row.key, { stockedQuantity: event.target.value })
+                      }
+                      type="text"
+                      value={override.stockedQuantity ?? String(row.stockedQuantity)}
+                    />
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
 function getProductDefaultValues(product: MerchantProduct | undefined): ProductFormValues {
   const firstPrice = getFirstVariantPrice(product);
   const title = product?.title ?? "";
@@ -835,8 +1041,10 @@ function getProductDefaultValues(product: MerchantProduct | undefined): ProductF
     status: normalizeStatus(product?.status),
     priceAmount: firstPrice?.amount ?? "",
     currencyCode: "etb",
-    optionTitle: getInitialOptionTitle(product),
-    optionValues: getInitialOptionValues(product).join("\n"),
+    initialStock: "0",
+    options: getInitialProductOptions(product),
+    skuPrefix: product?.handle?.toUpperCase() ?? "",
+    variantOverrides: {},
     collectionId: product?.collectionId ?? NO_COLLECTION_VALUE,
     categoryIds: product?.categoryIds ?? [],
   };
@@ -858,6 +1066,7 @@ function getProductPayload(values: ProductFormValues, options: { includeOptions:
       : undefined,
     currencyCode: values.currencyCode,
     options: options.includeOptions ? getProductOptionsPayload(values) : undefined,
+    variants: options.includeOptions ? getProductVariantsPayload(values) : undefined,
     collectionId:
       values.collectionId && values.collectionId !== NO_COLLECTION_VALUE ? values.collectionId : null,
     categoryIds: values.categoryIds,
@@ -904,20 +1113,12 @@ function getFirstInvalidFieldForStep(
     }
   }
 
-  if (step === "pricing" && validatePriceAmount(values.priceAmount)) {
+  if (step === "variants" && validatePriceAmount(values.priceAmount)) {
     return "priceAmount";
   }
 
-  if (step === "pricing") {
-    const optionError = validateProductOption(values.optionTitle, values.optionValues);
-
-    if (optionError?.optionTitle) {
-      return "optionTitle";
-    }
-
-    if (optionError?.optionValues) {
-      return "optionValues";
-    }
+  if (step === "variants" && validateInitialStock(values.initialStock)) {
+    return "initialStock";
   }
 
   return null;
@@ -949,34 +1150,79 @@ function validatePriceAmount(value: string) {
   return undefined;
 }
 
-function validateProductOption(optionTitle: string, optionValues: string) {
-  const hasTitle = Boolean(optionTitle.trim());
-  const values = parseOptionValues(optionValues);
-
-  if (!hasTitle && !optionValues.trim()) {
-    return null;
-  }
-
-  if (!hasTitle) {
-    return { optionTitle: "Enter an option name.", optionValues: undefined };
-  }
-
-  if (!values.length) {
-    return { optionTitle: undefined, optionValues: "Enter at least one option value." };
-  }
-
-  return null;
-}
-
 function getProductOptionsPayload(values: ProductFormValues) {
-  const title = values.optionTitle.trim();
-  const optionValues = parseOptionValues(values.optionValues);
+  const options = normalizeProductOptions(values.options);
 
-  return title && optionValues.length ? [{ title, values: optionValues }] : undefined;
+  return options.length ? options : undefined;
 }
 
-function parseOptionValues(value: string) {
-  return [...new Set(value.split(/[\n,]/).map((row) => row.trim()).filter(Boolean))];
+function getProductVariantsPayload(values: ProductFormValues) {
+  return getVariantRows(values).map((row) => ({
+    optionValues: row.optionValues,
+    sku: row.sku.trim() ? row.sku.trim() : null,
+    priceAmount: row.priceAmount,
+    currencyCode: row.currencyCode,
+    stockedQuantity: row.stockedQuantity,
+  }));
+}
+
+function getVariantRows(values: ProductFormValues) {
+  return buildVariantMatrix({
+    defaults: {
+      currencyCode: values.currencyCode,
+      priceAmount: parseWholeNumber(values.priceAmount) ?? 0,
+      skuPrefix: values.skuPrefix,
+      stockedQuantity: parseWholeNumber(values.initialStock) ?? 0,
+    },
+    options: normalizeProductOptions(values.options),
+    overrides: getVariantOverrideMap(values.variantOverrides),
+  });
+}
+
+function getVariantOverrideMap(values: ProductFormValues["variantOverrides"]) {
+  return new Map(
+    Object.entries(values).map(([key, override]) => [
+      key,
+      {
+        ...(override.priceAmount?.trim()
+          ? { priceAmount: parseWholeNumber(override.priceAmount) }
+          : {}),
+        ...(override.sku?.trim() ? { sku: override.sku.trim() } : {}),
+        ...(override.stockedQuantity?.trim()
+          ? { stockedQuantity: parseWholeNumber(override.stockedQuantity) }
+          : {}),
+      },
+    ]),
+  );
+}
+
+function normalizeProductOptions(options: ProductOptionDraft[]) {
+  return options
+    .map((option) => ({
+      title: option.title.trim(),
+      values: [...new Set(option.values.map((value) => value.trim()).filter(Boolean))],
+    }))
+    .filter((option) => option.title && option.values.length);
+}
+
+function validateInitialStock(value: string) {
+  const trimmed = value.trim();
+
+  if (!trimmed) {
+    return "Enter an initial stock quantity.";
+  }
+
+  if (!/^\d+$/.test(trimmed)) {
+    return "Use a whole number stock quantity.";
+  }
+
+  return undefined;
+}
+
+function parseWholeNumber(value: string) {
+  const trimmed = value.trim();
+
+  return /^\d+$/.test(trimmed) ? Number.parseInt(trimmed, 10) : undefined;
 }
 
 class ProductMutationError extends Error {
@@ -1052,30 +1298,25 @@ function getFirstVariantPrice(product: MerchantProduct | undefined) {
   return undefined;
 }
 
-function getInitialOptionTitle(product: MerchantProduct | undefined) {
-  for (const variant of product?.variants ?? []) {
-    const option = variant.optionValues?.find((value) => value.optionTitle);
-
-    if (option?.optionTitle) {
-      return option.optionTitle;
-    }
-  }
-
-  return "";
-}
-
-function getInitialOptionValues(product: MerchantProduct | undefined) {
-  const values = new Set<string>();
+function getInitialProductOptions(product: MerchantProduct | undefined): ProductOptionDraft[] {
+  const options = new Map<string, Set<string>>();
 
   for (const variant of product?.variants ?? []) {
     for (const option of variant.optionValues ?? []) {
-      if (option.value) {
-        values.add(option.value);
+      if (!option.optionTitle || !option.value) {
+        continue;
       }
+
+      const values = options.get(option.optionTitle) ?? new Set<string>();
+      values.add(option.value);
+      options.set(option.optionTitle, values);
     }
   }
 
-  return Array.from(values);
+  return Array.from(options, ([title, values]) => ({
+    title,
+    values: Array.from(values),
+  }));
 }
 
 function slugifyProductHandle(value: string) {

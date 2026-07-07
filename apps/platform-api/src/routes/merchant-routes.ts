@@ -705,6 +705,7 @@ export function registerMerchantRoutes(
     const body = await getJsonBody(context.req.raw);
     const title = getRequiredBodyString(body, "title");
     const productOptions = getOptionalBodyProductOptions(body);
+    const productVariants = getOptionalBodyProductVariants(body);
 
     if (!title) {
       return context.json({ error: "missing_title" }, 400);
@@ -718,6 +719,7 @@ export function registerMerchantRoutes(
       categoryIds: getOptionalBodyStringArray(body, "categoryIds"),
       imageUrls: getOptionalBodyStringArray(body, "imageUrls"),
       ...(productOptions ? { options: productOptions } : {}),
+      ...(productVariants ? { variants: productVariants } : {}),
       priceAmount: getOptionalBodyNumber(body, "priceAmount"),
       currencyCode: getOptionalBodyString(body, "currencyCode") ?? "etb",
       regionId: commerce.context.medusaRegionId,
@@ -1575,4 +1577,76 @@ function getOptionalBodyProductOptions(body: unknown) {
 
     return title && values.length ? [{ title, values }] : [];
   });
+}
+
+function getOptionalBodyProductVariants(body: unknown) {
+  if (!body || typeof body !== "object" || !("variants" in body)) {
+    return undefined;
+  }
+
+  const variants = (body as { variants?: unknown }).variants;
+
+  if (!Array.isArray(variants)) {
+    return undefined;
+  }
+
+  const normalizedVariants = variants.flatMap((variant) => {
+    if (!variant || typeof variant !== "object") {
+      return [];
+    }
+
+    const optionValues = getProductVariantOptionValues(
+      (variant as { optionValues?: unknown }).optionValues,
+    );
+    const priceAmount = (variant as { priceAmount?: unknown }).priceAmount;
+    const currencyCode =
+      typeof (variant as { currencyCode?: unknown }).currencyCode === "string"
+        ? (variant as { currencyCode: string }).currencyCode.trim().toLowerCase()
+        : "";
+    const sku =
+      typeof (variant as { sku?: unknown }).sku === "string"
+        ? (variant as { sku: string }).sku.trim()
+        : undefined;
+    const stockedQuantity = (variant as { stockedQuantity?: unknown }).stockedQuantity;
+
+    if (
+      !currencyCode ||
+      typeof priceAmount !== "number" ||
+      !Number.isFinite(priceAmount) ||
+      Object.keys(optionValues).length === 0
+    ) {
+      return [];
+    }
+
+    return [
+      {
+        currencyCode,
+        optionValues,
+        priceAmount,
+        ...(sku ? { sku } : {}),
+        ...(typeof stockedQuantity === "number" && Number.isFinite(stockedQuantity)
+          ? { stockedQuantity }
+          : {}),
+      },
+    ];
+  });
+
+  return normalizedVariants.length ? normalizedVariants : undefined;
+}
+
+function getProductVariantOptionValues(value: unknown) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return {};
+  }
+
+  return Object.entries(value).reduce<Record<string, string>>((result, [key, entry]) => {
+    const optionTitle = key.trim();
+    const optionValue = typeof entry === "string" ? entry.trim() : "";
+
+    if (optionTitle && optionValue) {
+      result[optionTitle] = optionValue;
+    }
+
+    return result;
+  }, {});
 }

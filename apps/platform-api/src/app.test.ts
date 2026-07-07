@@ -123,12 +123,22 @@ function appWithResolution(
       description?: string | null | undefined;
       handle?: string | null | undefined;
       imageUrls?: string[] | undefined;
+      options?: Array<{ title: string; values: string[] }> | undefined;
       priceAmount?: number | undefined;
       regionId?: string | null | undefined;
       salesChannelId: string;
       status?: string | null | undefined;
       thumbnail?: string | null | undefined;
       title: string;
+      variants?:
+        | Array<{
+            currencyCode: string;
+            optionValues: Record<string, string>;
+            priceAmount: number;
+            sku?: string | null | undefined;
+            stockedQuantity?: number | undefined;
+          }>
+        | undefined;
     }) => Promise<MerchantProductWriteResult>;
     createMerchantProductCategory?: (input: {
       handle?: string | null | undefined;
@@ -6292,6 +6302,15 @@ describe("platform app", () => {
           status?: string | null | undefined;
           thumbnail?: string | null | undefined;
           title: string;
+          variants?:
+            | Array<{
+                currencyCode: string;
+                optionValues: Record<string, string>;
+                priceAmount: number;
+                sku?: string | null | undefined;
+                stockedQuantity?: number | undefined;
+              }>
+            | undefined;
         }
       | undefined;
     const app = appWithResolution(
@@ -6345,6 +6364,15 @@ describe("platform app", () => {
         imageUrls: ["https://cdn.test/coffee-1.jpg"],
         priceAmount: 350,
         currencyCode: "etb",
+        variants: [
+          {
+            optionValues: { Size: "Small" },
+            sku: "COFFEE-S",
+            priceAmount: 350,
+            currencyCode: "etb",
+            stockedQuantity: 5,
+          },
+        ],
         status: "draft",
         thumbnail: "",
       }),
@@ -6365,6 +6393,15 @@ describe("platform app", () => {
       imageUrls: ["https://cdn.test/coffee-1.jpg"],
       priceAmount: 350,
       currencyCode: "etb",
+      variants: [
+        {
+          optionValues: { Size: "Small" },
+          sku: "COFFEE-S",
+          priceAmount: 350,
+          currencyCode: "etb",
+          stockedQuantity: 5,
+        },
+      ],
       regionId: "reg_1",
       status: "draft",
       stockLocationId: "sloc_1",

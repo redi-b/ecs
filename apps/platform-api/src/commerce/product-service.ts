@@ -31,11 +31,20 @@ type ProductWriteInput = {
   stockLocationId?: string | null | undefined;
   thumbnail?: string | null | undefined;
   title?: string | null | undefined;
+  variants?: ProductVariantWriteInput[] | undefined;
 };
 
 type ProductOptionInput = {
   title: string;
   values: string[];
+};
+
+type ProductVariantWriteInput = {
+  currencyCode: string;
+  optionValues: Record<string, string>;
+  priceAmount: number;
+  sku?: string | null | undefined;
+  stockedQuantity?: number | undefined;
 };
 
 type ProductUpdateInput = ProductWriteInput & {
@@ -1181,25 +1190,23 @@ function getProductWriteBody(input: ProductWriteInput) {
 
   if (input.priceAmount !== undefined) {
     const productOptions = getProductOptionsForWrite(input.options);
+    const productVariants = getProductVariantsForWrite(input.variants);
 
     body.options = productOptions;
-    body.variants = getProductVariantCombinations(productOptions).map((combination) => ({
-      title: combination.map((option) => option.value).join(" / "),
-      options: Object.fromEntries(combination.map((option) => [option.title, option.value])),
-      prices: [
-        {
-          amount: input.priceAmount,
-          currency_code: input.currencyCode?.trim().toLowerCase() || "etb",
-          ...(input.regionId?.trim()
-            ? {
-                rules: {
-                  region_id: input.regionId,
-                },
-              }
-            : {}),
-        },
-      ],
-    }));
+    body.variants = productVariants.length
+      ? productVariants.map((variant) => getProductVariantWriteBody(variant, input.regionId))
+      : getProductVariantCombinations(productOptions).map((combination) =>
+          getProductVariantWriteBody(
+            {
+              optionValues: Object.fromEntries(
+                combination.map((option) => [option.title, option.value]),
+              ),
+              priceAmount: input.priceAmount ?? 0,
+              currencyCode: input.currencyCode?.trim().toLowerCase() || "etb",
+            },
+            input.regionId,
+          ),
+        );
   }
 
   return body;
@@ -1221,6 +1228,45 @@ function getProductOptionsForWrite(options: ProductOptionInput[] | undefined) {
           values: ["Default"],
         },
       ];
+}
+
+function getProductVariantsForWrite(variants: ProductVariantWriteInput[] | undefined) {
+  return (variants ?? []).filter(
+    (variant) =>
+      Number.isFinite(variant.priceAmount) &&
+      Object.keys(variant.optionValues).length > 0 &&
+      variant.currencyCode.trim(),
+  );
+}
+
+function getProductVariantWriteBody(
+  variant: ProductVariantWriteInput,
+  regionId: string | null | undefined,
+) {
+  const optionValues = Object.fromEntries(
+    Object.entries(variant.optionValues)
+      .map(([title, value]) => [title.trim(), value.trim()])
+      .filter(([title, value]) => title && value),
+  );
+
+  return {
+    title: Object.values(optionValues).join(" / ") || "Default",
+    ...(variant.sku?.trim() ? { sku: variant.sku.trim() } : {}),
+    options: optionValues,
+    prices: [
+      {
+        amount: variant.priceAmount,
+        currency_code: variant.currencyCode.trim().toLowerCase(),
+        ...(regionId?.trim()
+          ? {
+              rules: {
+                region_id: regionId,
+              },
+            }
+          : {}),
+      },
+    ],
+  };
 }
 
 function getProductVariantCombinations(options: ProductOptionInput[]) {
