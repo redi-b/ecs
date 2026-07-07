@@ -836,11 +836,17 @@ export type StorefrontDraftResult =
         data: unknown;
         themeTokens: unknown;
         updatedAt: string;
+        published?: {
+          revisionId: string;
+          publishedAt: string;
+          data: unknown;
+          themeTokens: unknown;
+        } | null;
       };
     }
   | {
       ok: false;
-      error: "storefront_draft_not_found";
+      error: "invalid_storefront_draft" | "storefront_draft_not_found";
     };
 
 export type StorefrontDraftUpdateResult = StorefrontDraftResult;
@@ -859,7 +865,7 @@ export type StorefrontPublishResult =
     }
   | {
       ok: false;
-      error: "storefront_draft_not_found";
+      error: "invalid_storefront_draft" | "storefront_draft_not_found";
     };
 
 export type TenantDomain = {

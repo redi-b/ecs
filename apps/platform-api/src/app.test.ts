@@ -1402,6 +1402,61 @@ describe("platform app", () => {
     });
   });
 
+  it("returns the published storefront config for a draft tenant with a published revision", async () => {
+    let configInput: { publishedRevisionId: string; tenantId: string } | undefined;
+    const app = appWithResolution(
+      {
+        ok: true,
+        context: {
+          ...resolvedTenantContext,
+          status: "draft",
+          publishedRevisionId: "revision_1",
+        },
+      },
+      {
+        getPublishedStorefrontConfig: async (input) => {
+          configInput = input;
+
+          return {
+            ok: true,
+            config: {
+              publishedRevisionId: "revision_1",
+              templateId: "template_1",
+              templateVersion: 1,
+              templateKey: "classic@1",
+              data: {
+                home: {
+                  hero: {
+                    title: "Abebe Market",
+                  },
+                },
+              },
+              themeTokens: {
+                colors: {
+                  primary: "#0f766e",
+                },
+              },
+              publishedAt: "2026-01-01T00:00:00.000Z",
+            },
+          };
+        },
+      },
+    );
+
+    const response = await app.request("/platform/storefront/config", {
+      headers: {
+        Host: "abebe.lvh.me",
+      },
+    });
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(configInput, {
+      tenantId: "tenant_1",
+      publishedRevisionId: "revision_1",
+    });
+    assert.equal((await response.json()).tenant.status, "draft");
+  });
+
   it("does not return storefront config without a tenant commerce region", async () => {
     const app = appWithResolution(
       {
@@ -1588,6 +1643,16 @@ describe("platform app", () => {
                 color: "green",
               },
               updatedAt: "2026-06-02T10:00:00.000Z",
+              published: {
+                revisionId: "revision_1",
+                publishedAt: "2026-06-02T09:00:00.000Z",
+                data: {
+                  heroTitle: "Published Market",
+                },
+                themeTokens: {
+                  color: "black",
+                },
+              },
             },
           };
         },
@@ -1613,6 +1678,16 @@ describe("platform app", () => {
           color: "green",
         },
         updatedAt: "2026-06-02T10:00:00.000Z",
+        published: {
+          revisionId: "revision_1",
+          publishedAt: "2026-06-02T09:00:00.000Z",
+          data: {
+            heroTitle: "Published Market",
+          },
+          themeTokens: {
+            color: "black",
+          },
+        },
       },
     });
   });
@@ -1676,7 +1751,7 @@ describe("platform app", () => {
       headers: {
         "content-type": "application/json",
       },
-      method: "PUT",
+      method: "POST",
     });
 
     assert.equal(response.status, 200);
@@ -1704,6 +1779,54 @@ describe("platform app", () => {
         },
         updatedAt: "2026-06-02T10:00:00.000Z",
       },
+    });
+  });
+
+  it("returns bad request when storefront draft validation fails", async () => {
+    const app = appWithResolution(
+      { ok: false, error: "shop_context_required" },
+      {
+        authorizeDashboardForTenant: async () => ({
+          ok: true,
+          actor: {
+            id: "user_1",
+            email: "owner@abebe.local",
+            name: "Abebe Owner",
+            role: "owner",
+          },
+        }),
+        getSession: async () => ({
+          user: {
+            id: "user_1",
+            email: "owner@abebe.local",
+            name: "Abebe Owner",
+          },
+        }),
+        updateStorefrontDraft: async () => ({
+          ok: false,
+          error: "invalid_storefront_draft",
+        }),
+      },
+    );
+
+    const response = await app.request("/platform/tenants/tenant_1/storefront/draft", {
+      body: JSON.stringify({
+        data: {
+          checkout: {
+            customScript: "<script>alert('no')</script>",
+          },
+        },
+        themeTokens: {},
+      }),
+      headers: {
+        "content-type": "application/json",
+      },
+      method: "POST",
+    });
+
+    assert.equal(response.status, 400);
+    assert.deepEqual(await response.json(), {
+      error: "invalid_storefront_draft",
     });
   });
 
