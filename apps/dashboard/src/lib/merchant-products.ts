@@ -144,6 +144,15 @@ export type MerchantProductWriteInput = {
   status?: string | null | undefined;
   thumbnail?: string | null | undefined;
   title?: string | null | undefined;
+  variants?:
+    | Array<{
+        currencyCode: string;
+        optionValues: Record<string, string>;
+        priceAmount: number;
+        sku?: string | null | undefined;
+        stockedQuantity?: number | undefined;
+      }>
+    | undefined;
 };
 
 export async function createMerchantProduct(options: {

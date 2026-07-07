@@ -64,4 +64,69 @@ describe("getProductFormInput", () => {
       thumbnail: null,
     });
   });
+
+  it("normalizes generated product options and variant matrix rows", () => {
+    const formData = new FormData();
+
+    formData.set("title", "T-shirt");
+    formData.set(
+      "options",
+      JSON.stringify([
+        { title: "Size", values: ["S", "M"] },
+        { title: "Color", values: ["Black"] },
+      ]),
+    );
+    formData.set(
+      "variants",
+      JSON.stringify([
+        {
+          optionValues: { Size: "S", Color: "Black" },
+          sku: "TEE-S-BLACK",
+          priceAmount: 25,
+          currencyCode: "usd",
+          stockedQuantity: 4,
+        },
+        {
+          optionValues: { Size: "M", Color: "Black" },
+          sku: "TEE-M-BLACK",
+          priceAmount: 27,
+          currencyCode: "usd",
+          stockedQuantity: 7,
+        },
+      ]),
+    );
+
+    assert.deepEqual(getProductFormInput(formData), {
+      title: "T-shirt",
+      description: null,
+      handle: null,
+      collectionId: null,
+      categoryIds: [],
+      imageUrls: [],
+      options: [
+        { title: "Size", values: ["S", "M"] },
+        { title: "Color", values: ["Black"] },
+      ],
+      variants: [
+        {
+          optionValues: { Size: "S", Color: "Black" },
+          sku: "TEE-S-BLACK",
+          priceAmount: 25,
+          currencyCode: "usd",
+          stockedQuantity: 4,
+        },
+        {
+          optionValues: { Size: "M", Color: "Black" },
+          sku: "TEE-M-BLACK",
+          priceAmount: 27,
+          currencyCode: "usd",
+          stockedQuantity: 7,
+        },
+      ],
+      priceAmount: undefined,
+      currencyCode: null,
+      status: null,
+      thumbnail: null,
+    });
+  });
 });

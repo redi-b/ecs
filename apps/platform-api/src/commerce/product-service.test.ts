@@ -219,6 +219,76 @@ describe("createMedusaProductService", () => {
     });
   });
 
+  it("creates variants from explicit merchant variant rows", async () => {
+    let forwardedRequest: Request | undefined;
+    const service = createMedusaProductService({
+      adminApiToken: "medusa_token",
+      medusaInternalUrl: "http://medusa:9000",
+      fetcher: async (input, init) => {
+        forwardedRequest = new Request(input, init);
+
+        return Response.json({
+          product: {
+            id: "prod_1",
+            title: "T-shirt",
+            handle: "t-shirt",
+            variants: [
+              {
+                id: "variant_s_black",
+                title: "S / Black",
+                sku: "TEE-S-BLACK",
+                prices: [{ amount: 450, currency_code: "etb" }],
+              },
+            ],
+            created_at: "2026-01-01T00:00:00.000Z",
+            updated_at: "2026-01-02T00:00:00.000Z",
+          },
+        });
+      },
+    });
+
+    const result = await service.createMerchantProduct({
+      title: "T-shirt",
+      handle: "t-shirt",
+      options: [{ title: "Size", values: ["S"] }, { title: "Color", values: ["Black"] }],
+      variants: [
+        {
+          optionValues: { Size: "S", Color: "Black" },
+          sku: "TEE-S-BLACK",
+          priceAmount: 450,
+          currencyCode: "ETB",
+          stockedQuantity: 8,
+        },
+      ],
+      priceAmount: 400,
+      currencyCode: "ETB",
+      salesChannelId: "sc_1",
+    });
+
+    assert.equal(result.ok, true);
+    assert.ok(forwardedRequest);
+    assert.deepEqual(await forwardedRequest.json(), {
+      title: "T-shirt",
+      handle: "t-shirt",
+      options: [
+        { title: "Size", values: ["S"] },
+        { title: "Color", values: ["Black"] },
+      ],
+      variants: [
+        {
+          title: "S / Black",
+          sku: "TEE-S-BLACK",
+          options: {
+            Size: "S",
+            Color: "Black",
+          },
+          prices: [{ amount: 450, currency_code: "etb" }],
+        },
+      ],
+      sales_channels: [{ id: "sc_1" }],
+    });
+  });
+
   it("maps Medusa product write conflicts to product conflict errors", async () => {
     const service = createMedusaProductService({
       adminApiToken: "medusa_token",
