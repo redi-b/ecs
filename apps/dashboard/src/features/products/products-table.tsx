@@ -139,14 +139,6 @@ function getProductColumns(
       cell: ({ row }) => <ProductStatusBadge status={row.original.status} />,
     },
     {
-      id: "sku",
-      accessorFn: (product) => getProductSkuSummary(product),
-      header: ({ column }) => <DataTableHeader column={column} title="SKU" />,
-      cell: ({ row }) => (
-        <span className="text-muted-foreground">{getProductSkuSummary(row.original)}</span>
-      ),
-    },
-    {
       id: "price",
       accessorFn: (product) => getProductPriceSortValue(product),
       header: ({ column }) => <DataTableHeader column={column} title="Price" />,
@@ -286,34 +278,18 @@ function ProductOrganizationSummary({
     <div className="flex min-w-36 flex-col gap-1">
       <span className="truncate text-sm">
         {product.collectionId
-          ? collection?.title ?? collection?.handle ?? product.collectionId
+          ? `Collection: ${collection?.title ?? collection?.handle ?? product.collectionId}`
           : "No collection"}
       </span>
       <span className="text-xs text-muted-foreground">
         {categoryCount
-          ? `${firstCategory?.name ?? firstCategory?.handle ?? categoryIds[0]}${
+          ? `Category: ${firstCategory?.name ?? firstCategory?.handle ?? categoryIds[0]}${
               categoryCount > 1 ? ` +${categoryCount - 1}` : ""
             }`
           : "No categories"}
       </span>
     </div>
   );
-}
-
-function getProductSkuSummary(product: MerchantProduct) {
-  const skus = [
-    ...new Set(
-      (product.variants ?? [])
-        .map((variant) => variant.sku?.trim())
-        .filter((sku): sku is string => Boolean(sku)),
-    ),
-  ];
-
-  if (!skus.length) {
-    return "No SKU";
-  }
-
-  return skus.length === 1 ? skus[0] : `${skus[0]} +${skus.length - 1}`;
 }
 
 function getProductStockSortValue(product: MerchantProduct) {

@@ -111,10 +111,11 @@ export function createMedusaProductService(options: {
         return result;
       }
 
-      const initialized = await initializeProductStockLevel(fetcher, options, {
+      const initialized = await initializeProductStockLevels(fetcher, options, {
         productId: result.product.id,
         salesChannelId: input.salesChannelId,
         stockLocationId: input.stockLocationId,
+        variants: input.variants,
       });
 
       if (!initialized) {
@@ -178,6 +179,7 @@ export function createMedusaProductService(options: {
       limit: number;
       offset: number;
       salesChannelId: string;
+      stockLocationId?: string | null | undefined;
     }): Promise<MerchantProductsResult> => {
       if (!options.adminApiToken?.trim()) {
         return missingCredentials();
@@ -223,12 +225,22 @@ export function createMedusaProductService(options: {
 
       const data = await response.json().catch(() => undefined);
 
+      const normalizedProducts = Array.isArray(data?.products)
+        ? data.products.flatMap(normalizeProduct)
+        : [];
+      const products = input.stockLocationId?.trim()
+        ? await hydrateProductsWithStock(fetcher, options, {
+            products: normalizedProducts,
+            stockLocationId: input.stockLocationId,
+          })
+        : normalizedProducts;
+
       return {
         ok: true,
         count: getNumber(data?.count) ?? 0,
         limit: getNumber(data?.limit) ?? input.limit,
         offset: getNumber(data?.offset) ?? input.offset,
-        products: Array.isArray(data?.products) ? data.products.flatMap(normalizeProduct) : [],
+        products,
       };
     },
 
@@ -1175,7 +1187,57 @@ function getEmptyProductStock(input: {
   };
 }
 
-async function initializeProductStockLevel(
+async function hydrateProductsWithStock(
+  fetcher: typeof fetch,
+  options: {
+    adminApiToken?: string | undefined;
+    medusaInternalUrl: string;
+  },
+  input: {
+    products: MerchantProduct[];
+    stockLocationId: string;
+  },
+) {
+  return Promise.all(
+    input.products.map(async (product) => ({
+      ...product,
+      variants: await Promise.all(
+        (product.variants ?? []).map(async (variant) => {
+          if (!variant.inventoryItemId) {
+            return {
+              ...variant,
+              stock: null,
+            };
+          }
+
+          const result = await getInventoryItemStock(fetcher, options, {
+            inventoryItemId: variant.inventoryItemId,
+            productId: product.id,
+            stockLocationId: input.stockLocationId,
+            variantId: variant.id,
+          });
+
+          return {
+            ...variant,
+            stock: result.ok ? getVariantStockSummary(result.stock) : null,
+          };
+        }),
+      ),
+    })),
+  );
+}
+
+function getVariantStockSummary(stock: MerchantProductStock) {
+  return {
+    locationId: stock.locationId,
+    stockedQuantity: stock.stockedQuantity,
+    reservedQuantity: stock.reservedQuantity,
+    incomingQuantity: stock.incomingQuantity,
+    availableQuantity: stock.availableQuantity,
+  };
+}
+
+async function initializeProductStockLevels(
   fetcher: typeof fetch,
   options: {
     adminApiToken?: string | undefined;
@@ -1185,32 +1247,47 @@ async function initializeProductStockLevel(
     productId: string;
     salesChannelId: string;
     stockLocationId: string;
+    variants?: ProductVariantWriteInput[] | undefined;
   },
 ) {
-  const inventory = await getProductInventoryContext(fetcher, options, {
-    productId: input.productId,
-    salesChannelId: input.salesChannelId,
-    stockLocationId: input.stockLocationId,
-  });
-
-  if (!inventory.ok) {
-    return false;
-  }
-
   const response = await requestMedusa(
     fetcher,
-    getInventoryItemLevelsUrl(options.medusaInternalUrl, inventory.inventoryItemId),
+    getProductInventoryUrl(options.medusaInternalUrl, input.productId),
     {
-      body: JSON.stringify({
-        location_id: input.stockLocationId,
-        stocked_quantity: 0,
-      }),
       headers: getAdminHeaders(options.adminApiToken ?? ""),
-      method: "POST",
     },
   );
 
-  return response.ok;
+  if (!response.ok) {
+    return false;
+  }
+
+  const data = await response.json().catch(() => undefined);
+
+  if (!productBelongsToSalesChannel(data?.product, input.salesChannelId)) {
+    return false;
+  }
+
+  const variants: Array<Record<string, unknown>> = isRecord(data?.product) && Array.isArray(data.product.variants)
+    ? data.product.variants.filter(isRecord)
+    : [];
+  const results = await Promise.all(
+    variants.map((variant, index) => {
+      const inventoryItemId = getVariantInventoryItemId(variant);
+
+      if (!inventoryItemId) {
+        return Promise.resolve(false);
+      }
+
+      return writeInventoryItemStockLevel(fetcher, options, {
+        inventoryItemId,
+        stockLocationId: input.stockLocationId,
+        stockedQuantity: input.variants?.[index]?.stockedQuantity ?? 0,
+      }).then((levelResponse) => levelResponse.ok);
+    }),
+  );
+
+  return results.some(Boolean);
 }
 
 function getProductWriteBody(input: ProductWriteInput) {
@@ -1297,6 +1374,7 @@ function getProductVariantWriteBody(
   return {
     title: Object.values(optionValues).join(" / ") || "Default",
     ...(variant.sku?.trim() ? { sku: variant.sku.trim() } : {}),
+    manage_inventory: true,
     options: optionValues,
     prices: [
       {
@@ -1509,7 +1587,7 @@ function getProductsUrl(
   url.searchParams.set("order", "-created_at");
   url.searchParams.set(
     "fields",
-    "id,title,description,handle,status,thumbnail,collection_id,categories.id,images.id,images.url,images.rank,images.created_at,images.updated_at,variants.id,variants.title,variants.sku,variants.options.value,variants.options.option.title,variants.prices.amount,variants.prices.currency_code,created_at,updated_at,sales_channels.id",
+    "id,title,description,handle,status,thumbnail,collection_id,categories.id,images.id,images.url,images.rank,images.created_at,images.updated_at,variants.id,variants.title,variants.sku,variants.options.value,variants.options.option.title,variants.prices.amount,variants.prices.currency_code,variants.inventory_items.inventory_item_id,created_at,updated_at,sales_channels.id",
   );
   url.searchParams.set("sales_channel_id[]", input.salesChannelId);
 

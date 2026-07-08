@@ -447,6 +447,7 @@ export type MerchantProductVariant = {
   sku: string | null;
   optionValues?: MerchantProductVariantOptionValue[];
   prices: MerchantProductPrice[];
+  stock?: Omit<MerchantProductStock, "productId" | "variantId" | "inventoryItemId"> | null;
 };
 
 export type MerchantProductVariantOptionValue = {
@@ -1244,6 +1245,7 @@ export type PlatformAppOptions = {
         limit: number;
         offset: number;
         salesChannelId: string;
+        stockLocationId?: string | null | undefined;
       }) => Promise<MerchantProductsResult>)
     | undefined;
   getMerchantProduct?:

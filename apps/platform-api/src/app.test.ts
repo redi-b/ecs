@@ -4969,6 +4969,7 @@ describe("platform app", () => {
       limit: 5,
       offset: 10,
       salesChannelId: "channel_1",
+      stockLocationId: "sloc_1",
     });
     assert.deepEqual(await response.json(), {
       products: [
@@ -5466,6 +5467,7 @@ describe("platform app", () => {
       limit: 5,
       offset: 10,
       salesChannelId: "channel_1",
+      stockLocationId: undefined,
     });
     assert.deepEqual(await response.json(), {
       products: [
