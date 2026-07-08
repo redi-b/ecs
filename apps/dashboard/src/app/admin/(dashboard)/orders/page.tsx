@@ -4,7 +4,13 @@ import { ListSummary, PaginationControls } from "@/components/app/list-page-cont
 import { PageShell } from "@/components/app/page-shell";
 import { RefreshButton } from "@/components/app/refresh-button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { parseOrderLifecycleFilter } from "@/features/orders/order-table-state";
+import {
+  parseOrderDateFilter,
+  parseOrderDeliveryFilter,
+  parseOrderFulfillmentFilter,
+  parseOrderLifecycleFilter,
+  parseOrderPaymentFilter,
+} from "@/features/orders/order-table-state";
 import { OrdersTable } from "@/features/orders/orders-table";
 import { type DashboardSearchParams, getSelectedTenantId } from "@/lib/dashboard-tenant-context";
 import { getListErrorState } from "@/lib/list-error-state";
@@ -42,7 +48,11 @@ export default async function MerchantOrdersPage({ searchParams }: MerchantOrder
         <>
           <ListSummary count={result.orders.count} label="orders" />
           <OrdersTable
+            initialCreated={parseOrderDateFilter(resolvedSearchParams.created)}
+            initialDelivery={parseOrderDeliveryFilter(resolvedSearchParams.delivery)}
+            initialFulfillment={parseOrderFulfillmentFilter(resolvedSearchParams.fulfillment)}
             initialLifecycle={parseOrderLifecycleFilter(resolvedSearchParams.lifecycle)}
+            initialPayment={parseOrderPaymentFilter(resolvedSearchParams.payment)}
             initialQuery={listParams.q}
             orders={result.orders.orders}
             pageSize={result.orders.limit}

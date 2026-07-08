@@ -12,7 +12,11 @@ import {
   getOrderTableCounts,
   getOrderTotalSortValue,
   normalizeOrderLifecycle,
+  parseOrderDateFilter,
+  parseOrderDeliveryFilter,
+  parseOrderFulfillmentFilter,
   parseOrderLifecycleFilter,
+  parseOrderPaymentFilter,
 } from "./order-table-state.js";
 
 const orders: MerchantOrder[] = [
@@ -220,6 +224,55 @@ describe("order table state", () => {
     );
   });
 
+  it("filters by payment, fulfillment, delivery, and created date", () => {
+    const now = new Date("2026-07-07T12:00:00.000Z");
+
+    assert.deepEqual(
+      filterOrdersForTable(orders, { lifecycle: "all", payment: "paid", query: "" }).map(
+        (order) => order.id,
+      ),
+      ["order_1"],
+    );
+    assert.deepEqual(
+      filterOrdersForTable(orders, {
+        fulfillment: "fulfilled",
+        lifecycle: "all",
+        query: "",
+      }).map((order) => order.id),
+      ["order_2", "order_6"],
+    );
+    assert.deepEqual(
+      filterOrdersForTable(orders, { delivery: "pickup", lifecycle: "all", query: "" }).map(
+        (order) => order.id,
+      ),
+      ["order_3"],
+    );
+    assert.deepEqual(
+      filterOrdersForTable(orders, { delivery: "none", lifecycle: "all", query: "" }).map(
+        (order) => order.id,
+      ),
+      ["order_2", "order_4", "order_5", "order_6"],
+    );
+    assert.deepEqual(
+      filterOrdersForTable(orders, {
+        created: "today",
+        lifecycle: "all",
+        now,
+        query: "",
+      }).map((order) => order.id),
+      ["order_6"],
+    );
+    assert.deepEqual(
+      filterOrdersForTable(orders, {
+        created: "no_date",
+        lifecycle: "all",
+        now,
+        query: "",
+      }).map((order) => order.id),
+      ["order_2"],
+    );
+  });
+
   it("normalizes lifecycle states by order, fulfillment, and payment status", () => {
     assert.equal(normalizeOrderLifecycle(openOrder), "open");
     assert.equal(normalizeOrderLifecycle(completedOrder), "completed");
@@ -243,6 +296,25 @@ describe("order table state", () => {
     assert.equal(parseOrderLifecycleFilter("refunded"), "all");
     assert.equal(parseOrderLifecycleFilter(undefined), "all");
     assert.equal(parseOrderLifecycleFilter(["fulfilled", "paid"]), "fulfilled");
+    assert.equal(parseOrderPaymentFilter("paid"), "paid");
+    assert.equal(parseOrderPaymentFilter("pending"), "pending");
+    assert.equal(parseOrderPaymentFilter("unpaid"), "unpaid");
+    assert.equal(parseOrderPaymentFilter("unknown"), "unknown");
+    assert.equal(parseOrderPaymentFilter("missing"), "all");
+    assert.equal(parseOrderFulfillmentFilter("needs_fulfillment"), "needs_fulfillment");
+    assert.equal(parseOrderFulfillmentFilter("fulfilled"), "fulfilled");
+    assert.equal(parseOrderFulfillmentFilter("unfulfilled"), "unfulfilled");
+    assert.equal(parseOrderFulfillmentFilter("unknown"), "unknown");
+    assert.equal(parseOrderFulfillmentFilter("missing"), "all");
+    assert.equal(parseOrderDeliveryFilter("delivery"), "delivery");
+    assert.equal(parseOrderDeliveryFilter("pickup"), "pickup");
+    assert.equal(parseOrderDeliveryFilter("none"), "none");
+    assert.equal(parseOrderDeliveryFilter("missing"), "all");
+    assert.equal(parseOrderDateFilter("today"), "today");
+    assert.equal(parseOrderDateFilter("last_7_days"), "last_7_days");
+    assert.equal(parseOrderDateFilter("last_30_days"), "last_30_days");
+    assert.equal(parseOrderDateFilter("no_date"), "no_date");
+    assert.equal(parseOrderDateFilter("missing"), "all");
   });
 
   it("formats display ids, totals, money, dates, and counts", () => {
@@ -266,6 +338,15 @@ describe("order table state", () => {
         totalCount: 12,
       }),
       { filteredCount: 1, hasActiveFilter: true, pageCount: 2, totalCount: 12 },
+    );
+    assert.deepEqual(
+      getOrderTableCounts({
+        filteredCount: 5,
+        filters: { lifecycle: "all", payment: "paid", query: "" },
+        pageCount: 5,
+        totalCount: 5,
+      }),
+      { filteredCount: 5, hasActiveFilter: true, pageCount: 5, totalCount: 5 },
     );
     assert.deepEqual(
       getOrderTableCounts({
