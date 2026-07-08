@@ -15,7 +15,7 @@ import {
   InputGroup,
   InputGroupAddon,
 } from "@/components/ui/input-group"
-import { SearchIcon, CheckIcon } from "lucide-react"
+import { SearchIcon, CheckIcon, XIcon } from "lucide-react"
 
 function Command({
   className,
@@ -67,20 +67,45 @@ function CommandDialog({
 
 function CommandInput({
   className,
+  value,
+  onValueChange,
   ...props
 }: React.ComponentProps<typeof CommandPrimitive.Input>) {
+  const stringValue = typeof value === "string" ? value : "";
+  const inputClassName = cn(
+    "w-full text-sm outline-hidden disabled:cursor-not-allowed disabled:opacity-50",
+    className
+  );
+
   return (
     <div data-slot="command-input-wrapper" className="p-1 pb-0">
       <InputGroup className="h-8! rounded-lg! border-input/30 bg-input/30 shadow-none! *:data-[slot=input-group-addon]:pl-2!">
-        <CommandPrimitive.Input
-          data-slot="command-input"
-          className={cn(
-            "w-full text-sm outline-hidden disabled:cursor-not-allowed disabled:opacity-50",
-            className
-          )}
-          {...props}
-        />
-        <InputGroupAddon>
+        {typeof value === "string" && onValueChange ? (
+          <CommandPrimitive.Input
+            data-slot="command-input"
+            className={inputClassName}
+            onValueChange={onValueChange}
+            value={value}
+            {...props}
+          />
+        ) : (
+          <CommandPrimitive.Input
+            data-slot="command-input"
+            className={inputClassName}
+            {...props}
+          />
+        )}
+        <InputGroupAddon className="gap-1">
+          {stringValue ? (
+            <button
+              aria-label="Clear search"
+              className="grid size-5 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              onClick={() => onValueChange?.("")}
+              type="button"
+            >
+              <XIcon className="size-3.5" />
+            </button>
+          ) : null}
           <SearchIcon className="size-4 shrink-0 opacity-50" />
         </InputGroupAddon>
       </InputGroup>

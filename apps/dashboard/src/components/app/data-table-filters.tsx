@@ -38,9 +38,15 @@ type DataTableFiltersProps = {
 export function DataTableFilters({ children, filters, onClearAll }: DataTableFiltersProps) {
   const [addFilterOpen, setAddFilterOpen] = useState(false);
   const [pendingFilterId, setPendingFilterId] = useState<string | null>(null);
+  const [filterSearch, setFilterSearch] = useState("");
   const availableFilters = filters.filter((filter) => filter.value === filter.defaultValue);
   const activeFilters = filters.filter((filter) => filter.value !== filter.defaultValue);
   const pendingFilter = filters.find((filter) => filter.id === pendingFilterId) ?? null;
+
+  function setPendingFilter(nextFilterId: string | null) {
+    setFilterSearch("");
+    setPendingFilterId(nextFilterId);
+  }
 
   return (
     <div className="flex flex-col gap-3">
@@ -58,7 +64,7 @@ export function DataTableFilters({ children, filters, onClearAll }: DataTableFil
               setAddFilterOpen(open);
 
               if (!open) {
-                setPendingFilterId(null);
+                setPendingFilter(null);
               }
             }}
             open={addFilterOpen}
@@ -74,7 +80,7 @@ export function DataTableFilters({ children, filters, onClearAll }: DataTableFil
                 <div className="px-1 pb-1">
                   <Button
                     className="h-8 rounded-full px-2 text-muted-foreground"
-                    onClick={() => setPendingFilterId(null)}
+                    onClick={() => setPendingFilter(null)}
                     size="sm"
                     type="button"
                     variant="ghost"
@@ -84,17 +90,22 @@ export function DataTableFilters({ children, filters, onClearAll }: DataTableFil
                   </Button>
                 </div>
               ) : null}
-              <Command>
+              <Command className="transition-all duration-200">
                 <CommandInput
                   placeholder={
                     pendingFilter
                       ? `Search ${pendingFilter.label.toLowerCase()}...`
                       : "Search filters..."
                   }
+                  onValueChange={setFilterSearch}
+                  value={filterSearch}
                 />
-                <CommandList>
+                <CommandList
+                  className="transition-all duration-200"
+                  key={pendingFilter ? `values-${pendingFilter.id}` : "filters"}
+                >
                   {pendingFilter ? (
-                    <>
+                    <div className="animate-in fade-in-0 slide-in-from-right-2 duration-200">
                       <CommandEmpty>No values found.</CommandEmpty>
                       <CommandGroup heading={pendingFilter.label}>
                         {getSelectableFilterOptions(pendingFilter).map((option) => (
@@ -102,7 +113,7 @@ export function DataTableFilters({ children, filters, onClearAll }: DataTableFil
                             key={option.value}
                             onSelect={() => {
                               pendingFilter.onChange(option.value);
-                              setPendingFilterId(null);
+                              setPendingFilter(null);
                               setAddFilterOpen(false);
                             }}
                             value={option.label}
@@ -111,22 +122,22 @@ export function DataTableFilters({ children, filters, onClearAll }: DataTableFil
                           </CommandItem>
                         ))}
                       </CommandGroup>
-                    </>
+                    </div>
                   ) : (
-                    <>
+                    <div className="animate-in fade-in-0 slide-in-from-left-2 duration-200">
                       <CommandEmpty>No filters found.</CommandEmpty>
                       <CommandGroup>
                         {availableFilters.map((filter) => (
                           <CommandItem
                             key={filter.id}
-                            onSelect={() => setPendingFilterId(filter.id)}
+                            onSelect={() => setPendingFilter(filter.id)}
                             value={filter.label}
                           >
                             {filter.label}
                           </CommandItem>
                         ))}
                       </CommandGroup>
-                    </>
+                    </div>
                   )}
                 </CommandList>
               </Command>
@@ -155,9 +166,19 @@ function DataTableAppliedFilterChip({
   filter: DataTableFilterDefinition;
 }) {
   const [open, setOpen] = useState(false);
+  const [optionSearch, setOptionSearch] = useState("");
 
   return (
-    <Popover onOpenChange={setOpen} open={open}>
+    <Popover
+      onOpenChange={(nextOpen) => {
+        setOpen(nextOpen);
+
+        if (!nextOpen) {
+          setOptionSearch("");
+        }
+      }}
+      open={open}
+    >
       <div className="flex h-9 items-center overflow-hidden rounded-full border bg-background/80 text-sm shadow-sm shadow-primary/5">
         <PopoverTrigger asChild>
           <button
@@ -182,7 +203,11 @@ function DataTableAppliedFilterChip({
       </div>
       <PopoverContent align="start" className="w-72 rounded-2xl p-1.5" sideOffset={8}>
         <Command>
-          <CommandInput placeholder={`Search ${filter.label.toLowerCase()}...`} />
+          <CommandInput
+            onValueChange={setOptionSearch}
+            placeholder={`Search ${filter.label.toLowerCase()}...`}
+            value={optionSearch}
+          />
           <CommandList>
             <CommandEmpty>No values found.</CommandEmpty>
             <CommandGroup heading={filter.label}>

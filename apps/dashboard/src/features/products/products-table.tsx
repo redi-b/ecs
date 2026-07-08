@@ -399,6 +399,22 @@ function getDeletionErrorMessage(error: unknown, resourceName: string) {
   return `Failed to delete ${resourceName.toLowerCase()}. Try again.`;
 }
 
+function getStatusLoadingMessage(count: number, status: ProductStatusValue) {
+  const productLabel = count === 1 ? "product" : "products";
+
+  return status === "published"
+    ? `Publishing ${count} ${productLabel}...`
+    : `Moving ${count} ${productLabel} to draft...`;
+}
+
+function getStatusSuccessMessage(count: number, status: ProductStatusValue) {
+  const productLabel = count === 1 ? "product" : "products";
+
+  return status === "published"
+    ? `${count} ${productLabel} published.`
+    : `${count} ${productLabel} moved to draft.`;
+}
+
 export function ProductsTable({
   categories,
   collections,
@@ -507,23 +523,20 @@ export function ProductsTable({
 
       return { count: productIds.length, status };
     },
-    onSuccess: ({ count, status }) => {
-      toast.success(
-        `${count} product${count === 1 ? "" : "s"} ${
-          status === "published" ? "published" : "moved to draft"
-        }.`,
-      );
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["products"] });
       router.refresh();
     },
-    onError: () => {
-      toast.error("Product status could not be updated. Try again.");
-    },
   });
-  const { isPending: isStatusUpdatePending, mutate: updateProductStatus } = updateStatusMutation;
+  const { isPending: isStatusUpdatePending, mutateAsync: updateProductStatus } =
+    updateStatusMutation;
   const handleStatusChange = useCallback(
     (productIds: string[], nextStatus: ProductStatusValue) => {
-      updateProductStatus({ productIds, status: nextStatus });
+      return toast.promise(updateProductStatus({ productIds, status: nextStatus }), {
+        error: "Product status could not be updated. Try again.",
+        loading: getStatusLoadingMessage(productIds.length, nextStatus),
+        success: ({ count, status }) => getStatusSuccessMessage(count, status),
+      });
     },
     [updateProductStatus],
   );
@@ -740,10 +753,10 @@ export function ProductsTable({
             <Button
               disabled={isStatusUpdatePending}
               onClick={() =>
-                updateProductStatus({
-                  productIds: selectedProducts.map((product) => product.id),
-                  status: "published",
-                })
+                handleStatusChange(
+                  selectedProducts.map((product) => product.id),
+                  "published",
+                )
               }
               size="sm"
               type="button"
@@ -754,10 +767,10 @@ export function ProductsTable({
             <Button
               disabled={isStatusUpdatePending}
               onClick={() =>
-                updateProductStatus({
-                  productIds: selectedProducts.map((product) => product.id),
-                  status: "draft",
-                })
+                handleStatusChange(
+                  selectedProducts.map((product) => product.id),
+                  "draft",
+                )
               }
               size="sm"
               type="button"
