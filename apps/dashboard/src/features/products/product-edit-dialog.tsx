@@ -5,43 +5,389 @@ import type {
   MerchantProductCategory,
   MerchantProductCollection,
 } from "@ecs/contracts";
-import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { type ReactNode, useMemo, useState } from "react";
+import { toast } from "sonner";
 
+import { AppIcons } from "@/components/app/icons";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { ProductForm } from "@/features/products/product-form";
+import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  CategoryPicker,
+  CollectionPicker,
+  NO_COLLECTION_VALUE,
+} from "@/features/products/product-form-fields";
 
-type ProductEditDialogProps = {
+type ProductEditSheetBaseProps = {
   action: string;
-  categories: MerchantProductCategory[];
-  collections: MerchantProductCollection[];
   product: MerchantProduct;
-  returnHref: string;
 };
 
-export function ProductEditDialog({
+type ProductDetailsValues = {
+  description: string;
+  handle: string;
+  status: string;
+  title: string;
+};
+
+type ProductOrganizationValues = {
+  categoryIds: string[];
+  collectionId: string;
+};
+
+type ProductMediaValues = {
+  imageUrls: string;
+  thumbnail: string;
+};
+
+const PRODUCT_STATUS_OPTIONS = ["draft", "published"] as const;
+
+export function ProductDetailsEditButton({
+  action,
+  product,
+}: ProductEditSheetBaseProps) {
+  const [values, setValues] = useState<ProductDetailsValues>(() => ({
+    description: product.description ?? "",
+    handle: product.handle ?? "",
+    status: normalizeProductStatus(product.status),
+    title: product.title ?? "",
+  }));
+
+  return (
+    <ProductEditSheet
+      action={action}
+      buildPayload={() => {
+        const title = values.title.trim();
+
+        if (!title) {
+          throw new Error("Product title is required.");
+        }
+
+        return {
+          title,
+          description: values.description.trim() || null,
+          handle: values.handle.trim() || null,
+          status: values.status,
+        };
+      }}
+      description="Update the core product information shown to shoppers."
+      onOpen={() =>
+        setValues({
+          description: product.description ?? "",
+          handle: product.handle ?? "",
+          status: normalizeProductStatus(product.status),
+          title: product.title ?? "",
+        })
+      }
+      title="Edit product details"
+      triggerLabel="Edit product details"
+    >
+      <Field>
+        <FieldLabel htmlFor="product-details-title">Title</FieldLabel>
+        <Input
+          id="product-details-title"
+          onChange={(event) => setValues((current) => ({ ...current, title: event.target.value }))}
+          required
+          value={values.title}
+        />
+      </Field>
+      <Field>
+        <FieldLabel htmlFor="product-details-handle">Handle</FieldLabel>
+        <Input
+          id="product-details-handle"
+          onChange={(event) => setValues((current) => ({ ...current, handle: event.target.value }))}
+          value={values.handle}
+        />
+        <FieldDescription>Leave empty to keep Medusa-generated handles.</FieldDescription>
+      </Field>
+      <Field>
+        <FieldLabel>Status</FieldLabel>
+        <Select
+          onValueChange={(value) => setValues((current) => ({ ...current, status: value }))}
+          value={values.status}
+        >
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {PRODUCT_STATUS_OPTIONS.map((status) => (
+              <SelectItem key={status} value={status}>
+                {status}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </Field>
+      <Field>
+        <FieldLabel htmlFor="product-details-description">Description</FieldLabel>
+        <Textarea
+          id="product-details-description"
+          onChange={(event) =>
+            setValues((current) => ({ ...current, description: event.target.value }))
+          }
+          rows={6}
+          value={values.description}
+        />
+      </Field>
+    </ProductEditSheet>
+  );
+}
+
+export function ProductOrganizationEditButton({
   action,
   categories,
   collections,
   product,
-  returnHref,
-}: ProductEditDialogProps) {
-  const [open, setOpen] = useState(false);
+}: ProductEditSheetBaseProps & {
+  categories: MerchantProductCategory[];
+  collections: MerchantProductCollection[];
+}) {
+  const [values, setValues] = useState<ProductOrganizationValues>(() => ({
+    categoryIds: product.categoryIds ?? [],
+    collectionId: product.collectionId ?? NO_COLLECTION_VALUE,
+  }));
+  const selectedCollection = collections.find((collection) => collection.id === values.collectionId);
+  const selectedCategories = useMemo(
+    () => categories.filter((category) => values.categoryIds.includes(category.id)),
+    [categories, values.categoryIds],
+  );
 
   return (
-    <>
-      <Button onClick={() => setOpen(true)} type="button">
-        Edit product
-      </Button>
-      <ProductForm
-        action={action}
-        categories={categories}
-        collections={collections}
-        onClose={() => setOpen(false)}
-        open={open}
-        product={product}
-        returnHref={returnHref}
-        submitLabel="Save product"
-      />
-    </>
+    <ProductEditSheet
+      action={action}
+      buildPayload={() => ({
+        collectionId:
+          values.collectionId && values.collectionId !== NO_COLLECTION_VALUE
+            ? values.collectionId
+            : null,
+        categoryIds: values.categoryIds,
+      })}
+      description="Update how this product is grouped in the catalog."
+      onOpen={() =>
+        setValues({
+          categoryIds: product.categoryIds ?? [],
+          collectionId: product.collectionId ?? NO_COLLECTION_VALUE,
+        })
+      }
+      title="Edit organization"
+      triggerLabel="Edit product organization"
+    >
+      <Field>
+        <FieldLabel>Collection</FieldLabel>
+        <CollectionPicker
+          collections={collections}
+          onChange={(collectionId) => setValues((current) => ({ ...current, collectionId }))}
+          selectedCollection={selectedCollection}
+          value={values.collectionId}
+        />
+      </Field>
+      <Field>
+        <FieldLabel>Categories</FieldLabel>
+        <CategoryPicker
+          categories={categories}
+          onChange={(categoryIds) => setValues((current) => ({ ...current, categoryIds }))}
+          selectedCategories={selectedCategories}
+          value={values.categoryIds}
+        />
+      </Field>
+    </ProductEditSheet>
   );
+}
+
+export function ProductMediaEditButton({
+  action,
+  product,
+}: ProductEditSheetBaseProps) {
+  const [values, setValues] = useState<ProductMediaValues>(() => getProductMediaValues(product));
+
+  return (
+    <ProductEditSheet
+      action={action}
+      buildPayload={() => ({
+        thumbnail: values.thumbnail.trim() || null,
+        imageUrls: getImageUrls(values.imageUrls),
+      })}
+      description="Update the thumbnail and gallery image URLs."
+      onOpen={() => setValues(getProductMediaValues(product))}
+      title="Edit product media"
+      triggerLabel="Edit product media"
+    >
+      <Field>
+        <FieldLabel htmlFor="product-media-thumbnail">Thumbnail URL</FieldLabel>
+        <Input
+          id="product-media-thumbnail"
+          onChange={(event) =>
+            setValues((current) => ({ ...current, thumbnail: event.target.value }))
+          }
+          value={values.thumbnail}
+        />
+      </Field>
+      <Field>
+        <FieldLabel htmlFor="product-media-images">Image URLs</FieldLabel>
+        <Textarea
+          id="product-media-images"
+          onChange={(event) =>
+            setValues((current) => ({ ...current, imageUrls: event.target.value }))
+          }
+          rows={8}
+          value={values.imageUrls}
+        />
+        <FieldDescription>One URL per line.</FieldDescription>
+      </Field>
+    </ProductEditSheet>
+  );
+}
+
+function ProductEditSheet({
+  action,
+  buildPayload,
+  children,
+  description,
+  onOpen,
+  title,
+  triggerLabel,
+}: {
+  action: string;
+  buildPayload: () => Record<string, unknown>;
+  children: ReactNode;
+  description: string;
+  onOpen: () => void;
+  title: string;
+  triggerLabel: string;
+}) {
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+
+  async function submitEdit() {
+    let payload: Record<string, unknown>;
+
+    try {
+      payload = buildPayload();
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "Check the form and try again.");
+      return;
+    }
+
+    setIsSaving(true);
+    setError(null);
+
+    const response = await fetch(action, {
+      body: JSON.stringify(payload),
+      headers: {
+        accept: "application/json",
+        "content-type": "application/json",
+      },
+      method: "POST",
+    }).catch(() => null);
+    const data = (await response?.json().catch(() => ({}))) as { error?: string };
+
+    setIsSaving(false);
+
+    if (!response?.ok) {
+      setError(getProductEditErrorMessage(data.error));
+      return;
+    }
+
+    toast.success("Product updated.");
+    setOpen(false);
+    router.refresh();
+  }
+
+  return (
+    <Sheet
+      onOpenChange={(nextOpen) => {
+        if (nextOpen) {
+          onOpen();
+          setError(null);
+        }
+
+        setOpen(nextOpen);
+      }}
+      open={open}
+    >
+      <Button aria-label={triggerLabel} size="icon-sm" type="button" variant="ghost" onClick={() => setOpen(true)}>
+        <AppIcons.edit data-icon="inline-start" />
+      </Button>
+      <SheetContent className="w-full overflow-y-auto sm:max-w-md">
+        <SheetHeader>
+          <SheetTitle>{title}</SheetTitle>
+          <SheetDescription>{description}</SheetDescription>
+        </SheetHeader>
+        <form
+          className="flex flex-1 flex-col gap-5 px-4"
+          onSubmit={(event) => {
+            event.preventDefault();
+            void submitEdit();
+          }}
+        >
+          {error ? (
+            <Alert variant="destructive">
+              <AlertTitle>Product could not be updated</AlertTitle>
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          ) : null}
+          <div className="grid gap-4">{children}</div>
+          <SheetFooter className="px-0">
+            <Button disabled={isSaving} type="submit">
+              {isSaving ? "Saving..." : "Save changes"}
+            </Button>
+          </SheetFooter>
+        </form>
+      </SheetContent>
+    </Sheet>
+  );
+}
+
+function normalizeProductStatus(status: string | null) {
+  return PRODUCT_STATUS_OPTIONS.find((option) => option === status?.toLowerCase()) ?? "draft";
+}
+
+function getProductMediaValues(product: MerchantProduct): ProductMediaValues {
+  return {
+    imageUrls: (product.images ?? []).map((image) => image.url).filter(Boolean).join("\n"),
+    thumbnail: product.thumbnail ?? "",
+  };
+}
+
+function getImageUrls(value: string) {
+  return value
+    .split("\n")
+    .map((row) => row.trim())
+    .filter(Boolean);
+}
+
+function getProductEditErrorMessage(error: string | undefined) {
+  if (error === "product_conflict") {
+    return "Another product already uses that handle.";
+  }
+
+  if (error === "product_not_found") {
+    return "This product is no longer available.";
+  }
+
+  if (error === "commerce_backend_unavailable") {
+    return "The commerce backend is temporarily unavailable.";
+  }
+
+  return "Product details could not be saved. Try again.";
 }

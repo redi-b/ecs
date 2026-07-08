@@ -22,7 +22,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -41,8 +40,14 @@ import {
 } from "@/components/ui/table";
 import { getTenantScopedPath } from "@/lib/dashboard-tenant-context";
 import { dashboardRoutes } from "@/lib/routes";
+import {
+  ProductDetailsEditButton,
+  ProductMediaEditButton,
+  ProductOrganizationEditButton,
+} from "@/features/products/product-edit-dialog";
 
 type ProductDetailProps = {
+  action: string;
   categories: MerchantProductCategory[];
   collections: MerchantProductCollection[];
   product: MerchantProduct;
@@ -50,6 +55,7 @@ type ProductDetailProps = {
 };
 
 export function ProductDetail({
+  action,
   categories,
   collections,
   product,
@@ -72,6 +78,7 @@ export function ProductDetail({
               <div className="flex flex-wrap items-center gap-2">
                 <CardTitle>{product.title ?? "Untitled product"}</CardTitle>
                 <ProductStatusBadge status={product.status} />
+                <ProductDetailsEditButton action={action} product={product} />
               </div>
               <CardDescription className="break-all">
                 {product.handle ? `/${product.handle}` : product.id}
@@ -86,36 +93,53 @@ export function ProductDetail({
       </CardHeader>
       <CardContent className="space-y-6">
         <section className="space-y-2">
-          <h2 className="text-sm font-medium">Description</h2>
+          <SectionHeader
+            action={<ProductDetailsEditButton action={action} product={product} />}
+            title="Description"
+          />
           <p className="text-sm whitespace-pre-wrap text-muted-foreground">
             {product.description ?? "No description provided."}
           </p>
         </section>
 
-        <section className="grid gap-4 md:grid-cols-2">
-          <DetailField
-            label="Collection"
-            value={
-              <CollectionValue
-                collection={collection}
+        <section className="space-y-3">
+          <SectionHeader
+            action={
+              <ProductOrganizationEditButton
+                action={action}
+                categories={categories}
+                collections={collections}
                 product={product}
-                tenantId={tenantId}
               />
             }
+            title="Organization"
           />
-          <DetailField
-            label="Categories"
-            value={<CategoryValue categories={productCategories} tenantId={tenantId} />}
-          />
-          <DetailField label="Created" value={formatDateTime(product.createdAt)} />
-          <DetailField label="Updated" value={formatDateTime(product.updatedAt)} />
+          <div className="grid gap-4 md:grid-cols-2">
+            <DetailField
+              label="Collection"
+              value={
+                <CollectionValue
+                  collection={collection}
+                  product={product}
+                  tenantId={tenantId}
+                />
+              }
+            />
+            <DetailField
+              label="Categories"
+              value={<CategoryValue categories={productCategories} tenantId={tenantId} />}
+            />
+            <DetailField label="Created" value={formatDateTime(product.createdAt)} />
+            <DetailField label="Updated" value={formatDateTime(product.updatedAt)} />
+          </div>
         </section>
 
         <section className="space-y-3">
-          <div className="flex items-center justify-between gap-3">
-            <h2 className="text-sm font-medium">Images</h2>
-            <span className="text-sm text-muted-foreground">{images.length} images</span>
-          </div>
+          <SectionHeader
+            action={<ProductMediaEditButton action={action} product={product} />}
+            meta={`${images.length} images`}
+            title="Images"
+          />
           {images.length ? (
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               {images.map((image) => (
@@ -191,6 +215,26 @@ function ProductVariantsTable({ product }: { product: MerchantProduct }) {
           ))}
         </TableBody>
       </Table>
+    </div>
+  );
+}
+
+function SectionHeader({
+  action,
+  meta,
+  title,
+}: {
+  action?: ReactNode;
+  meta?: string;
+  title: string;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <div className="flex min-w-0 items-center gap-2">
+        <h2 className="text-sm font-medium">{title}</h2>
+        {action}
+      </div>
+      {meta ? <span className="text-sm text-muted-foreground">{meta}</span> : null}
     </div>
   );
 }
