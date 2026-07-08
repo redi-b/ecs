@@ -1,13 +1,12 @@
 import { headers } from "next/headers";
-import Link from "next/link";
 
 import { ListSummary, PaginationControls } from "@/components/app/list-page-controls";
 import { ListSetupState } from "@/components/app/list-error-state";
 import { PageShell } from "@/components/app/page-shell";
 import { RefreshButton } from "@/components/app/refresh-button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
 import { ProductCollectionsTable } from "@/features/catalog-taxonomy/product-collections-table";
+import { TaxonomyCreateDialog } from "@/features/catalog-taxonomy/taxonomy-create-dialog";
 import { getTaxonomyListErrorState } from "@/features/catalog-taxonomy/taxonomy-list-error-state";
 import {
   type DashboardSearchParams,
@@ -30,8 +29,8 @@ export default async function MerchantProductCollectionsPage({
   const tenantId = getSelectedTenantId(resolvedSearchParams);
   const requestHeaders = await headers();
   const offset = (listParams.page - 1) * listParams.pageSize;
-  const createCollectionHref = getTenantScopedPath(
-    dashboardRoutes.productCollectionsNew,
+  const createCollectionAction = getTenantScopedPath(
+    dashboardRoutes.productCollectionCreateAction,
     tenantId,
   );
   const collectionNotice = getCollectionNotice(resolvedSearchParams.collectionStatus);
@@ -52,9 +51,15 @@ export default async function MerchantProductCollectionsPage({
       actions={
         <>
           <RefreshButton />
-          <Button asChild>
-            <Link href={createCollectionHref}>New collection</Link>
-          </Button>
+          <TaxonomyCreateDialog
+            action={createCollectionAction}
+            entityLabel="collection"
+            nameKey="title"
+            nameLabel="Title"
+            namePlaceholder="Featured"
+            queryKey="product-collections"
+            triggerLabel="New collection"
+          />
         </>
       }
       description="Review merchant-scoped product collections from the catalog taxonomy."

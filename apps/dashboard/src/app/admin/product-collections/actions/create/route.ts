@@ -6,10 +6,14 @@ import { createMerchantProductCollection } from "../../../../../lib/merchant-pro
 import { getTaxonomyFormInput } from "../../../../../lib/taxonomy-form-data";
 
 export async function POST(request: Request) {
-  const formData = await request.formData();
-  const collection = getTaxonomyFormInput(formData);
+  const wantsJson = request.headers.get("accept")?.includes("application/json");
+  const collection = await getCollectionInput(request);
 
   if (!collection.title) {
+    if (wantsJson) {
+      return NextResponse.json({ error: "missing_title" }, { status: 400 });
+    }
+
     return redirectToCollections(request, "missing_title");
   }
 
@@ -24,7 +28,31 @@ export async function POST(request: Request) {
     title: collection.title,
   });
 
+  if (wantsJson) {
+    if (!result.ok) {
+      return NextResponse.json({ error: result.message }, { status: result.status });
+    }
+
+    return NextResponse.json({ collection: result.collection });
+  }
+
   return redirectToCollections(request, result.ok ? "collection_created" : result.message);
+}
+
+async function getCollectionInput(request: Request) {
+  if (request.headers.get("content-type")?.includes("application/json")) {
+    const body = (await request.json().catch(() => ({}))) as {
+      handle?: unknown;
+      title?: unknown;
+    };
+
+    return {
+      handle: typeof body.handle === "string" && body.handle.trim() ? body.handle.trim() : null,
+      title: typeof body.title === "string" && body.title.trim() ? body.title.trim() : null,
+    };
+  }
+
+  return getTaxonomyFormInput(await request.formData());
 }
 
 function redirectToCollections(request: Request, status: string) {
