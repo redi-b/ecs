@@ -383,6 +383,7 @@ export function registerPlatformRoutes(
       limit: getPaginationValue(context.req.query("limit"), 20, 100),
       offset: getPaginationValue(context.req.query("offset"), 0, 10_000),
       salesChannelId: commerce.context.medusaSalesChannelId,
+      stockLocationId: commerce.context.medusaStockLocationId,
     });
 
     if (!products.ok) {

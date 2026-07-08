@@ -23,7 +23,7 @@ export function ProductIdentityCell({
   const href = getTenantScopedPath(dashboardRoutes.productDetail(product.id), tenantId);
 
   return (
-    <div className="flex min-w-72 items-center gap-3">
+    <div className="flex w-64 max-w-64 items-center gap-3">
       <ProductMediaCell product={product} />
       <div className="flex min-w-0 flex-col gap-1">
         <Link

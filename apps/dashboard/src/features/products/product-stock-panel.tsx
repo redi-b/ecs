@@ -2,10 +2,12 @@
 
 import type { MerchantProduct, MerchantProductStock } from "@ecs/contracts";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import type { ColumnDef } from "@tanstack/react-table";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
+import { DataTable } from "@/components/app/data-table";
 import { AppIcons } from "@/components/app/icons";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -19,14 +21,6 @@ import {
 } from "@/components/ui/card";
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { getTenantScopedPath } from "@/lib/dashboard-tenant-context";
 import { dashboardRoutes } from "@/lib/routes";
 
@@ -37,6 +31,17 @@ type ProductStockPanelProps = {
   productId: string;
   stockError?: string | undefined;
   tenantId?: string | undefined;
+};
+
+type VariantInventoryRow = {
+  error: string | undefined;
+  isLoading: boolean;
+  isSaving: boolean;
+  onStockedQuantityChange: (value: string) => void;
+  onSubmit: () => void;
+  stock: MerchantProductStock | undefined;
+  stockedQuantity: string;
+  variant: NonNullable<MerchantProduct["variants"]>[number];
 };
 
 export function ProductStockPanel({
@@ -255,6 +260,7 @@ function VariantStockPanel({
         .some((value) => String(value).toLowerCase().includes(needle)),
     );
   }, [query, variants]);
+  const columns = useMemo(() => getVariantInventoryColumns(), []);
 
   useEffect(() => {
     let cancelled = false;
@@ -376,6 +382,31 @@ function VariantStockPanel({
       }));
     },
   });
+  const rows = useMemo<VariantInventoryRow[]>(
+    () =>
+      filteredVariants.map((variant) => ({
+        error: errorByVariantId[variant.id],
+        isLoading,
+        isSaving: mutation.isPending && mutation.variables === variant.id,
+        onStockedQuantityChange: (value) =>
+          setStockedQuantityByVariantId((current) => ({
+            ...current,
+            [variant.id]: value,
+          })),
+        onSubmit: () => mutation.mutate(variant.id),
+        stock: stockByVariantId[variant.id],
+        stockedQuantity: stockedQuantityByVariantId[variant.id] ?? "",
+        variant,
+      })),
+    [
+      errorByVariantId,
+      filteredVariants,
+      isLoading,
+      mutation,
+      stockByVariantId,
+      stockedQuantityByVariantId,
+    ],
+  );
 
   return (
     <Card>
@@ -398,8 +429,16 @@ function VariantStockPanel({
           <StockMetric label="Reserved" value={isLoading ? "Loading..." : String(totalReserved)} />
         </div>
 
-        <div className="overflow-hidden rounded-2xl border bg-background shadow-sm shadow-primary/5">
-          <div className="flex flex-col gap-3 border-b bg-muted/30 px-4 py-3 md:flex-row md:items-center md:justify-between">
+        <DataTable
+          columns={columns}
+          data={rows}
+          emptyMessage="No variants match this search."
+          emptyTitle="No matching variants"
+          getRowId={(row) => row.variant.id}
+          isFiltered={Boolean(query.trim())}
+          pageSize={8}
+          toolbar={
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div>
               <h3 className="text-sm font-medium">Variant inventory</h3>
               <p className="text-sm text-muted-foreground">
@@ -420,88 +459,105 @@ function VariantStockPanel({
               />
             </div>
           </div>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Variant</TableHead>
-                <TableHead>SKU</TableHead>
-                <TableHead>Price</TableHead>
-                <TableHead className="text-right">Available</TableHead>
-                <TableHead className="text-right">Reserved</TableHead>
-                <TableHead className="w-56">Stocked quantity</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredVariants.length ? filteredVariants.map((variant) => {
-                const stock = stockByVariantId[variant.id];
-                const error = errorByVariantId[variant.id];
-                const isSaving = mutation.isPending && mutation.variables === variant.id;
-
-                return (
-                  <TableRow className="align-top" key={variant.id}>
-                    <TableCell className="min-w-56 whitespace-normal">
-                      <div className="font-medium">{variant.title ?? "Untitled variant"}</div>
-                      <div className="break-all text-xs text-muted-foreground">{variant.id}</div>
-                      <VariantOptionSummary variant={variant} />
-                      {error ? (
-                        <div className="mt-2 text-xs text-destructive">{error}</div>
-                      ) : null}
-                    </TableCell>
-                    <TableCell>{variant.sku ?? "No SKU"}</TableCell>
-                    <TableCell>{formatVariantPrice(variant)}</TableCell>
-                    <TableCell className="text-right">
-                      <div className="font-medium">
-                        {isLoading ? "Loading..." : formatQuantity(stock?.availableQuantity ?? null)}
-                      </div>
-                      {!isLoading ? (
-                        <StockStateText availableQuantity={stock?.availableQuantity ?? stock?.stockedQuantity ?? null} />
-                      ) : null}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {isLoading ? "Loading..." : formatQuantity(stock?.reservedQuantity ?? null)}
-                    </TableCell>
-                    <TableCell>
-                      <form
-                        className="flex items-center gap-2"
-                        onSubmit={(event) => {
-                          event.preventDefault();
-                          mutation.mutate(variant.id);
-                        }}
-                      >
-                        <Input
-                          aria-label={`Stocked quantity for ${variant.title ?? variant.id}`}
-                          className="h-9 w-24"
-                          min="0"
-                          onChange={(event) =>
-                            setStockedQuantityByVariantId((current) => ({
-                              ...current,
-                              [variant.id]: event.target.value,
-                            }))
-                          }
-                          step="1"
-                          type="number"
-                          value={stockedQuantityByVariantId[variant.id] ?? ""}
-                        />
-                        <Button disabled={isSaving || isLoading} size="sm" type="submit">
-                          {isSaving ? "Saving..." : "Save"}
-                        </Button>
-                      </form>
-                    </TableCell>
-                  </TableRow>
-                );
-              }) : (
-                <TableRow>
-                  <TableCell className="py-8 text-center text-sm text-muted-foreground" colSpan={6}>
-                    No variants match this search.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </div>
+          }
+        />
       </CardContent>
     </Card>
   );
+}
+
+function getVariantInventoryColumns(): ColumnDef<VariantInventoryRow>[] {
+  return [
+    {
+      accessorFn: (row) => row.variant.title ?? row.variant.id,
+      header: "Variant",
+      cell: ({ row }) => {
+        const { error, variant } = row.original;
+
+        return (
+          <div className="w-64 max-w-64 whitespace-normal">
+            <div className="font-medium">{variant.title ?? "Untitled variant"}</div>
+            <div className="break-all text-xs text-muted-foreground">{variant.id}</div>
+            <VariantOptionSummary variant={variant} />
+            {error ? <div className="mt-2 text-xs text-destructive">{error}</div> : null}
+          </div>
+        );
+      },
+    },
+    {
+      accessorFn: (row) => row.variant.sku ?? "",
+      header: "SKU",
+      cell: ({ row }) => (
+        <span className="text-muted-foreground">{row.original.variant.sku ?? "No SKU"}</span>
+      ),
+    },
+    {
+      accessorFn: (row) => formatVariantPrice(row.variant),
+      header: "Price",
+      cell: ({ row }) => formatVariantPrice(row.original.variant),
+    },
+    {
+      accessorFn: (row) => row.stock?.availableQuantity ?? row.stock?.stockedQuantity ?? 0,
+      header: "Available",
+      cell: ({ row }) => {
+        const { isLoading, stock } = row.original;
+
+        return (
+          <div className="text-right">
+            <div className="font-medium">
+              {isLoading ? "Loading..." : formatQuantity(stock?.availableQuantity ?? null)}
+            </div>
+            {!isLoading ? (
+              <StockStateText
+                availableQuantity={stock?.availableQuantity ?? stock?.stockedQuantity ?? null}
+              />
+            ) : null}
+          </div>
+        );
+      },
+    },
+    {
+      accessorFn: (row) => row.stock?.reservedQuantity ?? 0,
+      header: "Reserved",
+      cell: ({ row }) => (
+        <div className="text-right">
+          {row.original.isLoading
+            ? "Loading..."
+            : formatQuantity(row.original.stock?.reservedQuantity ?? null)}
+        </div>
+      ),
+    },
+    {
+      id: "actions",
+      header: "Stocked",
+      cell: ({ row }) => {
+        const item = row.original;
+
+        return (
+          <form
+            className="flex items-center justify-end gap-2"
+            onSubmit={(event) => {
+              event.preventDefault();
+              item.onSubmit();
+            }}
+          >
+            <Input
+              aria-label={`Stocked quantity for ${item.variant.title ?? item.variant.id}`}
+              className="h-9 w-24"
+              min="0"
+              onChange={(event) => item.onStockedQuantityChange(event.target.value)}
+              step="1"
+              type="number"
+              value={item.stockedQuantity}
+            />
+            <Button disabled={item.isSaving || item.isLoading} size="sm" type="submit">
+              {item.isSaving ? "Saving..." : "Save"}
+            </Button>
+          </form>
+        );
+      },
+    },
+  ];
 }
 
 function StockMetric({
