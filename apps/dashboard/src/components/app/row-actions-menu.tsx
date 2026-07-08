@@ -23,7 +23,7 @@ export type RowAction =
   | {
       disabled?: boolean;
       label: string;
-      onSelect: () => void;
+      onSelect: () => Promise<void> | void;
       type: "button";
       variant?: "default" | "destructive";
     }
@@ -70,7 +70,9 @@ export function RowActionsMenu({ actions, label }: RowActionsMenuProps) {
               <DropdownMenuItem
                 disabled={action.disabled ?? false}
                 key={action.label}
-                onSelect={action.onSelect}
+                onSelect={() => {
+                  void action.onSelect();
+                }}
                 {...(action.variant ? { variant: action.variant } : {})}
               >
                 {action.label}

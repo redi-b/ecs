@@ -3,6 +3,7 @@
 import type { MerchantOrder } from "@ecs/contracts";
 import type { ColumnDef } from "@tanstack/react-table";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
 
 import { DataTable } from "@/components/app/data-table";
 import {
@@ -32,6 +33,7 @@ import {
   type OrderLifecycleFilter,
   type OrderPaymentFilter,
 } from "@/features/orders/order-table-state";
+import { copyTextToClipboard } from "@/lib/clipboard";
 import { getTenantScopedPath } from "@/lib/dashboard-tenant-context";
 import { dashboardRoutes } from "@/lib/routes";
 
@@ -62,12 +64,19 @@ const orderLifecycleFilterOptions: Array<{
   { label: "Paid", value: "paid" },
 ];
 
-function copyToClipboard(value: string) {
-  if (!value || typeof navigator === "undefined" || !navigator.clipboard) {
-    return;
-  }
+async function copyToClipboard(value: string, label: string) {
+  try {
+    const copied = await copyTextToClipboard(value);
 
-  void navigator.clipboard.writeText(value).catch(() => undefined);
+    if (!copied) {
+      toast.error("Nothing to copy.");
+      return;
+    }
+
+    toast.success(`${label} copied.`);
+  } catch {
+    toast.error("Could not copy. Try again.");
+  }
 }
 
 function setUrlFilter(url: URL, key: string, value: string, defaultValue: string) {
@@ -161,13 +170,13 @@ function getOrderColumns(tenantId?: string): ColumnDef<MerchantOrder>[] {
               { id: "identity", type: "separator" },
               {
                 label: "Copy order ID",
-                onSelect: () => copyToClipboard(order.id),
+                onSelect: () => copyToClipboard(order.id, "Order ID"),
                 type: "button",
               },
               {
                 disabled: !order.email,
                 label: "Copy customer email",
-                onSelect: () => copyToClipboard(order.email ?? ""),
+                onSelect: () => copyToClipboard(order.email ?? "", "Customer email"),
                 type: "button",
               },
             ]}
@@ -369,7 +378,9 @@ export function OrdersTable({
     <DataTable
       bulkActions={(selectedOrders) => (
         <Button
-          onClick={() => copyToClipboard(selectedOrders.map((order) => order.id).join("\n"))}
+          onClick={() =>
+            copyToClipboard(selectedOrders.map((order) => order.id).join("\n"), "Order IDs")
+          }
           size="sm"
           type="button"
           variant="outline"
