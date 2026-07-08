@@ -437,20 +437,11 @@ export function createMedusaProductService(options: {
         return inventory;
       }
 
-      const response = await requestMedusa(
-        fetcher,
-        getInventoryItemLevelUrl(options.medusaInternalUrl, {
-          inventoryItemId: inventory.inventoryItemId,
-          stockLocationId: input.stockLocationId,
-        }),
-        {
-          body: JSON.stringify({
-            stocked_quantity: input.stockedQuantity,
-          }),
-          headers: getAdminHeaders(options.adminApiToken),
-          method: "POST",
-        },
-      );
+      const response = await writeInventoryItemStockLevel(fetcher, options, {
+        inventoryItemId: inventory.inventoryItemId,
+        stockLocationId: input.stockLocationId,
+        stockedQuantity: input.stockedQuantity,
+      });
 
       if (!response.ok) {
         return getStockWriteError(response);
@@ -493,20 +484,11 @@ export function createMedusaProductService(options: {
         return inventory;
       }
 
-      const response = await requestMedusa(
-        fetcher,
-        getInventoryItemLevelUrl(options.medusaInternalUrl, {
-          inventoryItemId: inventory.inventoryItemId,
-          stockLocationId: input.stockLocationId,
-        }),
-        {
-          body: JSON.stringify({
-            stocked_quantity: input.stockedQuantity,
-          }),
-          headers: getAdminHeaders(options.adminApiToken),
-          method: "POST",
-        },
-      );
+      const response = await writeInventoryItemStockLevel(fetcher, options, {
+        inventoryItemId: inventory.inventoryItemId,
+        stockLocationId: input.stockLocationId,
+        stockedQuantity: input.stockedQuantity,
+      });
 
       if (!response.ok) {
         return getStockWriteError(response);
@@ -1116,7 +1098,7 @@ async function getInventoryItemStock(
     value: data?.inventory_item,
   });
 
-  if (!stock) {
+  if (!stock && !isRecord(data?.inventory_item)) {
     return {
       ok: false,
       error: "product_inventory_unavailable",
@@ -1126,7 +1108,70 @@ async function getInventoryItemStock(
 
   return {
     ok: true,
-    stock,
+    stock: stock ?? getEmptyProductStock(input),
+  };
+}
+
+async function writeInventoryItemStockLevel(
+  fetcher: typeof fetch,
+  options: {
+    adminApiToken?: string | undefined;
+    medusaInternalUrl: string;
+  },
+  input: {
+    inventoryItemId: string;
+    stockLocationId: string;
+    stockedQuantity: number;
+  },
+) {
+  const response = await requestMedusa(
+    fetcher,
+    getInventoryItemLevelUrl(options.medusaInternalUrl, {
+      inventoryItemId: input.inventoryItemId,
+      stockLocationId: input.stockLocationId,
+    }),
+    {
+      body: JSON.stringify({
+        stocked_quantity: input.stockedQuantity,
+      }),
+      headers: getAdminHeaders(options.adminApiToken ?? ""),
+      method: "POST",
+    },
+  );
+
+  if (response.status !== 404) {
+    return response;
+  }
+
+  return requestMedusa(
+    fetcher,
+    getInventoryItemLevelsUrl(options.medusaInternalUrl, input.inventoryItemId),
+    {
+      body: JSON.stringify({
+        location_id: input.stockLocationId,
+        stocked_quantity: input.stockedQuantity,
+      }),
+      headers: getAdminHeaders(options.adminApiToken ?? ""),
+      method: "POST",
+    },
+  );
+}
+
+function getEmptyProductStock(input: {
+  inventoryItemId: string;
+  productId: string;
+  stockLocationId: string;
+  variantId: string;
+}): MerchantProductStock {
+  return {
+    productId: input.productId,
+    variantId: input.variantId,
+    inventoryItemId: input.inventoryItemId,
+    locationId: input.stockLocationId,
+    stockedQuantity: 0,
+    reservedQuantity: 0,
+    incomingQuantity: 0,
+    availableQuantity: 0,
   };
 }
 

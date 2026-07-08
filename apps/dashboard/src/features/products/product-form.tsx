@@ -52,6 +52,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
@@ -92,6 +93,7 @@ type ProductFormValues = {
   status: "draft" | "published";
   priceAmount: string;
   currencyCode: "etb";
+  hasVariants: boolean;
   initialStock: string;
   options: ProductOptionDraft[];
   skuPrefix: string;
@@ -115,7 +117,7 @@ type ComposerStep = {
 const PRODUCT_STEPS: ComposerStep[] = [
   { id: "details", label: "Details" },
   { id: "organize", label: "Organize" },
-  { id: "variants", label: "Variants" },
+  { id: "variants", label: "Pricing & stock" },
   { id: "review", label: "Review" },
 ];
 
@@ -225,8 +227,6 @@ export function ProductForm({
     },
   });
   const HandleLockIcon = isHandleLocked ? AppIcons.lock : AppIcons.lockUnlock;
-  const variantRows = getVariantRows(form.state.values);
-
   function requestExit(next: () => void) {
     if (form.state.isDirty && !submitMutation.isSuccess) {
       setExitIntent(() => next);
@@ -650,26 +650,15 @@ export function ProductForm({
             {activeStep === "variants" ? (
               <section className="flex flex-col gap-5">
                 <ComposerSection
-                  description="Define option groups, then apply default price, SKU, and stock values to every generated variant."
-                  title="Variants"
+                  description="Set the default selling price and stocked quantity. Enable variants only when shoppers choose between options like size or color."
+                  title="Pricing and stock"
                 />
-
-                {!product ? (
-                  <form.Field name="options">
-                    {(field) => (
-                      <ProductOptionsBuilder
-                        onChange={field.handleChange}
-                        options={field.state.value}
-                      />
-                    )}
-                  </form.Field>
-                ) : null}
 
                 <div className="rounded-2xl border bg-background p-4 shadow-sm shadow-primary/5">
                   <div className="mb-4 flex flex-col gap-1">
-                    <h3 className="text-sm font-medium">Variant defaults</h3>
+                    <h3 className="text-sm font-medium">Default selling settings</h3>
                     <p className="text-sm text-muted-foreground">
-                      These values apply to every generated row. Override a row only when it differs.
+                      These values apply to the product. When variants are enabled, they become the defaults for every generated row.
                     </p>
                   </div>
                   <div className="grid gap-4 md:grid-cols-4">
@@ -766,34 +755,77 @@ export function ProductForm({
                   </div>
                 </div>
 
-                <VariantMatrixTable
-                  onOverrideChange={(key, override) => {
-                    form.setFieldValue("variantOverrides", {
-                      ...form.state.values.variantOverrides,
-                      [key]: {
-                        ...form.state.values.variantOverrides[key],
-                        ...override,
-                      },
-                    });
-                  }}
-                  rows={variantRows}
-                  values={form.state.values.variantOverrides}
-                />
+                {!product ? (
+                  <form.Field name="hasVariants">
+                    {(field) => (
+                      <div className="flex items-start justify-between gap-4 rounded-2xl border bg-muted/20 p-4">
+                        <div className="max-w-2xl">
+                          <h3 className="text-sm font-medium">This product has variants</h3>
+                          <p className="mt-1 text-sm text-muted-foreground">
+                            Turn this on for products sold in multiple option combinations.
+                          </p>
+                        </div>
+                        <Switch
+                          aria-label="Enable product variants"
+                          checked={field.state.value}
+                          onCheckedChange={(checked) => {
+                            field.handleChange(checked);
+                            if (!checked) {
+                              form.setFieldValue("variantOverrides", {});
+                            }
+                          }}
+                        />
+                      </div>
+                    )}
+                  </form.Field>
+                ) : null}
+
+                <form.Subscribe selector={(state) => state.values}>
+                  {(values) =>
+                    values.hasVariants ? (
+                      <>
+                        {!product ? (
+                          <form.Field name="options">
+                            {(field) => (
+                              <ProductOptionsBuilder
+                                onChange={field.handleChange}
+                                options={field.state.value}
+                              />
+                            )}
+                          </form.Field>
+                        ) : null}
+
+                        <VariantMatrixTable
+                          onOverrideChange={(key, override) => {
+                            form.setFieldValue("variantOverrides", {
+                              ...values.variantOverrides,
+                              [key]: {
+                                ...values.variantOverrides[key],
+                                ...override,
+                              },
+                            });
+                          }}
+                          rows={getVariantRows(values)}
+                          values={values.variantOverrides}
+                        />
+                      </>
+                    ) : (
+                      <SimpleProductStockPreview values={values} />
+                    )
+                  }
+                </form.Subscribe>
               </section>
             ) : null}
 
             {activeStep === "review" ? (
               <section className="flex flex-col gap-5">
                 <ComposerSection
-                  description="Review the generated product variants before saving."
+                  description="Confirm the catalog details that will be saved."
                   title="Review"
                 />
-                <div className="rounded-lg border p-4">
-                  <p className="text-sm text-muted-foreground">
-                    {variantRows.length} variant{variantRows.length === 1 ? "" : "s"} will be saved
-                    with default price, SKU, and stock settings.
-                  </p>
-                </div>
+                <form.Subscribe selector={(state) => state.values}>
+                  {(values) => <ProductReviewSummary values={values} />}
+                </form.Subscribe>
               </section>
             ) : null}
                 </div>
@@ -850,6 +882,83 @@ export function ProductForm({
         </AlertDialogContent>
       </AlertDialog>
     </>
+  );
+}
+
+function SimpleProductStockPreview({ values }: { values: ProductFormValues }) {
+  return (
+    <div className="grid gap-3 md:grid-cols-3">
+      <VariantMatrixMetric label="Product type" value="Simple product" />
+      <VariantMatrixMetric label="Price" value={formatEtbAmount(values.priceAmount)} />
+      <VariantMatrixMetric
+        label="Initial stock"
+        value={String(parseWholeNumber(values.initialStock) ?? 0)}
+      />
+    </div>
+  );
+}
+
+function ProductReviewSummary({ values }: { values: ProductFormValues }) {
+  const rows = getVariantRows(values);
+  const normalizedOptions = normalizeProductOptions(values.options);
+  const totalStock = rows.reduce((total, row) => total + row.stockedQuantity, 0);
+  const prices = rows.map((row) => row.priceAmount);
+  const minPrice = Math.min(...prices);
+  const maxPrice = Math.max(...prices);
+  const overriddenRows = rows.filter((row) => values.variantOverrides[row.key]).length;
+
+  return (
+    <div className="grid gap-4">
+      <div className="grid gap-3 md:grid-cols-4">
+        <VariantMatrixMetric
+          label="Product type"
+          value={values.hasVariants ? "Variant product" : "Simple product"}
+        />
+        <VariantMatrixMetric label="Sellable rows" value={String(rows.length)} />
+        <VariantMatrixMetric
+          label="Price"
+          value={minPrice === maxPrice ? `ETB ${minPrice}` : `ETB ${minPrice} to ${maxPrice}`}
+        />
+        <VariantMatrixMetric label="Initial stock" value={String(totalStock)} />
+      </div>
+
+      <div className="rounded-2xl border bg-background p-4">
+        <h3 className="text-sm font-medium">What will be saved</h3>
+        <div className="mt-3 grid gap-3 text-sm md:grid-cols-2">
+          <ReviewLine label="Title" value={values.title.trim() || "Untitled product"} />
+          <ReviewLine label="Status" value={values.status === "published" ? "Published" : "Draft"} />
+          <ReviewLine label="Handle" value={values.handle.trim() ? `/${values.handle.trim()}` : "No handle"} />
+          <ReviewLine label="SKU prefix" value={values.skuPrefix.trim() || "No SKU prefix"} />
+          <ReviewLine
+            label="Options"
+            value={
+              values.hasVariants && normalizedOptions.length
+                ? normalizedOptions
+                    .map((option) => `${option.title}: ${option.values.join(", ")}`)
+                    .join(" | ")
+                : "No shopper options"
+            }
+          />
+          <ReviewLine
+            label="Overrides"
+            value={
+              values.hasVariants
+                ? `${overriddenRows} row${overriddenRows === 1 ? "" : "s"} customized`
+                : "Not applicable"
+            }
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ReviewLine({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-lg border bg-muted/20 px-3 py-2">
+      <div className="text-xs text-muted-foreground">{label}</div>
+      <div className="mt-1 break-words font-medium">{value}</div>
+    </div>
   );
 }
 
@@ -1166,6 +1275,7 @@ function getProductDefaultValues(product: MerchantProduct | undefined): ProductF
   const firstPrice = getFirstVariantPrice(product);
   const title = product?.title ?? "";
   const generatedHandle = slugifyProductHandle(title);
+  const initialOptions = getInitialProductOptions(product);
 
   return {
     title,
@@ -1177,10 +1287,11 @@ function getProductDefaultValues(product: MerchantProduct | undefined): ProductF
       .filter(Boolean)
       .join("\n"),
     status: normalizeStatus(product?.status),
-    priceAmount: firstPrice?.amount ?? "",
+    priceAmount: firstPrice?.amount === undefined ? "" : String(firstPrice.amount),
     currencyCode: "etb",
+    hasVariants: Boolean(product && initialOptions.length),
     initialStock: "0",
-    options: getInitialProductOptions(product),
+    options: initialOptions,
     skuPrefix: product?.handle?.toUpperCase() ?? "",
     variantOverrides: {},
     collectionId: product?.collectionId ?? NO_COLLECTION_VALUE,
@@ -1289,12 +1400,28 @@ function validatePriceAmount(value: string) {
 }
 
 function getProductOptionsPayload(values: ProductFormValues) {
+  if (!values.hasVariants) {
+    return [{ title: "Default", values: ["Default"] }];
+  }
+
   const options = normalizeProductOptions(values.options);
 
   return options.length ? options : undefined;
 }
 
 function getProductVariantsPayload(values: ProductFormValues) {
+  if (!values.hasVariants) {
+    return [
+      {
+        optionValues: { Default: "Default" },
+        sku: values.skuPrefix.trim() ? values.skuPrefix.trim() : null,
+        priceAmount: parseWholeNumber(values.priceAmount) ?? 0,
+        currencyCode: values.currencyCode,
+        stockedQuantity: parseWholeNumber(values.initialStock) ?? 0,
+      },
+    ];
+  }
+
   return getVariantRows(values).map((row) => ({
     optionValues: row.optionValues,
     sku: row.sku.trim() ? row.sku.trim() : null,
@@ -1361,6 +1488,12 @@ function parseWholeNumber(value: string) {
   const trimmed = value.trim();
 
   return /^\d+$/.test(trimmed) ? Number.parseInt(trimmed, 10) : undefined;
+}
+
+function formatEtbAmount(value: string) {
+  const amount = parseWholeNumber(value);
+
+  return amount === undefined ? "No price" : `ETB ${amount}`;
 }
 
 class ProductMutationError extends Error {
@@ -1441,7 +1574,7 @@ function getInitialProductOptions(product: MerchantProduct | undefined): Product
 
   for (const variant of product?.variants ?? []) {
     for (const option of variant.optionValues ?? []) {
-      if (!option.optionTitle || !option.value) {
+      if (!option.optionTitle || !option.value || option.optionTitle === "Default") {
         continue;
       }
 

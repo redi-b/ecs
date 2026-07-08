@@ -3,9 +3,10 @@
 import type { MerchantProduct, MerchantProductStock } from "@ecs/contracts";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
+import { AppIcons } from "@/components/app/icons";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -231,6 +232,29 @@ function VariantStockPanel({
   );
   const totalReserved = stocks.reduce((total, stock) => total + (stock.reservedQuantity ?? 0), 0);
   const totalStocked = stocks.reduce((total, stock) => total + (stock.stockedQuantity ?? 0), 0);
+  const [query, setQuery] = useState("");
+  const filteredVariants = useMemo(() => {
+    const needle = query.trim().toLowerCase();
+
+    if (!needle) {
+      return variants;
+    }
+
+    return variants.filter((variant) =>
+      [
+        variant.id,
+        variant.title,
+        variant.sku,
+        formatVariantPrice(variant),
+        ...(variant.optionValues ?? []).flatMap((option) => [
+          option.optionTitle,
+          option.value,
+        ]),
+      ]
+        .filter(Boolean)
+        .some((value) => String(value).toLowerCase().includes(needle)),
+    );
+  }, [query, variants]);
 
   useEffect(() => {
     let cancelled = false;
@@ -375,24 +399,40 @@ function VariantStockPanel({
         </div>
 
         <div className="overflow-hidden rounded-2xl border bg-background shadow-sm shadow-primary/5">
-          <div className="border-b bg-muted/30 px-4 py-3">
-            <h3 className="text-sm font-medium">Stock by variant</h3>
-            <p className="text-sm text-muted-foreground">
-              Set stocked quantities per variant. Available stock reflects reserved orders.
-            </p>
+          <div className="flex flex-col gap-3 border-b bg-muted/30 px-4 py-3 md:flex-row md:items-center md:justify-between">
+            <div>
+              <h3 className="text-sm font-medium">Variant inventory</h3>
+              <p className="text-sm text-muted-foreground">
+                Search variants, review price, and set stocked quantities.
+              </p>
+            </div>
+            <div className="relative md:w-72">
+              <AppIcons.search
+                className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
+                data-icon="inline-start"
+              />
+              <Input
+                aria-label="Search variants"
+                className="h-9 pl-9"
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Search variant, SKU, option"
+                value={query}
+              />
+            </div>
           </div>
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Variant</TableHead>
                 <TableHead>SKU</TableHead>
+                <TableHead>Price</TableHead>
                 <TableHead className="text-right">Available</TableHead>
                 <TableHead className="text-right">Reserved</TableHead>
                 <TableHead className="w-56">Stocked quantity</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {variants.map((variant) => {
+              {filteredVariants.length ? filteredVariants.map((variant) => {
                 const stock = stockByVariantId[variant.id];
                 const error = errorByVariantId[variant.id];
                 const isSaving = mutation.isPending && mutation.variables === variant.id;
@@ -408,6 +448,7 @@ function VariantStockPanel({
                       ) : null}
                     </TableCell>
                     <TableCell>{variant.sku ?? "No SKU"}</TableCell>
+                    <TableCell>{formatVariantPrice(variant)}</TableCell>
                     <TableCell className="text-right">
                       <div className="font-medium">
                         {isLoading ? "Loading..." : formatQuantity(stock?.availableQuantity ?? null)}
@@ -448,7 +489,13 @@ function VariantStockPanel({
                     </TableCell>
                   </TableRow>
                 );
-              })}
+              }) : (
+                <TableRow>
+                  <TableCell className="py-8 text-center text-sm text-muted-foreground" colSpan={6}>
+                    No variants match this search.
+                  </TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         </div>
@@ -539,6 +586,18 @@ function getAvailableQuantity(stock: MerchantProductStock) {
 
 function formatQuantity(value: number | null) {
   return typeof value === "number" ? String(value) : "Not available";
+}
+
+function formatVariantPrice(variant: NonNullable<MerchantProduct["variants"]>[number]) {
+  const price = variant.prices.find(
+    (variantPrice) => typeof variantPrice.amount === "number" && variantPrice.currencyCode,
+  );
+
+  if (!price || typeof price.amount !== "number" || !price.currencyCode) {
+    return "No price";
+  }
+
+  return `${price.currencyCode.toUpperCase()} ${price.amount}`;
 }
 
 function getStockErrorMessage(error: string | undefined) {
