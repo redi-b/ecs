@@ -1,6 +1,10 @@
 "use client";
 
-import type { MerchantProduct } from "@ecs/contracts";
+import type {
+  MerchantProduct,
+  MerchantProductCategory,
+  MerchantProductCollection,
+} from "@ecs/contracts";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
 import { useRouter } from "next/navigation";
@@ -40,13 +44,23 @@ import {
   getProductPriceSortValue,
   getProductTableCounts,
   type ProductStatusFilter,
+  type ProductMediaFilter,
+  type ProductStockFilter,
+  type ProductVariantCountFilter,
 } from "@/features/products/product-table-state";
 import { getTenantScopedPath } from "@/lib/dashboard-tenant-context";
 import { dashboardRoutes } from "@/lib/routes";
 
 type ProductsTableProps = {
+  categories: MerchantProductCategory[];
+  collections: MerchantProductCollection[];
+  initialCategoryId?: string | undefined;
+  initialCollectionId?: string | undefined;
+  initialMedia?: ProductMediaFilter | undefined;
   initialQuery?: string | undefined;
   initialStatus?: ProductStatusFilter | undefined;
+  initialStock?: ProductStockFilter | undefined;
+  initialVariantCount?: ProductVariantCountFilter | undefined;
   pageSize: number;
   products: MerchantProduct[];
   tenantId?: string | undefined;
@@ -69,6 +83,14 @@ function copyToClipboard(value: string) {
   }
 
   void navigator.clipboard.writeText(value).catch(() => undefined);
+}
+
+function setUrlFilter(url: URL, key: string, value: string, defaultValue: string) {
+  if (value !== defaultValue) {
+    url.searchParams.set(key, value);
+  } else {
+    url.searchParams.delete(key);
+  }
 }
 
 function getProductColumns(
@@ -198,8 +220,15 @@ function getDeletionErrorMessage(error: unknown, resourceName: string) {
 }
 
 export function ProductsTable({
+  categories,
+  collections,
+  initialCategoryId = "all",
+  initialCollectionId = "all",
+  initialMedia = "all",
   initialQuery = "",
   initialStatus = "all",
+  initialStock = "all",
+  initialVariantCount = "all",
   pageSize,
   products,
   tenantId,
@@ -209,6 +238,12 @@ export function ProductsTable({
   const queryClient = useQueryClient();
   const [query, setQuery] = useState(initialQuery);
   const [status, setStatus] = useState<ProductStatusFilter>(initialStatus);
+  const [stock, setStock] = useState<ProductStockFilter>(initialStock);
+  const [media, setMedia] = useState<ProductMediaFilter>(initialMedia);
+  const [variantCount, setVariantCount] =
+    useState<ProductVariantCountFilter>(initialVariantCount);
+  const [collectionId, setCollectionId] = useState(initialCollectionId);
+  const [categoryId, setCategoryId] = useState(initialCategoryId);
   const hasSyncedInitialUrlState = useRef(false);
   void pageSize;
 
@@ -269,14 +304,23 @@ export function ProductsTable({
   });
 
   const filteredProducts = useMemo(
-    () => filterProductsForTable(products, { query, status }),
-    [products, query, status],
+    () =>
+      filterProductsForTable(products, {
+        categoryId,
+        collectionId,
+        media,
+        query,
+        status,
+        stock,
+        variantCount,
+      }),
+    [products, categoryId, collectionId, media, query, status, stock, variantCount],
   );
   const counts = getProductTableCounts({
     filteredCount: filteredProducts.length,
     pageCount: products.length,
     totalCount,
-    filters: { query, status },
+    filters: { categoryId, collectionId, media, query, status, stock, variantCount },
   });
   const filters: DataTableFilterDefinition[] = [
     {
@@ -287,11 +331,84 @@ export function ProductsTable({
       options: productStatusFilterOptions,
       value: status,
     },
+    {
+      defaultValue: "all",
+      id: "stock",
+      label: "Stock",
+      onChange: (value) => setStock(value as ProductStockFilter),
+      options: [
+        { label: "All stock", value: "all" },
+        { label: "In stock", value: "in_stock" },
+        { label: "Out of stock", value: "out_of_stock" },
+        { label: "Not tracked", value: "not_tracked" },
+      ],
+      value: stock,
+    },
+    {
+      defaultValue: "all",
+      id: "media",
+      label: "Media",
+      onChange: (value) => setMedia(value as ProductMediaFilter),
+      options: [
+        { label: "All media", value: "all" },
+        { label: "With media", value: "with_media" },
+        { label: "Without media", value: "without_media" },
+      ],
+      value: media,
+    },
+    {
+      defaultValue: "all",
+      id: "variantCount",
+      label: "Variants",
+      onChange: (value) => setVariantCount(value as ProductVariantCountFilter),
+      options: [
+        { label: "All variant counts", value: "all" },
+        { label: "No variants", value: "no_variants" },
+        { label: "Single variant", value: "single_variant" },
+        { label: "Multiple variants", value: "multi_variant" },
+      ],
+      value: variantCount,
+    },
+    {
+      defaultValue: "all",
+      id: "collectionId",
+      label: "Collection",
+      onChange: setCollectionId,
+      options: [
+        { label: "All collections", value: "all" },
+        { label: "No collection", value: "none" },
+        ...collections.map((collection) => ({
+          label: collection.title ?? collection.handle ?? collection.id,
+          value: collection.id,
+        })),
+      ],
+      value: collectionId,
+    },
+    {
+      defaultValue: "all",
+      id: "categoryId",
+      label: "Category",
+      onChange: setCategoryId,
+      options: [
+        { label: "All categories", value: "all" },
+        { label: "No category", value: "none" },
+        ...categories.map((category) => ({
+          label: category.name ?? category.handle ?? category.id,
+          value: category.id,
+        })),
+      ],
+      value: categoryId,
+    },
   ];
 
   function clearFilters() {
     setQuery("");
     setStatus("all");
+    setStock("all");
+    setMedia("all");
+    setVariantCount("all");
+    setCollectionId("all");
+    setCategoryId("all");
   }
 
   useEffect(() => {
@@ -318,9 +435,15 @@ export function ProductsTable({
       url.searchParams.delete("status");
     }
 
+    setUrlFilter(url, "stock", stock, "all");
+    setUrlFilter(url, "media", media, "all");
+    setUrlFilter(url, "variantCount", variantCount, "all");
+    setUrlFilter(url, "collectionId", collectionId, "all");
+    setUrlFilter(url, "categoryId", categoryId, "all");
+
     url.searchParams.delete("page");
     window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}`);
-  }, [query, status]);
+  }, [categoryId, collectionId, media, query, status, stock, variantCount]);
 
   const toolbar = (
     <div className="flex flex-col gap-3">

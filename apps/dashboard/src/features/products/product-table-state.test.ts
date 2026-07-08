@@ -10,7 +10,10 @@ import {
   getProductTableCounts,
   getProductThumbnail,
   normalizeProductStatus,
+  parseProductMediaFilter,
   parseProductStatusFilter,
+  parseProductStockFilter,
+  parseProductVariantCountFilter,
 } from "./product-table-state.js";
 
 const products: MerchantProduct[] = [
@@ -22,7 +25,7 @@ const products: MerchantProduct[] = [
     status: "published",
     thumbnail: "https://cdn.example.com/coffee.jpg",
     collectionId: null,
-    categoryIds: [],
+    categoryIds: ["pcat_beans"],
     images: [
       {
         id: "img_1",
@@ -38,6 +41,13 @@ const products: MerchantProduct[] = [
         title: "Default",
         sku: "COF-1",
         prices: [{ amount: 250, currencyCode: "etb" }],
+        stock: {
+          locationId: "sloc_1",
+          stockedQuantity: 5,
+          reservedQuantity: 1,
+          incomingQuantity: 0,
+          availableQuantity: 4,
+        },
       },
     ],
     createdAt: "2026-01-01T00:00:00.000Z",
@@ -64,6 +74,43 @@ const teaProduct = products[1];
 
 assert.ok(coffeeProduct);
 assert.ok(teaProduct);
+
+const multiVariantProduct: MerchantProduct = {
+  ...coffeeProduct,
+  id: "prod_roast",
+  title: "Roast sampler",
+  handle: "roast-sampler",
+  collectionId: "pcol_featured",
+  categoryIds: ["pcat_beans", "pcat_gifts"],
+  variants: [
+    {
+      id: "var_dark",
+      title: "Dark",
+      sku: "ROAST-DARK",
+      prices: [{ amount: 300, currencyCode: "etb" }],
+      stock: {
+        locationId: "sloc_1",
+        stockedQuantity: 0,
+        reservedQuantity: 0,
+        incomingQuantity: 0,
+        availableQuantity: 0,
+      },
+    },
+    {
+      id: "var_light",
+      title: "Light",
+      sku: "ROAST-LIGHT",
+      prices: [{ amount: 300, currencyCode: "etb" }],
+      stock: {
+        locationId: "sloc_1",
+        stockedQuantity: 0,
+        reservedQuantity: 0,
+        incomingQuantity: 0,
+        availableQuantity: 0,
+      },
+    },
+  ],
+};
 
 describe("product table state", () => {
   it("searches product title, handle, status, and id", () => {
@@ -111,6 +158,59 @@ describe("product table state", () => {
     );
   });
 
+  it("filters products by stock, media, variant count, collection, and category", () => {
+    const catalog = [...products, multiVariantProduct];
+
+    assert.deepEqual(
+      filterProductsForTable(catalog, { query: "", status: "all", stock: "in_stock" }).map(
+        (product) => product.id,
+      ),
+      ["prod_coffee"],
+    );
+    assert.deepEqual(
+      filterProductsForTable(catalog, { query: "", status: "all", stock: "out_of_stock" }).map(
+        (product) => product.id,
+      ),
+      ["prod_roast"],
+    );
+    assert.deepEqual(
+      filterProductsForTable(catalog, { query: "", status: "all", stock: "not_tracked" }).map(
+        (product) => product.id,
+      ),
+      ["prod_tea"],
+    );
+    assert.deepEqual(
+      filterProductsForTable(catalog, { media: "without_media", query: "", status: "all" }).map(
+        (product) => product.id,
+      ),
+      ["prod_tea"],
+    );
+    assert.deepEqual(
+      filterProductsForTable(catalog, {
+        query: "",
+        status: "all",
+        variantCount: "multi_variant",
+      }).map((product) => product.id),
+      ["prod_roast"],
+    );
+    assert.deepEqual(
+      filterProductsForTable(catalog, {
+        collectionId: "pcol_featured",
+        query: "",
+        status: "all",
+      }).map((product) => product.id),
+      ["prod_roast"],
+    );
+    assert.deepEqual(
+      filterProductsForTable(catalog, {
+        categoryId: "pcat_gifts",
+        query: "",
+        status: "all",
+      }).map((product) => product.id),
+      ["prod_roast"],
+    );
+  });
+
   it("normalizes statuses case-insensitively and maps unexpected statuses to unknown", () => {
     assert.equal(normalizeProductStatus("PUBLISHED"), "published");
     assert.equal(normalizeProductStatus("Draft"), "draft");
@@ -127,6 +227,17 @@ describe("product table state", () => {
     assert.equal(parseProductStatusFilter("archived"), "all");
     assert.equal(parseProductStatusFilter(undefined), "all");
     assert.equal(parseProductStatusFilter(["published", "draft"]), "published");
+    assert.equal(parseProductStockFilter("in_stock"), "in_stock");
+    assert.equal(parseProductStockFilter("out_of_stock"), "out_of_stock");
+    assert.equal(parseProductStockFilter("not_tracked"), "not_tracked");
+    assert.equal(parseProductStockFilter("missing"), "all");
+    assert.equal(parseProductMediaFilter("with_media"), "with_media");
+    assert.equal(parseProductMediaFilter("without_media"), "without_media");
+    assert.equal(parseProductMediaFilter("missing"), "all");
+    assert.equal(parseProductVariantCountFilter("no_variants"), "no_variants");
+    assert.equal(parseProductVariantCountFilter("single_variant"), "single_variant");
+    assert.equal(parseProductVariantCountFilter("multi_variant"), "multi_variant");
+    assert.equal(parseProductVariantCountFilter("missing"), "all");
   });
 
   it("derives price, media, thumbnail, and filtered counts", () => {
@@ -291,6 +402,20 @@ describe("product table state", () => {
       getProductTableCounts({
         filteredCount: 2,
         filters: { query: "", status: "draft" },
+        pageCount: 2,
+        totalCount: 2,
+      }),
+      {
+        filteredCount: 2,
+        hasActiveFilter: true,
+        pageCount: 2,
+        totalCount: 2,
+      },
+    );
+    assert.deepEqual(
+      getProductTableCounts({
+        filteredCount: 2,
+        filters: { media: "with_media", query: "", status: "all" },
         pageCount: 2,
         totalCount: 2,
       }),

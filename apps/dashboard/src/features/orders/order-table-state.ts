@@ -9,9 +9,18 @@ export type OrderLifecycleFilter =
   | "fulfilled"
   | "payment_pending"
   | "paid";
+export type OrderPaymentFilter = "all" | "paid" | "pending" | "unpaid" | "unknown";
+export type OrderFulfillmentFilter = "all" | "needs_fulfillment" | "fulfilled" | "unfulfilled" | "unknown";
+export type OrderDeliveryFilter = "all" | "delivery" | "pickup" | "none";
+export type OrderDateFilter = "all" | "today" | "last_7_days" | "last_30_days" | "no_date";
 
 export type OrderTableFilterInput = {
+  created?: OrderDateFilter | undefined;
+  delivery?: OrderDeliveryFilter | undefined;
+  fulfillment?: OrderFulfillmentFilter | undefined;
   lifecycle: OrderLifecycleFilter;
+  now?: Date | undefined;
+  payment?: OrderPaymentFilter | undefined;
   query: string;
 };
 
@@ -24,8 +33,19 @@ export function filterOrdersForTable(
   return orders.filter((order) => {
     const matchesQuery = !query || getOrderSearchText(order).includes(query);
     const matchesLifecycle = orderMatchesLifecycle(order, input.lifecycle);
+    const matchesPayment = orderMatchesPayment(order, input.payment ?? "all");
+    const matchesFulfillment = orderMatchesFulfillment(order, input.fulfillment ?? "all");
+    const matchesDelivery = orderMatchesDelivery(order, input.delivery ?? "all");
+    const matchesCreated = orderMatchesCreatedDate(order, input.created ?? "all", input.now);
 
-    return matchesQuery && matchesLifecycle;
+    return (
+      matchesQuery &&
+      matchesLifecycle &&
+      matchesPayment &&
+      matchesFulfillment &&
+      matchesDelivery &&
+      matchesCreated
+    );
   });
 }
 
@@ -97,6 +117,58 @@ export function parseOrderLifecycleFilter(value: string | string[] | null | unde
   return "all";
 }
 
+export function parseOrderPaymentFilter(value: string | string[] | null | undefined): OrderPaymentFilter {
+  const normalized = (Array.isArray(value) ? value[0] : value)?.trim().toLowerCase();
+
+  if (normalized === "paid" || normalized === "pending" || normalized === "unpaid" || normalized === "unknown") {
+    return normalized;
+  }
+
+  return "all";
+}
+
+export function parseOrderFulfillmentFilter(
+  value: string | string[] | null | undefined,
+): OrderFulfillmentFilter {
+  const normalized = (Array.isArray(value) ? value[0] : value)?.trim().toLowerCase();
+
+  if (
+    normalized === "needs_fulfillment" ||
+    normalized === "fulfilled" ||
+    normalized === "unfulfilled" ||
+    normalized === "unknown"
+  ) {
+    return normalized;
+  }
+
+  return "all";
+}
+
+export function parseOrderDeliveryFilter(value: string | string[] | null | undefined): OrderDeliveryFilter {
+  const normalized = (Array.isArray(value) ? value[0] : value)?.trim().toLowerCase();
+
+  if (normalized === "delivery" || normalized === "pickup" || normalized === "none") {
+    return normalized;
+  }
+
+  return "all";
+}
+
+export function parseOrderDateFilter(value: string | string[] | null | undefined): OrderDateFilter {
+  const normalized = (Array.isArray(value) ? value[0] : value)?.trim().toLowerCase();
+
+  if (
+    normalized === "today" ||
+    normalized === "last_7_days" ||
+    normalized === "last_30_days" ||
+    normalized === "no_date"
+  ) {
+    return normalized;
+  }
+
+  return "all";
+}
+
 export function getOrderTableCounts(input: {
   filteredCount: number;
   filters: OrderTableFilterInput;
@@ -107,7 +179,13 @@ export function getOrderTableCounts(input: {
 
   return {
     ...counts,
-    hasActiveFilter: filters.query.trim().length > 0 || filters.lifecycle !== "all",
+    hasActiveFilter:
+      filters.query.trim().length > 0 ||
+      filters.lifecycle !== "all" ||
+      (filters.payment ?? "all") !== "all" ||
+      (filters.fulfillment ?? "all") !== "all" ||
+      (filters.delivery ?? "all") !== "all" ||
+      (filters.created ?? "all") !== "all",
   };
 }
 
@@ -172,6 +250,108 @@ function orderMatchesLifecycle(order: MerchantOrder, lifecycle: OrderLifecycleFi
     case "open":
       return normalizeOrderLifecycle(order) === "open";
   }
+}
+
+function orderMatchesPayment(order: MerchantOrder, paymentFilter: OrderPaymentFilter) {
+  if (paymentFilter === "all") {
+    return true;
+  }
+
+  const paymentStatus = normalizeStatus(order.paymentStatus);
+
+  if (paymentFilter === "unknown") {
+    return !paymentStatus;
+  }
+
+  if (paymentFilter === "paid") {
+    return isPaidStatus(paymentStatus);
+  }
+
+  if (paymentFilter === "pending") {
+    return isPaymentPendingStatus(paymentStatus);
+  }
+
+  return paymentStatus.includes("not_paid") || paymentStatus.includes("unpaid");
+}
+
+function orderMatchesFulfillment(
+  order: MerchantOrder,
+  fulfillmentFilter: OrderFulfillmentFilter,
+) {
+  if (fulfillmentFilter === "all") {
+    return true;
+  }
+
+  const fulfillmentStatus = normalizeStatus(order.fulfillmentStatus);
+
+  if (fulfillmentFilter === "unknown") {
+    return !fulfillmentStatus;
+  }
+
+  if (fulfillmentFilter === "fulfilled") {
+    return isFulfilledStatus(fulfillmentStatus);
+  }
+
+  if (fulfillmentFilter === "needs_fulfillment") {
+    return isNeedsFulfillmentStatus(fulfillmentStatus);
+  }
+
+  return fulfillmentStatus.includes("not_fulfilled") || fulfillmentStatus.includes("unfulfilled");
+}
+
+function orderMatchesDelivery(order: MerchantOrder, deliveryFilter: OrderDeliveryFilter) {
+  if (deliveryFilter === "all") {
+    return true;
+  }
+
+  const deliveryChoice = order.delivery?.choice?.trim().toLowerCase();
+
+  if (deliveryFilter === "none") {
+    return !deliveryChoice;
+  }
+
+  return deliveryChoice === deliveryFilter;
+}
+
+function orderMatchesCreatedDate(
+  order: MerchantOrder,
+  dateFilter: OrderDateFilter,
+  now = new Date(),
+) {
+  if (dateFilter === "all") {
+    return true;
+  }
+
+  if (!order.createdAt) {
+    return dateFilter === "no_date";
+  }
+
+  const createdAt = new Date(order.createdAt);
+
+  if (Number.isNaN(createdAt.getTime())) {
+    return dateFilter === "no_date";
+  }
+
+  if (dateFilter === "no_date") {
+    return false;
+  }
+
+  const ageMs = startOfUtcDay(now).getTime() - startOfUtcDay(createdAt).getTime();
+  const ageDays = Math.floor(ageMs / 86_400_000);
+
+  if (dateFilter === "today") {
+    return ageDays === 0;
+  }
+
+  if (dateFilter === "last_7_days") {
+    return ageDays >= 0 && ageDays <= 6;
+  }
+
+  return ageDays >= 0 && ageDays <= 29;
+}
+
+function startOfUtcDay(date: Date) {
+  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
 }
 
 function normalizeStatus(value: string | null) {

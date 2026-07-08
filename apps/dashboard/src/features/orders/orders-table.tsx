@@ -26,13 +26,21 @@ import {
   formatOrderDate,
   getOrderTableCounts,
   getOrderTotalSortValue,
+  type OrderDateFilter,
+  type OrderDeliveryFilter,
+  type OrderFulfillmentFilter,
   type OrderLifecycleFilter,
+  type OrderPaymentFilter,
 } from "@/features/orders/order-table-state";
 import { getTenantScopedPath } from "@/lib/dashboard-tenant-context";
 import { dashboardRoutes } from "@/lib/routes";
 
 type OrdersTableProps = {
+  initialCreated?: OrderDateFilter | undefined;
+  initialDelivery?: OrderDeliveryFilter | undefined;
+  initialFulfillment?: OrderFulfillmentFilter | undefined;
   initialLifecycle?: OrderLifecycleFilter | undefined;
+  initialPayment?: OrderPaymentFilter | undefined;
   initialQuery?: string | undefined;
   orders: MerchantOrder[];
   pageSize: number;
@@ -60,6 +68,14 @@ function copyToClipboard(value: string) {
   }
 
   void navigator.clipboard.writeText(value).catch(() => undefined);
+}
+
+function setUrlFilter(url: URL, key: string, value: string, defaultValue: string) {
+  if (value !== defaultValue) {
+    url.searchParams.set(key, value);
+  } else {
+    url.searchParams.delete(key);
+  }
 }
 
 function getOrderColumns(tenantId?: string): ColumnDef<MerchantOrder>[] {
@@ -166,7 +182,11 @@ function getOrderColumns(tenantId?: string): ColumnDef<MerchantOrder>[] {
 }
 
 export function OrdersTable({
+  initialCreated = "all",
+  initialDelivery = "all",
+  initialFulfillment = "all",
   initialLifecycle = "all",
+  initialPayment = "all",
   initialQuery = "",
   orders,
   pageSize,
@@ -175,16 +195,28 @@ export function OrdersTable({
 }: OrdersTableProps) {
   const [query, setQuery] = useState(initialQuery);
   const [lifecycle, setLifecycle] = useState<OrderLifecycleFilter>(initialLifecycle);
+  const [payment, setPayment] = useState<OrderPaymentFilter>(initialPayment);
+  const [fulfillment, setFulfillment] = useState<OrderFulfillmentFilter>(initialFulfillment);
+  const [delivery, setDelivery] = useState<OrderDeliveryFilter>(initialDelivery);
+  const [created, setCreated] = useState<OrderDateFilter>(initialCreated);
   const hasSyncedInitialUrlState = useRef(false);
   void pageSize;
 
   const filteredOrders = useMemo(
-    () => filterOrdersForTable(orders, { lifecycle, query }),
-    [orders, lifecycle, query],
+    () =>
+      filterOrdersForTable(orders, {
+        created,
+        delivery,
+        fulfillment,
+        lifecycle,
+        payment,
+        query,
+      }),
+    [orders, created, delivery, fulfillment, lifecycle, payment, query],
   );
   const counts = getOrderTableCounts({
     filteredCount: filteredOrders.length,
-    filters: { lifecycle, query },
+    filters: { created, delivery, fulfillment, lifecycle, payment, query },
     pageCount: orders.length,
     totalCount,
   });
@@ -197,11 +229,70 @@ export function OrdersTable({
       options: orderLifecycleFilterOptions,
       value: lifecycle,
     },
+    {
+      defaultValue: "all",
+      id: "payment",
+      label: "Payment",
+      onChange: (value) => setPayment(value as OrderPaymentFilter),
+      options: [
+        { label: "All payments", value: "all" },
+        { label: "Paid", value: "paid" },
+        { label: "Pending", value: "pending" },
+        { label: "Unpaid", value: "unpaid" },
+        { label: "Unknown", value: "unknown" },
+      ],
+      value: payment,
+    },
+    {
+      defaultValue: "all",
+      id: "fulfillment",
+      label: "Fulfillment",
+      onChange: (value) => setFulfillment(value as OrderFulfillmentFilter),
+      options: [
+        { label: "All fulfillment", value: "all" },
+        { label: "Needs fulfillment", value: "needs_fulfillment" },
+        { label: "Fulfilled", value: "fulfilled" },
+        { label: "Unfulfilled", value: "unfulfilled" },
+        { label: "Unknown", value: "unknown" },
+      ],
+      value: fulfillment,
+    },
+    {
+      defaultValue: "all",
+      id: "delivery",
+      label: "Delivery",
+      onChange: (value) => setDelivery(value as OrderDeliveryFilter),
+      options: [
+        { label: "All delivery", value: "all" },
+        { label: "Delivery", value: "delivery" },
+        { label: "Pickup", value: "pickup" },
+        { label: "No delivery choice", value: "none" },
+      ],
+      value: delivery,
+    },
+    {
+      defaultValue: "all",
+      id: "created",
+      label: "Created",
+      onChange: (value) => setCreated(value as OrderDateFilter),
+      options: [
+        { label: "All dates", value: "all" },
+        { label: "Today", value: "today" },
+        { label: "Last 7 days", value: "last_7_days" },
+        { label: "Last 30 days", value: "last_30_days" },
+        { label: "No date", value: "no_date" },
+      ],
+      value: created,
+    },
   ];
 
   function clearFilters() {
     setQuery("");
     setLifecycle("all");
+    setPayment("all");
+    setFulfillment("all");
+    setDelivery("all");
+    setCreated("all");
   }
 
   useEffect(() => {
@@ -228,9 +319,14 @@ export function OrdersTable({
       url.searchParams.delete("lifecycle");
     }
 
+    setUrlFilter(url, "payment", payment, "all");
+    setUrlFilter(url, "fulfillment", fulfillment, "all");
+    setUrlFilter(url, "delivery", delivery, "all");
+    setUrlFilter(url, "created", created, "all");
+
     url.searchParams.delete("page");
     window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}`);
-  }, [lifecycle, query]);
+  }, [created, delivery, fulfillment, lifecycle, payment, query]);
 
   const toolbar = (
     <div className="flex flex-col gap-3">

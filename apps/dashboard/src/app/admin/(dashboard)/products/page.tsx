@@ -7,7 +7,12 @@ import { RefreshButton } from "@/components/app/refresh-button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ProductCreateDialog } from "@/features/products/product-create-dialog";
 import { ProductsTable } from "@/features/products/products-table";
-import { parseProductStatusFilter } from "@/features/products/product-table-state";
+import {
+  parseProductMediaFilter,
+  parseProductStatusFilter,
+  parseProductStockFilter,
+  parseProductVariantCountFilter,
+} from "@/features/products/product-table-state";
 import {
   type DashboardSearchParams,
   getSelectedTenantId,
@@ -104,8 +109,15 @@ export default async function MerchantProductsPage({ searchParams }: MerchantPro
         <>
           <ListSummary count={result.products.count} label="products" />
           <ProductsTable
+            categories={categoriesResult.ok ? categoriesResult.categories : []}
+            collections={collectionsResult.ok ? collectionsResult.collections : []}
+            initialCategoryId={getResourceFilter(resolvedSearchParams.categoryId)}
+            initialCollectionId={getResourceFilter(resolvedSearchParams.collectionId)}
+            initialMedia={parseProductMediaFilter(resolvedSearchParams.media)}
             initialQuery={listParams.q}
             initialStatus={parseProductStatusFilter(listParams.status)}
+            initialStock={parseProductStockFilter(resolvedSearchParams.stock)}
+            initialVariantCount={parseProductVariantCountFilter(resolvedSearchParams.variantCount)}
             pageSize={result.products.limit}
             products={result.products.products}
             tenantId={tenantId}
@@ -129,6 +141,13 @@ export default async function MerchantProductsPage({ searchParams }: MerchantPro
       )}
     </PageShell>
   );
+}
+
+function getResourceFilter(value: string | string[] | undefined) {
+  const candidate = Array.isArray(value) ? value[0] : value;
+  const trimmed = candidate?.trim();
+
+  return trimmed || "all";
 }
 
 function getReferenceDataError(
