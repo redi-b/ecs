@@ -28,7 +28,7 @@ export function DataTableBulkBar({
   return (
     <div
       className={cn(
-        "sticky bottom-4 z-20 mx-auto mt-4 flex w-fit max-w-full items-center gap-3 rounded-full border bg-popover/95 px-3 py-2 text-sm text-popover-foreground shadow-xl shadow-primary/10 ring-1 ring-foreground/10 backdrop-blur transition-all duration-200",
+        "fixed bottom-4 left-1/2 z-50 flex w-fit max-w-[calc(100vw-2rem)] -translate-x-1/2 items-center gap-3 rounded-full border bg-popover/95 px-3 py-2 text-sm text-popover-foreground shadow-xl shadow-primary/10 ring-1 ring-foreground/10 backdrop-blur transition-all duration-200",
         className,
       )}
     >

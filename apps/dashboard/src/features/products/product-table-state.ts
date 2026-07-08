@@ -68,6 +68,12 @@ export function getProductSearchText(product: MerchantProduct) {
     product.handle,
     product.status,
     product.description,
+    ...(product.variants ?? []).flatMap((variant) => [
+      variant.id,
+      variant.title,
+      variant.sku,
+      ...(variant.optionValues ?? []).flatMap((option) => [option.optionTitle, option.value]),
+    ]),
   ]
     .filter((value): value is string => typeof value === "string" && value.length > 0)
     .join(" ")

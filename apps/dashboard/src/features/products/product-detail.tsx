@@ -30,14 +30,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { getTenantScopedPath } from "@/lib/dashboard-tenant-context";
 import { dashboardRoutes } from "@/lib/routes";
 import {
@@ -165,56 +157,55 @@ export function ProductDetail({
 
         <section className="space-y-3">
           <div className="flex items-center justify-between gap-3">
-            <h2 className="text-sm font-medium">Product options and variants</h2>
+            <h2 className="text-sm font-medium">Product options</h2>
             <span className="text-sm text-muted-foreground">
               {product.variants?.length ?? 0} variants
             </span>
           </div>
-          <ProductVariantsTable product={product} />
+          <ProductOptionsSummary product={product} />
         </section>
       </CardContent>
     </Card>
   );
 }
 
-function ProductVariantsTable({ product }: { product: MerchantProduct }) {
+function ProductOptionsSummary({ product }: { product: MerchantProduct }) {
   const variants = product.variants ?? [];
+  const options = getProductOptionGroups(product);
 
   if (!variants.length) {
     return (
       <p className="rounded-lg border border-dashed px-4 py-6 text-sm text-muted-foreground">
-        No variants have been configured for this product.
+        This product does not have sellable variants yet.
       </p>
     );
   }
 
+  if (!options.length) {
+    return (
+      <div className="rounded-lg border bg-muted/20 px-4 py-3 text-sm">
+        <div className="font-medium">Simple product</div>
+        <div className="mt-1 text-muted-foreground">
+          One sellable product row is managed in the stock section.
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="overflow-hidden rounded-xl border">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Variant</TableHead>
-            <TableHead>Options</TableHead>
-            <TableHead>SKU</TableHead>
-            <TableHead className="text-right">Price</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {variants.map((variant) => (
-            <TableRow key={variant.id}>
-              <TableCell className="min-w-52 whitespace-normal">
-                <div className="font-medium">{variant.title ?? "Untitled variant"}</div>
-                <div className="break-all text-xs text-muted-foreground">{variant.id}</div>
-              </TableCell>
-              <TableCell className="min-w-52 whitespace-normal">
-                <VariantOptionBadges options={variant.optionValues ?? []} />
-              </TableCell>
-              <TableCell>{variant.sku ?? "No SKU"}</TableCell>
-              <TableCell className="text-right">{formatVariantPrice(variant)}</TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+    <div className="grid gap-3 md:grid-cols-2">
+      {options.map((option) => (
+        <div className="rounded-lg border bg-muted/20 px-4 py-3" key={option.title}>
+          <div className="text-sm font-medium">{option.title}</div>
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {option.values.map((value) => (
+              <Badge className="rounded-md" key={value} variant="secondary">
+                {value}
+              </Badge>
+            ))}
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
@@ -239,25 +230,25 @@ function SectionHeader({
   );
 }
 
-function VariantOptionBadges({
-  options,
-}: {
-  options: NonNullable<NonNullable<MerchantProduct["variants"]>[number]["optionValues"]>;
-}) {
-  if (!options.length) {
-    return <span className="text-muted-foreground">Default option</span>;
+function getProductOptionGroups(product: MerchantProduct) {
+  const optionGroups = new Map<string, Set<string>>();
+
+  for (const variant of product.variants ?? []) {
+    for (const option of variant.optionValues ?? []) {
+      if (!option.optionTitle || !option.value || option.optionTitle === "Default") {
+        continue;
+      }
+
+      const values = optionGroups.get(option.optionTitle) ?? new Set<string>();
+      values.add(option.value);
+      optionGroups.set(option.optionTitle, values);
+    }
   }
 
-  return (
-    <div className="flex flex-wrap gap-2">
-      {options.map((option, index) => (
-        <Badge key={`${option.optionTitle}-${option.value}-${index}`} variant="secondary">
-          {option.optionTitle ? `${option.optionTitle}: ` : ""}
-          {option.value ?? "Unset"}
-        </Badge>
-      ))}
-    </div>
-  );
+  return Array.from(optionGroups, ([title, values]) => ({
+    title,
+    values: Array.from(values),
+  }));
 }
 
 function ProductThumbnail({ src, title }: { src: string | null; title: string | null }) {
@@ -375,18 +366,6 @@ function formatFirstPrice(product: MerchantProduct) {
   const price = product.variants
     ?.flatMap((variant) => variant.prices)
     .find((variantPrice) => typeof variantPrice.amount === "number" && variantPrice.currencyCode);
-
-  if (!price || typeof price.amount !== "number" || !price.currencyCode) {
-    return "No price";
-  }
-
-  return `${price.currencyCode.toUpperCase()} ${price.amount}`;
-}
-
-function formatVariantPrice(variant: NonNullable<MerchantProduct["variants"]>[number]) {
-  const price = variant.prices.find(
-    (variantPrice) => typeof variantPrice.amount === "number" && variantPrice.currencyCode,
-  );
 
   if (!price || typeof price.amount !== "number" || !price.currencyCode) {
     return "No price";

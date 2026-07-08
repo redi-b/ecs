@@ -28,6 +28,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
@@ -95,8 +96,13 @@ function setUrlFilter(url: URL, key: string, value: string, defaultValue: string
 
 function getProductColumns(
   tenantId: string | null | undefined,
+  categories: MerchantProductCategory[],
+  collections: MerchantProductCollection[],
   onDelete: (productId: string) => void,
 ): ColumnDef<MerchantProduct>[] {
+  const categoryById = new Map(categories.map((category) => [category.id, category]));
+  const collectionById = new Map(collections.map((collection) => [collection.id, collection]));
+
   return [
     {
       id: "select",
@@ -133,6 +139,14 @@ function getProductColumns(
       cell: ({ row }) => <ProductStatusBadge status={row.original.status} />,
     },
     {
+      id: "sku",
+      accessorFn: (product) => getProductSkuSummary(product),
+      header: ({ column }) => <DataTableHeader column={column} title="SKU" />,
+      cell: ({ row }) => (
+        <span className="text-muted-foreground">{getProductSkuSummary(row.original)}</span>
+      ),
+    },
+    {
       id: "price",
       accessorFn: (product) => getProductPriceSortValue(product),
       header: ({ column }) => <DataTableHeader column={column} title="Price" />,
@@ -146,6 +160,28 @@ function getProductColumns(
       header: ({ column }) => <DataTableHeader column={column} title="Variants" />,
       cell: ({ row }) => (
         <span className="text-muted-foreground">{row.original.variants?.length ?? 0}</span>
+      ),
+    },
+    {
+      id: "stock",
+      accessorFn: (product) => getProductStockSortValue(product),
+      header: ({ column }) => <DataTableHeader column={column} title="Stock" />,
+      cell: ({ row }) => <ProductStockSummary product={row.original} />,
+    },
+    {
+      id: "organization",
+      accessorFn: (product) =>
+        [
+          product.collectionId ? collectionById.get(product.collectionId)?.title ?? product.collectionId : "",
+          ...(product.categoryIds ?? []).map((id) => categoryById.get(id)?.name ?? id),
+        ].join(" "),
+      header: ({ column }) => <DataTableHeader column={column} title="Organization" />,
+      cell: ({ row }) => (
+        <ProductOrganizationSummary
+          categoryById={categoryById}
+          collectionById={collectionById}
+          product={row.original}
+        />
       ),
     },
     {
@@ -171,6 +207,7 @@ function getProductColumns(
           <RowActionsMenu
             actions={[
               { href, label: "View details", type: "link" },
+              { href, label: "Manage inventory", type: "link" },
               { id: "identity", type: "separator" },
               {
                 label: "Copy product ID",
@@ -181,6 +218,12 @@ function getProductColumns(
                 disabled: !product.handle,
                 label: "Copy handle",
                 onSelect: () => copyToClipboard(product.handle ?? ""),
+                type: "button",
+              },
+              {
+                disabled: !product.handle,
+                label: "Copy storefront path",
+                onSelect: () => copyToClipboard(product.handle ? `/products/${product.handle}` : ""),
                 type: "button",
               },
               { id: "danger", type: "separator" },
@@ -199,6 +242,97 @@ function getProductColumns(
       enableSorting: false,
     },
   ];
+}
+
+function ProductStockSummary({ product }: { product: MerchantProduct }) {
+  const variants = product.variants ?? [];
+  const stocks = variants.map((variant) => variant.stock).filter(isProductStock);
+
+  if (!stocks.length) {
+    return <Badge variant="outline">Not tracked</Badge>;
+  }
+
+  const available = stocks.reduce(
+    (total, stock) => total + (stock.availableQuantity ?? stock.stockedQuantity ?? 0),
+    0,
+  );
+
+  return (
+    <Badge variant={available > 0 ? "default" : "secondary"}>
+      {available > 0 ? `${available} available` : "Out of stock"}
+    </Badge>
+  );
+}
+
+function ProductOrganizationSummary({
+  categoryById,
+  collectionById,
+  product,
+}: {
+  categoryById: Map<string, MerchantProductCategory>;
+  collectionById: Map<string, MerchantProductCollection>;
+  product: MerchantProduct;
+}) {
+  const collection = product.collectionId ? collectionById.get(product.collectionId) : undefined;
+  const categoryIds = product.categoryIds ?? [];
+  const categoryCount = categoryIds.length;
+  const firstCategory = categoryIds[0] ? categoryById.get(categoryIds[0]) : undefined;
+
+  if (!product.collectionId && !categoryCount) {
+    return <span className="text-muted-foreground">Unassigned</span>;
+  }
+
+  return (
+    <div className="flex min-w-36 flex-col gap-1">
+      <span className="truncate text-sm">
+        {product.collectionId
+          ? collection?.title ?? collection?.handle ?? product.collectionId
+          : "No collection"}
+      </span>
+      <span className="text-xs text-muted-foreground">
+        {categoryCount
+          ? `${firstCategory?.name ?? firstCategory?.handle ?? categoryIds[0]}${
+              categoryCount > 1 ? ` +${categoryCount - 1}` : ""
+            }`
+          : "No categories"}
+      </span>
+    </div>
+  );
+}
+
+function getProductSkuSummary(product: MerchantProduct) {
+  const skus = [
+    ...new Set(
+      (product.variants ?? [])
+        .map((variant) => variant.sku?.trim())
+        .filter((sku): sku is string => Boolean(sku)),
+    ),
+  ];
+
+  if (!skus.length) {
+    return "No SKU";
+  }
+
+  return skus.length === 1 ? skus[0] : `${skus[0]} +${skus.length - 1}`;
+}
+
+function getProductStockSortValue(product: MerchantProduct) {
+  const stocks = (product.variants ?? []).map((variant) => variant.stock).filter(isProductStock);
+
+  if (!stocks.length) {
+    return -1;
+  }
+
+  return stocks.reduce(
+    (total, stock) => total + (stock.availableQuantity ?? stock.stockedQuantity ?? 0),
+    0,
+  );
+}
+
+function isProductStock(
+  stock: NonNullable<MerchantProduct["variants"]>[number]["stock"] | null | undefined,
+): stock is NonNullable<NonNullable<MerchantProduct["variants"]>[number]["stock"]> {
+  return Boolean(stock);
 }
 
 function getDeletionErrorMessage(error: unknown, resourceName: string) {
@@ -252,8 +386,8 @@ export function ProductsTable({
   const [showBatchDeleteDialog, setShowBatchDeleteDialog] = useState(false);
 
   const columns = useMemo(
-    () => getProductColumns(tenantId, (id) => setDeleteProductId(id)),
-    [tenantId],
+    () => getProductColumns(tenantId, categories, collections, (id) => setDeleteProductId(id)),
+    [categories, collections, tenantId],
   );
 
   const deleteProductMutation = useMutation({
