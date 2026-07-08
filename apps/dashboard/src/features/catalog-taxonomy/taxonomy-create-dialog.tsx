@@ -129,7 +129,7 @@ export function TaxonomyCreateDialog({
           <DialogHeader>
             <DialogTitle>Create {entityLabel}</DialogTitle>
             <DialogDescription>
-              Add a catalog {entityLabel} without leaving this table.
+              Create a product {entityLabel}.
             </DialogDescription>
           </DialogHeader>
           <form

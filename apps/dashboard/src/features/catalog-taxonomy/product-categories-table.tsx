@@ -34,15 +34,23 @@ import {
   getCategoryDisplayName,
   getTaxonomyTableCounts,
 } from "@/features/catalog-taxonomy/taxonomy-table-state";
+import { copyTextToClipboard } from "@/lib/clipboard";
 import { getTenantScopedPath } from "@/lib/dashboard-tenant-context";
 import { dashboardRoutes } from "@/lib/routes";
 
-function copyToClipboard(value: string) {
-  if (!value || typeof navigator === "undefined" || !navigator.clipboard) {
-    return;
-  }
+async function copyToClipboard(value: string, label: string) {
+  try {
+    const copied = await copyTextToClipboard(value);
 
-  void navigator.clipboard.writeText(value).catch(() => undefined);
+    if (!copied) {
+      toast.error("Nothing to copy.");
+      return;
+    }
+
+    toast.success(`${label} copied.`);
+  } catch {
+    toast.error("Could not copy. Try again.");
+  }
 }
 
 function getCategoryColumns(
@@ -118,13 +126,13 @@ function getCategoryColumns(
             actions={[
               {
                 label: "Copy category ID",
-                onSelect: () => copyToClipboard(category.id),
+                onSelect: () => copyToClipboard(category.id, "Category ID"),
                 type: "button",
               },
               {
                 disabled: !category.handle,
                 label: "Copy handle",
-                onSelect: () => copyToClipboard(category.handle ?? ""),
+                onSelect: () => copyToClipboard(category.handle ?? "", "Handle"),
                 type: "button",
               },
               { id: "danger", type: "separator" },
@@ -286,7 +294,10 @@ export function ProductCategoriesTable({
           <div className="flex items-center gap-2">
             <Button
               onClick={() =>
-                copyToClipboard(selectedCategories.map((category) => category.id).join("\n"))
+                copyToClipboard(
+                  selectedCategories.map((category) => category.id).join("\n"),
+                  "Category IDs",
+                )
               }
               size="sm"
               type="button"

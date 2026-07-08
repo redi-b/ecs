@@ -8,7 +8,8 @@ import type {
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import type { ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { DataTable } from "@/components/app/data-table";
 import {
@@ -32,9 +33,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   formatProductDate,
-  formatProductFirstPrice,
+  formatProductPriceRange,
   ProductIdentityCell,
   ProductMediaSignal,
   ProductStatusBadge,
@@ -44,11 +46,13 @@ import {
   getProductMediaCount,
   getProductPriceSortValue,
   getProductTableCounts,
+  normalizeProductStatus,
   type ProductStatusFilter,
   type ProductMediaFilter,
   type ProductStockFilter,
   type ProductVariantCountFilter,
 } from "@/features/products/product-table-state";
+import { copyTextToClipboard } from "@/lib/clipboard";
 import { getTenantScopedPath } from "@/lib/dashboard-tenant-context";
 import { dashboardRoutes } from "@/lib/routes";
 
@@ -78,12 +82,21 @@ const productStatusFilterOptions: Array<{
   { label: "Unknown", value: "unknown" },
 ];
 
-function copyToClipboard(value: string) {
-  if (!value || typeof navigator === "undefined" || !navigator.clipboard) {
-    return;
-  }
+type ProductStatusValue = "draft" | "published";
 
-  void navigator.clipboard.writeText(value).catch(() => undefined);
+async function copyToClipboard(value: string, label: string) {
+  try {
+    const copied = await copyTextToClipboard(value);
+
+    if (!copied) {
+      toast.error("Nothing to copy.");
+      return;
+    }
+
+    toast.success(`${label} copied.`);
+  } catch {
+    toast.error("Could not copy. Try again.");
+  }
 }
 
 function setUrlFilter(url: URL, key: string, value: string, defaultValue: string) {
@@ -99,6 +112,7 @@ function getProductColumns(
   categories: MerchantProductCategory[],
   collections: MerchantProductCollection[],
   onDelete: (productId: string) => void,
+  onStatusChange: (productIds: string[], status: ProductStatusValue) => void,
 ): ColumnDef<MerchantProduct>[] {
   const categoryById = new Map(categories.map((category) => [category.id, category]));
   const collectionById = new Map(collections.map((collection) => [collection.id, collection]));
@@ -143,16 +157,22 @@ function getProductColumns(
       accessorFn: (product) => getProductPriceSortValue(product),
       header: ({ column }) => <DataTableHeader column={column} title="Price" />,
       cell: ({ row }) => (
-        <span className="text-muted-foreground">{formatProductFirstPrice(row.original)}</span>
+        <span className="text-muted-foreground">{formatProductPriceRange(row.original)}</span>
       ),
     },
     {
       id: "variants",
       accessorFn: (product) => product.variants?.length ?? 0,
       header: ({ column }) => <DataTableHeader column={column} title="Variants" />,
-      cell: ({ row }) => (
-        <span className="text-muted-foreground">{row.original.variants?.length ?? 0}</span>
-      ),
+      cell: ({ row }) => {
+        const variantCount = row.original.variants?.length ?? 0;
+
+        return (
+          <span className="text-muted-foreground">
+            {variantCount} variant{variantCount === 1 ? "" : "s"}
+          </span>
+        );
+      },
     },
     {
       id: "stock",
@@ -194,28 +214,36 @@ function getProductColumns(
       cell: ({ row }) => {
         const product = row.original;
         const href = getTenantScopedPath(dashboardRoutes.productDetail(product.id), tenantId);
+        const normalizedStatus = normalizeProductStatus(product.status);
+        const nextStatus = normalizedStatus === "published" ? "draft" : "published";
 
         return (
           <RowActionsMenu
             actions={[
               { href, label: "View details", type: "link" },
               { href, label: "Manage inventory", type: "link" },
+              {
+                label: nextStatus === "published" ? "Publish product" : "Move to draft",
+                onSelect: () => onStatusChange([product.id], nextStatus),
+                type: "button",
+              },
               { id: "identity", type: "separator" },
               {
                 label: "Copy product ID",
-                onSelect: () => copyToClipboard(product.id),
+                onSelect: () => copyToClipboard(product.id, "Product ID"),
                 type: "button",
               },
               {
                 disabled: !product.handle,
                 label: "Copy handle",
-                onSelect: () => copyToClipboard(product.handle ?? ""),
+                onSelect: () => copyToClipboard(product.handle ?? "", "Handle"),
                 type: "button",
               },
               {
                 disabled: !product.handle,
                 label: "Copy storefront path",
-                onSelect: () => copyToClipboard(product.handle ? `/products/${product.handle}` : ""),
+                onSelect: () =>
+                  copyToClipboard(product.handle ? `/products/${product.handle}` : "", "Product path"),
                 type: "button",
               },
               { id: "danger", type: "separator" },
@@ -271,24 +299,66 @@ function ProductOrganizationSummary({
   const firstCategory = categoryIds[0] ? categoryById.get(categoryIds[0]) : undefined;
 
   if (!product.collectionId && !categoryCount) {
-    return <span className="text-muted-foreground">Unassigned</span>;
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span className="inline-flex items-center gap-1.5 text-muted-foreground">
+            <AppIcons.folder className="size-4" />
+            <AppIcons.tag className="size-4" />
+          </span>
+        </TooltipTrigger>
+        <TooltipContent>No collection or categories</TooltipContent>
+      </Tooltip>
+    );
   }
 
   return (
-    <div className="flex min-w-36 flex-col gap-1">
-      <span className="truncate text-sm">
-        {product.collectionId
-          ? `Collection: ${collection?.title ?? collection?.handle ?? product.collectionId}`
-          : "No collection"}
-      </span>
-      <span className="text-xs text-muted-foreground">
-        {categoryCount
-          ? `Category: ${firstCategory?.name ?? firstCategory?.handle ?? categoryIds[0]}${
-              categoryCount > 1 ? ` +${categoryCount - 1}` : ""
-            }`
-          : "No categories"}
-      </span>
+    <div className="flex min-w-36 flex-col gap-1.5">
+      <OrganizationSignal
+        icon={<AppIcons.folder className="size-4" />}
+        tooltip="Collection"
+        value={
+          product.collectionId
+            ? collection?.title ?? collection?.handle ?? product.collectionId
+            : "No collection"
+        }
+      />
+      <OrganizationSignal
+        icon={<AppIcons.tag className="size-4" />}
+        tooltip="Categories"
+        value={
+          categoryCount
+            ? `${firstCategory?.name ?? firstCategory?.handle ?? categoryIds[0]}${
+                categoryCount > 1 ? ` +${categoryCount - 1}` : ""
+              }`
+            : "No categories"
+        }
+      />
     </div>
+  );
+}
+
+function OrganizationSignal({
+  icon,
+  tooltip,
+  value,
+}: {
+  icon: ReactNode;
+  tooltip: string;
+  value: string;
+}) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span className="inline-flex min-w-0 items-center gap-1.5 text-sm">
+          <span className="shrink-0 text-muted-foreground">{icon}</span>
+          <span className="truncate">{value}</span>
+        </span>
+      </TooltipTrigger>
+      <TooltipContent>
+        {tooltip}: {value}
+      </TooltipContent>
+    </Tooltip>
   );
 }
 
@@ -361,11 +431,6 @@ export function ProductsTable({
   const [selectedProductIdsForDelete, setSelectedProductIdsForDelete] = useState<string[]>([]);
   const [showBatchDeleteDialog, setShowBatchDeleteDialog] = useState(false);
 
-  const columns = useMemo(
-    () => getProductColumns(tenantId, categories, collections, (id) => setDeleteProductId(id)),
-    [categories, collections, tenantId],
-  );
-
   const deleteProductMutation = useMutation({
     mutationFn: async (productId: string) => {
       const url = getTenantScopedPath(dashboardRoutes.productDeleteAction(productId), tenantId);
@@ -412,6 +477,68 @@ export function ProductsTable({
       toast.error(getDeletionErrorMessage(error, "Products"));
     },
   });
+
+  const updateStatusMutation = useMutation({
+    mutationFn: async ({
+      productIds,
+      status,
+    }: {
+      productIds: string[];
+      status: ProductStatusValue;
+    }) => {
+      await Promise.all(
+        productIds.map(async (productId) => {
+          const url = getTenantScopedPath(dashboardRoutes.productUpdateAction(productId), tenantId);
+          const res = await fetch(url, {
+            body: JSON.stringify({ status }),
+            headers: {
+              accept: "application/json",
+              "content-type": "application/json",
+            },
+            method: "POST",
+          });
+
+          if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.error || "Failed to update product status.");
+          }
+        }),
+      );
+
+      return { count: productIds.length, status };
+    },
+    onSuccess: ({ count, status }) => {
+      toast.success(
+        `${count} product${count === 1 ? "" : "s"} ${
+          status === "published" ? "published" : "moved to draft"
+        }.`,
+      );
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+      router.refresh();
+    },
+    onError: () => {
+      toast.error("Product status could not be updated. Try again.");
+    },
+  });
+  const { isPending: isStatusUpdatePending, mutate: updateProductStatus } = updateStatusMutation;
+  const handleStatusChange = useCallback(
+    (productIds: string[], nextStatus: ProductStatusValue) => {
+      updateProductStatus({ productIds, status: nextStatus });
+    },
+    [updateProductStatus],
+  );
+
+  const columns = useMemo(
+    () =>
+      getProductColumns(
+        tenantId,
+        categories,
+        collections,
+        (id) => setDeleteProductId(id),
+        handleStatusChange,
+      ),
+    [categories, collections, handleStatusChange, tenantId],
+  );
 
   const filteredProducts = useMemo(
     () =>
@@ -601,7 +728,7 @@ export function ProductsTable({
           <div className="flex items-center gap-2">
             <Button
               onClick={() =>
-                copyToClipboard(selectedProducts.map((product) => product.id).join("\n"))
+                copyToClipboard(selectedProducts.map((product) => product.id).join("\n"), "Product IDs")
               }
               size="sm"
               type="button"
@@ -609,6 +736,34 @@ export function ProductsTable({
             >
               <AppIcons.copy data-icon="inline-start" />
               Copy IDs
+            </Button>
+            <Button
+              disabled={isStatusUpdatePending}
+              onClick={() =>
+                updateProductStatus({
+                  productIds: selectedProducts.map((product) => product.id),
+                  status: "published",
+                })
+              }
+              size="sm"
+              type="button"
+              variant="outline"
+            >
+              Publish
+            </Button>
+            <Button
+              disabled={isStatusUpdatePending}
+              onClick={() =>
+                updateProductStatus({
+                  productIds: selectedProducts.map((product) => product.id),
+                  status: "draft",
+                })
+              }
+              size="sm"
+              type="button"
+              variant="outline"
+            >
+              Move to draft
             </Button>
             <Button
               onClick={() => {

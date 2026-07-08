@@ -17,6 +17,7 @@ import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -116,7 +117,7 @@ export function ProductDetailsEditButton({
           onChange={(event) => setValues((current) => ({ ...current, handle: event.target.value }))}
           value={values.handle}
         />
-        <FieldDescription>Leave empty to keep Medusa-generated handles.</FieldDescription>
+        <FieldDescription>Leave empty to generate a handle automatically.</FieldDescription>
       </Field>
       <Field>
         <FieldLabel>Status</FieldLabel>
@@ -124,15 +125,17 @@ export function ProductDetailsEditButton({
           onValueChange={(value) => setValues((current) => ({ ...current, status: value }))}
           value={values.status}
         >
-          <SelectTrigger>
-            <SelectValue />
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Select status" />
           </SelectTrigger>
           <SelectContent>
-            {PRODUCT_STATUS_OPTIONS.map((status) => (
-              <SelectItem key={status} value={status}>
-                {status}
-              </SelectItem>
-            ))}
+            <SelectGroup>
+              {PRODUCT_STATUS_OPTIONS.map((status) => (
+                <SelectItem key={status} value={status}>
+                  {status === "published" ? "Published" : "Draft"}
+                </SelectItem>
+              ))}
+            </SelectGroup>
           </SelectContent>
         </Select>
       </Field>
@@ -325,10 +328,31 @@ function ProductEditSheet({
       }}
       open={open}
     >
-      <Button aria-label={triggerLabel} size="icon-sm" type="button" variant="ghost" onClick={() => setOpen(true)}>
+      <Button
+        aria-label={triggerLabel}
+        onClick={() => setOpen(true)}
+        size="icon-sm"
+        type="button"
+        variant="ghost"
+      >
         <AppIcons.edit data-icon="inline-start" />
       </Button>
-      <SheetContent className="w-full overflow-y-auto sm:max-w-md">
+      <SheetContent
+        className="w-full overflow-y-auto sm:max-w-md"
+        onInteractOutside={(event) => {
+          const target = event.target;
+
+          if (!(target instanceof HTMLElement)) {
+            return;
+          }
+
+          if (
+            target.closest("[data-slot='select-content'], [data-radix-popper-content-wrapper]")
+          ) {
+            event.preventDefault();
+          }
+        }}
+      >
         <SheetHeader>
           <SheetTitle>{title}</SheetTitle>
           <SheetDescription>{description}</SheetDescription>

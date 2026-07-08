@@ -307,15 +307,30 @@ export function ProductForm({
   }
 
   function updateTitle(nextTitle: string) {
+    const currentTitle = form.state.values.title;
+    const currentSkuPrefix = form.state.values.skuPrefix.trim();
+    const shouldUpdateSkuPrefix =
+      !product &&
+      (!currentSkuPrefix || currentSkuPrefix === getDefaultSkuPrefix(currentTitle));
+
     form.setFieldValue("title", nextTitle);
 
     if (isHandleLocked) {
       form.setFieldValue("handle", slugifyProductHandle(nextTitle));
     }
+
+    if (shouldUpdateSkuPrefix) {
+      form.setFieldValue("skuPrefix", getDefaultSkuPrefix(nextTitle));
+    }
   }
 
   function regenerateHandle() {
-    form.setFieldValue("handle", slugifyProductHandle(form.state.values.title));
+    const nextHandle = slugifyProductHandle(form.state.values.title);
+
+    form.setFieldValue("handle", nextHandle);
+    if (!product && !form.state.values.skuPrefix.trim()) {
+      form.setFieldValue("skuPrefix", getDefaultSkuPrefix(nextHandle));
+    }
     setIsHandleLocked(true);
   }
 
@@ -452,9 +467,22 @@ export function ProductForm({
                             id={field.name}
                             name={field.name}
                             onBlur={field.handleBlur}
-                            onChange={(event) =>
-                              field.handleChange(slugifyProductHandle(event.target.value))
-                            }
+                            onChange={(event) => {
+                              const nextHandle = slugifyProductHandle(event.target.value);
+                              const currentSkuPrefix = form.state.values.skuPrefix.trim();
+                              const shouldUpdateSkuPrefix =
+                                !product &&
+                                (!currentSkuPrefix ||
+                                  currentSkuPrefix === getDefaultSkuPrefix(field.state.value) ||
+                                  currentSkuPrefix ===
+                                    getDefaultSkuPrefix(form.state.values.title));
+
+                              field.handleChange(nextHandle);
+
+                              if (shouldUpdateSkuPrefix) {
+                                form.setFieldValue("skuPrefix", getDefaultSkuPrefix(nextHandle));
+                              }
+                            }}
                             placeholder="coffee-beans"
                             readOnly={isHandleLocked}
                             value={field.state.value}
@@ -500,8 +528,8 @@ export function ProductForm({
                         </InputGroup>
                         <FieldDescription>
                           {isHandleLocked
-                            ? "The handle follows the title automatically."
-                            : "Handle editing is unlocked for a custom storefront slug."}
+                            ? "Uses the product title automatically."
+                            : "Use a custom URL handle."}
                         </FieldDescription>
                       </Field>
                     )}
@@ -528,7 +556,7 @@ export function ProductForm({
                 <Separator />
 
                 <ComposerSection
-                  description="Use image URLs for now. Upload support can replace this without changing the composer shape."
+                  description="Add product image links for the storefront."
                   title="Media"
                 />
 
@@ -582,7 +610,7 @@ export function ProductForm({
             {activeStep === "organize" ? (
               <section className="flex flex-col gap-5">
                 <ComposerSection
-                  description="Keep products easy to find in the dashboard and storefront."
+                  description="Choose where this product appears in the catalog."
                   title="Organize"
                 />
 
@@ -1292,7 +1320,7 @@ function getProductDefaultValues(product: MerchantProduct | undefined): ProductF
     hasVariants: Boolean(product && initialOptions.length),
     initialStock: "0",
     options: initialOptions,
-    skuPrefix: product?.handle?.toUpperCase() ?? "",
+    skuPrefix: getDefaultSkuPrefix(product?.handle ?? title),
     variantOverrides: {},
     collectionId: product?.collectionId ?? NO_COLLECTION_VALUE,
     categoryIds: product?.categoryIds ?? [],
@@ -1597,6 +1625,15 @@ function slugifyProductHandle(value: string) {
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "")
     .slice(0, 80);
+}
+
+function getDefaultSkuPrefix(value: string) {
+  return value
+    .trim()
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 32);
 }
 
 function isInitialHandleLocked(product: MerchantProduct | undefined) {

@@ -33,6 +33,7 @@ import {
   getCollectionDisplayName,
   getTaxonomyTableCounts,
 } from "@/features/catalog-taxonomy/taxonomy-table-state";
+import { copyTextToClipboard } from "@/lib/clipboard";
 import { getTenantScopedPath } from "@/lib/dashboard-tenant-context";
 import { dashboardRoutes } from "@/lib/routes";
 
@@ -43,12 +44,19 @@ type ProductCollectionsTableProps = {
   tenantId?: string | undefined;
 };
 
-function copyToClipboard(value: string) {
-  if (!value || typeof navigator === "undefined" || !navigator.clipboard) {
-    return;
-  }
+async function copyToClipboard(value: string, label: string) {
+  try {
+    const copied = await copyTextToClipboard(value);
 
-  void navigator.clipboard.writeText(value).catch(() => undefined);
+    if (!copied) {
+      toast.error("Nothing to copy.");
+      return;
+    }
+
+    toast.success(`${label} copied.`);
+  } catch {
+    toast.error("Could not copy. Try again.");
+  }
 }
 
 function getCollectionColumns(
@@ -108,13 +116,13 @@ function getCollectionColumns(
             actions={[
               {
                 label: "Copy collection ID",
-                onSelect: () => copyToClipboard(collection.id),
+                onSelect: () => copyToClipboard(collection.id, "Collection ID"),
                 type: "button",
               },
               {
                 disabled: !collection.handle,
                 label: "Copy handle",
-                onSelect: () => copyToClipboard(collection.handle ?? ""),
+                onSelect: () => copyToClipboard(collection.handle ?? "", "Handle"),
                 type: "button",
               },
               { id: "danger", type: "separator" },
@@ -266,7 +274,10 @@ export function ProductCollectionsTable({
           <div className="flex items-center gap-2">
             <Button
               onClick={() =>
-                copyToClipboard(selectedCollections.map((collection) => collection.id).join("\n"))
+                copyToClipboard(
+                  selectedCollections.map((collection) => collection.id).join("\n"),
+                  "Collection IDs",
+                )
               }
               size="sm"
               type="button"

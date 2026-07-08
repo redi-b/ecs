@@ -91,14 +91,28 @@ export function formatProductDate(value: string | null) {
   }).format(new Date(value));
 }
 
-export function formatProductFirstPrice(product: MerchantProduct) {
-  const price = product.variants
+export function formatProductPriceRange(product: MerchantProduct) {
+  const prices = product.variants
     ?.flatMap((variant) => variant.prices)
-    .find((variantPrice) => typeof variantPrice.amount === "number" && variantPrice.currencyCode);
+    .filter(
+      (variantPrice) => typeof variantPrice.amount === "number" && variantPrice.currencyCode,
+    );
 
-  if (!price || typeof price.amount !== "number" || !price.currencyCode) {
+  if (!prices?.length) {
     return "No price";
   }
 
-  return `${price.currencyCode.toUpperCase()} ${price.amount}`;
+  const currencyCode = prices[0]?.currencyCode?.toUpperCase() ?? "";
+  const amounts = prices
+    .filter((price) => price.currencyCode?.toUpperCase() === currencyCode)
+    .map((price) => price.amount)
+    .filter((amount): amount is number => typeof amount === "number");
+  const min = Math.min(...amounts);
+  const max = Math.max(...amounts);
+
+  if (!Number.isFinite(min) || !Number.isFinite(max)) {
+    return "No price";
+  }
+
+  return min === max ? `${currencyCode} ${min}` : `${currencyCode} ${min}-${max}`;
 }
