@@ -151,43 +151,47 @@ function SingleVariantStockPanel({
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <CardTitle>Stock</CardTitle>
-            <CardDescription>Single-variant stock at the merchant stock location.</CardDescription>
+            <CardDescription>Inventory at the merchant stock location.</CardDescription>
           </div>
-          <Badge variant={getAvailableQuantity(stock) > 0 ? "default" : "secondary"}>
-            {getAvailableQuantity(stock)} available
-          </Badge>
+          <StockStateBadge availableQuantity={getAvailableQuantity(stock)} />
         </div>
       </CardHeader>
       <CardContent className="flex flex-col gap-5">
         <div className="grid gap-3 md:grid-cols-4">
+          <StockMetric
+            emphasis
+            label="Available"
+            value={formatQuantity(stock.availableQuantity)}
+          />
           <StockMetric label="Stocked" value={formatQuantity(stock.stockedQuantity)} />
           <StockMetric label="Reserved" value={formatQuantity(stock.reservedQuantity)} />
           <StockMetric label="Incoming" value={formatQuantity(stock.incomingQuantity)} />
-          <StockMetric label="Available" value={formatQuantity(stock.availableQuantity)} />
         </div>
 
         <form
-          className="flex flex-col gap-3 rounded-xl border bg-muted/20 p-4 sm:flex-row sm:items-end"
+          className="rounded-2xl border bg-muted/20 p-4"
           onSubmit={(event) => {
             event.preventDefault();
             mutation.mutate();
           }}
         >
-          <Field className="flex-1">
-            <FieldLabel htmlFor="stockedQuantity">Stocked quantity</FieldLabel>
-            <Input
-              id="stockedQuantity"
-              min="0"
-              onChange={(event) => setStockedQuantity(event.target.value)}
-              step="1"
-              type="number"
-              value={stockedQuantity}
-            />
-            <FieldDescription>Updates the stocked quantity for this product.</FieldDescription>
-          </Field>
-          <Button disabled={mutation.isPending} type="submit">
-            {mutation.isPending ? "Saving..." : "Update stock"}
-          </Button>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <Field className="max-w-xs flex-1">
+              <FieldLabel htmlFor="stockedQuantity">Set stocked quantity</FieldLabel>
+              <Input
+                id="stockedQuantity"
+                min="0"
+                onChange={(event) => setStockedQuantity(event.target.value)}
+                step="1"
+                type="number"
+                value={stockedQuantity}
+              />
+              <FieldDescription>Reserved stock is calculated from orders.</FieldDescription>
+            </Field>
+            <Button disabled={mutation.isPending} type="submit">
+              {mutation.isPending ? "Saving..." : "Save stock"}
+            </Button>
+          </div>
         </form>
 
         {actionError ? (
@@ -220,6 +224,13 @@ function VariantStockPanel({
   >({});
   const [errorByVariantId, setErrorByVariantId] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(true);
+  const stocks = Object.values(stockByVariantId);
+  const totalAvailable = stocks.reduce(
+    (total, stock) => total + (stock.availableQuantity ?? stock.stockedQuantity ?? 0),
+    0,
+  );
+  const totalReserved = stocks.reduce((total, stock) => total + (stock.reservedQuantity ?? 0), 0);
+  const totalStocked = stocks.reduce((total, stock) => total + (stock.stockedQuantity ?? 0), 0);
 
   useEffect(() => {
     let cancelled = false;
@@ -348,13 +359,28 @@ function VariantStockPanel({
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <CardTitle>Variant stock</CardTitle>
-            <CardDescription>Stock at the merchant location for each product variant.</CardDescription>
+            <CardDescription>Inventory at the merchant location for each sellable variant.</CardDescription>
           </div>
-          <Badge variant="secondary">{variants.length} variants</Badge>
+          <div className="flex flex-wrap gap-2">
+            <Badge variant="secondary">{variants.length} variants</Badge>
+            <StockStateBadge availableQuantity={totalAvailable} />
+          </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="overflow-hidden rounded-xl border">
+        <div className="grid gap-3 md:grid-cols-3">
+          <StockMetric emphasis label="Available" value={isLoading ? "Loading..." : String(totalAvailable)} />
+          <StockMetric label="Stocked" value={isLoading ? "Loading..." : String(totalStocked)} />
+          <StockMetric label="Reserved" value={isLoading ? "Loading..." : String(totalReserved)} />
+        </div>
+
+        <div className="overflow-hidden rounded-2xl border bg-background shadow-sm shadow-primary/5">
+          <div className="border-b bg-muted/30 px-4 py-3">
+            <h3 className="text-sm font-medium">Stock by variant</h3>
+            <p className="text-sm text-muted-foreground">
+              Set stocked quantities per variant. Available stock reflects reserved orders.
+            </p>
+          </div>
           <Table>
             <TableHeader>
               <TableRow>
@@ -372,7 +398,7 @@ function VariantStockPanel({
                 const isSaving = mutation.isPending && mutation.variables === variant.id;
 
                 return (
-                  <TableRow key={variant.id}>
+                  <TableRow className="align-top" key={variant.id}>
                     <TableCell className="min-w-56 whitespace-normal">
                       <div className="font-medium">{variant.title ?? "Untitled variant"}</div>
                       <div className="break-all text-xs text-muted-foreground">{variant.id}</div>
@@ -383,7 +409,12 @@ function VariantStockPanel({
                     </TableCell>
                     <TableCell>{variant.sku ?? "No SKU"}</TableCell>
                     <TableCell className="text-right">
-                      {isLoading ? "Loading..." : formatQuantity(stock?.availableQuantity ?? null)}
+                      <div className="font-medium">
+                        {isLoading ? "Loading..." : formatQuantity(stock?.availableQuantity ?? null)}
+                      </div>
+                      {!isLoading ? (
+                        <StockStateText availableQuantity={stock?.availableQuantity ?? stock?.stockedQuantity ?? null} />
+                      ) : null}
                     </TableCell>
                     <TableCell className="text-right">
                       {isLoading ? "Loading..." : formatQuantity(stock?.reservedQuantity ?? null)}
@@ -398,7 +429,7 @@ function VariantStockPanel({
                       >
                         <Input
                           aria-label={`Stocked quantity for ${variant.title ?? variant.id}`}
-                          className="w-24"
+                          className="h-9 w-24"
                           min="0"
                           onChange={(event) =>
                             setStockedQuantityByVariantId((current) => ({
@@ -426,11 +457,39 @@ function VariantStockPanel({
   );
 }
 
-function StockMetric({ label, value }: { label: string; value: string }) {
+function StockMetric({
+  emphasis = false,
+  label,
+  value,
+}: {
+  emphasis?: boolean;
+  label: string;
+  value: string;
+}) {
   return (
-    <div className="rounded-lg border bg-background px-3 py-2">
+    <div className={emphasis ? "rounded-xl border bg-primary/5 px-3 py-2" : "rounded-xl border bg-background px-3 py-2"}>
       <div className="text-xs text-muted-foreground">{label}</div>
       <div className="text-sm font-medium">{value}</div>
+    </div>
+  );
+}
+
+function StockStateBadge({ availableQuantity }: { availableQuantity: number }) {
+  return (
+    <Badge variant={availableQuantity > 0 ? "default" : "secondary"}>
+      {availableQuantity > 0 ? `${availableQuantity} available` : "Out of stock"}
+    </Badge>
+  );
+}
+
+function StockStateText({ availableQuantity }: { availableQuantity: number | null }) {
+  if (availableQuantity === null) {
+    return <div className="text-xs text-muted-foreground">Not tracked</div>;
+  }
+
+  return (
+    <div className={availableQuantity > 0 ? "text-xs text-muted-foreground" : "text-xs text-destructive"}>
+      {availableQuantity > 0 ? "Ready to sell" : "Needs restock"}
     </div>
   );
 }
