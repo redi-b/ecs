@@ -6,10 +6,14 @@ import { createMerchantProductCategory } from "../../../../../lib/merchant-produ
 import { getTaxonomyFormInput } from "../../../../../lib/taxonomy-form-data";
 
 export async function POST(request: Request) {
-  const formData = await request.formData();
-  const category = getTaxonomyFormInput(formData);
+  const wantsJson = request.headers.get("accept")?.includes("application/json");
+  const category = await getCategoryInput(request);
 
   if (!category.name) {
+    if (wantsJson) {
+      return NextResponse.json({ error: "missing_name" }, { status: 400 });
+    }
+
     return redirectToCategories(request, "missing_name");
   }
 
@@ -24,7 +28,31 @@ export async function POST(request: Request) {
     tenantId: new URL(request.url).searchParams.get("tenantId"),
   });
 
+  if (wantsJson) {
+    if (!result.ok) {
+      return NextResponse.json({ error: result.message }, { status: result.status });
+    }
+
+    return NextResponse.json({ category: result.category });
+  }
+
   return redirectToCategories(request, result.ok ? "category_created" : result.message);
+}
+
+async function getCategoryInput(request: Request) {
+  if (request.headers.get("content-type")?.includes("application/json")) {
+    const body = (await request.json().catch(() => ({}))) as {
+      handle?: unknown;
+      name?: unknown;
+    };
+
+    return {
+      handle: typeof body.handle === "string" && body.handle.trim() ? body.handle.trim() : null,
+      name: typeof body.name === "string" && body.name.trim() ? body.name.trim() : null,
+    };
+  }
+
+  return getTaxonomyFormInput(await request.formData());
 }
 
 function redirectToCategories(request: Request, status: string) {

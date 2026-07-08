@@ -1,13 +1,12 @@
 import { headers } from "next/headers";
-import Link from "next/link";
 
 import { ListSummary, PaginationControls } from "@/components/app/list-page-controls";
 import { ListSetupState } from "@/components/app/list-error-state";
 import { PageShell } from "@/components/app/page-shell";
 import { RefreshButton } from "@/components/app/refresh-button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
 import { ProductCategoriesTable } from "@/features/catalog-taxonomy/product-categories-table";
+import { TaxonomyCreateDialog } from "@/features/catalog-taxonomy/taxonomy-create-dialog";
 import { getTaxonomyListErrorState } from "@/features/catalog-taxonomy/taxonomy-list-error-state";
 import {
   type DashboardSearchParams,
@@ -30,8 +29,8 @@ export default async function MerchantProductCategoriesPage({
   const tenantId = getSelectedTenantId(resolvedSearchParams);
   const requestHeaders = await headers();
   const offset = (listParams.page - 1) * listParams.pageSize;
-  const createCategoryHref = getTenantScopedPath(
-    dashboardRoutes.productCategoriesNew,
+  const createCategoryAction = getTenantScopedPath(
+    dashboardRoutes.productCategoryCreateAction,
     tenantId,
   );
   const categoryNotice = getCategoryNotice(resolvedSearchParams.categoryStatus);
@@ -50,9 +49,15 @@ export default async function MerchantProductCategoriesPage({
       actions={
         <>
           <RefreshButton />
-          <Button asChild>
-            <Link href={createCategoryHref}>New category</Link>
-          </Button>
+          <TaxonomyCreateDialog
+            action={createCategoryAction}
+            entityLabel="category"
+            nameKey="name"
+            nameLabel="Name"
+            namePlaceholder="Coffee"
+            queryKey="product-categories"
+            triggerLabel="New category"
+          />
         </>
       }
       description="Review merchant-scoped product categories from the catalog taxonomy."
