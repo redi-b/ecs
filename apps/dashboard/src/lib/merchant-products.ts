@@ -21,6 +21,7 @@ import {
   merchantDeleteResultSchema,
   merchantBatchDeleteResultSchema,
 } from "@ecs/contracts";
+import { createPlatformHeaders, normalizeBaseUrl } from "@/lib/platform-api/client";
 
 export type MerchantProductsResult =
   | {
@@ -1288,24 +1289,9 @@ function getProductHeaders(options: {
   contentType?: boolean | undefined;
   requestHost?: string | null | undefined;
 }) {
-  const headers = new Headers();
-
-  if (options.contentType) {
-    headers.set("accept", "application/json");
-    headers.set("content-type", "application/json");
-  }
-
-  if (options.cookieHeader?.trim()) {
-    headers.set("cookie", options.cookieHeader.trim());
-  }
-
-  if (options.requestHost?.trim()) {
-    headers.set("x-forwarded-host", options.requestHost.trim());
-  }
-
-  return headers;
-}
-
-function normalizeBaseUrl(value: string) {
-  return value.endsWith("/") ? value : `${value}/`;
+  return createPlatformHeaders({
+    contentType: options.contentType ? "json" : false,
+    cookieHeader: options.cookieHeader,
+    requestHost: options.requestHost,
+  });
 }

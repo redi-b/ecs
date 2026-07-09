@@ -1,4 +1,4 @@
-import type { PlatformAppOptions } from "../app.js";
+import type { PlatformAppOptions } from "../../../app.js";
 
 type CodCheckoutInput = {
   address: {

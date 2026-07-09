@@ -1,7 +1,5 @@
-import { cookies, headers } from "next/headers";
-import { NextResponse } from "next/server";
-
 import { mutateMerchantOrder, type MerchantOrderAction } from "@/lib/merchant-orders";
+import { withMerchantAction } from "@/lib/platform-api/action-route";
 
 const ORDER_ACTIONS = new Set<MerchantOrderAction>(["cancel", "complete", "deliver", "fulfill"]);
 
@@ -10,35 +8,51 @@ export async function POST(
   { params }: { params: Promise<{ orderId: string }> },
 ) {
   const { orderId } = await params;
-  const body = (await request.json().catch(() => ({}))) as {
-    action?: unknown;
-    fulfillmentId?: unknown;
-  };
-  const action = typeof body.action === "string" ? body.action : "";
 
-  if (!ORDER_ACTIONS.has(action as MerchantOrderAction)) {
-    return NextResponse.json({ error: "order_action_invalid" }, { status: 400 });
-  }
+  return withMerchantAction(request, async (context) => {
+    const body = (await context.request.json().catch(() => ({}))) as {
+      action?: unknown;
+      fulfillmentId?: unknown;
+    };
+    const action = typeof body.action === "string" ? body.action : "";
 
-  if (action === "deliver" && typeof body.fulfillmentId !== "string") {
-    return NextResponse.json({ error: "order_fulfillment_not_found" }, { status: 404 });
-  }
+    if (!ORDER_ACTIONS.has(action as MerchantOrderAction)) {
+      return {
+        ok: false,
+        message: "order_action_invalid",
+        status: 400,
+      };
+    }
 
-  const cookieStore = await cookies();
-  const requestHeaders = await headers();
-  const result = await mutateMerchantOrder({
-    action: action as MerchantOrderAction,
-    cookieHeader: cookieStore.toString(),
-    fulfillmentId: typeof body.fulfillmentId === "string" ? body.fulfillmentId : undefined,
-    orderId,
-    platformApiBaseUrl: process.env.PLATFORM_API_BASE_URL ?? "http://localhost:3000",
-    requestHost: requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host"),
-    tenantId: new URL(request.url).searchParams.get("tenantId"),
+    if (action === "deliver" && typeof body.fulfillmentId !== "string") {
+      return {
+        ok: false,
+        message: "order_fulfillment_not_found",
+        status: 404,
+      };
+    }
+
+    const result = await mutateMerchantOrder({
+      action: action as MerchantOrderAction,
+      cookieHeader: context.cookieHeader,
+      fulfillmentId: typeof body.fulfillmentId === "string" ? body.fulfillmentId : undefined,
+      orderId,
+      platformApiBaseUrl: context.platformApiBaseUrl,
+      requestHost: context.requestHost,
+      tenantId: context.tenantId,
+    });
+
+    if (!result.ok) {
+      return {
+        ok: false,
+        message: result.message,
+        status: result.status,
+      };
+    }
+
+    return {
+      ok: true,
+      data: { order: result.order },
+    };
   });
-
-  if (!result.ok) {
-    return NextResponse.json({ error: result.message }, { status: result.status });
-  }
-
-  return NextResponse.json({ order: result.order });
 }
