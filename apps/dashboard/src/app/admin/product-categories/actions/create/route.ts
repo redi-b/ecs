@@ -1,42 +1,59 @@
-import { cookies, headers } from "next/headers";
-import { NextResponse } from "next/server";
-
-import { appendTenantRedirectParams } from "../../../../../lib/dashboard-tenant-context";
-import { createMerchantProductCategory } from "../../../../../lib/merchant-products";
-import { getTaxonomyFormInput } from "../../../../../lib/taxonomy-form-data";
+import { createMerchantProductCategory } from "@/lib/merchant-products";
+import { withMerchantAction } from "@/lib/platform-api/action-route";
+import { getTaxonomyFormInput } from "@/lib/taxonomy-form-data";
 
 export async function POST(request: Request) {
-  const wantsJson = request.headers.get("accept")?.includes("application/json");
-  const category = await getCategoryInput(request);
+  return withMerchantAction(request, async (context) => {
+    const category = await getCategoryInput(context.request);
 
-  if (!category.name) {
-    if (wantsJson) {
-      return NextResponse.json({ error: "missing_name" }, { status: 400 });
+    if (!category.name) {
+      if (context.wantsJson) {
+        return { ok: false, message: "missing_name", status: 400 };
+      }
+
+      return {
+        ok: false,
+        message: "missing_name",
+        status: 400,
+        redirectPath: "/admin/products/categories",
+        redirectStatusParam: "missing_name",
+      };
     }
 
-    return redirectToCategories(request, "missing_name");
-  }
+    const result = await createMerchantProductCategory({
+      cookieHeader: context.cookieHeader,
+      handle: category.handle,
+      name: category.name,
+      platformApiBaseUrl: context.platformApiBaseUrl,
+      requestHost: context.requestHost,
+      tenantId: context.tenantId,
+    });
 
-  const cookieStore = await cookies();
-  const requestHeaders = await headers();
-  const result = await createMerchantProductCategory({
-    cookieHeader: cookieStore.toString(),
-    handle: category.handle,
-    name: category.name,
-    platformApiBaseUrl: process.env.PLATFORM_API_BASE_URL ?? "http://localhost:3000",
-    requestHost: requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host"),
-    tenantId: new URL(request.url).searchParams.get("tenantId"),
-  });
-
-  if (wantsJson) {
     if (!result.ok) {
-      return NextResponse.json({ error: result.message }, { status: result.status });
+      if (context.wantsJson) {
+        return { ok: false, message: result.message, status: result.status };
+      }
+
+      return {
+        ok: false,
+        message: result.message,
+        status: result.status,
+        redirectPath: "/admin/products/categories",
+        redirectStatusParam: result.message,
+      };
     }
 
-    return NextResponse.json({ category: result.category });
-  }
+    if (context.wantsJson) {
+      return { ok: true, data: { category: result.category } };
+    }
 
-  return redirectToCategories(request, result.ok ? "category_created" : result.message);
+    return {
+      ok: true,
+      data: { category: result.category },
+      redirectPath: "/admin/products/categories",
+      redirectStatusParam: "category_created",
+    };
+  });
 }
 
 async function getCategoryInput(request: Request) {
@@ -53,25 +70,4 @@ async function getCategoryInput(request: Request) {
   }
 
   return getTaxonomyFormInput(await request.formData());
-}
-
-function redirectToCategories(request: Request, status: string) {
-  const url = new URL("/admin/products/categories", getRequestOrigin(request));
-
-  url.searchParams.set("categoryStatus", status);
-  appendTenantRedirectParams(url, request);
-
-  return NextResponse.redirect(url, { status: 303 });
-}
-
-function getRequestOrigin(request: Request) {
-  const forwardedHost = request.headers.get("x-forwarded-host");
-
-  if (!forwardedHost) {
-    return new URL(request.url).origin;
-  }
-
-  const forwardedProto = request.headers.get("x-forwarded-proto") ?? "http";
-
-  return `${forwardedProto}://${forwardedHost}`;
 }
