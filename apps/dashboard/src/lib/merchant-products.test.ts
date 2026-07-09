@@ -860,7 +860,7 @@ describe("getMerchantProducts", () => {
       assert.deepEqual(result, {
         ok: false,
         status: 404,
-        message: "This product could not be found.",
+        message: "product_not_found",
       });
     });
 

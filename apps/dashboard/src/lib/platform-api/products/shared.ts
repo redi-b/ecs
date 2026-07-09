@@ -10,7 +10,6 @@ import {
   merchantDeleteResultSchema,
   merchantBatchDeleteResultSchema,
 } from "@ecs/contracts";
-import { mapPlatformErrorMessage } from "@/lib/platform-api/errors";
 import type {
   MerchantBatchDeleteActionResult,
   MerchantDeleteActionResult,
@@ -45,7 +44,7 @@ export async function parseDeleteResponse(
     return {
       ok: false,
       status: response.status,
-      message: mapPlatformErrorMessage(error.success ? error.data.error : undefined, { fallback: response.statusText || `Failed to delete ${resource}.`, resource: "Catalog data" }),
+      message: (error.success ? error.data.error : response.statusText || `Failed to delete ${resource}.`),
     };
   }
 
@@ -74,7 +73,7 @@ export async function parseBatchDeleteResponse(
     return {
       ok: false,
       status: response.status,
-      message: mapPlatformErrorMessage(error.success ? error.data.error : undefined, { fallback: response.statusText || "Failed to batch delete resources.", resource: "Catalog data" }),
+      message: (error.success ? error.data.error : response.statusText || "Failed to batch delete resources."),
     };
   }
 
@@ -226,7 +225,7 @@ export async function parseProductResponse(response: Response): Promise<Merchant
     return {
       ok: false,
       status: response.status,
-      message: mapPlatformErrorMessage(error.success ? error.data.error : undefined, { fallback: response.statusText || "Product request failed", resource: "Catalog data" }),
+      message: (error.success ? error.data.error : response.statusText || "Product request failed"),
     };
   }
 
@@ -257,7 +256,7 @@ export async function parseProductMutationResponse(
     return {
       ok: false,
       status: response.status,
-      message: mapPlatformErrorMessage(error.success ? error.data.error : undefined, { fallback: response.statusText || "Product request failed", resource: "Catalog data" }),
+      message: (error.success ? error.data.error : response.statusText || "Product request failed"),
     };
   }
 
@@ -341,7 +340,7 @@ export async function parseProductCategoryMutationResponse(
       ok: false,
       status: response.status,
       message:
-        mapPlatformErrorMessage(error.success ? error.data.error : undefined, { fallback: response.statusText || "Product category request failed", resource: "Catalog data" }),
+        (error.success ? error.data.error : response.statusText || "Product category request failed"),
     };
   }
 
@@ -435,7 +434,7 @@ export async function parseProductCategoriesResponse(
       ok: false,
       status: response.status,
       message:
-        mapPlatformErrorMessage(error.success ? error.data.error : undefined, { fallback: response.statusText || "Product categories request failed", resource: "Catalog data" }),
+        (error.success ? error.data.error : response.statusText || "Product categories request failed"),
     };
   }
 

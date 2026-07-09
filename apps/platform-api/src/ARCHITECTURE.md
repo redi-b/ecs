@@ -44,3 +44,9 @@ Legacy top-level folders (`auth/`, `tenants/`, `billing/`, …) keep **compatibi
   - `routes/merchant/<resource>.ts`
   - `modules/<domain>/…`
   - `adapters/<provider>/…` when external I/O is required
+
+## Media / new features
+
+- Do **not** add new implementation under legacy re-export folders (`auth/`, `tenants/`, `billing/`, …).
+- Prefer `modules/<domain>`, `adapters/<provider>`, `routes/merchant|platform|storefront|webhooks`.
+- Dashboard server clients: `lib/platform-api/<resource>/` + thin named re-exports in `lib/merchant-*.ts` (no `"use client"`, no browser SDKs in those barrels).
