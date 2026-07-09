@@ -10,7 +10,7 @@ import type {
   MerchantProductWriteResult,
   MerchantDeleteResult,
   MerchantBatchDeleteResult,
-} from "../../app.js";
+} from "../../../types/index.js";
 import {
   categoryBelongsToTenantById,
   collectionBelongsToTenantById,

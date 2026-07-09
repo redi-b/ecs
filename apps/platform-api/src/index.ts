@@ -13,17 +13,17 @@ import { createPlatformApp } from "./app.js";
 import { createDashboardAuthorizationLookup } from "./auth/dashboard-authorization.js";
 import { createPlatformAuth, parseTrustedOrigins } from "./auth/platform-auth.js";
 import { createBillingService } from "./billing/billing-service.js";
-import { createMedusaOrderService } from "./commerce/order-service.js";
-import { createMedusaProductService } from "./commerce/product-service.js";
+import { createMedusaOrderService } from "./modules/commerce/order-management.js";
+import { createMedusaProductService } from "./modules/commerce/product-catalog.js";
 import { loadPlatformApiEnvFiles } from "./config/env.js";
 import { getSystemHosts } from "./config/hosts.js";
 import { createDeliverySettingsService } from "./delivery/delivery-service.js";
 import { createDomainManagementService } from "./domains/domain-service.js";
 import { createNotificationService } from "./notifications/notification-service.js";
 import { createTenantOnboardingService } from "./onboarding/onboarding-service.js";
-import { createChapaPaymentService } from "./payments/chapa-payment-service.js";
+import { createChapaPaymentService } from "./adapters/chapa/payment-service.js";
 import { createPaymentOnboardingService } from "./payments/payment-onboarding-service.js";
-import { createMedusaCommerceProvisioningClient } from "./provisioning/medusa-commerce-provisioning.js";
+import { createMedusaCommerceProvisioningClient } from "./adapters/medusa/commerce-provisioning.js";
 import {
   createTenantProvisioningAttemptListService,
   createTenantShopProvisioningRetryServiceFromDb,

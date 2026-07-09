@@ -4,7 +4,7 @@ import type {
   MerchantProductCollectionWriteResult,
   MerchantDeleteResult,
   MerchantBatchDeleteResult,
-} from "../../app.js";
+} from "../../../types/index.js";
 import type {
   ProductOptionInput,
   ProductVariantWriteInput,

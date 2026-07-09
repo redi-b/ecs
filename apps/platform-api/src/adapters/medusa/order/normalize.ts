@@ -1,4 +1,4 @@
-import type { MerchantOrder } from "../../app.js";
+import type { MerchantOrder } from "../../../types/index.js";
 import { getNumber, getString, isRecord } from "./values.js";
 
 export function normalizeOrder(value: unknown, salesChannelId: string): MerchantOrder[] {

@@ -3,7 +3,7 @@ import type {
   MerchantProductCategory,
   MerchantProductCollection,
   MerchantProductStock,
-} from "../../app.js";
+} from "../../../types/index.js";
 import { getBoolean, getNumber, getString, isRecord } from "./values.js";
 
 export function normalizeProduct(value: unknown): MerchantProduct[] {

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { afterEach, describe, it } from "node:test";
 
-import { createChapaPaymentService } from "./chapa-payment-service.js";
+import { createChapaPaymentService } from "./payment-service.js";
 
 const originalFetch = globalThis.fetch;
 

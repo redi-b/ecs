@@ -3,7 +3,7 @@ import type {
   MerchantProductStock,
   MerchantProductStockResult,
   MerchantProductStockUpdateResult,
-} from "../../app.js";
+} from "../../../types/index.js";
 import type {
   ProductStockInput,
   ProductVariantStockInput,
