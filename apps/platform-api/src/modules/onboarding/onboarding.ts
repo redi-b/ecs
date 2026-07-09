@@ -1,1 +1,1 @@
-export { createTenantOnboardingService } from "../../onboarding/onboarding-service.js";
+export { createTenantOnboardingService } from "./service.js";

@@ -5,7 +5,7 @@ import {
   buildInitialTenantOnboardingState,
   createTenantShopProvisioner,
   createTenantShopProvisioningRetryService,
-} from "./tenant-shop-provisioning.js";
+} from "./shop-provisioning.js";
 
 describe("createTenantShopProvisioner", () => {
   it("builds the initial tenant onboarding state after commerce and template provisioning", () => {
