@@ -1,6 +1,6 @@
-export { createDomainTenantLookup } from "../tenancy/domain-tenant-lookup.js";
-export { resolveTenantFromHost, normalizeHostname } from "../tenancy/tenant-resolver.js";
-export type { TenantContext, TenantResolutionResult } from "../tenancy/tenant-resolver.js";
+export { createDomainTenantLookup } from "./domain-tenant-lookup.js";
+export { resolveTenantFromHost, normalizeHostname } from "./tenant-resolver.js";
+export type { TenantContext, TenantResolutionResult } from "./tenant-resolver.js";
 export {
   createMerchantRouteHelpers,
   type MerchantRouteHelpers,

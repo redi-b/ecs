@@ -2,8 +2,8 @@ import type {
   AnalyticsEventRecordInput,
   AnalyticsEventRecordResult,
   TenantInsightsSummaryResult,
-} from "../analytics/analytics-service.js";
-import type { TenantResolutionResult } from "../tenancy/tenant-resolver.js";
+} from "../modules/analytics/analytics-service.js";
+import type { TenantResolutionResult } from "../context/tenant-resolver.js";
 import type { BillingInvoiceUpdateResult, BillingStatusResult } from "./billing.js";
 import type { DashboardMetricsResult } from "./metrics.js";
 import type { DeliverySettingsResult, DeliverySettingsUpdateResult } from "./delivery.js";

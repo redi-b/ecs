@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { buildTenantCommerceContext } from "./tenant-commerce-context-service.js";
+import { buildTenantCommerceContext } from "./commerce-context-service.js";
 
 const completeRow = {
   id: "tenant_1",

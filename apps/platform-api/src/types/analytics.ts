@@ -2,4 +2,4 @@ export type {
   AnalyticsEventRecordInput,
   AnalyticsEventRecordResult,
   TenantInsightsSummaryResult,
-} from "../analytics/analytics-service.js";
+} from "../modules/analytics/analytics-service.js";

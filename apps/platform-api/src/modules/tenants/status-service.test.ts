@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { buildTenantReadiness } from "./tenant-status-service.js";
+import { buildTenantReadiness } from "./status-service.js";
 
 describe("buildTenantReadiness", () => {
   it("includes the latest failed provisioning attempt in readiness", () => {

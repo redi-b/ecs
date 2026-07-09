@@ -1,1 +1,1 @@
-export { createPaymentOnboardingService } from "../../payments/payment-onboarding-service.js";
+export { createPaymentOnboardingService } from "./payment-onboarding-service.js";
