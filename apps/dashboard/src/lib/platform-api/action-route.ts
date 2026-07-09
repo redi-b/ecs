@@ -19,6 +19,7 @@ export type MerchantActionResult =
       data?: unknown;
       redirectPath?: string;
       redirectStatusParam?: string;
+      redirectStatusKey?: string;
       status?: number;
     }
   | {
@@ -27,6 +28,7 @@ export type MerchantActionResult =
       status: number;
       redirectPath?: string;
       redirectStatusParam?: string;
+      redirectStatusKey?: string;
     };
 
 /**
@@ -63,16 +65,32 @@ export async function withMerchantAction(
   }
 
   const statusParam = result.redirectStatusParam ?? (result.ok ? "ok" : result.message);
-  return redirectWithStatus(request, result.redirectPath ?? "/admin", statusParam);
+  return redirectWithStatus(
+    request,
+    result.redirectPath ?? "/admin",
+    statusParam,
+    result.redirectStatusKey,
+  );
 }
 
-export function redirectWithStatus(request: Request, path: string, status: string) {
+export function redirectWithStatus(
+  request: Request,
+  path: string,
+  status: string,
+  statusKeyOverride?: string | undefined,
+) {
   const url = new URL(path, getRequestOrigin(request));
-  const statusKey = path.includes("/products")
-    ? "productStatus"
-    : path.includes("/orders")
-      ? "orderStatus"
-      : "status";
+  const statusKey =
+    statusKeyOverride ??
+    (path.includes("/categories")
+      ? "categoryStatus"
+      : path.includes("/collections")
+        ? "collectionStatus"
+        : path.includes("/products")
+          ? "productStatus"
+          : path.includes("/orders")
+            ? "orderStatus"
+            : "status");
 
   url.searchParams.set(statusKey, status);
   appendTenantRedirectParams(url, request);
