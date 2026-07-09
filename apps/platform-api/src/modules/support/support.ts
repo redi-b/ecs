@@ -1,1 +1,1 @@
-export { createSupportService } from "../../support/support-service.js";
+export { createSupportService } from "./service.js";

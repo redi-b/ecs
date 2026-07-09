@@ -26,14 +26,17 @@ src/
       order/
       commerce-provisioning.ts
     chapa/
-  analytics|auth|billing|...  # existing service implementations
-                              # (re-exported via modules/*)
+  modules/
+    billing/service.ts, notifications/service.ts, delivery/, domains/,
+    support/, storefront/template-service.ts, tenants/, analytics/, …
+  auth|tenancy|provisioning|payments  # remaining legacy paths with re-exports
 ```
 
 ## Rules
 
 - **Routes** validate request/auth/context and call modules (or injected options).
-- **Modules** expose domain-shaped factories (`createProductCatalog`, `createOrderManagement`, …).
+- **Modules** expose domain-shaped factories (`createProductCatalog`, `createOrderManagement`, …) and own domain services where they do not need an external adapter.
 - **Adapters** talk to Medusa, Chapa, and other providers.
 - **types/** is the home for `PlatformAppOptions` and merchant/commerce result types.
 - Prefer adding new post-MVP resources under `routes/merchant/<resource>.ts` + `modules/` + `adapters/` as needed.
+- Old paths (`billing/billing-service.ts`, `commerce/product-service.ts`, …) re-export for compatibility.
