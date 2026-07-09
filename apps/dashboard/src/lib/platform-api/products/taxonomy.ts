@@ -5,7 +5,7 @@ import type {
   MerchantProductCategoryMutationResult,
   MerchantProductCollectionMutationResult,
   MerchantProductCollectionsResult,
-} from "./types.js";
+} from "./types";
 import {
   fetchProductResource,
   parseBatchDeleteResponse,
@@ -15,13 +15,13 @@ import {
   parseProductCollectionMutationResponse,
   parseProductCollectionsResponse,
   sendTaxonomyMutation,
-} from "./shared.js";
+} from "./shared";
 import { normalizeBaseUrl } from "@/lib/platform-api/client";
 import {
   getProductHeaders,
   getProductResourceMutationUrl,
   getProductResourceUrl,
-} from "./urls.js";
+} from "./urls";
 
 export async function createMerchantProductCategory(options: {
   cookieHeader?: string | null | undefined;
