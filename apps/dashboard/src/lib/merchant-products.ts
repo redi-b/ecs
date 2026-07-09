@@ -1,1 +1,34 @@
-export * from "@/lib/platform-api/products";
+export {
+  createMerchantProduct,
+  getMerchantProduct,
+  getMerchantProducts,
+  updateMerchantProduct,
+  deleteMerchantProduct,
+  deleteMerchantProductsBatch,
+  getMerchantProductStock,
+  updateMerchantProductStock,
+  getMerchantProductVariantStock,
+  updateMerchantProductVariantStock,
+  createMerchantProductCategory,
+  createMerchantProductCollection,
+  getMerchantProductCategories,
+  getMerchantProductCollections,
+  deleteMerchantProductCategory,
+  deleteMerchantProductCategoriesBatch,
+  deleteMerchantProductCollection,
+  deleteMerchantProductCollectionsBatch,
+} from "@/lib/platform-api/products";
+
+export type {
+  MerchantProductsResult,
+  MerchantProductMutationResult,
+  MerchantProductResult,
+  MerchantProductCategoriesResult,
+  MerchantProductCollectionsResult,
+  MerchantProductCategoryMutationResult,
+  MerchantProductCollectionMutationResult,
+  MerchantProductStockResult,
+  MerchantDeleteActionResult,
+  MerchantBatchDeleteActionResult,
+  MerchantProductWriteInput,
+} from "@/lib/platform-api/products";

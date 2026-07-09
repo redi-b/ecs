@@ -1,4 +1,4 @@
-export type * from "./types.js";
-export * from "./products.js";
-export * from "./stock.js";
-export * from "./taxonomy.js";
+export type * from "./types";
+export * from "./products";
+export * from "./stock";
+export * from "./taxonomy";

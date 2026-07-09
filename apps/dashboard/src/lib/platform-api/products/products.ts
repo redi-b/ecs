@@ -5,21 +5,21 @@ import type {
   MerchantProductResult,
   MerchantProductsResult,
   MerchantProductWriteInput,
-} from "./types.js";
+} from "./types";
 import {
   parseBatchDeleteResponse,
   parseDeleteResponse,
   parseProductMutationResponse,
   parseProductResponse,
   sendProductMutation,
-} from "./shared.js";
+} from "./shared";
 import {
   merchantProductsSchema,
   platformErrorSchema,
 } from "@ecs/contracts";
 import { normalizeBaseUrl } from "@/lib/platform-api/client";
 import { mapPlatformErrorMessage } from "@/lib/platform-api/errors";
-import { getProductHeaders, getProductMutationUrl, getProductsUrl } from "./urls.js";
+import { getProductHeaders, getProductMutationUrl, getProductsUrl } from "./urls";
 
 export async function createMerchantProduct(options: {
   cookieHeader?: string | null | undefined;

@@ -23,7 +23,7 @@ import type {
   MerchantProductStockResult,
   MerchantProductWriteInput,
   MerchantProductsResult,
-} from "./types.js";
+} from "./types";
 import {
   getProductHeaders,
   getProductMutationUrl,
@@ -32,7 +32,7 @@ import {
   getProductStockUrl,
   getProductVariantStockUrl,
   getProductsUrl,
-} from "./urls.js";
+} from "./urls";
 
 
 export async function parseDeleteResponse(

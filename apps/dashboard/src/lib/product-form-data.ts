@@ -1,4 +1,4 @@
-import type { MerchantProductWriteInput } from "./merchant-products.js";
+import type { MerchantProductWriteInput } from "./merchant-products";
 
 export function getProductFormInput(formData: FormData): MerchantProductWriteInput {
   const variants = getProductVariants(formData);

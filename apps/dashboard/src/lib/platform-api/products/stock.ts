@@ -1,10 +1,10 @@
-import type { MerchantProductStockResult } from "./types.js";
-import { fetchProductStockResource, parseProductStockResponse } from "./shared.js";
+import type { MerchantProductStockResult } from "./types";
+import { fetchProductStockResource, parseProductStockResponse } from "./shared";
 import {
   getProductHeaders,
   getProductStockUrl,
   getProductVariantStockUrl,
-} from "./urls.js";
+} from "./urls";
 
 export async function getMerchantProductStock(options: {
   cookieHeader?: string | null | undefined;
