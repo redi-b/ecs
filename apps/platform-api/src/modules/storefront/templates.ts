@@ -1,1 +1,1 @@
-export { createStorefrontTemplateService } from "../../storefront/template-service.js";
+export { createStorefrontTemplateService } from "./template-service.js";

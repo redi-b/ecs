@@ -1,1 +1,1 @@
-export { createBillingService } from "../../billing/billing-service.js";
+export { createBillingService } from "./service.js";

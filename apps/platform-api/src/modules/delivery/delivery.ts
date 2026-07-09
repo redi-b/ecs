@@ -1,1 +1,1 @@
-export { createDeliverySettingsService } from "../../delivery/delivery-service.js";
+export { createDeliverySettingsService } from "./service.js";

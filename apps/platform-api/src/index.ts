@@ -12,14 +12,14 @@ import { createDashboardMetricsService } from "./analytics/dashboard-metrics-ser
 import { createPlatformApp } from "./app.js";
 import { createDashboardAuthorizationLookup } from "./auth/dashboard-authorization.js";
 import { createPlatformAuth, parseTrustedOrigins } from "./auth/platform-auth.js";
-import { createBillingService } from "./billing/billing-service.js";
+import { createBillingService } from "./modules/billing/service.js";
 import { createMedusaOrderService } from "./modules/commerce/order-management.js";
 import { createMedusaProductService } from "./modules/commerce/product-catalog.js";
 import { loadPlatformApiEnvFiles } from "./config/env.js";
 import { getSystemHosts } from "./config/hosts.js";
-import { createDeliverySettingsService } from "./delivery/delivery-service.js";
-import { createDomainManagementService } from "./domains/domain-service.js";
-import { createNotificationService } from "./notifications/notification-service.js";
+import { createDeliverySettingsService } from "./modules/delivery/service.js";
+import { createDomainManagementService } from "./modules/domains/service.js";
+import { createNotificationService } from "./modules/notifications/service.js";
 import { createTenantOnboardingService } from "./onboarding/onboarding-service.js";
 import { createChapaPaymentService } from "./adapters/chapa/payment-service.js";
 import { createPaymentOnboardingService } from "./payments/payment-onboarding-service.js";
@@ -29,8 +29,8 @@ import {
   createTenantShopProvisioningRetryServiceFromDb,
   createTenantShopProvisioningService,
 } from "./provisioning/tenant-shop-provisioning.js";
-import { createStorefrontTemplateService } from "./storefront/template-service.js";
-import { createSupportService } from "./support/support-service.js";
+import { createStorefrontTemplateService } from "./modules/storefront/template-service.js";
+import { createSupportService } from "./modules/support/service.js";
 import { createDomainTenantLookup } from "./tenancy/domain-tenant-lookup.js";
 import { resolveTenantFromHost } from "./tenancy/tenant-resolver.js";
 import {

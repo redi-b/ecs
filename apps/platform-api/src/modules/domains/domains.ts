@@ -1,1 +1,1 @@
-export { createDomainManagementService } from "../../domains/domain-service.js";
+export { createDomainManagementService } from "./service.js";
