@@ -1,4 +1,5 @@
 import type { MerchantOrder, MerchantOrders } from "@ecs/contracts";
+import { createPlatformHeaders, normalizeBaseUrl } from "@/lib/platform-api/client";
 import { merchantOrderSchema, merchantOrdersSchema, platformErrorSchema } from "@ecs/contracts";
 
 export type MerchantOrderAction = "cancel" | "complete" | "deliver" | "fulfill";
@@ -253,23 +254,9 @@ function getOrderHeaders(options: {
   cookieHeader?: string | null | undefined;
   requestHost?: string | null | undefined;
 }) {
-  const headers = new Headers();
-
-  if (options.contentType) {
-    headers.set("content-type", options.contentType);
-  }
-
-  if (options.cookieHeader?.trim()) {
-    headers.set("cookie", options.cookieHeader.trim());
-  }
-
-  if (options.requestHost?.trim()) {
-    headers.set("x-forwarded-host", options.requestHost.trim());
-  }
-
-  return headers;
-}
-
-function normalizeBaseUrl(value: string) {
-  return value.endsWith("/") ? value : `${value}/`;
+  return createPlatformHeaders({
+    contentType: options.contentType || false,
+    cookieHeader: options.cookieHeader,
+    requestHost: options.requestHost,
+  });
 }

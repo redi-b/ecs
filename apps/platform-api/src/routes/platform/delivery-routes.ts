@@ -1,7 +1,7 @@
 import type { Context, Hono } from "hono";
 
-import type { PlatformAppOptions, PlatformAppVariables } from "../app.js";
-import { getJsonBody, getRequiredBodyString } from "./shared.js";
+import type { PlatformAppOptions, PlatformAppVariables } from "../../app.js";
+import { getJsonBody, getRequiredBodyString } from "../shared.js";
 
 function getRequiredBodyBoolean(body: unknown, key: string) {
   if (typeof body !== "object" || body === null || !(key in body)) {

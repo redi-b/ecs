@@ -5,9 +5,7 @@ import type {
   AnalyticsEventRecordResult,
   TenantInsightsSummaryResult,
 } from "./analytics/analytics-service.js";
-import { registerMerchantRoutes } from "./routes/merchant-routes.js";
-import { registerPlatformRoutes } from "./routes/platform-routes.js";
-import { registerStoreFacadeRoutes } from "./routes/store-facade-routes.js";
+import { registerAllRoutes } from "./routes/index.js";
 import type { TenantResolutionResult } from "./tenancy/tenant-resolver.js";
 
 export type { AnalyticsEventRecordInput, AnalyticsEventRecordResult, TenantInsightsSummaryResult };
@@ -1445,9 +1443,7 @@ export function createPlatformApp(options: PlatformAppOptions) {
     }
   });
 
-  registerPlatformRoutes(app, options);
-  registerMerchantRoutes(app, options);
-  registerStoreFacadeRoutes(app, options, medusaStoreFetch);
+  registerAllRoutes(app, options, medusaStoreFetch);
 
   return app;
 }
