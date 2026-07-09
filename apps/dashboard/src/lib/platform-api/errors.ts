@@ -1,6 +1,10 @@
 /**
- * Maps platform API error codes to merchant-safe dashboard messages.
- * Keep this as the single place for production copy used by server clients.
+ * Maps platform API error codes to merchant-safe dashboard copy.
+ *
+ * Contract:
+ * - Platform API clients should keep machine codes in `message` / `error` so
+ *   list-error helpers and mutation handlers can branch on codes.
+ * - Map to human text only at the presentation boundary (pages, toasts, alerts).
  */
 
 export type PlatformErrorMessageOptions = {
@@ -67,7 +71,7 @@ export function mapPlatformErrorMessage(
     return mapped;
   }
 
-  // Never surface raw developer codes as primary copy when unknown.
+  // Unknown snake_case codes should not be shown raw to merchants.
   if (/^[a-z0-9_]+$/i.test(code) && code.includes("_")) {
     return options.fallback ?? defaultFallback(options.resource);
   }

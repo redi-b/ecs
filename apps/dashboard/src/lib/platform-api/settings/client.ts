@@ -6,7 +6,6 @@ import {
   platformTenantMutationSchema,
 } from "@ecs/contracts";
 import { createPlatformHeaders, normalizeBaseUrl } from "@/lib/platform-api/client";
-import { mapPlatformErrorMessage } from "@/lib/platform-api/errors";
 
 export type MerchantSettingsResult =
   | {
@@ -81,7 +80,7 @@ export async function updateMerchantSettings(options: {
     return {
       ok: false,
       status: response.status,
-      message: mapPlatformErrorMessage(error.success ? error.data.error : undefined, { fallback: response.statusText || "Settings update failed", resource: "Settings" }),
+      message: (error.success ? error.data.error : response.statusText || "Settings update failed"),
     };
   }
 
@@ -158,7 +157,7 @@ async function parseDeliveryResponse(
     return {
       ok: false,
       status: response.status,
-      message: mapPlatformErrorMessage(error.success ? error.data.error : undefined, { fallback: response.statusText || "Delivery request failed", resource: "Settings" }),
+      message: (error.success ? error.data.error : response.statusText || "Delivery request failed"),
     };
   }
 

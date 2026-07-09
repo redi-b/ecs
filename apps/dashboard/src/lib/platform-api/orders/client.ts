@@ -1,6 +1,5 @@
 import type { MerchantOrder, MerchantOrders } from "@ecs/contracts";
 import { createPlatformHeaders, normalizeBaseUrl } from "@/lib/platform-api/client";
-import { mapPlatformErrorMessage } from "@/lib/platform-api/errors";
 import { merchantOrderSchema, merchantOrdersSchema, platformErrorSchema } from "@ecs/contracts";
 
 export type MerchantOrderAction = "cancel" | "complete" | "deliver" | "fulfill";
@@ -63,7 +62,7 @@ export async function getMerchantOrders(options: {
     return {
       ok: false,
       status: response.status,
-      message: mapPlatformErrorMessage(error.success ? error.data.error : undefined, { fallback: response.statusText || "Orders request failed", resource: "Orders" }),
+      message: (error.success ? error.data.error : response.statusText || "Orders request failed"),
     };
   }
 
@@ -116,7 +115,7 @@ export async function getMerchantOrder(options: {
     return {
       ok: false,
       status: response.status,
-      message: mapPlatformErrorMessage(error.success ? error.data.error : undefined, { fallback: response.statusText || "Order request failed", resource: "Orders" }),
+      message: (error.success ? error.data.error : response.statusText || "Order request failed"),
     };
   }
 
@@ -174,7 +173,7 @@ export async function mutateMerchantOrder(options: {
     return {
       ok: false,
       status: response.status,
-      message: mapPlatformErrorMessage(error.success ? error.data.error : undefined, { fallback: response.statusText || "Order action failed", resource: "Orders" }),
+      message: (error.success ? error.data.error : response.statusText || "Order action failed"),
     };
   }
 
