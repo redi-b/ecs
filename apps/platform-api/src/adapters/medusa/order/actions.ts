@@ -2,7 +2,7 @@ import type {
   MerchantOrder,
   MerchantOrderActionResult,
   MerchantOrderDetailResult,
-} from "../../app.js";
+} from "../../../types/index.js";
 import { getAdminHeaders, missingCredentials, requestMedusa } from "./medusa-http.js";
 import { getFulfillmentItems, normalizeOrder } from "./normalize.js";
 import {

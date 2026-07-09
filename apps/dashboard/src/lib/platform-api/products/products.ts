@@ -18,6 +18,7 @@ import {
   platformErrorSchema,
 } from "@ecs/contracts";
 import { normalizeBaseUrl } from "@/lib/platform-api/client";
+import { mapPlatformErrorMessage } from "@/lib/platform-api/errors";
 import { getProductHeaders, getProductMutationUrl, getProductsUrl } from "./urls.js";
 
 export async function createMerchantProduct(options: {
@@ -102,7 +103,7 @@ export async function getMerchantProducts(options: {
     return {
       ok: false,
       status: response.status,
-      message: error.success ? error.data.error : response.statusText || "Products request failed",
+      message: mapPlatformErrorMessage(error.success ? error.data.error : undefined, { fallback: response.statusText || "Products request failed", resource: "Catalog data" }),
     };
   }
 

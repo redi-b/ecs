@@ -1,1 +1,1 @@
-export { createMedusaOrderService } from "./order/index.js";
+export { createMedusaOrderService } from "../adapters/medusa/order/index.js";

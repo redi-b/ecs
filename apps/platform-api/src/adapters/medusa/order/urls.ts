@@ -1,4 +1,4 @@
-import type { MerchantOrderAction } from "../../app.js";
+import type { MerchantOrderAction } from "../../../types/index.js";
 
 export function getOrdersUrl(
   medusaInternalUrl: string,

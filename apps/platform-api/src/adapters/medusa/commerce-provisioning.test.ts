@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { createMedusaCommerceProvisioningClient } from "./medusa-commerce-provisioning.js";
+import { createMedusaCommerceProvisioningClient } from "./commerce-provisioning.js";
 
 describe("createMedusaCommerceProvisioningClient", () => {
   it("calls the Medusa internal provisioning endpoint with the platform token", async () => {

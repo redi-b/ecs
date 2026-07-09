@@ -10,6 +10,7 @@ import {
   storefrontTemplateSelectionSchema,
 } from "@ecs/contracts";
 import { createPlatformHeaders, normalizeBaseUrl } from "@/lib/platform-api/client";
+import { mapPlatformErrorMessage } from "@/lib/platform-api/errors";
 
 export type StorefrontTemplateCatalogResult =
   | {
@@ -244,7 +245,7 @@ function getPlatformError(response: Response, data: unknown, fallbackMessage: st
   return {
     ok: false,
     status: response.status,
-    message: error.success ? error.data.error : response.statusText || fallbackMessage,
+    message: mapPlatformErrorMessage(error.success ? error.data.error : undefined, { fallback: response.statusText || fallbackMessage, resource: "Storefront" }),
   } as const;
 }
 

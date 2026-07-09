@@ -3,7 +3,7 @@ import type {
   MerchantOrderActionResult,
   MerchantOrderDetailResult,
   MerchantOrdersResult,
-} from "../../app.js";
+} from "../../../types/index.js";
 import {
   deliverMerchantOrderFulfillment,
   fulfillMerchantOrder,
