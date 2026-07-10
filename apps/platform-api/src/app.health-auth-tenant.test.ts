@@ -863,6 +863,4 @@ describe("platform app health, auth, and tenant bootstrap", () => {
       },
     });
   });
-
-
 });

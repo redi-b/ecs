@@ -47,8 +47,8 @@ import {
   getProductPriceSortValue,
   getProductTableCounts,
   normalizeProductStatus,
-  type ProductStatusFilter,
   type ProductMediaFilter,
+  type ProductStatusFilter,
   type ProductStockFilter,
   type ProductVariantCountFilter,
 } from "@/features/products/product-table-state";
@@ -72,20 +72,18 @@ type ProductsTableProps = {
   totalCount: number;
 };
 
-
 import {
   getDeletionErrorMessage,
   getProductColumns,
   getProductStockSortValue,
   getStatusLoadingMessage,
   getStatusSuccessMessage,
-  productStatusFilterOptions,
   ProductOrganizationSummary,
-  ProductStockSummary,
-  setUrlFilter,
   type ProductStatusValue,
+  ProductStockSummary,
+  productStatusFilterOptions,
+  setUrlFilter,
 } from "@/features/products/products-table-helpers";
-
 
 async function copyToClipboard(value: string, label: string) {
   try {
@@ -121,8 +119,7 @@ export function ProductsTable({
   const [status, setStatus] = useState<ProductStatusFilter>(initialStatus);
   const [stock, setStock] = useState<ProductStockFilter>(initialStock);
   const [media, setMedia] = useState<ProductMediaFilter>(initialMedia);
-  const [variantCount, setVariantCount] =
-    useState<ProductVariantCountFilter>(initialVariantCount);
+  const [variantCount, setVariantCount] = useState<ProductVariantCountFilter>(initialVariantCount);
   const [collectionId, setCollectionId] = useState(initialCollectionId);
   const [categoryId, setCategoryId] = useState(initialCategoryId);
   const hasSyncedInitialUrlState = useRef(false);
@@ -426,7 +423,10 @@ export function ProductsTable({
           <div className="flex items-center gap-2">
             <Button
               onClick={() =>
-                copyToClipboard(selectedProducts.map((product) => product.id).join("\n"), "Product IDs")
+                copyToClipboard(
+                  selectedProducts.map((product) => product.id).join("\n"),
+                  "Product IDs",
+                )
               }
               size="sm"
               type="button"
@@ -545,4 +545,3 @@ export function ProductsTable({
     </>
   );
 }
-

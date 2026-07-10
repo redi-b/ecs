@@ -2,6 +2,10 @@ import type { Hono } from "hono";
 
 import type { PlatformAppOptions, PlatformAppVariables } from "../../../app.js";
 import {
+  getOptionalBodyProductOptions,
+  getOptionalBodyProductVariants,
+} from "../../merchant/product-body.js";
+import {
   getJsonBody,
   getOptionalBodyNumber,
   getOptionalBodyString,
@@ -9,10 +13,6 @@ import {
   getPaginationValue,
   getRequiredBodyString,
 } from "../../shared.js";
-import {
-  getOptionalBodyProductOptions,
-  getOptionalBodyProductVariants,
-} from "../../merchant/product-body.js";
 
 export function registerPlatformTenantProductsRoutes(
   app: Hono<{ Variables: PlatformAppVariables }>,
@@ -324,6 +324,4 @@ export function registerPlatformTenantProductsRoutes(
     if (!result.ok) return context.json({ error: result.error }, result.status);
     return context.json(result);
   });
-
-
 }

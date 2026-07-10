@@ -9,7 +9,10 @@ import {
 } from "@ecs/db";
 import { and, eq } from "drizzle-orm";
 
-import type { TenantCommerceContextResult, TenantDashboardSummaryResult } from "../../types/index.js";
+import type {
+  TenantCommerceContextResult,
+  TenantDashboardSummaryResult,
+} from "../../types/index.js";
 
 type PlatformDb = ReturnType<typeof createPlatformDb>["db"];
 

@@ -2,7 +2,11 @@ import type { createPlatformDb } from "@ecs/db";
 import { auditLogs, invoices, plans, subscriptions } from "@ecs/db";
 import { and, desc, eq } from "drizzle-orm";
 
-import type { BillingInvoice, BillingInvoiceUpdateResult, BillingStatusResult } from "../../types/index.js";
+import type {
+  BillingInvoice,
+  BillingInvoiceUpdateResult,
+  BillingStatusResult,
+} from "../../types/index.js";
 
 type PlatformDb = ReturnType<typeof createPlatformDb>["db"];
 const allowedInvoiceStatuses = new Set(["pending", "paid", "cancelled", "void"]);

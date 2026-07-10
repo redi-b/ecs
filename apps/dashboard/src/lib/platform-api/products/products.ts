@@ -1,3 +1,12 @@
+import { merchantProductsSchema, platformErrorSchema } from "@ecs/contracts";
+import { normalizeBaseUrl } from "@/lib/platform-api/client";
+import {
+  parseBatchDeleteResponse,
+  parseDeleteResponse,
+  parseProductMutationResponse,
+  parseProductResponse,
+  sendProductMutation,
+} from "./shared";
 import type {
   MerchantBatchDeleteActionResult,
   MerchantDeleteActionResult,
@@ -6,18 +15,6 @@ import type {
   MerchantProductsResult,
   MerchantProductWriteInput,
 } from "./types";
-import {
-  parseBatchDeleteResponse,
-  parseDeleteResponse,
-  parseProductMutationResponse,
-  parseProductResponse,
-  sendProductMutation,
-} from "./shared";
-import {
-  merchantProductsSchema,
-  platformErrorSchema,
-} from "@ecs/contracts";
-import { normalizeBaseUrl } from "@/lib/platform-api/client";
 import { getProductHeaders, getProductMutationUrl, getProductsUrl } from "./urls";
 
 export async function createMerchantProduct(options: {
@@ -102,7 +99,7 @@ export async function getMerchantProducts(options: {
     return {
       ok: false,
       status: response.status,
-      message: (error.success ? error.data.error : response.statusText || "Products request failed"),
+      message: error.success ? error.data.error : response.statusText || "Products request failed",
     };
   }
 
@@ -217,4 +214,3 @@ export async function deleteMerchantProductsBatch(options: {
 
   return parseBatchDeleteResponse(response);
 }
-

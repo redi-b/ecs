@@ -3,8 +3,8 @@ import { describe, it } from "node:test";
 
 import {
   appWithResolution,
-  resolvedTenantContext,
   type MerchantOrderAction,
+  resolvedTenantContext,
 } from "./test/platform-app-harness.js";
 
 describe("platform app merchant dashboard and orders", () => {
@@ -1823,6 +1823,4 @@ describe("platform app merchant dashboard and orders", () => {
       },
     });
   });
-
-
 });

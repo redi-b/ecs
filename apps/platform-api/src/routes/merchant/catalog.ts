@@ -214,5 +214,4 @@ export function registerMerchantCatalogRoutes(
     if (!result.ok) return context.json({ error: result.error }, result.status);
     return context.json(result);
   });
-
 }

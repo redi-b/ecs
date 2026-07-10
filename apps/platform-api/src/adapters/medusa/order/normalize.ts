@@ -36,7 +36,6 @@ export function normalizeOrder(value: unknown, salesChannelId: string): Merchant
   ];
 }
 
-
 export function getFulfillments(value: unknown) {
   if (!Array.isArray(value)) {
     return [];
@@ -64,7 +63,6 @@ export function getFulfillments(value: unknown) {
   });
 }
 
-
 export function getShippingAddress(value: unknown) {
   if (!isRecord(value)) {
     return undefined;
@@ -85,7 +83,6 @@ export function getShippingAddress(value: unknown) {
   return hasAnyValue(address) ? address : undefined;
 }
 
-
 export function getDeliveryDetails(order: Record<string, unknown>) {
   const orderMetadata = isRecord(order.metadata) ? order.metadata : {};
   const shippingAddress = isRecord(order.shipping_address) ? order.shipping_address : {};
@@ -102,11 +99,9 @@ export function getDeliveryDetails(order: Record<string, unknown>) {
   return hasAnyValue(delivery) ? delivery : undefined;
 }
 
-
 export function hasAnyValue(value: Record<string, string | null>) {
   return Object.values(value).some((item) => item !== null);
 }
-
 
 export function getLineItems(value: unknown) {
   if (!Array.isArray(value)) {
@@ -142,7 +137,6 @@ export function getLineItems(value: unknown) {
   });
 }
 
-
 export function getFulfillmentItems(order: MerchantOrder) {
   return (order.items ?? []).flatMap((item) => {
     const quantity = item.quantity ?? 0;
@@ -162,7 +156,6 @@ export function getFulfillmentItems(order: MerchantOrder) {
   });
 }
 
-
 export function getItemFulfilledQuantity(item: Record<string, unknown>) {
   const direct = getNumber(item.fulfilled_quantity);
 
@@ -176,5 +169,3 @@ export function getItemFulfilledQuantity(item: Record<string, unknown>) {
 
   return null;
 }
-
-

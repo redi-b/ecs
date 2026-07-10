@@ -67,4 +67,3 @@ export const commerceItems = [
   { key: "hasStore", label: "Sales setup" },
   { key: "hasSalesChannel", label: "Sales channel" },
 ] as const;
-

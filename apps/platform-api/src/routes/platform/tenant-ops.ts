@@ -12,7 +12,6 @@ export function registerPlatformTenantOpsRoutes(
   app: Hono<{ Variables: PlatformAppVariables }>,
   options: PlatformAppOptions,
 ) {
-
   app.get("/platform/tenants/:tenantId/notifications/preferences", async (context) => {
     if (!options.listNotificationPreferences) {
       return context.json({ error: "notifications_unavailable" }, 503);
@@ -385,6 +384,4 @@ export function registerPlatformTenantOpsRoutes(
       paymentOnboarding: result.paymentOnboarding,
     });
   });
-
-
 }

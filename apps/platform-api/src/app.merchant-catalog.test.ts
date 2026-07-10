@@ -3,8 +3,8 @@ import { describe, it } from "node:test";
 
 import {
   appWithResolution,
-  resolvedTenantContext,
   type NotificationEventType,
+  resolvedTenantContext,
 } from "./test/platform-app-harness.js";
 
 describe("platform app merchant and tenant catalog", () => {

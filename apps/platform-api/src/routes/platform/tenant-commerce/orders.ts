@@ -1,8 +1,9 @@
-import type { Hono } from "hono";
-
-import type { PlatformAppOptions, PlatformAppVariables } from "../../../app.js";
-import type { Context } from "hono";
-import type { MerchantOrderAction } from "../../../app.js";
+import type { Context, Hono } from "hono";
+import type {
+  MerchantOrderAction,
+  PlatformAppOptions,
+  PlatformAppVariables,
+} from "../../../app.js";
 import { getPaginationValue } from "../../shared.js";
 
 export function registerPlatformTenantOrdersRoutes(
@@ -168,6 +169,4 @@ export function registerPlatformTenantOrdersRoutes(
     "/platform/tenants/:tenantId/orders/:orderId/fulfillments/:fulfillmentId/deliver",
     (context) => mutateSelectedTenantOrder(context, "deliver"),
   );
-
-
 }

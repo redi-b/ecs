@@ -53,4 +53,3 @@ export const deliveryLabels: Array<{
     description: "Let customers add delivery instructions.",
   },
 ];
-

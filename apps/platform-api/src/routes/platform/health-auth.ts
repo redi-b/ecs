@@ -5,7 +5,6 @@ export function registerPlatformHealthAuthRoutes(
   app: Hono<{ Variables: PlatformAppVariables }>,
   options: PlatformAppOptions,
 ) {
-
   if (options.authHandler) {
     const authHandler = options.authHandler;
 
@@ -26,7 +25,6 @@ export function registerPlatformHealthAuthRoutes(
     }),
   );
 
-
   app.get("/platform/me", async (context) => {
     const session = await options.getSession?.(context.req.raw.headers);
 
@@ -38,6 +36,4 @@ export function registerPlatformHealthAuthRoutes(
       user: session.user,
     });
   });
-
-
 }

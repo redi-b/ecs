@@ -9,7 +9,6 @@ import { Input } from "@/components/ui/input";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
 import { Separator } from "@/components/ui/separator";
 import { FieldError, hasFieldError } from "@/features/products/product-form-fields";
-import type { ProductFormValues } from "@/features/products/product-form-types";
 import {
   formatEtbAmount,
   getVariantRows,
@@ -17,7 +16,11 @@ import {
   parseWholeNumber,
   validateInitialStock,
 } from "@/features/products/product-form-state";
-import type { ProductOptionDraft, VariantMatrixRow } from "@/features/products/product-variant-matrix";
+import type { ProductFormValues } from "@/features/products/product-form-types";
+import type {
+  ProductOptionDraft,
+  VariantMatrixRow,
+} from "@/features/products/product-variant-matrix";
 import { cn } from "@/lib/utils";
 
 export function SimpleProductStockPreview({ values }: { values: ProductFormValues }) {
@@ -61,8 +64,14 @@ export function ProductReviewSummary({ values }: { values: ProductFormValues }) 
         <h3 className="text-sm font-medium">What will be saved</h3>
         <div className="mt-3 grid gap-3 text-sm md:grid-cols-2">
           <ReviewLine label="Title" value={values.title.trim() || "Untitled product"} />
-          <ReviewLine label="Status" value={values.status === "published" ? "Published" : "Draft"} />
-          <ReviewLine label="Handle" value={values.handle.trim() ? `/${values.handle.trim()}` : "No handle"} />
+          <ReviewLine
+            label="Status"
+            value={values.status === "published" ? "Published" : "Draft"}
+          />
+          <ReviewLine
+            label="Handle"
+            value={values.handle.trim() ? `/${values.handle.trim()}` : "No handle"}
+          />
           <ReviewLine label="SKU prefix" value={values.skuPrefix.trim() || "No SKU prefix"} />
           <ReviewLine
             label="Options"
@@ -162,12 +171,7 @@ export function ProductOptionsBuilder({
             Add the attributes shoppers choose from. Each value combination becomes a variant.
           </p>
         </div>
-        <Button
-          onClick={() => addOption()}
-          size="sm"
-          type="button"
-          variant="outline"
-        >
+        <Button onClick={() => addOption()} size="sm" type="button" variant="outline">
           Add option
         </Button>
       </div>
@@ -177,13 +181,18 @@ export function ProductOptionsBuilder({
           {options.map((option, index) => (
             <div
               className="rounded-xl border bg-background p-4 shadow-sm shadow-primary/5"
-              key={index}
+              key={
+                // biome-ignore lint/suspicious/noArrayIndexKey: option order is the draft identity until the product is submitted.
+                index
+              }
             >
               <div className="grid gap-4 md:grid-cols-[14rem_minmax(0,1fr)_auto] md:items-start">
                 <Field>
                   <FieldLabel>Option name</FieldLabel>
                   <Input
-                    onChange={(event) => updateOption(index, { ...option, title: event.target.value })}
+                    onChange={(event) =>
+                      updateOption(index, { ...option, title: event.target.value })
+                    }
                     placeholder={index === 0 ? "Size" : "Color"}
                     value={option.title}
                   />
@@ -193,11 +202,7 @@ export function ProductOptionsBuilder({
                   <FieldLabel>Values</FieldLabel>
                   <div className="flex min-h-10 flex-wrap items-center gap-2 rounded-lg border bg-muted/20 px-2 py-2">
                     {option.values.map((value) => (
-                      <Badge
-                        className="gap-1 rounded-md px-2 py-1"
-                        key={value}
-                        variant="secondary"
-                      >
+                      <Badge className="gap-1 rounded-md px-2 py-1" key={value} variant="secondary">
                         {value}
                         <button
                           aria-label={`Remove ${value}`}
@@ -232,7 +237,9 @@ export function ProductOptionsBuilder({
                           addValues(index, pastedText);
                         }
                       }}
-                      placeholder={option.values.length ? "Add another value" : "Small, Medium, Large"}
+                      placeholder={
+                        option.values.length ? "Add another value" : "Small, Medium, Large"
+                      }
                       value={draftValues[index] ?? ""}
                     />
                   </div>
@@ -243,7 +250,9 @@ export function ProductOptionsBuilder({
 
                 <Button
                   className="md:mt-6"
-                  onClick={() => onChange(options.filter((_, optionIndex) => optionIndex !== index))}
+                  onClick={() =>
+                    onChange(options.filter((_, optionIndex) => optionIndex !== index))
+                  }
                   size="sm"
                   type="button"
                   variant="outline"
@@ -319,78 +328,82 @@ export function VariantMatrixTable({
         <div className="overflow-x-auto">
           <table className="w-full min-w-[56rem] text-sm">
             <thead className="bg-muted/40 text-muted-foreground">
-            <tr>
-              <th className="px-4 py-3 text-left font-medium">Variant</th>
-              <th className="px-4 py-3 text-left font-medium">SKU</th>
-              <th className="px-4 py-3 text-left font-medium">Price</th>
-              <th className="px-4 py-3 text-left font-medium">Initial stock</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((row) => {
-              const override = values[row.key] ?? {};
+              <tr>
+                <th className="px-4 py-3 text-left font-medium">Variant</th>
+                <th className="px-4 py-3 text-left font-medium">SKU</th>
+                <th className="px-4 py-3 text-left font-medium">Price</th>
+                <th className="px-4 py-3 text-left font-medium">Initial stock</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row) => {
+                const override = values[row.key] ?? {};
 
-              return (
-                <tr className="border-t align-top" key={row.key}>
-                  <td className="px-4 py-3">
-                    <div className="mb-2 font-medium">
-                      {Object.values(row.optionValues).join(" / ") || "Default variant"}
-                    </div>
-                    <div className="flex flex-wrap gap-1.5">
-                      {Object.entries(row.optionValues).length ? (
-                        Object.entries(row.optionValues).map(([title, value]) => (
-                          <Badge className="rounded-md" key={`${title}:${value}`} variant="secondary">
-                            {title}: {value}
+                return (
+                  <tr className="border-t align-top" key={row.key}>
+                    <td className="px-4 py-3">
+                      <div className="mb-2 font-medium">
+                        {Object.values(row.optionValues).join(" / ") || "Default variant"}
+                      </div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {Object.entries(row.optionValues).length ? (
+                          Object.entries(row.optionValues).map(([title, value]) => (
+                            <Badge
+                              className="rounded-md"
+                              key={`${title}:${value}`}
+                              variant="secondary"
+                            >
+                              {title}: {value}
+                            </Badge>
+                          ))
+                        ) : (
+                          <Badge className="rounded-md" variant="secondary">
+                            No options
                           </Badge>
-                        ))
-                      ) : (
-                        <Badge className="rounded-md" variant="secondary">No options</Badge>
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-4 py-3">
-                    <Input
-                      aria-label={`SKU for ${row.key}`}
-                      className="h-9"
-                      onChange={(event) =>
-                        onOverrideChange(row.key, { sku: event.target.value })
-                      }
-                      value={override.sku ?? row.sku}
-                    />
-                  </td>
-                  <td className="px-4 py-3">
-                    <InputGroup className="h-9">
-                      <InputGroupAddon>ETB</InputGroupAddon>
-                      <InputGroupInput
-                        aria-label={`Price for ${row.key}`}
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <Input
+                        aria-label={`SKU for ${row.key}`}
+                        className="h-9"
+                        onChange={(event) => onOverrideChange(row.key, { sku: event.target.value })}
+                        value={override.sku ?? row.sku}
+                      />
+                    </td>
+                    <td className="px-4 py-3">
+                      <InputGroup className="h-9">
+                        <InputGroupAddon>ETB</InputGroupAddon>
+                        <InputGroupInput
+                          aria-label={`Price for ${row.key}`}
+                          inputMode="numeric"
+                          min="0"
+                          onChange={(event) =>
+                            onOverrideChange(row.key, { priceAmount: event.target.value })
+                          }
+                          type="text"
+                          value={override.priceAmount ?? String(row.priceAmount)}
+                        />
+                      </InputGroup>
+                    </td>
+                    <td className="px-4 py-3">
+                      <Input
+                        aria-label={`Stock for ${row.key}`}
+                        className="h-9"
                         inputMode="numeric"
                         min="0"
                         onChange={(event) =>
-                          onOverrideChange(row.key, { priceAmount: event.target.value })
+                          onOverrideChange(row.key, { stockedQuantity: event.target.value })
                         }
                         type="text"
-                        value={override.priceAmount ?? String(row.priceAmount)}
+                        value={override.stockedQuantity ?? String(row.stockedQuantity)}
                       />
-                    </InputGroup>
-                  </td>
-                  <td className="px-4 py-3">
-                    <Input
-                      aria-label={`Stock for ${row.key}`}
-                      className="h-9"
-                      inputMode="numeric"
-                      min="0"
-                      onChange={(event) =>
-                        onOverrideChange(row.key, { stockedQuantity: event.target.value })
-                      }
-                      type="text"
-                      value={override.stockedQuantity ?? String(row.stockedQuantity)}
-                    />
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
@@ -405,4 +418,3 @@ export function VariantMatrixMetric({ label, value }: { label: string; value: st
     </div>
   );
 }
-

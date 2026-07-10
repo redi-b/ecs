@@ -1,11 +1,11 @@
+import { cookies, headers } from "next/headers";
+import { NextResponse } from "next/server";
 import {
   getMerchantProductVariantStock,
   updateMerchantProductVariantStock,
 } from "@/lib/merchant-products";
-import { getPlatformApiBaseUrl } from "@/lib/platform-api/client";
 import { withMerchantAction } from "@/lib/platform-api/action-route";
-import { cookies, headers } from "next/headers";
-import { NextResponse } from "next/server";
+import { getPlatformApiBaseUrl } from "@/lib/platform-api/client";
 
 export async function GET(
   request: Request,

@@ -1,12 +1,11 @@
-export {
-  getMerchantOrders,
-  getMerchantOrder,
-  mutateMerchantOrder,
-} from "@/lib/platform-api/orders/client";
-
 export type {
   MerchantOrderAction,
-  MerchantOrdersResult,
-  MerchantOrderResult,
   MerchantOrderActionResult,
+  MerchantOrderResult,
+  MerchantOrdersResult,
+} from "@/lib/platform-api/orders/client";
+export {
+  getMerchantOrder,
+  getMerchantOrders,
+  mutateMerchantOrder,
 } from "@/lib/platform-api/orders/client";

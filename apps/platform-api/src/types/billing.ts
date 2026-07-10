@@ -10,7 +10,6 @@ export type BillingInvoice = {
   createdAt: string;
 };
 
-
 export type BillingStatus = {
   subscription: {
     id: string;
@@ -30,7 +29,6 @@ export type BillingStatus = {
   invoices: BillingInvoice[];
 };
 
-
 export type BillingStatusResult =
   | {
       ok: true;
@@ -40,7 +38,6 @@ export type BillingStatusResult =
       ok: false;
       error: "billing_not_found";
     };
-
 
 export type BillingInvoiceUpdateResult =
   | {

@@ -14,7 +14,6 @@ export type SupportHistoryResult = {
   };
 };
 
-
 export type SupportNote = {
   id: string;
   operatorUserId: string;
@@ -22,7 +21,6 @@ export type SupportNote = {
   visibility: string;
   createdAt: string;
 };
-
 
 export type SupportNoteCreateResult = {
   ok: true;

@@ -1,12 +1,9 @@
-import { mutateMerchantOrder, type MerchantOrderAction } from "@/lib/merchant-orders";
+import { type MerchantOrderAction, mutateMerchantOrder } from "@/lib/merchant-orders";
 import { withMerchantAction } from "@/lib/platform-api/action-route";
 
 const ORDER_ACTIONS = new Set<MerchantOrderAction>(["cancel", "complete", "deliver", "fulfill"]);
 
-export async function POST(
-  request: Request,
-  { params }: { params: Promise<{ orderId: string }> },
-) {
+export async function POST(request: Request, { params }: { params: Promise<{ orderId: string }> }) {
   const { orderId } = await params;
 
   return withMerchantAction(request, async (context) => {

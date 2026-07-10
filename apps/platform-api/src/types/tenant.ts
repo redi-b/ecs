@@ -2,7 +2,6 @@ import type { DashboardActorRole } from "./session.js";
 
 export type TenantStatus = "draft" | "active" | "suspended" | "cancelled";
 
-
 export type TenantStatusUpdateResult =
   | {
       ok: true;
@@ -19,7 +18,6 @@ export type TenantStatusUpdateResult =
       status: 400 | 404;
     };
 
-
 export type TenantReadinessMissingReason =
   | "tenant_inactive"
   | "primary_domain_missing"
@@ -34,7 +32,6 @@ export type TenantReadinessMissingReason =
   | "storefront_unpublished"
   | "provisioning_failed";
 
-
 export type TenantProvisioningAttemptSummary = {
   id: string;
   completedAt: string | null;
@@ -48,7 +45,6 @@ export type TenantProvisioningAttemptSummary = {
   tenantId?: string | null;
 };
 
-
 export type TenantProvisioningAttemptListResult = {
   ok: true;
   attempts: Required<TenantProvisioningAttemptSummary>[];
@@ -56,7 +52,6 @@ export type TenantProvisioningAttemptListResult = {
   limit: number;
   offset: number;
 };
-
 
 export type TenantListItem = {
   id: string;
@@ -71,7 +66,6 @@ export type TenantListItem = {
   updatedAt: string;
 };
 
-
 export type TenantListResult = {
   ok: true;
   tenants: TenantListItem[];
@@ -80,14 +74,12 @@ export type TenantListResult = {
   offset: number;
 };
 
-
 export type TenantHandleAvailabilityResult = {
   handle: string;
   available: boolean;
   reason?: "invalid" | "reserved" | "taken";
   hostname?: string;
 };
-
 
 export type PlatformOnboardingStateResult =
   | {
@@ -121,7 +113,6 @@ export type PlatformOnboardingStateResult =
       status: number;
     };
 
-
 export type TenantDetailResult =
   | {
       ok: true;
@@ -132,7 +123,6 @@ export type TenantDetailResult =
       error: "tenant_not_found";
       status: 404;
     };
-
 
 export type TenantShopSettingsUpdateResult =
   | {
@@ -150,7 +140,6 @@ export type TenantShopSettingsUpdateResult =
         | "tenant_not_found";
       status: 400 | 404 | 409;
     };
-
 
 export type TenantReadiness = {
   ready: boolean;
@@ -197,7 +186,6 @@ export type TenantReadiness = {
   };
 };
 
-
 export type TenantReadinessResult =
   | {
       ok: true;
@@ -208,7 +196,6 @@ export type TenantReadinessResult =
       error: "tenant_not_found";
       status: 404;
     };
-
 
 export type TenantCommerceContextResult =
   | {
@@ -233,7 +220,6 @@ export type TenantCommerceContextResult =
         | "commerce_region_unavailable";
       status: 404 | 503;
     };
-
 
 export type TenantDashboardSummaryResult =
   | {
@@ -269,7 +255,6 @@ export type TenantDashboardSummaryResult =
       status: 404;
     };
 
-
 export type TenantDomain = {
   id: string;
   hostname: string;
@@ -280,12 +265,10 @@ export type TenantDomain = {
   sslStatus: string;
 };
 
-
 export type TenantDomainListResult = {
   ok: true;
   domains: TenantDomain[];
 };
-
 
 export type TenantDomainCreateResult =
   | {
@@ -298,7 +281,6 @@ export type TenantDomainCreateResult =
       status: 400 | 409;
     };
 
-
 export type TenantDomainPrimaryResult =
   | {
       ok: true;
@@ -309,7 +291,6 @@ export type TenantDomainPrimaryResult =
       error: "domain_not_found" | "domain_not_verified";
       status: 404 | 409;
     };
-
 
 export type TenantOnboardingResult =
   | {
@@ -325,7 +306,6 @@ export type TenantOnboardingResult =
       ok: false;
       error: "onboarding_not_found";
     };
-
 
 export type TenantShopProvisioningResult =
   | {

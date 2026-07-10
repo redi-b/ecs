@@ -4,7 +4,7 @@ import type { MerchantProduct, MerchantProductStock } from "@ecs/contracts";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { DataTable } from "@/components/app/data-table";
@@ -12,13 +12,7 @@ import { AppIcons } from "@/components/app/icons";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { getTenantScopedPath } from "@/lib/dashboard-tenant-context";
@@ -44,7 +38,6 @@ type VariantInventoryRow = {
   variant: NonNullable<MerchantProduct["variants"]>[number];
 };
 
-
 export function SingleVariantStockPanel({
   action,
   initialStock,
@@ -58,6 +51,7 @@ export function SingleVariantStockPanel({
 }) {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const stockedQuantityInputId = useId();
   const [stock, setStock] = useState(initialStock);
   const [stockedQuantity, setStockedQuantity] = useState(
     initialStock?.stockedQuantity === null || initialStock?.stockedQuantity === undefined
@@ -135,11 +129,7 @@ export function SingleVariantStockPanel({
       </CardHeader>
       <CardContent className="flex flex-col gap-5">
         <div className="grid gap-3 md:grid-cols-4">
-          <StockMetric
-            emphasis
-            label="Available"
-            value={formatQuantity(stock.availableQuantity)}
-          />
+          <StockMetric emphasis label="Available" value={formatQuantity(stock.availableQuantity)} />
           <StockMetric label="Stocked" value={formatQuantity(stock.stockedQuantity)} />
           <StockMetric label="Reserved" value={formatQuantity(stock.reservedQuantity)} />
           <StockMetric label="Incoming" value={formatQuantity(stock.incomingQuantity)} />
@@ -154,9 +144,9 @@ export function SingleVariantStockPanel({
         >
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <Field className="max-w-xs flex-1">
-              <FieldLabel htmlFor="stockedQuantity">Set stocked quantity</FieldLabel>
+              <FieldLabel htmlFor={stockedQuantityInputId}>Set stocked quantity</FieldLabel>
               <Input
-                id="stockedQuantity"
+                id={stockedQuantityInputId}
                 min="0"
                 onChange={(event) => setStockedQuantity(event.target.value)}
                 step="1"
@@ -222,10 +212,7 @@ export function VariantStockPanel({
         variant.title,
         variant.sku,
         formatVariantPrice(variant),
-        ...(variant.optionValues ?? []).flatMap((option) => [
-          option.optionTitle,
-          option.value,
-        ]),
+        ...(variant.optionValues ?? []).flatMap((option) => [option.optionTitle, option.value]),
       ]
         .filter(Boolean)
         .some((value) => String(value).toLowerCase().includes(needle)),
@@ -278,9 +265,7 @@ export function VariantStockPanel({
       );
       setErrorByVariantId(
         Object.fromEntries(
-          results.flatMap((result) =>
-            result.error ? [[result.variantId, result.error]] : [],
-          ),
+          results.flatMap((result) => (result.error ? [[result.variantId, result.error]] : [])),
         ),
       );
       setIsLoading(false);
@@ -385,7 +370,9 @@ export function VariantStockPanel({
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <CardTitle>Variant stock</CardTitle>
-            <CardDescription>Inventory at the merchant location for each sellable variant.</CardDescription>
+            <CardDescription>
+              Inventory at the merchant location for each sellable variant.
+            </CardDescription>
           </div>
           <div className="flex flex-wrap gap-2">
             <Badge variant="secondary">{variants.length} variants</Badge>
@@ -395,7 +382,11 @@ export function VariantStockPanel({
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid gap-3 md:grid-cols-3">
-          <StockMetric emphasis label="Available" value={isLoading ? "Loading..." : String(totalAvailable)} />
+          <StockMetric
+            emphasis
+            label="Available"
+            value={isLoading ? "Loading..." : String(totalAvailable)}
+          />
           <StockMetric label="Stocked" value={isLoading ? "Loading..." : String(totalStocked)} />
           <StockMetric label="Reserved" value={isLoading ? "Loading..." : String(totalReserved)} />
         </div>
@@ -410,26 +401,26 @@ export function VariantStockPanel({
           pageSize={8}
           toolbar={
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-            <div>
-              <h3 className="text-sm font-medium">Variant inventory</h3>
-              <p className="text-sm text-muted-foreground">
-                Search variants, review price, and set stocked quantities.
-              </p>
+              <div>
+                <h3 className="text-sm font-medium">Variant inventory</h3>
+                <p className="text-sm text-muted-foreground">
+                  Search variants, review price, and set stocked quantities.
+                </p>
+              </div>
+              <div className="relative md:w-72">
+                <AppIcons.search
+                  className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
+                  data-icon="inline-start"
+                />
+                <Input
+                  aria-label="Search variants"
+                  className="h-9 pl-9"
+                  onChange={(event) => setQuery(event.target.value)}
+                  placeholder="Search variant, SKU, option"
+                  value={query}
+                />
+              </div>
             </div>
-            <div className="relative md:w-72">
-              <AppIcons.search
-                className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
-                data-icon="inline-start"
-              />
-              <Input
-                aria-label="Search variants"
-                className="h-9 pl-9"
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search variant, SKU, option"
-                value={query}
-              />
-            </div>
-          </div>
           }
         />
       </CardContent>
@@ -541,7 +532,13 @@ export function StockMetric({
   value: string;
 }) {
   return (
-    <div className={emphasis ? "rounded-xl border bg-primary/5 px-3 py-2" : "rounded-xl border bg-background px-3 py-2"}>
+    <div
+      className={
+        emphasis
+          ? "rounded-xl border bg-primary/5 px-3 py-2"
+          : "rounded-xl border bg-background px-3 py-2"
+      }
+    >
       <div className="text-xs text-muted-foreground">{label}</div>
       <div className="text-sm font-medium">{value}</div>
     </div>
@@ -562,7 +559,11 @@ export function StockStateText({ availableQuantity }: { availableQuantity: numbe
   }
 
   return (
-    <div className={availableQuantity > 0 ? "text-xs text-muted-foreground" : "text-xs text-destructive"}>
+    <div
+      className={
+        availableQuantity > 0 ? "text-xs text-muted-foreground" : "text-xs text-destructive"
+      }
+    >
       {availableQuantity > 0 ? "Ready to sell" : "Needs restock"}
     </div>
   );
@@ -592,12 +593,16 @@ export function VariantOptionSummary({
 }
 
 export function getVariantStockAction(productId: string, variantId: string, tenantId?: string) {
-  return getTenantScopedPath(dashboardRoutes.productVariantStockAction(productId, variantId), tenantId);
+  return getTenantScopedPath(
+    dashboardRoutes.productVariantStockAction(productId, variantId),
+    tenantId,
+  );
 }
 
 export function StockAlert({ error }: { error?: string | undefined }) {
   const message = getStockErrorMessage(error);
-  const title = error === "product_variant_unsupported" ? "Variant stock coming next" : "Stock unavailable";
+  const title =
+    error === "product_variant_unsupported" ? "Variant stock coming next" : "Stock unavailable";
 
   return (
     <Alert variant={error === "product_variant_unsupported" ? "default" : "destructive"}>
@@ -650,4 +655,3 @@ export function getStockErrorMessage(error: string | undefined) {
 
   return "Stock data is temporarily unavailable. Try again.";
 }
-

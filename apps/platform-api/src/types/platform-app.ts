@@ -1,12 +1,31 @@
+import type { TenantResolutionResult } from "../context/tenant-resolver.js";
 import type {
   AnalyticsEventRecordInput,
   AnalyticsEventRecordResult,
   TenantInsightsSummaryResult,
 } from "../modules/analytics/analytics-service.js";
-import type { TenantResolutionResult } from "../context/tenant-resolver.js";
 import type { BillingInvoiceUpdateResult, BillingStatusResult } from "./billing.js";
-import type { DashboardMetricsResult } from "./metrics.js";
 import type { DeliverySettingsResult, DeliverySettingsUpdateResult } from "./delivery.js";
+import type {
+  MerchantOrderAction,
+  MerchantOrderActionResult,
+  MerchantOrderDetailResult,
+  MerchantOrdersResult,
+} from "./merchant-order.js";
+import type {
+  MerchantBatchDeleteResult,
+  MerchantDeleteResult,
+  MerchantProductCategoriesResult,
+  MerchantProductCategoryWriteResult,
+  MerchantProductCollectionsResult,
+  MerchantProductCollectionWriteResult,
+  MerchantProductDetailResult,
+  MerchantProductStockResult,
+  MerchantProductStockUpdateResult,
+  MerchantProductsResult,
+  MerchantProductWriteResult,
+} from "./merchant-product.js";
+import type { DashboardMetricsResult } from "./metrics.js";
 import type {
   NotificationEventRecordResult,
   NotificationEventType,
@@ -19,6 +38,16 @@ import type {
   PaymentOnboardingReviewResult,
   PaymentOnboardingSubmitResult,
 } from "./payments.js";
+import type { DashboardAuthorizationResult, PlatformSession } from "./session.js";
+import type {
+  PublishedStorefrontConfigResult,
+  StorefrontDraftResult,
+  StorefrontDraftUpdateResult,
+  StorefrontPublishResult,
+  StorefrontTemplateCatalogItem,
+  StorefrontTemplateSelectionResult,
+} from "./storefront.js";
+import type { SupportHistoryResult, SupportNoteCreateResult } from "./support.js";
 import type {
   PlatformOnboardingStateResult,
   TenantCommerceContextResult,
@@ -36,35 +65,6 @@ import type {
   TenantShopSettingsUpdateResult,
   TenantStatusUpdateResult,
 } from "./tenant.js";
-import type { SupportHistoryResult, SupportNoteCreateResult } from "./support.js";
-import type {
-  MerchantBatchDeleteResult,
-  MerchantDeleteResult,
-  MerchantProductCategoriesResult,
-  MerchantProductCategoryWriteResult,
-  MerchantProductCollectionsResult,
-  MerchantProductCollectionWriteResult,
-  MerchantProductDetailResult,
-  MerchantProductsResult,
-  MerchantProductStockResult,
-  MerchantProductStockUpdateResult,
-  MerchantProductWriteResult,
-} from "./merchant-product.js";
-import type {
-  MerchantOrderAction,
-  MerchantOrderActionResult,
-  MerchantOrderDetailResult,
-  MerchantOrdersResult,
-} from "./merchant-order.js";
-import type {
-  PublishedStorefrontConfigResult,
-  StorefrontDraftResult,
-  StorefrontDraftUpdateResult,
-  StorefrontPublishResult,
-  StorefrontTemplateCatalogItem,
-  StorefrontTemplateSelectionResult,
-} from "./storefront.js";
-import type { DashboardAuthorizationResult, PlatformSession } from "./session.js";
 
 export type PlatformAppOptions = {
   authorizeDashboardForTenant?:
@@ -434,8 +434,6 @@ export type PlatformAppOptions = {
   medusaStoreFetch?: typeof fetch;
   resolveTenantForHost: (host?: string) => Promise<TenantResolutionResult>;
 };
-
-
 
 export type PlatformAppVariables = {
   requestId: string;

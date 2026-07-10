@@ -1,8 +1,8 @@
 import {
   type DeliverySettings,
   deliverySettingsSchema,
-  platformErrorSchema,
   type PlatformTenant,
+  platformErrorSchema,
   platformTenantMutationSchema,
 } from "@ecs/contracts";
 import { createPlatformHeaders, normalizeBaseUrl } from "@/lib/platform-api/client";
@@ -80,7 +80,7 @@ export async function updateMerchantSettings(options: {
     return {
       ok: false,
       status: response.status,
-      message: (error.success ? error.data.error : response.statusText || "Settings update failed"),
+      message: error.success ? error.data.error : response.statusText || "Settings update failed",
     };
   }
 
@@ -157,7 +157,7 @@ async function parseDeliveryResponse(
     return {
       ok: false,
       status: response.status,
-      message: (error.success ? error.data.error : response.statusText || "Delivery request failed"),
+      message: error.success ? error.data.error : response.statusText || "Delivery request failed",
     };
   }
 
@@ -188,16 +188,12 @@ function getSettingsUrl(options: {
   return new URL(path, normalizeBaseUrl(options.platformApiBaseUrl));
 }
 
-function getDeliveryUrl(options: {
-  platformApiBaseUrl: string;
-  tenantId: string;
-}) {
+function getDeliveryUrl(options: { platformApiBaseUrl: string; tenantId: string }) {
   return new URL(
     `/platform/tenants/${encodeURIComponent(options.tenantId)}/delivery`,
     normalizeBaseUrl(options.platformApiBaseUrl),
   );
 }
-
 
 function getDashboardHeaders(options: {
   cookieHeader?: string | null | undefined;

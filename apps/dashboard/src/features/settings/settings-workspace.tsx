@@ -33,25 +33,25 @@ import {
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  isLaunchAssistantHidden,
-  setLaunchAssistantHidden,
-} from "@/lib/launch-assistant-preferences";
-import { dashboardRoutes } from "@/lib/routes";
-import { cn } from "@/lib/utils";
-
-import type { Delivery, DeliveryKey, SettingsWorkspaceProps } from "@/features/settings/settings-types";
-import { deliveryLabels } from "@/features/settings/settings-types";
-import {
-  getSelectedTemplateName,
-  statusCopy,
-} from "@/features/settings/settings-helpers";
+import { getSelectedTemplateName, statusCopy } from "@/features/settings/settings-helpers";
 import {
   SettingsLinkRow,
   SettingsRow,
   StorefrontTemplateOption,
   StorefrontTemplatePreview,
 } from "@/features/settings/settings-sections";
+import type {
+  Delivery,
+  DeliveryKey,
+  SettingsWorkspaceProps,
+} from "@/features/settings/settings-types";
+import { deliveryLabels } from "@/features/settings/settings-types";
+import {
+  isLaunchAssistantHidden,
+  setLaunchAssistantHidden,
+} from "@/lib/launch-assistant-preferences";
+import { dashboardRoutes } from "@/lib/routes";
+import { cn } from "@/lib/utils";
 
 export function SettingsWorkspace({
   delivery,
@@ -441,4 +441,3 @@ export function SettingsWorkspace({
     </div>
   );
 }
-

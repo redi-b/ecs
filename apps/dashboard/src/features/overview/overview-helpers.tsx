@@ -2,6 +2,7 @@
 
 import type { MerchantDashboardSummary } from "@ecs/contracts";
 import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
 import {
   Bar,
   BarChart,
@@ -15,6 +16,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -27,6 +29,7 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart";
 import { Separator } from "@/components/ui/separator";
+import { commerceItems, statusRingColors } from "@/features/overview/overview-config";
 import {
   getLaunchAssistantOpenPreference,
   isLaunchAssistantHidden,
@@ -36,9 +39,6 @@ import {
 } from "@/lib/launch-assistant-preferences";
 import { dashboardRoutes } from "@/lib/routes";
 import { cn } from "@/lib/utils";
-import { useEffect, useMemo, useState } from "react";
-import { commerceItems, statusRingColors } from "@/features/overview/overview-config";
-import { toast } from "sonner";
 
 export function MetricCard({
   className,
@@ -476,4 +476,3 @@ export function sampleNote(value: number | undefined) {
 
   return `${value.toLocaleString()} records reviewed`;
 }
-

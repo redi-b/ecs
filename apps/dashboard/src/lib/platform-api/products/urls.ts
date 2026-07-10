@@ -111,4 +111,3 @@ export function getProductHeaders(options: {
     requestHost: options.requestHost,
   });
 }
-

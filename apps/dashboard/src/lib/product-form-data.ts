@@ -50,7 +50,8 @@ function getProductVariants(formData: FormData) {
         return null;
       }
 
-      const priceAmount = typeof variant.priceAmount === "number" ? variant.priceAmount : Number.NaN;
+      const priceAmount =
+        typeof variant.priceAmount === "number" ? variant.priceAmount : Number.NaN;
       const currencyCode =
         typeof variant.currencyCode === "string" ? variant.currencyCode.trim() : "";
       const stockedQuantity =
@@ -59,9 +60,7 @@ function getProductVariants(formData: FormData) {
           : undefined;
 
       return {
-        optionValues: isRecord(variant.optionValues)
-          ? getStringRecord(variant.optionValues)
-          : {},
+        optionValues: isRecord(variant.optionValues) ? getStringRecord(variant.optionValues) : {},
         sku: typeof variant.sku === "string" && variant.sku.trim() ? variant.sku.trim() : null,
         priceAmount,
         currencyCode,

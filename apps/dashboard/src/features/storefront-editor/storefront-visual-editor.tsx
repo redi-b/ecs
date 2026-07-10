@@ -2,13 +2,13 @@
 
 import "@puckeditor/core/puck.css";
 
+import { classicV1EditorSchema as classicV1EditorManifest } from "@ecs/storefront-templates";
 import type { Config, Data, PuckAction } from "@puckeditor/core";
 import { createUsePuck, FieldLabel, Puck } from "@puckeditor/core";
-import { classicV1EditorSchema as classicV1EditorManifest } from "@ecs/storefront-templates";
 import {
-  RiCheckLine,
   RiArrowGoBackLine,
   RiArrowGoForwardLine,
+  RiCheckLine,
   RiEditLine,
   RiExternalLinkLine,
   RiEyeLine,
@@ -52,6 +52,22 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  buildPuckConfig,
+  getErrorMessage,
+  PuckDataOverride,
+  StorefrontEditorShell,
+} from "@/features/storefront-editor/editor-components";
+import type {
+  ActionResult,
+  StorefrontVisualEditorProps,
+} from "@/features/storefront-editor/editor-config";
+import {
+  FONT_OPTIONS,
+  HISTORY_COMMIT_DELAY_MS,
+  HISTORY_LIMIT,
+  useStorefrontPuck,
+} from "@/features/storefront-editor/editor-config";
 import { cn } from "@/lib/utils";
 import {
   buildDraftPayload,
@@ -59,26 +75,12 @@ import {
   getPublicationStatus,
   getStorefrontPageProps,
   isPreviewImageUrl,
-  serializeEditorData,
-  STOREFRONT_PAGE_COMPONENT,
   type PublicationStatus,
+  STOREFRONT_PAGE_COMPONENT,
   type StorefrontDraft,
   type StorefrontPageProps,
+  serializeEditorData,
 } from "./editor-state";
-
-import type { ActionResult, StorefrontVisualEditorProps } from "@/features/storefront-editor/editor-config";
-import {
-  FONT_OPTIONS,
-  HISTORY_COMMIT_DELAY_MS,
-  HISTORY_LIMIT,
-  useStorefrontPuck,
-} from "@/features/storefront-editor/editor-config";
-import {
-  buildPuckConfig,
-  getErrorMessage,
-  PuckDataOverride,
-  StorefrontEditorShell,
-} from "@/features/storefront-editor/editor-components";
 
 export function StorefrontVisualEditor({
   draft,
@@ -378,4 +380,3 @@ export function StorefrontVisualEditor({
     </div>
   );
 }
-

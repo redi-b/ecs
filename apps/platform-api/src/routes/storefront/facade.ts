@@ -1,8 +1,6 @@
 import type { Hono } from "hono";
 
 import type { PlatformAppOptions, PlatformAppVariables } from "../../app.js";
-import { initializeChapaCheckout } from "./checkout/chapa.js";
-import { completeCodCheckout } from "./checkout/cod.js";
 import {
   getForwardHeaders,
   getForwardUrl,
@@ -10,6 +8,8 @@ import {
   isAllowedStoreFacadeRoute,
   storeErrorStatus,
 } from "../shared.js";
+import { initializeChapaCheckout } from "./checkout/chapa.js";
+import { completeCodCheckout } from "./checkout/cod.js";
 
 type StoreForwardRequestResult =
   | {

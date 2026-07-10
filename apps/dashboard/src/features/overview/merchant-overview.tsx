@@ -43,16 +43,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import {
-  getLaunchAssistantOpenPreference,
-  isLaunchAssistantHidden,
-  LAUNCH_ASSISTANT_PREFERENCE_EVENT,
-  setLaunchAssistantHidden,
-  setLaunchAssistantOpenPreference,
-} from "@/lib/launch-assistant-preferences";
-import { dashboardRoutes } from "@/lib/routes";
-import { cn } from "@/lib/utils";
-
 import type { ChartMetric, MerchantOverviewProps } from "@/features/overview/overview-config";
 import {
   averageOrderConfig,
@@ -73,10 +63,19 @@ import {
   LaunchAssistant,
   MetricCard,
   ReadinessBlock,
-  sampleNote,
   StatusDonutChart,
+  sampleNote,
   TopEventsChart,
 } from "@/features/overview/overview-helpers";
+import {
+  getLaunchAssistantOpenPreference,
+  isLaunchAssistantHidden,
+  LAUNCH_ASSISTANT_PREFERENCE_EVENT,
+  setLaunchAssistantHidden,
+  setLaunchAssistantOpenPreference,
+} from "@/lib/launch-assistant-preferences";
+import { dashboardRoutes } from "@/lib/routes";
+import { cn } from "@/lib/utils";
 
 export function MerchantOverview({ summary }: MerchantOverviewProps) {
   const [metric, setMetric] = useState<ChartMetric>("revenue");
@@ -540,4 +539,3 @@ export function MerchantOverview({ summary }: MerchantOverviewProps) {
     </section>
   );
 }
-

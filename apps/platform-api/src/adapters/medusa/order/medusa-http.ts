@@ -6,7 +6,6 @@ export async function requestMedusa(fetcher: typeof fetch, input: URL, init: Req
   }
 }
 
-
 export function getAdminHeaders(adminApiToken: string) {
   return {
     accept: "application/json",
@@ -15,7 +14,6 @@ export function getAdminHeaders(adminApiToken: string) {
   };
 }
 
-
 export function missingCredentials() {
   return {
     ok: false,
@@ -23,4 +21,3 @@ export function missingCredentials() {
     status: 503,
   } as const;
 }
-

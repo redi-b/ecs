@@ -5,12 +5,12 @@ import type {
   MerchantProductCategory,
   MerchantProductCollection,
 } from "@ecs/contracts";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "@tanstack/react-form";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { type ReactNode, useMemo, useState } from "react";
-import { z } from "zod";
-
+import { toast } from "sonner";
+import type { z } from "zod";
 import { AppIcons } from "@/components/app/icons";
 import {
   AlertDialog,
@@ -24,25 +24,10 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  Field,
-  FieldDescription,
-  FieldLabel,
-  FieldLegend,
-  FieldSet,
-} from "@/components/ui/field";
-import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupInput,
-} from "@/components/ui/input-group";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
+import { Field, FieldDescription, FieldLabel, FieldLegend, FieldSet } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
 import {
   Select,
   SelectContent,
@@ -70,12 +55,6 @@ import {
   SimpleProductStockPreview,
   VariantMatrixTable,
 } from "@/features/products/product-form-sections";
-import type {
-  ComposerStep,
-  ProductFormProps,
-  ProductFormValues,
-} from "@/features/products/product-form-types";
-import { PRODUCT_STEPS, productPayloadSchema } from "@/features/products/product-form-types";
 import {
   formatEtbAmount,
   getDefaultSkuPrefix,
@@ -95,9 +74,14 @@ import {
   validatePriceAmount,
   validateTitle,
 } from "@/features/products/product-form-state";
+import type {
+  ComposerStep,
+  ProductFormProps,
+  ProductFormValues,
+} from "@/features/products/product-form-types";
+import { PRODUCT_STEPS, type productPayloadSchema } from "@/features/products/product-form-types";
 import type { ProductOptionDraft } from "@/features/products/product-variant-matrix";
 import { cn } from "@/lib/utils";
-import { toast } from "sonner";
 
 export function ProductForm({
   action,
@@ -254,8 +238,7 @@ export function ProductForm({
     const currentTitle = form.state.values.title;
     const currentSkuPrefix = form.state.values.skuPrefix.trim();
     const shouldUpdateSkuPrefix =
-      !product &&
-      (!currentSkuPrefix || currentSkuPrefix === getDefaultSkuPrefix(currentTitle));
+      !product && (!currentSkuPrefix || currentSkuPrefix === getDefaultSkuPrefix(currentTitle));
 
     form.setFieldValue("title", nextTitle);
 
@@ -370,442 +353,462 @@ export function ProductForm({
               <div className="min-h-0 flex-1 overflow-y-auto">
                 <div className="mx-auto flex min-h-full w-full max-w-4xl flex-col gap-8 px-5 py-10 md:px-8">
                   {notice}
-            {activeStep === "details" ? (
-              <section className="flex flex-col gap-5">
-                <ComposerSection
-                  description="Start with the information shoppers will recognize first."
-                  title="General"
-                />
-
-                <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-                  <form.Field
-                    name="title"
-                    validators={{
-                      onBlur: ({ value }) => validateTitle(value),
-                      onSubmit: ({ value }) => validateTitle(value),
-                    }}
-                  >
-                    {(field) => (
-                      <Field data-invalid={hasFieldError(field)}>
-                        <FieldLabel htmlFor={field.name}>Title</FieldLabel>
-                        <Input
-                          aria-invalid={hasFieldError(field)}
-                          id={field.name}
-                          name={field.name}
-                          onBlur={field.handleBlur}
-                          onChange={(event) => updateTitle(event.target.value)}
-                          placeholder="Coffee beans"
-                          value={field.state.value}
-                        />
-                        <FieldError errors={field.state.meta.errors} touched={field.state.meta.isTouched} />
-                      </Field>
-                    )}
-                  </form.Field>
-
-                  <form.Field name="handle">
-                    {(field) => (
-                      <Field>
-                        <FieldLabel htmlFor={field.name}>Handle</FieldLabel>
-                        <InputGroup className="pr-1">
-                          <InputGroupInput
-                            id={field.name}
-                            name={field.name}
-                            onBlur={field.handleBlur}
-                            onChange={(event) => {
-                              const nextHandle = slugifyProductHandle(event.target.value);
-                              const currentSkuPrefix = form.state.values.skuPrefix.trim();
-                              const shouldUpdateSkuPrefix =
-                                !product &&
-                                (!currentSkuPrefix ||
-                                  currentSkuPrefix === getDefaultSkuPrefix(field.state.value) ||
-                                  currentSkuPrefix ===
-                                    getDefaultSkuPrefix(form.state.values.title));
-
-                              field.handleChange(nextHandle);
-
-                              if (shouldUpdateSkuPrefix) {
-                                form.setFieldValue("skuPrefix", getDefaultSkuPrefix(nextHandle));
-                              }
-                            }}
-                            placeholder="coffee-beans"
-                            readOnly={isHandleLocked}
-                            value={field.state.value}
-                          />
-                          <InputGroupAddon align="inline-end" className="gap-1 py-0 pr-0">
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  aria-label={
-                                    isHandleLocked ? "Unlock handle editing" : "Lock handle editing"
-                                  }
-                                  className="rounded-full"
-                                  onClick={() => setIsHandleLocked((current) => !current)}
-                                  size="icon-sm"
-                                  type="button"
-                                  variant="ghost"
-                                >
-                                  <HandleLockIcon data-icon="inline-start" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent side="top" sideOffset={6}>
-                                {isHandleLocked ? "Unlock handle editing" : "Lock handle editing"}
-                              </TooltipContent>
-                            </Tooltip>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  aria-label="Regenerate handle from title"
-                                  className="rounded-full"
-                                  onClick={regenerateHandle}
-                                  size="icon-sm"
-                                  type="button"
-                                  variant="ghost"
-                                >
-                                  <AppIcons.refresh data-icon="inline-start" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent side="top" sideOffset={6}>
-                                Regenerate from title
-                              </TooltipContent>
-                            </Tooltip>
-                          </InputGroupAddon>
-                        </InputGroup>
-                        <FieldDescription>
-                          {isHandleLocked
-                            ? "Uses the product title automatically."
-                            : "Use a custom URL handle."}
-                        </FieldDescription>
-                      </Field>
-                    )}
-                  </form.Field>
-                </div>
-
-                <form.Field name="description">
-                  {(field) => (
-                    <Field>
-                      <FieldLabel htmlFor={field.name}>Description</FieldLabel>
-                      <Textarea
-                        className="min-h-28"
-                        id={field.name}
-                        name={field.name}
-                        onBlur={field.handleBlur}
-                        onChange={(event) => field.handleChange(event.target.value)}
-                        placeholder="Describe the product for the storefront."
-                        value={field.state.value}
+                  {activeStep === "details" ? (
+                    <section className="flex flex-col gap-5">
+                      <ComposerSection
+                        description="Start with the information shoppers will recognize first."
+                        title="General"
                       />
-                    </Field>
-                  )}
-                </form.Field>
 
-                <Separator />
-
-                <ComposerSection
-                  description="Add product image links for the storefront."
-                  title="Media"
-                />
-
-                <div className="grid gap-4 md:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
-                  <form.Field name="thumbnail">
-                    {(field) => (
-                      <Field>
-                        <FieldLabel htmlFor={field.name}>Thumbnail URL</FieldLabel>
-                        <Input
-                          id={field.name}
-                          name={field.name}
-                          onBlur={field.handleBlur}
-                          onChange={(event) => field.handleChange(event.target.value)}
-                          placeholder="https://cdn.example.com/product.jpg"
-                          type="url"
-                          value={field.state.value}
-                        />
-                      </Field>
-                    )}
-                  </form.Field>
-
-                  <form.Field
-                    name="imageUrls"
-                    validators={{
-                      onBlur: ({ value }) => validateImageUrls(value),
-                      onSubmit: ({ value }) => validateImageUrls(value),
-                    }}
-                  >
-                    {(field) => (
-                      <Field data-invalid={hasFieldError(field)}>
-                        <FieldLabel htmlFor={field.name}>Image URLs</FieldLabel>
-                        <Textarea
-                          aria-invalid={hasFieldError(field)}
-                          className="min-h-28"
-                          id={field.name}
-                          name={field.name}
-                          onBlur={field.handleBlur}
-                          onChange={(event) => field.handleChange(event.target.value)}
-                          placeholder={"https://cdn.example.com/front.jpg\nhttps://cdn.example.com/back.jpg"}
-                          value={field.state.value}
-                        />
-                        <FieldDescription>Enter one image URL per line.</FieldDescription>
-                        <FieldError errors={field.state.meta.errors} touched={field.state.meta.isTouched} />
-                      </Field>
-                    )}
-                  </form.Field>
-                </div>
-              </section>
-            ) : null}
-
-            {activeStep === "organize" ? (
-              <section className="flex flex-col gap-5">
-                <ComposerSection
-                  description="Choose where this product appears in the catalog."
-                  title="Organize"
-                />
-
-                <div className="grid gap-4 md:grid-cols-2">
-                  <form.Field name="status">
-                    {(field) => (
-                      <Field>
-                        <FieldLabel htmlFor={field.name}>Status</FieldLabel>
-                        <Select
-                          onValueChange={(value) =>
-                            field.handleChange(value === "published" ? "published" : "draft")
-                          }
-                          value={field.state.value}
+                      <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+                        <form.Field
+                          name="title"
+                          validators={{
+                            onBlur: ({ value }) => validateTitle(value),
+                            onSubmit: ({ value }) => validateTitle(value),
+                          }}
                         >
-                          <SelectTrigger className="w-full" id={field.name}>
-                            <SelectValue placeholder="Select status" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectGroup>
-                              <SelectItem value="draft">Draft</SelectItem>
-                              <SelectItem value="published">Published</SelectItem>
-                            </SelectGroup>
-                          </SelectContent>
-                        </Select>
-                      </Field>
-                    )}
-                  </form.Field>
-
-                  <form.Field name="collectionId">
-                    {(field) => (
-                      <Field>
-                        <FieldLabel>Collection</FieldLabel>
-                        <CollectionPicker
-                          collections={collections}
-                          onChange={field.handleChange}
-                          selectedCollection={collections.find(
-                            (collection) => collection.id === field.state.value,
+                          {(field) => (
+                            <Field data-invalid={hasFieldError(field)}>
+                              <FieldLabel htmlFor={field.name}>Title</FieldLabel>
+                              <Input
+                                aria-invalid={hasFieldError(field)}
+                                id={field.name}
+                                name={field.name}
+                                onBlur={field.handleBlur}
+                                onChange={(event) => updateTitle(event.target.value)}
+                                placeholder="Coffee beans"
+                                value={field.state.value}
+                              />
+                              <FieldError
+                                errors={field.state.meta.errors}
+                                touched={field.state.meta.isTouched}
+                              />
+                            </Field>
                           )}
-                          value={field.state.value}
-                        />
-                      </Field>
-                    )}
-                  </form.Field>
-                </div>
+                        </form.Field>
 
-                <form.Field name="categoryIds">
-                  {(field) => (
-                    <FieldSet>
-                      <FieldLegend variant="label">Categories</FieldLegend>
-                      <FieldDescription>Select all categories that apply.</FieldDescription>
-                      <CategoryPicker
-                        categories={categories}
-                        onChange={field.handleChange}
-                        selectedCategories={categories.filter((category) =>
-                          field.state.value.includes(category.id),
-                        )}
-                        value={field.state.value}
-                      />
-                    </FieldSet>
-                  )}
-                </form.Field>
-              </section>
-            ) : null}
+                        <form.Field name="handle">
+                          {(field) => (
+                            <Field>
+                              <FieldLabel htmlFor={field.name}>Handle</FieldLabel>
+                              <InputGroup className="pr-1">
+                                <InputGroupInput
+                                  id={field.name}
+                                  name={field.name}
+                                  onBlur={field.handleBlur}
+                                  onChange={(event) => {
+                                    const nextHandle = slugifyProductHandle(event.target.value);
+                                    const currentSkuPrefix = form.state.values.skuPrefix.trim();
+                                    const shouldUpdateSkuPrefix =
+                                      !product &&
+                                      (!currentSkuPrefix ||
+                                        currentSkuPrefix ===
+                                          getDefaultSkuPrefix(field.state.value) ||
+                                        currentSkuPrefix ===
+                                          getDefaultSkuPrefix(form.state.values.title));
 
-            {activeStep === "variants" ? (
-              <section className="flex flex-col gap-5">
-                <ComposerSection
-                  description="Set the default selling price and stocked quantity. Enable variants only when shoppers choose between options like size or color."
-                  title="Pricing and stock"
-                />
+                                    field.handleChange(nextHandle);
 
-                <div className="rounded-2xl border bg-background p-4 shadow-sm shadow-primary/5">
-                  <div className="mb-4 flex flex-col gap-1">
-                    <h3 className="text-sm font-medium">Default selling settings</h3>
-                    <p className="text-sm text-muted-foreground">
-                      These values apply to the product. When variants are enabled, they become the defaults for every generated row.
-                    </p>
-                  </div>
-                  <div className="grid gap-4 md:grid-cols-4">
-                    <form.Field
-                      name="priceAmount"
-                      validators={{
-                        onBlur: ({ value }) => validatePriceAmount(value),
-                        onSubmit: ({ value }) => validatePriceAmount(value),
-                      }}
-                    >
-                      {(field) => (
-                        <Field data-invalid={hasFieldError(field)}>
-                          <FieldLabel htmlFor={field.name}>Price</FieldLabel>
-                          <InputGroup>
-                            <InputGroupAddon>ETB</InputGroupAddon>
-                            <InputGroupInput
-                              aria-invalid={hasFieldError(field)}
+                                    if (shouldUpdateSkuPrefix) {
+                                      form.setFieldValue(
+                                        "skuPrefix",
+                                        getDefaultSkuPrefix(nextHandle),
+                                      );
+                                    }
+                                  }}
+                                  placeholder="coffee-beans"
+                                  readOnly={isHandleLocked}
+                                  value={field.state.value}
+                                />
+                                <InputGroupAddon align="inline-end" className="gap-1 py-0 pr-0">
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button
+                                        aria-label={
+                                          isHandleLocked
+                                            ? "Unlock handle editing"
+                                            : "Lock handle editing"
+                                        }
+                                        className="rounded-full"
+                                        onClick={() => setIsHandleLocked((current) => !current)}
+                                        size="icon-sm"
+                                        type="button"
+                                        variant="ghost"
+                                      >
+                                        <HandleLockIcon data-icon="inline-start" />
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="top" sideOffset={6}>
+                                      {isHandleLocked
+                                        ? "Unlock handle editing"
+                                        : "Lock handle editing"}
+                                    </TooltipContent>
+                                  </Tooltip>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button
+                                        aria-label="Regenerate handle from title"
+                                        className="rounded-full"
+                                        onClick={regenerateHandle}
+                                        size="icon-sm"
+                                        type="button"
+                                        variant="ghost"
+                                      >
+                                        <AppIcons.refresh data-icon="inline-start" />
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="top" sideOffset={6}>
+                                      Regenerate from title
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </InputGroupAddon>
+                              </InputGroup>
+                              <FieldDescription>
+                                {isHandleLocked
+                                  ? "Uses the product title automatically."
+                                  : "Use a custom URL handle."}
+                              </FieldDescription>
+                            </Field>
+                          )}
+                        </form.Field>
+                      </div>
+
+                      <form.Field name="description">
+                        {(field) => (
+                          <Field>
+                            <FieldLabel htmlFor={field.name}>Description</FieldLabel>
+                            <Textarea
+                              className="min-h-28"
                               id={field.name}
-                              inputMode="numeric"
-                              min="0"
                               name={field.name}
                               onBlur={field.handleBlur}
                               onChange={(event) => field.handleChange(event.target.value)}
-                              placeholder="0"
-                              type="text"
+                              placeholder="Describe the product for the storefront."
                               value={field.state.value}
                             />
-                          </InputGroup>
-                          <FieldError errors={field.state.meta.errors} touched={field.state.meta.isTouched} />
-                        </Field>
-                      )}
-                    </form.Field>
+                          </Field>
+                        )}
+                      </form.Field>
 
-                    <form.Field
-                      name="initialStock"
-                      validators={{
-                        onBlur: ({ value }) => validateInitialStock(value),
-                        onSubmit: ({ value }) => validateInitialStock(value),
-                      }}
-                    >
-                      {(field) => (
-                        <Field data-invalid={hasFieldError(field)}>
-                          <FieldLabel htmlFor={field.name}>Stocked</FieldLabel>
-                          <Input
-                            aria-invalid={hasFieldError(field)}
-                            id={field.name}
-                            inputMode="numeric"
-                            min="0"
-                            name={field.name}
-                            onBlur={field.handleBlur}
-                            onChange={(event) => field.handleChange(event.target.value)}
-                            placeholder="0"
-                            type="text"
-                            value={field.state.value}
-                          />
-                          <FieldError
-                            errors={field.state.meta.errors}
-                            touched={field.state.meta.isTouched}
-                          />
-                        </Field>
-                      )}
-                    </form.Field>
+                      <Separator />
 
-                    <form.Field name="skuPrefix">
-                      {(field) => (
-                        <Field>
-                          <FieldLabel htmlFor={field.name}>SKU prefix</FieldLabel>
-                          <Input
-                            id={field.name}
-                            name={field.name}
-                            onBlur={field.handleBlur}
-                            onChange={(event) => field.handleChange(event.target.value)}
-                            placeholder="TEE"
-                            value={field.state.value}
-                          />
-                        </Field>
-                      )}
-                    </form.Field>
+                      <ComposerSection
+                        description="Add product image links for the storefront."
+                        title="Media"
+                      />
 
-                    <form.Field name="currencyCode">
-                      {(field) => (
-                        <Field data-disabled>
-                          <FieldLabel htmlFor={field.name}>Currency</FieldLabel>
-                          <Input
-                            id={field.name}
-                            name={field.name}
-                            readOnly
-                            value={field.state.value.toUpperCase()}
-                          />
-                          <FieldDescription>Fixed for this merchant market.</FieldDescription>
-                        </Field>
-                      )}
-                    </form.Field>
-                  </div>
-                </div>
+                      <div className="grid gap-4 md:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
+                        <form.Field name="thumbnail">
+                          {(field) => (
+                            <Field>
+                              <FieldLabel htmlFor={field.name}>Thumbnail URL</FieldLabel>
+                              <Input
+                                id={field.name}
+                                name={field.name}
+                                onBlur={field.handleBlur}
+                                onChange={(event) => field.handleChange(event.target.value)}
+                                placeholder="https://cdn.example.com/product.jpg"
+                                type="url"
+                                value={field.state.value}
+                              />
+                            </Field>
+                          )}
+                        </form.Field>
 
-                {!product ? (
-                  <form.Field name="hasVariants">
-                    {(field) => (
-                      <div className="flex items-start justify-between gap-4 rounded-2xl border bg-muted/20 p-4">
-                        <div className="max-w-2xl">
-                          <h3 className="text-sm font-medium">This product has variants</h3>
-                          <p className="mt-1 text-sm text-muted-foreground">
-                            Turn this on for products sold in multiple option combinations.
+                        <form.Field
+                          name="imageUrls"
+                          validators={{
+                            onBlur: ({ value }) => validateImageUrls(value),
+                            onSubmit: ({ value }) => validateImageUrls(value),
+                          }}
+                        >
+                          {(field) => (
+                            <Field data-invalid={hasFieldError(field)}>
+                              <FieldLabel htmlFor={field.name}>Image URLs</FieldLabel>
+                              <Textarea
+                                aria-invalid={hasFieldError(field)}
+                                className="min-h-28"
+                                id={field.name}
+                                name={field.name}
+                                onBlur={field.handleBlur}
+                                onChange={(event) => field.handleChange(event.target.value)}
+                                placeholder={
+                                  "https://cdn.example.com/front.jpg\nhttps://cdn.example.com/back.jpg"
+                                }
+                                value={field.state.value}
+                              />
+                              <FieldDescription>Enter one image URL per line.</FieldDescription>
+                              <FieldError
+                                errors={field.state.meta.errors}
+                                touched={field.state.meta.isTouched}
+                              />
+                            </Field>
+                          )}
+                        </form.Field>
+                      </div>
+                    </section>
+                  ) : null}
+
+                  {activeStep === "organize" ? (
+                    <section className="flex flex-col gap-5">
+                      <ComposerSection
+                        description="Choose where this product appears in the catalog."
+                        title="Organize"
+                      />
+
+                      <div className="grid gap-4 md:grid-cols-2">
+                        <form.Field name="status">
+                          {(field) => (
+                            <Field>
+                              <FieldLabel htmlFor={field.name}>Status</FieldLabel>
+                              <Select
+                                onValueChange={(value) =>
+                                  field.handleChange(value === "published" ? "published" : "draft")
+                                }
+                                value={field.state.value}
+                              >
+                                <SelectTrigger className="w-full" id={field.name}>
+                                  <SelectValue placeholder="Select status" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectGroup>
+                                    <SelectItem value="draft">Draft</SelectItem>
+                                    <SelectItem value="published">Published</SelectItem>
+                                  </SelectGroup>
+                                </SelectContent>
+                              </Select>
+                            </Field>
+                          )}
+                        </form.Field>
+
+                        <form.Field name="collectionId">
+                          {(field) => (
+                            <Field>
+                              <FieldLabel>Collection</FieldLabel>
+                              <CollectionPicker
+                                collections={collections}
+                                onChange={field.handleChange}
+                                selectedCollection={collections.find(
+                                  (collection) => collection.id === field.state.value,
+                                )}
+                                value={field.state.value}
+                              />
+                            </Field>
+                          )}
+                        </form.Field>
+                      </div>
+
+                      <form.Field name="categoryIds">
+                        {(field) => (
+                          <FieldSet>
+                            <FieldLegend variant="label">Categories</FieldLegend>
+                            <FieldDescription>Select all categories that apply.</FieldDescription>
+                            <CategoryPicker
+                              categories={categories}
+                              onChange={field.handleChange}
+                              selectedCategories={categories.filter((category) =>
+                                field.state.value.includes(category.id),
+                              )}
+                              value={field.state.value}
+                            />
+                          </FieldSet>
+                        )}
+                      </form.Field>
+                    </section>
+                  ) : null}
+
+                  {activeStep === "variants" ? (
+                    <section className="flex flex-col gap-5">
+                      <ComposerSection
+                        description="Set the default selling price and stocked quantity. Enable variants only when shoppers choose between options like size or color."
+                        title="Pricing and stock"
+                      />
+
+                      <div className="rounded-2xl border bg-background p-4 shadow-sm shadow-primary/5">
+                        <div className="mb-4 flex flex-col gap-1">
+                          <h3 className="text-sm font-medium">Default selling settings</h3>
+                          <p className="text-sm text-muted-foreground">
+                            These values apply to the product. When variants are enabled, they
+                            become the defaults for every generated row.
                           </p>
                         </div>
-                        <Switch
-                          aria-label="Enable product variants"
-                          checked={field.state.value}
-                          onCheckedChange={(checked) => {
-                            field.handleChange(checked);
-                            if (!checked) {
-                              form.setFieldValue("variantOverrides", {});
-                            }
-                          }}
-                        />
-                      </div>
-                    )}
-                  </form.Field>
-                ) : null}
-
-                <form.Subscribe selector={(state) => state.values}>
-                  {(values) =>
-                    values.hasVariants ? (
-                      <>
-                        {!product ? (
-                          <form.Field name="options">
+                        <div className="grid gap-4 md:grid-cols-4">
+                          <form.Field
+                            name="priceAmount"
+                            validators={{
+                              onBlur: ({ value }) => validatePriceAmount(value),
+                              onSubmit: ({ value }) => validatePriceAmount(value),
+                            }}
+                          >
                             {(field) => (
-                              <ProductOptionsBuilder
-                                onChange={field.handleChange}
-                                options={field.state.value}
-                              />
+                              <Field data-invalid={hasFieldError(field)}>
+                                <FieldLabel htmlFor={field.name}>Price</FieldLabel>
+                                <InputGroup>
+                                  <InputGroupAddon>ETB</InputGroupAddon>
+                                  <InputGroupInput
+                                    aria-invalid={hasFieldError(field)}
+                                    id={field.name}
+                                    inputMode="numeric"
+                                    min="0"
+                                    name={field.name}
+                                    onBlur={field.handleBlur}
+                                    onChange={(event) => field.handleChange(event.target.value)}
+                                    placeholder="0"
+                                    type="text"
+                                    value={field.state.value}
+                                  />
+                                </InputGroup>
+                                <FieldError
+                                  errors={field.state.meta.errors}
+                                  touched={field.state.meta.isTouched}
+                                />
+                              </Field>
                             )}
                           </form.Field>
-                        ) : null}
 
-                        <VariantMatrixTable
-                          onOverrideChange={(key, override) => {
-                            form.setFieldValue("variantOverrides", {
-                              ...values.variantOverrides,
-                              [key]: {
-                                ...values.variantOverrides[key],
-                                ...override,
-                              },
-                            });
-                          }}
-                          rows={getVariantRows(values)}
-                          values={values.variantOverrides}
-                        />
-                      </>
-                    ) : (
-                      <SimpleProductStockPreview values={values} />
-                    )
-                  }
-                </form.Subscribe>
-              </section>
-            ) : null}
+                          <form.Field
+                            name="initialStock"
+                            validators={{
+                              onBlur: ({ value }) => validateInitialStock(value),
+                              onSubmit: ({ value }) => validateInitialStock(value),
+                            }}
+                          >
+                            {(field) => (
+                              <Field data-invalid={hasFieldError(field)}>
+                                <FieldLabel htmlFor={field.name}>Stocked</FieldLabel>
+                                <Input
+                                  aria-invalid={hasFieldError(field)}
+                                  id={field.name}
+                                  inputMode="numeric"
+                                  min="0"
+                                  name={field.name}
+                                  onBlur={field.handleBlur}
+                                  onChange={(event) => field.handleChange(event.target.value)}
+                                  placeholder="0"
+                                  type="text"
+                                  value={field.state.value}
+                                />
+                                <FieldError
+                                  errors={field.state.meta.errors}
+                                  touched={field.state.meta.isTouched}
+                                />
+                              </Field>
+                            )}
+                          </form.Field>
 
-            {activeStep === "review" ? (
-              <section className="flex flex-col gap-5">
-                <ComposerSection
-                  description="Confirm the catalog details that will be saved."
-                  title="Review"
-                />
-                <form.Subscribe selector={(state) => state.values}>
-                  {(values) => <ProductReviewSummary values={values} />}
-                </form.Subscribe>
-              </section>
-            ) : null}
+                          <form.Field name="skuPrefix">
+                            {(field) => (
+                              <Field>
+                                <FieldLabel htmlFor={field.name}>SKU prefix</FieldLabel>
+                                <Input
+                                  id={field.name}
+                                  name={field.name}
+                                  onBlur={field.handleBlur}
+                                  onChange={(event) => field.handleChange(event.target.value)}
+                                  placeholder="TEE"
+                                  value={field.state.value}
+                                />
+                              </Field>
+                            )}
+                          </form.Field>
+
+                          <form.Field name="currencyCode">
+                            {(field) => (
+                              <Field data-disabled>
+                                <FieldLabel htmlFor={field.name}>Currency</FieldLabel>
+                                <Input
+                                  id={field.name}
+                                  name={field.name}
+                                  readOnly
+                                  value={field.state.value.toUpperCase()}
+                                />
+                                <FieldDescription>Fixed for this merchant market.</FieldDescription>
+                              </Field>
+                            )}
+                          </form.Field>
+                        </div>
+                      </div>
+
+                      {!product ? (
+                        <form.Field name="hasVariants">
+                          {(field) => (
+                            <div className="flex items-start justify-between gap-4 rounded-2xl border bg-muted/20 p-4">
+                              <div className="max-w-2xl">
+                                <h3 className="text-sm font-medium">This product has variants</h3>
+                                <p className="mt-1 text-sm text-muted-foreground">
+                                  Turn this on for products sold in multiple option combinations.
+                                </p>
+                              </div>
+                              <Switch
+                                aria-label="Enable product variants"
+                                checked={field.state.value}
+                                onCheckedChange={(checked) => {
+                                  field.handleChange(checked);
+                                  if (!checked) {
+                                    form.setFieldValue("variantOverrides", {});
+                                  }
+                                }}
+                              />
+                            </div>
+                          )}
+                        </form.Field>
+                      ) : null}
+
+                      <form.Subscribe selector={(state) => state.values}>
+                        {(values) =>
+                          values.hasVariants ? (
+                            <>
+                              {!product ? (
+                                <form.Field name="options">
+                                  {(field) => (
+                                    <ProductOptionsBuilder
+                                      onChange={field.handleChange}
+                                      options={field.state.value}
+                                    />
+                                  )}
+                                </form.Field>
+                              ) : null}
+
+                              <VariantMatrixTable
+                                onOverrideChange={(key, override) => {
+                                  form.setFieldValue("variantOverrides", {
+                                    ...values.variantOverrides,
+                                    [key]: {
+                                      ...values.variantOverrides[key],
+                                      ...override,
+                                    },
+                                  });
+                                }}
+                                rows={getVariantRows(values)}
+                                values={values.variantOverrides}
+                              />
+                            </>
+                          ) : (
+                            <SimpleProductStockPreview values={values} />
+                          )
+                        }
+                      </form.Subscribe>
+                    </section>
+                  ) : null}
+
+                  {activeStep === "review" ? (
+                    <section className="flex flex-col gap-5">
+                      <ComposerSection
+                        description="Confirm the catalog details that will be saved."
+                        title="Review"
+                      />
+                      <form.Subscribe selector={(state) => state.values}>
+                        {(values) => <ProductReviewSummary values={values} />}
+                      </form.Subscribe>
+                    </section>
+                  ) : null}
                 </div>
               </div>
 
               <div className="z-20 flex shrink-0 flex-col gap-3 border-t bg-background/95 p-4 backdrop-blur sm:flex-row sm:items-center sm:justify-between">
                 <form.Subscribe selector={(state) => state.isDirty}>
-                  {(isDirty) => (
+                  {(isDirty) =>
                     actionError ? (
                       <p className="flex items-center gap-2 text-sm font-medium text-destructive">
                         <AppIcons.error data-icon="inline-start" />
@@ -816,7 +819,7 @@ export function ProductForm({
                         {isDirty ? "Unsaved changes" : "No unsaved changes"}
                       </p>
                     )
-                  )}
+                  }
                 </form.Subscribe>
                 <div className="flex justify-end gap-2">
                   <Button onClick={closeComposer} type="button" variant="outline">
@@ -856,4 +859,3 @@ export function ProductForm({
     </>
   );
 }
-

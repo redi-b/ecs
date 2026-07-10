@@ -16,11 +16,9 @@ export function getProductsUrl(
   return url;
 }
 
-
 export function getProductsBaseUrl(medusaInternalUrl: string) {
   return new URL("/admin/products", normalizeBaseUrl(medusaInternalUrl));
 }
-
 
 export function getProductDetailUrl(medusaInternalUrl: string, productId: string) {
   const url = getProductUrl(medusaInternalUrl, productId);
@@ -32,7 +30,6 @@ export function getProductDetailUrl(medusaInternalUrl: string, productId: string
 
   return url;
 }
-
 
 export function getProductCategoriesUrl(
   medusaInternalUrl: string,
@@ -51,11 +48,9 @@ export function getProductCategoriesUrl(
   return url;
 }
 
-
 export function getProductCategoriesBaseUrl(medusaInternalUrl: string) {
   return new URL("/admin/product-categories", normalizeBaseUrl(medusaInternalUrl));
 }
-
 
 export function getProductCollectionsUrl(
   medusaInternalUrl: string,
@@ -71,11 +66,9 @@ export function getProductCollectionsUrl(
   return url;
 }
 
-
 export function getProductCollectionsBaseUrl(medusaInternalUrl: string) {
   return new URL("/admin/collections", normalizeBaseUrl(medusaInternalUrl));
 }
-
 
 export function getProductUrl(medusaInternalUrl: string, productId: string) {
   return new URL(
@@ -83,7 +76,6 @@ export function getProductUrl(medusaInternalUrl: string, productId: string) {
     normalizeBaseUrl(medusaInternalUrl),
   );
 }
-
 
 export function getProductInventoryUrl(medusaInternalUrl: string, productId: string) {
   const url = getProductUrl(medusaInternalUrl, productId);
@@ -96,7 +88,6 @@ export function getProductInventoryUrl(medusaInternalUrl: string, productId: str
   return url;
 }
 
-
 export function getInventoryItemUrl(medusaInternalUrl: string, inventoryItemId: string) {
   const url = new URL(
     `/admin/inventory-items/${encodeURIComponent(inventoryItemId)}`,
@@ -108,14 +99,12 @@ export function getInventoryItemUrl(medusaInternalUrl: string, inventoryItemId: 
   return url;
 }
 
-
 export function getInventoryItemLevelsUrl(medusaInternalUrl: string, inventoryItemId: string) {
   return new URL(
     `/admin/inventory-items/${encodeURIComponent(inventoryItemId)}/location-levels`,
     normalizeBaseUrl(medusaInternalUrl),
   );
 }
-
 
 export function getInventoryItemLevelUrl(
   medusaInternalUrl: string,
@@ -127,7 +116,6 @@ export function getInventoryItemLevelUrl(
   );
 }
 
-
 export function getProductOwnershipUrl(medusaInternalUrl: string, productId: string) {
   const url = getProductUrl(medusaInternalUrl, productId);
 
@@ -135,7 +123,6 @@ export function getProductOwnershipUrl(medusaInternalUrl: string, productId: str
 
   return url;
 }
-
 
 export function getProductOwnershipListUrl(
   medusaInternalUrl: string,
@@ -152,8 +139,6 @@ export function getProductOwnershipListUrl(
   return url;
 }
 
-
 export function normalizeBaseUrl(value: string) {
   return value.endsWith("/") ? value : `${value}/`;
 }
-

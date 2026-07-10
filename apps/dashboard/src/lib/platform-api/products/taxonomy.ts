@@ -1,11 +1,4 @@
-import type {
-  MerchantBatchDeleteActionResult,
-  MerchantDeleteActionResult,
-  MerchantProductCategoriesResult,
-  MerchantProductCategoryMutationResult,
-  MerchantProductCollectionMutationResult,
-  MerchantProductCollectionsResult,
-} from "./types";
+import { normalizeBaseUrl } from "@/lib/platform-api/client";
 import {
   fetchProductResource,
   parseBatchDeleteResponse,
@@ -16,12 +9,15 @@ import {
   parseProductCollectionsResponse,
   sendTaxonomyMutation,
 } from "./shared";
-import { normalizeBaseUrl } from "@/lib/platform-api/client";
-import {
-  getProductHeaders,
-  getProductResourceMutationUrl,
-  getProductResourceUrl,
-} from "./urls";
+import type {
+  MerchantBatchDeleteActionResult,
+  MerchantDeleteActionResult,
+  MerchantProductCategoriesResult,
+  MerchantProductCategoryMutationResult,
+  MerchantProductCollectionMutationResult,
+  MerchantProductCollectionsResult,
+} from "./types";
+import { getProductHeaders, getProductResourceMutationUrl, getProductResourceUrl } from "./urls";
 
 export async function createMerchantProductCategory(options: {
   cookieHeader?: string | null | undefined;
@@ -120,7 +116,10 @@ export async function deleteMerchantProductCategory(options: {
   const basePath = tenantId
     ? `/platform/tenants/${encodeURIComponent(tenantId)}/product-categories`
     : "/platform/merchant/product-categories";
-  const url = new URL(`${basePath}/${encodeURIComponent(options.categoryId)}`, normalizeBaseUrl(options.platformApiBaseUrl));
+  const url = new URL(
+    `${basePath}/${encodeURIComponent(options.categoryId)}`,
+    normalizeBaseUrl(options.platformApiBaseUrl),
+  );
 
   const response = await fetcher(url, {
     cache: "no-store",
@@ -192,7 +191,10 @@ export async function deleteMerchantProductCollection(options: {
   const basePath = tenantId
     ? `/platform/tenants/${encodeURIComponent(tenantId)}/product-collections`
     : "/platform/merchant/product-collections";
-  const url = new URL(`${basePath}/${encodeURIComponent(options.collectionId)}`, normalizeBaseUrl(options.platformApiBaseUrl));
+  const url = new URL(
+    `${basePath}/${encodeURIComponent(options.collectionId)}`,
+    normalizeBaseUrl(options.platformApiBaseUrl),
+  );
 
   const response = await fetcher(url, {
     cache: "no-store",
@@ -250,4 +252,3 @@ export async function deleteMerchantProductCollectionsBatch(options: {
 
   return parseBatchDeleteResponse(response);
 }
-

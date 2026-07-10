@@ -62,4 +62,3 @@ export function createPlatformApp(options: PlatformAppOptions) {
 
   return app;
 }
-

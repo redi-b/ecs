@@ -1,13 +1,16 @@
-import { storefrontTemplates as templateRegistry, themeTokensSchema } from "@ecs/storefront-templates";
 import type { createPlatformDb } from "@ecs/db";
 import {
   auditLogs,
+  storefrontTemplates as dbStorefrontTemplates,
   storefrontConfigs,
   storefrontRevisions,
-  storefrontTemplates as dbStorefrontTemplates,
   storefrontTemplateVersions,
   tenants,
 } from "@ecs/db";
+import {
+  storefrontTemplates as templateRegistry,
+  themeTokensSchema,
+} from "@ecs/storefront-templates";
 import { and, asc, eq } from "drizzle-orm";
 import type {
   PublishedStorefrontConfigResult,
@@ -113,7 +116,10 @@ export function createStorefrontTemplateService(db: PlatformDb) {
           eq(storefrontTemplateVersions.version, storefrontConfigs.draftTemplateVersion),
         ),
       )
-      .leftJoin(storefrontRevisions, eq(storefrontRevisions.id, storefrontConfigs.publishedRevisionId))
+      .leftJoin(
+        storefrontRevisions,
+        eq(storefrontRevisions.id, storefrontConfigs.publishedRevisionId),
+      )
       .where(eq(storefrontConfigs.tenantId, input.tenantId))
       .limit(1);
 
@@ -189,7 +195,7 @@ export function createStorefrontTemplateService(db: PlatformDb) {
       };
     },
     listStorefrontTemplates: async (): Promise<StorefrontTemplateCatalogItem[]> => {
-        const rows = await db
+      const rows = await db
         .select({
           id: dbStorefrontTemplates.id,
           slug: dbStorefrontTemplates.slug,

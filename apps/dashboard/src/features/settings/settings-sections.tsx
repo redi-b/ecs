@@ -20,7 +20,6 @@ export function SettingsRow({ label, value }: { label: string; value: string }) 
   );
 }
 
-
 export function SettingsLinkRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between gap-3 text-sm">
@@ -37,7 +36,6 @@ export function SettingsLinkRow({ label, value }: { label: string; value: string
     </div>
   );
 }
-
 
 export function StorefrontTemplateOption({
   currentTemplateKey,
@@ -89,8 +87,11 @@ export function StorefrontTemplateOption({
   );
 }
 
-
-export function StorefrontTemplatePreview({ template }: { template: StorefrontTemplateCatalogItem }) {
+export function StorefrontTemplatePreview({
+  template,
+}: {
+  template: StorefrontTemplateCatalogItem;
+}) {
   return (
     <div className="aspect-[16/9] overflow-hidden rounded-md border bg-muted">
       <div className="flex h-full flex-col">
@@ -111,4 +112,3 @@ export function StorefrontTemplatePreview({ template }: { template: StorefrontTe
     </div>
   );
 }
-

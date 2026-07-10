@@ -6,7 +6,6 @@ export function registerPlatformOnboardingRoutes(
   app: Hono<{ Variables: PlatformAppVariables }>,
   options: PlatformAppOptions,
 ) {
-
   app.get("/platform/onboarding/state", async (context) => {
     if (!options.getOnboardingState) {
       return context.json({ error: "onboarding_state_unavailable" }, 503);
@@ -90,6 +89,4 @@ export function registerPlatformOnboardingRoutes(
       tenant: result.tenant,
     });
   });
-
-
 }
