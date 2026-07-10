@@ -1,53 +1,85 @@
-import { cookies, headers } from "next/headers";
-import { NextResponse } from "next/server";
-
 import { updateMerchantDeliverySettings, updateMerchantSettings } from "@/lib/merchant-settings";
+import { withMerchantAction } from "@/lib/platform-api";
 
 export async function POST(request: Request) {
-  const wantsJson = request.headers.get("accept")?.includes("application/json");
-  const isJson = request.headers.get("content-type")?.includes("application/json");
-  const tenantId = new URL(request.url).searchParams.get("tenantId");
-  const body = await getSettingsInput(request);
-  const cookieStore = await cookies();
-  const requestHeaders = await headers();
-  const commonOptions = {
-    cookieHeader: cookieStore.toString(),
-    platformApiBaseUrl: process.env.PLATFORM_API_BASE_URL ?? "http://localhost:3000",
-  };
+  return withMerchantAction(request, async (context) => {
+    const isJson = context.request.headers.get("content-type")?.includes("application/json");
+    const body = await getSettingsInput(context.request);
+    const commonOptions = {
+      cookieHeader: context.cookieHeader,
+      platformApiBaseUrl: context.platformApiBaseUrl,
+    };
 
-  let redirectTo: string | null = null;
+    let redirectTo: string | null = null;
 
-  if (body.mode !== "delivery") {
-    const shop = await updateMerchantSettings({
-      ...commonOptions,
-      requestHost: requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host"),
-      settings: {
-        name: body.name,
-        handle: body.handle,
-      },
-      tenantId,
-    });
+    if (body.mode !== "delivery") {
+      const shop = await updateMerchantSettings({
+        ...commonOptions,
+        requestHost: context.requestHost,
+        settings: {
+          name: body.name,
+          handle: body.handle,
+        },
+        tenantId: context.tenantId,
+      });
 
-    if (!shop.ok) {
-      return respond(request, wantsJson, shop.message, shop.status, null);
+      if (!shop.ok) {
+        if (context.wantsJson || isJson) {
+          return { ok: false, message: shop.message, status: shop.status };
+        }
+
+        return {
+          ok: false,
+          message: shop.message,
+          status: shop.status,
+          redirectPath: "/admin/settings",
+          redirectStatusParam: shop.message,
+          redirectStatusKey: "settingsStatus",
+        };
+      }
+
+      redirectTo = shop.redirectTo;
     }
 
-    redirectTo = shop.redirectTo;
-  }
+    if (context.tenantId?.trim() && body.mode !== "shop" && body.deliverySettingsAvailable) {
+      const delivery = await updateMerchantDeliverySettings({
+        ...commonOptions,
+        delivery: body.delivery,
+        tenantId: context.tenantId.trim(),
+      });
 
-  if (tenantId?.trim() && body.mode !== "shop" && body.deliverySettingsAvailable) {
-    const delivery = await updateMerchantDeliverySettings({
-      ...commonOptions,
-      delivery: body.delivery,
-      tenantId: tenantId.trim(),
-    });
+      if (!delivery.ok) {
+        if (context.wantsJson || isJson) {
+          return { ok: false, message: delivery.message, status: delivery.status };
+        }
 
-    if (!delivery.ok) {
-      return respond(request, wantsJson, delivery.message, delivery.status, null);
+        return {
+          ok: false,
+          message: delivery.message,
+          status: delivery.status,
+          redirectPath: "/admin/settings",
+          redirectStatusParam: delivery.message,
+          redirectStatusKey: "settingsStatus",
+        };
+      }
     }
-  }
 
-  return respond(request, wantsJson || isJson, "settings_updated", 200, redirectTo);
+    if (context.wantsJson || isJson) {
+      return {
+        ok: true,
+        data: { ok: true, message: "settings_updated", redirectTo },
+        status: 200,
+      };
+    }
+
+    return {
+      ok: true,
+      data: { ok: true },
+      redirectPath: "/admin/settings",
+      redirectStatusParam: "settings_updated",
+      redirectStatusKey: "settingsStatus",
+    };
+  });
 }
 
 async function getSettingsInput(request: Request) {
@@ -81,7 +113,7 @@ async function getSettingsInput(request: Request) {
   const formData = await request.formData();
 
   return {
-    mode: "all",
+    mode: "all" as const,
     name: String(formData.get("name") ?? "").trim(),
     handle: String(formData.get("handle") ?? "").trim(),
     delivery: {
@@ -91,47 +123,11 @@ async function getSettingsInput(request: Request) {
       notesEnabled: formData.get("notesEnabled") === "on",
       landmarkRequired: formData.get("landmarkRequired") === "on",
       defaultDeliveryFee: String(formData.get("defaultDeliveryFee") ?? "0").trim(),
-      currency: String(formData.get("currency") ?? "ETB").trim().toUpperCase(),
-      zones: [],
+      currency: String(formData.get("currency") ?? "ETB")
+        .trim()
+        .toUpperCase(),
+      zones: [] as unknown[],
     },
     deliverySettingsAvailable: formData.get("deliverySettingsAvailable") === "true",
   };
-}
-
-function respond(
-  request: Request,
-  wantsJson: boolean | undefined,
-  message: string,
-  status: number,
-  redirectTo: string | null,
-) {
-  if (wantsJson) {
-    return NextResponse.json(
-      status >= 200 && status < 300 ? { ok: true, message, redirectTo } : { error: message },
-      { status },
-    );
-  }
-
-  const url = new URL("/admin/settings", getRequestOrigin(request));
-  url.searchParams.set("settingsStatus", message);
-
-  const tenantId = new URL(request.url).searchParams.get("tenantId");
-
-  if (tenantId?.trim()) {
-    url.searchParams.set("tenantId", tenantId.trim());
-  }
-
-  return NextResponse.redirect(url, { status: 303 });
-}
-
-function getRequestOrigin(request: Request) {
-  const forwardedHost = request.headers.get("x-forwarded-host");
-
-  if (!forwardedHost) {
-    return new URL(request.url).origin;
-  }
-
-  const forwardedProto = request.headers.get("x-forwarded-proto") ?? "http";
-
-  return `${forwardedProto}://${forwardedHost}`;
 }

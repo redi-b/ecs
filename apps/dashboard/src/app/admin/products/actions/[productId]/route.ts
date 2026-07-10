@@ -1,37 +1,49 @@
-import { cookies, headers } from "next/headers";
-import { NextResponse } from "next/server";
-
-import { appendTenantRedirectParams } from "../../../../../lib/dashboard-tenant-context";
-import { updateMerchantProduct } from "../../../../../lib/merchant-products";
-import { getProductFormInput } from "../../../../../lib/product-form-data";
+import { updateMerchantProduct } from "@/lib/merchant-products";
+import { withMerchantAction } from "@/lib/platform-api/action-route";
+import { getProductFormInput } from "@/lib/product-form-data";
 
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ productId: string }> },
 ) {
   const { productId } = await params;
-  const wantsJson = request.headers.get("accept")?.includes("application/json");
-  const product = await getProductInput(request);
-  const cookieStore = await cookies();
-  const requestHeaders = await headers();
-  const result = await updateMerchantProduct({
-    cookieHeader: cookieStore.toString(),
-    platformApiBaseUrl: process.env.PLATFORM_API_BASE_URL ?? "http://localhost:3000",
-    product,
-    productId,
-    requestHost: requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host"),
-    tenantId: new URL(request.url).searchParams.get("tenantId"),
-  });
 
-  if (wantsJson) {
+  return withMerchantAction(request, async (context) => {
+    const product = await getProductInput(context.request);
+    const result = await updateMerchantProduct({
+      cookieHeader: context.cookieHeader,
+      platformApiBaseUrl: context.platformApiBaseUrl,
+      product,
+      productId,
+      requestHost: context.requestHost,
+      tenantId: context.tenantId,
+    });
+
     if (!result.ok) {
-      return NextResponse.json({ error: result.message }, { status: result.status });
+      if (context.wantsJson) {
+        return { ok: false, message: result.message, status: result.status };
+      }
+
+      return {
+        ok: false,
+        message: result.message,
+        status: result.status,
+        redirectPath: "/admin/products",
+        redirectStatusParam: result.message,
+      };
     }
 
-    return NextResponse.json({ product: result.product });
-  }
+    if (context.wantsJson) {
+      return { ok: true, data: { product: result.product } };
+    }
 
-  return redirectToProducts(request, result.ok ? "product_updated" : result.message);
+    return {
+      ok: true,
+      data: { product: result.product },
+      redirectPath: "/admin/products",
+      redirectStatusParam: "product_updated",
+    };
+  });
 }
 
 async function getProductInput(request: Request) {
@@ -40,25 +52,4 @@ async function getProductInput(request: Request) {
   }
 
   return getProductFormInput(await request.formData());
-}
-
-function redirectToProducts(request: Request, status: string) {
-  const url = new URL("/admin/products", getRequestOrigin(request));
-
-  url.searchParams.set("productStatus", status);
-  appendTenantRedirectParams(url, request);
-
-  return NextResponse.redirect(url, { status: 303 });
-}
-
-function getRequestOrigin(request: Request) {
-  const forwardedHost = request.headers.get("x-forwarded-host");
-
-  if (!forwardedHost) {
-    return new URL(request.url).origin;
-  }
-
-  const forwardedProto = request.headers.get("x-forwarded-proto") ?? "http";
-
-  return `${forwardedProto}://${forwardedHost}`;
 }

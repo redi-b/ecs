@@ -1,3 +1,5 @@
+import { mapPlatformErrorMessage } from "@/lib/platform-api/errors";
+
 type ListKind = "orders" | "products";
 
 export type ListErrorState = {
@@ -69,7 +71,10 @@ export function getListErrorState(kind: ListKind, message: string): ListErrorSta
   return {
     kind: "error",
     title: `${capitalize(kind)} could not be loaded`,
-    description: message,
+    description: mapPlatformErrorMessage(message, {
+      fallback: message || `${capitalize(kind)} could not be loaded.`,
+      resource: capitalize(kind),
+    }),
   };
 }
 

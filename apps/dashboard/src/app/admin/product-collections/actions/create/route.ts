@@ -1,42 +1,59 @@
-import { cookies, headers } from "next/headers";
-import { NextResponse } from "next/server";
-
-import { appendTenantRedirectParams } from "../../../../../lib/dashboard-tenant-context";
-import { createMerchantProductCollection } from "../../../../../lib/merchant-products";
-import { getTaxonomyFormInput } from "../../../../../lib/taxonomy-form-data";
+import { createMerchantProductCollection } from "@/lib/merchant-products";
+import { withMerchantAction } from "@/lib/platform-api/action-route";
+import { getTaxonomyFormInput } from "@/lib/taxonomy-form-data";
 
 export async function POST(request: Request) {
-  const wantsJson = request.headers.get("accept")?.includes("application/json");
-  const collection = await getCollectionInput(request);
+  return withMerchantAction(request, async (context) => {
+    const collection = await getCollectionInput(context.request);
 
-  if (!collection.title) {
-    if (wantsJson) {
-      return NextResponse.json({ error: "missing_title" }, { status: 400 });
+    if (!collection.title) {
+      if (context.wantsJson) {
+        return { ok: false, message: "missing_title", status: 400 };
+      }
+
+      return {
+        ok: false,
+        message: "missing_title",
+        status: 400,
+        redirectPath: "/admin/products/collections",
+        redirectStatusParam: "missing_title",
+      };
     }
 
-    return redirectToCollections(request, "missing_title");
-  }
+    const result = await createMerchantProductCollection({
+      cookieHeader: context.cookieHeader,
+      handle: collection.handle,
+      platformApiBaseUrl: context.platformApiBaseUrl,
+      requestHost: context.requestHost,
+      tenantId: context.tenantId,
+      title: collection.title,
+    });
 
-  const cookieStore = await cookies();
-  const requestHeaders = await headers();
-  const result = await createMerchantProductCollection({
-    cookieHeader: cookieStore.toString(),
-    handle: collection.handle,
-    platformApiBaseUrl: process.env.PLATFORM_API_BASE_URL ?? "http://localhost:3000",
-    requestHost: requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host"),
-    tenantId: new URL(request.url).searchParams.get("tenantId"),
-    title: collection.title,
-  });
-
-  if (wantsJson) {
     if (!result.ok) {
-      return NextResponse.json({ error: result.message }, { status: result.status });
+      if (context.wantsJson) {
+        return { ok: false, message: result.message, status: result.status };
+      }
+
+      return {
+        ok: false,
+        message: result.message,
+        status: result.status,
+        redirectPath: "/admin/products/collections",
+        redirectStatusParam: result.message,
+      };
     }
 
-    return NextResponse.json({ collection: result.collection });
-  }
+    if (context.wantsJson) {
+      return { ok: true, data: { collection: result.collection } };
+    }
 
-  return redirectToCollections(request, result.ok ? "collection_created" : result.message);
+    return {
+      ok: true,
+      data: { collection: result.collection },
+      redirectPath: "/admin/products/collections",
+      redirectStatusParam: "collection_created",
+    };
+  });
 }
 
 async function getCollectionInput(request: Request) {
@@ -53,25 +70,4 @@ async function getCollectionInput(request: Request) {
   }
 
   return getTaxonomyFormInput(await request.formData());
-}
-
-function redirectToCollections(request: Request, status: string) {
-  const url = new URL("/admin/products/collections", getRequestOrigin(request));
-
-  url.searchParams.set("collectionStatus", status);
-  appendTenantRedirectParams(url, request);
-
-  return NextResponse.redirect(url, { status: 303 });
-}
-
-function getRequestOrigin(request: Request) {
-  const forwardedHost = request.headers.get("x-forwarded-host");
-
-  if (!forwardedHost) {
-    return new URL(request.url).origin;
-  }
-
-  const forwardedProto = request.headers.get("x-forwarded-proto") ?? "http";
-
-  return `${forwardedProto}://${forwardedHost}`;
 }
