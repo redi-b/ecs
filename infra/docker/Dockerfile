@@ -44,14 +44,18 @@ ENV DISABLE_MEDUSA_ADMIN=true
 ENV MEDUSA_TELEMETRY_DISABLED=true
 ENV XDG_CONFIG_HOME=/tmp/.config
 RUN pnpm --filter @ecs/medusa build
+
+# Medusa's build output is a standalone application. Use pnpm deploy only to
+# install the locked production dependencies, then replace its source tree with
+# the compiled standalone server instead of overlaying the two trees.
 RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
     pnpm --filter @ecs/medusa deploy --prod /out/medusa && \
+    rm -rf /out/medusa/src /out/medusa/medusa-config.ts && \
     cp -R apps/medusa/.medusa/server/. /out/medusa/ && \
-    node -e "require.resolve('@medusajs/draft-order/package.json', { paths: ['/out/medusa'] })" && \
-    # Medusa db:migrate calls mkdir on each module's migrations/ path. Pre-create
-    # empty dirs so migrate works on read-only rootfs (Node reports that mkdir as ENOENT).
-    find /out/medusa/src/modules -mindepth 1 -maxdepth 1 -type d -exec mkdir -p {}/migrations \; && \
-    find /out/medusa/node_modules -type d -name dist -exec mkdir -p {}/migrations \;
+    test -f /out/medusa/src/api/internal/platform/provision-tenant/route.js && \
+    test ! -f /out/medusa/src/api/internal/platform/provision-tenant/route.ts && \
+    test -f /out/medusa/src/workflows/provision-tenant-commerce-resources.js && \
+    node -e "require.resolve('@medusajs/draft-order/package.json', { paths: ['/out/medusa'] })"
 FROM node:${NODE_VERSION} AS runtime
 RUN apk add --no-cache dumb-init
 ENV NODE_ENV=production

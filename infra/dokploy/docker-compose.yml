@@ -99,9 +99,8 @@ services:
       postgres:
         condition: service_healthy
 
-  # Medusa db:migrate creates empty migrations/ dirs under modules and
-  # node_modules (recursive mkdir). On a read-only rootfs Node reports that as
-  # ENOENT, so this one-shot job must be writable. App containers stay read-only.
+  # Medusa discovers and manages module migration directories at runtime, so its
+  # migration filesystem must be writable.
   migrate-medusa:
     image: ${IMAGE_PREFIX:?set IMAGE_PREFIX}/medusa:${IMAGE_TAG:-main}
     pull_policy: always
@@ -142,6 +141,7 @@ services:
     <<: *app-defaults
     image: ${IMAGE_PREFIX:?set IMAGE_PREFIX}/medusa:${IMAGE_TAG:-main}
     pull_policy: always
+    read_only: false
     environment: *medusa-environment
     expose:
       - "9000"
