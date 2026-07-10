@@ -3,10 +3,7 @@ import { getListErrorState } from "@/lib/list-error-state";
 
 type TaxonomyListKind = "categories" | "collections";
 
-export function getTaxonomyListErrorState(
-  kind: TaxonomyListKind,
-  message: string,
-): ListErrorState {
+export function getTaxonomyListErrorState(kind: TaxonomyListKind, message: string): ListErrorState {
   const state = getListErrorState("products", message);
   const label = kind === "categories" ? "Product categories" : "Product collections";
   const lowerLabel = label.toLowerCase();

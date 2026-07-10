@@ -1,7 +1,4 @@
-import type {
-  MerchantProductCategory,
-  MerchantProductCollection,
-} from "@ecs/contracts";
+import type { MerchantProductCategory, MerchantProductCollection } from "@ecs/contracts";
 
 export type TaxonomyTableFilterInput = {
   query: string;

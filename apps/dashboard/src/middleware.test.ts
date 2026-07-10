@@ -16,9 +16,7 @@ describe("dashboard proxy", () => {
       "/admin/products?page=2",
     );
     assert.ok(
-      response.headers
-        .get("x-middleware-override-headers")
-        ?.includes(DASHBOARD_PATH_HEADER),
+      response.headers.get("x-middleware-override-headers")?.includes(DASHBOARD_PATH_HEADER),
     );
     assert.equal(request.headers.get(DASHBOARD_PATH_HEADER), null);
   });
@@ -31,11 +29,7 @@ describe("dashboard proxy", () => {
     assertNoDashboardPathOverride(response);
   });
 
-  for (const pathname of [
-    "/admin/sign-in",
-    "/admin/session",
-    "/admin/storefront/template",
-  ]) {
+  for (const pathname of ["/admin/sign-in", "/admin/session", "/admin/storefront/template"]) {
     it(`does not add the dashboard path header for ${pathname}`, () => {
       const request = new NextRequest(`http://abebe.lvh.me${pathname}`);
       const response = proxy(request);
@@ -47,8 +41,5 @@ describe("dashboard proxy", () => {
 });
 
 function assertNoDashboardPathOverride(response: Response) {
-  assert.equal(
-    response.headers.get(`x-middleware-request-${DASHBOARD_PATH_HEADER}`),
-    null,
-  );
+  assert.equal(response.headers.get(`x-middleware-request-${DASHBOARD_PATH_HEADER}`), null);
 }

@@ -1,13 +1,6 @@
 "use client";
 
-import {
-  createContext,
-  type ReactNode,
-  useCallback,
-  useContext,
-  useEffect,
-  useState,
-} from "react";
+import { createContext, type ReactNode, useCallback, useContext, useEffect, useState } from "react";
 
 import type { DashboardBreadcrumbLabels } from "@/lib/dashboard-breadcrumbs";
 
@@ -48,14 +41,20 @@ export function useBreadcrumbLabels() {
   return useContext(BreadcrumbLabelsContext);
 }
 
-export function DashboardBreadcrumbLabel({ id, label }: { id: string; label: string | null }) {
+export function DashboardBreadcrumbLabel({
+  label,
+  labelKey,
+}: {
+  label: string | null;
+  labelKey: string;
+}) {
   const setLabel = useContext(BreadcrumbLabelSetterContext);
 
   useEffect(() => {
-    setLabel?.(id, label);
+    setLabel?.(labelKey, label);
 
-    return () => setLabel?.(id, null);
-  }, [id, label, setLabel]);
+    return () => setLabel?.(labelKey, null);
+  }, [labelKey, label, setLabel]);
 
   return null;
 }

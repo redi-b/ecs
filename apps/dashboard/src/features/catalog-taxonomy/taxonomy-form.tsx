@@ -1,22 +1,13 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useId, useMemo, useState } from "react";
 
 import { AppIcons } from "@/components/app/icons";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import {
-  Field,
-  FieldDescription,
-  FieldGroup,
-  FieldLabel,
-} from "@/components/ui/field";
-import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupInput,
-} from "@/components/ui/input-group";
+import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { slugifyTaxonomyHandle } from "@/features/catalog-taxonomy/taxonomy-table-state";
 
@@ -40,6 +31,7 @@ export function TaxonomyForm({
   const [displayName, setDisplayName] = useState("");
   const [handle, setHandle] = useState("");
   const [isHandleLocked, setIsHandleLocked] = useState(true);
+  const formId = useId();
   const generatedHandle = useMemo(() => slugifyTaxonomyHandle(displayName), [displayName]);
   const HandleLockIcon = isHandleLocked ? AppIcons.lock : AppIcons.lockUnlock;
 
@@ -62,10 +54,10 @@ export function TaxonomyForm({
         <CardContent>
           <FieldGroup>
             <Field>
-              <FieldLabel htmlFor={name}>{nameLabel}</FieldLabel>
+              <FieldLabel htmlFor={`${formId}-name`}>{nameLabel}</FieldLabel>
               <Input
                 autoComplete="off"
-                id={name}
+                id={`${formId}-name`}
                 name={name}
                 onChange={(event) => updateDisplayName(event.target.value)}
                 placeholder={namePlaceholder}
@@ -75,10 +67,10 @@ export function TaxonomyForm({
             </Field>
 
             <Field>
-              <FieldLabel htmlFor="handle">Handle</FieldLabel>
+              <FieldLabel htmlFor={`${formId}-handle`}>Handle</FieldLabel>
               <InputGroup className="pr-1">
                 <InputGroupInput
-                  id="handle"
+                  id={`${formId}-handle`}
                   name="handle"
                   onChange={(event) => setHandle(slugifyTaxonomyHandle(event.target.value))}
                   placeholder={slugifyTaxonomyHandle(namePlaceholder)}

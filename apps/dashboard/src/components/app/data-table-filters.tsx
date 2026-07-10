@@ -54,10 +54,7 @@ export function DataTableFilters({ children, filters, onClearAll }: DataTableFil
         <div className="flex flex-1 flex-wrap items-center gap-2">
           {children}
           {activeFilters.map((filter) => (
-            <DataTableAppliedFilterChip
-              filter={filter}
-              key={filter.id}
-            />
+            <DataTableAppliedFilterChip filter={filter} key={filter.id} />
           ))}
           <Popover
             onOpenChange={(open) => {
@@ -160,11 +157,7 @@ export function DataTableFilters({ children, filters, onClearAll }: DataTableFil
   );
 }
 
-function DataTableAppliedFilterChip({
-  filter,
-}: {
-  filter: DataTableFilterDefinition;
-}) {
+function DataTableAppliedFilterChip({ filter }: { filter: DataTableFilterDefinition }) {
   const [open, setOpen] = useState(false);
   const [optionSearch, setOptionSearch] = useState("");
 

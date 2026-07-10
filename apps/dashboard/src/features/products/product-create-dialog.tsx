@@ -1,9 +1,6 @@
 "use client";
 
-import type {
-  MerchantProductCategory,
-  MerchantProductCollection,
-} from "@ecs/contracts";
+import type { MerchantProductCategory, MerchantProductCollection } from "@ecs/contracts";
 import { useState } from "react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";

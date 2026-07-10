@@ -1,4 +1,4 @@
-import { DashboardApiError, apiErrorKindFromStatus } from "@/lib/api/errors";
+import { apiErrorKindFromStatus, DashboardApiError } from "@/lib/api/errors";
 
 function createDashboardHeaders(init?: RequestInit) {
   const headers = new Headers(init?.headers);
@@ -34,10 +34,7 @@ async function parseDashboardResponse<T>(response: Response): Promise<T> {
   return body as T;
 }
 
-export async function dashboardFetch<T>(
-  path: string,
-  init?: RequestInit,
-): Promise<T> {
+export async function dashboardFetch<T>(path: string, init?: RequestInit): Promise<T> {
   let response: Response;
 
   try {

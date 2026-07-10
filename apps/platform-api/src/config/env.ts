@@ -1,7 +1,7 @@
-import { loadServiceEnvFiles } from "@ecs/config";
 import { existsSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { loadServiceEnvFiles } from "@ecs/config";
 
 export function loadPlatformApiEnvFiles(moduleUrl = import.meta.url) {
   return loadServiceEnvFiles({

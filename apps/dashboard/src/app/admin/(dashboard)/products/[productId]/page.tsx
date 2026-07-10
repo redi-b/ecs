@@ -5,7 +5,7 @@ import { ListSetupState } from "@/components/app/list-error-state";
 import { PageShell } from "@/components/app/page-shell";
 import { RefreshButton } from "@/components/app/refresh-button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { ProductDetail, ProductDeleteButton } from "@/features/products/product-detail";
+import { ProductDeleteButton, ProductDetail } from "@/features/products/product-detail";
 import { ProductStockPanel } from "@/features/products/product-stock-panel";
 import {
   type DashboardSearchParams,
@@ -105,8 +105,8 @@ export default async function MerchantProductDetailPage({
       ) : productResult.ok ? (
         <>
           <DashboardBreadcrumbLabel
-            id="product-details"
             label={productResult.product.title ?? productResult.product.handle ?? null}
+            labelKey="product-details"
           />
           {optionErrors.length ? <ReferenceDataAlert errors={optionErrors} /> : null}
           <ProductDetail

@@ -1,6 +1,5 @@
-import type { Data } from "@puckeditor/core";
-
 import { classicV1EditorSchema as classicV1EditorManifest } from "@ecs/storefront-templates";
+import type { Data } from "@puckeditor/core";
 
 export type StorefrontDraft = {
   data: unknown;
@@ -9,12 +8,15 @@ export type StorefrontDraft = {
   tenantId: string;
   themeTokens: unknown;
   updatedAt: string;
-  published?: {
-    revisionId: string;
-    publishedAt: string;
-    data: unknown;
-    themeTokens: unknown;
-  } | null | undefined;
+  published?:
+    | {
+        revisionId: string;
+        publishedAt: string;
+        data: unknown;
+        themeTokens: unknown;
+      }
+    | null
+    | undefined;
 };
 
 export type StorefrontPageProps = {

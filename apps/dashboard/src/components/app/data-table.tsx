@@ -1,7 +1,5 @@
 "use client";
 
-import { useState } from "react";
-import type * as React from "react";
 import {
   type ColumnDef,
   flexRender,
@@ -14,6 +12,8 @@ import {
   type SortingState,
   useReactTable,
 } from "@tanstack/react-table";
+import type * as React from "react";
+import { useState } from "react";
 
 import { DataTableBulkBar } from "@/components/app/data-table-bulk-bar";
 import { AppIcons } from "@/components/app/icons";
@@ -85,8 +85,7 @@ export function DataTable<TData>({
     getSortedRowModel: getSortedRowModel(),
     ...(getRowId ? { getRowId } : {}),
     onGlobalFilterChange: (updater) => {
-      const nextValue =
-        typeof updater === "function" ? updater(globalFilter ?? "") : updater;
+      const nextValue = typeof updater === "function" ? updater(globalFilter ?? "") : updater;
 
       onGlobalFilterChange?.(String(nextValue ?? ""));
     },
@@ -106,8 +105,7 @@ export function DataTable<TData>({
   const visibleColumnCount = table.getVisibleLeafColumns().length || columns.length;
   const emptyStateMessage =
     isFiltered && rows.length === 0 ? (filteredEmptyMessage ?? emptyMessage) : emptyMessage;
-  const emptyStateTitle =
-    isFiltered && rows.length === 0 ? filteredEmptyTitle : emptyTitle;
+  const emptyStateTitle = isFiltered && rows.length === 0 ? filteredEmptyTitle : emptyTitle;
   const selectedSummary =
     typeof selectedSummaryLabel === "function"
       ? selectedSummaryLabel(selectedRows.length)
@@ -161,10 +159,7 @@ export function DataTable<TData>({
               ))
             ) : (
               <TableRow>
-                <TableCell
-                  className="h-52 px-4"
-                  colSpan={visibleColumnCount}
-                >
+                <TableCell className="h-52 px-4" colSpan={visibleColumnCount}>
                   <Empty className="border-0">
                     <EmptyHeader>
                       <EmptyMedia variant="icon">

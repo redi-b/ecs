@@ -11,9 +11,7 @@ export const listSearchParamsSchema = z.object({
 
 export type ListSearchParams = z.infer<typeof listSearchParamsSchema>;
 
-export type SearchParamsInput =
-  | URLSearchParams
-  | Record<string, string | string[] | undefined>;
+export type SearchParamsInput = URLSearchParams | Record<string, string | string[] | undefined>;
 
 export function parseListSearchParams(input: SearchParamsInput): ListSearchParams {
   if (input instanceof URLSearchParams) {
@@ -27,10 +25,7 @@ export function parseListSearchParams(input: SearchParamsInput): ListSearchParam
   }
 
   const normalized = Object.fromEntries(
-    Object.entries(input).map(([key, value]) => [
-      key,
-      Array.isArray(value) ? value[0] : value,
-    ]),
+    Object.entries(input).map(([key, value]) => [key, Array.isArray(value) ? value[0] : value]),
   );
 
   return listSearchParamsSchema.parse(normalized);

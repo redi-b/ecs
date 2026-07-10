@@ -6,7 +6,7 @@ import type {
   MerchantProductCollection,
 } from "@ecs/contracts";
 import { useRouter } from "next/navigation";
-import { type ReactNode, useMemo, useState } from "react";
+import { type ReactNode, useId, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { AppIcons } from "@/components/app/icons";
@@ -61,10 +61,8 @@ type ProductMediaValues = {
 
 const PRODUCT_STATUS_OPTIONS = ["draft", "published"] as const;
 
-export function ProductDetailsEditButton({
-  action,
-  product,
-}: ProductEditSheetBaseProps) {
+export function ProductDetailsEditButton({ action, product }: ProductEditSheetBaseProps) {
+  const detailsId = useId();
   const [values, setValues] = useState<ProductDetailsValues>(() => ({
     description: product.description ?? "",
     handle: product.handle ?? "",
@@ -102,18 +100,18 @@ export function ProductDetailsEditButton({
       triggerLabel="Edit product details"
     >
       <Field>
-        <FieldLabel htmlFor="product-details-title">Title</FieldLabel>
+        <FieldLabel htmlFor={`${detailsId}-title`}>Title</FieldLabel>
         <Input
-          id="product-details-title"
+          id={`${detailsId}-title`}
           onChange={(event) => setValues((current) => ({ ...current, title: event.target.value }))}
           required
           value={values.title}
         />
       </Field>
       <Field>
-        <FieldLabel htmlFor="product-details-handle">Handle</FieldLabel>
+        <FieldLabel htmlFor={`${detailsId}-handle`}>Handle</FieldLabel>
         <Input
-          id="product-details-handle"
+          id={`${detailsId}-handle`}
           onChange={(event) => setValues((current) => ({ ...current, handle: event.target.value }))}
           value={values.handle}
         />
@@ -140,9 +138,9 @@ export function ProductDetailsEditButton({
         </Select>
       </Field>
       <Field>
-        <FieldLabel htmlFor="product-details-description">Description</FieldLabel>
+        <FieldLabel htmlFor={`${detailsId}-description`}>Description</FieldLabel>
         <Textarea
-          id="product-details-description"
+          id={`${detailsId}-description`}
           onChange={(event) =>
             setValues((current) => ({ ...current, description: event.target.value }))
           }
@@ -167,7 +165,9 @@ export function ProductOrganizationEditButton({
     categoryIds: product.categoryIds ?? [],
     collectionId: product.collectionId ?? NO_COLLECTION_VALUE,
   }));
-  const selectedCollection = collections.find((collection) => collection.id === values.collectionId);
+  const selectedCollection = collections.find(
+    (collection) => collection.id === values.collectionId,
+  );
   const selectedCategories = useMemo(
     () => categories.filter((category) => values.categoryIds.includes(category.id)),
     [categories, values.categoryIds],
@@ -215,10 +215,8 @@ export function ProductOrganizationEditButton({
   );
 }
 
-export function ProductMediaEditButton({
-  action,
-  product,
-}: ProductEditSheetBaseProps) {
+export function ProductMediaEditButton({ action, product }: ProductEditSheetBaseProps) {
+  const mediaId = useId();
   const [values, setValues] = useState<ProductMediaValues>(() => getProductMediaValues(product));
 
   return (
@@ -234,9 +232,9 @@ export function ProductMediaEditButton({
       triggerLabel="Edit product media"
     >
       <Field>
-        <FieldLabel htmlFor="product-media-thumbnail">Thumbnail URL</FieldLabel>
+        <FieldLabel htmlFor={`${mediaId}-thumbnail`}>Thumbnail URL</FieldLabel>
         <Input
-          id="product-media-thumbnail"
+          id={`${mediaId}-thumbnail`}
           onChange={(event) =>
             setValues((current) => ({ ...current, thumbnail: event.target.value }))
           }
@@ -244,9 +242,9 @@ export function ProductMediaEditButton({
         />
       </Field>
       <Field>
-        <FieldLabel htmlFor="product-media-images">Image URLs</FieldLabel>
+        <FieldLabel htmlFor={`${mediaId}-images`}>Image URLs</FieldLabel>
         <Textarea
-          id="product-media-images"
+          id={`${mediaId}-images`}
           onChange={(event) =>
             setValues((current) => ({ ...current, imageUrls: event.target.value }))
           }
@@ -346,9 +344,7 @@ function ProductEditSheet({
             return;
           }
 
-          if (
-            target.closest("[data-slot='select-content'], [data-radix-popper-content-wrapper]")
-          ) {
+          if (target.closest("[data-slot='select-content'], [data-radix-popper-content-wrapper]")) {
             event.preventDefault();
           }
         }}
@@ -388,7 +384,10 @@ function normalizeProductStatus(status: string | null) {
 
 function getProductMediaValues(product: MerchantProduct): ProductMediaValues {
   return {
-    imageUrls: (product.images ?? []).map((image) => image.url).filter(Boolean).join("\n"),
+    imageUrls: (product.images ?? [])
+      .map((image) => image.url)
+      .filter(Boolean)
+      .join("\n"),
     thumbnail: product.thumbnail ?? "",
   };
 }

@@ -1,24 +1,24 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
+  createMerchantProduct,
   createMerchantProductCategory,
   createMerchantProductCollection,
-  createMerchantProduct,
+  deleteMerchantProduct,
+  deleteMerchantProductCategoriesBatch,
+  deleteMerchantProductCategory,
+  deleteMerchantProductCollection,
+  deleteMerchantProductCollectionsBatch,
+  deleteMerchantProductsBatch,
   getMerchantProduct,
   getMerchantProductCategories,
   getMerchantProductCollections,
   getMerchantProductStock,
-  getMerchantProductVariantStock,
   getMerchantProducts,
+  getMerchantProductVariantStock,
+  updateMerchantProduct,
   updateMerchantProductStock,
   updateMerchantProductVariantStock,
-  updateMerchantProduct,
-  deleteMerchantProduct,
-  deleteMerchantProductsBatch,
-  deleteMerchantProductCategory,
-  deleteMerchantProductCategoriesBatch,
-  deleteMerchantProductCollection,
-  deleteMerchantProductCollectionsBatch,
 } from "./merchant-products.js";
 
 const merchantProduct = {

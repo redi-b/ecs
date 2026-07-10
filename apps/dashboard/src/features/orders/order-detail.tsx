@@ -1,23 +1,8 @@
 import type { MerchantOrder } from "@ecs/contracts";
-import type { ReactNode } from "react";
 import Link from "next/link";
+import type { ReactNode } from "react";
 
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { OrderStatusBadge } from "@/features/orders/order-table-cells";
-import {
-  formatOrderDate,
-  formatOrderDisplayId,
-  formatOrderMoney,
-} from "@/features/orders/order-table-state";
-import { OrderActions } from "@/features/orders/order-actions";
-import { getTenantScopedPath } from "@/lib/dashboard-tenant-context";
-import { dashboardRoutes } from "@/lib/routes";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -26,6 +11,15 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { OrderActions } from "@/features/orders/order-actions";
+import { OrderStatusBadge } from "@/features/orders/order-table-cells";
+import {
+  formatOrderDate,
+  formatOrderDisplayId,
+  formatOrderMoney,
+} from "@/features/orders/order-table-state";
+import { getTenantScopedPath } from "@/lib/dashboard-tenant-context";
+import { dashboardRoutes } from "@/lib/routes";
 
 type OrderDetailProps = {
   action: string;
@@ -79,7 +73,9 @@ export function OrderDetail({ action, order, tenantId }: OrderDetailProps) {
               <DetailField
                 label="Phone"
                 value={
-                  order.delivery?.customerPhone ?? order.shippingAddress?.phone ?? "No phone captured"
+                  order.delivery?.customerPhone ??
+                  order.shippingAddress?.phone ??
+                  "No phone captured"
                 }
               />
             </div>
@@ -102,8 +98,8 @@ export function OrderDetail({ action, order, tenantId }: OrderDetailProps) {
           >
             <div className="rounded-lg border px-4 py-3">
               <div className="space-y-1 text-sm">
-                {formatShippingAddress(order.shippingAddress).map((line, index) => (
-                  <div key={`${line}-${index}`} className="break-words">
+                {formatShippingAddress(order.shippingAddress).map((line) => (
+                  <div key={line} className="break-words">
                     {line}
                   </div>
                 ))}
@@ -369,7 +365,11 @@ function StatusField({
   return (
     <div className="flex items-center justify-between gap-3 rounded-lg border px-4 py-3">
       <div className="text-sm font-medium text-muted-foreground">{label}</div>
-      {tone ? <OrderStatusBadge status={status} tone={tone} /> : <OrderStatusBadge status={status} />}
+      {tone ? (
+        <OrderStatusBadge status={status} tone={tone} />
+      ) : (
+        <OrderStatusBadge status={status} />
+      )}
     </div>
   );
 }

@@ -6,9 +6,9 @@ import type {
   MerchantProductCollection,
 } from "@ecs/contracts";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type ReactNode, useState } from "react";
-import Link from "next/link";
 import { toast } from "sonner";
 
 import {
@@ -21,22 +21,16 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { getTenantScopedPath } from "@/lib/dashboard-tenant-context";
-import { dashboardRoutes } from "@/lib/routes";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   ProductDetailsEditButton,
   ProductMediaEditButton,
   ProductOrganizationEditButton,
 } from "@/features/products/product-edit-dialog";
+import { getTenantScopedPath } from "@/lib/dashboard-tenant-context";
+import { dashboardRoutes } from "@/lib/routes";
 
 type ProductDetailProps = {
   action: string;
@@ -110,11 +104,7 @@ export function ProductDetail({
             <DetailField
               label="Collection"
               value={
-                <CollectionValue
-                  collection={collection}
-                  product={product}
-                  tenantId={tenantId}
-                />
+                <CollectionValue collection={collection} product={product} tenantId={tenantId} />
               }
             />
             <DetailField
@@ -400,7 +390,11 @@ function getDeletionErrorMessage(error: unknown, resourceName: string) {
   if (code === "commerce_credentials_missing" || code === "commerce_credentials_invalid") {
     return "Catalog changes are temporarily unavailable. Contact support.";
   }
-  if (code === "product_not_found" || code === "category_not_found" || code === "collection_not_found") {
+  if (
+    code === "product_not_found" ||
+    code === "category_not_found" ||
+    code === "collection_not_found"
+  ) {
     return `${resourceName} not found.`;
   }
   return `Failed to delete ${resourceName.toLowerCase()}. Try again.`;

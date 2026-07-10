@@ -184,9 +184,7 @@ describe("order table state", () => {
       ["order_5"],
     );
     assert.deepEqual(
-      filterOrdersForTable(orders, { lifecycle: "completed", query: "" }).map(
-        (order) => order.id,
-      ),
+      filterOrdersForTable(orders, { lifecycle: "completed", query: "" }).map((order) => order.id),
       ["order_2"],
     );
     assert.deepEqual(
