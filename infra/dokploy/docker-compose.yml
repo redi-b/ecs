@@ -1,0 +1,231 @@
+name: ecs
+
+x-app-defaults: &app-defaults
+  restart: unless-stopped
+  read_only: true
+  tmpfs:
+    - /tmp:size=64m,mode=1777
+  security_opt:
+    - no-new-privileges:true
+
+x-platform-environment: &platform-environment
+  NODE_ENV: production
+  SERVICE_NAME: platform-api
+  PORT: "3000"
+  PLATFORM_DATABASE_URL: ${PLATFORM_DATABASE_URL:?set PLATFORM_DATABASE_URL}
+  PLATFORM_DATABASE_SSL: ${PLATFORM_DATABASE_SSL:-false}
+  REDIS_URL: redis://redis:6379
+  MEDUSA_INTERNAL_URL: http://medusa:9000
+  MEDUSA_ADMIN_API_TOKEN: ${MEDUSA_ADMIN_API_TOKEN:-}
+  PLATFORM_INTERNAL_API_TOKEN: ${PLATFORM_INTERNAL_API_TOKEN:?set PLATFORM_INTERNAL_API_TOKEN}
+  PLATFORM_PUBLIC_BASE_URL: https://api.${BASE_DOMAIN:?set BASE_DOMAIN}
+  STOREFRONT_PUBLIC_BASE_DOMAIN: ${BASE_DOMAIN}
+  DASHBOARD_PUBLIC_BASE_URL: https://dashboard.${BASE_DOMAIN}
+  BETTER_AUTH_URL: https://api.${BASE_DOMAIN}
+  BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?set BETTER_AUTH_SECRET}
+  BETTER_AUTH_TRUSTED_ORIGINS: https://dashboard.${BASE_DOMAIN},https://*.${BASE_DOMAIN}
+  CHAPA_SECRET_KEY: ${CHAPA_SECRET_KEY:-}
+  CHAPA_API_URL: ${CHAPA_API_URL:-https://api.chapa.co/v1}
+
+x-medusa-environment: &medusa-environment
+  NODE_ENV: production
+  SERVICE_NAME: medusa
+  PORT: "9000"
+  DATABASE_URL: ${MEDUSA_DATABASE_URL:?set MEDUSA_DATABASE_URL}
+  DATABASE_SSL: ${MEDUSA_DATABASE_SSL:-false}
+  REDIS_URL: redis://redis:6379
+  STORE_CORS: https://*.${BASE_DOMAIN}
+  ADMIN_CORS: https://dashboard.${BASE_DOMAIN}
+  AUTH_CORS: https://dashboard.${BASE_DOMAIN}
+  JWT_SECRET: ${MEDUSA_JWT_SECRET:?set MEDUSA_JWT_SECRET}
+  COOKIE_SECRET: ${MEDUSA_COOKIE_SECRET:?set MEDUSA_COOKIE_SECRET}
+  PLATFORM_INTERNAL_API_TOKEN: ${PLATFORM_INTERNAL_API_TOKEN}
+  MEDUSA_WORKER_MODE: shared
+  DISABLE_MEDUSA_ADMIN: "true"
+  CHAPA_SECRET_KEY: ${CHAPA_SECRET_KEY:-}
+  CHAPA_API_URL: ${CHAPA_API_URL:-https://api.chapa.co/v1}
+  CHAPA_CALLBACK_URL: https://api.${BASE_DOMAIN}/platform/payments/chapa/callback
+  CHAPA_RETURN_URL: https://shop.${BASE_DOMAIN}/checkout/payment-return
+  CHAPA_CUSTOMIZATION_TITLE: ${CHAPA_CUSTOMIZATION_TITLE:-ECS Store}
+  CHAPA_CUSTOMIZATION_DESCRIPTION: ${CHAPA_CUSTOMIZATION_DESCRIPTION:-Order payment}
+  CHAPA_FALLBACK_EMAIL: ${CHAPA_FALLBACK_EMAIL:-payments@example.com}
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-ecs}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-ecs}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ../compose/initdb:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+    security_opt:
+      - no-new-privileges:true
+
+  redis:
+    image: redis:8-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--save", "60", "1"]
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    security_opt:
+      - no-new-privileges:true
+
+  migrate-platform:
+    image: ${IMAGE_PREFIX:?set IMAGE_PREFIX}/platform-api:${IMAGE_TAG:-main}
+    pull_policy: always
+    restart: "no"
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    security_opt:
+      - no-new-privileges:true
+    environment: *platform-environment
+    command: ["timeout", "-s", "TERM", "180", "node", "--import", "tsx", "node_modules/@ecs/db/src/migrations.ts"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  migrate-medusa:
+    image: ${IMAGE_PREFIX:?set IMAGE_PREFIX}/medusa:${IMAGE_TAG:-main}
+    pull_policy: always
+    restart: "no"
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    security_opt:
+      - no-new-privileges:true
+    environment: *medusa-environment
+    command: ["timeout", "-s", "TERM", "180", "node_modules/.bin/medusa", "db:migrate"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  platform-api:
+    <<: *app-defaults
+    image: ${IMAGE_PREFIX:?set IMAGE_PREFIX}/platform-api:${IMAGE_TAG:-main}
+    pull_policy: always
+    environment: *platform-environment
+    expose:
+      - "3000"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/health').then(r=>{if(!r.ok)throw Error(r.status)}).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 15s
+    depends_on:
+      migrate-platform:
+        condition: service_completed_successfully
+      medusa:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  medusa:
+    <<: *app-defaults
+    image: ${IMAGE_PREFIX:?set IMAGE_PREFIX}/medusa:${IMAGE_TAG:-main}
+    pull_policy: always
+    environment: *medusa-environment
+    expose:
+      - "9000"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:9000/health').then(r=>{if(!r.ok)throw Error(r.status)}).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 18
+      start_period: 30s
+    depends_on:
+      migrate-medusa:
+        condition: service_completed_successfully
+
+  dashboard:
+    <<: *app-defaults
+    image: ${IMAGE_PREFIX:?set IMAGE_PREFIX}/dashboard:${IMAGE_TAG:-main}
+    pull_policy: always
+    environment:
+      NODE_ENV: production
+      PORT: "3001"
+      PLATFORM_API_BASE_URL: http://platform-api:3000
+      DASHBOARD_PUBLIC_BASE_URL: https://dashboard.${BASE_DOMAIN}
+      DASHBOARD_AUTH_COOKIE_DOMAIN: .${BASE_DOMAIN}
+    expose:
+      - "3001"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3001/').then(r=>{if(r.status>=500)throw Error(r.status)}).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+    depends_on:
+      platform-api:
+        condition: service_healthy
+
+  storefront:
+    <<: *app-defaults
+    image: ${IMAGE_PREFIX:?set IMAGE_PREFIX}/storefront:${IMAGE_TAG:-main}
+    pull_policy: always
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: "4321"
+      PLATFORM_API_BASE_URL: http://platform-api:3000
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+      - /app/.astro:size=16m,mode=1777
+    expose:
+      - "4321"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:4321/healthz').then(r=>{if(!r.ok)throw Error(r.status)}).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 15s
+    depends_on:
+      platform-api:
+        condition: service_healthy
+
+  caddy:
+    image: caddy:2.10-alpine
+    restart: unless-stopped
+    read_only: true
+    environment:
+      BASE_DOMAIN: ${BASE_DOMAIN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+    tmpfs:
+      - /config:size=8m
+      - /data:size=8m
+    expose:
+      - "80"
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://127.0.0.1/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    security_opt:
+      - no-new-privileges:true
+    depends_on:
+      dashboard:
+        condition: service_healthy
+      storefront:
+        condition: service_healthy
+
+volumes:
+  postgres-data:
+  redis-data:

@@ -1,0 +1,45 @@
+{
+	admin off
+	auto_https off
+}
+
+:80 {
+	encode zstd gzip
+
+	respond /healthz 200
+
+	@platform host api.{$BASE_DOMAIN}
+	handle @platform {
+		reverse_proxy platform-api:3000
+	}
+
+	@dashboard host dashboard.{$BASE_DOMAIN}
+	handle @dashboard {
+		reverse_proxy dashboard:3001
+	}
+
+	@storefront host *.{$BASE_DOMAIN}
+	handle @storefront {
+		@dashboard_assets path /_next/* /__nextjs* /favicon.ico
+		handle @dashboard_assets {
+			reverse_proxy dashboard:3001
+		}
+
+		@admin path /admin*
+		handle @admin {
+			reverse_proxy dashboard:3001
+		}
+
+		@api path /api/*
+		handle @api {
+			uri strip_prefix /api
+			reverse_proxy platform-api:3000
+		}
+
+		handle {
+			reverse_proxy storefront:4321
+		}
+	}
+
+	respond 404
+}
