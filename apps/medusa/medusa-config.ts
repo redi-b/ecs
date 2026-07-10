@@ -3,6 +3,7 @@ import { defineConfig, loadEnv } from "@medusajs/framework/utils";
 loadEnv(process.env.NODE_ENV || "development", process.cwd());
 
 const redisUrl = process.env.REDIS_URL || "redis://localhost:6379";
+const databaseSslEnabled = process.env.DATABASE_SSL === "true";
 
 const paymentProviders = [
   {
@@ -26,6 +27,14 @@ module.exports = defineConfig({
   },
   projectConfig: {
     databaseUrl: process.env.DATABASE_URL || "postgres://ecs:ecs@localhost:5432/medusa_db",
+    ...(databaseSslEnabled
+      ? {}
+      : {
+          databaseDriverOptions: {
+            ssl: false,
+            sslmode: "disable",
+          },
+        }),
     redisUrl,
     workerMode: (process.env.MEDUSA_WORKER_MODE || process.env.WORKER_MODE || "shared") as
       | "server"
