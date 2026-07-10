@@ -62,7 +62,7 @@ describe("getListErrorState", () => {
 
   it("keeps unknown errors as technical failures", () => {
     assert.deepEqual(getListErrorState("products", "invalid_products_response"), {
-      description: "invalid_products_response",
+      description: "Product data was incomplete. Try again.",
       kind: "error",
       title: "Products could not be loaded",
     });

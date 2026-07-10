@@ -2,49 +2,49 @@ import { loadServiceEnv } from "@ecs/config";
 import { createPlatformDb } from "@ecs/db";
 import { createLogger } from "@ecs/logger";
 import { serve } from "@hono/node-server";
+import { createChapaPaymentService } from "./adapters/chapa/payment-service.js";
+import { createMedusaCommerceProvisioningClient } from "./adapters/medusa/commerce-provisioning.js";
+import { createPlatformApp } from "./app.js";
+import { loadPlatformApiEnvFiles } from "./config/env.js";
+import { getSystemHosts } from "./config/hosts.js";
+import { createDashboardAuthorizationLookup } from "./context/dashboard-authorization.js";
+import { createDomainTenantLookup } from "./context/domain-tenant-lookup.js";
+import { createPlatformAuth, parseTrustedOrigins } from "./context/platform-auth.js";
+import { resolveTenantFromHost } from "./context/tenant-resolver.js";
 import {
   createAnalyticsInsightsService,
   createAnalyticsService,
   createDrizzleAnalyticsEventStore,
   createDrizzleAnalyticsInsightsStore,
-} from "./analytics/analytics-service.js";
-import { createDashboardMetricsService } from "./analytics/dashboard-metrics-service.js";
-import { createPlatformApp } from "./app.js";
-import { createDashboardAuthorizationLookup } from "./auth/dashboard-authorization.js";
-import { createPlatformAuth, parseTrustedOrigins } from "./auth/platform-auth.js";
-import { createBillingService } from "./billing/billing-service.js";
-import { createMedusaOrderService } from "./commerce/order-service.js";
-import { createMedusaProductService } from "./commerce/product-service.js";
-import { loadPlatformApiEnvFiles } from "./config/env.js";
-import { getSystemHosts } from "./config/hosts.js";
-import { createDeliverySettingsService } from "./delivery/delivery-service.js";
-import { createDomainManagementService } from "./domains/domain-service.js";
-import { createNotificationService } from "./notifications/notification-service.js";
-import { createTenantOnboardingService } from "./onboarding/onboarding-service.js";
-import { createChapaPaymentService } from "./payments/chapa-payment-service.js";
-import { createPaymentOnboardingService } from "./payments/payment-onboarding-service.js";
-import { createMedusaCommerceProvisioningClient } from "./provisioning/medusa-commerce-provisioning.js";
-import {
-  createTenantProvisioningAttemptListService,
-  createTenantShopProvisioningRetryServiceFromDb,
-  createTenantShopProvisioningService,
-} from "./provisioning/tenant-shop-provisioning.js";
-import { createStorefrontTemplateService } from "./storefront/template-service.js";
-import { createSupportService } from "./support/support-service.js";
-import { createDomainTenantLookup } from "./tenancy/domain-tenant-lookup.js";
-import { resolveTenantFromHost } from "./tenancy/tenant-resolver.js";
+} from "./modules/analytics/analytics-service.js";
+import { createDashboardMetricsService } from "./modules/analytics/dashboard-metrics-service.js";
+import { createBillingService } from "./modules/billing/service.js";
+import { createMedusaOrderService } from "./modules/commerce/order-management.js";
+import { createMedusaProductService } from "./modules/commerce/product-catalog.js";
+import { createDeliverySettingsService } from "./modules/delivery/service.js";
+import { createDomainManagementService } from "./modules/domains/service.js";
+import { createNotificationService } from "./modules/notifications/service.js";
+import { createTenantOnboardingService } from "./modules/onboarding/service.js";
+import { createPaymentOnboardingService } from "./modules/payments/payment-onboarding-service.js";
+import { createStorefrontTemplateService } from "./modules/storefront/template-service.js";
+import { createSupportService } from "./modules/support/service.js";
 import {
   createTenantCommerceContextService,
   createTenantDashboardSummaryService,
-} from "./tenants/tenant-commerce-context-service.js";
+} from "./modules/tenants/commerce-context-service.js";
 import {
   createPlatformOnboardingStateService,
   createTenantDetailService,
   createTenantHandleAvailabilityService,
   createTenantListService,
   createTenantShopSettingsService,
-} from "./tenants/tenant-list-service.js";
-import { createTenantStatusService } from "./tenants/tenant-status-service.js";
+} from "./modules/tenants/list-service.js";
+import {
+  createTenantProvisioningAttemptListService,
+  createTenantShopProvisioningRetryServiceFromDb,
+  createTenantShopProvisioningService,
+} from "./modules/tenants/shop-provisioning.js";
+import { createTenantStatusService } from "./modules/tenants/status-service.js";
 
 loadPlatformApiEnvFiles();
 
