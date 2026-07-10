@@ -6,6 +6,12 @@
   "exports": {
     ".": "./src/index.ts"
   },
+  "files": [
+    "src",
+    "migrations",
+    "drizzle.config.ts",
+    "tsconfig.json"
+  ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
