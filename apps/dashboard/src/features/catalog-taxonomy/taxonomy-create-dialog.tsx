@@ -128,9 +128,7 @@ export function TaxonomyCreateDialog({
         <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle>Create {entityLabel}</DialogTitle>
-            <DialogDescription>
-              Create a product {entityLabel}.
-            </DialogDescription>
+            <DialogDescription>Create a product {entityLabel}.</DialogDescription>
           </DialogHeader>
           <form
             onSubmit={(event) => {
@@ -162,9 +160,7 @@ export function TaxonomyCreateDialog({
                 <InputGroup className="pr-1">
                   <InputGroupInput
                     id={`taxonomy-${entityLabel}-handle`}
-                    onChange={(event) =>
-                      setHandle(slugifyTaxonomyHandle(event.target.value))
-                    }
+                    onChange={(event) => setHandle(slugifyTaxonomyHandle(event.target.value))}
                     placeholder={slugifyTaxonomyHandle(namePlaceholder)}
                     readOnly={isHandleLocked}
                     value={handle}
@@ -215,7 +211,12 @@ export function TaxonomyCreateDialog({
                 </FieldDescription>
               </Field>
               <DialogFooter>
-                <Button disabled={isSaving} onClick={() => setOpen(false)} type="button" variant="outline">
+                <Button
+                  disabled={isSaving}
+                  onClick={() => setOpen(false)}
+                  type="button"
+                  variant="outline"
+                >
                   Cancel
                 </Button>
                 <Button disabled={isSaving} type="submit">

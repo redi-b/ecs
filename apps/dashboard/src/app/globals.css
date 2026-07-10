@@ -538,8 +538,7 @@
         135deg,
         color-mix(in oklch, var(--primary) 18%, transparent),
         color-mix(in oklch, var(--accent) 68%, transparent)
-      ),
-      var(--muted);
+      ), var(--muted);
   }
 
   .template-card-body {

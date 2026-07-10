@@ -40,7 +40,9 @@ export function filterProductsForTable(
     const matchesCollection =
       !input.collectionId ||
       input.collectionId === "all" ||
-      (input.collectionId === "none" ? !product.collectionId : product.collectionId === input.collectionId);
+      (input.collectionId === "none"
+        ? !product.collectionId
+        : product.collectionId === input.collectionId);
     const matchesCategory =
       !input.categoryId ||
       input.categoryId === "all" ||
@@ -100,7 +102,9 @@ export function parseProductStatusFilter(value: string | string[] | null | undef
   return "all";
 }
 
-export function parseProductStockFilter(value: string | string[] | null | undefined): ProductStockFilter {
+export function parseProductStockFilter(
+  value: string | string[] | null | undefined,
+): ProductStockFilter {
   const normalized = (Array.isArray(value) ? value[0] : value)?.trim().toLowerCase();
 
   if (normalized === "in_stock" || normalized === "out_of_stock" || normalized === "not_tracked") {
@@ -110,7 +114,9 @@ export function parseProductStockFilter(value: string | string[] | null | undefi
   return "all";
 }
 
-export function parseProductMediaFilter(value: string | string[] | null | undefined): ProductMediaFilter {
+export function parseProductMediaFilter(
+  value: string | string[] | null | undefined,
+): ProductMediaFilter {
   const normalized = (Array.isArray(value) ? value[0] : value)?.trim().toLowerCase();
 
   if (normalized === "with_media" || normalized === "without_media") {

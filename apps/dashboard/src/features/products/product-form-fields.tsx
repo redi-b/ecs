@@ -1,9 +1,6 @@
 "use client";
 
-import type {
-  MerchantProductCategory,
-  MerchantProductCollection,
-} from "@ecs/contracts";
+import type { MerchantProductCategory, MerchantProductCollection } from "@ecs/contracts";
 import { useState } from "react";
 
 import { AppIcons } from "@/components/app/icons";
@@ -24,13 +21,7 @@ import { cn } from "@/lib/utils";
 
 export const NO_COLLECTION_VALUE = "__none";
 
-export function ComposerSection({
-  description,
-  title,
-}: {
-  description: string;
-  title: string;
-}) {
+export function ComposerSection({ description, title }: { description: string; title: string }) {
   return (
     <div className="flex flex-col gap-1">
       <h2 className="text-lg font-semibold tracking-normal">{title}</h2>
@@ -107,7 +98,9 @@ export function CollectionPicker({
                 >
                   <span className="truncate">{getCollectionLabel(collection)}</span>
                   {collection.handle ? (
-                    <span className="ml-auto text-xs text-muted-foreground">{collection.handle}</span>
+                    <span className="ml-auto text-xs text-muted-foreground">
+                      {collection.handle}
+                    </span>
                   ) : null}
                 </CommandItem>
               ))}
@@ -169,7 +162,9 @@ export function CategoryPicker({
                     <Checkbox checked={value.includes(category.id)} />
                     <span className="truncate">{getCategoryLabel(category)}</span>
                     {category.handle ? (
-                      <span className="ml-auto text-xs text-muted-foreground">{category.handle}</span>
+                      <span className="ml-auto text-xs text-muted-foreground">
+                        {category.handle}
+                      </span>
                     ) : null}
                   </CommandItem>
                 ))}

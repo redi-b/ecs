@@ -59,7 +59,7 @@ export default async function MerchantOrderDetailPage({
       description="Review merchant-scoped customer, delivery, payment, fulfillment, and total details for this order."
       title="Order details"
     >
-      <DashboardBreadcrumbLabel id="order-details" label={breadcrumbLabel} />
+      <DashboardBreadcrumbLabel label={breadcrumbLabel} labelKey="order-details" />
       {setupError ? (
         <ListSetupState state={setupError} />
       ) : result.ok ? (

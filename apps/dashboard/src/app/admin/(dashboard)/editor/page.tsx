@@ -1,6 +1,6 @@
 import { RiLayoutMasonryLine } from "@remixicon/react";
-import Link from "next/link";
 import { headers } from "next/headers";
+import Link from "next/link";
 
 import { PageShell } from "@/components/app/page-shell";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -116,9 +116,7 @@ async function saveDraftAction(payload: StorefrontDraftPayload) {
     themeTokens: payload.themeTokens,
   });
 
-  return result.ok
-    ? ({ ok: true } as const)
-    : ({ ok: false, message: result.message } as const);
+  return result.ok ? ({ ok: true } as const) : ({ ok: false, message: result.message } as const);
 }
 
 async function publishDraftAction(tenantId: string) {
@@ -131,7 +129,5 @@ async function publishDraftAction(tenantId: string) {
     tenantId,
   });
 
-  return result.ok
-    ? ({ ok: true } as const)
-    : ({ ok: false, message: result.message } as const);
+  return result.ok ? ({ ok: true } as const) : ({ ok: false, message: result.message } as const);
 }

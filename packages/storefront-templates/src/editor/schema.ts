@@ -28,13 +28,7 @@ export const storefrontEditorManifestSchema = z.object({
   sections: z.array(storefrontEditorSectionSchema).min(1),
 });
 
-export type StorefrontEditorFieldKind = z.infer<
-  typeof storefrontEditorFieldKindSchema
->;
+export type StorefrontEditorFieldKind = z.infer<typeof storefrontEditorFieldKindSchema>;
 export type StorefrontEditorField = z.infer<typeof storefrontEditorFieldSchema>;
-export type StorefrontEditorSection = z.infer<
-  typeof storefrontEditorSectionSchema
->;
-export type StorefrontEditorManifest = z.infer<
-  typeof storefrontEditorManifestSchema
->;
+export type StorefrontEditorSection = z.infer<typeof storefrontEditorSectionSchema>;
+export type StorefrontEditorManifest = z.infer<typeof storefrontEditorManifestSchema>;

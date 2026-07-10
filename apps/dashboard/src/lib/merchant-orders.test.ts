@@ -140,10 +140,7 @@ describe("getMerchantOrder", () => {
     });
 
     assert.equal(result.ok, true);
-    assert.equal(
-      forwardedRequest?.url,
-      "http://platform.local/platform/merchant/orders/order_1",
-    );
+    assert.equal(forwardedRequest?.url, "http://platform.local/platform/merchant/orders/order_1");
     assert.equal(forwardedRequest?.headers.get("x-forwarded-host"), "merchant.example.com");
     assert.equal(forwardedRequest?.headers.get("cookie"), "better-auth.session_token=session_1");
   });

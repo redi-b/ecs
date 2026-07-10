@@ -151,9 +151,7 @@ describe("product table state", () => {
       ["prod_coffee"],
     );
     assert.deepEqual(
-      filterProductsForTable(products, { query: "", status: "draft" }).map(
-        (product) => product.id,
-      ),
+      filterProductsForTable(products, { query: "", status: "draft" }).map((product) => product.id),
       ["prod_tea"],
     );
   });

@@ -11,10 +11,7 @@ import {
 
 export default function InsightsPage() {
   return (
-    <PageShell
-      description="Deeper reports for traffic, products, and customers."
-      title="Insights"
-    >
+    <PageShell description="Deeper reports for traffic, products, and customers." title="Insights">
       <Empty className="min-h-96 border">
         <EmptyHeader>
           <EmptyMedia variant="icon">

@@ -253,7 +253,10 @@ describe("createMedusaProductService", () => {
     const result = await service.createMerchantProduct({
       title: "T-shirt",
       handle: "t-shirt",
-      options: [{ title: "Size", values: ["S"] }, { title: "Color", values: ["Black"] }],
+      options: [
+        { title: "Size", values: ["S"] },
+        { title: "Color", values: ["Black"] },
+      ],
       variants: [
         {
           optionValues: { Size: "S", Color: "Black" },
@@ -1943,15 +1946,12 @@ describe("createMedusaProductService", () => {
       assert.equal(forwardedRequests.length, 2);
       assert.equal(
         forwardedRequests[0]?.url,
-        "http://medusa:9000/admin/products/prod_1?fields=id%2Csales_channels.id"
+        "http://medusa:9000/admin/products/prod_1?fields=id%2Csales_channels.id",
       );
       assert.equal(forwardedRequests[0]?.method, "GET");
       assert.equal(forwardedRequests[0]?.headers.get("authorization"), "Basic medusa_token");
 
-      assert.equal(
-        forwardedRequests[1]?.url,
-        "http://medusa:9000/admin/products/prod_1"
-      );
+      assert.equal(forwardedRequests[1]?.url, "http://medusa:9000/admin/products/prod_1");
       assert.equal(forwardedRequests[1]?.method, "DELETE");
       assert.equal(forwardedRequests[1]?.headers.get("authorization"), "Basic medusa_token");
     });
@@ -1998,10 +1998,7 @@ describe("createMedusaProductService", () => {
 
           if (request.method === "GET") {
             return Response.json({
-              products: [
-                { id: "prod_1" },
-                { id: "prod_2" },
-              ],
+              products: [{ id: "prod_1" }, { id: "prod_2" }],
             });
           }
 
@@ -2085,12 +2082,9 @@ describe("createMedusaProductService", () => {
       assert.equal(forwardedRequests.length, 2);
       assert.equal(
         forwardedRequests[0]?.url,
-        "http://medusa:9000/admin/product-categories/pcat_1?fields=id%2Cmetadata"
+        "http://medusa:9000/admin/product-categories/pcat_1?fields=id%2Cmetadata",
       );
-      assert.equal(
-        forwardedRequests[1]?.url,
-        "http://medusa:9000/admin/product-categories/pcat_1"
-      );
+      assert.equal(forwardedRequests[1]?.url, "http://medusa:9000/admin/product-categories/pcat_1");
       assert.equal(forwardedRequests[1]?.method, "DELETE");
     });
 
@@ -2223,12 +2217,9 @@ describe("createMedusaProductService", () => {
       assert.equal(forwardedRequests.length, 2);
       assert.equal(
         forwardedRequests[0]?.url,
-        "http://medusa:9000/admin/collections/pcol_1?fields=id%2Cmetadata"
+        "http://medusa:9000/admin/collections/pcol_1?fields=id%2Cmetadata",
       );
-      assert.equal(
-        forwardedRequests[1]?.url,
-        "http://medusa:9000/admin/collections/pcol_1"
-      );
+      assert.equal(forwardedRequests[1]?.url, "http://medusa:9000/admin/collections/pcol_1");
       assert.equal(forwardedRequests[1]?.method, "DELETE");
     });
 

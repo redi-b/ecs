@@ -1,10 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import type {
-  MerchantProductCategory,
-  MerchantProductCollection,
-} from "@ecs/contracts";
+import type { MerchantProductCategory, MerchantProductCollection } from "@ecs/contracts";
 
 import {
   filterCategoriesForTable,
@@ -90,42 +87,30 @@ describe("taxonomy table state", () => {
 
   it("searches categories by id, name, handle, and parent id", () => {
     assert.deepEqual(
-      filterCategoriesForTable(categories, { query: "pcat_beans" }).map(
-        (category) => category.id,
-      ),
+      filterCategoriesForTable(categories, { query: "pcat_beans" }).map((category) => category.id),
       ["pcat_beans"],
     );
     assert.deepEqual(
-      filterCategoriesForTable(categories, { query: "beans" }).map(
-        (category) => category.id,
-      ),
+      filterCategoriesForTable(categories, { query: "beans" }).map((category) => category.id),
       ["pcat_beans"],
     );
     assert.deepEqual(
-      filterCategoriesForTable(categories, { query: "brew-tools" }).map(
-        (category) => category.id,
-      ),
+      filterCategoriesForTable(categories, { query: "brew-tools" }).map((category) => category.id),
       ["pcat_tools"],
     );
     assert.deepEqual(
-      filterCategoriesForTable(categories, { query: "pcat_pantry" }).map(
-        (category) => category.id,
-      ),
+      filterCategoriesForTable(categories, { query: "pcat_pantry" }).map((category) => category.id),
       ["pcat_beans"],
     );
   });
 
   it("keeps all taxonomy rows for whitespace-only queries", () => {
     assert.deepEqual(
-      filterCollectionsForTable(collections, { query: "   " }).map(
-        (collection) => collection.id,
-      ),
+      filterCollectionsForTable(collections, { query: "   " }).map((collection) => collection.id),
       ["pcol_coffee", "pcol_tea"],
     );
     assert.deepEqual(
-      filterCategoriesForTable(categories, { query: "   " }).map(
-        (category) => category.id,
-      ),
+      filterCategoriesForTable(categories, { query: "   " }).map((category) => category.id),
       ["pcat_beans", "pcat_tools"],
     );
   });
@@ -170,10 +155,7 @@ describe("taxonomy table state", () => {
   it("uses title/name display labels before handle and id fallbacks", () => {
     assert.equal(getCollectionDisplayName(coffeeCollection), "Coffee picks");
     assert.equal(getCollectionDisplayName(teaCollection), "tea-leaves");
-    assert.equal(
-      getCollectionDisplayName({ ...teaCollection, handle: null }),
-      "pcol_tea",
-    );
+    assert.equal(getCollectionDisplayName({ ...teaCollection, handle: null }), "pcol_tea");
     assert.equal(getCategoryDisplayName(beansCategory), "Beans");
     assert.equal(getCategoryDisplayName(toolsCategory), "brew-tools");
     assert.equal(getCategoryDisplayName({ ...toolsCategory, handle: null }), "pcat_tools");

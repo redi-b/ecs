@@ -1,7 +1,6 @@
 import { headers } from "next/headers";
-
-import { ListSummary, PaginationControls } from "@/components/app/list-page-controls";
 import { ListSetupState } from "@/components/app/list-error-state";
+import { ListSummary, PaginationControls } from "@/components/app/list-page-controls";
 import { PageShell } from "@/components/app/page-shell";
 import { RefreshButton } from "@/components/app/refresh-button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -42,9 +41,7 @@ export default async function MerchantProductCollectionsPage({
     requestHost: requestHeaders.get("host"),
     tenantId,
   });
-  const errorState = result.ok
-    ? null
-    : getTaxonomyListErrorState("collections", result.message);
+  const errorState = result.ok ? null : getTaxonomyListErrorState("collections", result.message);
 
   return (
     <PageShell

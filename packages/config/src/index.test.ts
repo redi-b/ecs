@@ -16,7 +16,10 @@ describe("loadServiceEnvFiles", () => {
 
     try {
       mkdirSync(serviceDir);
-      writeFileSync(join(root, ".env"), "ECS_CONFIG_ROOT_VALUE=root\nECS_CONFIG_EXISTING_VALUE=root\n");
+      writeFileSync(
+        join(root, ".env"),
+        "ECS_CONFIG_ROOT_VALUE=root\nECS_CONFIG_EXISTING_VALUE=root\n",
+      );
       writeFileSync(
         join(serviceDir, ".env"),
         "ECS_CONFIG_SERVICE_VALUE=service\nECS_CONFIG_EXISTING_VALUE=service\n",

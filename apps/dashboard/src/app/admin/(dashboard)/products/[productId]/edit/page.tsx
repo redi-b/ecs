@@ -86,8 +86,8 @@ export default async function MerchantProductEditPage({
       ) : productResult.ok ? (
         <>
           <DashboardBreadcrumbLabel
-            id="product-details"
             label={productResult.product.title ?? productResult.product.handle ?? null}
+            labelKey="product-details"
           />
           {optionErrors.length ? <ReferenceDataAlert errors={optionErrors} /> : null}
           {optionErrors.length ? null : (

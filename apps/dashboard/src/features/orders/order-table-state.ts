@@ -10,7 +10,12 @@ export type OrderLifecycleFilter =
   | "payment_pending"
   | "paid";
 export type OrderPaymentFilter = "all" | "paid" | "pending" | "unpaid" | "unknown";
-export type OrderFulfillmentFilter = "all" | "needs_fulfillment" | "fulfilled" | "unfulfilled" | "unknown";
+export type OrderFulfillmentFilter =
+  | "all"
+  | "needs_fulfillment"
+  | "fulfilled"
+  | "unfulfilled"
+  | "unknown";
 export type OrderDeliveryFilter = "all" | "delivery" | "pickup" | "none";
 export type OrderDateFilter = "all" | "today" | "last_7_days" | "last_30_days" | "no_date";
 
@@ -24,10 +29,7 @@ export type OrderTableFilterInput = {
   query: string;
 };
 
-export function filterOrdersForTable(
-  orders: MerchantOrder[],
-  input: OrderTableFilterInput,
-) {
+export function filterOrdersForTable(orders: MerchantOrder[], input: OrderTableFilterInput) {
   const query = input.query.trim().toLowerCase();
 
   return orders.filter((order) => {
@@ -117,10 +119,17 @@ export function parseOrderLifecycleFilter(value: string | string[] | null | unde
   return "all";
 }
 
-export function parseOrderPaymentFilter(value: string | string[] | null | undefined): OrderPaymentFilter {
+export function parseOrderPaymentFilter(
+  value: string | string[] | null | undefined,
+): OrderPaymentFilter {
   const normalized = (Array.isArray(value) ? value[0] : value)?.trim().toLowerCase();
 
-  if (normalized === "paid" || normalized === "pending" || normalized === "unpaid" || normalized === "unknown") {
+  if (
+    normalized === "paid" ||
+    normalized === "pending" ||
+    normalized === "unpaid" ||
+    normalized === "unknown"
+  ) {
     return normalized;
   }
 
@@ -144,7 +153,9 @@ export function parseOrderFulfillmentFilter(
   return "all";
 }
 
-export function parseOrderDeliveryFilter(value: string | string[] | null | undefined): OrderDeliveryFilter {
+export function parseOrderDeliveryFilter(
+  value: string | string[] | null | undefined,
+): OrderDeliveryFilter {
   const normalized = (Array.isArray(value) ? value[0] : value)?.trim().toLowerCase();
 
   if (normalized === "delivery" || normalized === "pickup" || normalized === "none") {
@@ -274,10 +285,7 @@ function orderMatchesPayment(order: MerchantOrder, paymentFilter: OrderPaymentFi
   return paymentStatus.includes("not_paid") || paymentStatus.includes("unpaid");
 }
 
-function orderMatchesFulfillment(
-  order: MerchantOrder,
-  fulfillmentFilter: OrderFulfillmentFilter,
-) {
+function orderMatchesFulfillment(order: MerchantOrder, fulfillmentFilter: OrderFulfillmentFilter) {
   if (fulfillmentFilter === "all") {
     return true;
   }

@@ -1,18 +1,17 @@
 import { headers } from "next/headers";
-
-import { ListSummary, PaginationControls } from "@/components/app/list-page-controls";
 import { ListSetupState } from "@/components/app/list-error-state";
+import { ListSummary, PaginationControls } from "@/components/app/list-page-controls";
 import { PageShell } from "@/components/app/page-shell";
 import { RefreshButton } from "@/components/app/refresh-button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ProductCreateDialog } from "@/features/products/product-create-dialog";
-import { ProductsTable } from "@/features/products/products-table";
 import {
   parseProductMediaFilter,
   parseProductStatusFilter,
   parseProductStockFilter,
   parseProductVariantCountFilter,
 } from "@/features/products/product-table-state";
+import { ProductsTable } from "@/features/products/products-table";
 import {
   type DashboardSearchParams,
   getSelectedTenantId,

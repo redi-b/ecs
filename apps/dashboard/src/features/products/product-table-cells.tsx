@@ -94,9 +94,7 @@ export function formatProductDate(value: string | null) {
 export function formatProductPriceRange(product: MerchantProduct) {
   const prices = product.variants
     ?.flatMap((variant) => variant.prices)
-    .filter(
-      (variantPrice) => typeof variantPrice.amount === "number" && variantPrice.currencyCode,
-    );
+    .filter((variantPrice) => typeof variantPrice.amount === "number" && variantPrice.currencyCode);
 
   if (!prices?.length) {
     return "No price";

@@ -1,7 +1,4 @@
-import type {
-  MerchantProductCategory,
-  MerchantProductCollection,
-} from "@ecs/contracts";
+import type { MerchantProductCategory, MerchantProductCollection } from "@ecs/contracts";
 
 import {
   formatTaxonomyDate,
@@ -29,14 +26,8 @@ export function CategoryIdentityCell({ category }: { category: MerchantProductCa
   return <TaxonomyIdentityCell entity={category} label={getCategoryDisplayName(category)} />;
 }
 
-export function CollectionIdentityCell({
-  collection,
-}: {
-  collection: MerchantProductCollection;
-}) {
-  return (
-    <TaxonomyIdentityCell entity={collection} label={getCollectionDisplayName(collection)} />
-  );
+export function CollectionIdentityCell({ collection }: { collection: MerchantProductCollection }) {
+  return <TaxonomyIdentityCell entity={collection} label={getCollectionDisplayName(collection)} />;
 }
 
 export function TaxonomyHandleCell({ handle }: { handle: string | null }) {

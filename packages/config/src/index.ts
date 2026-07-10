@@ -1,6 +1,6 @@
-import { z } from "zod";
 import { existsSync } from "node:fs";
 import { resolve } from "node:path";
+import { z } from "zod";
 
 export const serviceEnvSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
@@ -13,10 +13,9 @@ export function loadServiceEnv(env: NodeJS.ProcessEnv = process.env): ServiceEnv
   return serviceEnvSchema.parse(env);
 }
 
-export function loadServiceEnvFiles(options: {
-  cwd?: string | undefined;
-  serviceDir?: string | undefined;
-} = {}) {
+export function loadServiceEnvFiles(
+  options: { cwd?: string | undefined; serviceDir?: string | undefined } = {},
+) {
   const cwd = options.cwd ?? process.cwd();
   const serviceDir = options.serviceDir ?? cwd;
   const envFiles = [resolve(cwd, ".env"), resolve(serviceDir, ".env")];
