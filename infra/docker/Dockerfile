@@ -47,8 +47,11 @@ RUN pnpm --filter @ecs/medusa build
 RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
     pnpm --filter @ecs/medusa deploy --prod /out/medusa && \
     cp -R apps/medusa/.medusa/server/. /out/medusa/ && \
-    node -e "require.resolve('@medusajs/draft-order/package.json', { paths: ['/out/medusa'] })"
-
+    node -e "require.resolve('@medusajs/draft-order/package.json', { paths: ['/out/medusa'] })" && \
+    # Medusa db:migrate calls mkdir on each module's migrations/ path. Pre-create
+    # empty dirs so migrate works on read-only rootfs (Node reports that mkdir as ENOENT).
+    find /out/medusa/src/modules -mindepth 1 -maxdepth 1 -type d -exec mkdir -p {}/migrations \; && \
+    find /out/medusa/node_modules -type d -name dist -exec mkdir -p {}/migrations \;
 FROM node:${NODE_VERSION} AS runtime
 RUN apk add --no-cache dumb-init
 ENV NODE_ENV=production

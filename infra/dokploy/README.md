@@ -32,7 +32,7 @@ Use URL-safe database passwords or percent-encode reserved characters in both da
 
 Deployments run platform and Medusa migrations as one-shot services before starting the applications. Both commands have a three-minute timeout, so a stuck migration fails visibly instead of holding the deployment open.
 
-`migrate-medusa` is intentionally **not** read-only. Medusa's `db:migrate` creates empty `migrations/` directories under custom modules and some packages; on a read-only rootfs Node reports that as `ENOENT` and the job fails after core modules have already migrated. Application services remain read-only.
+`migrate-medusa` is not read-only in Compose, and the Medusa image pre-creates empty `migrations/` directories under modules and package `dist` folders. Medusa's `db:migrate` otherwise tries to `mkdir` those paths; on a read-only rootfs Node reports that as `ENOENT` even when the parent exists. Application services remain read-only.
 
 Seeds are not automatic. Run them from the Dokploy terminal when required:
 
