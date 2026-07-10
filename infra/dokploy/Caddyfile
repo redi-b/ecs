@@ -5,6 +5,10 @@
 
 :80 {
 	encode zstd gzip
+	log {
+		output stdout
+		format console
+	}
 
 	respond /healthz 200
 

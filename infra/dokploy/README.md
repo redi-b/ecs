@@ -10,11 +10,11 @@ Set `BASE_DOMAIN` to the delegated application domain, for example `ecs.example.
 - `dashboard.ecs.example.com` for the operator dashboard
 - `<shop>.ecs.example.com` for tenant storefronts
 
-The Compose service exposes Caddy on container port `80`. In Dokploy, point the wildcard domain to the `caddy` service on port `80`. The Compose file does not add Traefik labels, publish a host port, or attach Caddy to a Dokploy network manually.
+The Compose service connects Caddy to Dokploy's external `dokploy-network` and defines a wildcard Traefik router for one-level subdomains. Remove any matching entries from Dokploy's Domains UI before deploying so Dokploy does not generate duplicate routers. Caddy remains connected to the default Compose network for internal service routing.
 
 The wildcard record does not cover the bare `ecs.example.com` host. Add that record separately only if the bare host will be used.
 
-Wildcard DNS and wildcard TLS are separate concerns. HTTPS for arbitrary shop hosts requires a certificate for `*.ecs.example.com`, which normally uses a DNS-01 challenge or an imported wildcard certificate. If Dokploy is not configured for that certificate flow, add known shop domains individually until wildcard TLS is available. Caddy intentionally handles internal HTTP only.
+Wildcard DNS and wildcard TLS are separate concerns. The included demo certificate router uses ordinary Let's Encrypt certificates for `dashboard`, `api`, and `shop`, while the wildcard router forwards every one-level tenant hostname. New tenant hosts will show a certificate warning until a certificate for `*.ecs.example.com` is imported into Dokploy. Caddy intentionally handles internal HTTP only.
 
 ## Dokploy configuration
 
