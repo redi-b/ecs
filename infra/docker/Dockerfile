@@ -36,7 +36,8 @@ RUN --mount=type=cache,id=astro-cache,target=/workspace/apps/storefront/node_mod
 
 FROM workspace AS platform-api-build
 RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
-    pnpm --filter @ecs/platform-api deploy --prod /out/platform-api
+    pnpm --filter @ecs/platform-api deploy --prod /out/platform-api && \
+    test -f /out/platform-api/node_modules/@ecs/db/migrations/meta/_journal.json
 
 FROM workspace AS medusa-build
 ENV DISABLE_MEDUSA_ADMIN=true
@@ -45,7 +46,8 @@ ENV XDG_CONFIG_HOME=/tmp/.config
 RUN pnpm --filter @ecs/medusa build
 RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
     pnpm --filter @ecs/medusa deploy --prod /out/medusa && \
-    cp -R apps/medusa/.medusa/server/. /out/medusa/
+    cp -R apps/medusa/.medusa/server/. /out/medusa/ && \
+    node -e "require.resolve('@medusajs/draft-order/package.json', { paths: ['/out/medusa'] })"
 
 FROM node:${NODE_VERSION} AS runtime
 RUN apk add --no-cache dumb-init
