@@ -1,5 +1,5 @@
-import { belongsToTenant } from "./normalize.js";
 import { getAdminHeaders, requestMedusa } from "./medusa-http.js";
+import { belongsToTenant } from "./normalize.js";
 import {
   getProductOwnershipListUrl,
   getProductOwnershipUrl,
@@ -30,7 +30,6 @@ export function productBelongsToSalesChannel(product: unknown, salesChannelId: s
   return salesChannelIds.includes(salesChannelId);
 }
 
-
 export async function productIsInSalesChannel(
   fetcher: typeof fetch,
   options: {
@@ -50,7 +49,6 @@ export async function productIsInSalesChannel(
     salesChannelId: input.salesChannelId,
   });
 }
-
 
 export async function productExistsInSalesChannel(
   fetcher: typeof fetch,
@@ -79,7 +77,6 @@ export async function productExistsInSalesChannel(
     : false;
 }
 
-
 export async function categoryBelongsToTenantById(
   fetcher: typeof fetch,
   options: { adminApiToken?: string | undefined; medusaInternalUrl: string },
@@ -87,7 +84,11 @@ export async function categoryBelongsToTenantById(
   tenantId: string,
 ): Promise<
   | boolean
-  | { ok: false; error: "commerce_credentials_invalid" | "commerce_backend_unavailable"; status: 401 | 503 }
+  | {
+      ok: false;
+      error: "commerce_credentials_invalid" | "commerce_backend_unavailable";
+      status: 401 | 503;
+    }
 > {
   const url = new URL(
     `/admin/product-categories/${encodeURIComponent(categoryId)}`,
@@ -123,7 +124,6 @@ export async function categoryBelongsToTenantById(
   return belongsToTenant(data?.product_category, tenantId);
 }
 
-
 export async function collectionBelongsToTenantById(
   fetcher: typeof fetch,
   options: { adminApiToken?: string | undefined; medusaInternalUrl: string },
@@ -131,7 +131,11 @@ export async function collectionBelongsToTenantById(
   tenantId: string,
 ): Promise<
   | boolean
-  | { ok: false; error: "commerce_credentials_invalid" | "commerce_backend_unavailable"; status: 401 | 503 }
+  | {
+      ok: false;
+      error: "commerce_credentials_invalid" | "commerce_backend_unavailable";
+      status: 401 | 503;
+    }
 > {
   const url = new URL(
     `/admin/collections/${encodeURIComponent(collectionId)}`,
@@ -167,7 +171,6 @@ export async function collectionBelongsToTenantById(
   return belongsToTenant(data?.collection, tenantId);
 }
 
-
 export async function filterProductIdsBySalesChannel(
   fetcher: typeof fetch,
   options: { adminApiToken?: string | undefined; medusaInternalUrl: string },
@@ -175,7 +178,11 @@ export async function filterProductIdsBySalesChannel(
   salesChannelId: string,
 ): Promise<
   | string[]
-  | { ok: false; error: "commerce_credentials_invalid" | "commerce_backend_unavailable"; status: 401 | 503 }
+  | {
+      ok: false;
+      error: "commerce_credentials_invalid" | "commerce_backend_unavailable";
+      status: 401 | 503;
+    }
 > {
   if (productIds.length === 0) {
     return [];
@@ -219,4 +226,3 @@ export async function filterProductIdsBySalesChannel(
     .map((p: any) => getString(p.id))
     .filter((id: string | null): id is string => Boolean(id));
 }
-

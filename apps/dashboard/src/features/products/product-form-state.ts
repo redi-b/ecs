@@ -3,11 +3,14 @@ import { z } from "zod";
 
 import { NO_COLLECTION_VALUE } from "@/features/products/product-form-fields";
 import {
-  productPayloadSchema,
   type ComposerStep,
   type ProductFormValues,
+  productPayloadSchema,
 } from "@/features/products/product-form-types";
-import type { ProductOptionDraft, VariantMatrixRow } from "@/features/products/product-variant-matrix";
+import type {
+  ProductOptionDraft,
+  VariantMatrixRow,
+} from "@/features/products/product-variant-matrix";
 import { buildVariantMatrix } from "@/features/products/product-variant-matrix";
 
 export function getProductDefaultValues(product: MerchantProduct | undefined): ProductFormValues {
@@ -56,7 +59,9 @@ export function getProductPayload(values: ProductFormValues, options: { includeO
     options: options.includeOptions ? getProductOptionsPayload(values) : undefined,
     variants: options.includeOptions ? getProductVariantsPayload(values) : undefined,
     collectionId:
-      values.collectionId && values.collectionId !== NO_COLLECTION_VALUE ? values.collectionId : null,
+      values.collectionId && values.collectionId !== NO_COLLECTION_VALUE
+        ? values.collectionId
+        : null,
     categoryIds: values.categoryIds,
   });
 
@@ -265,7 +270,9 @@ export function getProductMutationError(error: string | undefined, status: numbe
   }
 
   if (error === "commerce_credentials_missing" || error === "commerce_credentials_invalid") {
-    return new ProductMutationError("Catalog changes are temporarily unavailable. Contact support.");
+    return new ProductMutationError(
+      "Catalog changes are temporarily unavailable. Contact support.",
+    );
   }
 
   return new ProductMutationError("Product could not be saved. Try again.");
@@ -308,7 +315,9 @@ export function getFirstVariantPrice(product: MerchantProduct | undefined) {
   return undefined;
 }
 
-export function getInitialProductOptions(product: MerchantProduct | undefined): ProductOptionDraft[] {
+export function getInitialProductOptions(
+  product: MerchantProduct | undefined,
+): ProductOptionDraft[] {
   const options = new Map<string, Set<string>>();
 
   for (const variant of product?.variants ?? []) {

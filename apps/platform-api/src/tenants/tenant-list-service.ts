@@ -1,7 +1,7 @@
 export {
-  createTenantListService,
+  createPlatformOnboardingStateService,
   createTenantDetailService,
   createTenantHandleAvailabilityService,
-  createPlatformOnboardingStateService,
+  createTenantListService,
   createTenantShopSettingsService,
 } from "../modules/tenants/list-service.js";

@@ -6,7 +6,6 @@ export function registerPlatformTenantRoutes(
   app: Hono<{ Variables: PlatformAppVariables }>,
   options: PlatformAppOptions,
 ) {
-
   app.post("/platform/tenants", async (context) => {
     if (!options.createTenantShop) {
       return context.json({ error: "tenant_provisioning_unavailable" }, 503);
@@ -52,6 +51,4 @@ export function registerPlatformTenantRoutes(
       201,
     );
   });
-
-
 }

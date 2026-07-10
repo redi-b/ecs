@@ -123,7 +123,9 @@ async function getSettingsInput(request: Request) {
       notesEnabled: formData.get("notesEnabled") === "on",
       landmarkRequired: formData.get("landmarkRequired") === "on",
       defaultDeliveryFee: String(formData.get("defaultDeliveryFee") ?? "0").trim(),
-      currency: String(formData.get("currency") ?? "ETB").trim().toUpperCase(),
+      currency: String(formData.get("currency") ?? "ETB")
+        .trim()
+        .toUpperCase(),
       zones: [] as unknown[],
     },
     deliverySettingsAvailable: formData.get("deliverySettingsAvailable") === "true",

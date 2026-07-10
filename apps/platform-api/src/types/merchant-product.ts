@@ -13,7 +13,6 @@ export type MerchantProduct = {
   updatedAt: string | null;
 };
 
-
 export type MerchantProductImage = {
   id: string;
   url: string | null;
@@ -21,7 +20,6 @@ export type MerchantProductImage = {
   createdAt: string | null;
   updatedAt: string | null;
 };
-
 
 export type MerchantProductVariant = {
   id: string;
@@ -33,18 +31,15 @@ export type MerchantProductVariant = {
   stock?: Omit<MerchantProductStock, "productId" | "variantId" | "inventoryItemId"> | null;
 };
 
-
 export type MerchantProductVariantOptionValue = {
   optionTitle: string | null;
   value: string | null;
 };
 
-
 export type MerchantProductPrice = {
   amount: number | null;
   currencyCode: string | null;
 };
-
 
 export type MerchantProductsResult =
   | {
@@ -64,9 +59,7 @@ export type MerchantProductsResult =
       status: 401 | 503;
     };
 
-
 export type MerchantProductDetailResult = MerchantProductWriteResult;
-
 
 export type MerchantProductWriteResult =
   | {
@@ -85,7 +78,6 @@ export type MerchantProductWriteResult =
       status: 400 | 401 | 404 | 409 | 422 | 503;
     };
 
-
 export type MerchantProductCategory = {
   id: string;
   name: string | null;
@@ -96,7 +88,6 @@ export type MerchantProductCategory = {
   createdAt: string | null;
   updatedAt: string | null;
 };
-
 
 export type MerchantProductCategoriesResult =
   | {
@@ -115,7 +106,6 @@ export type MerchantProductCategoriesResult =
       status: 401 | 503;
     };
 
-
 export type MerchantProductCategoryWriteResult =
   | {
       ok: true;
@@ -130,7 +120,6 @@ export type MerchantProductCategoryWriteResult =
       status: 401 | 503;
     };
 
-
 export type MerchantProductCollection = {
   id: string;
   title: string | null;
@@ -138,7 +127,6 @@ export type MerchantProductCollection = {
   createdAt: string | null;
   updatedAt: string | null;
 };
-
 
 export type MerchantProductCollectionsResult =
   | {
@@ -157,7 +145,6 @@ export type MerchantProductCollectionsResult =
       status: 401 | 503;
     };
 
-
 export type MerchantProductCollectionWriteResult =
   | {
       ok: true;
@@ -172,7 +159,6 @@ export type MerchantProductCollectionWriteResult =
       status: 401 | 503;
     };
 
-
 export type MerchantProductStock = {
   productId: string;
   variantId: string;
@@ -183,7 +169,6 @@ export type MerchantProductStock = {
   incomingQuantity: number | null;
   availableQuantity: number | null;
 };
-
 
 export type MerchantProductStockResult =
   | {
@@ -203,9 +188,7 @@ export type MerchantProductStockResult =
       status: 401 | 404 | 409 | 503;
     };
 
-
 export type MerchantProductStockUpdateResult = MerchantProductStockResult;
-
 
 export type MerchantDeleteResult =
   | {
@@ -224,7 +207,6 @@ export type MerchantDeleteResult =
         | "collection_not_found";
       status: 401 | 404 | 503;
     };
-
 
 export type MerchantBatchDeleteResult =
   | {

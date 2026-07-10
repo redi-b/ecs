@@ -11,11 +11,8 @@ import {
   getRequiredBodyString,
   storeErrorStatus,
 } from "../shared.js";
-import {
-  getOptionalBodyProductOptions,
-  getOptionalBodyProductVariants,
-} from "./product-body.js";
 import type { MerchantRouteHelpers } from "./context.js";
+import { getOptionalBodyProductOptions, getOptionalBodyProductVariants } from "./product-body.js";
 
 export function registerMerchantProductRoutes(
   app: Hono<{ Variables: PlatformAppVariables }>,
@@ -308,141 +305,135 @@ export function registerMerchantProductRoutes(
     });
   });
 
-  app.get(
-    "/platform/merchant/products/:productId/variants/:variantId/stock",
-    async (context) => {
-      const session = await options.getSession?.(context.req.raw.headers);
+  app.get("/platform/merchant/products/:productId/variants/:variantId/stock", async (context) => {
+    const session = await options.getSession?.(context.req.raw.headers);
 
-      if (!session) {
-        return context.json({ error: "auth_required" }, 401);
-      }
+    if (!session) {
+      return context.json({ error: "auth_required" }, 401);
+    }
 
-      const host = getRequestHost(
-        context.req.header("x-forwarded-host") ?? context.req.header("host"),
-      );
-      const result = await options.resolveTenantForHost(host);
+    const host = getRequestHost(
+      context.req.header("x-forwarded-host") ?? context.req.header("host"),
+    );
+    const result = await options.resolveTenantForHost(host);
 
-      if (!result.ok) {
-        return context.json({ error: result.error }, storeErrorStatus[result.error]);
-      }
+    if (!result.ok) {
+      return context.json({ error: result.error }, storeErrorStatus[result.error]);
+    }
 
-      const authorization = await options.authorizeDashboardForTenant?.({
-        tenantId: result.context.tenantId,
-        userId: session.user.id,
-      });
+    const authorization = await options.authorizeDashboardForTenant?.({
+      tenantId: result.context.tenantId,
+      userId: session.user.id,
+    });
 
-      if (!authorization?.ok) {
-        return context.json({ error: "dashboard_forbidden" }, 403);
-      }
+    if (!authorization?.ok) {
+      return context.json({ error: "dashboard_forbidden" }, 403);
+    }
 
-      const commerce = getResolvedCommerce(result.context, {
-        requireStockLocation: true,
-      });
+    const commerce = getResolvedCommerce(result.context, {
+      requireStockLocation: true,
+    });
 
-      if (!commerce.ok) {
-        return context.json({ error: commerce.error }, commerce.status);
-      }
+    if (!commerce.ok) {
+      return context.json({ error: commerce.error }, commerce.status);
+    }
 
-      if (!options.getMerchantProductVariantStock) {
-        return context.json({ error: "commerce_backend_unavailable" }, 503);
-      }
+    if (!options.getMerchantProductVariantStock) {
+      return context.json({ error: "commerce_backend_unavailable" }, 503);
+    }
 
-      const stockLocationId = commerce.context.medusaStockLocationId;
+    const stockLocationId = commerce.context.medusaStockLocationId;
 
-      if (!stockLocationId) {
-        return context.json({ error: "inventory_location_unavailable" }, 503);
-      }
+    if (!stockLocationId) {
+      return context.json({ error: "inventory_location_unavailable" }, 503);
+    }
 
-      const stock = await options.getMerchantProductVariantStock({
-        productId: context.req.param("productId"),
-        salesChannelId: commerce.context.medusaSalesChannelId,
-        stockLocationId,
-        variantId: context.req.param("variantId"),
-      });
+    const stock = await options.getMerchantProductVariantStock({
+      productId: context.req.param("productId"),
+      salesChannelId: commerce.context.medusaSalesChannelId,
+      stockLocationId,
+      variantId: context.req.param("variantId"),
+    });
 
-      if (!stock.ok) {
-        return context.json({ error: stock.error }, stock.status);
-      }
+    if (!stock.ok) {
+      return context.json({ error: stock.error }, stock.status);
+    }
 
-      return context.json({
-        stock: stock.stock,
-      });
-    },
-  );
+    return context.json({
+      stock: stock.stock,
+    });
+  });
 
-  app.post(
-    "/platform/merchant/products/:productId/variants/:variantId/stock",
-    async (context) => {
-      const session = await options.getSession?.(context.req.raw.headers);
+  app.post("/platform/merchant/products/:productId/variants/:variantId/stock", async (context) => {
+    const session = await options.getSession?.(context.req.raw.headers);
 
-      if (!session) {
-        return context.json({ error: "auth_required" }, 401);
-      }
+    if (!session) {
+      return context.json({ error: "auth_required" }, 401);
+    }
 
-      const host = getRequestHost(
-        context.req.header("x-forwarded-host") ?? context.req.header("host"),
-      );
-      const result = await options.resolveTenantForHost(host);
+    const host = getRequestHost(
+      context.req.header("x-forwarded-host") ?? context.req.header("host"),
+    );
+    const result = await options.resolveTenantForHost(host);
 
-      if (!result.ok) {
-        return context.json({ error: result.error }, storeErrorStatus[result.error]);
-      }
+    if (!result.ok) {
+      return context.json({ error: result.error }, storeErrorStatus[result.error]);
+    }
 
-      const authorization = await options.authorizeDashboardForTenant?.({
-        tenantId: result.context.tenantId,
-        userId: session.user.id,
-      });
+    const authorization = await options.authorizeDashboardForTenant?.({
+      tenantId: result.context.tenantId,
+      userId: session.user.id,
+    });
 
-      if (!authorization?.ok) {
-        return context.json({ error: "dashboard_forbidden" }, 403);
-      }
+    if (!authorization?.ok) {
+      return context.json({ error: "dashboard_forbidden" }, 403);
+    }
 
-      const commerce = getResolvedCommerce(result.context, {
-        requireStockLocation: true,
-      });
+    const commerce = getResolvedCommerce(result.context, {
+      requireStockLocation: true,
+    });
 
-      if (!commerce.ok) {
-        return context.json({ error: commerce.error }, commerce.status);
-      }
+    if (!commerce.ok) {
+      return context.json({ error: commerce.error }, commerce.status);
+    }
 
-      if (!options.updateMerchantProductVariantStock) {
-        return context.json({ error: "commerce_backend_unavailable" }, 503);
-      }
+    if (!options.updateMerchantProductVariantStock) {
+      return context.json({ error: "commerce_backend_unavailable" }, 503);
+    }
 
-      const body = await getJsonBody(context.req.raw);
-      const stockedQuantity = getOptionalBodyNumber(body, "stockedQuantity");
+    const body = await getJsonBody(context.req.raw);
+    const stockedQuantity = getOptionalBodyNumber(body, "stockedQuantity");
 
-      if (
-        stockedQuantity === undefined ||
-        stockedQuantity < 0 ||
-        !Number.isInteger(stockedQuantity)
-      ) {
-        return context.json({ error: "invalid_stocked_quantity" }, 400);
-      }
+    if (
+      stockedQuantity === undefined ||
+      stockedQuantity < 0 ||
+      !Number.isInteger(stockedQuantity)
+    ) {
+      return context.json({ error: "invalid_stocked_quantity" }, 400);
+    }
 
-      const stockLocationId = commerce.context.medusaStockLocationId;
+    const stockLocationId = commerce.context.medusaStockLocationId;
 
-      if (!stockLocationId) {
-        return context.json({ error: "inventory_location_unavailable" }, 503);
-      }
+    if (!stockLocationId) {
+      return context.json({ error: "inventory_location_unavailable" }, 503);
+    }
 
-      const stock = await options.updateMerchantProductVariantStock({
-        productId: context.req.param("productId"),
-        salesChannelId: commerce.context.medusaSalesChannelId,
-        stockLocationId,
-        stockedQuantity,
-        variantId: context.req.param("variantId"),
-      });
+    const stock = await options.updateMerchantProductVariantStock({
+      productId: context.req.param("productId"),
+      salesChannelId: commerce.context.medusaSalesChannelId,
+      stockLocationId,
+      stockedQuantity,
+      variantId: context.req.param("variantId"),
+    });
 
-      if (!stock.ok) {
-        return context.json({ error: stock.error }, stock.status);
-      }
+    if (!stock.ok) {
+      return context.json({ error: stock.error }, stock.status);
+    }
 
-      return context.json({
-        stock: stock.stock,
-      });
-    },
-  );
+    return context.json({
+      stock: stock.stock,
+    });
+  });
 
   app.post("/platform/merchant/products/batch-delete", async (context) => {
     const merchant = await getAuthorizedMerchantContext(context);
@@ -538,6 +529,4 @@ export function registerMerchantProductRoutes(
     if (!result.ok) return context.json({ error: result.error }, result.status);
     return context.json(result);
   });
-
-
 }

@@ -12,7 +12,9 @@ export type PlatformRequestContext = {
 };
 
 export function getPlatformApiBaseUrl(value?: string | null | undefined) {
-  return normalizeBaseUrl(value?.trim() || process.env.PLATFORM_API_BASE_URL || "http://localhost:3000");
+  return normalizeBaseUrl(
+    value?.trim() || process.env.PLATFORM_API_BASE_URL || "http://localhost:3000",
+  );
 }
 
 export function normalizeBaseUrl(value: string) {
@@ -79,7 +81,10 @@ export function createPlatformUrl(
   platformApiBaseUrl?: string | null | undefined,
   searchParams?: Record<string, string | number | undefined | null>,
 ) {
-  const url = new URL(path.startsWith("/") ? path.slice(1) : path, getPlatformApiBaseUrl(platformApiBaseUrl));
+  const url = new URL(
+    path.startsWith("/") ? path.slice(1) : path,
+    getPlatformApiBaseUrl(platformApiBaseUrl),
+  );
 
   if (searchParams) {
     for (const [key, value] of Object.entries(searchParams)) {

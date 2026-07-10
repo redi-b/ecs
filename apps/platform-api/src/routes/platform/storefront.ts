@@ -12,7 +12,6 @@ export function registerPlatformStorefrontRoutes(
   app: Hono<{ Variables: PlatformAppVariables }>,
   options: PlatformAppOptions,
 ) {
-
   app.get("/platform/storefront/templates", async (context) => {
     if (!options.listStorefrontTemplates) {
       return context.json({ error: "storefront_templates_unavailable" }, 503);
@@ -187,8 +186,7 @@ export function registerPlatformStorefrontRoutes(
       return context.json({ error: "invalid_request" }, 400);
     }
 
-    const data =
-      "data" in body ? body.data : "draftData" in body ? body.draftData : undefined;
+    const data = "data" in body ? body.data : "draftData" in body ? body.draftData : undefined;
     const themeTokens =
       "themeTokens" in body
         ? body.themeTokens
@@ -253,6 +251,4 @@ export function registerPlatformStorefrontRoutes(
       storefront: result.storefront,
     });
   });
-
-
 }

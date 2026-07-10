@@ -205,5 +205,3 @@ export function createMedusaOrderService(options: {
     },
   };
 }
-
-

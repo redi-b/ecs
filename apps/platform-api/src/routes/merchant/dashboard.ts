@@ -189,6 +189,4 @@ export function registerMerchantDashboardRoutes(
       preference: result.preference,
     });
   });
-
-
 }

@@ -17,7 +17,6 @@ export function getOrdersUrl(
   return url;
 }
 
-
 export function getOrderUrl(
   medusaInternalUrl: string,
   input: { orderId: string; salesChannelId: string },
@@ -35,14 +34,12 @@ export function getOrderUrl(
   return url;
 }
 
-
 export function getOrderFulfillmentUrl(medusaInternalUrl: string, input: { orderId: string }) {
   return new URL(
     `/admin/orders/${encodeURIComponent(input.orderId)}/fulfillments`,
     normalizeBaseUrl(medusaInternalUrl),
   );
 }
-
 
 export function getOrderFulfillmentDeliveryUrl(
   medusaInternalUrl: string,
@@ -56,7 +53,6 @@ export function getOrderFulfillmentDeliveryUrl(
   );
 }
 
-
 export function getOrderActionUrl(
   medusaInternalUrl: string,
   input: { action: MerchantOrderAction; orderId: string },
@@ -67,8 +63,6 @@ export function getOrderActionUrl(
   );
 }
 
-
 export function normalizeBaseUrl(value: string) {
   return value.endsWith("/") ? value : `${value}/`;
 }
-

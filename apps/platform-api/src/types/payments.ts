@@ -17,7 +17,6 @@ export type ChapaPaymentCallbackResult =
       status: 400 | 404 | 502;
     };
 
-
 export type PaymentOnboarding = {
   id: string;
   provider: string;
@@ -27,12 +26,10 @@ export type PaymentOnboarding = {
   providerAccountRef: string | null;
 };
 
-
 export type PaymentOnboardingListResult = {
   ok: true;
   paymentOnboarding: PaymentOnboarding[];
 };
-
 
 export type PaymentOnboardingSubmitResult =
   | {
@@ -44,7 +41,6 @@ export type PaymentOnboardingSubmitResult =
       error: "payment_provider_invalid";
       status: 400;
     };
-
 
 export type PaymentOnboardingReviewResult =
   | {

@@ -65,7 +65,6 @@ export async function getMerchantOrderForAction(
   };
 }
 
-
 export async function fulfillMerchantOrder(
   fetcher: typeof fetch,
   options: {
@@ -162,7 +161,6 @@ export async function fulfillMerchantOrder(
   };
 }
 
-
 export async function deliverMerchantOrderFulfillment(
   fetcher: typeof fetch,
   options: {
@@ -250,5 +248,3 @@ export async function deliverMerchantOrderFulfillment(
     order,
   };
 }
-
-

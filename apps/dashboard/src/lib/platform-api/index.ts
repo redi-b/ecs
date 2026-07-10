@@ -1,19 +1,18 @@
 export {
+  getRequestOrigin,
+  type MerchantActionContext,
+  type MerchantActionResult,
+  redirectWithStatus,
+  withMerchantAction,
+} from "./action-route";
+export {
   createPlatformHeaders,
   createPlatformUrl,
   getMerchantResourcePath,
   getPlatformApiBaseUrl,
   normalizeBaseUrl,
-  platformFetch,
   type PlatformRequestContext,
+  platformFetch,
 } from "./client";
 
-export {
-  getRequestOrigin,
-  redirectWithStatus,
-  withMerchantAction,
-  type MerchantActionContext,
-  type MerchantActionResult,
-} from "./action-route";
-
-export { mapPlatformErrorMessage, isKnownPlatformErrorCode } from "./errors";
+export { isKnownPlatformErrorCode, mapPlatformErrorMessage } from "./errors";

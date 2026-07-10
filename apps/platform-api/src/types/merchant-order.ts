@@ -23,7 +23,6 @@ export type MerchantOrder = {
   updatedAt: string | null;
 };
 
-
 export type MerchantOrderAddress = {
   firstName: string | null;
   lastName: string | null;
@@ -36,14 +35,12 @@ export type MerchantOrderAddress = {
   countryCode: string | null;
 };
 
-
 export type MerchantOrderFulfillment = {
   id: string;
   deliveredAt: string | null;
   shippedAt: string | null;
   canceledAt: string | null;
 };
-
 
 export type MerchantOrderLineItem = {
   id: string;
@@ -56,7 +53,6 @@ export type MerchantOrderLineItem = {
   total: number | null;
   thumbnail: string | null;
 };
-
 
 export type MerchantOrdersResult =
   | {
@@ -74,7 +70,6 @@ export type MerchantOrdersResult =
         | "commerce_credentials_missing";
       status: 401 | 503;
     };
-
 
 export type MerchantOrderDetailResult =
   | {
@@ -94,8 +89,6 @@ export type MerchantOrderDetailResult =
       status: 401 | 404 | 409 | 503;
     };
 
-
 export type MerchantOrderAction = "cancel" | "complete" | "deliver" | "fulfill";
-
 
 export type MerchantOrderActionResult = MerchantOrderDetailResult;

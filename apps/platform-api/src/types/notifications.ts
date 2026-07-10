@@ -15,9 +15,7 @@ export type NotificationEventType =
   | "shop.published"
   | "shop.suspended";
 
-
 export type NotificationChannel = "email" | "telegram";
-
 
 export type NotificationPreference = {
   id: string;
@@ -28,12 +26,10 @@ export type NotificationPreference = {
   updatedAt: string;
 };
 
-
 export type NotificationPreferenceListResult = {
   ok: true;
   preferences: NotificationPreference[];
 };
-
 
 export type NotificationPreferenceUpsertResult =
   | {
@@ -48,7 +44,6 @@ export type NotificationPreferenceUpsertResult =
         | "notification_target_invalid";
       status: 400;
     };
-
 
 export type NotificationEventRecordResult = {
   ok: true;

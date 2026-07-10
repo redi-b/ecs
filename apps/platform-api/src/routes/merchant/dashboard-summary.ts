@@ -390,7 +390,6 @@ export function createMerchantDashboardSummary(
     return status !== "fulfilled" && status !== "delivered" && status !== "shipped";
   }
 
-
   function isOpenPaymentStatus(status: string | null) {
     return status !== "captured" && status !== "paid";
   }

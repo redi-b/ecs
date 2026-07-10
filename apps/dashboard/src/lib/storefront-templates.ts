@@ -1,15 +1,14 @@
-export {
-  getStorefrontTemplates,
-  getStorefrontDraft,
-  updateStorefrontDraft,
-  publishStorefrontDraft,
-  selectStorefrontTemplate,
-} from "@/lib/platform-api/storefront/templates";
-
 export type {
-  StorefrontTemplateCatalogResult,
-  StorefrontTemplateSelectionResult,
   StorefrontDraftResult,
   StorefrontDraftUpdateResult,
   StorefrontPublishResult,
+  StorefrontTemplateCatalogResult,
+  StorefrontTemplateSelectionResult,
+} from "@/lib/platform-api/storefront/templates";
+export {
+  getStorefrontDraft,
+  getStorefrontTemplates,
+  publishStorefrontDraft,
+  selectStorefrontTemplate,
+  updateStorefrontDraft,
 } from "@/lib/platform-api/storefront/templates";

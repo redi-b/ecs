@@ -2,21 +2,17 @@ export function getString(value: unknown) {
   return typeof value === "string" ? value : null;
 }
 
-
 export function getNumber(value: unknown) {
   return typeof value === "number" ? value : undefined;
 }
-
 
 export function getBoolean(value: unknown) {
   return typeof value === "boolean" ? value : null;
 }
 
-
 export function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
-
 
 export function getErrorMessage(value: unknown) {
   if (typeof value === "string") {
@@ -34,7 +30,6 @@ export function getErrorMessage(value: unknown) {
     getString(value.code)
   );
 }
-
 
 export async function isMissingCommerceResourceResponse(response: Response) {
   const data = await response.json().catch(() => undefined);
@@ -55,4 +50,3 @@ export async function isMissingCommerceResourceResponse(response: Response) {
     )
   );
 }
-

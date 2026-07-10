@@ -1,11 +1,11 @@
 import {
   platformErrorSchema,
   type StorefrontDraft,
-  storefrontDraftSchema,
   type StorefrontPublish,
-  storefrontPublishSchema,
   type StorefrontTemplateCatalogItem,
   type StorefrontTemplateSelection,
+  storefrontDraftSchema,
+  storefrontPublishSchema,
   storefrontTemplateCatalogSchema,
   storefrontTemplateSelectionSchema,
 } from "@ecs/contracts";
@@ -94,10 +94,13 @@ export async function getStorefrontDraft(options: {
   tenantId: string;
 }): Promise<StorefrontDraftResult> {
   const fetcher = options.fetcher ?? fetch;
-  const response = await fetcher(getStorefrontDraftUrl(options.platformApiBaseUrl, options.tenantId), {
-    cache: "no-store",
-    headers: getJsonHeaders(options.cookieHeader),
-  });
+  const response = await fetcher(
+    getStorefrontDraftUrl(options.platformApiBaseUrl, options.tenantId),
+    {
+      cache: "no-store",
+      headers: getJsonHeaders(options.cookieHeader),
+    },
+  );
   const data = await response.json().catch(() => undefined);
 
   if (!response.ok) {
@@ -129,15 +132,18 @@ export async function updateStorefrontDraft(options: {
   themeTokens: unknown;
 }): Promise<StorefrontDraftUpdateResult> {
   const fetcher = options.fetcher ?? fetch;
-  const response = await fetcher(getStorefrontDraftUrl(options.platformApiBaseUrl, options.tenantId), {
-    body: JSON.stringify({
-      data: options.data,
-      themeTokens: options.themeTokens,
-    }),
-    cache: "no-store",
-    headers: getJsonHeaders(options.cookieHeader),
-    method: "POST",
-  });
+  const response = await fetcher(
+    getStorefrontDraftUrl(options.platformApiBaseUrl, options.tenantId),
+    {
+      body: JSON.stringify({
+        data: options.data,
+        themeTokens: options.themeTokens,
+      }),
+      cache: "no-store",
+      headers: getJsonHeaders(options.cookieHeader),
+      method: "POST",
+    },
+  );
   const responseData = await response.json().catch(() => undefined);
 
   if (!response.ok) {
@@ -244,7 +250,7 @@ function getPlatformError(response: Response, data: unknown, fallbackMessage: st
   return {
     ok: false,
     status: response.status,
-    message: (error.success ? error.data.error : response.statusText || fallbackMessage),
+    message: error.success ? error.data.error : response.statusText || fallbackMessage,
   } as const;
 }
 
@@ -279,4 +285,3 @@ function getJsonHeaders(cookieHeader?: string | null | undefined) {
     cookieHeader,
   });
 }
-

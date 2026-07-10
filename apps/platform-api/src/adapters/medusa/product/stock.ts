@@ -4,26 +4,26 @@ import type {
   MerchantProductStockResult,
   MerchantProductStockUpdateResult,
 } from "../../../types/index.js";
+import { getAdminHeaders, requestMedusa } from "./medusa-http.js";
+import {
+  getSingleVariantInventoryItem,
+  getVariantInventoryItem,
+  getVariantInventoryItemId,
+  normalizeProductStock,
+} from "./normalize.js";
+import { productBelongsToSalesChannel } from "./ownership.js";
 import type {
   ProductStockInput,
   ProductVariantStockInput,
   ProductVariantWriteInput,
 } from "./types.js";
-import { getAdminHeaders, requestMedusa } from "./medusa-http.js";
 import {
-  getVariantInventoryItem,
-  getVariantInventoryItemId,
-  getSingleVariantInventoryItem,
-  normalizeProductStock,
-} from "./normalize.js";
-import {
-  getInventoryItemLevelUrl,
   getInventoryItemLevelsUrl,
+  getInventoryItemLevelUrl,
   getInventoryItemUrl,
   getProductInventoryUrl,
 } from "./urls.js";
 import { getBoolean, getNumber, getString, isRecord } from "./values.js";
-import { productBelongsToSalesChannel } from "./ownership.js";
 
 export async function getProductInventoryContext(
   fetcher: typeof fetch,
@@ -106,7 +106,6 @@ export async function getProductInventoryContext(
   };
 }
 
-
 export async function getProductVariantInventoryContext(
   fetcher: typeof fetch,
   options: {
@@ -180,7 +179,6 @@ export async function getProductVariantInventoryContext(
   };
 }
 
-
 export async function getInventoryItemStock(
   fetcher: typeof fetch,
   options: {
@@ -241,7 +239,6 @@ export async function getInventoryItemStock(
   };
 }
 
-
 export async function writeInventoryItemStockLevel(
   fetcher: typeof fetch,
   options: {
@@ -287,7 +284,6 @@ export async function writeInventoryItemStockLevel(
   );
 }
 
-
 export function getEmptyProductStock(input: {
   inventoryItemId: string;
   productId: string;
@@ -305,7 +301,6 @@ export function getEmptyProductStock(input: {
     availableQuantity: 0,
   };
 }
-
 
 export async function hydrateProductsWithStock(
   fetcher: typeof fetch,
@@ -347,7 +342,6 @@ export async function hydrateProductsWithStock(
   );
 }
 
-
 export function getVariantStockSummary(stock: MerchantProductStock) {
   return {
     locationId: stock.locationId,
@@ -357,7 +351,6 @@ export function getVariantStockSummary(stock: MerchantProductStock) {
     availableQuantity: stock.availableQuantity,
   };
 }
-
 
 export async function initializeProductStockLevels(
   fetcher: typeof fetch,
@@ -390,9 +383,10 @@ export async function initializeProductStockLevels(
     return false;
   }
 
-  const variants: Array<Record<string, unknown>> = isRecord(data?.product) && Array.isArray(data.product.variants)
-    ? data.product.variants.filter(isRecord)
-    : [];
+  const variants: Array<Record<string, unknown>> =
+    isRecord(data?.product) && Array.isArray(data.product.variants)
+      ? data.product.variants.filter(isRecord)
+      : [];
   const results = await Promise.all(
     variants.map((variant, index) => {
       const inventoryItemId = getVariantInventoryItemId(variant);
@@ -411,7 +405,6 @@ export async function initializeProductStockLevels(
 
   return results.some(Boolean);
 }
-
 
 export function getStockWriteError(response: Response): MerchantProductStockUpdateResult {
   if (response.status === 401) {
@@ -436,5 +429,3 @@ export function getStockWriteError(response: Response): MerchantProductStockUpda
     status: 503,
   };
 }
-
-

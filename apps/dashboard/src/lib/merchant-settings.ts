@@ -1,12 +1,11 @@
-export {
-  updateMerchantSettings,
-  getMerchantDeliverySettings,
-  updateMerchantDeliverySettings,
-} from "@/lib/platform-api/settings/client";
-
 export type {
-  MerchantSettingsResult,
+  MerchantDeliverySettingsInput,
   MerchantDeliverySettingsResult,
   MerchantSettingsInput,
-  MerchantDeliverySettingsInput,
+  MerchantSettingsResult,
+} from "@/lib/platform-api/settings/client";
+export {
+  getMerchantDeliverySettings,
+  updateMerchantDeliverySettings,
+  updateMerchantSettings,
 } from "@/lib/platform-api/settings/client";

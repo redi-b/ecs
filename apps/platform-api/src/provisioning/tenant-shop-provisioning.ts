@@ -1,8 +1,8 @@
 export {
   buildInitialTenantOnboardingState,
+  createTenantProvisioningAttemptListService,
   createTenantShopProvisioner,
-  createTenantShopProvisioningService,
   createTenantShopProvisioningRetryService,
   createTenantShopProvisioningRetryServiceFromDb,
-  createTenantProvisioningAttemptListService,
+  createTenantShopProvisioningService,
 } from "../modules/tenants/shop-provisioning.js";

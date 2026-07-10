@@ -113,7 +113,6 @@ test("mergeStorefrontTemplateDefaults restores required strings cleared in the e
   assert.equal(parsed.home.featuredProducts.title, "Featured products");
 });
 
-
 test("mergeStorefrontTemplateDefaults restores required theme token keys", () => {
   const themeTokens = mergeStorefrontTemplateDefaults(
     {

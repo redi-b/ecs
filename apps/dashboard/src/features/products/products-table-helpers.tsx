@@ -47,8 +47,8 @@ import {
   getProductPriceSortValue,
   getProductTableCounts,
   normalizeProductStatus,
-  type ProductStatusFilter,
   type ProductMediaFilter,
+  type ProductStatusFilter,
   type ProductStockFilter,
   type ProductVariantCountFilter,
 } from "@/features/products/product-table-state";
@@ -71,7 +71,6 @@ type ProductsTableProps = {
   tenantId?: string | undefined;
   totalCount: number;
 };
-
 
 export const productStatusFilterOptions: Array<{
   label: string;
@@ -185,7 +184,9 @@ export function getProductColumns(
       id: "organization",
       accessorFn: (product) =>
         [
-          product.collectionId ? collectionById.get(product.collectionId)?.title ?? product.collectionId : "",
+          product.collectionId
+            ? (collectionById.get(product.collectionId)?.title ?? product.collectionId)
+            : "",
           ...(product.categoryIds ?? []).map((id) => categoryById.get(id)?.name ?? id),
         ].join(" "),
       header: ({ column }) => <DataTableHeader column={column} title="Organization" />,
@@ -244,7 +245,10 @@ export function getProductColumns(
                 disabled: !product.handle,
                 label: "Copy storefront path",
                 onSelect: () =>
-                  copyToClipboard(product.handle ? `/products/${product.handle}` : "", "Product path"),
+                  copyToClipboard(
+                    product.handle ? `/products/${product.handle}` : "",
+                    "Product path",
+                  ),
                 type: "button",
               },
               { id: "danger", type: "separator" },
@@ -320,7 +324,7 @@ export function ProductOrganizationSummary({
         tooltip="Collection"
         value={
           product.collectionId
-            ? collection?.title ?? collection?.handle ?? product.collectionId
+            ? (collection?.title ?? collection?.handle ?? product.collectionId)
             : "No collection"
         }
       />
@@ -415,4 +419,3 @@ export function getStatusSuccessMessage(count: number, status: ProductStatusValu
     ? `${count} ${productLabel} published.`
     : `${count} ${productLabel} moved to draft.`;
 }
-

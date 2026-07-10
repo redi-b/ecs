@@ -2,13 +2,13 @@
 
 import "@puckeditor/core/puck.css";
 
+import { classicV1EditorSchema as classicV1EditorManifest } from "@ecs/storefront-templates";
 import type { Config, Data, PuckAction } from "@puckeditor/core";
 import { createUsePuck, FieldLabel, Puck } from "@puckeditor/core";
-import { classicV1EditorSchema as classicV1EditorManifest } from "@ecs/storefront-templates";
 import {
-  RiCheckLine,
   RiArrowGoBackLine,
   RiArrowGoForwardLine,
+  RiCheckLine,
   RiEditLine,
   RiExternalLinkLine,
   RiEyeLine,
@@ -52,21 +52,10 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { cn } from "@/lib/utils";
-import {
-  buildDraftPayload,
-  buildPuckData,
-  getPublicationStatus,
-  getStorefrontPageProps,
-  isPreviewImageUrl,
-  serializeEditorData,
-  STOREFRONT_PAGE_COMPONENT,
-  type PublicationStatus,
-  type StorefrontDraft,
-  type StorefrontPageProps,
-} from "./editor-state";
-
-import type { ActionResult, StorefrontVisualEditorProps } from "@/features/storefront-editor/editor-config";
+import type {
+  ActionResult,
+  StorefrontVisualEditorProps,
+} from "@/features/storefront-editor/editor-config";
 import {
   FONT_OPTIONS,
   HISTORY_COMMIT_DELAY_MS,
@@ -75,6 +64,19 @@ import {
   SETTINGS_SECTION_LABELS,
   useStorefrontPuck,
 } from "@/features/storefront-editor/editor-config";
+import { cn } from "@/lib/utils";
+import {
+  buildDraftPayload,
+  buildPuckData,
+  getPublicationStatus,
+  getStorefrontPageProps,
+  isPreviewImageUrl,
+  type PublicationStatus,
+  STOREFRONT_PAGE_COMPONENT,
+  type StorefrontDraft,
+  type StorefrontPageProps,
+  serializeEditorData,
+} from "./editor-state";
 
 export function PuckDataOverride({ data }: { data: Data | null }) {
   const dispatch = useStorefrontPuck((api) => api.dispatch);
@@ -175,7 +177,11 @@ export function StorefrontEditorActions({
         onClick={onToggleEditHints}
         pressed={showEditHints}
       >
-        {showEditHints ? <RiEyeLine data-icon="inline-start" /> : <RiEyeOffLine data-icon="inline-start" />}
+        {showEditHints ? (
+          <RiEyeLine data-icon="inline-start" />
+        ) : (
+          <RiEyeOffLine data-icon="inline-start" />
+        )}
       </ToolbarIconButton>
       <ToolbarIconButton
         label={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
@@ -376,37 +382,37 @@ export function StorefrontSettingsPanel() {
   return (
     <ScrollArea className="min-h-0 flex-1">
       <div className="flex flex-col gap-3 p-4">
-      {classicV1EditorManifest.sections.map((section) => (
-        <section className="rounded-xl border bg-card shadow-sm" key={section.id}>
-          <div className="border-b px-4 py-3">
-            <div className="text-sm font-semibold">
-              {SETTINGS_SECTION_LABELS[section.id] ?? section.label}
+        {classicV1EditorManifest.sections.map((section) => (
+          <section className="rounded-xl border bg-card shadow-sm" key={section.id}>
+            <div className="border-b px-4 py-3">
+              <div className="text-sm font-semibold">
+                {SETTINGS_SECTION_LABELS[section.id] ?? section.label}
+              </div>
             </div>
-          </div>
-          <div className="flex flex-col gap-4 p-4">
-            {section.fields.map((field) => {
-              const value = (props as Record<string, unknown>)[field.prop];
-              const stringValue = typeof value === "string" ? value : "";
-              const helpText = "helpText" in field ? field.helpText : undefined;
+            <div className="flex flex-col gap-4 p-4">
+              {section.fields.map((field) => {
+                const value = (props as Record<string, unknown>)[field.prop];
+                const stringValue = typeof value === "string" ? value : "";
+                const helpText = "helpText" in field ? field.helpText : undefined;
 
-              return (
-                <Field key={field.path}>
-                  <label className="grid gap-2 text-sm font-medium">
-                    <span>{field.label}</span>
-                    <StorefrontSettingControl
-                      data={data}
-                      dispatch={dispatch}
-                      field={field}
-                      value={stringValue}
-                    />
-                  </label>
-                  {helpText ? <FieldDescription>{helpText}</FieldDescription> : null}
-                </Field>
-              );
-            })}
-          </div>
-        </section>
-      ))}
+                return (
+                  <Field key={field.path}>
+                    <div className="grid gap-2 text-sm font-medium">
+                      <span>{field.label}</span>
+                      <StorefrontSettingControl
+                        data={data}
+                        dispatch={dispatch}
+                        field={field}
+                        value={stringValue}
+                      />
+                    </div>
+                    {helpText ? <FieldDescription>{helpText}</FieldDescription> : null}
+                  </Field>
+                );
+              })}
+            </div>
+          </section>
+        ))}
       </div>
     </ScrollArea>
   );
@@ -441,6 +447,7 @@ export function StorefrontSettingControl({
   if (field.kind === "textarea") {
     return (
       <Textarea
+        aria-label={field.label}
         className="min-h-24"
         name={field.prop}
         onChange={(event) => update(event.currentTarget.value)}
@@ -451,6 +458,7 @@ export function StorefrontSettingControl({
 
   return (
     <Input
+      aria-label={field.label}
       name={field.prop}
       onChange={(event) => update(event.currentTarget.value)}
       placeholder={field.kind === "link" ? "/" : undefined}
@@ -568,14 +576,14 @@ export function FontSelect({
           <CommandList>
             <CommandEmpty>No font found.</CommandEmpty>
             <CommandGroup>
-          {FONT_OPTIONS.map((font) => (
+              {FONT_OPTIONS.map((font) => (
                 <CommandItem key={font} onSelect={() => onChange(font)} value={font}>
                   <span className="flex-1" style={{ fontFamily: font }}>
                     {font}
                   </span>
                   {font === value ? <RiCheckLine aria-hidden data-icon="inline-end" /> : null}
                 </CommandItem>
-          ))}
+              ))}
             </CommandGroup>
           </CommandList>
         </Command>
@@ -715,7 +723,9 @@ export function UnsupportedTemplatePreview({ templateKey }: { templateKey: strin
   );
 }
 
-export function ClassicV1StorefrontPreview(props: StorefrontPageProps & { storefrontName?: string }) {
+export function ClassicV1StorefrontPreview(
+  props: StorefrontPageProps & { storefrontName?: string },
+) {
   const theme = {
     backgroundColor: props.backgroundColor || "#ffffff",
     color: props.foregroundColor || "#111827",
@@ -757,23 +767,35 @@ export function ClassicV1StorefrontPreview(props: StorefrontPageProps & { storef
             href={props.navigationHref || "/"}
             onClick={preventPreviewLink}
           >
-            <EditableText fallback="Shop" propName="navigationLabel" value={props.navigationLabel} />
+            <EditableText
+              fallback="Shop"
+              propName="navigationLabel"
+              value={props.navigationLabel}
+            />
           </a>
-          <a className="text-sm font-semibold" href="#contact" onClick={preventPreviewLink}>
+          <button className="text-sm font-semibold" onClick={preventPreviewLink} type="button">
             Contact
-          </a>
+          </button>
         </nav>
       </header>
       <section className="mx-auto grid min-h-[420px] max-w-5xl items-center gap-12 px-8 py-16 lg:grid-cols-[1.05fr_0.95fr]">
         <div className="flex flex-col gap-5">
-          <p className="text-sm font-extrabold uppercase tracking-normal" style={{ color: primaryColor }}>
+          <p
+            className="text-sm font-extrabold uppercase tracking-normal"
+            style={{ color: primaryColor }}
+          >
             {storefrontName}
           </p>
           <h1
             className="max-w-3xl whitespace-pre-line text-[clamp(2.75rem,6vw,4.5rem)] font-bold leading-none tracking-normal"
             style={{ fontFamily: props.headingFont || "Inter" }}
           >
-            <EditableText fallback="Your shop, online" multiline propName="heroTitle" value={props.heroTitle} />
+            <EditableText
+              fallback="Your shop, online"
+              multiline
+              propName="heroTitle"
+              value={props.heroTitle}
+            />
           </h1>
           <p className="max-w-xl text-lg leading-7 opacity-75">
             <EditableText
@@ -821,7 +843,7 @@ export function ClassicV1StorefrontPreview(props: StorefrontPageProps & { storef
           ))}
         </div>
       </section>
-      <footer id="contact" className="mx-auto flex max-w-5xl justify-between gap-5 border-t px-8 py-8 text-sm">
+      <footer className="mx-auto flex max-w-5xl justify-between gap-5 border-t px-8 py-8 text-sm">
         <div className="flex flex-col gap-1">
           <strong>{storefrontName}</strong>
           <EditableText fallback="Phone" propName="footerPhone" value={props.footerPhone} />
@@ -853,7 +875,12 @@ export function EditableText({
   const displayValue = value?.trim() ? value : fallback;
 
   function updateValue(nextValue: string) {
-    updateStorefrontProp(data, dispatch, propName, multiline ? nextValue : nextValue.replace(/\n/g, " "));
+    updateStorefrontProp(
+      data,
+      dispatch,
+      propName,
+      multiline ? nextValue : nextValue.replace(/\n/g, " "),
+    );
   }
 
   if (multiline) {
@@ -947,7 +974,9 @@ export function EditableImage({
         <div className="flex flex-col gap-3">
           <div>
             <div className="text-sm font-medium">{placeholder}</div>
-            <div className="text-xs text-muted-foreground">Paste an image URL for the storefront preview.</div>
+            <div className="text-xs text-muted-foreground">
+              Paste an image URL for the storefront preview.
+            </div>
           </div>
           <Input
             aria-label={`${placeholder} URL`}
@@ -1001,7 +1030,7 @@ export function updateStorefrontProp(
   });
 }
 
-export function preventPreviewLink(event: React.MouseEvent<HTMLAnchorElement>) {
+export function preventPreviewLink(event: React.MouseEvent<HTMLElement>) {
   event.preventDefault();
 }
 

@@ -18,13 +18,11 @@ export function getSelectedTemplateName(
   );
 }
 
-
 export function getTemplateTags(template: StorefrontTemplateCatalogItem) {
   return Array.isArray(template.tags)
     ? template.tags.filter((tag): tag is string => typeof tag === "string").slice(0, 3)
     : [];
 }
-
 
 export function statusCopy(value: string) {
   if (value === "settings_updated") {
@@ -45,4 +43,3 @@ export function statusCopy(value: string) {
 
   return value.replaceAll("_", " ");
 }
-

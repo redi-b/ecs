@@ -1800,6 +1800,4 @@ describe("platform app storefront, delivery, billing, and operator", () => {
       },
     });
   });
-
-
 });

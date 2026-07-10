@@ -1,16 +1,16 @@
 import type {
-  MerchantProductWriteResult,
+  MerchantBatchDeleteResult,
+  MerchantDeleteResult,
   MerchantProductCategoryWriteResult,
   MerchantProductCollectionWriteResult,
-  MerchantDeleteResult,
-  MerchantBatchDeleteResult,
+  MerchantProductWriteResult,
 } from "../../../types/index.js";
-import type {
-  ProductOptionInput,
-  ProductVariantWriteInput,
-  ProductWriteInput,
-} from "./types.js";
-import { normalizeProduct, normalizeProductCategory, normalizeProductCollection } from "./normalize.js";
+import {
+  normalizeProduct,
+  normalizeProductCategory,
+  normalizeProductCollection,
+} from "./normalize.js";
+import type { ProductOptionInput, ProductVariantWriteInput, ProductWriteInput } from "./types.js";
 import { getBoolean, getErrorMessage, getString, isRecord } from "./values.js";
 
 export function getProductWriteBody(input: ProductWriteInput) {
@@ -57,7 +57,6 @@ export function getProductWriteBody(input: ProductWriteInput) {
   return body;
 }
 
-
 export function getProductOptionsForWrite(options: ProductOptionInput[] | undefined) {
   const normalized = (options ?? [])
     .map((option) => ({
@@ -76,7 +75,6 @@ export function getProductOptionsForWrite(options: ProductOptionInput[] | undefi
       ];
 }
 
-
 export function getProductVariantsForWrite(variants: ProductVariantWriteInput[] | undefined) {
   return (variants ?? []).filter(
     (variant) =>
@@ -85,7 +83,6 @@ export function getProductVariantsForWrite(variants: ProductVariantWriteInput[] 
       variant.currencyCode.trim(),
   );
 }
-
 
 export function getProductVariantWriteBody(
   variant: ProductVariantWriteInput,
@@ -118,7 +115,6 @@ export function getProductVariantWriteBody(
   };
 }
 
-
 export function getProductVariantCombinations(options: ProductOptionInput[]) {
   return options.reduce<Array<Array<{ title: string; value: string }>>>(
     (combinations, option) =>
@@ -129,8 +125,9 @@ export function getProductVariantCombinations(options: ProductOptionInput[]) {
   );
 }
 
-
-export async function parseProductWriteResponse(response: Response): Promise<MerchantProductWriteResult> {
+export async function parseProductWriteResponse(
+  response: Response,
+): Promise<MerchantProductWriteResult> {
   if (!response.ok) {
     return getWriteError(response);
   }
@@ -151,7 +148,6 @@ export async function parseProductWriteResponse(response: Response): Promise<Mer
     product,
   };
 }
-
 
 export async function parseProductCategoryWriteResponse(
   response: Response,
@@ -177,7 +173,6 @@ export async function parseProductCategoryWriteResponse(
   };
 }
 
-
 export async function parseProductCollectionWriteResponse(
   response: Response,
 ): Promise<MerchantProductCollectionWriteResult> {
@@ -201,7 +196,6 @@ export async function parseProductCollectionWriteResponse(
     collection,
   };
 }
-
 
 export function getWriteError(response: Response): MerchantProductWriteResult {
   if (response.status === 401) {
@@ -243,7 +237,6 @@ export function getWriteError(response: Response): MerchantProductWriteResult {
   };
 }
 
-
 export function getCategoryWriteError(response: Response): MerchantProductCategoryWriteResult {
   if (response.status === 401) {
     return {
@@ -260,7 +253,6 @@ export function getCategoryWriteError(response: Response): MerchantProductCatego
   };
 }
 
-
 export function getCollectionWriteError(response: Response): MerchantProductCollectionWriteResult {
   if (response.status === 401) {
     return {
@@ -276,7 +268,6 @@ export function getCollectionWriteError(response: Response): MerchantProductColl
     status: 503,
   };
 }
-
 
 export function getDeleteError(
   response: Response,
@@ -304,7 +295,6 @@ export function getDeleteError(
     status: 503,
   };
 }
-
 
 export async function parseDeleteResponse(
   response: Response,
@@ -353,7 +343,6 @@ export async function parseDeleteResponse(
   };
 }
 
-
 export async function parseBatchDeleteResponse(
   response: Response,
   requestedIds: string[],
@@ -385,4 +374,3 @@ export async function parseBatchDeleteResponse(
     deleted: true,
   };
 }
-

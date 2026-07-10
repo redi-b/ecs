@@ -270,6 +270,4 @@ export function registerPlatformTenantCatalogRoutes(
     if (!result.ok) return context.json({ error: result.error }, result.status);
     return context.json(result);
   });
-
-
 }

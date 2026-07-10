@@ -92,4 +92,3 @@ export const productPayloadSchema = z.object({
   collectionId: z.string().trim().nullable(),
   categoryIds: z.array(z.string().min(1)),
 });
-

@@ -12,12 +12,14 @@ import {
   tenants,
 } from "@ecs/db";
 import { and, asc, count, desc, eq } from "drizzle-orm";
-
-import type { TenantProvisioningAttemptListResult, TenantShopProvisioningResult } from "../../types/index.js";
 import type {
   CommerceProvisioningInput,
   CommerceProvisioningResult,
 } from "../../adapters/medusa/commerce-provisioning.js";
+import type {
+  TenantProvisioningAttemptListResult,
+  TenantShopProvisioningResult,
+} from "../../types/index.js";
 
 type PlatformDb = ReturnType<typeof createPlatformDb>["db"];
 

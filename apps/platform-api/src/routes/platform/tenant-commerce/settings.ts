@@ -1,10 +1,7 @@
 import type { Hono } from "hono";
 
 import type { PlatformAppOptions, PlatformAppVariables } from "../../../app.js";
-import {
-  getJsonBody,
-  getRequiredBodyString,
-} from "../../shared.js";
+import { getJsonBody, getRequiredBodyString } from "../../shared.js";
 
 export function registerPlatformTenantSettingsRoutes(
   app: Hono<{ Variables: PlatformAppVariables }>,
@@ -91,6 +88,4 @@ export function registerPlatformTenantSettingsRoutes(
       tenant: result.tenant,
     });
   });
-
-
 }

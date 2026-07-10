@@ -37,7 +37,6 @@ export function normalizeProduct(value: unknown): MerchantProduct[] {
   ];
 }
 
-
 export function getProductCategoryIds(value: unknown) {
   if (!Array.isArray(value)) {
     return [];
@@ -47,7 +46,6 @@ export function getProductCategoryIds(value: unknown) {
     .map((category) => (isRecord(category) ? getString(category.id) : null))
     .filter((id): id is string => Boolean(id));
 }
-
 
 export function getProductImages(value: unknown) {
   if (!Array.isArray(value)) {
@@ -76,7 +74,6 @@ export function getProductImages(value: unknown) {
     ];
   });
 }
-
 
 export function getProductVariants(value: unknown) {
   if (!Array.isArray(value)) {
@@ -109,7 +106,6 @@ export function getProductVariants(value: unknown) {
   });
 }
 
-
 export function getProductVariantOptionValues(value: unknown) {
   if (!Array.isArray(value)) {
     return [];
@@ -137,7 +133,6 @@ export function getProductVariantOptionValues(value: unknown) {
     ];
   });
 }
-
 
 export function getSingleVariantInventoryItem(product: unknown) {
   if (!isRecord(product) || !Array.isArray(product.variants)) {
@@ -169,7 +164,6 @@ export function getSingleVariantInventoryItem(product: unknown) {
   return undefined;
 }
 
-
 export function getVariantInventoryItem(product: unknown, variantId: string) {
   if (!isRecord(product) || !Array.isArray(product.variants)) {
     return undefined;
@@ -195,7 +189,6 @@ export function getVariantInventoryItem(product: unknown, variantId: string) {
   };
 }
 
-
 export function getVariantInventoryItemId(variant: Record<string, unknown>) {
   if (!Array.isArray(variant.inventory_items)) {
     return null;
@@ -216,7 +209,6 @@ export function getVariantInventoryItemId(variant: Record<string, unknown>) {
 
   return null;
 }
-
 
 export function normalizeProductStock(input: {
   inventoryItemId: string;
@@ -249,7 +241,6 @@ export function normalizeProductStock(input: {
   };
 }
 
-
 export function getProductPrices(value: unknown) {
   if (!Array.isArray(value)) {
     return [];
@@ -268,7 +259,6 @@ export function getProductPrices(value: unknown) {
     ];
   });
 }
-
 
 export function normalizeProductCategory(value: unknown): MerchantProductCategory[] {
   if (!isRecord(value)) {
@@ -295,7 +285,6 @@ export function normalizeProductCategory(value: unknown): MerchantProductCategor
   ];
 }
 
-
 export function normalizeProductCollection(value: unknown): MerchantProductCollection[] {
   if (!isRecord(value)) {
     return [];
@@ -318,7 +307,6 @@ export function normalizeProductCollection(value: unknown): MerchantProductColle
   ];
 }
 
-
 export function belongsToTenant(value: unknown, tenantId: string) {
   if (!isRecord(value) || !isRecord(value.metadata)) {
     return false;
@@ -327,10 +315,8 @@ export function belongsToTenant(value: unknown, tenantId: string) {
   return value.metadata.platform_tenant_id === tenantId;
 }
 
-
 export function getTenantMetadata(tenantId: string) {
   return {
     platform_tenant_id: tenantId,
   };
 }
-

@@ -10,7 +10,6 @@ export {
   createTenantListService,
   createTenantShopSettingsService,
 } from "./list-service.js";
-export { buildTenantReadiness, createTenantStatusService } from "./status-service.js";
 export {
   buildInitialTenantOnboardingState,
   createTenantProvisioningAttemptListService,
@@ -19,3 +18,4 @@ export {
   createTenantShopProvisioningRetryServiceFromDb,
   createTenantShopProvisioningService,
 } from "./shop-provisioning.js";
+export { buildTenantReadiness, createTenantStatusService } from "./status-service.js";

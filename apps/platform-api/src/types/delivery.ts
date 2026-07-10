@@ -11,13 +11,9 @@ export type DeliverySettings = {
   updatedAt: string;
 };
 
-
 export type DeliverySettingsResult = {
   ok: true;
   delivery: DeliverySettings;
 };
 
-
 export type DeliverySettingsUpdateResult = DeliverySettingsResult;
-
-

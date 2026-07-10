@@ -1,4 +1,6 @@
 import type {
+  MerchantBatchDeleteResult,
+  MerchantDeleteResult,
   MerchantProductCategoriesResult,
   MerchantProductCategoryWriteResult,
   MerchantProductCollectionsResult,
@@ -8,9 +10,16 @@ import type {
   MerchantProductStockUpdateResult,
   MerchantProductsResult,
   MerchantProductWriteResult,
-  MerchantDeleteResult,
-  MerchantBatchDeleteResult,
 } from "../../../types/index.js";
+import { getAdminHeaders, missingCredentials, requestMedusa } from "./medusa-http.js";
+import {
+  belongsToTenant,
+  getTenantMetadata,
+  normalizeProduct,
+  normalizeProductCategory,
+  normalizeProductCollection,
+  normalizeProductStock,
+} from "./normalize.js";
 import {
   categoryBelongsToTenantById,
   collectionBelongsToTenantById,
@@ -19,14 +28,6 @@ import {
   productExistsInSalesChannel,
   productIsInSalesChannel,
 } from "./ownership.js";
-import { getAdminHeaders, missingCredentials, requestMedusa } from "./medusa-http.js";
-import {
-  belongsToTenant,
-  getTenantMetadata,
-  normalizeProduct,
-  normalizeProductCategory,
-  normalizeProductCollection,
-} from "./normalize.js";
 import {
   getEmptyProductStock,
   getInventoryItemStock,
@@ -71,7 +72,6 @@ import {
   parseProductCollectionWriteResponse,
   parseProductWriteResponse,
 } from "./write.js";
-import { normalizeProductStock } from "./normalize.js";
 
 export function createMedusaProductService(options: {
   adminApiToken?: string | undefined;
@@ -608,11 +608,14 @@ export function createMedusaProductService(options: {
 
       const response = await requestMedusa(
         fetcher,
-        new URL(`/admin/products/${encodeURIComponent(input.productId)}`, normalizeBaseUrl(options.medusaInternalUrl)),
+        new URL(
+          `/admin/products/${encodeURIComponent(input.productId)}`,
+          normalizeBaseUrl(options.medusaInternalUrl),
+        ),
         {
           headers: getAdminHeaders(options.adminApiToken!),
           method: "DELETE",
-        }
+        },
       );
 
       return parseDeleteResponse(response, "product");
@@ -630,7 +633,7 @@ export function createMedusaProductService(options: {
         fetcher,
         options,
         input.productIds,
-        input.salesChannelId
+        input.salesChannelId,
       );
 
       if (!Array.isArray(verifiedIds)) {
@@ -652,7 +655,7 @@ export function createMedusaProductService(options: {
           body: JSON.stringify({ delete: verifiedIds }),
           headers: getAdminHeaders(options.adminApiToken!),
           method: "POST",
-        }
+        },
       );
 
       return parseBatchDeleteResponse(response, verifiedIds);
@@ -666,7 +669,12 @@ export function createMedusaProductService(options: {
         return missingCredentials();
       }
 
-      const ownership = await categoryBelongsToTenantById(fetcher, options, input.categoryId, input.tenantId);
+      const ownership = await categoryBelongsToTenantById(
+        fetcher,
+        options,
+        input.categoryId,
+        input.tenantId,
+      );
       if (typeof ownership === "object") {
         return ownership;
       }
@@ -682,12 +690,12 @@ export function createMedusaProductService(options: {
         fetcher,
         new URL(
           `/admin/product-categories/${encodeURIComponent(input.categoryId)}`,
-          normalizeBaseUrl(options.medusaInternalUrl)
+          normalizeBaseUrl(options.medusaInternalUrl),
         ),
         {
           headers: getAdminHeaders(options.adminApiToken!),
           method: "DELETE",
-        }
+        },
       );
 
       return parseDeleteResponse(response, "category");
@@ -703,8 +711,8 @@ export function createMedusaProductService(options: {
 
       const results = await Promise.all(
         input.categoryIds.map((id) =>
-          categoryBelongsToTenantById(fetcher, options, id, input.tenantId)
-        )
+          categoryBelongsToTenantById(fetcher, options, id, input.tenantId),
+        ),
       );
 
       for (const r of results) {
@@ -732,15 +740,15 @@ export function createMedusaProductService(options: {
             fetcher,
             new URL(
               `/admin/product-categories/${encodeURIComponent(id)}`,
-              normalizeBaseUrl(options.medusaInternalUrl)
+              normalizeBaseUrl(options.medusaInternalUrl),
             ),
             {
               headers: getAdminHeaders(options.adminApiToken!),
               method: "DELETE",
-            }
+            },
           );
           return parseDeleteResponse(response, "category");
-        })
+        }),
       );
 
       for (const r of deleteResults) {
@@ -779,7 +787,12 @@ export function createMedusaProductService(options: {
         return missingCredentials();
       }
 
-      const ownership = await collectionBelongsToTenantById(fetcher, options, input.collectionId, input.tenantId);
+      const ownership = await collectionBelongsToTenantById(
+        fetcher,
+        options,
+        input.collectionId,
+        input.tenantId,
+      );
       if (typeof ownership === "object") {
         return ownership;
       }
@@ -795,12 +808,12 @@ export function createMedusaProductService(options: {
         fetcher,
         new URL(
           `/admin/collections/${encodeURIComponent(input.collectionId)}`,
-          normalizeBaseUrl(options.medusaInternalUrl)
+          normalizeBaseUrl(options.medusaInternalUrl),
         ),
         {
           headers: getAdminHeaders(options.adminApiToken!),
           method: "DELETE",
-        }
+        },
       );
 
       return parseDeleteResponse(response, "collection");
@@ -816,8 +829,8 @@ export function createMedusaProductService(options: {
 
       const results = await Promise.all(
         input.collectionIds.map((id) =>
-          collectionBelongsToTenantById(fetcher, options, id, input.tenantId)
-        )
+          collectionBelongsToTenantById(fetcher, options, id, input.tenantId),
+        ),
       );
 
       for (const r of results) {
@@ -845,15 +858,15 @@ export function createMedusaProductService(options: {
             fetcher,
             new URL(
               `/admin/collections/${encodeURIComponent(id)}`,
-              normalizeBaseUrl(options.medusaInternalUrl)
+              normalizeBaseUrl(options.medusaInternalUrl),
             ),
             {
               headers: getAdminHeaders(options.adminApiToken!),
               method: "DELETE",
-            }
+            },
           );
           return parseDeleteResponse(response, "collection");
-        })
+        }),
       );
 
       for (const r of deleteResults) {
@@ -885,4 +898,3 @@ export function createMedusaProductService(options: {
     },
   };
 }
-

@@ -1,4 +1,6 @@
 import {
+  merchantBatchDeleteResultSchema,
+  merchantDeleteResultSchema,
   merchantProductCategoriesSchema,
   merchantProductCategorySchema,
   merchantProductCollectionSchema,
@@ -7,8 +9,6 @@ import {
   merchantProductStockResponseSchema,
   merchantProductsSchema,
   platformErrorSchema,
-  merchantDeleteResultSchema,
-  merchantBatchDeleteResultSchema,
 } from "@ecs/contracts";
 import type {
   MerchantBatchDeleteActionResult,
@@ -20,8 +20,8 @@ import type {
   MerchantProductMutationResult,
   MerchantProductResult,
   MerchantProductStockResult,
-  MerchantProductWriteInput,
   MerchantProductsResult,
+  MerchantProductWriteInput,
 } from "./types";
 import {
   getProductHeaders,
@@ -29,10 +29,9 @@ import {
   getProductResourceMutationUrl,
   getProductResourceUrl,
   getProductStockUrl,
-  getProductVariantStockUrl,
   getProductsUrl,
+  getProductVariantStockUrl,
 } from "./urls";
-
 
 export async function parseDeleteResponse(
   response: Response,
@@ -44,7 +43,9 @@ export async function parseDeleteResponse(
     return {
       ok: false,
       status: response.status,
-      message: (error.success ? error.data.error : response.statusText || `Failed to delete ${resource}.`),
+      message: error.success
+        ? error.data.error
+        : response.statusText || `Failed to delete ${resource}.`,
     };
   }
 
@@ -73,7 +74,9 @@ export async function parseBatchDeleteResponse(
     return {
       ok: false,
       status: response.status,
-      message: (error.success ? error.data.error : response.statusText || "Failed to batch delete resources."),
+      message: error.success
+        ? error.data.error
+        : response.statusText || "Failed to batch delete resources.",
     };
   }
 
@@ -225,7 +228,7 @@ export async function parseProductResponse(response: Response): Promise<Merchant
     return {
       ok: false,
       status: response.status,
-      message: (error.success ? error.data.error : response.statusText || "Product request failed"),
+      message: error.success ? error.data.error : response.statusText || "Product request failed",
     };
   }
 
@@ -256,7 +259,7 @@ export async function parseProductMutationResponse(
     return {
       ok: false,
       status: response.status,
-      message: (error.success ? error.data.error : response.statusText || "Product request failed"),
+      message: error.success ? error.data.error : response.statusText || "Product request failed",
     };
   }
 
@@ -339,8 +342,9 @@ export async function parseProductCategoryMutationResponse(
     return {
       ok: false,
       status: response.status,
-      message:
-        (error.success ? error.data.error : response.statusText || "Product category request failed"),
+      message: error.success
+        ? error.data.error
+        : response.statusText || "Product category request failed",
     };
   }
 
@@ -385,10 +389,9 @@ export async function parseProductCollectionMutationResponse(
     return {
       ok: false,
       status: response.status,
-      message:
-        error.success
-          ? error.data.error
-          : response.statusText || "Product collection request failed",
+      message: error.success
+        ? error.data.error
+        : response.statusText || "Product collection request failed",
     };
   }
 
@@ -433,8 +436,9 @@ export async function parseProductCategoriesResponse(
     return {
       ok: false,
       status: response.status,
-      message:
-        (error.success ? error.data.error : response.statusText || "Product categories request failed"),
+      message: error.success
+        ? error.data.error
+        : response.statusText || "Product categories request failed",
     };
   }
 
@@ -475,10 +479,9 @@ export async function parseProductCollectionsResponse(
     return {
       ok: false,
       status: response.status,
-      message:
-        error.success
-          ? error.data.error
-          : response.statusText || "Product collections request failed",
+      message: error.success
+        ? error.data.error
+        : response.statusText || "Product collections request failed",
     };
   }
 
@@ -498,4 +501,3 @@ export async function parseProductCollectionsResponse(
     ...parsed.data,
   };
 }
-

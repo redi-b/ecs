@@ -14,7 +14,6 @@ export type StorefrontTemplateCatalogItem = {
   };
 };
 
-
 export type StorefrontTemplateSelectionResult =
   | {
       ok: true;
@@ -29,7 +28,6 @@ export type StorefrontTemplateSelectionResult =
       ok: false;
       error: "template_not_found" | "tenant_not_found" | "template_plan_unavailable";
     };
-
 
 export type StorefrontDraftResult =
   | {
@@ -55,9 +53,7 @@ export type StorefrontDraftResult =
       error: "invalid_storefront_draft" | "storefront_draft_not_found";
     };
 
-
 export type StorefrontDraftUpdateResult = StorefrontDraftResult;
-
 
 export type StorefrontPublishResult =
   | {
@@ -75,7 +71,6 @@ export type StorefrontPublishResult =
       ok: false;
       error: "invalid_storefront_draft" | "storefront_draft_not_found";
     };
-
 
 export type PublishedStorefrontConfigResult =
   | {

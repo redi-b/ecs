@@ -1,8 +1,5 @@
-import type { Hono } from "hono";
-
-import type { PlatformAppOptions, PlatformAppVariables } from "../../app.js";
-import type { Context } from "hono";
-import type { MerchantOrderAction } from "../../app.js";
+import type { Context, Hono } from "hono";
+import type { MerchantOrderAction, PlatformAppOptions, PlatformAppVariables } from "../../app.js";
 import { getPaginationValue, getRequestHost, storeErrorStatus } from "../shared.js";
 import type { MerchantRouteHelpers } from "./context.js";
 
@@ -182,6 +179,4 @@ export function registerMerchantOrderRoutes(
   app.post("/platform/merchant/orders/:orderId/fulfillments/:fulfillmentId/deliver", (context) =>
     mutateResolvedMerchantOrder(context, "deliver"),
   );
-
-
 }

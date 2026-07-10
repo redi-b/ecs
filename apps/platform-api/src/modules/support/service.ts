@@ -2,7 +2,11 @@ import type { createPlatformDb } from "@ecs/db";
 import { auditLogs, operatorNotes } from "@ecs/db";
 import { desc, eq } from "drizzle-orm";
 
-import type { SupportHistoryResult, SupportNote, SupportNoteCreateResult } from "../../types/index.js";
+import type {
+  SupportHistoryResult,
+  SupportNote,
+  SupportNoteCreateResult,
+} from "../../types/index.js";
 
 type PlatformDb = ReturnType<typeof createPlatformDb>["db"];
 
