@@ -12,6 +12,8 @@ Set `BASE_DOMAIN` to the delegated application domain, for example `ecs.example.
 
 The Compose service connects Caddy to Dokploy's external `dokploy-network` and defines a wildcard Traefik router for one-level subdomains. Remove any matching entries from Dokploy's Domains UI before deploying so Dokploy does not generate duplicate routers. Caddy remains connected to the default Compose network for internal service routing.
 
+Caddy trusts forwarded headers only from private network peers so the dashboard receives the original public scheme and host after TLS terminates at Traefik. Its access log excludes the local `/healthz` probe.
+
 The wildcard record does not cover the bare `ecs.example.com` host. Add that record separately only if the bare host will be used.
 
 Wildcard DNS and wildcard TLS are separate concerns. The included demo certificate router uses ordinary Let's Encrypt certificates for `dashboard`, `api`, and `shop`, while the wildcard router forwards every one-level tenant hostname. New tenant hosts will show a certificate warning until a certificate for `*.ecs.example.com` is imported into Dokploy. Caddy intentionally handles internal HTTP only.
