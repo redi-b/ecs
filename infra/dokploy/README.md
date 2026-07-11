@@ -14,6 +14,8 @@ The Compose service connects Caddy to Dokploy's external `dokploy-network` and d
 
 Caddy trusts forwarded headers only from private network peers so the dashboard receives the original public scheme and host after TLS terminates at Traefik. Its access log excludes the local `/healthz` probe.
 
+Better Auth issues secure session cookies for the shared `.${BASE_DOMAIN}` parent domain. This allows the central dashboard, tenant dashboards, and platform API to use the same session while keeping cookies HTTP-only and same-site.
+
 The wildcard record does not cover the bare `ecs.example.com` host. Add that record separately only if the bare host will be used.
 
 Wildcard DNS and wildcard TLS are separate concerns. The included demo certificate router uses ordinary Let's Encrypt certificates for `dashboard`, `api`, and `shop`, while the wildcard router forwards every one-level tenant hostname. New tenant hosts will show a certificate warning until a certificate for `*.ecs.example.com` is imported into Dokploy. Caddy intentionally handles internal HTTP only.
@@ -32,7 +34,7 @@ Use URL-safe database passwords or percent-encode reserved characters in both da
 
 ## Migrations and seeds
 
-Deployments run platform and Medusa migrations as one-shot services before starting the applications. Both commands have a three-minute timeout, so a stuck migration fails visibly instead of holding the deployment open.
+Deployments run platform and Medusa migrations as one-shot services before starting the applications. The platform migration job also synchronizes the built-in storefront template registry, so onboarding works on a fresh database without creating demo users or shops. Both jobs have a three-minute timeout, so a stuck migration fails visibly instead of holding the deployment open.
 
 The Medusa migration and application containers use writable root filesystems because Medusa discovers and manages module directories at runtime. They still run as a non-root user with `no-new-privileges`. The platform API, dashboard, storefront, and Caddy remain read-only.
 

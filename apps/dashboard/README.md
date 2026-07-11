@@ -27,7 +27,7 @@ Merchant dashboard pages under `/admin` are protected by the server-side dashboa
 
 Local development seed credentials:
 
-- Email: `owner@abebe.local`
+- Email: `owner@selam.local`
 - Password: `password1234`
 
 The dashboard signs in through `POST /admin/session`, which proxies Better Auth email sign-in to Platform API and forwards the Better Auth session cookie back to the browser.

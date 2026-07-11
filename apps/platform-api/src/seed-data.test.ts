@@ -23,12 +23,12 @@ test("buildPlatformSeed creates the default local tenant context", () => {
     ],
   });
 
-  assert.equal(seed.tenant.handle, "abebe");
-  assert.equal(seed.domain.hostname, "abebe.lvh.me");
+  assert.equal(seed.tenant.handle, "selam");
+  assert.equal(seed.domain.hostname, "selam.lvh.me");
   assert.equal(seed.tenant.medusaPublishableKeyId, "pk_test_local");
-  assert.equal(seed.tenant.medusaRegionId, "reg_local_abebe");
-  assert.equal(seed.tenant.medusaShippingOptionId, "so_local_abebe");
-  assert.equal(seed.user.email, "owner@abebe.local");
+  assert.equal(seed.tenant.medusaRegionId, "reg_local_selam");
+  assert.equal(seed.tenant.medusaShippingOptionId, "so_local_selam");
+  assert.equal(seed.user.email, "owner@selam.local");
   assert.equal(seed.tenantMembership.role, "owner");
   assert.deepEqual(seed.tenantOnboarding, {
     id: "00000000-0000-4000-8000-000000000009",
@@ -60,6 +60,6 @@ test("buildPlatformSeed normalizes base domain and publishable key input", () =>
     ],
   });
 
-  assert.equal(seed.domain.hostname, "abebe.lvh.me");
+  assert.equal(seed.domain.hostname, "selam.lvh.me");
   assert.equal(seed.tenant.medusaPublishableKeyId, "pk_test_trimmed");
 });

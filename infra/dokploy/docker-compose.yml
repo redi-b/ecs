@@ -23,6 +23,7 @@ x-platform-environment: &platform-environment
   DASHBOARD_PUBLIC_BASE_URL: https://dashboard.${BASE_DOMAIN}
   BETTER_AUTH_URL: https://api.${BASE_DOMAIN}
   BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?set BETTER_AUTH_SECRET}
+  BETTER_AUTH_COOKIE_DOMAIN: .${BASE_DOMAIN}
   BETTER_AUTH_TRUSTED_ORIGINS: https://dashboard.${BASE_DOMAIN},https://*.${BASE_DOMAIN}
   CHAPA_SECRET_KEY: ${CHAPA_SECRET_KEY:-}
   CHAPA_API_URL: ${CHAPA_API_URL:-https://api.chapa.co/v1}
@@ -94,7 +95,14 @@ services:
     security_opt:
       - no-new-privileges:true
     environment: *platform-environment
-    command: ["timeout", "-s", "TERM", "180", "node", "--import", "tsx", "node_modules/@ecs/db/src/migrations.ts"]
+    command:
+      - timeout
+      - -s
+      - TERM
+      - "180"
+      - sh
+      - -c
+      - node --import tsx node_modules/@ecs/db/src/migrations.ts && node --import tsx src/sync-storefront-templates.ts
     depends_on:
       postgres:
         condition: service_healthy
@@ -165,6 +173,7 @@ services:
       PLATFORM_API_BASE_URL: http://platform-api:3000
       DASHBOARD_PUBLIC_BASE_URL: https://dashboard.${BASE_DOMAIN}
       DASHBOARD_AUTH_COOKIE_DOMAIN: .${BASE_DOMAIN}
+      STOREFRONT_PUBLIC_BASE_DOMAIN: ${BASE_DOMAIN}
     expose:
       - "3001"
     healthcheck:

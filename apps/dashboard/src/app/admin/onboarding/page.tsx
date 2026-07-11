@@ -102,6 +102,7 @@ export default async function OnboardingPage({ searchParams }: OnboardingPagePro
             shopName: resolvedSearchParams.shopName,
           }}
           errorMessage={errorMessage}
+          storefrontBaseDomain={process.env.STOREFRONT_PUBLIC_BASE_DOMAIN ?? "lvh.me"}
           templates={templates}
         />
       </div>

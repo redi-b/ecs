@@ -38,7 +38,7 @@ export function buildPlatformSeed(options: PlatformSeedOptions) {
     throw new Error("At least one storefront template is required for platform seed data.");
   }
 
-  const hostname = `abebe.${normalizeBaseDomain(options.storefrontBaseDomain)}`;
+  const hostname = `selam.${normalizeBaseDomain(options.storefrontBaseDomain)}`;
   const medusaPublishableKeyId = options.medusaPublishableKeyId.trim();
 
   if (!medusaPublishableKeyId) {
@@ -49,19 +49,19 @@ export function buildPlatformSeed(options: PlatformSeedOptions) {
     ids: localIds,
     tenant: {
       id: localIds.tenant,
-      name: "Abebe Market",
-      handle: "abebe",
+      name: "Selam Market",
+      handle: "selam",
       status: "active" as const,
       primaryDomainId: localIds.domain,
-      medusaStoreId: "store_local_abebe",
-      medusaSalesChannelId: "sc_local_abebe",
+      medusaStoreId: "store_local_selam",
+      medusaSalesChannelId: "sc_local_selam",
       medusaPublishableKeyId,
-      medusaStockLocationId: "sloc_local_abebe",
-      medusaRegionId: "reg_local_abebe",
-      medusaShippingProfileId: "shp_local_abebe",
-      medusaFulfillmentSetId: "fuset_local_abebe",
-      medusaServiceZoneId: "serzo_local_abebe",
-      medusaShippingOptionId: "so_local_abebe",
+      medusaStockLocationId: "sloc_local_selam",
+      medusaRegionId: "reg_local_selam",
+      medusaShippingProfileId: "shp_local_selam",
+      medusaFulfillmentSetId: "fuset_local_selam",
+      medusaServiceZoneId: "serzo_local_selam",
+      medusaShippingOptionId: "so_local_selam",
     },
     domain: {
       id: localIds.domain,
@@ -75,11 +75,11 @@ export function buildPlatformSeed(options: PlatformSeedOptions) {
     },
     user: {
       id: localIds.user,
-      email: "owner@abebe.local",
+      email: "owner@selam.local",
       emailVerified: true,
       image: null,
       phone: "+251911000000",
-      name: "Abebe Owner",
+      name: "Selam Bekele",
       status: "active",
     },
     tenantMembership: {

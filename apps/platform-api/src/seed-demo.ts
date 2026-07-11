@@ -48,7 +48,7 @@ const platformInternalApiToken =
 
 const seed = buildPlatformSeed({
   storefrontBaseDomain: process.env.STOREFRONT_PUBLIC_BASE_DOMAIN ?? "lvh.me",
-  medusaPublishableKeyId: process.env.SEED_MEDUSA_PUBLISHABLE_KEY_ID ?? "pk_test_local_abebe",
+  medusaPublishableKeyId: process.env.SEED_MEDUSA_PUBLISHABLE_KEY_ID ?? "pk_test_local_selam",
   templates: storefrontTemplates,
 });
 const seedOwnerPassword = process.env.SEED_OWNER_PASSWORD ?? "password1234";
@@ -1077,7 +1077,7 @@ function buildStudioMetricRows(tenantId: string, now: Date) {
   return rows;
 }
 
-function buildDemoEvents(tenantId: string, now: Date, prefix = "abebe") {
+function buildDemoEvents(tenantId: string, now: Date, prefix = "selam") {
   return demoEventTypes.flatMap((eventType, eventIndex) =>
     Array.from({ length: 12 }, (_, index) => ({
       tenantId,
@@ -1510,14 +1510,12 @@ function productSeed(
   basePrice: number,
   options: readonly string[],
 ) {
-  const imageSlug = encodeURIComponent(title.toLowerCase().replaceAll(" ", ","));
-
   return {
     title,
     handle,
     subtitle,
-    description: `${title} prepared as a polished marketplace demo product for Abebe Market.`,
-    image: `https://images.unsplash.com/600x600/?${imageSlug},market,product`,
+    description: `${title} is a carefully selected product for Selam Market, prepared for everyday use and gifting.`,
+    image: getDemoImageUrl(subtitle),
     optionTitle: "Variant",
     variants: options.map((option, index) => ({
       option,
@@ -1526,6 +1524,23 @@ function productSeed(
       price: basePrice + index * Math.round(basePrice * 0.45),
     })),
   };
+}
+
+const demoImageUrls: Record<string, string> = {
+  "Coffee & Tea": "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085",
+  "Pantry Staples": "https://images.unsplash.com/photo-1547592180-85f173990554",
+  "Home Goods": "https://images.unsplash.com/photo-1586023492125-27b2c045efd7",
+  "Fresh Market": "https://images.unsplash.com/photo-1542838132-92c53300491e",
+  "Giftable Essentials": "https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0",
+  "Soft Furnishings": "https://images.unsplash.com/photo-1555041469-a586c61ea9bc",
+  "Home Fragrance": "https://images.unsplash.com/photo-1603006905003-be475563bc59",
+  "Dinner Party Edit": "https://images.unsplash.com/photo-1601050690597-df0568f70950",
+  "Wedding Gifts": "https://images.unsplash.com/photo-1519225421980-715cb0215aed",
+};
+
+function getDemoImageUrl(category: string) {
+  const baseUrl = demoImageUrls[category] ?? demoImageUrls["Giftable Essentials"];
+  return `${baseUrl}?auto=format&fit=crop&w=1200&q=80`;
 }
 
 try {

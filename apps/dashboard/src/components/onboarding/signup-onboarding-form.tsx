@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { getStorefrontHostname } from "@/lib/storefront-hosts";
 import { cn } from "@/lib/utils";
 
 const steps = [
@@ -45,6 +46,7 @@ type HandleState =
 export function ShopOnboardingForm({
   defaultValues,
   errorMessage,
+  storefrontBaseDomain,
   templates,
 }: {
   defaultValues: {
@@ -54,6 +56,7 @@ export function ShopOnboardingForm({
     shopName?: string | undefined;
   };
   errorMessage: string | null;
+  storefrontBaseDomain: string;
   templates: StorefrontTemplateCatalogItem[];
 }) {
   const fieldId = useId();
@@ -131,7 +134,7 @@ export function ShopOnboardingForm({
 
       setHandleState({
         status: "available",
-        hostname: data.hostname ?? `${normalized}.lvh.me`,
+        hostname: data.hostname ?? getStorefrontHostname(normalized, storefrontBaseDomain),
         message: "Address available.",
       });
     }, 350);
@@ -140,7 +143,7 @@ export function ShopOnboardingForm({
       controller.abort();
       window.clearTimeout(timeout);
     };
-  }, [handle]);
+  }, [handle, storefrontBaseDomain]);
 
   const canContinue =
     (step === 0 && shopName.trim() && handleState.status === "available") ||
@@ -230,7 +233,7 @@ export function ShopOnboardingForm({
                         <span className="min-w-0 truncate font-medium">
                           {handleState.status === "available"
                             ? handleState.hostname
-                            : `${handle || "shop"}.lvh.me`}
+                            : getStorefrontHostname(handle || "shop", storefrontBaseDomain)}
                         </span>
                       </div>
                     </div>

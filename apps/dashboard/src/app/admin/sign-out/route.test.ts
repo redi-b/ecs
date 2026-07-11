@@ -70,7 +70,7 @@ test("POST /admin/sign-out signs out through Platform auth and forwards clearing
   );
   assert.match(
     setCookie,
-    /__Secure-better-auth\.session_token=; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly; SameSite=Lax; Domain=\.lvh\.me; Path=\//,
+    /__Secure-better-auth\.session_token=; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly; SameSite=Lax; Secure; Domain=\.lvh\.me; Path=\//,
   );
   assert.notEqual(
     setCookie,

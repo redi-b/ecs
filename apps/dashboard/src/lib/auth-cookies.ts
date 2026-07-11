@@ -23,10 +23,11 @@ export function getSharedAuthCookie(cookie: string) {
 export function getSharedAuthCookieClears() {
   const sharedDomain = getSharedCookieDomain();
 
-  return betterAuthSessionCookieNames.map(
-    (name) =>
-      `${name}=; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly; SameSite=Lax; Domain=${sharedDomain}; Path=/`,
-  );
+  return betterAuthSessionCookieNames.map((name) => {
+    const secure = name.startsWith("__Secure-") ? "; Secure" : "";
+
+    return `${name}=; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly; SameSite=Lax${secure}; Domain=${sharedDomain}; Path=/`;
+  });
 }
 
 function getSharedCookieDomain() {

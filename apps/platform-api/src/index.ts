@@ -137,14 +137,15 @@ const productService = createMedusaProductService({
 });
 const auth = createPlatformAuth({
   baseUrl: process.env.BETTER_AUTH_URL ?? "http://api.lvh.me",
+  cookieDomain: process.env.BETTER_AUTH_COOKIE_DOMAIN,
   db: platformDb.db,
   secret:
     process.env.BETTER_AUTH_SECRET ?? "development-better-auth-secret-change-before-production",
   trustedOrigins: parseTrustedOrigins(process.env.BETTER_AUTH_TRUSTED_ORIGINS) ?? [
-    "http://abebe.lvh.me",
     "http://api.lvh.me",
     "http://dashboard.lvh.me",
   ],
+  useSecureCookies: (process.env.BETTER_AUTH_URL ?? "http://api.lvh.me").startsWith("https://"),
 });
 
 const app = createPlatformApp({

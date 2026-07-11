@@ -36,7 +36,7 @@ const platformDb = createPlatformDb({
 
 const seed = buildPlatformSeed({
   storefrontBaseDomain: process.env.STOREFRONT_PUBLIC_BASE_DOMAIN ?? "lvh.me",
-  medusaPublishableKeyId: process.env.SEED_MEDUSA_PUBLISHABLE_KEY_ID ?? "pk_test_local_abebe",
+  medusaPublishableKeyId: process.env.SEED_MEDUSA_PUBLISHABLE_KEY_ID ?? "pk_test_local_selam",
   templates: storefrontTemplates,
 });
 const seedOwnerPassword = process.env.SEED_OWNER_PASSWORD ?? "password1234";

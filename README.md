@@ -53,8 +53,8 @@ Development defaults use `lvh.me`, which resolves to localhost:
 
 - `http://api.lvh.me`
 - `http://dashboard.lvh.me`
-- `http://abebe.lvh.me`
-- `http://abebe.lvh.me/admin`
+- `http://selam.lvh.me`
+- `http://selam.lvh.me/admin`
 
 ## Running Locally
 
@@ -150,7 +150,7 @@ The smoke script uses these defaults:
 
 - `PLATFORM_API_URL=http://localhost:3000`
 - `PLATFORM_ORIGIN=http://dashboard.lvh.me`
-- `SMOKE_OWNER_EMAIL=owner@abebe.local`
+- `SMOKE_OWNER_EMAIL=owner@selam.local`
 - `SMOKE_OWNER_PASSWORD=password1234`
 
 Override those values in the shell if your local setup is different.

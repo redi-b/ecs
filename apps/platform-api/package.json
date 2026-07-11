@@ -12,6 +12,7 @@
     "seed": "tsx src/seed.ts",
     "seed:demo": "tsx src/seed-demo.ts",
     "seed:demo:clean": "tsx src/seed-demo.ts --clean",
+    "sync:storefront-templates": "tsx src/sync-storefront-templates.ts",
     "start": "tsx src/index.ts"
   },
   "dependencies": {

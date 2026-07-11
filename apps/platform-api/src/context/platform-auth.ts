@@ -7,14 +7,14 @@ type PlatformDb = ReturnType<typeof createPlatformDb>["db"];
 
 export function createPlatformAuth(options: {
   baseUrl?: string | undefined;
+  cookieDomain?: string | undefined;
   db: PlatformDb;
   secret: string;
   trustedOrigins?: string[] | undefined;
+  useSecureCookies?: boolean | undefined;
 }) {
   return betterAuth({
-    advanced: {
-      trustedProxyHeaders: true,
-    },
+    advanced: getPlatformAuthCookieOptions(options),
     basePath: "/platform/auth",
     ...(options.baseUrl ? { baseURL: options.baseUrl } : {}),
     database: drizzleAdapter(options.db, {
@@ -45,6 +45,24 @@ export function createPlatformAuth(options: {
       modelName: "verifications",
     },
   });
+}
+
+export function getPlatformAuthCookieOptions(options: {
+  cookieDomain?: string | undefined;
+  useSecureCookies?: boolean | undefined;
+}) {
+  return {
+    ...(options.cookieDomain
+      ? {
+          crossSubDomainCookies: {
+            domain: options.cookieDomain,
+            enabled: true,
+          },
+        }
+      : {}),
+    trustedProxyHeaders: true,
+    ...(options.useSecureCookies ? { useSecureCookies: true } : {}),
+  };
 }
 
 export type PlatformAuth = ReturnType<typeof createPlatformAuth>;
