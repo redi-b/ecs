@@ -5,11 +5,20 @@ import type { MerchantRouteApp, MerchantRouteHelpers } from "./context.js";
 
 const promotionSchema = z.object({
   allocation: z.enum(["each", "across"]).nullish(),
+  applyToQuantity: z.number().int().positive().nullish(),
+  buyMinQuantity: z.number().int().positive().nullish(),
+  buyProductIds: z.array(z.string().min(1)).optional(),
+  campaignBudgetLimit: z.number().positive().nullish(),
+  campaignBudgetType: z.enum(["usage", "spend"]).nullish(),
+  campaignName: z.string().trim().max(120).nullish(),
   code: z.string().trim().min(2).max(64),
   currencyCode: z.string().trim().length(3).nullish(),
   endsAt: z.string().datetime().nullish(),
   isAutomatic: z.boolean().optional(),
+  isTaxInclusive: z.boolean().optional(),
+  maxQuantity: z.number().int().positive().nullish(),
   method: z.enum(["percentage", "fixed"]),
+  productIds: z.array(z.string().min(1)).optional(),
   promotionType: z.enum(["standard", "buyget"]).optional(),
   startsAt: z.string().datetime().nullish(),
   status: z.enum(["active", "inactive", "draft"]),
@@ -91,9 +100,22 @@ function toPromotionInput(data: z.infer<typeof promotionSchema>) {
     status: data.status,
     value: data.value,
     ...(data.allocation != null ? { allocation: data.allocation } : {}),
+    ...(data.applyToQuantity !== undefined ? { applyToQuantity: data.applyToQuantity } : {}),
+    ...(data.buyMinQuantity !== undefined ? { buyMinQuantity: data.buyMinQuantity } : {}),
+    ...(data.buyProductIds !== undefined ? { buyProductIds: data.buyProductIds } : {}),
+    ...(data.campaignBudgetLimit !== undefined
+      ? { campaignBudgetLimit: data.campaignBudgetLimit }
+      : {}),
+    ...(data.campaignBudgetType !== undefined
+      ? { campaignBudgetType: data.campaignBudgetType }
+      : {}),
+    ...(data.campaignName !== undefined ? { campaignName: data.campaignName } : {}),
     ...(data.currencyCode != null ? { currencyCode: data.currencyCode } : {}),
     ...(data.endsAt !== undefined ? { endsAt: data.endsAt } : {}),
     ...(data.isAutomatic !== undefined ? { isAutomatic: data.isAutomatic } : {}),
+    ...(data.isTaxInclusive !== undefined ? { isTaxInclusive: data.isTaxInclusive } : {}),
+    ...(data.maxQuantity !== undefined ? { maxQuantity: data.maxQuantity } : {}),
+    ...(data.productIds !== undefined ? { productIds: data.productIds } : {}),
     ...(data.promotionType !== undefined ? { promotionType: data.promotionType } : {}),
     ...(data.startsAt !== undefined ? { startsAt: data.startsAt } : {}),
     ...(data.targetType !== undefined ? { targetType: data.targetType } : {}),

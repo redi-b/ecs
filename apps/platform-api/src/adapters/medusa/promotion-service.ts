@@ -44,7 +44,6 @@ export function createMedusaPromotionService(options: Options) {
     const campaign = toRecord(promotion.campaign);
     const identifier = stringOrNull(campaign.campaign_identifier);
     if (identifier?.startsWith(tenantCampaignPrefix(tenantId))) return true;
-    // Legacy: earlier payloads attempted metadata tenancy (not supported by Medusa).
     const metadata = toRecord(promotion.metadata);
     return stringOrNull(metadata.platform_tenant_id) === tenantId;
   }
@@ -56,7 +55,7 @@ export function createMedusaPromotionService(options: Options) {
     tenantId: string;
   }): Promise<MerchantPromotionsResult> {
     const search = new URLSearchParams({
-      fields: "+application_method,+campaign",
+      fields: "+application_method,+application_method.target_rules,+application_method.buy_rules,+campaign,+rules",
       limit: "100",
       offset: "0",
     });
@@ -80,7 +79,7 @@ export function createMedusaPromotionService(options: Options) {
 
   async function getOwned(id: string, tenantId: string): Promise<MerchantPromotionResult> {
     const response = await fetcher(
-      `${base}/admin/promotions/${encodeURIComponent(id)}?fields=+application_method,+campaign`,
+      `${base}/admin/promotions/${encodeURIComponent(id)}?fields=+application_method,+application_method.target_rules,+application_method.buy_rules,+campaign,+rules`,
       { headers: headers() },
     ).catch(() => null);
     if (!response?.ok)
@@ -118,7 +117,6 @@ export function createMedusaPromotionService(options: Options) {
     ).catch(() => null);
     if (!response?.ok) return fail(response);
 
-    // Schedule is stored on the campaign, not the promotion.
     const detailResponse = await fetcher(
       `${base}/admin/promotions/${encodeURIComponent(input.promotionId)}?fields=+campaign`,
       { headers: headers() },
@@ -127,12 +125,16 @@ export function createMedusaPromotionService(options: Options) {
       const promo = toRecord((await detailResponse.json().catch(() => ({}))).promotion);
       const campaign = toRecord(promo.campaign);
       const campaignId = stringOrNull(campaign.id) ?? stringOrNull(promo.campaign_id);
-      if (campaignId && (input.startsAt !== undefined || input.endsAt !== undefined)) {
+      if (
+        campaignId &&
+        (input.startsAt !== undefined ||
+          input.endsAt !== undefined ||
+          input.campaignName !== undefined ||
+          input.campaignBudgetType !== undefined ||
+          input.campaignBudgetLimit !== undefined)
+      ) {
         await fetcher(`${base}/admin/campaigns/${encodeURIComponent(campaignId)}`, {
-          body: JSON.stringify({
-            ...(input.startsAt !== undefined ? { starts_at: input.startsAt || null } : {}),
-            ...(input.endsAt !== undefined ? { ends_at: input.endsAt || null } : {}),
-          }),
+          body: JSON.stringify(toCampaignUpdate(input)),
           headers: headers(),
           method: "POST",
         }).catch(() => null);
@@ -158,39 +160,89 @@ export function createMedusaPromotionService(options: Options) {
   return { createPromotion, deletePromotion, listPromotions, updatePromotion };
 }
 
-/**
- * Medusa AdminCreatePromotion accepts code/type/status/limit/application_method/campaign.
- * Schedule lives on campaign; usage cap is `limit` (not usage_limit). No top-level metadata.
- */
+function productRule(productIds: string[]) {
+  const ids = productIds.map((id) => id.trim()).filter(Boolean);
+  if (!ids.length) return undefined;
+  return {
+    attribute: "items.product.id",
+    operator: "in" as const,
+    values: ids,
+  };
+}
+
 function toCreatePayload(input: MerchantPromotionInput) {
   const code = input.code.trim().toUpperCase();
+  const promotionType = input.promotionType ?? "standard";
   const targetType = input.targetType ?? "order";
+  const productIds = input.productIds ?? [];
+  const buyProductIds = input.buyProductIds ?? [];
+
   const application_method: Record<string, unknown> = {
     type: input.method,
     target_type: targetType,
     value: input.value,
   };
-  if (input.method === "fixed") {
-    application_method.currency_code = (input.currencyCode ?? "etb").toLowerCase();
+
+  if (input.method === "fixed" || targetType === "order") {
+    // Fixed discounts require currency; order-level fixed also needs it.
+    if (input.method === "fixed") {
+      application_method.currency_code = (input.currencyCode ?? "etb").toLowerCase();
+    }
   }
-  // Allocation is only relevant when the discount applies across cart line items.
-  if (targetType === "items") {
-    application_method.allocation = input.allocation ?? "across";
+
+  if (targetType === "items" || promotionType === "buyget") {
+    application_method.allocation = input.allocation ?? "each";
+  }
+  if (input.maxQuantity != null) {
+    application_method.max_quantity = input.maxQuantity;
+  }
+
+  const targetRule = productRule(productIds);
+  if (targetRule) {
+    application_method.target_rules = [targetRule];
+  }
+
+  if (promotionType === "buyget") {
+    application_method.buy_rules_min_quantity = input.buyMinQuantity ?? 1;
+    application_method.apply_to_quantity = input.applyToQuantity ?? 1;
+    const buyRule = productRule(buyProductIds.length ? buyProductIds : productIds);
+    if (buyRule) {
+      application_method.buy_rules = [buyRule];
+    }
+    // Buy X get Y is typically free (100% off the get items).
+    application_method.type = "percentage";
+    application_method.value = 100;
+    application_method.target_type = "items";
+    application_method.allocation = input.allocation ?? "each";
+  }
+
+  const campaignName = input.campaignName?.trim() || code;
+  const campaign: Record<string, unknown> = {
+    campaign_identifier: tenantCampaignIdentifier(input.tenantId, code),
+    ends_at: input.endsAt || null,
+    name: campaignName,
+    starts_at: input.startsAt || null,
+  };
+
+  if (input.campaignBudgetType && input.campaignBudgetLimit != null) {
+    campaign.budget = {
+      type: input.campaignBudgetType,
+      limit: input.campaignBudgetLimit,
+      ...(input.campaignBudgetType === "spend"
+        ? { currency_code: (input.currencyCode ?? "etb").toLowerCase() }
+        : {}),
+    };
   }
 
   return {
     application_method,
-    campaign: {
-      campaign_identifier: tenantCampaignIdentifier(input.tenantId, code),
-      ends_at: input.endsAt || null,
-      name: code,
-      starts_at: input.startsAt || null,
-    },
+    campaign,
     code,
     is_automatic: input.isAutomatic ?? false,
+    is_tax_inclusive: input.isTaxInclusive ?? false,
     ...(input.usageLimit != null ? { limit: input.usageLimit } : {}),
     status: input.status,
-    type: input.promotionType ?? "standard",
+    type: promotionType,
   };
 }
 
@@ -206,31 +258,85 @@ function toUpdatePayload(input: MerchantPromotionInput) {
     application_method.currency_code = (input.currencyCode ?? "etb").toLowerCase();
   }
   if (targetType === "items") {
-    application_method.allocation = input.allocation ?? "across";
+    application_method.allocation = input.allocation ?? "each";
+  }
+  if (input.maxQuantity !== undefined) {
+    application_method.max_quantity = input.maxQuantity;
   }
 
   return {
     application_method,
     code,
     is_automatic: input.isAutomatic ?? false,
+    is_tax_inclusive: input.isTaxInclusive ?? false,
     limit: input.usageLimit ?? null,
     status: input.status,
     type: input.promotionType ?? "standard",
   };
 }
 
+function toCampaignUpdate(input: MerchantPromotionInput) {
+  const body: Record<string, unknown> = {};
+  if (input.startsAt !== undefined) body.starts_at = input.startsAt || null;
+  if (input.endsAt !== undefined) body.ends_at = input.endsAt || null;
+  if (input.campaignName !== undefined) body.name = input.campaignName?.trim() || undefined;
+  if (input.campaignBudgetType && input.campaignBudgetLimit != null) {
+    body.budget = { limit: input.campaignBudgetLimit };
+  }
+  return body;
+}
+
+function ruleProductIds(rules: unknown): string[] {
+  if (!Array.isArray(rules)) return [];
+  const ids: string[] = [];
+  for (const rule of rules) {
+    const record = toRecord(rule);
+    const attribute = stringOrNull(record.attribute) ?? "";
+    if (!attribute.includes("product")) continue;
+    const values = record.values;
+    if (Array.isArray(values)) {
+      for (const value of values) {
+        if (typeof value === "string") ids.push(value);
+        else if (value && typeof value === "object" && "value" in value) {
+          const nested = (value as { value?: unknown }).value;
+          if (typeof nested === "string") ids.push(nested);
+        }
+      }
+    } else if (typeof values === "string") {
+      ids.push(values);
+    }
+  }
+  return ids;
+}
+
 function normalizePromotion(value: unknown): MerchantPromotion {
   const promotion = toRecord(value);
   const method = toRecord(promotion.application_method);
   const campaign = toRecord(promotion.campaign);
+  const budget = toRecord(campaign.budget);
+  const targetRules = method.target_rules ?? promotion.rules;
+  const buyRules = method.buy_rules;
+
   return {
+    applyToQuantity:
+      method.apply_to_quantity == null ? null : Number(method.apply_to_quantity),
+    buyMinQuantity:
+      method.buy_rules_min_quantity == null ? null : Number(method.buy_rules_min_quantity),
+    buyProductIds: ruleProductIds(buyRules),
+    campaignBudgetLimit: budget.limit == null ? null : Number(budget.limit),
+    campaignBudgetType:
+      budget.type === "usage" || budget.type === "spend" ? budget.type : null,
+    campaignName: stringOrNull(campaign.name),
     code: String(promotion.code ?? ""),
     createdAt: stringOr(promotion.created_at, new Date(0).toISOString()),
     currencyCode: stringOrNull(method.currency_code),
     endsAt: stringOrNull(campaign.ends_at) ?? stringOrNull(promotion.ends_at),
     id: String(promotion.id ?? ""),
     isAutomatic: Boolean(promotion.is_automatic),
+    isTaxInclusive: Boolean(promotion.is_tax_inclusive),
+    maxQuantity: method.max_quantity == null ? null : Number(method.max_quantity),
     method: method.type === "fixed" ? "fixed" : "percentage",
+    productIds: ruleProductIds(targetRules),
     promotionType: promotion.type === "buyget" ? "buyget" : "standard",
     startsAt: stringOrNull(campaign.starts_at) ?? stringOrNull(promotion.starts_at),
     status:

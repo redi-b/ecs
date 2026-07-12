@@ -47,9 +47,24 @@ async function copyToClipboard(value: string, label: string) {
 }
 
 function formatDiscount(item: MerchantPromotion) {
+  if (item.promotionType === "buyget") {
+    const buy = item.buyMinQuantity ?? "X";
+    const get = item.applyToQuantity ?? "Y";
+    return `Buy ${buy} get ${get}`;
+  }
+  if (item.targetType === "shipping_methods" && item.method === "percentage" && item.value >= 100) {
+    return "Free shipping";
+  }
   return item.method === "percentage"
     ? `${item.value}%`
     : `${item.value} ${item.currencyCode?.toUpperCase() ?? "ETB"}`;
+}
+
+function formatTarget(item: MerchantPromotion) {
+  if (item.promotionType === "buyget") return "Buy X get Y";
+  if (item.targetType === "shipping_methods") return "Shipping";
+  if (item.targetType === "items") return "Products";
+  return "Order";
 }
 
 function statusBadgeVariant(status: MerchantPromotion["status"]) {
@@ -183,14 +198,22 @@ export function PromotionsManager({
         accessorFn: (item) => item.value,
         header: ({ column }) => <DataTableHeader column={column} title="Discount" />,
         cell: ({ row }) => (
-          <span className="text-sm text-muted-foreground">{formatDiscount(row.original)}</span>
+          <div className="min-w-0">
+            <p className="text-sm">{formatDiscount(row.original)}</p>
+            <p className="text-xs text-muted-foreground">{formatTarget(row.original)}</p>
+          </div>
         ),
       },
       {
         accessorKey: "status",
         header: ({ column }) => <DataTableHeader column={column} title="Status" />,
         cell: ({ row }) => (
-          <Badge variant={statusBadgeVariant(row.original.status)}>{row.original.status}</Badge>
+          <div className="flex flex-wrap items-center gap-1.5">
+            <Badge variant={statusBadgeVariant(row.original.status)}>{row.original.status}</Badge>
+            {row.original.isAutomatic ? (
+              <Badge variant="outline">Auto</Badge>
+            ) : null}
+          </div>
         ),
       },
       {
@@ -238,11 +261,6 @@ export function PromotionsManager({
                 {
                   label: "Copy code",
                   onSelect: () => void copyToClipboard(item.code, "Promotion code"),
-                  type: "button",
-                },
-                {
-                  label: "Copy promotion ID",
-                  onSelect: () => void copyToClipboard(item.id, "Promotion ID"),
                   type: "button",
                 },
                 { id: "danger", type: "separator" },
