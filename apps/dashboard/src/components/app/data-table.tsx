@@ -168,18 +168,25 @@ export function DataTable<TData>({
                   data-state={row.getIsSelected() ? "selected" : undefined}
                   key={row.id}
                 >
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell
-                      className={cn(
-                        "bg-card px-4 py-3 group-hover/row:bg-muted/40",
-                        row.getIsSelected() && "bg-primary/5 group-hover/row:bg-primary/10",
-                        getStickyColumnClass(cell.column.id, false),
-                      )}
-                      key={cell.id}
-                    >
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </TableCell>
-                  ))}
+                  {row.getVisibleCells().map((cell) => {
+                    const isSticky = cell.column.id === "select" || cell.column.id === "actions";
+                    return (
+                      <TableCell
+                        className={cn(
+                          "px-4 py-3",
+                          isSticky
+                            ? getStickyColumnClass(cell.column.id, false, row.getIsSelected())
+                            : cn(
+                                "bg-card group-hover/row:bg-muted/40",
+                                row.getIsSelected() && "bg-primary/5 group-hover/row:bg-primary/10",
+                              ),
+                        )}
+                        key={cell.id}
+                      >
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </TableCell>
+                    );
+                  })}
                 </TableRow>
               ))
             ) : (
@@ -225,18 +232,32 @@ export function DataTable<TData>({
   );
 }
 
-function getStickyColumnClass(columnId: string, isHeader: boolean) {
+function getStickyColumnClass(columnId: string, isHeader: boolean, isSelected = false) {
   if (columnId === "select") {
     return cn(
       "sticky left-0 w-12 min-w-12",
-      isHeader ? "z-40 bg-card" : "z-20 bg-card group-hover/row:bg-muted/40",
+      isHeader
+        ? "z-40 bg-card"
+        : cn(
+            "z-20",
+            isSelected
+              ? "bg-[color-mix(in_oklch,var(--card),var(--primary)_5%)] group-hover/row:bg-[color-mix(in_oklch,var(--card),var(--primary)_10%)]"
+              : "bg-card group-hover/row:bg-[color-mix(in_oklch,var(--card),var(--muted)_40%)]",
+          ),
     );
   }
 
   if (columnId === "actions") {
     return cn(
       "sticky right-0 w-14 min-w-14",
-      isHeader ? "z-40 bg-card" : "z-20 bg-card group-hover/row:bg-muted/40",
+      isHeader
+        ? "z-40 bg-card"
+        : cn(
+            "z-20",
+            isSelected
+              ? "bg-[color-mix(in_oklch,var(--card),var(--primary)_5%)] group-hover/row:bg-[color-mix(in_oklch,var(--card),var(--primary)_10%)]"
+              : "bg-card group-hover/row:bg-[color-mix(in_oklch,var(--card),var(--muted)_40%)]",
+          ),
     );
   }
 
