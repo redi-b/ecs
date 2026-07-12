@@ -14,9 +14,9 @@ const allowedMethods = response.headers.get("access-control-allow-methods") ?? "
 
 if (!response.ok || !allowedOrigin || !allowedMethods.includes("PUT")) {
   console.error(
-    `Media CORS check failed: status=${response.status} origin=${allowedOrigin ?? "missing"} methods=${allowedMethods || "missing"}`,
+    `✗ Media CORS check failed: status=${response.status} origin=${allowedOrigin ?? "missing"} methods=${allowedMethods || "missing"}`,
   );
   process.exit(1);
 }
 
-console.log(`Media CORS ready for ${origin}: ${allowedMethods}`);
+console.log(`✓ Media CORS ready for ${origin}: ${allowedMethods}`);

@@ -1,5 +1,15 @@
+#!/usr/bin/env node
+/**
+ * Start local app processes (assumes infra + migrations already done).
+ *
+ *   pnpm dev:apps
+ *   pnpm dev:apps --grouped
+ *   pnpm dev:apps --split-medusa
+ */
 import { spawn } from "node:child_process";
 import concurrently from "concurrently";
+
+import { blank, box, color, heading, info, kv } from "./lib/cli.mjs";
 
 process.env.NODE_ENV = "development";
 
@@ -7,51 +17,92 @@ const args = new Set(process.argv.slice(2));
 const groupedLogs = args.has("--grouped") || process.env.DEV_LOG_MODE === "grouped";
 const splitMedusa = args.has("--split-medusa") || process.env.MEDUSA_DEV_MODE === "split";
 
-const commands = [
+const services = [
   {
-    name: "api",
+    color: "cyan",
     command: "pnpm --filter @ecs/platform-api dev",
+    name: "api",
+    title: "Platform API",
   },
   {
-    name: "worker",
+    color: "yellow",
     command: "pnpm --filter @ecs/platform-api dev:worker",
+    name: "worker",
+    title: "Platform worker",
   },
   {
-    name: "dashboard",
+    color: "magenta",
     command: "pnpm --filter @ecs/dashboard dev",
+    name: "dashboard",
+    title: "Dashboard",
   },
   {
-    name: "storefront",
+    color: "blue",
     command: "pnpm --filter @ecs/storefront dev",
+    name: "storefront",
+    title: "Storefront",
   },
   {
+    color: "green",
+    command: splitMedusa
+      ? "pnpm --filter @ecs/medusa dev:server"
+      : "pnpm --filter @ecs/medusa dev",
     name: "medusa",
-    command: splitMedusa ? "pnpm --filter @ecs/medusa dev:server" : "pnpm --filter @ecs/medusa dev",
+    title: splitMedusa ? "Medusa server" : "Medusa",
   },
   ...(splitMedusa
     ? [
         {
-          name: "medusa-worker",
+          color: "gray",
           command: "pnpm --filter @ecs/medusa dev:worker",
+          name: "medusa-w",
+          title: "Medusa worker",
         },
       ]
     : []),
 ];
 
+heading("ECS app processes");
+kv([
+  ["Mode", groupedLogs ? "grouped (dashboard view)" : "streaming (prefixed logs)"],
+  ["Medusa", splitMedusa ? "split server + worker" : "shared worker mode"],
+  ["Services", services.map((service) => service.name).join(", ")],
+]);
+blank();
+box([
+  "Local endpoints",
+  "  API         http://api.lvh.me  (localhost:3000)",
+  "  Dashboard   http://dashboard.lvh.me/admin",
+  "  Storefront  http://<handle>.lvh.me",
+  "  Medusa      http://localhost:9000",
+]);
+blank();
+info("Ctrl+C stops all processes");
+blank();
+
 if (groupedLogs) {
-  await runGrouped(commands);
+  await runGrouped(services);
 } else {
-  await runStreaming(commands);
+  await runStreaming(services);
 }
 
 async function runStreaming(devCommands) {
-  const { result } = concurrently(devCommands, {
-    prefix: "[{time}] [{name}]",
-    prefixColors: ["cyan", "yellow", "magenta", "blue", "green", "gray"],
-    killOthersOn: ["failure"],
-    restartTries: 0,
-    timestampFormat: "HH:mm:ss",
-  });
+  const { result } = concurrently(
+    devCommands.map((service) => ({
+      command: service.command,
+      name: service.name,
+      prefixColor: service.color,
+    })),
+    {
+      killOthersOn: ["failure"],
+      // Fixed-width name so columns line up: [12:04:01] api       message
+      prefix: "[{time}] {name}",
+      prefixColors: devCommands.map((service) => service.color),
+      prefixLength: 10,
+      restartTries: 0,
+      timestampFormat: "HH:mm:ss",
+    },
+  );
 
   try {
     await result;
@@ -103,7 +154,7 @@ async function runGrouped(devCommands) {
 
   const render = () => renderGroupedLogs(states);
   render();
-  const renderTimer = setInterval(render, 500);
+  const renderTimer = setInterval(render, 400);
 
   const stop = () => {
     shuttingDown = true;
@@ -126,13 +177,9 @@ function appendOutput(state, chunk) {
   state.buffer = parts.pop() ?? "";
 
   for (const line of parts) {
-    if (!line.trim()) {
-      continue;
-    }
-
+    if (!line.trim()) continue;
     state.lines.push(line);
-
-    if (state.lines.length > 8) {
+    if (state.lines.length > 10) {
       state.lines.shift();
       state.collapsed += 1;
     }
@@ -142,22 +189,31 @@ function appendOutput(state, chunk) {
 function renderGroupedLogs(states) {
   const now = Date.now();
   process.stdout.write("\x1b[2J\x1b[H");
-  process.stdout.write("ECS development processes\n\n");
+  process.stdout.write(`${color.bold("ECS development processes")}\n`);
+  process.stdout.write(`${color.dim("Live tail · last 10 lines per service")}\n\n`);
 
   for (const state of states.values()) {
-    const status = state.exitCode === undefined ? "running" : `exited ${state.exitCode}`;
+    const running = state.exitCode === undefined;
+    const statusLabel = running
+      ? color.green("running")
+      : state.exitCode === 0
+        ? color.dim("exited 0")
+        : color.red(`exited ${state.exitCode}`);
     const elapsed = formatElapsed(now - state.startedAt);
-    const collapsed = state.collapsed > 0 ? `, ${state.collapsed} lines collapsed` : "";
-    process.stdout.write(`${state.name} ${status} ${elapsed}${collapsed}\n`);
+    const collapsed =
+      state.collapsed > 0 ? color.dim(` · ${state.collapsed} older lines hidden`) : "";
+
+    process.stdout.write(
+      `${color.bold(state.title.padEnd(16))} ${statusLabel}  ${color.dim(elapsed)}${collapsed}\n`,
+    );
 
     if (state.lines.length === 0) {
-      process.stdout.write("  waiting for output...\n");
+      process.stdout.write(`  ${color.dim("waiting for output…")}\n`);
     } else {
       for (const line of state.lines) {
-        process.stdout.write(`  ${line}\n`);
+        process.stdout.write(`  ${color.dim("│")} ${line}\n`);
       }
     }
-
     process.stdout.write("\n");
   }
 }
@@ -166,20 +222,13 @@ function formatElapsed(milliseconds) {
   const seconds = Math.floor(milliseconds / 1000);
   const minutes = Math.floor(seconds / 60);
   const remainder = seconds % 60;
-
-  if (minutes === 0) {
-    return `${remainder}s`;
-  }
-
-  return `${minutes}m ${remainder}s`;
+  if (minutes === 0) return `${remainder}s`;
+  return `${minutes}m ${String(remainder).padStart(2, "0")}s`;
 }
 
 function stopChildren(children, except) {
   for (const child of children) {
-    if (child === except || child.killed || child.exitCode !== null) {
-      continue;
-    }
-
+    if (child === except || child.killed || child.exitCode !== null) continue;
     child.kill("SIGTERM");
   }
 }

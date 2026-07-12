@@ -7,17 +7,13 @@
  *
  * Then: pnpm seed --write-env
  */
-import { spawnSync } from "node:child_process";
 import { createInterface } from "node:readline/promises";
 import { stdin as input, stdout as output } from "node:process";
 
+import { blank, heading, info, kv, run, success, warn } from "./lib/cli.mjs";
+
 const composeFile = "infra/compose/docker-compose.yml";
 const yes = process.argv.includes("--yes") || process.argv.includes("-y");
-
-function run(command, args) {
-  const result = spawnSync(command, args, { stdio: "inherit" });
-  if (result.status !== 0) process.exit(result.status ?? 1);
-}
 
 async function confirm() {
   if (yes) return true;
@@ -29,25 +25,41 @@ async function confirm() {
   return /^y(es)?$/i.test(answer.trim());
 }
 
+heading("ECS database reset");
+kv([
+  ["Compose file", composeFile],
+  ["Confirm", yes ? "skipped (--yes)" : "interactive"],
+]);
+blank();
+
 if (!(await confirm())) {
-  console.info("Aborted.");
+  warn("Aborted");
   process.exit(0);
 }
 
-console.info("→ docker compose down -v");
+info("Stopping compose stack and removing volumes…");
 run("docker", ["compose", "-f", composeFile, "down", "-v", "--remove-orphans"]);
+success("Volumes removed");
 
-console.info("→ start infrastructure");
+blank();
+info("Starting infrastructure…");
 run("pnpm", ["dev:infra"]);
+success("Infrastructure is up");
 
-console.info("→ migrate platform + medusa");
+blank();
+info("Migrating platform database…");
 run("pnpm", ["db:migrate"]);
+success("Platform migrated");
+
+info("Migrating Medusa database…");
 run("pnpm", ["medusa:migrate"]);
+success("Medusa migrated");
 
-console.info(`
-Databases are empty and migrated.
-
-Next:
-  pnpm seed --write-env
-  pnpm dev:apps
-`);
+blank();
+heading("Databases empty and migrated");
+kv([
+  ["Next", "pnpm seed --write-env"],
+  ["Then", "pnpm dev:apps"],
+  ["Demo", "pnpm seed:demo  (after apps are up)"],
+]);
+blank();
