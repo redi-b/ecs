@@ -10,7 +10,7 @@ import { DataTable } from "@/components/app/data-table";
 import { DataTableFilters } from "@/components/app/data-table-filters";
 import { DataTableHeader } from "@/components/app/data-table-header";
 import { AppIcons } from "@/components/app/icons";
-import { ListToolbarSearch } from "@/components/app/list-toolbar";
+import { ListToolbarSearch, ListViewToggle } from "@/components/app/list-toolbar";
 import { RowActionsMenu } from "@/components/app/row-actions-menu";
 import {
   AlertDialog,
@@ -303,50 +303,40 @@ export function ProductCategoriesTable({
 
   const toolbar = (
     <div className="flex flex-col gap-3">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="min-w-0 flex-1">
-          <DataTableFilters filters={[]} onClearAll={() => setQuery("")}>
-            <ListToolbarSearch
-              clearLabel="Clear category search"
-              label="Search product categories"
-              onChange={setQuery}
-              placeholder="Search categories"
-              value={query}
+      <DataTableFilters
+        actions={
+          <>
+            <ListViewToggle
+              onChange={setViewMode}
+              options={[
+                { icon: AppIcons.list, label: "Table", value: "table" },
+                { icon: AppIcons.tree, label: "Tree", value: "tree" },
+              ]}
+              value={viewMode}
             />
-          </DataTableFilters>
-        </div>
-        <div className="flex shrink-0 flex-wrap gap-2">
-          <div className="flex rounded-lg border p-0.5">
             <Button
-              onClick={() => setViewMode("table")}
+              className="rounded-full"
+              onClick={() => setReorderOpen(true)}
               size="sm"
               type="button"
-              variant={viewMode === "table" ? "secondary" : "ghost"}
+              variant="outline"
             >
-              <AppIcons.list data-icon="inline-start" />
-              Table
+              <AppIcons.arrowUpDown data-icon="inline-start" />
+              Reorder
             </Button>
-            <Button
-              onClick={() => setViewMode("tree")}
-              size="sm"
-              type="button"
-              variant={viewMode === "tree" ? "secondary" : "ghost"}
-            >
-              <AppIcons.folder data-icon="inline-start" />
-              Tree
-            </Button>
-          </div>
-          <Button
-            onClick={() => setReorderOpen(true)}
-            size="sm"
-            type="button"
-            variant="outline"
-          >
-            <AppIcons.arrowUpDown data-icon="inline-start" />
-            Reorder
-          </Button>
-        </div>
-      </div>
+          </>
+        }
+        filters={[]}
+        onClearAll={() => setQuery("")}
+      >
+        <ListToolbarSearch
+          clearLabel="Clear category search"
+          label="Search product categories"
+          onChange={setQuery}
+          placeholder="Search categories"
+          value={query}
+        />
+      </DataTableFilters>
       <p className="text-sm text-muted-foreground">
         {counts.hasActiveFilter
           ? `${counts.filteredCount} of ${counts.pageCount} on this page`
