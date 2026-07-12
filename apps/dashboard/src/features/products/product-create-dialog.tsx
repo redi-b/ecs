@@ -3,6 +3,7 @@
 import type { MerchantProductCategory, MerchantProductCollection } from "@ecs/contracts";
 import { useState } from "react";
 
+import { AppIcons } from "@/components/app/icons";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { ProductForm } from "@/features/products/product-form";
@@ -38,6 +39,7 @@ export function ProductCreateDialog({
         title={disabledReason}
         type="button"
       >
+        <AppIcons.products data-icon="inline-start" />
         Create product
       </Button>
       <ProductForm

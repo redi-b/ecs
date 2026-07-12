@@ -1,7 +1,7 @@
 "use client";
 
 import type { MerchantProductCategory, MerchantProductCollection } from "@ecs/contracts";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import { AppIcons } from "@/components/app/icons";
 import { Badge } from "@/components/ui/badge";
@@ -17,6 +17,10 @@ import {
 } from "@/components/ui/command";
 import { FieldDescription } from "@/components/ui/field";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  buildCategoryTree,
+  flattenCategoryTree,
+} from "@/features/catalog-taxonomy/taxonomy-table-state";
 import { cn } from "@/lib/utils";
 
 export const NO_COLLECTION_VALUE = "__none";
@@ -124,6 +128,10 @@ export function CategoryPicker({
   value: string[];
 }) {
   const [open, setOpen] = useState(false);
+  const treeRows = useMemo(
+    () => flattenCategoryTree(buildCategoryTree(categories)),
+    [categories],
+  );
 
   function toggleCategory(categoryId: string) {
     onChange(
@@ -148,26 +156,38 @@ export function CategoryPicker({
         </PopoverTrigger>
         <PopoverContent align="start" className="w-[min(30rem,calc(100vw-2rem))] p-1">
           <Command>
-            <CommandInput placeholder="Search categories..." />
-            <CommandList>
+            <CommandInput placeholder="Search categories…" />
+            <CommandList className="max-h-72">
               <CommandEmpty>No categories found.</CommandEmpty>
               <CommandGroup>
-                {categories.map((category) => (
-                  <CommandItem
-                    data-checked={value.includes(category.id)}
-                    key={category.id}
-                    onSelect={() => toggleCategory(category.id)}
-                    value={`${category.name ?? ""} ${category.handle ?? ""}`}
-                  >
-                    <Checkbox checked={value.includes(category.id)} />
-                    <span className="truncate">{getCategoryLabel(category)}</span>
-                    {category.handle ? (
-                      <span className="ml-auto text-xs text-muted-foreground">
-                        {category.handle}
+                {treeRows.map((node) => {
+                  const category = node.category;
+                  const label = getCategoryLabel(category);
+                  return (
+                    <CommandItem
+                      data-checked={value.includes(category.id) ? true : undefined}
+                      key={category.id}
+                      onSelect={() => toggleCategory(category.id)}
+                      value={`${category.name ?? ""} ${category.handle ?? ""} ${label}`}
+                    >
+                      <Checkbox checked={value.includes(category.id)} tabIndex={-1} />
+                      <span
+                        className="min-w-0 flex-1 truncate"
+                        style={{ paddingLeft: `${node.depth * 0.85}rem` }}
+                      >
+                        {node.depth > 0 ? (
+                          <span className="mr-1.5 text-muted-foreground/50">└</span>
+                        ) : null}
+                        {label}
                       </span>
-                    ) : null}
-                  </CommandItem>
-                ))}
+                      {category.handle ? (
+                        <span className="ml-auto max-w-[35%] truncate text-xs text-muted-foreground">
+                          {category.handle}
+                        </span>
+                      ) : null}
+                    </CommandItem>
+                  );
+                })}
               </CommandGroup>
             </CommandList>
           </Command>

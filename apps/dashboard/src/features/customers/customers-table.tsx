@@ -129,6 +129,32 @@ export function CustomersTable({
         enableSorting: false,
       },
       {
+        id: "addresses",
+        accessorFn: (customer) => customer.addresses.length,
+        header: ({ column }) => <DataTableHeader column={column} title="Addresses" />,
+        cell: ({ row }) => {
+          const count = row.original.addresses.length;
+          if (!count) {
+            return <span className="text-sm text-muted-foreground">—</span>;
+          }
+          const hasDefault = row.original.addresses.some(
+            (address) => address.isDefaultBilling || address.isDefaultShipping,
+          );
+          return (
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="text-sm tabular-nums text-muted-foreground">
+                {count} address{count === 1 ? "" : "es"}
+              </span>
+              {hasDefault ? (
+                <Badge className="font-normal" variant="outline">
+                  Default set
+                </Badge>
+              ) : null}
+            </div>
+          );
+        },
+      },
+      {
         accessorKey: "createdAt",
         header: ({ column }) => <DataTableHeader column={column} title="Joined" />,
         cell: ({ row }) => (
@@ -149,22 +175,26 @@ export function CustomersTable({
               actions={[
                 {
                   href: dashboardRoutes.customerDetail(customer.id),
+                  icon: AppIcons.eye,
                   label: "View details",
                   type: "link",
                 },
                 {
+                  icon: AppIcons.edit,
                   label: "Edit customer",
                   onSelect: () => setEditing(customer),
                   type: "button",
                 },
                 { id: "copy", type: "separator" },
                 {
+                  icon: AppIcons.copy,
                   label: "Copy email",
                   onSelect: () => void copyToClipboard(customer.email, "Email"),
                   type: "button",
                 },
                 {
                   disabled: !customer.phone,
+                  icon: AppIcons.copy,
                   label: "Copy phone",
                   onSelect: () => void copyToClipboard(customer.phone ?? "", "Phone"),
                   type: "button",

@@ -324,17 +324,20 @@ export function PromotionsManager({
             <RowActionsMenu
               actions={[
                 {
+                  icon: AppIcons.edit,
                   label: "Edit promotion",
                   onSelect: () => setEditing(item),
                   type: "button",
                 },
                 {
+                  icon: AppIcons.copy,
                   label: "Copy code",
                   onSelect: () => void copyToClipboard(item.code, "Promotion code"),
                   type: "button",
                 },
                 { id: "danger", type: "separator" },
                 {
+                  icon: AppIcons.trash,
                   label: "Delete promotion",
                   onSelect: () => setDeleteTarget(item),
                   type: "button",

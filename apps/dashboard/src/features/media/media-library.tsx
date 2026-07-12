@@ -277,23 +277,27 @@ export function MediaLibrary({
   function assetActions(asset: MediaAsset) {
     return [
       {
+        icon: AppIcons.expand,
         label: t("media.openImage"),
         onSelect: () => openLightbox(asset),
         type: "button" as const,
       },
       {
+        icon: AppIcons.edit,
         label: t("media.editDetails"),
         onSelect: () => setEditing(asset),
         type: "button" as const,
       },
       {
         disabled: !asset.publicUrl,
+        icon: AppIcons.copy,
         label: t("media.copyUrl"),
         onSelect: () => void copyUrls([asset]),
         type: "button" as const,
       },
       {
         disabled: !asset.publicUrl,
+        icon: AppIcons.externalLink,
         label: t("media.openInNewTab"),
         onSelect: () => {
           if (asset.publicUrl) window.open(asset.publicUrl, "_blank", "noopener,noreferrer");
@@ -302,12 +306,14 @@ export function MediaLibrary({
       },
       {
         disabled: !asset.publicUrl,
+        icon: AppIcons.download,
         label: t("media.download"),
         onSelect: () => void downloadAsset(asset),
         type: "button" as const,
       },
       { id: "danger", type: "separator" as const },
       {
+        icon: AppIcons.trash,
         label: t("media.delete"),
         onSelect: () => {
           setBulkDeleteTargets([]);

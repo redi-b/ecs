@@ -160,7 +160,14 @@ export function TaxonomyCreateDialog({
       open={open}
     >
       <DialogTrigger asChild>
-        <Button type="button">{triggerLabel}</Button>
+        <Button type="button">
+          {entityLabel === "category" ? (
+            <AppIcons.tree data-icon="inline-start" />
+          ) : (
+            <AppIcons.folder data-icon="inline-start" />
+          )}
+          {triggerLabel}
+        </Button>
       </DialogTrigger>
       <DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-lg">
         <DialogHeader className="gap-1.5 border-b px-4 py-4 text-left sm:px-5">

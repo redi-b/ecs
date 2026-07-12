@@ -222,27 +222,31 @@ export function getProductColumns(
         return (
           <RowActionsMenu
             actions={[
-              { href, label: "View details", type: "link" },
-              { href, label: "Manage inventory", type: "link" },
+              { href, icon: AppIcons.eye, label: "View details", type: "link" },
+              { href, icon: AppIcons.products, label: "Manage inventory", type: "link" },
               {
+                icon: nextStatus === "published" ? AppIcons.check : AppIcons.eyeOff,
                 label: nextStatus === "published" ? "Publish product" : "Move to draft",
                 onSelect: () => onStatusChange([product.id], nextStatus),
                 type: "button",
               },
               { id: "identity", type: "separator" },
               {
+                icon: AppIcons.copy,
                 label: "Copy product ID",
                 onSelect: () => copyToClipboard(product.id, "Product ID"),
                 type: "button",
               },
               {
                 disabled: !product.handle,
+                icon: AppIcons.copy,
                 label: "Copy handle",
                 onSelect: () => copyToClipboard(product.handle ?? "", "Handle"),
                 type: "button",
               },
               {
                 disabled: !product.handle,
+                icon: AppIcons.externalLink,
                 label: "Copy storefront path",
                 onSelect: () =>
                   copyToClipboard(
@@ -253,6 +257,7 @@ export function getProductColumns(
               },
               { id: "danger", type: "separator" },
               {
+                icon: AppIcons.trash,
                 label: "Delete product",
                 onSelect: () => onDelete(product.id),
                 type: "button",

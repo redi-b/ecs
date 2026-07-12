@@ -6,7 +6,6 @@ import { useState } from "react";
 import { AppIcons } from "@/components/app/icons";
 import { listToolbarControlClassName } from "@/components/app/list-toolbar";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 import {
   Command,
   CommandEmpty,
@@ -16,6 +15,7 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 
 export type DataTableFilterOption = {
   label: string;
@@ -57,9 +57,9 @@ export function DataTableFilters({
   }
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-2.5">
       <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex flex-1 flex-wrap items-center gap-2">
+        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
           {children}
           {activeFilters.map((filter) => (
             <DataTableAppliedFilterChip filter={filter} key={filter.id} />
@@ -68,10 +68,7 @@ export function DataTableFilters({
             <Popover
               onOpenChange={(open) => {
                 setAddFilterOpen(open);
-
-                if (!open) {
-                  setPendingFilter(null);
-                }
+                if (!open) setPendingFilter(null);
               }}
               open={addFilterOpen}
             >
@@ -86,72 +83,86 @@ export function DataTableFilters({
                   Add filter
                 </Button>
               </PopoverTrigger>
-              <PopoverContent align="start" className="w-72 rounded-2xl p-1.5" sideOffset={8}>
-                {pendingFilter ? (
-                  <div className="px-1 pb-1">
-                    <Button
-                      className="h-8 rounded-full px-2 text-muted-foreground"
-                      onClick={() => setPendingFilter(null)}
-                      size="sm"
-                      type="button"
-                      variant="ghost"
-                    >
-                      <AppIcons.arrowLeft data-icon="inline-start" />
-                      Filters
-                    </Button>
-                  </div>
-                ) : null}
-                <Command className="transition-all duration-200">
-                  <CommandInput
-                    placeholder={
-                      pendingFilter
-                        ? `Search ${pendingFilter.label.toLowerCase()}...`
-                        : "Search filters..."
-                    }
-                    onValueChange={setFilterSearch}
-                    value={filterSearch}
-                  />
-                  <CommandList
-                    className="transition-all duration-200"
-                    key={pendingFilter ? `values-${pendingFilter.id}` : "filters"}
-                  >
-                    {pendingFilter ? (
-                      <div className="animate-in fade-in-0 slide-in-from-right-2 duration-200">
-                        <CommandEmpty>No values found.</CommandEmpty>
-                        <CommandGroup heading={pendingFilter.label}>
-                          {getSelectableFilterOptions(pendingFilter).map((option) => (
-                            <CommandItem
-                              key={option.value}
-                              onSelect={() => {
-                                pendingFilter.onChange(option.value);
-                                setPendingFilter(null);
-                                setAddFilterOpen(false);
-                              }}
-                              value={option.label}
-                            >
-                              {option.label}
-                            </CommandItem>
-                          ))}
-                        </CommandGroup>
-                      </div>
-                    ) : (
-                      <div className="animate-in fade-in-0 slide-in-from-left-2 duration-200">
-                        <CommandEmpty>No filters found.</CommandEmpty>
-                        <CommandGroup>
-                          {availableFilters.map((filter) => (
-                            <CommandItem
-                              key={filter.id}
-                              onSelect={() => setPendingFilter(filter.id)}
-                              value={filter.label}
-                            >
-                              {filter.label}
-                            </CommandItem>
-                          ))}
-                        </CommandGroup>
-                      </div>
-                    )}
-                  </CommandList>
-                </Command>
+              <PopoverContent
+                align="start"
+                className="w-72 overflow-hidden rounded-2xl p-1.5 shadow-lg"
+                sideOffset={8}
+              >
+                <div
+                  className={cn(
+                    "transition-[opacity,transform] duration-200 ease-out",
+                    pendingFilter
+                      ? "animate-in fade-in-0 slide-in-from-right-2"
+                      : "animate-in fade-in-0 slide-in-from-left-1",
+                  )}
+                  key={pendingFilter ? `values-${pendingFilter.id}` : "filters"}
+                >
+                  {pendingFilter ? (
+                    <div className="px-1 pb-1">
+                      <Button
+                        className="h-8 rounded-full px-2 text-muted-foreground"
+                        onClick={() => setPendingFilter(null)}
+                        size="sm"
+                        type="button"
+                        variant="ghost"
+                      >
+                        <AppIcons.arrowLeft data-icon="inline-start" />
+                        Filters
+                      </Button>
+                    </div>
+                  ) : null}
+                  <Command shouldFilter>
+                    <CommandInput
+                      onValueChange={setFilterSearch}
+                      placeholder={
+                        pendingFilter
+                          ? `Search ${pendingFilter.label.toLowerCase()}…`
+                          : "Search filters…"
+                      }
+                      value={filterSearch}
+                    />
+                    <CommandList className="max-h-64">
+                      {pendingFilter ? (
+                        <>
+                          <CommandEmpty>No values found.</CommandEmpty>
+                          <CommandGroup heading={pendingFilter.label}>
+                            {getSelectableFilterOptions(pendingFilter).map((option) => (
+                              <CommandItem
+                                data-checked={
+                                  pendingFilter.value === option.value ? true : undefined
+                                }
+                                key={option.value}
+                                onSelect={() => {
+                                  pendingFilter.onChange(option.value);
+                                  setPendingFilter(null);
+                                  setAddFilterOpen(false);
+                                }}
+                                value={option.label}
+                              >
+                                {option.label}
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </>
+                      ) : (
+                        <>
+                          <CommandEmpty>No filters found.</CommandEmpty>
+                          <CommandGroup>
+                            {availableFilters.map((filter) => (
+                              <CommandItem
+                                key={filter.id}
+                                onSelect={() => setPendingFilter(filter.id)}
+                                value={filter.label}
+                              >
+                                {filter.label}
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </>
+                      )}
+                    </CommandList>
+                  </Command>
+                </div>
               </PopoverContent>
             </Popover>
           ) : null}
@@ -163,6 +174,7 @@ export function DataTableFilters({
               type="button"
               variant="ghost"
             >
+              <AppIcons.close data-icon="inline-start" />
               Clear all
             </Button>
           ) : null}
@@ -183,27 +195,29 @@ function DataTableAppliedFilterChip({ filter }: { filter: DataTableFilterDefinit
     <Popover
       onOpenChange={(nextOpen) => {
         setOpen(nextOpen);
-
-        if (!nextOpen) {
-          setOptionSearch("");
-        }
+        if (!nextOpen) setOptionSearch("");
       }}
       open={open}
     >
-      <div className="flex h-9 items-center overflow-hidden rounded-full border bg-background/80 text-sm">
+      <div
+        className={cn(
+          "flex h-8 items-center overflow-hidden rounded-full border bg-background/90 text-sm",
+          "animate-in fade-in-0 zoom-in-95 duration-150",
+        )}
+      >
         <PopoverTrigger asChild>
           <button
-            className="flex h-full items-center gap-2 px-3 text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground"
+            className="flex h-full items-center gap-1.5 px-2.5 text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground"
             type="button"
           >
-            <span>{filter.label}</span>
-            <span className="text-xs">is</span>
+            <span className="text-xs">{filter.label}</span>
+            <span className="text-[11px] opacity-60">is</span>
             <span className="font-medium text-foreground">{getFilterValueLabel(filter)}</span>
           </button>
         </PopoverTrigger>
         <Button
           aria-label={`Clear ${filter.label} filter`}
-          className="h-full rounded-none border-l px-2"
+          className="h-full rounded-none border-l px-1.5"
           onClick={() => filter.onChange(filter.defaultValue)}
           size="icon-sm"
           type="button"
@@ -212,19 +226,23 @@ function DataTableAppliedFilterChip({ filter }: { filter: DataTableFilterDefinit
           <AppIcons.close data-icon="inline-start" />
         </Button>
       </div>
-      <PopoverContent align="start" className="w-72 rounded-2xl p-1.5" sideOffset={8}>
+      <PopoverContent
+        align="start"
+        className="w-72 overflow-hidden rounded-2xl p-1.5 shadow-lg"
+        sideOffset={8}
+      >
         <Command>
           <CommandInput
             onValueChange={setOptionSearch}
-            placeholder={`Search ${filter.label.toLowerCase()}...`}
+            placeholder={`Search ${filter.label.toLowerCase()}…`}
             value={optionSearch}
           />
-          <CommandList>
+          <CommandList className="max-h-64">
             <CommandEmpty>No values found.</CommandEmpty>
             <CommandGroup heading={filter.label}>
               {getSelectableFilterOptions(filter).map((option) => (
                 <CommandItem
-                  data-checked={filter.value === option.value}
+                  data-checked={filter.value === option.value ? true : undefined}
                   key={option.value}
                   onSelect={() => {
                     filter.onChange(option.value);
@@ -232,7 +250,7 @@ function DataTableAppliedFilterChip({ filter }: { filter: DataTableFilterDefinit
                   }}
                   value={option.label}
                 >
-                  <span>{option.label}</span>
+                  {option.label}
                 </CommandItem>
               ))}
             </CommandGroup>

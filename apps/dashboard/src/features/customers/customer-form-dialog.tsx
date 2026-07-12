@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useId, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 
+import { AppIcons } from "@/components/app/icons";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
@@ -105,6 +106,11 @@ export function CustomerFormDialog({
       ) : (
         <DialogTrigger asChild>
           <Button variant={customer ? "outline" : "default"}>
+            {customer ? (
+              <AppIcons.edit data-icon="inline-start" />
+            ) : (
+              <AppIcons.user data-icon="inline-start" />
+            )}
             {customer ? "Edit customer" : "Add customer"}
           </Button>
         </DialogTrigger>

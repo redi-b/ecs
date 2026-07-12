@@ -1,16 +1,24 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
-import { createPortal } from "react-dom";
+import { useEffect, useId, useState } from "react";
 
 import { AppIcons } from "@/components/app/icons";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useI18n } from "@/i18n/provider";
 import type { MediaAsset } from "@/lib/merchant-media";
 import { cn } from "@/lib/utils";
 import { formatBytes, formatMimeLabel, mediaAssetDimensionsLabel } from "./media-helpers";
 
-const EXIT_MS = 200;
+/** Above dialog/sheet (z-50) and their tooltips (z-50). */
+const LIGHTBOX_Z = "z-[200]";
+const LIGHTBOX_TOOLTIP_Z = "z-[210]";
 
 type LightboxItem = {
   altText?: string | null;
@@ -68,97 +76,70 @@ export function MediaPreviewLightbox({
   onClose: () => void;
   onIndexChange: (index: number) => void;
 }) {
-  const [mounted, setMounted] = useState(false);
-  const [rendered, setRendered] = useState(false);
-  const [active, setActive] = useState(false);
-  const [exiting, setExiting] = useState(false);
-  const [snapshot, setSnapshot] = useState<{ index: number; items: LightboxItem[] } | null>(null);
-  const exitTimer = useRef<number | null>(null);
-
   const isOpen = index !== null && items.length > 0;
+  // Keep last open frame so Dialog can animate out without flashing empty.
+  const [snapshot, setSnapshot] = useState<{ index: number; items: LightboxItem[] } | null>(null);
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  // Keep content current while open (does not re-trigger enter animation).
   useEffect(() => {
     if (isOpen && index !== null) {
       setSnapshot({ index, items });
+      return;
     }
+    // Drop snapshot after exit animation so we do not leave a closed Dialog root mounted.
+    const timer = window.setTimeout(() => setSnapshot(null), 220);
+    return () => window.clearTimeout(timer);
   }, [index, isOpen, items]);
 
-  // Enter / exit animation for the whole lightbox shell.
-  useEffect(() => {
-    if (exitTimer.current !== null) {
-      window.clearTimeout(exitTimer.current);
-      exitTimer.current = null;
-    }
+  if (!snapshot || !snapshot.items.length) return null;
 
-    if (isOpen) {
-      setExiting(false);
-      setRendered(true);
-      const frame = window.requestAnimationFrame(() => {
-        window.requestAnimationFrame(() => setActive(true));
-      });
-      return () => window.cancelAnimationFrame(frame);
-    }
-
-    setActive(false);
-    setExiting(true);
-    exitTimer.current = window.setTimeout(() => {
-      setRendered(false);
-      setExiting(false);
-      setSnapshot(null);
-      exitTimer.current = null;
-    }, EXIT_MS);
-
-    return () => {
-      if (exitTimer.current !== null) {
-        window.clearTimeout(exitTimer.current);
-        exitTimer.current = null;
-      }
-    };
-  }, [isOpen]);
-
-  if (!mounted || !rendered || !snapshot || !snapshot.items.length) return null;
-
-  const safeIndex = Math.min(Math.max(snapshot.index, 0), snapshot.items.length - 1);
+  const safeIndex = Math.min(
+    Math.max(isOpen && index !== null ? index : snapshot.index, 0),
+    snapshot.items.length - 1,
+  );
   const current = snapshot.items[safeIndex];
   if (!current) return null;
 
-  return createPortal(
-    <LightboxChrome
-      active={active}
-      current={current}
-      exiting={exiting}
-      index={safeIndex}
-      onClose={onClose}
-      onIndexChange={onIndexChange}
-      total={snapshot.items.length}
-    />,
-    document.body,
+  return (
+    <Dialog
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+      open={isOpen}
+    >
+      <DialogContent
+        className={cn(
+          LIGHTBOX_Z,
+          // Not full-bleed content: leave the overlay as the real dismiss surface
+          // so outside-click / scrim close works through the shared dismiss stack.
+          "fixed inset-0 top-0 left-0 flex h-dvh max-h-none w-screen max-w-none translate-x-0 translate-y-0",
+          "flex-col gap-0 rounded-none border-0 bg-transparent p-0 shadow-none ring-0 sm:max-w-none",
+          "data-open:zoom-in-100 data-closed:zoom-out-100",
+        )}
+        data-media-lightbox=""
+        onOpenAutoFocus={(event) => event.preventDefault()}
+        overlayClassName={cn(LIGHTBOX_Z, "bg-background/92 supports-backdrop-filter:backdrop-blur-[2px]")}
+        showCloseButton={false}
+      >
+        <LightboxChrome
+          current={current}
+          index={safeIndex}
+          onClose={onClose}
+          onIndexChange={onIndexChange}
+          total={snapshot.items.length}
+        />
+      </DialogContent>
+    </Dialog>
   );
 }
 
-function motionClass(active: boolean, exiting: boolean, enter: string, exit: string) {
-  if (active) return enter;
-  if (exiting) return exit;
-  return "opacity-0";
-}
-
 function LightboxChrome({
-  active,
   current,
-  exiting,
   index,
   onClose,
   onIndexChange,
   total,
 }: {
-  active: boolean;
   current: LightboxItem;
-  exiting: boolean;
   index: number;
   onClose: () => void;
   onIndexChange: (index: number) => void;
@@ -167,13 +148,9 @@ function LightboxChrome({
   const { t } = useI18n();
   const titleId = useId();
   const canNavigate = total > 1;
+  const hasUrl = Boolean(current.publicUrl);
 
   useEffect(() => {
-    if (!active) return;
-
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-
     function onKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
         event.preventDefault();
@@ -195,157 +172,182 @@ function LightboxChrome({
     }
 
     window.addEventListener("keydown", onKeyDown, true);
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      window.removeEventListener("keydown", onKeyDown, true);
-    };
-  }, [active, canNavigate, index, onClose, onIndexChange, total]);
+    return () => window.removeEventListener("keydown", onKeyDown, true);
+  }, [canNavigate, index, onClose, onIndexChange, total]);
 
   return (
-    <div
-      aria-hidden={!active}
-      aria-labelledby={titleId}
-      aria-modal="true"
-      className={cn(
-        "fixed inset-0 z-[100] flex flex-col bg-background/92 text-foreground",
-        "supports-backdrop-filter:backdrop-blur-[2px]",
-        "duration-200 ease-out fill-mode-forwards",
-        motionClass(
-          active,
-          exiting,
-          "animate-in fade-in-0",
-          "pointer-events-none animate-out fade-out-0",
-        ),
-      )}
-      data-media-lightbox=""
-      onPointerDown={(event) => event.stopPropagation()}
-      role="dialog"
-    >
-      <div
-        className={cn(
-          "flex items-center justify-between gap-3 border-b border-border/80 bg-card/90 px-4 py-3 shadow-sm",
-          "duration-200 ease-out fill-mode-forwards",
-          motionClass(
-            active,
-            exiting,
-            "animate-in fade-in-0 slide-in-from-top-2",
-            "animate-out fade-out-0 slide-out-to-top-2",
-          ),
-        )}
-      >
+    <div className="flex h-full min-h-0 flex-col text-foreground" role="document">
+      <DialogTitle className="sr-only" id={titleId}>
+        {current.displayName}
+      </DialogTitle>
+      <DialogDescription className="sr-only">{t("media.lightboxLabel")}</DialogDescription>
+
+      <div className="flex items-center justify-between gap-3 border-b border-border/80 bg-card/90 px-4 py-3 shadow-sm">
         <div className="min-w-0">
-          <p className="truncate text-sm font-medium" id={titleId}>
-            {current.displayName}
-          </p>
+          <p className="truncate text-sm font-medium">{current.displayName}</p>
           <p className="truncate text-xs text-muted-foreground">
             {current.subtitle ?? t("media.lightboxLabel")}
             {total > 1 ? ` · ${index + 1} / ${total}` : ""}
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-1">
-          {current.publicUrl ? (
-            <Button asChild size="icon-sm" variant="ghost">
-              <a
-                aria-label={t("media.openInNewTab")}
-                href={current.publicUrl}
-                rel="noreferrer"
-                target="_blank"
-              >
-                <AppIcons.externalLink />
-              </a>
-            </Button>
-          ) : null}
-          <Button
-            aria-label={t("media.lightboxClose")}
-            onClick={onClose}
-            size="icon-sm"
-            type="button"
-            variant="ghost"
+          <LightboxIconButton
+            disabled={!hasUrl}
+            {...(hasUrl ? { href: current.publicUrl } : {})}
+            label={hasUrl ? t("media.openInNewTab") : t("media.lightboxOpenUnavailable")}
           >
+            <AppIcons.externalLink />
+          </LightboxIconButton>
+          <LightboxIconButton label={t("media.lightboxClose")} onClick={onClose}>
             <AppIcons.close />
-          </Button>
+          </LightboxIconButton>
         </div>
       </div>
 
       <div className="relative flex min-h-0 flex-1 items-center justify-center p-4 md:p-8">
-        {canNavigate ? (
-          <Button
-            aria-label={t("media.lightboxPrevious")}
-            className={cn(
-              "absolute left-3 z-10 rounded-full md:left-6",
-              "duration-200 ease-out fill-mode-forwards",
-              motionClass(
-                active,
-                exiting,
-                "animate-in fade-in-0 slide-in-from-left-2",
-                "animate-out fade-out-0 slide-out-to-left-2",
-              ),
-            )}
-            onClick={() => onIndexChange((index - 1 + total) % total)}
-            size="icon"
-            type="button"
-            variant="outline"
-          >
-            <AppIcons.arrowLeft />
-          </Button>
-        ) : null}
+        <LightboxNavButton
+          disabled={!canNavigate}
+          label={canNavigate ? t("media.lightboxPrevious") : t("media.lightboxNavUnavailable")}
+          onClick={() => canNavigate && onIndexChange((index - 1 + total) % total)}
+          side="left"
+          tooltipSide="right"
+        >
+          <AppIcons.arrowLeft />
+        </LightboxNavButton>
 
         <button
           aria-label={t("media.lightboxClose")}
-          className="absolute inset-0 cursor-zoom-out bg-muted/30"
+          className="absolute inset-0 cursor-zoom-out bg-muted/20"
           onClick={onClose}
           type="button"
         />
 
         <div
-          className={cn(
-            "relative z-[1] flex max-h-full max-w-full items-center justify-center",
-            "duration-200 ease-out fill-mode-forwards",
-            // Image crossfade/zoom on open/close of the shell; key remounts soft-enter on nav.
-            motionClass(
-              active,
-              exiting,
-              "animate-in fade-in-0 zoom-in-95 slide-in-from-bottom-1",
-              "animate-out fade-out-0 zoom-out-95 slide-out-to-bottom-1",
-            ),
-          )}
+          className="relative z-[1] flex max-h-full max-w-full items-center justify-center"
           key={current.id}
           onClick={(event) => event.stopPropagation()}
           onKeyDown={(event) => event.stopPropagation()}
         >
-          {/* biome-ignore lint/performance/noImgElement: Runtime object-storage media preview. */}
-          <img
-            alt={current.altText ?? current.displayName}
-            className={cn(
-              "max-h-[min(80vh,52rem)] max-w-full rounded-xl object-contain",
-              "bg-card shadow-lg ring-1 ring-border",
-            )}
-            src={current.publicUrl}
-          />
+          {hasUrl ? (
+            // biome-ignore lint/performance/noImgElement: Runtime object-storage media preview.
+            <img
+              alt={current.altText ?? current.displayName}
+              className={cn(
+                "max-h-[min(80vh,52rem)] max-w-full rounded-xl object-contain",
+                "bg-card shadow-lg ring-1 ring-border",
+              )}
+              src={current.publicUrl}
+            />
+          ) : (
+            <div className="flex max-w-sm flex-col items-center gap-2 rounded-xl border bg-card px-6 py-10 text-center shadow-lg">
+              <AppIcons.image className="size-8 text-muted-foreground" />
+              <p className="text-sm font-medium">{current.displayName}</p>
+              <p className="text-xs text-muted-foreground">{t("media.lightboxOpenUnavailable")}</p>
+            </div>
+          )}
         </div>
 
-        {canNavigate ? (
+        <LightboxNavButton
+          disabled={!canNavigate}
+          label={canNavigate ? t("media.lightboxNext") : t("media.lightboxNavUnavailable")}
+          onClick={() => canNavigate && onIndexChange((index + 1) % total)}
+          side="right"
+          tooltipSide="left"
+        >
+          <AppIcons.arrowRight />
+        </LightboxNavButton>
+      </div>
+    </div>
+  );
+}
+
+function LightboxNavButton({
+  children,
+  disabled,
+  label,
+  onClick,
+  side,
+  tooltipSide,
+}: {
+  children: React.ReactNode;
+  disabled?: boolean;
+  label: string;
+  onClick: () => void;
+  side: "left" | "right";
+  tooltipSide: "left" | "right";
+}) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span
+          className={cn(
+            "absolute z-10 inline-flex",
+            side === "left" ? "left-3 md:left-6" : "right-3 md:right-6",
+            disabled && "cursor-not-allowed",
+          )}
+        >
           <Button
-            aria-label={t("media.lightboxNext")}
-            className={cn(
-              "absolute right-3 z-10 rounded-full md:right-6",
-              "duration-200 ease-out fill-mode-forwards",
-              motionClass(
-                active,
-                exiting,
-                "animate-in fade-in-0 slide-in-from-right-2",
-                "animate-out fade-out-0 slide-out-to-right-2",
-              ),
-            )}
-            onClick={() => onIndexChange((index + 1) % total)}
+            aria-label={label}
+            className={cn("rounded-full", disabled && "opacity-40")}
+            disabled={disabled}
+            onClick={onClick}
             size="icon"
             type="button"
             variant="outline"
           >
-            <AppIcons.arrowRight />
+            {children}
           </Button>
-        ) : null}
-      </div>
-    </div>
+        </span>
+      </TooltipTrigger>
+      <TooltipContent className={LIGHTBOX_TOOLTIP_Z} side={tooltipSide}>
+        {label}
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
+function LightboxIconButton({
+  children,
+  disabled,
+  href,
+  label,
+  onClick,
+}: {
+  children: React.ReactNode;
+  disabled?: boolean;
+  href?: string;
+  label: string;
+  onClick?: () => void;
+}) {
+  const button =
+    href && !disabled ? (
+      <Button asChild size="icon-sm" variant="ghost">
+        <a aria-label={label} href={href} rel="noreferrer" target="_blank">
+          {children}
+        </a>
+      </Button>
+    ) : (
+      <Button
+        aria-label={label}
+        className={cn(disabled && "opacity-40")}
+        disabled={disabled}
+        onClick={onClick}
+        size="icon-sm"
+        type="button"
+        variant="ghost"
+      >
+        {children}
+      </Button>
+    );
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span className={cn("inline-flex", disabled && "cursor-not-allowed")}>{button}</span>
+      </TooltipTrigger>
+      <TooltipContent className={LIGHTBOX_TOOLTIP_Z} side="bottom">
+        {label}
+      </TooltipContent>
+    </Tooltip>
   );
 }

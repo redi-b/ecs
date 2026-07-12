@@ -31,11 +31,13 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
+import { MediaUploadField } from "@/features/media/media-upload-field";
 import {
   CategoryPicker,
   CollectionPicker,
   NO_COLLECTION_VALUE,
 } from "@/features/products/product-form-fields";
+import { cn } from "@/lib/utils";
 
 type ProductEditSheetBaseProps = {
   action: string;
@@ -216,8 +218,8 @@ export function ProductOrganizationEditButton({
 }
 
 export function ProductMediaEditButton({ action, product }: ProductEditSheetBaseProps) {
-  const mediaId = useId();
   const [values, setValues] = useState<ProductMediaValues>(() => getProductMediaValues(product));
+  const imageUrlList = getImageUrls(values.imageUrls);
 
   return (
     <ProductEditSheet
@@ -226,33 +228,27 @@ export function ProductMediaEditButton({ action, product }: ProductEditSheetBase
         thumbnail: values.thumbnail.trim() || null,
         imageUrls: getImageUrls(values.imageUrls),
       })}
-      description="Update the thumbnail and gallery image URLs."
+      contentClassName="sm:max-w-xl"
+      description="Upload images, pick from your library, set a cover, and reorder the gallery."
       onOpen={() => setValues(getProductMediaValues(product))}
       title="Edit product media"
       triggerLabel="Edit product media"
     >
-      <Field>
-        <FieldLabel htmlFor={`${mediaId}-thumbnail`}>Thumbnail URL</FieldLabel>
-        <Input
-          id={`${mediaId}-thumbnail`}
-          onChange={(event) =>
-            setValues((current) => ({ ...current, thumbnail: event.target.value }))
-          }
-          value={values.thumbnail}
-        />
-      </Field>
-      <Field>
-        <FieldLabel htmlFor={`${mediaId}-images`}>Image URLs</FieldLabel>
-        <Textarea
-          id={`${mediaId}-images`}
-          onChange={(event) =>
-            setValues((current) => ({ ...current, imageUrls: event.target.value }))
-          }
-          rows={8}
-          value={values.imageUrls}
-        />
-        <FieldDescription>One URL per line.</FieldDescription>
-      </Field>
+      <MediaUploadField
+        imageUrls={imageUrlList}
+        onImageUrlsChange={(urls) =>
+          setValues((current) => ({
+            ...current,
+            imageUrls: urls.join("\n"),
+            thumbnail:
+              current.thumbnail && urls.includes(current.thumbnail)
+                ? current.thumbnail
+                : (urls[0] ?? ""),
+          }))
+        }
+        onThumbnailChange={(url) => setValues((current) => ({ ...current, thumbnail: url }))}
+        thumbnail={values.thumbnail}
+      />
     </ProductEditSheet>
   );
 }
@@ -261,6 +257,7 @@ function ProductEditSheet({
   action,
   buildPayload,
   children,
+  contentClassName,
   description,
   onOpen,
   title,
@@ -269,6 +266,7 @@ function ProductEditSheet({
   action: string;
   buildPayload: () => Record<string, unknown>;
   children: ReactNode;
+  contentClassName?: string;
   description: string;
   onOpen: () => void;
   title: string;
@@ -335,20 +333,7 @@ function ProductEditSheet({
       >
         <AppIcons.edit data-icon="inline-start" />
       </Button>
-      <SheetContent
-        className="w-full overflow-y-auto sm:max-w-md"
-        onInteractOutside={(event) => {
-          const target = event.target;
-
-          if (!(target instanceof HTMLElement)) {
-            return;
-          }
-
-          if (target.closest("[data-slot='select-content'], [data-radix-popper-content-wrapper]")) {
-            event.preventDefault();
-          }
-        }}
-      >
+      <SheetContent className={cn("w-full overflow-y-auto sm:max-w-md", contentClassName)}>
         <SheetHeader>
           <SheetTitle>{title}</SheetTitle>
           <SheetDescription>{description}</SheetDescription>

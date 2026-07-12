@@ -436,6 +436,7 @@ export function ProductsTable({
               type="button"
               variant="destructive"
             >
+              <AppIcons.trash data-icon="inline-start" />
               Delete selected
             </Button>
           </div>

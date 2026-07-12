@@ -64,6 +64,8 @@ import {
   SETTINGS_SECTION_LABELS,
   useStorefrontPuck,
 } from "@/features/storefront-editor/editor-config";
+import { MediaLibraryDialog } from "@/features/media/media-library-dialog";
+import { uploadMediaFile } from "@/features/media/upload-media-file";
 import { cn } from "@/lib/utils";
 import {
   buildDraftPayload,
@@ -492,7 +494,7 @@ export function ImageReferenceControl({
         <div className="min-w-0 flex-1">
           <div className="text-sm font-medium">{label}</div>
           <div className="truncate text-xs text-muted-foreground">
-            {value ? "Image reference set" : "Paste an image URL"}
+            {value ? "Image reference set" : "Upload a file or choose from your library"}
           </div>
         </div>
         {value ? (
@@ -501,13 +503,66 @@ export function ImageReferenceControl({
           </Button>
         ) : null}
       </div>
-      <Input
-        aria-label={`${label} URL`}
-        onChange={(event) =>
-          onChange(event.currentTarget.value.trim() ? event.currentTarget.value : undefined)
-        }
-        placeholder="https://example.com/image.jpg"
-        value={value}
+      <EditorImageSourceActions onPicked={onChange} />
+    </div>
+  );
+}
+
+function EditorImageSourceActions({ onPicked }: { onPicked: (url: string | undefined) => void }) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+
+  async function handleFiles(files: FileList | null) {
+    const file = files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const url = await uploadMediaFile(file);
+      onPicked(url);
+      toast.success("Image uploaded.");
+    } catch (error) {
+      const code = error instanceof Error ? error.message : "upload_failed";
+      toast.error(
+        code === "invalid_type"
+          ? "Choose a supported image file."
+          : code === "too_large"
+            ? "Images must be 15 MB or smaller."
+            : "Could not upload this image. Try again.",
+      );
+    } finally {
+      setUploading(false);
+      if (inputRef.current) inputRef.current.value = "";
+    }
+  }
+
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <input
+        accept="image/avif,image/gif,image/jpeg,image/png,image/webp"
+        className="sr-only"
+        onChange={(event) => void handleFiles(event.target.files)}
+        ref={inputRef}
+        type="file"
+      />
+      <Button
+        disabled={uploading}
+        onClick={() => inputRef.current?.click()}
+        size="sm"
+        type="button"
+        variant="outline"
+      >
+        <RiImageLine data-icon="inline-start" />
+        {uploading ? "Uploading…" : "Upload image"}
+      </Button>
+      <MediaLibraryDialog
+        onSelect={(assets) => {
+          const url = assets[0]?.publicUrl?.trim();
+          if (url) onPicked(url);
+        }}
+        selectionMode="single"
+        triggerLabel="Choose from library"
+        triggerSize="sm"
+        triggerVariant="outline"
       />
     </div>
   );
@@ -975,15 +1030,13 @@ export function EditableImage({
           <div>
             <div className="text-sm font-medium">{placeholder}</div>
             <div className="text-xs text-muted-foreground">
-              Paste an image URL for the storefront preview.
+              Upload a file or choose an image from your media library.
             </div>
           </div>
-          <Input
-            aria-label={`${placeholder} URL`}
-            autoFocus
-            onChange={(event) => updateValue(event.currentTarget.value)}
-            placeholder="https://example.com/image.jpg"
-            value={value ?? ""}
+          <EditorImageSourceActions
+            onPicked={(url) => {
+              if (url) updateValue(url);
+            }}
           />
           {value ? (
             <Button onClick={() => updateValue("")} size="sm" type="button" variant="outline">

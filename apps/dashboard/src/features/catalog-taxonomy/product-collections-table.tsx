@@ -132,23 +132,27 @@ function getCollectionColumns(
           <RowActionsMenu
             actions={[
               {
+                icon: AppIcons.edit,
                 label: "Edit collection",
                 onSelect: () => onEdit(collection),
                 type: "button",
               },
               {
+                icon: AppIcons.copy,
                 label: "Copy collection ID",
                 onSelect: () => copyToClipboard(collection.id, "Collection ID"),
                 type: "button",
               },
               {
                 disabled: !collection.handle,
+                icon: AppIcons.copy,
                 label: "Copy handle",
                 onSelect: () => copyToClipboard(collection.handle ?? "", "Handle"),
                 type: "button",
               },
               { id: "danger", type: "separator" },
               {
+                icon: AppIcons.trash,
                 label: "Delete collection",
                 onSelect: () => onDelete(collection.id),
                 type: "button",
@@ -357,6 +361,7 @@ export function ProductCollectionsTable({
               type="button"
               variant="destructive"
             >
+              <AppIcons.trash data-icon="inline-start" />
               Delete selected
             </Button>
           </div>

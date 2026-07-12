@@ -407,14 +407,18 @@ export function MediaUploadField({
             Bounded gallery: denser tiles + scroll so many images do not stretch the form.
             Horizontal scroll on small screens; wrapped grid with max-height on larger ones.
           */}
-          <div className="max-h-[18.5rem] overflow-y-auto overscroll-contain rounded-2xl border bg-muted/10 p-2.5 sm:max-h-[20rem]">
+          {/*
+            Viewport breakpoints still apply inside sheets/dialogs, so avoid 4–5
+            columns that shrink tiles to stamps. Two larger tiles read clearly.
+          */}
+          <div className="max-h-[min(70vh,28rem)] overflow-y-auto overscroll-contain rounded-2xl border bg-muted/10 p-3 sm:max-h-[min(72vh,32rem)]">
             <DndContext
               collisionDetection={closestCenter}
               onDragEnd={reorderUploaded}
               sensors={sensors}
             >
               <SortableContext items={imageUrls} strategy={rectSortingStrategy}>
-                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+                <div className="grid grid-cols-2 gap-3">
                   {imageUrls.map((url, index) => (
                     <UploadedImage
                       isCover={thumbnail === url || (!thumbnail && index === 0)}

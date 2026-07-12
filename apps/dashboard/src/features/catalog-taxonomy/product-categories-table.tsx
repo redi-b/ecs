@@ -155,23 +155,27 @@ function getCategoryColumns(
           <RowActionsMenu
             actions={[
               {
+                icon: AppIcons.edit,
                 label: "Edit category",
                 onSelect: () => onEdit(category),
                 type: "button",
               },
               {
+                icon: AppIcons.copy,
                 label: "Copy category ID",
                 onSelect: () => copyToClipboard(category.id, "Category ID"),
                 type: "button",
               },
               {
                 disabled: !category.handle,
+                icon: AppIcons.copy,
                 label: "Copy handle",
                 onSelect: () => copyToClipboard(category.handle ?? "", "Handle"),
                 type: "button",
               },
               { id: "danger", type: "separator" },
               {
+                icon: AppIcons.trash,
                 label: "Delete category",
                 onSelect: () => onDelete(category.id),
                 type: "button",
@@ -429,6 +433,7 @@ export function ProductCategoriesTable({
               type="button"
               variant="destructive"
             >
+              <AppIcons.trash data-icon="inline-start" />
               Delete selected
             </Button>
           </div>

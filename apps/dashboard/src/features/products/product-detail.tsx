@@ -8,9 +8,10 @@ import type {
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { type ReactNode, useState } from "react";
+import { type ReactNode, useMemo, useState } from "react";
 import { toast } from "sonner";
 
+import { AppIcons } from "@/components/app/icons";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,6 +25,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { MediaPreviewLightbox } from "@/features/media/media-lightbox";
 import {
   ProductDetailsEditButton,
   ProductMediaEditButton,
@@ -31,6 +33,7 @@ import {
 } from "@/features/products/product-edit-dialog";
 import { getTenantScopedPath } from "@/lib/dashboard-tenant-context";
 import { dashboardRoutes } from "@/lib/routes";
+import { cn } from "@/lib/utils";
 
 type ProductDetailProps = {
   action: string;
@@ -47,19 +50,50 @@ export function ProductDetail({
   product,
   tenantId,
 }: ProductDetailProps) {
-  const images = product.images?.filter((image) => image.url) ?? [];
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+
+  const images = useMemo(
+    () => (product.images ?? []).filter((image): image is typeof image & { url: string } => Boolean(image.url)),
+    [product.images],
+  );
+
+  const lightboxItems = useMemo(
+    () =>
+      images.map((image, index) => ({
+        altText: product.title,
+        displayName: product.title
+          ? `${product.title} · image ${index + 1}`
+          : `Product image ${index + 1}`,
+        id: image.id || image.url,
+        publicUrl: image.url,
+        subtitle:
+          product.thumbnail && product.thumbnail === image.url ? "Cover image" : image.url,
+      })),
+    [images, product.thumbnail, product.title],
+  );
+
   const collection = collections.find((item) => item.id === product.collectionId);
   const productCategories = (product.categoryIds ?? []).map((categoryId) => ({
     category: categories.find((item) => item.id === categoryId),
     id: categoryId,
   }));
 
+  function openLightboxForUrl(url: string | null | undefined) {
+    if (!url || !lightboxItems.length) return;
+    const index = lightboxItems.findIndex((item) => item.publicUrl === url);
+    setLightboxIndex(index >= 0 ? index : 0);
+  }
+
   return (
     <Card>
       <CardHeader>
         <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
           <div className="flex min-w-0 gap-4">
-            <ProductThumbnail src={product.thumbnail} title={product.title} />
+            <ProductThumbnail
+              onOpen={() => openLightboxForUrl(product.thumbnail ?? images[0]?.url)}
+              src={product.thumbnail}
+              title={product.title}
+            />
             <div className="min-w-0 space-y-2">
               <div className="flex flex-wrap items-center gap-2">
                 <CardTitle>{product.title ?? "Untitled product"}</CardTitle>
@@ -124,19 +158,41 @@ export function ProductDetail({
           />
           {images.length ? (
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              {images.map((image) => (
-                <figure key={image.id} className="overflow-hidden rounded-lg border bg-muted/30">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    alt={product.title ?? "Product image"}
-                    className="aspect-square w-full object-cover"
-                    src={image.url ?? ""}
-                  />
-                  <figcaption className="truncate px-3 py-2 text-xs text-muted-foreground">
-                    {image.url}
-                  </figcaption>
-                </figure>
-              ))}
+              {images.map((image, index) => {
+                const isCover = Boolean(product.thumbnail && product.thumbnail === image.url);
+                return (
+                  <figure
+                    className="group overflow-hidden rounded-lg border bg-muted/30"
+                    key={image.id || image.url}
+                  >
+                    <button
+                      aria-label={`Open image ${index + 1} preview`}
+                      className="relative block w-full cursor-zoom-in bg-muted text-left outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring"
+                      onClick={() => setLightboxIndex(index)}
+                      type="button"
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        alt={product.title ?? "Product image"}
+                        className="aspect-square w-full object-cover transition-transform duration-200 ease-out group-hover:scale-[1.02]"
+                        src={image.url}
+                      />
+                      <span className="pointer-events-none absolute inset-0 bg-linear-to-t from-black/40 via-transparent to-transparent opacity-0 transition-opacity duration-200 group-hover:opacity-100" />
+                      {isCover ? (
+                        <span className="absolute top-2 left-2 rounded-full bg-primary px-2 py-0.5 text-[10px] font-medium text-primary-foreground shadow-sm">
+                          Cover
+                        </span>
+                      ) : null}
+                      <span className="absolute right-2 bottom-2 rounded-full border border-white/20 bg-black/45 p-1.5 text-white opacity-0 shadow-sm transition-opacity duration-200 group-hover:opacity-100">
+                        <AppIcons.expand className="size-3.5" />
+                      </span>
+                    </button>
+                    <figcaption className="truncate px-3 py-2 text-xs text-muted-foreground">
+                      {image.url}
+                    </figcaption>
+                  </figure>
+                );
+              })}
             </div>
           ) : (
             <p className="rounded-lg border border-dashed px-4 py-6 text-sm text-muted-foreground">
@@ -155,6 +211,13 @@ export function ProductDetail({
           <ProductOptionsSummary product={product} />
         </section>
       </CardContent>
+
+      <MediaPreviewLightbox
+        index={lightboxIndex}
+        items={lightboxItems}
+        onClose={() => setLightboxIndex(null)}
+        onIndexChange={setLightboxIndex}
+      />
     </Card>
   );
 }
@@ -241,7 +304,15 @@ function getProductOptionGroups(product: MerchantProduct) {
   }));
 }
 
-function ProductThumbnail({ src, title }: { src: string | null; title: string | null }) {
+function ProductThumbnail({
+  onOpen,
+  src,
+  title,
+}: {
+  onOpen?: () => void;
+  src: string | null;
+  title: string | null;
+}) {
   if (!src) {
     return (
       <div className="flex size-20 shrink-0 items-center justify-center rounded-lg border border-dashed bg-muted text-xs font-medium text-muted-foreground">
@@ -250,11 +321,35 @@ function ProductThumbnail({ src, title }: { src: string | null; title: string | 
     );
   }
 
+  if (!onOpen) {
+    return (
+      <div className="size-20 shrink-0 overflow-hidden rounded-lg border bg-muted">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img alt={title ?? "Product thumbnail"} className="size-full object-cover" src={src} />
+      </div>
+    );
+  }
+
   return (
-    <div className="size-20 shrink-0 overflow-hidden rounded-lg border bg-muted">
+    <button
+      aria-label="Open cover image preview"
+      className={cn(
+        "group relative size-20 shrink-0 overflow-hidden rounded-lg border bg-muted",
+        "cursor-zoom-in outline-none transition-shadow focus-visible:ring-2 focus-visible:ring-ring",
+      )}
+      onClick={onOpen}
+      type="button"
+    >
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img alt={title ?? "Product thumbnail"} className="size-full object-cover" src={src} />
-    </div>
+      <img
+        alt={title ?? "Product thumbnail"}
+        className="size-full object-cover transition-transform duration-200 ease-out group-hover:scale-[1.03]"
+        src={src}
+      />
+      <span className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/0 text-white opacity-0 transition-all duration-200 group-hover:bg-black/25 group-hover:opacity-100">
+        <AppIcons.expand className="size-4 drop-shadow" />
+      </span>
+    </button>
   );
 }
 

@@ -167,15 +167,17 @@ function getOrderColumns(tenantId?: string): ColumnDef<MerchantOrder>[] {
         return (
           <RowActionsMenu
             actions={[
-              { href, label: "View details", type: "link" },
+              { href, icon: AppIcons.eye, label: "View details", type: "link" },
               { id: "identity", type: "separator" },
               {
+                icon: AppIcons.copy,
                 label: "Copy order ID",
                 onSelect: () => copyToClipboard(order.id, "Order ID"),
                 type: "button",
               },
               {
                 disabled: !order.email,
+                icon: AppIcons.copy,
                 label: "Copy customer email",
                 onSelect: () => copyToClipboard(order.email ?? "", "Customer email"),
                 type: "button",

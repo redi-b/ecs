@@ -14,9 +14,10 @@ function Popover({
   ...props
 }: React.ComponentProps<typeof PopoverPrimitive.Root>) {
   const openRef = React.useRef(false);
+  const layerIdRef = React.useRef<symbol | undefined>(undefined);
 
   React.useEffect(() => {
-    return () => releaseNestedOverlayIfOpen(openRef.current);
+    return () => releaseNestedOverlayIfOpen(openRef.current, layerIdRef.current);
   }, []);
 
   return (
@@ -24,7 +25,12 @@ function Popover({
       data-slot="popover"
       onOpenChange={(open) => {
         openRef.current = open;
-        notifyNestedOverlayChange(open);
+        if (open) {
+          layerIdRef.current = notifyNestedOverlayChange(true);
+        } else {
+          notifyNestedOverlayChange(false, layerIdRef.current);
+          layerIdRef.current = undefined;
+        }
         onOpenChange?.(open);
       }}
       {...props}
