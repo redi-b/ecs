@@ -29,6 +29,8 @@ export const dashboardRoutes = {
   productCategoriesBatchDeleteAction: "/admin/products/categories/actions/batch-delete",
   productCollectionDeleteAction: (collectionId: string) =>
     `/admin/products/collections/actions/${encodeURIComponent(collectionId)}/delete`,
+  productCollectionUpdateAction: (collectionId: string) =>
+    `/admin/products/collections/actions/${encodeURIComponent(collectionId)}`,
   productCollectionsBatchDeleteAction: "/admin/products/collections/actions/batch-delete",
   orders: "/admin/orders",
   media: "/admin/media",

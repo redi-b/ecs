@@ -13,6 +13,8 @@ export async function POST(
       name?: unknown;
       parentCategoryId?: unknown;
       rank?: unknown;
+      seoDescription?: unknown;
+      seoTitle?: unknown;
       visibility?: unknown;
     };
 
@@ -31,8 +33,7 @@ export async function POST(
     const result = await updateMerchantProductCategory({
       categoryId,
       cookieHeader: context.cookieHeader,
-      handle:
-        typeof body.handle === "string" && body.handle.trim() ? body.handle.trim() : null,
+      handle: typeof body.handle === "string" && body.handle.trim() ? body.handle.trim() : null,
       name,
       parentCategoryId:
         typeof body.parentCategoryId === "string" && body.parentCategoryId.trim()
@@ -41,6 +42,9 @@ export async function POST(
       platformApiBaseUrl: context.platformApiBaseUrl,
       ...(rank === undefined ? {} : { rank }),
       requestHost: context.requestHost,
+      seoDescription:
+        typeof body.seoDescription === "string" ? body.seoDescription.trim() || null : null,
+      seoTitle: typeof body.seoTitle === "string" ? body.seoTitle.trim() || null : null,
       tenantId: context.tenantId,
       visibility: body.visibility === "hidden" ? "hidden" : "public",
     });

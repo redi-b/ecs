@@ -30,6 +30,7 @@ export {
   reorderMerchantProductCategories,
   updateMerchantProduct,
   updateMerchantProductCategory,
+  updateMerchantProductCollection,
   updateMerchantProductStock,
   updateMerchantProductVariantStock,
 } from "@/lib/platform-api/products";

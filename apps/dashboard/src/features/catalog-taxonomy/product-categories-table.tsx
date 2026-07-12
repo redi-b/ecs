@@ -27,6 +27,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { CategoryEditSheet } from "@/features/catalog-taxonomy/category-edit-sheet";
 import { CategoryReorderSheet } from "@/features/catalog-taxonomy/category-reorder-sheet";
+import { CategoryTreeView } from "@/features/catalog-taxonomy/category-tree-view";
 import {
   CategoryIdentityCell,
   CategoryParentCell,
@@ -220,6 +221,7 @@ export function ProductCategoriesTable({
   const [deleteCategoryId, setDeleteCategoryId] = useState<string | null>(null);
   const [editingCategory, setEditingCategory] = useState<MerchantProductCategory | null>(null);
   const [reorderOpen, setReorderOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<"table" | "tree">("table");
   const [selectedCategoryIdsForDelete, setSelectedCategoryIdsForDelete] = useState<string[]>([]);
   const [showBatchDeleteDialog, setShowBatchDeleteDialog] = useState(false);
 
@@ -313,16 +315,37 @@ export function ProductCategoriesTable({
             />
           </DataTableFilters>
         </div>
-        <Button
-          className="shrink-0"
-          onClick={() => setReorderOpen(true)}
-          size="sm"
-          type="button"
-          variant="outline"
-        >
-          <AppIcons.arrowUpDown data-icon="inline-start" />
-          Reorder
-        </Button>
+        <div className="flex shrink-0 flex-wrap gap-2">
+          <div className="flex rounded-lg border p-0.5">
+            <Button
+              onClick={() => setViewMode("table")}
+              size="sm"
+              type="button"
+              variant={viewMode === "table" ? "secondary" : "ghost"}
+            >
+              <AppIcons.list data-icon="inline-start" />
+              Table
+            </Button>
+            <Button
+              onClick={() => setViewMode("tree")}
+              size="sm"
+              type="button"
+              variant={viewMode === "tree" ? "secondary" : "ghost"}
+            >
+              <AppIcons.folder data-icon="inline-start" />
+              Tree
+            </Button>
+          </div>
+          <Button
+            onClick={() => setReorderOpen(true)}
+            size="sm"
+            type="button"
+            variant="outline"
+          >
+            <AppIcons.arrowUpDown data-icon="inline-start" />
+            Reorder
+          </Button>
+        </div>
       </div>
       <p className="text-sm text-muted-foreground">
         {counts.hasActiveFilter
@@ -351,6 +374,17 @@ export function ProductCategoriesTable({
         open={reorderOpen}
         tenantId={tenantId}
       />
+      {viewMode === "tree" ? (
+        <div className="space-y-3">
+          {toolbar}
+          <CategoryTreeView
+            categories={categories}
+            onEdit={(category) => setEditingCategory(category)}
+            query={query}
+          />
+          {footer}
+        </div>
+      ) : (
       <DataTable
         bulkActions={(selectedCategories) => (
           <div className="flex items-center gap-2">
@@ -393,6 +427,7 @@ export function ProductCategoriesTable({
         toolbar={toolbar}
         footer={footer}
       />
+      )}
 
       <AlertDialog
         open={deleteCategoryId !== null}

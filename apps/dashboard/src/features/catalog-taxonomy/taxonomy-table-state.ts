@@ -78,6 +78,55 @@ export function getCategoryDisplayName(category: MerchantProductCategory) {
   return getFirstDisplayValue([category.name, category.handle, category.id]);
 }
 
+export type CategoryTreeNode = {
+  category: MerchantProductCategory;
+  children: CategoryTreeNode[];
+  depth: number;
+};
+
+/** Build a tree ordered by Medusa sibling rank, then name. */
+export function buildCategoryTree(categories: MerchantProductCategory[]): CategoryTreeNode[] {
+  const childrenByParent = new Map<string | null, MerchantProductCategory[]>();
+
+  for (const category of categories) {
+    const parentId = category.parentCategoryId;
+    const list = childrenByParent.get(parentId) ?? [];
+    list.push(category);
+    childrenByParent.set(parentId, list);
+  }
+
+  for (const list of childrenByParent.values()) {
+    list.sort((a, b) => {
+      const rankDelta = (a.rank ?? 0) - (b.rank ?? 0);
+      if (rankDelta !== 0) return rankDelta;
+      return getCategoryDisplayName(a).localeCompare(getCategoryDisplayName(b));
+    });
+  }
+
+  function walk(parentId: string | null, depth: number): CategoryTreeNode[] {
+    return (childrenByParent.get(parentId) ?? []).map((category) => ({
+      category,
+      children: walk(category.id, depth + 1),
+      depth,
+    }));
+  }
+
+  return walk(null, 0);
+}
+
+/** Flatten tree to rows for table/tree views, preserving hierarchy order. */
+export function flattenCategoryTree(nodes: CategoryTreeNode[]): CategoryTreeNode[] {
+  const rows: CategoryTreeNode[] = [];
+  function visit(list: CategoryTreeNode[]) {
+    for (const node of list) {
+      rows.push(node);
+      visit(node.children);
+    }
+  }
+  visit(nodes);
+  return rows;
+}
+
 export function slugifyTaxonomyHandle(value: string) {
   return value
     .trim()

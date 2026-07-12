@@ -22,8 +22,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { CollectionEditSheet } from "@/features/catalog-taxonomy/collection-edit-sheet";
 import {
   CollectionIdentityCell,
   TaxonomyDateCell,
@@ -63,6 +65,7 @@ async function copyToClipboard(value: string, label: string) {
 
 function getCollectionColumns(
   onDelete: (collectionId: string) => void,
+  onEdit: (collection: MerchantProductCollection) => void,
 ): ColumnDef<MerchantProductCollection>[] {
   return [
     {
@@ -99,14 +102,22 @@ function getCollectionColumns(
       cell: ({ row }) => <TaxonomyHandleCell handle={row.original.handle} />,
     },
     {
+      id: "visibility",
+      accessorFn: (collection) => collection.visibility ?? "public",
+      header: ({ column }) => <DataTableHeader column={column} title="Visibility" />,
+      cell: ({ row }) => {
+        const hidden = row.original.visibility === "hidden";
+        return (
+          <Badge variant={hidden ? "secondary" : "outline"}>
+            {hidden ? "Hidden" : "Public"}
+          </Badge>
+        );
+      },
+    },
+    {
       accessorKey: "updatedAt",
       header: ({ column }) => <DataTableHeader column={column} title="Updated" />,
       cell: ({ row }) => <TaxonomyDateCell value={row.original.updatedAt} />,
-    },
-    {
-      accessorKey: "createdAt",
-      header: ({ column }) => <DataTableHeader column={column} title="Created" />,
-      cell: ({ row }) => <TaxonomyDateCell value={row.original.createdAt} />,
     },
     {
       id: "actions",
@@ -116,6 +127,11 @@ function getCollectionColumns(
         return (
           <RowActionsMenu
             actions={[
+              {
+                label: "Edit collection",
+                onSelect: () => onEdit(collection),
+                type: "button",
+              },
               {
                 label: "Copy collection ID",
                 onSelect: () => copyToClipboard(collection.id, "Collection ID"),
@@ -176,12 +192,22 @@ export function ProductCollectionsTable({
   void pageSize;
 
   const [deleteCollectionId, setDeleteCollectionId] = useState<string | null>(null);
+  const [editingCollection, setEditingCollection] = useState<MerchantProductCollection | null>(
+    null,
+  );
   const [selectedCollectionIdsForDelete, setSelectedCollectionIdsForDelete] = useState<string[]>(
     [],
   );
   const [showBatchDeleteDialog, setShowBatchDeleteDialog] = useState(false);
 
-  const columns = useMemo(() => getCollectionColumns((id) => setDeleteCollectionId(id)), []);
+  const columns = useMemo(
+    () =>
+      getCollectionColumns(
+        (id) => setDeleteCollectionId(id),
+        (collection) => setEditingCollection(collection),
+      ),
+    [],
+  );
 
   const deleteCollectionMutation = useMutation({
     mutationFn: async (collectionId: string) => {
@@ -270,6 +296,14 @@ export function ProductCollectionsTable({
 
   return (
     <>
+      <CollectionEditSheet
+        collection={editingCollection}
+        onOpenChange={(next) => {
+          if (!next) setEditingCollection(null);
+        }}
+        open={Boolean(editingCollection)}
+        tenantId={tenantId}
+      />
       <DataTable
         bulkActions={(selectedCollections) => (
           <div className="flex items-center gap-2">

@@ -315,6 +315,40 @@ export function registerPlatformTenantCatalogRoutes(
     return context.json(result);
   });
 
+  app.post("/platform/tenants/:tenantId/product-collections/:collectionId", async (context) => {
+    if (!options.getTenantCommerceContext || !options.updateMerchantProductCollection) {
+      return context.json({ error: "commerce_backend_unavailable" }, 503);
+    }
+
+    const session = await options.getSession?.(context.req.raw.headers);
+    if (!session) return context.json({ error: "auth_required" }, 401);
+
+    const commerce = await options.getTenantCommerceContext({
+      tenantId: context.req.param("tenantId"),
+      userId: session.user.id,
+    });
+    if (!commerce.ok) return context.json({ error: commerce.error }, commerce.status);
+
+    const body = await getJsonBody(context.req.raw);
+    const title = getRequiredBodyString(body, "title");
+    if (!title) return context.json({ error: "missing_title" }, 400);
+
+    const result = await options.updateMerchantProductCollection({
+      collectionId: context.req.param("collectionId"),
+      handle: getOptionalBodyString(body, "handle"),
+      mediaUrl: getOptionalBodyString(body, "mediaUrl"),
+      seoDescription: getOptionalBodyString(body, "seoDescription"),
+      seoTitle: getOptionalBodyString(body, "seoTitle"),
+      tenantId: commerce.context.tenantId,
+      title,
+      visibility: getOptionalBodyString(body, "visibility") === "hidden" ? "hidden" : "public",
+    });
+
+    return result.ok
+      ? context.json(result)
+      : context.json({ error: result.error }, result.status);
+  });
+
   app.delete("/platform/tenants/:tenantId/product-collections/:collectionId", async (context) => {
     if (!options.getTenantCommerceContext || !options.deleteMerchantProductCollection) {
       return context.json({ error: "commerce_backend_unavailable" }, 503);
