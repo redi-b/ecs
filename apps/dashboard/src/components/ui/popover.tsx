@@ -1,12 +1,35 @@
 "use client";
 
 import { Popover as PopoverPrimitive } from "radix-ui";
-import type * as React from "react";
+import * as React from "react";
 
+import {
+  notifyNestedOverlayChange,
+  releaseNestedOverlayIfOpen,
+} from "@/lib/nested-overlay";
 import { cn } from "@/lib/utils";
 
-function Popover({ ...props }: React.ComponentProps<typeof PopoverPrimitive.Root>) {
-  return <PopoverPrimitive.Root data-slot="popover" {...props} />;
+function Popover({
+  onOpenChange,
+  ...props
+}: React.ComponentProps<typeof PopoverPrimitive.Root>) {
+  const openRef = React.useRef(false);
+
+  React.useEffect(() => {
+    return () => releaseNestedOverlayIfOpen(openRef.current);
+  }, []);
+
+  return (
+    <PopoverPrimitive.Root
+      data-slot="popover"
+      onOpenChange={(open) => {
+        openRef.current = open;
+        notifyNestedOverlayChange(open);
+        onOpenChange?.(open);
+      }}
+      {...props}
+    />
+  );
 }
 
 function PopoverTrigger({ ...props }: React.ComponentProps<typeof PopoverPrimitive.Trigger>) {

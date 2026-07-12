@@ -4,6 +4,7 @@ import { XIcon } from "lucide-react";
 import { Dialog as DialogPrimitive } from "radix-ui";
 import type * as React from "react";
 import { Button } from "@/components/ui/button";
+import { preventDialogDismissForPortals } from "@/lib/dialog-outside";
 import { cn } from "@/lib/utils";
 
 function Dialog({ ...props }: React.ComponentProps<typeof DialogPrimitive.Root>) {
@@ -30,7 +31,7 @@ function DialogOverlay({
     <DialogPrimitive.Overlay
       data-slot="dialog-overlay"
       className={cn(
-        "fixed inset-0 isolate z-50 bg-black/10 duration-200 ease-out supports-backdrop-filter:backdrop-blur-xs data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0",
+          "fixed inset-0 isolate z-50 bg-black/20 duration-200 ease-out data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0",
         className,
       )}
       {...props}
@@ -42,6 +43,9 @@ function DialogContent({
   className,
   children,
   showCloseButton = true,
+  onInteractOutside,
+  onPointerDownOutside,
+  onFocusOutside,
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Content> & {
   showCloseButton?: boolean;
@@ -56,6 +60,18 @@ function DialogContent({
           className,
         )}
         {...props}
+        onFocusOutside={(event) => {
+          preventDialogDismissForPortals(event);
+          onFocusOutside?.(event);
+        }}
+        onInteractOutside={(event) => {
+          preventDialogDismissForPortals(event);
+          onInteractOutside?.(event);
+        }}
+        onPointerDownOutside={(event) => {
+          preventDialogDismissForPortals(event);
+          onPointerDownOutside?.(event);
+        }}
       >
         {children}
         {showCloseButton && (

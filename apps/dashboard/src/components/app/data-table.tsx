@@ -13,11 +13,11 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import type * as React from "react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { DataTableBulkBar } from "@/components/app/data-table-bulk-bar";
 import { AppIcons } from "@/components/app/icons";
-import { Button } from "@/components/ui/button";
+import { PaginationBar } from "@/components/app/pagination-bar";
 import {
   Empty,
   EmptyDescription,
@@ -43,6 +43,8 @@ type DataTableProps<TData> = {
   emptyTitle?: string;
   filteredEmptyMessage?: string;
   filteredEmptyTitle?: string;
+  /** Rendered under the scroll region (e.g. server PaginationControls). Always visible. */
+  footer?: React.ReactNode;
   getRowId?: (row: TData) => string;
   globalFilter?: string;
   isFiltered?: boolean;
@@ -60,6 +62,7 @@ export function DataTable<TData>({
   emptyTitle = "No rows yet",
   filteredEmptyMessage,
   filteredEmptyTitle = "No matching rows",
+  footer,
   getRowId,
   globalFilter,
   isFiltered = false,
@@ -75,6 +78,13 @@ export function DataTable<TData>({
     pageSize: pageSize ?? (data.length || 1),
   });
   const isPaginated = typeof pageSize === "number" && pageSize > 0;
+
+  useEffect(() => {
+    if (!isPaginated || typeof pageSize !== "number") return;
+    setPagination((current) =>
+      current.pageSize === pageSize ? current : { pageIndex: 0, pageSize },
+    );
+  }, [isPaginated, pageSize]);
 
   const table = useReactTable({
     columns,
@@ -111,19 +121,32 @@ export function DataTable<TData>({
       ? selectedSummaryLabel(selectedRows.length)
       : selectedSummaryLabel;
 
+  const pageCount = Math.max(1, table.getPageCount());
+  const pageIndex = table.getState().pagination.pageIndex;
+  const showClientPagination = isPaginated && data.length > 0;
+
   return (
-    <div className="mb-4 w-full min-w-0 overflow-hidden rounded-[1.35rem] border bg-card/95 shadow-sm shadow-primary/5 lg:mb-6">
-      {toolbar ? <div className="border-b bg-muted/20 p-3">{toolbar}</div> : null}
-      <div className="max-w-full overflow-hidden">
+    <div className="mb-4 flex w-full min-w-0 flex-col overflow-hidden rounded-[1.35rem] border bg-card/95 lg:mb-6">
+      {toolbar ? (
+        <div className="shrink-0 border-b bg-muted/20 p-3">{toolbar}</div>
+      ) : null}
+
+      {/*
+        Scroll region owns vertical overflow so:
+        - thead can stick at top of the table body
+        - footer pagination stays visible without scrolling past every row
+      */}
+      <div className="relative max-h-[min(36rem,calc(100dvh-14rem))] min-h-0 overflow-auto">
         <Table className="min-w-max">
-          <TableHeader>
+          <TableHeader className="sticky top-0 z-30">
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow className="hover:bg-transparent" key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
                   <TableHead
                     className={cn(
-                      "h-11 bg-card px-4 text-xs uppercase text-muted-foreground",
-                      getStickyColumnClass(header.column.id),
+                      "h-11 border-b bg-card/95 px-4 text-xs uppercase text-muted-foreground backdrop-blur-sm",
+                      "sticky top-0",
+                      getStickyColumnClass(header.column.id, true),
                     )}
                     key={header.id}
                   >
@@ -148,7 +171,7 @@ export function DataTable<TData>({
                       className={cn(
                         "bg-card px-4 py-3 group-hover/row:bg-muted/40",
                         row.getIsSelected() && "bg-primary/5 group-hover/row:bg-primary/10",
-                        getStickyColumnClass(cell.column.id),
+                        getStickyColumnClass(cell.column.id, false),
                       )}
                       key={cell.id}
                     >
@@ -175,51 +198,45 @@ export function DataTable<TData>({
           </TableBody>
         </Table>
       </div>
+
       <DataTableBulkBar
         actions={bulkActions?.(selectedRows.map((row) => row.original))}
         onClearSelection={() => table.resetRowSelection()}
         selectedCount={selectedRows.length}
         summaryLabel={selectedSummary}
       />
-      {isPaginated && rows.length ? (
-        <div className="flex items-center justify-between gap-3 border-t bg-muted/10 px-3 py-2 text-sm text-muted-foreground">
-          <span>
-            Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
-          </span>
-          <div className="flex items-center gap-2">
-            <Button
-              disabled={!table.getCanPreviousPage()}
-              onClick={() => table.previousPage()}
-              size="sm"
-              type="button"
-              variant="outline"
-            >
-              Previous
-            </Button>
-            <Button
-              disabled={!table.getCanNextPage()}
-              onClick={() => table.nextPage()}
-              size="sm"
-              type="button"
-              variant="outline"
-            >
-              Next
-            </Button>
-          </div>
+
+      {showClientPagination ? (
+        <div className="shrink-0 border-t bg-muted/10 px-3 py-2">
+          <PaginationBar
+            onPageChange={(page) => table.setPageIndex(page - 1)}
+            page={pageIndex + 1}
+            totalPages={pageCount}
+          />
         </div>
+      ) : null}
+
+      {footer ? (
+        <div className="shrink-0 border-t bg-muted/10 px-3 py-2">{footer}</div>
       ) : null}
     </div>
   );
 }
 
-function getStickyColumnClass(columnId: string) {
+function getStickyColumnClass(columnId: string, isHeader: boolean) {
   if (columnId === "select") {
-    return "sticky left-0 z-20 w-12 min-w-12";
+    return cn(
+      "sticky left-0 w-12 min-w-12",
+      isHeader ? "z-40 bg-card/95" : "z-20 bg-card group-hover/row:bg-muted/40",
+    );
   }
 
   if (columnId === "actions") {
-    return "sticky right-0 z-20 w-14 min-w-14";
+    return cn(
+      "sticky right-0 w-14 min-w-14",
+      isHeader ? "z-40 bg-card/95" : "z-20 bg-card group-hover/row:bg-muted/40",
+    );
   }
 
-  return "";
+  return isHeader ? "z-30" : "";
 }

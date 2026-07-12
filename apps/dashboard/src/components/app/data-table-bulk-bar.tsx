@@ -46,7 +46,7 @@ export function DataTableBulkBar({
     <div
       aria-hidden={!isVisible}
       className={cn(
-        "fixed bottom-4 left-1/2 z-50 flex w-fit max-w-[calc(100vw-2rem)] -translate-x-1/2 items-center gap-3 rounded-full border bg-popover/95 px-3 py-2 text-sm text-popover-foreground shadow-xl shadow-primary/10 ring-1 ring-foreground/10 backdrop-blur transition-all duration-200 ease-out",
+        "fixed bottom-4 left-1/2 z-50 flex w-fit max-w-[calc(100vw-2rem)] -translate-x-1/2 items-center gap-3 rounded-full border bg-popover px-3 py-2 text-sm text-popover-foreground shadow-sm transition-all duration-200 ease-out",
         isVisible
           ? "translate-y-0 scale-100 opacity-100"
           : "pointer-events-none translate-y-3 scale-95 opacity-0",

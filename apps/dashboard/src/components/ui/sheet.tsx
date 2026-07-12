@@ -4,6 +4,7 @@ import { XIcon } from "lucide-react";
 import { Dialog as SheetPrimitive } from "radix-ui";
 import type * as React from "react";
 import { Button } from "@/components/ui/button";
+import { preventDialogDismissForPortals } from "@/lib/dialog-outside";
 import { cn } from "@/lib/utils";
 
 function Sheet({ ...props }: React.ComponentProps<typeof SheetPrimitive.Root>) {
@@ -30,7 +31,7 @@ function SheetOverlay({
     <SheetPrimitive.Overlay
       data-slot="sheet-overlay"
       className={cn(
-        "fixed inset-0 z-50 bg-black/10 duration-100 supports-backdrop-filter:backdrop-blur-xs data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0",
+        "fixed inset-0 z-50 bg-black/20 duration-100 data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0",
         className,
       )}
       {...props}
@@ -43,6 +44,9 @@ function SheetContent({
   children,
   side = "right",
   showCloseButton = true,
+  onInteractOutside,
+  onPointerDownOutside,
+  onFocusOutside,
   ...props
 }: React.ComponentProps<typeof SheetPrimitive.Content> & {
   side?: "top" | "right" | "bottom" | "left";
@@ -59,6 +63,18 @@ function SheetContent({
           className,
         )}
         {...props}
+        onFocusOutside={(event) => {
+          preventDialogDismissForPortals(event);
+          onFocusOutside?.(event);
+        }}
+        onInteractOutside={(event) => {
+          preventDialogDismissForPortals(event);
+          onInteractOutside?.(event);
+        }}
+        onPointerDownOutside={(event) => {
+          preventDialogDismissForPortals(event);
+          onPointerDownOutside?.(event);
+        }}
       >
         {children}
         {showCloseButton && (

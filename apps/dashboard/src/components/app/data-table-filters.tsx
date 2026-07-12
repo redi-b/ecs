@@ -30,12 +30,18 @@ export type DataTableFilterDefinition = {
 };
 
 type DataTableFiltersProps = {
+  actions?: ReactNode;
   children?: ReactNode;
   filters: DataTableFilterDefinition[];
   onClearAll: () => void;
 };
 
-export function DataTableFilters({ children, filters, onClearAll }: DataTableFiltersProps) {
+export function DataTableFilters({
+  actions,
+  children,
+  filters,
+  onClearAll,
+}: DataTableFiltersProps) {
   const [addFilterOpen, setAddFilterOpen] = useState(false);
   const [pendingFilterId, setPendingFilterId] = useState<string | null>(null);
   const [filterSearch, setFilterSearch] = useState("");
@@ -152,6 +158,7 @@ export function DataTableFilters({ children, filters, onClearAll }: DataTableFil
             </Button>
           ) : null}
         </div>
+        {actions ? <div className="flex shrink-0 items-center gap-2">{actions}</div> : null}
       </div>
     </div>
   );
@@ -172,7 +179,7 @@ function DataTableAppliedFilterChip({ filter }: { filter: DataTableFilterDefinit
       }}
       open={open}
     >
-      <div className="flex h-9 items-center overflow-hidden rounded-full border bg-background/80 text-sm shadow-sm shadow-primary/5">
+      <div className="flex h-9 items-center overflow-hidden rounded-full border bg-background/80 text-sm">
         <PopoverTrigger asChild>
           <button
             className="flex h-full items-center gap-2 px-3 text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground"

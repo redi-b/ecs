@@ -1,6 +1,6 @@
-import Link from "next/link";
+"use client";
 
-import { Button } from "@/components/ui/button";
+import { PaginationBar } from "@/components/app/pagination-bar";
 import type { DashboardSearchParams } from "@/lib/dashboard-tenant-context";
 
 const TRANSIENT_STATUS_PARAMS = new Set(["categoryStatus", "collectionStatus", "productStatus"]);
@@ -15,7 +15,9 @@ type PaginationControlsProps = {
   count: number;
   page: number;
   pageSize: number;
+  /** Must be plain serializable data (no functions) — safe from Server Components. */
   searchParams: DashboardSearchParams;
+  className?: string;
 };
 
 export function ListSummary({ count, label }: ListSummaryProps) {
@@ -33,41 +35,40 @@ export function PaginationControls({
   page,
   pageSize,
   searchParams,
+  className,
 }: PaginationControlsProps) {
   const totalPages = Math.max(1, Math.ceil(count / pageSize));
-  const previousPage = Math.max(1, page - 1);
-  const nextPage = Math.min(totalPages, page + 1);
+  const safePage = Math.min(Math.max(1, page), totalPages);
+  const from = count === 0 ? 0 : (safePage - 1) * pageSize + 1;
+  const to = Math.min(count, safePage * pageSize);
+
+  // Build hrefs on the client so Server Components never pass a function prop.
+  function getPageHref(nextPage: number) {
+    return buildPageHref(basePath, searchParams, nextPage);
+  }
 
   return (
-    <div className="flex items-center justify-between gap-3 text-sm text-muted-foreground">
-      <span>
-        Page {page} of {totalPages}
-      </span>
-      <div className="flex items-center gap-2">
-        {page > 1 ? (
-          <Button asChild size="sm" variant="outline">
-            <Link href={getPageHref(basePath, searchParams, previousPage)}>Previous</Link>
-          </Button>
-        ) : (
-          <Button disabled size="sm" variant="outline">
-            Previous
-          </Button>
-        )}
-        {page < totalPages ? (
-          <Button asChild size="sm" variant="outline">
-            <Link href={getPageHref(basePath, searchParams, nextPage)}>Next</Link>
-          </Button>
-        ) : (
-          <Button disabled size="sm" variant="outline">
-            Next
-          </Button>
-        )}
-      </div>
-    </div>
+    <PaginationBar
+      {...(className ? { className } : {})}
+      getPageHref={getPageHref}
+      page={safePage}
+      summary={
+        <span>
+          {count === 0
+            ? "No results"
+            : `Showing ${from.toLocaleString()}–${to.toLocaleString()} of ${count.toLocaleString()}`}
+        </span>
+      }
+      totalPages={totalPages}
+    />
   );
 }
 
-function getPageHref(basePath: string, searchParams: DashboardSearchParams, page: number) {
+export function buildPageHref(
+  basePath: string,
+  searchParams: DashboardSearchParams,
+  page: number,
+) {
   const params = new URLSearchParams();
 
   for (const [key, value] of Object.entries(searchParams ?? {})) {
@@ -86,3 +87,6 @@ function getPageHref(basePath: string, searchParams: DashboardSearchParams, page
 
   return `${basePath}?${params.toString()}`;
 }
+
+/** @deprecated Use buildPageHref — kept for any external imports. */
+export const getPageHref = buildPageHref;

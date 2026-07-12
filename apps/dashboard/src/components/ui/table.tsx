@@ -6,7 +6,9 @@ import { cn } from "@/lib/utils";
 
 function Table({ className, ...props }: React.ComponentProps<"table">) {
   return (
-    <div data-slot="table-container" className="relative w-full overflow-x-auto">
+    // Avoid overflow-x-auto here: any overflow on an ancestor breaks position:sticky headers.
+    // Horizontal scroll is owned by the surrounding DataTable scroll region.
+    <div data-slot="table-container" className="relative w-full">
       <table
         data-slot="table"
         className={cn("w-full caption-bottom text-sm", className)}

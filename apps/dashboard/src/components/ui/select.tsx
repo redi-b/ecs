@@ -2,11 +2,34 @@
 
 import { CheckIcon, ChevronDownIcon, ChevronUpIcon } from "lucide-react";
 import { Select as SelectPrimitive } from "radix-ui";
-import type * as React from "react";
+import * as React from "react";
+import {
+  notifyNestedOverlayChange,
+  releaseNestedOverlayIfOpen,
+} from "@/lib/nested-overlay";
 import { cn } from "@/lib/utils";
 
-function Select({ ...props }: React.ComponentProps<typeof SelectPrimitive.Root>) {
-  return <SelectPrimitive.Root data-slot="select" {...props} />;
+function Select({
+  onOpenChange,
+  ...props
+}: React.ComponentProps<typeof SelectPrimitive.Root>) {
+  const openRef = React.useRef(false);
+
+  React.useEffect(() => {
+    return () => releaseNestedOverlayIfOpen(openRef.current);
+  }, []);
+
+  return (
+    <SelectPrimitive.Root
+      data-slot="select"
+      onOpenChange={(open) => {
+        openRef.current = open;
+        notifyNestedOverlayChange(open);
+        onOpenChange?.(open);
+      }}
+      {...props}
+    />
+  );
 }
 
 function SelectGroup({ className, ...props }: React.ComponentProps<typeof SelectPrimitive.Group>) {
