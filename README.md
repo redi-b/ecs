@@ -72,49 +72,62 @@ POSTGRES_HOST_PORT=5433 pnpm dev:infra
 
 When using a different PostgreSQL port, update the local database URLs in `.env`, `apps/platform-api/.env`, and `apps/medusa/.env` to use the same port.
 
-Run migrations:
+### Clean local databases (recommended before testing seed / onboarding)
+
+Wipes Docker volumes for postgres/redis/minio, recreates empty DBs, and migrates:
+
+```bash
+pnpm db:reset:local --yes
+pnpm seed:bootstrap --write-env
+pnpm dev:apps
+```
+
+`seed:bootstrap` only:
+
+1. Seeds Medusa (ETB region + **secret Admin API key**)
+2. Syncs storefront templates
+3. Optionally writes `MEDUSA_ADMIN_API_TOKEN` into `apps/platform-api/.env` (`--write-env`)
+
+It does **not** create a demo shop. After bootstrap you can test real signup → create shop at `http://dashboard.lvh.me/admin`.
+
+### Manual migrate + bootstrap
 
 ```bash
 pnpm db:migrate
 pnpm medusa:migrate
+pnpm seed:bootstrap --write-env
 ```
 
-Seed Medusa first:
+### Optional local demo shop
+
+Only for UI demos with sample catalog data (not required for onboarding, not for production):
 
 ```bash
-pnpm --filter @ecs/medusa seed
+pnpm seed                 # platform demo tenant + owner@selam.local
+pnpm seed:demo            # needs MEDUSA_ADMIN_API_TOKEN; demo products/orders
+pnpm seed:demo:clean      # remove demo commerce/platform rows
 ```
 
-The Medusa seed prints a local Admin API token. Keep that token in your local shell or local env file as `MEDUSA_ADMIN_API_TOKEN`. Do not commit it.
+Demo product images use public placeholders (picsum). Merchant media uploads still use MinIO via `MEDIA_S3_*`.
 
-Seed platform data:
+### Start apps
 
 ```bash
-pnpm seed
+pnpm dev:apps
+# or with token override:
+MEDUSA_ADMIN_API_TOKEN=<token> pnpm dev:apps
 ```
 
-Start app processes after infrastructure is ready:
+Grouped logs:
 
 ```bash
-MEDUSA_ADMIN_API_TOKEN=<token-from-medusa-seed> pnpm dev:apps
+pnpm dev:apps:grouped
 ```
 
-Start app processes with grouped logs:
+Full local startup (infra + apps):
 
 ```bash
-MEDUSA_ADMIN_API_TOKEN=<token-from-medusa-seed> pnpm dev:apps:grouped
-```
-
-Run the full local startup flow:
-
-```bash
-MEDUSA_ADMIN_API_TOKEN=<token-from-medusa-seed> pnpm dev
-```
-
-Run the full local startup flow with grouped logs:
-
-```bash
-MEDUSA_ADMIN_API_TOKEN=<token-from-medusa-seed> pnpm dev:grouped
+pnpm dev
 ```
 
 Stop local infrastructure:

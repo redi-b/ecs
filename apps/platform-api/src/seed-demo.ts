@@ -624,6 +624,9 @@ async function cleanSecondDemoShop() {
 
 async function seedCommerceDemoData(context: DemoCommerceContext) {
   if (!medusaAdminApiToken?.trim()) {
+    console.warn(
+      "[seed:demo] MEDUSA_ADMIN_API_TOKEN is not set — commerce demo data will be skipped. Run `pnpm --filter @ecs/medusa seed` first and export the token.",
+    );
     return {
       skipped: true,
       reason: "MEDUSA_ADMIN_API_TOKEN is not set",
@@ -1526,21 +1529,33 @@ function productSeed(
   };
 }
 
-const demoImageUrls: Record<string, string> = {
-  "Coffee & Tea": "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085",
-  "Pantry Staples": "https://images.unsplash.com/photo-1547592180-85f173990554",
-  "Home Goods": "https://images.unsplash.com/photo-1586023492125-27b2c045efd7",
-  "Fresh Market": "https://images.unsplash.com/photo-1542838132-92c53300491e",
-  "Giftable Essentials": "https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0",
-  "Soft Furnishings": "https://images.unsplash.com/photo-1555041469-a586c61ea9bc",
-  "Home Fragrance": "https://images.unsplash.com/photo-1603006905003-be475563bc59",
-  "Dinner Party Edit": "https://images.unsplash.com/photo-1601050690597-df0568f70950",
-  "Wedding Gifts": "https://images.unsplash.com/photo-1519225421980-715cb0215aed",
+/**
+ * Product image URLs for demo catalog.
+ * These are remote placeholders stored on Medusa product.images (not media-library assets).
+ * Merchant uploads in the dashboard still go through MinIO via MEDIA_S3_*.
+ *
+ * Override with SEED_DEMO_IMAGE_BASE (e.g. https://picsum.photos/seed) for offline-friendly seeds.
+ */
+const demoImageSeeds: Record<string, string> = {
+  "Coffee & Tea": "coffee-tea",
+  "Pantry Staples": "pantry",
+  "Home Goods": "home-goods",
+  "Fresh Market": "fresh-market",
+  "Giftable Essentials": "gifts",
+  "Soft Furnishings": "soft-furnishings",
+  "Home Fragrance": "fragrance",
+  "Dinner Party Edit": "dinner",
+  "Wedding Gifts": "wedding",
 };
 
 function getDemoImageUrl(category: string) {
-  const baseUrl = demoImageUrls[category] ?? demoImageUrls["Giftable Essentials"];
-  return `${baseUrl}?auto=format&fit=crop&w=1200&q=80`;
+  const customBase = process.env.SEED_DEMO_IMAGE_BASE?.trim().replace(/\/$/, "");
+  const seed = demoImageSeeds[category] ?? "gifts";
+  if (customBase) {
+    return `${customBase}/${encodeURIComponent(seed)}/1200/1200`;
+  }
+  // Stable public placeholders (no MinIO required for demo seed).
+  return `https://picsum.photos/seed/${encodeURIComponent(`ecs-${seed}`)}/1200/1200`;
 }
 
 try {

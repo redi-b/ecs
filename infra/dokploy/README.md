@@ -35,27 +35,52 @@ Use URL-safe database passwords or percent-encode reserved characters in both da
 
 ## Migrations and seeds
 
-Deployments run platform and Medusa migrations as one-shot services before starting the applications. The platform migration job also synchronizes the built-in storefront template registry, so onboarding works on a fresh database without creating demo users or shops. Both jobs have a three-minute timeout, so a stuck migration fails visibly instead of holding the deployment open.
+Deployments run platform and Medusa migrations as one-shot services before starting the applications. The platform migration job also synchronizes the built-in storefront template registry, so onboarding works on a fresh database **without** demo users or shops. Both jobs have a three-minute timeout, so a stuck migration fails visibly instead of holding the deployment open.
 
 The Medusa migration and application containers use writable root filesystems because Medusa discovers and manages module directories at runtime. They still run as a non-root user with `no-new-privileges`. The platform API, dashboard, storefront, and Caddy remain read-only.
 
-Seeds are not automatic. Run them from the Dokploy terminal when required:
+### After first deploy (required)
+
+Do **not** run `platform-api` `seed.ts` or `seed-demo.ts` on production unless you explicitly want a demo shop.
+
+1. Confirm env includes at least:
+   - `MEDUSA_ADMIN_API_TOKEN` (empty until step 3)
+   - `MINIO_ROOT_PASSWORD`
+   - `MEDIA_S3_PUBLIC_BASE_URL` (or accept the default `https://media.${BASE_DOMAIN}/ecs-media`)
+   - `MINIO_API_CORS_ALLOW_ORIGIN=https://dashboard.${BASE_DOMAIN}`
+2. Deploy the stack (migrations + template sync run automatically).
+3. Create the Medusa **secret** Admin API key (token shown **once**):
 
 ```sh
-docker compose -f infra/dokploy/docker-compose.yml run --rm medusa node_modules/.bin/medusa exec ./src/scripts/seed.js
-docker compose -f infra/dokploy/docker-compose.yml run --rm platform-api node --import tsx src/seed.ts
-docker compose -f infra/dokploy/docker-compose.yml run --rm platform-api node --import tsx src/seed-demo.ts
+# From the Dokploy server / compose directory for this project:
+docker compose run --rm medusa node_modules/.bin/medusa exec ./src/scripts/seed.js
 ```
 
-The Medusa seed creates the API credential used by the platform service. Store that value as `MEDUSA_ADMIN_API_TOKEN` in Dokploy and redeploy before using commerce provisioning features (including shop onboarding, which provisions Medusa commerce resources).
+4. Copy `medusaAdminApiToken` from the JSON output into Dokploy env as `MEDUSA_ADMIN_API_TOKEN`.
+5. Redeploy or restart **platform-api** so it loads the token.
+6. Open `https://dashboard.${BASE_DOMAIN}`, sign up, create a shop.
+
+If shop create fails, check:
+
+- platform-api logs for `[platform/tenants]`
+- dashboard logs for `[onboarding/submit]`
+- that `MEDUSA_ADMIN_API_TOKEN` is set and platform-api was restarted
+- Medusa is healthy
+
+### Optional demo data (local / staging only)
+
+```sh
+docker compose run --rm platform-api node --import tsx src/seed.ts
+docker compose run --rm -e MEDUSA_ADMIN_API_TOKEN="$MEDUSA_ADMIN_API_TOKEN" platform-api node --import tsx src/seed-demo.ts
+```
 
 ### Media (MinIO)
 
-This stack runs MinIO for product and library uploads. Set `MINIO_ROOT_PASSWORD` (and optionally `MINIO_ROOT_USER` / `MINIO_BUCKET`) in Dokploy. Platform API talks to MinIO on the internal network (`http://minio:9000`) and serves public object URLs through `MEDIA_S3_PUBLIC_BASE_URL` (default `https://media.${BASE_DOMAIN}/${MINIO_BUCKET}`).
+This stack runs MinIO for product and library uploads. Set `MINIO_ROOT_PASSWORD` (and optionally `MINIO_ROOT_USER` / `MINIO_BUCKET`) in Dokploy. Platform API talks to MinIO on the internal network (`http://minio:9000`) and serves public object URLs through `MEDIA_S3_PUBLIC_BASE_URL`.
 
 Point DNS for `media.${BASE_DOMAIN}` at the same Caddy/Traefik entry used by other app hosts, and set `MINIO_API_CORS_ALLOW_ORIGIN` to your dashboard origin so browser uploads can preflight.
 
-Shop **create** does not require MinIO. Media uploads do. Onboarding failures are more often missing `MEDUSA_ADMIN_API_TOKEN`, auth/session issues, or Medusa health.
+Shop **create** does not require MinIO. Media uploads do.
 
 The platform image also contains `src/worker.ts`. It is not started by this stack because the current worker is only a placeholder; it can be added as a separate service when it begins processing jobs.
 
