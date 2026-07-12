@@ -1,7 +1,7 @@
 "use client";
 
 import { useId, useMemo, useState } from "react";
-
+ 
 import { AppIcons } from "@/components/app/icons";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { slugifyTaxonomyHandle } from "@/features/catalog-taxonomy/taxonomy-table-state";
+import { useI18n } from "@/i18n/provider";
 
 type TaxonomyFormProps = {
   action: string;
@@ -28,12 +29,15 @@ export function TaxonomyForm({
   namePlaceholder,
   submitLabel,
 }: TaxonomyFormProps) {
+  const { t } = useI18n();
   const [displayName, setDisplayName] = useState("");
   const [handle, setHandle] = useState("");
   const [isHandleLocked, setIsHandleLocked] = useState(true);
   const formId = useId();
   const generatedHandle = useMemo(() => slugifyTaxonomyHandle(displayName), [displayName]);
   const HandleLockIcon = isHandleLocked ? AppIcons.lock : AppIcons.lockUnlock;
+
+  const localizedEntity = t(`taxonomy.entity.${entityLabel}` as any);
 
   function updateDisplayName(nextName: string) {
     setDisplayName(nextName);
@@ -67,7 +71,7 @@ export function TaxonomyForm({
             </Field>
 
             <Field>
-              <FieldLabel htmlFor={`${formId}-handle`}>Handle</FieldLabel>
+              <FieldLabel htmlFor={`${formId}-handle`}>{t("common.handle" as any)}</FieldLabel>
               <InputGroup className="pr-1">
                 <InputGroupInput
                   id={`${formId}-handle`}
@@ -82,7 +86,9 @@ export function TaxonomyForm({
                     <TooltipTrigger asChild>
                       <Button
                         aria-label={
-                          isHandleLocked ? "Unlock handle editing" : "Lock handle editing"
+                          isHandleLocked
+                            ? t("taxonomy.form.lockHandle" as any)
+                            : t("taxonomy.form.unlockHandle" as any)
                         }
                         className="rounded-full"
                         onClick={() => setIsHandleLocked((current) => !current)}
@@ -94,13 +100,15 @@ export function TaxonomyForm({
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent side="top" sideOffset={6}>
-                      {isHandleLocked ? "Unlock handle editing" : "Lock handle editing"}
+                      {isHandleLocked
+                        ? t("taxonomy.form.unlockHandle" as any)
+                        : t("taxonomy.form.lockHandle" as any)}
                     </TooltipContent>
                   </Tooltip>
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button
-                        aria-label={`Regenerate ${entityLabel} handle`}
+                        aria-label={t("taxonomy.form.regenerateHandle" as any, { entity: localizedEntity })}
                         className="rounded-full"
                         onClick={regenerateHandle}
                         size="icon-sm"
@@ -111,15 +119,15 @@ export function TaxonomyForm({
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent side="top" sideOffset={6}>
-                      Regenerate from {nameLabel.toLowerCase()}
+                      {t("taxonomy.form.regenerateFrom" as any, { label: nameLabel.toLowerCase() })}
                     </TooltipContent>
                   </Tooltip>
                 </InputGroupAddon>
               </InputGroup>
               <FieldDescription>
                 {isHandleLocked
-                  ? `The ${entityLabel} handle follows the ${nameLabel.toLowerCase()} automatically.`
-                  : `Handle editing is unlocked for a custom ${entityLabel} slug.`}
+                  ? t("taxonomy.form.handleFollows" as any, { entity: localizedEntity, label: nameLabel.toLowerCase() })
+                  : t("taxonomy.form.handleUnlocked" as any, { entity: localizedEntity })}
               </FieldDescription>
             </Field>
 

@@ -1,5 +1,6 @@
 import { PageShell } from "@/components/app/page-shell";
 import { TaxonomyForm } from "@/features/catalog-taxonomy/taxonomy-form";
+import { getRequestMessages } from "@/i18n/server";
 import {
   type DashboardSearchParams,
   getSelectedTenantId,
@@ -16,19 +17,21 @@ export default async function MerchantProductCollectionCreatePage({
 }: MerchantProductCollectionCreatePageProps) {
   const resolvedSearchParams = (await searchParams) ?? {};
   const tenantId = getSelectedTenantId(resolvedSearchParams);
+  const { messages } = await getRequestMessages();
+  const t = (key: any) => messages[key as keyof typeof messages];
 
   return (
     <PageShell
-      description="Create a product collection for grouping related catalog items and campaign merchandising."
-      title="New collection"
+      description={t("collections.create.shellDescription" as any)}
+      title={t("collections.create.shellTitle" as any)}
     >
       <TaxonomyForm
         action={getTenantScopedPath(dashboardRoutes.productCollectionCreateAction, tenantId)}
         entityLabel="collection"
         name="title"
-        nameLabel="Title"
+        nameLabel={t("common.title" as any) ?? "Title"}
         namePlaceholder="Summer essentials"
-        submitLabel="Create collection"
+        submitLabel={t("collections.create.submitLabel" as any)}
       />
     </PageShell>
   );

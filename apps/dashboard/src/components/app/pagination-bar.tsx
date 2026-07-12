@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 
 import { AppIcons } from "@/components/app/icons";
 import { Button } from "@/components/ui/button";
+import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 
 export type PaginationItem = number | "ellipsis";
@@ -50,6 +51,7 @@ export function PaginationBar({
   getPageHref,
   summary,
 }: PaginationBarProps) {
+  const { t, formatNumber } = useI18n();
   const total = Math.max(1, totalPages);
   const current = Math.min(Math.max(1, page), total);
   const items = getPaginationItems(current, total);
@@ -108,7 +110,10 @@ export function PaginationBar({
       <div className="text-sm text-muted-foreground">
         {summary ?? (
           <span>
-            Page {current} of {total}
+            {t("common.pagination.pageOf" as any, {
+              current: formatNumber(current),
+              total: formatNumber(total),
+            })}
           </span>
         )}
       </div>
@@ -117,12 +122,12 @@ export function PaginationBar({
           children: (
             <>
               <AppIcons.arrowLeft data-icon="inline-start" />
-              <span className="max-sm:sr-only">Previous</span>
+              <span className="max-sm:sr-only">{t("common.pagination.previous" as any)}</span>
             </>
           ),
           disabled: !canPrev,
           href: canPrev ? getPageHref?.(current - 1) : undefined,
-          label: "Previous page",
+          label: t("common.pagination.previousAria" as any),
           onClick: canPrev ? () => onPageChange?.(current - 1) : undefined,
         })}
 
@@ -144,7 +149,7 @@ export function PaginationBar({
             return (
               <Button
                 aria-current="page"
-                aria-label={`Page ${item}`}
+                aria-label={t("common.pagination.pageAria" as any, { page: formatNumber(item) })}
                 className="pointer-events-none"
                 key={item}
                 size="sm"
@@ -161,7 +166,7 @@ export function PaginationBar({
             disabled: false,
             href: getPageHref?.(item),
             key: item,
-            label: `Page ${item}`,
+            label: t("common.pagination.pageAria" as any, { page: formatNumber(item) }),
             onClick: () => onPageChange?.(item),
             variant: "outline",
           });
@@ -170,13 +175,13 @@ export function PaginationBar({
         {renderControl({
           children: (
             <>
-              <span className="max-sm:sr-only">Next</span>
+              <span className="max-sm:sr-only">{t("common.pagination.next" as any)}</span>
               <AppIcons.arrowRight data-icon="inline-end" />
             </>
           ),
           disabled: !canNext,
           href: canNext ? getPageHref?.(current + 1) : undefined,
-          label: "Next page",
+          label: t("common.pagination.nextAria" as any),
           onClick: canNext ? () => onPageChange?.(current + 1) : undefined,
         })}
       </div>
