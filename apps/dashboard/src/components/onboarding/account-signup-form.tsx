@@ -12,11 +12,12 @@ import {
   InputGroupButton,
   InputGroupInput,
 } from "@/components/ui/input-group";
+import type { MessageKey } from "@/i18n/messages";
 import { useI18n } from "@/i18n/provider";
 
 export function AccountSignUpForm({
   defaultValues,
-  errorMessage,
+  errorMessage: initialErrorMessage,
 }: {
   defaultValues: {
     email?: string | undefined;
@@ -30,7 +31,40 @@ export function AccountSignUpForm({
   const [email, setEmail] = useState(defaultValues.email ?? "");
   const [password, setPassword] = useState("");
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+  const [errorMessage, setErrorMessage] = useState(initialErrorMessage);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const PasswordIcon = isPasswordVisible ? AppIcons.eyeOff : AppIcons.eye;
+
+  async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (isSubmitting) return;
+
+    setIsSubmitting(true);
+    setErrorMessage(null);
+
+    const response = await fetch("/admin/sign-up/submit", {
+      body: JSON.stringify({ email, ownerName, password }),
+      headers: {
+        accept: "application/json",
+        "content-type": "application/json",
+      },
+      method: "POST",
+    }).catch(() => null);
+
+    const data = (await response?.json().catch(() => null)) as {
+      error?: string;
+      ok?: boolean;
+      redirectTo?: string;
+    } | null;
+
+    if (!response?.ok || !data?.ok || !data.redirectTo) {
+      setErrorMessage(mapSignupError(data?.error, t));
+      setIsSubmitting(false);
+      return;
+    }
+
+    window.location.assign(data.redirectTo);
+  }
 
   return (
     <div className="rounded-2xl border border-border bg-card p-7 shadow-sm sm:p-9">
@@ -46,7 +80,7 @@ export function AccountSignUpForm({
         </p>
       </div>
 
-      <form action="/admin/sign-up/submit" className="flex flex-col gap-5" method="post">
+      <form className="flex flex-col gap-5" onSubmit={(event) => void onSubmit(event)}>
         <Field>
           <FieldLabel htmlFor={`${fieldId}-ownerName`}>{t("auth.ownerName")}</FieldLabel>
           <InputGroup className="h-11 rounded-xl bg-background px-1 transition-colors hover:border-ring/50 focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/25">
@@ -54,6 +88,7 @@ export function AccountSignUpForm({
               autoComplete="name"
               autoFocus
               className="px-3 text-sm"
+              disabled={isSubmitting}
               id={`${fieldId}-ownerName`}
               name="ownerName"
               onChange={(event) => setOwnerName(event.target.value)}
@@ -70,6 +105,7 @@ export function AccountSignUpForm({
             <InputGroupInput
               autoComplete="email"
               className="px-3 text-sm"
+              disabled={isSubmitting}
               id={`${fieldId}-email`}
               name="email"
               onChange={(event) => setEmail(event.target.value)}
@@ -86,6 +122,7 @@ export function AccountSignUpForm({
             <InputGroupInput
               autoComplete="new-password"
               className="px-3 text-sm"
+              disabled={isSubmitting}
               id={`${fieldId}-password`}
               minLength={8}
               name="password"
@@ -97,6 +134,7 @@ export function AccountSignUpForm({
             <InputGroupAddon align="inline-end">
               <InputGroupButton
                 aria-label={isPasswordVisible ? t("auth.hidePassword") : t("auth.showPassword")}
+                disabled={isSubmitting}
                 onClick={() => setIsPasswordVisible((value) => !value)}
                 size="icon-xs"
               >
@@ -111,8 +149,20 @@ export function AccountSignUpForm({
             <FieldError>{errorMessage}</FieldError>
           </Field>
         ) : null}
-        <Button className="mt-2 h-11 w-full rounded-xl text-sm font-semibold" type="submit">
-          {t("auth.createAccountCta")}
+        <Button
+          aria-busy={isSubmitting}
+          className="mt-2 h-11 w-full rounded-xl text-sm font-semibold"
+          disabled={isSubmitting}
+          type="submit"
+        >
+          {isSubmitting ? (
+            <>
+              <AppIcons.loader className="animate-spin" data-icon="inline-start" />
+              {t("auth.creatingAccount")}
+            </>
+          ) : (
+            t("auth.createAccountCta")
+          )}
         </Button>
       </form>
 
@@ -127,4 +177,21 @@ export function AccountSignUpForm({
       </p>
     </div>
   );
+}
+
+function mapSignupError(code: string | undefined, t: (key: MessageKey) => string) {
+  switch (code) {
+    case "auth_session_missing":
+      return t("signup.error.sessionMissing");
+    case "auth_unavailable":
+      return t("signup.error.unavailable");
+    case "email_already_exists":
+      return t("signup.error.emailExists");
+    case "missing_required_fields":
+      return t("signup.error.required");
+    case "password_too_short":
+      return t("signup.error.passwordShort");
+    default:
+      return t("signup.error.failed");
+  }
 }

@@ -31,8 +31,21 @@ export function AccountMenu({ actor }: { actor: MerchantDashboardSummary["actor"
   const collapsed = state === "collapsed";
   const [menuOpen, setMenuOpen] = useState(false);
   const [suppressTooltip, setSuppressTooltip] = useState(false);
+  const [isSigningOut, setIsSigningOut] = useState(false);
   const accountName = actor.name?.trim() || actor.email;
   const accountInitials = getAccountInitials(accountName);
+
+  async function signOut() {
+    if (isSigningOut) return;
+    setIsSigningOut(true);
+    setMenuOpen(false);
+    const response = await fetch("/admin/sign-out", {
+      headers: { accept: "application/json" },
+      method: "POST",
+    }).catch(() => null);
+    const data = (await response?.json().catch(() => null)) as { redirectTo?: string } | null;
+    window.location.assign(data?.redirectTo ?? "/admin/sign-in");
+  }
 
   function handleMenuOpenChange(open: boolean) {
     setMenuOpen(open);
@@ -103,14 +116,21 @@ export function AccountMenu({ actor }: { actor: MerchantDashboardSummary["actor"
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <form action="/admin/sign-out" method="post">
-              <DropdownMenuItem asChild variant="destructive">
-                <button className="w-full" type="submit">
-                  <AppIcons.logout />
-                  {t("account.signOut")}
-                </button>
-              </DropdownMenuItem>
-            </form>
+            <DropdownMenuItem
+              disabled={isSigningOut}
+              onSelect={(event) => {
+                event.preventDefault();
+                void signOut();
+              }}
+              variant="destructive"
+            >
+              {isSigningOut ? (
+                <AppIcons.loader className="animate-spin" />
+              ) : (
+                <AppIcons.logout />
+              )}
+              {isSigningOut ? t("account.signingOut") : t("account.signOut")}
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </SidebarMenuItem>

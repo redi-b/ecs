@@ -1,22 +1,24 @@
 import { NextResponse } from "next/server";
 
 import { createTenantShop } from "@/lib/platform-onboarding";
+import { requestWantsJson } from "@/lib/request-wants-json";
 
 export async function POST(request: Request) {
-  const formData = await request.formData();
-  const shopName = getRequiredString(formData, "shopName");
-  const handle = getRequiredString(formData, "handle");
-  const templateKey = getRequiredString(formData, "templateKey");
-  const businessCategory = getOptionalString(formData, "businessCategory");
-  const contactPhone = getOptionalString(formData, "contactPhone");
+  const wantsJson = requestWantsJson(request);
+  const payload = await readOnboardingPayload(request);
+  const shopName = payload.shopName;
+  const handle = payload.handle;
+  const templateKey = payload.templateKey;
+  const businessCategory = payload.businessCategory;
+  const contactPhone = payload.contactPhone;
   const cookieHeader = request.headers.get("cookie") ?? "";
 
   if (!cookieHeader) {
-    return redirectToOnboarding(request, "auth_required", formData);
+    return failOnboarding(request, "auth_required", payload, wantsJson);
   }
 
   if (!shopName || !handle || !templateKey) {
-    return redirectToOnboarding(request, "missing_required_fields", formData);
+    return failOnboarding(request, "missing_required_fields", payload, wantsJson);
   }
 
   const createResult = await createTenantShop({
@@ -32,44 +34,115 @@ export async function POST(request: Request) {
   });
 
   if (!createResult.ok) {
-    // Surface the platform error code in server logs — the browser only sees the mapped message.
     console.error("[onboarding/submit] shop create failed", {
       handle,
       message: createResult.message,
       status: createResult.status,
     });
-    return redirectToOnboarding(request, createResult.message, formData);
+    return failOnboarding(request, createResult.message, payload, wantsJson);
   }
 
-  const dashboardUrl =
+  const redirectTo =
     createResult.mutation.redirectTo ??
     `http://${createResult.mutation.tenant.primaryDomain.hostname}/admin`;
 
-  return NextResponse.redirect(dashboardUrl, { status: 303 });
+  if (wantsJson) {
+    return NextResponse.json({ ok: true as const, redirectTo });
+  }
+
+  return NextResponse.redirect(redirectTo, { status: 303 });
+}
+
+async function readOnboardingPayload(request: Request) {
+  const contentType = request.headers.get("content-type") ?? "";
+  if (contentType.includes("application/json")) {
+    const body = (await request.json().catch(() => null)) as {
+      businessCategory?: unknown;
+      contactPhone?: unknown;
+      handle?: unknown;
+      shopName?: unknown;
+      templateKey?: unknown;
+    } | null;
+    return {
+      businessCategory: optionalString(body?.businessCategory),
+      contactPhone: optionalString(body?.contactPhone),
+      handle: requiredString(body?.handle),
+      shopName: requiredString(body?.shopName),
+      templateKey: requiredString(body?.templateKey),
+    };
+  }
+
+  const formData = await request.formData();
+  return {
+    businessCategory: getOptionalString(formData, "businessCategory"),
+    contactPhone: getOptionalString(formData, "contactPhone"),
+    handle: getRequiredString(formData, "handle"),
+    shopName: getRequiredString(formData, "shopName"),
+    templateKey: getRequiredString(formData, "templateKey"),
+  };
+}
+
+function failOnboarding(
+  request: Request,
+  error: string,
+  payload: {
+    businessCategory?: string | undefined;
+    contactPhone?: string | undefined;
+    handle: string | null;
+    shopName: string | null;
+  },
+  wantsJson: boolean,
+) {
+  if (wantsJson) {
+    const status =
+      error === "auth_required"
+        ? 401
+        : error === "missing_required_fields"
+          ? 400
+          : 503;
+    return NextResponse.json({ error, ok: false as const }, { status });
+  }
+  return redirectToOnboarding(request, error, payload);
 }
 
 function getRequiredString(formData: FormData, key: string) {
   const value = formData.get(key);
-
   return typeof value === "string" && value.trim() ? value.trim() : null;
 }
 
 function getOptionalString(formData: FormData, key: string) {
   const value = formData.get(key);
-
   return typeof value === "string" && value.trim() ? value.trim() : undefined;
 }
 
-function redirectToOnboarding(request: Request, error: string, formData: FormData) {
+function requiredString(value: unknown) {
+  return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
+function optionalString(value: unknown) {
+  return typeof value === "string" && value.trim() ? value.trim() : undefined;
+}
+
+function redirectToOnboarding(
+  request: Request,
+  error: string,
+  payload: {
+    businessCategory?: string | undefined;
+    contactPhone?: string | undefined;
+    handle: string | null;
+    shopName: string | null;
+  },
+) {
   const url = new URL("/admin/onboarding", getRequestOrigin(request));
 
   url.searchParams.set("error", error);
-  for (const key of ["shopName", "handle", "businessCategory", "contactPhone"]) {
-    const value = getOptionalString(formData, key);
-
-    if (value) {
-      url.searchParams.set(key, value);
-    }
+  for (const [key, value] of Object.entries({
+    shopName: payload.shopName,
+    handle: payload.handle,
+    businessCategory: payload.businessCategory,
+    contactPhone: payload.contactPhone,
+  })) {
+    if (value) url.searchParams.set(key, value);
   }
 
   return NextResponse.redirect(url, { status: 303 });

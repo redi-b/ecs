@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { getSharedAuthCookie } from "@/lib/auth-cookies";
+import { requestWantsJson } from "@/lib/request-wants-json";
 
 type SignUpResult =
   | {
@@ -13,17 +14,18 @@ type SignUpResult =
     };
 
 export async function POST(request: Request) {
-  const formData = await request.formData();
-  const ownerName = getRequiredString(formData, "ownerName");
-  const email = getRequiredString(formData, "email")?.toLowerCase();
-  const password = getRequiredString(formData, "password");
+  const wantsJson = requestWantsJson(request);
+  const payload = await readSignUpPayload(request);
+  const ownerName = payload.ownerName;
+  const email = payload.email?.toLowerCase() ?? null;
+  const password = payload.password;
 
   if (!ownerName || !email || !password) {
-    return redirectToSignUp(request, "missing_required_fields", formData);
+    return failSignUp(request, "missing_required_fields", payload, wantsJson);
   }
 
   if (password.length < 8) {
-    return redirectToSignUp(request, "password_too_short", formData);
+    return failSignUp(request, "password_too_short", payload, wantsJson);
   }
 
   const signUpResult = await signUpWithPlatformAuth({
@@ -35,22 +37,72 @@ export async function POST(request: Request) {
   });
 
   if (!signUpResult.ok) {
-    return redirectToSignUp(request, signUpResult.error, formData);
+    return failSignUp(request, signUpResult.error, payload, wantsJson);
   }
 
   if (signUpResult.cookies.length === 0) {
-    return redirectToSignUp(request, "auth_session_missing", formData);
+    return failSignUp(request, "auth_session_missing", payload, wantsJson);
   }
 
-  const response = NextResponse.redirect(new URL("/admin/onboarding", getRequestOrigin(request)), {
-    status: 303,
-  });
+  const redirectTo = new URL("/admin/onboarding", getRequestOrigin(request)).toString();
 
+  if (wantsJson) {
+    const response = NextResponse.json({ ok: true as const, redirectTo });
+    for (const cookie of signUpResult.cookies) {
+      response.headers.append("set-cookie", getSharedAuthCookie(cookie));
+    }
+    return response;
+  }
+
+  const response = NextResponse.redirect(redirectTo, { status: 303 });
   for (const cookie of signUpResult.cookies) {
     response.headers.append("set-cookie", getSharedAuthCookie(cookie));
   }
-
   return response;
+}
+
+async function readSignUpPayload(request: Request) {
+  const contentType = request.headers.get("content-type") ?? "";
+  if (contentType.includes("application/json")) {
+    const body = (await request.json().catch(() => null)) as {
+      email?: unknown;
+      ownerName?: unknown;
+      password?: unknown;
+    } | null;
+    return {
+      email: typeof body?.email === "string" && body.email.trim() ? body.email.trim() : null,
+      ownerName:
+        typeof body?.ownerName === "string" && body.ownerName.trim()
+          ? body.ownerName.trim()
+          : null,
+      password: typeof body?.password === "string" && body.password ? body.password : null,
+    };
+  }
+
+  const formData = await request.formData();
+  return {
+    email: getRequiredString(formData, "email"),
+    ownerName: getRequiredString(formData, "ownerName"),
+    password: getRequiredString(formData, "password"),
+  };
+}
+
+function failSignUp(
+  request: Request,
+  error: string,
+  payload: { email: string | null; ownerName: string | null },
+  wantsJson: boolean,
+) {
+  if (wantsJson) {
+    const status =
+      error === "email_already_exists"
+        ? 409
+        : error === "password_too_short" || error === "missing_required_fields"
+          ? 400
+          : 503;
+    return NextResponse.json({ error, ok: false as const }, { status });
+  }
+  return redirectToSignUp(request, error, payload);
 }
 
 async function signUpWithPlatformAuth(input: {
@@ -127,23 +179,16 @@ function normalizeSignupError(value: string | undefined) {
   return "signup_failed";
 }
 
-function getOptionalString(formData: FormData, key: string) {
-  const value = formData.get(key);
-
-  return typeof value === "string" && value.trim() ? value.trim() : undefined;
-}
-
-function redirectToSignUp(request: Request, error: string, formData: FormData) {
+function redirectToSignUp(
+  request: Request,
+  error: string,
+  payload: { email: string | null; ownerName: string | null },
+) {
   const url = new URL("/admin/sign-up", getRequestOrigin(request));
 
   url.searchParams.set("error", error);
-  for (const key of ["ownerName", "email"]) {
-    const value = getOptionalString(formData, key);
-
-    if (value) {
-      url.searchParams.set(key, value);
-    }
-  }
+  if (payload.ownerName) url.searchParams.set("ownerName", payload.ownerName);
+  if (payload.email) url.searchParams.set("email", payload.email);
 
   return NextResponse.redirect(url, { status: 303 });
 }

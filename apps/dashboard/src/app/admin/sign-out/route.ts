@@ -1,16 +1,20 @@
 import { NextResponse } from "next/server";
 
 import { getSharedAuthCookie, getSharedAuthCookieClears } from "@/lib/auth-cookies";
+import { requestWantsJson } from "@/lib/request-wants-json";
 
 export async function POST(request: Request) {
+  const wantsJson = requestWantsJson(request);
   const signOutResult = await signOutWithPlatformAuth({
     cookieHeader: request.headers.get("cookie"),
     forwardedHost: request.headers.get("x-forwarded-host") ?? request.headers.get("host") ?? "",
     forwardedProto: request.headers.get("x-forwarded-proto") ?? "http",
   });
-  const response = NextResponse.redirect(getRedirectUrl("/admin/sign-in", request), {
-    status: 303,
-  });
+  const redirectTo = getRedirectUrl("/admin/sign-in", request).toString();
+
+  const response = wantsJson
+    ? NextResponse.json({ ok: true as const, redirectTo })
+    : NextResponse.redirect(redirectTo, { status: 303 });
 
   for (const cookie of signOutResult.cookies) {
     response.headers.append("set-cookie", getSharedAuthCookie(cookie));

@@ -102,6 +102,9 @@ export function ShopOnboardingForm({
     status: "idle",
     message: t("onboarding.handle.choose"),
   });
+  const [submitError, setSubmitError] = useState<string | null>(errorMessage);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSigningOut, setIsSigningOut] = useState(false);
   const businessCategory = serializeCategories(businessCategories);
 
   const selectedTemplate = useMemo(
@@ -228,6 +231,55 @@ export function ShopOnboardingForm({
     setStep((value) => Math.max(0, value - 1));
   }
 
+  async function submitOnboarding(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (step < lastStep || !canSubmit || isSubmitting) return;
+
+    setIsSubmitting(true);
+    setSubmitError(null);
+    window.localStorage.removeItem(DRAFT_KEY);
+
+    const response = await fetch("/admin/onboarding/submit", {
+      body: JSON.stringify({
+        businessCategory: businessCategory || undefined,
+        contactPhone: contactPhone.trim() || undefined,
+        handle,
+        shopName,
+        templateKey,
+      }),
+      headers: {
+        accept: "application/json",
+        "content-type": "application/json",
+      },
+      method: "POST",
+    }).catch(() => null);
+
+    const data = (await response?.json().catch(() => null)) as {
+      error?: string;
+      ok?: boolean;
+      redirectTo?: string;
+    } | null;
+
+    if (!response?.ok || !data?.ok || !data.redirectTo) {
+      setSubmitError(mapOnboardingError(data?.error, t));
+      setIsSubmitting(false);
+      return;
+    }
+
+    window.location.assign(data.redirectTo);
+  }
+
+  async function signOutToOtherAccount() {
+    if (isSigningOut || isSubmitting) return;
+    setIsSigningOut(true);
+    const response = await fetch("/admin/sign-out", {
+      headers: { accept: "application/json" },
+      method: "POST",
+    }).catch(() => null);
+    const data = (await response?.json().catch(() => null)) as { redirectTo?: string } | null;
+    window.location.assign(data?.redirectTo ?? "/admin/sign-in");
+  }
+
   return (
     <div className="grid gap-8 lg:grid-cols-[14rem_minmax(0,1fr)] lg:gap-12">
       <nav aria-label={t("onboarding.stepsLabel")} className="lg:sticky lg:top-8 lg:self-start">
@@ -317,27 +369,18 @@ export function ShopOnboardingForm({
           </div>
 
           <div className="px-6 py-7 sm:px-8 sm:py-8">
-            {errorMessage ? (
+            {submitError ? (
               <Alert className="mb-7" variant="destructive">
                 <AppIcons.error />
                 <AlertTitle>{t("onboarding.paused")}</AlertTitle>
-                <AlertDescription>{errorMessage}</AlertDescription>
+                <AlertDescription>{submitError}</AlertDescription>
               </Alert>
             ) : null}
 
             <form
-              action="/admin/onboarding/submit"
               className="flex flex-col gap-7"
               id="onboarding-setup-form"
-              method="post"
-              onSubmit={(event) => {
-                // Guard accidental submits while still on earlier steps.
-                if (step < lastStep || !canSubmit) {
-                  event.preventDefault();
-                  return;
-                }
-                window.localStorage.removeItem(DRAFT_KEY);
-              }}
+              onSubmit={(event) => void submitOnboarding(event)}
             >
               <div className={cn(step === 0 ? "grid gap-6" : "hidden")}>
                 <Field>
@@ -517,17 +560,29 @@ export function ShopOnboardingForm({
             </form>
 
             <div className="mt-7 flex flex-col gap-3 border-t pt-6 sm:flex-row sm:items-center sm:justify-between">
-              <form action="/admin/sign-out" method="post">
-                <Button
-                  className="justify-start px-0 text-muted-foreground hover:text-foreground"
-                  type="submit"
-                  variant="link"
-                >
-                  {t("onboarding.otherAccount")}
-                </Button>
-              </form>
+              <Button
+                className="justify-start px-0 text-muted-foreground hover:text-foreground"
+                disabled={isSigningOut || isSubmitting}
+                onClick={() => void signOutToOtherAccount()}
+                type="button"
+                variant="link"
+              >
+                {isSigningOut ? (
+                  <>
+                    <AppIcons.loader className="animate-spin" data-icon="inline-start" />
+                    {t("account.signingOut")}
+                  </>
+                ) : (
+                  t("onboarding.otherAccount")
+                )}
+              </Button>
               <div className="flex gap-2">
-                <Button disabled={step === 0} onClick={goBack} type="button" variant="outline">
+                <Button
+                  disabled={step === 0 || isSubmitting}
+                  onClick={goBack}
+                  type="button"
+                  variant="outline"
+                >
                   {t("common.back")}
                 </Button>
                 {/*
@@ -537,19 +592,27 @@ export function ShopOnboardingForm({
                 */}
                 <Button
                   className={step >= lastStep ? "hidden" : undefined}
-                  disabled={!canContinue}
+                  disabled={!canContinue || isSubmitting}
                   onClick={goNext}
                   type="button"
                 >
                   {t("common.continue")}
                 </Button>
                 <Button
+                  aria-busy={isSubmitting}
                   className={step < lastStep ? "hidden" : undefined}
-                  disabled={!canSubmit}
+                  disabled={!canSubmit || isSubmitting}
                   form="onboarding-setup-form"
                   type="submit"
                 >
-                  {t("onboarding.createShop")}
+                  {isSubmitting ? (
+                    <>
+                      <AppIcons.loader className="animate-spin" data-icon="inline-start" />
+                      {t("onboarding.creatingShop")}
+                    </>
+                  ) : (
+                    t("onboarding.createShop")
+                  )}
                 </Button>
               </div>
             </div>
@@ -878,6 +941,30 @@ function getHandleReason(reason: string | undefined, t: (key: MessageKey) => str
   if (reason === "reserved") return t("onboarding.handle.reserved");
   if (reason === "invalid") return t("onboarding.handle.invalid");
   return t("onboarding.handle.unavailable");
+}
+
+function mapOnboardingError(code: string | undefined, t: (key: MessageKey) => string) {
+  const messages: Record<string, MessageKey> = {
+    auth_required: "onboarding.error.authRequired",
+    commerce_backend_unavailable: "onboarding.error.provisioningFailed",
+    commerce_credentials_invalid: "onboarding.error.commerceCredentials",
+    commerce_credentials_missing: "onboarding.error.commerceCredentials",
+    handle_invalid: "onboarding.handle.invalid",
+    handle_reserved: "onboarding.handle.reserved",
+    handle_taken: "onboarding.error.handleTaken",
+    invalid_shop_setup: "onboarding.error.invalidSetup",
+    invalid_tenant_creation_response: "onboarding.error.invalidResponse",
+    missing_handle: "onboarding.error.required",
+    missing_name: "onboarding.error.required",
+    missing_required_fields: "onboarding.error.required",
+    platform_request_failed: "onboarding.error.platformUnavailable",
+    storefront_template_unavailable: "onboarding.error.storefrontUnavailable",
+    template_unavailable: "onboarding.error.templateUnavailable",
+    tenant_handle_taken: "onboarding.error.handleTaken",
+    tenant_provisioning_failed: "onboarding.error.provisioningFailed",
+    tenant_provisioning_unavailable: "onboarding.error.provisioningUnavailable",
+  };
+  return t(messages[code ?? ""] ?? "onboarding.error.failed");
 }
 
 function slugify(value: string) {

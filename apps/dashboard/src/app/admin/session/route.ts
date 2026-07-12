@@ -3,19 +3,21 @@ import { NextResponse } from "next/server";
 
 import { getSharedAuthCookie } from "@/lib/auth-cookies";
 import { isCentralDashboardHost } from "@/lib/dashboard-hosts";
+import { requestWantsJson } from "@/lib/request-wants-json";
 
 export async function POST(request: Request) {
-  const formData = await request.formData();
-  const email = formData.get("email");
-  const password = formData.get("password");
-  const nextPath = getSafeNextPath(formData.get("next"));
+  const wantsJson = requestWantsJson(request);
+  const payload = await readSignInPayload(request);
+  const email = payload.email;
+  const password = payload.password;
+  const nextPath = getSafeNextPath(payload.next);
 
   if (typeof email !== "string" || !email.trim()) {
-    return redirectToSignIn(request, nextPath, "missing_email");
+    return failSignIn(request, nextPath, "missing_email", wantsJson);
   }
 
   if (typeof password !== "string" || !password) {
-    return redirectToSignIn(request, nextPath, "missing_password");
+    return failSignIn(request, nextPath, "missing_password", wantsJson);
   }
 
   const forwardedHost =
@@ -28,7 +30,7 @@ export async function POST(request: Request) {
       });
 
   if (!hostResult.ok) {
-    return redirectToSignIn(request, nextPath, hostResult.error);
+    return failSignIn(request, nextPath, hostResult.error, wantsJson);
   }
 
   const authResult = await signInWithPlatformAuth({
@@ -39,10 +41,11 @@ export async function POST(request: Request) {
   });
 
   if (!authResult.ok) {
-    return redirectToSignIn(
+    return failSignIn(
       request,
       nextPath,
       authResult.status === 401 ? "invalid_credentials" : "auth_unavailable",
+      wantsJson,
     );
   }
 
@@ -51,13 +54,57 @@ export async function POST(request: Request) {
     forwardedHost,
     nextPath,
   });
-  const response = NextResponse.redirect(getRedirectUrl(redirectPath, request), { status: 303 });
+  const redirectTo = absoluteRedirectUrl(redirectPath, request);
 
+  if (wantsJson) {
+    const response = NextResponse.json({ ok: true as const, redirectTo });
+    for (const cookie of authResult.cookies) {
+      response.headers.append("set-cookie", getSharedAuthCookie(cookie));
+    }
+    return response;
+  }
+
+  const response = NextResponse.redirect(redirectTo, { status: 303 });
   for (const cookie of authResult.cookies) {
     response.headers.append("set-cookie", getSharedAuthCookie(cookie));
   }
-
   return response;
+}
+
+async function readSignInPayload(request: Request) {
+  const contentType = request.headers.get("content-type") ?? "";
+  if (contentType.includes("application/json")) {
+    const body = (await request.json().catch(() => null)) as {
+      email?: unknown;
+      next?: unknown;
+      password?: unknown;
+    } | null;
+    return {
+      email: typeof body?.email === "string" ? body.email : null,
+      next: typeof body?.next === "string" ? body.next : null,
+      password: typeof body?.password === "string" ? body.password : null,
+    };
+  }
+
+  const formData = await request.formData();
+  return {
+    email: formData.get("email"),
+    next: formData.get("next"),
+    password: formData.get("password"),
+  };
+}
+
+function failSignIn(request: Request, nextPath: string, error: string, wantsJson: boolean) {
+  if (wantsJson) {
+    const status =
+      error === "invalid_credentials" || error === "missing_email" || error === "missing_password"
+        ? 401
+        : error === "shop_not_found" || error === "shop_unavailable"
+          ? 404
+          : 503;
+    return NextResponse.json({ error, ok: false as const }, { status });
+  }
+  return redirectToSignIn(request, nextPath, error);
 }
 
 async function getPostSignInRedirectPath(input: {
@@ -129,7 +176,7 @@ function getPlatformBaseUrl() {
   return normalizeBaseUrl(process.env.PLATFORM_API_BASE_URL ?? "http://localhost:3000");
 }
 
-function getSafeNextPath(value: FormDataEntryValue | null) {
+function getSafeNextPath(value: FormDataEntryValue | string | null) {
   if (typeof value !== "string" || !value.startsWith("/") || value.startsWith("//")) {
     return "/admin";
   }
@@ -141,9 +188,18 @@ function redirectToSignIn(request: Request, nextPath: string, error: string) {
   const url = getRedirectUrl("/admin/sign-in", request);
 
   url.searchParams.set("error", error);
-  url.searchParams.set("next", nextPath);
+  if (nextPath.startsWith("/")) {
+    url.searchParams.set("next", nextPath);
+  }
 
   return NextResponse.redirect(url, { status: 303 });
+}
+
+function absoluteRedirectUrl(pathOrUrl: string, request: Request) {
+  if (/^https?:\/\//i.test(pathOrUrl)) {
+    return pathOrUrl;
+  }
+  return getRedirectUrl(pathOrUrl, request).toString();
 }
 
 function getRedirectUrl(path: string, request: Request) {
