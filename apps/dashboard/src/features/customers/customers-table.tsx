@@ -162,11 +162,6 @@ export function CustomersTable({
                   type: "button",
                 },
                 {
-                  label: "Copy customer ID",
-                  onSelect: () => void copyToClipboard(customer.id, "Customer ID"),
-                  type: "button",
-                },
-                {
                   disabled: !customer.phone,
                   label: "Copy phone",
                   onSelect: () => void copyToClipboard(customer.phone ?? "", "Phone"),
@@ -192,20 +187,6 @@ export function CustomersTable({
             <Button
               onClick={() =>
                 void copyToClipboard(
-                  selectedCustomers.map((customer) => customer.id).join("\n"),
-                  "Customer IDs",
-                )
-              }
-              size="sm"
-              type="button"
-              variant="outline"
-            >
-              <AppIcons.copy data-icon="inline-start" />
-              Copy IDs
-            </Button>
-            <Button
-              onClick={() =>
-                void copyToClipboard(
                   selectedCustomers.map((customer) => customer.email).join("\n"),
                   "Emails",
                 )
@@ -216,6 +197,24 @@ export function CustomersTable({
             >
               <AppIcons.copy data-icon="inline-start" />
               Copy emails
+            </Button>
+            <Button
+              disabled={!selectedCustomers.some((customer) => customer.phone)}
+              onClick={() =>
+                void copyToClipboard(
+                  selectedCustomers
+                    .map((customer) => customer.phone)
+                    .filter((phone): phone is string => Boolean(phone))
+                    .join("\n"),
+                  "Phone numbers",
+                )
+              }
+              size="sm"
+              type="button"
+              variant="outline"
+            >
+              <AppIcons.copy data-icon="inline-start" />
+              Copy phones
             </Button>
           </div>
         )}

@@ -114,8 +114,17 @@ export function createMedusaCustomerService(options: Options) {
       headers: headers(),
       method: "POST",
     }).catch(() => null);
-    if (!attached?.ok) return unavailable();
-    return { customer: { ...customer, groups: [{ id: group.id, name: group.name }] }, ok: true };
+    if (!attached?.ok) {
+      // Customer was created but group link failed — surface a clear conflict/availability path.
+      return mapError(attached);
+    }
+    return {
+      customer: {
+        ...customer,
+        groups: [{ id: String(group.id), name: String(group.name ?? "Customers") }],
+      },
+      ok: true,
+    };
   }
 
   async function updateCustomer(

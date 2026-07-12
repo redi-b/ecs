@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useId, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -35,10 +36,14 @@ export function CustomerFormDialog({
   const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
   const open = isControlled ? Boolean(openProp) : uncontrolledOpen;
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [formKey, setFormKey] = useState(0);
 
   useEffect(() => {
-    if (open) setFormKey((value) => value + 1);
+    if (open) {
+      setFormKey((value) => value + 1);
+      setError(null);
+    }
   }, [open, customer?.id]);
 
   function setOpen(next: boolean) {
@@ -48,19 +53,44 @@ export function CustomerFormDialog({
 
   async function submit(formData: FormData) {
     setSaving(true);
-    const payload = Object.fromEntries(formData);
+    setError(null);
+
+    const payload = {
+      companyName: String(formData.get("companyName") ?? "").trim() || null,
+      email: String(formData.get("email") ?? "").trim(),
+      firstName: String(formData.get("firstName") ?? "").trim() || null,
+      lastName: String(formData.get("lastName") ?? "").trim() || null,
+      phone: String(formData.get("phone") ?? "").trim() || null,
+    };
+
+    if (!payload.email) {
+      setSaving(false);
+      setError("Enter an email address.");
+      return;
+    }
+
     const response = await fetch(
       customer
         ? `/admin/customers/actions/${encodeURIComponent(customer.id)}`
         : "/admin/customers/actions",
       {
         body: JSON.stringify(payload),
-        headers: { "content-type": "application/json" },
+        headers: {
+          accept: "application/json",
+          "content-type": "application/json",
+        },
         method: "POST",
       },
-    );
+    ).catch(() => null);
+
     setSaving(false);
-    if (!response.ok) return toast.error("Customer could not be saved.");
+
+    if (!response?.ok) {
+      const data = (await response?.json().catch(() => ({}))) as { error?: string };
+      setError(getCustomerErrorMessage(data.error, Boolean(customer)));
+      return;
+    }
+
     toast.success(customer ? "Customer updated." : "Customer created.");
     setOpen(false);
     router.refresh();
@@ -83,7 +113,7 @@ export function CustomerFormDialog({
         <DialogHeader className="gap-1.5 border-b px-4 py-4 text-left sm:px-5">
           <DialogTitle>{customer ? "Edit customer" : "Add customer"}</DialogTitle>
           <DialogDescription>
-            Keep contact information accurate for orders, support, and repeat purchases.
+            Keep contact details current for orders, support, and follow-ups.
           </DialogDescription>
         </DialogHeader>
         <form
@@ -92,9 +122,19 @@ export function CustomerFormDialog({
           key={formKey}
         >
           <div className="grid gap-4 p-4 sm:grid-cols-2 sm:p-5">
+            {error ? (
+              <Alert className="sm:col-span-2" variant="destructive">
+                <AlertTitle>
+                  {customer ? "Customer could not be updated" : "Customer could not be created"}
+                </AlertTitle>
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            ) : null}
+
             <Field>
               <FieldLabel htmlFor={`${id}-first`}>First name</FieldLabel>
               <Input
+                autoComplete="given-name"
                 defaultValue={customer?.firstName ?? ""}
                 id={`${id}-first`}
                 name="firstName"
@@ -104,6 +144,7 @@ export function CustomerFormDialog({
             <Field>
               <FieldLabel htmlFor={`${id}-last`}>Last name</FieldLabel>
               <Input
+                autoComplete="family-name"
                 defaultValue={customer?.lastName ?? ""}
                 id={`${id}-last`}
                 name="lastName"
@@ -113,6 +154,7 @@ export function CustomerFormDialog({
             <Field className="sm:col-span-2">
               <FieldLabel htmlFor={`${id}-email`}>Email</FieldLabel>
               <Input
+                autoComplete="email"
                 defaultValue={customer?.email ?? ""}
                 id={`${id}-email`}
                 name="email"
@@ -125,6 +167,7 @@ export function CustomerFormDialog({
             <Field>
               <FieldLabel htmlFor={`${id}-phone`}>Phone</FieldLabel>
               <Input
+                autoComplete="tel"
                 defaultValue={customer?.phone ?? ""}
                 id={`${id}-phone`}
                 name="phone"
@@ -134,6 +177,7 @@ export function CustomerFormDialog({
             <Field>
               <FieldLabel htmlFor={`${id}-company`}>Company</FieldLabel>
               <Input
+                autoComplete="organization"
                 defaultValue={customer?.companyName ?? ""}
                 id={`${id}-company`}
                 name="companyName"
@@ -142,7 +186,12 @@ export function CustomerFormDialog({
             </Field>
           </div>
           <DialogFooter className="mx-0 mb-0 rounded-none border-t bg-muted/50 p-4">
-            <Button onClick={() => setOpen(false)} type="button" variant="outline">
+            <Button
+              disabled={saving}
+              onClick={() => setOpen(false)}
+              type="button"
+              variant="outline"
+            >
               Cancel
             </Button>
             <Button disabled={saving} type="submit">
@@ -153,4 +202,21 @@ export function CustomerFormDialog({
       </DialogContent>
     </Dialog>
   );
+}
+
+function getCustomerErrorMessage(error: string | undefined, isEdit: boolean) {
+  if (error === "invalid_customer") return "Check the email and other fields, then try again.";
+  if (error === "customer_email_conflict") {
+    return "A customer with this email already exists.";
+  }
+  if (error === "customer_not_found") return "Customer was not found.";
+  if (error === "commerce_backend_unavailable") {
+    return "Customer updates are temporarily unavailable. Try again in a moment.";
+  }
+  if (error === "commerce_credentials_missing" || error === "commerce_credentials_invalid") {
+    return "Customer updates are temporarily unavailable. Contact support.";
+  }
+  return isEdit
+    ? "Customer could not be updated. Try again."
+    : "Customer could not be created. Try again.";
 }

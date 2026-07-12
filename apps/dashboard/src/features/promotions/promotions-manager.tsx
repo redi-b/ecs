@@ -27,6 +27,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { PromotionEditSheet } from "@/features/promotions/promotion-edit-sheet";
 import { copyTextToClipboard } from "@/lib/clipboard";
 import type { MerchantPromotion } from "@/lib/merchant-promotions";
 
@@ -88,6 +89,7 @@ export function PromotionsManager({
   const [method, setMethod] = useState<MethodFilter>("all");
   const [deleteTarget, setDeleteTarget] = useState<MerchantPromotion | null>(null);
   const [bulkDeleteTargets, setBulkDeleteTargets] = useState<MerchantPromotion[]>([]);
+  const [editing, setEditing] = useState<MerchantPromotion | null>(null);
   const [deleting, setDeleting] = useState(false);
 
   const filtered = useMemo(() => {
@@ -259,6 +261,11 @@ export function PromotionsManager({
             <RowActionsMenu
               actions={[
                 {
+                  label: "Edit promotion",
+                  onSelect: () => setEditing(item),
+                  type: "button",
+                },
+                {
                   label: "Copy code",
                   onSelect: () => void copyToClipboard(item.code, "Promotion code"),
                   type: "button",
@@ -349,6 +356,14 @@ export function PromotionsManager({
             </p>
           </div>
         }
+      />
+
+      <PromotionEditSheet
+        onOpenChange={(next) => {
+          if (!next) setEditing(null);
+        }}
+        open={Boolean(editing)}
+        promotion={editing}
       />
 
       <AlertDialog
