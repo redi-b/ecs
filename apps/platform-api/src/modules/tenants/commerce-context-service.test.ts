@@ -10,6 +10,8 @@ const completeRow = {
   medusaStockLocationId: "sloc_1",
   medusaPublishableKeyId: "pk_1",
   medusaRegionId: "reg_1",
+  medusaShippingProfileId: "shp_1",
+  medusaShippingOptionId: "so_1",
 };
 
 describe("buildTenantCommerceContext", () => {
@@ -23,6 +25,8 @@ describe("buildTenantCommerceContext", () => {
         medusaStockLocationId: "sloc_1",
         medusaPublishableKeyId: "pk_1",
         medusaRegionId: "reg_1",
+        medusaShippingProfileId: "shp_1",
+        medusaShippingOptionId: "so_1",
       },
     });
   });

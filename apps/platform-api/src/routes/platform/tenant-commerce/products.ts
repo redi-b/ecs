@@ -220,6 +220,9 @@ export function registerPlatformTenantProductsRoutes(
       ...(commerce.context.medusaStockLocationId
         ? { stockLocationId: commerce.context.medusaStockLocationId }
         : {}),
+      ...(commerce.context.medusaShippingProfileId
+        ? { shippingProfileId: commerce.context.medusaShippingProfileId }
+        : {}),
       thumbnail: getOptionalBodyString(body, "thumbnail"),
       salesChannelId: commerce.context.medusaSalesChannelId,
     });

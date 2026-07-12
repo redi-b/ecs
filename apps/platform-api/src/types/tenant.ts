@@ -207,6 +207,8 @@ export type TenantCommerceContextResult =
         medusaStockLocationId?: string | null;
         medusaPublishableKeyId: string | null;
         medusaRegionId: string | null;
+        medusaShippingProfileId?: string | null;
+        medusaShippingOptionId?: string | null;
       };
     }
   | {

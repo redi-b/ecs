@@ -9,6 +9,7 @@ export type ProductWriteInput = {
   priceAmount?: number | undefined;
   regionId?: string | null | undefined;
   salesChannelId: string;
+  shippingProfileId?: string | null | undefined;
   status?: string | null | undefined;
   stockLocationId?: string | null | undefined;
   thumbnail?: string | null | undefined;

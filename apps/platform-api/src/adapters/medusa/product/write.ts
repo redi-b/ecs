@@ -20,6 +20,7 @@ export function getProductWriteBody(input: ProductWriteInput) {
       ["description", input.description],
       ["handle", input.handle],
       ["collection_id", input.collectionId],
+      ["shipping_profile_id", input.shippingProfileId],
       ["status", input.status],
       ["thumbnail", input.thumbnail],
     ].filter(([, value]) => typeof value === "string" && value.trim()),

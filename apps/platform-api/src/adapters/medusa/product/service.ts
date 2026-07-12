@@ -92,6 +92,9 @@ export function createMedusaProductService(options: {
         body: JSON.stringify({
           ...getProductWriteBody(input),
           sales_channels: [{ id: input.salesChannelId }],
+          ...(input.shippingProfileId?.trim()
+            ? { shipping_profile_id: input.shippingProfileId.trim() }
+            : {}),
         }),
         headers: getAdminHeaders(options.adminApiToken),
         method: "POST",

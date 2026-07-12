@@ -83,6 +83,9 @@ export function registerMerchantProductRoutes(
       ...(result.context.medusaStockLocationId
         ? { stockLocationId: result.context.medusaStockLocationId }
         : {}),
+      ...(result.context.medusaShippingProfileId
+        ? { shippingProfileId: result.context.medusaShippingProfileId }
+        : {}),
       thumbnail: getOptionalBodyString(body, "thumbnail"),
       salesChannelId: commerce.context.medusaSalesChannelId,
     });

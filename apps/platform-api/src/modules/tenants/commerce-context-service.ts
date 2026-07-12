@@ -23,6 +23,8 @@ type TenantCommerceContextRow = {
   medusaStockLocationId: string | null;
   medusaPublishableKeyId: string | null;
   medusaRegionId: string | null;
+  medusaShippingProfileId: string | null;
+  medusaShippingOptionId: string | null;
 };
 
 export function buildTenantCommerceContext(
@@ -85,6 +87,8 @@ export function buildTenantCommerceContext(
       medusaStockLocationId: row.medusaStockLocationId,
       medusaPublishableKeyId: row.medusaPublishableKeyId,
       medusaRegionId: row.medusaRegionId,
+      medusaShippingProfileId: row.medusaShippingProfileId,
+      medusaShippingOptionId: row.medusaShippingOptionId,
     },
   };
 }
@@ -102,6 +106,8 @@ export function createTenantCommerceContextService(db: PlatformDb) {
         medusaStockLocationId: tenants.medusaStockLocationId,
         medusaPublishableKeyId: tenants.medusaPublishableKeyId,
         medusaRegionId: tenants.medusaRegionId,
+        medusaShippingProfileId: tenants.medusaShippingProfileId,
+        medusaShippingOptionId: tenants.medusaShippingOptionId,
       })
       .from(tenantMemberships)
       .innerJoin(tenants, eq(tenantMemberships.tenantId, tenants.id))

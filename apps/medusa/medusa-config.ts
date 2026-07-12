@@ -25,6 +25,12 @@ module.exports = defineConfig({
   admin: {
     disable: process.env.DISABLE_MEDUSA_ADMIN === "true",
   },
+  plugins: [
+    {
+      resolve: "@medusajs/draft-order",
+      options: {},
+    },
+  ],
   projectConfig: {
     databaseUrl: process.env.DATABASE_URL || "postgres://ecs:ecs@localhost:5432/medusa_db",
     ...(databaseSslEnabled

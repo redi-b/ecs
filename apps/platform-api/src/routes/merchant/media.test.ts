@@ -125,6 +125,8 @@ function mediaApp(
       medusaPublishableKeyId: "pk_1",
       medusaRegionId: "region_1",
       medusaSalesChannelId: "channel_1",
+      medusaShippingOptionId: "so_1",
+      medusaShippingProfileId: "shp_1",
       medusaStockLocationId: "stock_1",
       medusaStoreId: "store_1",
       publishedRevisionId: null,

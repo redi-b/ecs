@@ -69,6 +69,8 @@ export const resolvedTenantContext: TenantContext = {
   medusaStockLocationId: "sloc_1",
   medusaPublishableKeyId: "pk_1",
   medusaRegionId: "reg_1",
+  medusaShippingProfileId: "shp_1",
+  medusaShippingOptionId: "so_1",
   publishedRevisionId: "revision_1",
   templateId: "template_1",
   templateKey: "classic@1",
