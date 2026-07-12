@@ -5,6 +5,7 @@ import { serve } from "@hono/node-server";
 import { createChapaPaymentService } from "./adapters/chapa/payment-service.js";
 import { createMedusaCommerceProvisioningClient } from "./adapters/medusa/commerce-provisioning.js";
 import { createMedusaCustomerService } from "./adapters/medusa/customer-service.js";
+import { createMedusaManualOrderService } from "./adapters/medusa/manual-order-service.js";
 import { createMedusaPromotionService } from "./adapters/medusa/promotion-service.js";
 import { createMediaStorageFromEnv } from "./adapters/storage/index.js";
 import { createPlatformApp } from "./app.js";
@@ -153,6 +154,10 @@ const orderService = createMedusaOrderService({
   adminApiToken: process.env.MEDUSA_ADMIN_API_TOKEN,
   medusaInternalUrl,
 });
+const manualOrderService = createMedusaManualOrderService({
+  adminApiToken: process.env.MEDUSA_ADMIN_API_TOKEN,
+  medusaInternalUrl,
+});
 const productService = createMedusaProductService({
   adminApiToken: process.env.MEDUSA_ADMIN_API_TOKEN,
   medusaInternalUrl,
@@ -180,6 +185,7 @@ const app = createPlatformApp({
   createMerchantProductCollection: productService.createMerchantProductCollection,
   createMediaUpload: mediaService.createUpload,
   createMerchantCustomer: customerService.createCustomer,
+  ensureMerchantCustomer: customerService.ensureCustomer,
   createMerchantCustomerAddress: customerService.createCustomerAddress,
   deleteMerchantCustomerAddress: customerService.deleteCustomerAddress,
   deleteMerchantPromotion: promotionService.deletePromotion,
@@ -209,6 +215,7 @@ const app = createPlatformApp({
   getTenantOnboarding: tenantOnboardingService.getTenantOnboarding,
   getTenantReadiness: tenantStatusService.getTenantReadiness,
   getMerchantOrder: orderService.getMerchantOrder,
+  createMerchantManualOrder: manualOrderService.createManualOrder,
   getMerchantCustomer: customerService.getCustomer,
   getMerchantProduct: productService.getMerchantProduct,
   getMerchantProductStock: productService.getMerchantProductStock,

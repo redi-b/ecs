@@ -713,14 +713,18 @@ function ProductMultiPicker({
       </PopoverTrigger>
       <PopoverContent
         align="start"
-        className="w-[var(--radix-popover-trigger-width)] p-0"
+        className="w-[var(--radix-popover-trigger-width)] overflow-hidden p-0"
+        collisionPadding={16}
         onOpenAutoFocus={(event) => event.preventDefault()}
       >
-        <Command>
+        <Command className="h-auto max-h-72 w-full">
           <CommandInput placeholder="Search products…" />
-          <CommandList className="max-h-52">
+          <CommandList
+            className="max-h-60 overflow-y-auto overscroll-contain"
+            onWheel={(event) => event.stopPropagation()}
+          >
             <CommandEmpty>No matching products.</CommandEmpty>
-            <CommandGroup>
+            <CommandGroup className="overflow-visible">
               {catalog.map((product) => {
                 const isSelected = selected.has(product.id);
                 return (

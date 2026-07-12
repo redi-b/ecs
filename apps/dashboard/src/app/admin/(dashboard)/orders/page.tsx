@@ -4,6 +4,7 @@ import { ListSummary, PaginationControls } from "@/components/app/list-page-cont
 import { PageShell } from "@/components/app/page-shell";
 import { RefreshButton } from "@/components/app/refresh-button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { ManualOrderCreateDialog } from "@/features/orders/manual-order-create-dialog";
 import {
   parseOrderDateFilter,
   parseOrderDeliveryFilter,
@@ -40,8 +41,13 @@ export default async function MerchantOrdersPage({ searchParams }: MerchantOrder
 
   return (
     <PageShell
-      actions={<RefreshButton />}
-      description="Review orders, payment status, and fulfillment progress."
+      actions={
+        <>
+          <RefreshButton />
+          <ManualOrderCreateDialog />
+        </>
+      }
+      description="Review orders, payment status, and fulfillment progress. Create COD orders for phone or in-person sales."
       title="Orders"
     >
       {result.ok ? (

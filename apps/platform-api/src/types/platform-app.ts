@@ -245,7 +245,9 @@ export type PlatformAppOptions = {
         priceAmount?: number | undefined;
         regionId?: string | null | undefined;
         salesChannelId: string;
+        shippingProfileId?: string | null | undefined;
         status?: string | null | undefined;
+        stockLocationId?: string | null | undefined;
         thumbnail?: string | null | undefined;
         title: string;
         variants?:
@@ -478,6 +480,50 @@ export type PlatformAppOptions = {
   getMerchantOrder?:
     | ((input: { orderId: string; salesChannelId: string }) => Promise<MerchantOrderDetailResult>)
     | undefined;
+  createMerchantManualOrder?:
+    | ((input: {
+        customerEmail: string;
+        customerId?: string | null | undefined;
+        customerFirstName?: string | null | undefined;
+        customerLastName?: string | null | undefined;
+        customerPhone?: string | null | undefined;
+        items: Array<{ quantity: number; variantId: string }>;
+        note?: string | null | undefined;
+        regionId: string;
+        salesChannelId: string;
+        shippingAddress?:
+          | {
+              address1?: string | null | undefined;
+              address2?: string | null | undefined;
+              city?: string | null | undefined;
+              countryCode?: string | null | undefined;
+              firstName?: string | null | undefined;
+              lastName?: string | null | undefined;
+              phone?: string | null | undefined;
+              postalCode?: string | null | undefined;
+              province?: string | null | undefined;
+            }
+          | null
+          | undefined;
+        shippingOptionId?: string | null | undefined;
+        tenantId: string;
+        userId: string;
+      }) => Promise<
+        | {
+            ok: true;
+            order: {
+              id: string;
+              displayId: string | number | null;
+              status: string;
+            };
+          }
+        | {
+            ok: false;
+            error: string;
+            status: 400 | 401 | 404 | 503;
+          }
+      >)
+    | undefined;
   mutateMerchantOrder?:
     | ((input: {
         action: MerchantOrderAction;
@@ -601,6 +647,16 @@ export type PlatformAppOptions = {
     | ((input: { customerId: string; tenantId: string }) => Promise<MerchantCustomerResult>)
     | undefined;
   createMerchantCustomer?:
+    | ((input: {
+        companyName?: string | null | undefined;
+        email: string;
+        firstName?: string | null | undefined;
+        lastName?: string | null | undefined;
+        phone?: string | null | undefined;
+        tenantId: string;
+      }) => Promise<MerchantCustomerResult>)
+    | undefined;
+  ensureMerchantCustomer?:
     | ((input: {
         companyName?: string | null | undefined;
         email: string;

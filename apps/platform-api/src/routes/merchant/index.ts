@@ -5,6 +5,7 @@ import { registerMerchantCatalogRoutes } from "./catalog.js";
 import { createMerchantRouteHelpers } from "./context.js";
 import { registerMerchantCustomerRoutes } from "./customers.js";
 import { registerMerchantDashboardRoutes } from "./dashboard.js";
+import { registerMerchantManualOrderRoutes } from "./manual-orders.js";
 import { registerMerchantMediaRoutes } from "./media.js";
 import { registerMerchantOrderRoutes } from "./orders.js";
 import { registerMerchantProductRoutes } from "./products.js";
@@ -19,6 +20,7 @@ export function registerMerchantRoutes(
   registerMerchantDashboardRoutes(app, options, helpers);
   registerMerchantProductRoutes(app, options, helpers);
   registerMerchantOrderRoutes(app, options, helpers);
+  registerMerchantManualOrderRoutes(app, options, helpers);
   registerMerchantCatalogRoutes(app, options, helpers);
   registerMerchantMediaRoutes(app, options, helpers);
   registerMerchantCustomerRoutes(app, options, helpers);

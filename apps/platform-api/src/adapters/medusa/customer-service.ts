@@ -203,6 +203,34 @@ export function createMedusaCustomerService(options: Options) {
     };
   }
 
+  /**
+   * Find-or-create a customer in this shop's group (never 409s for existing members).
+   * Used by manual orders so email-only checkout still lands a Customers profile.
+   */
+  async function ensureCustomer(input: CustomerInput): Promise<MerchantCustomerResult> {
+    const group = await tenantGroup(input.tenantId);
+    if (!group) return unavailable();
+    const email = input.email.trim().toLowerCase();
+
+    const existing = await findByEmail(email);
+    if (existing?.groups.some((item) => item.id === group.id)) {
+      return { customer: existing, ok: true };
+    }
+
+    const created = await createCustomer(input);
+    if (created.ok) return created;
+
+    // Race: another request may have linked the same email into this shop.
+    if (created.error === "customer_email_conflict") {
+      const again = await findByEmail(email);
+      if (again?.groups.some((item) => item.id === group.id)) {
+        return { customer: again, ok: true };
+      }
+    }
+
+    return created;
+  }
+
   async function updateCustomer(
     input: CustomerInput & { customerId: string },
   ): Promise<MerchantCustomerResult> {
@@ -290,6 +318,7 @@ export function createMedusaCustomerService(options: Options) {
     createCustomer,
     createCustomerAddress,
     deleteCustomerAddress,
+    ensureCustomer,
     getCustomer,
     listCustomers,
     listGroups,
