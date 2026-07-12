@@ -144,9 +144,9 @@ export function DataTable<TData>({
                 {headerGroup.headers.map((header) => (
                   <TableHead
                     className={cn(
-                      // Solid header surface + hairline shadow so scrolling rows never bleed through.
-                      "h-11 border-b border-border bg-card px-4 text-xs uppercase text-muted-foreground",
-                      "sticky top-0 shadow-[0_1px_0_0_var(--border)]",
+                      // Muted solid surface + layered edge so body rows never blend into chrome.
+                      "h-11 border-b border-border/80 bg-muted/55 px-4 text-xs uppercase tracking-wide text-muted-foreground",
+                      "sticky top-0 shadow-[inset_0_-1px_0_0_var(--border),0_4px_10px_-6px_rgba(0,0,0,0.18)]",
                       getStickyColumnClass(header.column.id, true),
                     )}
                     key={header.id}
@@ -228,14 +228,15 @@ function getStickyColumnClass(columnId: string, isHeader: boolean) {
   if (columnId === "select") {
     return cn(
       "sticky left-0 w-12 min-w-12",
-      isHeader ? "z-40 bg-card" : "z-20 bg-card group-hover/row:bg-muted/40",
+      // Match header chrome tint so sticky edge columns stay opaque while scrolling.
+      isHeader ? "z-40 bg-muted/55" : "z-20 bg-card group-hover/row:bg-muted/40",
     );
   }
 
   if (columnId === "actions") {
     return cn(
       "sticky right-0 w-14 min-w-14",
-      isHeader ? "z-40 bg-card" : "z-20 bg-card group-hover/row:bg-muted/40",
+      isHeader ? "z-40 bg-muted/55" : "z-20 bg-card group-hover/row:bg-muted/40",
     );
   }
 
