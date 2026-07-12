@@ -50,7 +50,6 @@ import {
 import { copyTextToClipboard } from "@/lib/clipboard";
 import { getTenantScopedPath } from "@/lib/dashboard-tenant-context";
 import { dashboardRoutes } from "@/lib/routes";
-import { cn } from "@/lib/utils";
 
 async function copyToClipboard(value: string, label: string) {
   try {
@@ -341,7 +340,7 @@ export function ProductCategoriesTable({
               value={viewMode}
             />
             <Button
-              className={cn(listToolbarControlClassName, "px-3")}
+              className={listToolbarControlClassName}
               onClick={() => setReorderOpen(true)}
               size="sm"
               type="button"

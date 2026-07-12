@@ -6,16 +6,18 @@ import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/in
 import { cn } from "@/lib/utils";
 
 /**
- * Shared list-toolbar density.
- * One height + pill radius for search, filters, toggles, and actions so
- * list pages feel intentional rather than mixed shadcn defaults.
+ * Shared list-toolbar density for catalog/media/order tables.
+ *
+ * Uses h-8 (32px) to match default Button + InputGroup height so toolbars
+ * sit at the same optical weight as table chrome, not auth/form fields.
+ * Pill radius keeps the premium feel without oversized padding.
  */
-export const listToolbarHeightClass = "h-9";
+export const listToolbarHeightClass = "h-8";
 export const listToolbarRadiusClass = "rounded-full";
 export const listToolbarControlClassName = cn(
   listToolbarHeightClass,
   listToolbarRadiusClass,
-  "text-sm font-medium",
+  "gap-1.5 px-2.5 text-sm font-medium",
 );
 
 export function ListToolbarSearch({
@@ -36,11 +38,11 @@ export function ListToolbarSearch({
       className={cn(
         listToolbarHeightClass,
         listToolbarRadiusClass,
-        "w-full bg-background/70 px-1 sm:max-w-sm",
+        "w-full bg-background/70 px-0.5 sm:max-w-sm",
       )}
     >
       <InputGroupAddon>
-        <AppIcons.search />
+        <AppIcons.search className="size-3.5" />
       </InputGroupAddon>
       <InputGroupInput
         aria-label={label}
@@ -55,7 +57,7 @@ export function ListToolbarSearch({
             aria-label={clearLabel}
             className={listToolbarRadiusClass}
             onClick={() => onChange("")}
-            size="icon-sm"
+            size="icon-xs"
             type="button"
             variant="ghost"
           >
@@ -84,7 +86,7 @@ export function ListViewToggle<T extends string>({
   return (
     <div
       className={cn(
-        "inline-flex shrink-0 items-center border bg-background/70 p-0.5",
+        "inline-flex shrink-0 items-stretch border bg-background/70 p-px",
         listToolbarHeightClass,
         listToolbarRadiusClass,
       )}
@@ -98,7 +100,7 @@ export function ListViewToggle<T extends string>({
             aria-label={option.label}
             aria-pressed={active}
             className={cn(
-              "h-full min-h-0 gap-1.5 rounded-full px-2.5 text-sm font-medium shadow-none",
+              "h-auto min-h-0 gap-1.5 rounded-full px-2.5 text-sm font-medium shadow-none",
               active ? "bg-muted text-foreground" : "text-muted-foreground hover:text-foreground",
             )}
             key={option.value}

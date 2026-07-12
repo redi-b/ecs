@@ -77,7 +77,7 @@ export function DataTableFilters({
             >
               <PopoverTrigger asChild>
                 <Button
-                  className={cn(listToolbarControlClassName, "px-3")}
+                  className={listToolbarControlClassName}
                   size="sm"
                   type="button"
                   variant="outline"
@@ -157,7 +157,7 @@ export function DataTableFilters({
           ) : null}
           {activeFilters.length ? (
             <Button
-              className={cn(listToolbarControlClassName, "px-2.5 text-muted-foreground")}
+              className={cn(listToolbarControlClassName, "text-muted-foreground")}
               onClick={onClearAll}
               size="sm"
               type="button"
