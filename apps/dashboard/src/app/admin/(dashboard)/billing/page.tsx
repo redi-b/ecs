@@ -3,6 +3,8 @@ import { cookies, headers } from "next/headers";
 import { PageShell } from "@/components/app/page-shell";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { BillingWorkspace } from "@/features/billing/billing-workspace";
+import type { MessageKey } from "@/i18n/messages";
+import { getRequestMessages } from "@/i18n/server";
 import {
   billingReturnPaidFlag,
   type DashboardSearchParams,
@@ -22,6 +24,8 @@ export default async function BillingPage({ searchParams }: BillingPageProps) {
   const resolvedSearchParams = (await searchParams) ?? {};
   const selectedTenantId = getSelectedTenantId(resolvedSearchParams);
   const returnedFromPayment = billingReturnPaidFlag(resolvedSearchParams);
+  const { messages } = await getRequestMessages();
+  const t = (key: MessageKey) => messages[key];
   const requestHeaders = await headers();
   const cookieHeader = (await cookies()).toString();
   const requestHost =
@@ -62,9 +66,9 @@ export default async function BillingPage({ searchParams }: BillingPageProps) {
 
   if (!access.ok) {
     return (
-      <PageShell description="Manage your shop plan and payments." title="Billing">
+      <PageShell description={t("billing.description")} title={t("billing.title")}>
         <Alert variant="destructive">
-          <AlertTitle>Billing could not be loaded</AlertTitle>
+          <AlertTitle>{t("billing.error.loadTitle")}</AlertTitle>
           <AlertDescription>{mapPlatformErrorMessage(access.message)}</AlertDescription>
         </Alert>
       </PageShell>
@@ -102,10 +106,10 @@ export default async function BillingPage({ searchParams }: BillingPageProps) {
   });
 
   return (
-    <PageShell description="Manage your shop plan and payments." title="Billing">
+    <PageShell description={t("billing.description")} title={t("billing.title")}>
       {!result.ok ? (
         <Alert variant="destructive">
-          <AlertTitle>Billing could not be loaded</AlertTitle>
+          <AlertTitle>{t("billing.error.loadTitle")}</AlertTitle>
           <AlertDescription>{mapPlatformErrorMessage(result.message)}</AlertDescription>
         </Alert>
       ) : (
