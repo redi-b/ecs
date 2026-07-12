@@ -27,3 +27,23 @@ export const notificationStatus = pgEnum("notification_status", [
 ]);
 
 export const analyticsSource = pgEnum("analytics_source", ["medusa", "platform", "storefront"]);
+
+export const mediaAccessMode = pgEnum("media_access_mode", ["public", "private"]);
+
+export const mediaAssetStatus = pgEnum("media_asset_status", [
+  "pending",
+  "uploaded",
+  "processing",
+  "ready",
+  "failed",
+  "deleted",
+]);
+
+export const mediaResourceType = pgEnum("media_usage_resource_type", [
+  "product",
+  "editor",
+  "settings",
+  "collection",
+  "category",
+  "other",
+]);
