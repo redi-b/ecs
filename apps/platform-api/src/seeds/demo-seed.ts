@@ -1,9 +1,16 @@
 /**
  * Demo seed: two shops (tech + fashion), separate owners, real Medusa commerce.
  *
- *   pnpm seed:demo
+ * Idempotent: re-running `pnpm seed:demo` refreshes catalog/metrics without
+ * requiring a wipe first. Users/tenants are upserted; commerce demo data is
+ * replaced for those shops only.
+ *
+ * Reverse / unseed:
+ *   pnpm seed:demo:clean
+ *   pnpm seed:unseed
  *   pnpm seed:demo --clean
- *   pnpm seed:demo --strict   # fail if Medusa is unavailable
+ *
+ *   pnpm seed:demo --strict   # fail if Medusa commerce is incomplete
  *
  * Prerequisites: `pnpm seed --write-env`, Medusa + platform DB running.
  */
@@ -68,8 +75,12 @@ const platformBaseDomain = (process.env.STOREFRONT_PUBLIC_BASE_DOMAIN ?? "lvh.me
   .trim()
   .replace(/\.$/, "")
   .toLowerCase();
-const allowPartial = process.env.SEED_DEMO_ALLOW_PARTIAL !== "false" && !process.argv.includes("--strict");
-const cleanOnly = process.argv.includes("--clean");
+const allowPartial =
+  process.env.SEED_DEMO_ALLOW_PARTIAL !== "false" && !process.argv.includes("--strict");
+const cleanOnly =
+  process.argv.includes("--clean") ||
+  process.argv.includes("--unseed") ||
+  process.argv.includes("--reverse");
 
 type CommerceResources = {
   fulfillmentSetId: string;
@@ -91,8 +102,19 @@ type ProductSeedResult = {
 
 async function main() {
   if (cleanOnly) {
-    await cleanAllDemoData();
-    console.log(JSON.stringify({ cleaned: true, shops: demoShops.map((s) => s.tenant.handle) }, null, 2));
+    const cleaned = await cleanAllDemoData();
+    console.log(
+      JSON.stringify(
+        {
+          cleaned: true,
+          shops: demoShops.map((shop) => shop.tenant.handle),
+          summary: cleaned,
+        },
+        null,
+        2,
+      ),
+    );
+    console.info("[seed:demo] Demo data reversed (shops, users, catalog, metrics removed).");
     return;
   }
 
@@ -103,8 +125,7 @@ async function main() {
     console.warn(`[seed:demo] ${message}`);
   }
 
-  await cleanAllDemoData();
-
+  // Idempotent path: do not wipe platform tenants. Refresh commerce per shop instead.
   const billing = createBillingService(platformDb.db);
   await billing.ensureDefaultPlans();
 
@@ -130,6 +151,7 @@ async function main() {
       {
         seeded: {
           service: env.SERVICE_NAME,
+          idempotent: true,
           password: DEMO_OWNER_PASSWORD,
           shops: results,
         },
@@ -140,7 +162,7 @@ async function main() {
   );
 
   console.info(`
-Demo shops ready.
+Demo shops ready (safe to re-run).
 
   Tech shop:    http://addis-tech.${platformBaseDomain}/admin
   Owner:        owner@addis-tech.local
@@ -150,7 +172,7 @@ Demo shops ready.
   Owner:        owner@bole-style.local
   Password:     ${DEMO_OWNER_PASSWORD}
 
-Or sign in at http://dashboard.${platformBaseDomain}/admin with either account.
+Reverse demo data: pnpm seed:demo:clean   (or pnpm seed:unseed)
 `);
 }
 
@@ -263,6 +285,8 @@ async function seedShop(
   let commerce: Record<string, unknown> = { skipped: true, reason: "missing_commerce_resources" };
 
   if (resources && medusaAdminApiToken) {
+    // Replace demo catalog/orders/promos for this shop only (idempotent refresh).
+    await cleanShopCommerce(shop.tenant.handle, provisioned.tenant.id, resources.salesChannelId);
     commerce = await seedCommerce(shop, resources, userId, provisioned.tenant.id);
   } else if (!medusaAdminApiToken) {
     commerce = { skipped: true, reason: "MEDUSA_ADMIN_API_TOKEN missing" };
@@ -832,23 +856,39 @@ function addDays(value: Date, days: number) {
 }
 
 async function cleanAllDemoData() {
-  for (const shop of demoShops) {
-    await cleanShopCommerce(shop.tenant.handle, shop.ids.tenant);
-  }
-
   const handles = demoShops.map((shop) => shop.tenant.handle);
   const emails = demoShops.map((shop) => shop.user.email);
   const tenantIds = demoShops.map((shop) => shop.ids.tenant);
 
-  // Remove by known handles / ids from previous runs.
   const existingTenants = await platformDb.db
-    .select({ id: tenants.id, handle: tenants.handle })
+    .select({
+      id: tenants.id,
+      handle: tenants.handle,
+      medusaSalesChannelId: tenants.medusaSalesChannelId,
+    })
     .from(tenants)
     .where(inArray(tenants.handle, handles));
 
   const idsToRemove = [
     ...new Set([...tenantIds, ...existingTenants.map((row) => row.id)]),
   ];
+
+  let commerce = { categories: 0, collections: 0, customers: 0, orders: 0, products: 0, promotions: 0 };
+
+  for (const shop of demoShops) {
+    const live = existingTenants.find((row) => row.handle === shop.tenant.handle);
+    const tenantId = live?.id ?? shop.ids.tenant;
+    const channelId = live?.medusaSalesChannelId ?? null;
+    const removed = await cleanShopCommerce(shop.tenant.handle, tenantId, channelId);
+    commerce = {
+      categories: commerce.categories + removed.categories,
+      collections: commerce.collections + removed.collections,
+      customers: commerce.customers + removed.customers,
+      orders: commerce.orders + removed.orders,
+      products: commerce.products + removed.products,
+      promotions: commerce.promotions + removed.promotions,
+    };
+  }
 
   if (idsToRemove.length) {
     await platformDb.db
@@ -891,60 +931,141 @@ async function cleanAllDemoData() {
     await platformDb.db.delete(users).where(inArray(users.id, userIds));
   }
 
-  // Keep default plans (shared); no-op if unused.
   void DEFAULT_PLAN_IDS;
+
+  return {
+    commerce,
+    tenantsRemoved: idsToRemove.length,
+    usersRemoved: userIds.length,
+  };
 }
 
-async function cleanShopCommerce(handle: string, tenantId: string) {
-  if (!medusaAdminApiToken) return;
+function isDemoMetadata(
+  metadata: Record<string, unknown> | null | undefined,
+  tenantId: string,
+  handle: string,
+) {
+  if (!metadata) return false;
+  if (metadata.demo_seed === DEMO_SEED_MARKER) return true;
+  if (metadata.platform_tenant_id === tenantId) return true;
+  if (metadata.shop_handle === handle) return true;
+  return false;
+}
+
+async function cleanShopCommerce(
+  handle: string,
+  tenantId: string,
+  salesChannelId?: string | null,
+) {
+  const summary = {
+    categories: 0,
+    collections: 0,
+    customers: 0,
+    orders: 0,
+    products: 0,
+    promotions: 0,
+  };
+
+  if (!medusaAdminApiToken) return summary;
+
+  // Orders first (avoid dangling line items where possible).
+  const orderQuery = new URLSearchParams({
+    fields: "id,metadata,sales_channel_id,email",
+    limit: "100",
+    order: "-created_at",
+  });
+  if (salesChannelId) orderQuery.set("sales_channel_id", salesChannelId);
+
+  const orders = await medusaGet<{
+    orders?: Array<{
+      email?: string | null;
+      id: string;
+      metadata?: Record<string, unknown> | null;
+      sales_channel_id?: string | null;
+    }>;
+  }>(`/admin/orders?${orderQuery}`);
+
+  const demoEmails = new Set(demoShops.flatMap((shop) => shop.customers.map((c) => c.email)));
+
+  for (const order of orders?.orders ?? []) {
+    const channelMatch = !salesChannelId || order.sales_channel_id === salesChannelId;
+    const demoOrder =
+      isDemoMetadata(order.metadata ?? undefined, tenantId, handle) ||
+      (channelMatch && order.email && demoEmails.has(order.email));
+    if (!demoOrder || !channelMatch) continue;
+
+    // Best-effort cancel then ignore archive failures on already-closed orders.
+    await medusaPost(`/admin/orders/${encodeURIComponent(order.id)}/cancel`, {}).catch(() => null);
+    summary.orders += 1;
+  }
+
+  const shop = demoShops.find((item) => item.tenant.handle === handle);
+  const shopProductHandles = new Set(shop?.products.map((item) => item.handle) ?? []);
 
   const products = await medusaGet<{
-    products?: Array<{ id: string; metadata?: Record<string, unknown> }>;
-  }>("/admin/products?limit=200&fields=id,metadata");
+    products?: Array<{ handle?: string | null; id: string; metadata?: Record<string, unknown> }>;
+  }>("/admin/products?limit=200&fields=id,handle,metadata");
 
   for (const product of products?.products ?? []) {
-    if (
-      product.metadata?.demo_seed === DEMO_SEED_MARKER &&
-      (product.metadata.platform_tenant_id === tenantId ||
-        product.metadata.shop_handle === handle)
-    ) {
+    const byMeta = isDemoMetadata(product.metadata, tenantId, handle);
+    const byHandle = Boolean(product.handle && shopProductHandles.has(product.handle));
+    if (byMeta || byHandle) {
       await medusaDelete(`/admin/products/${encodeURIComponent(product.id)}`);
+      summary.products += 1;
     }
   }
 
   const collections = await medusaGet<{
-    collections?: Array<{ id: string; metadata?: Record<string, unknown> }>;
-  }>("/admin/collections?limit=100&fields=id,metadata");
+    collections?: Array<{ handle?: string | null; id: string; metadata?: Record<string, unknown> }>;
+  }>("/admin/collections?limit=100&fields=id,handle,metadata");
 
+  const shopCollectionHandles = new Set(shop?.collections.map((item) => item.handle) ?? []);
   for (const collection of collections?.collections ?? []) {
     if (
-      collection.metadata?.demo_seed === DEMO_SEED_MARKER &&
-      (collection.metadata.platform_tenant_id === tenantId ||
-        collection.metadata.shop_handle === handle)
+      isDemoMetadata(collection.metadata, tenantId, handle) ||
+      (collection.handle && shopCollectionHandles.has(collection.handle))
     ) {
       await medusaDelete(`/admin/collections/${encodeURIComponent(collection.id)}`);
+      summary.collections += 1;
     }
   }
 
   const categories = await medusaGet<{
-    product_categories?: Array<{ id: string; metadata?: Record<string, unknown> }>;
-  }>("/admin/product-categories?limit=100&fields=id,metadata");
+    product_categories?: Array<{
+      handle?: string | null;
+      id: string;
+      metadata?: Record<string, unknown>;
+    }>;
+  }>("/admin/product-categories?limit=100&fields=id,handle,metadata");
 
+  const shopCategoryHandles = new Set(shop?.categories.map((item) => item.handle) ?? []);
   for (const category of categories?.product_categories ?? []) {
     if (
-      category.metadata?.demo_seed === DEMO_SEED_MARKER &&
-      (category.metadata.platform_tenant_id === tenantId ||
-        category.metadata.shop_handle === handle)
+      isDemoMetadata(category.metadata, tenantId, handle) ||
+      (category.handle && shopCategoryHandles.has(category.handle))
     ) {
       await medusaDelete(`/admin/product-categories/${encodeURIComponent(category.id)}`);
+      summary.categories += 1;
     }
   }
 
-  // Remove tenant-scoped demo promotions (matched by campaign identifier prefix).
-  await cleanTenantPromotions(tenantId, handle);
+  // Demo customers (by known emails).
+  for (const customer of shop?.customers ?? []) {
+    const found = await medusaGet<{
+      customers?: Array<{ id: string }>;
+    }>(`/admin/customers?limit=5&email=${encodeURIComponent(customer.email)}`);
+    for (const row of found?.customers ?? []) {
+      await medusaDelete(`/admin/customers/${encodeURIComponent(row.id)}`);
+      summary.customers += 1;
+    }
+  }
+
+  summary.promotions = await cleanTenantPromotions(tenantId, handle);
+  return summary;
 }
 
 async function cleanTenantPromotions(tenantId: string, handle: string) {
+  let removed = 0;
   const campaignPrefix = `ecs_${tenantId}_`;
   const slug = handle.replace(/[^a-z0-9]/gi, "").slice(0, 6).toUpperCase() || "SHOP";
   const promotions = await medusaGet<{
@@ -954,9 +1075,7 @@ async function cleanTenantPromotions(tenantId: string, handle: string) {
       campaign?: { campaign_identifier?: string | null } | null;
       campaign_id?: string | null;
     }>;
-  }>(
-    "/admin/promotions?limit=100&fields=id,code,+campaign,+campaign.campaign_identifier",
-  );
+  }>("/admin/promotions?limit=100&fields=id,code,+campaign,+campaign.campaign_identifier");
 
   for (const promotion of promotions?.promotions ?? []) {
     const identifier = promotion.campaign?.campaign_identifier ?? "";
@@ -964,10 +1083,10 @@ async function cleanTenantPromotions(tenantId: string, handle: string) {
     const isDemo =
       identifier.startsWith(campaignPrefix) ||
       code.startsWith(slug) ||
-      // Codes we used before slug cleanup.
       code.startsWith(handle.slice(0, 4).toUpperCase());
     if (isDemo) {
       await medusaDelete(`/admin/promotions/${encodeURIComponent(promotion.id)}`);
+      removed += 1;
     }
   }
 
@@ -982,6 +1101,8 @@ async function cleanTenantPromotions(tenantId: string, handle: string) {
       await medusaDelete(`/admin/campaigns/${encodeURIComponent(campaign.id)}`);
     }
   }
+
+  return removed;
 }
 
 async function medusaGet<T>(path: string): Promise<T | null> {

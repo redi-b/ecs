@@ -11,6 +11,7 @@
     "test": "node --import tsx --test \"src/**/*.test.ts\"",
     "sync:storefront-templates": "tsx src/sync-storefront-templates.ts",
     "seed:demo": "tsx src/seeds/demo-seed.ts",
+    "seed:demo:clean": "tsx src/seeds/demo-seed.ts --clean",
     "start": "tsx src/index.ts"
   },
   "dependencies": {

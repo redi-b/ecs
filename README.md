@@ -78,7 +78,8 @@ When using a different PostgreSQL port, update the local database URLs in `.env`
 |--------|---------|
 | `pnpm db:reset --yes` | Wipe local Docker volumes, recreate DBs, migrate |
 | `pnpm seed --write-env` | **Always run this:** Medusa admin secret key + storefront templates |
-| `pnpm seed:demo` | Two demo shops (tech + fashion), catalogs, customers, sample orders |
+| `pnpm seed:demo` | Idempotent demo shops (tech + fashion); safe to re-run |
+| `pnpm seed:demo:clean` | Reverse demo seed (`pnpm seed:unseed` alias) |
 
 Medusa bootstrap seed: `apps/medusa/src/scripts/seed.ts`. Demo shops: `pnpm seed:demo` (tech + fashion, two owners).
 
@@ -132,6 +133,7 @@ pnpm db:reset --yes
 pnpm medusa:migrate
 pnpm seed --write-env
 pnpm seed:demo
+pnpm seed:demo:clean
 
 # checks
 pnpm smoke:commerce
