@@ -280,6 +280,37 @@ export type PlatformAppOptions = {
         visibility?: "public" | "hidden" | undefined;
       }) => Promise<MerchantProductCollectionWriteResult>)
     | undefined;
+  listMerchantCollectionProducts?:
+    | ((input: {
+        collectionId: string;
+        limit: number;
+        offset: number;
+        salesChannelId: string;
+        tenantId: string;
+      }) => Promise<
+        import("./merchant-product.js").MerchantProductsResult
+      >)
+    | undefined;
+  updateMerchantCollectionProducts?:
+    | ((input: {
+        add?: string[] | undefined;
+        collectionId: string;
+        remove?: string[] | undefined;
+        salesChannelId: string;
+        tenantId: string;
+      }) => Promise<
+        | { ok: true }
+        | {
+            ok: false;
+            error:
+              | "commerce_backend_unavailable"
+              | "commerce_credentials_invalid"
+              | "commerce_credentials_missing"
+              | "collection_not_found";
+            status: 401 | 404 | 503;
+          }
+      >)
+    | undefined;
   reorderMerchantProductCategories?:
     | ((input: {
         items: Array<{ categoryId: string; rank: number }>;

@@ -281,6 +281,123 @@ export function createMedusaProductService(options: {
       return parseProductCollectionWriteResponse(response);
     },
 
+    listMerchantCollectionProducts: async (input: {
+      collectionId: string;
+      limit: number;
+      offset: number;
+      salesChannelId: string;
+      tenantId: string;
+    }): Promise<MerchantProductsResult> => {
+      if (!options.adminApiToken?.trim()) return missingCredentials();
+      const owned = await collectionBelongsToTenantById(
+        fetcher,
+        options,
+        input.collectionId,
+        input.tenantId,
+      );
+      if (owned !== true)
+        return typeof owned === "object"
+          ? owned
+          : { error: "commerce_backend_unavailable", ok: false, status: 503 };
+
+      const url = getProductsUrl(options.medusaInternalUrl, {
+        limit: input.limit,
+        offset: input.offset,
+        salesChannelId: input.salesChannelId,
+      });
+      url.searchParams.set("collection_id[]", input.collectionId);
+
+      const response = await requestMedusa(fetcher, url, {
+        headers: getAdminHeaders(options.adminApiToken),
+      });
+      if (response.status === 401) {
+        return { ok: false, error: "commerce_credentials_invalid", status: 401 };
+      }
+      if (!response.ok) {
+        return { ok: false, error: "commerce_backend_unavailable", status: 503 };
+      }
+      const data = await response.json().catch(() => undefined);
+      const products = Array.isArray(data?.products)
+        ? data.products.flatMap(normalizeProduct)
+        : [];
+      return {
+        ok: true,
+        count: getNumber(data?.count) ?? products.length,
+        limit: getNumber(data?.limit) ?? input.limit,
+        offset: getNumber(data?.offset) ?? input.offset,
+        products,
+      };
+    },
+
+    updateMerchantCollectionProducts: async (input: {
+      add?: string[] | undefined;
+      collectionId: string;
+      remove?: string[] | undefined;
+      salesChannelId: string;
+      tenantId: string;
+    }): Promise<
+      | { ok: true }
+      | {
+          ok: false;
+          error:
+            | "commerce_backend_unavailable"
+            | "commerce_credentials_invalid"
+            | "commerce_credentials_missing"
+            | "collection_not_found";
+          status: 401 | 404 | 503;
+        }
+    > => {
+      if (!options.adminApiToken?.trim()) return missingCredentials();
+      const owned = await collectionBelongsToTenantById(
+        fetcher,
+        options,
+        input.collectionId,
+        input.tenantId,
+      );
+      if (owned !== true)
+        return typeof owned === "object"
+          ? owned
+          : { error: "commerce_backend_unavailable", ok: false, status: 503 };
+
+      const add = (input.add ?? []).filter(Boolean);
+      const remove = (input.remove ?? []).filter(Boolean);
+      if (!add.length && !remove.length) return { ok: true };
+
+      // Ensure products are on this merchant sales channel before linking.
+      for (const productId of [...add, ...remove]) {
+        const inChannel = await productExistsInSalesChannel(fetcher, options, {
+          productId,
+          salesChannelId: input.salesChannelId,
+        });
+        if (!inChannel) {
+          return { error: "commerce_backend_unavailable", ok: false, status: 503 };
+        }
+      }
+
+      const url = new URL(
+        `/admin/collections/${encodeURIComponent(input.collectionId)}/products`,
+        normalizeBaseUrl(options.medusaInternalUrl),
+      );
+      const response = await requestMedusa(fetcher, url, {
+        body: JSON.stringify({
+          ...(add.length ? { add } : {}),
+          ...(remove.length ? { remove } : {}),
+        }),
+        headers: getAdminHeaders(options.adminApiToken),
+        method: "POST",
+      });
+      if (response.status === 401) {
+        return { ok: false, error: "commerce_credentials_invalid", status: 401 };
+      }
+      if (response.status === 404) {
+        return { ok: false, error: "collection_not_found", status: 404 };
+      }
+      if (!response.ok) {
+        return { ok: false, error: "commerce_backend_unavailable", status: 503 };
+      }
+      return { ok: true };
+    },
+
     listMerchantProducts: async (input: {
       limit: number;
       offset: number;

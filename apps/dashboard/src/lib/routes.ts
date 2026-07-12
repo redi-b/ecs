@@ -2,6 +2,7 @@ export const dashboardRoutes = {
   overview: "/admin",
   products: "/admin/products",
   productCreateAction: "/admin/products/actions/create",
+  productListAction: "/admin/products/actions/list",
   productCategories: "/admin/products/categories",
   productCategoriesNew: "/admin/products/categories/new",
   productCategoryCreateAction: "/admin/product-categories/actions/create",
@@ -31,6 +32,8 @@ export const dashboardRoutes = {
     `/admin/products/collections/actions/${encodeURIComponent(collectionId)}/delete`,
   productCollectionUpdateAction: (collectionId: string) =>
     `/admin/products/collections/actions/${encodeURIComponent(collectionId)}`,
+  productCollectionProductsAction: (collectionId: string) =>
+    `/admin/products/collections/actions/${encodeURIComponent(collectionId)}/products`,
   productCollectionsBatchDeleteAction: "/admin/products/collections/actions/batch-delete",
   orders: "/admin/orders",
   media: "/admin/media",

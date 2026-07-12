@@ -9,6 +9,7 @@ import {
   parseProductCollectionsResponse,
   sendTaxonomyMutation,
 } from "./shared";
+import { merchantProductsSchema, platformErrorSchema } from "@ecs/contracts";
 import type {
   MerchantBatchDeleteActionResult,
   MerchantDeleteActionResult,
@@ -16,6 +17,7 @@ import type {
   MerchantProductCategoryMutationResult,
   MerchantProductCollectionMutationResult,
   MerchantProductCollectionsResult,
+  MerchantProductsResult,
 } from "./types";
 import { getProductHeaders, getProductResourceMutationUrl, getProductResourceUrl } from "./urls";
 
@@ -172,6 +174,107 @@ export async function updateMerchantProductCategory(options: {
   }
 
   return parseProductCategoryMutationResponse(response);
+}
+
+export async function getMerchantCollectionProducts(options: {
+  collectionId: string;
+  cookieHeader?: string | null | undefined;
+  fetcher?: typeof fetch;
+  limit?: number | undefined;
+  offset?: number | undefined;
+  platformApiBaseUrl: string;
+  requestHost?: string | null | undefined;
+  tenantId?: string | null | undefined;
+}): Promise<MerchantProductsResult> {
+  const tenantId = options.tenantId?.trim();
+  const fetcher = options.fetcher ?? fetch;
+  const basePath = tenantId
+    ? `/platform/tenants/${encodeURIComponent(tenantId)}/product-collections`
+    : "/platform/merchant/product-collections";
+  const url = new URL(
+    `${basePath}/${encodeURIComponent(options.collectionId)}/products`,
+    normalizeBaseUrl(options.platformApiBaseUrl),
+  );
+  url.searchParams.set("limit", String(options.limit ?? 50));
+  url.searchParams.set("offset", String(options.offset ?? 0));
+
+  const response = await fetcher(url, {
+    cache: "no-store",
+    headers: getProductHeaders({
+      cookieHeader: options.cookieHeader,
+      requestHost: tenantId ? undefined : options.requestHost,
+    }),
+  }).catch(() => null);
+
+  if (!response) {
+    return { ok: false, status: 503, message: "platform_request_failed" };
+  }
+
+  const data = await response.json().catch(() => undefined);
+
+  if (!response.ok) {
+    const error = platformErrorSchema.safeParse(data);
+    return {
+      ok: false,
+      status: response.status,
+      message: error.success ? error.data.error : "platform_request_failed",
+    };
+  }
+
+  const parsed = merchantProductsSchema.safeParse(data);
+  if (!parsed.success) {
+    return { ok: false, status: 502, message: "invalid_products_response" };
+  }
+
+  return { ok: true, products: parsed.data };
+}
+
+export async function updateMerchantCollectionProducts(options: {
+  add?: string[] | undefined;
+  collectionId: string;
+  cookieHeader?: string | null | undefined;
+  fetcher?: typeof fetch;
+  platformApiBaseUrl: string;
+  remove?: string[] | undefined;
+  requestHost?: string | null | undefined;
+  tenantId?: string | null | undefined;
+}): Promise<{ ok: true } | { ok: false; message: string; status: number }> {
+  const tenantId = options.tenantId?.trim();
+  const fetcher = options.fetcher ?? fetch;
+  const basePath = tenantId
+    ? `/platform/tenants/${encodeURIComponent(tenantId)}/product-collections`
+    : "/platform/merchant/product-collections";
+  const url = new URL(
+    `${basePath}/${encodeURIComponent(options.collectionId)}/products`,
+    normalizeBaseUrl(options.platformApiBaseUrl),
+  );
+
+  const response = await fetcher(url, {
+    body: JSON.stringify({
+      ...(options.add?.length ? { add: options.add } : {}),
+      ...(options.remove?.length ? { remove: options.remove } : {}),
+    }),
+    cache: "no-store",
+    headers: getProductHeaders({
+      cookieHeader: options.cookieHeader,
+      contentType: true,
+      requestHost: tenantId ? undefined : options.requestHost,
+    }),
+    method: "POST",
+  }).catch(() => null);
+
+  if (!response) {
+    return { ok: false, status: 503, message: "platform_request_failed" };
+  }
+  if (!response.ok) {
+    const data = (await response.json().catch(() => ({}))) as { error?: string };
+    return {
+      ok: false,
+      status: response.status,
+      message: data.error ?? "platform_request_failed",
+    };
+  }
+  return { ok: true };
 }
 
 export async function updateMerchantProductCollection(options: {
