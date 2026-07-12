@@ -144,8 +144,9 @@ export function DataTable<TData>({
                 {headerGroup.headers.map((header) => (
                   <TableHead
                     className={cn(
-                      "h-11 border-b bg-card/95 px-4 text-xs uppercase text-muted-foreground backdrop-blur-sm",
-                      "sticky top-0",
+                      // Solid header surface + hairline shadow so scrolling rows never bleed through.
+                      "h-11 border-b border-border bg-card px-4 text-xs uppercase text-muted-foreground",
+                      "sticky top-0 shadow-[0_1px_0_0_var(--border)]",
                       getStickyColumnClass(header.column.id, true),
                     )}
                     key={header.id}
