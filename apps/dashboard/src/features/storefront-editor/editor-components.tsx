@@ -65,6 +65,7 @@ import {
   useStorefrontPuck,
 } from "@/features/storefront-editor/editor-config";
 import { MediaLibraryDialog } from "@/features/media/media-library-dialog";
+import { MediaUrlImportField } from "@/features/media/media-url-import-field";
 import { uploadMediaFile } from "@/features/media/upload-media-file";
 import { cn } from "@/lib/utils";
 import {
@@ -536,33 +537,50 @@ function EditorImageSourceActions({ onPicked }: { onPicked: (url: string | undef
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
-      <input
-        accept="image/avif,image/gif,image/jpeg,image/png,image/webp"
-        className="sr-only"
-        onChange={(event) => void handleFiles(event.target.files)}
-        ref={inputRef}
-        type="file"
-      />
-      <Button
+    <div className="flex flex-col gap-2">
+      <div className="flex flex-wrap items-center gap-2">
+        <input
+          accept="image/avif,image/gif,image/jpeg,image/png,image/webp"
+          className="sr-only"
+          onChange={(event) => void handleFiles(event.target.files)}
+          ref={inputRef}
+          type="file"
+        />
+        <Button
+          disabled={uploading}
+          onClick={() => inputRef.current?.click()}
+          size="sm"
+          type="button"
+          variant="outline"
+        >
+          <RiImageLine data-icon="inline-start" />
+          {uploading ? "Uploading…" : "Upload image"}
+        </Button>
+        <MediaLibraryDialog
+          onSelect={(assets) => {
+            const url = assets[0]?.publicUrl?.trim();
+            if (url) onPicked(url);
+          }}
+          selectionMode="single"
+          triggerLabel="Choose from library"
+          triggerSize="sm"
+          triggerVariant="outline"
+        />
+      </div>
+      <MediaUrlImportField
         disabled={uploading}
-        onClick={() => inputRef.current?.click()}
-        size="sm"
-        type="button"
-        variant="outline"
-      >
-        <RiImageLine data-icon="inline-start" />
-        {uploading ? "Uploading…" : "Upload image"}
-      </Button>
-      <MediaLibraryDialog
-        onSelect={(assets) => {
-          const url = assets[0]?.publicUrl?.trim();
-          if (url) onPicked(url);
+        onImported={(file) => {
+          void (async () => {
+            try {
+              const publicUrl = await uploadMediaFile(file);
+              onPicked(publicUrl);
+              toast.success("Image imported.");
+            } catch {
+              toast.error("Could not import this image. Try again.");
+            }
+          })();
         }}
-        selectionMode="single"
-        triggerLabel="Choose from library"
-        triggerSize="sm"
-        triggerVariant="outline"
+        size="sm"
       />
     </div>
   );

@@ -30,6 +30,7 @@ import { cn } from "@/lib/utils";
 import { MediaLibraryDialog } from "./media-library-dialog";
 import { MediaPreviewLightbox } from "./media-lightbox";
 import { createMediaUploadId } from "./media-upload-id";
+import { MediaUrlImportField } from "./media-url-import-field";
 
 const acceptedTypes = new Set(["image/avif", "image/gif", "image/jpeg", "image/png", "image/webp"]);
 const maxByteSize = 15 * 1024 * 1024;
@@ -370,6 +371,12 @@ export function MediaUploadField({
               );
             }}
             selectionMode="multiple"
+          />
+        </div>
+        <div className="w-full max-w-md text-left">
+          <MediaUrlImportField
+            onImported={(file) => void queueFiles([file])}
+            size="sm"
           />
         </div>
         <input

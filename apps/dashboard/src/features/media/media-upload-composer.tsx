@@ -25,6 +25,7 @@ import {
   MediaUploadQueue,
   type QueueFileView,
 } from "./media-upload-queue";
+import { MediaUrlImportField } from "./media-url-import-field";
 
 type UploadMeta = { assetId?: string };
 const allowedTypes = ["image/avif", "image/gif", "image/jpeg", "image/png", "image/webp"];
@@ -394,6 +395,17 @@ export function MediaUploadComposer({ onUploaded }: { onUploaded: () => void }) 
                   {t("media.browseFiles")}
                 </span>
               </button>
+
+              <div className="rounded-2xl border bg-card/60 p-3 sm:p-3.5">
+                <p className="mb-2 text-xs font-medium text-muted-foreground">
+                  {t("media.importUrlSection")}
+                </p>
+                <MediaUrlImportField
+                  disabled={uploading}
+                  onImported={(file) => addFiles([file])}
+                  size="sm"
+                />
+              </div>
 
               {stagedFiles.length ? (
                 <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain rounded-2xl border">
