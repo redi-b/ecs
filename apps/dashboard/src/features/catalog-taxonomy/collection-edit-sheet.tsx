@@ -9,17 +9,19 @@ import { toast } from "sonner";
 import { AppIcons } from "@/components/app/icons";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Sheet,
   SheetContent,
@@ -34,6 +36,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { slugifyTaxonomyHandle } from "@/features/catalog-taxonomy/taxonomy-table-state";
 import { getTenantScopedPath } from "@/lib/dashboard-tenant-context";
 import { dashboardRoutes } from "@/lib/routes";
+import { cn } from "@/lib/utils";
 
 type CollectionEditSheetProps = {
   collection: MerchantProductCollection | null;
@@ -66,7 +69,7 @@ export function CollectionEditSheet({
   const [isSaving, setIsSaving] = useState(false);
   const [members, setMembers] = useState<MemberProduct[]>([]);
   const [catalog, setCatalog] = useState<MemberProduct[]>([]);
-  const [selectedAddId, setSelectedAddId] = useState<string>("");
+  const [pendingAddIds, setPendingAddIds] = useState<string[]>([]);
   const [membersLoading, setMembersLoading] = useState(false);
   const [membershipBusy, setMembershipBusy] = useState(false);
   const HandleLockIcon = isHandleLocked ? AppIcons.lock : AppIcons.lockUnlock;
@@ -85,7 +88,7 @@ export function CollectionEditSheet({
     setSeoTitle(collection.seoTitle ?? "");
     setSeoDescription(collection.seoDescription ?? "");
     setError(null);
-    setSelectedAddId("");
+    setPendingAddIds([]);
     void loadMembership(collection.id);
   }, [collection, open, tenantId]);
 
@@ -156,8 +159,14 @@ export function CollectionEditSheet({
       return;
     }
 
-    toast.success(body.add?.length ? "Product added to collection." : "Product removed.");
-    setSelectedAddId("");
+    const added = body.add?.length ?? 0;
+    const removed = body.remove?.length ?? 0;
+    if (added > 0) {
+      toast.success(added === 1 ? "Product added to collection." : `${added} products added.`);
+    } else if (removed > 0) {
+      toast.success(removed === 1 ? "Product removed." : `${removed} products removed.`);
+    }
+    setPendingAddIds([]);
     await loadMembership(collection.id);
     router.refresh();
   }
@@ -295,97 +304,64 @@ export function CollectionEditSheet({
               />
             </Field>
 
-            <div className="space-y-4 rounded-xl border p-4">
-              <div>
-                <p className="text-sm font-medium">Products</p>
-                <p className="mt-0.5 text-xs text-muted-foreground">
-                  Add or remove products in this collection. Changes save immediately.
-                </p>
-              </div>
-
-              <div className="flex items-end gap-2">
-                <Field className="min-w-0 flex-1">
-                  <FieldLabel htmlFor="collection-edit-add-product">Add product</FieldLabel>
-                  <Select
-                    disabled={membershipBusy || membersLoading || addCandidates.length === 0}
-                    onValueChange={setSelectedAddId}
-                    {...(selectedAddId ? { value: selectedAddId } : {})}
-                  >
-                    <SelectTrigger className="w-full" id="collection-edit-add-product">
-                      <SelectValue
-                        placeholder={
-                          membersLoading
-                            ? "Loading products…"
-                            : addCandidates.length === 0
-                              ? "No products left to add"
-                              : "Select a product"
-                        }
-                      />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectGroup>
-                        {addCandidates.map((product) => (
-                          <SelectItem key={product.id} value={product.id}>
-                            <span className="truncate">
-                              {product.title ?? product.handle ?? product.id}
-                            </span>
-                          </SelectItem>
-                        ))}
-                      </SelectGroup>
-                    </SelectContent>
-                  </Select>
-                </Field>
-                <Button
-                  disabled={!selectedAddId || membershipBusy}
-                  onClick={() => {
-                    if (!selectedAddId) return;
-                    void mutateMembership({ add: [selectedAddId] });
-                  }}
-                  type="button"
-                >
-                  Add
-                </Button>
-              </div>
-
-              <div className="space-y-2">
-                {membersLoading ? (
-                  <p className="text-xs text-muted-foreground">Loading members…</p>
-                ) : members.length === 0 ? (
-                  <p className="rounded-lg border border-dashed px-3 py-4 text-center text-xs text-muted-foreground">
-                    No products in this collection yet.
+            <div className="space-y-3 rounded-xl border p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium">Products</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    Search and multi-select products to add. Membership saves immediately.
                   </p>
-                ) : (
-                  <ul className="divide-y overflow-hidden rounded-lg border">
-                    {members.map((product) => (
-                      <li
-                        className="flex items-center gap-2 px-3 py-2.5"
-                        key={product.id}
-                      >
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-medium">
-                            {product.title ?? "Untitled product"}
-                          </p>
-                          {product.handle ? (
-                            <p className="truncate text-xs text-muted-foreground">
-                              /{product.handle}
-                            </p>
-                          ) : null}
-                        </div>
-                        <Button
-                          aria-label={`Remove ${product.title ?? "product"}`}
-                          disabled={membershipBusy}
-                          onClick={() => void mutateMembership({ remove: [product.id] })}
-                          size="icon-sm"
-                          type="button"
-                          variant="ghost"
-                        >
-                          <AppIcons.trash data-icon="inline-start" />
-                        </Button>
-                      </li>
-                    ))}
-                  </ul>
-                )}
+                </div>
+                {members.length > 0 ? (
+                  <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-xs tabular-nums text-muted-foreground">
+                    {members.length}
+                  </span>
+                ) : null}
               </div>
+
+              <ProductAddCombobox
+                candidates={addCandidates}
+                disabled={membershipBusy || membersLoading}
+                loading={membersLoading}
+                onAdd={(ids) => void mutateMembership({ add: ids })}
+                onPendingChange={setPendingAddIds}
+                pendingIds={pendingAddIds}
+              />
+
+              {membersLoading ? (
+                <p className="text-xs text-muted-foreground">Loading members…</p>
+              ) : members.length === 0 ? (
+                <p className="rounded-lg border border-dashed px-3 py-4 text-center text-xs text-muted-foreground">
+                  No products in this collection yet.
+                </p>
+              ) : (
+                <ul className="max-h-48 divide-y overflow-y-auto rounded-lg border">
+                  {members.map((product) => (
+                    <li className="flex items-center gap-2 px-3 py-2.5" key={product.id}>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium">
+                          {product.title ?? "Untitled product"}
+                        </p>
+                        {product.handle ? (
+                          <p className="truncate text-xs text-muted-foreground">
+                            /{product.handle}
+                          </p>
+                        ) : null}
+                      </div>
+                      <Button
+                        aria-label={`Remove ${product.title ?? "product"}`}
+                        disabled={membershipBusy}
+                        onClick={() => void mutateMembership({ remove: [product.id] })}
+                        size="icon-sm"
+                        type="button"
+                        variant="ghost"
+                      >
+                        <AppIcons.trash data-icon="inline-start" />
+                      </Button>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
 
             <div className="space-y-4 rounded-xl border p-4">
@@ -434,6 +410,130 @@ export function CollectionEditSheet({
         </form>
       </SheetContent>
     </Sheet>
+  );
+}
+
+function ProductAddCombobox({
+  candidates,
+  disabled,
+  loading,
+  onAdd,
+  onPendingChange,
+  pendingIds,
+}: {
+  candidates: MemberProduct[];
+  disabled: boolean;
+  loading: boolean;
+  onAdd: (ids: string[]) => void;
+  onPendingChange: (ids: string[]) => void;
+  pendingIds: string[];
+}) {
+  const [open, setOpen] = useState(false);
+  const pending = useMemo(() => new Set(pendingIds), [pendingIds]);
+
+  function toggle(id: string) {
+    if (pending.has(id)) {
+      onPendingChange(pendingIds.filter((item) => item !== id));
+      return;
+    }
+    onPendingChange([...pendingIds, id]);
+  }
+
+  const triggerLabel =
+    pendingIds.length === 0
+      ? loading
+        ? "Loading products…"
+        : candidates.length === 0
+          ? "No products left to add"
+          : "Search products to add…"
+      : pendingIds.length === 1
+        ? "1 product selected"
+        : `${pendingIds.length} products selected`;
+
+  return (
+    <div className="space-y-2">
+      <Popover
+        onOpenChange={(next) => {
+          setOpen(next);
+        }}
+        open={open}
+      >
+        <PopoverTrigger asChild>
+          <Button
+            aria-expanded={open}
+            className={cn(
+              "h-8 w-full justify-between px-2.5 font-normal shadow-none",
+              pendingIds.length === 0 && "text-muted-foreground",
+            )}
+            disabled={disabled || (!loading && candidates.length === 0 && pendingIds.length === 0)}
+            id="collection-edit-add-product"
+            role="combobox"
+            type="button"
+            variant="outline"
+          >
+            <span className="truncate">{triggerLabel}</span>
+            <AppIcons.arrowDown className="size-4 shrink-0 opacity-60" data-icon="inline-end" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent
+          align="start"
+          className="w-[var(--radix-popover-trigger-width)] p-0"
+          onOpenAutoFocus={(event) => event.preventDefault()}
+        >
+          <Command>
+            <CommandInput placeholder="Search products…" />
+            <CommandList className="max-h-52">
+              <CommandEmpty>No matching products.</CommandEmpty>
+              <CommandGroup>
+                {candidates.map((product) => {
+                  const isSelected = pending.has(product.id);
+                  const label = product.title ?? product.handle ?? product.id;
+                  return (
+                    <CommandItem
+                      data-checked={isSelected ? true : undefined}
+                      key={product.id}
+                      onSelect={() => toggle(product.id)}
+                      value={`${product.title ?? ""} ${product.handle ?? ""} ${product.id}`}
+                    >
+                      <Checkbox checked={isSelected} tabIndex={-1} />
+                      <span className="min-w-0 flex-1 truncate">{label}</span>
+                      {product.handle ? (
+                        <span className="ml-auto max-w-[40%] truncate text-xs text-muted-foreground">
+                          /{product.handle}
+                        </span>
+                      ) : null}
+                    </CommandItem>
+                  );
+                })}
+              </CommandGroup>
+            </CommandList>
+          </Command>
+          {pendingIds.length > 0 ? (
+            <div className="flex items-center justify-between gap-2 border-t p-2">
+              <Button
+                onClick={() => onPendingChange([])}
+                size="sm"
+                type="button"
+                variant="ghost"
+              >
+                Clear
+              </Button>
+              <Button
+                disabled={disabled}
+                onClick={() => {
+                  onAdd(pendingIds);
+                  setOpen(false);
+                }}
+                size="sm"
+                type="button"
+              >
+                Add {pendingIds.length}
+              </Button>
+            </div>
+          ) : null}
+        </PopoverContent>
+      </Popover>
+    </div>
   );
 }
 

@@ -46,11 +46,11 @@ export function CommandCenter() {
           type="button"
           variant="outline"
           aria-label="Open command center"
-          className="h-10 justify-start rounded-full px-3 text-muted-foreground"
+          className="h-9 min-w-0 justify-start gap-2 rounded-lg px-3 text-muted-foreground sm:min-w-64"
         >
           <AppIcons.search data-icon="inline-start" />
-          <span className="hidden sm:inline">Search or jump...</span>
-          <KbdGroup className="ml-2 hidden sm:inline-flex">
+          <span className="hidden sm:inline">Search or jump…</span>
+          <KbdGroup className="ml-auto hidden shrink-0 sm:inline-flex">
             <Kbd>Ctrl</Kbd>
             <Kbd>K</Kbd>
           </KbdGroup>

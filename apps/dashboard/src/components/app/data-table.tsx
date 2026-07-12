@@ -138,15 +138,16 @@ export function DataTable<TData>({
       */}
       <div className="relative max-h-[min(36rem,calc(100dvh-14rem))] min-h-0 overflow-auto">
         <Table className="min-w-max">
-          <TableHeader className="sticky top-0 z-30">
+          <TableHeader className="sticky top-0 z-30 [&_tr]:border-b-0">
             {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow className="hover:bg-transparent" key={headerGroup.id}>
+              <TableRow className="border-b-0 hover:bg-transparent" key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
                   <TableHead
                     className={cn(
-                      // Muted solid surface + layered edge so body rows never blend into chrome.
-                      "h-11 border-b border-border/80 bg-muted/55 px-4 text-xs uppercase tracking-wide text-muted-foreground",
-                      "sticky top-0 shadow-[inset_0_-1px_0_0_var(--border),0_4px_10px_-6px_rgba(0,0,0,0.18)]",
+                      // Solid surface. Use 1px box-shadow (not border-b): sticky table cells
+                      // paint body rows over CSS borders while scrolling.
+                      "h-11 bg-card px-4 text-xs uppercase text-muted-foreground sticky top-0",
+                      "shadow-[0_1px_0_0_var(--border)]",
                       getStickyColumnClass(header.column.id, true),
                     )}
                     key={header.id}
@@ -228,15 +229,14 @@ function getStickyColumnClass(columnId: string, isHeader: boolean) {
   if (columnId === "select") {
     return cn(
       "sticky left-0 w-12 min-w-12",
-      // Match header chrome tint so sticky edge columns stay opaque while scrolling.
-      isHeader ? "z-40 bg-muted/55" : "z-20 bg-card group-hover/row:bg-muted/40",
+      isHeader ? "z-40 bg-card" : "z-20 bg-card group-hover/row:bg-muted/40",
     );
   }
 
   if (columnId === "actions") {
     return cn(
       "sticky right-0 w-14 min-w-14",
-      isHeader ? "z-40 bg-muted/55" : "z-20 bg-card group-hover/row:bg-muted/40",
+      isHeader ? "z-40 bg-card" : "z-20 bg-card group-hover/row:bg-muted/40",
     );
   }
 
