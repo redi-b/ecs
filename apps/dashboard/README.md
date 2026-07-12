@@ -25,10 +25,10 @@ Merchant-first Next.js dashboard for ECS shops.
 
 Merchant dashboard pages under `/admin` are protected by the server-side dashboard layout. Unauthenticated users are redirected to `/admin/sign-in?next=<path>`.
 
-Local development seed credentials:
+Local development demo seed credentials (`pnpm seed:demo`):
 
-- Email: `owner@selam.local`
-- Password: `password1234`
+- Tech shop: `owner@addis-tech.local` / `password1234` → `http://addis-tech.lvh.me/admin`
+- Fashion shop: `owner@bole-style.local` / `password1234` → `http://bole-style.lvh.me/admin`
 
 The dashboard signs in through `POST /admin/session`, which proxies Better Auth email sign-in to Platform API and forwards the Better Auth session cookie back to the browser.
 

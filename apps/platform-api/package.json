@@ -10,6 +10,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "node --import tsx --test \"src/**/*.test.ts\"",
     "sync:storefront-templates": "tsx src/sync-storefront-templates.ts",
+    "seed:demo": "tsx src/seeds/demo-seed.ts",
     "start": "tsx src/index.ts"
   },
   "dependencies": {

@@ -1,58 +1,53 @@
 #!/usr/bin/env node
 /**
- * Required bootstrap after empty/migrated databases.
+ * Bootstrap after empty/migrated databases.
  *
  * 1. Medusa: ETB region + secret Admin API key
  * 2. Platform: sync storefront templates
  * 3. Optionally write MEDUSA_ADMIN_API_TOKEN to apps/platform-api/.env
  *
- * Usage:
- *   pnpm seed              # print token
- *   pnpm seed --write-env  # also write apps/platform-api/.env
+ *   pnpm seed
+ *   pnpm seed --write-env
  *
- * Does not create shops or catalog demo data (seed redesign pending).
+ * For demo shops/catalog: pnpm seed:demo (Medusa must be running).
  */
-import { spawnSync } from "node:child_process";
 import { appendFileSync, existsSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
+
+import { blank, error, heading, info, kv, run, success, warn } from "./lib/cli.mjs";
 
 const writeEnv = process.argv.includes("--write-env");
 const platformEnvPath = resolve("apps/platform-api/.env");
 
-function run(command, args, { capture = false } = {}) {
-  const result = spawnSync(command, args, {
-    encoding: "utf8",
-    stdio: capture ? ["ignore", "pipe", "pipe"] : "inherit",
-    env: process.env,
-  });
-  if (result.status !== 0) {
-    if (capture) {
-      if (result.stdout) process.stdout.write(result.stdout);
-      if (result.stderr) process.stderr.write(result.stderr);
-    }
-    process.exit(result.status ?? 1);
-  }
-  return capture ? `${result.stdout ?? ""}${result.stderr ?? ""}` : "";
-}
+heading("ECS bootstrap seed");
+kv([
+  ["Write .env", writeEnv ? "yes → apps/platform-api/.env" : "no (print token only)"],
+  ["Demo data", "not included — use pnpm seed:demo"],
+]);
+blank();
 
-console.info("→ [1/2] Medusa seed (region + secret API key)");
-const medusaOut = run("pnpm", ["--filter", "@ecs/medusa", "seed"], { capture: true });
-process.stdout.write(medusaOut);
+info("[1/2] Medusa seed (shared ETB region + secret API key)");
+const medusa = run("pnpm", ["--filter", "@ecs/medusa", "seed"], { capture: true });
+if (medusa.stdout) process.stdout.write(medusa.stdout);
 
-const token = medusaOut.match(/"medusaAdminApiToken"\s*:\s*"([^"]+)"/)?.[1];
+const token = medusa.stdout?.match(/"medusaAdminApiToken"\s*:\s*"([^"]+)"/)?.[1];
 if (!token) {
-  console.error("Failed to parse medusaAdminApiToken from Medusa seed output.");
+  error("Failed to parse medusaAdminApiToken from Medusa seed output.");
   process.exit(1);
 }
+success("Medusa secret API key created");
 
-console.info("→ [2/2] Sync storefront templates");
+blank();
+info("[2/2] Sync storefront templates");
 run("pnpm", ["--filter", "@ecs/platform-api", "exec", "tsx", "src/sync-storefront-templates.ts"]);
+success("Templates synchronized");
 
 if (writeEnv) {
   if (!existsSync(platformEnvPath)) {
-    console.error(`Missing ${platformEnvPath}. Copy apps/platform-api/.env.example first.`);
+    error(`Missing ${platformEnvPath}. Copy apps/platform-api/.env.example first.`);
     process.exit(1);
   }
+
   let envText = readFileSync(platformEnvPath, "utf8");
   if (/^MEDUSA_ADMIN_API_TOKEN=/m.test(envText)) {
     envText = envText.replace(/^MEDUSA_ADMIN_API_TOKEN=.*$/m, `MEDUSA_ADMIN_API_TOKEN=${token}`);
@@ -60,15 +55,21 @@ if (writeEnv) {
   } else {
     appendFileSync(platformEnvPath, `\nMEDUSA_ADMIN_API_TOKEN=${token}\n`);
   }
-  console.info(`Wrote MEDUSA_ADMIN_API_TOKEN to ${platformEnvPath}`);
+  success(`Wrote MEDUSA_ADMIN_API_TOKEN to ${platformEnvPath}`);
+} else {
+  warn("Token not written to .env — pass --write-env to persist it");
 }
 
-console.info(`
-Done. MEDUSA_ADMIN_API_TOKEN=${token}
-
-Next:
-  ${writeEnv ? "Restart platform-api if it is already running." : "Add the token to apps/platform-api/.env (or re-run: pnpm seed --write-env)"}
-  pnpm dev:apps
-
-Production: set MEDUSA_ADMIN_API_TOKEN in Dokploy and restart platform-api.
-`);
+blank();
+heading("Bootstrap complete");
+kv([
+  ["MEDUSA_ADMIN_API_TOKEN", token],
+  [
+    "Next",
+    writeEnv
+      ? "Restart platform-api if it is already running, then pnpm dev:apps"
+      : "pnpm seed --write-env   or set the token manually",
+  ],
+  ["Demo shops", "pnpm seed:demo  (after apps are up)"],
+]);
+blank();

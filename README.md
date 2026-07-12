@@ -78,8 +78,9 @@ When using a different PostgreSQL port, update the local database URLs in `.env`
 |--------|---------|
 | `pnpm db:reset --yes` | Wipe local Docker volumes, recreate DBs, migrate |
 | `pnpm seed --write-env` | **Always run this:** Medusa admin secret key + storefront templates |
+| `pnpm seed:demo` | Two demo shops (tech + fashion), catalogs, customers, sample orders |
 
-Medusa bootstrap seed: `apps/medusa/src/scripts/seed.ts`. Sample shop/catalog seed is being redesigned (no `seed:demo` yet).
+Medusa bootstrap seed: `apps/medusa/src/scripts/seed.ts`. Demo shops: `pnpm seed:demo` (tech + fashion, two owners).
 
 Fresh local setup:
 
@@ -90,7 +91,16 @@ pnpm install
 pnpm db:reset --yes
 pnpm seed --write-env
 pnpm dev:apps
+# after Medusa is up:
+pnpm seed:demo
 ```
+
+Demo credentials:
+
+| Shop | Dashboard | Owner | Password |
+| --- | --- | --- | --- |
+| Addis Tech Hub | `http://addis-tech.lvh.me/admin` | `owner@addis-tech.local` | `password1234` |
+| Bole Style | `http://bole-style.lvh.me/admin` | `owner@bole-style.local` | `password1234` |
 
 - Onboarding test: `http://dashboard.lvh.me` → sign up → create shop  
 - Merchant image uploads use MinIO (`MEDIA_S3_*`).
@@ -98,9 +108,9 @@ pnpm dev:apps
 ### Start apps
 
 ```bash
-pnpm dev:apps
-pnpm dev:apps:grouped
 pnpm dev              # infra + migrate + seed --write-env + apps
+pnpm dev:apps         # apps only (infra already running)
+pnpm dev:apps:grouped # apps with grouped terminal panels
 pnpm dev:down
 pnpm dev:logs
 ```
@@ -108,25 +118,33 @@ pnpm dev:logs
 ## Common Commands
 
 ```bash
+# quality
 pnpm build
 pnpm typecheck
 pnpm lint
 pnpm test
 pnpm check:fix
+
+# data
 pnpm db:generate
 pnpm db:migrate
+pnpm db:reset --yes
 pnpm medusa:migrate
-pnpm seed
+pnpm seed --write-env
+pnpm seed:demo
+
+# checks
 pnpm smoke:commerce
+pnpm verify:media-cors
 ```
 
-`pnpm smoke:commerce` signs in with the seeded owner account, creates a tenant, creates a category, creates a collection, creates a product, reads product detail, and reads stock. It expects the platform API and Medusa to already be running.
+`pnpm smoke:commerce` creates an ephemeral smoke tenant (category, collection, product, stock). It expects the platform API and Medusa to already be running, plus a sign-in capable owner account.
 
 The smoke script uses these defaults:
 
 - `PLATFORM_API_URL=http://localhost:3000`
 - `PLATFORM_ORIGIN=http://dashboard.lvh.me`
-- `SMOKE_OWNER_EMAIL=owner@selam.local`
+- `SMOKE_OWNER_EMAIL=owner@addis-tech.local`
 - `SMOKE_OWNER_PASSWORD=password1234`
 
 Override those values in the shell if your local setup is different.
