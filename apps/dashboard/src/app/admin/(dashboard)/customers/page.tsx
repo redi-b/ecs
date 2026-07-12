@@ -6,6 +6,8 @@ import { RefreshButton } from "@/components/app/refresh-button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { CustomerFormDialog } from "@/features/customers/customer-form-dialog";
 import { CustomersTable } from "@/features/customers/customers-table";
+import type { MessageKey } from "@/i18n/messages";
+import { getRequestMessages } from "@/i18n/server";
 import type { DashboardSearchParams } from "@/lib/dashboard-tenant-context";
 import { getMerchantCustomers } from "@/lib/merchant-customers";
 import { dashboardRoutes } from "@/lib/routes";
@@ -22,6 +24,8 @@ export default async function CustomersPage({ searchParams }: CustomersPageProps
   const highlightCustomerId = Array.isArray(highlightRaw)
     ? highlightRaw[0]
     : highlightRaw;
+  const { messages } = await getRequestMessages();
+  const t = (key: MessageKey) => messages[key];
   const offset = (listParams.page - 1) * listParams.pageSize;
   const requestHeaders = await headers();
   const result = await getMerchantCustomers({
@@ -41,12 +45,12 @@ export default async function CustomersPage({ searchParams }: CustomersPageProps
           <CustomerFormDialog />
         </>
       }
-      description="Understand buyers, maintain contact details, and support repeat customers."
-      title="Customers"
+      description={t("customers.description")}
+      title={t("customers.title")}
     >
       {result.ok ? (
         <>
-          <ListSummary count={result.customers.count} label="customers" />
+          <ListSummary count={result.customers.count} label={t("nav.customers").toLowerCase()} />
           <CustomersTable
             customers={result.customers.customers}
             footer={
@@ -65,9 +69,9 @@ export default async function CustomersPage({ searchParams }: CustomersPageProps
         </>
       ) : (
         <Alert variant="destructive">
-          <AlertTitle>Customers could not be loaded</AlertTitle>
+          <AlertTitle>{t("customers.error.loadTitle")}</AlertTitle>
           <AlertDescription>
-            The customers list is temporarily unavailable. Refresh and try again.
+            {t("customers.error.loadDescription")}
           </AlertDescription>
         </Alert>
       )}
