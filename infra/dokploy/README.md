@@ -7,7 +7,8 @@ This stack is intended for a Dokploy Compose service. GitHub Actions builds the 
 Set `BASE_DOMAIN` to the delegated application domain, for example `ecs.example.com`. A DNS record for `*.ecs.example.com` covers hosts such as:
 
 - `api.ecs.example.com` for the platform API
-- `dashboard.ecs.example.com` for the operator dashboard
+- `dashboard.ecs.example.com` for the merchant dashboard
+- `media.ecs.example.com` for public media object URLs (MinIO)
 - `<shop>.ecs.example.com` for tenant storefronts
 
 The Compose service connects Caddy to Dokploy's external `dokploy-network` and defines a wildcard Traefik router for one-level subdomains. Remove any matching entries from Dokploy's Domains UI before deploying so Dokploy does not generate duplicate routers. Caddy remains connected to the default Compose network for internal service routing.
@@ -46,7 +47,15 @@ docker compose -f infra/dokploy/docker-compose.yml run --rm platform-api node --
 docker compose -f infra/dokploy/docker-compose.yml run --rm platform-api node --import tsx src/seed-demo.ts
 ```
 
-The Medusa seed creates the API credential used by the platform service. Store that value as `MEDUSA_ADMIN_API_TOKEN` in Dokploy and redeploy before using commerce provisioning features.
+The Medusa seed creates the API credential used by the platform service. Store that value as `MEDUSA_ADMIN_API_TOKEN` in Dokploy and redeploy before using commerce provisioning features (including shop onboarding, which provisions Medusa commerce resources).
+
+### Media (MinIO)
+
+This stack runs MinIO for product and library uploads. Set `MINIO_ROOT_PASSWORD` (and optionally `MINIO_ROOT_USER` / `MINIO_BUCKET`) in Dokploy. Platform API talks to MinIO on the internal network (`http://minio:9000`) and serves public object URLs through `MEDIA_S3_PUBLIC_BASE_URL` (default `https://media.${BASE_DOMAIN}/${MINIO_BUCKET}`).
+
+Point DNS for `media.${BASE_DOMAIN}` at the same Caddy/Traefik entry used by other app hosts, and set `MINIO_API_CORS_ALLOW_ORIGIN` to your dashboard origin so browser uploads can preflight.
+
+Shop **create** does not require MinIO. Media uploads do. Onboarding failures are more often missing `MEDUSA_ADMIN_API_TOKEN`, auth/session issues, or Medusa health.
 
 The platform image also contains `src/worker.ts`. It is not started by this stack because the current worker is only a placeholder; it can be added as a separate service when it begins processing jobs.
 

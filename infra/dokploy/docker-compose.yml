@@ -25,6 +25,15 @@ x-platform-environment: &platform-environment
   BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?set BETTER_AUTH_SECRET}
   BETTER_AUTH_COOKIE_DOMAIN: .${BASE_DOMAIN}
   BETTER_AUTH_TRUSTED_ORIGINS: https://dashboard.${BASE_DOMAIN},https://*.${BASE_DOMAIN}
+  MEDIA_STORAGE_PROVIDER: s3
+  MEDIA_S3_ENDPOINT: http://minio:9000
+  MEDIA_S3_REGION: ${MEDIA_S3_REGION:-us-east-1}
+  MEDIA_S3_BUCKET: ${MINIO_BUCKET:-ecs-media}
+  MEDIA_S3_ACCESS_KEY_ID: ${MINIO_ROOT_USER:-ecs}
+  MEDIA_S3_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD:?set MINIO_ROOT_PASSWORD}
+  MEDIA_S3_PUBLIC_BASE_URL: ${MEDIA_S3_PUBLIC_BASE_URL:-https://media.${BASE_DOMAIN}/${MINIO_BUCKET:-ecs-media}}
+  MEDIA_S3_FORCE_PATH_STYLE: "true"
+  MEDIA_UPLOAD_URL_TTL_SECONDS: ${MEDIA_UPLOAD_URL_TTL_SECONDS:-900}
   CHAPA_SECRET_KEY: ${CHAPA_SECRET_KEY:-}
   CHAPA_API_URL: ${CHAPA_API_URL:-https://api.chapa.co/v1}
 
@@ -82,6 +91,41 @@ services:
       interval: 5s
       timeout: 5s
       retries: 20
+    security_opt:
+      - no-new-privileges:true
+
+  minio:
+    image: minio/minio:RELEASE.2025-09-07T16-13-09Z
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-ecs}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?set MINIO_ROOT_PASSWORD}
+      # Browser uploads come from the dashboard origin; allow it for preflight.
+      MINIO_API_CORS_ALLOW_ORIGIN: ${MINIO_API_CORS_ALLOW_ORIGIN:-https://dashboard.${BASE_DOMAIN}}
+    volumes:
+      - minio-data:/data
+    expose:
+      - "9000"
+      - "9001"
+    security_opt:
+      - no-new-privileges:true
+
+  minio-init:
+    image: minio/mc:RELEASE.2025-08-13T08-35-41Z
+    restart: "no"
+    depends_on:
+      - minio
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - >-
+        until mc alias set local http://minio:9000 "$${MINIO_ROOT_USER}" "$${MINIO_ROOT_PASSWORD}"; do sleep 2; done;
+        mc mb --ignore-existing "local/$${MINIO_BUCKET}";
+        mc anonymous set download "local/$${MINIO_BUCKET}"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-ecs}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?set MINIO_ROOT_PASSWORD}
+      MINIO_BUCKET: ${MINIO_BUCKET:-ecs-media}
     security_opt:
       - no-new-privileges:true
 
@@ -144,6 +188,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
 
   medusa:
     <<: *app-defaults
@@ -242,7 +288,7 @@ services:
       - traefik.http.routers.ecs-caddy-https.entrypoints=websecure
       - traefik.http.routers.ecs-caddy-https.tls=true
       - traefik.http.routers.ecs-caddy-https.service=ecs-caddy
-      - traefik.http.routers.ecs-caddy-demo-certs.rule=Host(`dashboard.${BASE_DOMAIN}`) || Host(`api.${BASE_DOMAIN}`) || Host(`shop.${BASE_DOMAIN}`)
+      - traefik.http.routers.ecs-caddy-demo-certs.rule=Host(`dashboard.${BASE_DOMAIN}`) || Host(`api.${BASE_DOMAIN}`) || Host(`shop.${BASE_DOMAIN}`) || Host(`media.${BASE_DOMAIN}`)
       - traefik.http.routers.ecs-caddy-demo-certs.entrypoints=websecure
       - traefik.http.routers.ecs-caddy-demo-certs.priority=100
       - traefik.http.routers.ecs-caddy-demo-certs.tls=true
@@ -260,10 +306,13 @@ services:
         condition: service_healthy
       storefront:
         condition: service_healthy
+      minio:
+        condition: service_started
 
 volumes:
   postgres-data:
   redis-data:
+  minio-data:
 
 networks:
   dokploy-network:

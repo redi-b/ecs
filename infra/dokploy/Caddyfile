@@ -27,6 +27,12 @@
 		reverse_proxy dashboard:3001
 	}
 
+	# Public object reads for media uploads (path-style bucket URLs).
+	@media host media.{$BASE_DOMAIN}
+	handle @media {
+		reverse_proxy minio:9000
+	}
+
 	@storefront host *.{$BASE_DOMAIN}
 	handle @storefront {
 		@dashboard_assets path /_next/* /__nextjs* /favicon.ico
