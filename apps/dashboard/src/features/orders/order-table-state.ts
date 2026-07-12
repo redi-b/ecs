@@ -289,7 +289,7 @@ export function formatOrderStatusLabel(
 
   if (tone === "payment") {
     if (["captured", "paid"].includes(key)) return "Paid";
-    if (["not_paid", "awaiting", "pending"].includes(key)) return "Not paid";
+    if (["not_paid", "awaiting", "pending"].includes(key)) return "Not paid yet";
     if (key.includes("refund")) return "Refunded";
   }
 
@@ -321,6 +321,21 @@ export function getOrderSimpleStatus(order: MerchantOrder) {
   if (fulfillment === "delivered") return "Delivered";
   if (["fulfilled", "shipped", "partially_fulfilled"].includes(fulfillment)) return "Ready";
   return "New";
+}
+
+/**
+ * Payment label for merchants. Completed local/COD orders should not look unpaid.
+ */
+export function getOrderPaymentLabel(order: MerchantOrder) {
+  const status = (order.status ?? "").toLowerCase();
+  const payment = (order.paymentStatus ?? "").toLowerCase();
+
+  if (status.includes("cancel")) return "—";
+  if (["captured", "paid"].includes(payment)) return "Paid";
+  if (payment.includes("refund")) return "Refunded";
+  if (status === "completed") return "Settled";
+  if (["not_paid", "awaiting", "pending", ""].includes(payment)) return "Not paid yet";
+  return formatOrderStatusLabel(order.paymentStatus, "payment");
 }
 
 export function getOrderProgressSteps(order: MerchantOrder) {

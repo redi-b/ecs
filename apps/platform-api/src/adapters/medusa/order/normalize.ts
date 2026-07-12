@@ -22,6 +22,13 @@ export function normalizeOrder(value: unknown, salesChannelId: string): Merchant
   const shippingAddress = getShippingAddress(value.shipping_address);
   const delivery = getDeliveryDetails(value);
 
+  const items = getLineItems(value.items);
+  const total =
+    getNumber(value.total) ??
+    (items.length
+      ? items.reduce((sum, item) => sum + (item.total ?? 0), 0)
+      : null);
+
   return [
     {
       id,
@@ -31,10 +38,10 @@ export function normalizeOrder(value: unknown, salesChannelId: string): Merchant
       paymentStatus: getString(value.payment_status),
       fulfillmentStatus: getString(value.fulfillment_status),
       currencyCode: getString(value.currency_code),
-      total: getNumber(value.total) ?? null,
+      total,
       ...(delivery ? { delivery } : {}),
       ...(fulfillments.length === 0 ? {} : { fulfillments }),
-      items: getLineItems(value.items),
+      items,
       ...(shippingAddress ? { shippingAddress } : {}),
       createdAt: getString(value.created_at),
       updatedAt: getString(value.updated_at),
@@ -147,10 +154,14 @@ export function getLineItems(value: unknown) {
       getNumber(item.unit_price) ??
       (detail ? getNumber(detail.unit_price) : undefined) ??
       null;
+    // Prefer computed line total when Medusa returns 0/empty totals with a real unit price.
+    const reportedTotal = getNumber(item.total) ?? getNumber(item.subtotal);
+    const computedTotal =
+      quantity !== null && unitPrice !== null ? quantity * unitPrice : null;
     const total =
-      getNumber(item.total) ??
-      getNumber(item.subtotal) ??
-      (quantity !== null && unitPrice !== null ? quantity * unitPrice : null);
+      reportedTotal !== undefined && reportedTotal !== null && reportedTotal > 0
+        ? reportedTotal
+        : (computedTotal ?? reportedTotal ?? null);
 
     return [
       {

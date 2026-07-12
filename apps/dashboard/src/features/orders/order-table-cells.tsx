@@ -10,6 +10,7 @@ import {
   formatOrderStatusLabel,
   getOrderCustomerPrimaryLine,
   getOrderCustomerSecondaryLine,
+  getOrderPaymentLabel,
   getOrderSimpleStatus,
 } from "@/features/orders/order-table-state";
 import { cn } from "@/lib/utils";
@@ -46,6 +47,29 @@ export function OrderMoneyCell({ order }: { order: MerchantOrder }) {
     <span className="font-medium tabular-nums text-foreground">
       {formatOrderMoney(order.total, order.currencyCode)}
     </span>
+  );
+}
+
+export function OrderPaymentBadge({ order }: { order: MerchantOrder }) {
+  const label = getOrderPaymentLabel(order);
+  const key = label.toLowerCase();
+
+  return (
+    <Badge
+      className={cn(
+        "rounded-full border px-2.5",
+        key === "paid" || key === "settled"
+          ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+          : key === "refunded"
+            ? "border-rose-500/20 bg-rose-500/10 text-rose-700 dark:text-rose-300"
+            : key === "—"
+              ? "border-border bg-muted/40 text-muted-foreground"
+              : "border-amber-500/20 bg-amber-500/10 text-amber-700 dark:text-amber-300",
+      )}
+      variant="outline"
+    >
+      {label}
+    </Badge>
   );
 }
 

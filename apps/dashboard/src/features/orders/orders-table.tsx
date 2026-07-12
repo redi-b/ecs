@@ -20,8 +20,8 @@ import {
   OrderCustomerCell,
   OrderIdentityCell,
   OrderMoneyCell,
+  OrderPaymentBadge,
   OrderSimpleStatusBadge,
-  OrderStatusBadge,
 } from "@/features/orders/order-table-cells";
 import {
   filterOrdersForTable,
@@ -139,7 +139,7 @@ function getOrderColumns(tenantId?: string): ColumnDef<MerchantOrder>[] {
     {
       accessorKey: "paymentStatus",
       header: ({ column }) => <DataTableHeader column={column} title="Payment" />,
-      cell: ({ row }) => <OrderStatusBadge status={row.original.paymentStatus} tone="payment" />,
+      cell: ({ row }) => <OrderPaymentBadge order={row.original} />,
     },
     {
       id: "simpleStatus",
