@@ -1,14 +1,10 @@
 "use client";
 
-import type {
-  MerchantProduct,
-  MerchantProductCategory,
-  MerchantProductCollection,
-} from "@ecs/contracts";
+import type { MerchantProduct } from "@ecs/contracts";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { type ReactNode, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import type { z } from "zod";
 import { AppIcons } from "@/components/app/icons";
@@ -40,13 +36,13 @@ import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { MediaUploadField } from "@/features/media/media-upload-field";
 import {
   CategoryPicker,
   CollectionPicker,
   ComposerSection,
   FieldError,
   hasFieldError,
-  NO_COLLECTION_VALUE,
   StepDot,
 } from "@/features/products/product-form-fields";
 import {
@@ -56,11 +52,9 @@ import {
   VariantMatrixTable,
 } from "@/features/products/product-form-sections";
 import {
-  formatEtbAmount,
   getDefaultSkuPrefix,
   getErrorMessage,
   getFirstInvalidFieldForStep,
-  getNullableString,
   getProductDefaultValues,
   getProductMutationError,
   getProductPayload,
@@ -69,18 +63,12 @@ import {
   isInitialHandleLocked,
   ProductMutationError,
   slugifyProductHandle,
-  validateImageUrls,
   validateInitialStock,
   validatePriceAmount,
   validateTitle,
 } from "@/features/products/product-form-state";
-import type {
-  ComposerStep,
-  ProductFormProps,
-  ProductFormValues,
-} from "@/features/products/product-form-types";
+import type { ComposerStep, ProductFormProps } from "@/features/products/product-form-types";
 import { PRODUCT_STEPS, type productPayloadSchema } from "@/features/products/product-form-types";
-import type { ProductOptionDraft } from "@/features/products/product-variant-matrix";
 import { cn } from "@/lib/utils";
 
 export function ProductForm({
@@ -139,6 +127,20 @@ export function ProductForm({
       if (!response.ok || !data.product) {
         throw getProductMutationError(data.error, response.status);
       }
+
+      const mediaResponse = await fetch(
+        `/admin/media/products/${encodeURIComponent(data.product.id)}`,
+        {
+          body: JSON.stringify({
+            imageUrls: payload.imageUrls,
+            thumbnail: payload.thumbnail,
+          }),
+          headers: { "content-type": "application/json" },
+          method: "POST",
+        },
+      );
+      if (!mediaResponse.ok)
+        toast.warning("Product saved, but media usage could not be synchronized.");
 
       return data.product;
     },
@@ -287,7 +289,7 @@ export function ProductForm({
             Complete product details, organization, variants, and review before saving.
           </DialogDescription>
           <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-background">
-            <div className="grid shrink-0 border-b bg-background/95 backdrop-blur lg:grid-cols-[18rem_1fr_18rem]">
+            <div className="grid shrink-0 border-b bg-background lg:grid-cols-[18rem_1fr_18rem]">
               <div className="flex items-center gap-2 border-b p-3 lg:border-r lg:border-b-0">
                 <Button
                   aria-label="Close product composer"
@@ -494,59 +496,26 @@ export function ProductForm({
                       <Separator />
 
                       <ComposerSection
-                        description="Add product image links for the storefront."
+                        description="Upload, review, and arrange clear product photos."
                         title="Media"
                       />
 
-                      <div className="grid gap-4 md:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
-                        <form.Field name="thumbnail">
-                          {(field) => (
-                            <Field>
-                              <FieldLabel htmlFor={field.name}>Thumbnail URL</FieldLabel>
-                              <Input
-                                id={field.name}
-                                name={field.name}
-                                onBlur={field.handleBlur}
-                                onChange={(event) => field.handleChange(event.target.value)}
-                                placeholder="https://cdn.example.com/product.jpg"
-                                type="url"
-                                value={field.state.value}
-                              />
-                            </Field>
-                          )}
-                        </form.Field>
-
-                        <form.Field
-                          name="imageUrls"
-                          validators={{
-                            onBlur: ({ value }) => validateImageUrls(value),
-                            onSubmit: ({ value }) => validateImageUrls(value),
-                          }}
-                        >
-                          {(field) => (
-                            <Field data-invalid={hasFieldError(field)}>
-                              <FieldLabel htmlFor={field.name}>Image URLs</FieldLabel>
-                              <Textarea
-                                aria-invalid={hasFieldError(field)}
-                                className="min-h-28"
-                                id={field.name}
-                                name={field.name}
-                                onBlur={field.handleBlur}
-                                onChange={(event) => field.handleChange(event.target.value)}
-                                placeholder={
-                                  "https://cdn.example.com/front.jpg\nhttps://cdn.example.com/back.jpg"
-                                }
-                                value={field.state.value}
-                              />
-                              <FieldDescription>Enter one image URL per line.</FieldDescription>
-                              <FieldError
-                                errors={field.state.meta.errors}
-                                touched={field.state.meta.isTouched}
-                              />
-                            </Field>
-                          )}
-                        </form.Field>
-                      </div>
+                      <form.Subscribe
+                        selector={(state) =>
+                          [state.values.thumbnail, state.values.imageUrls] as const
+                        }
+                      >
+                        {([thumbnail, imageUrls]) => (
+                          <MediaUploadField
+                            imageUrls={getMediaUrls(thumbnail, imageUrls)}
+                            onImageUrlsChange={(urls) =>
+                              form.setFieldValue("imageUrls", urls.join("\n"))
+                            }
+                            onThumbnailChange={(url) => form.setFieldValue("thumbnail", url)}
+                            thumbnail={thumbnail}
+                          />
+                        )}
+                      </form.Subscribe>
                     </section>
                   ) : null}
 
@@ -625,7 +594,7 @@ export function ProductForm({
                         title="Pricing and stock"
                       />
 
-                      <div className="rounded-2xl border bg-background p-4 shadow-sm shadow-primary/5">
+                      <div className="rounded-2xl border bg-background p-4">
                         <div className="mb-4 flex flex-col gap-1">
                           <h3 className="text-sm font-medium">Default selling settings</h3>
                           <p className="text-sm text-muted-foreground">
@@ -806,7 +775,7 @@ export function ProductForm({
                 </div>
               </div>
 
-              <div className="z-20 flex shrink-0 flex-col gap-3 border-t bg-background/95 p-4 backdrop-blur sm:flex-row sm:items-center sm:justify-between">
+              <div className="z-20 flex shrink-0 flex-col gap-3 border-t bg-background p-4 sm:flex-row sm:items-center sm:justify-between">
                 <form.Subscribe selector={(state) => state.isDirty}>
                   {(isDirty) =>
                     actionError ? (
@@ -857,5 +826,11 @@ export function ProductForm({
         </AlertDialogContent>
       </AlertDialog>
     </>
+  );
+}
+
+function getMediaUrls(thumbnail: string, imageUrls: string) {
+  return Array.from(
+    new Set([thumbnail, ...imageUrls.split(/\r?\n/)].map((url) => url.trim()).filter(Boolean)),
   );
 }

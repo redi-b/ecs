@@ -7,21 +7,17 @@ import { Button } from "@/components/ui/button";
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
-import { Separator } from "@/components/ui/separator";
-import { FieldError, hasFieldError } from "@/features/products/product-form-fields";
 import {
   formatEtbAmount,
   getVariantRows,
   normalizeProductOptions,
   parseWholeNumber,
-  validateInitialStock,
 } from "@/features/products/product-form-state";
 import type { ProductFormValues } from "@/features/products/product-form-types";
 import type {
   ProductOptionDraft,
   VariantMatrixRow,
 } from "@/features/products/product-variant-matrix";
-import { cn } from "@/lib/utils";
 
 export function SimpleProductStockPreview({ values }: { values: ProductFormValues }) {
   return (
@@ -180,7 +176,7 @@ export function ProductOptionsBuilder({
         <div className="flex flex-col gap-3">
           {options.map((option, index) => (
             <div
-              className="rounded-xl border bg-background p-4 shadow-sm shadow-primary/5"
+              className="rounded-xl border bg-background p-4"
               key={
                 // biome-ignore lint/suspicious/noArrayIndexKey: option order is the draft identity until the product is submitted.
                 index
@@ -318,7 +314,7 @@ export function VariantMatrixTable({
         <VariantMatrixMetric label="Price range" value={priceSummary} />
       </div>
 
-      <div className="overflow-hidden rounded-2xl border bg-background shadow-sm shadow-primary/5">
+      <div className="overflow-hidden rounded-2xl border bg-background">
         <div className="flex flex-col gap-1 border-b bg-muted/30 px-4 py-3">
           <h3 className="text-sm font-medium">Generated variant matrix</h3>
           <p className="text-sm text-muted-foreground">

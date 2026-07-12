@@ -11,6 +11,9 @@
     "start": "NEXT_TELEMETRY_DISABLED=1 next start -p 3001"
   },
   "dependencies": {
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/sortable": "^10.0.0",
+    "@dnd-kit/utilities": "^3.2.2",
     "@ecs/contracts": "workspace:*",
     "@ecs/storefront-templates": "workspace:*",
     "@puckeditor/core": "^0.22.0",
@@ -18,6 +21,8 @@
     "@tanstack/react-form": "^1.33.0",
     "@tanstack/react-query": "^5.80.0",
     "@tanstack/react-table": "^8.21.0",
+    "@uppy/aws-s3": "^5.1.0",
+    "@uppy/core": "^5.2.0",
     "better-auth": "^1.6.20",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

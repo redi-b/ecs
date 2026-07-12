@@ -347,7 +347,7 @@ export function StorefrontEditorShell({
         data-edit-hints={showEditHints ? "on" : "off"}
       >
         <div className="overflow-auto p-5">
-          <div className="mx-auto max-w-6xl overflow-hidden rounded-xl border bg-background shadow-xl shadow-muted/30 transition-all duration-300 ease-out">
+          <div className="mx-auto max-w-6xl overflow-hidden rounded-xl border bg-background shadow-sm transition-all duration-300 ease-out">
             <TemplatePreview
               props={props}
               storefrontName={editorMeta.storefrontName}
@@ -355,7 +355,7 @@ export function StorefrontEditorShell({
             />
           </div>
         </div>
-        <aside className="flex min-h-0 flex-col border-t bg-background/95 backdrop-blur lg:border-l lg:border-t-0">
+        <aside className="flex min-h-0 flex-col border-t bg-background lg:border-l lg:border-t-0">
           <div className="border-b bg-background px-4 py-4">
             <div className="flex items-center justify-between gap-3">
               <div className="text-sm font-semibold">Settings</div>
