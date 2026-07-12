@@ -4,7 +4,7 @@ const steps = [
   ["Starting local infrastructure", ["pnpm", "dev:infra"]],
   ["Running platform database migrations", ["pnpm", "db:migrate"]],
   ["Running Medusa migrations", ["pnpm", "medusa:migrate"]],
-  // Bootstrap only (Medusa API token + templates). Demo catalog is opt-in: pnpm seed:demo
+  // Bootstrap only (Medusa API token + storefront templates).
   ["Bootstrapping Medusa + templates", ["pnpm", "seed", "--write-env"]],
 ];
 

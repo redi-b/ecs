@@ -57,14 +57,6 @@ docker compose run --rm medusa node_modules/.bin/medusa exec ./src/scripts/seed.
 
 Debug shop create: platform-api `[platform/tenants]`, dashboard `[onboarding/submit]`.
 
-### Optional demo data (local / staging only)
-
-```sh
-docker compose run --rm platform-api node --import tsx src/seeds/demo-tenant.ts
-docker compose run --rm -e MEDUSA_ADMIN_API_TOKEN="$MEDUSA_ADMIN_API_TOKEN" \
-  platform-api node --import tsx src/seeds/demo-catalog.ts
-```
-
 ### Media (MinIO)
 
 This stack runs MinIO for product and library uploads. Set `MINIO_ROOT_PASSWORD` (and optionally `MINIO_ROOT_USER` / `MINIO_BUCKET`) in Dokploy. Platform API talks to MinIO on the internal network (`http://minio:9000`) and serves public object URLs through `MEDIA_S3_PUBLIC_BASE_URL`.

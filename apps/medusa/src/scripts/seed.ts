@@ -19,8 +19,7 @@ type QueryGraph = {
  * The secret token is only available at creation time. Copy it into
  * MEDUSA_ADMIN_API_TOKEN and restart platform-api before onboarding shops.
  *
- * Does not create demo products, tenants, or media. Run platform `seed` /
- * `seed:demo` only when you want a local demo shop.
+ * Does not create demo products, tenants, or media.
  */
 export default async function seed({ container }: { container: MedusaContainer }) {
   const query = container.resolve("query") as QueryGraph;
@@ -98,11 +97,7 @@ export default async function seed({ container }: { container: MedusaContainer }
 
   2. Restart platform-api so it picks up the token.
 
-  3. You can now create shops via onboarding (no platform seed required).
-
-  Optional local demo shop (not for production):
-       pnpm seed
-       MEDUSA_ADMIN_API_TOKEN=... pnpm seed:demo
+  3. You can now create shops via onboarding.
 ────────────────────────────────────────────────────────────
 `);
 }

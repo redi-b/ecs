@@ -72,15 +72,14 @@ POSTGRES_HOST_PORT=5433 pnpm dev:infra
 
 When using a different PostgreSQL port, update the local database URLs in `.env`, `apps/platform-api/.env`, and `apps/medusa/.env` to use the same port.
 
-### Seeds (three commands only)
+### Seeds (bootstrap only)
 
 | Command | Purpose |
 |--------|---------|
 | `pnpm db:reset --yes` | Wipe local Docker volumes, recreate DBs, migrate |
 | `pnpm seed --write-env` | **Always run this:** Medusa admin secret key + storefront templates |
-| `pnpm seed:demo` | **Optional:** sample shops + products (start apps first so Medusa is up) |
 
-Seed source files live under `apps/platform-api/src/seeds/` and `apps/medusa/src/scripts/seed.ts`.
+Medusa bootstrap seed: `apps/medusa/src/scripts/seed.ts`. Sample shop/catalog seed is being redesigned (no `seed:demo` yet).
 
 Fresh local setup:
 
@@ -91,14 +90,10 @@ pnpm install
 pnpm db:reset --yes
 pnpm seed --write-env
 pnpm dev:apps
-# optional, with Medusa already running:
-pnpm seed:demo
 ```
 
 - Onboarding test: `http://dashboard.lvh.me` → sign up → create shop  
-- Demo shop: `http://selam.lvh.me/admin` · `owner@selam.local` / `password1234`  
-- Clean demo: `pnpm seed:demo --clean`  
-- Merchant image uploads use MinIO (`MEDIA_S3_*`); demo catalog uses public placeholders.
+- Merchant image uploads use MinIO (`MEDIA_S3_*`).
 
 ### Start apps
 

@@ -50,7 +50,4 @@ Databases are empty and migrated.
 Next:
   pnpm seed --write-env
   pnpm dev:apps
-
-Optional demo catalog:
-  pnpm seed:demo
 `);

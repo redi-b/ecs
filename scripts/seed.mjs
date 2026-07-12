@@ -10,7 +10,7 @@
  *   pnpm seed              # print token
  *   pnpm seed --write-env  # also write apps/platform-api/.env
  *
- * Does not create demo shops. For sample catalog data: pnpm seed:demo
+ * Does not create shops or catalog demo data (seed redesign pending).
  */
 import { spawnSync } from "node:child_process";
 import { appendFileSync, existsSync, readFileSync, writeFileSync } from "node:fs";
@@ -70,9 +70,5 @@ Next:
   ${writeEnv ? "Restart platform-api if it is already running." : "Add the token to apps/platform-api/.env (or re-run: pnpm seed --write-env)"}
   pnpm dev:apps
 
-  Optional sample shops/catalog:
-  pnpm seed:demo
-
 Production: set MEDUSA_ADMIN_API_TOKEN in Dokploy and restart platform-api.
-Do not run seed:demo on production unless you want demo shops.
 `);

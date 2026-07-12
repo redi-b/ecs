@@ -28,7 +28,6 @@
     "db:reset": "node scripts/db-reset.mjs",
     "medusa:migrate": "pnpm --filter @ecs/medusa db:migrate",
     "seed": "node scripts/seed.mjs",
-    "seed:demo": "node scripts/seed-demo.mjs",
     "smoke:commerce": "node scripts/smoke-commerce.mjs",
     "verify:media-cors": "node scripts/verify-media-cors.mjs"
   },
