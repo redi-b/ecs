@@ -11,7 +11,8 @@ export function getOrdersUrl(
   url.searchParams.set("order", "-created_at");
   url.searchParams.set(
     "fields",
-    "id,display_id,email,status,payment_status,fulfillment_status,currency_code,total,sales_channel_id,created_at,updated_at",
+    // Include shipping name/phone so list rows can show a real customer without raw emails only.
+    "id,display_id,email,status,payment_status,fulfillment_status,currency_code,total,sales_channel_id,metadata,shipping_address.first_name,shipping_address.last_name,shipping_address.phone,created_at,updated_at",
   );
 
   return url;

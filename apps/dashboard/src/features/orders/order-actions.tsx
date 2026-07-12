@@ -18,16 +18,15 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { formatOrderStatusLabel } from "@/features/orders/order-table-state";
+import { hasFulfillableItems } from "@/features/orders/order-table-state";
 
 type OrderAction = "cancel" | "complete" | "deliver" | "fulfill";
 
 type OrderActionConfig = {
-  action: OrderAction;
+  action: OrderAction | "finish";
   description: string;
   fulfillmentId?: string | undefined;
   label: string;
-  primary?: boolean | undefined;
   success: string;
   title: string;
   variant?: "default" | "destructive" | "outline";
@@ -43,29 +42,21 @@ export function OrderActions({ action, order }: OrderActionsProps) {
   const [pendingAction, setPendingAction] = useState<OrderActionConfig | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const { nextStep, secondary } = useMemo(() => getOrderActionGroups(order), [order]);
+
   const mutation = useMutation({
     mutationFn: async (config: OrderActionConfig) => {
-      const response = await fetch(action, {
-        body: JSON.stringify({
-          action: config.action,
-          ...(config.fulfillmentId ? { fulfillmentId: config.fulfillmentId } : {}),
-        }),
-        headers: {
-          accept: "application/json",
-          "content-type": "application/json",
-        },
-        method: "POST",
-      });
-      const data = (await response.json().catch(() => ({}))) as {
-        error?: string;
-      };
-
-      if (!response.ok) {
-        throw new Error(getOrderActionErrorMessage(data.error));
+      if (config.action === "finish") {
+        await runFinishOrder(action, order);
+        return;
       }
+
+      await postOrderAction(action, {
+        action: config.action,
+        ...(config.fulfillmentId ? { fulfillmentId: config.fulfillmentId } : {}),
+      });
     },
     onError: (error) => {
-      setActionError(error instanceof Error ? error.message : "Order action failed.");
+      setActionError(error instanceof Error ? error.message : "Could not update this order.");
     },
     onSuccess: async (_data, config) => {
       setActionError(null);
@@ -76,14 +67,14 @@ export function OrderActions({ action, order }: OrderActionsProps) {
   });
 
   if (!nextStep && secondary.length === 0) {
+    const status = (order.status ?? "").toLowerCase();
     return (
       <div className="rounded-xl border border-dashed px-4 py-5 text-sm text-muted-foreground">
-        No further actions for this order.
-        {order.status?.toLowerCase().includes("cancel")
-          ? " It was canceled."
-          : order.status?.toLowerCase() === "completed"
-            ? " It is already completed."
-            : ""}
+        {status.includes("cancel")
+          ? "This order was canceled."
+          : status === "completed"
+            ? "This order is complete."
+            : "No further actions for this order."}
       </div>
     );
   }
@@ -93,7 +84,7 @@ export function OrderActions({ action, order }: OrderActionsProps) {
       {nextStep ? (
         <div className="space-y-3 rounded-xl border border-primary/20 bg-primary/5 px-4 py-4">
           <div>
-            <p className="text-xs font-medium tracking-wide text-primary uppercase">Next step</p>
+            <p className="text-xs font-medium tracking-wide text-primary uppercase">Next</p>
             <p className="mt-1 text-sm font-medium text-foreground">{nextStep.title}</p>
             <p className="mt-1 text-sm text-muted-foreground">{nextStep.description}</p>
           </div>
@@ -131,9 +122,7 @@ export function OrderActions({ action, order }: OrderActionsProps) {
 
       <AlertDialog
         onOpenChange={(open) => {
-          if (!open && !mutation.isPending) {
-            setPendingAction(null);
-          }
+          if (!open && !mutation.isPending) setPendingAction(null);
         }}
         open={Boolean(pendingAction)}
       >
@@ -161,40 +150,57 @@ export function OrderActions({ action, order }: OrderActionsProps) {
   );
 }
 
-export function getOrderProgressSteps(order: MerchantOrder) {
-  const fulfillment = (order.fulfillmentStatus ?? "").toLowerCase();
-  const status = (order.status ?? "").toLowerCase();
-  const isCanceled = status.includes("cancel");
-  const packed =
-    ["fulfilled", "shipped", "delivered", "partially_fulfilled"].includes(fulfillment) ||
-    (order.fulfillments?.length ?? 0) > 0;
-  const delivered =
-    fulfillment === "delivered" ||
-    (order.fulfillments ?? []).some((item) => Boolean(item.deliveredAt));
-  const completed = status === "completed";
+/**
+ * One-click path for merchants: prepare items, mark delivered, then close.
+ */
+async function runFinishOrder(endpoint: string, order: MerchantOrder) {
+  let current: MerchantOrder = order;
 
-  return [
-    {
-      done: !isCanceled,
-      id: "received",
-      label: "Received",
+  if (hasFulfillableItems(current)) {
+    const result = await postOrderAction(endpoint, { action: "fulfill" });
+    if (result.order) current = result.order;
+  }
+
+  const openFulfillment = (current.fulfillments ?? []).find(
+    (item) => !item.deliveredAt && !item.canceledAt,
+  );
+
+  if (openFulfillment) {
+    const result = await postOrderAction(endpoint, {
+      action: "deliver",
+      fulfillmentId: openFulfillment.id,
+    });
+    if (result.order) current = result.order;
+  }
+
+  const status = (current.status ?? "").toLowerCase();
+  if (status !== "completed" && !status.includes("cancel")) {
+    await postOrderAction(endpoint, { action: "complete" });
+  }
+}
+
+async function postOrderAction(
+  endpoint: string,
+  body: { action: OrderAction; fulfillmentId?: string },
+) {
+  const response = await fetch(endpoint, {
+    body: JSON.stringify(body),
+    headers: {
+      accept: "application/json",
+      "content-type": "application/json",
     },
-    {
-      done: packed || delivered || completed,
-      id: "packed",
-      label: "Packed",
-    },
-    {
-      done: delivered || completed,
-      id: "delivered",
-      label: "Delivered",
-    },
-    {
-      done: completed,
-      id: "done",
-      label: "Done",
-    },
-  ] as const;
+    method: "POST",
+  });
+  const data = (await response.json().catch(() => ({}))) as {
+    error?: string;
+    order?: MerchantOrder;
+  };
+
+  if (!response.ok) {
+    throw new Error(getOrderActionErrorMessage(data.error));
+  }
+
+  return data;
 }
 
 function getOrderActionGroups(order: MerchantOrder): {
@@ -203,80 +209,43 @@ function getOrderActionGroups(order: MerchantOrder): {
 } {
   const normalizedStatus = order.status?.toLowerCase() ?? "";
   const isClosed = ["canceled", "cancelled", "completed", "archived"].includes(normalizedStatus);
-  const secondary: OrderActionConfig[] = [];
-  let nextStep: OrderActionConfig | null = null;
 
   if (isClosed) {
     return { nextStep: null, secondary: [] };
   }
 
-  if (hasFulfillableItems(order)) {
-    nextStep = {
-      action: "fulfill",
-      description:
-        "Mark the items as packed and ready to hand to the customer or courier. Stock will be reduced for this shop.",
-      label: "Mark packed & ready",
-      primary: true,
-      success: "Order marked as packed.",
-      title: "Mark order packed?",
-    };
-  } else {
-    const openFulfillment = (order.fulfillments ?? []).find(
-      (fulfillment) => !fulfillment.deliveredAt && !fulfillment.canceledAt,
-    );
+  const nextStep: OrderActionConfig = {
+    action: "finish",
+    description:
+      "Use this when the order is finished — items prepared and given to the customer (or sent with a courier). This closes the order in one step.",
+    label: "Complete order",
+    success: "Order completed.",
+    title: "Complete this order?",
+  };
 
-    if (openFulfillment) {
-      nextStep = {
-        action: "deliver",
-        description:
-          "Use this when the customer has received the order (COD handoff or courier delivered).",
-        fulfillmentId: openFulfillment.id,
-        label: "Mark delivered",
-        primary: true,
-        success: "Order marked as delivered.",
-        title: "Mark as delivered?",
-      };
-    } else if ((order.fulfillmentStatus ?? "").toLowerCase() === "delivered") {
-      nextStep = {
-        action: "complete",
-        description: "Close this order after delivery is finished.",
-        label: "Complete order",
-        primary: true,
-        success: "Order completed.",
-        title: "Complete this order?",
-      };
-    }
-  }
-
-  secondary.push({
-    action: "cancel",
-    description: "Only cancel if the sale will not go ahead. This cannot always be undone.",
-    label: "Cancel order",
-    success: "Order canceled.",
-    title: "Cancel this order?",
-    variant: "destructive",
-  });
+  const secondary: OrderActionConfig[] = [
+    {
+      action: "cancel",
+      description: "Only cancel if this sale will not go ahead.",
+      label: "Cancel order",
+      success: "Order canceled.",
+      title: "Cancel this order?",
+      variant: "destructive",
+    },
+  ];
 
   return { nextStep, secondary };
 }
 
-function hasFulfillableItems(order: MerchantOrder) {
-  return (order.items ?? []).some((item) => {
-    const quantity = item.quantity ?? 0;
-    const fulfilledQuantity = item.fulfilledQuantity ?? 0;
-    return quantity - fulfilledQuantity > 0;
-  });
-}
-
 function getOrderActionErrorMessage(error: string | undefined) {
   if (error === "order_not_fulfillable") {
-    return "There is nothing left to pack on this order.";
+    return "There is nothing left to prepare on this order.";
   }
   if (error === "order_fulfillment_not_found") {
-    return "Could not find packing record for this order. Refresh and try again.";
+    return "Could not update delivery for this order. Refresh and try again.";
   }
   if (error === "inventory_location_unavailable") {
-    return "This shop still needs a stock location before packing orders.";
+    return "This shop still needs a stock location before completing orders.";
   }
   if (error === "order_not_found") {
     return "This order is no longer available.";
@@ -285,8 +254,4 @@ function getOrderActionErrorMessage(error: string | undefined) {
     return "Commerce access is not configured correctly.";
   }
   return "Something went wrong. Try again in a moment.";
-}
-
-export function describeOrderPayment(order: MerchantOrder) {
-  return formatOrderStatusLabel(order.paymentStatus, "payment");
 }

@@ -217,6 +217,7 @@ export function formatOrderDisplayId(order: MerchantOrder) {
   return formatOrderReference(order);
 }
 
+/** Real person name only — never falls back to email (avoids list redundancy). */
 export function getOrderCustomerName(order: MerchantOrder) {
   if (order.delivery?.customerName?.trim()) {
     return order.delivery.customerName.trim();
@@ -227,11 +228,7 @@ export function getOrderCustomerName(order: MerchantOrder) {
     .join(" ")
     .trim();
 
-  if (fromAddress) {
-    return fromAddress;
-  }
-
-  return order.email?.trim() || null;
+  return fromAddress || null;
 }
 
 export function getOrderCustomerPhone(order: MerchantOrder) {
@@ -240,6 +237,25 @@ export function getOrderCustomerPhone(order: MerchantOrder) {
     order.shippingAddress?.phone?.trim() ||
     null
   );
+}
+
+export function getOrderCustomerPrimaryLine(order: MerchantOrder) {
+  return getOrderCustomerName(order) ?? order.email?.trim() ?? "No customer";
+}
+
+export function getOrderCustomerSecondaryLine(order: MerchantOrder) {
+  const name = getOrderCustomerName(order);
+  const phone = getOrderCustomerPhone(order);
+  const email = order.email?.trim() || null;
+
+  // If we already show the email as the primary line, prefer phone underneath.
+  if (!name && email) {
+    return phone && phone !== email ? phone : null;
+  }
+
+  if (phone) return phone;
+  if (email) return email;
+  return null;
 }
 
 export function getOrderTotalSortValue(order: MerchantOrder) {
@@ -262,6 +278,9 @@ export function formatOrderMoney(total: number | null, currencyCode: string | nu
   }).format(total);
 }
 
+/**
+ * Plain-language status for shop owners (avoid commerce jargon).
+ */
 export function formatOrderStatusLabel(
   status: string | null | undefined,
   tone: "fulfillment" | "order" | "payment" = "order",
@@ -270,27 +289,66 @@ export function formatOrderStatusLabel(
 
   if (tone === "payment") {
     if (["captured", "paid"].includes(key)) return "Paid";
-    if (["not_paid", "awaiting", "pending"].includes(key)) return "Unpaid / COD";
+    if (["not_paid", "awaiting", "pending"].includes(key)) return "Not paid";
     if (key.includes("refund")) return "Refunded";
   }
 
   if (tone === "fulfillment") {
-    if (["not_fulfilled", "unfulfilled"].includes(key)) return "Needs packing";
-    if (["partially_fulfilled", "partially_shipped"].includes(key)) return "Partly packed";
-    if (["fulfilled", "shipped"].includes(key)) return "Packed";
+    if (["not_fulfilled", "unfulfilled"].includes(key)) return "To prepare";
+    if (["partially_fulfilled", "partially_shipped"].includes(key)) return "Partly ready";
+    if (["fulfilled", "shipped"].includes(key)) return "Ready";
     if (key === "delivered") return "Delivered";
     if (key.includes("cancel")) return "Canceled";
   }
 
   if (tone === "order") {
-    if (["pending", "requires_action"].includes(key)) return "Open";
-    if (key === "completed") return "Completed";
+    if (["pending", "requires_action", "draft"].includes(key)) return "New";
+    if (key === "completed") return "Done";
     if (key.includes("cancel")) return "Canceled";
-    if (key === "draft") return "Draft";
   }
 
   if (!status?.trim()) return "Unknown";
   return status.replaceAll("_", " ");
+}
+
+/** One simple status for list rows (collapses order + fulfillment noise). */
+export function getOrderSimpleStatus(order: MerchantOrder) {
+  const status = (order.status ?? "").toLowerCase();
+  const fulfillment = (order.fulfillmentStatus ?? "").toLowerCase();
+
+  if (status.includes("cancel")) return "Canceled";
+  if (status === "completed") return "Done";
+  if (fulfillment === "delivered") return "Delivered";
+  if (["fulfilled", "shipped", "partially_fulfilled"].includes(fulfillment)) return "Ready";
+  return "New";
+}
+
+export function getOrderProgressSteps(order: MerchantOrder) {
+  const fulfillment = (order.fulfillmentStatus ?? "").toLowerCase();
+  const status = (order.status ?? "").toLowerCase();
+  const isCanceled = status.includes("cancel");
+  const ready =
+    ["fulfilled", "shipped", "delivered", "partially_fulfilled"].includes(fulfillment) ||
+    (order.fulfillments?.length ?? 0) > 0;
+  const delivered =
+    fulfillment === "delivered" ||
+    (order.fulfillments ?? []).some((item) => Boolean(item.deliveredAt));
+  const completed = status === "completed";
+
+  return [
+    { done: !isCanceled, id: "received", label: "Received" },
+    { done: ready || delivered || completed, id: "ready", label: "Ready" },
+    { done: delivered || completed, id: "delivered", label: "Delivered" },
+    { done: completed, id: "done", label: "Done" },
+  ] as const;
+}
+
+export function hasFulfillableItems(order: MerchantOrder) {
+  return (order.items ?? []).some((item) => {
+    const quantity = item.quantity ?? 0;
+    const fulfilledQuantity = item.fulfilledQuantity ?? 0;
+    return quantity - fulfilledQuantity > 0;
+  });
 }
 
 export function formatOrderDate(value: string | null) {

@@ -20,11 +20,11 @@ import {
   OrderCustomerCell,
   OrderIdentityCell,
   OrderMoneyCell,
+  OrderSimpleStatusBadge,
   OrderStatusBadge,
 } from "@/features/orders/order-table-cells";
 import {
   filterOrdersForTable,
-  formatOrderDate,
   formatOrderDisplayId,
   getOrderTableCounts,
   getOrderTotalSortValue,
@@ -141,23 +141,10 @@ function getOrderColumns(tenantId?: string): ColumnDef<MerchantOrder>[] {
       cell: ({ row }) => <OrderStatusBadge status={row.original.paymentStatus} tone="payment" />,
     },
     {
-      accessorKey: "fulfillmentStatus",
-      header: ({ column }) => <DataTableHeader column={column} title="Fulfillment" />,
-      cell: ({ row }) => (
-        <OrderStatusBadge status={row.original.fulfillmentStatus} tone="fulfillment" />
-      ),
-    },
-    {
-      accessorKey: "status",
+      id: "simpleStatus",
+      accessorFn: (order) => order.status ?? "",
       header: ({ column }) => <DataTableHeader column={column} title="Status" />,
-      cell: ({ row }) => <OrderStatusBadge status={row.original.status} />,
-    },
-    {
-      accessorKey: "createdAt",
-      header: ({ column }) => <DataTableHeader column={column} title="Created" />,
-      cell: ({ row }) => (
-        <span className="text-muted-foreground">{formatOrderDate(row.original.createdAt)}</span>
-      ),
+      cell: ({ row }) => <OrderSimpleStatusBadge order={row.original} />,
     },
     {
       id: "actions",

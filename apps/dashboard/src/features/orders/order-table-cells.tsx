@@ -9,51 +9,68 @@ import {
   formatOrderDisplayId,
   formatOrderMoney,
   formatOrderStatusLabel,
-  getOrderCustomerName,
-  getOrderCustomerPhone,
+  getOrderCustomerPrimaryLine,
+  getOrderCustomerSecondaryLine,
+  getOrderSimpleStatus,
 } from "@/features/orders/order-table-state";
 import { cn } from "@/lib/utils";
 
 type OrderStatusTone = "fulfillment" | "order" | "payment";
 
 export function OrderIdentityCell({ href, order }: { href: string; order: MerchantOrder }) {
-  const customer = getOrderCustomerName(order);
-
   return (
     <Link
-      className="group flex min-w-36 flex-col gap-1 rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+      className="group flex min-w-28 flex-col gap-1 rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
       href={href}
     >
       <span className="font-medium text-foreground transition-colors group-hover:text-primary">
         {formatOrderDisplayId(order)}
       </span>
-      <span className="text-xs text-muted-foreground">
-        {customer ? `${customer} · ` : ""}
-        {formatOrderDate(order.createdAt)}
-      </span>
+      <span className="text-xs text-muted-foreground">{formatOrderDate(order.createdAt)}</span>
     </Link>
   );
 }
 
 export function OrderCustomerCell({ order }: { order: MerchantOrder }) {
-  const name = getOrderCustomerName(order);
-  const phone = getOrderCustomerPhone(order);
+  const primary = getOrderCustomerPrimaryLine(order);
+  const secondary = getOrderCustomerSecondaryLine(order);
 
   return (
-    <div className="flex min-w-44 flex-col gap-1">
-      <span className="text-sm text-foreground">{name ?? "No customer name"}</span>
-      <span className="text-xs text-muted-foreground">
-        {phone ?? order.email ?? "No contact captured"}
-      </span>
+    <div className="flex min-w-40 flex-col gap-1">
+      <span className="text-sm text-foreground">{primary}</span>
+      {secondary ? <span className="text-xs text-muted-foreground">{secondary}</span> : null}
     </div>
   );
 }
 
 export function OrderMoneyCell({ order }: { order: MerchantOrder }) {
   return (
-    <span className="font-medium text-foreground">
+    <span className="font-medium tabular-nums text-foreground">
       {formatOrderMoney(order.total, order.currencyCode)}
     </span>
+  );
+}
+
+export function OrderSimpleStatusBadge({ order }: { order: MerchantOrder }) {
+  const label = getOrderSimpleStatus(order);
+  const key = label.toLowerCase();
+
+  return (
+    <Badge
+      className={cn(
+        "rounded-full border px-2.5",
+        key === "done" || key === "delivered"
+          ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+          : key === "ready"
+            ? "border-sky-500/20 bg-sky-500/10 text-sky-700 dark:text-sky-300"
+            : key === "canceled"
+              ? "border-rose-500/20 bg-rose-500/10 text-rose-700 dark:text-rose-300"
+              : "border-amber-500/20 bg-amber-500/10 text-amber-700 dark:text-amber-300",
+      )}
+      variant="outline"
+    >
+      {label}
+    </Badge>
   );
 }
 
@@ -85,7 +102,7 @@ export function OrderStatusBadge({
   return (
     <Badge
       className={cn(
-        "rounded-full border px-2.5 capitalize",
+        "rounded-full border px-2.5",
         tone === "payment" && "border-sky-500/20 bg-sky-500/10 text-sky-700 dark:text-sky-300",
         tone === "fulfillment" &&
           "border-violet-500/20 bg-violet-500/10 text-violet-700 dark:text-violet-300",

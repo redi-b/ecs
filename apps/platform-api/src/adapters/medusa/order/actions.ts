@@ -144,21 +144,11 @@ export async function fulfillMerchantOrder(
     };
   }
 
-  const data = await response.json().catch(() => undefined);
-  const order = normalizeOrder(data?.order, input.salesChannelId)[0];
-
-  if (!order) {
-    return {
-      ok: false,
-      error: "order_not_found",
-      status: 404,
-    };
-  }
-
-  return {
-    ok: true,
-    order,
-  };
+  // Fulfillment create may not embed a full order — re-fetch for fulfillments + line items.
+  return getMerchantOrderForAction(fetcher, options, {
+    orderId: input.orderId,
+    salesChannelId: input.salesChannelId,
+  });
 }
 
 export async function deliverMerchantOrderFulfillment(
@@ -232,19 +222,8 @@ export async function deliverMerchantOrderFulfillment(
     };
   }
 
-  const data = await response.json().catch(() => undefined);
-  const order = normalizeOrder(data?.order, input.salesChannelId)[0];
-
-  if (!order) {
-    return {
-      ok: false,
-      error: "order_not_found",
-      status: 404,
-    };
-  }
-
-  return {
-    ok: true,
-    order,
-  };
+  return getMerchantOrderForAction(fetcher, options, {
+    orderId: input.orderId,
+    salesChannelId: input.salesChannelId,
+  });
 }

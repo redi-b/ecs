@@ -11,7 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { OrderActions, getOrderProgressSteps } from "@/features/orders/order-actions";
+import { OrderActions } from "@/features/orders/order-actions";
 import { OrderStatusBadge } from "@/features/orders/order-table-cells";
 import {
   formatOrderDate,
@@ -20,6 +20,8 @@ import {
   formatOrderStatusLabel,
   getOrderCustomerName,
   getOrderCustomerPhone,
+  getOrderCustomerPrimaryLine,
+  getOrderProgressSteps,
 } from "@/features/orders/order-table-state";
 import { getTenantScopedPath } from "@/lib/dashboard-tenant-context";
 import { dashboardRoutes } from "@/lib/routes";
@@ -34,6 +36,7 @@ type OrderDetailProps = {
 export function OrderDetail({ action, order, tenantId }: OrderDetailProps) {
   const customerName = getOrderCustomerName(order);
   const customerPhone = getOrderCustomerPhone(order);
+  const customerPrimary = getOrderCustomerPrimaryLine(order);
   const progress = getOrderProgressSteps(order);
   const itemCount = (order.items ?? []).reduce((sum, item) => sum + (item.quantity ?? 0), 0);
 
@@ -45,13 +48,12 @@ export function OrderDetail({ action, order, tenantId }: OrderDetailProps) {
             <div className="min-w-0 space-y-2">
               <div className="flex flex-wrap items-center gap-2">
                 <CardTitle>Order {formatOrderDisplayId(order)}</CardTitle>
-                <OrderStatusBadge status={order.status} />
                 <OrderStatusBadge status={order.paymentStatus} tone="payment" />
-                <OrderStatusBadge status={order.fulfillmentStatus} tone="fulfillment" />
               </div>
               <CardDescription>
-                {customerName ? `${customerName} · ` : ""}
-                Placed {formatOrderDate(order.createdAt)}
+                {customerPrimary}
+                {" · "}
+                {formatOrderDate(order.createdAt)}
                 {itemCount > 0 ? ` · ${itemCount} item${itemCount === 1 ? "" : "s"}` : ""}
               </CardDescription>
             </div>
@@ -90,18 +92,11 @@ export function OrderDetail({ action, order, tenantId }: OrderDetailProps) {
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(20rem,0.42fr)]">
         <div className="space-y-6">
-          <DetailSection
-            description="Who ordered and how to reach them."
-            title="Customer"
-          >
+          <DetailSection description="Who ordered and how to reach them." title="Customer">
             <div className="grid gap-3 sm:grid-cols-2">
-              <DetailField label="Name" value={customerName ?? "Not provided"} />
-              <DetailField label="Phone" value={customerPhone ?? "Not provided"} />
-              <DetailField
-                className="sm:col-span-2"
-                label="Email"
-                value={order.email ?? "Not provided"}
-              />
+              <DetailField label="Name" value={customerName ?? "—"} />
+              <DetailField label="Phone" value={customerPhone ?? "—"} />
+              <DetailField className="sm:col-span-2" label="Email" value={order.email ?? "—"} />
             </div>
           </DetailSection>
 
@@ -133,7 +128,7 @@ export function OrderDetail({ action, order, tenantId }: OrderDetailProps) {
             </div>
           </DetailSection>
 
-          <DetailSection description="What the customer bought." title="Items">
+          <DetailSection description="Products on this order." title="Items">
             <OrderItemsTable
               currencyCode={order.currencyCode}
               items={order.items ?? []}
@@ -144,30 +139,29 @@ export function OrderDetail({ action, order, tenantId }: OrderDetailProps) {
 
         <div className="space-y-6">
           <DetailSection
-            description="What to do next for packing and delivery."
-            title="Fulfillment"
+            description="When the customer has their order, complete it here."
+            title="Finish order"
           >
             <OrderActions action={action} order={order} />
           </DetailSection>
 
-          <DetailSection description="Money for this order." title="Payment">
+          <DetailSection description="What the customer pays." title="Payment">
             <div className="space-y-3">
               <DetailField
-                label="Amount"
+                label="Amount due"
                 value={formatOrderMoney(order.total, order.currencyCode)}
               />
               <DetailField
-                label="Status"
+                label="Payment"
                 value={formatOrderStatusLabel(order.paymentStatus, "payment")}
               />
               <p className="text-xs text-muted-foreground">
-                Most local sales use cash on delivery. Mark payment as settled in your own
-                process when the customer pays.
+                If they pay in cash when they receive the order, collect the amount above.
               </p>
             </div>
           </DetailSection>
 
-          <DetailSection description="Packing and delivery history." title="Activity">
+          <DetailSection description="What has already happened on this order." title="Activity">
             <FulfillmentActivity order={order} />
           </DetailSection>
         </div>
@@ -182,7 +176,8 @@ function FulfillmentActivity({ order }: { order: MerchantOrder }) {
   if (!fulfillments.length) {
     return (
       <div className="rounded-xl border border-dashed px-4 py-5 text-sm text-muted-foreground">
-        Not packed yet. Use the next step when you are ready to prepare the order.
+        Nothing prepared yet. Tap <span className="font-medium text-foreground">Complete order</span>{" "}
+        when you are done.
       </div>
     );
   }
@@ -194,22 +189,18 @@ function FulfillmentActivity({ order }: { order: MerchantOrder }) {
           ? "Canceled"
           : fulfillment.deliveredAt
             ? "Delivered"
-            : fulfillment.shippedAt
-              ? "Out for delivery"
-              : "Packed";
+            : "Ready";
         const when =
-          fulfillment.deliveredAt ||
-          fulfillment.shippedAt ||
-          fulfillment.canceledAt ||
-          null;
+          fulfillment.deliveredAt || fulfillment.shippedAt || fulfillment.canceledAt || null;
 
         return (
           <li className="rounded-xl border px-4 py-3 text-sm" key={fulfillment.id}>
             <div className="font-medium">
-              Package {fulfillments.length > 1 ? index + 1 : ""} {state}
+              {fulfillments.length > 1 ? `Package ${index + 1} · ` : ""}
+              {state}
             </div>
             <div className="mt-0.5 text-xs text-muted-foreground">
-              {when ? formatOrderDate(when) : "Ready for handoff"}
+              {when ? formatOrderDate(when) : "Waiting for delivery"}
             </div>
           </li>
         );
