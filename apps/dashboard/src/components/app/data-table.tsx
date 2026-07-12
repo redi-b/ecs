@@ -228,14 +228,14 @@ function getStickyColumnClass(columnId: string, isHeader: boolean) {
   if (columnId === "select") {
     return cn(
       "sticky left-0 w-12 min-w-12",
-      isHeader ? "z-40 bg-card/95" : "z-20 bg-card group-hover/row:bg-muted/40",
+      isHeader ? "z-40 bg-card" : "z-20 bg-card group-hover/row:bg-muted/40",
     );
   }
 
   if (columnId === "actions") {
     return cn(
       "sticky right-0 w-14 min-w-14",
-      isHeader ? "z-40 bg-card/95" : "z-20 bg-card group-hover/row:bg-muted/40",
+      isHeader ? "z-40 bg-card" : "z-20 bg-card group-hover/row:bg-muted/40",
     );
   }
 
