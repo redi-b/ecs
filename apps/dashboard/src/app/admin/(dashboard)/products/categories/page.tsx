@@ -7,6 +7,8 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ProductCategoriesTable } from "@/features/catalog-taxonomy/product-categories-table";
 import { TaxonomyCreateDialog } from "@/features/catalog-taxonomy/taxonomy-create-dialog";
 import { getTaxonomyListErrorState } from "@/features/catalog-taxonomy/taxonomy-list-error-state";
+import type { MessageKey } from "@/i18n/messages";
+import { getRequestMessages } from "@/i18n/server";
 import {
   type DashboardSearchParams,
   getSelectedTenantId,
@@ -26,13 +28,15 @@ export default async function MerchantProductCategoriesPage({
   const resolvedSearchParams = (await searchParams) ?? {};
   const listParams = parseListSearchParams(resolvedSearchParams);
   const tenantId = getSelectedTenantId(resolvedSearchParams);
+  const { messages } = await getRequestMessages();
+  const t = (key: MessageKey) => messages[key];
   const requestHeaders = await headers();
   const offset = (listParams.page - 1) * listParams.pageSize;
   const createCategoryAction = getTenantScopedPath(
     dashboardRoutes.productCategoryCreateAction,
     tenantId,
   );
-  const categoryNotice = getCategoryNotice(resolvedSearchParams.categoryStatus);
+  const categoryNotice = getCategoryNotice(resolvedSearchParams.categoryStatus, t);
   const result = await getMerchantProductCategories({
     cookieHeader: requestHeaders.get("cookie"),
     limit: listParams.pageSize,
@@ -61,8 +65,8 @@ export default async function MerchantProductCategoriesPage({
           />
         </>
       }
-      description="Review merchant-scoped product categories from the catalog taxonomy."
-      title="Product categories"
+      description={t("categories.description")}
+      title={t("categories.title")}
     >
       {categoryNotice ? (
         <Alert variant={categoryNotice.variant}>
@@ -72,7 +76,7 @@ export default async function MerchantProductCategoriesPage({
       ) : null}
       {result.ok ? (
         <>
-          <ListSummary count={result.count} label="product categories" />
+          <ListSummary count={result.count} label={t("nav.productCategories").toLowerCase()} />
           <ProductCategoriesTable
             categories={result.categories}
             footer={
@@ -94,7 +98,7 @@ export default async function MerchantProductCategoriesPage({
         <ListSetupState state={errorState} />
       ) : (
         <Alert variant="destructive">
-          <AlertTitle>{errorState?.title ?? "Product categories could not be loaded"}</AlertTitle>
+          <AlertTitle>{errorState?.title ?? t("categories.error.loadTitle")}</AlertTitle>
           <AlertDescription>{errorState?.description ?? result.message}</AlertDescription>
         </Alert>
       )}
@@ -102,7 +106,10 @@ export default async function MerchantProductCategoriesPage({
   );
 }
 
-function getCategoryNotice(categoryStatus: string | string[] | undefined) {
+function getCategoryNotice(
+  categoryStatus: string | string[] | undefined,
+  t: (key: MessageKey) => string,
+) {
   const status = Array.isArray(categoryStatus) ? categoryStatus[0] : categoryStatus;
 
   if (!status) {
@@ -112,16 +119,16 @@ function getCategoryNotice(categoryStatus: string | string[] | undefined) {
   if (status === "category_created") {
     return {
       variant: "default" as const,
-      title: "Category created",
-      description: "The product category is now available for catalog organization.",
+      title: t("categories.notice.created.title"),
+      description: t("categories.notice.created.description"),
     };
   }
 
   if (status === "missing_name") {
     return {
       variant: "destructive" as const,
-      title: "Category could not be created",
-      description: "Enter a category name before continuing.",
+      title: t("categories.notice.missingName.title"),
+      description: t("categories.notice.missingName.description"),
     };
   }
 
@@ -133,7 +140,7 @@ function getCategoryNotice(categoryStatus: string | string[] | undefined) {
 
   return {
     variant: "destructive" as const,
-    title: "Category could not be created",
+    title: t("categories.notice.error.title"),
     description: mutationError.description,
   };
 }
