@@ -1,7 +1,10 @@
 import type { MerchantProductCategory, MerchantProductCollection } from "@ecs/contracts";
 
+export type TaxonomyVisibilityFilter = "all" | "public" | "hidden";
+
 export type TaxonomyTableFilterInput = {
   query: string;
+  visibility?: TaxonomyVisibilityFilter;
 };
 
 export function filterCollectionsForTable(
@@ -9,14 +12,18 @@ export function filterCollectionsForTable(
   input: TaxonomyTableFilterInput,
 ) {
   const query = input.query.trim().toLowerCase();
+  const visibility = input.visibility ?? "all";
 
-  if (!query) {
-    return collections;
-  }
-
-  return collections.filter((collection) =>
-    getTaxonomySearchText([collection.id, collection.title, collection.handle]).includes(query),
-  );
+  return collections.filter((collection) => {
+    if (visibility !== "all") {
+      const current = collection.visibility === "hidden" ? "hidden" : "public";
+      if (current !== visibility) return false;
+    }
+    if (!query) return true;
+    return getTaxonomySearchText([collection.id, collection.title, collection.handle]).includes(
+      query,
+    );
+  });
 }
 
 export function filterCategoriesForTable(
@@ -24,19 +31,21 @@ export function filterCategoriesForTable(
   input: TaxonomyTableFilterInput,
 ) {
   const query = input.query.trim().toLowerCase();
+  const visibility = input.visibility ?? "all";
 
-  if (!query) {
-    return categories;
-  }
-
-  return categories.filter((category) =>
-    getTaxonomySearchText([
+  return categories.filter((category) => {
+    if (visibility !== "all") {
+      const current = category.visibility === "hidden" ? "hidden" : "public";
+      if (current !== visibility) return false;
+    }
+    if (!query) return true;
+    return getTaxonomySearchText([
       category.id,
       category.name,
       category.handle,
       category.parentCategoryId,
-    ]).includes(query),
-  );
+    ]).includes(query);
+  });
 }
 
 export function getTaxonomyTableCounts(input: {
@@ -44,12 +53,13 @@ export function getTaxonomyTableCounts(input: {
   pageCount: number;
   query: string;
   totalCount: number;
+  visibility?: TaxonomyVisibilityFilter;
 }) {
-  const { query, ...counts } = input;
+  const { query, visibility = "all", ...counts } = input;
 
   return {
     ...counts,
-    hasActiveFilter: query.trim().length > 0,
+    hasActiveFilter: query.trim().length > 0 || visibility !== "all",
   };
 }
 

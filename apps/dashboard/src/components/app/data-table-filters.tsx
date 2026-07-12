@@ -4,7 +4,9 @@ import type { ReactNode } from "react";
 import { useState } from "react";
 
 import { AppIcons } from "@/components/app/icons";
+import { listToolbarControlClassName } from "@/components/app/list-toolbar";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import {
   Command,
   CommandEmpty,
@@ -74,7 +76,12 @@ export function DataTableFilters({
               open={addFilterOpen}
             >
               <PopoverTrigger asChild>
-                <Button className="rounded-full" size="sm" type="button" variant="outline">
+                <Button
+                  className={cn(listToolbarControlClassName, "px-3")}
+                  size="sm"
+                  type="button"
+                  variant="outline"
+                >
                   <AppIcons.filter data-icon="inline-start" />
                   Add filter
                 </Button>
@@ -150,7 +157,7 @@ export function DataTableFilters({
           ) : null}
           {activeFilters.length ? (
             <Button
-              className="rounded-full px-2 text-muted-foreground"
+              className={cn(listToolbarControlClassName, "px-2.5 text-muted-foreground")}
               onClick={onClearAll}
               size="sm"
               type="button"

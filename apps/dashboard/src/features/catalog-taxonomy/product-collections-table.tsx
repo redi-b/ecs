@@ -7,7 +7,10 @@ import { useRouter } from "next/navigation";
 import { useMemo, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import { DataTable } from "@/components/app/data-table";
-import { DataTableFilters } from "@/components/app/data-table-filters";
+import {
+  type DataTableFilterDefinition,
+  DataTableFilters,
+} from "@/components/app/data-table-filters";
 import { DataTableHeader } from "@/components/app/data-table-header";
 import { AppIcons } from "@/components/app/icons";
 import { ListToolbarSearch } from "@/components/app/list-toolbar";
@@ -35,6 +38,7 @@ import {
   filterCollectionsForTable,
   getCollectionDisplayName,
   getTaxonomyTableCounts,
+  type TaxonomyVisibilityFilter,
 } from "@/features/catalog-taxonomy/taxonomy-table-state";
 import { copyTextToClipboard } from "@/lib/clipboard";
 import { getTenantScopedPath } from "@/lib/dashboard-tenant-context";
@@ -189,6 +193,7 @@ export function ProductCollectionsTable({
   const router = useRouter();
   const queryClient = useQueryClient();
   const [query, setQuery] = useState("");
+  const [visibility, setVisibility] = useState<TaxonomyVisibilityFilter>("all");
   void pageSize;
 
   const [deleteCollectionId, setDeleteCollectionId] = useState<string | null>(null);
@@ -263,19 +268,41 @@ export function ProductCollectionsTable({
   });
 
   const filteredCollections = useMemo(
-    () => filterCollectionsForTable(collections, { query }),
-    [collections, query],
+    () => filterCollectionsForTable(collections, { query, visibility }),
+    [collections, query, visibility],
   );
   const counts = getTaxonomyTableCounts({
     filteredCount: filteredCollections.length,
     pageCount: collections.length,
     query,
     totalCount,
+    visibility,
   });
+
+  const filters: DataTableFilterDefinition[] = [
+    {
+      id: "visibility",
+      label: "Visibility",
+      defaultValue: "all",
+      value: visibility,
+      onChange: (value) => setVisibility(value as TaxonomyVisibilityFilter),
+      options: [
+        { label: "All visibility", value: "all" },
+        { label: "Public", value: "public" },
+        { label: "Hidden", value: "hidden" },
+      ],
+    },
+  ];
 
   const toolbar = (
     <div className="flex flex-col gap-3">
-      <DataTableFilters filters={[]} onClearAll={() => setQuery("")}>
+      <DataTableFilters
+        filters={filters}
+        onClearAll={() => {
+          setQuery("");
+          setVisibility("all");
+        }}
+      >
         <ListToolbarSearch
           clearLabel="Clear collection search"
           label="Search product collections"

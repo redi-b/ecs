@@ -5,6 +5,19 @@ import { Button } from "@/components/ui/button";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
 import { cn } from "@/lib/utils";
 
+/**
+ * Shared list-toolbar density.
+ * One height + pill radius for search, filters, toggles, and actions so
+ * list pages feel intentional rather than mixed shadcn defaults.
+ */
+export const listToolbarHeightClass = "h-9";
+export const listToolbarRadiusClass = "rounded-full";
+export const listToolbarControlClassName = cn(
+  listToolbarHeightClass,
+  listToolbarRadiusClass,
+  "text-sm font-medium",
+);
+
 export function ListToolbarSearch({
   clearLabel,
   label,
@@ -19,12 +32,19 @@ export function ListToolbarSearch({
   value: string;
 }) {
   return (
-    <InputGroup className="h-10 w-full rounded-full bg-background/70 px-1 sm:max-w-sm">
+    <InputGroup
+      className={cn(
+        listToolbarHeightClass,
+        listToolbarRadiusClass,
+        "w-full bg-background/70 px-1 sm:max-w-sm",
+      )}
+    >
       <InputGroupAddon>
         <AppIcons.search />
       </InputGroupAddon>
       <InputGroupInput
         aria-label={label}
+        className="text-sm"
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
         value={value}
@@ -33,7 +53,7 @@ export function ListToolbarSearch({
         <InputGroupAddon align="inline-end">
           <Button
             aria-label={clearLabel}
-            className="rounded-full"
+            className={listToolbarRadiusClass}
             onClick={() => onChange("")}
             size="icon-sm"
             type="button"
@@ -48,8 +68,9 @@ export function ListToolbarSearch({
 }
 
 /**
- * Segmented view switcher used by media, taxonomy, and other lists.
- * Labels stay visible (no hover-only tooltips) so mobile remains clear.
+ * Segmented view switcher for media, taxonomy, and other lists.
+ * Icon + visible label (no hover-only tooltips) for mobile clarity.
+ * Outer track matches listToolbarHeightClass so it lines up with actions.
  */
 export function ListViewToggle<T extends string>({
   options,
@@ -62,7 +83,11 @@ export function ListViewToggle<T extends string>({
 }) {
   return (
     <div
-      className="flex shrink-0 items-center rounded-full border bg-background/70 p-0.5"
+      className={cn(
+        "inline-flex shrink-0 items-center border bg-background/70 p-0.5",
+        listToolbarHeightClass,
+        listToolbarRadiusClass,
+      )}
       role="group"
     >
       {options.map((option) => {
@@ -73,8 +98,8 @@ export function ListViewToggle<T extends string>({
             aria-label={option.label}
             aria-pressed={active}
             className={cn(
-              "h-8 gap-1.5 rounded-full px-2.5 text-xs font-medium",
-              active && "bg-muted text-foreground shadow-none",
+              "h-full min-h-0 gap-1.5 rounded-full px-2.5 text-sm font-medium shadow-none",
+              active ? "bg-muted text-foreground" : "text-muted-foreground hover:text-foreground",
             )}
             key={option.value}
             onClick={() => onChange(option.value)}

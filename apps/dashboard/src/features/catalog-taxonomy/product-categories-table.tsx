@@ -7,10 +7,17 @@ import { useRouter } from "next/navigation";
 import { useMemo, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import { DataTable } from "@/components/app/data-table";
-import { DataTableFilters } from "@/components/app/data-table-filters";
+import {
+  type DataTableFilterDefinition,
+  DataTableFilters,
+} from "@/components/app/data-table-filters";
 import { DataTableHeader } from "@/components/app/data-table-header";
 import { AppIcons } from "@/components/app/icons";
-import { ListToolbarSearch, ListViewToggle } from "@/components/app/list-toolbar";
+import {
+  listToolbarControlClassName,
+  ListToolbarSearch,
+  ListViewToggle,
+} from "@/components/app/list-toolbar";
 import { RowActionsMenu } from "@/components/app/row-actions-menu";
 import {
   AlertDialog,
@@ -38,10 +45,12 @@ import {
   filterCategoriesForTable,
   getCategoryDisplayName,
   getTaxonomyTableCounts,
+  type TaxonomyVisibilityFilter,
 } from "@/features/catalog-taxonomy/taxonomy-table-state";
 import { copyTextToClipboard } from "@/lib/clipboard";
 import { getTenantScopedPath } from "@/lib/dashboard-tenant-context";
 import { dashboardRoutes } from "@/lib/routes";
+import { cn } from "@/lib/utils";
 
 async function copyToClipboard(value: string, label: string) {
   try {
@@ -216,6 +225,7 @@ export function ProductCategoriesTable({
   const router = useRouter();
   const queryClient = useQueryClient();
   const [query, setQuery] = useState("");
+  const [visibility, setVisibility] = useState<TaxonomyVisibilityFilter>("all");
   void pageSize;
 
   const [deleteCategoryId, setDeleteCategoryId] = useState<string | null>(null);
@@ -291,15 +301,31 @@ export function ProductCategoriesTable({
   });
 
   const filteredCategories = useMemo(
-    () => filterCategoriesForTable(categories, { query }),
-    [categories, query],
+    () => filterCategoriesForTable(categories, { query, visibility }),
+    [categories, query, visibility],
   );
   const counts = getTaxonomyTableCounts({
     filteredCount: filteredCategories.length,
     pageCount: categories.length,
     query,
     totalCount,
+    visibility,
   });
+
+  const filters: DataTableFilterDefinition[] = [
+    {
+      id: "visibility",
+      label: "Visibility",
+      defaultValue: "all",
+      value: visibility,
+      onChange: (value) => setVisibility(value as TaxonomyVisibilityFilter),
+      options: [
+        { label: "All visibility", value: "all" },
+        { label: "Public", value: "public" },
+        { label: "Hidden", value: "hidden" },
+      ],
+    },
+  ];
 
   const toolbar = (
     <div className="flex flex-col gap-3">
@@ -315,7 +341,7 @@ export function ProductCategoriesTable({
               value={viewMode}
             />
             <Button
-              className="rounded-full"
+              className={cn(listToolbarControlClassName, "px-3")}
               onClick={() => setReorderOpen(true)}
               size="sm"
               type="button"
@@ -326,8 +352,11 @@ export function ProductCategoriesTable({
             </Button>
           </>
         }
-        filters={[]}
-        onClearAll={() => setQuery("")}
+        filters={filters}
+        onClearAll={() => {
+          setQuery("");
+          setVisibility("all");
+        }}
       >
         <ListToolbarSearch
           clearLabel="Clear category search"
@@ -368,7 +397,7 @@ export function ProductCategoriesTable({
         <div className="space-y-3">
           {toolbar}
           <CategoryTreeView
-            categories={categories}
+            categories={filteredCategories}
             onEdit={(category) => setEditingCategory(category)}
             query={query}
           />
