@@ -8,6 +8,14 @@ import { AccountMenu } from "@/components/app/account-menu";
 import { AppIcons } from "@/components/app/icons";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
@@ -22,8 +30,13 @@ import {
   SidebarMenuSubButton,
   SidebarMenuSubItem,
   SidebarRail,
+  useSidebar,
 } from "@/components/ui/sidebar";
-import { type AppRoute, appRoutes } from "@/lib/navigation";
+import {
+  type AppRoute,
+  appRouteSections,
+  getAppRoutesBySection,
+} from "@/lib/navigation";
 import { dashboardRoutes } from "@/lib/routes";
 
 function isRouteActive(pathname: string, route: AppRoute) {
@@ -60,15 +73,110 @@ function isChildRouteActive(pathname: string, route: AppRoute) {
   return isRouteActive(pathname, route);
 }
 
+function NavRouteItem({ pathname, route }: { pathname: string; route: AppRoute }) {
+  const { isMobile, state } = useSidebar();
+  const Icon = route.icon;
+  const active = isRouteActive(pathname, route);
+  const collapsed = state === "collapsed" && !isMobile;
+
+  if (route.children?.length) {
+    // When the icon rail is active, nested collapsibles are hidden — use a flyout menu instead.
+    if (collapsed) {
+      return (
+        <SidebarMenuItem>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <SidebarMenuButton
+                className="rounded-xl"
+                isActive={active}
+                tooltip={route.title}
+              >
+                <Icon />
+                <span>{route.title}</span>
+              </SidebarMenuButton>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              align="start"
+              className="min-w-48 rounded-xl"
+              side="right"
+              sideOffset={8}
+            >
+              <DropdownMenuLabel className="text-xs font-medium text-muted-foreground">
+                {route.title}
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {route.children.map((child) => (
+                <DropdownMenuItem asChild key={child.id}>
+                  <Link href={child.href}>{child.title}</Link>
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </SidebarMenuItem>
+      );
+    }
+
+    const ChevronIcon = AppIcons.arrowDown;
+
+    return (
+      <Collapsible asChild className="group/collapsible" defaultOpen={active}>
+        <SidebarMenuItem>
+          <CollapsibleTrigger asChild>
+            <SidebarMenuButton className="rounded-xl" isActive={active} tooltip={route.title}>
+              <Icon />
+              <span>{route.title}</span>
+              <ChevronIcon className="ml-auto size-4 transition-transform group-data-[collapsible=icon]:hidden group-data-[state=open]/collapsible:rotate-180" />
+            </SidebarMenuButton>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down">
+            <SidebarMenuSub>
+              {route.children.map((child) => (
+                <SidebarMenuSubItem key={child.id}>
+                  <SidebarMenuSubButton asChild isActive={isChildRouteActive(pathname, child)}>
+                    <Link href={child.href}>{child.title}</Link>
+                  </SidebarMenuSubButton>
+                </SidebarMenuSubItem>
+              ))}
+            </SidebarMenuSub>
+          </CollapsibleContent>
+        </SidebarMenuItem>
+      </Collapsible>
+    );
+  }
+
+  return (
+    <SidebarMenuItem>
+      {route.disabled ? (
+        <SidebarMenuButton
+          className="rounded-xl"
+          disabled
+          isActive={false}
+          tooltip={route.title}
+        >
+          <Icon />
+          <span>{route.title}</span>
+        </SidebarMenuButton>
+      ) : (
+        <SidebarMenuButton asChild className="rounded-xl" isActive={active} tooltip={route.title}>
+          <Link href={route.href}>
+            <Icon />
+            <span>{route.title}</span>
+          </Link>
+        </SidebarMenuButton>
+      )}
+    </SidebarMenuItem>
+  );
+}
+
 export function AppSidebar({ actor }: { actor: MerchantDashboardSummary["actor"] }) {
   const pathname = usePathname();
 
   return (
-    <Sidebar collapsible="icon" className="border-r">
+    <Sidebar className="border-r" collapsible="icon">
       <SidebarHeader className="p-3 group-data-[collapsible=icon]:p-2">
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size="lg" asChild tooltip="ECS" className="rounded-xl">
+            <SidebarMenuButton asChild className="rounded-xl" size="lg" tooltip="ECS">
               <Link href={dashboardRoutes.overview}>
                 <span className="grid size-8 shrink-0 place-items-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
                   E
@@ -79,89 +187,30 @@ export function AppSidebar({ actor }: { actor: MerchantDashboardSummary["actor"]
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
+
       <SidebarContent>
-        <SidebarGroup className="px-3 group-data-[collapsible=icon]:px-2">
-          <SidebarGroupLabel>Merchant</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu className="gap-1">
-              {appRoutes.map((route) => {
-                const Icon = route.icon;
-                const active = isRouteActive(pathname, route);
-                const content = (
-                  <>
-                    <Icon />
-                    <span>{route.title}</span>
-                  </>
-                );
+        {appRouteSections.map((section) => {
+          const routes = getAppRoutesBySection(section.id);
+          if (!routes.length) return null;
 
-                if (route.children?.length) {
-                  const ChevronIcon = AppIcons.arrowDown;
-
-                  return (
-                    <Collapsible
-                      key={route.id}
-                      asChild
-                      defaultOpen={active}
-                      className="group/collapsible"
-                    >
-                      <SidebarMenuItem>
-                        <CollapsibleTrigger asChild>
-                          <SidebarMenuButton
-                            isActive={active}
-                            tooltip={route.title}
-                            className="rounded-xl"
-                          >
-                            {content}
-                            <ChevronIcon className="ml-auto size-4 transition-transform group-data-[collapsible=icon]:hidden group-data-[state=open]/collapsible:rotate-180" />
-                          </SidebarMenuButton>
-                        </CollapsibleTrigger>
-                        <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down">
-                          <SidebarMenuSub>
-                            {route.children.map((child) => (
-                              <SidebarMenuSubItem key={child.id}>
-                                <SidebarMenuSubButton
-                                  asChild
-                                  isActive={isChildRouteActive(pathname, child)}
-                                >
-                                  <Link href={child.href}>{child.title}</Link>
-                                </SidebarMenuSubButton>
-                              </SidebarMenuSubItem>
-                            ))}
-                          </SidebarMenuSub>
-                        </CollapsibleContent>
-                      </SidebarMenuItem>
-                    </Collapsible>
-                  );
-                }
-
-                return (
-                  <SidebarMenuItem key={route.id}>
-                    {route.disabled ? (
-                      <SidebarMenuButton
-                        disabled
-                        isActive={false}
-                        tooltip={route.title}
-                        className="rounded-xl"
-                      >
-                        {content}
-                      </SidebarMenuButton>
-                    ) : (
-                      <SidebarMenuButton
-                        asChild
-                        isActive={active}
-                        tooltip={route.title}
-                        className="rounded-xl"
-                      >
-                        <Link href={route.href}>{content}</Link>
-                      </SidebarMenuButton>
-                    )}
-                  </SidebarMenuItem>
-                );
-              })}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+          return (
+            <SidebarGroup
+              className="px-3 group-data-[collapsible=icon]:px-2"
+              key={section.id}
+            >
+              {section.label ? <SidebarGroupLabel>{section.label}</SidebarGroupLabel> : null}
+              <SidebarGroupContent>
+                <SidebarMenu className="gap-1">
+                  {routes.map((route) => (
+                    <NavRouteItem key={route.id} pathname={pathname} route={route} />
+                  ))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          );
+        })}
       </SidebarContent>
+
       <SidebarFooter className="p-3 group-data-[collapsible=icon]:p-2">
         <AccountMenu actor={actor} />
       </SidebarFooter>

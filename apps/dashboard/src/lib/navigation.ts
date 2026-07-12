@@ -2,7 +2,7 @@ import type { AppIcon } from "@/components/app/icons";
 import { AppIcons } from "@/components/app/icons";
 import { type DashboardRouteHref, dashboardRoutes } from "@/lib/routes";
 
-export type AppRouteSection = "commerce" | "storefront" | "business" | "system";
+export type AppRouteSection = "main" | "commerce" | "storefront" | "growth" | "system";
 
 export type AppRoute = {
   id: string;
@@ -15,13 +15,22 @@ export type AppRoute = {
   disabled?: boolean;
 };
 
+/** Sidebar section order and merchant-facing labels. */
+export const appRouteSections: ReadonlyArray<{ id: AppRouteSection; label: string | null }> = [
+  { id: "main", label: null },
+  { id: "commerce", label: "Commerce" },
+  { id: "storefront", label: "Storefront" },
+  { id: "growth", label: "Growth" },
+  { id: "system", label: "System" },
+];
+
 export const appRoutes: AppRoute[] = [
   {
     id: "overview",
     title: "Overview",
     href: dashboardRoutes.overview,
     icon: AppIcons.home,
-    section: "business",
+    section: "main",
     keywords: ["home", "dashboard", "summary"],
   },
   {
@@ -34,7 +43,7 @@ export const appRoutes: AppRoute[] = [
     children: [
       {
         id: "products-list",
-        title: "Products",
+        title: "All products",
         href: dashboardRoutes.products,
         icon: AppIcons.products,
         section: "commerce",
@@ -44,7 +53,7 @@ export const appRoutes: AppRoute[] = [
         id: "product-categories",
         title: "Categories",
         href: dashboardRoutes.productCategories,
-        icon: AppIcons.products,
+        icon: AppIcons.tree,
         section: "commerce",
         keywords: ["catalog", "taxonomy", "categories"],
       },
@@ -52,7 +61,7 @@ export const appRoutes: AppRoute[] = [
         id: "product-collections",
         title: "Collections",
         href: dashboardRoutes.productCollections,
-        icon: AppIcons.image,
+        icon: AppIcons.folder,
         section: "commerce",
         keywords: ["catalog", "taxonomy", "collections"],
       },
@@ -67,14 +76,6 @@ export const appRoutes: AppRoute[] = [
     keywords: ["sales", "fulfillment", "customers"],
   },
   {
-    id: "media",
-    title: "Media",
-    href: dashboardRoutes.media,
-    icon: AppIcons.image,
-    section: "commerce",
-    keywords: ["images", "files", "uploads", "library"],
-  },
-  {
     id: "customers",
     title: "Customers",
     href: dashboardRoutes.customers,
@@ -86,9 +87,17 @@ export const appRoutes: AppRoute[] = [
     id: "promotions",
     title: "Promotions",
     href: dashboardRoutes.promotions,
-    icon: AppIcons.billing,
+    icon: AppIcons.tag,
     section: "commerce",
     keywords: ["discounts", "coupons", "codes", "campaigns"],
+  },
+  {
+    id: "media",
+    title: "Media",
+    href: dashboardRoutes.media,
+    icon: AppIcons.image,
+    section: "commerce",
+    keywords: ["images", "files", "uploads", "library"],
   },
   {
     id: "editor",
@@ -103,7 +112,7 @@ export const appRoutes: AppRoute[] = [
     title: "Insights",
     href: dashboardRoutes.insights,
     icon: AppIcons.insights,
-    section: "business",
+    section: "growth",
     keywords: ["analytics", "reports", "sales"],
   },
   {
@@ -111,7 +120,7 @@ export const appRoutes: AppRoute[] = [
     title: "Billing",
     href: dashboardRoutes.billing,
     icon: AppIcons.billing,
-    section: "business",
+    section: "growth",
     keywords: ["plan", "subscription", "payments"],
   },
   {
@@ -123,6 +132,10 @@ export const appRoutes: AppRoute[] = [
     keywords: ["shop", "account", "preferences"],
   },
 ];
+
+export function getAppRoutesBySection(section: AppRouteSection) {
+  return appRoutes.filter((route) => route.section === section);
+}
 
 export function getNavigableAppRoutes() {
   const routes = new Map<DashboardRouteHref, AppRoute>();

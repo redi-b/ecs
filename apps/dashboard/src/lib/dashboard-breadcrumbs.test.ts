@@ -27,7 +27,7 @@ describe("getDashboardBreadcrumbTrail", () => {
     assert.deepEqual(
       productsRoute?.children?.map((route) => [route.title, route.href]),
       [
-        ["Products", "/admin/products"],
+        ["All products", "/admin/products"],
         ["Categories", "/admin/products/categories"],
         ["Collections", "/admin/products/collections"],
       ],
