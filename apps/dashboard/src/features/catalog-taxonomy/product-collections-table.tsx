@@ -4,11 +4,13 @@ import type { MerchantProductCollection } from "@ecs/contracts";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import { DataTable } from "@/components/app/data-table";
+import { DataTableFilters } from "@/components/app/data-table-filters";
 import { DataTableHeader } from "@/components/app/data-table-header";
 import { AppIcons } from "@/components/app/icons";
+import { ListToolbarSearch } from "@/components/app/list-toolbar";
 import { RowActionsMenu } from "@/components/app/row-actions-menu";
 import {
   AlertDialog,
@@ -22,7 +24,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
 import {
   CollectionIdentityCell,
   TaxonomyDateCell,
@@ -39,6 +40,7 @@ import { dashboardRoutes } from "@/lib/routes";
 
 type ProductCollectionsTableProps = {
   collections: MerchantProductCollection[];
+  footer?: ReactNode;
   pageSize: number;
   totalCount: number;
   tenantId?: string | undefined;
@@ -163,6 +165,7 @@ function getDeletionErrorMessage(error: unknown, resourceName: string) {
 
 export function ProductCollectionsTable({
   collections,
+  footer,
   pageSize,
   totalCount,
   tenantId,
@@ -245,18 +248,16 @@ export function ProductCollectionsTable({
   });
 
   const toolbar = (
-    <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-      <InputGroup className="h-10 rounded-full bg-background/70 px-1 sm:max-w-sm">
-        <InputGroupAddon>
-          <AppIcons.search data-icon="inline-start" />
-        </InputGroupAddon>
-        <InputGroupInput
-          aria-label="Search product collections"
-          onChange={(event) => setQuery(event.target.value)}
+    <div className="flex flex-col gap-3">
+      <DataTableFilters filters={[]} onClearAll={() => setQuery("")}>
+        <ListToolbarSearch
+          clearLabel="Clear collection search"
+          label="Search product collections"
+          onChange={setQuery}
           placeholder="Search collections"
           value={query}
         />
-      </InputGroup>
+      </DataTableFilters>
       <p className="text-sm text-muted-foreground">
         {counts.hasActiveFilter
           ? `${counts.filteredCount} of ${counts.pageCount} on this page`
@@ -302,11 +303,14 @@ export function ProductCollectionsTable({
         columns={columns}
         data={filteredCollections}
         emptyMessage="No product collections have been synced for this merchant yet."
+        emptyTitle="No collections yet"
         filteredEmptyMessage="No product collections match the current search."
+        filteredEmptyTitle="No matching collections"
         getRowId={(collection) => collection.id}
         isFiltered={counts.hasActiveFilter}
         selectedSummaryLabel={(count) => `collection${count === 1 ? "" : "s"} selected`}
         toolbar={toolbar}
+        footer={footer}
       />
 
       <AlertDialog
@@ -329,12 +333,12 @@ export function ProductCollectionsTable({
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction
-              className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
               disabled={deleteCollectionMutation.isPending}
               onClick={(e) => {
                 e.preventDefault();
                 if (deleteCollectionId) deleteCollectionMutation.mutate(deleteCollectionId);
               }}
+              variant="destructive"
             >
               {deleteCollectionMutation.isPending ? "Deleting..." : "Delete"}
             </AlertDialogAction>
@@ -356,12 +360,12 @@ export function ProductCollectionsTable({
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction
-              className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
               disabled={batchDeleteCollectionsMutation.isPending}
               onClick={(e) => {
                 e.preventDefault();
                 batchDeleteCollectionsMutation.mutate(selectedCollectionIdsForDelete);
               }}
+              variant="destructive"
             >
               {batchDeleteCollectionsMutation.isPending ? "Deleting..." : "Delete"}
             </AlertDialogAction>

@@ -48,6 +48,15 @@ export default async function MerchantOrdersPage({ searchParams }: MerchantOrder
         <>
           <ListSummary count={result.orders.count} label="orders" />
           <OrdersTable
+            footer={
+              <PaginationControls
+                basePath={dashboardRoutes.orders}
+                count={result.orders.count}
+                page={listParams.page}
+                pageSize={result.orders.limit}
+                searchParams={resolvedSearchParams}
+              />
+            }
             initialCreated={parseOrderDateFilter(resolvedSearchParams.created)}
             initialDelivery={parseOrderDeliveryFilter(resolvedSearchParams.delivery)}
             initialFulfillment={parseOrderFulfillmentFilter(resolvedSearchParams.fulfillment)}
@@ -58,13 +67,6 @@ export default async function MerchantOrdersPage({ searchParams }: MerchantOrder
             pageSize={result.orders.limit}
             tenantId={tenantId}
             totalCount={result.orders.count}
-          />
-          <PaginationControls
-            basePath={dashboardRoutes.orders}
-            count={result.orders.count}
-            page={listParams.page}
-            pageSize={result.orders.limit}
-            searchParams={resolvedSearchParams}
           />
         </>
       ) : errorState?.kind === "setup" || errorState?.kind === "service" ? (

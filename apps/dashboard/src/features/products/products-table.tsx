@@ -6,19 +6,16 @@ import type {
   MerchantProductCollection,
 } from "@ecs/contracts";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import type { ColumnDef } from "@tanstack/react-table";
 import { useRouter } from "next/navigation";
-import type { ReactNode } from "react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import { DataTable } from "@/components/app/data-table";
 import {
   type DataTableFilterDefinition,
   DataTableFilters,
 } from "@/components/app/data-table-filters";
-import { DataTableHeader } from "@/components/app/data-table-header";
 import { AppIcons } from "@/components/app/icons";
-import { RowActionsMenu } from "@/components/app/row-actions-menu";
+import { ListToolbarSearch } from "@/components/app/list-toolbar";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,24 +26,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import {
-  formatProductDate,
-  formatProductPriceRange,
-  ProductIdentityCell,
-  ProductMediaSignal,
-  ProductStatusBadge,
-} from "@/features/products/product-table-cells";
 import {
   filterProductsForTable,
-  getProductMediaCount,
-  getProductPriceSortValue,
   getProductTableCounts,
-  normalizeProductStatus,
   type ProductMediaFilter,
   type ProductStatusFilter,
   type ProductStockFilter,
@@ -59,6 +42,7 @@ import { dashboardRoutes } from "@/lib/routes";
 type ProductsTableProps = {
   categories: MerchantProductCategory[];
   collections: MerchantProductCollection[];
+  footer?: ReactNode;
   initialCategoryId?: string | undefined;
   initialCollectionId?: string | undefined;
   initialMedia?: ProductMediaFilter | undefined;
@@ -75,12 +59,9 @@ type ProductsTableProps = {
 import {
   getDeletionErrorMessage,
   getProductColumns,
-  getProductStockSortValue,
   getStatusLoadingMessage,
   getStatusSuccessMessage,
-  ProductOrganizationSummary,
   type ProductStatusValue,
-  ProductStockSummary,
   productStatusFilterOptions,
   setUrlFilter,
 } from "@/features/products/products-table-helpers";
@@ -101,6 +82,7 @@ async function copyToClipboard(value: string, label: string) {
 export function ProductsTable({
   categories,
   collections,
+  footer,
   initialCategoryId = "all",
   initialCollectionId = "all",
   initialMedia = "all",
@@ -380,31 +362,13 @@ export function ProductsTable({
   const toolbar = (
     <div className="flex flex-col gap-3">
       <DataTableFilters filters={filters} onClearAll={clearFilters}>
-        <InputGroup className="h-10 rounded-full bg-background/70 px-1 sm:max-w-sm">
-          <InputGroupAddon>
-            <AppIcons.search data-icon="inline-start" />
-          </InputGroupAddon>
-          <InputGroupInput
-            aria-label="Search products"
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search products"
-            value={query}
-          />
-          {query.trim() ? (
-            <InputGroupAddon align="inline-end">
-              <Button
-                aria-label="Clear product search"
-                className="rounded-full"
-                onClick={() => setQuery("")}
-                size="icon-sm"
-                type="button"
-                variant="ghost"
-              >
-                <AppIcons.close data-icon="inline-start" />
-              </Button>
-            </InputGroupAddon>
-          ) : null}
-        </InputGroup>
+        <ListToolbarSearch
+          clearLabel="Clear product search"
+          label="Search products"
+          onChange={setQuery}
+          placeholder="Search products"
+          value={query}
+        />
       </DataTableFilters>
       <p className="text-sm text-muted-foreground">
         {counts.hasActiveFilter
@@ -486,6 +450,7 @@ export function ProductsTable({
         isFiltered={counts.hasActiveFilter}
         selectedSummaryLabel={(count) => `product${count === 1 ? "" : "s"} selected`}
         toolbar={toolbar}
+        footer={footer}
       />
 
       <AlertDialog

@@ -73,16 +73,18 @@ export default async function MerchantProductCategoriesPage({
           <ListSummary count={result.count} label="product categories" />
           <ProductCategoriesTable
             categories={result.categories}
+            footer={
+              <PaginationControls
+                basePath={dashboardRoutes.productCategories}
+                count={result.count}
+                page={listParams.page}
+                pageSize={result.limit}
+                searchParams={resolvedSearchParams}
+              />
+            }
             pageSize={result.limit}
             totalCount={result.count}
             tenantId={tenantId}
-          />
-          <PaginationControls
-            basePath={dashboardRoutes.productCategories}
-            count={result.count}
-            page={listParams.page}
-            pageSize={result.limit}
-            searchParams={resolvedSearchParams}
           />
         </>
       ) : errorState?.kind === "setup" || errorState?.kind === "service" ? (

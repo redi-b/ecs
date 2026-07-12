@@ -4,11 +4,13 @@ import type { MerchantProductCategory } from "@ecs/contracts";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import { DataTable } from "@/components/app/data-table";
+import { DataTableFilters } from "@/components/app/data-table-filters";
 import { DataTableHeader } from "@/components/app/data-table-header";
 import { AppIcons } from "@/components/app/icons";
+import { ListToolbarSearch } from "@/components/app/list-toolbar";
 import { RowActionsMenu } from "@/components/app/row-actions-menu";
 import {
   AlertDialog,
@@ -22,7 +24,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
 import {
   CategoryIdentityCell,
   CategoryParentCell,
@@ -155,6 +156,7 @@ function getCategoryColumns(
 
 type ProductCategoriesTableProps = {
   categories: MerchantProductCategory[];
+  footer?: ReactNode;
   pageSize: number;
   totalCount: number;
   tenantId?: string | undefined;
@@ -180,6 +182,7 @@ function getDeletionErrorMessage(error: unknown, resourceName: string) {
 
 export function ProductCategoriesTable({
   categories,
+  footer,
   pageSize,
   totalCount,
   tenantId,
@@ -265,18 +268,16 @@ export function ProductCategoriesTable({
   });
 
   const toolbar = (
-    <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-      <InputGroup className="h-10 rounded-full bg-background/70 px-1 sm:max-w-sm">
-        <InputGroupAddon>
-          <AppIcons.search data-icon="inline-start" />
-        </InputGroupAddon>
-        <InputGroupInput
-          aria-label="Search product categories"
-          onChange={(event) => setQuery(event.target.value)}
+    <div className="flex flex-col gap-3">
+      <DataTableFilters filters={[]} onClearAll={() => setQuery("")}>
+        <ListToolbarSearch
+          clearLabel="Clear category search"
+          label="Search product categories"
+          onChange={setQuery}
           placeholder="Search categories"
           value={query}
         />
-      </InputGroup>
+      </DataTableFilters>
       <p className="text-sm text-muted-foreground">
         {counts.hasActiveFilter
           ? `${counts.filteredCount} of ${counts.pageCount} on this page`
@@ -322,11 +323,14 @@ export function ProductCategoriesTable({
         columns={columns}
         data={filteredCategories}
         emptyMessage="No product categories have been synced for this merchant yet."
+        emptyTitle="No categories yet"
         filteredEmptyMessage="No product categories match the current search."
+        filteredEmptyTitle="No matching categories"
         getRowId={(category) => category.id}
         isFiltered={counts.hasActiveFilter}
         selectedSummaryLabel={(count) => `categor${count === 1 ? "y" : "ies"} selected`}
         toolbar={toolbar}
+        footer={footer}
       />
 
       <AlertDialog
@@ -347,12 +351,12 @@ export function ProductCategoriesTable({
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction
-              className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
               disabled={deleteCategoryMutation.isPending}
               onClick={(e) => {
                 e.preventDefault();
                 if (deleteCategoryId) deleteCategoryMutation.mutate(deleteCategoryId);
               }}
+              variant="destructive"
             >
               {deleteCategoryMutation.isPending ? "Deleting..." : "Delete"}
             </AlertDialogAction>
@@ -374,12 +378,12 @@ export function ProductCategoriesTable({
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction
-              className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
               disabled={batchDeleteCategoriesMutation.isPending}
               onClick={(e) => {
                 e.preventDefault();
                 batchDeleteCategoriesMutation.mutate(selectedCategoryIdsForDelete);
               }}
+              variant="destructive"
             >
               {batchDeleteCategoriesMutation.isPending ? "Deleting..." : "Delete"}
             </AlertDialogAction>

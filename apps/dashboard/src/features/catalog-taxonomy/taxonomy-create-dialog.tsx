@@ -15,8 +15,9 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog";
-import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field";
+import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -111,123 +112,121 @@ export function TaxonomyCreateDialog({
   }
 
   return (
-    <>
-      <Button onClick={() => setOpen(true)} type="button">
-        {triggerLabel}
-      </Button>
-      <Dialog
-        onOpenChange={(nextOpen) => {
-          setOpen(nextOpen);
+    <Dialog
+      onOpenChange={(nextOpen) => {
+        setOpen(nextOpen);
+        if (!nextOpen) resetForm();
+      }}
+      open={open}
+    >
+      <DialogTrigger asChild>
+        <Button type="button">{triggerLabel}</Button>
+      </DialogTrigger>
+      <DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-lg">
+        <DialogHeader className="gap-1.5 border-b px-4 py-4 text-left sm:px-5">
+          <DialogTitle>Create {entityLabel}</DialogTitle>
+          <DialogDescription>
+            Add a product {entityLabel} name and optional handle for your catalog.
+          </DialogDescription>
+        </DialogHeader>
+        <form
+          className="flex flex-col"
+          onSubmit={(event) => {
+            event.preventDefault();
+            void submitTaxonomy();
+          }}
+        >
+          <div className="grid gap-4 p-4 sm:p-5">
+            {error ? (
+              <Alert variant="destructive">
+                <AlertTitle>{capitalize(entityLabel)} could not be created</AlertTitle>
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            ) : null}
+            <Field>
+              <FieldLabel htmlFor={`taxonomy-${entityLabel}-name`}>{nameLabel}</FieldLabel>
+              <Input
+                autoComplete="off"
+                id={`taxonomy-${entityLabel}-name`}
+                onChange={(event) => updateDisplayName(event.target.value)}
+                placeholder={namePlaceholder}
+                required
+                value={displayName}
+              />
+            </Field>
 
-          if (!nextOpen) {
-            resetForm();
-          }
-        }}
-        open={open}
-      >
-        <DialogContent className="sm:max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Create {entityLabel}</DialogTitle>
-            <DialogDescription>Create a product {entityLabel}.</DialogDescription>
-          </DialogHeader>
-          <form
-            onSubmit={(event) => {
-              event.preventDefault();
-              void submitTaxonomy();
-            }}
-          >
-            <FieldGroup>
-              {error ? (
-                <Alert variant="destructive">
-                  <AlertTitle>{capitalize(entityLabel)} could not be created</AlertTitle>
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              ) : null}
-              <Field>
-                <FieldLabel htmlFor={`taxonomy-${entityLabel}-name`}>{nameLabel}</FieldLabel>
-                <Input
-                  autoComplete="off"
-                  id={`taxonomy-${entityLabel}-name`}
-                  onChange={(event) => updateDisplayName(event.target.value)}
-                  placeholder={namePlaceholder}
-                  required
-                  value={displayName}
+            <Field>
+              <FieldLabel htmlFor={`taxonomy-${entityLabel}-handle`}>Handle</FieldLabel>
+              <InputGroup className="pr-1">
+                <InputGroupInput
+                  id={`taxonomy-${entityLabel}-handle`}
+                  onChange={(event) => setHandle(slugifyTaxonomyHandle(event.target.value))}
+                  placeholder={slugifyTaxonomyHandle(namePlaceholder)}
+                  readOnly={isHandleLocked}
+                  value={handle}
                 />
-              </Field>
-
-              <Field>
-                <FieldLabel htmlFor={`taxonomy-${entityLabel}-handle`}>Handle</FieldLabel>
-                <InputGroup className="pr-1">
-                  <InputGroupInput
-                    id={`taxonomy-${entityLabel}-handle`}
-                    onChange={(event) => setHandle(slugifyTaxonomyHandle(event.target.value))}
-                    placeholder={slugifyTaxonomyHandle(namePlaceholder)}
-                    readOnly={isHandleLocked}
-                    value={handle}
-                  />
-                  <InputGroupAddon align="inline-end" className="gap-1 py-0 pr-0">
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          aria-label={
-                            isHandleLocked ? "Unlock handle editing" : "Lock handle editing"
-                          }
-                          className="rounded-full"
-                          onClick={() => setIsHandleLocked((current) => !current)}
-                          size="icon-sm"
-                          type="button"
-                          variant="ghost"
-                        >
-                          <HandleLockIcon data-icon="inline-start" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent side="top" sideOffset={6}>
-                        {isHandleLocked ? "Unlock handle editing" : "Lock handle editing"}
-                      </TooltipContent>
-                    </Tooltip>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          aria-label={`Regenerate ${entityLabel} handle`}
-                          className="rounded-full"
-                          onClick={regenerateHandle}
-                          size="icon-sm"
-                          type="button"
-                          variant="ghost"
-                        >
-                          <AppIcons.refresh data-icon="inline-start" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent side="top" sideOffset={6}>
-                        Regenerate from {nameLabel.toLowerCase()}
-                      </TooltipContent>
-                    </Tooltip>
-                  </InputGroupAddon>
-                </InputGroup>
-                <FieldDescription>
-                  {isHandleLocked
-                    ? `The ${entityLabel} handle follows the ${nameLabel.toLowerCase()} automatically.`
-                    : `Handle editing is unlocked for a custom ${entityLabel} slug.`}
-                </FieldDescription>
-              </Field>
-              <DialogFooter>
-                <Button
-                  disabled={isSaving}
-                  onClick={() => setOpen(false)}
-                  type="button"
-                  variant="outline"
-                >
-                  Cancel
-                </Button>
-                <Button disabled={isSaving} type="submit">
-                  {isSaving ? "Creating..." : `Create ${entityLabel}`}
-                </Button>
-              </DialogFooter>
-            </FieldGroup>
-          </form>
-        </DialogContent>
-      </Dialog>
-    </>
+                <InputGroupAddon align="inline-end" className="gap-1 py-0 pr-0">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        aria-label={
+                          isHandleLocked ? "Unlock handle editing" : "Lock handle editing"
+                        }
+                        className="rounded-full"
+                        onClick={() => setIsHandleLocked((current) => !current)}
+                        size="icon-sm"
+                        type="button"
+                        variant="ghost"
+                      >
+                        <HandleLockIcon data-icon="inline-start" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" sideOffset={6}>
+                      {isHandleLocked ? "Unlock handle editing" : "Lock handle editing"}
+                    </TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        aria-label={`Regenerate ${entityLabel} handle`}
+                        className="rounded-full"
+                        onClick={regenerateHandle}
+                        size="icon-sm"
+                        type="button"
+                        variant="ghost"
+                      >
+                        <AppIcons.refresh data-icon="inline-start" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" sideOffset={6}>
+                      Regenerate from {nameLabel.toLowerCase()}
+                    </TooltipContent>
+                  </Tooltip>
+                </InputGroupAddon>
+              </InputGroup>
+              <FieldDescription>
+                {isHandleLocked
+                  ? `The ${entityLabel} handle follows the ${nameLabel.toLowerCase()} automatically.`
+                  : `Handle editing is unlocked for a custom ${entityLabel} slug.`}
+              </FieldDescription>
+            </Field>
+          </div>
+          <DialogFooter className="mx-0 mb-0 rounded-none border-t bg-muted/50 p-4 sm:justify-end">
+            <Button
+              disabled={isSaving}
+              onClick={() => setOpen(false)}
+              type="button"
+              variant="outline"
+            >
+              Cancel
+            </Button>
+            <Button disabled={isSaving} type="submit">
+              {isSaving ? "Creating…" : `Create ${entityLabel}`}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }
 

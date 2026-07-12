@@ -110,6 +110,15 @@ export default async function MerchantProductsPage({ searchParams }: MerchantPro
           <ProductsTable
             categories={categoriesResult.ok ? categoriesResult.categories : []}
             collections={collectionsResult.ok ? collectionsResult.collections : []}
+            footer={
+              <PaginationControls
+                basePath={dashboardRoutes.products}
+                count={result.products.count}
+                page={listParams.page}
+                pageSize={result.products.limit}
+                searchParams={resolvedSearchParams}
+              />
+            }
             initialCategoryId={getResourceFilter(resolvedSearchParams.categoryId)}
             initialCollectionId={getResourceFilter(resolvedSearchParams.collectionId)}
             initialMedia={parseProductMediaFilter(resolvedSearchParams.media)}
@@ -121,13 +130,6 @@ export default async function MerchantProductsPage({ searchParams }: MerchantPro
             products={result.products.products}
             tenantId={tenantId}
             totalCount={result.products.count}
-          />
-          <PaginationControls
-            basePath={dashboardRoutes.products}
-            count={result.products.count}
-            page={listParams.page}
-            pageSize={result.products.limit}
-            searchParams={resolvedSearchParams}
           />
         </>
       ) : errorState?.kind === "setup" || errorState?.kind === "service" ? (

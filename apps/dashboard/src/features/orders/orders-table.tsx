@@ -2,7 +2,7 @@
 
 import type { MerchantOrder } from "@ecs/contracts";
 import type { ColumnDef } from "@tanstack/react-table";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 
 import { DataTable } from "@/components/app/data-table";
@@ -12,10 +12,10 @@ import {
 } from "@/components/app/data-table-filters";
 import { DataTableHeader } from "@/components/app/data-table-header";
 import { AppIcons } from "@/components/app/icons";
+import { ListToolbarSearch } from "@/components/app/list-toolbar";
 import { RowActionsMenu } from "@/components/app/row-actions-menu";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
 import {
   OrderCustomerCell,
   OrderIdentityCell,
@@ -38,6 +38,7 @@ import { getTenantScopedPath } from "@/lib/dashboard-tenant-context";
 import { dashboardRoutes } from "@/lib/routes";
 
 type OrdersTableProps = {
+  footer?: ReactNode;
   initialCreated?: OrderDateFilter | undefined;
   initialDelivery?: OrderDeliveryFilter | undefined;
   initialFulfillment?: OrderFulfillmentFilter | undefined;
@@ -191,6 +192,7 @@ function getOrderColumns(tenantId?: string): ColumnDef<MerchantOrder>[] {
 }
 
 export function OrdersTable({
+  footer,
   initialCreated = "all",
   initialDelivery = "all",
   initialFulfillment = "all",
@@ -340,31 +342,13 @@ export function OrdersTable({
   const toolbar = (
     <div className="flex flex-col gap-3">
       <DataTableFilters filters={filters} onClearAll={clearFilters}>
-        <InputGroup className="h-10 rounded-full bg-background/70 px-1 sm:max-w-sm">
-          <InputGroupAddon>
-            <AppIcons.search data-icon="inline-start" />
-          </InputGroupAddon>
-          <InputGroupInput
-            aria-label="Search orders"
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search orders"
-            value={query}
-          />
-          {query.trim() ? (
-            <InputGroupAddon align="inline-end">
-              <Button
-                aria-label="Clear order search"
-                className="rounded-full"
-                onClick={() => setQuery("")}
-                size="icon-sm"
-                type="button"
-                variant="ghost"
-              >
-                <AppIcons.close data-icon="inline-start" />
-              </Button>
-            </InputGroupAddon>
-          ) : null}
-        </InputGroup>
+        <ListToolbarSearch
+          clearLabel="Clear order search"
+          label="Search orders"
+          onChange={setQuery}
+          placeholder="Search orders"
+          value={query}
+        />
       </DataTableFilters>
       <p className="text-sm text-muted-foreground">
         {counts.hasActiveFilter
@@ -399,6 +383,7 @@ export function OrdersTable({
       isFiltered={counts.hasActiveFilter}
       selectedSummaryLabel={(count) => `order${count === 1 ? "" : "s"} selected`}
       toolbar={toolbar}
+      footer={footer}
     />
   );
 }
