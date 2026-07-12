@@ -116,7 +116,9 @@ export function CustomersTable({
             {row.original.groups.length ? (
               row.original.groups.map((group) => (
                 <Badge key={group.id} variant="secondary">
-                  {group.name.startsWith("Tenant ") ? "Customer" : group.name}
+                  {group.name.startsWith("Tenant ") || group.name.startsWith("Shop ")
+                    ? "Customer"
+                    : group.name}
                 </Badge>
               ))
             ) : (

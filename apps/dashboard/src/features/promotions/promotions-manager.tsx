@@ -32,7 +32,16 @@ import { copyTextToClipboard } from "@/lib/clipboard";
 import type { MerchantPromotion } from "@/lib/merchant-promotions";
 
 type StatusFilter = "all" | "active" | "draft" | "inactive";
-type MethodFilter = "all" | "percentage" | "fixed";
+type OfferFilter =
+  | "all"
+  | "order"
+  | "products"
+  | "shipping"
+  | "buyget"
+  | "free_shipping"
+  | "percentage"
+  | "fixed";
+type ApplyFilter = "all" | "code" | "automatic";
 
 async function copyToClipboard(value: string, label: string) {
   try {
@@ -68,6 +77,37 @@ function formatTarget(item: MerchantPromotion) {
   return "Order";
 }
 
+function isFreeShippingOffer(item: MerchantPromotion) {
+  return (
+    item.targetType === "shipping_methods" &&
+    item.method === "percentage" &&
+    item.value >= 100
+  );
+}
+
+function matchesOfferFilter(item: MerchantPromotion, offer: OfferFilter) {
+  switch (offer) {
+    case "all":
+      return true;
+    case "buyget":
+      return item.promotionType === "buyget";
+    case "free_shipping":
+      return isFreeShippingOffer(item);
+    case "order":
+      return item.promotionType !== "buyget" && item.targetType === "order";
+    case "products":
+      return item.promotionType !== "buyget" && item.targetType === "items";
+    case "shipping":
+      return item.targetType === "shipping_methods";
+    case "percentage":
+      return item.method === "percentage" && !isFreeShippingOffer(item);
+    case "fixed":
+      return item.method === "fixed";
+    default:
+      return true;
+  }
+}
+
 function statusBadgeVariant(status: MerchantPromotion["status"]) {
   if (status === "active") return "default" as const;
   if (status === "draft") return "outline" as const;
@@ -86,7 +126,8 @@ export function PromotionsManager({
   const router = useRouter();
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<StatusFilter>("all");
-  const [method, setMethod] = useState<MethodFilter>("all");
+  const [offer, setOffer] = useState<OfferFilter>("all");
+  const [apply, setApply] = useState<ApplyFilter>("all");
   const [deleteTarget, setDeleteTarget] = useState<MerchantPromotion | null>(null);
   const [bulkDeleteTargets, setBulkDeleteTargets] = useState<MerchantPromotion[]>([]);
   const [editing, setEditing] = useState<MerchantPromotion | null>(null);
@@ -98,14 +139,20 @@ export function PromotionsManager({
       const matchesQuery =
         !normalized ||
         item.code.toLowerCase().includes(normalized) ||
-        item.status.includes(normalized);
+        item.status.includes(normalized) ||
+        formatTarget(item).toLowerCase().includes(normalized);
       const matchesStatus = status === "all" || item.status === status;
-      const matchesMethod = method === "all" || item.method === method;
-      return matchesQuery && matchesStatus && matchesMethod;
+      const matchesOffer = offer === "all" || matchesOfferFilter(item, offer);
+      const matchesApply =
+        apply === "all" ||
+        (apply === "automatic" ? item.isAutomatic : !item.isAutomatic);
+      return matchesQuery && matchesStatus && matchesOffer && matchesApply;
     });
-  }, [method, promotions, query, status]);
+  }, [apply, offer, promotions, query, status]);
 
-  const isFiltered = Boolean(query.trim() || status !== "all" || method !== "all");
+  const isFiltered = Boolean(
+    query.trim() || status !== "all" || offer !== "all" || apply !== "all",
+  );
 
   const filters: DataTableFilterDefinition[] = [
     {
@@ -123,15 +170,31 @@ export function PromotionsManager({
     },
     {
       defaultValue: "all",
-      id: "method",
-      label: "Discount type",
-      onChange: (value) => setMethod(value as MethodFilter),
+      id: "offer",
+      label: "Offer",
+      onChange: (value) => setOffer(value as OfferFilter),
       options: [
-        { label: "All types", value: "all" },
+        { label: "All offers", value: "all" },
+        { label: "Order discount", value: "order" },
+        { label: "Product discount", value: "products" },
+        { label: "Free shipping", value: "free_shipping" },
+        { label: "Buy X get Y", value: "buyget" },
         { label: "Percentage", value: "percentage" },
         { label: "Fixed amount", value: "fixed" },
       ],
-      value: method,
+      value: offer,
+    },
+    {
+      defaultValue: "all",
+      id: "apply",
+      label: "How it applies",
+      onChange: (value) => setApply(value as ApplyFilter),
+      options: [
+        { label: "All methods", value: "all" },
+        { label: "Promotion code", value: "code" },
+        { label: "Automatic", value: "automatic" },
+      ],
+      value: apply,
     },
   ];
 
@@ -338,7 +401,8 @@ export function PromotionsManager({
               onClearAll={() => {
                 setQuery("");
                 setStatus("all");
-                setMethod("all");
+                setOffer("all");
+                setApply("all");
               }}
             >
               <ListToolbarSearch

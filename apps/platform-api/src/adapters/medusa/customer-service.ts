@@ -21,6 +21,14 @@ type CustomerInput = {
   tenantId: string;
 };
 
+/**
+ * Multi-shop customer strategy (shared Medusa instance):
+ * Email is globally unique in Medusa, so we cannot create a separate customer per shop.
+ * Instead each shop owns a tenant customer-group; create either:
+ * - creates a new customer and adds them to this shop's group, or
+ * - finds an existing customer by email and links them into this shop's group.
+ * "Already exists" only when that email is already in *this* shop's group.
+ */
 export function createMedusaCustomerService(options: Options) {
   const fetcher = options.fetcher ?? fetch;
   const base = options.medusaInternalUrl.replace(/\/$/, "");
@@ -37,15 +45,47 @@ export function createMedusaCustomerService(options: Options) {
     if (!response?.ok) return null;
     const data = await response.json().catch(() => ({}));
     const existing = (Array.isArray(data.customer_groups) ? data.customer_groups : []).find(
-      (group: any) => group?.metadata?.tenant_id === tenantId,
+      (group: { metadata?: { tenant_id?: string }; id?: string }) =>
+        group?.metadata?.tenant_id === tenantId,
     );
     if (existing?.id) return existing;
     const created = await fetcher(`${base}/admin/customer-groups`, {
-      body: JSON.stringify({ metadata: { tenant_id: tenantId }, name: `Tenant ${tenantId}` }),
+      body: JSON.stringify({
+        metadata: { tenant_id: tenantId },
+        name: `Shop ${tenantId.slice(0, 8)}`,
+      }),
       headers: headers(),
       method: "POST",
     }).catch(() => null);
     return created?.ok ? ((await created.json().catch(() => ({}))).customer_group ?? null) : null;
+  }
+
+  async function findByEmail(email: string): Promise<MerchantCustomer | null> {
+    const search = new URLSearchParams({
+      email,
+      fields: "+groups,+addresses",
+      limit: "1",
+    });
+    const response = await fetcher(`${base}/admin/customers?${search}`, {
+      headers: headers(),
+    }).catch(() => null);
+    if (!response?.ok) return null;
+    const data = await response.json().catch(() => ({}));
+    const first = Array.isArray(data.customers) ? data.customers[0] : null;
+    return first ? normalizeCustomer(first) : null;
+  }
+
+  async function attachToGroup(
+    groupId: string,
+    customerId: string,
+  ): Promise<{ ok: true } | CustomerServiceError> {
+    const attached = await fetcher(`${base}/admin/customer-groups/${groupId}/customers`, {
+      body: JSON.stringify({ add: [customerId] }),
+      headers: headers(),
+      method: "POST",
+    }).catch(() => null);
+    if (!attached?.ok) return await mapError(attached);
+    return { ok: true };
   }
 
   async function listCustomers(input: {
@@ -66,7 +106,7 @@ export function createMedusaCustomerService(options: Options) {
     const response = await fetcher(`${base}/admin/customers?${search}`, {
       headers: headers(),
     }).catch(() => null);
-    if (!response?.ok) return mapError(response);
+    if (!response?.ok) return await mapError(response);
     const data = await response.json().catch(() => ({}));
     const customers = (Array.isArray(data.customers) ? data.customers : []).map(normalizeCustomer);
     return {
@@ -91,7 +131,7 @@ export function createMedusaCustomerService(options: Options) {
     if (!response?.ok)
       return response?.status === 404
         ? { error: "customer_not_found", ok: false, status: 404 }
-        : mapError(response);
+        : await mapError(response);
     const customer = normalizeCustomer((await response.json().catch(() => ({}))).customer);
     return customer.groups.some((item) => item.id === group.id)
       ? { customer, ok: true }
@@ -101,27 +141,60 @@ export function createMedusaCustomerService(options: Options) {
   async function createCustomer(input: CustomerInput): Promise<MerchantCustomerResult> {
     const group = await tenantGroup(input.tenantId);
     if (!group) return unavailable();
+    const email = input.email.trim().toLowerCase();
+
+    // Prefer create; on global email uniqueness conflict, link into this shop instead.
     const response = await fetcher(`${base}/admin/customers`, {
       body: JSON.stringify(toPayload(input)),
       headers: headers(),
       method: "POST",
     }).catch(() => null);
-    if (!response?.ok) return mapError(response);
-    const customer = normalizeCustomer((await response.json().catch(() => ({}))).customer);
-    // Medusa AdminBatchLink: { add, remove } — not customer_ids.
-    const attached = await fetcher(`${base}/admin/customer-groups/${group.id}/customers`, {
-      body: JSON.stringify({ add: [customer.id] }),
-      headers: headers(),
-      method: "POST",
-    }).catch(() => null);
-    if (!attached?.ok) {
-      // Customer was created but group link failed — surface a clear conflict/availability path.
-      return mapError(attached);
+
+    if (response?.ok) {
+      const customer = normalizeCustomer((await response.json().catch(() => ({}))).customer);
+      const linked = await attachToGroup(String(group.id), customer.id);
+      if (!linked.ok) return linked;
+      return {
+        customer: {
+          ...customer,
+          groups: [{ id: String(group.id), name: String(group.name ?? "Customers") }],
+        },
+        ok: true,
+      };
     }
+
+    const createError = await mapError(response);
+    if (createError.error !== "customer_email_conflict") return createError;
+
+    const existing = await findByEmail(email);
+    if (!existing) return createError;
+
+    const alreadyInShop = existing.groups.some((item) => item.id === group.id);
+    if (alreadyInShop) {
+      return { error: "customer_email_conflict", ok: false, status: 409 };
+    }
+
+    const linked = await attachToGroup(String(group.id), existing.id);
+    if (!linked.ok) return linked;
+
+    // Optionally refresh profile fields when linking into a new shop.
+    if (input.firstName || input.lastName || input.phone || input.companyName) {
+      await fetcher(`${base}/admin/customers/${encodeURIComponent(existing.id)}`, {
+        body: JSON.stringify(toPayload(input)),
+        headers: headers(),
+        method: "POST",
+      }).catch(() => null);
+    }
+
+    const refreshed = await getCustomer({ customerId: existing.id, tenantId: input.tenantId });
+    if (refreshed.ok) return refreshed;
     return {
       customer: {
-        ...customer,
-        groups: [{ id: String(group.id), name: String(group.name ?? "Customers") }],
+        ...existing,
+        groups: [
+          ...existing.groups.filter((item) => item.id !== group.id),
+          { id: String(group.id), name: String(group.name ?? "Customers") },
+        ],
       },
       ok: true,
     };
@@ -141,19 +214,21 @@ export function createMedusaCustomerService(options: Options) {
           customer: normalizeCustomer((await response.json().catch(() => ({}))).customer),
           ok: true,
         }
-      : mapError(response);
+      : await mapError(response);
   }
   async function listGroups(input: { tenantId: string }): Promise<MerchantCustomerGroupsResult> {
     const group = await tenantGroup(input.tenantId);
-    return group ? { groups: [{ id: group.id, name: group.name }], ok: true } : unavailable();
+    return group
+      ? { groups: [{ id: group.id, name: group.name ?? "Customers" }], ok: true }
+      : unavailable();
   }
   return { createCustomer, getCustomer, listCustomers, listGroups, updateCustomer };
 }
 
 function toPayload(input: CustomerInput) {
-  // Omit empty optionals — Medusa rejects unexpected nulls on some fields.
   return {
     email: input.email.trim().toLowerCase(),
+    metadata: { platform_tenant_id: input.tenantId },
     ...(input.companyName?.trim() ? { company_name: input.companyName.trim() } : {}),
     ...(input.firstName?.trim() ? { first_name: input.firstName.trim() } : {}),
     ...(input.lastName?.trim() ? { last_name: input.lastName.trim() } : {}),
@@ -184,10 +259,34 @@ function normalizeCustomer(value: any): MerchantCustomer {
     updatedAt: value?.updated_at ?? value?.created_at ?? new Date(0).toISOString(),
   };
 }
-function mapError(response: Response | null): CustomerServiceError {
-  if (response?.status === 401)
+
+async function mapError(response: Response | null): Promise<CustomerServiceError> {
+  if (!response) return { error: "commerce_backend_unavailable", ok: false, status: 503 };
+  if (response.status === 401)
     return { error: "commerce_credentials_invalid", ok: false, status: 401 };
-  if (response?.status === 409 || response?.status === 422)
+
+  const body = await response
+    .clone()
+    .json()
+    .catch(() => null);
+  if (isEmailConflict(response.status, body)) {
     return { error: "customer_email_conflict", ok: false, status: 409 };
+  }
+  if (response.status === 400) {
+    return { error: "invalid_customer", ok: false, status: 400 };
+  }
   return { error: "commerce_backend_unavailable", ok: false, status: 503 };
+}
+
+function isEmailConflict(status: number, body: unknown): boolean {
+  if (status === 409 || status === 422) return true;
+  const text = JSON.stringify(body ?? {}).toLowerCase();
+  return (
+    text.includes("email") &&
+    (text.includes("exist") ||
+      text.includes("unique") ||
+      text.includes("duplicate") ||
+      text.includes("already") ||
+      text.includes("conflict"))
+  );
 }

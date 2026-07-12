@@ -207,14 +207,18 @@ export function CustomerFormDialog({
 function getCustomerErrorMessage(error: string | undefined, isEdit: boolean) {
   if (error === "invalid_customer") return "Check the email and other fields, then try again.";
   if (error === "customer_email_conflict") {
-    return "A customer with this email already exists.";
+    return isEdit
+      ? "Another customer already uses this email."
+      : "This email is already in your customer list.";
   }
   if (error === "customer_not_found") return "Customer was not found.";
   if (error === "commerce_backend_unavailable") {
-    return "Customer updates are temporarily unavailable. Try again in a moment.";
+    return isEdit
+      ? "Could not save right now. Try again in a moment."
+      : "Could not add this customer right now. Try again in a moment.";
   }
   if (error === "commerce_credentials_missing" || error === "commerce_credentials_invalid") {
-    return "Customer updates are temporarily unavailable. Contact support.";
+    return "Customer changes are temporarily unavailable. Contact support.";
   }
   return isEdit
     ? "Customer could not be updated. Try again."
