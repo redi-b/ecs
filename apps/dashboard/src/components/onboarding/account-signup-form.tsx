@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useId, useState } from "react";
 
 import { AppIcons } from "@/components/app/icons";
+import { LanguageSwitcher } from "@/components/app/language-switcher";
 import { ThemeToggle } from "@/components/app/theme-toggle";
 import { Button } from "@/components/ui/button";
 import {
@@ -21,6 +22,7 @@ import {
   InputGroupButton,
   InputGroupInput,
 } from "@/components/ui/input-group";
+import { useI18n } from "@/i18n/provider";
 
 export function AccountSignUpForm({
   defaultValues,
@@ -33,6 +35,7 @@ export function AccountSignUpForm({
   errorMessage: string | null;
 }) {
   const fieldId = useId();
+  const { t } = useI18n();
   const [ownerName, setOwnerName] = useState(defaultValues.ownerName ?? "");
   const [email, setEmail] = useState(defaultValues.email ?? "");
   const [password, setPassword] = useState("");
@@ -40,21 +43,24 @@ export function AccountSignUpForm({
   const PasswordIcon = isPasswordVisible ? AppIcons.eyeOff : AppIcons.eye;
 
   return (
-    <Card className="w-full rounded-3xl border border-border/70 bg-card/95 shadow-xl shadow-primary/5 backdrop-blur [--card-spacing:--spacing(5)]">
+    <Card className="w-full rounded-3xl border border-border bg-card [--card-spacing:--spacing(5)]">
       <CardHeader className="gap-1.5">
         <div className="text-xs font-bold tracking-normal text-muted-foreground uppercase">
-          Merchant console
+          {t("auth.merchantConsole")}
         </div>
-        <CardTitle className="text-xl font-semibold">Create your account</CardTitle>
-        <CardDescription>Shop setup starts after your account is created.</CardDescription>
+        <CardTitle className="text-xl font-semibold">{t("auth.createAccountTitle")}</CardTitle>
+        <CardDescription>{t("auth.createAccountDescription")}</CardDescription>
         <CardAction>
-          <ThemeToggle />
+          <div className="flex items-center gap-1">
+            <LanguageSwitcher />
+            <ThemeToggle />
+          </div>
         </CardAction>
       </CardHeader>
       <CardContent className="pt-1">
         <form action="/admin/sign-up/submit" className="flex flex-col gap-5" method="post">
           <Field>
-            <FieldLabel htmlFor={`${fieldId}-ownerName`}>Owner name</FieldLabel>
+            <FieldLabel htmlFor={`${fieldId}-ownerName`}>{t("auth.ownerName")}</FieldLabel>
             <InputGroup className="h-11 rounded-full bg-background/70 px-1 transition-all duration-200 hover:border-ring/70">
               <InputGroupInput
                 autoComplete="name"
@@ -69,7 +75,7 @@ export function AccountSignUpForm({
             </InputGroup>
           </Field>
           <Field>
-            <FieldLabel htmlFor={`${fieldId}-email`}>Work email</FieldLabel>
+            <FieldLabel htmlFor={`${fieldId}-email`}>{t("auth.workEmail")}</FieldLabel>
             <InputGroup className="h-11 rounded-full bg-background/70 px-1 transition-all duration-200 hover:border-ring/70">
               <InputGroupInput
                 autoComplete="email"
@@ -85,7 +91,7 @@ export function AccountSignUpForm({
             </InputGroup>
           </Field>
           <Field>
-            <FieldLabel htmlFor={`${fieldId}-password`}>Password</FieldLabel>
+            <FieldLabel htmlFor={`${fieldId}-password`}>{t("auth.password")}</FieldLabel>
             <InputGroup className="h-11 rounded-full bg-background/70 px-1 transition-all duration-200 hover:border-ring/70">
               <InputGroupInput
                 autoComplete="new-password"
@@ -100,7 +106,7 @@ export function AccountSignUpForm({
               />
               <InputGroupAddon align="inline-end">
                 <InputGroupButton
-                  aria-label={isPasswordVisible ? "Hide password" : "Show password"}
+                  aria-label={isPasswordVisible ? t("auth.hidePassword") : t("auth.showPassword")}
                   onClick={() => setIsPasswordVisible((value) => !value)}
                   size="icon-xs"
                 >
@@ -108,7 +114,7 @@ export function AccountSignUpForm({
                 </InputGroupButton>
               </InputGroupAddon>
             </InputGroup>
-            <FieldDescription>At least 8 characters.</FieldDescription>
+            <FieldDescription>{t("auth.passwordMinimum")}</FieldDescription>
           </Field>
           {errorMessage ? (
             <Field data-invalid>
@@ -116,16 +122,16 @@ export function AccountSignUpForm({
             </Field>
           ) : null}
           <Button className="h-11 rounded-full text-sm font-semibold shadow-sm" type="submit">
-            Continue
+            {t("common.continue")}
           </Button>
         </form>
         <p className="mt-5 border-t pt-4 text-center text-sm text-muted-foreground">
-          Already have an account?{" "}
+          {t("auth.alreadyRegistered")}{" "}
           <Link
             className="font-medium text-primary underline-offset-4 hover:underline"
             href="/admin/sign-in"
           >
-            Sign in
+            {t("auth.signIn")}
           </Link>
         </p>
       </CardContent>

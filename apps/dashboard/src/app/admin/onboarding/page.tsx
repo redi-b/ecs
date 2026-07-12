@@ -1,9 +1,11 @@
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
-
+import { LanguageSwitcher } from "@/components/app/language-switcher";
 import { ThemeToggle } from "@/components/app/theme-toggle";
 import { ShopOnboardingForm } from "@/components/onboarding/signup-onboarding-form";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import type { MessageKey } from "@/i18n/messages";
+import { getRequestMessages } from "@/i18n/server";
 import { isCentralDashboardHost } from "@/lib/dashboard-hosts";
 import { getPlatformOnboardingState } from "@/lib/platform-onboarding";
 import { getStorefrontTemplates } from "@/lib/storefront-templates";
@@ -18,18 +20,9 @@ type OnboardingPageProps = {
   }>;
 };
 
-const errorMessages: Record<string, string> = {
-  auth_required: "Sign in before setting up a shop.",
-  handle_taken: "That shop address is already taken.",
-  invalid_shop_setup: "Check the shop details and try again.",
-  missing_required_fields: "Complete the required fields.",
-  platform_request_failed: "The platform service could not be reached.",
-  storefront_template_unavailable: "No storefront template is available right now.",
-  template_unavailable: "Selected storefront is unavailable.",
-  tenant_handle_taken: "That shop address is already taken.",
-};
-
 export default async function OnboardingPage({ searchParams }: OnboardingPageProps) {
+  const { messages } = await getRequestMessages();
+  const t = (key: MessageKey) => messages[key];
   const requestHeaders = await headers();
   const isCentralAccess = isCentralDashboardHost(
     requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host"),
@@ -67,8 +60,18 @@ export default async function OnboardingPage({ searchParams }: OnboardingPagePro
   }
 
   const templates = templatesResult.ok ? templatesResult.templates : [];
+  const errorMessages: Record<string, string> = {
+    auth_required: t("onboarding.error.authRequired"),
+    handle_taken: t("onboarding.error.handleTaken"),
+    invalid_shop_setup: t("onboarding.error.invalidSetup"),
+    missing_required_fields: t("onboarding.error.required"),
+    platform_request_failed: t("onboarding.error.platformUnavailable"),
+    storefront_template_unavailable: t("onboarding.error.storefrontUnavailable"),
+    template_unavailable: t("onboarding.error.templateUnavailable"),
+    tenant_handle_taken: t("onboarding.error.handleTaken"),
+  };
   const errorMessage = resolvedSearchParams.error
-    ? (errorMessages[resolvedSearchParams.error] ?? "Shop setup failed. Please try again.")
+    ? (errorMessages[resolvedSearchParams.error] ?? t("onboarding.error.failed"))
     : null;
 
   return (
@@ -76,20 +79,21 @@ export default async function OnboardingPage({ searchParams }: OnboardingPagePro
       <div className="mx-auto flex max-w-6xl flex-col gap-6">
         <header className="grid gap-3 border-b pb-5 md:grid-cols-[1fr_auto] md:items-start">
           <div>
-            <p className="text-sm font-medium text-primary">Merchant onboarding</p>
-            <h1 className="mt-2 text-3xl font-semibold tracking-tight">
-              Configure your first shop
-            </h1>
+            <p className="text-sm font-medium text-primary">{t("onboarding.eyebrow")}</p>
+            <h1 className="mt-2 text-3xl font-semibold tracking-tight">{t("onboarding.title")}</h1>
             <p className="mt-2 max-w-xl text-sm text-muted-foreground">
-              Your account is ready. Add the shop details and choose a storefront starting point.
+              {t("onboarding.description")}
             </p>
           </div>
-          <ThemeToggle />
+          <div className="flex items-center gap-1">
+            <LanguageSwitcher />
+            <ThemeToggle />
+          </div>
         </header>
 
         {!templatesResult.ok ? (
           <Alert variant="destructive">
-            <AlertTitle>Storefront templates unavailable</AlertTitle>
+            <AlertTitle>{t("onboarding.templatesUnavailable")}</AlertTitle>
             <AlertDescription>{templatesResult.message}</AlertDescription>
           </Alert>
         ) : null}

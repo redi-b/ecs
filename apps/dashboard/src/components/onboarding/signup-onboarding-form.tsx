@@ -10,19 +10,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import type { MessageKey } from "@/i18n/messages";
+import { useI18n } from "@/i18n/provider";
 import { getStorefrontHostname } from "@/lib/storefront-hosts";
 import { cn } from "@/lib/utils";
-
-const steps = [
-  {
-    title: "Shop",
-    description: "Name and address",
-  },
-  {
-    title: "Storefront",
-    description: "Starting point",
-  },
-] as const;
 
 type HandleState =
   | {
@@ -60,14 +51,31 @@ export function ShopOnboardingForm({
   templates: StorefrontTemplateCatalogItem[];
 }) {
   const fieldId = useId();
+  const { t } = useI18n();
+  const steps = [
+    {
+      title: t("onboarding.shopStep"),
+      description: t("onboarding.shopStepDescription"),
+    },
+    {
+      title: t("onboarding.storefrontStep"),
+      description: t("onboarding.storefrontStepDescription"),
+    },
+    {
+      title: t("onboarding.reviewStep"),
+      description: t("onboarding.reviewStepDescription"),
+    },
+  ] as const;
   const [step, setStep] = useState(0);
   const [shopName, setShopName] = useState(defaultValues.shopName ?? "");
   const [handle, setHandle] = useState(defaultValues.handle ?? "");
   const [handleTouched, setHandleTouched] = useState(Boolean(defaultValues.handle));
   const [templateKey, setTemplateKey] = useState(templates[0]?.version.templateKey ?? "");
+  const [businessCategory, setBusinessCategory] = useState(defaultValues.businessCategory ?? "");
+  const [contactPhone, setContactPhone] = useState(defaultValues.contactPhone ?? "");
   const [handleState, setHandleState] = useState<HandleState>({
     status: "idle",
-    message: "Choose a short shop address.",
+    message: t("onboarding.handle.choose"),
   });
   const selectedTemplate = useMemo(
     () =>
@@ -81,12 +89,40 @@ export function ShopOnboardingForm({
   }, [handleTouched, shopName]);
 
   useEffect(() => {
+    if (defaultValues.shopName || defaultValues.handle) return;
+    const draft = window.localStorage.getItem("ecs:onboarding-draft");
+    if (!draft) return;
+    try {
+      const value = JSON.parse(draft) as Record<string, string>;
+      setShopName(value.shopName ?? "");
+      setHandle(value.handle ?? "");
+      setHandleTouched(Boolean(value.handle));
+      setBusinessCategory(value.businessCategory ?? "");
+      setContactPhone(value.contactPhone ?? "");
+      if (
+        value.templateKey &&
+        templates.some((item) => item.version.templateKey === value.templateKey)
+      )
+        setTemplateKey(value.templateKey);
+    } catch {
+      window.localStorage.removeItem("ecs:onboarding-draft");
+    }
+  }, [defaultValues.handle, defaultValues.shopName, templates]);
+
+  useEffect(() => {
+    window.localStorage.setItem(
+      "ecs:onboarding-draft",
+      JSON.stringify({ businessCategory, contactPhone, handle, shopName, templateKey }),
+    );
+  }, [businessCategory, contactPhone, handle, shopName, templateKey]);
+
+  useEffect(() => {
     const normalized = slugify(handle);
 
     if (!normalized) {
       setHandleState({
         status: "idle",
-        message: "Choose a short shop address.",
+        message: t("onboarding.handle.choose"),
       });
       return;
     }
@@ -98,7 +134,7 @@ export function ShopOnboardingForm({
 
     setHandleState({
       status: "checking",
-      message: "Checking address...",
+      message: t("onboarding.handle.checking"),
     });
 
     const controller = new AbortController();
@@ -113,7 +149,7 @@ export function ShopOnboardingForm({
       if (!response) {
         setHandleState({
           status: "unavailable",
-          message: "Address check failed.",
+          message: t("onboarding.handle.checkFailed"),
         });
         return;
       }
@@ -127,7 +163,7 @@ export function ShopOnboardingForm({
       if (!response.ok || !data.available) {
         setHandleState({
           status: "unavailable",
-          message: getHandleReason(data.reason),
+          message: getHandleReason(data.reason, t),
         });
         return;
       }
@@ -135,7 +171,7 @@ export function ShopOnboardingForm({
       setHandleState({
         status: "available",
         hostname: data.hostname ?? getStorefrontHostname(normalized, storefrontBaseDomain),
-        message: "Address available.",
+        message: t("onboarding.handle.available"),
       });
     }, 350);
 
@@ -143,23 +179,22 @@ export function ShopOnboardingForm({
       controller.abort();
       window.clearTimeout(timeout);
     };
-  }, [handle, storefrontBaseDomain]);
+  }, [handle, storefrontBaseDomain, t]);
 
   const canContinue =
     (step === 0 && shopName.trim() && handleState.status === "available") ||
-    (step === 1 && templateKey);
+    (step === 1 && templateKey) ||
+    step === 2;
 
   return (
     <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_22rem]">
       <Card className="rounded-2xl border-border/80 bg-card/95 shadow-sm">
         <CardHeader className="border-b">
-          <CardTitle className="text-xl">Set up your shop</CardTitle>
-          <CardDescription>
-            Add the shop details and choose a storefront starting point.
-          </CardDescription>
+          <CardTitle className="text-xl">{t("onboarding.setupTitle")}</CardTitle>
+          <CardDescription>{t("onboarding.setupDescription")}</CardDescription>
         </CardHeader>
         <CardContent className="flex min-h-[34rem] flex-col gap-6 pt-5">
-          <div className="grid gap-2 sm:grid-cols-2">
+          <div className="grid gap-2 sm:grid-cols-3">
             {steps.map((item, index) => (
               <button
                 aria-current={step === index ? "step" : undefined}
@@ -183,11 +218,22 @@ export function ShopOnboardingForm({
               </button>
             ))}
           </div>
+          <div className="flex items-center gap-3">
+            <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
+              <div
+                className="h-full bg-primary transition-[width]"
+                style={{ width: `${((step + 1) / steps.length) * 100}%` }}
+              />
+            </div>
+            <span className="text-xs font-medium text-muted-foreground">
+              {t("onboarding.estimatedTime")}
+            </span>
+          </div>
 
           {errorMessage ? (
             <Alert variant="destructive">
               <AppIcons.error />
-              <AlertTitle>Shop setup paused</AlertTitle>
+              <AlertTitle>{t("onboarding.paused")}</AlertTitle>
               <AlertDescription>{errorMessage}</AlertDescription>
             </Alert>
           ) : null}
@@ -196,11 +242,14 @@ export function ShopOnboardingForm({
             action="/admin/onboarding/submit"
             className="flex flex-1 flex-col gap-6"
             method="post"
+            onSubmit={() => window.localStorage.removeItem("ecs:onboarding-draft")}
           >
             <div className="flex-1">
               <div className={cn("grid gap-4", step === 0 ? "block" : "hidden")}>
                 <Field>
-                  <FieldLabel htmlFor={`${fieldId}-shopName`}>Shop name</FieldLabel>
+                  <FieldLabel htmlFor={`${fieldId}-shopName`}>
+                    {t("onboarding.shopName")}
+                  </FieldLabel>
                   <Input
                     autoComplete="organization"
                     className="h-11 rounded-full px-3"
@@ -214,7 +263,9 @@ export function ShopOnboardingForm({
                 </Field>
                 <div className="grid gap-2">
                   <Field data-invalid={handleState.status === "unavailable" ? true : undefined}>
-                    <FieldLabel htmlFor={`${fieldId}-handle`}>Shop address</FieldLabel>
+                    <FieldLabel htmlFor={`${fieldId}-handle`}>
+                      {t("onboarding.shopAddress")}
+                    </FieldLabel>
                     <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_13rem] sm:items-center">
                       <Input
                         className="h-11 rounded-full px-3"
@@ -229,7 +280,7 @@ export function ShopOnboardingForm({
                         value={handle}
                       />
                       <div className="flex h-11 items-center justify-between gap-3 rounded-full border bg-muted/30 px-4 text-sm">
-                        <span className="text-xs text-muted-foreground">Preview</span>
+                        <span className="text-xs text-muted-foreground">{t("common.preview")}</span>
                         <span className="min-w-0 truncate font-medium">
                           {handleState.status === "available"
                             ? handleState.hostname
@@ -246,27 +297,71 @@ export function ShopOnboardingForm({
                 </div>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <Field>
-                    <FieldLabel htmlFor={`${fieldId}-businessCategory`}>Category</FieldLabel>
+                    <FieldLabel htmlFor={`${fieldId}-businessCategory`}>
+                      {t("onboarding.category")}
+                    </FieldLabel>
                     <Input
                       className="h-11 rounded-full px-3"
-                      defaultValue={defaultValues.businessCategory}
                       id={`${fieldId}-businessCategory`}
                       name="businessCategory"
-                      placeholder="Groceries, fashion, electronics"
+                      onChange={(event) => setBusinessCategory(event.target.value)}
+                      placeholder={t("onboarding.categoryPlaceholder")}
+                      value={businessCategory}
                     />
                   </Field>
                   <Field>
-                    <FieldLabel htmlFor={`${fieldId}-contactPhone`}>Contact phone</FieldLabel>
+                    <FieldLabel htmlFor={`${fieldId}-contactPhone`}>
+                      {t("onboarding.contactPhone")}
+                    </FieldLabel>
                     <Input
                       autoComplete="tel"
                       className="h-11 rounded-full px-3"
-                      defaultValue={defaultValues.contactPhone}
                       id={`${fieldId}-contactPhone`}
                       name="contactPhone"
+                      onChange={(event) => setContactPhone(event.target.value)}
                       placeholder="+251..."
+                      value={contactPhone}
                     />
                   </Field>
                 </div>
+              </div>
+
+              <div className={cn("grid gap-4", step === 2 ? "block" : "hidden")}>
+                <div className="rounded-2xl border bg-muted/20 p-5">
+                  <div className="mb-4 flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-semibold">{t("onboarding.reviewTitle")}</p>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        {t("onboarding.reviewDescription")}
+                      </p>
+                    </div>
+                    <Badge variant="secondary">{t("onboarding.ready")}</Badge>
+                  </div>
+                  <dl className="grid gap-4 sm:grid-cols-2">
+                    <ReviewItem label={t("onboarding.shopName")} value={shopName} />
+                    <ReviewItem
+                      label={t("onboarding.shopAddress")}
+                      value={handleState.status === "available" ? handleState.hostname : handle}
+                    />
+                    <ReviewItem
+                      label={t("onboarding.category")}
+                      value={businessCategory || t("common.notSet")}
+                    />
+                    <ReviewItem
+                      label={t("onboarding.contactPhone")}
+                      value={contactPhone || t("common.notSet")}
+                    />
+                    <ReviewItem
+                      label={t("onboarding.selectedStorefront")}
+                      value={selectedTemplate?.name ?? templateKey}
+                    />
+                  </dl>
+                </div>
+                <Alert>
+                  <AppIcons.check />
+                  <AlertTitle>{t("onboarding.recoverableTitle")}</AlertTitle>
+                  <AlertDescription>{t("onboarding.recoverableDescription")}</AlertDescription>
+                </Alert>
               </div>
 
               <div className={cn("grid gap-4", step === 1 ? "block" : "hidden")}>
@@ -284,10 +379,8 @@ export function ShopOnboardingForm({
                 {!templates.length ? (
                   <Alert variant="destructive">
                     <AppIcons.error />
-                    <AlertTitle>No storefronts available</AlertTitle>
-                    <AlertDescription>
-                      Shop setup needs an active storefront template.
-                    </AlertDescription>
+                    <AlertTitle>{t("onboarding.noStorefronts")}</AlertTitle>
+                    <AlertDescription>{t("onboarding.noStorefrontsDescription")}</AlertDescription>
                   </Alert>
                 ) : null}
               </div>
@@ -302,7 +395,7 @@ export function ShopOnboardingForm({
                 type="submit"
                 variant="link"
               >
-                Use another account
+                {t("onboarding.otherAccount")}
               </Button>
               <div className="flex gap-2">
                 <Button
@@ -311,7 +404,7 @@ export function ShopOnboardingForm({
                   type="button"
                   variant="outline"
                 >
-                  Back
+                  {t("common.back")}
                 </Button>
                 {step < steps.length - 1 ? (
                   <Button
@@ -319,14 +412,14 @@ export function ShopOnboardingForm({
                     onClick={() => setStep((value) => Math.min(steps.length - 1, value + 1))}
                     type="button"
                   >
-                    Continue
+                    {t("common.continue")}
                   </Button>
                 ) : (
                   <Button
                     disabled={!canContinue || handleState.status !== "available"}
                     type="submit"
                   >
-                    Create shop
+                    {t("onboarding.createShop")}
                   </Button>
                 )}
               </div>
@@ -338,15 +431,15 @@ export function ShopOnboardingForm({
       <aside className="space-y-4">
         <Card className="rounded-2xl border-border/80 bg-card/95 shadow-sm">
           <CardHeader>
-            <CardTitle className="text-base">What happens next</CardTitle>
-            <CardDescription>We create the workspace and storefront starter.</CardDescription>
+            <CardTitle className="text-base">{t("onboarding.whatNext")}</CardTitle>
+            <CardDescription>{t("onboarding.whatNextDescription")}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             {[
-              "Shop workspace",
-              "Storefront starting point",
-              "Secure dashboard",
-              "Launch assistant",
+              t("onboarding.workspace"),
+              t("onboarding.startingPoint"),
+              t("onboarding.secureDashboard"),
+              t("onboarding.launchAssistant"),
             ].map((item) => (
               <div className="flex items-center gap-2 text-sm" key={item}>
                 <span className="flex size-6 items-center justify-center rounded-full bg-primary/10 text-primary">
@@ -360,8 +453,10 @@ export function ShopOnboardingForm({
 
         <Card className="rounded-2xl border-border/80 bg-card/95 shadow-sm">
           <CardHeader>
-            <CardTitle className="text-base">Selected storefront</CardTitle>
-            <CardDescription>{selectedTemplate?.name ?? "Choose a template"}</CardDescription>
+            <CardTitle className="text-base">{t("onboarding.selectedStorefront")}</CardTitle>
+            <CardDescription>
+              {selectedTemplate?.name ?? t("onboarding.chooseTemplate")}
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <StorefrontPreview template={selectedTemplate ?? null} />
@@ -377,11 +472,20 @@ export function ShopOnboardingForm({
 
         <Card className="rounded-2xl border-border/80 bg-card/95 shadow-sm">
           <CardHeader>
-            <CardTitle className="text-base">After setup</CardTitle>
-            <CardDescription>Finish payments and fulfillment from the dashboard.</CardDescription>
+            <CardTitle className="text-base">{t("onboarding.afterSetup")}</CardTitle>
+            <CardDescription>{t("onboarding.afterSetupDescription")}</CardDescription>
           </CardHeader>
         </Card>
       </aside>
+    </div>
+  );
+}
+
+function ReviewItem({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <dt className="text-xs font-medium text-muted-foreground">{label}</dt>
+      <dd className="mt-1 truncate text-sm font-medium">{value}</dd>
     </div>
   );
 }
@@ -429,7 +533,7 @@ function TemplateOption({
 
 function StorefrontPreview({ template }: { template: StorefrontTemplateCatalogItem | null }) {
   return (
-    <div className="relative aspect-[16/10] overflow-hidden rounded-xl border bg-gradient-to-br from-primary/15 via-chart-3/10 to-background">
+    <div className="relative aspect-[16/10] overflow-hidden rounded-xl border bg-muted/45">
       <div className="absolute inset-x-3 top-3 flex items-center justify-between">
         <span className="h-2 w-16 rounded-full bg-foreground/20" />
         <span className="h-2 w-9 rounded-full bg-primary/60" />
@@ -460,11 +564,11 @@ function getTemplateTags(template: StorefrontTemplateCatalogItem | null | undefi
     : [];
 }
 
-function getHandleReason(reason: string | undefined) {
-  if (reason === "taken") return "Address is already taken.";
-  if (reason === "reserved") return "Address is reserved.";
-  if (reason === "invalid") return "Use lowercase letters, numbers, and hyphens.";
-  return "Address is unavailable.";
+function getHandleReason(reason: string | undefined, t: (key: MessageKey) => string) {
+  if (reason === "taken") return t("onboarding.handle.taken");
+  if (reason === "reserved") return t("onboarding.handle.reserved");
+  if (reason === "invalid") return t("onboarding.handle.invalid");
+  return t("onboarding.handle.unavailable");
 }
 
 function slugify(value: string) {
