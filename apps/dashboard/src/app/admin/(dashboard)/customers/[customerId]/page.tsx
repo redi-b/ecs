@@ -1,7 +1,13 @@
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
+
 import { PageShell } from "@/components/app/page-shell";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  CustomerAddressDeleteButton,
+  CustomerAddressDialog,
+} from "@/features/customers/customer-address-dialog";
 import { CustomerFormDialog } from "@/features/customers/customer-form-dialog";
 import { getMerchantCustomer } from "@/lib/merchant-customers";
 
@@ -50,7 +56,9 @@ export default async function CustomerDetailPage({
             {customer.groups.length ? (
               customer.groups.map((group) => (
                 <Badge key={group.id} variant="secondary">
-                  {group.name.startsWith("Tenant ") ? "Customer" : group.name}
+                  {group.name.startsWith("Tenant ") || group.name.startsWith("Shop ")
+                    ? "Customer"
+                    : group.name}
                 </Badge>
               ))
             ) : (
@@ -59,25 +67,43 @@ export default async function CustomerDetailPage({
           </div>
         </section>
         <section className="rounded-2xl border bg-card p-5 lg:col-span-3">
-          <div className="flex items-center justify-between gap-3">
-            <h2 className="text-sm font-semibold">Addresses</h2>
-            {customer.addresses.length ? (
-              <p className="text-xs text-muted-foreground">
-                {customer.addresses.length} saved address
-                {customer.addresses.length === 1 ? "" : "es"}
-              </p>
-            ) : null}
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="text-sm font-semibold">Addresses</h2>
+              {customer.addresses.length ? (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {customer.addresses.length} saved address
+                  {customer.addresses.length === 1 ? "" : "es"}
+                </p>
+              ) : null}
+            </div>
+            <CustomerAddressDialog customerId={customer.id} />
           </div>
           {customer.addresses.length ? (
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
               {customer.addresses.map((address) => {
-                const location = [address.city, address.countryCode?.toUpperCase()]
+                const line = [
+                  address.address1,
+                  address.address2,
+                  address.city,
+                  address.province,
+                  address.postalCode,
+                  address.countryCode?.toUpperCase(),
+                ]
                   .filter(Boolean)
                   .join(", ");
+                const contact = [address.firstName, address.lastName].filter(Boolean).join(" ");
                 return (
                   <div className="flex flex-col gap-3 rounded-xl border p-4" key={address.id}>
                     <div className="flex flex-wrap items-start justify-between gap-2">
-                      <p className="text-sm font-medium">{address.address1 || "Address"}</p>
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium">
+                          {address.addressName || address.address1 || "Address"}
+                        </p>
+                        {contact ? (
+                          <p className="mt-0.5 text-xs text-muted-foreground">{contact}</p>
+                        ) : null}
+                      </div>
                       <div className="flex flex-wrap gap-1.5">
                         {address.isDefaultShipping ? (
                           <Badge variant="secondary">Default shipping</Badge>
@@ -87,18 +113,34 @@ export default async function CustomerDetailPage({
                         ) : null}
                       </div>
                     </div>
-                    {location ? (
-                      <p className="text-sm text-muted-foreground">{location}</p>
-                    ) : (
-                      <p className="text-sm text-muted-foreground">No city or country on file.</p>
-                    )}
+                    <p className="text-sm text-muted-foreground">
+                      {line || "No address details on file."}
+                    </p>
+                    {address.phone ? (
+                      <p className="text-xs text-muted-foreground">{address.phone}</p>
+                    ) : null}
+                    <div className="flex flex-wrap gap-2 border-t pt-3">
+                      <CustomerAddressDialog
+                        address={address}
+                        customerId={customer.id}
+                        trigger={
+                          <Button size="sm" type="button" variant="outline">
+                            Edit
+                          </Button>
+                        }
+                      />
+                      <CustomerAddressDeleteButton
+                        addressId={address.id}
+                        customerId={customer.id}
+                      />
+                    </div>
                   </div>
                 );
               })}
             </div>
           ) : (
             <p className="mt-3 text-sm text-muted-foreground">
-              No saved addresses. Addresses appear here after checkout or storefront account updates.
+              No saved addresses yet. Add one for deliveries and manual orders.
             </p>
           )}
         </section>

@@ -1,6 +1,9 @@
 import type {
   CustomerServiceError,
   MerchantCustomer,
+  MerchantCustomerAddress,
+  MerchantCustomerAddressInput,
+  MerchantCustomerAddressResult,
   MerchantCustomerGroupsResult,
   MerchantCustomerResult,
   MerchantCustomersResult,
@@ -222,7 +225,77 @@ export function createMedusaCustomerService(options: Options) {
       ? { groups: [{ id: group.id, name: group.name ?? "Customers" }], ok: true }
       : unavailable();
   }
-  return { createCustomer, getCustomer, listCustomers, listGroups, updateCustomer };
+
+  async function createCustomerAddress(input: {
+    address: MerchantCustomerAddressInput;
+    customerId: string;
+    tenantId: string;
+  }): Promise<MerchantCustomerAddressResult> {
+    const current = await getCustomer(input);
+    if (!current.ok) return current;
+    const response = await fetcher(
+      `${base}/admin/customers/${encodeURIComponent(input.customerId)}/addresses`,
+      {
+        body: JSON.stringify(toAddressPayload(input.address)),
+        headers: headers(),
+        method: "POST",
+      },
+    ).catch(() => null);
+    if (!response?.ok) return await mapAddressError(response);
+    return getCustomer(input);
+  }
+
+  async function updateCustomerAddress(input: {
+    address: MerchantCustomerAddressInput;
+    addressId: string;
+    customerId: string;
+    tenantId: string;
+  }): Promise<MerchantCustomerAddressResult> {
+    const current = await getCustomer(input);
+    if (!current.ok) return current;
+    if (!current.customer.addresses.some((item) => item.id === input.addressId)) {
+      return { error: "customer_address_not_found", ok: false, status: 404 };
+    }
+    const response = await fetcher(
+      `${base}/admin/customers/${encodeURIComponent(input.customerId)}/addresses/${encodeURIComponent(input.addressId)}`,
+      {
+        body: JSON.stringify(toAddressPayload(input.address)),
+        headers: headers(),
+        method: "POST",
+      },
+    ).catch(() => null);
+    if (!response?.ok) return await mapAddressError(response);
+    return getCustomer(input);
+  }
+
+  async function deleteCustomerAddress(input: {
+    addressId: string;
+    customerId: string;
+    tenantId: string;
+  }): Promise<MerchantCustomerAddressResult> {
+    const current = await getCustomer(input);
+    if (!current.ok) return current;
+    if (!current.customer.addresses.some((item) => item.id === input.addressId)) {
+      return { error: "customer_address_not_found", ok: false, status: 404 };
+    }
+    const response = await fetcher(
+      `${base}/admin/customers/${encodeURIComponent(input.customerId)}/addresses/${encodeURIComponent(input.addressId)}`,
+      { headers: headers(), method: "DELETE" },
+    ).catch(() => null);
+    if (!response?.ok) return await mapAddressError(response);
+    return getCustomer(input);
+  }
+
+  return {
+    createCustomer,
+    createCustomerAddress,
+    deleteCustomerAddress,
+    getCustomer,
+    listCustomers,
+    listGroups,
+    updateCustomer,
+    updateCustomerAddress,
+  };
 }
 
 function toPayload(input: CustomerInput) {
@@ -235,16 +308,54 @@ function toPayload(input: CustomerInput) {
     ...(input.phone?.trim() ? { phone: input.phone.trim() } : {}),
   };
 }
+function toAddressPayload(input: MerchantCustomerAddressInput) {
+  return {
+    ...(input.address1 !== undefined ? { address_1: input.address1?.trim() || null } : {}),
+    ...(input.address2 !== undefined ? { address_2: input.address2?.trim() || null } : {}),
+    ...(input.addressName !== undefined
+      ? { address_name: input.addressName?.trim() || null }
+      : {}),
+    ...(input.city !== undefined ? { city: input.city?.trim() || null } : {}),
+    ...(input.company !== undefined ? { company: input.company?.trim() || null } : {}),
+    ...(input.countryCode !== undefined
+      ? { country_code: input.countryCode?.trim().toLowerCase() || null }
+      : {}),
+    ...(input.firstName !== undefined ? { first_name: input.firstName?.trim() || null } : {}),
+    ...(input.isDefaultBilling !== undefined
+      ? { is_default_billing: Boolean(input.isDefaultBilling) }
+      : {}),
+    ...(input.isDefaultShipping !== undefined
+      ? { is_default_shipping: Boolean(input.isDefaultShipping) }
+      : {}),
+    ...(input.lastName !== undefined ? { last_name: input.lastName?.trim() || null } : {}),
+    ...(input.phone !== undefined ? { phone: input.phone?.trim() || null } : {}),
+    ...(input.postalCode !== undefined ? { postal_code: input.postalCode?.trim() || null } : {}),
+    ...(input.province !== undefined ? { province: input.province?.trim() || null } : {}),
+  };
+}
+
+function normalizeAddress(value: any): MerchantCustomerAddress {
+  return {
+    address1: value?.address_1 ?? null,
+    address2: value?.address_2 ?? null,
+    addressName: value?.address_name ?? null,
+    city: value?.city ?? null,
+    company: value?.company ?? null,
+    countryCode: value?.country_code ?? null,
+    firstName: value?.first_name ?? null,
+    id: String(value?.id ?? ""),
+    isDefaultBilling: Boolean(value?.is_default_billing),
+    isDefaultShipping: Boolean(value?.is_default_shipping),
+    lastName: value?.last_name ?? null,
+    phone: value?.phone ?? null,
+    postalCode: value?.postal_code ?? null,
+    province: value?.province ?? null,
+  };
+}
+
 function normalizeCustomer(value: any): MerchantCustomer {
   return {
-    addresses: (Array.isArray(value?.addresses) ? value.addresses : []).map((a: any) => ({
-      address1: a.address_1 ?? null,
-      city: a.city ?? null,
-      countryCode: a.country_code ?? null,
-      id: String(a.id),
-      isDefaultBilling: Boolean(a.is_default_billing),
-      isDefaultShipping: Boolean(a.is_default_shipping),
-    })),
+    addresses: (Array.isArray(value?.addresses) ? value.addresses : []).map(normalizeAddress),
     companyName: value?.company_name ?? null,
     createdAt: value?.created_at ?? new Date(0).toISOString(),
     email: String(value?.email ?? ""),
@@ -275,6 +386,17 @@ async function mapError(response: Response | null): Promise<CustomerServiceError
   if (response.status === 400) {
     return { error: "invalid_customer", ok: false, status: 400 };
   }
+  return { error: "commerce_backend_unavailable", ok: false, status: 503 };
+}
+
+async function mapAddressError(response: Response | null): Promise<CustomerServiceError> {
+  if (!response) return { error: "commerce_backend_unavailable", ok: false, status: 503 };
+  if (response.status === 401)
+    return { error: "commerce_credentials_invalid", ok: false, status: 401 };
+  if (response.status === 404)
+    return { error: "customer_address_not_found", ok: false, status: 404 };
+  if (response.status === 400)
+    return { error: "invalid_customer_address", ok: false, status: 400 };
   return { error: "commerce_backend_unavailable", ok: false, status: 503 };
 }
 

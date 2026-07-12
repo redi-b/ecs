@@ -6,6 +6,8 @@ import type {
 } from "../modules/analytics/analytics-service.js";
 import type { BillingInvoiceUpdateResult, BillingStatusResult } from "./billing.js";
 import type {
+  MerchantCustomerAddressInput,
+  MerchantCustomerAddressResult,
   MerchantCustomerGroupsResult,
   MerchantCustomerResult,
   MerchantCustomersResult,
@@ -618,6 +620,28 @@ export type PlatformAppOptions = {
         phone?: string | null | undefined;
         tenantId: string;
       }) => Promise<MerchantCustomerResult>)
+    | undefined;
+  createMerchantCustomerAddress?:
+    | ((input: {
+        address: MerchantCustomerAddressInput;
+        customerId: string;
+        tenantId: string;
+      }) => Promise<MerchantCustomerAddressResult>)
+    | undefined;
+  updateMerchantCustomerAddress?:
+    | ((input: {
+        address: MerchantCustomerAddressInput;
+        addressId: string;
+        customerId: string;
+        tenantId: string;
+      }) => Promise<MerchantCustomerAddressResult>)
+    | undefined;
+  deleteMerchantCustomerAddress?:
+    | ((input: {
+        addressId: string;
+        customerId: string;
+        tenantId: string;
+      }) => Promise<MerchantCustomerAddressResult>)
     | undefined;
   listMerchantCustomerGroups?:
     | ((input: { tenantId: string }) => Promise<MerchantCustomerGroupsResult>)
