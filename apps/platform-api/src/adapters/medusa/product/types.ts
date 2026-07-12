@@ -38,6 +38,8 @@ export type ProductCategoryWriteInput = {
   name: string;
   tenantId: string;
   parentCategoryId?: string | null | undefined;
+  /** Medusa sibling order among categories with the same parent. */
+  rank?: number | null | undefined;
   visibility?: "public" | "hidden" | undefined;
   seoTitle?: string | null | undefined;
   seoDescription?: string | null | undefined;

@@ -280,6 +280,7 @@ export function normalizeProductCategory(value: unknown): MerchantProductCategor
       isActive: getBoolean(value.is_active),
       isInternal: getBoolean(value.is_internal),
       parentCategoryId: getString(value.parent_category_id),
+      rank: getNumber(value.rank) ?? null,
       createdAt: getString(value.created_at),
       updatedAt: getString(value.updated_at),
       ...(metadata.visibility

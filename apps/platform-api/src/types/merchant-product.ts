@@ -85,6 +85,8 @@ export type MerchantProductCategory = {
   isActive: boolean | null;
   isInternal: boolean | null;
   parentCategoryId: string | null;
+  /** Sibling order from Medusa `rank` (lower first). */
+  rank?: number | null;
   visibility?: "public" | "hidden";
   seoTitle?: string | null;
   seoDescription?: string | null;

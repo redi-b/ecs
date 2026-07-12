@@ -39,10 +39,11 @@ export function getProductCategoriesUrl(
 
   url.searchParams.set("limit", String(input.limit));
   url.searchParams.set("offset", String(input.offset));
-  url.searchParams.set("order", "-created_at");
+  // Sibling order is Medusa-native `rank`; fall back-friendly secondary key.
+  url.searchParams.set("order", "rank");
   url.searchParams.set(
     "fields",
-    "id,name,handle,is_active,is_internal,parent_category_id,metadata,created_at,updated_at",
+    "id,name,handle,is_active,is_internal,parent_category_id,rank,metadata,created_at,updated_at",
   );
 
   return url;

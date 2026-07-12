@@ -287,6 +287,7 @@ export type PlatformAppOptions = {
         mediaUrl?: string | null | undefined;
         name: string;
         parentCategoryId?: string | null | undefined;
+        rank?: number | null | undefined;
         seoDescription?: string | null | undefined;
         seoTitle?: string | null | undefined;
         tenantId: string;

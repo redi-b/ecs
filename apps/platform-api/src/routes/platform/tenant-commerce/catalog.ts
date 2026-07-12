@@ -82,6 +82,15 @@ export function registerPlatformTenantCatalogRoutes(
       name,
       handle: getOptionalBodyString(body, "handle"),
       tenantId: commerce.context.tenantId,
+      ...(getOptionalBodyString(body, "parentCategoryId")
+        ? { parentCategoryId: getOptionalBodyString(body, "parentCategoryId") }
+        : {}),
+      ...(getOptionalBodyString(body, "visibility")
+        ? {
+            visibility:
+              getOptionalBodyString(body, "visibility") === "hidden" ? "hidden" : "public",
+          }
+        : {}),
     });
 
     if (!category.ok) {
@@ -91,6 +100,47 @@ export function registerPlatformTenantCatalogRoutes(
     return context.json({
       category: category.category,
     });
+  });
+
+  app.post("/platform/tenants/:tenantId/product-categories/:categoryId", async (context) => {
+    if (!options.getTenantCommerceContext || !options.updateMerchantProductCategory) {
+      return context.json({ error: "commerce_backend_unavailable" }, 503);
+    }
+
+    const session = await options.getSession?.(context.req.raw.headers);
+    if (!session) return context.json({ error: "auth_required" }, 401);
+
+    const commerce = await options.getTenantCommerceContext({
+      tenantId: context.req.param("tenantId"),
+      userId: session.user.id,
+    });
+    if (!commerce.ok) return context.json({ error: commerce.error }, commerce.status);
+
+    const body = await getJsonBody(context.req.raw);
+    const name = getRequiredBodyString(body, "name");
+    if (!name) return context.json({ error: "missing_name" }, 400);
+
+    const rankRaw = body && typeof body === "object" ? (body as { rank?: unknown }).rank : undefined;
+    const rank =
+      typeof rankRaw === "number" && Number.isFinite(rankRaw)
+        ? Math.max(0, Math.floor(rankRaw))
+        : typeof rankRaw === "string" && rankRaw.trim() && Number.isFinite(Number(rankRaw))
+          ? Math.max(0, Math.floor(Number(rankRaw)))
+          : undefined;
+
+    const result = await options.updateMerchantProductCategory({
+      categoryId: context.req.param("categoryId"),
+      handle: getOptionalBodyString(body, "handle"),
+      name,
+      parentCategoryId: getOptionalBodyString(body, "parentCategoryId"),
+      ...(rank === undefined ? {} : { rank }),
+      tenantId: commerce.context.tenantId,
+      visibility: getOptionalBodyString(body, "visibility") === "hidden" ? "hidden" : "public",
+    });
+
+    return result.ok
+      ? context.json(result)
+      : context.json({ error: result.error }, result.status);
   });
 
   app.get("/platform/tenants/:tenantId/product-collections", async (context) => {

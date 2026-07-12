@@ -25,6 +25,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
+import { CategoryEditDialog } from "@/features/catalog-taxonomy/category-edit-dialog";
 import {
   CategoryIdentityCell,
   CategoryParentCell,
@@ -58,6 +59,7 @@ async function copyToClipboard(value: string, label: string) {
 function getCategoryColumns(
   categoriesById: Map<string, MerchantProductCategory>,
   onDelete: (categoryId: string) => void,
+  onEdit: (category: MerchantProductCategory) => void,
 ): ColumnDef<MerchantProductCategory>[] {
   return [
     {
@@ -122,14 +124,17 @@ function getCategoryColumns(
       },
     },
     {
+      id: "rank",
+      accessorFn: (category) => category.rank ?? 0,
+      header: ({ column }) => <DataTableHeader column={column} title="Order" />,
+      cell: ({ row }) => (
+        <span className="tabular-nums text-muted-foreground">{row.original.rank ?? 0}</span>
+      ),
+    },
+    {
       accessorKey: "updatedAt",
       header: ({ column }) => <DataTableHeader column={column} title="Updated" />,
       cell: ({ row }) => <TaxonomyDateCell value={row.original.updatedAt} />,
-    },
-    {
-      accessorKey: "createdAt",
-      header: ({ column }) => <DataTableHeader column={column} title="Created" />,
-      cell: ({ row }) => <TaxonomyDateCell value={row.original.createdAt} />,
     },
     {
       id: "actions",
@@ -139,6 +144,11 @@ function getCategoryColumns(
         return (
           <RowActionsMenu
             actions={[
+              {
+                label: "Edit category",
+                onSelect: () => onEdit(category),
+                type: "button",
+              },
               {
                 label: "Copy category ID",
                 onSelect: () => copyToClipboard(category.id, "Category ID"),
@@ -207,6 +217,7 @@ export function ProductCategoriesTable({
   void pageSize;
 
   const [deleteCategoryId, setDeleteCategoryId] = useState<string | null>(null);
+  const [editingCategory, setEditingCategory] = useState<MerchantProductCategory | null>(null);
   const [selectedCategoryIdsForDelete, setSelectedCategoryIdsForDelete] = useState<string[]>([]);
   const [showBatchDeleteDialog, setShowBatchDeleteDialog] = useState(false);
 
@@ -216,7 +227,12 @@ export function ProductCategoriesTable({
   );
 
   const columns = useMemo(
-    () => getCategoryColumns(categoriesById, (id) => setDeleteCategoryId(id)),
+    () =>
+      getCategoryColumns(
+        categoriesById,
+        (id) => setDeleteCategoryId(id),
+        (category) => setEditingCategory(category),
+      ),
     [categoriesById],
   );
 
@@ -304,6 +320,15 @@ export function ProductCategoriesTable({
 
   return (
     <>
+      <CategoryEditDialog
+        categories={categories}
+        category={editingCategory}
+        onOpenChange={(next) => {
+          if (!next) setEditingCategory(null);
+        }}
+        open={Boolean(editingCategory)}
+        tenantId={tenantId}
+      />
       <DataTable
         bulkActions={(selectedCategories) => (
           <div className="flex items-center gap-2">

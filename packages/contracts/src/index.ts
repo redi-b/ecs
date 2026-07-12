@@ -307,6 +307,8 @@ export const merchantProductCategorySchema = z.object({
   isActive: z.boolean().nullable(),
   isInternal: z.boolean().nullable(),
   parentCategoryId: z.string().min(1).nullable(),
+  /** Sibling order from Medusa `rank` (lower first). */
+  rank: z.number().int().nullable().optional(),
   visibility: z.enum(["public", "hidden"]).optional(),
   seoTitle: z.string().nullable().optional(),
   seoDescription: z.string().nullable().optional(),

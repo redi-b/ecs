@@ -182,12 +182,20 @@ export function registerMerchantCatalogRoutes(
     if (!name) return context.json({ error: "missing_name" }, 400);
     if (!options.updateMerchantProductCategory)
       return context.json({ error: "commerce_backend_unavailable" }, 503);
+    const rankRaw = body && typeof body === "object" ? (body as { rank?: unknown }).rank : undefined;
+    const rank =
+      typeof rankRaw === "number" && Number.isFinite(rankRaw)
+        ? Math.max(0, Math.floor(rankRaw))
+        : typeof rankRaw === "string" && rankRaw.trim() && Number.isFinite(Number(rankRaw))
+          ? Math.max(0, Math.floor(Number(rankRaw)))
+          : undefined;
     const result = await options.updateMerchantProductCategory({
       categoryId: context.req.param("categoryId"),
       handle: getOptionalBodyString(body, "handle"),
       mediaUrl: getOptionalBodyString(body, "mediaUrl"),
       name,
       parentCategoryId: getOptionalBodyString(body, "parentCategoryId"),
+      ...(rank === undefined ? {} : { rank }),
       seoDescription: getOptionalBodyString(body, "seoDescription"),
       seoTitle: getOptionalBodyString(body, "seoTitle"),
       tenantId: merchant.result.context.tenantId,

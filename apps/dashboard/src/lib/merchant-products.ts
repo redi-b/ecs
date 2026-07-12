@@ -28,6 +28,7 @@ export {
   getMerchantProducts,
   getMerchantProductVariantStock,
   updateMerchantProduct,
+  updateMerchantProductCategory,
   updateMerchantProductStock,
   updateMerchantProductVariantStock,
 } from "@/lib/platform-api/products";

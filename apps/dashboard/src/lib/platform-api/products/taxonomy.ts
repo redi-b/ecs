@@ -75,6 +75,57 @@ export async function createMerchantProductCollection(options: {
   return parseProductCollectionMutationResponse(response);
 }
 
+export async function updateMerchantProductCategory(options: {
+  categoryId: string;
+  cookieHeader?: string | null | undefined;
+  fetcher?: typeof fetch;
+  handle?: string | null | undefined;
+  name: string;
+  parentCategoryId?: string | null | undefined;
+  platformApiBaseUrl: string;
+  rank?: number | null | undefined;
+  requestHost?: string | null | undefined;
+  tenantId?: string | null | undefined;
+  visibility?: "public" | "hidden" | undefined;
+}): Promise<MerchantProductCategoryMutationResult> {
+  const tenantId = options.tenantId?.trim();
+  const fetcher = options.fetcher ?? fetch;
+  const basePath = tenantId
+    ? `/platform/tenants/${encodeURIComponent(tenantId)}/product-categories`
+    : "/platform/merchant/product-categories";
+  const url = new URL(
+    `${basePath}/${encodeURIComponent(options.categoryId)}`,
+    normalizeBaseUrl(options.platformApiBaseUrl),
+  );
+
+  const response = await fetcher(url, {
+    body: JSON.stringify({
+      name: options.name,
+      handle: options.handle,
+      parentCategoryId: options.parentCategoryId,
+      ...(typeof options.rank === "number" ? { rank: options.rank } : {}),
+      ...(options.visibility ? { visibility: options.visibility } : {}),
+    }),
+    cache: "no-store",
+    headers: getProductHeaders({
+      cookieHeader: options.cookieHeader,
+      contentType: true,
+      requestHost: tenantId ? undefined : options.requestHost,
+    }),
+    method: "POST",
+  }).catch(() => null);
+
+  if (!response) {
+    return {
+      ok: false,
+      status: 503,
+      message: "platform_request_failed",
+    };
+  }
+
+  return parseProductCategoryMutationResponse(response);
+}
+
 export async function getMerchantProductCategories(options: {
   cookieHeader?: string | null | undefined;
   fetcher?: typeof fetch;

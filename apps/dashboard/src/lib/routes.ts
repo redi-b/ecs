@@ -23,6 +23,8 @@ export const dashboardRoutes = {
   productsBatchDeleteAction: "/admin/products/actions/batch-delete",
   productCategoryDeleteAction: (categoryId: string) =>
     `/admin/products/categories/actions/${encodeURIComponent(categoryId)}/delete`,
+  productCategoryUpdateAction: (categoryId: string) =>
+    `/admin/products/categories/actions/${encodeURIComponent(categoryId)}`,
   productCategoriesBatchDeleteAction: "/admin/products/categories/actions/batch-delete",
   productCollectionDeleteAction: (collectionId: string) =>
     `/admin/products/collections/actions/${encodeURIComponent(collectionId)}/delete`,

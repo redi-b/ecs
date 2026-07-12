@@ -1,0 +1,304 @@
+"use client";
+
+import type { MerchantProductCategory } from "@ecs/contracts";
+import { useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
+
+import { AppIcons } from "@/components/app/icons";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  getCategoryDisplayName,
+  slugifyTaxonomyHandle,
+} from "@/features/catalog-taxonomy/taxonomy-table-state";
+import { getTenantScopedPath } from "@/lib/dashboard-tenant-context";
+import { dashboardRoutes } from "@/lib/routes";
+
+type CategoryEditDialogProps = {
+  category: MerchantProductCategory | null;
+  categories: MerchantProductCategory[];
+  onOpenChange: (open: boolean) => void;
+  open: boolean;
+  tenantId?: string | null | undefined;
+};
+
+export function CategoryEditDialog({
+  category,
+  categories,
+  onOpenChange,
+  open,
+  tenantId,
+}: CategoryEditDialogProps) {
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const [displayName, setDisplayName] = useState("");
+  const [handle, setHandle] = useState("");
+  const [isHandleLocked, setIsHandleLocked] = useState(true);
+  const [parentCategoryId, setParentCategoryId] = useState("__root__");
+  const [rank, setRank] = useState("0");
+  const [isVisible, setIsVisible] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const HandleLockIcon = isHandleLocked ? AppIcons.lock : AppIcons.lockUnlock;
+
+  const parentOptions = useMemo(() => {
+    if (!category) return categories;
+    const blocked = new Set(collectDescendantIds(category.id, categories));
+    blocked.add(category.id);
+    return categories
+      .filter((item) => !blocked.has(item.id))
+      .sort((a, b) => getCategoryDisplayName(a).localeCompare(getCategoryDisplayName(b)));
+  }, [categories, category]);
+
+  useEffect(() => {
+    if (!category || !open) return;
+    setDisplayName(category.name ?? "");
+    setHandle(category.handle ?? "");
+    setIsHandleLocked(true);
+    setParentCategoryId(category.parentCategoryId ?? "__root__");
+    setRank(String(category.rank ?? 0));
+    setIsVisible(category.visibility !== "hidden");
+    setError(null);
+  }, [category, open]);
+
+  async function submit() {
+    if (!category) return;
+    const name = displayName.trim();
+    if (!name) {
+      setError("Enter a category name.");
+      return;
+    }
+
+    setIsSaving(true);
+    setError(null);
+
+    const url = getTenantScopedPath(
+      dashboardRoutes.productCategoryUpdateAction(category.id),
+      tenantId,
+    );
+    const response = await fetch(url, {
+      body: JSON.stringify({
+        name,
+        handle: handle.trim() || null,
+        parentCategoryId: parentCategoryId === "__root__" ? null : parentCategoryId,
+        rank: Number.isFinite(Number(rank)) ? Math.max(0, Math.floor(Number(rank))) : 0,
+        visibility: isVisible ? "public" : "hidden",
+      }),
+      headers: {
+        accept: "application/json",
+        "content-type": "application/json",
+      },
+      method: "POST",
+    }).catch(() => null);
+
+    setIsSaving(false);
+
+    if (!response?.ok) {
+      const data = (await response?.json().catch(() => ({}))) as { error?: string };
+      setError(getEditErrorMessage(data.error));
+      return;
+    }
+
+    toast.success("Category updated.");
+    onOpenChange(false);
+    await queryClient.invalidateQueries({ queryKey: ["product-categories"] });
+    router.refresh();
+  }
+
+  return (
+    <Dialog onOpenChange={onOpenChange} open={open}>
+      <DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-lg">
+        <DialogHeader className="gap-1.5 border-b px-4 py-4 text-left sm:px-5">
+          <DialogTitle>Edit category</DialogTitle>
+          <DialogDescription>
+            Update name, handle, parent, sibling order, and storefront visibility.
+          </DialogDescription>
+        </DialogHeader>
+        <form
+          className="flex flex-col"
+          onSubmit={(event) => {
+            event.preventDefault();
+            void submit();
+          }}
+        >
+          <div className="grid gap-4 p-4 sm:p-5">
+            {error ? (
+              <Alert variant="destructive">
+                <AlertTitle>Category could not be updated</AlertTitle>
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            ) : null}
+
+            <Field>
+              <FieldLabel htmlFor="category-edit-name">Name</FieldLabel>
+              <Input
+                autoComplete="off"
+                id="category-edit-name"
+                onChange={(event) => {
+                  const next = event.target.value;
+                  setDisplayName(next);
+                  if (isHandleLocked) setHandle(slugifyTaxonomyHandle(next));
+                }}
+                required
+                value={displayName}
+              />
+            </Field>
+
+            <Field>
+              <FieldLabel htmlFor="category-edit-handle">Handle</FieldLabel>
+              <InputGroup className="pr-1">
+                <InputGroupInput
+                  id="category-edit-handle"
+                  onChange={(event) => setHandle(slugifyTaxonomyHandle(event.target.value))}
+                  readOnly={isHandleLocked}
+                  value={handle}
+                />
+                <InputGroupAddon align="inline-end" className="gap-1 py-0 pr-0">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        aria-label={isHandleLocked ? "Unlock handle editing" : "Lock handle editing"}
+                        className="rounded-full"
+                        onClick={() => setIsHandleLocked((value) => !value)}
+                        size="icon-sm"
+                        type="button"
+                        variant="ghost"
+                      >
+                        <HandleLockIcon data-icon="inline-start" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" sideOffset={6}>
+                      {isHandleLocked ? "Unlock handle editing" : "Lock handle editing"}
+                    </TooltipContent>
+                  </Tooltip>
+                </InputGroupAddon>
+              </InputGroup>
+            </Field>
+
+            <Field>
+              <FieldLabel>Parent category</FieldLabel>
+              <Select onValueChange={setParentCategoryId} value={parentCategoryId}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Root category" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectItem value="__root__">Root category</SelectItem>
+                    {parentOptions.map((item) => (
+                      <SelectItem key={item.id} value={item.id}>
+                        {getCategoryDisplayName(item)}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+              <FieldDescription>
+                Cannot nest a category under itself or one of its children.
+              </FieldDescription>
+            </Field>
+
+            <Field>
+              <FieldLabel htmlFor="category-edit-rank">Sibling order (rank)</FieldLabel>
+              <Input
+                id="category-edit-rank"
+                min={0}
+                onChange={(event) => setRank(event.target.value)}
+                step={1}
+                type="number"
+                value={rank}
+              />
+              <FieldDescription>
+                Order among categories that share the same parent. Lower numbers appear first.
+              </FieldDescription>
+            </Field>
+
+            <Field className="flex flex-row items-center justify-between gap-4 rounded-xl border px-3.5 py-3">
+              <div className="min-w-0 space-y-1">
+                <FieldLabel className="text-sm" htmlFor="category-edit-visible">
+                  Visible on storefront
+                </FieldLabel>
+                <FieldDescription className="text-xs">
+                  Hidden categories stay in the dashboard but are not listed publicly.
+                </FieldDescription>
+              </div>
+              <Switch
+                checked={isVisible}
+                id="category-edit-visible"
+                onCheckedChange={setIsVisible}
+              />
+            </Field>
+          </div>
+          <DialogFooter className="mx-0 mb-0 rounded-none border-t bg-muted/50 p-4 sm:justify-end">
+            <Button
+              disabled={isSaving}
+              onClick={() => onOpenChange(false)}
+              type="button"
+              variant="outline"
+            >
+              Cancel
+            </Button>
+            <Button disabled={isSaving} type="submit">
+              {isSaving ? "Saving…" : "Save changes"}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function collectDescendantIds(rootId: string, categories: MerchantProductCategory[]) {
+  const childrenByParent = new Map<string, string[]>();
+  for (const category of categories) {
+    const parentId = category.parentCategoryId;
+    if (!parentId) continue;
+    const list = childrenByParent.get(parentId) ?? [];
+    list.push(category.id);
+    childrenByParent.set(parentId, list);
+  }
+
+  const result: string[] = [];
+  const stack = [...(childrenByParent.get(rootId) ?? [])];
+  while (stack.length) {
+    const id = stack.pop();
+    if (!id) continue;
+    result.push(id);
+    stack.push(...(childrenByParent.get(id) ?? []));
+  }
+  return result;
+}
+
+function getEditErrorMessage(error: string | undefined) {
+  if (error === "missing_name") return "Enter a category name.";
+  if (error === "commerce_backend_unavailable") {
+    return "The commerce backend is temporarily unavailable.";
+  }
+  if (error === "commerce_credentials_missing" || error === "commerce_credentials_invalid") {
+    return "Catalog changes are temporarily unavailable. Contact support.";
+  }
+  if (error === "category_not_found") return "Category was not found.";
+  return "Category could not be saved. Try again.";
+}
