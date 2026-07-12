@@ -4,6 +4,8 @@ import { ListSummary, PaginationControls } from "@/components/app/list-page-cont
 import { PageShell } from "@/components/app/page-shell";
 import { RefreshButton } from "@/components/app/refresh-button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import type { MessageKey } from "@/i18n/messages";
+import { getRequestMessages } from "@/i18n/server";
 import { ProductCreateDialog } from "@/features/products/product-create-dialog";
 import {
   parseProductMediaFilter,
@@ -30,12 +32,14 @@ export default async function MerchantProductsPage({ searchParams }: MerchantPro
   const resolvedSearchParams = (await searchParams) ?? {};
   const listParams = parseListSearchParams(resolvedSearchParams);
   const tenantId = getSelectedTenantId(resolvedSearchParams);
+  const { messages } = await getRequestMessages();
+  const t = (key: MessageKey) => messages[key];
   const requestHeaders = await headers();
   const cookieHeader = requestHeaders.get("cookie");
   const requestHost = requestHeaders.get("host");
   const platformApiBaseUrl = process.env.PLATFORM_API_BASE_URL ?? "http://localhost:3000";
   const offset = (listParams.page - 1) * listParams.pageSize;
-  const productNotice = getProductNotice(resolvedSearchParams.productStatus);
+  const productNotice = getProductNotice(resolvedSearchParams.productStatus, t);
   const statusFilter = parseProductStatusFilter(listParams.status);
   const collectionFilter = getResourceFilter(resolvedSearchParams.collectionId);
   const categoryFilter = getResourceFilter(resolvedSearchParams.categoryId);
@@ -66,8 +70,8 @@ export default async function MerchantProductsPage({ searchParams }: MerchantPro
           />
         </>
       }
-      description="Create, review, and manage merchant-scoped catalog products."
-      title="Products"
+      description={t("products.description")}
+      title={t("products.title")}
     >
       {productNotice ? (
         <Alert variant={productNotice.variant}>
@@ -77,7 +81,7 @@ export default async function MerchantProductsPage({ searchParams }: MerchantPro
       ) : null}
       {result.ok ? (
         <>
-          <ListSummary count={result.products.count} label="products" />
+          <ListSummary count={result.products.count} label={t("nav.products").toLowerCase()} />
           <ProductsTable
             footer={
               <PaginationControls
@@ -105,7 +109,7 @@ export default async function MerchantProductsPage({ searchParams }: MerchantPro
         <ListSetupState state={errorState} />
       ) : (
         <Alert variant="destructive">
-          <AlertTitle>{errorState?.title ?? "Products could not be loaded"}</AlertTitle>
+          <AlertTitle>{errorState?.title ?? t("products.error.loadTitle")}</AlertTitle>
           <AlertDescription>{errorState?.description ?? result.message}</AlertDescription>
         </Alert>
       )}
@@ -120,7 +124,10 @@ function getResourceFilter(value: string | string[] | undefined) {
   return trimmed || "all";
 }
 
-function getProductNotice(productStatus: string | string[] | undefined) {
+function getProductNotice(
+  productStatus: string | string[] | undefined,
+  t: (key: MessageKey) => string,
+) {
   const status = Array.isArray(productStatus) ? productStatus[0] : productStatus;
 
   if (!status) {
@@ -130,16 +137,16 @@ function getProductNotice(productStatus: string | string[] | undefined) {
   if (status === "product_created") {
     return {
       variant: "default" as const,
-      title: "Product created",
-      description: "The product was created and is now available in this merchant catalog.",
+      title: t("products.notice.created.title"),
+      description: t("products.notice.created.description"),
     };
   }
 
   if (status === "product_updated") {
     return {
       variant: "default" as const,
-      title: "Product updated",
-      description: "The product changes were saved and the catalog list has been refreshed.",
+      title: t("products.notice.updated.title"),
+      description: t("products.notice.updated.description"),
     };
   }
 
@@ -151,7 +158,7 @@ function getProductNotice(productStatus: string | string[] | undefined) {
 
   return {
     variant: "destructive" as const,
-    title: "Product could not be saved",
+    title: t("products.notice.error.title"),
     description: mutationError.description,
   };
 }
