@@ -2,7 +2,7 @@ import type { AppIcon } from "@/components/app/icons";
 import { AppIcons } from "@/components/app/icons";
 import { type DashboardRouteHref, dashboardRoutes } from "@/lib/routes";
 
-export type AppRouteSection = "main" | "commerce" | "storefront" | "insights" | "footer";
+export type AppRouteSection = "main" | "commerce" | "storefront" | "insights" | "account";
 
 export type AppRoute = {
   id: string;
@@ -15,9 +15,7 @@ export type AppRoute = {
   disabled?: boolean;
 };
 
-/**
- * Primary scrollable sections. Footer routes (settings, billing) render in the sticky bottom.
- */
+/** Scrollable sidebar sections (settings/billing live only in the account menu). */
 export const appRouteSections: ReadonlyArray<{ id: AppRouteSection; label: string | null }> = [
   { id: "main", label: null },
   { id: "commerce", label: "Commerce" },
@@ -121,7 +119,7 @@ export const appRoutes: AppRoute[] = [
     title: "Billing",
     href: dashboardRoutes.billing,
     icon: AppIcons.billing,
-    section: "footer",
+    section: "account",
     keywords: ["plan", "subscription", "payments"],
   },
   {
@@ -129,17 +127,13 @@ export const appRoutes: AppRoute[] = [
     title: "Settings",
     href: dashboardRoutes.settings,
     icon: AppIcons.settings,
-    section: "footer",
+    section: "account",
     keywords: ["shop", "account", "preferences"],
   },
 ];
 
 export function getAppRoutesBySection(section: AppRouteSection) {
   return appRoutes.filter((route) => route.section === section);
-}
-
-export function getFooterAppRoutes() {
-  return getAppRoutesBySection("footer");
 }
 
 export function getNavigableAppRoutes() {

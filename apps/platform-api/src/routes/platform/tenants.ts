@@ -14,6 +14,7 @@ export function registerPlatformTenantRoutes(
     const session = await options.getSession?.(context.req.raw.headers);
 
     if (!session) {
+      console.warn("[platform/tenants] create rejected: auth_required");
       return context.json({ error: "auth_required" }, 401);
     }
 
@@ -31,6 +32,13 @@ export function registerPlatformTenantRoutes(
       return context.json({ error: "missing_handle" }, 400);
     }
 
+    console.info("[platform/tenants] create start", {
+      handle,
+      ownerUserId: session.user.id,
+      templateKey: templateKey ?? null,
+      templateId: templateId ?? null,
+    });
+
     const result = await options.createTenantShop({
       handle,
       name,
@@ -40,8 +48,18 @@ export function registerPlatformTenantRoutes(
     });
 
     if (!result.ok) {
+      console.error("[platform/tenants] create failed", {
+        error: result.error,
+        handle,
+        status: result.status,
+      });
       return context.json({ error: result.error }, result.status);
     }
+
+    console.info("[platform/tenants] create ok", {
+      handle,
+      tenantId: result.tenant.id,
+    });
 
     return context.json(
       {

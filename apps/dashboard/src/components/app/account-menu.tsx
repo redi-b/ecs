@@ -90,22 +90,16 @@ export function AccountMenu({ actor }: { actor: MerchantDashboardSummary["actor"
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
               <DropdownMenuItem asChild>
+                <Link href={dashboardRoutes.settings}>
+                  <AppIcons.settings />
+                  {t("account.settings")}
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
                 <Link href={dashboardRoutes.billing}>
                   <AppIcons.billing />
                   {t("account.billing")}
                 </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link href={dashboardRoutes.media}>
-                  <AppIcons.image />
-                  {t("account.mediaLibrary")}
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <a href="mailto:support@ecs.et">
-                  <AppIcons.externalLink />
-                  {t("account.support")}
-                </a>
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />

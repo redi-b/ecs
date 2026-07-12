@@ -9,9 +9,8 @@ const messages = {
   "account.tooltip": "መለያ",
   "account.account": "መለያ",
   "account.shopSettings": "የሱቅ ቅንብሮች",
+  "account.settings": "ቅንብሮች",
   "account.billing": "ክፍያ",
-  "account.mediaLibrary": "የሚዲያ ቤተ-መጽሐፍት",
-  "account.support": "ድጋፍ ያግኙ",
   "account.signOut": "ውጣ",
   "onboarding.shopStep": "ሱቅ",
   "onboarding.shopStepDescription": "ስም እና አድራሻ",
@@ -150,6 +149,12 @@ const messages = {
   "onboarding.error.platformUnavailable": "የመድረኩ አገልግሎት ሊገኝ አልቻለም።",
   "onboarding.error.storefrontUnavailable": "በአሁኑ ጊዜ የመደብር ገጽ አብነት አይገኝም።",
   "onboarding.error.templateUnavailable": "የተመረጠው የመደብር ገጽ አይገኝም።",
+  "onboarding.error.invalidResponse": "ያልተጠበቀ ምላሽ ተመለሰ። እንደገና ይሞክሩ።",
+  "onboarding.error.provisioningFailed":
+    "የሱቅ ሀብቶች ማዘጋጀት አልተሳካም። Medusa እና MEDUSA_ADMIN_API_TOKEN ን ያረጋግጡ።",
+  "onboarding.error.provisioningUnavailable": "በአሁኑ አካባቢ የሱቅ ማዘጋጀት አይገኝም።",
+  "onboarding.error.commerceCredentials":
+    "የንግድ ምስክር ወረቀቶች ጎድለዋል ወይም ልክ አይደሉም። MEDUSA_ADMIN_API_TOKEN ያዋቅሩ።",
   "onboarding.error.failed": "የሱቅ ማዋቀር አልተሳካም። እንደገና ይሞክሩ።",
   "media.title": "የምርት ምስሎች",
   "media.description": "ግልጽ የምርት ፎቶዎችን ይስቀሉ። የመጀመሪያው ምስል ሽፋን ይሆናል።",

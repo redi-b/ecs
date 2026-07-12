@@ -64,11 +64,19 @@ export default async function OnboardingPage({ searchParams }: OnboardingPagePro
     auth_required: t("onboarding.error.authRequired"),
     handle_taken: t("onboarding.error.handleTaken"),
     invalid_shop_setup: t("onboarding.error.invalidSetup"),
+    invalid_tenant_creation_response: t("onboarding.error.invalidResponse"),
+    missing_handle: t("onboarding.error.required"),
+    missing_name: t("onboarding.error.required"),
     missing_required_fields: t("onboarding.error.required"),
     platform_request_failed: t("onboarding.error.platformUnavailable"),
     storefront_template_unavailable: t("onboarding.error.storefrontUnavailable"),
     template_unavailable: t("onboarding.error.templateUnavailable"),
     tenant_handle_taken: t("onboarding.error.handleTaken"),
+    tenant_provisioning_failed: t("onboarding.error.provisioningFailed"),
+    tenant_provisioning_unavailable: t("onboarding.error.provisioningUnavailable"),
+    commerce_backend_unavailable: t("onboarding.error.provisioningFailed"),
+    commerce_credentials_missing: t("onboarding.error.commerceCredentials"),
+    commerce_credentials_invalid: t("onboarding.error.commerceCredentials"),
   };
   const errorMessage = resolvedSearchParams.error
     ? (errorMessages[resolvedSearchParams.error] ?? t("onboarding.error.failed"))

@@ -3,7 +3,6 @@
 import type { MerchantDashboardSummary } from "@ecs/contracts";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Fragment } from "react";
 
 import { AccountMenu } from "@/components/app/account-menu";
 import { AppIcons } from "@/components/app/icons";
@@ -31,15 +30,9 @@ import {
   SidebarMenuSubButton,
   SidebarMenuSubItem,
   SidebarRail,
-  SidebarSeparator,
   useSidebar,
 } from "@/components/ui/sidebar";
-import {
-  type AppRoute,
-  appRouteSections,
-  getAppRoutesBySection,
-  getFooterAppRoutes,
-} from "@/lib/navigation";
+import { type AppRoute, appRouteSections, getAppRoutesBySection } from "@/lib/navigation";
 import { dashboardRoutes } from "@/lib/routes";
 
 function isRouteActive(pathname: string, route: AppRoute) {
@@ -162,42 +155,8 @@ function NavRouteItem({ pathname, route }: { pathname: string; route: AppRoute }
   );
 }
 
-function RouteGroup({
-  label,
-  pathname,
-  routes,
-  showSeparator,
-}: {
-  label: string | null;
-  pathname: string;
-  routes: AppRoute[];
-  showSeparator: boolean;
-}) {
-  if (!routes.length) return null;
-
-  return (
-    <Fragment>
-      {showSeparator ? (
-        <SidebarSeparator className="mx-3 my-1 group-data-[collapsible=icon]:mx-2" />
-      ) : null}
-      <SidebarGroup className="px-3 group-data-[collapsible=icon]:px-2">
-        {label ? <SidebarGroupLabel>{label}</SidebarGroupLabel> : null}
-        <SidebarGroupContent>
-          <SidebarMenu className="gap-1">
-            {routes.map((route) => (
-              <NavRouteItem key={route.id} pathname={pathname} route={route} />
-            ))}
-          </SidebarMenu>
-        </SidebarGroupContent>
-      </SidebarGroup>
-    </Fragment>
-  );
-}
-
 export function AppSidebar({ actor }: { actor: MerchantDashboardSummary["actor"] }) {
   const pathname = usePathname();
-  const footerRoutes = getFooterAppRoutes();
-  let renderedGroups = 0;
 
   return (
     <Sidebar className="border-r" collapsible="icon">
@@ -220,31 +179,26 @@ export function AppSidebar({ actor }: { actor: MerchantDashboardSummary["actor"]
         {appRouteSections.map((section) => {
           const routes = getAppRoutesBySection(section.id);
           if (!routes.length) return null;
-          const showSeparator = renderedGroups > 0;
-          renderedGroups += 1;
+
           return (
-            <RouteGroup
+            <SidebarGroup
+              className="px-3 group-data-[collapsible=icon]:px-2"
               key={section.id}
-              label={section.label}
-              pathname={pathname}
-              routes={routes}
-              showSeparator={showSeparator}
-            />
+            >
+              {section.label ? <SidebarGroupLabel>{section.label}</SidebarGroupLabel> : null}
+              <SidebarGroupContent>
+                <SidebarMenu className="gap-1">
+                  {routes.map((route) => (
+                    <NavRouteItem key={route.id} pathname={pathname} route={route} />
+                  ))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
           );
         })}
       </SidebarContent>
 
-      <SidebarFooter className="gap-1 p-3 group-data-[collapsible=icon]:p-2">
-        {footerRoutes.length ? (
-          <>
-            <SidebarSeparator className="mx-0 mb-1" />
-            <SidebarMenu className="gap-1">
-              {footerRoutes.map((route) => (
-                <NavRouteItem key={route.id} pathname={pathname} route={route} />
-              ))}
-            </SidebarMenu>
-          </>
-        ) : null}
+      <SidebarFooter className="p-3 group-data-[collapsible=icon]:p-2">
         <AccountMenu actor={actor} />
       </SidebarFooter>
       <SidebarRail />

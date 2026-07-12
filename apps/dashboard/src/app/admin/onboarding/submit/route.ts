@@ -32,6 +32,12 @@ export async function POST(request: Request) {
   });
 
   if (!createResult.ok) {
+    // Surface the platform error code in server logs — the browser only sees the mapped message.
+    console.error("[onboarding/submit] shop create failed", {
+      handle,
+      message: createResult.message,
+      status: createResult.status,
+    });
     return redirectToOnboarding(request, createResult.message, formData);
   }
 

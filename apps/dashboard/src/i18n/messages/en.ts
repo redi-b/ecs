@@ -7,9 +7,8 @@ const messages = {
   "account.tooltip": "Account",
   "account.account": "Account",
   "account.shopSettings": "Shop settings",
+  "account.settings": "Settings",
   "account.billing": "Billing",
-  "account.mediaLibrary": "Media library",
-  "account.support": "Contact support",
   "account.signOut": "Sign out",
   "onboarding.shopStep": "Shop",
   "onboarding.shopStepDescription": "Name and address",
@@ -150,6 +149,13 @@ const messages = {
   "onboarding.error.platformUnavailable": "The platform service could not be reached.",
   "onboarding.error.storefrontUnavailable": "No storefront template is available right now.",
   "onboarding.error.templateUnavailable": "Selected storefront is unavailable.",
+  "onboarding.error.invalidResponse": "Shop setup returned an unexpected response. Try again.",
+  "onboarding.error.provisioningFailed":
+    "Shop resources could not be provisioned. Confirm Medusa is healthy and MEDUSA_ADMIN_API_TOKEN is set, then try again.",
+  "onboarding.error.provisioningUnavailable":
+    "Shop provisioning is not available on this environment right now.",
+  "onboarding.error.commerceCredentials":
+    "Commerce credentials are missing or invalid. Set MEDUSA_ADMIN_API_TOKEN after seeding Medusa.",
   "onboarding.error.failed": "Shop setup failed. Please try again.",
   "media.title": "Product images",
   "media.description": "Upload clear product photos. The first image becomes the cover.",
