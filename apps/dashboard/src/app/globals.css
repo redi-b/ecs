@@ -533,12 +533,7 @@
 
   .template-preview {
     height: 7rem;
-    background:
-      linear-gradient(
-        135deg,
-        color-mix(in oklch, var(--primary) 18%, transparent),
-        color-mix(in oklch, var(--accent) 68%, transparent)
-      ), var(--muted);
+    background: color-mix(in oklch, var(--primary) 8%, var(--muted));
   }
 
   .template-card-body {

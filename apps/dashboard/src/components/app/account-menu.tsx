@@ -21,9 +21,11 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 
 export function AccountMenu({ actor }: { actor: MerchantDashboardSummary["actor"] }) {
+  const { t } = useI18n();
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const [menuOpen, setMenuOpen] = useState(false);
@@ -51,10 +53,10 @@ export function AccountMenu({ actor }: { actor: MerchantDashboardSummary["actor"
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton
               size="lg"
-              aria-label="Open account menu"
+              aria-label={t("account.openMenu")}
               onPointerLeave={() => setSuppressTooltip(false)}
               onBlur={() => setSuppressTooltip(false)}
-              {...(suppressTooltip ? {} : { tooltip: "Account" })}
+              {...(suppressTooltip ? {} : { tooltip: t("account.tooltip") })}
               className={cn(
                 "rounded-full",
                 "group-data-[collapsible=icon]:size-8! group-data-[collapsible=icon]:p-0!",
@@ -89,13 +91,13 @@ export function AccountMenu({ actor }: { actor: MerchantDashboardSummary["actor"
               <DropdownMenuItem asChild>
                 <Link href="/admin/settings?tab=account">
                   <AppIcons.user />
-                  Account
+                  {t("account.account")}
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
                 <Link href="/admin/settings">
                   <AppIcons.settings />
-                  Shop settings
+                  {t("account.shopSettings")}
                 </Link>
               </DropdownMenuItem>
             </DropdownMenuGroup>
@@ -104,7 +106,7 @@ export function AccountMenu({ actor }: { actor: MerchantDashboardSummary["actor"
               <DropdownMenuItem asChild variant="destructive">
                 <button className="w-full" type="submit">
                   <AppIcons.logout />
-                  Sign out
+                  {t("account.signOut")}
                 </button>
               </DropdownMenuItem>
             </form>

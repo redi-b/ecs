@@ -11,6 +11,7 @@ import {
   InputGroupButton,
   InputGroupInput,
 } from "@/components/ui/input-group";
+import { useI18n } from "@/i18n/provider";
 
 export function SignInForm({
   errorMessage,
@@ -20,6 +21,7 @@ export function SignInForm({
   nextPath: string;
 }) {
   const fieldId = useId();
+  const { t } = useI18n();
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const PasswordIcon = isPasswordVisible ? AppIcons.eyeOff : AppIcons.eye;
 
@@ -28,21 +30,21 @@ export function SignInForm({
       <input name="next" type="hidden" value={nextPath} />
       <FieldGroup>
         <Field>
-          <FieldLabel htmlFor={`${fieldId}-email`}>Email</FieldLabel>
+          <FieldLabel htmlFor={`${fieldId}-email`}>{t("auth.email")}</FieldLabel>
           <InputGroup className="h-11 rounded-full bg-background/70 px-1 transition-all duration-200 hover:border-ring/70">
             <InputGroupInput
               autoComplete="email"
               className="px-3 text-sm"
               id={`${fieldId}-email`}
               name="email"
-              placeholder="you@business.com"
+              placeholder={t("auth.emailPlaceholder")}
               required
               type="email"
             />
           </InputGroup>
         </Field>
         <Field>
-          <FieldLabel htmlFor={`${fieldId}-password`}>Password</FieldLabel>
+          <FieldLabel htmlFor={`${fieldId}-password`}>{t("auth.password")}</FieldLabel>
           <InputGroup className="h-11 rounded-full bg-background/70 px-1 transition-all duration-200 hover:border-ring/70">
             <InputGroupInput
               autoComplete="current-password"
@@ -54,7 +56,7 @@ export function SignInForm({
             />
             <InputGroupAddon align="inline-end">
               <InputGroupButton
-                aria-label={isPasswordVisible ? "Hide password" : "Show password"}
+                aria-label={isPasswordVisible ? t("auth.hidePassword") : t("auth.showPassword")}
                 onClick={() => setIsPasswordVisible((value) => !value)}
                 size="icon-xs"
               >
@@ -62,7 +64,7 @@ export function SignInForm({
               </InputGroupButton>
             </InputGroupAddon>
           </InputGroup>
-          <FieldDescription>Use the password for this merchant account.</FieldDescription>
+          <FieldDescription>{t("auth.passwordHelp")}</FieldDescription>
         </Field>
         {errorMessage ? (
           <Field data-invalid>
@@ -71,7 +73,7 @@ export function SignInForm({
         ) : null}
       </FieldGroup>
       <Button className="h-11 rounded-full text-sm font-semibold shadow-sm" type="submit">
-        Continue
+        {t("common.continue")}
       </Button>
     </form>
   );

@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import type { ReactNode } from "react";
 
 import { AppProviders } from "@/components/providers/app-providers";
+import { getRequestMessages } from "@/i18n/server";
 
 import "./globals.css";
 
@@ -21,11 +22,15 @@ export const metadata: Metadata = {
   description: "Merchant console for commerce operations",
 };
 
-export default function RootLayout({ children }: { children: ReactNode }) {
+export default async function RootLayout({ children }: { children: ReactNode }) {
+  const { locale, messages } = await getRequestMessages();
+
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang={locale} suppressHydrationWarning>
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
-        <AppProviders>{children}</AppProviders>
+        <AppProviders locale={locale} messages={messages}>
+          {children}
+        </AppProviders>
       </body>
     </html>
   );

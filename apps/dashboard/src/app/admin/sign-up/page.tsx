@@ -2,6 +2,8 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { AccountSignUpForm } from "@/components/onboarding/account-signup-form";
+import type { MessageKey } from "@/i18n/messages";
+import { getRequestMessages } from "@/i18n/server";
 import { getAuthenticatedDashboardRedirect } from "@/lib/dashboard-auth-redirect";
 import { isCentralDashboardHost } from "@/lib/dashboard-hosts";
 
@@ -13,16 +15,9 @@ type SignUpPageProps = {
   }>;
 };
 
-const errorMessages: Record<string, string> = {
-  auth_session_missing: "Account was created, but the session did not start. Sign in to continue.",
-  auth_unavailable: "Signup is temporarily unavailable.",
-  email_already_exists: "An account with that email already exists.",
-  missing_required_fields: "Complete the required fields.",
-  password_too_short: "Use at least 8 characters for the password.",
-  signup_failed: "Signup could not be completed.",
-};
-
 export default async function SignUpPage({ searchParams }: SignUpPageProps) {
+  const { messages } = await getRequestMessages();
+  const t = (key: MessageKey) => messages[key];
   const requestHeaders = await headers();
   const requestHost = requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host");
   const authenticatedRedirect = await getAuthenticatedDashboardRedirect({
@@ -42,8 +37,16 @@ export default async function SignUpPage({ searchParams }: SignUpPageProps) {
   }
 
   const resolvedSearchParams = (await searchParams) ?? {};
+  const errorMessages: Record<string, string> = {
+    auth_session_missing: t("signup.error.sessionMissing"),
+    auth_unavailable: t("signup.error.unavailable"),
+    email_already_exists: t("signup.error.emailExists"),
+    missing_required_fields: t("signup.error.required"),
+    password_too_short: t("signup.error.passwordShort"),
+    signup_failed: t("signup.error.failed"),
+  };
   const errorMessage = resolvedSearchParams.error
-    ? (errorMessages[resolvedSearchParams.error] ?? "Signup failed. Please try again.")
+    ? (errorMessages[resolvedSearchParams.error] ?? t("signup.error.failed"))
     : null;
 
   return (
