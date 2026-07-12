@@ -11,6 +11,12 @@ import type {
 type PlatformDb = ReturnType<typeof createPlatformDb>["db"];
 const allowedInvoiceStatuses = new Set(["pending", "paid", "cancelled", "void"]);
 
+/** Stable UUIDs so ensureDefaultPlans is idempotent across runs. */
+export const DEFAULT_PLAN_IDS = {
+  starter: "a1000000-0000-4000-8000-000000000001",
+  growth: "a1000000-0000-4000-8000-000000000002",
+} as const;
+
 function serializeDate(value: Date | null) {
   return value ? value.toISOString() : null;
 }
@@ -53,9 +59,126 @@ function selectInvoiceFields() {
   };
 }
 
+function addBillingMonths(from: Date, months: number) {
+  const next = new Date(from);
+  next.setUTCMonth(next.getUTCMonth() + months);
+  return next;
+}
+
 export function createBillingService(db: PlatformDb) {
   return {
+    ensureDefaultPlans: async () => {
+      await db
+        .insert(plans)
+        .values({
+          id: DEFAULT_PLAN_IDS.starter,
+          name: "Starter",
+          price: "0",
+          status: "active",
+          limits: { products: 100, staff: 2, storefrontEvents: 10_000 },
+          features: { analytics: true, managedCheckout: true, trial: true },
+        })
+        .onConflictDoUpdate({
+          target: plans.id,
+          set: {
+            features: { analytics: true, managedCheckout: true, trial: true },
+            limits: { products: 100, staff: 2, storefrontEvents: 10_000 },
+            name: "Starter",
+            price: "0",
+            status: "active",
+          },
+        });
+
+      await db
+        .insert(plans)
+        .values({
+          id: DEFAULT_PLAN_IDS.growth,
+          name: "Growth",
+          price: "2499",
+          status: "active",
+          limits: { products: 2500, staff: 8, storefrontEvents: 100_000 },
+          features: { analytics: true, managedCheckout: true, localDelivery: true },
+        })
+        .onConflictDoUpdate({
+          target: plans.id,
+          set: {
+            features: { analytics: true, managedCheckout: true, localDelivery: true },
+            limits: { products: 2500, staff: 8, storefrontEvents: 100_000 },
+            name: "Growth",
+            price: "2499",
+            status: "active",
+          },
+        });
+    },
+
+    /**
+     * Assign a 14-day Starter trial when a shop is provisioned (idempotent).
+     */
+    ensureTrialSubscription: async (input: { tenantId: string }) => {
+      await createBillingService(db).ensureDefaultPlans();
+
+      const [existing] = await db
+        .select({ id: subscriptions.id })
+        .from(subscriptions)
+        .where(eq(subscriptions.tenantId, input.tenantId))
+        .limit(1);
+
+      if (existing) {
+        return { created: false as const, subscriptionId: existing.id };
+      }
+
+      const now = new Date();
+      const trialEnd = addBillingMonths(now, 0);
+      trialEnd.setUTCDate(trialEnd.getUTCDate() + 14);
+
+      const [subscription] = await db
+        .insert(subscriptions)
+        .values({
+          tenantId: input.tenantId,
+          planId: DEFAULT_PLAN_IDS.starter,
+          status: "trialing",
+          billingCycle: "monthly",
+          currentPeriodStart: now,
+          currentPeriodEnd: trialEnd,
+          manualPaymentState: "pending",
+        })
+        .returning({ id: subscriptions.id });
+
+      return { created: true as const, subscriptionId: subscription?.id ?? null };
+    },
+
+    listPlans: async () => {
+      await createBillingService(db).ensureDefaultPlans();
+      const rows = await db
+        .select({
+          id: plans.id,
+          name: plans.name,
+          price: plans.price,
+          limits: plans.limits,
+          features: plans.features,
+          status: plans.status,
+        })
+        .from(plans)
+        .where(eq(plans.status, "active"))
+        .orderBy(plans.price);
+
+      return {
+        ok: true as const,
+        plans: rows.map((plan) => ({
+          id: plan.id,
+          name: plan.name,
+          price: plan.price,
+          limits: plan.limits,
+          features: plan.features,
+          status: plan.status,
+        })),
+      };
+    },
+
     getBillingStatus: async (input: { tenantId: string }): Promise<BillingStatusResult> => {
+      // Auto-attach trial for shops provisioned before this feature.
+      await createBillingService(db).ensureTrialSubscription(input);
+
       const [subscription] = await db
         .select({
           subscriptionId: subscriptions.id,
@@ -88,7 +211,7 @@ export function createBillingService(db: PlatformDb) {
         .from(invoices)
         .where(eq(invoices.tenantId, input.tenantId))
         .orderBy(desc(invoices.createdAt))
-        .limit(10);
+        .limit(20);
 
       return {
         ok: true,
@@ -112,6 +235,7 @@ export function createBillingService(db: PlatformDb) {
         },
       };
     },
+
     updateBillingInvoiceStatus: async (input: {
       invoiceId: string;
       operatorUserId: string;
@@ -150,9 +274,31 @@ export function createBillingService(db: PlatformDb) {
         }
 
         if (status === "paid" && row.subscriptionId) {
+          const [sub] = await transaction
+            .select({
+              billingCycle: subscriptions.billingCycle,
+              currentPeriodEnd: subscriptions.currentPeriodEnd,
+            })
+            .from(subscriptions)
+            .where(
+              and(
+                eq(subscriptions.id, row.subscriptionId),
+                eq(subscriptions.tenantId, input.tenantId),
+              ),
+            )
+            .limit(1);
+
+          const now = new Date();
+          const base =
+            sub?.currentPeriodEnd && sub.currentPeriodEnd > now ? sub.currentPeriodEnd : now;
+          const months = sub?.billingCycle === "yearly" ? 12 : 1;
+          const nextEnd = addBillingMonths(base, months);
+
           await transaction
             .update(subscriptions)
             .set({
+              currentPeriodEnd: nextEnd,
+              currentPeriodStart: now,
               manualPaymentState: "paid",
               status: "active",
             })

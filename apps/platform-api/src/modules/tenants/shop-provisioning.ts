@@ -2,15 +2,19 @@ import type { createPlatformDb } from "@ecs/db";
 import {
   auditLogs,
   domains,
+  invoices,
+  plans,
   reservedHandles,
   storefrontConfigs,
   storefrontTemplates,
   storefrontTemplateVersions,
+  subscriptions,
   tenantMemberships,
   tenantOnboarding,
   tenantProvisioningAttempts,
   tenants,
 } from "@ecs/db";
+import { DEFAULT_PLAN_IDS } from "../billing/service.js";
 import { and, asc, count, desc, eq } from "drizzle-orm";
 import type {
   CommerceProvisioningInput,
@@ -481,6 +485,62 @@ export function createTenantShopProvisioningService(options: TenantShopProvision
             medusaShippingOptionId: commerceResources.shippingOptionId,
           },
         });
+
+        // Ensure default plans exist, then attach a 14-day Starter trial.
+        await transaction
+          .insert(plans)
+          .values({
+            id: DEFAULT_PLAN_IDS.starter,
+            name: "Starter",
+            price: "0",
+            status: "active",
+            limits: { products: 100, staff: 2, storefrontEvents: 10_000 },
+            features: { analytics: true, managedCheckout: true, trial: true },
+          })
+          .onConflictDoNothing({ target: plans.id });
+
+        await transaction
+          .insert(plans)
+          .values({
+            id: DEFAULT_PLAN_IDS.growth,
+            name: "Growth",
+            price: "2499",
+            status: "active",
+            limits: { products: 2500, staff: 8, storefrontEvents: 100_000 },
+            features: { analytics: true, managedCheckout: true, localDelivery: true },
+          })
+          .onConflictDoNothing({ target: plans.id });
+
+        const trialStart = new Date();
+        const trialEnd = new Date(trialStart);
+        trialEnd.setUTCDate(trialEnd.getUTCDate() + 14);
+
+        const [trialSubscription] = await transaction
+          .insert(subscriptions)
+          .values({
+            tenantId,
+            planId: DEFAULT_PLAN_IDS.starter,
+            status: "trialing",
+            billingCycle: "monthly",
+            currentPeriodStart: trialStart,
+            currentPeriodEnd: trialEnd,
+            manualPaymentState: "pending",
+          })
+          .returning({ id: subscriptions.id });
+
+        if (trialSubscription?.id) {
+          await transaction.insert(invoices).values({
+            tenantId,
+            subscriptionId: trialSubscription.id,
+            amount: "0",
+            currency: "ETB",
+            status: "paid",
+            dueAt: trialStart,
+            paidAt: trialStart,
+            provider: "trial",
+            providerReference: `trial:${tenantId.slice(0, 8)}`,
+          });
+        }
 
         return {
           ...createdTenantRow,
