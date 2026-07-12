@@ -57,10 +57,10 @@ export default async function MerchantProductCollectionsPage({
             action={createCollectionAction}
             entityLabel="collection"
             nameKey="title"
-            nameLabel="Title"
-            namePlaceholder="Featured"
+            nameLabel={t("taxonomy.create.titleLabel")}
+            namePlaceholder={t("taxonomy.create.titlePlaceholder")}
             queryKey="product-collections"
-            triggerLabel="New collection"
+            triggerLabel={t("collections.actions.new" as any)}
           />
         </>
       }

@@ -57,11 +57,11 @@ export default async function MerchantProductCategoriesPage({
             action={createCategoryAction}
             entityLabel="category"
             nameKey="name"
-            nameLabel="Name"
-            namePlaceholder="Coffee"
+            nameLabel={t("taxonomy.create.nameLabel")}
+            namePlaceholder={t("taxonomy.create.namePlaceholder")}
             parentOptions={result.ok ? result.categories : []}
             queryKey="product-categories"
-            triggerLabel="New category"
+            triggerLabel={t("categories.actions.new" as any)}
           />
         </>
       }
