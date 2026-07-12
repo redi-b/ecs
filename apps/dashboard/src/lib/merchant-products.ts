@@ -27,6 +27,7 @@ export {
   getMerchantProductStock,
   getMerchantProducts,
   getMerchantProductVariantStock,
+  reorderMerchantProductCategories,
   updateMerchantProduct,
   updateMerchantProductCategory,
   updateMerchantProductStock,

@@ -240,6 +240,7 @@ const app = createPlatformApp({
   updateDeliverySettings: deliverySettingsService.updateDeliverySettings,
   updateTenantShopSettings,
   updateMerchantProduct: productService.updateMerchantProduct,
+  reorderMerchantProductCategories: productService.reorderMerchantProductCategories,
   updateMerchantProductCategory: productService.updateMerchantProductCategory,
   updateMerchantProductCollection: productService.updateMerchantProductCollection,
   updateMerchantCustomer: customerService.updateCustomer,

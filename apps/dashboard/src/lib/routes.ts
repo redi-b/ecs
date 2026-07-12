@@ -25,6 +25,7 @@ export const dashboardRoutes = {
     `/admin/products/categories/actions/${encodeURIComponent(categoryId)}/delete`,
   productCategoryUpdateAction: (categoryId: string) =>
     `/admin/products/categories/actions/${encodeURIComponent(categoryId)}`,
+  productCategoriesReorderAction: "/admin/products/categories/actions/reorder",
   productCategoriesBatchDeleteAction: "/admin/products/categories/actions/batch-delete",
   productCollectionDeleteAction: (collectionId: string) =>
     `/admin/products/collections/actions/${encodeURIComponent(collectionId)}/delete`,

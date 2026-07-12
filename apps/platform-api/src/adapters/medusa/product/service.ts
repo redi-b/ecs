@@ -169,6 +169,55 @@ export function createMedusaProductService(options: {
       return parseProductCollectionWriteResponse(response);
     },
 
+    reorderMerchantProductCategories: async (input: {
+      items: Array<{ categoryId: string; rank: number }>;
+      tenantId: string;
+    }): Promise<
+      | { ok: true }
+      | {
+          ok: false;
+          error:
+            | "commerce_backend_unavailable"
+            | "commerce_credentials_invalid"
+            | "commerce_credentials_missing"
+            | "category_not_found";
+          status: 401 | 404 | 503;
+        }
+    > => {
+      if (!options.adminApiToken?.trim()) return missingCredentials();
+      for (const item of input.items) {
+        const owned = await categoryBelongsToTenantById(
+          fetcher,
+          options,
+          item.categoryId,
+          input.tenantId,
+        );
+        if (owned !== true) {
+          return typeof owned === "object"
+            ? owned
+            : { error: "commerce_backend_unavailable", ok: false, status: 503 };
+        }
+        const url = new URL(
+          `/admin/product-categories/${encodeURIComponent(item.categoryId)}`,
+          normalizeBaseUrl(options.medusaInternalUrl),
+        );
+        const response = await requestMedusa(fetcher, url, {
+          body: JSON.stringify({ rank: item.rank }),
+          headers: getAdminHeaders(options.adminApiToken),
+          method: "POST",
+        });
+        if (!response?.ok) {
+          if (response?.status === 404) {
+            return { error: "category_not_found", ok: false, status: 404 };
+          }
+          return response?.status === 401
+            ? { error: "commerce_credentials_invalid", ok: false, status: 401 }
+            : { error: "commerce_backend_unavailable", ok: false, status: 503 };
+        }
+      }
+      return { ok: true };
+    },
+
     updateMerchantProductCategory: async (
       input: ProductCategoryWriteInput & { categoryId: string },
     ): Promise<MerchantProductCategoryWriteResult> => {

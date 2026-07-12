@@ -102,6 +102,49 @@ export function registerPlatformTenantCatalogRoutes(
     });
   });
 
+  app.post("/platform/tenants/:tenantId/product-categories/reorder", async (context) => {
+    if (!options.getTenantCommerceContext || !options.reorderMerchantProductCategories) {
+      return context.json({ error: "commerce_backend_unavailable" }, 503);
+    }
+    const session = await options.getSession?.(context.req.raw.headers);
+    if (!session) return context.json({ error: "auth_required" }, 401);
+    const commerce = await options.getTenantCommerceContext({
+      tenantId: context.req.param("tenantId"),
+      userId: session.user.id,
+    });
+    if (!commerce.ok) return context.json({ error: commerce.error }, commerce.status);
+
+    const body = await getJsonBody(context.req.raw);
+    const itemsRaw = body && typeof body === "object" ? (body as { items?: unknown }).items : null;
+    if (!Array.isArray(itemsRaw) || itemsRaw.length === 0) {
+      return context.json({ error: "invalid_reorder_items" }, 400);
+    }
+    const items: Array<{ categoryId: string; rank: number }> = [];
+    for (const entry of itemsRaw) {
+      if (!entry || typeof entry !== "object") continue;
+      const record = entry as { categoryId?: unknown; rank?: unknown };
+      const categoryId =
+        typeof record.categoryId === "string" && record.categoryId.trim()
+          ? record.categoryId.trim()
+          : null;
+      const rank =
+        typeof record.rank === "number" && Number.isFinite(record.rank)
+          ? Math.max(0, Math.floor(record.rank))
+          : null;
+      if (!categoryId || rank === null) continue;
+      items.push({ categoryId, rank });
+    }
+    if (!items.length) return context.json({ error: "invalid_reorder_items" }, 400);
+
+    const result = await options.reorderMerchantProductCategories({
+      items,
+      tenantId: commerce.context.tenantId,
+    });
+    return result.ok
+      ? context.json({ ok: true })
+      : context.json({ error: result.error }, result.status);
+  });
+
   app.post("/platform/tenants/:tenantId/product-categories/:categoryId", async (context) => {
     if (!options.getTenantCommerceContext || !options.updateMerchantProductCategory) {
       return context.json({ error: "commerce_backend_unavailable" }, 503);

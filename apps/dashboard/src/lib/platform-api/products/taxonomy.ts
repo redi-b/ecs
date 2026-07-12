@@ -75,6 +75,48 @@ export async function createMerchantProductCollection(options: {
   return parseProductCollectionMutationResponse(response);
 }
 
+export async function reorderMerchantProductCategories(options: {
+  cookieHeader?: string | null | undefined;
+  fetcher?: typeof fetch;
+  items: Array<{ categoryId: string; rank: number }>;
+  platformApiBaseUrl: string;
+  requestHost?: string | null | undefined;
+  tenantId?: string | null | undefined;
+}): Promise<{ ok: true } | { ok: false; message: string; status: number }> {
+  const tenantId = options.tenantId?.trim();
+  const fetcher = options.fetcher ?? fetch;
+  const basePath = tenantId
+    ? `/platform/tenants/${encodeURIComponent(tenantId)}/product-categories`
+    : "/platform/merchant/product-categories";
+  const url = new URL(`${basePath}/reorder`, normalizeBaseUrl(options.platformApiBaseUrl));
+
+  const response = await fetcher(url, {
+    body: JSON.stringify({ items: options.items }),
+    cache: "no-store",
+    headers: getProductHeaders({
+      cookieHeader: options.cookieHeader,
+      contentType: true,
+      requestHost: tenantId ? undefined : options.requestHost,
+    }),
+    method: "POST",
+  }).catch(() => null);
+
+  if (!response) {
+    return { ok: false, status: 503, message: "platform_request_failed" };
+  }
+
+  if (!response.ok) {
+    const data = (await response.json().catch(() => ({}))) as { error?: string };
+    return {
+      ok: false,
+      status: response.status,
+      message: data.error ?? "platform_request_failed",
+    };
+  }
+
+  return { ok: true };
+}
+
 export async function updateMerchantProductCategory(options: {
   categoryId: string;
   cookieHeader?: string | null | undefined;

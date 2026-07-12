@@ -280,6 +280,23 @@ export type PlatformAppOptions = {
         visibility?: "public" | "hidden" | undefined;
       }) => Promise<MerchantProductCollectionWriteResult>)
     | undefined;
+  reorderMerchantProductCategories?:
+    | ((input: {
+        items: Array<{ categoryId: string; rank: number }>;
+        tenantId: string;
+      }) => Promise<
+        | { ok: true }
+        | {
+            ok: false;
+            error:
+              | "commerce_backend_unavailable"
+              | "commerce_credentials_invalid"
+              | "commerce_credentials_missing"
+              | "category_not_found";
+            status: 401 | 404 | 503;
+          }
+      >)
+    | undefined;
   updateMerchantProductCategory?:
     | ((input: {
         categoryId: string;

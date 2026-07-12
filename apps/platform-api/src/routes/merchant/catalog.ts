@@ -174,6 +174,42 @@ export function registerMerchantCatalogRoutes(
     });
   });
 
+  app.post("/platform/merchant/product-categories/reorder", async (context) => {
+    const merchant = await getAuthorizedMerchantContext(context);
+    if (!merchant.ok) return merchant.response;
+    if (!options.reorderMerchantProductCategories) {
+      return context.json({ error: "commerce_backend_unavailable" }, 503);
+    }
+    const body = await getJsonBody(context.req.raw);
+    const itemsRaw = body && typeof body === "object" ? (body as { items?: unknown }).items : null;
+    if (!Array.isArray(itemsRaw) || itemsRaw.length === 0) {
+      return context.json({ error: "invalid_reorder_items" }, 400);
+    }
+    const items: Array<{ categoryId: string; rank: number }> = [];
+    for (const entry of itemsRaw) {
+      if (!entry || typeof entry !== "object") continue;
+      const record = entry as { categoryId?: unknown; rank?: unknown };
+      const categoryId =
+        typeof record.categoryId === "string" && record.categoryId.trim()
+          ? record.categoryId.trim()
+          : null;
+      const rank =
+        typeof record.rank === "number" && Number.isFinite(record.rank)
+          ? Math.max(0, Math.floor(record.rank))
+          : null;
+      if (!categoryId || rank === null) continue;
+      items.push({ categoryId, rank });
+    }
+    if (!items.length) return context.json({ error: "invalid_reorder_items" }, 400);
+    const result = await options.reorderMerchantProductCategories({
+      items,
+      tenantId: merchant.result.context.tenantId,
+    });
+    return result.ok
+      ? context.json({ ok: true })
+      : context.json({ error: result.error }, result.status);
+  });
+
   app.post("/platform/merchant/product-categories/:categoryId", async (context) => {
     const merchant = await getAuthorizedMerchantContext(context);
     if (!merchant.ok) return merchant.response;

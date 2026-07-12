@@ -9,14 +9,6 @@ import { toast } from "sonner";
 import { AppIcons } from "@/components/app/icons";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
@@ -28,6 +20,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { Switch } from "@/components/ui/switch";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
@@ -37,7 +37,7 @@ import {
 import { getTenantScopedPath } from "@/lib/dashboard-tenant-context";
 import { dashboardRoutes } from "@/lib/routes";
 
-type CategoryEditDialogProps = {
+type CategoryEditSheetProps = {
   category: MerchantProductCategory | null;
   categories: MerchantProductCategory[];
   onOpenChange: (open: boolean) => void;
@@ -45,13 +45,13 @@ type CategoryEditDialogProps = {
   tenantId?: string | null | undefined;
 };
 
-export function CategoryEditDialog({
+export function CategoryEditSheet({
   category,
   categories,
   onOpenChange,
   open,
   tenantId,
-}: CategoryEditDialogProps) {
+}: CategoryEditSheetProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [displayName, setDisplayName] = useState("");
@@ -129,22 +129,23 @@ export function CategoryEditDialog({
   }
 
   return (
-    <Dialog onOpenChange={onOpenChange} open={open}>
-      <DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-lg">
-        <DialogHeader className="gap-1.5 border-b px-4 py-4 text-left sm:px-5">
-          <DialogTitle>Edit category</DialogTitle>
-          <DialogDescription>
+    <Sheet onOpenChange={onOpenChange} open={open}>
+      <SheetContent className="flex w-full flex-col gap-0 p-0 sm:max-w-md" side="right">
+        <SheetHeader className="border-b px-5 py-4 pr-12 text-left">
+          <SheetTitle>Edit category</SheetTitle>
+          <SheetDescription>
             Update name, handle, parent, sibling order, and storefront visibility.
-          </DialogDescription>
-        </DialogHeader>
+          </SheetDescription>
+        </SheetHeader>
+
         <form
-          className="flex flex-col"
+          className="flex min-h-0 flex-1 flex-col"
           onSubmit={(event) => {
             event.preventDefault();
             void submit();
           }}
         >
-          <div className="grid gap-4 p-4 sm:p-5">
+          <div className="grid flex-1 content-start gap-5 overflow-y-auto px-5 py-5">
             {error ? (
               <Alert variant="destructive">
                 <AlertTitle>Category could not be updated</AlertTitle>
@@ -180,7 +181,9 @@ export function CategoryEditDialog({
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button
-                        aria-label={isHandleLocked ? "Unlock handle editing" : "Lock handle editing"}
+                        aria-label={
+                          isHandleLocked ? "Unlock handle editing" : "Lock handle editing"
+                        }
                         className="rounded-full"
                         onClick={() => setIsHandleLocked((value) => !value)}
                         size="icon-sm"
@@ -221,7 +224,7 @@ export function CategoryEditDialog({
             </Field>
 
             <Field>
-              <FieldLabel htmlFor="category-edit-rank">Sibling order (rank)</FieldLabel>
+              <FieldLabel htmlFor="category-edit-rank">Sibling order</FieldLabel>
               <Input
                 id="category-edit-rank"
                 min={0}
@@ -231,7 +234,8 @@ export function CategoryEditDialog({
                 value={rank}
               />
               <FieldDescription>
-                Order among categories that share the same parent. Lower numbers appear first.
+                Order among categories that share the same parent. Lower numbers appear first. Prefer
+                drag reorder when reordering many siblings.
               </FieldDescription>
             </Field>
 
@@ -251,7 +255,8 @@ export function CategoryEditDialog({
               />
             </Field>
           </div>
-          <DialogFooter className="mx-0 mb-0 rounded-none border-t bg-muted/50 p-4 sm:justify-end">
+
+          <SheetFooter className="flex-row justify-end gap-2 border-t bg-muted/30 px-5 py-4">
             <Button
               disabled={isSaving}
               onClick={() => onOpenChange(false)}
@@ -263,10 +268,10 @@ export function CategoryEditDialog({
             <Button disabled={isSaving} type="submit">
               {isSaving ? "Saving…" : "Save changes"}
             </Button>
-          </DialogFooter>
+          </SheetFooter>
         </form>
-      </DialogContent>
-    </Dialog>
+      </SheetContent>
+    </Sheet>
   );
 }
 

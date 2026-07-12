@@ -25,7 +25,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { CategoryEditDialog } from "@/features/catalog-taxonomy/category-edit-dialog";
+import { CategoryEditSheet } from "@/features/catalog-taxonomy/category-edit-sheet";
+import { CategoryReorderSheet } from "@/features/catalog-taxonomy/category-reorder-sheet";
 import {
   CategoryIdentityCell,
   CategoryParentCell,
@@ -218,6 +219,7 @@ export function ProductCategoriesTable({
 
   const [deleteCategoryId, setDeleteCategoryId] = useState<string | null>(null);
   const [editingCategory, setEditingCategory] = useState<MerchantProductCategory | null>(null);
+  const [reorderOpen, setReorderOpen] = useState(false);
   const [selectedCategoryIdsForDelete, setSelectedCategoryIdsForDelete] = useState<string[]>([]);
   const [showBatchDeleteDialog, setShowBatchDeleteDialog] = useState(false);
 
@@ -299,15 +301,29 @@ export function ProductCategoriesTable({
 
   const toolbar = (
     <div className="flex flex-col gap-3">
-      <DataTableFilters filters={[]} onClearAll={() => setQuery("")}>
-        <ListToolbarSearch
-          clearLabel="Clear category search"
-          label="Search product categories"
-          onChange={setQuery}
-          placeholder="Search categories"
-          value={query}
-        />
-      </DataTableFilters>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0 flex-1">
+          <DataTableFilters filters={[]} onClearAll={() => setQuery("")}>
+            <ListToolbarSearch
+              clearLabel="Clear category search"
+              label="Search product categories"
+              onChange={setQuery}
+              placeholder="Search categories"
+              value={query}
+            />
+          </DataTableFilters>
+        </div>
+        <Button
+          className="shrink-0"
+          onClick={() => setReorderOpen(true)}
+          size="sm"
+          type="button"
+          variant="outline"
+        >
+          <AppIcons.arrowUpDown data-icon="inline-start" />
+          Reorder
+        </Button>
+      </div>
       <p className="text-sm text-muted-foreground">
         {counts.hasActiveFilter
           ? `${counts.filteredCount} of ${counts.pageCount} on this page`
@@ -320,13 +336,19 @@ export function ProductCategoriesTable({
 
   return (
     <>
-      <CategoryEditDialog
+      <CategoryEditSheet
         categories={categories}
         category={editingCategory}
         onOpenChange={(next) => {
           if (!next) setEditingCategory(null);
         }}
         open={Boolean(editingCategory)}
+        tenantId={tenantId}
+      />
+      <CategoryReorderSheet
+        categories={categories}
+        onOpenChange={setReorderOpen}
+        open={reorderOpen}
         tenantId={tenantId}
       />
       <DataTable
