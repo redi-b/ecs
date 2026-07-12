@@ -22,6 +22,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { useI18n } from "@/i18n/provider";
+import { dashboardRoutes } from "@/lib/routes";
 import { cn } from "@/lib/utils";
 
 export function AccountMenu({ actor }: { actor: MerchantDashboardSummary["actor"] }) {
@@ -73,7 +74,7 @@ export function AccountMenu({ actor }: { actor: MerchantDashboardSummary["actor"
             align={collapsed ? "end" : "center"}
             sideOffset={collapsed ? 10 : 16}
             collisionPadding={12}
-            className="w-56"
+            className="w-56 rounded-xl"
           >
             <DropdownMenuLabel className="px-2 py-1.5">
               <span className="block truncate text-sm font-medium text-popover-foreground">
@@ -89,16 +90,22 @@ export function AccountMenu({ actor }: { actor: MerchantDashboardSummary["actor"
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
               <DropdownMenuItem asChild>
-                <Link href="/admin/settings?tab=account">
-                  <AppIcons.user />
-                  {t("account.account")}
+                <Link href={dashboardRoutes.billing}>
+                  <AppIcons.billing />
+                  {t("account.billing")}
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link href="/admin/settings">
-                  <AppIcons.settings />
-                  {t("account.shopSettings")}
+                <Link href={dashboardRoutes.media}>
+                  <AppIcons.image />
+                  {t("account.mediaLibrary")}
                 </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <a href="mailto:support@ecs.et">
+                  <AppIcons.externalLink />
+                  {t("account.support")}
+                </a>
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />

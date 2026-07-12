@@ -2,7 +2,7 @@ import type { AppIcon } from "@/components/app/icons";
 import { AppIcons } from "@/components/app/icons";
 import { type DashboardRouteHref, dashboardRoutes } from "@/lib/routes";
 
-export type AppRouteSection = "main" | "commerce" | "storefront" | "growth" | "system";
+export type AppRouteSection = "main" | "commerce" | "storefront" | "insights" | "footer";
 
 export type AppRoute = {
   id: string;
@@ -15,13 +15,14 @@ export type AppRoute = {
   disabled?: boolean;
 };
 
-/** Sidebar section order and merchant-facing labels. */
+/**
+ * Primary scrollable sections. Footer routes (settings, billing) render in the sticky bottom.
+ */
 export const appRouteSections: ReadonlyArray<{ id: AppRouteSection; label: string | null }> = [
   { id: "main", label: null },
   { id: "commerce", label: "Commerce" },
   { id: "storefront", label: "Storefront" },
-  { id: "growth", label: "Growth" },
-  { id: "system", label: "System" },
+  { id: "insights", label: "Insights" },
 ];
 
 export const appRoutes: AppRoute[] = [
@@ -112,7 +113,7 @@ export const appRoutes: AppRoute[] = [
     title: "Insights",
     href: dashboardRoutes.insights,
     icon: AppIcons.insights,
-    section: "growth",
+    section: "insights",
     keywords: ["analytics", "reports", "sales"],
   },
   {
@@ -120,7 +121,7 @@ export const appRoutes: AppRoute[] = [
     title: "Billing",
     href: dashboardRoutes.billing,
     icon: AppIcons.billing,
-    section: "growth",
+    section: "footer",
     keywords: ["plan", "subscription", "payments"],
   },
   {
@@ -128,13 +129,17 @@ export const appRoutes: AppRoute[] = [
     title: "Settings",
     href: dashboardRoutes.settings,
     icon: AppIcons.settings,
-    section: "system",
+    section: "footer",
     keywords: ["shop", "account", "preferences"],
   },
 ];
 
 export function getAppRoutesBySection(section: AppRouteSection) {
   return appRoutes.filter((route) => route.section === section);
+}
+
+export function getFooterAppRoutes() {
+  return getAppRoutesBySection("footer");
 }
 
 export function getNavigableAppRoutes() {

@@ -33,7 +33,7 @@ const Toaster = ({ className, ...props }: ToasterProps) => {
         close: <XIcon className="size-3.5" />,
       }}
       offset={20}
-      position="bottom-right"
+      position="top-right"
       richColors={false}
       style={
         {
@@ -61,7 +61,7 @@ const Toaster = ({ className, ...props }: ToasterProps) => {
           toast: cn(
             "cn-toast group/toast",
             "border border-border/80 bg-popover/95 text-popover-foreground",
-            "rounded-[var(--radius-lg)] px-4 py-3.5 shadow-[0_18px_50px_-28px_rgba(15,23,42,0.45)]",
+            "rounded-[var(--radius-lg)] px-4 py-3.5 pr-10 shadow-[0_18px_50px_-28px_rgba(15,23,42,0.45)]",
             "backdrop-blur-xl",
             "data-[type=success]:border-[color:var(--success-border)] data-[type=success]:bg-[color:var(--success-bg)]",
             "data-[type=error]:border-[color:var(--error-border)] data-[type=error]:bg-[color:var(--error-bg)]",
@@ -72,8 +72,11 @@ const Toaster = ({ className, ...props }: ToasterProps) => {
             "rounded-lg bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground",
           cancelButton:
             "rounded-lg border border-border bg-background px-2.5 py-1 text-xs font-medium text-foreground",
-          closeButton:
-            "rounded-full border border-border/70 bg-background/80 text-muted-foreground opacity-80 transition-opacity hover:opacity-100",
+          closeButton: cn(
+            "left-auto! right-2! top-2! size-6! translate-x-0! translate-y-0!",
+            "rounded-full border border-border/70 bg-background/90 text-muted-foreground",
+            "opacity-80 transition-opacity hover:opacity-100",
+          ),
           icon: "mt-0.5 text-muted-foreground group-data-[type=success]/toast:text-primary group-data-[type=error]/toast:text-destructive",
         },
         duration: 4200,
