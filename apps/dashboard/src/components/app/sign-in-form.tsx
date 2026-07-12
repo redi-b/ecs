@@ -28,12 +28,13 @@ export function SignInForm({
   return (
     <form action="/admin/session" className="flex flex-col gap-5" method="post">
       <input name="next" type="hidden" value={nextPath} />
-      <FieldGroup>
+      <FieldGroup className="gap-4">
         <Field>
           <FieldLabel htmlFor={`${fieldId}-email`}>{t("auth.email")}</FieldLabel>
-          <InputGroup className="h-11 rounded-full bg-background/70 px-1 transition-all duration-200 hover:border-ring/70">
+          <InputGroup className="h-11 rounded-xl bg-background px-1 transition-colors hover:border-ring/50 focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/25">
             <InputGroupInput
               autoComplete="email"
+              autoFocus
               className="px-3 text-sm"
               id={`${fieldId}-email`}
               name="email"
@@ -45,7 +46,7 @@ export function SignInForm({
         </Field>
         <Field>
           <FieldLabel htmlFor={`${fieldId}-password`}>{t("auth.password")}</FieldLabel>
-          <InputGroup className="h-11 rounded-full bg-background/70 px-1 transition-all duration-200 hover:border-ring/70">
+          <InputGroup className="h-11 rounded-xl bg-background px-1 transition-colors hover:border-ring/50 focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/25">
             <InputGroupInput
               autoComplete="current-password"
               className="px-3 text-sm"
@@ -72,8 +73,8 @@ export function SignInForm({
           </Field>
         ) : null}
       </FieldGroup>
-      <Button className="h-11 rounded-full text-sm font-semibold shadow-sm" type="submit">
-        {t("common.continue")}
+      <Button className="h-11 w-full rounded-xl text-sm font-semibold" type="submit">
+        {t("auth.signIn")}
       </Button>
     </form>
   );

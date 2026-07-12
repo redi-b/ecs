@@ -1,7 +1,7 @@
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { LanguageSwitcher } from "@/components/app/language-switcher";
-import { ThemeToggle } from "@/components/app/theme-toggle";
+
+import { AuthShell } from "@/components/onboarding/auth-shell";
 import { ShopOnboardingForm } from "@/components/onboarding/signup-onboarding-form";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import type { MessageKey } from "@/i18n/messages";
@@ -75,41 +75,29 @@ export default async function OnboardingPage({ searchParams }: OnboardingPagePro
     : null;
 
   return (
-    <main className="min-h-screen bg-background px-4 py-6 text-foreground sm:px-6 lg:px-8">
-      <div className="mx-auto flex max-w-6xl flex-col gap-6">
-        <header className="grid gap-3 border-b pb-5 md:grid-cols-[1fr_auto] md:items-start">
-          <div>
-            <p className="text-sm font-medium text-primary">{t("onboarding.eyebrow")}</p>
-            <h1 className="mt-2 text-3xl font-semibold tracking-tight">{t("onboarding.title")}</h1>
-            <p className="mt-2 max-w-xl text-sm text-muted-foreground">
-              {t("onboarding.description")}
-            </p>
-          </div>
-          <div className="flex items-center gap-1">
-            <LanguageSwitcher />
-            <ThemeToggle />
-          </div>
-        </header>
+    <AuthShell
+      brandDescription={t("onboarding.description")}
+      brandTitle={t("onboarding.title")}
+      layout="setup"
+    >
+      {!templatesResult.ok ? (
+        <Alert className="mb-6" variant="destructive">
+          <AlertTitle>{t("onboarding.templatesUnavailable")}</AlertTitle>
+          <AlertDescription>{templatesResult.message}</AlertDescription>
+        </Alert>
+      ) : null}
 
-        {!templatesResult.ok ? (
-          <Alert variant="destructive">
-            <AlertTitle>{t("onboarding.templatesUnavailable")}</AlertTitle>
-            <AlertDescription>{templatesResult.message}</AlertDescription>
-          </Alert>
-        ) : null}
-
-        <ShopOnboardingForm
-          defaultValues={{
-            businessCategory: resolvedSearchParams.businessCategory,
-            contactPhone: resolvedSearchParams.contactPhone,
-            handle: resolvedSearchParams.handle,
-            shopName: resolvedSearchParams.shopName,
-          }}
-          errorMessage={errorMessage}
-          storefrontBaseDomain={process.env.STOREFRONT_PUBLIC_BASE_DOMAIN ?? "lvh.me"}
-          templates={templates}
-        />
-      </div>
-    </main>
+      <ShopOnboardingForm
+        defaultValues={{
+          businessCategory: resolvedSearchParams.businessCategory,
+          contactPhone: resolvedSearchParams.contactPhone,
+          handle: resolvedSearchParams.handle,
+          shopName: resolvedSearchParams.shopName,
+        }}
+        errorMessage={errorMessage}
+        storefrontBaseDomain={process.env.STOREFRONT_PUBLIC_BASE_DOMAIN ?? "lvh.me"}
+        templates={templates}
+      />
+    </AuthShell>
   );
 }

@@ -1,17 +1,9 @@
 import { headers } from "next/headers";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { LanguageSwitcher } from "@/components/app/language-switcher";
+
 import { SignInForm } from "@/components/app/sign-in-form";
-import { ThemeToggle } from "@/components/app/theme-toggle";
-import {
-  Card,
-  CardAction,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { AuthShell } from "@/components/onboarding/auth-shell";
 import type { MessageKey } from "@/i18n/messages";
 import { getRequestMessages } from "@/i18n/server";
 import { getAuthenticatedDashboardRedirect } from "@/lib/dashboard-auth-redirect";
@@ -42,41 +34,44 @@ export default async function AdminSignInPage({
   const errorMessage = getErrorMessage(params?.error, t);
 
   return (
-    <main className="min-h-screen bg-background px-5 py-8 text-foreground">
-      <div className="mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-md items-center">
-        <Card className="w-full rounded-3xl border border-border bg-card [--card-spacing:--spacing(5)]">
-          <CardHeader className="gap-1.5">
-            <div className="text-xs font-bold tracking-normal text-muted-foreground uppercase">
-              {t("auth.merchantConsole")}
-            </div>
-            <CardTitle className="text-xl font-semibold">{t("auth.signIn")}</CardTitle>
-            <CardDescription>
-              {isCentralAccess ? t("auth.centralDescription") : t("auth.shopDescription")}
-            </CardDescription>
-            <CardAction>
-              <div className="flex items-center gap-1">
-                <LanguageSwitcher />
-                <ThemeToggle />
-              </div>
-            </CardAction>
-          </CardHeader>
-          <CardContent className="pt-1">
-            <SignInForm errorMessage={errorMessage} nextPath={nextPath} />
-            {isCentralAccess ? (
-              <p className="mt-5 border-t pt-4 text-center text-sm text-muted-foreground">
-                {t("auth.newMerchant")}{" "}
-                <Link
-                  className="font-medium text-primary underline-offset-4 hover:underline"
-                  href="/admin/sign-up"
-                >
-                  {t("auth.createAccount")}
-                </Link>
-              </p>
-            ) : null}
-          </CardContent>
-        </Card>
+    <AuthShell
+      brandDescription={
+        isCentralAccess ? t("auth.centralBrandDescription") : t("auth.shopBrandDescription")
+      }
+      brandFooter={t("auth.brandFooter.signIn")}
+      brandPoints={
+        isCentralAccess
+          ? [t("auth.brandPoint.catalog"), t("auth.brandPoint.orders"), t("auth.brandPoint.storefront")]
+          : [t("auth.brandPoint.shopAccess"), t("auth.brandPoint.teamReady")]
+      }
+      brandTitle={isCentralAccess ? t("auth.centralBrandTitle") : t("auth.shopBrandTitle")}
+    >
+      <div className="rounded-2xl border border-border bg-card p-7 shadow-sm sm:p-9">
+        <div className="mb-7">
+          <p className="text-xs font-semibold tracking-[0.06em] text-muted-foreground uppercase">
+            {t("auth.merchantConsole")}
+          </p>
+          <h2 className="mt-2.5 text-xl font-semibold tracking-tight sm:text-[1.35rem]">
+            {t("auth.signIn")}
+          </h2>
+          <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+            {isCentralAccess ? t("auth.centralDescription") : t("auth.shopDescription")}
+          </p>
+        </div>
+        <SignInForm errorMessage={errorMessage} nextPath={nextPath} />
+        {isCentralAccess ? (
+          <p className="mt-7 border-t pt-6 text-center text-sm text-muted-foreground">
+            {t("auth.newMerchant")}{" "}
+            <Link
+              className="font-medium text-primary underline-offset-4 hover:underline"
+              href="/admin/sign-up"
+            >
+              {t("auth.createAccount")}
+            </Link>
+          </p>
+        ) : null}
       </div>
-    </main>
+    </AuthShell>
   );
 }
 

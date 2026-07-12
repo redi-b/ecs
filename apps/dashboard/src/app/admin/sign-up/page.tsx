@@ -2,6 +2,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { AccountSignUpForm } from "@/components/onboarding/account-signup-form";
+import { AuthShell } from "@/components/onboarding/auth-shell";
 import type { MessageKey } from "@/i18n/messages";
 import { getRequestMessages } from "@/i18n/server";
 import { getAuthenticatedDashboardRedirect } from "@/lib/dashboard-auth-redirect";
@@ -50,16 +51,23 @@ export default async function SignUpPage({ searchParams }: SignUpPageProps) {
     : null;
 
   return (
-    <main className="min-h-screen bg-background px-5 py-8 text-foreground">
-      <div className="mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-md items-center">
-        <AccountSignUpForm
-          defaultValues={{
-            email: resolvedSearchParams.email,
-            ownerName: resolvedSearchParams.ownerName,
-          }}
-          errorMessage={errorMessage}
-        />
-      </div>
-    </main>
+    <AuthShell
+      brandDescription={t("auth.signupBrandDescription")}
+      brandFooter={t("auth.brandFooter.signUp")}
+      brandPoints={[
+        t("auth.brandPoint.minutes"),
+        t("auth.brandPoint.catalog"),
+        t("auth.brandPoint.storefront"),
+      ]}
+      brandTitle={t("auth.signupBrandTitle")}
+    >
+      <AccountSignUpForm
+        defaultValues={{
+          email: resolvedSearchParams.email,
+          ownerName: resolvedSearchParams.ownerName,
+        }}
+        errorMessage={errorMessage}
+      />
+    </AuthShell>
   );
 }
