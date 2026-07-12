@@ -18,8 +18,8 @@ import {
 import { storefrontTemplates } from "@ecs/storefront-templates";
 import { hashPassword } from "better-auth/crypto";
 import { and, eq, inArray } from "drizzle-orm";
-import { loadPlatformApiEnvFiles } from "./config/env.js";
-import { buildPlatformSeed } from "./seed-data.js";
+import { loadPlatformApiEnvFiles } from "../config/env.js";
+import { buildPlatformSeed } from "./demo-tenant-data.js";
 
 loadPlatformApiEnvFiles();
 
@@ -1350,6 +1350,55 @@ const demoCustomers = [
   },
 ] as const;
 
+/**
+ * Product image URLs for demo catalog.
+ * Remote placeholders on Medusa product.images (not media-library / MinIO assets).
+ * Override with SEED_DEMO_IMAGE_BASE (e.g. https://picsum.photos/seed).
+ */
+const demoImageSeeds: Record<string, string> = {
+  "Coffee & Tea": "coffee-tea",
+  "Pantry Staples": "pantry",
+  "Home Goods": "home-goods",
+  "Fresh Market": "fresh-market",
+  "Giftable Essentials": "gifts",
+  "Soft Furnishings": "soft-furnishings",
+  "Home Fragrance": "fragrance",
+  "Dinner Party Edit": "dinner",
+  "Wedding Gifts": "wedding",
+};
+
+function getDemoImageUrl(category: string) {
+  const customBase = process.env.SEED_DEMO_IMAGE_BASE?.trim().replace(/\/$/, "");
+  const seed = demoImageSeeds[category] ?? "gifts";
+  if (customBase) {
+    return `${customBase}/${encodeURIComponent(seed)}/1200/1200`;
+  }
+  return `https://picsum.photos/seed/${encodeURIComponent(`ecs-${seed}`)}/1200/1200`;
+}
+
+function productSeed(
+  title: string,
+  handle: string,
+  subtitle: string,
+  basePrice: number,
+  options: readonly string[],
+) {
+  return {
+    title,
+    handle,
+    subtitle,
+    description: `${title} is a carefully selected product for Selam Market, prepared for everyday use and gifting.`,
+    image: getDemoImageUrl(subtitle),
+    optionTitle: "Variant",
+    variants: options.map((option, index) => ({
+      option,
+      title: `${title} / ${option}`,
+      sku: `DEMO-${handle.toUpperCase().replaceAll("-", "_")}-${index + 1}`,
+      price: basePrice + index * Math.round(basePrice * 0.45),
+    })),
+  };
+}
+
 const demoProducts = [
   productSeed("Yirgacheffe Filter Coffee", "demo-yirgacheffe-filter-coffee", "Coffee & Tea", 680, [
     "250g",
@@ -1505,58 +1554,6 @@ const studioProducts = [
     "Ridge",
   ]),
 ] as const;
-
-function productSeed(
-  title: string,
-  handle: string,
-  subtitle: string,
-  basePrice: number,
-  options: readonly string[],
-) {
-  return {
-    title,
-    handle,
-    subtitle,
-    description: `${title} is a carefully selected product for Selam Market, prepared for everyday use and gifting.`,
-    image: getDemoImageUrl(subtitle),
-    optionTitle: "Variant",
-    variants: options.map((option, index) => ({
-      option,
-      title: `${title} / ${option}`,
-      sku: `DEMO-${handle.toUpperCase().replaceAll("-", "_")}-${index + 1}`,
-      price: basePrice + index * Math.round(basePrice * 0.45),
-    })),
-  };
-}
-
-/**
- * Product image URLs for demo catalog.
- * These are remote placeholders stored on Medusa product.images (not media-library assets).
- * Merchant uploads in the dashboard still go through MinIO via MEDIA_S3_*.
- *
- * Override with SEED_DEMO_IMAGE_BASE (e.g. https://picsum.photos/seed) for offline-friendly seeds.
- */
-const demoImageSeeds: Record<string, string> = {
-  "Coffee & Tea": "coffee-tea",
-  "Pantry Staples": "pantry",
-  "Home Goods": "home-goods",
-  "Fresh Market": "fresh-market",
-  "Giftable Essentials": "gifts",
-  "Soft Furnishings": "soft-furnishings",
-  "Home Fragrance": "fragrance",
-  "Dinner Party Edit": "dinner",
-  "Wedding Gifts": "wedding",
-};
-
-function getDemoImageUrl(category: string) {
-  const customBase = process.env.SEED_DEMO_IMAGE_BASE?.trim().replace(/\/$/, "");
-  const seed = demoImageSeeds[category] ?? "gifts";
-  if (customBase) {
-    return `${customBase}/${encodeURIComponent(seed)}/1200/1200`;
-  }
-  // Stable public placeholders (no MinIO required for demo seed).
-  return `https://picsum.photos/seed/${encodeURIComponent(`ecs-${seed}`)}/1200/1200`;
-}
 
 try {
   await main();

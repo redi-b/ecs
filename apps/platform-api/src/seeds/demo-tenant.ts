@@ -14,8 +14,8 @@ import {
 } from "@ecs/db";
 import { storefrontTemplates } from "@ecs/storefront-templates";
 import { hashPassword } from "better-auth/crypto";
-import { loadPlatformApiEnvFiles } from "./config/env.js";
-import { buildPlatformSeed } from "./seed-data.js";
+import { loadPlatformApiEnvFiles } from "../config/env.js";
+import { buildPlatformSeed } from "./demo-tenant-data.js";
 
 loadPlatformApiEnvFiles();
 

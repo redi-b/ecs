@@ -41,37 +41,28 @@ The Medusa migration and application containers use writable root filesystems be
 
 ### After first deploy (required)
 
-Do **not** run `platform-api` `seed.ts` or `seed-demo.ts` on production unless you explicitly want a demo shop.
+Production does **not** need demo seeds. Migrations + template sync already run on deploy.
 
-1. Confirm env includes at least:
-   - `MEDUSA_ADMIN_API_TOKEN` (empty until step 3)
-   - `MINIO_ROOT_PASSWORD`
-   - `MEDIA_S3_PUBLIC_BASE_URL` (or accept the default `https://media.${BASE_DOMAIN}/ecs-media`)
-   - `MINIO_API_CORS_ALLOW_ORIGIN=https://dashboard.${BASE_DOMAIN}`
-2. Deploy the stack (migrations + template sync run automatically).
-3. Create the Medusa **secret** Admin API key (token shown **once**):
+1. Env: `MINIO_ROOT_PASSWORD`, media CORS/public URL, empty `MEDUSA_ADMIN_API_TOKEN` until step 2  
+2. Deploy  
+3. Create Medusa secret key (token shown **once**):
 
 ```sh
-# From the Dokploy server / compose directory for this project:
 docker compose run --rm medusa node_modules/.bin/medusa exec ./src/scripts/seed.js
 ```
 
-4. Copy `medusaAdminApiToken` from the JSON output into Dokploy env as `MEDUSA_ADMIN_API_TOKEN`.
-5. Redeploy or restart **platform-api** so it loads the token.
-6. Open `https://dashboard.${BASE_DOMAIN}`, sign up, create a shop.
+4. Set `MEDUSA_ADMIN_API_TOKEN` from `medusaAdminApiToken` in the JSON output  
+5. Restart **platform-api**  
+6. Sign up on the dashboard and create a shop  
 
-If shop create fails, check:
-
-- platform-api logs for `[platform/tenants]`
-- dashboard logs for `[onboarding/submit]`
-- that `MEDUSA_ADMIN_API_TOKEN` is set and platform-api was restarted
-- Medusa is healthy
+Debug shop create: platform-api `[platform/tenants]`, dashboard `[onboarding/submit]`.
 
 ### Optional demo data (local / staging only)
 
 ```sh
-docker compose run --rm platform-api node --import tsx src/seed.ts
-docker compose run --rm -e MEDUSA_ADMIN_API_TOKEN="$MEDUSA_ADMIN_API_TOKEN" platform-api node --import tsx src/seed-demo.ts
+docker compose run --rm platform-api node --import tsx src/seeds/demo-tenant.ts
+docker compose run --rm -e MEDUSA_ADMIN_API_TOKEN="$MEDUSA_ADMIN_API_TOKEN" \
+  platform-api node --import tsx src/seeds/demo-catalog.ts
 ```
 
 ### Media (MinIO)

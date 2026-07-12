@@ -3,7 +3,7 @@ import test from "node:test";
 
 import { z } from "zod";
 
-import { buildPlatformSeed } from "./seed-data.js";
+import { buildPlatformSeed } from "./demo-tenant-data.js";
 
 test("buildPlatformSeed creates the default local tenant context", () => {
   const seed = buildPlatformSeed({

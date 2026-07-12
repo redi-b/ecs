@@ -72,73 +72,41 @@ POSTGRES_HOST_PORT=5433 pnpm dev:infra
 
 When using a different PostgreSQL port, update the local database URLs in `.env`, `apps/platform-api/.env`, and `apps/medusa/.env` to use the same port.
 
-### Clean local databases (recommended before testing seed / onboarding)
+### Seeds (three commands only)
 
-Wipes Docker volumes for postgres/redis/minio, recreates empty DBs, and migrates:
+| Command | Purpose |
+|--------|---------|
+| `pnpm db:reset --yes` | Wipe local Docker volumes, recreate DBs, migrate |
+| `pnpm seed --write-env` | **Always run this:** Medusa admin secret key + storefront templates |
+| `pnpm seed:demo` | **Optional:** sample shops + products (start apps first so Medusa is up) |
+
+Seed source files live under `apps/platform-api/src/seeds/` and `apps/medusa/src/scripts/seed.ts`.
+
+Fresh local setup:
 
 ```bash
-pnpm db:reset:local --yes
-pnpm seed:bootstrap --write-env
+pnpm install
+# copy .env files once (see Environment above)
+
+pnpm db:reset --yes
+pnpm seed --write-env
 pnpm dev:apps
+# optional, with Medusa already running:
+pnpm seed:demo
 ```
 
-`seed:bootstrap` only:
-
-1. Seeds Medusa (ETB region + **secret Admin API key**)
-2. Syncs storefront templates
-3. Optionally writes `MEDUSA_ADMIN_API_TOKEN` into `apps/platform-api/.env` (`--write-env`)
-
-It does **not** create a demo shop. After bootstrap you can test real signup → create shop at `http://dashboard.lvh.me/admin`.
-
-### Manual migrate + bootstrap
-
-```bash
-pnpm db:migrate
-pnpm medusa:migrate
-pnpm seed:bootstrap --write-env
-```
-
-### Optional local demo shop
-
-Only for UI demos with sample catalog data (not required for onboarding, not for production):
-
-```bash
-pnpm seed                 # platform demo tenant + owner@selam.local
-pnpm seed:demo            # needs MEDUSA_ADMIN_API_TOKEN; demo products/orders
-pnpm seed:demo:clean      # remove demo commerce/platform rows
-```
-
-Demo product images use public placeholders (picsum). Merchant media uploads still use MinIO via `MEDIA_S3_*`.
+- Onboarding test: `http://dashboard.lvh.me` → sign up → create shop  
+- Demo shop: `http://selam.lvh.me/admin` · `owner@selam.local` / `password1234`  
+- Clean demo: `pnpm seed:demo --clean`  
+- Merchant image uploads use MinIO (`MEDIA_S3_*`); demo catalog uses public placeholders.
 
 ### Start apps
 
 ```bash
 pnpm dev:apps
-# or with token override:
-MEDUSA_ADMIN_API_TOKEN=<token> pnpm dev:apps
-```
-
-Grouped logs:
-
-```bash
 pnpm dev:apps:grouped
-```
-
-Full local startup (infra + apps):
-
-```bash
-pnpm dev
-```
-
-Stop local infrastructure:
-
-```bash
+pnpm dev              # infra + migrate + seed --write-env + apps
 pnpm dev:down
-```
-
-View infrastructure logs:
-
-```bash
 pnpm dev:logs
 ```
 

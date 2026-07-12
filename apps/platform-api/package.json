@@ -9,9 +9,8 @@
     "build": "tsc -p tsconfig.json --noEmit",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "node --import tsx --test \"src/**/*.test.ts\"",
-    "seed": "tsx src/seed.ts",
-    "seed:demo": "tsx src/seed-demo.ts",
-    "seed:demo:clean": "tsx src/seed-demo.ts --clean",
+    "seed:demo-tenant": "tsx src/seeds/demo-tenant.ts",
+    "seed:demo-catalog": "tsx src/seeds/demo-catalog.ts",
     "sync:storefront-templates": "tsx src/sync-storefront-templates.ts",
     "start": "tsx src/index.ts"
   },
