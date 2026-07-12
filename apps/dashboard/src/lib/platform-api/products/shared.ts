@@ -195,6 +195,7 @@ export async function sendTaxonomyMutation(options: {
   resource: "product-categories" | "product-collections";
   tenantId?: string | null | undefined;
 }) {
+  // body values are JSON-serialized; keep type loose enough for optional taxonomy fields.
   const tenantId = options.tenantId?.trim();
   const fetcher = options.fetcher ?? fetch;
   const response = await fetcher(getProductResourceMutationUrl({ ...options, tenantId }), {

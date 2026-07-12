@@ -24,9 +24,11 @@ export async function POST(request: Request) {
       cookieHeader: context.cookieHeader,
       handle: category.handle,
       name: category.name,
+      parentCategoryId: category.parentCategoryId,
       platformApiBaseUrl: context.platformApiBaseUrl,
       requestHost: context.requestHost,
       tenantId: context.tenantId,
+      visibility: category.visibility,
     });
 
     if (!result.ok) {
@@ -61,13 +63,25 @@ async function getCategoryInput(request: Request) {
     const body = (await request.json().catch(() => ({}))) as {
       handle?: unknown;
       name?: unknown;
+      parentCategoryId?: unknown;
+      visibility?: unknown;
     };
 
     return {
       handle: typeof body.handle === "string" && body.handle.trim() ? body.handle.trim() : null,
       name: typeof body.name === "string" && body.name.trim() ? body.name.trim() : null,
+      parentCategoryId:
+        typeof body.parentCategoryId === "string" && body.parentCategoryId.trim()
+          ? body.parentCategoryId.trim()
+          : null,
+      visibility: body.visibility === "hidden" ? ("hidden" as const) : ("public" as const),
     };
   }
 
-  return getTaxonomyFormInput(await request.formData());
+  const form = await getTaxonomyFormInput(await request.formData());
+  return {
+    ...form,
+    parentCategoryId: null as string | null,
+    visibility: "public" as const,
+  };
 }

@@ -27,6 +27,7 @@ export async function POST(request: Request) {
       requestHost: context.requestHost,
       tenantId: context.tenantId,
       title: collection.title,
+      visibility: collection.visibility,
     });
 
     if (!result.ok) {
@@ -61,13 +62,20 @@ async function getCollectionInput(request: Request) {
     const body = (await request.json().catch(() => ({}))) as {
       handle?: unknown;
       title?: unknown;
+      visibility?: unknown;
     };
 
     return {
       handle: typeof body.handle === "string" && body.handle.trim() ? body.handle.trim() : null,
       title: typeof body.title === "string" && body.title.trim() ? body.title.trim() : null,
+      visibility: body.visibility === "hidden" ? ("hidden" as const) : ("public" as const),
     };
   }
 
-  return getTaxonomyFormInput(await request.formData());
+  const form = await getTaxonomyFormInput(await request.formData());
+  return {
+    handle: form.handle,
+    title: form.title ?? form.name,
+    visibility: "public" as const,
+  };
 }

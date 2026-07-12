@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
 import {
   CategoryIdentityCell,
   CategoryParentCell,
@@ -106,6 +107,19 @@ function getCategoryColumns(
           parentCategoryId={row.original.parentCategoryId}
         />
       ),
+    },
+    {
+      id: "visibility",
+      accessorFn: (category) => category.visibility ?? "public",
+      header: ({ column }) => <DataTableHeader column={column} title="Visibility" />,
+      cell: ({ row }) => {
+        const hidden = row.original.visibility === "hidden";
+        return (
+          <Badge variant={hidden ? "secondary" : "outline"}>
+            {hidden ? "Hidden" : "Public"}
+          </Badge>
+        );
+      },
     },
     {
       accessorKey: "updatedAt",

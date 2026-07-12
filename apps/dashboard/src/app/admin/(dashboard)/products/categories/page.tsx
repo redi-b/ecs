@@ -54,6 +54,7 @@ export default async function MerchantProductCategoriesPage({
             nameKey="name"
             nameLabel="Name"
             namePlaceholder="Coffee"
+            parentOptions={result.ok ? result.categories : []}
             queryKey="product-categories"
             triggerLabel="New category"
           />

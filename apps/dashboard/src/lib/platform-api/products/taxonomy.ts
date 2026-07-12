@@ -24,14 +24,18 @@ export async function createMerchantProductCategory(options: {
   fetcher?: typeof fetch;
   handle?: string | null | undefined;
   name: string;
+  parentCategoryId?: string | null | undefined;
   platformApiBaseUrl: string;
   requestHost?: string | null | undefined;
   tenantId?: string | null | undefined;
+  visibility?: "public" | "hidden" | undefined;
 }): Promise<MerchantProductCategoryMutationResult> {
   const response = await sendTaxonomyMutation({
     body: {
       name: options.name,
       handle: options.handle,
+      ...(options.parentCategoryId ? { parentCategoryId: options.parentCategoryId } : {}),
+      ...(options.visibility ? { visibility: options.visibility } : {}),
     },
     cookieHeader: options.cookieHeader,
     fetcher: options.fetcher,
@@ -52,11 +56,13 @@ export async function createMerchantProductCollection(options: {
   requestHost?: string | null | undefined;
   tenantId?: string | null | undefined;
   title: string;
+  visibility?: "public" | "hidden" | undefined;
 }): Promise<MerchantProductCollectionMutationResult> {
   const response = await sendTaxonomyMutation({
     body: {
       title: options.title,
       handle: options.handle,
+      ...(options.visibility ? { visibility: options.visibility } : {}),
     },
     cookieHeader: options.cookieHeader,
     fetcher: options.fetcher,

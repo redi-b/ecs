@@ -1,5 +1,6 @@
 "use client";
 
+import type { MerchantProductCategory } from "@ecs/contracts";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
@@ -20,8 +21,20 @@ import {
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { slugifyTaxonomyHandle } from "@/features/catalog-taxonomy/taxonomy-table-state";
+import {
+  getCategoryDisplayName,
+  slugifyTaxonomyHandle,
+} from "@/features/catalog-taxonomy/taxonomy-table-state";
 
 type TaxonomyCreateDialogProps = {
   action: string;
@@ -29,6 +42,8 @@ type TaxonomyCreateDialogProps = {
   nameKey: "name" | "title";
   nameLabel: string;
   namePlaceholder: string;
+  /** Existing categories for parent selection (category create only). */
+  parentOptions?: MerchantProductCategory[];
   queryKey: string;
   triggerLabel: string;
 };
@@ -39,6 +54,7 @@ export function TaxonomyCreateDialog({
   nameKey,
   nameLabel,
   namePlaceholder,
+  parentOptions = [],
   queryKey,
   triggerLabel,
 }: TaxonomyCreateDialogProps) {
@@ -48,15 +64,27 @@ export function TaxonomyCreateDialog({
   const [displayName, setDisplayName] = useState("");
   const [handle, setHandle] = useState("");
   const [isHandleLocked, setIsHandleLocked] = useState(true);
+  const [parentCategoryId, setParentCategoryId] = useState<string>("__root__");
+  const [isVisible, setIsVisible] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const generatedHandle = useMemo(() => slugifyTaxonomyHandle(displayName), [displayName]);
   const HandleLockIcon = isHandleLocked ? AppIcons.lock : AppIcons.lockUnlock;
 
+  const sortedParents = useMemo(
+    () =>
+      [...parentOptions].sort((a, b) =>
+        getCategoryDisplayName(a).localeCompare(getCategoryDisplayName(b)),
+      ),
+    [parentOptions],
+  );
+
   function resetForm() {
     setDisplayName("");
     setHandle("");
     setIsHandleLocked(true);
+    setParentCategoryId("__root__");
+    setIsVisible(true);
     setError(null);
   }
 
@@ -84,11 +112,23 @@ export function TaxonomyCreateDialog({
     setIsSaving(true);
     setError(null);
 
+    const payload: Record<string, string | null> = {
+      [nameKey]: trimmedName,
+      handle: handle.trim() || null,
+    };
+
+    if (entityLabel === "category") {
+      payload.parentCategoryId =
+        parentCategoryId && parentCategoryId !== "__root__" ? parentCategoryId : null;
+      payload.visibility = isVisible ? "public" : "hidden";
+    }
+
+    if (entityLabel === "collection") {
+      payload.visibility = isVisible ? "public" : "hidden";
+    }
+
     const response = await fetch(action, {
-      body: JSON.stringify({
-        [nameKey]: trimmedName,
-        handle: handle.trim() || null,
-      }),
+      body: JSON.stringify(payload),
       headers: {
         accept: "application/json",
         "content-type": "application/json",
@@ -126,7 +166,9 @@ export function TaxonomyCreateDialog({
         <DialogHeader className="gap-1.5 border-b px-4 py-4 text-left sm:px-5">
           <DialogTitle>Create {entityLabel}</DialogTitle>
           <DialogDescription>
-            Add a product {entityLabel} name and optional handle for your catalog.
+            {entityLabel === "category"
+              ? "Add a category with an optional parent and storefront visibility."
+              : "Add a collection name, handle, and storefront visibility."}
           </DialogDescription>
         </DialogHeader>
         <form
@@ -209,6 +251,50 @@ export function TaxonomyCreateDialog({
                   ? `The ${entityLabel} handle follows the ${nameLabel.toLowerCase()} automatically.`
                   : `Handle editing is unlocked for a custom ${entityLabel} slug.`}
               </FieldDescription>
+            </Field>
+
+            {entityLabel === "category" ? (
+              <Field>
+                <FieldLabel>Parent category</FieldLabel>
+                <Select onValueChange={setParentCategoryId} value={parentCategoryId}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Root category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      <SelectItem value="__root__">Root category</SelectItem>
+                      {sortedParents.map((category) => (
+                        <SelectItem key={category.id} value={category.id}>
+                          {getCategoryDisplayName(category)}
+                          {category.handle ? (
+                            <span className="ml-2 text-muted-foreground">/{category.handle}</span>
+                          ) : null}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+                <FieldDescription>
+                  Nest under another category, or leave as a top-level root.
+                </FieldDescription>
+              </Field>
+            ) : null}
+
+            <Field className="flex flex-row items-center justify-between gap-4 rounded-xl border px-3.5 py-3">
+              <div className="min-w-0 space-y-1">
+                <FieldLabel className="text-sm" htmlFor={`taxonomy-${entityLabel}-visible`}>
+                  Visible on storefront
+                </FieldLabel>
+                <FieldDescription className="text-xs">
+                  Hidden {entityLabel === "category" ? "categories" : "collections"} stay in the
+                  dashboard but are not listed publicly.
+                </FieldDescription>
+              </div>
+              <Switch
+                checked={isVisible}
+                id={`taxonomy-${entityLabel}-visible`}
+                onCheckedChange={setIsVisible}
+              />
             </Field>
           </div>
           <DialogFooter className="mx-0 mb-0 rounded-none border-t bg-muted/50 p-4 sm:justify-end">
