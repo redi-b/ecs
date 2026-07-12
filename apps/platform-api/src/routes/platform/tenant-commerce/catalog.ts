@@ -349,6 +349,69 @@ export function registerPlatformTenantCatalogRoutes(
       : context.json({ error: result.error }, result.status);
   });
 
+  app.get(
+    "/platform/tenants/:tenantId/product-collections/:collectionId/products",
+    async (context) => {
+      if (!options.getTenantCommerceContext || !options.listMerchantCollectionProducts) {
+        return context.json({ error: "commerce_backend_unavailable" }, 503);
+      }
+
+      const session = await options.getSession?.(context.req.raw.headers);
+      if (!session) return context.json({ error: "auth_required" }, 401);
+
+      const commerce = await options.getTenantCommerceContext({
+        tenantId: context.req.param("tenantId"),
+        userId: session.user.id,
+      });
+      if (!commerce.ok) return context.json({ error: commerce.error }, commerce.status);
+
+      const result = await options.listMerchantCollectionProducts({
+        collectionId: context.req.param("collectionId"),
+        limit: getPaginationValue(context.req.query("limit"), 50, 100),
+        offset: getPaginationValue(context.req.query("offset"), 0, 10_000),
+        salesChannelId: commerce.context.medusaSalesChannelId,
+        tenantId: commerce.context.tenantId,
+      });
+
+      return result.ok
+        ? context.json(result)
+        : context.json({ error: result.error }, result.status);
+    },
+  );
+
+  app.post(
+    "/platform/tenants/:tenantId/product-collections/:collectionId/products",
+    async (context) => {
+      if (!options.getTenantCommerceContext || !options.updateMerchantCollectionProducts) {
+        return context.json({ error: "commerce_backend_unavailable" }, 503);
+      }
+
+      const session = await options.getSession?.(context.req.raw.headers);
+      if (!session) return context.json({ error: "auth_required" }, 401);
+
+      const commerce = await options.getTenantCommerceContext({
+        tenantId: context.req.param("tenantId"),
+        userId: session.user.id,
+      });
+      if (!commerce.ok) return context.json({ error: commerce.error }, commerce.status);
+
+      const body = await getJsonBody(context.req.raw);
+      const add = getOptionalBodyStringArray(body, "add") ?? [];
+      const remove = getOptionalBodyStringArray(body, "remove") ?? [];
+      const result = await options.updateMerchantCollectionProducts({
+        add,
+        collectionId: context.req.param("collectionId"),
+        remove,
+        salesChannelId: commerce.context.medusaSalesChannelId,
+        tenantId: commerce.context.tenantId,
+      });
+
+      return result.ok
+        ? context.json({ ok: true })
+        : context.json({ error: result.error }, result.status);
+    },
+  );
+
   app.delete("/platform/tenants/:tenantId/product-collections/:collectionId", async (context) => {
     if (!options.getTenantCommerceContext || !options.deleteMerchantProductCollection) {
       return context.json({ error: "commerce_backend_unavailable" }, 503);

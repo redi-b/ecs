@@ -1,9 +1,9 @@
 "use client";
 
-import type { MerchantProductCollection } from "@ecs/contracts";
+import type { MerchantProduct, MerchantProductCollection } from "@ecs/contracts";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { AppIcons } from "@/components/app/icons";
@@ -12,6 +12,14 @@ import { Button } from "@/components/ui/button";
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Sheet,
   SheetContent,
@@ -34,6 +42,12 @@ type CollectionEditSheetProps = {
   tenantId?: string | null | undefined;
 };
 
+type MemberProduct = {
+  id: string;
+  title: string | null;
+  handle: string | null;
+};
+
 export function CollectionEditSheet({
   collection,
   onOpenChange,
@@ -50,7 +64,17 @@ export function CollectionEditSheet({
   const [seoDescription, setSeoDescription] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [members, setMembers] = useState<MemberProduct[]>([]);
+  const [catalog, setCatalog] = useState<MemberProduct[]>([]);
+  const [selectedAddId, setSelectedAddId] = useState<string>("");
+  const [membersLoading, setMembersLoading] = useState(false);
+  const [membershipBusy, setMembershipBusy] = useState(false);
   const HandleLockIcon = isHandleLocked ? AppIcons.lock : AppIcons.lockUnlock;
+
+  const addCandidates = useMemo(() => {
+    const memberIds = new Set(members.map((item) => item.id));
+    return catalog.filter((item) => !memberIds.has(item.id));
+  }, [catalog, members]);
 
   useEffect(() => {
     if (!collection || !open) return;
@@ -61,7 +85,82 @@ export function CollectionEditSheet({
     setSeoTitle(collection.seoTitle ?? "");
     setSeoDescription(collection.seoDescription ?? "");
     setError(null);
-  }, [collection, open]);
+    setSelectedAddId("");
+    void loadMembership(collection.id);
+  }, [collection, open, tenantId]);
+
+  async function loadMembership(collectionId: string) {
+    setMembersLoading(true);
+    const membersUrl = getTenantScopedPath(
+      dashboardRoutes.productCollectionProductsAction(collectionId),
+      tenantId,
+    );
+    const catalogUrl = getTenantScopedPath(dashboardRoutes.productListAction, tenantId);
+
+    const [membersRes, catalogRes] = await Promise.all([
+      fetch(membersUrl, { headers: { accept: "application/json" } }).catch(() => null),
+      fetch(`${catalogUrl}?limit=100`, { headers: { accept: "application/json" } }).catch(
+        () => null,
+      ),
+    ]);
+
+    const membersData = (await membersRes?.json().catch(() => ({}))) as {
+      products?: MerchantProduct[];
+      error?: string;
+    };
+    const catalogData = (await catalogRes?.json().catch(() => ({}))) as {
+      products?: MerchantProduct[];
+      error?: string;
+    };
+
+    setMembers(
+      membersRes?.ok && Array.isArray(membersData.products)
+        ? membersData.products.map((product) => ({
+            id: product.id,
+            title: product.title ?? null,
+            handle: product.handle ?? null,
+          }))
+        : [],
+    );
+    setCatalog(
+      catalogRes?.ok && Array.isArray(catalogData.products)
+        ? catalogData.products.map((product) => ({
+            id: product.id,
+            title: product.title ?? null,
+            handle: product.handle ?? null,
+          }))
+        : [],
+    );
+    setMembersLoading(false);
+  }
+
+  async function mutateMembership(body: { add?: string[]; remove?: string[] }) {
+    if (!collection) return;
+    setMembershipBusy(true);
+    const url = getTenantScopedPath(
+      dashboardRoutes.productCollectionProductsAction(collection.id),
+      tenantId,
+    );
+    const response = await fetch(url, {
+      body: JSON.stringify(body),
+      headers: {
+        accept: "application/json",
+        "content-type": "application/json",
+      },
+      method: "POST",
+    }).catch(() => null);
+    setMembershipBusy(false);
+
+    if (!response?.ok) {
+      toast.error("Could not update collection products.");
+      return;
+    }
+
+    toast.success(body.add?.length ? "Product added to collection." : "Product removed.");
+    setSelectedAddId("");
+    await loadMembership(collection.id);
+    router.refresh();
+  }
 
   async function submit() {
     if (!collection) return;
@@ -113,7 +212,7 @@ export function CollectionEditSheet({
         <SheetHeader className="border-b px-5 py-4 pr-12 text-left">
           <SheetTitle>Edit collection</SheetTitle>
           <SheetDescription>
-            Update title, handle, storefront visibility, and SEO fields.
+            Update details, SEO, and which products belong in this collection.
           </SheetDescription>
         </SheetHeader>
 
@@ -195,6 +294,99 @@ export function CollectionEditSheet({
                 onCheckedChange={setIsVisible}
               />
             </Field>
+
+            <div className="space-y-4 rounded-xl border p-4">
+              <div>
+                <p className="text-sm font-medium">Products</p>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  Add or remove products in this collection. Changes save immediately.
+                </p>
+              </div>
+
+              <div className="flex items-end gap-2">
+                <Field className="min-w-0 flex-1">
+                  <FieldLabel htmlFor="collection-edit-add-product">Add product</FieldLabel>
+                  <Select
+                    disabled={membershipBusy || membersLoading || addCandidates.length === 0}
+                    onValueChange={setSelectedAddId}
+                    {...(selectedAddId ? { value: selectedAddId } : {})}
+                  >
+                    <SelectTrigger className="w-full" id="collection-edit-add-product">
+                      <SelectValue
+                        placeholder={
+                          membersLoading
+                            ? "Loading products…"
+                            : addCandidates.length === 0
+                              ? "No products left to add"
+                              : "Select a product"
+                        }
+                      />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectGroup>
+                        {addCandidates.map((product) => (
+                          <SelectItem key={product.id} value={product.id}>
+                            <span className="truncate">
+                              {product.title ?? product.handle ?? product.id}
+                            </span>
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
+                </Field>
+                <Button
+                  disabled={!selectedAddId || membershipBusy}
+                  onClick={() => {
+                    if (!selectedAddId) return;
+                    void mutateMembership({ add: [selectedAddId] });
+                  }}
+                  type="button"
+                >
+                  Add
+                </Button>
+              </div>
+
+              <div className="space-y-2">
+                {membersLoading ? (
+                  <p className="text-xs text-muted-foreground">Loading members…</p>
+                ) : members.length === 0 ? (
+                  <p className="rounded-lg border border-dashed px-3 py-4 text-center text-xs text-muted-foreground">
+                    No products in this collection yet.
+                  </p>
+                ) : (
+                  <ul className="divide-y overflow-hidden rounded-lg border">
+                    {members.map((product) => (
+                      <li
+                        className="flex items-center gap-2 px-3 py-2.5"
+                        key={product.id}
+                      >
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-medium">
+                            {product.title ?? "Untitled product"}
+                          </p>
+                          {product.handle ? (
+                            <p className="truncate text-xs text-muted-foreground">
+                              /{product.handle}
+                            </p>
+                          ) : null}
+                        </div>
+                        <Button
+                          aria-label={`Remove ${product.title ?? "product"}`}
+                          disabled={membershipBusy}
+                          onClick={() => void mutateMembership({ remove: [product.id] })}
+                          size="icon-sm"
+                          type="button"
+                          variant="ghost"
+                        >
+                          <AppIcons.trash data-icon="inline-start" />
+                        </Button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </div>
 
             <div className="space-y-4 rounded-xl border p-4">
               <div>
