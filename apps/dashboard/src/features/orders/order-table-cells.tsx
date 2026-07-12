@@ -8,12 +8,17 @@ import {
   formatOrderDate,
   formatOrderDisplayId,
   formatOrderMoney,
+  formatOrderStatusLabel,
+  getOrderCustomerName,
+  getOrderCustomerPhone,
 } from "@/features/orders/order-table-state";
 import { cn } from "@/lib/utils";
 
 type OrderStatusTone = "fulfillment" | "order" | "payment";
 
 export function OrderIdentityCell({ href, order }: { href: string; order: MerchantOrder }) {
+  const customer = getOrderCustomerName(order);
+
   return (
     <Link
       className="group flex min-w-36 flex-col gap-1 rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
@@ -22,19 +27,23 @@ export function OrderIdentityCell({ href, order }: { href: string; order: Mercha
       <span className="font-medium text-foreground transition-colors group-hover:text-primary">
         {formatOrderDisplayId(order)}
       </span>
-      <span className="text-xs text-muted-foreground">{formatOrderDate(order.createdAt)}</span>
+      <span className="text-xs text-muted-foreground">
+        {customer ? `${customer} · ` : ""}
+        {formatOrderDate(order.createdAt)}
+      </span>
     </Link>
   );
 }
 
 export function OrderCustomerCell({ order }: { order: MerchantOrder }) {
+  const name = getOrderCustomerName(order);
+  const phone = getOrderCustomerPhone(order);
+
   return (
     <div className="flex min-w-44 flex-col gap-1">
-      <span className="text-sm text-foreground">
-        {order.delivery?.customerName ?? order.email ?? "No customer"}
-      </span>
+      <span className="text-sm text-foreground">{name ?? "No customer name"}</span>
       <span className="text-xs text-muted-foreground">
-        {order.delivery?.customerPhone ?? order.email ?? "No contact captured"}
+        {phone ?? order.email ?? "No contact captured"}
       </span>
     </div>
   );
@@ -55,6 +64,7 @@ export function OrderStatusBadge({
   status: string | null;
   tone?: OrderStatusTone;
 }) {
+  const label = formatOrderStatusLabel(status, tone);
   const normalized = status?.replaceAll("_", " ").toLowerCase() ?? "unknown";
   const isPositive =
     normalized.includes("paid") ||
@@ -66,7 +76,9 @@ export function OrderStatusBadge({
     normalized.includes("pending") ||
     normalized.includes("awaiting") ||
     normalized.includes("requires") ||
+    normalized.includes("not_paid") ||
     normalized.includes("not fulfilled") ||
+    normalized.includes("not_fulfilled") ||
     normalized.includes("unfulfilled");
   const isCanceled = normalized.includes("cancel");
 
@@ -86,7 +98,7 @@ export function OrderStatusBadge({
       )}
       variant="outline"
     >
-      {normalized}
+      {label}
     </Badge>
   );
 }

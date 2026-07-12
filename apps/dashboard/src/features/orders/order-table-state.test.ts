@@ -316,15 +316,16 @@ describe("order table state", () => {
   });
 
   it("formats display ids, totals, money, dates, and counts", () => {
-    assert.equal(formatOrderDisplayId(paidOrder), "#1024");
-    assert.equal(formatOrderDisplayId(completedOrder), "order_2");
+    // Shop-friendly short refs from Medusa order ids (not global display_id).
+    assert.equal(formatOrderDisplayId({ ...paidOrder, id: "order_01ABCXYZ1024" }), "YZ1024");
+    assert.equal(formatOrderDisplayId(completedOrder), "2");
     assert.equal(getOrderTotalSortValue(paidOrder), 1250);
     assert.equal(getOrderTotalSortValue(completedOrder), null);
     assert.equal(formatOrderMoney(null, "etb"), "Not available");
-    assert.match(formatOrderMoney(1250, "etb"), /ETB/);
-    assert.match(formatOrderMoney(1250, "etb"), /12\.50/);
-    assert.match(formatOrderMoney(500, null), /ETB/);
-    assert.match(formatOrderMoney(500, null), /5\.00/);
+    assert.match(formatOrderMoney(1250, "etb"), /ETB|Br/);
+    assert.match(formatOrderMoney(1250, "etb"), /1[,.]?250/);
+    assert.match(formatOrderMoney(500, null), /ETB|Br/);
+    assert.match(formatOrderMoney(500, null), /500/);
     assert.equal(formatOrderDate("2026-07-01T10:00:00.000Z"), "Jul 1, 2026");
     assert.equal(formatOrderDate(null), "No date");
     assert.equal(formatOrderDate("not-a-date"), "No date");

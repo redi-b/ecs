@@ -318,8 +318,8 @@ export function ManualOrderCreateDialog() {
     };
 
     toast.success(
-      data.order?.displayId != null
-        ? `Order #${data.order.displayId} created.`
+      data.order?.id
+        ? `Order ${String(data.order.id).replace(/^order_/i, "").slice(-6).toUpperCase()} created.`
         : "Manual order created.",
     );
     setOpen(false);

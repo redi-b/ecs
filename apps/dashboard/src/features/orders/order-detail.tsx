@@ -11,15 +11,19 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { OrderActions } from "@/features/orders/order-actions";
+import { OrderActions, getOrderProgressSteps } from "@/features/orders/order-actions";
 import { OrderStatusBadge } from "@/features/orders/order-table-cells";
 import {
   formatOrderDate,
   formatOrderDisplayId,
   formatOrderMoney,
+  formatOrderStatusLabel,
+  getOrderCustomerName,
+  getOrderCustomerPhone,
 } from "@/features/orders/order-table-state";
 import { getTenantScopedPath } from "@/lib/dashboard-tenant-context";
 import { dashboardRoutes } from "@/lib/routes";
+import { cn } from "@/lib/utils";
 
 type OrderDetailProps = {
   action: string;
@@ -28,8 +32,10 @@ type OrderDetailProps = {
 };
 
 export function OrderDetail({ action, order, tenantId }: OrderDetailProps) {
-  const fulfillments = order.fulfillments ?? [];
-  const latestFulfillmentSignal = getLatestFulfillmentSignal(fulfillments);
+  const customerName = getOrderCustomerName(order);
+  const customerPhone = getOrderCustomerPhone(order);
+  const progress = getOrderProgressSteps(order);
+  const itemCount = (order.items ?? []).reduce((sum, item) => sum + (item.quantity ?? 0), 0);
 
   return (
     <div className="space-y-6">
@@ -38,79 +44,96 @@ export function OrderDetail({ action, order, tenantId }: OrderDetailProps) {
           <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
             <div className="min-w-0 space-y-2">
               <div className="flex flex-wrap items-center gap-2">
-                <CardTitle>{formatOrderDisplayId(order)}</CardTitle>
+                <CardTitle>Order {formatOrderDisplayId(order)}</CardTitle>
                 <OrderStatusBadge status={order.status} />
                 <OrderStatusBadge status={order.paymentStatus} tone="payment" />
                 <OrderStatusBadge status={order.fulfillmentStatus} tone="fulfillment" />
               </div>
-              <CardDescription className="break-all">
-                {order.id} · Created {formatOrderDate(order.createdAt)}
+              <CardDescription>
+                {customerName ? `${customerName} · ` : ""}
+                Placed {formatOrderDate(order.createdAt)}
+                {itemCount > 0 ? ` · ${itemCount} item${itemCount === 1 ? "" : "s"}` : ""}
               </CardDescription>
             </div>
-            <div className="grid grid-cols-2 gap-3 text-sm md:min-w-80">
+            <div className="grid grid-cols-2 gap-3 text-sm md:min-w-72">
               <DetailMetric
                 label="Total"
                 value={formatOrderMoney(order.total, order.currencyCode)}
               />
-              <DetailMetric label="Fulfillments" value={`${fulfillments.length}`} />
+              <DetailMetric
+                label="Payment"
+                value={formatOrderStatusLabel(order.paymentStatus, "payment")}
+              />
             </div>
           </div>
+
+          <ol className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+            {progress.map((step, index) => (
+              <li
+                className={cn(
+                  "rounded-xl border px-3 py-2 text-sm",
+                  step.done
+                    ? "border-primary/30 bg-primary/5 text-foreground"
+                    : "border-border text-muted-foreground",
+                )}
+                key={step.id}
+              >
+                <span className="block text-[11px] font-medium tracking-wide uppercase opacity-70">
+                  Step {index + 1}
+                </span>
+                <span className="font-medium">{step.label}</span>
+              </li>
+            ))}
+          </ol>
         </CardHeader>
       </Card>
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(22rem,0.45fr)]">
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(20rem,0.42fr)]">
         <div className="space-y-6">
           <DetailSection
-            description="Customer and delivery contact information captured with this order."
+            description="Who ordered and how to reach them."
             title="Customer"
           >
-            <div className="grid gap-4 md:grid-cols-3">
-              <DetailField label="Email" value={order.email ?? "No email captured"} />
+            <div className="grid gap-3 sm:grid-cols-2">
+              <DetailField label="Name" value={customerName ?? "Not provided"} />
+              <DetailField label="Phone" value={customerPhone ?? "Not provided"} />
               <DetailField
-                label="Customer name"
-                value={order.delivery?.customerName ?? "No name captured"}
-              />
-              <DetailField
-                label="Phone"
-                value={
-                  order.delivery?.customerPhone ??
-                  order.shippingAddress?.phone ??
-                  "No phone captured"
-                }
+                className="sm:col-span-2"
+                label="Email"
+                value={order.email ?? "Not provided"}
               />
             </div>
           </DetailSection>
 
           <DetailSection
-            description="Delivery preference and notes currently available in the order contract."
-            title="Delivery"
+            description="Where to deliver or where the customer will pick up."
+            title="Delivery address"
           >
-            <div className="grid gap-4 md:grid-cols-3">
-              <DetailField label="Choice" value={formatNullable(order.delivery?.choice)} />
-              <DetailField label="Landmark" value={formatNullable(order.delivery?.landmark)} />
-              <DetailField label="Notes" value={formatNullable(order.delivery?.notes)} />
-            </div>
-          </DetailSection>
-
-          <DetailSection
-            description="Shipping address fields returned for this merchant order."
-            title="Shipping address"
-          >
-            <div className="rounded-lg border px-4 py-3">
-              <div className="space-y-1 text-sm">
+            <div className="space-y-3">
+              <div className="rounded-xl border px-4 py-3 text-sm">
                 {formatShippingAddress(order.shippingAddress).map((line) => (
-                  <div key={line} className="break-words">
+                  <div className="break-words" key={line}>
                     {line}
                   </div>
                 ))}
               </div>
+              {(order.delivery?.landmark || order.delivery?.notes || order.delivery?.choice) && (
+                <div className="grid gap-3 sm:grid-cols-3">
+                  <DetailField
+                    label="Delivery type"
+                    value={friendlyDeliveryChoice(order.delivery?.choice)}
+                  />
+                  <DetailField
+                    label="Landmark"
+                    value={order.delivery?.landmark?.trim() || "—"}
+                  />
+                  <DetailField label="Notes" value={order.delivery?.notes?.trim() || "—"} />
+                </div>
+              )}
             </div>
           </DetailSection>
 
-          <DetailSection
-            description="Products and quantities included in this order."
-            title="Items"
-          >
+          <DetailSection description="What the customer bought." title="Items">
             <OrderItemsTable
               currencyCode={order.currencyCode}
               items={order.items ?? []}
@@ -121,83 +144,77 @@ export function OrderDetail({ action, order, tenantId }: OrderDetailProps) {
 
         <div className="space-y-6">
           <DetailSection
-            description="Safe order actions for the current order state."
-            title="Actions"
+            description="What to do next for packing and delivery."
+            title="Fulfillment"
           >
             <OrderActions action={action} order={order} />
           </DetailSection>
 
-          <DetailSection
-            description="Current order, payment, and fulfillment states."
-            title="Payment and fulfillment"
-          >
+          <DetailSection description="Money for this order." title="Payment">
             <div className="space-y-3">
-              <StatusField label="Order status" status={order.status} />
-              <StatusField label="Payment status" status={order.paymentStatus} tone="payment" />
-              <StatusField
-                label="Fulfillment status"
-                status={order.fulfillmentStatus}
-                tone="fulfillment"
-              />
-            </div>
-          </DetailSection>
-
-          <DetailSection
-            description="Fulfillment activity currently available from the order contract."
-            title="Fulfillments"
-          >
-            <div className="grid gap-4">
-              <DetailField label="Fulfillment count" value={`${fulfillments.length}`} />
-              <DetailField label="Latest signal" value={latestFulfillmentSignal} />
-              {fulfillments.length ? (
-                <div className="space-y-3">
-                  {fulfillments.map((fulfillment) => (
-                    <div key={fulfillment.id} className="space-y-2 rounded-lg border px-4 py-3">
-                      <div className="text-sm font-medium">{fulfillment.id}</div>
-                      <div className="grid gap-3 text-sm sm:grid-cols-3">
-                        <MiniSignal
-                          label="Shipped"
-                          value={formatOrderDate(fulfillment.shippedAt)}
-                        />
-                        <MiniSignal
-                          label="Delivered"
-                          value={formatOrderDate(fulfillment.deliveredAt)}
-                        />
-                        <MiniSignal
-                          label="Canceled"
-                          value={formatOrderDate(fulfillment.canceledAt)}
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="rounded-lg border border-dashed px-4 py-6 text-sm text-muted-foreground">
-                  No fulfillments have been recorded for this order.
-                </div>
-              )}
-            </div>
-          </DetailSection>
-
-          <DetailSection
-            description="Order total using the current merchant order contract values."
-            title="Totals"
-          >
-            <div className="grid gap-4">
               <DetailField
-                label="Currency"
-                value={order.currencyCode?.toUpperCase() ?? "Not available"}
-              />
-              <DetailField
-                label="Total"
+                label="Amount"
                 value={formatOrderMoney(order.total, order.currencyCode)}
               />
-              <DetailField label="Updated" value={formatOrderDate(order.updatedAt)} />
+              <DetailField
+                label="Status"
+                value={formatOrderStatusLabel(order.paymentStatus, "payment")}
+              />
+              <p className="text-xs text-muted-foreground">
+                Most local sales use cash on delivery. Mark payment as settled in your own
+                process when the customer pays.
+              </p>
             </div>
+          </DetailSection>
+
+          <DetailSection description="Packing and delivery history." title="Activity">
+            <FulfillmentActivity order={order} />
           </DetailSection>
         </div>
       </div>
     </div>
+  );
+}
+
+function FulfillmentActivity({ order }: { order: MerchantOrder }) {
+  const fulfillments = order.fulfillments ?? [];
+
+  if (!fulfillments.length) {
+    return (
+      <div className="rounded-xl border border-dashed px-4 py-5 text-sm text-muted-foreground">
+        Not packed yet. Use the next step when you are ready to prepare the order.
+      </div>
+    );
+  }
+
+  return (
+    <ul className="space-y-2">
+      {fulfillments.map((fulfillment, index) => {
+        const state = fulfillment.canceledAt
+          ? "Canceled"
+          : fulfillment.deliveredAt
+            ? "Delivered"
+            : fulfillment.shippedAt
+              ? "Out for delivery"
+              : "Packed";
+        const when =
+          fulfillment.deliveredAt ||
+          fulfillment.shippedAt ||
+          fulfillment.canceledAt ||
+          null;
+
+        return (
+          <li className="rounded-xl border px-4 py-3 text-sm" key={fulfillment.id}>
+            <div className="font-medium">
+              Package {fulfillments.length > 1 ? index + 1 : ""} {state}
+            </div>
+            <div className="mt-0.5 text-xs text-muted-foreground">
+              {when ? formatOrderDate(when) : "Ready for handoff"}
+            </div>
+          </li>
+        );
+      })}
+    </ul>
   );
 }
 
@@ -212,8 +229,8 @@ function OrderItemsTable({
 }) {
   if (!items.length) {
     return (
-      <div className="rounded-lg border border-dashed px-4 py-6 text-sm text-muted-foreground">
-        No line items were returned for this order.
+      <div className="rounded-xl border border-dashed px-4 py-6 text-sm text-muted-foreground">
+        No items on this order.
       </div>
     );
   }
@@ -225,49 +242,49 @@ function OrderItemsTable({
           <TableRow>
             <TableHead>Item</TableHead>
             <TableHead className="text-right">Qty</TableHead>
-            <TableHead className="text-right">Fulfilled</TableHead>
-            <TableHead className="text-right">Unit price</TableHead>
-            <TableHead className="text-right">Total</TableHead>
+            <TableHead className="text-right">Packed</TableHead>
+            <TableHead className="text-right">Line total</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {items.map((item) => (
-            <TableRow key={item.id}>
-              <TableCell className="min-w-56 whitespace-normal">
-                <div className="flex items-center gap-3">
-                  <LineItemThumbnail src={item.thumbnail} title={item.title} />
-                  <div className="min-w-0">
-                    {item.productId ? (
-                      <Link
-                        className="font-medium text-foreground underline-offset-4 hover:text-primary hover:underline"
-                        href={getTenantScopedPath(
-                          dashboardRoutes.productDetail(item.productId),
-                          tenantId,
-                        )}
-                      >
-                        {item.title ?? "Untitled item"}
-                      </Link>
-                    ) : (
-                      <div className="font-medium">{item.title ?? "Untitled item"}</div>
-                    )}
-                    <div className="break-all text-xs text-muted-foreground">
-                      {item.variantId ?? item.id}
+          {items.map((item) => {
+            const packed = item.fulfilledQuantity ?? 0;
+            const qty = item.quantity ?? 0;
+            return (
+              <TableRow key={item.id}>
+                <TableCell className="min-w-48 whitespace-normal">
+                  <div className="flex items-center gap-3">
+                    <LineItemThumbnail src={item.thumbnail} title={item.title} />
+                    <div className="min-w-0">
+                      {item.productId ? (
+                        <Link
+                          className="font-medium text-foreground underline-offset-4 hover:text-primary hover:underline"
+                          href={getTenantScopedPath(
+                            dashboardRoutes.productDetail(item.productId),
+                            tenantId,
+                          )}
+                        >
+                          {item.title ?? "Item"}
+                        </Link>
+                      ) : (
+                        <div className="font-medium">{item.title ?? "Item"}</div>
+                      )}
+                      <div className="text-xs text-muted-foreground">
+                        {formatOrderMoney(item.unitPrice, currencyCode)} each
+                      </div>
                     </div>
                   </div>
-                </div>
-              </TableCell>
-              <TableCell className="text-right">{formatQuantity(item.quantity)}</TableCell>
-              <TableCell className="text-right">
-                {formatQuantity(item.fulfilledQuantity ?? 0)}
-              </TableCell>
-              <TableCell className="text-right">
-                {formatOrderMoney(item.unitPrice, currencyCode)}
-              </TableCell>
-              <TableCell className="text-right">
-                {formatOrderMoney(item.total, currencyCode)}
-              </TableCell>
-            </TableRow>
-          ))}
+                </TableCell>
+                <TableCell className="text-right tabular-nums">{qty || "—"}</TableCell>
+                <TableCell className="text-right tabular-nums">
+                  {qty > 0 ? `${packed}/${qty}` : "—"}
+                </TableCell>
+                <TableCell className="text-right tabular-nums">
+                  {formatOrderMoney(item.total, currencyCode)}
+                </TableCell>
+              </TableRow>
+            );
+          })}
         </TableBody>
       </Table>
     </div>
@@ -289,10 +306,6 @@ function LineItemThumbnail({ src, title }: { src: string | null; title: string |
       <img alt={title ?? "Order item"} className="size-full object-cover" src={src} />
     </div>
   );
-}
-
-function formatQuantity(value: number | null | undefined) {
-  return typeof value === "number" ? String(value) : "-";
 }
 
 function getInitials(value: string | null) {
@@ -335,52 +348,34 @@ function DetailMetric({ label, value }: { label: string; value: string }) {
   );
 }
 
-function DetailField({ label, value }: { label: string; value: string }) {
+function DetailField({
+  className,
+  label,
+  value,
+}: {
+  className?: string;
+  label: string;
+  value: string;
+}) {
   return (
-    <div className="space-y-1 rounded-lg border px-4 py-3">
+    <div className={cn("space-y-1 rounded-xl border px-4 py-3", className)}>
       <div className="text-xs font-medium text-muted-foreground">{label}</div>
       <div className="break-words text-sm">{value}</div>
     </div>
   );
 }
 
-function MiniSignal({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="space-y-1">
-      <div className="text-xs font-medium text-muted-foreground">{label}</div>
-      <div className="break-words">{value}</div>
-    </div>
-  );
-}
-
-function StatusField({
-  label,
-  status,
-  tone,
-}: {
-  label: string;
-  status: string | null;
-  tone?: "fulfillment" | "order" | "payment";
-}) {
-  return (
-    <div className="flex items-center justify-between gap-3 rounded-lg border px-4 py-3">
-      <div className="text-sm font-medium text-muted-foreground">{label}</div>
-      {tone ? (
-        <OrderStatusBadge status={status} tone={tone} />
-      ) : (
-        <OrderStatusBadge status={status} />
-      )}
-    </div>
-  );
-}
-
-function formatNullable(value: string | null | undefined) {
-  return value?.trim() || "Not captured";
+function friendlyDeliveryChoice(value: string | null | undefined) {
+  if (!value?.trim()) return "—";
+  const key = value.trim().toLowerCase();
+  if (key === "delivery" || key === "local_delivery") return "Local delivery";
+  if (key === "pickup") return "Customer pickup";
+  return value.replaceAll("_", " ");
 }
 
 function formatShippingAddress(address: MerchantOrder["shippingAddress"]) {
   if (!address) {
-    return ["No shipping address captured."];
+    return ["No delivery address on this order."];
   }
 
   const name = [address.firstName, address.lastName].filter(Boolean).join(" ");
@@ -391,28 +386,8 @@ function formatShippingAddress(address: MerchantOrder["shippingAddress"]) {
     address.address1,
     address.address2,
     cityLine,
-    address.countryCode?.toUpperCase() ?? null,
+    address.countryCode?.toUpperCase() === "ET" ? "Ethiopia" : address.countryCode?.toUpperCase(),
   ].filter((line): line is string => Boolean(line?.trim()));
 
-  return lines.length ? lines : ["No shipping address captured."];
-}
-
-function getLatestFulfillmentSignal(fulfillments: NonNullable<MerchantOrder["fulfillments"]>) {
-  const signals = fulfillments.flatMap((fulfillment) => [
-    { label: "Delivered", value: fulfillment.deliveredAt },
-    { label: "Shipped", value: fulfillment.shippedAt },
-    { label: "Canceled", value: fulfillment.canceledAt },
-  ]);
-  const latest = signals
-    .filter(
-      (signal): signal is { label: string; value: string } =>
-        typeof signal.value === "string" && !Number.isNaN(new Date(signal.value).getTime()),
-    )
-    .sort((a, b) => new Date(b.value).getTime() - new Date(a.value).getTime())[0];
-
-  if (!latest) {
-    return "No shipped, delivered, or canceled signal";
-  }
-
-  return `${latest.label} ${formatOrderDate(latest.value)}`;
+  return lines.length ? lines : ["No delivery address on this order."];
 }

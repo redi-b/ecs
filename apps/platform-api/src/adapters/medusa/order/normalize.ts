@@ -87,11 +87,23 @@ export function getDeliveryDetails(order: Record<string, unknown>) {
   const orderMetadata = isRecord(order.metadata) ? order.metadata : {};
   const shippingAddress = isRecord(order.shipping_address) ? order.shipping_address : {};
   const shippingMetadata = isRecord(shippingAddress.metadata) ? shippingAddress.metadata : {};
+  const shippingName = [getString(shippingAddress.first_name), getString(shippingAddress.last_name)]
+    .filter((part): part is string => Boolean(part?.trim()))
+    .join(" ")
+    .trim();
 
   const delivery = {
     choice: getString(orderMetadata.delivery_choice ?? shippingMetadata.delivery_choice),
-    customerName: getString(orderMetadata.customer_name ?? shippingMetadata.customer_name),
-    customerPhone: getString(orderMetadata.customer_phone ?? shippingMetadata.customer_phone),
+    customerName: getString(
+      orderMetadata.customer_name ??
+        shippingMetadata.customer_name ??
+        (shippingName || null),
+    ),
+    customerPhone: getString(
+      orderMetadata.customer_phone ??
+        shippingMetadata.customer_phone ??
+        shippingAddress.phone,
+    ),
     landmark: getString(orderMetadata.landmark ?? shippingMetadata.landmark),
     notes: getString(orderMetadata.customer_notes ?? shippingMetadata.customer_notes),
   };

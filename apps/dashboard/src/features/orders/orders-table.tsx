@@ -25,6 +25,7 @@ import {
 import {
   filterOrdersForTable,
   formatOrderDate,
+  formatOrderDisplayId,
   getOrderTableCounts,
   getOrderTotalSortValue,
   type OrderDateFilter,
@@ -104,7 +105,7 @@ function getOrderColumns(tenantId?: string): ColumnDef<MerchantOrder>[] {
       ),
       cell: ({ row }) => (
         <Checkbox
-          aria-label={`Select ${row.original.displayId ?? row.original.id}`}
+          aria-label={`Select order ${formatOrderDisplayId(row.original)}`}
           checked={row.getIsSelected()}
           onCheckedChange={(value) => row.toggleSelected(Boolean(value))}
         />
@@ -114,7 +115,7 @@ function getOrderColumns(tenantId?: string): ColumnDef<MerchantOrder>[] {
     },
     {
       id: "order",
-      accessorFn: (order) => order.displayId ?? order.id,
+      accessorFn: (order) => formatOrderDisplayId(order),
       header: ({ column }) => <DataTableHeader column={column} title="Order" />,
       cell: ({ row }) => {
         const href = getTenantScopedPath(dashboardRoutes.orderDetail(row.original.id), tenantId);
@@ -183,7 +184,7 @@ function getOrderColumns(tenantId?: string): ColumnDef<MerchantOrder>[] {
                 type: "button",
               },
             ]}
-            label={`Open actions for ${order.displayId ?? order.id}`}
+            label={`Open actions for order ${formatOrderDisplayId(order)}`}
           />
         );
       },

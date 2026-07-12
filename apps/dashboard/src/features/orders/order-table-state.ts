@@ -54,8 +54,11 @@ export function filterOrdersForTable(orders: MerchantOrder[], input: OrderTableF
 export function getOrderSearchText(order: MerchantOrder) {
   return [
     order.id,
+    formatOrderReference(order),
     typeof order.displayId === "number" ? String(order.displayId) : null,
     order.email,
+    getOrderCustomerName(order),
+    getOrderCustomerPhone(order),
     order.delivery?.customerName,
     order.delivery?.customerPhone,
     order.delivery?.choice,
@@ -200,23 +203,94 @@ export function getOrderTableCounts(input: {
   };
 }
 
+/**
+ * Shop-friendly order code from Medusa id.
+ * Avoid global display_id — it increments across the whole shared commerce DB.
+ */
+export function formatOrderReference(order: Pick<MerchantOrder, "id">) {
+  const raw = order.id.replace(/^order_/i, "");
+  const tail = raw.slice(-6).toUpperCase();
+  return tail || order.id.slice(-6).toUpperCase();
+}
+
 export function formatOrderDisplayId(order: MerchantOrder) {
-  return typeof order.displayId === "number" ? `#${order.displayId}` : order.id;
+  return formatOrderReference(order);
+}
+
+export function getOrderCustomerName(order: MerchantOrder) {
+  if (order.delivery?.customerName?.trim()) {
+    return order.delivery.customerName.trim();
+  }
+
+  const fromAddress = [order.shippingAddress?.firstName, order.shippingAddress?.lastName]
+    .filter((part): part is string => Boolean(part?.trim()))
+    .join(" ")
+    .trim();
+
+  if (fromAddress) {
+    return fromAddress;
+  }
+
+  return order.email?.trim() || null;
+}
+
+export function getOrderCustomerPhone(order: MerchantOrder) {
+  return (
+    order.delivery?.customerPhone?.trim() ||
+    order.shippingAddress?.phone?.trim() ||
+    null
+  );
 }
 
 export function getOrderTotalSortValue(order: MerchantOrder) {
   return typeof order.total === "number" ? order.total : null;
 }
 
+/**
+ * Medusa v2 amounts for ETB are major units (same as product prices in catalog).
+ */
 export function formatOrderMoney(total: number | null, currencyCode: string | null) {
   if (typeof total !== "number") {
     return "Not available";
   }
 
-  return new Intl.NumberFormat("en", {
+  return new Intl.NumberFormat("en-ET", {
     currency: currencyCode?.toUpperCase() || "ETB",
+    maximumFractionDigits: 0,
+    minimumFractionDigits: 0,
     style: "currency",
-  }).format(total / 100);
+  }).format(total);
+}
+
+export function formatOrderStatusLabel(
+  status: string | null | undefined,
+  tone: "fulfillment" | "order" | "payment" = "order",
+) {
+  const key = status?.trim().toLowerCase().replaceAll(" ", "_") ?? "";
+
+  if (tone === "payment") {
+    if (["captured", "paid"].includes(key)) return "Paid";
+    if (["not_paid", "awaiting", "pending"].includes(key)) return "Unpaid / COD";
+    if (key.includes("refund")) return "Refunded";
+  }
+
+  if (tone === "fulfillment") {
+    if (["not_fulfilled", "unfulfilled"].includes(key)) return "Needs packing";
+    if (["partially_fulfilled", "partially_shipped"].includes(key)) return "Partly packed";
+    if (["fulfilled", "shipped"].includes(key)) return "Packed";
+    if (key === "delivered") return "Delivered";
+    if (key.includes("cancel")) return "Canceled";
+  }
+
+  if (tone === "order") {
+    if (["pending", "requires_action"].includes(key)) return "Open";
+    if (key === "completed") return "Completed";
+    if (key.includes("cancel")) return "Canceled";
+    if (key === "draft") return "Draft";
+  }
+
+  if (!status?.trim()) return "Unknown";
+  return status.replaceAll("_", " ");
 }
 
 export function formatOrderDate(value: string | null) {

@@ -47,17 +47,13 @@ export default async function MerchantOrderDetailPage({
   const errorState = result.ok ? null : getListErrorState("orders", result.message);
   const setupError =
     errorState?.kind === "setup" || errorState?.kind === "service" ? errorState : null;
-  const breadcrumbLabel = result.ok
-    ? typeof result.order.displayId === "number"
-      ? formatOrderDisplayId(result.order)
-      : "Order details"
-    : null;
+  const breadcrumbLabel = result.ok ? formatOrderDisplayId(result.order) : null;
 
   return (
     <PageShell
       actions={<RefreshButton />}
-      description="Review merchant-scoped customer, delivery, payment, fulfillment, and total details for this order."
-      title="Order details"
+      description="See who ordered, what to pack, and the next delivery step."
+      title={result.ok ? `Order ${formatOrderDisplayId(result.order)}` : "Order details"}
     >
       <DashboardBreadcrumbLabel label={breadcrumbLabel} labelKey="order-details" />
       {setupError ? (
