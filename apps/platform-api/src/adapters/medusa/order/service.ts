@@ -140,20 +140,25 @@ export function createMedusaOrderService(options: {
         };
       }
 
-      const data = await response.json().catch(() => undefined);
-      const order = normalizeOrder(data?.order, input.salesChannelId)[0];
-
-      if (!order) {
-        return {
-          ok: false,
-          error: "order_not_found",
-          status: 404,
-        };
+      // complete/cancel responses often omit sales_channel_id / nested fields.
+      // Always re-fetch a full merchant-normalized order after a successful action.
+      const refreshed = await getMerchantOrderForAction(fetcher, options, input);
+      if (refreshed.ok) {
+        return refreshed;
       }
 
+      // Action succeeded on Medusa; if re-fetch races, return prior order with status hint.
       return {
         ok: true,
-        order,
+        order: {
+          ...existing.order,
+          status:
+            input.action === "complete"
+              ? "completed"
+              : input.action === "cancel"
+                ? "canceled"
+                : existing.order.status,
+        },
       };
     },
 

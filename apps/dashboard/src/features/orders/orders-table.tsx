@@ -25,6 +25,7 @@ import {
 } from "@/features/orders/order-table-cells";
 import {
   filterOrdersForTable,
+  formatOrderDate,
   formatOrderDisplayId,
   getOrderTableCounts,
   getOrderTotalSortValue,
@@ -145,6 +146,13 @@ function getOrderColumns(tenantId?: string): ColumnDef<MerchantOrder>[] {
       accessorFn: (order) => order.status ?? "",
       header: ({ column }) => <DataTableHeader column={column} title="Status" />,
       cell: ({ row }) => <OrderSimpleStatusBadge order={row.original} />,
+    },
+    {
+      accessorKey: "createdAt",
+      header: ({ column }) => <DataTableHeader column={column} title="Date" />,
+      cell: ({ row }) => (
+        <span className="text-muted-foreground">{formatOrderDate(row.original.createdAt)}</span>
+      ),
     },
     {
       id: "actions",

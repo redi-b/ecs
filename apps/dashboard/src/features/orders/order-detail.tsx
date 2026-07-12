@@ -240,7 +240,14 @@ function OrderItemsTable({
         <TableBody>
           {items.map((item) => {
             const packed = item.fulfilledQuantity ?? 0;
-            const qty = item.quantity ?? 0;
+            const qty = typeof item.quantity === "number" ? item.quantity : null;
+            const lineTotal =
+              typeof item.total === "number"
+                ? item.total
+                : qty !== null && typeof item.unitPrice === "number"
+                  ? qty * item.unitPrice
+                  : item.unitPrice;
+
             return (
               <TableRow key={item.id}>
                 <TableCell className="min-w-48 whitespace-normal">
@@ -266,12 +273,17 @@ function OrderItemsTable({
                     </div>
                   </div>
                 </TableCell>
-                <TableCell className="text-right tabular-nums">{qty || "—"}</TableCell>
                 <TableCell className="text-right tabular-nums">
-                  {qty > 0 ? `${packed}/${qty}` : "—"}
+                  {qty === null ? "—" : qty}
                 </TableCell>
                 <TableCell className="text-right tabular-nums">
-                  {formatOrderMoney(item.total, currencyCode)}
+                  {qty === null ? "—" : `${packed}/${qty}`}
+                </TableCell>
+                <TableCell className="text-right tabular-nums">
+                  {formatOrderMoney(
+                    typeof lineTotal === "number" ? lineTotal : null,
+                    currencyCode,
+                  )}
                 </TableCell>
               </TableRow>
             );

@@ -5,7 +5,6 @@ import Link from "next/link";
 
 import { Badge } from "@/components/ui/badge";
 import {
-  formatOrderDate,
   formatOrderDisplayId,
   formatOrderMoney,
   formatOrderStatusLabel,
@@ -20,13 +19,12 @@ type OrderStatusTone = "fulfillment" | "order" | "payment";
 export function OrderIdentityCell({ href, order }: { href: string; order: MerchantOrder }) {
   return (
     <Link
-      className="group flex min-w-28 flex-col gap-1 rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+      className="group flex min-w-24 flex-col gap-0.5 rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
       href={href}
     >
       <span className="font-medium text-foreground transition-colors group-hover:text-primary">
         {formatOrderDisplayId(order)}
       </span>
-      <span className="text-xs text-muted-foreground">{formatOrderDate(order.createdAt)}</span>
     </Link>
   );
 }

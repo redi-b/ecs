@@ -2,13 +2,19 @@ import type { MerchantOrder } from "../../../types/index.js";
 import { getNumber, getString, isRecord } from "./values.js";
 
 export function normalizeOrder(value: unknown, salesChannelId: string): MerchantOrder[] {
-  if (!isRecord(value) || value.sales_channel_id !== salesChannelId) {
+  if (!isRecord(value)) {
     return [];
   }
 
   const id = getString(value.id);
 
   if (!id) {
+    return [];
+  }
+
+  // Some action responses omit sales_channel_id. When present, enforce tenant isolation.
+  const channelId = getString(value.sales_channel_id);
+  if (channelId && channelId !== salesChannelId) {
     return [];
   }
 
@@ -132,17 +138,30 @@ export function getLineItems(value: unknown) {
     }
 
     const fulfilledQuantity = getItemFulfilledQuantity(item);
+    const detail = isRecord(item.detail) ? item.detail : null;
+    const quantity =
+      getNumber(item.quantity) ??
+      (detail ? getNumber(detail.quantity) : undefined) ??
+      null;
+    const unitPrice =
+      getNumber(item.unit_price) ??
+      (detail ? getNumber(detail.unit_price) : undefined) ??
+      null;
+    const total =
+      getNumber(item.total) ??
+      getNumber(item.subtotal) ??
+      (quantity !== null && unitPrice !== null ? quantity * unitPrice : null);
 
     return [
       {
         id,
         ...(getString(item.product_id) ? { productId: getString(item.product_id) } : {}),
         ...(getString(item.variant_id) ? { variantId: getString(item.variant_id) } : {}),
-        title: getString(item.title),
-        quantity: getNumber(item.quantity) ?? null,
+        title: getString(item.title) ?? getString(item.product_title),
+        quantity,
         ...(fulfilledQuantity === null ? {} : { fulfilledQuantity }),
-        unitPrice: getNumber(item.unit_price) ?? null,
-        total: getNumber(item.total) ?? null,
+        unitPrice,
+        total,
         thumbnail: getString(item.thumbnail),
       },
     ];

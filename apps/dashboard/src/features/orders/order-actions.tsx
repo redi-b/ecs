@@ -175,7 +175,16 @@ async function runFinishOrder(endpoint: string, order: MerchantOrder) {
 
   const status = (current.status ?? "").toLowerCase();
   if (status !== "completed" && !status.includes("cancel")) {
-    await postOrderAction(endpoint, { action: "complete" });
+    try {
+      await postOrderAction(endpoint, { action: "complete" });
+    } catch (error) {
+      // Medusa may complete successfully while the follow-up read races.
+      // If list already shows Done, don't surface a scary false failure.
+      const message = error instanceof Error ? error.message : "";
+      if (!message.includes("no longer available")) {
+        throw error;
+      }
+    }
   }
 }
 
