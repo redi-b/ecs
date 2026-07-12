@@ -133,7 +133,8 @@ export function createMedusaProductService(options: {
             ...(input.handle?.trim() ? { handle: input.handle } : {}),
             is_active: true,
             is_internal: false,
-            metadata: getTenantMetadata(input.tenantId),
+            ...(input.parentCategoryId ? { parent_category_id: input.parentCategoryId } : {}),
+            metadata: getTaxonomyMetadata(input),
           }),
           headers: getAdminHeaders(options.adminApiToken),
           method: "POST",
@@ -157,13 +158,75 @@ export function createMedusaProductService(options: {
           body: JSON.stringify({
             title: input.title,
             ...(input.handle?.trim() ? { handle: input.handle } : {}),
-            metadata: getTenantMetadata(input.tenantId),
+            metadata: getTaxonomyMetadata(input),
           }),
           headers: getAdminHeaders(options.adminApiToken),
           method: "POST",
         },
       );
 
+      return parseProductCollectionWriteResponse(response);
+    },
+
+    updateMerchantProductCategory: async (
+      input: ProductCategoryWriteInput & { categoryId: string },
+    ): Promise<MerchantProductCategoryWriteResult> => {
+      if (!options.adminApiToken?.trim()) return missingCredentials();
+      const owned = await categoryBelongsToTenantById(
+        fetcher,
+        options,
+        input.categoryId,
+        input.tenantId,
+      );
+      if (owned !== true)
+        return typeof owned === "object"
+          ? owned
+          : { error: "commerce_backend_unavailable", ok: false, status: 503 };
+      const url = new URL(
+        `/admin/product-categories/${encodeURIComponent(input.categoryId)}`,
+        normalizeBaseUrl(options.medusaInternalUrl),
+      );
+      const response = await requestMedusa(fetcher, url, {
+        body: JSON.stringify({
+          handle: input.handle || undefined,
+          is_active: input.visibility !== "hidden",
+          metadata: getTaxonomyMetadata(input),
+          name: input.name,
+          parent_category_id: input.parentCategoryId || null,
+        }),
+        headers: getAdminHeaders(options.adminApiToken),
+        method: "POST",
+      });
+      return parseProductCategoryWriteResponse(response);
+    },
+
+    updateMerchantProductCollection: async (
+      input: ProductCollectionWriteInput & { collectionId: string },
+    ): Promise<MerchantProductCollectionWriteResult> => {
+      if (!options.adminApiToken?.trim()) return missingCredentials();
+      const owned = await collectionBelongsToTenantById(
+        fetcher,
+        options,
+        input.collectionId,
+        input.tenantId,
+      );
+      if (owned !== true)
+        return typeof owned === "object"
+          ? owned
+          : { error: "commerce_backend_unavailable", ok: false, status: 503 };
+      const url = new URL(
+        `/admin/collections/${encodeURIComponent(input.collectionId)}`,
+        normalizeBaseUrl(options.medusaInternalUrl),
+      );
+      const response = await requestMedusa(fetcher, url, {
+        body: JSON.stringify({
+          handle: input.handle || undefined,
+          metadata: getTaxonomyMetadata(input),
+          title: input.title,
+        }),
+        headers: getAdminHeaders(options.adminApiToken),
+        method: "POST",
+      });
       return parseProductCollectionWriteResponse(response);
     },
 
@@ -896,5 +959,15 @@ export function createMedusaProductService(options: {
         deleted: true,
       };
     },
+  };
+}
+
+function getTaxonomyMetadata(input: ProductCategoryWriteInput | ProductCollectionWriteInput) {
+  return {
+    ...getTenantMetadata(input.tenantId),
+    ...(input.visibility ? { visibility: input.visibility } : {}),
+    ...(input.seoTitle?.trim() ? { seo_title: input.seoTitle.trim() } : {}),
+    ...(input.seoDescription?.trim() ? { seo_description: input.seoDescription.trim() } : {}),
+    ...(input.mediaUrl?.trim() ? { media_url: input.mediaUrl.trim() } : {}),
   };
 }

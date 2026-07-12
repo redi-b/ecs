@@ -5,7 +5,18 @@ import type {
   TenantInsightsSummaryResult,
 } from "../modules/analytics/analytics-service.js";
 import type { BillingInvoiceUpdateResult, BillingStatusResult } from "./billing.js";
+import type {
+  MerchantCustomerGroupsResult,
+  MerchantCustomerResult,
+  MerchantCustomersResult,
+} from "./customer.js";
 import type { DeliverySettingsResult, DeliverySettingsUpdateResult } from "./delivery.js";
+import type {
+  MediaAssetDeleteResult,
+  MediaAssetListResult,
+  MediaAssetResult,
+  MediaUploadCreateResult,
+} from "./media.js";
 import type {
   MerchantOrderAction,
   MerchantOrderActionResult,
@@ -38,6 +49,12 @@ import type {
   PaymentOnboardingReviewResult,
   PaymentOnboardingSubmitResult,
 } from "./payments.js";
+import type {
+  MerchantPromotionDeleteResult,
+  MerchantPromotionInput,
+  MerchantPromotionResult,
+  MerchantPromotionsResult,
+} from "./promotion.js";
 import type { DashboardAuthorizationResult, PlatformSession } from "./session.js";
 import type {
   PublishedStorefrontConfigResult,
@@ -67,6 +84,25 @@ import type {
 } from "./tenant.js";
 
 export type PlatformAppOptions = {
+  listMerchantPromotions?:
+    | ((input: {
+        limit: number;
+        offset: number;
+        query?: string | undefined;
+        tenantId: string;
+      }) => Promise<MerchantPromotionsResult>)
+    | undefined;
+  createMerchantPromotion?:
+    | ((input: MerchantPromotionInput) => Promise<MerchantPromotionResult>)
+    | undefined;
+  updateMerchantPromotion?:
+    | ((
+        input: MerchantPromotionInput & { promotionId: string },
+      ) => Promise<MerchantPromotionResult>)
+    | undefined;
+  deleteMerchantPromotion?:
+    | ((input: { promotionId: string; tenantId: string }) => Promise<MerchantPromotionDeleteResult>)
+    | undefined;
   authorizeDashboardForTenant?:
     | ((input: { tenantId: string; userId: string }) => Promise<DashboardAuthorizationResult>)
     | undefined;
@@ -224,15 +260,49 @@ export type PlatformAppOptions = {
   createMerchantProductCategory?:
     | ((input: {
         handle?: string | null | undefined;
+        mediaUrl?: string | null | undefined;
         name: string;
+        parentCategoryId?: string | null | undefined;
+        seoDescription?: string | null | undefined;
+        seoTitle?: string | null | undefined;
         tenantId: string;
+        visibility?: "public" | "hidden" | undefined;
       }) => Promise<MerchantProductCategoryWriteResult>)
     | undefined;
   createMerchantProductCollection?:
     | ((input: {
         handle?: string | null | undefined;
+        mediaUrl?: string | null | undefined;
+        seoDescription?: string | null | undefined;
+        seoTitle?: string | null | undefined;
         tenantId: string;
         title: string;
+        visibility?: "public" | "hidden" | undefined;
+      }) => Promise<MerchantProductCollectionWriteResult>)
+    | undefined;
+  updateMerchantProductCategory?:
+    | ((input: {
+        categoryId: string;
+        handle?: string | null | undefined;
+        mediaUrl?: string | null | undefined;
+        name: string;
+        parentCategoryId?: string | null | undefined;
+        seoDescription?: string | null | undefined;
+        seoTitle?: string | null | undefined;
+        tenantId: string;
+        visibility?: "public" | "hidden" | undefined;
+      }) => Promise<MerchantProductCategoryWriteResult>)
+    | undefined;
+  updateMerchantProductCollection?:
+    | ((input: {
+        collectionId: string;
+        handle?: string | null | undefined;
+        mediaUrl?: string | null | undefined;
+        seoDescription?: string | null | undefined;
+        seoTitle?: string | null | undefined;
+        tenantId: string;
+        title: string;
+        visibility?: "public" | "hidden" | undefined;
       }) => Promise<MerchantProductCollectionWriteResult>)
     | undefined;
   createTenantShop?:
@@ -427,6 +497,89 @@ export type PlatformAppOptions = {
     | undefined;
   deleteMerchantProductCollectionsBatch?:
     | ((input: { collectionIds: string[]; tenantId: string }) => Promise<MerchantBatchDeleteResult>)
+    | undefined;
+  createMediaUpload?:
+    | ((input: {
+        accessMode: "public" | "private";
+        byteSize: number;
+        context: "product" | "editor" | "settings" | "media-library";
+        filename: string;
+        mimeType: string;
+        tenantId: string;
+        userId: string;
+      }) => Promise<MediaUploadCreateResult>)
+    | undefined;
+  completeMediaUpload?:
+    | ((input: {
+        altText?: string | null | undefined;
+        assetId: string;
+        height?: number | null | undefined;
+        tenantId: string;
+        width?: number | null | undefined;
+      }) => Promise<MediaAssetResult>)
+    | undefined;
+  listMediaAssets?:
+    | ((input: {
+        limit: number;
+        mimeType?: string | undefined;
+        offset: number;
+        query?: string | undefined;
+        tenantId: string;
+      }) => Promise<MediaAssetListResult>)
+    | undefined;
+  updateMediaMetadata?:
+    | ((input: {
+        altText?: string | null | undefined;
+        assetId: string;
+        displayName?: string | undefined;
+        tenantId: string;
+      }) => Promise<MediaAssetResult>)
+    | undefined;
+  deleteMediaAsset?:
+    | ((input: { assetId: string; tenantId: string }) => Promise<MediaAssetDeleteResult>)
+    | undefined;
+  listMerchantCustomers?:
+    | ((input: {
+        limit: number;
+        offset: number;
+        query?: string | undefined;
+        tenantId: string;
+      }) => Promise<MerchantCustomersResult>)
+    | undefined;
+  getMerchantCustomer?:
+    | ((input: { customerId: string; tenantId: string }) => Promise<MerchantCustomerResult>)
+    | undefined;
+  createMerchantCustomer?:
+    | ((input: {
+        companyName?: string | null | undefined;
+        email: string;
+        firstName?: string | null | undefined;
+        lastName?: string | null | undefined;
+        phone?: string | null | undefined;
+        tenantId: string;
+      }) => Promise<MerchantCustomerResult>)
+    | undefined;
+  updateMerchantCustomer?:
+    | ((input: {
+        companyName?: string | null | undefined;
+        customerId: string;
+        email: string;
+        firstName?: string | null | undefined;
+        lastName?: string | null | undefined;
+        phone?: string | null | undefined;
+        tenantId: string;
+      }) => Promise<MerchantCustomerResult>)
+    | undefined;
+  listMerchantCustomerGroups?:
+    | ((input: { tenantId: string }) => Promise<MerchantCustomerGroupsResult>)
+    | undefined;
+  syncProductMedia?:
+    | ((input: {
+        imageUrls: string[];
+        productId: string;
+        tenantId: string;
+        thumbnail: string | null;
+      }) => Promise<{ count: number; ok: true }>)
     | undefined;
   serviceName: string;
   medusaInternalUrl: string;

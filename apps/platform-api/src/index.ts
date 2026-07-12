@@ -4,6 +4,9 @@ import { createLogger } from "@ecs/logger";
 import { serve } from "@hono/node-server";
 import { createChapaPaymentService } from "./adapters/chapa/payment-service.js";
 import { createMedusaCommerceProvisioningClient } from "./adapters/medusa/commerce-provisioning.js";
+import { createMedusaCustomerService } from "./adapters/medusa/customer-service.js";
+import { createMedusaPromotionService } from "./adapters/medusa/promotion-service.js";
+import { createMediaStorageFromEnv } from "./adapters/storage/index.js";
 import { createPlatformApp } from "./app.js";
 import { loadPlatformApiEnvFiles } from "./config/env.js";
 import { getSystemHosts } from "./config/hosts.js";
@@ -23,6 +26,7 @@ import { createMedusaOrderService } from "./modules/commerce/order-management.js
 import { createMedusaProductService } from "./modules/commerce/product-catalog.js";
 import { createDeliverySettingsService } from "./modules/delivery/service.js";
 import { createDomainManagementService } from "./modules/domains/service.js";
+import { createMediaService } from "./modules/media/index.js";
 import { createNotificationService } from "./modules/notifications/service.js";
 import { createTenantOnboardingService } from "./modules/onboarding/service.js";
 import { createPaymentOnboardingService } from "./modules/payments/payment-onboarding-service.js";
@@ -71,6 +75,16 @@ const findDomainByHostname = createDomainTenantLookup(platformDb.db);
 const billingService = createBillingService(platformDb.db);
 const deliverySettingsService = createDeliverySettingsService(platformDb.db);
 const domainManagementService = createDomainManagementService(platformDb.db);
+const mediaStorage = createMediaStorageFromEnv();
+if (mediaStorage.provider === "unconfigured") {
+  logger.warn("Media storage is not configured; upload routes will return 503.");
+} else {
+  logger.info(
+    { bucket: mediaStorage.bucket, provider: mediaStorage.provider },
+    "Media storage configured.",
+  );
+}
+const mediaService = createMediaService(platformDb.db, mediaStorage);
 const notificationService = createNotificationService(platformDb.db);
 const analyticsService = createAnalyticsService(createDrizzleAnalyticsEventStore(platformDb.db));
 const analyticsInsightsService = createAnalyticsInsightsService(
@@ -94,6 +108,14 @@ const chapaPaymentService = createChapaPaymentService({
   secretKey: process.env.CHAPA_SECRET_KEY,
 });
 const medusaInternalUrl = process.env.MEDUSA_INTERNAL_URL ?? "http://localhost:9000";
+const customerService = createMedusaCustomerService({
+  adminApiToken: process.env.MEDUSA_ADMIN_API_TOKEN,
+  medusaInternalUrl,
+});
+const promotionService = createMedusaPromotionService({
+  adminApiToken: process.env.MEDUSA_ADMIN_API_TOKEN,
+  medusaInternalUrl,
+});
 const platformPublicBaseUrl =
   process.env.PLATFORM_PUBLIC_BASE_URL ?? process.env.BETTER_AUTH_URL ?? "http://api.lvh.me";
 const platformBaseDomain = process.env.STOREFRONT_PUBLIC_BASE_DOMAIN ?? "lvh.me";
@@ -149,12 +171,18 @@ const auth = createPlatformAuth({
 });
 
 const app = createPlatformApp({
+  createMerchantPromotion: promotionService.createPromotion,
   authHandler: auth.handler,
   authorizeDashboardForTenant,
   createOperatorSupportNote: supportService.createOperatorSupportNote,
   createMerchantProduct: productService.createMerchantProduct,
   createMerchantProductCategory: productService.createMerchantProductCategory,
   createMerchantProductCollection: productService.createMerchantProductCollection,
+  createMediaUpload: mediaService.createUpload,
+  createMerchantCustomer: customerService.createCustomer,
+  deleteMerchantPromotion: promotionService.deletePromotion,
+  completeMediaUpload: mediaService.completeUpload,
+  deleteMediaAsset: mediaService.deleteMedia,
   deleteMerchantProduct: productService.deleteMerchantProduct,
   deleteMerchantProductsBatch: productService.deleteMerchantProductsBatch,
   deleteMerchantProductCategory: productService.deleteMerchantProductCategory,
@@ -179,14 +207,20 @@ const app = createPlatformApp({
   getTenantOnboarding: tenantOnboardingService.getTenantOnboarding,
   getTenantReadiness: tenantStatusService.getTenantReadiness,
   getMerchantOrder: orderService.getMerchantOrder,
+  getMerchantCustomer: customerService.getCustomer,
   getMerchantProduct: productService.getMerchantProduct,
   getMerchantProductStock: productService.getMerchantProductStock,
   getMerchantProductVariantStock: productService.getMerchantProductVariantStock,
   getSession: (headers) => auth.api.getSession({ headers }),
   listMerchantOrders: orderService.listMerchantOrders,
+  listMerchantCustomers: customerService.listCustomers,
+  listMerchantPromotions: promotionService.listPromotions,
+  listMerchantCustomerGroups: customerService.listGroups,
   listMerchantProducts: productService.listMerchantProducts,
   listMerchantProductCategories: productService.listMerchantProductCategories,
   listMerchantProductCollections: productService.listMerchantProductCollections,
+  listMediaAssets: mediaService.listMedia,
+  syncProductMedia: mediaService.syncProductMedia,
   listNotificationPreferences: notificationService.listNotificationPreferences,
   listTenantsForUser,
   listTenantProvisioningAttempts,
@@ -206,8 +240,13 @@ const app = createPlatformApp({
   updateDeliverySettings: deliverySettingsService.updateDeliverySettings,
   updateTenantShopSettings,
   updateMerchantProduct: productService.updateMerchantProduct,
+  updateMerchantProductCategory: productService.updateMerchantProductCategory,
+  updateMerchantProductCollection: productService.updateMerchantProductCollection,
+  updateMerchantCustomer: customerService.updateCustomer,
+  updateMerchantPromotion: promotionService.updatePromotion,
   updateMerchantProductStock: productService.updateMerchantProductStock,
   updateMerchantProductVariantStock: productService.updateMerchantProductVariantStock,
+  updateMediaMetadata: mediaService.updateMetadata,
   upsertNotificationPreference: notificationService.upsertNotificationPreference,
   updateStorefrontDraft: storefrontTemplateService.updateStorefrontDraft,
   updateTenantStatus: tenantStatusService.updateTenantStatus,

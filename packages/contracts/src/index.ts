@@ -307,6 +307,10 @@ export const merchantProductCategorySchema = z.object({
   isActive: z.boolean().nullable(),
   isInternal: z.boolean().nullable(),
   parentCategoryId: z.string().min(1).nullable(),
+  visibility: z.enum(["public", "hidden"]).optional(),
+  seoTitle: z.string().nullable().optional(),
+  seoDescription: z.string().nullable().optional(),
+  mediaUrl: z.string().nullable().optional(),
   createdAt: z.string().min(1).nullable(),
   updatedAt: z.string().min(1).nullable(),
 });
@@ -322,6 +326,10 @@ export const merchantProductCollectionSchema = z.object({
   id: z.string().min(1),
   title: z.string().min(1).nullable(),
   handle: z.string().min(1).nullable(),
+  visibility: z.enum(["public", "hidden"]).optional(),
+  seoTitle: z.string().nullable().optional(),
+  seoDescription: z.string().nullable().optional(),
+  mediaUrl: z.string().nullable().optional(),
   createdAt: z.string().min(1).nullable(),
   updatedAt: z.string().min(1).nullable(),
 });

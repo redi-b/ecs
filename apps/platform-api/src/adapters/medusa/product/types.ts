@@ -37,12 +37,21 @@ export type ProductCategoryWriteInput = {
   handle?: string | null | undefined;
   name: string;
   tenantId: string;
+  parentCategoryId?: string | null | undefined;
+  visibility?: "public" | "hidden" | undefined;
+  seoTitle?: string | null | undefined;
+  seoDescription?: string | null | undefined;
+  mediaUrl?: string | null | undefined;
 };
 
 export type ProductCollectionWriteInput = {
   handle?: string | null | undefined;
   tenantId: string;
   title: string;
+  visibility?: "public" | "hidden" | undefined;
+  seoTitle?: string | null | undefined;
+  seoDescription?: string | null | undefined;
+  mediaUrl?: string | null | undefined;
 };
 
 export type ProductStockInput = {

@@ -271,6 +271,7 @@ export function normalizeProductCategory(value: unknown): MerchantProductCategor
     return [];
   }
 
+  const metadata = isRecord(value.metadata) ? value.metadata : {};
   return [
     {
       id,
@@ -281,6 +282,14 @@ export function normalizeProductCategory(value: unknown): MerchantProductCategor
       parentCategoryId: getString(value.parent_category_id),
       createdAt: getString(value.created_at),
       updatedAt: getString(value.updated_at),
+      ...(metadata.visibility
+        ? { visibility: metadata.visibility === "hidden" ? "hidden" : "public" }
+        : {}),
+      ...(getString(metadata.seo_title) ? { seoTitle: getString(metadata.seo_title) } : {}),
+      ...(getString(metadata.seo_description)
+        ? { seoDescription: getString(metadata.seo_description) }
+        : {}),
+      ...(getString(metadata.media_url) ? { mediaUrl: getString(metadata.media_url) } : {}),
     },
   ];
 }
@@ -296,6 +305,7 @@ export function normalizeProductCollection(value: unknown): MerchantProductColle
     return [];
   }
 
+  const metadata = isRecord(value.metadata) ? value.metadata : {};
   return [
     {
       id,
@@ -303,6 +313,14 @@ export function normalizeProductCollection(value: unknown): MerchantProductColle
       handle: getString(value.handle),
       createdAt: getString(value.created_at),
       updatedAt: getString(value.updated_at),
+      ...(metadata.visibility
+        ? { visibility: metadata.visibility === "hidden" ? "hidden" : "public" }
+        : {}),
+      ...(getString(metadata.seo_title) ? { seoTitle: getString(metadata.seo_title) } : {}),
+      ...(getString(metadata.seo_description)
+        ? { seoDescription: getString(metadata.seo_description) }
+        : {}),
+      ...(getString(metadata.media_url) ? { mediaUrl: getString(metadata.media_url) } : {}),
     },
   ];
 }

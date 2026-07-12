@@ -85,6 +85,10 @@ export type MerchantProductCategory = {
   isActive: boolean | null;
   isInternal: boolean | null;
   parentCategoryId: string | null;
+  visibility?: "public" | "hidden";
+  seoTitle?: string | null;
+  seoDescription?: string | null;
+  mediaUrl?: string | null;
   createdAt: string | null;
   updatedAt: string | null;
 };
@@ -126,6 +130,10 @@ export type MerchantProductCollection = {
   handle: string | null;
   createdAt: string | null;
   updatedAt: string | null;
+  visibility?: "public" | "hidden";
+  seoTitle?: string | null;
+  seoDescription?: string | null;
+  mediaUrl?: string | null;
 };
 
 export type MerchantProductCollectionsResult =

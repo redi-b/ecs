@@ -4,12 +4,15 @@ export type {
   TenantInsightsSummaryResult,
 } from "./analytics.js";
 export type * from "./billing.js";
+export type * from "./customer.js";
 export type * from "./delivery.js";
+export type * from "./media.js";
 export type * from "./merchant-order.js";
 export type * from "./merchant-product.js";
 export type * from "./metrics.js";
 export type * from "./notifications.js";
 export type * from "./payments.js";
+export type * from "./promotion.js";
 export type * from "./platform-app.js";
 export type * from "./session.js";
 export type * from "./storefront.js";

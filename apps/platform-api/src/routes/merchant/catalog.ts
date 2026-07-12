@@ -68,6 +68,24 @@ export function registerMerchantCatalogRoutes(
       name,
       handle: getOptionalBodyString(body, "handle"),
       tenantId: merchant.result.context.tenantId,
+      ...(getOptionalBodyString(body, "parentCategoryId")
+        ? { parentCategoryId: getOptionalBodyString(body, "parentCategoryId") }
+        : {}),
+      ...(getOptionalBodyString(body, "visibility")
+        ? {
+            visibility:
+              getOptionalBodyString(body, "visibility") === "hidden" ? "hidden" : "public",
+          }
+        : {}),
+      ...(getOptionalBodyString(body, "seoTitle")
+        ? { seoTitle: getOptionalBodyString(body, "seoTitle") }
+        : {}),
+      ...(getOptionalBodyString(body, "seoDescription")
+        ? { seoDescription: getOptionalBodyString(body, "seoDescription") }
+        : {}),
+      ...(getOptionalBodyString(body, "mediaUrl")
+        ? { mediaUrl: getOptionalBodyString(body, "mediaUrl") }
+        : {}),
     });
 
     if (!category.ok) {
@@ -130,6 +148,21 @@ export function registerMerchantCatalogRoutes(
       title,
       handle: getOptionalBodyString(body, "handle"),
       tenantId: merchant.result.context.tenantId,
+      ...(getOptionalBodyString(body, "visibility")
+        ? {
+            visibility:
+              getOptionalBodyString(body, "visibility") === "hidden" ? "hidden" : "public",
+          }
+        : {}),
+      ...(getOptionalBodyString(body, "seoTitle")
+        ? { seoTitle: getOptionalBodyString(body, "seoTitle") }
+        : {}),
+      ...(getOptionalBodyString(body, "seoDescription")
+        ? { seoDescription: getOptionalBodyString(body, "seoDescription") }
+        : {}),
+      ...(getOptionalBodyString(body, "mediaUrl")
+        ? { mediaUrl: getOptionalBodyString(body, "mediaUrl") }
+        : {}),
     });
 
     if (!collection.ok) {
@@ -139,6 +172,49 @@ export function registerMerchantCatalogRoutes(
     return context.json({
       collection: collection.collection,
     });
+  });
+
+  app.post("/platform/merchant/product-categories/:categoryId", async (context) => {
+    const merchant = await getAuthorizedMerchantContext(context);
+    if (!merchant.ok) return merchant.response;
+    const body = await getJsonBody(context.req.raw);
+    const name = getRequiredBodyString(body, "name");
+    if (!name) return context.json({ error: "missing_name" }, 400);
+    if (!options.updateMerchantProductCategory)
+      return context.json({ error: "commerce_backend_unavailable" }, 503);
+    const result = await options.updateMerchantProductCategory({
+      categoryId: context.req.param("categoryId"),
+      handle: getOptionalBodyString(body, "handle"),
+      mediaUrl: getOptionalBodyString(body, "mediaUrl"),
+      name,
+      parentCategoryId: getOptionalBodyString(body, "parentCategoryId"),
+      seoDescription: getOptionalBodyString(body, "seoDescription"),
+      seoTitle: getOptionalBodyString(body, "seoTitle"),
+      tenantId: merchant.result.context.tenantId,
+      visibility: getOptionalBodyString(body, "visibility") === "hidden" ? "hidden" : "public",
+    });
+    return result.ok ? context.json(result) : context.json({ error: result.error }, result.status);
+  });
+
+  app.post("/platform/merchant/product-collections/:collectionId", async (context) => {
+    const merchant = await getAuthorizedMerchantContext(context);
+    if (!merchant.ok) return merchant.response;
+    const body = await getJsonBody(context.req.raw);
+    const title = getRequiredBodyString(body, "title");
+    if (!title) return context.json({ error: "missing_title" }, 400);
+    if (!options.updateMerchantProductCollection)
+      return context.json({ error: "commerce_backend_unavailable" }, 503);
+    const result = await options.updateMerchantProductCollection({
+      collectionId: context.req.param("collectionId"),
+      handle: getOptionalBodyString(body, "handle"),
+      mediaUrl: getOptionalBodyString(body, "mediaUrl"),
+      seoDescription: getOptionalBodyString(body, "seoDescription"),
+      seoTitle: getOptionalBodyString(body, "seoTitle"),
+      tenantId: merchant.result.context.tenantId,
+      title,
+      visibility: getOptionalBodyString(body, "visibility") === "hidden" ? "hidden" : "public",
+    });
+    return result.ok ? context.json(result) : context.json({ error: result.error }, result.status);
   });
 
   app.delete("/platform/merchant/product-categories/:categoryId", async (context) => {
