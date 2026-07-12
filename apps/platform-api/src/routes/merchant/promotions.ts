@@ -4,12 +4,16 @@ import { getPaginationValue } from "../shared.js";
 import type { MerchantRouteApp, MerchantRouteHelpers } from "./context.js";
 
 const promotionSchema = z.object({
+  allocation: z.enum(["each", "across"]).nullish(),
   code: z.string().trim().min(2).max(64),
   currencyCode: z.string().trim().length(3).nullish(),
   endsAt: z.string().datetime().nullish(),
+  isAutomatic: z.boolean().optional(),
   method: z.enum(["percentage", "fixed"]),
+  promotionType: z.enum(["standard", "buyget"]).optional(),
   startsAt: z.string().datetime().nullish(),
   status: z.enum(["active", "inactive", "draft"]),
+  targetType: z.enum(["order", "items", "shipping_methods"]).optional(),
   usageLimit: z.number().int().positive().nullish(),
   value: z.number().positive(),
 });
@@ -42,11 +46,7 @@ export function registerMerchantPromotionRoutes(
     if (!options.createMerchantPromotion)
       return context.json({ error: "commerce_backend_unavailable" }, 503);
     const result = await options.createMerchantPromotion({
-      ...parsed.data,
-      ...(parsed.data.currencyCode === undefined ? {} : { currencyCode: parsed.data.currencyCode }),
-      ...(parsed.data.endsAt === undefined ? {} : { endsAt: parsed.data.endsAt }),
-      ...(parsed.data.startsAt === undefined ? {} : { startsAt: parsed.data.startsAt }),
-      ...(parsed.data.usageLimit === undefined ? {} : { usageLimit: parsed.data.usageLimit }),
+      ...toPromotionInput(parsed.data),
       tenantId: merchant.result.context.tenantId,
     });
     return result.ok
@@ -61,11 +61,7 @@ export function registerMerchantPromotionRoutes(
     if (!options.updateMerchantPromotion)
       return context.json({ error: "commerce_backend_unavailable" }, 503);
     const result = await options.updateMerchantPromotion({
-      ...parsed.data,
-      ...(parsed.data.currencyCode === undefined ? {} : { currencyCode: parsed.data.currencyCode }),
-      ...(parsed.data.endsAt === undefined ? {} : { endsAt: parsed.data.endsAt }),
-      ...(parsed.data.startsAt === undefined ? {} : { startsAt: parsed.data.startsAt }),
-      ...(parsed.data.usageLimit === undefined ? {} : { usageLimit: parsed.data.usageLimit }),
+      ...toPromotionInput(parsed.data),
       promotionId: context.req.param("promotionId"),
       tenantId: merchant.result.context.tenantId,
     });
@@ -86,4 +82,21 @@ export function registerMerchantPromotionRoutes(
       ? context.json(result)
       : context.json({ error: result.error }, result.status as 401 | 404 | 503);
   });
+}
+
+function toPromotionInput(data: z.infer<typeof promotionSchema>) {
+  return {
+    code: data.code,
+    method: data.method,
+    status: data.status,
+    value: data.value,
+    ...(data.allocation != null ? { allocation: data.allocation } : {}),
+    ...(data.currencyCode != null ? { currencyCode: data.currencyCode } : {}),
+    ...(data.endsAt !== undefined ? { endsAt: data.endsAt } : {}),
+    ...(data.isAutomatic !== undefined ? { isAutomatic: data.isAutomatic } : {}),
+    ...(data.promotionType !== undefined ? { promotionType: data.promotionType } : {}),
+    ...(data.startsAt !== undefined ? { startsAt: data.startsAt } : {}),
+    ...(data.targetType !== undefined ? { targetType: data.targetType } : {}),
+    ...(data.usageLimit !== undefined ? { usageLimit: data.usageLimit } : {}),
+  };
 }

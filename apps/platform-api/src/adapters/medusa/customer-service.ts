@@ -108,8 +108,9 @@ export function createMedusaCustomerService(options: Options) {
     }).catch(() => null);
     if (!response?.ok) return mapError(response);
     const customer = normalizeCustomer((await response.json().catch(() => ({}))).customer);
+    // Medusa AdminBatchLink: { add, remove } — not customer_ids.
     const attached = await fetcher(`${base}/admin/customer-groups/${group.id}/customers`, {
-      body: JSON.stringify({ customer_ids: [customer.id] }),
+      body: JSON.stringify({ add: [customer.id] }),
       headers: headers(),
       method: "POST",
     }).catch(() => null);
@@ -141,12 +142,13 @@ export function createMedusaCustomerService(options: Options) {
 }
 
 function toPayload(input: CustomerInput) {
+  // Omit empty optionals — Medusa rejects unexpected nulls on some fields.
   return {
-    company_name: input.companyName?.trim() || null,
     email: input.email.trim().toLowerCase(),
-    first_name: input.firstName?.trim() || null,
-    last_name: input.lastName?.trim() || null,
-    phone: input.phone?.trim() || null,
+    ...(input.companyName?.trim() ? { company_name: input.companyName.trim() } : {}),
+    ...(input.firstName?.trim() ? { first_name: input.firstName.trim() } : {}),
+    ...(input.lastName?.trim() ? { last_name: input.lastName.trim() } : {}),
+    ...(input.phone?.trim() ? { phone: input.phone.trim() } : {}),
   };
 }
 function normalizeCustomer(value: any): MerchantCustomer {
