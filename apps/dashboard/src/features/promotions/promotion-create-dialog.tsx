@@ -634,33 +634,33 @@ export function PromotionCreateDialog() {
           ) : null}
         </div>
 
-        <DialogFooter className="mx-0 mb-0 rounded-none border-t bg-muted/50 p-4 sm:justify-between">
-          <div className="flex gap-2">
-            {step > 0 ? (
-              <Button onClick={() => setStep((value) => value - 1)} type="button" variant="outline">
-                Back
-              </Button>
-            ) : (
-              <Button onClick={() => setOpen(false)} type="button" variant="outline">
-                Cancel
-              </Button>
-            )}
-          </div>
-          <div className="flex gap-2">
-            {step < 2 ? (
-              <Button
-                disabled={step === 1 && !canContinueFromDetails()}
-                onClick={() => setStep((value) => value + 1)}
-                type="button"
-              >
-                Continue
-              </Button>
-            ) : (
-              <Button disabled={saving || !canContinueFromDetails()} onClick={() => void create()} type="button">
-                {saving ? "Creating…" : "Create promotion"}
-              </Button>
-            )}
-          </div>
+        <DialogFooter className="mx-0 mb-0 rounded-none border-t bg-muted/50 p-4">
+          {step > 0 ? (
+            <Button onClick={() => setStep((value) => value - 1)} type="button" variant="outline">
+              Back
+            </Button>
+          ) : (
+            <Button onClick={() => setOpen(false)} type="button" variant="outline">
+              Cancel
+            </Button>
+          )}
+          {step < 2 ? (
+            <Button
+              disabled={step === 1 && !canContinueFromDetails()}
+              onClick={() => setStep((value) => value + 1)}
+              type="button"
+            >
+              Continue
+            </Button>
+          ) : (
+            <Button
+              disabled={saving || !canContinueFromDetails()}
+              onClick={() => void create()}
+              type="button"
+            >
+              {saving ? "Creating…" : "Create promotion"}
+            </Button>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>

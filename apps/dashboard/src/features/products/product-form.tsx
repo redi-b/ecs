@@ -20,7 +20,13 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+  dialogFooterActionsClassName,
+} from "@/components/ui/dialog";
 import { Field, FieldDescription, FieldLabel, FieldLegend, FieldSet } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
@@ -289,7 +295,7 @@ export function ProductForm({
             Complete product details, organization, variants, and review before saving.
           </DialogDescription>
           <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-background">
-            <div className="grid shrink-0 border-b bg-background lg:grid-cols-[18rem_1fr_18rem]">
+            <div className="flex shrink-0 flex-col border-b bg-background lg:grid lg:grid-cols-[minmax(0,16rem)_minmax(0,1fr)_minmax(0,12rem)]">
               <div className="flex items-center gap-2 border-b p-3 lg:border-r lg:border-b-0">
                 <Button
                   aria-label="Close product composer"
@@ -300,19 +306,28 @@ export function ProductForm({
                 >
                   <AppIcons.close data-icon="inline-start" />
                 </Button>
-                <Badge className="h-6 rounded-md px-2" variant="outline">
+                <Badge className="hidden h-6 rounded-md px-2 sm:inline-flex" variant="outline">
                   esc
                 </Badge>
-                <span className="text-sm text-muted-foreground">
+                <span className="min-w-0 truncate text-sm font-medium text-foreground sm:font-normal sm:text-muted-foreground">
                   {product ? "Edit product" : "Create product"}
                 </span>
+                <div className="ml-auto lg:hidden">
+                  <form.Subscribe selector={(state) => state.values.status}>
+                    {(status) => (
+                      <Badge variant={status === "published" ? "default" : "secondary"}>
+                        {status === "published" ? "Published" : "Draft"}
+                      </Badge>
+                    )}
+                  </form.Subscribe>
+                </div>
               </div>
 
-              <div className="grid grid-cols-4">
+              <div className="grid grid-cols-4 border-b lg:border-b-0">
                 {PRODUCT_STEPS.map((step) => (
                   <button
                     className={cn(
-                      "flex min-h-12 items-center justify-center gap-2 border-r px-3 text-sm text-muted-foreground transition-colors last:border-r-0 hover:bg-muted/60 hover:text-foreground",
+                      "flex min-h-11 min-w-0 flex-col items-center justify-center gap-1 border-r px-1.5 py-2 text-xs text-muted-foreground transition-colors last:border-r-0 hover:bg-muted/60 hover:text-foreground sm:min-h-12 sm:flex-row sm:gap-2 sm:px-3 sm:text-sm",
                       activeStep === step.id && "bg-muted text-foreground",
                     )}
                     key={step.id}
@@ -328,7 +343,8 @@ export function ProductForm({
                             : "idle"
                       }
                     />
-                    <span className="truncate">{step.label}</span>
+                    <span className="max-w-full truncate sm:hidden">{step.shortLabel}</span>
+                    <span className="hidden max-w-full truncate sm:inline">{step.label}</span>
                   </button>
                 ))}
               </div>
@@ -352,8 +368,8 @@ export function ProductForm({
                 form.handleSubmit();
               }}
             >
-              <div className="min-h-0 flex-1 overflow-y-auto">
-                <div className="mx-auto flex min-h-full w-full max-w-4xl flex-col gap-8 px-5 py-10 md:px-8">
+              <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+                <div className="mx-auto flex min-h-full w-full max-w-4xl flex-col gap-6 px-4 py-6 sm:gap-8 sm:px-5 sm:py-10 md:px-8">
                   {notice}
                   {activeStep === "details" ? (
                     <section className="flex flex-col gap-5">
@@ -775,7 +791,7 @@ export function ProductForm({
                 </div>
               </div>
 
-              <div className="z-20 flex shrink-0 flex-col gap-3 border-t bg-background p-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="z-20 flex shrink-0 flex-col gap-3 border-t bg-background p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:flex-row sm:items-center sm:justify-between sm:p-4 sm:pb-4">
                 <form.Subscribe selector={(state) => state.isDirty}>
                   {(isDirty) =>
                     actionError ? (
@@ -784,17 +800,21 @@ export function ProductForm({
                         {actionError}
                       </p>
                     ) : (
-                      <p className="text-sm text-muted-foreground">
+                      <p className="text-xs text-muted-foreground sm:text-sm">
                         {isDirty ? "Unsaved changes" : "No unsaved changes"}
                       </p>
                     )
                   }
                 </form.Subscribe>
-                <div className="flex justify-end gap-2">
+                <div className={dialogFooterActionsClassName}>
                   <Button onClick={closeComposer} type="button" variant="outline">
                     Cancel
                   </Button>
-                  <Button disabled={submitMutation.isPending} onClick={nextStep} type="button">
+                  <Button
+                    disabled={submitMutation.isPending}
+                    onClick={nextStep}
+                    type="button"
+                  >
                     {submitMutation.isPending
                       ? "Saving..."
                       : activeStep === "review"

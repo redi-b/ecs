@@ -58,8 +58,8 @@ export function DataTableFilters({
 
   return (
     <div className="flex flex-col gap-2.5">
-      <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+      <div className="flex flex-col gap-2 sm:gap-2.5 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5 sm:gap-2">
           {children}
           {activeFilters.map((filter) => (
             <DataTableAppliedFilterChip filter={filter} key={filter.id} />

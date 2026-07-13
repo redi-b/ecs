@@ -38,7 +38,7 @@ export function ListToolbarSearch({
       className={cn(
         listToolbarHeightClass,
         listToolbarRadiusClass,
-        "w-full bg-background/70 px-0.5 sm:max-w-sm",
+        "w-full min-w-0 bg-background/70 px-0.5 sm:max-w-sm",
       )}
     >
       <InputGroupAddon>

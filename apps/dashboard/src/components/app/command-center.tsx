@@ -21,10 +21,13 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Kbd, KbdGroup } from "@/components/ui/kbd";
+import { useSidebar } from "@/components/ui/sidebar";
 import { getNavigableAppRoutes } from "@/lib/navigation";
+import { cn } from "@/lib/utils";
 
 export function CommandCenter() {
   const router = useRouter();
+  const { isMobile, setOpenMobile } = useSidebar();
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
@@ -44,11 +47,16 @@ export function CommandCenter() {
       <DialogTrigger asChild>
         <Button
           type="button"
-          variant="outline"
+          variant="ghost"
           aria-label="Open command center"
-          className="h-9 min-w-0 justify-start gap-2 rounded-lg px-3 text-muted-foreground sm:min-w-64"
+          size="icon"
+          className={cn(
+            "shrink-0 text-muted-foreground",
+            // Desktop: full search field; mobile: icon-only matching header controls.
+            "sm:h-9 sm:w-auto sm:min-w-56 sm:justify-start sm:gap-2 sm:rounded-lg sm:border sm:border-input sm:bg-background sm:px-3 sm:hover:bg-accent sm:hover:text-accent-foreground",
+          )}
         >
-          <AppIcons.search data-icon="inline-start" />
+          <AppIcons.search className="size-4" />
           <span className="hidden sm:inline">Search or jump…</span>
           <KbdGroup className="ml-auto hidden shrink-0 sm:inline-flex">
             <Kbd>Ctrl</Kbd>
@@ -56,7 +64,7 @@ export function CommandCenter() {
           </KbdGroup>
         </Button>
       </DialogTrigger>
-      <DialogContent className="overflow-hidden p-0" showCloseButton={false}>
+      <DialogContent className="overflow-hidden p-0 sm:max-w-lg" showCloseButton={false}>
         <DialogTitle className="sr-only">Command center</DialogTitle>
         <DialogDescription className="sr-only">
           Search dashboard navigation and jump to a page.
@@ -78,6 +86,7 @@ export function CommandCenter() {
                       onSelect={() => {
                         router.push(route.href);
                         setOpen(false);
+                        if (isMobile) setOpenMobile(false);
                       }}
                     >
                       <Icon />

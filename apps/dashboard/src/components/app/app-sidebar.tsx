@@ -69,8 +69,19 @@ function isChildRouteActive(pathname: string, route: AppRoute) {
   return isRouteActive(pathname, route);
 }
 
+function useCloseMobileSidebar() {
+  const { isMobile, setOpenMobile } = useSidebar();
+
+  return () => {
+    if (isMobile) {
+      setOpenMobile(false);
+    }
+  };
+}
+
 function NavRouteItem({ pathname, route }: { pathname: string; route: AppRoute }) {
   const { isMobile, state } = useSidebar();
+  const closeMobileSidebar = useCloseMobileSidebar();
   const Icon = route.icon;
   const active = isRouteActive(pathname, route);
   const collapsed = state === "collapsed" && !isMobile;
@@ -99,7 +110,9 @@ function NavRouteItem({ pathname, route }: { pathname: string; route: AppRoute }
               <DropdownMenuSeparator />
               {route.children.map((child) => (
                 <DropdownMenuItem asChild key={child.id}>
-                  <Link href={child.href}>{child.title}</Link>
+                  <Link href={child.href} onClick={closeMobileSidebar}>
+                    {child.title}
+                  </Link>
                 </DropdownMenuItem>
               ))}
             </DropdownMenuContent>
@@ -125,7 +138,9 @@ function NavRouteItem({ pathname, route }: { pathname: string; route: AppRoute }
               {route.children.map((child) => (
                 <SidebarMenuSubItem key={child.id}>
                   <SidebarMenuSubButton asChild isActive={isChildRouteActive(pathname, child)}>
-                    <Link href={child.href}>{child.title}</Link>
+                    <Link href={child.href} onClick={closeMobileSidebar}>
+                      {child.title}
+                    </Link>
                   </SidebarMenuSubButton>
                 </SidebarMenuSubItem>
               ))}
@@ -145,7 +160,7 @@ function NavRouteItem({ pathname, route }: { pathname: string; route: AppRoute }
         </SidebarMenuButton>
       ) : (
         <SidebarMenuButton asChild className="rounded-xl" isActive={active} tooltip={route.title}>
-          <Link href={route.href}>
+          <Link href={route.href} onClick={closeMobileSidebar}>
             <Icon />
             <span>{route.title}</span>
           </Link>
@@ -157,6 +172,7 @@ function NavRouteItem({ pathname, route }: { pathname: string; route: AppRoute }
 
 export function AppSidebar({ actor }: { actor: MerchantDashboardSummary["actor"] }) {
   const pathname = usePathname();
+  const closeMobileSidebar = useCloseMobileSidebar();
 
   return (
     <Sidebar className="border-r" collapsible="icon">
@@ -164,7 +180,7 @@ export function AppSidebar({ actor }: { actor: MerchantDashboardSummary["actor"]
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton asChild className="rounded-xl" size="lg" tooltip="ECS">
-              <Link href={dashboardRoutes.overview}>
+              <Link href={dashboardRoutes.overview} onClick={closeMobileSidebar}>
                 <span className="grid size-8 shrink-0 place-items-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
                   E
                 </span>

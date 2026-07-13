@@ -27,6 +27,7 @@ import { AppIcons } from "@/components/app/icons";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
+  SheetBody,
   SheetContent,
   SheetDescription,
   SheetFooter,
@@ -123,15 +124,15 @@ export function CategoryReorderSheet({
 
   return (
     <Sheet onOpenChange={onOpenChange} open={open}>
-      <SheetContent className="flex w-full flex-col gap-0 p-0 sm:max-w-lg" side="right">
-        <SheetHeader className="border-b px-5 py-4 pr-12 text-left">
+      <SheetContent className="w-full sm:max-w-lg" side="right">
+        <SheetHeader className="px-5 py-4 text-left">
           <SheetTitle>Reorder categories</SheetTitle>
           <SheetDescription>
             Drag siblings within the same parent. Lower positions appear first on the storefront.
           </SheetDescription>
         </SheetHeader>
 
-        <div className="min-h-0 flex-1 space-y-6 overflow-y-auto px-5 py-5">
+        <SheetBody className="space-y-6 px-5 py-5">
           {groups.length === 0 ? (
             <p className="text-sm text-muted-foreground">No categories to reorder yet.</p>
           ) : null}
@@ -163,9 +164,9 @@ export function CategoryReorderSheet({
               </DndContext>
             </section>
           ))}
-        </div>
+        </SheetBody>
 
-        <SheetFooter className="flex-row justify-end gap-2 border-t bg-muted/30 px-5 py-4">
+        <SheetFooter className="flex-row justify-end gap-2 px-5 py-4">
           <Button disabled={isSaving} onClick={() => onOpenChange(false)} type="button" variant="outline">
             Cancel
           </Button>

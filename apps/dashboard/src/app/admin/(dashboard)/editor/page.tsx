@@ -54,6 +54,7 @@ export default async function StorefrontEditorPage({ searchParams }: StorefrontE
 
   return (
     <PageShell
+      className="gap-4 sm:gap-5"
       description="Edit storefront content, visuals, and theme settings in a live preview."
       title="Editor"
     >

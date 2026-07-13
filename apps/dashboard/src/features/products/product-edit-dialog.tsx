@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/select";
 import {
   Sheet,
+  SheetBody,
   SheetContent,
   SheetDescription,
   SheetFooter,
@@ -333,26 +334,28 @@ function ProductEditSheet({
       >
         <AppIcons.edit data-icon="inline-start" />
       </Button>
-      <SheetContent className={cn("w-full overflow-y-auto sm:max-w-md", contentClassName)}>
+      <SheetContent className={cn("w-full sm:max-w-md", contentClassName)}>
         <SheetHeader>
           <SheetTitle>{title}</SheetTitle>
           <SheetDescription>{description}</SheetDescription>
         </SheetHeader>
         <form
-          className="flex flex-1 flex-col gap-5 px-4"
+          className="flex min-h-0 flex-1 flex-col"
           onSubmit={(event) => {
             event.preventDefault();
             void submitEdit();
           }}
         >
-          {error ? (
-            <Alert variant="destructive">
-              <AlertTitle>Product could not be updated</AlertTitle>
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          ) : null}
-          <div className="grid gap-4">{children}</div>
-          <SheetFooter className="px-0">
+          <SheetBody className="flex flex-col gap-5">
+            {error ? (
+              <Alert variant="destructive">
+                <AlertTitle>Product could not be updated</AlertTitle>
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            ) : null}
+            <div className="grid gap-4">{children}</div>
+          </SheetBody>
+          <SheetFooter>
             <Button disabled={isSaving} type="submit">
               {isSaving ? "Saving..." : "Save changes"}
             </Button>

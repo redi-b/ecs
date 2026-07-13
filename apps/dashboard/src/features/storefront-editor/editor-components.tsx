@@ -4,7 +4,7 @@ import "@puckeditor/core/puck.css";
 
 import { classicV1EditorSchema as classicV1EditorManifest } from "@ecs/storefront-templates";
 import type { Config, Data, PuckAction } from "@puckeditor/core";
-import { createUsePuck, FieldLabel, Puck } from "@puckeditor/core";
+import { createUsePuck, FieldLabel as PuckFieldLabel, Puck } from "@puckeditor/core";
 import {
   RiArrowGoBackLine,
   RiArrowGoForwardLine,
@@ -45,7 +45,7 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
-import { Field, FieldDescription, FieldGroup } from "@/components/ui/field";
+import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -167,73 +167,98 @@ export function StorefrontEditorActions({
   }, []);
 
   return (
-    <div className="flex flex-wrap items-center justify-end gap-2">
-      <ToolbarIconButton disabled={hasMounted ? !canUndo : undefined} label="Undo" onClick={onUndo}>
-        <RiArrowGoBackLine data-icon="inline-start" />
-      </ToolbarIconButton>
-      <ToolbarIconButton disabled={hasMounted ? !canRedo : undefined} label="Redo" onClick={onRedo}>
-        <RiArrowGoForwardLine data-icon="inline-start" />
-      </ToolbarIconButton>
-      <Separator className="mx-1 hidden h-5 sm:block" orientation="vertical" />
-      <ToolbarIconButton
-        label={showEditHints ? "Hide editable outlines" : "Show editable outlines"}
-        onClick={onToggleEditHints}
-        pressed={showEditHints}
-      >
-        {showEditHints ? (
-          <RiEyeLine data-icon="inline-start" />
-        ) : (
-          <RiEyeOffLine data-icon="inline-start" />
-        )}
-      </ToolbarIconButton>
-      <ToolbarIconButton
-        label={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
-        onClick={onToggleFullscreen}
-      >
-        {isFullscreen ? (
-          <RiFullscreenExitLine data-icon="inline-start" />
-        ) : (
-          <RiFullscreenLine data-icon="inline-start" />
-        )}
-      </ToolbarIconButton>
-      <ToolbarIconButton asChild label="Open live storefront">
-        <a href={editorMeta.liveStorefrontUrl} rel="noreferrer" target="_blank">
-          <RiExternalLinkLine data-icon="inline-start" />
-        </a>
-      </ToolbarIconButton>
-      <AlertDialog>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <AlertDialogTrigger asChild>
-              <Button size="sm" type="button" variant="ghost">
-                <RiRefreshLine data-icon="inline-start" />
-              </Button>
-            </AlertDialogTrigger>
-          </TooltipTrigger>
-          <TooltipContent>Reset editor</TooltipContent>
-        </Tooltip>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Reset editor changes?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This resets the editor to the draft that was loaded when you opened this page.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={onReset}>Reset</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-      <Separator className="mx-1 hidden h-5 sm:block" orientation="vertical" />
-      <Button disabled={isPending} onClick={onSave} size="sm" type="button" variant="outline">
-        <RiSave3Line data-icon="inline-start" />
-        Save draft
-      </Button>
-      <Button disabled={isPending} onClick={onPublish} size="sm" type="button">
-        <RiRocketLine data-icon="inline-start" />
-        Publish
-      </Button>
+    <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center sm:justify-end sm:gap-2">
+      <div className="flex flex-wrap items-center gap-1 sm:gap-2">
+        <ToolbarIconButton
+          disabled={hasMounted ? !canUndo : undefined}
+          label="Undo"
+          onClick={onUndo}
+        >
+          <RiArrowGoBackLine data-icon="inline-start" />
+        </ToolbarIconButton>
+        <ToolbarIconButton
+          disabled={hasMounted ? !canRedo : undefined}
+          label="Redo"
+          onClick={onRedo}
+        >
+          <RiArrowGoForwardLine data-icon="inline-start" />
+        </ToolbarIconButton>
+        <Separator className="mx-0.5 hidden h-5 sm:mx-1 sm:block" orientation="vertical" />
+        <ToolbarIconButton
+          label={showEditHints ? "Hide editable outlines" : "Show editable outlines"}
+          onClick={onToggleEditHints}
+          pressed={showEditHints}
+        >
+          {showEditHints ? (
+            <RiEyeLine data-icon="inline-start" />
+          ) : (
+            <RiEyeOffLine data-icon="inline-start" />
+          )}
+        </ToolbarIconButton>
+        <ToolbarIconButton
+          label={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
+          onClick={onToggleFullscreen}
+        >
+          {isFullscreen ? (
+            <RiFullscreenExitLine data-icon="inline-start" />
+          ) : (
+            <RiFullscreenLine data-icon="inline-start" />
+          )}
+        </ToolbarIconButton>
+        <ToolbarIconButton asChild label="Open live storefront">
+          <a href={editorMeta.liveStorefrontUrl} rel="noreferrer" target="_blank">
+            <RiExternalLinkLine data-icon="inline-start" />
+          </a>
+        </ToolbarIconButton>
+        <AlertDialog>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <AlertDialogTrigger asChild>
+                <Button size="icon-sm" type="button" variant="ghost">
+                  <RiRefreshLine />
+                  <span className="sr-only">Reset editor</span>
+                </Button>
+              </AlertDialogTrigger>
+            </TooltipTrigger>
+            <TooltipContent>Reset editor</TooltipContent>
+          </Tooltip>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Reset editor changes?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This resets the editor to the draft that was loaded when you opened this page.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={onReset}>Reset</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
+      <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-row">
+        <Button
+          className="min-w-0"
+          disabled={isPending}
+          onClick={onSave}
+          size="sm"
+          type="button"
+          variant="outline"
+        >
+          <RiSave3Line data-icon="inline-start" />
+          Save draft
+        </Button>
+        <Button
+          className="min-w-0"
+          disabled={isPending}
+          onClick={onPublish}
+          size="sm"
+          type="button"
+        >
+          <RiRocketLine data-icon="inline-start" />
+          Publish
+        </Button>
+      </div>
     </div>
   );
 }
@@ -274,6 +299,8 @@ export function ToolbarIconButton({
   );
 }
 
+type EditorMobilePanel = "preview" | "settings";
+
 export function StorefrontEditorShell({
   canRedo,
   canUndo,
@@ -307,21 +334,22 @@ export function StorefrontEditorShell({
 }) {
   const data = useStorefrontPuck((api) => api.appState.data);
   const props = getStorefrontPageProps(data);
+  const [mobilePanel, setMobilePanel] = useState<EditorMobilePanel>("preview");
 
   return (
-    <div className="overflow-hidden rounded-xl border bg-background shadow-sm">
-      <div className="flex min-h-16 flex-wrap items-center justify-between gap-3 border-b bg-muted/30 px-4 py-3">
-        <div className="flex min-w-0 items-center gap-3">
-          <div className="grid size-10 place-items-center rounded-lg border bg-background shadow-sm">
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border bg-background shadow-sm">
+      <div className="flex shrink-0 flex-col gap-3 border-b bg-muted/30 px-3 py-3 sm:px-4">
+        <div className="flex min-w-0 items-start gap-3">
+          <div className="grid size-9 shrink-0 place-items-center rounded-lg border bg-background shadow-sm sm:size-10">
             <RiEditLine className="text-muted-foreground" aria-hidden />
           </div>
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
               <div className="text-sm font-semibold">Storefront editor</div>
               <Badge variant="secondary">{editorMeta.templateName}</Badge>
               <PublicationStatusBadge status={publicationStatus} />
             </div>
-            <div className="text-xs text-muted-foreground">
+            <div className="mt-0.5 hidden text-xs text-muted-foreground sm:block">
               Click outlined text in the preview, or refine details in settings.
             </div>
           </div>
@@ -342,14 +370,46 @@ export function StorefrontEditorShell({
           showEditHints={showEditHints}
         />
       </div>
+
+      {/* Mobile: switch between preview and settings so neither is buried. */}
+      <div className="grid shrink-0 grid-cols-2 border-b bg-background p-1 lg:hidden">
+        {(
+          [
+            { id: "preview", label: "Preview" },
+            { id: "settings", label: "Settings" },
+          ] as const
+        ).map((tab) => (
+          <button
+            className={cn(
+              "rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+              mobilePanel === tab.id
+                ? "bg-muted text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground",
+            )}
+            key={tab.id}
+            onClick={() => setMobilePanel(tab.id)}
+            type="button"
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
       <div
         className={cn(
-          "grid h-[calc(100vh-230px)] min-h-[42rem] bg-muted/30 transition-[height,min-height] duration-300 ease-out lg:grid-cols-[minmax(0,1fr)_24rem]",
-          isFullscreen && "h-[calc(100vh-5.5rem)] min-h-0",
+          "grid min-h-0 flex-1 bg-muted/30 transition-[height] duration-300 ease-out",
+          // Viewport-based height without forcing a 42rem floor on phones.
+          "h-[max(22rem,calc(100dvh-13.5rem))] sm:h-[max(28rem,calc(100dvh-14rem))] lg:h-[max(32rem,calc(100dvh-15rem))] lg:grid-cols-[minmax(0,1fr)_minmax(18rem,24rem)]",
+          isFullscreen && "h-[calc(100dvh-7.5rem)] sm:h-[calc(100dvh-6.5rem)]",
         )}
         data-edit-hints={showEditHints ? "on" : "off"}
       >
-        <div className="overflow-auto p-5">
+        <div
+          className={cn(
+            "min-h-0 overflow-auto p-3 sm:p-5",
+            mobilePanel !== "preview" && "max-lg:hidden",
+          )}
+        >
           <div className="mx-auto max-w-6xl overflow-hidden rounded-xl border bg-background shadow-sm transition-all duration-300 ease-out">
             <TemplatePreview
               props={props}
@@ -358,16 +418,23 @@ export function StorefrontEditorShell({
             />
           </div>
         </div>
-        <aside className="flex min-h-0 flex-col border-t bg-background lg:border-l lg:border-t-0">
-          <div className="border-b bg-background px-4 py-4">
-            <div className="flex items-center justify-between gap-3">
-              <div className="text-sm font-semibold">Settings</div>
-              <Button asChild size="sm" variant="outline">
+        <aside
+          className={cn(
+            "flex min-h-0 flex-col border-t bg-background lg:border-l lg:border-t-0",
+            mobilePanel !== "settings" && "max-lg:hidden",
+          )}
+        >
+          <div className="shrink-0 border-b bg-background px-4 py-3 sm:py-4">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
+              <div className="min-w-0">
+                <div className="text-sm font-semibold">Settings</div>
+                <div className="mt-0.5 text-xs text-muted-foreground">
+                  Links, images, colors, and fallback content.
+                </div>
+              </div>
+              <Button asChild className="w-full shrink-0 sm:w-auto" size="sm" variant="outline">
                 <a href={editorMeta.settingsUrl}>Change template</a>
               </Button>
-            </div>
-            <div className="text-xs text-muted-foreground">
-              Links, images, colors, and fallback content.
             </div>
           </div>
           <StorefrontSettingsPanel />
@@ -384,24 +451,27 @@ export function StorefrontSettingsPanel() {
 
   return (
     <ScrollArea className="min-h-0 flex-1">
-      <div className="flex flex-col gap-3 p-4">
+      <div className="flex flex-col gap-3 p-4 pb-8">
         {classicV1EditorManifest.sections.map((section) => (
-          <section className="rounded-xl border bg-card shadow-sm" key={section.id}>
+          <section
+            className="min-w-0 overflow-hidden rounded-xl border bg-card shadow-sm"
+            key={section.id}
+          >
             <div className="border-b px-4 py-3">
               <div className="text-sm font-semibold">
                 {SETTINGS_SECTION_LABELS[section.id] ?? section.label}
               </div>
             </div>
-            <div className="flex flex-col gap-4 p-4">
+            <div className="flex min-w-0 flex-col gap-4 p-4">
               {section.fields.map((field) => {
                 const value = (props as Record<string, unknown>)[field.prop];
                 const stringValue = typeof value === "string" ? value : "";
                 const helpText = "helpText" in field ? field.helpText : undefined;
 
                 return (
-                  <Field key={field.path}>
-                    <div className="grid gap-2 text-sm font-medium">
-                      <span>{field.label}</span>
+                  <Field className="min-w-0 gap-2" key={field.path}>
+                    <FieldLabel className="text-sm font-medium">{field.label}</FieldLabel>
+                    <div className="min-w-0">
                       <StorefrontSettingControl
                         data={data}
                         dispatch={dispatch}
@@ -409,7 +479,9 @@ export function StorefrontSettingsPanel() {
                         value={stringValue}
                       />
                     </div>
-                    {helpText ? <FieldDescription>{helpText}</FieldDescription> : null}
+                    {helpText ? (
+                      <FieldDescription className="text-pretty">{helpText}</FieldDescription>
+                    ) : null}
                   </Field>
                 );
               })}
@@ -451,7 +523,7 @@ export function StorefrontSettingControl({
     return (
       <Textarea
         aria-label={field.label}
-        className="min-h-24"
+        className="min-h-24 w-full min-w-0"
         name={field.prop}
         onChange={(event) => update(event.currentTarget.value)}
         value={value}
@@ -462,6 +534,7 @@ export function StorefrontSettingControl({
   return (
     <Input
       aria-label={field.label}
+      className="w-full min-w-0"
       name={field.prop}
       onChange={(event) => update(event.currentTarget.value)}
       placeholder={field.kind === "link" ? "/" : undefined}
@@ -482,8 +555,8 @@ export function ImageReferenceControl({
   const imageUrl = isPreviewImageUrl(value) ? value : "";
 
   return (
-    <div className="flex flex-col gap-3 rounded-lg border bg-background p-3">
-      <div className="flex items-center gap-3">
+    <div className="flex min-w-0 flex-col gap-3 rounded-lg border bg-background p-3">
+      <div className="flex min-w-0 items-start gap-3">
         <div className="flex size-14 shrink-0 items-center justify-center overflow-hidden rounded-md border bg-muted">
           {imageUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
@@ -494,12 +567,18 @@ export function ImageReferenceControl({
         </div>
         <div className="min-w-0 flex-1">
           <div className="text-sm font-medium">{label}</div>
-          <div className="truncate text-xs text-muted-foreground">
+          <div className="text-xs text-pretty text-muted-foreground">
             {value ? "Image reference set" : "Upload a file or choose from your library"}
           </div>
         </div>
         {value ? (
-          <Button onClick={() => onChange(undefined)} size="sm" type="button" variant="ghost">
+          <Button
+            className="shrink-0"
+            onClick={() => onChange(undefined)}
+            size="sm"
+            type="button"
+            variant="ghost"
+          >
             Clear
           </Button>
         ) : null}
@@ -537,8 +616,8 @@ function EditorImageSourceActions({ onPicked }: { onPicked: (url: string | undef
   }
 
   return (
-    <div className="flex flex-col gap-2">
-      <div className="flex flex-wrap items-center gap-2">
+    <div className="flex min-w-0 flex-col gap-2">
+      <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap">
         <input
           accept="image/avif,image/gif,image/jpeg,image/png,image/webp"
           className="sr-only"
@@ -547,6 +626,7 @@ function EditorImageSourceActions({ onPicked }: { onPicked: (url: string | undef
           type="file"
         />
         <Button
+          className="w-full min-w-0 justify-center sm:w-auto"
           disabled={uploading}
           onClick={() => inputRef.current?.click()}
           size="sm"
@@ -562,12 +642,14 @@ function EditorImageSourceActions({ onPicked }: { onPicked: (url: string | undef
             if (url) onPicked(url);
           }}
           selectionMode="single"
+          triggerClassName="w-full min-w-0 sm:w-auto"
           triggerLabel="Choose from library"
           triggerSize="sm"
           triggerVariant="outline"
         />
       </div>
       <MediaUrlImportField
+        className="min-w-0"
         disabled={uploading}
         onImported={(file) => {
           void (async () => {
@@ -600,9 +682,9 @@ export function PremiumColorPicker({
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button className="justify-start gap-2" type="button" variant="outline">
-          <span className="size-4 rounded-full border" style={{ backgroundColor: color }} />
-          <span className="font-mono text-xs uppercase">{color}</span>
+        <Button className="w-full min-w-0 justify-start gap-2" type="button" variant="outline">
+          <span className="size-4 shrink-0 rounded-full border" style={{ backgroundColor: color }} />
+          <span className="truncate font-mono text-xs uppercase">{color}</span>
         </Button>
       </PopoverTrigger>
       <PopoverContent align="start" className={POPOVER_MOTION_CLASSNAME}>
@@ -638,9 +720,11 @@ export function FontSelect({
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button className="justify-between" type="button" variant="outline">
-          <span style={{ fontFamily: value }}>{value || "Choose font"}</span>
-          <RiEditLine data-icon="inline-end" />
+        <Button className="w-full min-w-0 justify-between gap-2" type="button" variant="outline">
+          <span className="min-w-0 truncate" style={{ fontFamily: value }}>
+            {value || "Choose font"}
+          </span>
+          <RiEditLine className="shrink-0" data-icon="inline-end" />
         </Button>
       </PopoverTrigger>
       <PopoverContent align="start" className={cn(POPOVER_MOTION_CLASSNAME, "p-0")}>
@@ -738,7 +822,7 @@ export function VisualEditorField({
   return (
     <FieldGroup>
       <Field>
-        <FieldLabel label={label}>
+        <PuckFieldLabel label={label}>
           {kind === "textarea" ? (
             <Textarea
               name={name}
@@ -759,7 +843,7 @@ export function VisualEditorField({
               value={stringValue}
             />
           )}
-        </FieldLabel>
+        </PuckFieldLabel>
         {helpText ? <FieldDescription>{helpText}</FieldDescription> : null}
       </Field>
     </FieldGroup>

@@ -46,12 +46,18 @@ export function MediaUrlImportField({
     }
   }
 
+  const compact = size === "sm";
+
   return (
-    <div className={cn("flex flex-col gap-1.5", className)}>
-      <div className={cn("flex gap-2", size === "sm" ? "items-center" : "flex-col sm:flex-row")}>
+    <div className={cn("flex min-w-0 flex-col gap-1.5", className)}>
+      {/*
+        Stack on narrow widths so the Import button never crushes the URL field.
+        Side-by-side only from sm when there is room.
+      */}
+      <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center">
         <Input
           aria-label={t("media.importUrlLabel")}
-          className={cn(size === "sm" ? "h-8" : "h-9", "min-w-0 flex-1")}
+          className={cn(compact ? "h-8" : "h-9", "min-w-0 w-full flex-1")}
           disabled={disabled || importing}
           onChange={(event) => {
             setUrl(event.target.value);
@@ -69,10 +75,13 @@ export function MediaUrlImportField({
         />
         <Button
           aria-busy={importing}
-          className={cn(size === "sm" ? "h-8 shrink-0" : "h-9 shrink-0")}
+          className={cn(
+            compact ? "h-8" : "h-9",
+            "w-full shrink-0 sm:w-auto",
+          )}
           disabled={disabled || importing || !url.trim()}
           onClick={() => void importUrl()}
-          size={size === "sm" ? "sm" : "default"}
+          size={compact ? "sm" : "default"}
           type="button"
           variant="outline"
         >
@@ -91,7 +100,7 @@ export function MediaUrlImportField({
       </div>
       {error ? <p className="text-xs text-destructive">{error}</p> : null}
       {!error ? (
-        <p className="text-xs text-muted-foreground">{t("media.importUrlHint")}</p>
+        <p className="text-xs text-pretty text-muted-foreground">{t("media.importUrlHint")}</p>
       ) : null}
     </div>
   );

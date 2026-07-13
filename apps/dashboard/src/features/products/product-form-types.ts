@@ -50,13 +50,15 @@ export type ProductFormValues = {
 export type ComposerStep = {
   id: "details" | "organize" | "variants" | "review";
   label: string;
+  /** Shorter label for narrow step rails (mobile). */
+  shortLabel: string;
 };
 
 export const PRODUCT_STEPS: ComposerStep[] = [
-  { id: "details", label: "Details" },
-  { id: "organize", label: "Organize" },
-  { id: "variants", label: "Pricing & stock" },
-  { id: "review", label: "Review" },
+  { id: "details", label: "Details", shortLabel: "Details" },
+  { id: "organize", label: "Organize", shortLabel: "Organize" },
+  { id: "variants", label: "Pricing & stock", shortLabel: "Pricing" },
+  { id: "review", label: "Review", shortLabel: "Review" },
 ];
 
 export const productPayloadSchema = z.object({

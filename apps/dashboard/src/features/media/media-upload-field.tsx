@@ -373,7 +373,7 @@ export function MediaUploadField({
             selectionMode="multiple"
           />
         </div>
-        <div className="w-full max-w-md text-left">
+        <div className="w-full max-w-md min-w-0 text-left">
           <MediaUrlImportField
             onImported={(file) => void queueFiles([file])}
             size="sm"

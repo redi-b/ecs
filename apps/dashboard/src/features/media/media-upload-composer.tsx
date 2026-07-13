@@ -14,6 +14,7 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
+  dialogFooterActionsClassName,
 } from "@/components/ui/dialog";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
@@ -354,7 +355,7 @@ export function MediaUploadComposer({ onUploaded }: { onUploaded: () => void }) 
         open={open}
       >
         <DialogContent
-          className="flex max-h-[min(90vh,52rem)] w-full flex-col gap-0 overflow-hidden p-0 sm:max-w-5xl"
+          className="flex max-h-[min(100dvh,52rem)] w-full flex-col gap-0 overflow-hidden p-0 sm:max-h-[min(90vh,52rem)] sm:max-w-5xl"
           onEscapeKeyDown={(event) => {
             if (lightboxOpen) {
               event.preventDefault();
@@ -375,10 +376,10 @@ export function MediaUploadComposer({ onUploaded }: { onUploaded: () => void }) 
           </DialogHeader>
 
           <div className="grid min-h-0 flex-1 gap-0 overflow-hidden lg:grid-cols-[minmax(0,1fr)_minmax(16rem,18rem)]">
-            <div className="flex min-h-0 flex-col gap-4 overflow-hidden p-4 sm:p-5">
+            <div className="flex min-h-0 flex-col gap-4 overflow-y-auto overscroll-contain p-4 sm:p-5">
               <button
                 className={cn(
-                  "group relative flex min-h-36 w-full shrink-0 flex-col items-center justify-center gap-3 rounded-2xl border border-dashed px-6 py-7 text-center transition-colors",
+                  "group relative flex min-h-32 w-full shrink-0 flex-col items-center justify-center gap-3 rounded-2xl border border-dashed px-4 py-6 text-center transition-colors sm:min-h-36 sm:px-6 sm:py-7",
                   "bg-muted/15 hover:border-primary/40 hover:bg-muted/30",
                 )}
                 onClick={() => inputRef.current?.click()}
@@ -396,7 +397,7 @@ export function MediaUploadComposer({ onUploaded }: { onUploaded: () => void }) 
                 </span>
               </button>
 
-              <div className="rounded-2xl border bg-card/60 p-3 sm:p-3.5">
+              <div className="min-w-0 shrink-0 rounded-2xl border bg-card/60 p-3 sm:p-3.5">
                 <p className="mb-2 text-xs font-medium text-muted-foreground">
                   {t("media.importUrlSection")}
                 </p>
@@ -405,6 +406,14 @@ export function MediaUploadComposer({ onUploaded }: { onUploaded: () => void }) 
                   onImported={(file) => addFiles([file])}
                   size="sm"
                 />
+              </div>
+
+              {/* Compact summary on mobile (desktop uses the right aside). */}
+              <div className="flex shrink-0 items-center justify-between gap-2 rounded-xl border bg-muted/20 px-3 py-2.5 text-xs sm:text-sm lg:hidden">
+                <span className="text-muted-foreground">
+                  {t("media.readyCount", { count: stagedFiles.length })}
+                </span>
+                <span className="font-medium tabular-nums">{formatBytes(totalBytes)}</span>
               </div>
 
               {stagedFiles.length ? (
@@ -456,16 +465,26 @@ export function MediaUploadComposer({ onUploaded }: { onUploaded: () => void }) 
                   </ul>
                 </div>
               ) : (
-                <div className="flex min-h-44 flex-1 flex-col items-center justify-center rounded-2xl border border-dashed bg-muted/10 px-6 py-10 text-center">
+                <div className="flex min-h-28 shrink-0 flex-col items-center justify-center rounded-2xl border border-dashed bg-muted/10 px-4 py-8 text-center sm:min-h-44 sm:px-6 sm:py-10">
                   <span className="mb-3 grid size-11 place-items-center rounded-xl border bg-background text-muted-foreground">
                     <AppIcons.image />
                   </span>
                   <p className="text-sm font-medium">{t("media.reviewEmpty")}</p>
                 </div>
               )}
+
+              <Button
+                className="w-full shrink-0 lg:hidden"
+                onClick={() => inputRef.current?.click()}
+                type="button"
+                variant="outline"
+              >
+                <AppIcons.image data-icon="inline-start" />
+                {t("media.addMore")}
+              </Button>
             </div>
 
-            <aside className="flex flex-col gap-4 border-t bg-muted/15 p-4 sm:p-5 lg:border-t-0 lg:border-l">
+            <aside className="hidden flex-col gap-4 border-t bg-muted/15 p-4 sm:p-5 lg:flex lg:border-t-0 lg:border-l">
               <div>
                 <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
                   {t("media.readyCount", { count: stagedFiles.length })}
@@ -514,18 +533,20 @@ export function MediaUploadComposer({ onUploaded }: { onUploaded: () => void }) 
             This composer uses p-0, so match the footer chrome with a plain flush footer.
           */}
           <div
-            className={cn(
-              "flex shrink-0 flex-col-reverse gap-2 border-t bg-muted/50 p-4",
-              "sm:flex-row sm:items-center sm:justify-between",
-            )}
+            className="flex shrink-0 flex-col gap-3 border-t bg-muted/50 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:flex-row sm:items-center sm:justify-between sm:p-4 sm:pb-4"
             data-slot="dialog-footer"
           >
-            <p className="text-center text-xs text-muted-foreground sm:text-left">
+            <p className="hidden text-xs text-muted-foreground sm:block">
               {t("media.readyCount", { count: stagedFiles.length })}
               {totalBytes ? ` · ${formatBytes(totalBytes)}` : ""}
             </p>
-            <div className="flex flex-col-reverse gap-2 sm:flex-row">
-              <Button onClick={() => setOpen(false)} type="button" variant="outline">
+            <div className={dialogFooterActionsClassName}>
+              <Button
+                disabled={uploading}
+                onClick={() => setOpen(false)}
+                type="button"
+                variant="outline"
+              >
                 {t("common.cancel")}
               </Button>
               <Button

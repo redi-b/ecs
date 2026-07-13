@@ -24,6 +24,7 @@ import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/in
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Sheet,
+  SheetBody,
   SheetContent,
   SheetDescription,
   SheetFooter,
@@ -217,8 +218,8 @@ export function CollectionEditSheet({
 
   return (
     <Sheet onOpenChange={onOpenChange} open={open}>
-      <SheetContent className="flex w-full flex-col gap-0 p-0 sm:max-w-md" side="right">
-        <SheetHeader className="border-b px-5 py-4 pr-12 text-left">
+      <SheetContent className="w-full sm:max-w-md" side="right">
+        <SheetHeader className="px-5 py-4 text-left">
           <SheetTitle>Edit collection</SheetTitle>
           <SheetDescription>
             Update details, SEO, and which products belong in this collection.
@@ -232,7 +233,7 @@ export function CollectionEditSheet({
             void submit();
           }}
         >
-          <div className="grid flex-1 content-start gap-5 overflow-y-auto px-5 py-5">
+          <SheetBody className="grid content-start gap-5 px-5 py-5">
             {error ? (
               <Alert variant="destructive">
                 <AlertTitle>Collection could not be updated</AlertTitle>
@@ -392,9 +393,9 @@ export function CollectionEditSheet({
                 />
               </Field>
             </div>
-          </div>
+          </SheetBody>
 
-          <SheetFooter className="flex-row justify-end gap-2 border-t bg-muted/30 px-5 py-4">
+          <SheetFooter className="flex-row justify-end gap-2 px-5 py-4">
             <Button
               disabled={isSaving}
               onClick={() => onOpenChange(false)}

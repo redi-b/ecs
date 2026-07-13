@@ -45,6 +45,7 @@ type MediaLibraryDialogProps = {
   onSelect: (assets: MediaAsset[]) => void;
   /** Optional hard cap for multi-select. */
   maxSelection?: number | undefined;
+  triggerClassName?: string | undefined;
   triggerLabel?: string | undefined;
   triggerVariant?: "default" | "outline" | "secondary" | "ghost" | undefined;
   triggerSize?: "default" | "sm" | "xs" | "lg" | undefined;
@@ -54,6 +55,7 @@ export function MediaLibraryDialog({
   selectionMode = "single",
   onSelect,
   maxSelection,
+  triggerClassName,
   triggerLabel,
   triggerVariant = "outline",
   triggerSize = "sm",
@@ -163,6 +165,7 @@ export function MediaLibraryDialog({
   return (
     <>
       <Button
+        className={triggerClassName}
         onClick={() => setOpen(true)}
         size={triggerSize}
         type="button"

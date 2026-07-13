@@ -27,7 +27,7 @@ import { cn } from "@/lib/utils";
 
 export function AccountMenu({ actor }: { actor: MerchantDashboardSummary["actor"] }) {
   const { t } = useI18n();
-  const { state } = useSidebar();
+  const { isMobile, setOpenMobile, state } = useSidebar();
   const collapsed = state === "collapsed";
   const [menuOpen, setMenuOpen] = useState(false);
   const [suppressTooltip, setSuppressTooltip] = useState(false);
@@ -35,10 +35,17 @@ export function AccountMenu({ actor }: { actor: MerchantDashboardSummary["actor"
   const accountName = actor.name?.trim() || actor.email;
   const accountInitials = getAccountInitials(accountName);
 
+  function closeMobileSidebar() {
+    if (isMobile) {
+      setOpenMobile(false);
+    }
+  }
+
   async function signOut() {
     if (isSigningOut) return;
     setIsSigningOut(true);
     setMenuOpen(false);
+    closeMobileSidebar();
     const response = await fetch("/admin/sign-out", {
       headers: { accept: "application/json" },
       method: "POST",
@@ -103,13 +110,13 @@ export function AccountMenu({ actor }: { actor: MerchantDashboardSummary["actor"
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
               <DropdownMenuItem asChild>
-                <Link href={dashboardRoutes.settings}>
+                <Link href={dashboardRoutes.settings} onClick={closeMobileSidebar}>
                   <AppIcons.settings />
                   {t("account.settings")}
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link href={dashboardRoutes.billing}>
+                <Link href={dashboardRoutes.billing} onClick={closeMobileSidebar}>
                   <AppIcons.billing />
                   {t("account.billing")}
                 </Link>

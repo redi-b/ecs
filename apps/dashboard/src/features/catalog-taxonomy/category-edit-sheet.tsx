@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/select";
 import {
   Sheet,
+  SheetBody,
   SheetContent,
   SheetDescription,
   SheetFooter,
@@ -137,8 +138,8 @@ export function CategoryEditSheet({
 
   return (
     <Sheet onOpenChange={onOpenChange} open={open}>
-      <SheetContent className="flex w-full flex-col gap-0 p-0 sm:max-w-md" side="right">
-        <SheetHeader className="border-b px-5 py-4 pr-12 text-left">
+      <SheetContent className="w-full sm:max-w-md" side="right">
+        <SheetHeader className="px-5 py-4 text-left">
           <SheetTitle>Edit category</SheetTitle>
           <SheetDescription>
             Update name, handle, parent, sibling order, and storefront visibility.
@@ -152,7 +153,7 @@ export function CategoryEditSheet({
             void submit();
           }}
         >
-          <div className="grid flex-1 content-start gap-5 overflow-y-auto px-5 py-5">
+          <SheetBody className="grid content-start gap-5 px-5 py-5">
             {error ? (
               <Alert variant="destructive">
                 <AlertTitle>Category could not be updated</AlertTitle>
@@ -290,9 +291,9 @@ export function CategoryEditSheet({
                 />
               </Field>
             </div>
-          </div>
+          </SheetBody>
 
-          <SheetFooter className="flex-row justify-end gap-2 border-t bg-muted/30 px-5 py-4">
+          <SheetFooter className="flex-row justify-end gap-2 px-5 py-4">
             <Button
               disabled={isSaving}
               onClick={() => onOpenChange(false)}

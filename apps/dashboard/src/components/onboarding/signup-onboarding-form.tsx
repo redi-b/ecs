@@ -281,14 +281,58 @@ export function ShopOnboardingForm({
   }
 
   return (
-    <div className="grid gap-8 lg:grid-cols-[14rem_minmax(0,1fr)] lg:gap-12">
+    <div className="grid gap-5 sm:gap-8 lg:grid-cols-[14rem_minmax(0,1fr)] lg:gap-12">
       <nav aria-label={t("onboarding.stepsLabel")} className="lg:sticky lg:top-8 lg:self-start">
-        <ol className="flex gap-1 overflow-x-auto pb-1 lg:flex-col lg:gap-0 lg:overflow-visible lg:pb-0">
+        {/* Mobile: compact step rail */}
+        <ol className="flex items-center gap-1 rounded-xl border border-border bg-card p-1.5 lg:hidden">
           {steps.map((item, index) => {
             const complete = index < step;
             const active = index === step;
             return (
-              <li className="min-w-[9rem] lg:min-w-0" key={item.id}>
+              <li className="min-w-0 flex-1" key={item.id}>
+                <button
+                  aria-current={active ? "step" : undefined}
+                  aria-label={`${item.title} (${index + 1} of ${steps.length})`}
+                  className={cn(
+                    "flex w-full flex-col items-center gap-1 rounded-lg px-1 py-2 text-center transition-colors",
+                    "outline-none focus-visible:ring-2 focus-visible:ring-ring/40",
+                    active && "bg-muted",
+                  )}
+                  onClick={() => {
+                    if (index <= step) setStep(index);
+                  }}
+                  type="button"
+                >
+                  <span
+                    className={cn(
+                      "grid size-7 place-items-center rounded-full text-xs font-semibold",
+                      (complete || active) && "bg-primary text-primary-foreground",
+                      !active && !complete && "bg-muted text-muted-foreground ring-1 ring-border",
+                    )}
+                  >
+                    {complete ? <AppIcons.check className="size-3.5" /> : index + 1}
+                  </span>
+                  <span
+                    className={cn(
+                      "w-full truncate text-[0.7rem] font-medium leading-tight",
+                      active ? "text-foreground" : "text-muted-foreground",
+                    )}
+                  >
+                    {item.title}
+                  </span>
+                </button>
+              </li>
+            );
+          })}
+        </ol>
+
+        {/* Desktop: vertical step list */}
+        <ol className="hidden lg:flex lg:flex-col">
+          {steps.map((item, index) => {
+            const complete = index < step;
+            const active = index === step;
+            return (
+              <li key={item.id}>
                 <button
                   aria-current={active ? "step" : undefined}
                   className={cn(
@@ -322,13 +366,13 @@ export function ShopOnboardingForm({
                     >
                       {item.title}
                     </span>
-                    <span className="mt-0.5 hidden text-xs leading-snug text-muted-foreground lg:block">
+                    <span className="mt-0.5 block text-xs leading-snug text-muted-foreground">
                       {item.description}
                     </span>
                   </span>
                 </button>
                 {index < steps.length - 1 ? (
-                  <div aria-hidden className="ml-[1.35rem] hidden h-3 w-px bg-border lg:block" />
+                  <div aria-hidden className="ml-[1.35rem] h-3 w-px bg-border" />
                 ) : null}
               </li>
             );
@@ -342,8 +386,8 @@ export function ShopOnboardingForm({
 
       <div className="min-w-0">
         <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
-          <div className="border-b px-6 py-6 sm:px-8 sm:py-7">
-            <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="border-b px-4 py-5 sm:px-8 sm:py-7">
+            <div className="flex flex-wrap items-start justify-between gap-3 sm:gap-4">
               <div className="min-w-0 max-w-xl">
                 <p className="text-xs font-semibold tracking-[0.06em] text-muted-foreground uppercase">
                   {t("onboarding.stepOf", {
@@ -351,16 +395,18 @@ export function ShopOnboardingForm({
                     total: String(steps.length),
                   })}
                 </p>
-                <h2 className="mt-2 text-xl font-semibold tracking-tight sm:text-[1.35rem]">
+                <h2 className="mt-2 text-lg font-semibold tracking-tight sm:text-[1.35rem]">
                   {current.title}
                 </h2>
-                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{current.detail}</p>
+                <p className="mt-2 text-sm leading-relaxed text-pretty text-muted-foreground">
+                  {current.detail}
+                </p>
               </div>
-              <Badge className="shrink-0 font-medium" variant="secondary">
+              <Badge className="hidden shrink-0 font-medium sm:inline-flex" variant="secondary">
                 {t("onboarding.estimatedTime")}
               </Badge>
             </div>
-            <div className="mt-6 h-1 overflow-hidden rounded-full bg-muted">
+            <div className="mt-5 h-1 overflow-hidden rounded-full bg-muted sm:mt-6">
               <div
                 className="h-full rounded-full bg-primary transition-[width] duration-300 ease-[var(--ease-dashboard)]"
                 style={{ width: `${((step + 1) / steps.length) * 100}%` }}
@@ -368,7 +414,7 @@ export function ShopOnboardingForm({
             </div>
           </div>
 
-          <div className="px-6 py-7 sm:px-8 sm:py-8">
+          <div className="px-4 py-6 sm:px-8 sm:py-8">
             {submitError ? (
               <Alert className="mb-7" variant="destructive">
                 <AppIcons.error />
@@ -559,61 +605,67 @@ export function ShopOnboardingForm({
 
             </form>
 
-            <div className="mt-7 flex flex-col gap-3 border-t pt-6 sm:flex-row sm:items-center sm:justify-between">
-              <Button
-                className="justify-start px-0 text-muted-foreground hover:text-foreground"
-                disabled={isSigningOut || isSubmitting}
-                onClick={() => void signOutToOtherAccount()}
-                type="button"
-                variant="link"
-              >
-                {isSigningOut ? (
-                  <>
-                    <AppIcons.loader className="animate-spin" data-icon="inline-start" />
-                    {t("account.signingOut")}
-                  </>
-                ) : (
-                  t("onboarding.otherAccount")
-                )}
-              </Button>
-              <div className="flex gap-2">
+            <div className="mt-6 flex flex-col gap-3 border-t pt-5 sm:mt-7 sm:pt-6">
+              {/*
+                Mobile: primary full-width on top (col-reverse), secondary under.
+                Desktop: row with secondary left / primary right.
+              */}
+              <div className="flex w-full flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <Button
-                  disabled={step === 0 || isSubmitting}
-                  onClick={goBack}
+                  className="w-full justify-center text-muted-foreground hover:text-foreground sm:w-auto sm:justify-start sm:px-0"
+                  disabled={isSigningOut || isSubmitting}
+                  onClick={() => void signOutToOtherAccount()}
                   type="button"
-                  variant="outline"
+                  variant="link"
                 >
-                  {t("common.back")}
-                </Button>
-                {/*
-                  Keep Continue and Create mounted separately. Swapping
-                  type=button → type=submit on the same node causes the
-                  browser to submit on the click that advances the step.
-                */}
-                <Button
-                  className={step >= lastStep ? "hidden" : undefined}
-                  disabled={!canContinue || isSubmitting}
-                  onClick={goNext}
-                  type="button"
-                >
-                  {t("common.continue")}
-                </Button>
-                <Button
-                  aria-busy={isSubmitting}
-                  className={step < lastStep ? "hidden" : undefined}
-                  disabled={!canSubmit || isSubmitting}
-                  form="onboarding-setup-form"
-                  type="submit"
-                >
-                  {isSubmitting ? (
+                  {isSigningOut ? (
                     <>
                       <AppIcons.loader className="animate-spin" data-icon="inline-start" />
-                      {t("onboarding.creatingShop")}
+                      {t("account.signingOut")}
                     </>
                   ) : (
-                    t("onboarding.createShop")
+                    t("onboarding.otherAccount")
                   )}
                 </Button>
+                <div className="flex w-full flex-col-reverse gap-2 sm:w-auto sm:flex-row sm:[&>button]:w-auto [&>button]:w-full">
+                  <Button
+                    disabled={step === 0 || isSubmitting}
+                    onClick={goBack}
+                    type="button"
+                    variant="outline"
+                  >
+                    {t("common.back")}
+                  </Button>
+                  {/*
+                    Keep Continue and Create mounted separately. Swapping
+                    type=button → type=submit on the same node causes the
+                    browser to submit on the click that advances the step.
+                  */}
+                  <Button
+                    className={step >= lastStep ? "hidden" : undefined}
+                    disabled={!canContinue || isSubmitting}
+                    onClick={goNext}
+                    type="button"
+                  >
+                    {t("common.continue")}
+                  </Button>
+                  <Button
+                    aria-busy={isSubmitting}
+                    className={step < lastStep ? "hidden" : undefined}
+                    disabled={!canSubmit || isSubmitting}
+                    form="onboarding-setup-form"
+                    type="submit"
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <AppIcons.loader className="animate-spin" data-icon="inline-start" />
+                        {t("onboarding.creatingShop")}
+                      </>
+                    ) : (
+                      t("onboarding.createShop")
+                    )}
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
@@ -823,9 +875,9 @@ function ReviewItem({
   value: string;
 }) {
   return (
-    <div className={className}>
+    <div className={cn("min-w-0", className)}>
       <dt className="text-xs font-medium tracking-wide text-muted-foreground">{label}</dt>
-      <dd className="mt-1.5 truncate text-sm font-medium">{value}</dd>
+      <dd className="mt-1.5 break-words text-sm font-medium text-pretty">{value}</dd>
     </div>
   );
 }

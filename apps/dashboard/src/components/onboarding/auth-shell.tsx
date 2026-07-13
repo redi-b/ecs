@@ -35,34 +35,44 @@ export async function AuthShell({
   const t = (key: keyof typeof messages) => messages[key];
   const footer = brandFooter ?? t("auth.brandFooter");
 
+  const tools = (
+    <div className="flex shrink-0 items-center gap-0.5 rounded-full border border-border bg-card p-0.5 shadow-sm sm:gap-1 sm:p-1">
+      {toolbar}
+      <LanguageSwitcher />
+      <ThemeToggle />
+    </div>
+  );
+
   return (
     <div className={cn("relative min-h-screen bg-background text-foreground", className)}>
-      <div className="fixed top-4 right-4 z-50 flex items-center gap-1 rounded-full border border-border bg-card p-1 shadow-sm">
-        {toolbar}
-        <LanguageSwitcher />
-        <ThemeToggle />
-      </div>
+      {/* Desktop only: floating tools. Mobile tools sit in the brand row so they never overlay copy. */}
+      <div className="fixed top-4 right-4 z-50 hidden sm:block">{tools}</div>
 
       {layout === "auth" ? (
         <div className="grid min-h-screen w-full lg:grid-cols-2">
-          <aside className="flex flex-col border-b px-6 py-8 sm:px-10 lg:min-h-screen lg:border-r lg:border-b-0 lg:px-12 lg:py-12 xl:px-16">
+          <aside className="flex flex-col border-b px-5 py-7 sm:px-10 sm:py-8 lg:min-h-screen lg:border-r lg:border-b-0 lg:px-12 lg:py-12 xl:px-16">
             <div className="mx-auto flex w-full max-w-md flex-1 flex-col">
-              <div className="flex shrink-0 items-center gap-2.5 pr-16 lg:pr-0">
-                <BrandMark tagline={t("auth.brandTagline")} />
+              <div className="flex shrink-0 items-center justify-between gap-3">
+                <div className="flex min-w-0 items-center gap-2.5">
+                  <BrandMark tagline={t("auth.brandTagline")} />
+                </div>
+                <div className="sm:hidden">{tools}</div>
               </div>
 
-              <div className="mt-10 flex flex-1 flex-col justify-center lg:mt-0">
+              {/* On small screens keep brand short so the form is above the fold. */}
+              <div className="mt-6 flex flex-1 flex-col justify-center sm:mt-10 lg:mt-0">
                 <BrandCopy
                   brandDescription={brandDescription}
                   brandPoints={brandPoints}
                   brandTitle={brandTitle}
+                  compactOnMobile
                   eyebrow={t("auth.merchantConsole")}
-                  titleClassName="text-3xl sm:text-[2.15rem] sm:leading-tight"
+                  titleClassName="text-2xl sm:text-3xl sm:text-[2.15rem] sm:leading-tight"
                 />
               </div>
 
               {footer ? (
-                <p className="mt-10 shrink-0 text-xs leading-relaxed text-muted-foreground lg:mt-0">
+                <p className="mt-8 hidden shrink-0 text-xs leading-relaxed text-muted-foreground sm:mt-10 sm:block lg:mt-0">
                   {footer}
                 </p>
               ) : null}
@@ -70,27 +80,33 @@ export async function AuthShell({
           </aside>
 
           {/* Full half-width column; card centered on both axes, capped width. */}
-          <div className="flex min-h-full items-center justify-center px-5 py-12 sm:px-10 lg:px-12 lg:py-14">
+          <div className="flex min-h-full items-start justify-center px-4 py-8 sm:items-center sm:px-10 sm:py-12 lg:px-12 lg:py-14">
             <div className="w-full max-w-md">{children}</div>
           </div>
         </div>
       ) : (
         <div className="relative mx-auto flex min-h-screen w-full max-w-6xl flex-col">
-          <aside className="flex flex-col border-b px-6 py-8 sm:px-10 sm:py-10 lg:px-14 lg:py-12 lg:pb-10">
-            <div className="flex shrink-0 items-center gap-2.5 pr-28">
-              <BrandMark tagline={t("auth.brandTagline")} />
+          <aside className="flex flex-col border-b px-4 py-6 sm:px-10 sm:py-10 lg:px-14 lg:py-12 lg:pb-10">
+            <div className="flex shrink-0 items-center justify-between gap-3">
+              <div className="flex min-w-0 items-center gap-2.5">
+                <BrandMark tagline={t("auth.brandTagline")} />
+              </div>
+              <div className="sm:hidden">{tools}</div>
             </div>
-            <div className="mt-8 max-w-2xl sm:mt-10">
+            <div className="mt-6 max-w-2xl sm:mt-10">
               <BrandCopy
                 brandDescription={brandDescription}
                 brandPoints={brandPoints}
                 brandTitle={brandTitle}
+                compactOnMobile
                 eyebrow={t("auth.merchantConsole")}
-                titleClassName="text-2xl sm:text-3xl"
+                titleClassName="text-xl sm:text-2xl sm:text-3xl"
               />
             </div>
           </aside>
-          <div className="px-5 pb-12 pt-8 sm:px-10 sm:pt-10 lg:px-12 lg:pt-12">{children}</div>
+          <div className="px-4 pb-10 pt-6 sm:px-10 sm:pb-12 sm:pt-10 lg:px-12 lg:pt-12">
+            {children}
+          </div>
         </div>
       )}
     </div>
@@ -118,26 +134,38 @@ function BrandCopy({
   brandDescription,
   brandPoints,
   brandTitle,
+  compactOnMobile = false,
   eyebrow,
   titleClassName,
 }: {
   brandDescription: string;
   brandPoints: string[];
   brandTitle: string;
+  compactOnMobile?: boolean;
   eyebrow: string;
   titleClassName: string;
 }) {
   return (
     <>
       <p className="text-xs font-semibold tracking-[0.08em] text-primary uppercase">{eyebrow}</p>
-      <h1 className={cn("mt-3 font-semibold tracking-tight text-balance", titleClassName)}>
+      <h1 className={cn("mt-2 font-semibold tracking-tight text-balance sm:mt-3", titleClassName)}>
         {brandTitle}
       </h1>
-      <p className="mt-3.5 max-w-prose text-sm leading-relaxed text-pretty text-muted-foreground sm:text-[0.95rem]">
+      <p
+        className={cn(
+          "mt-2.5 max-w-prose text-sm leading-relaxed text-pretty text-muted-foreground sm:mt-3.5 sm:text-[0.95rem]",
+          compactOnMobile && "line-clamp-3 sm:line-clamp-none",
+        )}
+      >
         {brandDescription}
       </p>
       {brandPoints.length > 0 ? (
-        <ul className="mt-8 space-y-3.5">
+        <ul
+          className={cn(
+            "mt-6 space-y-3 sm:mt-8 sm:space-y-3.5",
+            compactOnMobile && "hidden sm:block",
+          )}
+        >
           {brandPoints.map((point) => (
             <li className="flex gap-3 text-sm" key={point}>
               <span aria-hidden className="mt-2 size-1.5 shrink-0 rounded-full bg-primary" />

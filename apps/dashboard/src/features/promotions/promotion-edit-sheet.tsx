@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/select";
 import {
   Sheet,
+  SheetBody,
   SheetContent,
   SheetDescription,
   SheetFooter,
@@ -234,15 +235,15 @@ export function PromotionEditSheet({
 
   return (
     <Sheet onOpenChange={onOpenChange} open={open}>
-      <SheetContent className="flex w-full flex-col gap-0 p-0 sm:max-w-lg" side="right">
-        <SheetHeader className="border-b px-5 py-4 pr-12 text-left">
+      <SheetContent className="w-full sm:max-w-lg" side="right">
+        <SheetHeader className="px-5 py-4 text-left">
           <SheetTitle>Edit promotion</SheetTitle>
           <SheetDescription>
             {promotion ? offerSummary(promotion) : "Update code, status, products, and schedule."}
           </SheetDescription>
         </SheetHeader>
 
-        <div className="grid flex-1 content-start gap-5 overflow-y-auto px-5 py-5">
+        <SheetBody className="grid content-start gap-5 px-5 py-5">
           <Field>
             <FieldLabel htmlFor="promo-edit-code">Promotion code</FieldLabel>
             <Input
@@ -502,9 +503,9 @@ export function PromotionEditSheet({
               {promotion.usageCount === 1 ? "" : "s"}.
             </p>
           ) : null}
-        </div>
+        </SheetBody>
 
-        <SheetFooter className="flex-row justify-end gap-2 border-t bg-muted/30 px-5 py-4">
+        <SheetFooter className="flex-row justify-end gap-2 px-5 py-4">
           <Button onClick={() => onOpenChange(false)} type="button" variant="outline">
             Cancel
           </Button>

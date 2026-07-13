@@ -96,6 +96,14 @@ function DialogHeader({ className, ...props }: React.ComponentProps<"div">) {
   );
 }
 
+/**
+ * Mobile: full-width stacked actions (primary last in DOM → top via col-reverse).
+ * Desktop: inline end-aligned row.
+ * Use for custom footers that are not `DialogFooter` (full-screen composers).
+ */
+const dialogFooterActionsClassName =
+  "flex w-full flex-col-reverse gap-2 sm:w-auto sm:flex-row sm:justify-end [&>button]:w-full sm:[&>button]:w-auto";
+
 function DialogFooter({
   className,
   showCloseButton = false,
@@ -108,7 +116,10 @@ function DialogFooter({
     <div
       data-slot="dialog-footer"
       className={cn(
+        // Negative margins cancel DialogContent padding so the footer is edge-to-edge.
         "-mx-4 -mb-4 flex flex-col-reverse gap-2 rounded-b-xl border-t bg-muted/50 p-4 sm:flex-row sm:justify-end",
+        // Direct button children fill width on mobile (Cancel under primary).
+        "[&>button]:w-full sm:[&>button]:w-auto",
         className,
       )}
       {...props}
@@ -160,4 +171,5 @@ export {
   DialogPortal,
   DialogTitle,
   DialogTrigger,
+  dialogFooterActionsClassName,
 };

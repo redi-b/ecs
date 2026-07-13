@@ -335,9 +335,9 @@ export function StorefrontVisualEditor({
   return (
     <div
       className={cn(
-        "storefront-puck-editor flex flex-col gap-4 transition-all duration-300 ease-out",
+        "storefront-puck-editor flex min-h-0 flex-1 flex-col transition-all duration-300 ease-out",
         isFullscreen &&
-          "fixed inset-0 z-50 animate-in fade-in-0 bg-background p-3 duration-200",
+          "fixed inset-0 z-50 animate-in fade-in-0 bg-background p-2 duration-200 sm:p-3",
       )}
     >
       <Puck
