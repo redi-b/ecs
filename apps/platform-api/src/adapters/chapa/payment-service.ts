@@ -2,6 +2,15 @@ import type { ChapaPaymentCallbackResult } from "../../types/index.js";
 
 type ChapaPaymentServiceOptions = {
   apiUrl?: string | undefined;
+  /**
+   * Called after a successful Chapa verification so Medusa payment/order
+   * state can be updated (capture / mark paid).
+   */
+  onVerifiedSuccess?: (input: {
+    providerReference: string | null;
+    tenantId: string;
+    txRef: string;
+  }) => Promise<void>;
   recordAnalyticsEvent?: (input: {
     eventType: string;
     idempotencyKey?: string | null | undefined;
@@ -100,6 +109,8 @@ export function createChapaPaymentService(options: ChapaPaymentServiceOptions) {
   }
 
   return {
+    verifyPayment,
+
     handleChapaPaymentCallback: async (input: {
       providerReference?: string | null | undefined;
       reportedStatus?: string | null | undefined;
@@ -224,6 +235,29 @@ export function createChapaPaymentService(options: ChapaPaymentServiceOptions) {
         },
         tenantId,
       });
+
+      if (verifiedStatus === "success" && options.onVerifiedSuccess) {
+        try {
+          await options.onVerifiedSuccess({
+            providerReference,
+            tenantId,
+            txRef,
+          });
+        } catch {
+          // Medusa update failures are logged via analytics; webhook still ok.
+          await recordPaymentAnalyticsEvent({
+            eventType: "payment.webhook_failed",
+            properties: {
+              reason: "medusa_capture_failed",
+              providerReference,
+              txRef,
+            },
+            recordAnalyticsEvent: options.recordAnalyticsEvent,
+            tenantId,
+            txRef,
+          });
+        }
+      }
 
       return {
         ok: true,

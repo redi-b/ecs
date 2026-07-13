@@ -1,7 +1,8 @@
 import { loadServiceEnv } from "@ecs/config";
-import { createPlatformDb } from "@ecs/db";
+import { createPlatformDb, tenants } from "@ecs/db";
 import { createLogger } from "@ecs/logger";
 import { serve } from "@hono/node-server";
+import { eq } from "drizzle-orm";
 import { createChapaPaymentService } from "./adapters/chapa/payment-service.js";
 import { createMedusaCommerceProvisioningClient } from "./adapters/medusa/commerce-provisioning.js";
 import { createMedusaCustomerService } from "./adapters/medusa/customer-service.js";
@@ -102,12 +103,6 @@ const getTenantForUser = createTenantDetailService(platformDb.db);
 const listTenantsForUser = createTenantListService(platformDb.db);
 const tenantStatusService = createTenantStatusService(platformDb.db);
 const paymentOnboardingService = createPaymentOnboardingService(platformDb.db);
-const chapaPaymentService = createChapaPaymentService({
-  apiUrl: process.env.CHAPA_API_URL,
-  recordAnalyticsEvent: analyticsService.recordAnalyticsEvent,
-  recordNotificationEvent: notificationService.recordNotificationEvent,
-  secretKey: process.env.CHAPA_SECRET_KEY,
-});
 const medusaInternalUrl = process.env.MEDUSA_INTERNAL_URL ?? "http://localhost:9000";
 const customerService = createMedusaCustomerService({
   adminApiToken: process.env.MEDUSA_ADMIN_API_TOKEN,
@@ -162,6 +157,100 @@ const productService = createMedusaProductService({
   adminApiToken: process.env.MEDUSA_ADMIN_API_TOKEN,
   medusaInternalUrl,
 });
+
+async function resolveTenantSalesChannelId(tenantId: string) {
+  const [row] = await platformDb.db
+    .select({ medusaSalesChannelId: tenants.medusaSalesChannelId })
+    .from(tenants)
+    .where(eq(tenants.id, tenantId))
+    .limit(1);
+  return row?.medusaSalesChannelId?.trim() || null;
+}
+
+const chapaPaymentService = createChapaPaymentService({
+  apiUrl: process.env.CHAPA_API_URL,
+  onVerifiedSuccess: async ({ tenantId, txRef }) => {
+    const salesChannelId = await resolveTenantSalesChannelId(tenantId);
+    if (!salesChannelId) {
+      return;
+    }
+    await orderService.capturePaymentByTxRef({
+      salesChannelId,
+      source: "chapa_webhook",
+      txRef,
+    });
+  },
+  recordAnalyticsEvent: analyticsService.recordAnalyticsEvent,
+  recordNotificationEvent: notificationService.recordNotificationEvent,
+  secretKey: process.env.CHAPA_SECRET_KEY,
+});
+
+async function recheckMerchantOrderPayment(input: {
+  orderId: string;
+  salesChannelId: string;
+  tenantId: string;
+}) {
+  const existing = await orderService.getMerchantOrder({
+    orderId: input.orderId,
+    salesChannelId: input.salesChannelId,
+  });
+  if (!existing.ok) {
+    return existing;
+  }
+
+  const txRef = existing.order.paymentReference?.trim();
+  if (!txRef) {
+    return {
+      ok: false as const,
+      error: "order_not_fulfillable" as const,
+      status: 409 as const,
+    };
+  }
+
+  let verification: Awaited<ReturnType<typeof chapaPaymentService.verifyPayment>>;
+  try {
+    verification = await chapaPaymentService.verifyPayment(txRef);
+  } catch {
+    return {
+      ok: false as const,
+      error: "commerce_backend_unavailable" as const,
+      status: 503 as const,
+    };
+  }
+
+  if (!verification) {
+    return {
+      ok: false as const,
+      error: "order_not_found" as const,
+      status: 404 as const,
+    };
+  }
+
+  const status = (
+    typeof verification.data?.status === "string"
+      ? verification.data.status
+      : typeof verification.status === "string"
+        ? verification.status
+        : ""
+  )
+    .trim()
+    .toLowerCase();
+
+  if (status !== "success") {
+    return {
+      ok: false as const,
+      error: "order_not_fulfillable" as const,
+      status: 409 as const,
+    };
+  }
+
+  return orderService.markMerchantOrderPaid({
+    orderId: input.orderId,
+    paymentReference: txRef,
+    salesChannelId: input.salesChannelId,
+    source: "chapa_recheck",
+  });
+}
 const auth = createPlatformAuth({
   baseUrl: process.env.BETTER_AUTH_URL ?? "http://api.lvh.me",
   cookieDomain: process.env.BETTER_AUTH_COOKIE_DOMAIN,
@@ -237,6 +326,8 @@ const app = createPlatformApp({
   listTenantDomains: domainManagementService.listTenantDomains,
   listStorefrontTemplates: storefrontTemplateService.listStorefrontTemplates,
   mutateMerchantOrder: orderService.mutateMerchantOrder,
+  recheckMerchantOrderPayment,
+  captureOrderPaymentByTxRef: orderService.capturePaymentByTxRef,
   publishStorefrontDraft: storefrontTemplateService.publishStorefrontDraft,
   recordAnalyticsEvent: analyticsService.recordAnalyticsEvent,
   recordNotificationEvent: notificationService.recordNotificationEvent,

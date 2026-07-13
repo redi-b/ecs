@@ -108,6 +108,8 @@ export function createMedusaManualOrderService(options: Options) {
         created_by_user_id: input.userId,
         created_from: "dashboard_manual_order",
         note: input.note?.trim() || null,
+        payment_method: "cod",
+        checkout_type: "cod",
         platform_tenant_id: input.tenantId,
       },
     };

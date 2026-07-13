@@ -6,15 +6,55 @@ export type MerchantOrderDelivery = {
   notes: string | null;
 };
 
+export type MerchantOrderPaymentMethod = "cod" | "chapa" | "unknown";
+
+/** Merchant-facing progress (not Medusa jargon). */
+export type MerchantOrderProgressFilter =
+  | "new"
+  | "ready"
+  | "completed"
+  | "canceled"
+  | "open";
+
+export type MerchantOrderPaymentFilter = "unpaid" | "paid" | "failed";
+
+export type MerchantOrderMethodFilter = "cod" | "chapa";
+
+export type MerchantOrderDeliveryFilter = "delivery" | "pickup";
+
+export type MerchantOrderCreatedPreset = "today" | "last_7_days" | "last_30_days";
+
+export type MerchantOrderListQuery = {
+  created?: MerchantOrderCreatedPreset | undefined;
+  createdFrom?: string | undefined;
+  createdTo?: string | undefined;
+  delivery?: MerchantOrderDeliveryFilter | undefined;
+  limit: number;
+  offset: number;
+  paymentMethod?: MerchantOrderMethodFilter | undefined;
+  paymentStatus?: MerchantOrderPaymentFilter | undefined;
+  progress?: MerchantOrderProgressFilter | undefined;
+  q?: string | undefined;
+  salesChannelId: string;
+};
+
 export type MerchantOrder = {
   id: string;
   displayId: number | null;
   email: string | null;
+  customerId?: string | null;
   status: string | null;
   paymentStatus: string | null;
   fulfillmentStatus: string | null;
+  paymentMethod?: MerchantOrderPaymentMethod | null;
+  paymentReference?: string | null;
+  note?: string | null;
   currencyCode: string | null;
   total: number | null;
+  subtotal?: number | null;
+  shippingTotal?: number | null;
+  discountTotal?: number | null;
+  itemCount?: number | null;
   delivery?: MerchantOrderDelivery;
   fulfillments?: MerchantOrderFulfillment[];
   items?: MerchantOrderLineItem[];
@@ -89,6 +129,13 @@ export type MerchantOrderDetailResult =
       status: 401 | 404 | 409 | 503;
     };
 
-export type MerchantOrderAction = "cancel" | "complete" | "deliver" | "fulfill";
+export type MerchantOrderAction =
+  | "cancel"
+  | "complete"
+  | "deliver"
+  | "fulfill"
+  | "mark-paid"
+  | "recheck-payment"
+  | "finish";
 
 export type MerchantOrderActionResult = MerchantOrderDetailResult;

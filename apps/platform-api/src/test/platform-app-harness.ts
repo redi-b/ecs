@@ -303,11 +303,9 @@ export function appWithResolution(
       offset: number;
       tenantId: string;
     }) => Promise<MerchantProductCollectionsResult>;
-    listMerchantOrders?: (input: {
-      limit: number;
-      offset: number;
-      salesChannelId: string;
-    }) => Promise<MerchantOrdersResult>;
+    listMerchantOrders?: (
+      input: import("../types/merchant-order.js").MerchantOrderListQuery,
+    ) => Promise<MerchantOrdersResult>;
     listNotificationPreferences?: (input: {
       tenantId: string;
     }) => Promise<NotificationPreferenceListResult>;

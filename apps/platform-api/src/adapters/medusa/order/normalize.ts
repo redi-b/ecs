@@ -1,4 +1,4 @@
-import type { MerchantOrder } from "../../../types/index.js";
+import type { MerchantOrder, MerchantOrderPaymentMethod } from "../../../types/index.js";
 import { getNumber, getString, isRecord } from "./values.js";
 
 export function normalizeOrder(value: unknown, salesChannelId: string): MerchantOrder[] {
@@ -21,24 +21,50 @@ export function normalizeOrder(value: unknown, salesChannelId: string): Merchant
   const fulfillments = getFulfillments(value.fulfillments);
   const shippingAddress = getShippingAddress(value.shipping_address);
   const delivery = getDeliveryDetails(value);
+  const metadata = isRecord(value.metadata) ? value.metadata : {};
 
   const items = getLineItems(value.items);
   const total =
     getNumber(value.total) ??
-    (items.length
-      ? items.reduce((sum, item) => sum + (item.total ?? 0), 0)
-      : null);
+    (items.length ? items.reduce((sum, item) => sum + (item.total ?? 0), 0) : null);
+
+  const paymentMethod = resolvePaymentMethod(value, metadata);
+  const paymentReference = resolvePaymentReference(metadata, value);
+  const note =
+    getString(metadata.note) ??
+    getString(metadata.internal_note) ??
+    getString(metadata.customer_notes) ??
+    null;
+  const customerId = getString(value.customer_id) ?? null;
+  const itemCount =
+    items.length > 0
+      ? items.reduce((sum, item) => sum + (item.quantity ?? 0), 0)
+      : (getNumber(value.items_count) ?? null);
+
+  // Prefer real payment_status; allow explicit dashboard override only when still unpaid-ish.
+  const rawPaymentStatus = getString(value.payment_status);
+  const overridePaid = normalizeKey(getString(metadata.payment_status_override)) === "paid";
+  const paymentStatus =
+    overridePaid && isUnpaidPaymentStatus(rawPaymentStatus) ? "captured" : rawPaymentStatus;
 
   return [
     {
       id,
       displayId: getNumber(value.display_id) ?? null,
       email: getString(value.email),
+      customerId,
       status: getString(value.status),
-      paymentStatus: getString(value.payment_status),
+      paymentStatus,
       fulfillmentStatus: getString(value.fulfillment_status),
+      paymentMethod,
+      paymentReference,
+      note,
       currencyCode: getString(value.currency_code),
       total,
+      subtotal: getNumber(value.subtotal) ?? null,
+      shippingTotal: getNumber(value.shipping_total) ?? null,
+      discountTotal: getNumber(value.discount_total) ?? null,
+      itemCount,
       ...(delivery ? { delivery } : {}),
       ...(fulfillments.length === 0 ? {} : { fulfillments }),
       items,
@@ -47,6 +73,101 @@ export function normalizeOrder(value: unknown, salesChannelId: string): Merchant
       updatedAt: getString(value.updated_at),
     },
   ];
+}
+
+function normalizeKey(value: string | null | undefined) {
+  return value?.trim().toLowerCase() ?? "";
+}
+
+function isUnpaidPaymentStatus(value: string | null) {
+  const key = normalizeKey(value);
+  if (!key) return true;
+  if (key.includes("captured") || key === "paid" || key.includes("refund")) return false;
+  return true;
+}
+
+export function resolvePaymentMethod(
+  order: Record<string, unknown>,
+  metadata: Record<string, unknown>,
+): MerchantOrderPaymentMethod {
+  const fromMeta =
+    getString(metadata.payment_method) ??
+    getString(metadata.checkout_type) ??
+    getString(metadata.paymentMethod);
+
+  const metaKey = normalizeKey(fromMeta);
+  if (metaKey === "cod" || metaKey === "cash_on_delivery" || metaKey === "cash") {
+    return "cod";
+  }
+  if (metaKey === "chapa" || metaKey === "online" || metaKey.includes("chapa")) {
+    return "chapa";
+  }
+
+  const createdFrom = normalizeKey(getString(metadata.created_from));
+  if (createdFrom.includes("manual") || createdFrom.includes("dashboard")) {
+    return "cod";
+  }
+
+  // Inspect payment collections / sessions when present on detail payloads.
+  const collections = Array.isArray(order.payment_collections)
+    ? order.payment_collections
+    : Array.isArray(order.payment_collection)
+      ? [order.payment_collection]
+      : [];
+
+  for (const collection of collections) {
+    if (!isRecord(collection)) continue;
+    const sessions = Array.isArray(collection.payment_sessions)
+      ? collection.payment_sessions
+      : [];
+    for (const session of sessions) {
+      if (!isRecord(session)) continue;
+      const provider = normalizeKey(getString(session.provider_id));
+      if (provider.includes("chapa")) return "chapa";
+      if (provider.includes("system") || provider.includes("manual")) {
+        const sessionData = isRecord(session.data) ? session.data : {};
+        const sessionMethod = normalizeKey(
+          getString(sessionData.payment_method) ?? getString(sessionData.method),
+        );
+        if (sessionMethod === "cod" || sessionMethod.includes("cash")) return "cod";
+      }
+    }
+  }
+
+  return "unknown";
+}
+
+function resolvePaymentReference(
+  metadata: Record<string, unknown>,
+  order: Record<string, unknown>,
+) {
+  const fromMeta =
+    getString(metadata.payment_reference) ??
+    getString(metadata.tx_ref) ??
+    getString(metadata.chapa_tx_ref) ??
+    getString(metadata.provider_reference);
+
+  if (fromMeta) return fromMeta;
+
+  const collections = Array.isArray(order.payment_collections)
+    ? order.payment_collections
+    : [];
+
+  for (const collection of collections) {
+    if (!isRecord(collection)) continue;
+    const sessions = Array.isArray(collection.payment_sessions)
+      ? collection.payment_sessions
+      : [];
+    for (const session of sessions) {
+      if (!isRecord(session)) continue;
+      const data = isRecord(session.data) ? session.data : {};
+      const ref =
+        getString(data.tx_ref) ?? getString(data.txRef) ?? getString(data.reference);
+      if (ref) return ref;
+    }
+  }
+
+  return null;
 }
 
 export function getFulfillments(value: unknown) {
@@ -147,13 +268,9 @@ export function getLineItems(value: unknown) {
     const fulfilledQuantity = getItemFulfilledQuantity(item);
     const detail = isRecord(item.detail) ? item.detail : null;
     const quantity =
-      getNumber(item.quantity) ??
-      (detail ? getNumber(detail.quantity) : undefined) ??
-      null;
+      getNumber(item.quantity) ?? (detail ? getNumber(detail.quantity) : undefined) ?? null;
     const unitPrice =
-      getNumber(item.unit_price) ??
-      (detail ? getNumber(detail.unit_price) : undefined) ??
-      null;
+      getNumber(item.unit_price) ?? (detail ? getNumber(detail.unit_price) : undefined) ?? null;
     // Prefer computed line total when Medusa returns 0/empty totals with a real unit price.
     const reportedTotal = getNumber(item.total) ?? getNumber(item.subtotal);
     const computedTotal =

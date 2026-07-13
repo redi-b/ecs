@@ -471,11 +471,7 @@ export type PlatformAppOptions = {
       }) => Promise<MerchantProductStockUpdateResult>)
     | undefined;
   listMerchantOrders?:
-    | ((input: {
-        limit: number;
-        offset: number;
-        salesChannelId: string;
-      }) => Promise<MerchantOrdersResult>)
+    | ((input: import("./merchant-order.js").MerchantOrderListQuery) => Promise<MerchantOrdersResult>)
     | undefined;
   getMerchantOrder?:
     | ((input: { orderId: string; salesChannelId: string }) => Promise<MerchantOrderDetailResult>)
@@ -528,10 +524,25 @@ export type PlatformAppOptions = {
     | ((input: {
         action: MerchantOrderAction;
         fulfillmentId?: string | undefined;
+        markPaid?: boolean | undefined;
         orderId: string;
         salesChannelId: string;
         stockLocationId?: string | undefined;
       }) => Promise<MerchantOrderActionResult>)
+    | undefined;
+  recheckMerchantOrderPayment?:
+    | ((input: {
+        orderId: string;
+        salesChannelId: string;
+        tenantId: string;
+      }) => Promise<MerchantOrderActionResult>)
+    | undefined;
+  captureOrderPaymentByTxRef?:
+    | ((input: {
+        salesChannelId: string;
+        source?: "chapa_webhook" | "chapa_recheck" | undefined;
+        txRef: string;
+      }) => Promise<MerchantOrderActionResult | { ok: false; error: "order_not_found"; status: 404 }>)
     | undefined;
   listNotificationPreferences?:
     | ((input: { tenantId: string }) => Promise<NotificationPreferenceListResult>)

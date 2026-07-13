@@ -1,5 +1,6 @@
 import type { Context, Hono } from "hono";
 import type { MerchantOrderAction, PlatformAppOptions, PlatformAppVariables } from "../../app.js";
+import { parseMerchantOrderListQuery } from "../../adapters/medusa/order/list-query.js";
 import { getPaginationValue, getRequestHost, storeErrorStatus } from "../shared.js";
 import type { MerchantRouteHelpers } from "./context.js";
 
@@ -45,11 +46,27 @@ export function registerMerchantOrderRoutes(
       return context.json({ error: "commerce_backend_unavailable" }, 503);
     }
 
-    const orders = await options.listMerchantOrders({
-      limit: getPaginationValue(context.req.query("limit"), 20, 100),
-      offset: getPaginationValue(context.req.query("offset"), 0, 10_000),
-      salesChannelId: commerce.context.medusaSalesChannelId,
-    });
+    const orders = await options.listMerchantOrders(
+      parseMerchantOrderListQuery(
+        {
+          created: context.req.query("created"),
+          createdFrom: context.req.query("createdFrom"),
+          createdTo: context.req.query("createdTo"),
+          delivery: context.req.query("delivery"),
+          method: context.req.query("method"),
+          payment: context.req.query("payment"),
+          paymentMethod: context.req.query("paymentMethod"),
+          paymentStatus: context.req.query("paymentStatus"),
+          progress: context.req.query("progress"),
+          q: context.req.query("q"),
+        },
+        {
+          limit: getPaginationValue(context.req.query("limit"), 20, 100),
+          offset: getPaginationValue(context.req.query("offset"), 0, 10_000),
+          salesChannelId: commerce.context.medusaSalesChannelId,
+        },
+      ),
+    );
 
     if (!orders.ok) {
       return context.json({ error: orders.error }, orders.status);
@@ -179,4 +196,103 @@ export function registerMerchantOrderRoutes(
   app.post("/platform/merchant/orders/:orderId/fulfillments/:fulfillmentId/deliver", (context) =>
     mutateResolvedMerchantOrder(context, "deliver"),
   );
+
+  app.post("/platform/merchant/orders/:orderId/mark-paid", (context) =>
+    mutateResolvedMerchantOrder(context, "mark-paid"),
+  );
+
+  app.post("/platform/merchant/orders/:orderId/finish", async (context) => {
+    if (!options.mutateMerchantOrder) {
+      return context.json({ error: "commerce_backend_unavailable" }, 503);
+    }
+
+    const merchant = await getAuthorizedMerchantContext(context);
+    if (!merchant.ok) {
+      return merchant.response;
+    }
+
+    const body = (await context.req.json().catch(() => ({}))) as { markPaid?: unknown };
+    const markPaid = body.markPaid === true;
+
+    const commerce = getResolvedCommerce(merchant.result.context, {
+      requireStockLocation: true,
+    });
+    if (!commerce.ok) {
+      // Finish may not need stock if already fulfilled — retry without requirement.
+      const loose = getResolvedCommerce(merchant.result.context);
+      if (!loose.ok) {
+        return context.json({ error: loose.error }, loose.status);
+      }
+
+      const orderId = context.req.param("orderId");
+      if (!orderId) {
+        return context.json({ error: "order_not_found" }, 404);
+      }
+
+      const order = await options.mutateMerchantOrder({
+        action: "finish",
+        markPaid,
+        orderId,
+        salesChannelId: loose.context.medusaSalesChannelId,
+        stockLocationId: loose.context.medusaStockLocationId ?? undefined,
+      });
+
+      if (!order.ok) {
+        return context.json({ error: order.error }, order.status);
+      }
+      return context.json({ order: order.order });
+    }
+
+    const orderId = context.req.param("orderId");
+    if (!orderId) {
+      return context.json({ error: "order_not_found" }, 404);
+    }
+
+    const order = await options.mutateMerchantOrder({
+      action: "finish",
+      markPaid,
+      orderId,
+      salesChannelId: commerce.context.medusaSalesChannelId,
+      stockLocationId: commerce.context.medusaStockLocationId ?? undefined,
+    });
+
+    if (!order.ok) {
+      return context.json({ error: order.error }, order.status);
+    }
+
+    return context.json({ order: order.order });
+  });
+
+  app.post("/platform/merchant/orders/:orderId/recheck-payment", async (context) => {
+    if (!options.recheckMerchantOrderPayment) {
+      return context.json({ error: "commerce_backend_unavailable" }, 503);
+    }
+
+    const merchant = await getAuthorizedMerchantContext(context);
+    if (!merchant.ok) {
+      return merchant.response;
+    }
+
+    const commerce = getResolvedCommerce(merchant.result.context);
+    if (!commerce.ok) {
+      return context.json({ error: commerce.error }, commerce.status);
+    }
+
+    const orderId = context.req.param("orderId");
+    if (!orderId) {
+      return context.json({ error: "order_not_found" }, 404);
+    }
+
+    const result = await options.recheckMerchantOrderPayment({
+      orderId,
+      salesChannelId: commerce.context.medusaSalesChannelId,
+      tenantId: merchant.result.context.tenantId,
+    });
+
+    if (!result.ok) {
+      return context.json({ error: result.error }, result.status);
+    }
+
+    return context.json({ order: result.order });
+  });
 }

@@ -361,15 +361,27 @@ export type MerchantProductStock = z.infer<typeof merchantProductStockSchema>;
 
 export type MerchantProductStockResponse = z.infer<typeof merchantProductStockResponseSchema>;
 
+export const merchantOrderPaymentMethodSchema = z.enum(["cod", "chapa", "unknown"]);
+
+export type MerchantOrderPaymentMethod = z.infer<typeof merchantOrderPaymentMethodSchema>;
+
 export const merchantOrderSchema = z.object({
   id: z.string().min(1),
   displayId: z.number().int().nullable(),
   email: z.string().min(1).nullable(),
+  customerId: z.string().min(1).nullable().optional(),
   status: z.string().min(1).nullable(),
   paymentStatus: z.string().min(1).nullable(),
   fulfillmentStatus: z.string().min(1).nullable(),
+  paymentMethod: merchantOrderPaymentMethodSchema.nullable().optional(),
+  paymentReference: z.string().min(1).nullable().optional(),
+  note: z.string().min(1).nullable().optional(),
   currencyCode: z.string().min(1).nullable(),
   total: z.number().nullable(),
+  subtotal: z.number().nullable().optional(),
+  shippingTotal: z.number().nullable().optional(),
+  discountTotal: z.number().nullable().optional(),
+  itemCount: z.number().int().nonnegative().nullable().optional(),
   delivery: z
     .object({
       choice: z.string().min(1).nullable(),

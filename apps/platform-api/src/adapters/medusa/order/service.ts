@@ -1,7 +1,9 @@
 import type {
+  MerchantOrder,
   MerchantOrderAction,
   MerchantOrderActionResult,
   MerchantOrderDetailResult,
+  MerchantOrderListQuery,
   MerchantOrdersResult,
 } from "../../../types/index.js";
 import {
@@ -9,10 +11,22 @@ import {
   fulfillMerchantOrder,
   getMerchantOrderForAction,
 } from "./actions.js";
+import {
+  applyOrderListPostFilters,
+  needsPostFilter,
+} from "./list-query.js";
 import { getAdminHeaders, missingCredentials, requestMedusa } from "./medusa-http.js";
 import { normalizeOrder } from "./normalize.js";
+import {
+  capturePaymentByTxRef,
+  finishMerchantOrder,
+  markMerchantOrderPaid,
+} from "./payment-actions.js";
 import { getOrderActionUrl, getOrdersUrl, getOrderUrl } from "./urls.js";
 import { getNumber } from "./values.js";
+
+const POST_FILTER_SCAN_LIMIT = 500;
+const POST_FILTER_PAGE_SIZE = 50;
 
 export function createMedusaOrderService(options: {
   adminApiToken?: string | undefined;
@@ -20,6 +34,57 @@ export function createMedusaOrderService(options: {
   medusaInternalUrl: string;
 }) {
   const fetcher = options.fetcher ?? fetch;
+
+  async function fetchOrderPage(
+    input: MerchantOrderListQuery,
+  ): Promise<
+    | { ok: true; orders: MerchantOrder[]; count: number; limit: number; offset: number }
+    | {
+        ok: false;
+        error:
+          | "commerce_backend_unavailable"
+          | "commerce_credentials_invalid"
+          | "commerce_credentials_missing";
+        status: 401 | 503;
+      }
+  > {
+    if (!options.adminApiToken?.trim()) {
+      return missingCredentials();
+    }
+
+    const response = await requestMedusa(fetcher, getOrdersUrl(options.medusaInternalUrl, input), {
+      headers: getAdminHeaders(options.adminApiToken),
+    });
+
+    if (response.status === 401) {
+      return {
+        ok: false,
+        error: "commerce_credentials_invalid",
+        status: 401,
+      };
+    }
+
+    if (!response.ok) {
+      return {
+        ok: false,
+        error: "commerce_backend_unavailable",
+        status: 503,
+      };
+    }
+
+    const data = await response.json().catch(() => undefined);
+    const orders = Array.isArray(data?.orders)
+      ? data.orders.flatMap((order: unknown) => normalizeOrder(order, input.salesChannelId))
+      : [];
+
+    return {
+      ok: true,
+      count: getNumber(data?.count) ?? orders.length,
+      limit: getNumber(data?.limit) ?? input.limit,
+      offset: getNumber(data?.offset) ?? input.offset,
+      orders,
+    };
+  }
 
   return {
     getMerchantOrder: async (input: {
@@ -75,15 +140,77 @@ export function createMedusaOrderService(options: {
       };
     },
 
-    mutateMerchantOrder: async (input: {
-      action: MerchantOrderAction;
-      fulfillmentId?: string | undefined;
+    markMerchantOrderPaid: async (input: {
+      orderId: string;
+      paymentReference?: string | null | undefined;
+      salesChannelId: string;
+      source?: "dashboard" | "chapa_webhook" | "chapa_recheck" | undefined;
+    }): Promise<MerchantOrderActionResult> => {
+      if (!options.adminApiToken?.trim()) {
+        return missingCredentials();
+      }
+      return markMerchantOrderPaid(fetcher, options, input);
+    },
+
+    capturePaymentByTxRef: async (input: {
+      salesChannelId: string;
+      source?: "chapa_webhook" | "chapa_recheck" | undefined;
+      txRef: string;
+    }): Promise<MerchantOrderActionResult | { ok: false; error: "order_not_found"; status: 404 }> => {
+      if (!options.adminApiToken?.trim()) {
+        return missingCredentials();
+      }
+      return capturePaymentByTxRef(fetcher, options, input);
+    },
+
+    finishMerchantOrder: async (input: {
+      markPaid?: boolean | undefined;
       orderId: string;
       salesChannelId: string;
       stockLocationId?: string | undefined;
     }): Promise<MerchantOrderActionResult> => {
       if (!options.adminApiToken?.trim()) {
         return missingCredentials();
+      }
+      return finishMerchantOrder(fetcher, options, input);
+    },
+
+    mutateMerchantOrder: async (input: {
+      action: MerchantOrderAction;
+      fulfillmentId?: string | undefined;
+      markPaid?: boolean | undefined;
+      orderId: string;
+      salesChannelId: string;
+      stockLocationId?: string | undefined;
+    }): Promise<MerchantOrderActionResult> => {
+      if (!options.adminApiToken?.trim()) {
+        return missingCredentials();
+      }
+
+      if (input.action === "mark-paid") {
+        return markMerchantOrderPaid(fetcher, options, {
+          orderId: input.orderId,
+          salesChannelId: input.salesChannelId,
+          source: "dashboard",
+        });
+      }
+
+      if (input.action === "finish") {
+        return finishMerchantOrder(fetcher, options, {
+          markPaid: input.markPaid,
+          orderId: input.orderId,
+          salesChannelId: input.salesChannelId,
+          stockLocationId: input.stockLocationId,
+        });
+      }
+
+      if (input.action === "recheck-payment") {
+        // Recheck without Chapa verify requires a reference; callers use dedicated route.
+        return {
+          ok: false,
+          error: "order_not_fulfillable",
+          status: 409,
+        };
       }
 
       const existing = await getMerchantOrderForAction(fetcher, options, input);
@@ -106,9 +233,20 @@ export function createMedusaOrderService(options: {
         });
       }
 
+      if (input.action !== "cancel" && input.action !== "complete") {
+        return {
+          ok: false,
+          error: "order_not_fulfillable",
+          status: 409,
+        };
+      }
+
       const response = await requestMedusa(
         fetcher,
-        getOrderActionUrl(options.medusaInternalUrl, input),
+        getOrderActionUrl(options.medusaInternalUrl, {
+          action: input.action,
+          orderId: input.orderId,
+        }),
         {
           ...(input.action === "complete" ? { body: JSON.stringify({}) } : {}),
           headers: getAdminHeaders(options.adminApiToken),
@@ -162,49 +300,76 @@ export function createMedusaOrderService(options: {
       };
     },
 
-    listMerchantOrders: async (input: {
-      limit: number;
-      offset: number;
-      salesChannelId: string;
-    }): Promise<MerchantOrdersResult> => {
+    listMerchantOrders: async (input: MerchantOrderListQuery): Promise<MerchantOrdersResult> => {
       if (!options.adminApiToken?.trim()) {
         return missingCredentials();
       }
 
-      const response = await requestMedusa(
-        fetcher,
-        getOrdersUrl(options.medusaInternalUrl, input),
-        {
-          headers: getAdminHeaders(options.adminApiToken),
-        },
-      );
+      // Lightweight path: Medusa pagination + channel normalize + soft post-filter.
+      if (!needsPostFilter(input)) {
+        const page = await fetchOrderPage(input);
+        if (!page.ok) {
+          return page;
+        }
 
-      if (response.status === 401) {
+        // paymentStatus already on Medusa query; still belt-and-suspenders for channel-only edges.
+        const orders = applyOrderListPostFilters(page.orders, input);
+
         return {
-          ok: false,
-          error: "commerce_credentials_invalid",
-          status: 401,
+          ok: true,
+          // Prefer Medusa total when we are not dropping rows via post-filters.
+          count: orders.length === page.orders.length ? page.count : orders.length,
+          limit: input.limit,
+          offset: input.offset,
+          orders,
         };
       }
 
-      if (!response.ok) {
-        return {
-          ok: false,
-          error: "commerce_backend_unavailable",
-          status: 503,
-        };
+      // Progress / method / delivery / free-text need post-filtering. Scan a bounded
+      // window so page results are full and count is honest within that window.
+      const matched: MerchantOrder[] = [];
+      let scanOffset = 0;
+      let exhausted = false;
+
+      while (matched.length < input.offset + input.limit && scanOffset < POST_FILTER_SCAN_LIMIT) {
+        const page = await fetchOrderPage({
+          ...input,
+          // Keep Medusa-side payment/date/q when present; progress/method/delivery post-filter.
+          limit: POST_FILTER_PAGE_SIZE,
+          offset: scanOffset,
+        });
+
+        if (!page.ok) {
+          return page;
+        }
+
+        matched.push(...applyOrderListPostFilters(page.orders, input));
+
+        if (page.orders.length < POST_FILTER_PAGE_SIZE) {
+          exhausted = true;
+          break;
+        }
+
+        scanOffset += POST_FILTER_PAGE_SIZE;
+
+        // If Medusa returned fewer than requested total window, stop.
+        if (scanOffset >= page.count) {
+          exhausted = true;
+          break;
+        }
       }
 
-      const data = await response.json().catch(() => undefined);
-      const orders = Array.isArray(data?.orders)
-        ? data.orders.flatMap((order: unknown) => normalizeOrder(order, input.salesChannelId))
-        : [];
+      if (!exhausted && scanOffset >= POST_FILTER_SCAN_LIMIT) {
+        exhausted = true;
+      }
+
+      const orders = matched.slice(input.offset, input.offset + input.limit);
 
       return {
         ok: true,
-        count: orders.length,
-        limit: getNumber(data?.limit) ?? input.limit,
-        offset: getNumber(data?.offset) ?? input.offset,
+        count: matched.length,
+        limit: input.limit,
+        offset: input.offset,
         orders,
       };
     },
