@@ -7,6 +7,7 @@
  *
  * Then: pnpm seed --write-env
  */
+import { spawnSync } from "node:child_process";
 import { createInterface } from "node:readline/promises";
 import { stdin as input, stdout as output } from "node:process";
 
@@ -23,6 +24,37 @@ async function confirm() {
   );
   rl.close();
   return /^y(es)?$/i.test(answer.trim());
+}
+
+function dockerPsql(args) {
+  return spawnSync(
+    "docker",
+    ["compose", "-f", composeFile, "exec", "-T", "postgres", "psql", "-U", "ecs", ...args],
+    { encoding: "utf8" },
+  );
+}
+
+/** initdb only runs on empty volume; re-assert DBs in case entrypoint skipped them. */
+function ensureDatabases() {
+  for (const dbName of ["platform_db", "medusa_db"]) {
+    const check = dockerPsql([
+      "-d",
+      "postgres",
+      "-tAc",
+      `SELECT 1 FROM pg_database WHERE datname = '${dbName}'`,
+    ]);
+    if (check.status !== 0) {
+      warn(`Could not query postgres for ${dbName} (status ${check.status}).`);
+      continue;
+    }
+    if (String(check.stdout ?? "").trim() === "1") continue;
+
+    info(`Creating database ${dbName}…`);
+    const created = dockerPsql(["-d", "postgres", "-c", `CREATE DATABASE ${dbName};`]);
+    if (created.status !== 0) {
+      warn(`CREATE DATABASE ${dbName} failed: ${created.stderr || created.stdout || ""}`);
+    }
+  }
 }
 
 heading("ECS database reset");
@@ -45,6 +77,11 @@ blank();
 info("Starting infrastructure…");
 run("pnpm", ["dev:infra"]);
 success("Infrastructure is up");
+
+blank();
+info("Ensuring platform_db and medusa_db exist…");
+ensureDatabases();
+success("Databases ready");
 
 blank();
 info("Migrating platform database…");

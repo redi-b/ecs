@@ -165,15 +165,17 @@ async function runGrouped(devCommands) {
     });
   }
 
-  const showCursor = () => {
-    if (process.stdout.isTTY) process.stdout.write("\x1b[?25h");
+  const leaveAltScreen = () => {
+    if (!process.stdout.isTTY) return;
+    // Show cursor + leave alternate screen (restores prior scrollback).
+    process.stdout.write("\x1b[?25h\x1b[?1049l");
   };
 
-  // Hide cursor while the dashboard is live-updating over itself.
+  // Alternate screen buffer: live UI never pollutes the main terminal scrollback.
   if (process.stdout.isTTY) {
-    process.stdout.write("\x1b[?25l");
+    process.stdout.write("\x1b[?1049h\x1b[?25l\x1b[H\x1b[2J");
   }
-  process.once("exit", showCursor);
+  process.once("exit", leaveAltScreen);
 
   const render = () => {
     paintedRows = renderGroupedLogs(states, paintedRows);
@@ -198,10 +200,14 @@ async function runGrouped(devCommands) {
   clearInterval(renderTimer);
   clearTimeout(forceKillTimer);
   render();
-  showCursor();
+  leaveAltScreen();
+
+  // Final snapshot on the main screen (one clean block, no live redraw history).
+  if (process.stdout.isTTY) {
+    process.stdout.write(buildGroupedFrame(states, Date.now(), process.stdout.columns || 80).join("\n") + "\n");
+  }
 
   if (shuttingDown) {
-    process.stdout.write("\n");
     success("All app processes stopped");
     process.exitCode = 0;
     return;
@@ -270,8 +276,8 @@ function appendGroupedOutput(state, chunk) {
 }
 
 /**
- * Medusa-style in-place redraw: move cursor up over the previous frame,
- * clear each line, rewrite. Never full-screen clears — scrollback stays clean.
+ * Redraw the live dashboard on the alternate screen buffer.
+ * Home + clear + rewrite keeps scrollback clean (no frame history).
  *
  * @returns {number} row count of the frame just painted
  */
@@ -286,29 +292,9 @@ function renderGroupedLogs(states, previousRows) {
     return frame.length;
   }
 
-  let out = "";
-
-  if (previousRows > 0) {
-    // Jump to the first row of the previous frame.
-    out += `\x1b[${previousRows}A`;
-  }
-
-  for (const line of frame) {
-    // Clear the whole line, write content, advance one row.
-    out += `\x1b[2K${line}\n`;
-  }
-
-  // If this frame is shorter, blank leftover rows then park the cursor
-  // at the end of the new content so the next redraw baseline is correct.
-  if (previousRows > frame.length) {
-    const extra = previousRows - frame.length;
-    for (let i = 0; i < extra; i++) {
-      out += "\x1b[2K\n";
-    }
-    out += `\x1b[${extra}A`;
-  }
-
-  process.stdout.write(out);
+  // On alt-screen, full clear is fine — it never hits the user's main scrollback.
+  void previousRows;
+  process.stdout.write(`\x1b[H\x1b[J${frame.join("\n")}\n`);
   return frame.length;
 }
 
