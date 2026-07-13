@@ -42,11 +42,21 @@ services:
       - "${MINIO_CONSOLE_HOST_PORT:-9003}:9001"
     volumes:
       - minio-data:/data
+    healthcheck:
+      # MinIO image ships curl; ready when the API answers.
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
 
+  # One-shot bucket bootstrap. Do NOT include this service in `up --wait` —
+  # compose treats a successful exit as failure for waited services.
   minio-init:
     image: minio/mc:RELEASE.2025-08-13T08-35-41Z
     depends_on:
-      - minio
+      minio:
+        condition: service_healthy
+    restart: "no"
     entrypoint: ["/bin/sh", "-c"]
     command:
       - >-
