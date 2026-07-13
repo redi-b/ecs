@@ -2,7 +2,7 @@
 
 import type { ColumnDef } from "@tanstack/react-table";
 import Link from "next/link";
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 
 import { DataTable } from "@/components/app/data-table";
@@ -18,6 +18,7 @@ import { CustomerFormDialog } from "@/features/customers/customer-form-dialog";
 import { copyTextToClipboard } from "@/lib/clipboard";
 import type { MerchantCustomer } from "@/lib/merchant-customers";
 import { dashboardRoutes } from "@/lib/routes";
+import { cn } from "@/lib/utils";
 
 function customerDisplayName(customer: MerchantCustomer) {
   return (
@@ -41,14 +42,37 @@ async function copyToClipboard(value: string, label: string) {
 export function CustomersTable({
   customers,
   footer,
+  highlightCustomerId,
   totalCount,
 }: {
   customers: MerchantCustomer[];
   footer?: ReactNode;
+  /** When set (e.g. from order detail), flash that row and open edit if present. */
+  highlightCustomerId?: string | undefined;
   totalCount: number;
 }) {
   const [query, setQuery] = useState("");
   const [editing, setEditing] = useState<MerchantCustomer | null>(null);
+  const [highlightedId, setHighlightedId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!highlightCustomerId) return;
+    const match = customers.find((customer) => customer.id === highlightCustomerId);
+    setHighlightedId(highlightCustomerId);
+    if (match) {
+      setEditing(match);
+    }
+    const timeout = window.setTimeout(() => setHighlightedId(null), 3500);
+    // Drop highlight query from the URL without a navigation stack entry.
+    if (typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      if (url.searchParams.has("highlight")) {
+        url.searchParams.delete("highlight");
+        window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}`);
+      }
+    }
+    return () => window.clearTimeout(timeout);
+  }, [customers, highlightCustomerId]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -89,17 +113,28 @@ export function CustomersTable({
         id: "name",
         accessorFn: (customer) => customerDisplayName(customer),
         header: ({ column }) => <DataTableHeader column={column} title="Customer" />,
-        cell: ({ row }) => (
-          <div className="min-w-0">
-            <Link
-              className="font-medium hover:underline"
-              href={dashboardRoutes.customerDetail(row.original.id)}
+        cell: ({ row }) => {
+          const isHighlighted = highlightedId === row.original.id;
+          return (
+            <div
+              className={cn(
+                "min-w-0 rounded-md px-1.5 py-1 transition-colors",
+                isHighlighted && "bg-primary/10 ring-2 ring-primary/40",
+              )}
+              data-highlighted={isHighlighted ? "true" : undefined}
+              id={isHighlighted ? `customer-row-${row.original.id}` : undefined}
             >
-              {customerDisplayName(row.original)}
-            </Link>
-            <p className="truncate text-xs text-muted-foreground">{row.original.email}</p>
-          </div>
-        ),
+              <button
+                className="text-left font-medium text-primary underline-offset-4 hover:underline"
+                onClick={() => setEditing(row.original)}
+                type="button"
+              >
+                {customerDisplayName(row.original)}
+              </button>
+              <p className="truncate text-xs text-muted-foreground">{row.original.email}</p>
+            </div>
+          );
+        },
       },
       {
         accessorKey: "phone",
@@ -208,8 +243,14 @@ export function CustomersTable({
         enableSorting: false,
       },
     ],
-    [],
+    [highlightedId],
   );
+
+  useEffect(() => {
+    if (!highlightedId) return;
+    const el = document.getElementById(`customer-row-${highlightedId}`);
+    el?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [highlightedId, filtered]);
 
   return (
     <>

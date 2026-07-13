@@ -67,6 +67,7 @@ import {
   sampleNote,
   TopEventsChart,
 } from "@/features/overview/overview-helpers";
+import { formatOrderReference } from "@/features/orders/order-domain";
 import {
   getLaunchAssistantOpenPreference,
   isLaunchAssistantHidden,
@@ -76,6 +77,17 @@ import {
 } from "@/lib/launch-assistant-preferences";
 import { dashboardRoutes } from "@/lib/routes";
 import { cn } from "@/lib/utils";
+
+function formatOverviewPaymentStatus(paymentStatus: string) {
+  const value = paymentStatus.trim().toLowerCase();
+  if (value.includes("captured") || value === "paid" || value.includes("refund")) {
+    return "Paid";
+  }
+  if (value.includes("fail") || value === "canceled" || value === "cancelled") {
+    return "Failed";
+  }
+  return "Unpaid";
+}
 
 export function MerchantOverview({ summary }: MerchantOverviewProps) {
   const [metric, setMetric] = useState<ChartMetric>("revenue");
@@ -518,10 +530,13 @@ export function MerchantOverview({ summary }: MerchantOverviewProps) {
                 >
                   <span className="min-w-0">
                     <span className="block truncate font-medium">
-                      {order.displayId ? `#${order.displayId}` : order.id}
+                      {formatOrderReference({ id: order.id })}
                     </span>
                     <span className="block truncate text-xs text-muted-foreground">
                       {order.email ?? "No email"}
+                      {order.paymentStatus
+                        ? ` · ${formatOverviewPaymentStatus(order.paymentStatus)}`
+                        : ""}
                     </span>
                   </span>
                   <span className="font-mono text-xs tabular-nums">

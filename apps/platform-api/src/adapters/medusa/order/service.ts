@@ -181,6 +181,7 @@ export function createMedusaOrderService(options: {
       markPaid?: boolean | undefined;
       orderId: string;
       salesChannelId: string;
+      shippingOptionId?: string | undefined;
       stockLocationId?: string | undefined;
     }): Promise<MerchantOrderActionResult> => {
       if (!options.adminApiToken?.trim()) {
@@ -200,6 +201,7 @@ export function createMedusaOrderService(options: {
           markPaid: input.markPaid,
           orderId: input.orderId,
           salesChannelId: input.salesChannelId,
+          shippingOptionId: input.shippingOptionId,
           stockLocationId: input.stockLocationId,
         });
       }
@@ -221,8 +223,11 @@ export function createMedusaOrderService(options: {
 
       if (input.action === "fulfill") {
         return fulfillMerchantOrder(fetcher, options, {
-          ...input,
           order: existing.order,
+          orderId: input.orderId,
+          salesChannelId: input.salesChannelId,
+          shippingOptionId: input.shippingOptionId,
+          stockLocationId: input.stockLocationId,
         });
       }
 

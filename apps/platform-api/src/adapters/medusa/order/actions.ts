@@ -75,6 +75,7 @@ export async function fulfillMerchantOrder(
     order: MerchantOrder;
     orderId: string;
     salesChannelId: string;
+    shippingOptionId?: string | undefined;
     stockLocationId?: string | undefined;
   },
 ): Promise<MerchantOrderActionResult> {
@@ -96,21 +97,39 @@ export async function fulfillMerchantOrder(
     };
   }
 
-  const response = await requestMedusa(
-    fetcher,
-    getOrderFulfillmentUrl(options.medusaInternalUrl, input),
-    {
-      body: JSON.stringify({
-        items,
-        location_id: input.stockLocationId,
-        metadata: {
-          source: "platform",
-        },
-      }),
+  async function postFulfillment(payload: Record<string, unknown>) {
+    return requestMedusa(fetcher, getOrderFulfillmentUrl(options.medusaInternalUrl, input), {
+      body: JSON.stringify(payload),
       headers: getAdminHeaders(options.adminApiToken ?? ""),
       method: "POST",
+    });
+  }
+
+  const shippingOptionId = input.shippingOptionId?.trim();
+  const basePayload: Record<string, unknown> = {
+    items,
+    location_id: input.stockLocationId,
+    metadata: {
+      source: "platform",
     },
-  );
+  };
+  // Shipping option ties the fulfillment to the same shipping profile as the
+  // order lines / tenant delivery option — avoids profile mismatch 400s.
+  if (shippingOptionId) {
+    basePayload.shipping_option_id = shippingOptionId;
+  }
+
+  let response = await postFulfillment(basePayload);
+
+  // Retry without location when Medusa rejects profile/location pairing.
+  // Option-only fulfill lets Medusa pick a location that matches the profile.
+  if (!response.ok && response.status === 400 && shippingOptionId) {
+    response = await postFulfillment({
+      items,
+      shipping_option_id: shippingOptionId,
+      metadata: { source: "platform" },
+    });
+  }
 
   if (response.status === 401) {
     return {
@@ -137,6 +156,15 @@ export async function fulfillMerchantOrder(
   }
 
   if (!response.ok) {
+    // Surface Medusa validation (e.g. shipping profile mismatch) as not fulfillable
+    // so the dashboard can show a recoverable merchant message.
+    if (response.status === 400) {
+      return {
+        ok: false,
+        error: "order_not_fulfillable",
+        status: 409,
+      };
+    }
     return {
       ok: false,
       error: "commerce_backend_unavailable",

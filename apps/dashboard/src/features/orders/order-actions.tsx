@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
+import { HelpTip } from "@/components/app/help-tip";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   AlertDialog,
@@ -18,249 +19,325 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { hasFulfillableItems } from "@/features/orders/order-table-state";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  canMarkPaid,
+  canRecheckPayment,
+  getNextAction,
+  getRemainingFinishSteps,
+  type OrderNextActionType,
+} from "@/features/orders/order-domain";
 
-type OrderAction = "cancel" | "complete" | "deliver" | "fulfill";
-
-type OrderActionConfig = {
-  action: OrderAction | "finish";
-  description: string;
-  fulfillmentId?: string | undefined;
-  label: string;
-  success: string;
-  title: string;
-  variant?: "default" | "destructive" | "outline";
-};
+type PendingKind =
+  | { kind: "next"; type: OrderNextActionType }
+  | { kind: "finish" }
+  | { kind: "mark_paid" }
+  | { kind: "recheck" }
+  | { kind: "cancel" };
 
 type OrderActionsProps = {
   action: string;
   order: MerchantOrder;
+  /** Compact layout for sticky header */
+  variant?: "card" | "header";
 };
 
-export function OrderActions({ action, order }: OrderActionsProps) {
+function mapActionError(message: string) {
+  switch (message) {
+    case "order_not_fulfillable":
+      return "Couldn’t pack this order. Products may not share this shop’s delivery profile — try re-saving the product or contact support.";
+    case "order_fulfillment_not_found":
+      return "Could not find a package to update.";
+    case "inventory_location_unavailable":
+      return "Stock location isn’t set up for packing yet.";
+    case "order_not_found":
+      return "Order not found.";
+    default:
+      return message || "Could not update this order.";
+  }
+}
+
+async function postOrderAction(
+  actionUrl: string,
+  body: Record<string, unknown>,
+): Promise<MerchantOrder> {
+  const response = await fetch(actionUrl, {
+    body: JSON.stringify(body),
+    headers: { "content-type": "application/json" },
+    method: "POST",
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(
+      typeof data?.message === "string"
+        ? data.message
+        : typeof data?.error === "string"
+          ? data.error
+          : "order_action_failed",
+    );
+  }
+  return data?.data?.order ?? data?.order;
+}
+
+export function OrderActions({ action, order, variant = "card" }: OrderActionsProps) {
   const router = useRouter();
-  const [pendingAction, setPendingAction] = useState<OrderActionConfig | null>(null);
+  const next = useMemo(() => getNextAction(order), [order]);
+  const [pending, setPending] = useState<PendingKind | null>(null);
+  const [finishIncludePaid, setFinishIncludePaid] = useState(true);
   const [actionError, setActionError] = useState<string | null>(null);
-  const { nextStep, secondary } = useMemo(() => getOrderActionGroups(order), [order]);
+
+  const finishSteps = useMemo(
+    () => getRemainingFinishSteps(order, { includeMarkPaid: finishIncludePaid }),
+    [order, finishIncludePaid],
+  );
 
   const mutation = useMutation({
-    mutationFn: async (config: OrderActionConfig) => {
-      if (config.action === "finish") {
-        await runFinishOrder(action, order);
-        return;
+    mutationFn: async (kind: PendingKind) => {
+      if (kind.kind === "next") {
+        if (kind.type === "mark_ready") {
+          await postOrderAction(action, { action: "fulfill" });
+          return "Order marked ready.";
+        }
+        if (kind.type === "mark_completed") {
+          // Deliver open fulfillments then complete.
+          const open = (order.fulfillments ?? []).filter(
+            (item) => !item.deliveredAt && !item.canceledAt,
+          );
+          for (const fulfillment of open) {
+            await postOrderAction(action, {
+              action: "deliver",
+              fulfillmentId: fulfillment.id,
+            });
+          }
+          // If no fulfillment yet, finish path handles pack+deliver+complete
+          if (open.length === 0) {
+            await postOrderAction(action, { action: "finish", markPaid: false });
+          } else {
+            await postOrderAction(action, { action: "complete" });
+          }
+          return "Order marked completed.";
+        }
+        if (kind.type === "mark_paid") {
+          await postOrderAction(action, { action: "mark-paid" });
+          return "Payment recorded.";
+        }
+        return "Done.";
       }
 
-      await postOrderAction(action, {
-        action: config.action,
-        ...(config.fulfillmentId ? { fulfillmentId: config.fulfillmentId } : {}),
-      });
+      if (kind.kind === "finish") {
+        await postOrderAction(action, {
+          action: "finish",
+          markPaid: finishIncludePaid && canMarkPaid(order),
+        });
+        return "Remaining steps finished.";
+      }
+
+      if (kind.kind === "mark_paid") {
+        await postOrderAction(action, { action: "mark-paid" });
+        return "Payment recorded.";
+      }
+
+      if (kind.kind === "recheck") {
+        await postOrderAction(action, { action: "recheck-payment" });
+        return "Payment checked with Chapa.";
+      }
+
+      await postOrderAction(action, { action: "cancel" });
+      return "Order canceled.";
     },
     onError: (error) => {
-      setActionError(error instanceof Error ? error.message : "Could not update this order.");
+      setActionError(mapActionError(error instanceof Error ? error.message : "order_action_failed"));
     },
-    onSuccess: async (_data, config) => {
+    onSuccess: (message) => {
       setActionError(null);
-      setPendingAction(null);
-      toast.success(config.success);
+      setPending(null);
+      toast.success(message);
       router.refresh();
     },
   });
 
-  if (!nextStep && secondary.length === 0) {
-    const status = (order.status ?? "").toLowerCase();
+  const showMarkPaid = canMarkPaid(order);
+  const showRecheck = canRecheckPayment(order);
+  const showFinish = finishSteps.length > 0 || next.type !== "none";
+  const showCancel = getNextAction(order).type !== "none" || canMarkPaid(order);
+
+  if (next.type === "none" && !showMarkPaid && !showRecheck) {
+    const canceled = (order.status ?? "").toLowerCase().includes("cancel");
     return (
-      <div className="rounded-xl border border-dashed px-4 py-5 text-sm text-muted-foreground">
-        {status.includes("cancel")
-          ? "This order was canceled."
-          : status === "completed"
-            ? "This order is complete."
-            : "No further actions for this order."}
+      <div className="rounded-xl border border-dashed px-4 py-4 text-sm text-muted-foreground">
+        {canceled ? "This order was canceled." : "No further steps for this order."}
       </div>
     );
   }
 
-  return (
-    <div className="flex flex-col gap-4">
-      {nextStep ? (
-        <div className="space-y-3 rounded-xl border border-primary/20 bg-primary/5 px-4 py-4">
-          <div>
-            <p className="text-xs font-medium tracking-wide text-primary uppercase">Next</p>
-            <p className="mt-1 text-sm font-medium text-foreground">{nextStep.title}</p>
-            <p className="mt-1 text-sm text-muted-foreground">{nextStep.description}</p>
-          </div>
+  const primary = (
+    <div className={variant === "header" ? "flex flex-wrap items-center gap-2" : "space-y-3"}>
+      {next.type !== "none" ? (
+        <div
+          className={
+            variant === "card"
+              ? "space-y-3 rounded-xl border border-primary/20 bg-primary/5 px-4 py-4"
+              : "contents"
+          }
+        >
+          {variant === "card" ? (
+            <div className="flex items-start justify-between gap-2">
+              <div>
+                <p className="text-xs font-medium tracking-wide text-primary uppercase">Next</p>
+                <p className="mt-1 text-sm font-medium">{next.label}</p>
+                <p className="mt-1 text-sm text-muted-foreground">{next.description}</p>
+              </div>
+              <HelpTip summary={next.description} title={next.label} />
+            </div>
+          ) : null}
           <Button
-            className="w-full sm:w-auto"
-            onClick={() => setPendingAction(nextStep)}
+            disabled={mutation.isPending}
+            onClick={() => setPending({ kind: "next", type: next.type })}
             type="button"
           >
-            {nextStep.label}
+            {next.label}
           </Button>
         </div>
       ) : null}
 
-      {secondary.length > 0 ? (
-        <div className="flex flex-wrap gap-2">
-          {secondary.map((config) => (
-            <Button
-              key={`${config.action}-${config.fulfillmentId ?? "order"}`}
-              onClick={() => setPendingAction(config)}
-              type="button"
-              variant={config.variant ?? "outline"}
-            >
-              {config.label}
-            </Button>
-          ))}
-        </div>
-      ) : null}
+      <div className="flex flex-wrap gap-2">
+        {showFinish && next.type !== "none" ? (
+          <Button
+            disabled={mutation.isPending}
+            onClick={() => setPending({ kind: "finish" })}
+            type="button"
+            variant="outline"
+          >
+            Complete all steps
+          </Button>
+        ) : null}
+        {showMarkPaid && next.type !== "mark_paid" ? (
+          <Button
+            disabled={mutation.isPending}
+            onClick={() => setPending({ kind: "mark_paid" })}
+            type="button"
+            variant="outline"
+          >
+            Mark as paid
+          </Button>
+        ) : null}
+        {showRecheck ? (
+          <Button
+            disabled={mutation.isPending}
+            onClick={() => setPending({ kind: "recheck" })}
+            type="button"
+            variant="outline"
+          >
+            Re-check payment
+          </Button>
+        ) : null}
+        {showCancel && !(order.status ?? "").toLowerCase().includes("cancel") ? (
+          <Button
+            className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+            disabled={mutation.isPending}
+            onClick={() => setPending({ kind: "cancel" })}
+            type="button"
+            variant="ghost"
+          >
+            Cancel order
+          </Button>
+        ) : null}
+      </div>
+    </div>
+  );
 
+  return (
+    <div className="space-y-3">
       {actionError ? (
         <Alert variant="destructive">
-          <AlertTitle>Could not update order</AlertTitle>
+          <AlertTitle>Couldn’t update order</AlertTitle>
           <AlertDescription>{actionError}</AlertDescription>
         </Alert>
       ) : null}
 
+      {primary}
+
       <AlertDialog
+        open={pending !== null}
         onOpenChange={(open) => {
-          if (!open && !mutation.isPending) setPendingAction(null);
+          if (!open && !mutation.isPending) setPending(null);
         }}
-        open={Boolean(pendingAction)}
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{pendingAction?.title}</AlertDialogTitle>
-            <AlertDialogDescription>{pendingAction?.description}</AlertDialogDescription>
+            <AlertDialogTitle>
+              {pending?.kind === "cancel"
+                ? "Cancel this order?"
+                : pending?.kind === "finish"
+                  ? "Complete all remaining steps?"
+                  : pending?.kind === "mark_paid"
+                    ? "Mark as paid?"
+                    : pending?.kind === "recheck"
+                      ? "Re-check payment?"
+                      : next.label}
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3 text-sm text-muted-foreground">
+                {pending?.kind === "cancel" ? (
+                  <p className="text-destructive">
+                    This permanently cancels the sale. Only do this if the order will not go ahead.
+                  </p>
+                ) : null}
+                {pending?.kind === "finish" ? (
+                  <>
+                    <p>
+                      Runs every open step at once so you don’t click through one by one:
+                    </p>
+                    <ul className="list-disc space-y-1 pl-5">
+                      {finishSteps.map((step) => (
+                        <li key={step.id}>{step.label}</li>
+                      ))}
+                      {finishSteps.length === 0 ? <li>Close out remaining work</li> : null}
+                    </ul>
+                    {canMarkPaid(order) ? (
+                      <label className="flex items-center gap-2 text-foreground">
+                        <Checkbox
+                          checked={finishIncludePaid}
+                          onCheckedChange={(value) => setFinishIncludePaid(Boolean(value))}
+                        />
+                        Also mark as paid (cash received)
+                      </label>
+                    ) : null}
+                  </>
+                ) : null}
+                {pending?.kind === "mark_paid" ? (
+                  <p>Record that you received payment for this order.</p>
+                ) : null}
+                {pending?.kind === "recheck" ? (
+                  <p>Ask Chapa if this online payment went through, then update the order.</p>
+                ) : null}
+                {pending?.kind === "next" ? <p>{next.description}</p> : null}
+              </div>
+            </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={mutation.isPending}>Go back</AlertDialogCancel>
+            <AlertDialogCancel disabled={mutation.isPending}>Back</AlertDialogCancel>
             <AlertDialogAction
-              disabled={mutation.isPending}
+              className={
+                pending?.kind === "cancel"
+                  ? "bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  : undefined
+              }
+              disabled={mutation.isPending || !pending}
               onClick={(event) => {
                 event.preventDefault();
-                if (pendingAction) mutation.mutate(pendingAction);
+                if (pending) mutation.mutate(pending);
               }}
-              variant={pendingAction?.variant === "destructive" ? "destructive" : "default"}
             >
-              {mutation.isPending ? "Working…" : "Confirm"}
+              {mutation.isPending
+                ? "Working…"
+                : pending?.kind === "cancel"
+                  ? "Yes, cancel order"
+                  : "Confirm"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
     </div>
   );
-}
-
-/**
- * One-click path for merchants: prepare items, mark delivered, then close.
- */
-async function runFinishOrder(endpoint: string, order: MerchantOrder) {
-  let current: MerchantOrder = order;
-
-  if (hasFulfillableItems(current)) {
-    const result = await postOrderAction(endpoint, { action: "fulfill" });
-    if (result.order) current = result.order;
-  }
-
-  const openFulfillment = (current.fulfillments ?? []).find(
-    (item) => !item.deliveredAt && !item.canceledAt,
-  );
-
-  if (openFulfillment) {
-    const result = await postOrderAction(endpoint, {
-      action: "deliver",
-      fulfillmentId: openFulfillment.id,
-    });
-    if (result.order) current = result.order;
-  }
-
-  const status = (current.status ?? "").toLowerCase();
-  if (status !== "completed" && !status.includes("cancel")) {
-    try {
-      await postOrderAction(endpoint, { action: "complete" });
-    } catch (error) {
-      // Medusa may complete successfully while the follow-up read races.
-      // If list already shows Done, don't surface a scary false failure.
-      const message = error instanceof Error ? error.message : "";
-      if (!message.includes("no longer available")) {
-        throw error;
-      }
-    }
-  }
-}
-
-async function postOrderAction(
-  endpoint: string,
-  body: { action: OrderAction; fulfillmentId?: string },
-) {
-  const response = await fetch(endpoint, {
-    body: JSON.stringify(body),
-    headers: {
-      accept: "application/json",
-      "content-type": "application/json",
-    },
-    method: "POST",
-  });
-  const data = (await response.json().catch(() => ({}))) as {
-    error?: string;
-    order?: MerchantOrder;
-  };
-
-  if (!response.ok) {
-    throw new Error(getOrderActionErrorMessage(data.error));
-  }
-
-  return data;
-}
-
-function getOrderActionGroups(order: MerchantOrder): {
-  nextStep: OrderActionConfig | null;
-  secondary: OrderActionConfig[];
-} {
-  const normalizedStatus = order.status?.toLowerCase() ?? "";
-  const isClosed = ["canceled", "cancelled", "completed", "archived"].includes(normalizedStatus);
-
-  if (isClosed) {
-    return { nextStep: null, secondary: [] };
-  }
-
-  const nextStep: OrderActionConfig = {
-    action: "finish",
-    description:
-      "Use this when the order is finished — items prepared and given to the customer (or sent with a courier). This closes the order in one step.",
-    label: "Complete order",
-    success: "Order completed.",
-    title: "Complete this order?",
-  };
-
-  const secondary: OrderActionConfig[] = [
-    {
-      action: "cancel",
-      description: "Only cancel if this sale will not go ahead.",
-      label: "Cancel order",
-      success: "Order canceled.",
-      title: "Cancel this order?",
-      variant: "destructive",
-    },
-  ];
-
-  return { nextStep, secondary };
-}
-
-function getOrderActionErrorMessage(error: string | undefined) {
-  if (error === "order_not_fulfillable") {
-    return "There is nothing left to prepare on this order.";
-  }
-  if (error === "order_fulfillment_not_found") {
-    return "Could not update delivery for this order. Refresh and try again.";
-  }
-  if (error === "inventory_location_unavailable") {
-    return "This shop still needs a stock location before completing orders.";
-  }
-  if (error === "order_not_found") {
-    return "This order is no longer available.";
-  }
-  if (error === "commerce_credentials_invalid" || error === "commerce_credentials_missing") {
-    return "Commerce access is not configured correctly.";
-  }
-  return "Something went wrong. Try again in a moment.";
 }

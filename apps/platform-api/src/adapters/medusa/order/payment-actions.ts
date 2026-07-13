@@ -383,6 +383,7 @@ export async function finishMerchantOrder(
     markPaid?: boolean | undefined;
     orderId: string;
     salesChannelId: string;
+    shippingOptionId?: string | undefined;
     stockLocationId?: string | undefined;
   },
 ): Promise<MerchantOrderActionResult> {
@@ -406,6 +407,7 @@ export async function finishMerchantOrder(
         order: current.order,
         orderId: input.orderId,
         salesChannelId: input.salesChannelId,
+        shippingOptionId: input.shippingOptionId,
         stockLocationId: input.stockLocationId,
       });
       if (!fulfilled.ok) {

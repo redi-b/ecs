@@ -167,8 +167,11 @@ export function registerMerchantOrderRoutes(
       ...(action === "deliver" ? { fulfillmentId } : {}),
       orderId,
       salesChannelId: commerce.context.medusaSalesChannelId,
-      ...(action === "fulfill"
-        ? { stockLocationId: commerce.context.medusaStockLocationId ?? undefined }
+      ...(action === "fulfill" || action === "finish"
+        ? {
+            stockLocationId: commerce.context.medusaStockLocationId ?? undefined,
+            shippingOptionId: merchant.result.context.medusaShippingOptionId ?? undefined,
+          }
         : {}),
     });
 
@@ -235,6 +238,7 @@ export function registerMerchantOrderRoutes(
         orderId,
         salesChannelId: loose.context.medusaSalesChannelId,
         stockLocationId: loose.context.medusaStockLocationId ?? undefined,
+        shippingOptionId: merchant.result.context.medusaShippingOptionId ?? undefined,
       });
 
       if (!order.ok) {
@@ -254,6 +258,7 @@ export function registerMerchantOrderRoutes(
       orderId,
       salesChannelId: commerce.context.medusaSalesChannelId,
       stockLocationId: commerce.context.medusaStockLocationId ?? undefined,
+      shippingOptionId: merchant.result.context.medusaShippingOptionId ?? undefined,
     });
 
     if (!order.ok) {

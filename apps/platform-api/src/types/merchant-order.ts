@@ -139,3 +139,13 @@ export type MerchantOrderAction =
   | "finish";
 
 export type MerchantOrderActionResult = MerchantOrderDetailResult;
+
+export type MerchantOrderMutateInput = {
+  action: MerchantOrderAction;
+  fulfillmentId?: string | undefined;
+  markPaid?: boolean | undefined;
+  orderId: string;
+  salesChannelId: string;
+  shippingOptionId?: string | undefined;
+  stockLocationId?: string | undefined;
+};

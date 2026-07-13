@@ -156,8 +156,11 @@ export function registerPlatformTenantOrdersRoutes(
       ...(action === "deliver" ? { fulfillmentId } : {}),
       orderId,
       salesChannelId: commerce.context.medusaSalesChannelId,
-      ...(action === "fulfill"
-        ? { stockLocationId: commerce.context.medusaStockLocationId ?? undefined }
+      ...(action === "fulfill" || action === "finish"
+        ? {
+            stockLocationId: commerce.context.medusaStockLocationId ?? undefined,
+            shippingOptionId: commerce.context.medusaShippingOptionId ?? undefined,
+          }
         : {}),
     });
 
@@ -222,6 +225,7 @@ export function registerPlatformTenantOrdersRoutes(
       orderId,
       salesChannelId: commerce.context.medusaSalesChannelId,
       stockLocationId: commerce.context.medusaStockLocationId ?? undefined,
+      shippingOptionId: commerce.context.medusaShippingOptionId ?? undefined,
     });
 
     if (!order.ok) {

@@ -1,7 +1,15 @@
 import { type MerchantOrderAction, mutateMerchantOrder } from "@/lib/merchant-orders";
 import { withMerchantAction } from "@/lib/platform-api/action-route";
 
-const ORDER_ACTIONS = new Set<MerchantOrderAction>(["cancel", "complete", "deliver", "fulfill"]);
+const ORDER_ACTIONS = new Set<MerchantOrderAction>([
+  "cancel",
+  "complete",
+  "deliver",
+  "fulfill",
+  "mark-paid",
+  "recheck-payment",
+  "finish",
+]);
 
 export async function POST(request: Request, { params }: { params: Promise<{ orderId: string }> }) {
   const { orderId } = await params;
@@ -10,6 +18,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ ord
     const body = (await context.request.json().catch(() => ({}))) as {
       action?: unknown;
       fulfillmentId?: unknown;
+      markPaid?: unknown;
     };
     const action = typeof body.action === "string" ? body.action : "";
 
@@ -33,6 +42,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ ord
       action: action as MerchantOrderAction,
       cookieHeader: context.cookieHeader,
       fulfillmentId: typeof body.fulfillmentId === "string" ? body.fulfillmentId : undefined,
+      markPaid: body.markPaid === true,
       orderId,
       platformApiBaseUrl: context.platformApiBaseUrl,
       requestHost: context.requestHost,

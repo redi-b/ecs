@@ -5,13 +5,7 @@ import { PageShell } from "@/components/app/page-shell";
 import { RefreshButton } from "@/components/app/refresh-button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ManualOrderCreateDialog } from "@/features/orders/manual-order-create-dialog";
-import {
-  parseOrderDateFilter,
-  parseOrderDeliveryFilter,
-  parseOrderFulfillmentFilter,
-  parseOrderLifecycleFilter,
-  parseOrderPaymentFilter,
-} from "@/features/orders/order-table-state";
+import { parseOrderListFilters } from "@/features/orders/order-domain";
 import { OrdersTable } from "@/features/orders/orders-table";
 import { type DashboardSearchParams, getSelectedTenantId } from "@/lib/dashboard-tenant-context";
 import { getListErrorState } from "@/lib/list-error-state";
@@ -26,9 +20,11 @@ type MerchantOrdersPageProps = {
 export default async function MerchantOrdersPage({ searchParams }: MerchantOrdersPageProps) {
   const resolvedSearchParams = (await searchParams) ?? {};
   const listParams = parseListSearchParams(resolvedSearchParams);
+  const filters = parseOrderListFilters(resolvedSearchParams);
   const tenantId = getSelectedTenantId(resolvedSearchParams);
   const requestHeaders = await headers();
   const offset = (listParams.page - 1) * listParams.pageSize;
+
   const result = await getMerchantOrders({
     cookieHeader: requestHeaders.get("cookie"),
     limit: listParams.pageSize,
@@ -36,6 +32,12 @@ export default async function MerchantOrdersPage({ searchParams }: MerchantOrder
     platformApiBaseUrl: process.env.PLATFORM_API_BASE_URL ?? "http://localhost:3000",
     requestHost: requestHeaders.get("host"),
     tenantId,
+    q: filters.q || undefined,
+    progress: filters.progress !== "all" ? filters.progress : undefined,
+    payment: filters.payment !== "all" ? filters.payment : undefined,
+    method: filters.method !== "all" ? filters.method : undefined,
+    delivery: filters.delivery !== "all" ? filters.delivery : undefined,
+    created: filters.created !== "all" ? filters.created : undefined,
   });
   const errorState = result.ok ? null : getListErrorState("orders", result.message);
 
@@ -47,13 +49,14 @@ export default async function MerchantOrdersPage({ searchParams }: MerchantOrder
           <ManualOrderCreateDialog />
         </>
       }
-      description="Review orders, payment status, and fulfillment progress. Create COD orders for phone or in-person sales."
+      description="Track sales, payments, and delivery."
       title="Orders"
     >
       {result.ok ? (
         <>
           <ListSummary count={result.orders.count} label="orders" />
           <OrdersTable
+            filters={filters}
             footer={
               <PaginationControls
                 basePath={dashboardRoutes.orders}
@@ -63,12 +66,6 @@ export default async function MerchantOrdersPage({ searchParams }: MerchantOrder
                 searchParams={resolvedSearchParams}
               />
             }
-            initialCreated={parseOrderDateFilter(resolvedSearchParams.created)}
-            initialDelivery={parseOrderDeliveryFilter(resolvedSearchParams.delivery)}
-            initialFulfillment={parseOrderFulfillmentFilter(resolvedSearchParams.fulfillment)}
-            initialLifecycle={parseOrderLifecycleFilter(resolvedSearchParams.lifecycle)}
-            initialPayment={parseOrderPaymentFilter(resolvedSearchParams.payment)}
-            initialQuery={listParams.q}
             orders={result.orders.orders}
             pageSize={result.orders.limit}
             tenantId={tenantId}

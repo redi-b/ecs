@@ -18,6 +18,10 @@ type CustomersPageProps = {
 export default async function CustomersPage({ searchParams }: CustomersPageProps) {
   const resolvedSearchParams = (await searchParams) ?? {};
   const listParams = parseListSearchParams(resolvedSearchParams);
+  const highlightRaw = resolvedSearchParams.highlight;
+  const highlightCustomerId = Array.isArray(highlightRaw)
+    ? highlightRaw[0]
+    : highlightRaw;
   const offset = (listParams.page - 1) * listParams.pageSize;
   const requestHeaders = await headers();
   const result = await getMerchantCustomers({
@@ -54,6 +58,7 @@ export default async function CustomersPage({ searchParams }: CustomersPageProps
                 searchParams={resolvedSearchParams}
               />
             }
+            {...(highlightCustomerId ? { highlightCustomerId } : {})}
             totalCount={result.customers.count}
           />
         </>

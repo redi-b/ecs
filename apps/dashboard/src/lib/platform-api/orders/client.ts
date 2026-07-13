@@ -2,7 +2,29 @@ import type { MerchantOrder, MerchantOrders } from "@ecs/contracts";
 import { merchantOrderSchema, merchantOrdersSchema, platformErrorSchema } from "@ecs/contracts";
 import { createPlatformHeaders, normalizeBaseUrl } from "@/lib/platform-api/client";
 
-export type MerchantOrderAction = "cancel" | "complete" | "deliver" | "fulfill";
+export type MerchantOrderAction =
+  | "cancel"
+  | "complete"
+  | "deliver"
+  | "fulfill"
+  | "mark-paid"
+  | "recheck-payment"
+  | "finish";
+
+export type MerchantOrderListParams = {
+  created?: string | undefined;
+  createdFrom?: string | undefined;
+  createdTo?: string | undefined;
+  delivery?: string | undefined;
+  limit?: number | undefined;
+  method?: string | undefined;
+  offset?: number | undefined;
+  payment?: string | undefined;
+  paymentMethod?: string | undefined;
+  paymentStatus?: string | undefined;
+  progress?: string | undefined;
+  q?: string | undefined;
+};
 
 export type MerchantOrdersResult =
   | {
@@ -31,12 +53,10 @@ export type MerchantOrderActionResult = MerchantOrderResult;
 export async function getMerchantOrders(options: {
   cookieHeader?: string | null | undefined;
   fetcher?: typeof fetch;
-  limit?: number | undefined;
-  offset?: number | undefined;
   platformApiBaseUrl: string;
   requestHost?: string | null | undefined;
   tenantId?: string | null | undefined;
-}): Promise<MerchantOrdersResult> {
+} & MerchantOrderListParams): Promise<MerchantOrdersResult> {
   const fetcher = options.fetcher ?? fetch;
   const response = await fetcher(getOrdersUrl(options), {
     cache: "no-store",
@@ -140,14 +160,23 @@ export async function mutateMerchantOrder(options: {
   cookieHeader?: string | null | undefined;
   fetcher?: typeof fetch;
   fulfillmentId?: string | null | undefined;
+  markPaid?: boolean | undefined;
   orderId: string;
   platformApiBaseUrl: string;
   requestHost?: string | null | undefined;
   tenantId?: string | null | undefined;
 }): Promise<MerchantOrderActionResult> {
   const fetcher = options.fetcher ?? fetch;
+  const body: Record<string, unknown> = {};
+  if (options.action === "finish" && options.markPaid) {
+    body.markPaid = true;
+  }
+  if (options.action === "deliver" && options.fulfillmentId) {
+    body.fulfillmentId = options.fulfillmentId;
+  }
+
   const response = await fetcher(getOrderActionUrl(options), {
-    body: JSON.stringify({}),
+    body: JSON.stringify(body),
     cache: "no-store",
     headers: getOrderHeaders({
       contentType: "application/json",
@@ -193,24 +222,34 @@ export async function mutateMerchantOrder(options: {
   };
 }
 
-function getOrdersUrl(options: {
-  limit?: number | undefined;
-  offset?: number | undefined;
-  platformApiBaseUrl: string;
-  tenantId?: string | null | undefined;
-}) {
+function getOrdersUrl(
+  options: {
+    platformApiBaseUrl: string;
+    tenantId?: string | null | undefined;
+  } & MerchantOrderListParams,
+) {
   const path = options.tenantId?.trim()
     ? `/platform/tenants/${encodeURIComponent(options.tenantId.trim())}/orders`
     : "/platform/merchant/orders";
   const url = new URL(path, normalizeBaseUrl(options.platformApiBaseUrl));
 
-  if (typeof options.limit === "number") {
-    url.searchParams.set("limit", String(options.limit));
-  }
+  const setIf = (key: string, value: string | number | undefined) => {
+    if (value === undefined || value === "") return;
+    url.searchParams.set(key, String(value));
+  };
 
-  if (typeof options.offset === "number") {
-    url.searchParams.set("offset", String(options.offset));
-  }
+  setIf("limit", options.limit);
+  setIf("offset", options.offset);
+  setIf("q", options.q);
+  setIf("progress", options.progress);
+  setIf("payment", options.payment ?? options.paymentStatus);
+  setIf("paymentStatus", options.paymentStatus);
+  setIf("method", options.method ?? options.paymentMethod);
+  setIf("paymentMethod", options.paymentMethod);
+  setIf("delivery", options.delivery);
+  setIf("created", options.created);
+  setIf("createdFrom", options.createdFrom);
+  setIf("createdTo", options.createdTo);
 
   return url;
 }

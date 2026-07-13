@@ -14,7 +14,7 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty";
 import { OrderDetail } from "@/features/orders/order-detail";
-import { formatOrderDisplayId } from "@/features/orders/order-table-state";
+import { formatOrderReference } from "@/features/orders/order-domain";
 import {
   type DashboardSearchParams,
   getSelectedTenantId,
@@ -47,13 +47,13 @@ export default async function MerchantOrderDetailPage({
   const errorState = result.ok ? null : getListErrorState("orders", result.message);
   const setupError =
     errorState?.kind === "setup" || errorState?.kind === "service" ? errorState : null;
-  const breadcrumbLabel = result.ok ? formatOrderDisplayId(result.order) : null;
+  const breadcrumbLabel = result.ok ? formatOrderReference(result.order) : null;
 
   return (
     <PageShell
       actions={<RefreshButton />}
-      description="See who ordered, what to pack, and the next delivery step."
-      title={result.ok ? `Order ${formatOrderDisplayId(result.order)}` : "Order details"}
+      description="Who ordered, what to pack, payment, and handoff."
+      title={result.ok ? `Order ${formatOrderReference(result.order)}` : "Order details"}
     >
       <DashboardBreadcrumbLabel label={breadcrumbLabel} labelKey="order-details" />
       {setupError ? (

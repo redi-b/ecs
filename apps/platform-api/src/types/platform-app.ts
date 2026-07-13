@@ -527,6 +527,7 @@ export type PlatformAppOptions = {
         markPaid?: boolean | undefined;
         orderId: string;
         salesChannelId: string;
+        shippingOptionId?: string | undefined;
         stockLocationId?: string | undefined;
       }) => Promise<MerchantOrderActionResult>)
     | undefined;
