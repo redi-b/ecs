@@ -13,6 +13,7 @@ import {
 } from "@/components/app/data-table-filters";
 import { DataTableHeader } from "@/components/app/data-table-header";
 import { AppIcons } from "@/components/app/icons";
+import { ListResultsStatus } from "@/components/app/list-results-status";
 import { ListToolbarSearch } from "@/components/app/list-toolbar";
 import { RowActionsMenu } from "@/components/app/row-actions-menu";
 import {
@@ -343,15 +344,14 @@ export function ProductCollectionsTable({
           value={searchValue}
         />
       </DataTableFilters>
-      <p className="text-sm text-muted-foreground">
-        {pending
-          ? "Updating…"
-          : hasClientPageFilter
-            ? `${counts.filteredCount} of ${counts.pageCount} on this page`
-            : hasServerFilter
-              ? `${collections.length} of ${totalCount} matching`
-              : `${counts.pageCount} on this page, ${counts.totalCount} total`}
-      </p>
+      <ListResultsStatus
+        filteredPageCount={counts.filteredCount}
+        hasClientPageFilter={hasClientPageFilter}
+        hasServerFilter={hasServerFilter}
+        pageCount={collections.length}
+        pending={pending}
+        totalCount={totalCount}
+      />
     </div>
   );
 

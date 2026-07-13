@@ -13,6 +13,7 @@ import {
 } from "@/components/app/data-table-filters";
 import { DataTableHeader } from "@/components/app/data-table-header";
 import { AppIcons } from "@/components/app/icons";
+import { ListResultsStatus } from "@/components/app/list-results-status";
 import { ListToolbarSearch } from "@/components/app/list-toolbar";
 import { RowActionsMenu } from "@/components/app/row-actions-menu";
 import { Button } from "@/components/ui/button";
@@ -320,13 +321,12 @@ export function OrdersTable({
         />
       </DataTableFilters>
 
-      <p className="text-sm text-muted-foreground">
-        {pending
-          ? "Updating…"
-          : hasActiveFilters
-            ? `${orders.length} of ${totalCount} matching`
-            : `${orders.length} on this page, ${totalCount} total`}
-      </p>
+      <ListResultsStatus
+        hasServerFilter={hasActiveFilters}
+        pageCount={orders.length}
+        pending={pending}
+        totalCount={totalCount}
+      />
     </div>
   );
 

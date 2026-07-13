@@ -141,6 +141,17 @@
   }
 }
 
+/* Indeterminate bar for list filter / search status */
+@keyframes list-status-indeterminate {
+  0% {
+    left: -55%;
+  }
+
+  100% {
+    left: 110%;
+  }
+}
+
 @keyframes theme-ink-fill {
   from {
     clip-path: circle(0 at var(--theme-x, 50%) var(--theme-y, 50%));

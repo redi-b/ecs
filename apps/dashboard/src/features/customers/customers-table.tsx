@@ -10,6 +10,7 @@ import { DataTable } from "@/components/app/data-table";
 import { DataTableFilters } from "@/components/app/data-table-filters";
 import { DataTableHeader } from "@/components/app/data-table-header";
 import { AppIcons } from "@/components/app/icons";
+import { ListResultsStatus } from "@/components/app/list-results-status";
 import { ListToolbarSearch } from "@/components/app/list-toolbar";
 import { RowActionsMenu } from "@/components/app/row-actions-menu";
 import { Badge } from "@/components/ui/badge";
@@ -331,13 +332,12 @@ export function CustomersTable({
                 value={searchValue}
               />
             </DataTableFilters>
-            <p className="text-sm text-muted-foreground">
-              {pending
-                ? "Updating…"
-                : hasActiveFilter
-                  ? `${customers.length} of ${totalCount} matching`
-                  : `${customers.length} on this page, ${totalCount} total`}
-            </p>
+            <ListResultsStatus
+              hasServerFilter={hasActiveFilter}
+              pageCount={customers.length}
+              pending={pending}
+              totalCount={totalCount}
+            />
           </div>
         }
       />

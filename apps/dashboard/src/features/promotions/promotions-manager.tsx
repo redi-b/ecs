@@ -12,6 +12,7 @@ import {
 } from "@/components/app/data-table-filters";
 import { DataTableHeader } from "@/components/app/data-table-header";
 import { AppIcons } from "@/components/app/icons";
+import { ListResultsStatus } from "@/components/app/list-results-status";
 import { ListToolbarSearch } from "@/components/app/list-toolbar";
 import { RowActionsMenu } from "@/components/app/row-actions-menu";
 import {
@@ -451,15 +452,14 @@ export function PromotionsManager({
                 value={searchValue}
               />
             </DataTableFilters>
-            <p className="text-sm text-muted-foreground">
-              {pending
-                ? "Updating…"
-                : hasClientPageFilter
-                  ? `${filtered.length} of ${promotions.length} on this page`
-                  : hasServerFilter
-                    ? `${promotions.length} of ${totalCount} matching`
-                    : `${promotions.length} on this page, ${totalCount} total`}
-            </p>
+            <ListResultsStatus
+              filteredPageCount={filtered.length}
+              hasClientPageFilter={hasClientPageFilter}
+              hasServerFilter={hasServerFilter}
+              pageCount={promotions.length}
+              pending={pending}
+              totalCount={totalCount}
+            />
           </div>
         }
       />

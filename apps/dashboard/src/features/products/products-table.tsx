@@ -22,6 +22,7 @@ import {
   DataTableFilters,
 } from "@/components/app/data-table-filters";
 import { AppIcons } from "@/components/app/icons";
+import { ListResultsStatus } from "@/components/app/list-results-status";
 import { ListToolbarSearch } from "@/components/app/list-toolbar";
 import {
   AlertDialog,
@@ -438,15 +439,14 @@ export function ProductsTable({
           value={searchValue}
         />
       </DataTableFilters>
-      <p className="text-sm text-muted-foreground">
-        {pending
-          ? "Updating…"
-          : hasClientPageFilter
-            ? `${counts.filteredCount} of ${counts.pageCount} on this page`
-            : hasServerFilter
-              ? `${products.length} of ${totalCount} matching`
-              : `${products.length} on this page, ${totalCount} total`}
-      </p>
+      <ListResultsStatus
+        filteredPageCount={counts.filteredCount}
+        hasClientPageFilter={hasClientPageFilter}
+        hasServerFilter={hasServerFilter}
+        pageCount={products.length}
+        pending={pending}
+        totalCount={totalCount}
+      />
     </div>
   );
 

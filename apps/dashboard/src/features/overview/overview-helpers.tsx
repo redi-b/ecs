@@ -221,7 +221,7 @@ export function LaunchAssistant({ summary }: { summary: MerchantDashboardSummary
   function dismissAssistant() {
     setLaunchAssistantHidden(summary.tenant.id, true);
     toast("Launch assistant hidden", {
-      description: "Turn it back on from Settings > Account.",
+      description: "Turn it back on from Settings → Preferences.",
     });
   }
 

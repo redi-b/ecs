@@ -13,6 +13,7 @@ import {
 } from "@/components/app/data-table-filters";
 import { DataTableHeader } from "@/components/app/data-table-header";
 import { AppIcons } from "@/components/app/icons";
+import { ListResultsStatus } from "@/components/app/list-results-status";
 import { ListToolbarSearch, ListViewToggle } from "@/components/app/list-toolbar";
 import { RowActionsMenu } from "@/components/app/row-actions-menu";
 import {
@@ -476,21 +477,14 @@ export function MediaLibrary({
           value={searchValue}
         />
       </DataTableFilters>
-      <p className="text-sm text-muted-foreground">
-        {pending
-          ? "Updating…"
-          : hasClientPageFilter
-            ? t("media.pageFilteredCount", {
-                filtered: filtered.length,
-                pageCount,
-              })
-            : hasServerFilter
-              ? `${assets.length} of ${totalCount} matching`
-              : t("media.pageCountSummary", {
-                  pageCount,
-                  total: totalCount,
-                })}
-      </p>
+      <ListResultsStatus
+        filteredPageCount={filtered.length}
+        hasClientPageFilter={hasClientPageFilter}
+        hasServerFilter={hasServerFilter}
+        pageCount={assets.length}
+        pending={pending}
+        totalCount={totalCount}
+      />
     </div>
   );
 
