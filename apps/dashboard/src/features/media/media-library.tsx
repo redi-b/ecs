@@ -661,11 +661,21 @@ export function MediaLibrary({
   );
 }
 
-function AssetName({ asset }: { asset: MediaAsset }) {
+function AssetName({ asset, onOpen }: { asset: MediaAsset; onOpen?: () => void }) {
   const dimensions = mediaAssetDimensionsLabel(asset);
   return (
     <div className="min-w-0 flex-1">
-      <p className="truncate text-sm font-medium">{asset.displayName}</p>
+      {onOpen ? (
+        <button
+          className="truncate text-sm font-medium text-foreground transition-colors hover:text-primary"
+          onClick={onOpen}
+          type="button"
+        >
+          {asset.displayName}
+        </button>
+      ) : (
+        <p className="truncate text-sm font-medium">{asset.displayName}</p>
+      )}
       <p className="truncate text-xs text-muted-foreground">
         {dimensions ? `${dimensions} · ` : ""}
         {formatBytes(asset.byteSize)}

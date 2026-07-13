@@ -106,7 +106,7 @@ export function getMethodLabel(order: MerchantOrder): OrderMethodLabel {
 export function getMethodDisplayLabel(method: OrderMethodLabel) {
   switch (method) {
     case "cod":
-      return "Cash on delivery";
+      return "Cash";
     case "chapa":
       return "Online";
     case "unknown":
@@ -117,7 +117,7 @@ export function getMethodDisplayLabel(method: OrderMethodLabel) {
 export function getMethodShortLabel(method: OrderMethodLabel) {
   switch (method) {
     case "cod":
-      return "COD";
+      return "Cash";
     case "chapa":
       return "Online";
     case "unknown":
@@ -184,9 +184,13 @@ export function formatOrderDateTime(value: string | null | undefined) {
   if (!value) return "—";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "—";
-  return new Intl.DateTimeFormat(undefined, {
-    dateStyle: "medium",
-    timeStyle: "short",
+  // Pin locale — `undefined` can yield odd month forms (e.g. "M07") in some runtimes.
+  return new Intl.DateTimeFormat("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
   }).format(date);
 }
 

@@ -15,11 +15,12 @@ import { DataTableHeader } from "@/components/app/data-table-header";
 import { AppIcons } from "@/components/app/icons";
 import { ListToolbarSearch } from "@/components/app/list-toolbar";
 import { RowActionsMenu } from "@/components/app/row-actions-menu";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   OrderCustomerCell,
   OrderDeliveryCell,
   OrderIdentityCell,
-  OrderItemsCell,
   OrderMoneyCell,
   OrderPaymentCell,
   OrderPlacedCell,
@@ -59,6 +60,28 @@ async function copyToClipboard(value: string, label: string) {
 function getOrderColumns(tenantId?: string): ColumnDef<MerchantOrder>[] {
   return [
     {
+      id: "select",
+      header: ({ table }) => (
+        <Checkbox
+          aria-label="Select all visible orders"
+          checked={
+            table.getIsAllPageRowsSelected() ||
+            (table.getIsSomePageRowsSelected() && "indeterminate")
+          }
+          onCheckedChange={(value) => table.toggleAllPageRowsSelected(Boolean(value))}
+        />
+      ),
+      cell: ({ row }) => (
+        <Checkbox
+          aria-label={`Select order ${formatOrderReference(row.original)}`}
+          checked={row.getIsSelected()}
+          onCheckedChange={(value) => row.toggleSelected(Boolean(value))}
+        />
+      ),
+      enableHiding: false,
+      enableSorting: false,
+    },
+    {
       id: "order",
       accessorFn: (order) => formatOrderReference(order),
       header: ({ column }) => <DataTableHeader column={column} title="Order" />,
@@ -67,22 +90,10 @@ function getOrderColumns(tenantId?: string): ColumnDef<MerchantOrder>[] {
       ),
     },
     {
-      id: "placed",
-      accessorFn: (order) => order.createdAt ?? "",
-      header: ({ column }) => <DataTableHeader column={column} title="Placed" />,
-      cell: ({ row }) => <OrderPlacedCell order={row.original} />,
-    },
-    {
       id: "customer",
       accessorFn: (order) => order.delivery?.customerName ?? order.email ?? "",
       header: ({ column }) => <DataTableHeader column={column} title="Customer" />,
       cell: ({ row }) => <OrderCustomerCell order={row.original} />,
-    },
-    {
-      id: "items",
-      header: ({ column }) => <DataTableHeader column={column} title="Items" />,
-      cell: ({ row }) => <OrderItemsCell order={row.original} />,
-      enableSorting: false,
     },
     {
       id: "total",
@@ -107,6 +118,12 @@ function getOrderColumns(tenantId?: string): ColumnDef<MerchantOrder>[] {
       header: ({ column }) => <DataTableHeader column={column} title="Delivery" />,
       cell: ({ row }) => <OrderDeliveryCell order={row.original} />,
       enableSorting: false,
+    },
+    {
+      id: "placed",
+      accessorFn: (order) => order.createdAt ?? "",
+      header: ({ column }) => <DataTableHeader column={column} title="Placed" />,
+      cell: ({ row }) => <OrderPlacedCell order={row.original} />,
     },
     {
       id: "actions",
@@ -244,7 +261,7 @@ export function OrdersTable({
         value: filters.method,
         options: [
           { label: "All", value: "all" },
-          { label: "Cash on delivery", value: "cod" },
+          { label: "Cash", value: "cod" },
           { label: "Online", value: "chapa" },
         ],
         onChange: (value) => pushFilters({ method: value as OrderListFilterState["method"] }),
@@ -304,16 +321,53 @@ export function OrdersTable({
       </DataTableFilters>
 
       <p className="text-sm text-muted-foreground">
-        {pending ? "Updating… · " : ""}
-        {hasActiveFilters
-          ? `${orders.length} of ${totalCount} matching`
-          : `${orders.length} on this page, ${totalCount} total`}
+        {pending
+          ? "Updating…"
+          : hasActiveFilters
+            ? `${orders.length} of ${totalCount} matching`
+            : `${orders.length} on this page, ${totalCount} total`}
       </p>
     </div>
   );
 
   return (
     <DataTable
+      bulkActions={(selectedOrders) => (
+        <div className="flex items-center gap-2">
+          <Button
+            onClick={() =>
+              void copyToClipboard(
+                selectedOrders.map((order) => formatOrderReference(order)).join("\n"),
+                "Order codes",
+              )
+            }
+            size="sm"
+            type="button"
+            variant="outline"
+          >
+            <AppIcons.copy data-icon="inline-start" />
+            Copy codes
+          </Button>
+          <Button
+            onClick={() => {
+              const phones = selectedOrders
+                .map((order) => getOrderCustomerPhone(order))
+                .filter((phone): phone is string => Boolean(phone));
+              if (!phones.length) {
+                toast.error("No phone numbers on the selected orders.");
+                return;
+              }
+              void copyToClipboard(phones.join("\n"), "Phone numbers");
+            }}
+            size="sm"
+            type="button"
+            variant="outline"
+          >
+            <AppIcons.copy data-icon="inline-start" />
+            Copy phones
+          </Button>
+        </div>
+      )}
       columns={columns}
       data={orders}
       emptyMessage={
@@ -327,6 +381,7 @@ export function OrdersTable({
       footer={footer}
       getRowId={(row) => row.id}
       isFiltered={hasActiveFilters}
+      selectedSummaryLabel={(count) => `order${count === 1 ? "" : "s"} selected`}
       toolbar={toolbar}
     />
   );

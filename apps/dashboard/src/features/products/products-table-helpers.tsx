@@ -329,7 +329,7 @@ export function ProductOrganizationSummary({
         tooltip="Collection"
         value={
           product.collectionId
-            ? (collection?.title ?? collection?.handle ?? product.collectionId)
+            ? (collection?.title ?? collection?.handle ?? "Unknown collection")
             : "No collection"
         }
       />
@@ -338,7 +338,7 @@ export function ProductOrganizationSummary({
         tooltip="Categories"
         value={
           categoryCount
-            ? `${firstCategory?.name ?? firstCategory?.handle ?? categoryIds[0]}${
+            ? `${firstCategory?.name ?? firstCategory?.handle ?? "Unknown category"}${
                 categoryCount > 1 ? ` +${categoryCount - 1}` : ""
               }`
             : "No categories"

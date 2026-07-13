@@ -352,7 +352,7 @@ export function ManualOrderCreateDialog() {
         <DialogHeader className="gap-1.5 border-b px-4 py-4 text-left sm:px-5">
           <DialogTitle>Create order</DialogTitle>
           <DialogDescription>
-            Capture a phone or in-person COD sale. Choose a customer, add products, then confirm
+            Capture a phone or in-person cash sale. Choose a customer, add products, then confirm
             delivery.
           </DialogDescription>
           <ol className="mt-3 flex flex-wrap gap-2 text-xs">
@@ -547,7 +547,7 @@ export function ManualOrderCreateDialog() {
                 <div className="sm:col-span-2">
                   <p className="text-sm font-medium">Review</p>
                   <p className="mt-0.5 text-xs text-muted-foreground">
-                    Confirm customer and items, then add delivery details for this COD order.
+                    Confirm customer and items, then add delivery details for this cash order.
                   </p>
                 </div>
                 <div className="rounded-xl border px-3.5 py-3 sm:col-span-2">
@@ -565,7 +565,7 @@ export function ManualOrderCreateDialog() {
                     </div>
                     <div className="flex justify-between gap-3">
                       <dt className="text-muted-foreground">Payment</dt>
-                      <dd className="font-medium">Cash on delivery</dd>
+                      <dd className="font-medium">Cash</dd>
                     </div>
                   </dl>
                 </div>
@@ -667,7 +667,7 @@ export function ManualOrderCreateDialog() {
                   <Textarea
                     id="mo-note"
                     onChange={(event) => setNote(event.target.value)}
-                    placeholder="Optional — COD details, delivery timing, WhatsApp thread…"
+                    placeholder="Optional — cash collection notes, delivery timing, WhatsApp thread…"
                     rows={2}
                     value={note}
                   />

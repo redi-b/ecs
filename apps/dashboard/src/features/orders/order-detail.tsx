@@ -295,7 +295,7 @@ export function OrderDetail({ action, order, tenantId }: OrderDetailProps) {
             help={{
               summary: "Payment is separate from packing and handoff.",
               title: "Payment",
-              body: "Cash on delivery is marked paid when you receive cash. Online (Chapa) usually updates automatically; use Re-check if it looks stuck.",
+              body: "Cash sales are marked paid when you receive the money. Online (Chapa) usually updates automatically; use Re-check if it looks stuck.",
             }}
           >
             <Field label="Method" value={getMethodDisplayLabel(getMethodLabel(order))} />
