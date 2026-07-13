@@ -7,9 +7,8 @@
  *   pnpm dev:apps --split-medusa
  */
 import { spawn } from "node:child_process";
-import concurrently from "concurrently";
 
-import { blank, box, color, heading, info, kv } from "./lib/cli.mjs";
+import { blank, box, color, heading, info, kv, success } from "./lib/cli.mjs";
 
 process.env.NODE_ENV = "development";
 
@@ -87,98 +86,182 @@ if (groupedLogs) {
 }
 
 async function runStreaming(devCommands) {
-  const { result } = concurrently(
-    devCommands.map((service) => ({
-      command: service.command,
-      name: service.name,
-      prefixColor: service.color,
-    })),
-    {
-      killOthersOn: ["failure"],
-      // Fixed-width name so columns line up: [12:04:01] api       message
-      prefix: "[{time}] {name}",
-      prefixColors: devCommands.map((service) => service.color),
-      prefixLength: 10,
-      restartTries: 0,
-      timestampFormat: "HH:mm:ss",
-    },
-  );
-
-  try {
-    await result;
-  } catch {
-    process.exitCode = 1;
-  }
-}
-
-async function runGrouped(devCommands) {
-  const states = new Map(
-    devCommands.map((command) => [
-      command.name,
-      {
-        ...command,
-        buffer: "",
-        collapsed: 0,
-        exitCode: undefined,
-        lines: [],
-        process: undefined,
-        startedAt: Date.now(),
-      },
-    ]),
-  );
+  const nameWidth = Math.max(...devCommands.map((service) => service.name.length));
+  const states = spawnServices(devCommands);
   let shuttingDown = false;
+  let forceKillTimer;
 
-  const exitPromises = [];
-  const children = devCommands.map((command) => {
-    const child = spawn(command.command, {
-      shell: true,
-      stdio: ["ignore", "pipe", "pipe"],
-    });
-    const state = states.get(command.name);
-    state.process = child;
+  const writeLine = (state, line) => {
+    if (shuttingDown || !line.trim()) return;
+    const paint = color[state.color] ?? ((value) => value);
+    const stamp = formatClock(new Date());
+    const name = state.name.padEnd(nameWidth);
+    process.stdout.write(`${paint(`[${stamp}] ${name}`)} ${line}\n`);
+  };
 
-    child.stdout.on("data", (chunk) => appendOutput(state, chunk));
-    child.stderr.on("data", (chunk) => appendOutput(state, chunk));
-    child.on("exit", (code, signal) => {
+  for (const state of states.values()) {
+    state.process.stdout.on("data", (chunk) => appendStreamLines(state, chunk, writeLine));
+    state.process.stderr.on("data", (chunk) => appendStreamLines(state, chunk, writeLine));
+    state.process.on("exit", (code, signal) => {
       state.exitCode = shuttingDown || signal ? 0 : (code ?? 0);
 
       if (!shuttingDown && state.exitCode !== 0) {
         shuttingDown = true;
-        stopChildren(children, child);
+        info(`Stopping other processes (${state.name} exited ${state.exitCode})…`);
+        stopAll(states);
       }
     });
-    exitPromises.push(onceExit(child));
-
-    return child;
-  });
-
-  const render = () => renderGroupedLogs(states);
-  render();
-  const renderTimer = setInterval(render, 400);
+  }
 
   const stop = () => {
+    if (shuttingDown) {
+      // Second Ctrl+C — force kill immediately.
+      stopAll(states, "SIGKILL");
+      return;
+    }
     shuttingDown = true;
-    stopChildren(children);
+    clearInlineInterrupt();
+    info("Stopping app processes…");
+    stopAll(states);
+    forceKillTimer = setTimeout(() => stopAll(states, "SIGKILL"), 4_000);
   };
   process.on("SIGINT", stop);
   process.on("SIGTERM", stop);
 
-  await Promise.all(exitPromises);
-  clearInterval(renderTimer);
-  render();
+  await Promise.all([...states.values()].map((state) => onceExit(state.process)));
+  clearTimeout(forceKillTimer);
+
+  if (shuttingDown) {
+    success("All app processes stopped");
+    process.exitCode = 0;
+    return;
+  }
 
   const failed = [...states.values()].some((state) => (state.exitCode ?? 0) !== 0);
   process.exitCode = failed ? 1 : 0;
 }
 
-function appendOutput(state, chunk) {
+async function runGrouped(devCommands) {
+  const states = spawnServices(devCommands);
+  let shuttingDown = false;
+  /** Rows currently painted by the live dashboard (for in-place redraw). */
+  let paintedRows = 0;
+  let forceKillTimer;
+
+  for (const state of states.values()) {
+    state.process.stdout.on("data", (chunk) => {
+      if (!shuttingDown) appendGroupedOutput(state, chunk);
+    });
+    state.process.stderr.on("data", (chunk) => {
+      if (!shuttingDown) appendGroupedOutput(state, chunk);
+    });
+    state.process.on("exit", (code, signal) => {
+      state.exitCode = shuttingDown || signal ? 0 : (code ?? 0);
+
+      if (!shuttingDown && state.exitCode !== 0) {
+        shuttingDown = true;
+        stopAll(states);
+      }
+    });
+  }
+
+  const showCursor = () => {
+    if (process.stdout.isTTY) process.stdout.write("\x1b[?25h");
+  };
+
+  // Hide cursor while the dashboard is live-updating over itself.
+  if (process.stdout.isTTY) {
+    process.stdout.write("\x1b[?25l");
+  }
+  process.once("exit", showCursor);
+
+  const render = () => {
+    paintedRows = renderGroupedLogs(states, paintedRows);
+  };
+  render();
+  const renderTimer = setInterval(render, 400);
+
+  const stop = () => {
+    if (shuttingDown) {
+      stopAll(states, "SIGKILL");
+      return;
+    }
+    shuttingDown = true;
+    clearInlineInterrupt();
+    stopAll(states);
+    forceKillTimer = setTimeout(() => stopAll(states, "SIGKILL"), 4_000);
+  };
+  process.on("SIGINT", stop);
+  process.on("SIGTERM", stop);
+
+  await Promise.all([...states.values()].map((state) => onceExit(state.process)));
+  clearInterval(renderTimer);
+  clearTimeout(forceKillTimer);
+  render();
+  showCursor();
+
+  if (shuttingDown) {
+    process.stdout.write("\n");
+    success("All app processes stopped");
+    process.exitCode = 0;
+    return;
+  }
+
+  const failed = [...states.values()].some((state) => (state.exitCode ?? 0) !== 0);
+  process.exitCode = failed ? 1 : 0;
+}
+
+/**
+ * Spawn each service in its own process group so Ctrl+C hits only this
+ * supervisor — children get a quiet SIGTERM instead of printing SIGINT noise.
+ */
+function spawnServices(devCommands) {
+  const states = new Map();
+
+  for (const command of devCommands) {
+    const child = spawn(command.command, {
+      shell: true,
+      stdio: ["ignore", "pipe", "pipe"],
+      // New session/process group on POSIX so the terminal's SIGINT process
+      // group does not include the child trees.
+      detached: process.platform !== "win32",
+    });
+
+    states.set(command.name, {
+      ...command,
+      buffer: "",
+      collapsed: 0,
+      exitCode: undefined,
+      lines: [],
+      process: child,
+      startedAt: Date.now(),
+    });
+  }
+
+  return states;
+}
+
+function appendStreamLines(state, chunk, writeLine) {
+  state.buffer += chunk.toString();
+  const parts = state.buffer.split(/\r?\n/);
+  state.buffer = parts.pop() ?? "";
+
+  for (const part of parts) {
+    const line = stripAnsi(part).replace(/\r/g, "");
+    if (!line.trim()) continue;
+    writeLine(state, line);
+  }
+}
+
+function appendGroupedOutput(state, chunk) {
   state.buffer += chunk.toString();
   const parts = state.buffer.split(/\r?\n/);
   state.buffer = parts.pop() ?? "";
 
   for (const line of parts) {
     if (!line.trim()) continue;
-    state.lines.push(line);
+    // Strip child ANSI / CR so our frame stays one terminal row per log line.
+    state.lines.push(stripAnsi(line).replace(/\r/g, ""));
     if (state.lines.length > 10) {
       state.lines.shift();
       state.collapsed += 1;
@@ -186,11 +269,54 @@ function appendOutput(state, chunk) {
   }
 }
 
-function renderGroupedLogs(states) {
+/**
+ * Medusa-style in-place redraw: move cursor up over the previous frame,
+ * clear each line, rewrite. Never full-screen clears — scrollback stays clean.
+ *
+ * @returns {number} row count of the frame just painted
+ */
+function renderGroupedLogs(states, previousRows) {
   const now = Date.now();
-  process.stdout.write("\x1b[2J\x1b[H");
-  process.stdout.write(`${color.bold("ECS development processes")}\n`);
-  process.stdout.write(`${color.dim("Live tail · last 10 lines per service")}\n\n`);
+  const columns = process.stdout.columns || 80;
+  const frame = buildGroupedFrame(states, now, columns);
+
+  if (!process.stdout.isTTY) {
+    // Non-TTY (piped logs): print a full snapshot once per tick.
+    process.stdout.write(frame.join("\n") + "\n");
+    return frame.length;
+  }
+
+  let out = "";
+
+  if (previousRows > 0) {
+    // Jump to the first row of the previous frame.
+    out += `\x1b[${previousRows}A`;
+  }
+
+  for (const line of frame) {
+    // Clear the whole line, write content, advance one row.
+    out += `\x1b[2K${line}\n`;
+  }
+
+  // If this frame is shorter, blank leftover rows then park the cursor
+  // at the end of the new content so the next redraw baseline is correct.
+  if (previousRows > frame.length) {
+    const extra = previousRows - frame.length;
+    for (let i = 0; i < extra; i++) {
+      out += "\x1b[2K\n";
+    }
+    out += `\x1b[${extra}A`;
+  }
+
+  process.stdout.write(out);
+  return frame.length;
+}
+
+function buildGroupedFrame(states, now, columns) {
+  const lines = [];
+  lines.push(fitWidth(color.bold("ECS development processes"), columns));
+  lines.push(fitWidth(color.dim("Live tail · last 10 lines per service"), columns));
+  lines.push("");
 
   for (const state of states.values()) {
     const running = state.exitCode === undefined;
@@ -203,19 +329,58 @@ function renderGroupedLogs(states) {
     const collapsed =
       state.collapsed > 0 ? color.dim(` · ${state.collapsed} older lines hidden`) : "";
 
-    process.stdout.write(
-      `${color.bold(state.title.padEnd(16))} ${statusLabel}  ${color.dim(elapsed)}${collapsed}\n`,
+    lines.push(
+      fitWidth(
+        `${color.bold(state.title.padEnd(16))} ${statusLabel}  ${color.dim(elapsed)}${collapsed}`,
+        columns,
+      ),
     );
 
     if (state.lines.length === 0) {
-      process.stdout.write(`  ${color.dim("waiting for output…")}\n`);
+      lines.push(fitWidth(`  ${color.dim("waiting for output…")}`, columns));
     } else {
       for (const line of state.lines) {
-        process.stdout.write(`  ${color.dim("│")} ${line}\n`);
+        lines.push(fitWidth(`  ${color.dim("│")} ${line}`, columns));
       }
     }
-    process.stdout.write("\n");
+    lines.push("");
   }
+
+  // Drop trailing blank so we don't leave an extra empty row every tick.
+  while (lines.length > 0 && lines[lines.length - 1] === "") {
+    lines.pop();
+  }
+
+  return lines;
+}
+
+/** Visible length without ANSI SGR sequences. */
+function stripAnsi(value) {
+  return value.replace(/\x1b\[[0-9;]*m/g, "");
+}
+
+/** Truncate a (possibly colored) line so it fits one terminal row. */
+function fitWidth(line, columns) {
+  const plain = stripAnsi(line);
+  if (plain.length <= columns) return line;
+  // Prefer truncating the raw string; if colors remain unbalanced the next
+  // \x1b[2K redraw resets the line anyway.
+  const keep = Math.max(0, columns - 1);
+  let visible = 0;
+  let out = "";
+  for (let i = 0; i < line.length; i++) {
+    if (line[i] === "\x1b") {
+      const end = line.indexOf("m", i);
+      if (end === -1) break;
+      out += line.slice(i, end + 1);
+      i = end;
+      continue;
+    }
+    if (visible >= keep) break;
+    out += line[i];
+    visible += 1;
+  }
+  return `${out}…`;
 }
 
 function formatElapsed(milliseconds) {
@@ -226,15 +391,51 @@ function formatElapsed(milliseconds) {
   return `${minutes}m ${String(remainder).padStart(2, "0")}s`;
 }
 
-function stopChildren(children, except) {
-  for (const child of children) {
-    if (child === except || child.killed || child.exitCode !== null) continue;
-    child.kill("SIGTERM");
+function formatClock(date) {
+  const hh = String(date.getHours()).padStart(2, "0");
+  const mm = String(date.getMinutes()).padStart(2, "0");
+  const ss = String(date.getSeconds()).padStart(2, "0");
+  return `${hh}:${mm}:${ss}`;
+}
+
+/** Clear the terminal's echoed `^C` on the current line. */
+function clearInlineInterrupt() {
+  if (process.stdout.isTTY) {
+    process.stdout.write("\r\x1b[2K");
+  }
+}
+
+function stopAll(states, signal = "SIGTERM") {
+  for (const state of states.values()) {
+    killTree(state.process, signal);
+  }
+}
+
+function killTree(child, signal = "SIGTERM") {
+  if (!child?.pid || child.exitCode !== null || child.signalCode) return;
+
+  try {
+    if (process.platform !== "win32") {
+      // Negative PID targets the process group created via detached: true.
+      process.kill(-child.pid, signal);
+      return;
+    }
+    child.kill(signal);
+  } catch {
+    try {
+      child.kill(signal);
+    } catch {
+      // Already gone.
+    }
   }
 }
 
 function onceExit(child) {
   return new Promise((resolve) => {
+    if (child.exitCode !== null || child.signalCode) {
+      resolve();
+      return;
+    }
     child.once("exit", resolve);
   });
 }
