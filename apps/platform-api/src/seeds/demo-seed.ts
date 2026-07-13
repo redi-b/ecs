@@ -14,6 +14,8 @@
  *
  * Prerequisites: `pnpm seed --write-env`, Medusa + platform DB running.
  */
+import { existsSync, readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { loadServiceEnv } from "@ecs/config";
 import {
   accounts,
@@ -35,7 +37,7 @@ import { hashPassword } from "better-auth/crypto";
 import { and, eq, inArray } from "drizzle-orm";
 
 import { createMedusaCommerceProvisioningClient } from "../adapters/medusa/commerce-provisioning.js";
-import { loadPlatformApiEnvFiles } from "../config/env.js";
+import { getPlatformApiServiceDir, loadPlatformApiEnvFiles } from "../config/env.js";
 import { DEFAULT_PLAN_IDS, createBillingService } from "../modules/billing/service.js";
 import { createTenantShopProvisioningService } from "../modules/tenants/shop-provisioning.js";
 import {
@@ -453,7 +455,7 @@ async function seedCommerce(
   await cleanTenantPromotions(tenantId, shop.tenant.handle);
   const promotionsCreated = await seedPromotions(tenantId, shop.tenant.handle, products);
 
-  // COD-style draft orders → convert a few to real orders
+  // Cash (COD) draft orders → convert a few to real orders, dates spread for charts/list.
   const variants = products.flatMap((product) =>
     (product.variants ?? []).map((variant) => ({
       productTitle: product.title,
@@ -462,11 +464,17 @@ async function seedCommerce(
   );
   let ordersCreated = 0;
   const orderCount = Math.min(10, variants.length, Math.max(shop.customers.length * 2, 4));
+  const orderIdsToBackdate: Array<{ id: string; createdAt: Date }> = [];
 
   for (let index = 0; index < orderCount; index += 1) {
     const variant = variants[index];
     const customer = shop.customers[index % shop.customers.length];
     if (!variant || !customer) continue;
+
+    // Spread across ~35 days: newest first index, older as index grows.
+    const daysAgo = Math.min(34, Math.round((index / Math.max(orderCount - 1, 1)) * 34));
+    const placedAt = addDays(new Date(), -daysAgo);
+    placedAt.setUTCHours(9 + (index % 9), (index * 11) % 60, index % 60, 0);
 
     const draft = await medusaPost<{ draft_order?: { id: string }; order?: { id: string } }>(
       "/admin/draft-orders",
@@ -491,7 +499,8 @@ async function seedCommerce(
           delivery_choice: index % 3 === 0 ? "pickup" : "delivery",
           customer_name: `${customer.firstName} ${customer.lastName}`.trim(),
           customer_phone: customer.phone,
-          note: "Demo COD order",
+          note: "Demo cash order",
+          demo_placed_at: placedAt.toISOString(),
         },
         region_id: resources.regionId,
         sales_channel_id: resources.salesChannelId,
@@ -510,11 +519,18 @@ async function seedCommerce(
         `/admin/draft-orders/${encodeURIComponent(draftId)}/convert-to-order`,
         {},
       );
-      if (converted?.order?.id) ordersCreated += 1;
+      if (converted?.order?.id) {
+        orderIdsToBackdate.push({ id: converted.order.id, createdAt: placedAt });
+        ordersCreated += 1;
+      }
     } else {
+      // Draft orders live in draft_order table — still count for seed summary.
+      await backdateMedusaDraftOrder(draftId, placedAt);
       ordersCreated += 1;
     }
   }
+
+  await backdateMedusaOrders(orderIdsToBackdate);
 
   return {
     skipped: false,
@@ -974,45 +990,27 @@ async function cleanShopCommerce(
 
   if (!medusaAdminApiToken) return summary;
 
-  // Orders first (avoid dangling line items where possible).
-  const orderQuery = new URLSearchParams({
-    fields: "id,metadata,sales_channel_id,email",
-    limit: "100",
-    order: "-created_at",
-  });
-  if (salesChannelId) orderQuery.set("sales_channel_id", salesChannelId);
-
-  const orders = await medusaGet<{
-    orders?: Array<{
-      email?: string | null;
-      id: string;
-      metadata?: Record<string, unknown> | null;
-      sales_channel_id?: string | null;
-    }>;
-  }>(`/admin/orders?${orderQuery}`);
-
   const demoEmails = new Set(demoShops.flatMap((shop) => shop.customers.map((c) => c.email)));
 
-  for (const order of orders?.orders ?? []) {
-    const channelMatch = !salesChannelId || order.sales_channel_id === salesChannelId;
-    const demoOrder =
-      isDemoMetadata(order.metadata ?? undefined, tenantId, handle) ||
-      (channelMatch && order.email && demoEmails.has(order.email));
-    if (!demoOrder || !channelMatch) continue;
-
-    // Best-effort cancel then ignore archive failures on already-closed orders.
-    await medusaPost(`/admin/orders/${encodeURIComponent(order.id)}/cancel`, {}).catch(() => null);
-    summary.orders += 1;
-  }
+  // Orders first so product deletes are less likely to fail on line-item refs.
+  // Cancel + archive removes them from the default merchant list on re-seed.
+  summary.orders = await cleanDemoOrders({
+    demoEmails,
+    handle,
+    salesChannelId,
+    tenantId,
+  });
+  await cleanDemoDraftOrders({ demoEmails, handle, salesChannelId, tenantId });
 
   const shop = demoShops.find((item) => item.tenant.handle === handle);
   const shopProductHandles = new Set(shop?.products.map((item) => item.handle) ?? []);
 
-  const products = await medusaGet<{
-    products?: Array<{ handle?: string | null; id: string; metadata?: Record<string, unknown> }>;
-  }>("/admin/products?limit=200&fields=id,handle,metadata");
-
-  for (const product of products?.products ?? []) {
+  // Paginate products — a single page misses leftovers after prior partial seeds.
+  for await (const product of paginateMedusaList<{
+    handle?: string | null;
+    id: string;
+    metadata?: Record<string, unknown>;
+  }>("/admin/products", "products", "id,handle,metadata")) {
     const byMeta = isDemoMetadata(product.metadata, tenantId, handle);
     const byHandle = Boolean(product.handle && shopProductHandles.has(product.handle));
     if (byMeta || byHandle) {
@@ -1021,12 +1019,12 @@ async function cleanShopCommerce(
     }
   }
 
-  const collections = await medusaGet<{
-    collections?: Array<{ handle?: string | null; id: string; metadata?: Record<string, unknown> }>;
-  }>("/admin/collections?limit=100&fields=id,handle,metadata");
-
   const shopCollectionHandles = new Set(shop?.collections.map((item) => item.handle) ?? []);
-  for (const collection of collections?.collections ?? []) {
+  for await (const collection of paginateMedusaList<{
+    handle?: string | null;
+    id: string;
+    metadata?: Record<string, unknown>;
+  }>("/admin/collections", "collections", "id,handle,metadata")) {
     if (
       isDemoMetadata(collection.metadata, tenantId, handle) ||
       (collection.handle && shopCollectionHandles.has(collection.handle))
@@ -1036,16 +1034,12 @@ async function cleanShopCommerce(
     }
   }
 
-  const categories = await medusaGet<{
-    product_categories?: Array<{
-      handle?: string | null;
-      id: string;
-      metadata?: Record<string, unknown>;
-    }>;
-  }>("/admin/product-categories?limit=100&fields=id,handle,metadata");
-
   const shopCategoryHandles = new Set(shop?.categories.map((item) => item.handle) ?? []);
-  for (const category of categories?.product_categories ?? []) {
+  for await (const category of paginateMedusaList<{
+    handle?: string | null;
+    id: string;
+    metadata?: Record<string, unknown>;
+  }>("/admin/product-categories", "product_categories", "id,handle,metadata")) {
     if (
       isDemoMetadata(category.metadata, tenantId, handle) ||
       (category.handle && shopCategoryHandles.has(category.handle))
@@ -1068,6 +1062,124 @@ async function cleanShopCommerce(
 
   summary.promotions = await cleanTenantPromotions(tenantId, handle);
   return summary;
+}
+
+/**
+ * Remove demo orders from the merchant list on re-seed.
+ * Medusa has no hard delete for orders — cancel + archive is the supported cleanup.
+ */
+async function cleanDemoOrders(input: {
+  demoEmails: Set<string>;
+  handle: string;
+  salesChannelId?: string | null;
+  tenantId: string;
+}) {
+  let removed = 0;
+  const pageSize = 100;
+  let offset = 0;
+
+  for (let page = 0; page < 20; page += 1) {
+    const orderQuery = new URLSearchParams({
+      fields: "id,metadata,sales_channel_id,email,status",
+      limit: String(pageSize),
+      offset: String(offset),
+      order: "-created_at",
+    });
+    // Medusa list expects array form for sales channel filter.
+    if (input.salesChannelId) {
+      orderQuery.append("sales_channel_id[]", input.salesChannelId);
+    }
+
+    const listed = await medusaGet<{
+      count?: number;
+      orders?: Array<{
+        email?: string | null;
+        id: string;
+        metadata?: Record<string, unknown> | null;
+        sales_channel_id?: string | null;
+        status?: string | null;
+      }>;
+    }>(`/admin/orders?${orderQuery}`);
+
+    const batch = listed?.orders ?? [];
+    if (batch.length === 0) break;
+
+    for (const order of batch) {
+      const channelMatch =
+        !input.salesChannelId || order.sales_channel_id === input.salesChannelId;
+      const demoOrder =
+        isDemoMetadata(order.metadata ?? undefined, input.tenantId, input.handle) ||
+        (channelMatch && order.email && input.demoEmails.has(order.email));
+      if (!demoOrder || !channelMatch) continue;
+
+      const status = (order.status ?? "").toLowerCase();
+      if (!status.includes("cancel")) {
+        await medusaPost(`/admin/orders/${encodeURIComponent(order.id)}/cancel`, {}).catch(
+          () => null,
+        );
+      }
+      await medusaPost(`/admin/orders/${encodeURIComponent(order.id)}/archive`, {}).catch(
+        () => null,
+      );
+      removed += 1;
+    }
+
+    offset += batch.length;
+    if (batch.length < pageSize) break;
+    if (typeof listed?.count === "number" && offset >= listed.count) break;
+  }
+
+  return removed;
+}
+
+async function cleanDemoDraftOrders(input: {
+  demoEmails: Set<string>;
+  handle: string;
+  salesChannelId?: string | null;
+  tenantId: string;
+}) {
+  for await (const draft of paginateMedusaList<{
+    email?: string | null;
+    id: string;
+    metadata?: Record<string, unknown> | null;
+    sales_channel_id?: string | null;
+  }>("/admin/draft-orders", "draft_orders", "id,metadata,sales_channel_id,email")) {
+    const channelMatch =
+      !input.salesChannelId || draft.sales_channel_id === input.salesChannelId;
+    const isDemo =
+      isDemoMetadata(draft.metadata ?? undefined, input.tenantId, input.handle) ||
+      (channelMatch && draft.email && input.demoEmails.has(draft.email));
+    if (!isDemo || !channelMatch) continue;
+    await medusaDelete(`/admin/draft-orders/${encodeURIComponent(draft.id)}`);
+  }
+}
+
+/** Walk Medusa admin list endpoints until exhausted (or a safety page cap). */
+async function* paginateMedusaList<T extends { id: string }>(
+  path: string,
+  key: string,
+  fields: string,
+  pageSize = 100,
+): AsyncGenerator<T> {
+  let offset = 0;
+  for (let page = 0; page < 30; page += 1) {
+    const query = new URLSearchParams({
+      fields,
+      limit: String(pageSize),
+      offset: String(offset),
+    });
+    const separator = path.includes("?") ? "&" : "?";
+    const listed = await medusaGet<Record<string, unknown>>(
+      `${path}${separator}${query.toString()}`,
+    );
+    const batch = Array.isArray(listed?.[key]) ? (listed[key] as T[]) : [];
+    if (batch.length === 0) return;
+    for (const item of batch) {
+      yield item;
+    }
+    offset += batch.length;
+    if (batch.length < pageSize) return;
+  }
 }
 
 async function cleanTenantPromotions(tenantId: string, handle: string) {
@@ -1109,6 +1221,113 @@ async function cleanTenantPromotions(tenantId: string, handle: string) {
   }
 
   return removed;
+}
+
+/**
+ * Backdate converted orders so the list/overview feel multi-day.
+ * Admin API cannot set created_at — update Medusa DB directly when available.
+ */
+async function backdateMedusaOrders(entries: Array<{ id: string; createdAt: Date }>) {
+  if (!entries.length) return;
+  const client = await getMedusaPgClient();
+  if (!client) return;
+  try {
+    for (const entry of entries) {
+      await client.query(
+        `UPDATE "order" SET created_at = $1, updated_at = $1 WHERE id = $2 AND deleted_at IS NULL`,
+        [entry.createdAt.toISOString(), entry.id],
+      );
+    }
+  } finally {
+    await client.end();
+  }
+}
+
+async function backdateMedusaDraftOrder(draftId: string, createdAt: Date) {
+  // Draft-order plugin stores drafts as order rows with is_draft_order = true.
+  await backdateMedusaOrders([{ id: draftId, createdAt }]);
+}
+
+/**
+ * Resolve Medusa Postgres URL without requiring a separate env var.
+ * Loads apps/medusa/.env DATABASE_URL when present; normalizes mistaken http:// schemes.
+ */
+function resolveMedusaDatabaseUrl() {
+  // Prefer explicit medusa URL; avoid platform API DATABASE_URL if it points at platform_db.
+  const candidates = [
+    process.env.MEDUSA_DATABASE_URL,
+    process.env.MEDUSA_DB_URL,
+    // Only use DATABASE_URL when it clearly targets medusa.
+    process.env.DATABASE_URL?.includes("medusa") ? process.env.DATABASE_URL : undefined,
+  ];
+
+  // apps/medusa/.env is the canonical local source.
+  try {
+    const medusaEnvPath = resolve(
+      getPlatformApiServiceDir(import.meta.url),
+      "../medusa/.env",
+    );
+    if (existsSync(medusaEnvPath)) {
+      const text = readFileSync(medusaEnvPath, "utf8");
+      for (const line of text.split("\n")) {
+        const match = line.match(/^\s*DATABASE_URL\s*=\s*(.+)\s*$/);
+        if (match?.[1]) {
+          candidates.push(match[1].trim().replace(/^["']|["']$/g, ""));
+          break;
+        }
+      }
+    }
+  } catch {
+    // ignore
+  }
+
+  candidates.push("postgres://ecs:ecs@localhost:5432/medusa_db");
+
+  for (const raw of candidates) {
+    if (!raw?.trim()) continue;
+    let url = raw.trim();
+    // Common misconfig: http://user:pass@host/db
+    if (url.startsWith("http://") || url.startsWith("https://")) {
+      url = url.replace(/^https?:\/\//, "postgres://");
+    }
+    if (url.startsWith("postgres://") || url.startsWith("postgresql://")) {
+      return url;
+    }
+  }
+
+  return "postgres://ecs:ecs@localhost:5432/medusa_db";
+}
+
+async function loadPgModule() {
+  try {
+    return await import("pg");
+  } catch {
+    // platform-api may not list pg; resolve via @ecs/db which depends on it.
+    const { createRequire } = await import("node:module");
+    const { pathToFileURL } = await import("node:url");
+    const require = createRequire(
+      resolve(getPlatformApiServiceDir(import.meta.url), "../../packages/db/package.json"),
+    );
+    const pgPath = require.resolve("pg");
+    return import(pathToFileURL(pgPath).href);
+  }
+}
+
+async function getMedusaPgClient() {
+  const connectionString = resolveMedusaDatabaseUrl();
+  try {
+    const pg = await loadPgModule();
+    const Client = pg.default?.Client ?? pg.Client;
+    const client = new Client({ connectionString });
+    await client.connect();
+    return client;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.warn(
+      `Could not connect to Medusa DB to backdate orders (${message}). Using connection ${connectionString.replace(/:[^:@/]+@/, ":***@")}.`,
+    );
+    return null;
+  }
 }
 
 async function medusaGet<T>(path: string): Promise<T | null> {
