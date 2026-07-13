@@ -80,7 +80,12 @@ export function StorefrontTemplateOption({
           </div>
         ) : null}
       </div>
-      <Button disabled={selected} type="submit" variant={selected ? "secondary" : "default"}>
+      <Button
+        className="rounded-full"
+        disabled={selected}
+        type="submit"
+        variant={selected ? "secondary" : "default"}
+      >
         {selected ? "Selected" : "Use this storefront"}
       </Button>
     </form>

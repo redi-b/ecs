@@ -41,7 +41,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
 
   return (
     <PageShell
-      description="Manage shop address, checkout fulfillment, storefront status, and account details."
+      description="Manage shop details, preferences, fulfillment, storefront, and account security."
       title="Settings"
     >
       {!result.ok ? (

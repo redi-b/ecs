@@ -2,6 +2,7 @@ import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
 
+import { ActorProvider } from "@/components/app/actor-context";
 import { AppHeader } from "@/components/app/app-header";
 import { AppSidebar } from "@/components/app/app-sidebar";
 import { BreadcrumbLabelsProvider } from "@/components/app/breadcrumb-labels";
@@ -91,13 +92,15 @@ export default async function AdminDashboardLayout({ children }: { children: Rea
   return (
     <TooltipProvider>
       <SidebarProvider defaultOpen={sidebarDefaultOpen}>
-        <AppSidebar actor={access.summary.actor} />
-        <SidebarInset>
-          <BreadcrumbLabelsProvider>
-            <AppHeader />
-            {children}
-          </BreadcrumbLabelsProvider>
-        </SidebarInset>
+        <ActorProvider actor={access.summary.actor}>
+          <AppSidebar actor={access.summary.actor} />
+          <SidebarInset>
+            <BreadcrumbLabelsProvider>
+              <AppHeader />
+              {children}
+            </BreadcrumbLabelsProvider>
+          </SidebarInset>
+        </ActorProvider>
       </SidebarProvider>
     </TooltipProvider>
   );

@@ -260,6 +260,11 @@ const auth = createPlatformAuth({
   trustedOrigins: parseTrustedOrigins(process.env.BETTER_AUTH_TRUSTED_ORIGINS) ?? [
     "http://api.lvh.me",
     "http://dashboard.lvh.me",
+    // Tenant dashboards (shop subdomains) call /platform/auth from the browser origin.
+    "http://*.lvh.me",
+    "http://*.lvh.me:3001",
+    "http://localhost:3001",
+    "http://127.0.0.1:3001",
   ],
   useSecureCookies: (process.env.BETTER_AUTH_URL ?? "http://api.lvh.me").startsWith("https://"),
 });

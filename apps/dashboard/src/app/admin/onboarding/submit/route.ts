@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { updateMerchantDeliverySettings } from "@/lib/merchant-settings";
 import { createTenantShop } from "@/lib/platform-onboarding";
 import { requestWantsJson } from "@/lib/request-wants-json";
 
@@ -21,6 +22,7 @@ export async function POST(request: Request) {
     return failOnboarding(request, "missing_required_fields", payload, wantsJson);
   }
 
+  const platformApiBaseUrl = getPlatformBaseUrl();
   const createResult = await createTenantShop({
     cookieHeader,
     input: {
@@ -30,7 +32,7 @@ export async function POST(request: Request) {
       name: shopName,
       templateKey,
     },
-    platformApiBaseUrl: getPlatformBaseUrl(),
+    platformApiBaseUrl,
   });
 
   if (!createResult.ok) {
@@ -40,6 +42,34 @@ export async function POST(request: Request) {
       status: createResult.status,
     });
     return failOnboarding(request, createResult.message, payload, wantsJson);
+  }
+
+  // Apply checkout preferences chosen during onboarding (best-effort after provision).
+  const tenantId = createResult.mutation.tenant.id;
+  if (tenantId) {
+    const deliveryResult = await updateMerchantDeliverySettings({
+      cookieHeader,
+      delivery: {
+        currency: "ETB",
+        defaultDeliveryFee: "0",
+        deliveryEnabled: payload.deliveryEnabled,
+        landmarkRequired: false,
+        notesEnabled: true,
+        phoneConfirmationRequired: payload.phoneConfirmationRequired,
+        pickupEnabled: payload.pickupEnabled,
+        zones: [],
+      },
+      platformApiBaseUrl,
+      tenantId,
+    });
+
+    if (!deliveryResult.ok) {
+      console.warn("[onboarding/submit] delivery prefs not applied", {
+        handle,
+        message: deliveryResult.message,
+        tenantId,
+      });
+    }
   }
 
   const redirectTo =
@@ -59,14 +89,20 @@ async function readOnboardingPayload(request: Request) {
     const body = (await request.json().catch(() => null)) as {
       businessCategory?: unknown;
       contactPhone?: unknown;
+      deliveryEnabled?: unknown;
       handle?: unknown;
+      phoneConfirmationRequired?: unknown;
+      pickupEnabled?: unknown;
       shopName?: unknown;
       templateKey?: unknown;
     } | null;
     return {
       businessCategory: optionalString(body?.businessCategory),
       contactPhone: optionalString(body?.contactPhone),
+      deliveryEnabled: optionalBoolean(body?.deliveryEnabled, true),
       handle: requiredString(body?.handle),
+      phoneConfirmationRequired: optionalBoolean(body?.phoneConfirmationRequired, true),
+      pickupEnabled: optionalBoolean(body?.pickupEnabled, true),
       shopName: requiredString(body?.shopName),
       templateKey: requiredString(body?.templateKey),
     };
@@ -76,10 +112,20 @@ async function readOnboardingPayload(request: Request) {
   return {
     businessCategory: getOptionalString(formData, "businessCategory"),
     contactPhone: getOptionalString(formData, "contactPhone"),
+    deliveryEnabled: formData.get("deliveryEnabled") !== "false",
     handle: getRequiredString(formData, "handle"),
+    phoneConfirmationRequired: formData.get("phoneConfirmationRequired") !== "false",
+    pickupEnabled: formData.get("pickupEnabled") !== "false",
     shopName: getRequiredString(formData, "shopName"),
     templateKey: getRequiredString(formData, "templateKey"),
   };
+}
+
+function optionalBoolean(value: unknown, fallback: boolean) {
+  if (typeof value === "boolean") return value;
+  if (value === "true") return true;
+  if (value === "false") return false;
+  return fallback;
 }
 
 function failOnboarding(

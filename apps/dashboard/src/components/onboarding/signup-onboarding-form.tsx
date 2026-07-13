@@ -18,6 +18,7 @@ import {
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Switch } from "@/components/ui/switch";
 import type { MessageKey } from "@/i18n/messages";
 import { useI18n } from "@/i18n/provider";
 import { getStorefrontHostname } from "@/lib/storefront-hosts";
@@ -98,6 +99,9 @@ export function ShopOnboardingForm({
     parseCategories(defaultValues.businessCategory),
   );
   const [contactPhone, setContactPhone] = useState(defaultValues.contactPhone ?? "");
+  const [deliveryEnabled, setDeliveryEnabled] = useState(true);
+  const [pickupEnabled, setPickupEnabled] = useState(true);
+  const [phoneConfirmationRequired, setPhoneConfirmationRequired] = useState(true);
   const [handleState, setHandleState] = useState<HandleState>({
     status: "idle",
     message: t("onboarding.handle.choose"),
@@ -243,7 +247,10 @@ export function ShopOnboardingForm({
       body: JSON.stringify({
         businessCategory: businessCategory || undefined,
         contactPhone: contactPhone.trim() || undefined,
+        deliveryEnabled,
         handle,
+        phoneConfirmationRequired,
+        pickupEnabled,
         shopName,
         templateKey,
       }),
@@ -511,6 +518,34 @@ export function ShopOnboardingForm({
                     />
                     <FieldDescription>{t("onboarding.contactPhoneHelp")}</FieldDescription>
                   </Field>
+                </div>
+
+                <div className="rounded-xl border border-border/90 p-4 sm:p-5">
+                  <p className="text-sm font-semibold tracking-tight">Checkout preferences</p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Starting defaults for how customers place orders. You can change these later in
+                    Settings → Fulfillment.
+                  </p>
+                  <div className="mt-4 grid gap-3">
+                    <PreferenceToggle
+                      checked={deliveryEnabled}
+                      description="Customers can request local delivery."
+                      label="Offer delivery"
+                      onCheckedChange={setDeliveryEnabled}
+                    />
+                    <PreferenceToggle
+                      checked={pickupEnabled}
+                      description="Customers can collect orders themselves."
+                      label="Offer pickup"
+                      onCheckedChange={setPickupEnabled}
+                    />
+                    <PreferenceToggle
+                      checked={phoneConfirmationRequired}
+                      description="Require a phone number before checkout."
+                      label="Require phone number"
+                      onCheckedChange={setPhoneConfirmationRequired}
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -878,6 +913,28 @@ function ReviewItem({
     <div className={cn("min-w-0", className)}>
       <dt className="text-xs font-medium tracking-wide text-muted-foreground">{label}</dt>
       <dd className="mt-1.5 break-words text-sm font-medium text-pretty">{value}</dd>
+    </div>
+  );
+}
+
+function PreferenceToggle({
+  checked,
+  description,
+  label,
+  onCheckedChange,
+}: {
+  checked: boolean;
+  description: string;
+  label: string;
+  onCheckedChange: (checked: boolean) => void;
+}) {
+  return (
+    <div className="flex items-start justify-between gap-3 rounded-lg border px-3 py-3">
+      <div className="min-w-0">
+        <p className="text-sm font-medium">{label}</p>
+        <p className="mt-0.5 text-xs text-muted-foreground">{description}</p>
+      </div>
+      <Switch checked={checked} onCheckedChange={onCheckedChange} />
     </div>
   );
 }

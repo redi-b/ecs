@@ -36,6 +36,9 @@ export function createPlatformAuth(options: {
       modelName: "users",
     },
     session: {
+      // Merchant dashboard account actions (password/sessions) re-check current password
+      // where needed; do not block on session "freshness" after a long browser session.
+      freshAge: 0,
       modelName: "sessions",
     },
     account: {

@@ -4,6 +4,7 @@ import type { MerchantDashboardSummary } from "@ecs/contracts";
 import Link from "next/link";
 import { useState } from "react";
 
+import { useActorOrFallback } from "@/components/app/actor-context";
 import { AppIcons } from "@/components/app/icons";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -28,11 +29,12 @@ import { cn } from "@/lib/utils";
 export function AccountMenu({ actor }: { actor: MerchantDashboardSummary["actor"] }) {
   const { t } = useI18n();
   const { isMobile, setOpenMobile, state } = useSidebar();
+  const { actor: liveActor } = useActorOrFallback(actor);
   const collapsed = state === "collapsed";
   const [menuOpen, setMenuOpen] = useState(false);
   const [suppressTooltip, setSuppressTooltip] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
-  const accountName = actor.name?.trim() || actor.email;
+  const accountName = liveActor.name?.trim() || liveActor.email;
   const accountInitials = getAccountInitials(accountName);
 
   function closeMobileSidebar() {
@@ -101,10 +103,10 @@ export function AccountMenu({ actor }: { actor: MerchantDashboardSummary["actor"
                 {accountName}
               </span>
               <span className="block truncate text-xs font-normal text-muted-foreground">
-                {actor.email}
+                {liveActor.email}
               </span>
               <span className="block truncate text-xs font-normal capitalize text-muted-foreground">
-                {actor.role}
+                {liveActor.role}
               </span>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
