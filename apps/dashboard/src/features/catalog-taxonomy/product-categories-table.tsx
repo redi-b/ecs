@@ -98,7 +98,9 @@ function getCategoryColumns(
       id: "name",
       accessorFn: (category) => getCategoryDisplayName(category),
       header: ({ column }) => <DataTableHeader column={column} title="Category" />,
-      cell: ({ row }) => <CategoryIdentityCell category={row.original} />,
+      cell: ({ row }) => (
+        <CategoryIdentityCell category={row.original} onOpen={() => onEdit(row.original)} />
+      ),
     },
     {
       accessorKey: "handle",

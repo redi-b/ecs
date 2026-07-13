@@ -98,7 +98,9 @@ function getCollectionColumns(
       id: "title",
       accessorFn: (collection) => getCollectionDisplayName(collection),
       header: ({ column }) => <DataTableHeader column={column} title="Collection" />,
-      cell: ({ row }) => <CollectionIdentityCell collection={row.original} />,
+      cell: ({ row }) => (
+        <CollectionIdentityCell collection={row.original} onOpen={() => onEdit(row.original)} />
+      ),
     },
     {
       accessorKey: "handle",

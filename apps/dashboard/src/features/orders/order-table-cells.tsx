@@ -5,9 +5,9 @@ import Link from "next/link";
 
 import { Badge } from "@/components/ui/badge";
 import {
+  formatOrderDateTime,
   formatOrderMoney,
   formatOrderReference,
-  formatOrderRelativeTime,
   getDeliveryDisplayLabel,
   getDeliveryLabel,
   getMethodLabel,
@@ -21,6 +21,7 @@ import {
   getPaymentStatusLabel,
 } from "@/features/orders/order-domain";
 import { getTenantScopedPath } from "@/lib/dashboard-tenant-context";
+import { listEntityLinkClassName } from "@/lib/list-entity-link";
 import { dashboardRoutes } from "@/lib/routes";
 import { cn } from "@/lib/utils";
 
@@ -33,12 +34,17 @@ export function OrderIdentityCell({
 }) {
   const href = getTenantScopedPath(dashboardRoutes.orderDetail(order.id), tenantId);
   return (
-    <div className="min-w-0 space-y-0.5">
-      <Link className="font-medium tabular-nums hover:underline" href={href}>
-        {formatOrderReference(order)}
-      </Link>
-      <p className="text-xs text-muted-foreground">{formatOrderRelativeTime(order.createdAt)}</p>
-    </div>
+    <Link className={cn(listEntityLinkClassName, "tabular-nums")} href={href}>
+      {formatOrderReference(order)}
+    </Link>
+  );
+}
+
+export function OrderPlacedCell({ order }: { order: MerchantOrder }) {
+  return (
+    <span className="whitespace-nowrap text-sm text-muted-foreground">
+      {formatOrderDateTime(order.createdAt)}
+    </span>
   );
 }
 

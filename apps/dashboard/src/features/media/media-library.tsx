@@ -365,7 +365,13 @@ export function MediaLibrary({
               <img alt="" className="size-11 object-cover" src={asset.publicUrl ?? ""} />
             </button>
             <div className="min-w-0">
-              <p className="truncate text-sm font-medium">{asset.displayName}</p>
+              <button
+                className="truncate text-sm font-medium text-foreground transition-colors hover:text-primary"
+                onClick={() => setEditing(asset)}
+                type="button"
+              >
+                {asset.displayName}
+              </button>
               <p className="truncate text-xs text-muted-foreground">
                 {dimensions ? `${dimensions} · ` : ""}
                 {asset.filename}
@@ -549,7 +555,7 @@ export function MediaLibrary({
                         </span>
                       </button>
                       <div className="flex items-center gap-2 border-t p-3">
-                        <AssetName asset={asset} />
+                        <AssetName asset={asset} onOpen={() => setEditing(asset)} />
                         <RowActionsMenu
                           actions={assetActions(asset)}
                           label={t("media.rowActions")}

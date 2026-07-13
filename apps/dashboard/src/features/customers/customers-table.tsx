@@ -17,6 +17,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { CustomerFormDialog } from "@/features/customers/customer-form-dialog";
 import { copyTextToClipboard } from "@/lib/clipboard";
 import type { MerchantCustomer } from "@/lib/merchant-customers";
+import { listEntityActionClassName } from "@/lib/list-entity-link";
 import { dashboardRoutes } from "@/lib/routes";
 import { cn } from "@/lib/utils";
 
@@ -57,11 +58,7 @@ export function CustomersTable({
 
   useEffect(() => {
     if (!highlightCustomerId) return;
-    const match = customers.find((customer) => customer.id === highlightCustomerId);
     setHighlightedId(highlightCustomerId);
-    if (match) {
-      setEditing(match);
-    }
     const timeout = window.setTimeout(() => setHighlightedId(null), 3500);
     // Drop highlight query from the URL without a navigation stack entry.
     if (typeof window !== "undefined") {
@@ -125,7 +122,7 @@ export function CustomersTable({
               id={isHighlighted ? `customer-row-${row.original.id}` : undefined}
             >
               <button
-                className="text-left font-medium text-primary underline-offset-4 hover:underline"
+                className={cn(listEntityActionClassName, "truncate")}
                 onClick={() => setEditing(row.original)}
                 type="button"
               >

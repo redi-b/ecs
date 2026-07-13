@@ -15,7 +15,6 @@ import { DataTableHeader } from "@/components/app/data-table-header";
 import { AppIcons } from "@/components/app/icons";
 import { ListToolbarSearch } from "@/components/app/list-toolbar";
 import { RowActionsMenu } from "@/components/app/row-actions-menu";
-import { Button } from "@/components/ui/button";
 import {
   OrderCustomerCell,
   OrderDeliveryCell,
@@ -23,6 +22,7 @@ import {
   OrderItemsCell,
   OrderMoneyCell,
   OrderPaymentCell,
+  OrderPlacedCell,
   OrderProgressBadge,
 } from "@/features/orders/order-table-cells";
 import {
@@ -65,6 +65,12 @@ function getOrderColumns(tenantId?: string): ColumnDef<MerchantOrder>[] {
       cell: ({ row }) => (
         <OrderIdentityCell order={row.original} {...(tenantId ? { tenantId } : {})} />
       ),
+    },
+    {
+      id: "placed",
+      accessorFn: (order) => order.createdAt ?? "",
+      header: ({ column }) => <DataTableHeader column={column} title="Placed" />,
+      cell: ({ row }) => <OrderPlacedCell order={row.original} />,
     },
     {
       id: "customer",
@@ -274,33 +280,6 @@ export function OrdersTable({
     [filters, pushFilters],
   );
 
-  const chips: Array<{ id: string; label: string; active: boolean; apply: () => void }> = [
-    {
-      id: "needs_packing",
-      label: "Needs packing",
-      active: filters.progress === "new",
-      apply: () => pushFilters({ progress: filters.progress === "new" ? "all" : "new" }),
-    },
-    {
-      id: "unpaid",
-      label: "Unpaid",
-      active: filters.payment === "unpaid",
-      apply: () => pushFilters({ payment: filters.payment === "unpaid" ? "all" : "unpaid" }),
-    },
-    {
-      id: "today",
-      label: "Today",
-      active: filters.created === "today",
-      apply: () => pushFilters({ created: filters.created === "today" ? "all" : "today" }),
-    },
-    {
-      id: "ready",
-      label: "Ready for handoff",
-      active: filters.progress === "ready",
-      apply: () => pushFilters({ progress: filters.progress === "ready" ? "all" : "ready" }),
-    },
-  ];
-
   const hasActiveFilters =
     Boolean(filters.q) ||
     filters.progress !== "all" ||
@@ -324,23 +303,8 @@ export function OrdersTable({
         />
       </DataTableFilters>
 
-      <div className="flex flex-wrap items-center gap-2">
-        {chips.map((chip) => (
-          <Button
-            key={chip.id}
-            className="h-7 rounded-full px-3 text-xs"
-            onClick={chip.apply}
-            size="sm"
-            type="button"
-            variant={chip.active ? "default" : "outline"}
-          >
-            {chip.label}
-          </Button>
-        ))}
-        {pending ? <span className="text-xs text-muted-foreground">Updating…</span> : null}
-      </div>
-
       <p className="text-sm text-muted-foreground">
+        {pending ? "Updating… · " : ""}
         {hasActiveFilters
           ? `${orders.length} of ${totalCount} matching`
           : `${orders.length} on this page, ${totalCount} total`}

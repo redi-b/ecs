@@ -485,6 +485,12 @@ async function seedCommerce(
         metadata: {
           ...metadata,
           created_from: "demo_seed",
+          checkout_type: "cod",
+          payment_method: "cod",
+          // Alternate delivery vs pickup so the orders list has real delivery types.
+          delivery_choice: index % 3 === 0 ? "pickup" : "delivery",
+          customer_name: `${customer.firstName} ${customer.lastName}`.trim(),
+          customer_phone: customer.phone,
           note: "Demo COD order",
         },
         region_id: resources.regionId,

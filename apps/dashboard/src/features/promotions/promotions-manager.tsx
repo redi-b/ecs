@@ -255,7 +255,13 @@ export function PromotionsManager({
         accessorKey: "code",
         header: ({ column }) => <DataTableHeader column={column} title="Code" />,
         cell: ({ row }) => (
-          <span className="font-mono text-sm font-medium">{row.original.code}</span>
+          <button
+            className="font-mono text-sm font-medium text-foreground transition-colors hover:text-primary"
+            onClick={() => setEditing(row.original)}
+            type="button"
+          >
+            {row.original.code}
+          </button>
         ),
       },
       {
@@ -352,7 +358,8 @@ export function PromotionsManager({
         enableSorting: false,
       },
     ],
-    [],
+    // setEditing is stable enough for column identity in this manager.
+    [setEditing],
   );
 
   const deleteTargets = deleteTarget ? [deleteTarget] : bulkDeleteTargets;

@@ -11,7 +11,9 @@ import {
   normalizeProductStatus,
 } from "@/features/products/product-table-state";
 import { getTenantScopedPath } from "@/lib/dashboard-tenant-context";
+import { listEntityLinkClassName } from "@/lib/list-entity-link";
 import { dashboardRoutes } from "@/lib/routes";
+import { cn } from "@/lib/utils";
 
 export function ProductIdentityCell({
   product,
@@ -26,10 +28,7 @@ export function ProductIdentityCell({
     <div className="flex w-64 max-w-64 items-center gap-3">
       <ProductMediaCell product={product} />
       <div className="flex min-w-0 flex-col gap-1">
-        <Link
-          className="truncate font-medium text-foreground transition-colors hover:text-primary"
-          href={href}
-        >
+        <Link className={cn(listEntityLinkClassName, "truncate")} href={href}>
           {product.title ?? "Untitled product"}
         </Link>
         <span className="truncate text-xs text-muted-foreground">

@@ -29,6 +29,7 @@ import {
   getPaymentStatusLabel,
 } from "@/features/orders/order-domain";
 import { getTenantScopedPath } from "@/lib/dashboard-tenant-context";
+import { listEntityLinkClassName } from "@/lib/list-entity-link";
 import { dashboardRoutes } from "@/lib/routes";
 import { cn } from "@/lib/utils";
 
@@ -219,7 +220,7 @@ export function OrderDetail({ action, order, tenantId }: OrderDetailProps) {
                             )}
                             <div className="min-w-0">
                               {href ? (
-                                <Link className="font-medium hover:underline" href={href}>
+                                <Link className={cn(listEntityLinkClassName, "truncate")} href={href}>
                                   {item.title ?? "Item"}
                                 </Link>
                               ) : (
@@ -253,7 +254,7 @@ export function OrderDetail({ action, order, tenantId }: OrderDetailProps) {
               ) : null}
               {order.shippingTotal != null ? (
                 <div className="flex justify-between gap-4">
-                  <span className="text-muted-foreground">Shipping</span>
+                  <span className="text-muted-foreground">Delivery</span>
                   <span>{formatOrderMoney(order.shippingTotal, order.currencyCode)}</span>
                 </div>
               ) : null}
@@ -325,7 +326,7 @@ export function OrderDetail({ action, order, tenantId }: OrderDetailProps) {
                 label="In customers"
                 value={
                   <Link
-                    className="inline-flex items-center gap-1 font-medium text-primary underline-offset-4 hover:underline"
+                    className={cn(listEntityLinkClassName, "inline-flex items-center gap-1")}
                     href={getTenantScopedPath(
                       `${dashboardRoutes.customers}?highlight=${encodeURIComponent(order.customerId)}`,
                       tenantId,
