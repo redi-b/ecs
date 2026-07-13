@@ -85,6 +85,15 @@ function isFreeShippingOffer(item: MerchantPromotion) {
   );
 }
 
+/** Fixed locale so SSR and the browser always render the same string. */
+function formatScheduleDate(value: string) {
+  return new Intl.DateTimeFormat("en", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  }).format(new Date(value));
+}
+
 function matchesOfferFilter(item: MerchantPromotion, offer: OfferFilter) {
   switch (offer) {
     case "all":
@@ -322,14 +331,14 @@ export function PromotionsManager({
           if (item.endsAt) {
             return (
               <span className="text-sm text-muted-foreground">
-                Ends {new Date(item.endsAt).toLocaleDateString()}
+                Ends {formatScheduleDate(item.endsAt)}
               </span>
             );
           }
           if (item.startsAt) {
             return (
               <span className="text-sm text-muted-foreground">
-                Starts {new Date(item.startsAt).toLocaleDateString()}
+                Starts {formatScheduleDate(item.startsAt)}
               </span>
             );
           }
