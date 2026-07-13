@@ -139,6 +139,16 @@ export function registerMerchantProductRoutes(
       offset: getPaginationValue(context.req.query("offset"), 0, 10_000),
       salesChannelId: commerce.context.medusaSalesChannelId,
       stockLocationId: result.context.medusaStockLocationId,
+      ...(context.req.query("q")?.trim() ? { q: context.req.query("q")!.trim() } : {}),
+      ...(context.req.query("status")?.trim()
+        ? { status: context.req.query("status")!.trim() }
+        : {}),
+      ...(context.req.query("collectionId")?.trim()
+        ? { collectionId: context.req.query("collectionId")!.trim() }
+        : {}),
+      ...(context.req.query("categoryId")?.trim()
+        ? { categoryId: context.req.query("categoryId")!.trim() }
+        : {}),
     });
 
     if (!products.ok) {

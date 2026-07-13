@@ -412,9 +412,13 @@ export type PlatformAppOptions = {
     | undefined;
   listMerchantProducts?:
     | ((input: {
+        categoryId?: string | undefined;
+        collectionId?: string | undefined;
         limit: number;
         offset: number;
+        q?: string | undefined;
         salesChannelId: string;
+        status?: string | undefined;
         stockLocationId?: string | null | undefined;
       }) => Promise<MerchantProductsResult>)
     | undefined;
@@ -428,6 +432,7 @@ export type PlatformAppOptions = {
     | ((input: {
         limit: number;
         offset: number;
+        q?: string | undefined;
         tenantId: string;
       }) => Promise<MerchantProductCategoriesResult>)
     | undefined;
@@ -435,6 +440,7 @@ export type PlatformAppOptions = {
     | ((input: {
         limit: number;
         offset: number;
+        q?: string | undefined;
         tenantId: string;
       }) => Promise<MerchantProductCollectionsResult>)
     | undefined;

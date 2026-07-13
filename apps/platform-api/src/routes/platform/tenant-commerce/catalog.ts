@@ -37,6 +37,7 @@ export function registerPlatformTenantCatalogRoutes(
       limit: getPaginationValue(context.req.query("limit"), 20, 100),
       offset: getPaginationValue(context.req.query("offset"), 0, 10_000),
       tenantId: commerce.context.tenantId,
+      ...(context.req.query("q")?.trim() ? { q: context.req.query("q")!.trim() } : {}),
     });
 
     if (!categories.ok) {
@@ -210,6 +211,7 @@ export function registerPlatformTenantCatalogRoutes(
       limit: getPaginationValue(context.req.query("limit"), 20, 100),
       offset: getPaginationValue(context.req.query("offset"), 0, 10_000),
       tenantId: commerce.context.tenantId,
+      ...(context.req.query("q")?.trim() ? { q: context.req.query("q")!.trim() } : {}),
     });
 
     if (!collections.ok) {

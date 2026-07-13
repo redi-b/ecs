@@ -1,7 +1,14 @@
-export function getProductsUrl(
-  medusaInternalUrl: string,
-  input: { limit: number; offset: number; salesChannelId: string },
-) {
+export type ProductListUrlInput = {
+  categoryId?: string | undefined;
+  collectionId?: string | undefined;
+  limit: number;
+  offset: number;
+  q?: string | undefined;
+  salesChannelId: string;
+  status?: string | undefined;
+};
+
+export function getProductsUrl(medusaInternalUrl: string, input: ProductListUrlInput) {
   const url = getProductsBaseUrl(medusaInternalUrl);
 
   url.searchParams.set("limit", String(input.limit));
@@ -12,6 +19,19 @@ export function getProductsUrl(
     "id,title,description,handle,status,thumbnail,collection_id,categories.id,images.id,images.url,images.rank,images.created_at,images.updated_at,variants.id,variants.title,variants.sku,variants.options.value,variants.options.option.title,variants.prices.amount,variants.prices.currency_code,variants.inventory_items.inventory_item_id,created_at,updated_at,sales_channels.id",
   );
   url.searchParams.set("sales_channel_id[]", input.salesChannelId);
+
+  if (input.q?.trim()) {
+    url.searchParams.set("q", input.q.trim());
+  }
+  if (input.status?.trim() && input.status !== "all" && input.status !== "unknown") {
+    url.searchParams.append("status[]", input.status.trim().toLowerCase());
+  }
+  if (input.collectionId?.trim() && input.collectionId !== "all" && input.collectionId !== "none") {
+    url.searchParams.append("collection_id[]", input.collectionId.trim());
+  }
+  if (input.categoryId?.trim() && input.categoryId !== "all" && input.categoryId !== "none") {
+    url.searchParams.append("category_id[]", input.categoryId.trim());
+  }
 
   return url;
 }
@@ -33,7 +53,7 @@ export function getProductDetailUrl(medusaInternalUrl: string, productId: string
 
 export function getProductCategoriesUrl(
   medusaInternalUrl: string,
-  input: { limit: number; offset: number },
+  input: { limit: number; offset: number; q?: string | undefined },
 ) {
   const url = getProductCategoriesBaseUrl(medusaInternalUrl);
 
@@ -45,6 +65,9 @@ export function getProductCategoriesUrl(
     "fields",
     "id,name,handle,is_active,is_internal,parent_category_id,rank,metadata,created_at,updated_at",
   );
+  if (input.q?.trim()) {
+    url.searchParams.set("q", input.q.trim());
+  }
 
   return url;
 }
@@ -55,7 +78,7 @@ export function getProductCategoriesBaseUrl(medusaInternalUrl: string) {
 
 export function getProductCollectionsUrl(
   medusaInternalUrl: string,
-  input: { limit: number; offset: number },
+  input: { limit: number; offset: number; q?: string | undefined },
 ) {
   const url = getProductCollectionsBaseUrl(medusaInternalUrl);
 
@@ -63,6 +86,9 @@ export function getProductCollectionsUrl(
   url.searchParams.set("offset", String(input.offset));
   url.searchParams.set("order", "-created_at");
   url.searchParams.set("fields", "id,title,handle,metadata,created_at,updated_at");
+  if (input.q?.trim()) {
+    url.searchParams.set("q", input.q.trim());
+  }
 
   return url;
 }

@@ -402,21 +402,45 @@ export function createMedusaProductService(options: {
     },
 
     listMerchantProducts: async (input: {
+      categoryId?: string | undefined;
+      collectionId?: string | undefined;
       limit: number;
       offset: number;
+      q?: string | undefined;
       salesChannelId: string;
+      status?: string | undefined;
       stockLocationId?: string | null | undefined;
     }): Promise<MerchantProductsResult> => {
       if (!options.adminApiToken?.trim()) {
         return missingCredentials();
       }
 
+      // Medusa cannot express “none” (no collection/category) as a positive filter.
+      // Fetch a larger window and post-filter when needed.
+      const needsNoneFilter =
+        input.collectionId === "none" || input.categoryId === "none" || input.status === "unknown";
+
       let response: Response;
 
       try {
-        response = await fetcher(getProductsUrl(options.medusaInternalUrl, input), {
-          headers: getAdminHeaders(options.adminApiToken),
-        });
+        response = await fetcher(
+          getProductsUrl(options.medusaInternalUrl, {
+            limit: needsNoneFilter ? Math.min(100, Math.max(input.limit, 50)) : input.limit,
+            offset: needsNoneFilter ? 0 : input.offset,
+            salesChannelId: input.salesChannelId,
+            ...(input.q ? { q: input.q } : {}),
+            ...(input.status && input.status !== "unknown" ? { status: input.status } : {}),
+            ...(input.collectionId && input.collectionId !== "none"
+              ? { collectionId: input.collectionId }
+              : {}),
+            ...(input.categoryId && input.categoryId !== "none"
+              ? { categoryId: input.categoryId }
+              : {}),
+          }),
+          {
+            headers: getAdminHeaders(options.adminApiToken),
+          },
+        );
       } catch {
         return {
           ok: false,
@@ -451,21 +475,48 @@ export function createMedusaProductService(options: {
 
       const data = await response.json().catch(() => undefined);
 
-      const normalizedProducts = Array.isArray(data?.products)
+      let normalizedProducts = Array.isArray(data?.products)
         ? data.products.flatMap(normalizeProduct)
         : [];
+
+      if (input.collectionId === "none") {
+        normalizedProducts = normalizedProducts.filter(
+          (product: (typeof normalizedProducts)[number]) => !product.collectionId,
+        );
+      }
+      if (input.categoryId === "none") {
+        normalizedProducts = normalizedProducts.filter(
+          (product: (typeof normalizedProducts)[number]) =>
+            !(product.categoryIds ?? []).length,
+        );
+      }
+      if (input.status === "unknown") {
+        normalizedProducts = normalizedProducts.filter(
+          (product: (typeof normalizedProducts)[number]) => {
+            const status = product.status?.trim().toLowerCase();
+            return status !== "published" && status !== "draft";
+          },
+        );
+      }
+
       const products = input.stockLocationId?.trim()
         ? await hydrateProductsWithStock(fetcher, options, {
-            products: normalizedProducts,
+            products: needsNoneFilter
+              ? normalizedProducts.slice(input.offset, input.offset + input.limit)
+              : normalizedProducts,
             stockLocationId: input.stockLocationId,
           })
-        : normalizedProducts;
+        : needsNoneFilter
+          ? normalizedProducts.slice(input.offset, input.offset + input.limit)
+          : normalizedProducts;
 
       return {
         ok: true,
-        count: getNumber(data?.count) ?? 0,
-        limit: getNumber(data?.limit) ?? input.limit,
-        offset: getNumber(data?.offset) ?? input.offset,
+        count: needsNoneFilter
+          ? normalizedProducts.length
+          : (getNumber(data?.count) ?? products.length),
+        limit: input.limit,
+        offset: input.offset,
         products,
       };
     },
@@ -525,6 +576,7 @@ export function createMedusaProductService(options: {
     listMerchantProductCategories: async (input: {
       limit: number;
       offset: number;
+      q?: string | undefined;
       tenantId: string;
     }): Promise<MerchantProductCategoriesResult> => {
       if (!options.adminApiToken?.trim()) {
@@ -574,6 +626,7 @@ export function createMedusaProductService(options: {
     listMerchantProductCollections: async (input: {
       limit: number;
       offset: number;
+      q?: string | undefined;
       tenantId: string;
     }): Promise<MerchantProductCollectionsResult> => {
       if (!options.adminApiToken?.trim()) {
