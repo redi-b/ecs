@@ -40,6 +40,7 @@ export default async function MerchantProductCategoriesPage({
     platformApiBaseUrl: process.env.PLATFORM_API_BASE_URL ?? "http://localhost:3000",
     requestHost: requestHeaders.get("host"),
     tenantId,
+    ...(listParams.q ? { q: listParams.q } : {}),
   });
   const errorState = result.ok ? null : getTaxonomyListErrorState("categories", result.message);
 
@@ -83,6 +84,7 @@ export default async function MerchantProductCategoriesPage({
                 searchParams={resolvedSearchParams}
               />
             }
+            initialQuery={listParams.q}
             pageSize={result.limit}
             totalCount={result.count}
             tenantId={tenantId}

@@ -17,6 +17,7 @@ export function MediaWorkspace({
   children,
   initialAssets,
   initialError,
+  initialQuery = "",
   page,
   pageSize,
   totalCount: initialTotalCount,
@@ -24,6 +25,7 @@ export function MediaWorkspace({
   children?: ReactNode;
   initialAssets: MediaAsset[];
   initialError?: string | undefined;
+  initialQuery?: string | undefined;
   page: number;
   pageSize: number;
   totalCount: number;
@@ -47,6 +49,7 @@ export function MediaWorkspace({
       limit: String(pageSize),
       offset: String(offset),
     });
+    if (initialQuery.trim()) params.set("q", initialQuery.trim());
     const response = await fetch(`/admin/media/assets?${params}`);
     const data = (await response.json().catch(() => null)) as {
       assets?: MediaAsset[];
@@ -61,7 +64,7 @@ export function MediaWorkspace({
       setLoadError(true);
     }
     setRefreshing(false);
-  }, [page, pageSize]);
+  }, [initialQuery, page, pageSize]);
 
   return (
     <PageShell
@@ -99,6 +102,7 @@ export function MediaWorkspace({
       <MediaLibrary
         assets={assets}
         footer={children}
+        initialQuery={initialQuery}
         onChanged={() => void refresh()}
         pageCount={assets.length}
         totalCount={totalCount}

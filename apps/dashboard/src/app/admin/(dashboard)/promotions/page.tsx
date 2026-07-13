@@ -53,6 +53,7 @@ export default async function PromotionsPage({ searchParams }: PromotionsPagePro
                 searchParams={resolvedSearchParams}
               />
             }
+            initialQuery={listParams.q}
             promotions={result.promotions.promotions}
             totalCount={result.promotions.count}
           />

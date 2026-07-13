@@ -336,6 +336,7 @@ export async function getMerchantProductCategories(options: {
   limit?: number | undefined;
   offset?: number | undefined;
   platformApiBaseUrl: string;
+  q?: string | undefined;
   requestHost?: string | null | undefined;
   tenantId?: string | null | undefined;
 }): Promise<MerchantProductCategoriesResult> {
@@ -353,6 +354,7 @@ export async function getMerchantProductCollections(options: {
   limit?: number | undefined;
   offset?: number | undefined;
   platformApiBaseUrl: string;
+  q?: string | undefined;
   requestHost?: string | null | undefined;
   tenantId?: string | null | undefined;
 }): Promise<MerchantProductCollectionsResult> {

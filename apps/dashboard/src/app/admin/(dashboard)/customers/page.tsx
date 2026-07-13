@@ -58,6 +58,7 @@ export default async function CustomersPage({ searchParams }: CustomersPageProps
                 searchParams={resolvedSearchParams}
               />
             }
+            initialQuery={listParams.q}
             {...(highlightCustomerId ? { highlightCustomerId } : {})}
             totalCount={result.customers.count}
           />

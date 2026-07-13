@@ -42,6 +42,7 @@ export default async function MediaPage({ searchParams }: MediaPageProps) {
     <MediaWorkspace
       initialAssets={assets}
       initialError={result.ok ? undefined : result.error}
+      initialQuery={listParams.q}
       page={listParams.page}
       pageSize={limit}
       totalCount={totalCount}

@@ -102,6 +102,7 @@ export async function fetchProductResource(options: {
   limit?: number | undefined;
   offset?: number | undefined;
   platformApiBaseUrl: string;
+  q?: string | undefined;
   requestHost?: string | null | undefined;
   resource: "product-categories" | "product-collections";
   tenantId?: string | null | undefined;

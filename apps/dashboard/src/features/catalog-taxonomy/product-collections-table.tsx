@@ -4,7 +4,7 @@ import type { MerchantProductCollection } from "@ecs/contracts";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
 import { useRouter } from "next/navigation";
-import { useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useState, useTransition, type ReactNode } from "react";
 import { toast } from "sonner";
 import { DataTable } from "@/components/app/data-table";
 import {
@@ -47,6 +47,7 @@ import { dashboardRoutes } from "@/lib/routes";
 type ProductCollectionsTableProps = {
   collections: MerchantProductCollection[];
   footer?: ReactNode;
+  initialQuery?: string | undefined;
   pageSize: number;
   totalCount: number;
   tenantId?: string | undefined;
@@ -192,15 +193,34 @@ function getDeletionErrorMessage(error: unknown, resourceName: string) {
 export function ProductCollectionsTable({
   collections,
   footer,
+  initialQuery = "",
   pageSize,
   totalCount,
   tenantId,
 }: ProductCollectionsTableProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const [query, setQuery] = useState("");
+  const [pending, startTransition] = useTransition();
+  const [searchValue, setSearchValue] = useState(initialQuery);
   const [visibility, setVisibility] = useState<TaxonomyVisibilityFilter>("all");
   void pageSize;
+
+  useEffect(() => {
+    setSearchValue(initialQuery);
+  }, [initialQuery]);
+
+  const pushQuery = useCallback(
+    (q: string) => {
+      const url = new URL(window.location.href);
+      if (q.trim()) url.searchParams.set("q", q.trim());
+      else url.searchParams.delete("q");
+      url.searchParams.delete("page");
+      startTransition(() => {
+        router.push(`${url.pathname}?${url.searchParams.toString()}`);
+      });
+    },
+    [router],
+  );
 
   const [deleteCollectionId, setDeleteCollectionId] = useState<string | null>(null);
   const [editingCollection, setEditingCollection] = useState<MerchantProductCollection | null>(
@@ -274,16 +294,18 @@ export function ProductCollectionsTable({
   });
 
   const filteredCollections = useMemo(
-    () => filterCollectionsForTable(collections, { query, visibility }),
-    [collections, query, visibility],
+    () => filterCollectionsForTable(collections, { query: "", visibility }),
+    [collections, visibility],
   );
   const counts = getTaxonomyTableCounts({
     filteredCount: filteredCollections.length,
     pageCount: collections.length,
-    query,
+    query: initialQuery,
     totalCount,
     visibility,
   });
+  const hasServerFilter = Boolean(initialQuery.trim());
+  const hasClientPageFilter = visibility !== "all";
 
   const filters: DataTableFilterDefinition[] = [
     {
@@ -305,22 +327,30 @@ export function ProductCollectionsTable({
       <DataTableFilters
         filters={filters}
         onClearAll={() => {
-          setQuery("");
           setVisibility("all");
+          setSearchValue("");
+          pushQuery("");
         }}
       >
         <ListToolbarSearch
           clearLabel="Clear collection search"
           label="Search product collections"
-          onChange={setQuery}
+          onChange={(value) => {
+            setSearchValue(value);
+            pushQuery(value);
+          }}
           placeholder="Search collections"
-          value={query}
+          value={searchValue}
         />
       </DataTableFilters>
       <p className="text-sm text-muted-foreground">
-        {counts.hasActiveFilter
-          ? `${counts.filteredCount} of ${counts.pageCount} on this page`
-          : `${counts.pageCount} on this page, ${counts.totalCount} total`}
+        {pending
+          ? "Updating…"
+          : hasClientPageFilter
+            ? `${counts.filteredCount} of ${counts.pageCount} on this page`
+            : hasServerFilter
+              ? `${collections.length} of ${totalCount} matching`
+              : `${counts.pageCount} on this page, ${counts.totalCount} total`}
       </p>
     </div>
   );

@@ -1,7 +1,8 @@
 "use client";
 
 import type { ColumnDef } from "@tanstack/react-table";
-import { useMemo, useState, type ReactNode } from "react";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useMemo, useState, useTransition, type ReactNode } from "react";
 import { toast } from "sonner";
 
 import { DataTable } from "@/components/app/data-table";
@@ -55,18 +56,23 @@ type MediaView = "grid" | "list";
 export function MediaLibrary({
   assets,
   footer,
+  initialQuery = "",
   onChanged,
   pageCount,
   totalCount,
 }: {
   assets: MediaAsset[];
   footer?: ReactNode;
+  initialQuery?: string | undefined;
   onChanged: () => void;
   pageCount: number;
   totalCount: number;
 }) {
   const { formatDate, t } = useI18n();
-  const [query, setQuery] = useState("");
+  const router = useRouter();
+  const [pending, startTransition] = useTransition();
+  const [searchValue, setSearchValue] = useState(initialQuery);
+  // Type / size / orientation refine the current server page; search is server-side.
   const [type, setType] = useState("all");
   const [size, setSize] = useState<MediaSizeFilter>("all");
   const [orientation, setOrientation] = useState<MediaOrientationFilter>("all");
@@ -78,19 +84,44 @@ export function MediaLibrary({
   const [deleteTarget, setDeleteTarget] = useState<MediaAsset | null>(null);
   const [bulkDeleteTargets, setBulkDeleteTargets] = useState<MediaAsset[]>([]);
 
+  useEffect(() => {
+    setSearchValue(initialQuery);
+  }, [initialQuery]);
+
+  const pushQuery = useCallback(
+    (q: string) => {
+      const url = new URL(window.location.href);
+      if (q.trim()) url.searchParams.set("q", q.trim());
+      else url.searchParams.delete("q");
+      url.searchParams.delete("page");
+      startTransition(() => {
+        router.push(`${url.pathname}?${url.searchParams.toString()}`);
+      });
+    },
+    [router],
+  );
+
   const filtered = useMemo(
     () =>
       filterAndSortMediaAssets(assets, {
         orientation,
-        query,
+        query: "",
         size,
         sort,
         type,
       }),
-    [assets, orientation, query, size, sort, type],
+    [assets, orientation, size, sort, type],
   );
 
-  const isFiltered = hasActiveMediaFilters({ orientation, query, size, sort, type });
+  const hasServerFilter = Boolean(initialQuery.trim());
+  const hasClientPageFilter = hasActiveMediaFilters({
+    orientation,
+    query: "",
+    size,
+    sort,
+    type,
+  });
+  const isFiltered = hasServerFilter || hasClientPageFilter;
   const allPageSelected =
     filtered.length > 0 && filtered.every((asset) => selectedIds.has(asset.id));
   const selectedAssets = filtered.filter((asset) => selectedIds.has(asset.id));
@@ -155,11 +186,12 @@ export function MediaLibrary({
   ];
 
   function clearFilters() {
-    setQuery("");
+    setSearchValue("");
     setType("all");
     setSize("all");
     setOrientation("all");
     setSort("newest");
+    pushQuery("");
   }
 
   function toggleSelected(assetId: string, selected: boolean) {
@@ -436,21 +468,28 @@ export function MediaLibrary({
         <ListToolbarSearch
           clearLabel={t("media.clearFilters")}
           label={t("media.search")}
-          onChange={setQuery}
+          onChange={(value) => {
+            setSearchValue(value);
+            pushQuery(value);
+          }}
           placeholder={t("media.searchPlaceholder")}
-          value={query}
+          value={searchValue}
         />
       </DataTableFilters>
       <p className="text-sm text-muted-foreground">
-        {isFiltered
-          ? t("media.pageFilteredCount", {
-              filtered: filtered.length,
-              pageCount,
-            })
-          : t("media.pageCountSummary", {
-              pageCount,
-              total: totalCount,
-            })}
+        {pending
+          ? "Updating…"
+          : hasClientPageFilter
+            ? t("media.pageFilteredCount", {
+                filtered: filtered.length,
+                pageCount,
+              })
+            : hasServerFilter
+              ? `${assets.length} of ${totalCount} matching`
+              : t("media.pageCountSummary", {
+                  pageCount,
+                  total: totalCount,
+                })}
       </p>
     </div>
   );

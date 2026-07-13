@@ -4,7 +4,7 @@ import type { MerchantProductCategory } from "@ecs/contracts";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
 import { useRouter } from "next/navigation";
-import { useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useState, useTransition, type ReactNode } from "react";
 import { toast } from "sonner";
 import { DataTable } from "@/components/app/data-table";
 import {
@@ -197,6 +197,7 @@ function getCategoryColumns(
 type ProductCategoriesTableProps = {
   categories: MerchantProductCategory[];
   footer?: ReactNode;
+  initialQuery?: string | undefined;
   pageSize: number;
   totalCount: number;
   tenantId?: string | undefined;
@@ -223,15 +224,34 @@ function getDeletionErrorMessage(error: unknown, resourceName: string) {
 export function ProductCategoriesTable({
   categories,
   footer,
+  initialQuery = "",
   pageSize,
   totalCount,
   tenantId,
 }: ProductCategoriesTableProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const [query, setQuery] = useState("");
+  const [pending, startTransition] = useTransition();
+  const [searchValue, setSearchValue] = useState(initialQuery);
   const [visibility, setVisibility] = useState<TaxonomyVisibilityFilter>("all");
   void pageSize;
+
+  useEffect(() => {
+    setSearchValue(initialQuery);
+  }, [initialQuery]);
+
+  const pushQuery = useCallback(
+    (q: string) => {
+      const url = new URL(window.location.href);
+      if (q.trim()) url.searchParams.set("q", q.trim());
+      else url.searchParams.delete("q");
+      url.searchParams.delete("page");
+      startTransition(() => {
+        router.push(`${url.pathname}?${url.searchParams.toString()}`);
+      });
+    },
+    [router],
+  );
 
   const [deleteCategoryId, setDeleteCategoryId] = useState<string | null>(null);
   const [editingCategory, setEditingCategory] = useState<MerchantProductCategory | null>(null);
@@ -306,16 +326,18 @@ export function ProductCategoriesTable({
   });
 
   const filteredCategories = useMemo(
-    () => filterCategoriesForTable(categories, { query, visibility }),
-    [categories, query, visibility],
+    () => filterCategoriesForTable(categories, { query: "", visibility }),
+    [categories, visibility],
   );
   const counts = getTaxonomyTableCounts({
     filteredCount: filteredCategories.length,
     pageCount: categories.length,
-    query,
+    query: initialQuery,
     totalCount,
     visibility,
   });
+  const hasServerFilter = Boolean(initialQuery.trim());
+  const hasClientPageFilter = visibility !== "all";
 
   const filters: DataTableFilterDefinition[] = [
     {
@@ -359,22 +381,30 @@ export function ProductCategoriesTable({
         }
         filters={filters}
         onClearAll={() => {
-          setQuery("");
           setVisibility("all");
+          setSearchValue("");
+          pushQuery("");
         }}
       >
         <ListToolbarSearch
           clearLabel="Clear category search"
           label="Search product categories"
-          onChange={setQuery}
+          onChange={(value) => {
+            setSearchValue(value);
+            pushQuery(value);
+          }}
           placeholder="Search categories"
-          value={query}
+          value={searchValue}
         />
       </DataTableFilters>
       <p className="text-sm text-muted-foreground">
-        {counts.hasActiveFilter
-          ? `${counts.filteredCount} of ${counts.pageCount} on this page`
-          : `${counts.pageCount} on this page, ${counts.totalCount} total`}
+        {pending
+          ? "Updating…"
+          : hasClientPageFilter
+            ? `${counts.filteredCount} of ${counts.pageCount} on this page`
+            : hasServerFilter
+              ? `${categories.length} of ${totalCount} matching`
+              : `${counts.pageCount} on this page, ${counts.totalCount} total`}
       </p>
     </div>
   );
@@ -404,7 +434,7 @@ export function ProductCategoriesTable({
           <CategoryTreeView
             categories={filteredCategories}
             onEdit={(category) => setEditingCategory(category)}
-            query={query}
+            query={initialQuery}
           />
           {footer}
         </div>

@@ -2,7 +2,8 @@
 
 import type { ColumnDef } from "@tanstack/react-table";
 import Link from "next/link";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useMemo, useState, useTransition, type ReactNode } from "react";
 import { toast } from "sonner";
 
 import { DataTable } from "@/components/app/data-table";
@@ -44,17 +45,25 @@ export function CustomersTable({
   customers,
   footer,
   highlightCustomerId,
+  initialQuery = "",
   totalCount,
 }: {
   customers: MerchantCustomer[];
   footer?: ReactNode;
   /** When set (e.g. from order detail), flash that row and open edit if present. */
   highlightCustomerId?: string | undefined;
+  initialQuery?: string | undefined;
   totalCount: number;
 }) {
-  const [query, setQuery] = useState("");
+  const router = useRouter();
+  const [pending, startTransition] = useTransition();
+  const [searchValue, setSearchValue] = useState(initialQuery);
   const [editing, setEditing] = useState<MerchantCustomer | null>(null);
   const [highlightedId, setHighlightedId] = useState<string | null>(null);
+
+  useEffect(() => {
+    setSearchValue(initialQuery);
+  }, [initialQuery]);
 
   useEffect(() => {
     if (!highlightCustomerId) return;
@@ -71,16 +80,20 @@ export function CustomersTable({
     return () => window.clearTimeout(timeout);
   }, [customers, highlightCustomerId]);
 
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return q
-      ? customers.filter((item) =>
-          `${item.firstName ?? ""} ${item.lastName ?? ""} ${item.email} ${item.phone ?? ""} ${item.companyName ?? ""}`
-            .toLowerCase()
-            .includes(q),
-        )
-      : customers;
-  }, [customers, query]);
+  const pushQuery = useCallback(
+    (q: string) => {
+      const url = new URL(window.location.href);
+      if (q.trim()) url.searchParams.set("q", q.trim());
+      else url.searchParams.delete("q");
+      url.searchParams.delete("page");
+      startTransition(() => {
+        router.push(`${url.pathname}?${url.searchParams.toString()}`);
+      });
+    },
+    [router],
+  );
+
+  const hasActiveFilter = Boolean(initialQuery.trim());
 
   const columns = useMemo<ColumnDef<MerchantCustomer>[]>(
     () => [
@@ -247,7 +260,7 @@ export function CustomersTable({
     if (!highlightedId) return;
     const el = document.getElementById(`customer-row-${highlightedId}`);
     el?.scrollIntoView({ behavior: "smooth", block: "center" });
-  }, [highlightedId, filtered]);
+  }, [highlightedId, customers]);
 
   return (
     <>
@@ -289,30 +302,41 @@ export function CustomersTable({
           </div>
         )}
         columns={columns}
-        data={filtered}
+        data={customers}
         emptyMessage="Customers will appear here after their first order or when you add them."
         emptyTitle="No customers yet"
         filteredEmptyMessage="Try another name, email, phone, or company."
         filteredEmptyTitle="No matching customers"
         getRowId={(row) => row.id}
-        isFiltered={Boolean(query.trim())}
+        isFiltered={hasActiveFilter}
         selectedSummaryLabel={(count) => `customer${count === 1 ? "" : "s"} selected`}
         footer={footer}
         toolbar={
           <div className="flex flex-col gap-3">
-            <DataTableFilters filters={[]} onClearAll={() => setQuery("")}>
+            <DataTableFilters
+              filters={[]}
+              onClearAll={() => {
+                setSearchValue("");
+                pushQuery("");
+              }}
+            >
               <ListToolbarSearch
                 clearLabel="Clear customer search"
                 label="Search customers"
-                onChange={setQuery}
+                onChange={(value) => {
+                  setSearchValue(value);
+                  pushQuery(value);
+                }}
                 placeholder="Search customers"
-                value={query}
+                value={searchValue}
               />
             </DataTableFilters>
             <p className="text-sm text-muted-foreground">
-              {query.trim()
-                ? `${filtered.length} of ${customers.length} on this page`
-                : `${customers.length} on this page, ${totalCount} total`}
+              {pending
+                ? "Updating…"
+                : hasActiveFilter
+                  ? `${customers.length} of ${totalCount} matching`
+                  : `${customers.length} on this page, ${totalCount} total`}
             </p>
           </div>
         }

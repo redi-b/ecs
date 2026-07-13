@@ -7,7 +7,14 @@ import type {
 } from "@ecs/contracts";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  useTransition,
+  type ReactNode,
+} from "react";
 import { toast } from "sonner";
 import { DataTable } from "@/components/app/data-table";
 import {
@@ -97,15 +104,17 @@ export function ProductsTable({
 }: ProductsTableProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const [query, setQuery] = useState(initialQuery);
-  const [status, setStatus] = useState<ProductStatusFilter>(initialStatus);
+  const [pending, startTransition] = useTransition();
+  const [searchValue, setSearchValue] = useState(initialQuery);
+  // Stock / media / variants stay client-side on the current server page (phase-2 candidates).
   const [stock, setStock] = useState<ProductStockFilter>(initialStock);
   const [media, setMedia] = useState<ProductMediaFilter>(initialMedia);
   const [variantCount, setVariantCount] = useState<ProductVariantCountFilter>(initialVariantCount);
-  const [collectionId, setCollectionId] = useState(initialCollectionId);
-  const [categoryId, setCategoryId] = useState(initialCategoryId);
-  const hasSyncedInitialUrlState = useRef(false);
   void pageSize;
+
+  useEffect(() => {
+    setSearchValue(initialQuery);
+  }, [initialQuery]);
 
   const [deleteProductId, setDeleteProductId] = useState<string | null>(null);
   const [selectedProductIdsForDelete, setSelectedProductIdsForDelete] = useState<string[]>([]);
@@ -217,39 +226,114 @@ export function ProductsTable({
     [categories, collections, handleStatusChange, tenantId],
   );
 
+  const pushServerFilters = useCallback(
+    (
+      next: Partial<{
+        q: string;
+        status: ProductStatusFilter;
+        collectionId: string;
+        categoryId: string;
+      }>,
+    ) => {
+      const url = new URL(window.location.href);
+      const q = next.q !== undefined ? next.q : initialQuery;
+      const status = next.status !== undefined ? next.status : initialStatus;
+      const collectionId =
+        next.collectionId !== undefined ? next.collectionId : initialCollectionId;
+      const categoryId = next.categoryId !== undefined ? next.categoryId : initialCategoryId;
+
+      if (q.trim()) url.searchParams.set("q", q.trim());
+      else url.searchParams.delete("q");
+
+      setUrlFilter(url, "status", status, "all");
+      setUrlFilter(url, "collectionId", collectionId, "all");
+      setUrlFilter(url, "categoryId", categoryId, "all");
+      // Preserve client-only filters in the URL for bookmarking.
+      setUrlFilter(url, "stock", stock, "all");
+      setUrlFilter(url, "media", media, "all");
+      setUrlFilter(url, "variantCount", variantCount, "all");
+      url.searchParams.delete("page");
+
+      startTransition(() => {
+        router.push(`${url.pathname}?${url.searchParams.toString()}`);
+      });
+    },
+    [
+      initialCategoryId,
+      initialCollectionId,
+      initialQuery,
+      initialStatus,
+      media,
+      router,
+      stock,
+      variantCount,
+    ],
+  );
+
+  const setClientFilter = useCallback(
+    (key: "stock" | "media" | "variantCount", value: string) => {
+      if (key === "stock") setStock(value as ProductStockFilter);
+      if (key === "media") setMedia(value as ProductMediaFilter);
+      if (key === "variantCount") setVariantCount(value as ProductVariantCountFilter);
+
+      if (typeof window === "undefined") return;
+      const url = new URL(window.location.href);
+      setUrlFilter(url, key, value, "all");
+      window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}`);
+    },
+    [],
+  );
+
+  // Server already applied q/status/collection/category — only refine the page locally.
   const filteredProducts = useMemo(
     () =>
       filterProductsForTable(products, {
-        categoryId,
-        collectionId,
+        categoryId: "all",
+        collectionId: "all",
         media,
-        query,
-        status,
+        query: "",
+        status: "all",
         stock,
         variantCount,
       }),
-    [products, categoryId, collectionId, media, query, status, stock, variantCount],
+    [products, media, stock, variantCount],
   );
   const counts = getProductTableCounts({
     filteredCount: filteredProducts.length,
     pageCount: products.length,
     totalCount,
-    filters: { categoryId, collectionId, media, query, status, stock, variantCount },
+    filters: {
+      categoryId: initialCategoryId,
+      collectionId: initialCollectionId,
+      media,
+      query: initialQuery,
+      status: initialStatus,
+      stock,
+      variantCount,
+    },
   });
+  const hasClientPageFilter =
+    stock !== "all" || media !== "all" || variantCount !== "all";
+  const hasServerFilter =
+    Boolean(initialQuery.trim()) ||
+    initialStatus !== "all" ||
+    initialCollectionId !== "all" ||
+    initialCategoryId !== "all";
+
   const filters: DataTableFilterDefinition[] = [
     {
       defaultValue: "all",
       id: "status",
       label: "Status",
-      onChange: (value) => setStatus(value as ProductStatusFilter),
+      onChange: (value) => pushServerFilters({ status: value as ProductStatusFilter }),
       options: productStatusFilterOptions,
-      value: status,
+      value: initialStatus,
     },
     {
       defaultValue: "all",
       id: "stock",
       label: "Stock",
-      onChange: (value) => setStock(value as ProductStockFilter),
+      onChange: (value) => setClientFilter("stock", value),
       options: [
         { label: "All stock", value: "all" },
         { label: "In stock", value: "in_stock" },
@@ -262,7 +346,7 @@ export function ProductsTable({
       defaultValue: "all",
       id: "media",
       label: "Media",
-      onChange: (value) => setMedia(value as ProductMediaFilter),
+      onChange: (value) => setClientFilter("media", value),
       options: [
         { label: "All media", value: "all" },
         { label: "With media", value: "with_media" },
@@ -274,7 +358,7 @@ export function ProductsTable({
       defaultValue: "all",
       id: "variantCount",
       label: "Variants",
-      onChange: (value) => setVariantCount(value as ProductVariantCountFilter),
+      onChange: (value) => setClientFilter("variantCount", value),
       options: [
         { label: "All variant counts", value: "all" },
         { label: "No variants", value: "no_variants" },
@@ -287,7 +371,7 @@ export function ProductsTable({
       defaultValue: "all",
       id: "collectionId",
       label: "Collection",
-      onChange: setCollectionId,
+      onChange: (value) => pushServerFilters({ collectionId: value }),
       options: [
         { label: "All collections", value: "all" },
         { label: "No collection", value: "none" },
@@ -296,13 +380,13 @@ export function ProductsTable({
           value: collection.id,
         })),
       ],
-      value: collectionId,
+      value: initialCollectionId,
     },
     {
       defaultValue: "all",
       id: "categoryId",
       label: "Category",
-      onChange: setCategoryId,
+      onChange: (value) => pushServerFilters({ categoryId: value }),
       options: [
         { label: "All categories", value: "all" },
         { label: "No category", value: "none" },
@@ -311,53 +395,34 @@ export function ProductsTable({
           value: category.id,
         })),
       ],
-      value: categoryId,
+      value: initialCategoryId,
     },
   ];
 
   function clearFilters() {
-    setQuery("");
-    setStatus("all");
     setStock("all");
     setMedia("all");
     setVariantCount("all");
-    setCollectionId("all");
-    setCategoryId("all");
-  }
-
-  useEffect(() => {
-    if (typeof window === "undefined") {
-      return;
-    }
-
-    if (!hasSyncedInitialUrlState.current) {
-      hasSyncedInitialUrlState.current = true;
-      return;
-    }
+    setSearchValue("");
 
     const url = new URL(window.location.href);
-
-    if (query.trim()) {
-      url.searchParams.set("q", query.trim());
-    } else {
-      url.searchParams.delete("q");
+    for (const key of [
+      "q",
+      "status",
+      "collectionId",
+      "categoryId",
+      "stock",
+      "media",
+      "variantCount",
+      "page",
+    ]) {
+      url.searchParams.delete(key);
     }
 
-    if (status !== "all") {
-      url.searchParams.set("status", status);
-    } else {
-      url.searchParams.delete("status");
-    }
-
-    setUrlFilter(url, "stock", stock, "all");
-    setUrlFilter(url, "media", media, "all");
-    setUrlFilter(url, "variantCount", variantCount, "all");
-    setUrlFilter(url, "collectionId", collectionId, "all");
-    setUrlFilter(url, "categoryId", categoryId, "all");
-
-    url.searchParams.delete("page");
-    window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}`);
-  }, [categoryId, collectionId, media, query, status, stock, variantCount]);
+    startTransition(() => {
+      router.push(`${url.pathname}?${url.searchParams.toString()}`);
+    });
+  }
 
   const toolbar = (
     <div className="flex flex-col gap-3">
@@ -365,15 +430,22 @@ export function ProductsTable({
         <ListToolbarSearch
           clearLabel="Clear product search"
           label="Search products"
-          onChange={setQuery}
+          onChange={(value) => {
+            setSearchValue(value);
+            pushServerFilters({ q: value });
+          }}
           placeholder="Search products"
-          value={query}
+          value={searchValue}
         />
       </DataTableFilters>
       <p className="text-sm text-muted-foreground">
-        {counts.hasActiveFilter
-          ? `${counts.filteredCount} of ${counts.pageCount} on this page`
-          : `${counts.pageCount} on this page, ${counts.totalCount} total`}
+        {pending
+          ? "Updating…"
+          : hasClientPageFilter
+            ? `${counts.filteredCount} of ${counts.pageCount} on this page`
+            : hasServerFilter
+              ? `${products.length} of ${totalCount} matching`
+              : `${products.length} on this page, ${totalCount} total`}
       </p>
     </div>
   );

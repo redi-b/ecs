@@ -45,6 +45,9 @@ export default async function MerchantProductsPage({ searchParams }: MerchantPro
   const platformApiBaseUrl = process.env.PLATFORM_API_BASE_URL ?? "http://localhost:3000";
   const offset = (listParams.page - 1) * listParams.pageSize;
   const productNotice = getProductNotice(resolvedSearchParams.productStatus);
+  const statusFilter = parseProductStatusFilter(listParams.status);
+  const collectionFilter = getResourceFilter(resolvedSearchParams.collectionId);
+  const categoryFilter = getResourceFilter(resolvedSearchParams.categoryId);
   const [result, categoriesResult, collectionsResult] = await Promise.all([
     getMerchantProducts({
       cookieHeader,
@@ -53,6 +56,10 @@ export default async function MerchantProductsPage({ searchParams }: MerchantPro
       platformApiBaseUrl,
       requestHost,
       tenantId,
+      ...(listParams.q ? { q: listParams.q } : {}),
+      ...(statusFilter !== "all" ? { status: statusFilter } : {}),
+      ...(collectionFilter !== "all" ? { collectionId: collectionFilter } : {}),
+      ...(categoryFilter !== "all" ? { categoryId: categoryFilter } : {}),
     }),
     getMerchantProductCategories({
       cookieHeader,
@@ -119,11 +126,11 @@ export default async function MerchantProductsPage({ searchParams }: MerchantPro
                 searchParams={resolvedSearchParams}
               />
             }
-            initialCategoryId={getResourceFilter(resolvedSearchParams.categoryId)}
-            initialCollectionId={getResourceFilter(resolvedSearchParams.collectionId)}
+            initialCategoryId={categoryFilter}
+            initialCollectionId={collectionFilter}
             initialMedia={parseProductMediaFilter(resolvedSearchParams.media)}
             initialQuery={listParams.q}
-            initialStatus={parseProductStatusFilter(listParams.status)}
+            initialStatus={statusFilter}
             initialStock={parseProductStockFilter(resolvedSearchParams.stock)}
             initialVariantCount={parseProductVariantCountFilter(resolvedSearchParams.variantCount)}
             pageSize={result.products.limit}

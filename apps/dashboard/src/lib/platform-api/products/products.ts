@@ -66,12 +66,16 @@ export async function getMerchantProduct(options: {
 }
 
 export async function getMerchantProducts(options: {
+  categoryId?: string | undefined;
+  collectionId?: string | undefined;
   cookieHeader?: string | null | undefined;
   fetcher?: typeof fetch;
   limit?: number | undefined;
   offset?: number | undefined;
   platformApiBaseUrl: string;
+  q?: string | undefined;
   requestHost?: string | null | undefined;
+  status?: string | undefined;
   tenantId?: string | null | undefined;
 }): Promise<MerchantProductsResult> {
   const fetcher = options.fetcher ?? fetch;

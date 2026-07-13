@@ -2,7 +2,7 @@
 
 import type { ColumnDef } from "@tanstack/react-table";
 import { useRouter } from "next/navigation";
-import { useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useState, useTransition, type ReactNode } from "react";
 import { toast } from "sonner";
 
 import { DataTable } from "@/components/app/data-table";
@@ -116,15 +116,19 @@ function statusBadgeVariant(status: MerchantPromotion["status"]) {
 
 export function PromotionsManager({
   footer,
+  initialQuery = "",
   promotions,
   totalCount,
 }: {
   footer?: ReactNode;
+  initialQuery?: string | undefined;
   promotions: MerchantPromotion[];
   totalCount: number;
 }) {
   const router = useRouter();
-  const [query, setQuery] = useState("");
+  const [pending, startTransition] = useTransition();
+  const [searchValue, setSearchValue] = useState(initialQuery);
+  // Status / offer / apply refine the current server page until dedicated API filters exist.
   const [status, setStatus] = useState<StatusFilter>("all");
   const [offer, setOffer] = useState<OfferFilter>("all");
   const [apply, setApply] = useState<ApplyFilter>("all");
@@ -133,26 +137,37 @@ export function PromotionsManager({
   const [editing, setEditing] = useState<MerchantPromotion | null>(null);
   const [deleting, setDeleting] = useState(false);
 
+  useEffect(() => {
+    setSearchValue(initialQuery);
+  }, [initialQuery]);
+
+  const pushQuery = useCallback(
+    (q: string) => {
+      const url = new URL(window.location.href);
+      if (q.trim()) url.searchParams.set("q", q.trim());
+      else url.searchParams.delete("q");
+      url.searchParams.delete("page");
+      startTransition(() => {
+        router.push(`${url.pathname}?${url.searchParams.toString()}`);
+      });
+    },
+    [router],
+  );
+
   const filtered = useMemo(() => {
-    const normalized = query.trim().toLowerCase();
     return promotions.filter((item) => {
-      const matchesQuery =
-        !normalized ||
-        item.code.toLowerCase().includes(normalized) ||
-        item.status.includes(normalized) ||
-        formatTarget(item).toLowerCase().includes(normalized);
       const matchesStatus = status === "all" || item.status === status;
       const matchesOffer = offer === "all" || matchesOfferFilter(item, offer);
       const matchesApply =
         apply === "all" ||
         (apply === "automatic" ? item.isAutomatic : !item.isAutomatic);
-      return matchesQuery && matchesStatus && matchesOffer && matchesApply;
+      return matchesStatus && matchesOffer && matchesApply;
     });
-  }, [apply, offer, promotions, query, status]);
+  }, [apply, offer, promotions, status]);
 
-  const isFiltered = Boolean(
-    query.trim() || status !== "all" || offer !== "all" || apply !== "all",
-  );
+  const hasServerFilter = Boolean(initialQuery.trim());
+  const hasClientPageFilter = status !== "all" || offer !== "all" || apply !== "all";
+  const isFiltered = hasServerFilter || hasClientPageFilter;
 
   const filters: DataTableFilterDefinition[] = [
     {
@@ -409,24 +424,32 @@ export function PromotionsManager({
             <DataTableFilters
               filters={filters}
               onClearAll={() => {
-                setQuery("");
                 setStatus("all");
                 setOffer("all");
                 setApply("all");
+                setSearchValue("");
+                pushQuery("");
               }}
             >
               <ListToolbarSearch
                 clearLabel="Clear promotion search"
                 label="Search promotions"
-                onChange={setQuery}
+                onChange={(value) => {
+                  setSearchValue(value);
+                  pushQuery(value);
+                }}
                 placeholder="Search promotion codes…"
-                value={query}
+                value={searchValue}
               />
             </DataTableFilters>
             <p className="text-sm text-muted-foreground">
-              {isFiltered
-                ? `${filtered.length} of ${promotions.length} on this page`
-                : `${promotions.length} on this page, ${totalCount} total`}
+              {pending
+                ? "Updating…"
+                : hasClientPageFilter
+                  ? `${filtered.length} of ${promotions.length} on this page`
+                  : hasServerFilter
+                    ? `${promotions.length} of ${totalCount} matching`
+                    : `${promotions.length} on this page, ${totalCount} total`}
             </p>
           </div>
         }

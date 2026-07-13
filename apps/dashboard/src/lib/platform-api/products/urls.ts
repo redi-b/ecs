@@ -1,9 +1,13 @@
 import { createPlatformHeaders, normalizeBaseUrl } from "@/lib/platform-api/client";
 
 export function getProductsUrl(options: {
+  categoryId?: string | undefined;
+  collectionId?: string | undefined;
   limit?: number | undefined;
   offset?: number | undefined;
   platformApiBaseUrl: string;
+  q?: string | undefined;
+  status?: string | undefined;
   tenantId?: string | null | undefined;
 }) {
   const path = options.tenantId?.trim()
@@ -19,6 +23,19 @@ export function getProductsUrl(options: {
     url.searchParams.set("offset", String(options.offset));
   }
 
+  if (options.q?.trim()) {
+    url.searchParams.set("q", options.q.trim());
+  }
+  if (options.status?.trim() && options.status !== "all") {
+    url.searchParams.set("status", options.status.trim());
+  }
+  if (options.collectionId?.trim() && options.collectionId !== "all") {
+    url.searchParams.set("collectionId", options.collectionId.trim());
+  }
+  if (options.categoryId?.trim() && options.categoryId !== "all") {
+    url.searchParams.set("categoryId", options.categoryId.trim());
+  }
+
   return url;
 }
 
@@ -26,6 +43,7 @@ export function getProductResourceUrl(options: {
   limit?: number | undefined;
   offset?: number | undefined;
   platformApiBaseUrl: string;
+  q?: string | undefined;
   resource: "product-categories" | "product-collections";
   tenantId?: string | null | undefined;
 }) {
@@ -36,6 +54,9 @@ export function getProductResourceUrl(options: {
 
   url.searchParams.set("limit", String(options.limit ?? 100));
   url.searchParams.set("offset", String(options.offset ?? 0));
+  if (options.q?.trim()) {
+    url.searchParams.set("q", options.q.trim());
+  }
 
   return url;
 }
