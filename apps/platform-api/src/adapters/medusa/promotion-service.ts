@@ -52,6 +52,8 @@ export function createMedusaPromotionService(options: Options) {
     limit: number;
     offset: number;
     query?: string | undefined;
+    /** Main status filter; applied after tenant ownership (Medusa list is not tenant-scoped). */
+    status?: "active" | "inactive" | "draft" | undefined;
     tenantId: string;
   }): Promise<MerchantPromotionsResult> {
     const search = new URLSearchParams({
@@ -67,7 +69,8 @@ export function createMedusaPromotionService(options: Options) {
     const data = toRecord(await response.json().catch(() => ({})));
     const all = (Array.isArray(data.promotions) ? data.promotions : [])
       .filter((item) => isOwnedByTenant(item, input.tenantId))
-      .map(normalizePromotion);
+      .map(normalizePromotion)
+      .filter((item) => !input.status || item.status === input.status);
     return {
       count: all.length,
       limit: input.limit,

@@ -16,6 +16,10 @@ const DEFAULT_MEDIA_PAGE_SIZE = 24;
 export default async function MediaPage({ searchParams }: MediaPageProps) {
   const resolvedSearchParams = (await searchParams) ?? {};
   const listParams = parseListSearchParams(resolvedSearchParams);
+  const mimeTypeRaw = Array.isArray(resolvedSearchParams.mimeType)
+    ? resolvedSearchParams.mimeType[0]
+    : resolvedSearchParams.mimeType;
+  const mimeType = mimeTypeRaw?.trim() || undefined;
   const pageSize = hasExplicitPageSize(resolvedSearchParams)
     ? listParams.pageSize
     : DEFAULT_MEDIA_PAGE_SIZE;
@@ -31,6 +35,7 @@ export default async function MediaPage({ searchParams }: MediaPageProps) {
       limit: pageSize,
       offset,
       ...(listParams.q ? { query: listParams.q } : {}),
+      ...(mimeType && mimeType !== "all" ? { mimeType } : {}),
     },
   );
 
@@ -42,6 +47,7 @@ export default async function MediaPage({ searchParams }: MediaPageProps) {
     <MediaWorkspace
       initialAssets={assets}
       initialError={result.ok ? undefined : result.error}
+      initialMimeType={mimeType && mimeType !== "all" ? mimeType : "all"}
       initialQuery={listParams.q}
       page={listParams.page}
       pageSize={limit}

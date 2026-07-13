@@ -17,6 +17,7 @@ export function MediaWorkspace({
   children,
   initialAssets,
   initialError,
+  initialMimeType = "all",
   initialQuery = "",
   page,
   pageSize,
@@ -25,6 +26,7 @@ export function MediaWorkspace({
   children?: ReactNode;
   initialAssets: MediaAsset[];
   initialError?: string | undefined;
+  initialMimeType?: string | undefined;
   initialQuery?: string | undefined;
   page: number;
   pageSize: number;
@@ -50,6 +52,9 @@ export function MediaWorkspace({
       offset: String(offset),
     });
     if (initialQuery.trim()) params.set("q", initialQuery.trim());
+    if (initialMimeType && initialMimeType !== "all") {
+      params.set("mimeType", initialMimeType);
+    }
     const response = await fetch(`/admin/media/assets?${params}`);
     const data = (await response.json().catch(() => null)) as {
       assets?: MediaAsset[];
@@ -64,7 +69,7 @@ export function MediaWorkspace({
       setLoadError(true);
     }
     setRefreshing(false);
-  }, [initialQuery, page, pageSize]);
+  }, [initialMimeType, initialQuery, page, pageSize]);
 
   return (
     <PageShell
@@ -102,6 +107,7 @@ export function MediaWorkspace({
       <MediaLibrary
         assets={assets}
         footer={children}
+        initialMimeType={initialMimeType}
         initialQuery={initialQuery}
         onChanged={() => void refresh()}
         pageCount={assets.length}

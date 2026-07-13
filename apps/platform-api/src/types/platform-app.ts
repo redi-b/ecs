@@ -91,6 +91,7 @@ export type PlatformAppOptions = {
         limit: number;
         offset: number;
         query?: string | undefined;
+        status?: "active" | "inactive" | "draft" | undefined;
         tenantId: string;
       }) => Promise<MerchantPromotionsResult>)
     | undefined;

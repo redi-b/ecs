@@ -30,13 +30,19 @@ export const promotionSchema = z.object({
 export type MerchantPromotion = z.infer<typeof promotionSchema>;
 
 export async function getMerchantPromotions(
-  context: PlatformRequestContext & { limit?: number; offset?: number; query?: string },
+  context: PlatformRequestContext & {
+    limit?: number;
+    offset?: number;
+    query?: string;
+    status?: "active" | "inactive" | "draft" | undefined;
+  },
 ) {
   const search = new URLSearchParams({
     limit: String(context.limit ?? 100),
     offset: String(context.offset ?? 0),
   });
   if (context.query) search.set("q", context.query);
+  if (context.status) search.set("status", context.status);
   const response = await platformFetch(`/platform/merchant/promotions?${search}`, context);
   const data = await response.json().catch(() => null);
   const parsed = z

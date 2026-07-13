@@ -37,10 +37,16 @@ export function registerMerchantPromotionRoutes(
     if (!merchant.ok) return merchant.response;
     if (!options.listMerchantPromotions)
       return context.json({ error: "commerce_backend_unavailable" }, 503);
+    const statusParam = context.req.query("status")?.trim().toLowerCase();
+    const status =
+      statusParam === "active" || statusParam === "inactive" || statusParam === "draft"
+        ? statusParam
+        : undefined;
     const result = await options.listMerchantPromotions({
       limit: getPaginationValue(context.req.query("limit"), 20, 100),
       offset: getPaginationValue(context.req.query("offset"), 0, 100_000),
       ...(context.req.query("q")?.trim() ? { query: context.req.query("q")?.trim() } : {}),
+      ...(status ? { status } : {}),
       tenantId: merchant.result.context.tenantId,
     });
     return result.ok

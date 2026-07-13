@@ -18,6 +18,13 @@ type PromotionsPageProps = {
 export default async function PromotionsPage({ searchParams }: PromotionsPageProps) {
   const resolvedSearchParams = (await searchParams) ?? {};
   const listParams = parseListSearchParams(resolvedSearchParams);
+  const statusRaw = Array.isArray(resolvedSearchParams.status)
+    ? resolvedSearchParams.status[0]
+    : resolvedSearchParams.status;
+  const status =
+    statusRaw === "active" || statusRaw === "inactive" || statusRaw === "draft"
+      ? statusRaw
+      : undefined;
   const offset = (listParams.page - 1) * listParams.pageSize;
   const requestHeaders = await headers();
   const result = await getMerchantPromotions({
@@ -27,6 +34,7 @@ export default async function PromotionsPage({ searchParams }: PromotionsPagePro
     platformApiBaseUrl: process.env.PLATFORM_API_BASE_URL ?? "http://localhost:3000",
     requestHost: requestHeaders.get("host"),
     ...(listParams.q ? { query: listParams.q } : {}),
+    ...(status ? { status } : {}),
   });
 
   return (
@@ -54,6 +62,7 @@ export default async function PromotionsPage({ searchParams }: PromotionsPagePro
               />
             }
             initialQuery={listParams.q}
+            initialStatus={status ?? "all"}
             promotions={result.promotions.promotions}
             totalCount={result.promotions.count}
           />

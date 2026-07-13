@@ -57,6 +57,7 @@ type MediaView = "grid" | "list";
 export function MediaLibrary({
   assets,
   footer,
+  initialMimeType = "all",
   initialQuery = "",
   onChanged,
   pageCount,
@@ -64,6 +65,7 @@ export function MediaLibrary({
 }: {
   assets: MediaAsset[];
   footer?: ReactNode;
+  initialMimeType?: string | undefined;
   initialQuery?: string | undefined;
   onChanged: () => void;
   pageCount: number;
@@ -73,8 +75,7 @@ export function MediaLibrary({
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [searchValue, setSearchValue] = useState(initialQuery);
-  // Type / size / orientation refine the current server page; search is server-side.
-  const [type, setType] = useState("all");
+  // Size / orientation / sort refine the current page. Type + search are server-side.
   const [size, setSize] = useState<MediaSizeFilter>("all");
   const [orientation, setOrientation] = useState<MediaOrientationFilter>("all");
   const [sort, setSort] = useState<MediaSort>("newest");
@@ -89,17 +90,21 @@ export function MediaLibrary({
     setSearchValue(initialQuery);
   }, [initialQuery]);
 
-  const pushQuery = useCallback(
-    (q: string) => {
+  const pushServerFilters = useCallback(
+    (next: { q?: string; mimeType?: string }) => {
       const url = new URL(window.location.href);
+      const q = next.q !== undefined ? next.q : initialQuery;
+      const mimeType = next.mimeType !== undefined ? next.mimeType : initialMimeType;
       if (q.trim()) url.searchParams.set("q", q.trim());
       else url.searchParams.delete("q");
+      if (mimeType && mimeType !== "all") url.searchParams.set("mimeType", mimeType);
+      else url.searchParams.delete("mimeType");
       url.searchParams.delete("page");
       startTransition(() => {
         router.push(`${url.pathname}?${url.searchParams.toString()}`);
       });
     },
-    [router],
+    [initialMimeType, initialQuery, router],
   );
 
   const filtered = useMemo(
@@ -109,18 +114,19 @@ export function MediaLibrary({
         query: "",
         size,
         sort,
-        type,
+        type: "all",
       }),
-    [assets, orientation, size, sort, type],
+    [assets, orientation, size, sort],
   );
 
-  const hasServerFilter = Boolean(initialQuery.trim());
+  const hasServerFilter =
+    Boolean(initialQuery.trim()) || (initialMimeType !== "all" && Boolean(initialMimeType));
   const hasClientPageFilter = hasActiveMediaFilters({
     orientation,
     query: "",
     size,
     sort,
-    type,
+    type: "all",
   });
   const isFiltered = hasServerFilter || hasClientPageFilter;
   const allPageSelected =
@@ -132,7 +138,7 @@ export function MediaLibrary({
       defaultValue: "all",
       id: "type",
       label: t("media.type"),
-      onChange: setType,
+      onChange: (value) => pushServerFilters({ mimeType: value }),
       options: [
         { label: t("media.allTypes"), value: "all" },
         { label: "JPEG", value: "image/jpeg" },
@@ -141,7 +147,7 @@ export function MediaLibrary({
         { label: "AVIF", value: "image/avif" },
         { label: "GIF", value: "image/gif" },
       ],
-      value: type,
+      value: initialMimeType || "all",
     },
     {
       defaultValue: "all",
@@ -188,11 +194,10 @@ export function MediaLibrary({
 
   function clearFilters() {
     setSearchValue("");
-    setType("all");
     setSize("all");
     setOrientation("all");
     setSort("newest");
-    pushQuery("");
+    pushServerFilters({ q: "", mimeType: "all" });
   }
 
   function toggleSelected(assetId: string, selected: boolean) {
@@ -471,7 +476,7 @@ export function MediaLibrary({
           label={t("media.search")}
           onChange={(value) => {
             setSearchValue(value);
-            pushQuery(value);
+            pushServerFilters({ q: value });
           }}
           placeholder={t("media.searchPlaceholder")}
           value={searchValue}

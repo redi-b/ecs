@@ -127,19 +127,20 @@ function statusBadgeVariant(status: MerchantPromotion["status"]) {
 export function PromotionsManager({
   footer,
   initialQuery = "",
+  initialStatus = "all",
   promotions,
   totalCount,
 }: {
   footer?: ReactNode;
   initialQuery?: string | undefined;
+  initialStatus?: StatusFilter | undefined;
   promotions: MerchantPromotion[];
   totalCount: number;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [searchValue, setSearchValue] = useState(initialQuery);
-  // Status / offer / apply refine the current server page until dedicated API filters exist.
-  const [status, setStatus] = useState<StatusFilter>("all");
+  // Offer / apply refine the current page. Status is server-side (main filter).
   const [offer, setOffer] = useState<OfferFilter>("all");
   const [apply, setApply] = useState<ApplyFilter>("all");
   const [deleteTarget, setDeleteTarget] = useState<MerchantPromotion | null>(null);
@@ -151,32 +152,35 @@ export function PromotionsManager({
     setSearchValue(initialQuery);
   }, [initialQuery]);
 
-  const pushQuery = useCallback(
-    (q: string) => {
+  const pushServerFilters = useCallback(
+    (next: { q?: string; status?: StatusFilter }) => {
       const url = new URL(window.location.href);
+      const q = next.q !== undefined ? next.q : initialQuery;
+      const status = next.status !== undefined ? next.status : initialStatus;
       if (q.trim()) url.searchParams.set("q", q.trim());
       else url.searchParams.delete("q");
+      if (status && status !== "all") url.searchParams.set("status", status);
+      else url.searchParams.delete("status");
       url.searchParams.delete("page");
       startTransition(() => {
         router.push(`${url.pathname}?${url.searchParams.toString()}`);
       });
     },
-    [router],
+    [initialQuery, initialStatus, router],
   );
 
   const filtered = useMemo(() => {
     return promotions.filter((item) => {
-      const matchesStatus = status === "all" || item.status === status;
       const matchesOffer = offer === "all" || matchesOfferFilter(item, offer);
       const matchesApply =
         apply === "all" ||
         (apply === "automatic" ? item.isAutomatic : !item.isAutomatic);
-      return matchesStatus && matchesOffer && matchesApply;
+      return matchesOffer && matchesApply;
     });
-  }, [apply, offer, promotions, status]);
+  }, [apply, offer, promotions]);
 
-  const hasServerFilter = Boolean(initialQuery.trim());
-  const hasClientPageFilter = status !== "all" || offer !== "all" || apply !== "all";
+  const hasServerFilter = Boolean(initialQuery.trim()) || initialStatus !== "all";
+  const hasClientPageFilter = offer !== "all" || apply !== "all";
   const isFiltered = hasServerFilter || hasClientPageFilter;
 
   const filters: DataTableFilterDefinition[] = [
@@ -184,14 +188,14 @@ export function PromotionsManager({
       defaultValue: "all",
       id: "status",
       label: "Status",
-      onChange: (value) => setStatus(value as StatusFilter),
+      onChange: (value) => pushServerFilters({ status: value as StatusFilter }),
       options: [
         { label: "All statuses", value: "all" },
         { label: "Active", value: "active" },
         { label: "Draft", value: "draft" },
         { label: "Inactive", value: "inactive" },
       ],
-      value: status,
+      value: initialStatus,
     },
     {
       defaultValue: "all",
@@ -434,11 +438,10 @@ export function PromotionsManager({
             <DataTableFilters
               filters={filters}
               onClearAll={() => {
-                setStatus("all");
                 setOffer("all");
                 setApply("all");
                 setSearchValue("");
-                pushQuery("");
+                pushServerFilters({ q: "", status: "all" });
               }}
             >
               <ListToolbarSearch
@@ -446,7 +449,7 @@ export function PromotionsManager({
                 label="Search promotions"
                 onChange={(value) => {
                   setSearchValue(value);
-                  pushQuery(value);
+                  pushServerFilters({ q: value });
                 }}
                 placeholder="Search promotion codes…"
                 value={searchValue}
