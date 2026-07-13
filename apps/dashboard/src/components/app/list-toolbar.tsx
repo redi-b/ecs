@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
+
 import { type AppIcon, AppIcons } from "@/components/app/icons";
 import { Button } from "@/components/ui/button";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
@@ -20,19 +22,57 @@ export const listToolbarControlClassName = cn(
   "gap-1.5 px-2.5 text-sm font-medium",
 );
 
+const DEFAULT_SEARCH_DEBOUNCE_MS = 300;
+
 export function ListToolbarSearch({
   clearLabel,
+  debounceMs = DEFAULT_SEARCH_DEBOUNCE_MS,
   label,
   onChange,
   placeholder,
   value,
 }: {
   clearLabel: string;
+  /** Delay before calling onChange while typing. Clear always commits immediately. */
+  debounceMs?: number;
   label: string;
   onChange: (value: string) => void;
   placeholder: string;
   value: string;
 }) {
+  const [draft, setDraft] = useState(value);
+  const onChangeRef = useRef(onChange);
+  const skipDebounceRef = useRef(false);
+
+  useEffect(() => {
+    onChangeRef.current = onChange;
+  }, [onChange]);
+
+  // Sync when the committed value changes from outside (URL nav, clear, filters reset).
+  useEffect(() => {
+    setDraft(value);
+  }, [value]);
+
+  useEffect(() => {
+    if (skipDebounceRef.current) {
+      skipDebounceRef.current = false;
+      return;
+    }
+    if (draft === value) return;
+
+    const timeout = window.setTimeout(() => {
+      onChangeRef.current(draft);
+    }, Math.max(0, debounceMs));
+
+    return () => window.clearTimeout(timeout);
+  }, [debounceMs, draft, value]);
+
+  function commitImmediate(next: string) {
+    skipDebounceRef.current = true;
+    setDraft(next);
+    onChange(next);
+  }
+
   return (
     <InputGroup
       className={cn(
@@ -47,16 +87,16 @@ export function ListToolbarSearch({
       <InputGroupInput
         aria-label={label}
         className="text-sm"
-        onChange={(event) => onChange(event.target.value)}
+        onChange={(event) => setDraft(event.target.value)}
         placeholder={placeholder}
-        value={value}
+        value={draft}
       />
-      {value.trim() ? (
+      {draft.trim() ? (
         <InputGroupAddon align="inline-end">
           <Button
             aria-label={clearLabel}
             className={listToolbarRadiusClass}
-            onClick={() => onChange("")}
+            onClick={() => commitImmediate("")}
             size="icon-xs"
             type="button"
             variant="ghost"
