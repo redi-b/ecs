@@ -126,15 +126,23 @@ export function createMerchantDashboardSummary(
   }) {
     const base = buildMerchantDashboardBase(input);
     const commerce = getResolvedCommerce(input.context);
+    const commerceContext = commerce.ok ? commerce.context : null;
+
+    // Ops / analytics / billing are independent — run together for Overview TTFB.
+    const [operations, analytics, billing] = await Promise.all([
+      getDashboardOperations({
+        commerce: commerceContext,
+        tenantId: input.context.tenantId,
+      }),
+      getDashboardAnalytics({ tenantId: input.context.tenantId }),
+      getDashboardBilling({ tenantId: input.context.tenantId }),
+    ]);
 
     return {
       ...base,
-      operations: await getDashboardOperations({
-        commerce: commerce.ok ? commerce.context : null,
-        tenantId: input.context.tenantId,
-      }),
-      analytics: await getDashboardAnalytics({ tenantId: input.context.tenantId }),
-      billing: await getDashboardBilling({ tenantId: input.context.tenantId }),
+      operations,
+      analytics,
+      billing,
     };
   }
 
@@ -143,26 +151,38 @@ export function createMerchantDashboardSummary(
     tenantId: string;
   }) {
     const unavailable: string[] = [];
-    const orders =
-      input.commerce && options.listMerchantOrders
-        ? await options.listMerchantOrders({
-            limit: 90,
-            offset: 0,
-            salesChannelId: input.commerce.medusaSalesChannelId,
-          })
-        : null;
-    const products =
-      input.commerce && options.listMerchantProducts
-        ? await options.listMerchantProducts({
-            limit: 5,
-            offset: 0,
-            salesChannelId: input.commerce.medusaSalesChannelId,
-          })
-        : null;
+
+    // Prefer platform daily_metrics (cheap DB) before heavy Medusa list calls.
     const metrics = options.getDashboardMetrics
       ? await options.getDashboardMetrics({ days: 90, tenantId: input.tenantId })
       : null;
     const metricData = metrics?.ok ? metrics.metrics : null;
+    const useMetricOperations = Boolean(metricData?.series?.length);
+
+    // With metrics: only need a handful of recent orders for the list strip.
+    // Without metrics: sample more for charts (still less than the old 90).
+    const orderLimit = useMetricOperations ? 8 : 45;
+    const needProductSample =
+      !useMetricOperations ||
+      metricData?.products == null ||
+      metricData?.attention.draftProducts == null;
+
+    const [orders, products] = await Promise.all([
+      input.commerce && options.listMerchantOrders
+        ? options.listMerchantOrders({
+            limit: orderLimit,
+            offset: 0,
+            salesChannelId: input.commerce.medusaSalesChannelId,
+          })
+        : Promise.resolve(null),
+      input.commerce && options.listMerchantProducts && needProductSample
+        ? options.listMerchantProducts({
+            limit: 5,
+            offset: 0,
+            salesChannelId: input.commerce.medusaSalesChannelId,
+          })
+        : Promise.resolve(null),
+    ]);
 
     if (!input.commerce) {
       unavailable.push("commerce_context");
@@ -188,12 +208,11 @@ export function createMerchantDashboardSummary(
 
     const customers = new Set(customerOrderCounts.keys());
     const currencyCode = orderRows.find((order) => order.currencyCode)?.currencyCode ?? null;
-    const useMetricOperations = orderRows.length === 0 && Boolean(metricData?.series.length);
     const metricTotals = metricData ? getMetricTotals(metricData) : null;
 
     return {
       range: {
-        label: useMetricOperations ? "Last 30 days" : "Recent orders",
+        label: useMetricOperations ? "Last 90 days" : "Recent orders",
         days: 90,
         sampledOrderCount: useMetricOperations ? (metricTotals?.orders ?? 0) : orderRows.length,
       },
@@ -206,13 +225,15 @@ export function createMerchantDashboardSummary(
           : orders?.ok
             ? orders.count
             : null,
-        products: products?.ok ? products.count : (metricData?.products ?? null),
+        products: metricData?.products ?? (products?.ok ? products.count : null),
         customers: useMetricOperations
           ? (metricTotals?.customers ?? null)
           : orders?.ok
             ? customers.size
             : null,
-        currencyCode: useMetricOperations ? metricData?.currencyCode : currencyCode,
+        currencyCode: useMetricOperations
+          ? (metricData?.currencyCode ?? null)
+          : currencyCode,
       },
       attention: {
         unfulfilledOrders: useMetricOperations
@@ -225,9 +246,12 @@ export function createMerchantDashboardSummary(
           : orders?.ok
             ? orderRows.filter((order) => isOpenPaymentStatus(order.paymentStatus)).length
             : null,
-        draftProducts: products?.ok
-          ? productRows.filter((product) => product.status === "draft").length
-          : (metricData?.attention.draftProducts ?? null),
+        draftProducts:
+          metricData?.attention.draftProducts != null
+            ? metricData.attention.draftProducts
+            : products?.ok
+              ? productRows.filter((product) => product.status === "draft").length
+              : null,
       },
       customers: {
         unique: useMetricOperations
@@ -235,6 +259,7 @@ export function createMerchantDashboardSummary(
           : orders?.ok
             ? customers.size
             : null,
+        // Repeat customers need per-email counts; only honest from an order sample.
         repeat: orders?.ok
           ? [...customerOrderCounts.values()].filter((orderCount) => orderCount > 1).length
           : null,
