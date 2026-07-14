@@ -41,6 +41,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { AccountSecurityPanel } from "@/features/settings/account-security-panel";
+import { NotificationsSection } from "@/features/settings/notifications-section";
 import { getSelectedTemplateName, statusCopy } from "@/features/settings/settings-helpers";
 import {
   parseSettingsSection,
@@ -64,6 +65,7 @@ import { cn } from "@/lib/utils";
 const SECTION_ICONS: Record<SettingsSectionId, AppIcon> = {
   shop: AppIcons.settings,
   preferences: AppIcons.star,
+  notifications: AppIcons.star,
   fulfillment: AppIcons.orders,
   storefront: AppIcons.editor,
   account: AppIcons.user,
@@ -340,6 +342,10 @@ export function SettingsWorkspace({
               }}
               onOpenFulfillment={() => selectSection("fulfillment")}
             />
+          ) : null}
+
+          {section === "notifications" ? (
+            <NotificationsSection tenantId={summary.tenant.id} />
           ) : null}
 
           {section === "fulfillment" ? (

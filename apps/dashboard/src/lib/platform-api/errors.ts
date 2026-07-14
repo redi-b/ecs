@@ -48,6 +48,9 @@ const PLATFORM_ERROR_MESSAGES: Record<string, string> = {
   invalid_collection_ids: "Select at least one collection.",
   settings_unavailable: "Shop settings are temporarily unavailable.",
   notifications_unavailable: "Notification settings are temporarily unavailable.",
+  notification_preference_missing:
+    "Save an enabled channel target before sending a test notification.",
+  notification_channel_invalid: "Choose email or Telegram as the channel.",
   billing_not_found: "Billing is not active for this shop yet.",
   billing_unavailable: "Billing is temporarily unavailable.",
   template_not_found: "That storefront template could not be found.",

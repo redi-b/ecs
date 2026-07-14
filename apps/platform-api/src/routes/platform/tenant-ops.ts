@@ -99,6 +99,50 @@ export function registerPlatformTenantOpsRoutes(
     });
   });
 
+  app.post("/platform/tenants/:tenantId/notifications/test", async (context) => {
+    if (!options.sendTestNotification) {
+      return context.json({ error: "notifications_unavailable" }, 503);
+    }
+
+    const session = await options.getSession?.(context.req.raw.headers);
+
+    if (!session) {
+      return context.json({ error: "auth_required" }, 401);
+    }
+
+    const tenantId = context.req.param("tenantId");
+    const authorization = await options.authorizeDashboardForTenant?.({
+      tenantId,
+      userId: session.user.id,
+    });
+
+    if (!authorization?.ok) {
+      return context.json({ error: "dashboard_forbidden" }, 403);
+    }
+
+    const body = await getJsonBody(context.req.raw);
+    const channel = getRequiredBodyString(body, "channel");
+
+    if (!channel) {
+      return context.json({ error: "missing_channel" }, 400);
+    }
+
+    const result = await options.sendTestNotification({
+      channel,
+      tenantId,
+    });
+
+    if (!result.ok) {
+      return context.json({ error: result.error }, result.status);
+    }
+
+    return context.json({
+      ok: true,
+      logId: result.logId,
+      jobEnqueued: result.jobEnqueued,
+    });
+  });
+
   app.get("/platform/tenants/:tenantId/insights/summary", async (context) => {
     if (!options.getTenantInsightsSummary) {
       return context.json({ error: "insights_unavailable" }, 503);

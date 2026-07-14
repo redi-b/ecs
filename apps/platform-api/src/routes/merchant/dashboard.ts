@@ -216,4 +216,38 @@ export function registerMerchantDashboardRoutes(
       preference: result.preference,
     });
   });
+
+  app.post("/platform/merchant/notifications/test", async (context) => {
+    if (!options.sendTestNotification) {
+      return context.json({ error: "notifications_unavailable" }, 503);
+    }
+
+    const merchant = await getAuthorizedMerchantContext(context);
+
+    if (!merchant.ok) {
+      return merchant.response;
+    }
+
+    const body = await getJsonBody(context.req.raw);
+    const channel = getRequiredBodyString(body, "channel");
+
+    if (!channel) {
+      return context.json({ error: "missing_channel" }, 400);
+    }
+
+    const result = await options.sendTestNotification({
+      channel,
+      tenantId: merchant.result.context.tenantId,
+    });
+
+    if (!result.ok) {
+      return context.json({ error: result.error }, result.status);
+    }
+
+    return context.json({
+      ok: true,
+      logId: result.logId,
+      jobEnqueued: result.jobEnqueued,
+    });
+  });
 }

@@ -182,6 +182,84 @@ export function createNotificationService(
         logIds,
       };
     },
+    /**
+     * Send a test notification for one channel (uses log provider until real channels ship).
+     * Does not require notification.test in preference events — creates a delivery attempt directly.
+     */
+    sendTestNotification: async (input: {
+      channel: string;
+      tenantId: string;
+    }): Promise<
+      | { ok: true; logId: string; jobEnqueued: boolean }
+      | {
+          ok: false;
+          error: "notification_channel_invalid" | "notification_preference_missing";
+          status: 400 | 404;
+        }
+    > => {
+      const channel = normalizeChannel(input.channel);
+      if (!allowedChannels.has(channel as NotificationChannel)) {
+        return { ok: false, error: "notification_channel_invalid", status: 400 };
+      }
+
+      const [preference] = await db
+        .select()
+        .from(notificationPreferences)
+        .where(
+          and(
+            eq(notificationPreferences.tenantId, input.tenantId),
+            eq(notificationPreferences.channel, channel),
+            eq(notificationPreferences.enabled, true),
+          ),
+        )
+        .limit(1);
+
+      if (!preference) {
+        return { ok: false, error: "notification_preference_missing", status: 404 };
+      }
+
+      const [log] = await db
+        .insert(notificationLogs)
+        .values({
+          tenantId: input.tenantId,
+          eventType: "notification.test",
+          channel: preference.channel,
+          recipient: preference.target,
+          status: "pending",
+          payload: {
+            source: "dashboard_test",
+            channel,
+          },
+        })
+        .returning({ id: notificationLogs.id });
+
+      if (!log) {
+        throw new Error("Failed to create test notification log");
+      }
+
+      let jobEnqueued = false;
+      if (enqueueJob) {
+        try {
+          await enqueueJob({
+            name: "notifications.deliver",
+            payload: { notificationLogId: log.id },
+            tenantId: input.tenantId,
+            idempotencyKey: `notifications.deliver:${log.id}`,
+          });
+          jobEnqueued = true;
+        } catch (error) {
+          await db
+            .update(notificationLogs)
+            .set({
+              status: "failed",
+              error: `enqueue_failed:${errorMessage(error)}`,
+            })
+            .where(eq(notificationLogs.id, log.id));
+        }
+      }
+
+      return { ok: true, logId: log.id, jobEnqueued };
+    },
     upsertNotificationPreference: async (input: {
       channel: string;
       enabled: boolean;

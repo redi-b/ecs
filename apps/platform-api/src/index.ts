@@ -360,6 +360,7 @@ const app = createPlatformApp({
   resolveTenantIdByMedusaSalesChannelId: createResolveTenantIdByMedusaSalesChannel(
     platformDb.db,
   ),
+  sendTestNotification: notificationService.sendTestNotification,
   reviewPaymentOnboarding: paymentOnboardingService.reviewPaymentOnboarding,
   retryTenantShopProvisioningAttempt,
   selectStorefrontTemplate: storefrontTemplateService.selectStorefrontTemplate,

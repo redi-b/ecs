@@ -566,6 +566,19 @@ export type PlatformAppOptions = {
   resolveTenantIdByMedusaSalesChannelId?:
     | ((salesChannelId: string) => Promise<string | null>)
     | undefined;
+  sendTestNotification?:
+    | ((input: {
+        channel: string;
+        tenantId: string;
+      }) => Promise<
+        | { ok: true; logId: string; jobEnqueued: boolean }
+        | {
+            ok: false;
+            error: "notification_channel_invalid" | "notification_preference_missing";
+            status: 400 | 404;
+          }
+      >)
+    | undefined;
   upsertNotificationPreference?:
     | ((input: {
         channel: string;
