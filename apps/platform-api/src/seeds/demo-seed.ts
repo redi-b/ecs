@@ -22,8 +22,15 @@ import {
   analyticsEvents,
   createPlatformDb,
   dailyMetrics,
+  deliverySettings,
   domains,
   invoices,
+  mediaAssets,
+  mediaUsages,
+  notificationLogs,
+  notificationPreferences,
+  operatorNotes,
+  paymentOnboarding,
   storefrontConfigs,
   storefrontRevisions,
   subscriptions,
@@ -913,6 +920,8 @@ async function cleanAllDemoData() {
   }
 
   if (idsToRemove.length) {
+    // Delete every platform table that FKs tenants (ON DELETE NO ACTION).
+    // Order: dependents with nested FKs first (media usages → assets), then tenants.
     await platformDb.db
       .delete(analyticsEvents)
       .where(inArray(analyticsEvents.tenantId, idsToRemove));
@@ -940,6 +949,23 @@ async function cleanAllDemoData() {
     await platformDb.db
       .delete(tenantProvisioningAttempts)
       .where(inArray(tenantProvisioningAttempts.platformTenantId, idsToRemove));
+    await platformDb.db
+      .delete(deliverySettings)
+      .where(inArray(deliverySettings.tenantId, idsToRemove));
+    await platformDb.db
+      .delete(paymentOnboarding)
+      .where(inArray(paymentOnboarding.tenantId, idsToRemove));
+    await platformDb.db
+      .delete(notificationPreferences)
+      .where(inArray(notificationPreferences.tenantId, idsToRemove));
+    await platformDb.db
+      .delete(notificationLogs)
+      .where(inArray(notificationLogs.tenantId, idsToRemove));
+    await platformDb.db
+      .delete(operatorNotes)
+      .where(inArray(operatorNotes.tenantId, idsToRemove));
+    await platformDb.db.delete(mediaUsages).where(inArray(mediaUsages.tenantId, idsToRemove));
+    await platformDb.db.delete(mediaAssets).where(inArray(mediaAssets.tenantId, idsToRemove));
     await platformDb.db.delete(tenants).where(inArray(tenants.id, idsToRemove));
   }
 
