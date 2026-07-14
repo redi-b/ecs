@@ -194,6 +194,23 @@ services:
       minio-init:
         condition: service_completed_successfully
 
+  platform-worker:
+    <<: *app-defaults
+    image: ${IMAGE_PREFIX:?set IMAGE_PREFIX}/platform-api:${IMAGE_TAG:-main}
+    pull_policy: always
+    environment:
+      <<: *platform-environment
+      SERVICE_NAME: platform-worker
+      PLATFORM_DATABASE_POOL_MAX: ${PLATFORM_WORKER_DATABASE_POOL_MAX:-5}
+    command: ["node", "--import", "tsx", "src/worker.ts"]
+    depends_on:
+      migrate-platform:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+
   medusa:
     <<: *app-defaults
     image: ${IMAGE_PREFIX:?set IMAGE_PREFIX}/medusa:${IMAGE_TAG:-main}

@@ -97,7 +97,7 @@ Point DNS for `media.${BASE_DOMAIN}` at the same Caddy/Traefik entry used by oth
 
 Shop **create** does not require MinIO. Media uploads do.
 
-The platform image also contains `src/worker.ts`. It is not started by this stack because the current worker is only a placeholder; it can be added as a separate service when it begins processing jobs.
+The platform image runs two processes from the same image: `platform-api` (HTTP) and `platform-worker` (BullMQ via `@ecs/jobs`). The worker command is `node --import tsx src/worker.ts`. It requires Redis and platform migrations, and is required for background jobs (notifications, billing, imports, and other post-MVP work).
 
 ## GitHub Actions
 
