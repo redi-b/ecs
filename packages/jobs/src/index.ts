@@ -14,4 +14,6 @@ export {
   DEFAULT_CONCURRENCY,
   DEFAULT_BACKOFF_MS,
 } from "./defaults.js";
-// createJobsClient / startPlatformWorker added in later tasks
+export { createJobsClient } from "./client.js";
+export type { JobsClient, JobsClientOptions } from "./client.js";
+// startPlatformWorker added in a later task
