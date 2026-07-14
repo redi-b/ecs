@@ -3,6 +3,37 @@ import { describe, it } from "node:test";
 
 import { getMerchantDashboardSummary } from "./merchant-dashboard.js";
 
+const shellPayload = {
+  tenant: {
+    id: "tenant_1",
+    name: "Abebe Market",
+    handle: "abebe",
+    status: "active",
+  },
+  domain: {
+    id: "domain_1",
+    hostname: "abebe.lvh.me",
+  },
+  actor: {
+    id: "user_1",
+    email: "owner@abebe.local",
+    name: "Abebe Owner",
+    role: "owner",
+  },
+  commerce: {
+    hasPublishableKey: true,
+    hasSalesChannel: true,
+    hasStore: true,
+  },
+  storefront: {
+    isPublished: true,
+    publishedRevisionId: "revision_1",
+    templateId: "template_1",
+    templateKey: "classic@1",
+    templateVersion: 1,
+  },
+};
+
 describe("getMerchantDashboardSummary", () => {
   it("fetches the merchant dashboard summary with selected tenant context", async () => {
     let forwardedRequest: Request | undefined;
@@ -13,36 +44,7 @@ describe("getMerchantDashboardSummary", () => {
       fetcher: async (input, init) => {
         forwardedRequest = new Request(input, init);
 
-        return Response.json({
-          tenant: {
-            id: "tenant_1",
-            name: "Abebe Market",
-            handle: "abebe",
-            status: "active",
-          },
-          domain: {
-            id: "domain_1",
-            hostname: "abebe.lvh.me",
-          },
-          actor: {
-            id: "user_1",
-            email: "owner@abebe.local",
-            name: "Abebe Owner",
-            role: "owner",
-          },
-          commerce: {
-            hasPublishableKey: true,
-            hasSalesChannel: true,
-            hasStore: true,
-          },
-          storefront: {
-            isPublished: true,
-            publishedRevisionId: "revision_1",
-            templateId: "template_1",
-            templateKey: "classic@1",
-            templateVersion: 1,
-          },
-        });
+        return Response.json(shellPayload);
       },
     });
 
@@ -53,6 +55,27 @@ describe("getMerchantDashboardSummary", () => {
     );
     assert.equal(forwardedRequest?.headers.get("x-forwarded-host"), null);
     assert.equal(forwardedRequest?.headers.get("cookie"), "better-auth.session_token=session_1");
+  });
+
+  it("fetches lean access shell for layout auth", async () => {
+    let forwardedRequest: Request | undefined;
+    const { getMerchantDashboardAccessShell } = await import("./merchant-dashboard.js");
+    const result = await getMerchantDashboardAccessShell({
+      cookieHeader: "better-auth.session_token=session_1",
+      platformApiBaseUrl: "http://platform.local",
+      requestHost: "abebe.lvh.me",
+      fetcher: async (input, init) => {
+        forwardedRequest = new Request(input, init);
+        return Response.json(shellPayload);
+      },
+    });
+
+    assert.equal(result.ok, true);
+    assert.equal(
+      forwardedRequest?.url,
+      "http://platform.local/platform/merchant/dashboard/access",
+    );
+    assert.equal(forwardedRequest?.headers.get("x-forwarded-host"), "abebe.lvh.me");
   });
 
   it("returns a dashboard error for invalid platform responses", async () => {

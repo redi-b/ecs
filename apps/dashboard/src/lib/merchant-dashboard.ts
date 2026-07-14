@@ -1,5 +1,7 @@
 import {
+  type MerchantDashboardAccess,
   type MerchantDashboardSummary,
+  merchantDashboardAccessSchema,
   merchantDashboardSummarySchema,
   platformErrorSchema,
 } from "@ecs/contracts";
@@ -15,6 +17,18 @@ export type MerchantDashboardResult =
       status: number;
     };
 
+export type MerchantDashboardAccessResult =
+  | {
+      ok: true;
+      access: MerchantDashboardAccess;
+    }
+  | {
+      ok: false;
+      message: string;
+      status: number;
+    };
+
+/** Full overview payload (ops, analytics, billing). Use on overview/billing/settings only. */
 export async function getMerchantDashboardSummary(options: {
   cookieHeader?: string | null | undefined;
   fetcher?: typeof fetch;
@@ -23,7 +37,7 @@ export async function getMerchantDashboardSummary(options: {
   tenantId?: string | null | undefined;
 }): Promise<MerchantDashboardResult> {
   const fetcher = options.fetcher ?? fetch;
-  const response = await fetcher(getMerchantDashboardUrl(options), {
+  const response = await fetcher(getMerchantDashboardUrl(options, "full"), {
     cache: "no-store",
     headers: getDashboardHeaders({
       cookieHeader: options.cookieHeader,
@@ -67,13 +81,74 @@ export async function getMerchantDashboardSummary(options: {
   };
 }
 
-function getMerchantDashboardUrl(options: {
+/** Lean shell for layout auth — no Medusa order sampling or billing. */
+export async function getMerchantDashboardAccessShell(options: {
+  cookieHeader?: string | null | undefined;
+  fetcher?: typeof fetch;
   platformApiBaseUrl: string;
+  requestHost?: string | null | undefined;
   tenantId?: string | null | undefined;
-}) {
-  const path = options.tenantId?.trim()
-    ? `/platform/tenants/${encodeURIComponent(options.tenantId.trim())}/dashboard`
-    : "/platform/merchant/dashboard";
+}): Promise<MerchantDashboardAccessResult> {
+  const fetcher = options.fetcher ?? fetch;
+  const response = await fetcher(getMerchantDashboardUrl(options, "access"), {
+    cache: "no-store",
+    headers: getDashboardHeaders({
+      cookieHeader: options.cookieHeader,
+      requestHost: options.tenantId?.trim() ? undefined : options.requestHost,
+    }),
+  }).catch(() => null);
+
+  if (!response) {
+    return {
+      ok: false,
+      status: 503,
+      message: "platform_request_failed",
+    };
+  }
+
+  const data = await response.json().catch(() => undefined);
+
+  if (!response.ok) {
+    const error = platformErrorSchema.safeParse(data);
+
+    return {
+      ok: false,
+      status: response.status,
+      message: error.success ? error.data.error : response.statusText || "Dashboard access failed",
+    };
+  }
+
+  const parsed = merchantDashboardAccessSchema.safeParse(data);
+
+  if (!parsed.success) {
+    return {
+      ok: false,
+      status: 502,
+      message: "invalid_dashboard_access_response",
+    };
+  }
+
+  return {
+    ok: true,
+    access: parsed.data,
+  };
+}
+
+function getMerchantDashboardUrl(
+  options: {
+    platformApiBaseUrl: string;
+    tenantId?: string | null | undefined;
+  },
+  mode: "full" | "access",
+) {
+  const tenantId = options.tenantId?.trim();
+  const path = tenantId
+    ? mode === "access"
+      ? `/platform/tenants/${encodeURIComponent(tenantId)}/dashboard/access`
+      : `/platform/tenants/${encodeURIComponent(tenantId)}/dashboard`
+    : mode === "access"
+      ? "/platform/merchant/dashboard/access"
+      : "/platform/merchant/dashboard";
 
   return new URL(path, normalizeBaseUrl(options.platformApiBaseUrl));
 }

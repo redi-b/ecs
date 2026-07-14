@@ -11,10 +11,42 @@ export function registerMerchantDashboardRoutes(
   helpers: MerchantRouteHelpers,
 ) {
   const { getAuthorizedMerchantContext, getResolvedCommerce } = helpers;
-  const { getMerchantDashboardPayload } = createMerchantDashboardSummary(
-    options,
-    getResolvedCommerce,
-  );
+  const { getMerchantDashboardAccessPayload, getMerchantDashboardPayload } =
+    createMerchantDashboardSummary(options, getResolvedCommerce);
+
+  /** Lean shell: actor + tenant + storefront flags only (no ops/metrics/billing). */
+  app.get("/platform/merchant/dashboard/access", async (context) => {
+    const session = await options.getSession?.(context.req.raw.headers);
+
+    if (!session) {
+      return context.json({ error: "auth_required" }, 401);
+    }
+
+    const host = getRequestHost(
+      context.req.header("x-forwarded-host") ?? context.req.header("host"),
+    );
+    const result = await options.resolveTenantForHost(host);
+
+    if (!result.ok) {
+      return context.json({ error: result.error }, storeErrorStatus[result.error]);
+    }
+
+    const authorization = await options.authorizeDashboardForTenant?.({
+      tenantId: result.context.tenantId,
+      userId: session.user.id,
+    });
+
+    if (!authorization?.ok) {
+      return context.json({ error: "dashboard_forbidden" }, 403);
+    }
+
+    return context.json(
+      await getMerchantDashboardAccessPayload({
+        actor: authorization.actor,
+        context: result.context,
+      }),
+    );
+  });
 
   app.get("/platform/merchant/dashboard", async (context) => {
     const session = await options.getSession?.(context.req.raw.headers);
@@ -29,12 +61,7 @@ export function registerMerchantDashboardRoutes(
     const result = await options.resolveTenantForHost(host);
 
     if (!result.ok) {
-      return context.json(
-        {
-          error: result.error,
-        },
-        storeErrorStatus[result.error],
-      );
+      return context.json({ error: result.error }, storeErrorStatus[result.error]);
     }
 
     const authorization = await options.authorizeDashboardForTenant?.({

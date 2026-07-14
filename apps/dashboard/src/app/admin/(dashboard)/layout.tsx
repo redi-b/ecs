@@ -16,7 +16,7 @@ import {
 } from "@/lib/dashboard-auth";
 import { isCentralDashboardHost } from "@/lib/dashboard-hosts";
 import { getSelectedTenantId } from "@/lib/dashboard-tenant-context";
-import { getMerchantDashboardSummary } from "@/lib/merchant-dashboard";
+import { getMerchantDashboardAccessShell } from "@/lib/merchant-dashboard";
 import { getPlatformOnboardingState } from "@/lib/platform-onboarding";
 import { getSidebarDefaultOpen, SIDEBAR_COOKIE_NAME } from "@/lib/sidebar-state";
 
@@ -55,9 +55,10 @@ export default async function AdminDashboardLayout({ children }: { children: Rea
     redirect(onboarding.state.primaryTenant.dashboardUrl);
   }
 
+  // Lean shell only — never load ops/metrics/billing for the chrome.
   const access = await getMerchantDashboardAccess({
-    getSummary: () =>
-      getMerchantDashboardSummary({
+    getAccess: () =>
+      getMerchantDashboardAccessShell({
         cookieHeader: requestHeaders.get("cookie"),
         platformApiBaseUrl,
         requestHost,
@@ -92,8 +93,8 @@ export default async function AdminDashboardLayout({ children }: { children: Rea
   return (
     <TooltipProvider>
       <SidebarProvider defaultOpen={sidebarDefaultOpen}>
-        <ActorProvider actor={access.summary.actor}>
-          <AppSidebar actor={access.summary.actor} />
+        <ActorProvider actor={access.access.actor}>
+          <AppSidebar actor={access.access.actor} />
           <SidebarInset>
             <BreadcrumbLabelsProvider>
               <AppHeader />

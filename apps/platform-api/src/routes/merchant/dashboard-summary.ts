@@ -63,27 +63,29 @@ export function createMerchantDashboardSummary(
         status: 503;
       },
 ) {
-  async function getMerchantDashboardPayload(input: {
+  type DashboardContextInput = {
+    domainId: string;
+    hostname: string;
+    medusaPublishableKeyId: string | null;
+    medusaRegionId: string | null;
+    medusaSalesChannelId: string | null;
+    medusaStockLocationId: string | null;
+    medusaStoreId: string | null;
+    publishedRevisionId: string | null;
+    status: string;
+    templateId: string | null;
+    templateKey: string | null;
+    templateVersion: number | null;
+    tenantHandle: string;
+    tenantId: string;
+    tenantName: string;
+  };
+
+  function buildMerchantDashboardBase(input: {
     actor: MerchantDashboardBase["actor"];
-    context: {
-      domainId: string;
-      hostname: string;
-      medusaPublishableKeyId: string | null;
-      medusaRegionId: string | null;
-      medusaSalesChannelId: string | null;
-      medusaStockLocationId: string | null;
-      medusaStoreId: string | null;
-      publishedRevisionId: string | null;
-      status: string;
-      templateId: string | null;
-      templateKey: string | null;
-      templateVersion: number | null;
-      tenantHandle: string;
-      tenantId: string;
-      tenantName: string;
-    };
-  }) {
-    const base: MerchantDashboardBase = {
+    context: DashboardContextInput;
+  }): MerchantDashboardBase {
+    return {
       tenant: {
         id: input.context.tenantId,
         name: input.context.tenantName,
@@ -108,6 +110,21 @@ export function createMerchantDashboardSummary(
         templateVersion: input.context.templateVersion,
       },
     };
+  }
+
+  /** Auth/shell only — no Medusa order sampling, metrics, or billing. */
+  async function getMerchantDashboardAccessPayload(input: {
+    actor: MerchantDashboardBase["actor"];
+    context: DashboardContextInput;
+  }) {
+    return buildMerchantDashboardBase(input);
+  }
+
+  async function getMerchantDashboardPayload(input: {
+    actor: MerchantDashboardBase["actor"];
+    context: DashboardContextInput;
+  }) {
+    const base = buildMerchantDashboardBase(input);
     const commerce = getResolvedCommerce(input.context);
 
     return {
@@ -394,5 +411,5 @@ export function createMerchantDashboardSummary(
     return status !== "captured" && status !== "paid";
   }
 
-  return { getMerchantDashboardPayload };
+  return { getMerchantDashboardAccessPayload, getMerchantDashboardPayload };
 }

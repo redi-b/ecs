@@ -29,10 +29,14 @@ export default async function MerchantAdminPage({ searchParams }: MerchantAdminP
       actions={
         <div className="flex items-center gap-2">
           <Button asChild size="sm" variant="outline">
-            <Link href={dashboardRoutes.orders}>Orders</Link>
+            <Link href={dashboardRoutes.orders} prefetch={false}>
+              Orders
+            </Link>
           </Button>
           <Button asChild size="sm">
-            <Link href={dashboardRoutes.products}>Products</Link>
+            <Link href={dashboardRoutes.products} prefetch={false}>
+              Products
+            </Link>
           </Button>
         </div>
       }

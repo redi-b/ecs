@@ -7,6 +7,40 @@ export function registerPlatformTenantSettingsRoutes(
   app: Hono<{ Variables: PlatformAppVariables }>,
   options: PlatformAppOptions,
 ) {
+  /** Lean shell for layout auth (tenant path is already light — no Medusa ops). */
+  app.get("/platform/tenants/:tenantId/dashboard/access", async (context) => {
+    if (!options.getTenantDashboardSummary) {
+      return context.json({ error: "dashboard_summary_unavailable" }, 503);
+    }
+
+    const session = await options.getSession?.(context.req.raw.headers);
+
+    if (!session) {
+      return context.json({ error: "auth_required" }, 401);
+    }
+
+    const tenantId = context.req.param("tenantId");
+    const authorization = await options.authorizeDashboardForTenant?.({
+      tenantId,
+      userId: session.user.id,
+    });
+
+    if (!authorization?.ok) {
+      return context.json({ error: "dashboard_forbidden" }, 403);
+    }
+
+    const result = await options.getTenantDashboardSummary({ tenantId });
+
+    if (!result.ok) {
+      return context.json({ error: result.error }, result.status);
+    }
+
+    return context.json({
+      ...result.summary,
+      actor: authorization.actor,
+    });
+  });
+
   app.get("/platform/tenants/:tenantId/dashboard", async (context) => {
     if (!options.getTenantDashboardSummary) {
       return context.json({ error: "dashboard_summary_unavailable" }, 503);

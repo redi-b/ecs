@@ -1,5 +1,5 @@
 import { isCentralDashboardHost } from "@/lib/dashboard-hosts";
-import { getMerchantDashboardSummary } from "@/lib/merchant-dashboard";
+import { getMerchantDashboardAccessShell } from "@/lib/merchant-dashboard";
 import { getPlatformOnboardingState } from "@/lib/platform-onboarding";
 
 export async function getAuthenticatedDashboardRedirect(options: {
@@ -24,11 +24,11 @@ export async function getAuthenticatedDashboardRedirect(options: {
     return onboarding.state.primaryTenant?.dashboardUrl ?? "/admin/onboarding";
   }
 
-  const summary = await getMerchantDashboardSummary({
+  const access = await getMerchantDashboardAccessShell({
     cookieHeader: options.cookieHeader,
     platformApiBaseUrl: options.platformApiBaseUrl,
     requestHost: options.requestHost,
   });
 
-  return summary.ok ? "/admin" : null;
+  return access.ok ? "/admin" : null;
 }

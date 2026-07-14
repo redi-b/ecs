@@ -112,13 +112,13 @@ export function AccountMenu({ actor }: { actor: MerchantDashboardSummary["actor"
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
               <DropdownMenuItem asChild>
-                <Link href={dashboardRoutes.settings} onClick={closeMobileSidebar}>
+                <Link href={dashboardRoutes.settings} onClick={closeMobileSidebar} prefetch={false}>
                   <AppIcons.settings />
                   {t("account.settings")}
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link href={dashboardRoutes.billing} onClick={closeMobileSidebar}>
+                <Link href={dashboardRoutes.billing} onClick={closeMobileSidebar} prefetch={false}>
                   <AppIcons.billing />
                   {t("account.billing")}
                 </Link>

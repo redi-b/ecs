@@ -1,13 +1,13 @@
-import type { MerchantDashboardSummary } from "@ecs/contracts";
+import type { MerchantDashboardAccess as MerchantDashboardAccessPayload } from "@ecs/contracts";
 
-import type { MerchantDashboardResult } from "@/lib/merchant-dashboard";
+import type { MerchantDashboardAccessResult } from "@/lib/merchant-dashboard";
 
 export const DASHBOARD_PATH_HEADER = "x-ecs-dashboard-path";
 
 export type MerchantDashboardAccess =
   | {
       ok: true;
-      summary: MerchantDashboardSummary;
+      access: MerchantDashboardAccessPayload;
     }
   | {
       ok: false;
@@ -25,14 +25,14 @@ export type MerchantDashboardAccess =
     };
 
 export async function getMerchantDashboardAccess(options: {
-  getSummary: () => Promise<MerchantDashboardResult>;
+  getAccess: () => Promise<MerchantDashboardAccessResult>;
 }): Promise<MerchantDashboardAccess> {
-  const result = await options.getSummary();
+  const result = await options.getAccess();
 
   if (result.ok) {
     return {
       ok: true,
-      summary: result.summary,
+      access: result.access,
     };
   }
 

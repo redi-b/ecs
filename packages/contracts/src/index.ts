@@ -625,6 +625,17 @@ export const merchantDashboardSummarySchema = z.object({
 
 export type MerchantDashboardSummary = z.infer<typeof merchantDashboardSummarySchema>;
 
+/** Shell/auth payload only — no operations, analytics, or billing. */
+export const merchantDashboardAccessSchema = merchantDashboardSummarySchema.pick({
+  actor: true,
+  commerce: true,
+  domain: true,
+  storefront: true,
+  tenant: true,
+});
+
+export type MerchantDashboardAccess = z.infer<typeof merchantDashboardAccessSchema>;
+
 export const tenantReadinessSchema = z.object({
   readiness: z.object({
     ready: z.boolean(),

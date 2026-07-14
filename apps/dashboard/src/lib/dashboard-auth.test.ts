@@ -7,7 +7,7 @@ import {
   getSafeDashboardPath,
 } from "./dashboard-auth.js";
 
-const summary = {
+const accessPayload = {
   actor: {
     email: "owner@abebe.local",
     id: "user_1",
@@ -63,20 +63,20 @@ describe("getDashboardAuthRedirectPath", () => {
 });
 
 describe("getMerchantDashboardAccess", () => {
-  it("returns summary for an authenticated merchant", async () => {
+  it("returns lean access for an authenticated merchant", async () => {
     const access = await getMerchantDashboardAccess({
-      getSummary: async () => ({ ok: true, summary }),
+      getAccess: async () => ({ ok: true, access: accessPayload }),
     });
 
     assert.deepEqual(access, {
       ok: true,
-      summary,
+      access: accessPayload,
     });
   });
 
   it("maps auth_required to unauthenticated", async () => {
     const access = await getMerchantDashboardAccess({
-      getSummary: async () => ({
+      getAccess: async () => ({
         ok: false,
         message: "auth_required",
         status: 401,
@@ -91,7 +91,7 @@ describe("getMerchantDashboardAccess", () => {
 
   it("maps dashboard_forbidden to forbidden", async () => {
     const access = await getMerchantDashboardAccess({
-      getSummary: async () => ({
+      getAccess: async () => ({
         ok: false,
         message: "dashboard_forbidden",
         status: 403,
@@ -107,7 +107,7 @@ describe("getMerchantDashboardAccess", () => {
 
   it("maps network failures to unavailable", async () => {
     const access = await getMerchantDashboardAccess({
-      getSummary: async () => ({
+      getAccess: async () => ({
         ok: false,
         message: "platform_request_failed",
         status: 503,
