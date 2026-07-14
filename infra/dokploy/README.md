@@ -15,6 +15,24 @@ The Compose service connects Caddy to Dokploy's external `dokploy-network` and d
 
 Caddy trusts forwarded headers only from private network peers so the dashboard receives the original public scheme and host after TLS terminates at Traefik. Its access log excludes the local `/healthz` probe.
 
+### Static asset caching
+
+Hashed Next.js chunks under `/_next/static/*` get `Cache-Control: public, max-age=31536000, immutable` from both the dashboard Next config and Caddy (dashboard host and shop-host `/_next/static` path). That keeps cold revisits from re-downloading megabytes of JS after the first load.
+
+**Do not** long-cache `/admin` HTML or cookie-auth API responses — those stay `no-store` / uncached on purpose.
+
+After deploy, spot-check:
+
+```sh
+# Should include max-age=31536000 (and usually immutable)
+curl -sI "https://dashboard.${BASE_DOMAIN}/_next/static/chunks/webpack-*.js" | grep -i cache-control
+
+# Document must not be year-cached
+curl -sI "https://dashboard.${BASE_DOMAIN}/admin" | grep -i cache-control
+```
+
+Public media (`media.${BASE_DOMAIN}`) gets a one-week cache with stale-while-revalidate for product thumbs.
+
 Better Auth issues secure session cookies for the shared `.${BASE_DOMAIN}` parent domain. This allows the central dashboard, tenant dashboards, and platform API to use the same session while keeping cookies HTTP-only and same-site.
 
 The wildcard record does not cover the bare `ecs.example.com` host. Add that record separately only if the bare host will be used.

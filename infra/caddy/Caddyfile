@@ -2,15 +2,35 @@
 	auto_https off
 }
 
+# Hashed Next.js build assets — safe to cache for a year.
+# Document/HTML under /admin* stays uncached (cookie auth; Next sets no-store).
+(next_static_cache) {
+	header Cache-Control "public, max-age=31536000, immutable"
+}
+
 http://api.lvh.me {
 	reverse_proxy host.docker.internal:3000
 }
 
 http://dashboard.lvh.me {
-	reverse_proxy host.docker.internal:3001
+	@next_static path /_next/static/*
+	handle @next_static {
+		import next_static_cache
+		reverse_proxy host.docker.internal:3001
+	}
+
+	handle {
+		reverse_proxy host.docker.internal:3001
+	}
 }
 
 http://*.lvh.me {
+	@next_static path /_next/static/*
+	handle @next_static {
+		import next_static_cache
+		reverse_proxy host.docker.internal:3001
+	}
+
 	@dashboardAssets path /_next/* /__nextjs* /favicon.ico
 	handle @dashboardAssets {
 		reverse_proxy host.docker.internal:3001
