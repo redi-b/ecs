@@ -20,8 +20,10 @@
       "@ecs/config": ["packages/config/src/index.ts"],
       "@ecs/contracts": ["packages/contracts/src/index.ts"],
       "@ecs/db": ["packages/db/src/index.ts"],
+      "@ecs/jobs": ["packages/jobs/src/index.ts"],
       "@ecs/logger": ["packages/logger/src/index.ts"],
       "@ecs/storefront-templates": ["packages/storefront-templates/src/index.ts"]
+
     }
   }
 }

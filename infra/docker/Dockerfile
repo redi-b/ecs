@@ -16,8 +16,10 @@ COPY apps/storefront/package.json apps/storefront/package.json
 COPY packages/config/package.json packages/config/package.json
 COPY packages/contracts/package.json packages/contracts/package.json
 COPY packages/db/package.json packages/db/package.json
+COPY packages/jobs/package.json packages/jobs/package.json
 COPY packages/logger/package.json packages/logger/package.json
 COPY packages/storefront-templates/package.json packages/storefront-templates/package.json
+
 
 RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
     pnpm install --frozen-lockfile

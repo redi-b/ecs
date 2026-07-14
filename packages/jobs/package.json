@@ -1,0 +1,23 @@
+{
+  "name": "@ecs/jobs",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "typecheck": "tsc -b ../db && tsc -p tsconfig.json --noEmit",
+    "test": "node --import tsx --test \"src/**/*.test.ts\""
+  },
+  "dependencies": {
+    "@ecs/db": "workspace:*",
+    "@ecs/logger": "workspace:*",
+    "bullmq": "^5.13.0",
+    "ioredis": "^5.11.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.0"
+  }
+}
