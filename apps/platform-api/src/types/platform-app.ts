@@ -562,6 +562,10 @@ export type PlatformAppOptions = {
         tenantId: string;
       }) => Promise<NotificationEventRecordResult>)
     | undefined;
+  /** Resolve platform tenant from Medusa sales channel (internal notification ingest). */
+  resolveTenantIdByMedusaSalesChannelId?:
+    | ((salesChannelId: string) => Promise<string | null>)
+    | undefined;
   upsertNotificationPreference?:
     | ((input: {
         channel: string;

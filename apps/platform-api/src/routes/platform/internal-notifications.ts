@@ -8,9 +8,20 @@ function getInternalToken(request: Request) {
   return request.headers.get("x-platform-internal-token");
 }
 
+function readOptionalString(record: Record<string, unknown>, key: string): string {
+  const value = record[key];
+  return typeof value === "string" ? value.trim() : "";
+}
+
 /**
- * Machine-to-machine notification event ingest (future Medusa subscribers, scripts).
+ * Machine-to-machine notification event ingest (Medusa subscribers, scripts).
  * Auth: PLATFORM_INTERNAL_API_TOKEN via x-platform-internal-token.
+ *
+ * Body:
+ * - eventType (required)
+ * - tenantId OR medusaSalesChannelId (one required)
+ * - payload (optional)
+ * - source / sourceEventId (optional metadata for later idempotency)
  */
 export function registerPlatformInternalNotificationRoutes(
   app: Hono<{ Variables: PlatformAppVariables }>,
@@ -38,30 +49,59 @@ export function registerPlatformInternalNotificationRoutes(
     }
 
     const record = body as Record<string, unknown>;
-    const tenantId =
-      typeof record.tenantId === "string" ? record.tenantId.trim() : "";
-    const eventTypeRaw =
-      typeof record.eventType === "string" ? record.eventType.trim() : "";
-
-    if (!tenantId) {
-      return context.json({ error: "tenant_id_required" }, 400);
-    }
+    const eventTypeRaw = readOptionalString(record, "eventType");
+    let tenantId = readOptionalString(record, "tenantId");
+    const medusaSalesChannelId = readOptionalString(record, "medusaSalesChannelId");
 
     if (!eventTypeRaw || !isAllowedNotificationEventType(eventTypeRaw)) {
       return context.json({ error: "notification_events_invalid" }, 400);
     }
 
+    if (!tenantId && medusaSalesChannelId) {
+      if (!options.resolveTenantIdByMedusaSalesChannelId) {
+        return context.json({ error: "tenant_resolution_unavailable" }, 503);
+      }
+      const resolved = await options.resolveTenantIdByMedusaSalesChannelId(
+        medusaSalesChannelId,
+      );
+      if (!resolved) {
+        return context.json({ error: "tenant_not_found_for_sales_channel" }, 404);
+      }
+      tenantId = resolved;
+    }
+
+    if (!tenantId) {
+      return context.json({ error: "tenant_id_required" }, 400);
+    }
+
     const eventType = eventTypeRaw as NotificationEventType;
-    const payload = "payload" in record ? record.payload : undefined;
+
+    let payload: unknown;
+    if ("payload" in record && record.payload !== undefined) {
+      payload = record.payload;
+    } else {
+      const envelope: Record<string, string> = {
+        source: readOptionalString(record, "source") || "medusa",
+      };
+      const sourceEventId = readOptionalString(record, "sourceEventId");
+      if (sourceEventId) {
+        envelope.sourceEventId = sourceEventId;
+      }
+      if (medusaSalesChannelId) {
+        envelope.medusaSalesChannelId = medusaSalesChannelId;
+      }
+      payload = envelope;
+    }
 
     const result = await options.recordNotificationEvent({
       tenantId,
       eventType,
-      ...(payload !== undefined ? { payload } : {}),
+      payload,
     });
 
     return context.json({
       ok: true,
+      tenantId,
       logCount: result.logCount,
       logIds: result.logIds,
     });

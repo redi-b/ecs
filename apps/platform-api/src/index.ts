@@ -51,6 +51,7 @@ import {
   createTenantShopProvisioningRetryServiceFromDb,
   createTenantShopProvisioningService,
 } from "./modules/tenants/shop-provisioning.js";
+import { createResolveTenantIdByMedusaSalesChannel } from "./modules/tenants/resolve-by-medusa-sales-channel.js";
 import { createTenantStatusService } from "./modules/tenants/status-service.js";
 
 loadPlatformApiEnvFiles();
@@ -356,6 +357,9 @@ const app = createPlatformApp({
   publishStorefrontDraft: storefrontTemplateService.publishStorefrontDraft,
   recordAnalyticsEvent: analyticsService.recordAnalyticsEvent,
   recordNotificationEvent: notificationService.recordNotificationEvent,
+  resolveTenantIdByMedusaSalesChannelId: createResolveTenantIdByMedusaSalesChannel(
+    platformDb.db,
+  ),
   reviewPaymentOnboarding: paymentOnboardingService.reviewPaymentOnboarding,
   retryTenantShopProvisioningAttempt,
   selectStorefrontTemplate: storefrontTemplateService.selectStorefrontTemplate,
