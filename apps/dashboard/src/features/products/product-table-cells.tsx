@@ -28,7 +28,7 @@ export function ProductIdentityCell({
     <div className="flex w-64 max-w-64 items-center gap-3">
       <ProductMediaCell product={product} />
       <div className="flex min-w-0 flex-col gap-1">
-        <Link className={cn(listEntityLinkClassName, "truncate")} href={href}>
+        <Link className={cn(listEntityLinkClassName, "truncate")} href={href} prefetch={false}>
           {product.title ?? "Untitled product"}
         </Link>
         <span className="truncate text-xs text-muted-foreground">

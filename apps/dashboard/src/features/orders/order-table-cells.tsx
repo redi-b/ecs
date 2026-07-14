@@ -34,7 +34,7 @@ export function OrderIdentityCell({
 }) {
   const href = getTenantScopedPath(dashboardRoutes.orderDetail(order.id), tenantId);
   return (
-    <Link className={cn(listEntityLinkClassName, "tabular-nums")} href={href}>
+    <Link className={cn(listEntityLinkClassName, "tabular-nums")} href={href} prefetch={false}>
       {formatOrderReference(order)}
     </Link>
   );
