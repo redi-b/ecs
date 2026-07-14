@@ -15,11 +15,12 @@ import {
 } from "./runs.js";
 import type { JobHandler, PlatformDb } from "./types.js";
 
+/** Pino-compatible structured logger: (obj, msg) first-arg shape. */
 export type WorkerLogger = {
-  info: (...args: unknown[]) => void;
-  warn: (...args: unknown[]) => void;
-  error: (...args: unknown[]) => void;
-  debug: (...args: unknown[]) => void;
+  info?: (obj: Record<string, unknown>, msg?: string) => void;
+  warn?: (obj: Record<string, unknown>, msg?: string) => void;
+  error?: (obj: Record<string, unknown>, msg?: string) => void;
+  debug?: (obj: Record<string, unknown>, msg?: string) => void;
 };
 
 export type StartPlatformWorkerOptions = {
@@ -108,13 +109,13 @@ export function createJobProcessor(
     const handler = resolveHandler(handlers, name);
     if (!handler) {
       const message = `No handler registered for job "${name}"`;
-      logger?.error(message, { jobRunId, name });
+      logger?.error?.({ jobRunId, name }, message);
       await lifecycle.markFailed(jobRunId, message, true);
       throw new UnrecoverableError(message);
     }
 
     await lifecycle.markActive(jobRunId, attempt);
-    logger?.debug("Job active", { jobRunId, name, attempt });
+    logger?.debug?.({ jobRunId, name, attempt }, "Job active");
 
     try {
       const result = await handler({
@@ -125,7 +126,7 @@ export function createJobProcessor(
         attempt,
       });
       await lifecycle.markCompleted(jobRunId, result);
-      logger?.info("Job completed", { jobRunId, name, attempt });
+      logger?.info?.({ jobRunId, name, attempt }, "Job completed");
       return result;
     } catch (error) {
       const message = errorMessage(error);
@@ -133,13 +134,16 @@ export function createJobProcessor(
       const isUnrecoverable = error instanceof UnrecoverableError;
       const terminal = isUnrecoverable || attempt >= maxAttempts;
 
-      logger?.error("Job failed", {
-        jobRunId,
-        name,
-        attempt,
-        terminal,
-        err: message,
-      });
+      logger?.error?.(
+        {
+          jobRunId,
+          name,
+          attempt,
+          terminal,
+          err: message,
+        },
+        "Job failed",
+      );
       await lifecycle.markFailed(jobRunId, message, terminal);
       throw error;
     }
@@ -170,12 +174,15 @@ export function startPlatformWorker(options: StartPlatformWorkerOptions): {
     concurrency,
   });
 
-  options.logger?.info("Platform worker started", {
-    queueName,
-    prefix,
-    concurrency,
-    handlers: Object.keys(options.handlers),
-  });
+  options.logger?.info?.(
+    {
+      queueName,
+      prefix,
+      concurrency,
+      handlers: Object.keys(options.handlers),
+    },
+    "Platform worker started",
+  );
 
   return {
     async close() {
