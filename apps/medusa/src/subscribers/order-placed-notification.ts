@@ -27,8 +27,7 @@ export default async function orderPlacedNotificationHandler({
     const order = await loadOrderForNotification(query, orderId);
     if (!order?.sales_channel_id) {
       logger.warn(
-        { orderId },
-        "order.placed notification skipped: order or sales_channel_id missing",
+        `order.placed notification skipped: order or sales_channel_id missing (orderId=${orderId})`,
       );
       return;
     }
@@ -43,17 +42,17 @@ export default async function orderPlacedNotificationHandler({
 
     if (!result.ok) {
       logger.error(
-        { orderId, error: result.error, status: result.status },
-        "failed to emit platform notification for order.placed",
+        `failed to emit platform notification for order.placed (orderId=${orderId}, error=${result.error}, status=${result.status ?? "n/a"})`,
       );
       return;
     }
 
-    logger.info({ orderId, eventType }, "emitted platform notification for order.placed");
+    logger.info(
+      `emitted platform notification for order.placed (orderId=${orderId}, eventType=${eventType})`,
+    );
   } catch (error) {
     logger.error(
-      { orderId, err: error instanceof Error ? error.message : String(error) },
-      "order.placed notification handler error",
+      `order.placed notification handler error (orderId=${orderId}, err=${error instanceof Error ? error.message : String(error)})`,
     );
   }
 }

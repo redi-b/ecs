@@ -24,8 +24,7 @@ export default async function orderCanceledNotificationHandler({
     const order = await loadOrderForNotification(query, orderId);
     if (!order?.sales_channel_id) {
       logger.warn(
-        { orderId },
-        "order.canceled notification skipped: order or sales_channel_id missing",
+        `order.canceled notification skipped: order or sales_channel_id missing (orderId=${orderId})`,
       );
       return;
     }
@@ -40,17 +39,17 @@ export default async function orderCanceledNotificationHandler({
 
     if (!result.ok) {
       logger.error(
-        { orderId, error: result.error, status: result.status },
-        "failed to emit platform notification for order.canceled",
+        `failed to emit platform notification for order.canceled (orderId=${orderId}, error=${result.error}, status=${result.status ?? "n/a"})`,
       );
       return;
     }
 
-    logger.info({ orderId, eventType }, "emitted platform notification for order.canceled");
+    logger.info(
+      `emitted platform notification for order.canceled (orderId=${orderId}, eventType=${eventType})`,
+    );
   } catch (error) {
     logger.error(
-      { orderId, err: error instanceof Error ? error.message : String(error) },
-      "order.canceled notification handler error",
+      `order.canceled notification handler error (orderId=${orderId}, err=${error instanceof Error ? error.message : String(error)})`,
     );
   }
 }

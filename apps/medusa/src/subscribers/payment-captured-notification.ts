@@ -62,8 +62,7 @@ export default async function paymentCapturedNotificationHandler({
     const orderId = await resolveOrderIdFromPayment(query, paymentId);
     if (!orderId) {
       logger.warn(
-        { paymentId },
-        "payment.captured notification skipped: could not resolve order from payment",
+        `payment.captured notification skipped: could not resolve order from payment (paymentId=${paymentId})`,
       );
       return;
     }
@@ -71,8 +70,7 @@ export default async function paymentCapturedNotificationHandler({
     const order = await loadOrderForNotification(query, orderId);
     if (!order?.sales_channel_id) {
       logger.warn(
-        { orderId, paymentId },
-        "payment.captured notification skipped: order or sales_channel_id missing",
+        `payment.captured notification skipped: order or sales_channel_id missing (orderId=${orderId}, paymentId=${paymentId})`,
       );
       return;
     }
@@ -90,20 +88,17 @@ export default async function paymentCapturedNotificationHandler({
 
     if (!result.ok) {
       logger.error(
-        { orderId, paymentId, error: result.error, status: result.status },
-        "failed to emit platform notification for payment.captured",
+        `failed to emit platform notification for payment.captured (orderId=${orderId}, paymentId=${paymentId}, error=${result.error}, status=${result.status ?? "n/a"})`,
       );
       return;
     }
 
     logger.info(
-      { orderId, paymentId, eventType },
-      "emitted platform notification for payment.captured",
+      `emitted platform notification for payment.captured (orderId=${orderId}, paymentId=${paymentId}, eventType=${eventType})`,
     );
   } catch (error) {
     logger.error(
-      { paymentId, err: error instanceof Error ? error.message : String(error) },
-      "payment.captured notification handler error",
+      `payment.captured notification handler error (paymentId=${paymentId}, err=${error instanceof Error ? error.message : String(error)})`,
     );
   }
 }
