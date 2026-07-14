@@ -47,3 +47,11 @@ export const mediaResourceType = pgEnum("media_usage_resource_type", [
   "category",
   "other",
 ]);
+
+export const jobRunStatus = pgEnum("job_run_status", [
+  "queued",
+  "active",
+  "completed",
+  "failed",
+  "cancelled",
+]);
