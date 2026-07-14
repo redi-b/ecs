@@ -20,6 +20,7 @@
     "@ecs/config": "workspace:*",
     "@ecs/contracts": "workspace:*",
     "@ecs/db": "workspace:*",
+    "@ecs/jobs": "workspace:*",
     "@ecs/logger": "workspace:*",
     "@ecs/storefront-templates": "workspace:*",
     "@hono/node-server": "^1.14.0",

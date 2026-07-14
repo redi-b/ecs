@@ -194,6 +194,9 @@ importers:
       '@ecs/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@ecs/jobs':
+        specifier: workspace:*
+        version: link:../../packages/jobs
       '@ecs/logger':
         specifier: workspace:*
         version: link:../../packages/logger
