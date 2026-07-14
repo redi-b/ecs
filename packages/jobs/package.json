@@ -15,6 +15,7 @@
     "@ecs/db": "workspace:*",
     "@ecs/logger": "workspace:*",
     "bullmq": "^5.13.0",
+    "drizzle-orm": "^0.45.2",
     "ioredis": "^5.11.1"
   },
   "devDependencies": {

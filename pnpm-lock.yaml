@@ -293,13 +293,16 @@ importers:
     dependencies:
       '@ecs/db':
         specifier: workspace:*
-        version: file:packages/db(@opentelemetry/api@1.9.1)(@types/pg@8.20.0)(knex@3.2.10)(kysely@0.29.2)
+        version: link:../db
       '@ecs/logger':
         specifier: workspace:*
         version: link:../logger
       bullmq:
         specifier: ^5.13.0
         version: 5.13.0
+      drizzle-orm:
+        specifier: ^0.45.2
+        version: 0.45.2(@opentelemetry/api@1.9.1)(@types/pg@8.20.0)(knex@3.2.10(pg@8.22.0))(kysely@0.29.2)(pg@8.22.0)
       ioredis:
         specifier: ^5.11.1
         version: 5.11.1
@@ -999,9 +1002,6 @@ packages:
 
   '@drizzle-team/brocli@0.10.2':
     resolution: {integrity: sha512-z33Il7l5dKjUgGULTqBsQBQwckHh5AbIuxhdsIxDDiZAzBOrZO6q9ogcWC65kU382AfynTfgNumVcNIjuIua6w==}
-
-  '@ecs/db@file:packages/db':
-    resolution: {directory: packages/db, type: directory}
 
   '@emmetio/abbreviation@2.3.3':
     resolution: {integrity: sha512-mgv58UrU3rh4YgbE/TzgLQwJ3pFsHHhCLqY20aJq+9comytTXUDNGG/SMtSeMJdkpxgXSXunBGLD8Boka3JyVA==}
@@ -10976,42 +10976,6 @@ snapshots:
 
   '@drizzle-team/brocli@0.10.2': {}
 
-  '@ecs/db@file:packages/db(@opentelemetry/api@1.9.1)(@types/pg@8.20.0)(knex@3.2.10)(kysely@0.29.2)':
-    dependencies:
-      drizzle-orm: 0.45.2(@opentelemetry/api@1.9.1)(@types/pg@8.20.0)(knex@3.2.10)(kysely@0.29.2)(pg@8.22.0)
-      pg: 8.22.0
-      tsx: 4.22.4
-    transitivePeerDependencies:
-      - '@aws-sdk/client-rds-data'
-      - '@cloudflare/workers-types'
-      - '@electric-sql/pglite'
-      - '@libsql/client'
-      - '@libsql/client-wasm'
-      - '@neondatabase/serverless'
-      - '@op-engineering/op-sqlite'
-      - '@opentelemetry/api'
-      - '@planetscale/database'
-      - '@prisma/client'
-      - '@tidbcloud/serverless'
-      - '@types/better-sqlite3'
-      - '@types/pg'
-      - '@types/sql.js'
-      - '@upstash/redis'
-      - '@vercel/postgres'
-      - '@xata.io/client'
-      - better-sqlite3
-      - bun-types
-      - expo-sqlite
-      - gel
-      - knex
-      - kysely
-      - mysql2
-      - pg-native
-      - postgres
-      - prisma
-      - sql.js
-      - sqlite3
-
   '@emmetio/abbreviation@2.3.3':
     dependencies:
       '@emmetio/scanner': 1.0.4
@@ -16584,14 +16548,6 @@ snapshots:
       '@opentelemetry/api': 1.9.1
       '@types/pg': 8.20.0
       knex: 3.2.10(pg@8.22.0)
-      kysely: 0.29.2
-      pg: 8.22.0
-
-  drizzle-orm@0.45.2(@opentelemetry/api@1.9.1)(@types/pg@8.20.0)(knex@3.2.10)(kysely@0.29.2)(pg@8.22.0):
-    optionalDependencies:
-      '@opentelemetry/api': 1.9.1
-      '@types/pg': 8.20.0
-      knex: 3.2.10(pg@8.20.0)
       kysely: 0.29.2
       pg: 8.22.0
 
