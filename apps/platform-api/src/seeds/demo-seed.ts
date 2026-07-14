@@ -1299,18 +1299,34 @@ function resolveMedusaDatabaseUrl() {
 }
 
 async function loadPgModule() {
+  // Prefer direct dependency (listed on platform-api for deploy images).
   try {
     return await import("pg");
   } catch {
-    // platform-api may not list pg; resolve via @ecs/db which depends on it.
-    const { createRequire } = await import("node:module");
-    const { pathToFileURL } = await import("node:url");
-    const require = createRequire(
-      resolve(getPlatformApiServiceDir(import.meta.url), "../../packages/db/package.json"),
-    );
-    const pgPath = require.resolve("pg");
-    return import(pathToFileURL(pgPath).href);
+    // Fallbacks for monorepo layouts where pg is only under @ecs/db.
   }
+
+  const { createRequire } = await import("node:module");
+  const { pathToFileURL } = await import("node:url");
+  const candidates = [
+    resolve(getPlatformApiServiceDir(import.meta.url), "package.json"),
+    resolve(getPlatformApiServiceDir(import.meta.url), "node_modules/@ecs/db/package.json"),
+    resolve(getPlatformApiServiceDir(import.meta.url), "../../packages/db/package.json"),
+  ];
+
+  for (const packageJson of candidates) {
+    try {
+      const require = createRequire(packageJson);
+      const pgPath = require.resolve("pg");
+      return await import(pathToFileURL(pgPath).href);
+    } catch {
+      // try next candidate
+    }
+  }
+
+  throw new Error(
+    'Cannot load "pg". In Docker/Dokploy use: node --import tsx src/seeds/demo-seed.ts (from /app in platform-api). Ensure the image includes dependency "pg".',
+  );
 }
 
 async function getMedusaPgClient() {
