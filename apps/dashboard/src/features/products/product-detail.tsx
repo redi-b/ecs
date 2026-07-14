@@ -31,25 +31,21 @@ import {
   ProductMediaEditButton,
   ProductOrganizationEditButton,
 } from "@/features/products/product-edit-dialog";
+import { useProductTaxonomy } from "@/features/products/use-product-taxonomy";
 import { getTenantScopedPath } from "@/lib/dashboard-tenant-context";
 import { dashboardRoutes } from "@/lib/routes";
 import { cn } from "@/lib/utils";
 
 type ProductDetailProps = {
   action: string;
-  categories: MerchantProductCategory[];
-  collections: MerchantProductCollection[];
   product: MerchantProduct;
   tenantId?: string | undefined;
 };
 
-export function ProductDetail({
-  action,
-  categories,
-  collections,
-  product,
-  tenantId,
-}: ProductDetailProps) {
+export function ProductDetail({ action, product, tenantId }: ProductDetailProps) {
+  const taxonomy = useProductTaxonomy({ tenantId });
+  const categories = taxonomy.categories;
+  const collections = taxonomy.collections;
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
   const images = useMemo(

@@ -1,10 +1,6 @@
 "use client";
 
-import type {
-  MerchantProduct,
-  MerchantProductCategory,
-  MerchantProductCollection,
-} from "@ecs/contracts";
+import type { MerchantProduct } from "@ecs/contracts";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import {
@@ -43,13 +39,12 @@ import {
   type ProductStockFilter,
   type ProductVariantCountFilter,
 } from "@/features/products/product-table-state";
+import { useProductTaxonomy } from "@/features/products/use-product-taxonomy";
 import { copyTextToClipboard } from "@/lib/clipboard";
 import { getTenantScopedPath } from "@/lib/dashboard-tenant-context";
 import { dashboardRoutes } from "@/lib/routes";
 
 type ProductsTableProps = {
-  categories: MerchantProductCategory[];
-  collections: MerchantProductCollection[];
   footer?: ReactNode;
   initialCategoryId?: string | undefined;
   initialCollectionId?: string | undefined;
@@ -88,8 +83,6 @@ async function copyToClipboard(value: string, label: string) {
 }
 
 export function ProductsTable({
-  categories,
-  collections,
   footer,
   initialCategoryId = "all",
   initialCollectionId = "all",
@@ -105,6 +98,9 @@ export function ProductsTable({
 }: ProductsTableProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const taxonomy = useProductTaxonomy({ tenantId });
+  const categories = taxonomy.categories;
+  const collections = taxonomy.collections;
   const [pending, startTransition] = useTransition();
   const [searchValue, setSearchValue] = useState(initialQuery);
   // Stock / media / variants stay client-side on the current server page (phase-2 candidates).

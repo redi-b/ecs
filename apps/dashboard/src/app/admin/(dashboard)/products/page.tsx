@@ -17,22 +17,13 @@ import {
   getSelectedTenantId,
   getTenantScopedPath,
 } from "@/lib/dashboard-tenant-context";
-import { getListErrorState, type ListErrorState } from "@/lib/list-error-state";
-import {
-  getMerchantProductCategories,
-  getMerchantProductCollections,
-  getMerchantProducts,
-} from "@/lib/merchant-products";
+import { getListErrorState } from "@/lib/list-error-state";
+import { getMerchantProducts } from "@/lib/merchant-products";
 import { dashboardRoutes } from "@/lib/routes";
 import { parseListSearchParams } from "@/lib/url-state";
 
 type MerchantProductsPageProps = {
   searchParams?: Promise<DashboardSearchParams>;
-};
-
-type ReferenceDataError = {
-  label: string;
-  state: ListErrorState;
 };
 
 export default async function MerchantProductsPage({ searchParams }: MerchantProductsPageProps) {
@@ -48,44 +39,20 @@ export default async function MerchantProductsPage({ searchParams }: MerchantPro
   const statusFilter = parseProductStatusFilter(listParams.status);
   const collectionFilter = getResourceFilter(resolvedSearchParams.collectionId);
   const categoryFilter = getResourceFilter(resolvedSearchParams.categoryId);
-  const [result, categoriesResult, collectionsResult] = await Promise.all([
-    getMerchantProducts({
-      cookieHeader,
-      limit: listParams.pageSize,
-      offset,
-      platformApiBaseUrl,
-      requestHost,
-      tenantId,
-      ...(listParams.q ? { q: listParams.q } : {}),
-      ...(statusFilter !== "all" ? { status: statusFilter } : {}),
-      ...(collectionFilter !== "all" ? { collectionId: collectionFilter } : {}),
-      ...(categoryFilter !== "all" ? { categoryId: categoryFilter } : {}),
-    }),
-    getMerchantProductCategories({
-      cookieHeader,
-      limit: 100,
-      offset: 0,
-      platformApiBaseUrl,
-      requestHost,
-      tenantId,
-    }),
-    getMerchantProductCollections({
-      cookieHeader,
-      limit: 100,
-      offset: 0,
-      platformApiBaseUrl,
-      requestHost,
-      tenantId,
-    }),
-  ]);
-  const referenceDataErrors = [
-    getReferenceDataError("Categories", categoriesResult),
-    getReferenceDataError("Collections", collectionsResult),
-  ].filter((error): error is ReferenceDataError => Boolean(error));
-  const setupError = referenceDataErrors.find(
-    (error) => error.state.kind === "setup" || error.state.kind === "service",
-  );
-  const optionErrors = referenceDataErrors.filter((error) => error.state.kind === "error");
+  // Taxonomy (categories/collections) loads client-side after paint — keeps list TTFB
+  // on the product page only.
+  const result = await getMerchantProducts({
+    cookieHeader,
+    limit: listParams.pageSize,
+    offset,
+    platformApiBaseUrl,
+    requestHost,
+    tenantId,
+    ...(listParams.q ? { q: listParams.q } : {}),
+    ...(statusFilter !== "all" ? { status: statusFilter } : {}),
+    ...(collectionFilter !== "all" ? { collectionId: collectionFilter } : {}),
+    ...(categoryFilter !== "all" ? { categoryId: categoryFilter } : {}),
+  });
   const errorState = result.ok ? null : getListErrorState("products", result.message);
 
   return (
@@ -95,10 +62,7 @@ export default async function MerchantProductsPage({ searchParams }: MerchantPro
           <RefreshButton />
           <ProductCreateDialog
             action={getTenantScopedPath(dashboardRoutes.productCreateAction, tenantId)}
-            categories={categoriesResult.ok ? categoriesResult.categories : []}
-            collections={collectionsResult.ok ? collectionsResult.collections : []}
-            disabledReason={setupError?.state.description}
-            optionErrorLabels={optionErrors.map((error) => error.label.toLowerCase())}
+            tenantId={tenantId}
           />
         </>
       }
@@ -115,8 +79,6 @@ export default async function MerchantProductsPage({ searchParams }: MerchantPro
         <>
           <ListSummary count={result.products.count} label="products" />
           <ProductsTable
-            categories={categoriesResult.ok ? categoriesResult.categories : []}
-            collections={collectionsResult.ok ? collectionsResult.collections : []}
             footer={
               <PaginationControls
                 basePath={dashboardRoutes.products}
@@ -156,22 +118,6 @@ function getResourceFilter(value: string | string[] | undefined) {
   const trimmed = candidate?.trim();
 
   return trimmed || "all";
-}
-
-function getReferenceDataError(
-  label: string,
-  result:
-    | Awaited<ReturnType<typeof getMerchantProductCategories>>
-    | Awaited<ReturnType<typeof getMerchantProductCollections>>,
-): ReferenceDataError | null {
-  if (result.ok) {
-    return null;
-  }
-
-  return {
-    label,
-    state: getListErrorState("products", result.message),
-  };
 }
 
 function getProductNotice(productStatus: string | string[] | undefined) {

@@ -13,22 +13,12 @@ import {
   getTenantScopedPath,
 } from "@/lib/dashboard-tenant-context";
 import { getListErrorState, type ListErrorState } from "@/lib/list-error-state";
-import {
-  getMerchantProduct,
-  getMerchantProductCategories,
-  getMerchantProductCollections,
-  getMerchantProductStock,
-} from "@/lib/merchant-products";
+import { getMerchantProduct, getMerchantProductStock } from "@/lib/merchant-products";
 import { dashboardRoutes } from "@/lib/routes";
 
 type MerchantProductDetailPageProps = {
   params: Promise<{ productId: string }>;
   searchParams?: Promise<DashboardSearchParams>;
-};
-
-type ReferenceDataError = {
-  label: string;
-  state: ListErrorState;
 };
 
 export default async function MerchantProductDetailPage({
@@ -46,20 +36,12 @@ export default async function MerchantProductDetailPage({
     requestHost: requestHeaders.get("host"),
     tenantId,
   };
-  const [productResult, categoriesResult, collectionsResult, stockResult] = await Promise.all([
+  // Product + stock only. Categories/collections resolve client-side for org labels
+  // and the organization edit dialog (shared react-query cache with list page).
+  const [productResult, stockResult] = await Promise.all([
     getMerchantProduct({
       ...requestOptions,
       productId,
-    }),
-    getMerchantProductCategories({
-      ...requestOptions,
-      limit: 100,
-      offset: 0,
-    }),
-    getMerchantProductCollections({
-      ...requestOptions,
-      limit: 100,
-      offset: 0,
     }),
     getMerchantProductStock({
       ...requestOptions,
@@ -69,30 +51,21 @@ export default async function MerchantProductDetailPage({
   const productErrorState = productResult.ok
     ? null
     : getListErrorState("products", productResult.message);
-  const referenceDataErrors = [
-    getReferenceDataError("Categories", categoriesResult),
-    getReferenceDataError("Collections", collectionsResult),
-  ].filter((error): error is ReferenceDataError => Boolean(error));
   const setupError =
     productErrorState?.kind === "setup" || productErrorState?.kind === "service"
       ? productErrorState
-      : referenceDataErrors.find(
-          (error) => error.state.kind === "setup" || error.state.kind === "service",
-        )?.state;
-  const optionErrors = referenceDataErrors.filter((error) => error.state.kind === "error");
+      : null;
 
   return (
     <PageShell
       actions={
         <div className="flex items-center gap-2">
-          {productResult.ok && !optionErrors.length ? (
-            <>
-              <ProductDeleteButton
-                productId={productResult.product.id}
-                productTitle={productResult.product.title ?? "this product"}
-                tenantId={tenantId}
-              />
-            </>
+          {productResult.ok ? (
+            <ProductDeleteButton
+              productId={productResult.product.id}
+              productTitle={productResult.product.title ?? "this product"}
+              tenantId={tenantId}
+            />
           ) : null}
           <RefreshButton />
         </div>
@@ -108,14 +81,11 @@ export default async function MerchantProductDetailPage({
             label={productResult.product.title ?? productResult.product.handle ?? null}
             labelKey="product-details"
           />
-          {optionErrors.length ? <ReferenceDataAlert errors={optionErrors} /> : null}
           <ProductDetail
             action={getTenantScopedPath(
               dashboardRoutes.productUpdateAction(productResult.product.id),
               tenantId,
             )}
-            categories={categoriesResult.ok ? categoriesResult.categories : []}
-            collections={collectionsResult.ok ? collectionsResult.collections : []}
             product={productResult.product}
             tenantId={tenantId}
           />
@@ -135,35 +105,6 @@ export default async function MerchantProductDetailPage({
         <ProductLoadAlert state={productErrorState} />
       )}
     </PageShell>
-  );
-}
-
-function getReferenceDataError(
-  label: string,
-  result:
-    | Awaited<ReturnType<typeof getMerchantProductCategories>>
-    | Awaited<ReturnType<typeof getMerchantProductCollections>>,
-): ReferenceDataError | null {
-  if (result.ok) {
-    return null;
-  }
-
-  return {
-    label,
-    state: getListErrorState("products", result.message),
-  };
-}
-
-function ReferenceDataAlert({ errors }: { errors: ReferenceDataError[] }) {
-  const labels = errors.map((error) => error.label.toLowerCase()).join(" and ");
-
-  return (
-    <Alert variant="destructive">
-      <AlertTitle>Product options could not be loaded</AlertTitle>
-      <AlertDescription>
-        {`Could not load ${labels}. Editing is disabled until reference data loads to avoid clearing existing relationships.`}
-      </AlertDescription>
-    </Alert>
   );
 }
 

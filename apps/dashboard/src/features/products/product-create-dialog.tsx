@@ -1,30 +1,28 @@
 "use client";
 
-import type { MerchantProductCategory, MerchantProductCollection } from "@ecs/contracts";
 import { useState } from "react";
 
 import { AppIcons } from "@/components/app/icons";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { ProductForm } from "@/features/products/product-form";
+import { useProductTaxonomy } from "@/features/products/use-product-taxonomy";
 
 type ProductCreateDialogProps = {
   action: string;
-  categories: MerchantProductCategory[];
-  collections: MerchantProductCollection[];
   disabledReason?: string | undefined;
-  optionErrorLabels?: string[] | undefined;
+  tenantId?: string | undefined;
 };
 
 export function ProductCreateDialog({
   action,
-  categories,
-  collections,
   disabledReason,
-  optionErrorLabels = [],
+  tenantId,
 }: ProductCreateDialogProps) {
   const [open, setOpen] = useState(false);
   const [sessionKey, setSessionKey] = useState(0);
+  // Load taxonomy only when the composer opens — not on every products page paint.
+  const taxonomy = useProductTaxonomy({ enabled: open, tenantId });
 
   function openCreateDialog() {
     setSessionKey((current) => current + 1);
@@ -44,15 +42,32 @@ export function ProductCreateDialog({
       </Button>
       <ProductForm
         action={action}
-        categories={categories}
-        collections={collections}
+        categories={taxonomy.categories}
+        collections={taxonomy.collections}
         key={sessionKey}
-        notice={optionErrorLabels.length ? <ReferenceDataAlert labels={optionErrorLabels} /> : null}
+        notice={
+          taxonomy.errorLabels.length ? (
+            <ReferenceDataAlert labels={taxonomy.errorLabels} />
+          ) : taxonomy.isPending ? (
+            <ReferenceDataLoadingAlert />
+          ) : null
+        }
         onClose={() => setOpen(false)}
         open={open}
         submitLabel="Create product"
       />
     </>
+  );
+}
+
+function ReferenceDataLoadingAlert() {
+  return (
+    <Alert>
+      <AlertTitle>Loading product options</AlertTitle>
+      <AlertDescription>
+        Categories and collections are loading. You can still enter product details.
+      </AlertDescription>
+    </Alert>
   );
 }
 

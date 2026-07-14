@@ -13,10 +13,10 @@ import {
 } from "@/lib/dashboard-tenant-context";
 import { getListErrorState, type ListErrorState } from "@/lib/list-error-state";
 import {
-  getMerchantProduct,
-  getMerchantProductCategories,
-  getMerchantProductCollections,
-} from "@/lib/merchant-products";
+  getMerchantProductCached,
+  getMerchantProductCategoriesCached,
+  getMerchantProductCollectionsCached,
+} from "@/lib/merchant-products-rsc";
 import { dashboardRoutes } from "@/lib/routes";
 
 type MerchantProductEditPageProps = {
@@ -38,27 +38,33 @@ export default async function MerchantProductEditPage({
   const cookieStore = await cookies();
   const requestHeaders = await headers();
   const platformApiBaseUrl = process.env.PLATFORM_API_BASE_URL ?? "http://localhost:3000";
-  const requestOptions = {
-    cookieHeader: cookieStore.toString(),
-    platformApiBaseUrl,
-    requestHost: requestHeaders.get("host"),
-    tenantId,
-  };
+  const cookieHeader = cookieStore.toString();
+  const requestHost = requestHeaders.get("host");
+  // Edit still needs taxonomy for the form; use request-memoized loaders.
   const [productResult, categoriesResult, collectionsResult] = await Promise.all([
-    getMerchantProduct({
-      ...requestOptions,
+    getMerchantProductCached(
+      platformApiBaseUrl,
+      cookieHeader,
+      requestHost,
+      tenantId,
       productId,
-    }),
-    getMerchantProductCategories({
-      ...requestOptions,
-      limit: 100,
-      offset: 0,
-    }),
-    getMerchantProductCollections({
-      ...requestOptions,
-      limit: 100,
-      offset: 0,
-    }),
+    ),
+    getMerchantProductCategoriesCached(
+      platformApiBaseUrl,
+      cookieHeader,
+      requestHost,
+      tenantId,
+      100,
+      0,
+    ),
+    getMerchantProductCollectionsCached(
+      platformApiBaseUrl,
+      cookieHeader,
+      requestHost,
+      tenantId,
+      100,
+      0,
+    ),
   ]);
   const productErrorState = productResult.ok
     ? null
@@ -117,8 +123,8 @@ export default async function MerchantProductEditPage({
 function getReferenceDataError(
   label: string,
   result:
-    | Awaited<ReturnType<typeof getMerchantProductCategories>>
-    | Awaited<ReturnType<typeof getMerchantProductCollections>>,
+    | Awaited<ReturnType<typeof getMerchantProductCategoriesCached>>
+    | Awaited<ReturnType<typeof getMerchantProductCollectionsCached>>,
 ): ReferenceDataError | null {
   if (result.ok) {
     return null;

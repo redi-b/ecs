@@ -313,6 +313,33 @@ export async function hydrateProductsWithStock(
     stockLocationId: string;
   },
 ) {
+  // Request-scoped memo: many variants can share inventory items; list hydration
+  // used to N+1 Medusa inventory-item reads for the same id.
+  const inventoryStockByKey = new Map<string, Promise<MerchantProductStockResult>>();
+
+  function loadInventoryStock(inputStock: {
+    inventoryItemId: string;
+    productId: string;
+    variantId: string;
+  }) {
+    const key = `${inputStock.inventoryItemId}:${input.stockLocationId}`;
+    const existing = inventoryStockByKey.get(key);
+
+    if (existing) {
+      return existing;
+    }
+
+    const pending = getInventoryItemStock(fetcher, options, {
+      inventoryItemId: inputStock.inventoryItemId,
+      productId: inputStock.productId,
+      stockLocationId: input.stockLocationId,
+      variantId: inputStock.variantId,
+    });
+    inventoryStockByKey.set(key, pending);
+
+    return pending;
+  }
+
   return Promise.all(
     input.products.map(async (product) => ({
       ...product,
@@ -325,10 +352,9 @@ export async function hydrateProductsWithStock(
             };
           }
 
-          const result = await getInventoryItemStock(fetcher, options, {
+          const result = await loadInventoryStock({
             inventoryItemId: variant.inventoryItemId,
             productId: product.id,
-            stockLocationId: input.stockLocationId,
             variantId: variant.id,
           });
 
