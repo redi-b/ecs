@@ -1249,24 +1249,24 @@ async function backdateMedusaDraftOrder(draftId: string, createdAt: Date) {
 }
 
 /**
- * Resolve Medusa Postgres URL without requiring a separate env var.
- * Loads apps/medusa/.env DATABASE_URL when present; normalizes mistaken http:// schemes.
+ * Resolve Medusa Postgres URL for order backdating.
+ * Prefer MEDUSA_DATABASE_URL (set on platform-api in Dokploy). Fallbacks:
+ * - MEDUSA_DB_URL
+ * - DATABASE_URL when it targets medusa
+ * - apps/medusa/.env (local monorepo)
+ * - Derive from PLATFORM_DATABASE_URL by swapping platform_db → medusa_db
+ * - Local default last (localhost) — wrong inside Docker; env must be set there
  */
 function resolveMedusaDatabaseUrl() {
-  // Prefer explicit medusa URL; avoid platform API DATABASE_URL if it points at platform_db.
   const candidates = [
     process.env.MEDUSA_DATABASE_URL,
     process.env.MEDUSA_DB_URL,
-    // Only use DATABASE_URL when it clearly targets medusa.
     process.env.DATABASE_URL?.includes("medusa") ? process.env.DATABASE_URL : undefined,
+    deriveMedusaUrlFromPlatformDatabaseUrl(process.env.PLATFORM_DATABASE_URL),
   ];
 
-  // apps/medusa/.env is the canonical local source.
   try {
-    const medusaEnvPath = resolve(
-      getPlatformApiServiceDir(import.meta.url),
-      "../medusa/.env",
-    );
+    const medusaEnvPath = resolve(getPlatformApiServiceDir(import.meta.url), "../medusa/.env");
     if (existsSync(medusaEnvPath)) {
       const text = readFileSync(medusaEnvPath, "utf8");
       for (const line of text.split("\n")) {
@@ -1286,7 +1286,6 @@ function resolveMedusaDatabaseUrl() {
   for (const raw of candidates) {
     if (!raw?.trim()) continue;
     let url = raw.trim();
-    // Common misconfig: http://user:pass@host/db
     if (url.startsWith("http://") || url.startsWith("https://")) {
       url = url.replace(/^https?:\/\//, "postgres://");
     }
@@ -1296,6 +1295,22 @@ function resolveMedusaDatabaseUrl() {
   }
 
   return "postgres://ecs:ecs@localhost:5432/medusa_db";
+}
+
+/** Same Postgres server, sibling database name — common docker-compose layout. */
+function deriveMedusaUrlFromPlatformDatabaseUrl(platformUrl: string | undefined) {
+  if (!platformUrl?.trim()) return undefined;
+  const raw = platformUrl.trim();
+  if (!raw.startsWith("postgres://") && !raw.startsWith("postgresql://")) return undefined;
+
+  // .../platform_db or .../platform → .../medusa_db
+  if (/\/platform_db(?:\?|$)/.test(raw)) {
+    return raw.replace(/\/platform_db(?=\?|$)/, "/medusa_db");
+  }
+  if (/\/platform(?:\?|$)/.test(raw)) {
+    return raw.replace(/\/platform(?=\?|$)/, "/medusa_db");
+  }
+  return undefined;
 }
 
 async function loadPgModule() {

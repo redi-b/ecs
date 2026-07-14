@@ -41,7 +41,21 @@ The Medusa migration and application containers use writable root filesystems be
 
 ### After first deploy (required)
 
-Production does **not** need demo seeds. Migrations + template sync already run on deploy.
+Production does **not** need demo seeds for real merchants. Migrations + template sync already run on deploy.
+
+### Optional demo seed (showcase / staging)
+
+Demo seed runs **inside** the `platform-api` container (no host `pnpm` required). Compose injects both `PLATFORM_DATABASE_URL` and `MEDUSA_DATABASE_URL` so order **backdating** can open Medusa’s Postgres directly.
+
+```sh
+# Seed demo shops + catalog + backdated orders
+docker compose exec platform-api node --import tsx src/seeds/demo-seed.ts
+
+# Remove demo data
+docker compose exec platform-api node --import tsx src/seeds/demo-seed.ts --clean
+```
+
+If backdating logs `localhost:5432`, the process is missing `MEDUSA_DATABASE_URL` (should be `postgres://…@postgres:5432/medusa_db` on Dokploy, not localhost).
 
 1. Env: `MINIO_ROOT_PASSWORD`, media CORS/public URL, empty `MEDUSA_ADMIN_API_TOKEN` until step 2  
 2. Deploy  

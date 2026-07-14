@@ -14,6 +14,9 @@ x-platform-environment: &platform-environment
   PORT: "3000"
   PLATFORM_DATABASE_URL: ${PLATFORM_DATABASE_URL:?set PLATFORM_DATABASE_URL}
   PLATFORM_DATABASE_SSL: ${PLATFORM_DATABASE_SSL:-false}
+  # Same Postgres instance as Medusa; needed for demo-seed order backdating (SQL).
+  MEDUSA_DATABASE_URL: ${MEDUSA_DATABASE_URL:?set MEDUSA_DATABASE_URL}
+  MEDUSA_DATABASE_SSL: ${MEDUSA_DATABASE_SSL:-false}
   REDIS_URL: redis://redis:6379
   MEDUSA_INTERNAL_URL: http://medusa:9000
   MEDUSA_ADMIN_API_TOKEN: ${MEDUSA_ADMIN_API_TOKEN:-}
