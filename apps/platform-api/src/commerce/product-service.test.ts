@@ -904,7 +904,7 @@ describe("createMedusaProductService", () => {
     assert.equal(url.searchParams.get("sales_channel_id[]"), "sc_1");
     assert.equal(
       url.searchParams.get("fields"),
-      "id,title,description,handle,status,thumbnail,collection_id,categories.id,images.id,images.url,images.rank,images.created_at,images.updated_at,variants.id,variants.title,variants.sku,variants.options.value,variants.options.option.title,variants.prices.amount,variants.prices.currency_code,variants.inventory_items.inventory_item_id,created_at,updated_at,sales_channels.id",
+      "id,title,handle,status,thumbnail,collection_id,categories.id,variants.id,variants.title,variants.sku,variants.prices.amount,variants.prices.currency_code,variants.inventory_items.inventory_item_id,created_at,updated_at",
     );
     assert.deepEqual(result, {
       ok: true,
@@ -1004,7 +1004,7 @@ describe("createMedusaProductService", () => {
     assert.deepEqual(
       forwardedRequests.map((request) => `${request.method} ${request.url}`),
       [
-        "GET http://medusa:9000/admin/products?limit=20&offset=0&order=-created_at&fields=id%2Ctitle%2Cdescription%2Chandle%2Cstatus%2Cthumbnail%2Ccollection_id%2Ccategories.id%2Cimages.id%2Cimages.url%2Cimages.rank%2Cimages.created_at%2Cimages.updated_at%2Cvariants.id%2Cvariants.title%2Cvariants.sku%2Cvariants.options.value%2Cvariants.options.option.title%2Cvariants.prices.amount%2Cvariants.prices.currency_code%2Cvariants.inventory_items.inventory_item_id%2Ccreated_at%2Cupdated_at%2Csales_channels.id&sales_channel_id%5B%5D=sc_1",
+        "GET http://medusa:9000/admin/products?limit=20&offset=0&order=-created_at&fields=id%2Ctitle%2Chandle%2Cstatus%2Cthumbnail%2Ccollection_id%2Ccategories.id%2Cvariants.id%2Cvariants.title%2Cvariants.sku%2Cvariants.prices.amount%2Cvariants.prices.currency_code%2Cvariants.inventory_items.inventory_item_id%2Ccreated_at%2Cupdated_at&sales_channel_id%5B%5D=sc_1",
         "GET http://medusa:9000/admin/inventory-items/iitem_1?fields=id%2C*location_levels",
       ],
     );

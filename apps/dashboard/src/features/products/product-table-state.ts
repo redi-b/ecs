@@ -153,6 +153,8 @@ export function getProductPriceSortValue(product: MerchantProduct) {
 export function getProductMediaCount(product: MerchantProduct) {
   const mediaUrls = new Set<string>();
 
+  // List responses only ship `thumbnail` (not gallery images) for payload size.
+  // Detail still includes `images`; count those when present.
   const thumbnailUrl = product.thumbnail?.trim();
 
   if (thumbnailUrl) {

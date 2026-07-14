@@ -8,16 +8,64 @@ export type ProductListUrlInput = {
   status?: string | undefined;
 };
 
+/**
+ * List/table payload: identity, cover thumb, taxonomy ids, price+stock hooks.
+ * Intentionally omits description, gallery images, variant options, and sales_channels
+ * (channel is already applied via sales_channel_id[]). Detail keeps the full set.
+ */
+export const PRODUCT_LIST_FIELDS = [
+  "id",
+  "title",
+  "handle",
+  "status",
+  "thumbnail",
+  "collection_id",
+  "categories.id",
+  "variants.id",
+  "variants.title",
+  "variants.sku",
+  "variants.prices.amount",
+  "variants.prices.currency_code",
+  "variants.inventory_items.inventory_item_id",
+  "created_at",
+  "updated_at",
+].join(",");
+
+/** Editor / detail: full description, gallery, options, ownership channels. */
+export const PRODUCT_DETAIL_FIELDS = [
+  "id",
+  "title",
+  "description",
+  "handle",
+  "status",
+  "thumbnail",
+  "collection_id",
+  "categories.id",
+  "images.id",
+  "images.url",
+  "images.rank",
+  "images.created_at",
+  "images.updated_at",
+  "variants.id",
+  "variants.title",
+  "variants.sku",
+  "variants.options.value",
+  "variants.options.option.title",
+  "variants.prices.amount",
+  "variants.prices.currency_code",
+  "variants.inventory_items.inventory_item_id",
+  "created_at",
+  "updated_at",
+  "sales_channels.id",
+].join(",");
+
 export function getProductsUrl(medusaInternalUrl: string, input: ProductListUrlInput) {
   const url = getProductsBaseUrl(medusaInternalUrl);
 
   url.searchParams.set("limit", String(input.limit));
   url.searchParams.set("offset", String(input.offset));
   url.searchParams.set("order", "-created_at");
-  url.searchParams.set(
-    "fields",
-    "id,title,description,handle,status,thumbnail,collection_id,categories.id,images.id,images.url,images.rank,images.created_at,images.updated_at,variants.id,variants.title,variants.sku,variants.options.value,variants.options.option.title,variants.prices.amount,variants.prices.currency_code,variants.inventory_items.inventory_item_id,created_at,updated_at,sales_channels.id",
-  );
+  url.searchParams.set("fields", PRODUCT_LIST_FIELDS);
   url.searchParams.set("sales_channel_id[]", input.salesChannelId);
 
   if (input.q?.trim()) {
@@ -43,10 +91,7 @@ export function getProductsBaseUrl(medusaInternalUrl: string) {
 export function getProductDetailUrl(medusaInternalUrl: string, productId: string) {
   const url = getProductUrl(medusaInternalUrl, productId);
 
-  url.searchParams.set(
-    "fields",
-    "id,title,description,handle,status,thumbnail,collection_id,categories.id,images.id,images.url,images.rank,images.created_at,images.updated_at,variants.id,variants.title,variants.sku,variants.options.value,variants.options.option.title,variants.prices.amount,variants.prices.currency_code,variants.inventory_items.inventory_item_id,created_at,updated_at,sales_channels.id",
-  );
+  url.searchParams.set("fields", PRODUCT_DETAIL_FIELDS);
 
   return url;
 }
