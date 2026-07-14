@@ -1,6 +1,6 @@
 import { RiLayoutMasonryLine } from "@remixicon/react";
 import { headers } from "next/headers";
-import Link from "next/link";
+import Link from "@/components/app/link";
 
 import { PageShell } from "@/components/app/page-shell";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";

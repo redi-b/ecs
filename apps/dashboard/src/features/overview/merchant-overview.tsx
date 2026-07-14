@@ -1,7 +1,7 @@
 "use client";
 
 import type { MerchantDashboardSummary } from "@ecs/contracts";
-import Link from "next/link";
+import Link from "@/components/app/link";
 import { useEffect, useMemo, useState } from "react";
 import {
   Area,
@@ -528,6 +528,7 @@ export function MerchantOverview({ summary }: MerchantOverviewProps) {
                   className="flex items-center justify-between gap-3 rounded-lg px-1 py-1.5 text-sm hover:bg-muted/50"
                   href={dashboardRoutes.orderDetail(order.id)}
                   key={order.id}
+                  prefetch={false}
                 >
                   <span className="min-w-0">
                     <span className="block truncate font-medium">

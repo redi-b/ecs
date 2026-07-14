@@ -1,7 +1,7 @@
 "use client";
 
 import type { MerchantDashboardSummary } from "@ecs/contracts";
-import Link from "next/link";
+import Link from "@/components/app/link";
 import { useEffect, useMemo, useState } from "react";
 import {
   Bar,

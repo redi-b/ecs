@@ -1,7 +1,7 @@
 "use client";
 
 import type { MerchantDashboardSummary } from "@ecs/contracts";
-import Link from "next/link";
+import Link from "@/components/app/link";
 import { usePathname } from "next/navigation";
 
 import { AccountMenu } from "@/components/app/account-menu";

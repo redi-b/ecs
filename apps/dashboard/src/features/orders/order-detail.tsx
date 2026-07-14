@@ -1,5 +1,5 @@
 import type { MerchantOrder } from "@ecs/contracts";
-import Link from "next/link";
+import Link from "@/components/app/link";
 
 import { HelpTip } from "@/components/app/help-tip";
 import { Badge } from "@/components/ui/badge";

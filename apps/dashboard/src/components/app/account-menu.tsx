@@ -1,7 +1,7 @@
 "use client";
 
 import type { MerchantDashboardSummary } from "@ecs/contracts";
-import Link from "next/link";
+import Link from "@/components/app/link";
 import { useState } from "react";
 
 import { useActorOrFallback } from "@/components/app/actor-context";

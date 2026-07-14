@@ -6,7 +6,7 @@ import type {
   MerchantProductCollection,
 } from "@ecs/contracts";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import Link from "next/link";
+import Link from "@/components/app/link";
 import { useRouter } from "next/navigation";
 import { type ReactNode, useMemo, useState } from "react";
 import { toast } from "sonner";

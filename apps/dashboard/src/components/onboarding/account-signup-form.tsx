@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/app/link";
 import { useId, useState } from "react";
 
 import { AppIcons } from "@/components/app/icons";

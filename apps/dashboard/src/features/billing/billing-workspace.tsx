@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/app/link";
 
 import { AppIcons } from "@/components/app/icons";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";

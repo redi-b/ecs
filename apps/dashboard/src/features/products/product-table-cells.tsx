@@ -1,7 +1,7 @@
 "use client";
 
 import type { MerchantProduct } from "@ecs/contracts";
-import Link from "next/link";
+import Link from "@/components/app/link";
 
 import { AppIcons } from "@/components/app/icons";
 import { Badge } from "@/components/ui/badge";
