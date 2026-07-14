@@ -60,7 +60,11 @@ export function MetricCard({
         <CardTitle className="font-mono text-2xl tabular-nums">{value}</CardTitle>
       </CardHeader>
       <CardContent>
-        <Link className="text-xs text-muted-foreground hover:text-foreground" href={href}>
+        <Link
+          className="text-xs text-muted-foreground hover:text-foreground"
+          href={href}
+          prefetch={false}
+        >
           {note}
         </Link>
       </CardContent>
@@ -277,6 +281,7 @@ export function LaunchAssistant({ summary }: { summary: MerchantDashboardSummary
               className="grid grid-cols-[auto_1fr_auto] items-center gap-3 rounded-lg border bg-background px-3 py-2 text-sm transition-colors hover:bg-muted/50"
               href={item.href}
               key={item.label}
+              prefetch={false}
             >
               <span
                 className={cn(
@@ -304,7 +309,9 @@ export function LaunchAssistant({ summary }: { summary: MerchantDashboardSummary
         </div>
         <div className="flex items-center justify-between gap-3 border-t p-3">
           <Button asChild size="sm" variant="outline">
-            <Link href={`${dashboardRoutes.settings}?tab=storefront`}>Storefront settings</Link>
+            <Link href={`${dashboardRoutes.settings}?tab=storefront`} prefetch={false}>
+              Storefront settings
+            </Link>
           </Button>
           <Button size="sm" type="button" variant="ghost" onClick={dismissAssistant}>
             Do not show again

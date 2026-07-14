@@ -320,6 +320,7 @@ export function MerchantOverview({ summary }: MerchantOverviewProps) {
                 className="flex items-center justify-between gap-3 rounded-lg border bg-background px-3 py-2 text-sm transition-colors hover:bg-muted/50"
                 href={item.href}
                 key={item.label}
+                prefetch={false}
               >
                 <span className="text-muted-foreground">{item.label}</span>
                 <span className="font-mono font-medium tabular-nums">
