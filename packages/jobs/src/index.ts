@@ -16,4 +16,5 @@ export {
 } from "./defaults.js";
 export { createJobsClient } from "./client.js";
 export type { JobsClient, JobsClientOptions } from "./client.js";
-// startPlatformWorker added in a later task
+export { startPlatformWorker } from "./worker.js";
+export type { StartPlatformWorkerOptions } from "./worker.js";
