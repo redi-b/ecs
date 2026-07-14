@@ -1,5 +1,6 @@
 import { loadServiceEnv } from "@ecs/config";
 import { createPlatformDb, tenants } from "@ecs/db";
+import { createJobsClient } from "@ecs/jobs";
 import { createLogger } from "@ecs/logger";
 import { serve } from "@hono/node-server";
 import { eq } from "drizzle-orm";
@@ -87,7 +88,26 @@ if (mediaStorage.provider === "unconfigured") {
   );
 }
 const mediaService = createMediaService(platformDb.db, mediaStorage);
-const notificationService = createNotificationService(platformDb.db);
+
+const redisUrl = process.env.REDIS_URL?.trim();
+const jobsClient = redisUrl
+  ? createJobsClient({
+      redisUrl,
+      db: platformDb.db,
+      logger,
+    })
+  : null;
+if (!jobsClient) {
+  logger.warn("REDIS_URL is not set; notification delivery jobs will not be enqueued.");
+}
+
+const notificationService = createNotificationService(platformDb.db, {
+  ...(jobsClient
+    ? {
+        enqueueJob: (input) => jobsClient.enqueueJob(input),
+      }
+    : {}),
+});
 const analyticsService = createAnalyticsService(createDrizzleAnalyticsEventStore(platformDb.db));
 const analyticsInsightsService = createAnalyticsInsightsService(
   createDrizzleAnalyticsInsightsStore(platformDb.db),
@@ -362,6 +382,7 @@ const app = createPlatformApp({
   serviceName: env.SERVICE_NAME,
   medusaInternalUrl,
   platformPublicBaseUrl,
+  internalApiToken: platformInternalApiToken,
   resolveTenantForHost: (host) =>
     resolveTenantFromHost({
       host,
@@ -372,6 +393,27 @@ const app = createPlatformApp({
 });
 
 const port = Number.parseInt(process.env.PORT ?? "3000", 10);
+
+async function shutdown(signal: string) {
+  logger.info({ signal }, "platform api shutting down");
+  try {
+    if (jobsClient) {
+      await jobsClient.close();
+    }
+    await platformDb.pool.end();
+  } catch (error) {
+    logger.error({ err: error }, "error during platform api shutdown");
+    process.exit(1);
+  }
+  process.exit(0);
+}
+
+process.on("SIGINT", () => {
+  void shutdown("SIGINT");
+});
+process.on("SIGTERM", () => {
+  void shutdown("SIGTERM");
+});
 
 serve(
   {

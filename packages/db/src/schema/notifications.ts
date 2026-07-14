@@ -37,6 +37,8 @@ export const notificationLogs = pgTable("notification_logs", {
   channel: text("channel").notNull(),
   recipient: text("recipient").notNull(),
   status: notificationStatus("status").notNull().default("pending"),
+  /** Event context at record time for async delivery rendering (no secrets). */
+  payload: jsonb("payload").notNull().default({}),
   providerReference: text("provider_reference"),
   error: text("error"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

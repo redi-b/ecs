@@ -47,6 +47,7 @@ describe("createChapaPaymentService", () => {
         return {
           ok: true,
           logCount: 1,
+          logIds: ["log_1"],
         };
       },
       recordAnalyticsEvent: async (input) => {
@@ -139,6 +140,7 @@ describe("createChapaPaymentService", () => {
         return {
           ok: true,
           logCount: 1,
+          logIds: ["log_1"],
         };
       },
       recordAnalyticsEvent: async (input) => {
@@ -226,6 +228,7 @@ describe("createChapaPaymentService", () => {
         return {
           ok: true,
           logCount: 1,
+          logIds: ["log_1"],
         };
       },
       secretKey: "sk_test",

@@ -26,7 +26,7 @@ type ChapaPaymentServiceOptions = {
     eventType: "payment.failed" | "payment.paid" | "payment.webhook_failed";
     payload?: unknown;
     tenantId: string;
-  }) => Promise<{ ok: true; logCount: number }>;
+  }) => Promise<{ ok: true; logCount: number; logIds?: string[] }>;
   secretKey?: string | undefined;
 };
 

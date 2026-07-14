@@ -2,6 +2,7 @@ export type NotificationEventType =
   | "cod_order.created"
   | "chapa.onboarding_needs_review"
   | "domain.misconfigured"
+  | "notification.test"
   | "order.created"
   | "order.cancelled"
   | "order.confirmed"
@@ -48,4 +49,5 @@ export type NotificationPreferenceUpsertResult =
 export type NotificationEventRecordResult = {
   ok: true;
   logCount: number;
+  logIds: string[];
 };

@@ -1,5 +1,6 @@
 import type { createPlatformDb } from "@ecs/db";
 import { auditLogs, notificationLogs, notificationPreferences } from "@ecs/db";
+import type { EnqueueJobInput, EnqueueJobResult } from "@ecs/jobs";
 import { and, eq } from "drizzle-orm";
 
 import type {
@@ -14,11 +15,21 @@ import type {
 type PlatformDb = ReturnType<typeof createPlatformDb>["db"];
 type NotificationPreferenceRow = typeof notificationPreferences.$inferSelect;
 
+export type NotificationServiceEnqueue = (
+  input: EnqueueJobInput,
+) => Promise<EnqueueJobResult>;
+
+export type CreateNotificationServiceOptions = {
+  /** When omitted, logs stay pending (tests / no-worker harness). */
+  enqueueJob?: NotificationServiceEnqueue;
+};
+
 const allowedChannels = new Set<NotificationChannel>(["email", "telegram"]);
 const allowedEvents = new Set<NotificationEventType>([
   "cod_order.created",
   "chapa.onboarding_needs_review",
   "domain.misconfigured",
+  "notification.test",
   "order.created",
   "order.cancelled",
   "order.confirmed",
@@ -32,6 +43,10 @@ const allowedEvents = new Set<NotificationEventType>([
   "shop.published",
   "shop.suspended",
 ]);
+
+export function isAllowedNotificationEventType(eventType: string): eventType is NotificationEventType {
+  return allowedEvents.has(eventType as NotificationEventType);
+}
 
 function eventMatchesPreference(events: unknown, eventType: NotificationEventType) {
   return Array.isArray(events) && (events.includes(eventType) || events.includes("*"));
@@ -67,7 +82,19 @@ function normalizeEvents(events: string[]) {
   return [...new Set(events.map((event) => event.trim()).filter(Boolean))];
 }
 
-export function createNotificationService(db: PlatformDb) {
+function errorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  return String(error);
+}
+
+export function createNotificationService(
+  db: PlatformDb,
+  options: CreateNotificationServiceOptions = {},
+) {
+  const enqueueJob = options.enqueueJob;
+
   return {
     listNotificationPreferences: async (input: {
       tenantId: string;
@@ -103,22 +130,56 @@ export function createNotificationService(db: PlatformDb) {
         return {
           ok: true,
           logCount: 0,
+          logIds: [],
         };
       }
 
-      await db.insert(notificationLogs).values(
-        matchingPreferences.map((preference) => ({
-          tenantId: input.tenantId,
-          eventType: input.eventType,
-          channel: preference.channel,
-          recipient: preference.target,
-          status: "pending" as const,
-        })),
-      );
+      const payload =
+        input.payload !== undefined && input.payload !== null && typeof input.payload === "object"
+          ? input.payload
+          : {};
+
+      const inserted = await db
+        .insert(notificationLogs)
+        .values(
+          matchingPreferences.map((preference) => ({
+            tenantId: input.tenantId,
+            eventType: input.eventType,
+            channel: preference.channel,
+            recipient: preference.target,
+            status: "pending" as const,
+            payload,
+          })),
+        )
+        .returning({ id: notificationLogs.id });
+
+      const logIds = inserted.map((row) => row.id);
+
+      if (enqueueJob) {
+        for (const logId of logIds) {
+          try {
+            await enqueueJob({
+              name: "notifications.deliver",
+              payload: { notificationLogId: logId },
+              tenantId: input.tenantId,
+              idempotencyKey: `notifications.deliver:${logId}`,
+            });
+          } catch (error) {
+            await db
+              .update(notificationLogs)
+              .set({
+                status: "failed",
+                error: `enqueue_failed:${errorMessage(error)}`,
+              })
+              .where(eq(notificationLogs.id, logId));
+          }
+        }
+      }
 
       return {
         ok: true,
-        logCount: matchingPreferences.length,
+        logCount: logIds.length,
+        logIds,
       };
     },
     upsertNotificationPreference: async (input: {

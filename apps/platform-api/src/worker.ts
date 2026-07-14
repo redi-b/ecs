@@ -3,7 +3,11 @@ import { createPlatformDb } from "@ecs/db";
 import { startPlatformWorker, type JobHandler } from "@ecs/jobs";
 import { createLogger } from "@ecs/logger";
 import { loadPlatformApiEnvFiles } from "./config/env.js";
+import { createNotificationsDeliverHandler } from "./jobs/handlers/notifications-deliver.js";
 import { systemPingHandler } from "./jobs/handlers/system-ping.js";
+import { createLogNotificationProvider } from "./modules/notifications/providers/log-provider.js";
+import { createProviderRegistry } from "./modules/notifications/providers/registry.js";
+import { createCodeNotificationRenderer } from "./modules/notifications/renderer.js";
 
 loadPlatformApiEnvFiles();
 
@@ -33,15 +37,37 @@ const platformDb = createPlatformDb({
   ),
 });
 
+const logProvider = (channel: string) =>
+  createLogNotificationProvider(channel, {
+    log: (fields, message) => {
+      logger.info(fields, message);
+    },
+  });
+
+const notificationProviders = createProviderRegistry([
+  logProvider("email"),
+  logProvider("telegram"),
+]);
+const notificationRenderer = createCodeNotificationRenderer();
+
 const worker = startPlatformWorker({
   redisUrl,
   db: platformDb.db,
   handlers: {
-    // Handlers receive unknown payload at the worker boundary; runtime validation is inside.
     "system.ping": systemPingHandler as JobHandler,
+    "notifications.deliver": createNotificationsDeliverHandler({
+      db: platformDb.db,
+      renderer: notificationRenderer,
+      providers: notificationProviders,
+    }) as JobHandler,
   },
   logger,
 });
+
+logger.info(
+  { handlers: ["system.ping", "notifications.deliver"] },
+  "platform worker started",
+);
 
 async function shutdown(signal: string) {
   logger.info({ signal }, "platform worker shutting down");

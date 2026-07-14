@@ -732,6 +732,8 @@ export type PlatformAppOptions = {
   serviceName: string;
   medusaInternalUrl: string;
   platformPublicBaseUrl: string;
+  /** Shared secret for machine-to-machine routes (Medusa → platform ingest, etc.). */
+  internalApiToken?: string | undefined;
   medusaStoreFetch?: typeof fetch;
   resolveTenantForHost: (host?: string) => Promise<TenantResolutionResult>;
 };

@@ -2544,6 +2544,7 @@ describe("platform app merchant and tenant catalog", () => {
           return {
             ok: true,
             logCount: 1,
+            logIds: ["log_1"],
           };
         },
         recordAnalyticsEvent: async (input) => {

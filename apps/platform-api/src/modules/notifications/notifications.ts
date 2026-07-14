@@ -1,1 +1,12 @@
-export { createNotificationService } from "./service.js";
+export { deliverNotificationLog } from "./delivery.js";
+export { createLogNotificationProvider } from "./providers/log-provider.js";
+export { createProviderRegistry } from "./providers/registry.js";
+export type { NotificationProviderRegistry } from "./providers/registry.js";
+export type { NotificationProvider } from "./providers/types.js";
+export { createCodeNotificationRenderer } from "./renderer.js";
+export type { NotificationRenderer } from "./renderer.js";
+export {
+  createNotificationService,
+  isAllowedNotificationEventType,
+  type CreateNotificationServiceOptions,
+} from "./service.js";

@@ -18,3 +18,5 @@ export { createJobsClient } from "./client.js";
 export type { JobsClient, JobsClientOptions } from "./client.js";
 export { startPlatformWorker } from "./worker.js";
 export type { StartPlatformWorkerOptions } from "./worker.js";
+/** Re-export for job handlers that must fail without retry (no direct bullmq imports in apps). */
+export { UnrecoverableError } from "bullmq";
