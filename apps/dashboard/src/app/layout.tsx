@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 
 import { AppProviders } from "@/components/providers/app-providers";
 import { getRequestMessages } from "@/i18n/server";
+import { cn } from "@/lib/utils";
 
 import "./globals.css";
 
@@ -19,14 +20,19 @@ const geistMono = Geist_Mono({
 
 /**
  * Amharic / Ethiopic UI face.
- * Note: "Google Sans" is not available via next/font (proprietary).
- * Noto Sans Ethiopic is Google's open family for Ethiopic scripts and pairs well with Geist for Latin.
+ *
+ * Google Sans is proprietary and not available via next/font.
+ * Noto Sans Ethiopic is Google’s open Ethiopic family (same designer lineage as
+ * the Google Fonts preview). We apply its className when locale is `am` so the
+ * browser cannot fall back to a thin system Ethiopic face.
  */
 const notoEthiopic = Noto_Sans_Ethiopic({
   variable: "--font-ethiopic",
   subsets: ["ethiopic"],
   weight: ["400", "500", "600", "700"],
   display: "swap",
+  preload: true,
+  adjustFontFallback: true,
 });
 
 export const metadata: Metadata = {
@@ -36,12 +42,22 @@ export const metadata: Metadata = {
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
   const { locale, messages } = await getRequestMessages();
+  const isAmharic = locale === "am";
 
   return (
-    <html lang={locale} suppressHydrationWarning>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} ${notoEthiopic.variable} font-sans antialiased`}
-      >
+    <html
+      lang={locale}
+      suppressHydrationWarning
+      className={cn(
+        // CSS variables must live on <html> so theme tokens can resolve them.
+        geistSans.variable,
+        geistMono.variable,
+        notoEthiopic.variable,
+        // Explicit face for Amharic — does not rely on font-family stack fallback.
+        isAmharic && notoEthiopic.className,
+      )}
+    >
+      <body className={cn("min-h-dvh font-sans antialiased", !isAmharic && geistSans.className)}>
         <AppProviders locale={locale} messages={messages}>
           {children}
         </AppProviders>

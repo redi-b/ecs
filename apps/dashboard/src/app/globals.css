@@ -46,7 +46,10 @@
 }
 
 @theme inline {
-  /* Latin UI defaults to Geist; Ethiopic glyphs fall back to Noto. */
+  /*
+   * Font stacks use the next/font CSS variables (set on <html>).
+   * Those variables expand to a quoted family name + optional fallback face.
+   */
   --font-sans: var(--font-geist-sans), var(--font-ethiopic), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
   --font-heading: var(--font-geist-sans), var(--font-ethiopic), ui-sans-serif, system-ui, sans-serif;
