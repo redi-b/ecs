@@ -3,12 +3,12 @@
   "description": "የነጋዴውን ካታሎግ ምርቶች ይፍጠሩ፣ ይገምግሙ እና ያስተዳድሩ።",
   "notice": {
     "created": {
-      "title": "ምርት ተፈጥሯል",
-      "description": "ምርቱ ተፈጥሯል እና አሁን በዚህ የነጋዴ ካታሎግ ውስጥ ይገኛል።"
+      "title": "ምርቱ ተጨምሯል",
+      "description": "ምርቱ አሁን በካታሎግዎ ውስጥ ይገኛል።"
     },
     "updated": {
-      "title": "ምርት ተዘምኗል",
-      "description": "የምርት ለውጦች ተቀምጠዋል እና የካታሎግ ዝርዝሩ ታድሷል።"
+      "title": "ለውጦቹ ተቀምጠዋል",
+      "description": "የምርት ለውጦቹ ተቀምጠዋል።"
     },
     "error": {
       "title": "ምርቱን ማስቀመጥ አልተቻለም"
@@ -25,15 +25,15 @@
     "loadErrorTitle": "ምርቱን መጫን አልተቻለም",
     "loadErrorDesc": "ቆይተው እንደገና ይሞክሩ።",
     "untitled": "ርዕስ የሌለው ምርት",
-    "variants": "ተለዋጮች",
+    "variants": "አማራጮች",
     "firstPrice": "መጀመሪያ ዋጋ",
-    "description": "መግለጫ",
-    "noDescription": "መግለጫ አልተሰጠም።",
+    "description": "ማብራሪያ",
+    "noDescription": "ማብራሪያ አልተጨመረም።",
     "organization": "ድርጅት",
     "collection": "ስብስብ",
     "categories": "ምድቦች",
-    "created": "ተፈጥሯል",
-    "updated": "ተዘምኗል",
+    "created": "የተጨመረበት",
+    "updated": "የመጨረሻ ለውጥ",
     "images": "ምስሎች",
     "imagesCount": "{count} ምስሎች",
     "cover": "ሽፋን",
@@ -44,13 +44,13 @@
     "noPrice": "ዋጋ የለም",
     "never": "በጭራሽ",
     "unknown": "ያልታወቀ",
-    "createProduct": "ምርት ፍጠር",
+    "createProduct": "አዲስ ምርት",
     "loadingOptionsTitle": "የምርት አማራጮች በመጫን ላይ",
     "loadingOptionsDesc": "ምድቦች እና ስብስቦች በመጫን ላይ ናቸው። አሁንም የምርት ዝርዝር ማስገባት ይችላሉ።",
     "deleteTitle": "ምርቱን ማጥፋት?",
     "deleteDesc": "“{title}” ከካታሎጉ ይወገዳል። ይህን መመለስ አይቻልም።",
     "deleteConfirm": "አጥፋ",
-    "toastDeleted": "ምርት ጠፍቷል።",
+    "toastDeleted": "ምርቱ ከካታሎጉ ተወግዷል።",
     "thisProduct": "ይህ ምርት",
     "noImage": "ምስል የለም"
   },
@@ -79,11 +79,11 @@
       "without_media": "ሚዲያ የሌለው"
     },
     "variants": {
-      "label": "ተለዋጮች",
-      "all": "ሁሉም የተለዋጭ ብዛት",
-      "no_variants": "ተለዋጭ የለም",
-      "single_variant": "አንድ ተለዋጭ",
-      "multi_variant": "ብዙ ተለዋጮች"
+      "label": "አማራጮች",
+      "all": "ሁሉም የአማራጭ ብዛት",
+      "no_variants": "አማራጭ የለውም",
+      "single_variant": "አንድ አማራጭ",
+      "multi_variant": "ብዙ አማራጮች"
     },
     "collection": {
       "label": "ስብስብ",
@@ -105,8 +105,8 @@
     "product": "ምርት",
     "price": "ዋጋ",
     "organization": "ድርጅት",
-    "variantCount": "{count} ተለዋጮች",
-    "variantCountOne": "1 ተለዋጭ",
+    "variantCount": "{count} አማራጮች",
+    "variantCountOne": "1 አማራጭ",
     "notTracked": "አይከታተልም",
     "selectAllAria": "ሁሉንም የሚታዩ ምርቶች ምረጥ",
     "viewDetails": "ዝርዝሮችን እይ",
@@ -142,12 +142,12 @@
     "mediaDesc": "ምስሎችን ይጫኑ፣ ከቤተ-መጻሕፍት ይምረጡ፣ ሽፋን ያዘጋጁ እና ማዕከለ-ሥዕላትን እንደገና ያስተካክሉ።",
     "title": "ርዕስ",
     "handle": "ሃንድል",
-    "description": "መግለጫ",
+    "description": "ማብራሪያ",
     "status": "ሁኔታ",
     "titleRequired": "የምርት ርዕስ ያስፈልጋል።",
-    "saveChanges": "ለውጦችን አስቀምጥ",
+    "saveChanges": "ለውጦቹን አስቀምጥ",
     "saving": "እየተቀመጠ ነው…",
-    "toastSaved": "ምርቱ ተዘምኗል።",
+    "toastSaved": "ለውጦቹ ተቀምጠዋል።",
     "toastError": "ምርቱን ማስቀመጥ አልተቻለም።",
     "handleHelp": "በራሱ እንዲፈጠር ባዶ ይተዉት።",
     "selectStatus": "ሁኔታ ይምረጡ",
