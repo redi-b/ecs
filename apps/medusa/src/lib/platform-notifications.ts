@@ -120,13 +120,16 @@ export function buildOrderNotificationPayload(order: OrderNotificationFields) {
     source: "medusa",
   };
   if (order.display_id != null) {
+    // Numeric display id only — renderer formats as #N for merchants.
     payload.orderDisplayId = String(order.display_id);
   }
   if (order.currency_code) {
-    payload.currencyCode = order.currency_code;
+    payload.currencyCode = String(order.currency_code).toUpperCase();
   }
   if (order.total != null) {
-    payload.amount = String(order.total);
+    // Prefer a clean numeric string; avoid float noise where possible.
+    const asNumber = typeof order.total === "number" ? order.total : Number(order.total);
+    payload.amount = Number.isFinite(asNumber) ? String(asNumber) : String(order.total);
   }
   if (order.email) {
     payload.customerEmail = order.email;
