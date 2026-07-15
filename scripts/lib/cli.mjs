@@ -7,9 +7,11 @@ import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 const useColor =
-  process.env.FORCE_COLOR !== "0" &&
   process.env.NO_COLOR === undefined &&
-  Boolean(process.stdout.isTTY);
+  process.env.FORCE_COLOR !== "0" &&
+  (Boolean(process.stdout.isTTY) ||
+    process.env.FORCE_COLOR === "1" ||
+    process.env.FORCE_COLOR === "true");
 
 const wrap =
   (open, close = "\x1b[0m") =>

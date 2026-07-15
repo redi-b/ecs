@@ -12,9 +12,14 @@ import { blank, box, color, heading, info, kv, success } from "./lib/cli.mjs";
 import { fitWidth, formatDevLogLine, stripAnsi, wrapLine } from "./lib/dev-log.mjs";
 
 process.env.NODE_ENV = "development";
-// Prefer human logs from Node services; child pino-pretty still works when installed.
+// Children are piped (non-TTY). Emit JSON and recolor/format in this supervisor.
+// Standalone app `dev` still uses pino-pretty (LOG_PRETTY unset there).
 if (process.env.LOG_PRETTY === undefined) {
-  process.env.LOG_PRETTY = "1";
+  process.env.LOG_PRETTY = "0";
+}
+// Ensure cli color helpers stay on even if nested TTY checks flake.
+if (process.env.FORCE_COLOR === undefined) {
+  process.env.FORCE_COLOR = "1";
 }
 
 const args = new Set(process.argv.slice(2));
@@ -234,6 +239,8 @@ function spawnServices(devCommands) {
       env: {
         ...process.env,
         FORCE_COLOR: process.env.FORCE_COLOR ?? "1",
+        // JSON → parent formatter (colors work on the supervisor TTY).
+        LOG_PRETTY: process.env.LOG_PRETTY ?? "0",
       },
     });
 

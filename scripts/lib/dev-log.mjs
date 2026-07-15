@@ -1,5 +1,8 @@
 /**
  * Helpers for local multi-service log streaming / grouped dashboard.
+ *
+ * Child processes are piped (non-TTY), so their own colors often die.
+ * Prefer JSON from Node loggers and recolor/format here in the parent TTY.
  */
 import { color } from "./cli.mjs";
 
@@ -11,26 +14,19 @@ export function stripAnsi(value) {
 /**
  * Format a raw process log line for developer reading.
  * - Pretty-prints pino JSON into a short colored line
- * - Leaves other lines (Next, Medusa) mostly intact
+ * - Parses pino-pretty leftovers that still dump trailing JSON
+ * - Preserves ANSI on other lines (Next, Vite, Medusa)
  */
 export function formatDevLogLine(rawLine) {
-  const plain = stripAnsi(rawLine).replace(/\r/g, "").trimEnd();
+  const original = String(rawLine).replace(/\r/g, "").trimEnd();
+  const plain = stripAnsi(original);
   if (!plain.trim()) return null;
 
-  // pino / structured JSON logs
-  if (plain.startsWith("{") && plain.includes('"level"') && plain.includes('"time"')) {
-    try {
-      return formatPinoLine(JSON.parse(plain));
-    } catch {
-      // fall through
-    }
-  }
-
-  // Single-line compact JSON without pretty transport
-  if (plain.startsWith("{") && plain.length > 2) {
+  // Pure pino JSON (preferred when LOG_PRETTY=0 under the supervisor)
+  if (plain.startsWith("{")) {
     try {
       const obj = JSON.parse(plain);
-      if (obj && typeof obj === "object" && (obj.msg || obj.message || obj.level != null)) {
+      if (obj && typeof obj === "object" && (obj.msg != null || obj.message != null || obj.level != null)) {
         return formatPinoLine(obj);
       }
     } catch {
@@ -38,30 +34,93 @@ export function formatDevLogLine(rawLine) {
     }
   }
 
-  return plain;
+  // pino-pretty style: [11:23:15] INFO (platform-api): message {...json}
+  const pretty = plain.match(
+    /^\[([^\]]+)\]\s+([A-Z]+)\s+(?:\(([^)]+)\):\s*)?(.*)$/,
+  );
+  if (pretty) {
+    const [, timeToken, levelToken, , rest] = pretty;
+    const parsed = splitMessageAndJson(rest);
+    if (parsed.obj) {
+      return formatPinoLine({
+        ...parsed.obj,
+        msg: parsed.obj.msg ?? parsed.obj.message ?? parsed.message,
+        level: levelFromName(levelToken),
+        time: parsed.obj.time ?? timeToken,
+      });
+    }
+    // Pretty line without trailing object — recolor levels
+    return [
+      color.dim(timeToken),
+      paintLevel(levelToken.toLowerCase()),
+      parsed.message,
+    ]
+      .filter(Boolean)
+      .join(" ");
+  }
+
+  // Keep original colors from Next/Vite/Medusa when present
+  return original;
+}
+
+function splitMessageAndJson(rest) {
+  const text = rest.trim();
+  // Trailing JSON object (pino-pretty singleLine dumps extra fields this way)
+  const brace = text.lastIndexOf(" {");
+  if (brace >= 0) {
+    const maybeJson = text.slice(brace + 1).trim();
+    if (maybeJson.startsWith("{") && maybeJson.endsWith("}")) {
+      try {
+        return {
+          message: text.slice(0, brace).trim(),
+          obj: JSON.parse(maybeJson),
+        };
+      } catch {
+        // fall through
+      }
+    }
+  }
+  if (text.startsWith("{") && text.endsWith("}")) {
+    try {
+      return { message: "", obj: JSON.parse(text) };
+    } catch {
+      // fall through
+    }
+  }
+  return { message: text, obj: null };
+}
+
+function levelFromName(name) {
+  const key = String(name).toLowerCase();
+  if (key === "fatal") return 60;
+  if (key === "error") return 50;
+  if (key === "warn" || key === "warning") return 40;
+  if (key === "info") return 30;
+  if (key === "debug") return 20;
+  if (key === "trace") return 10;
+  return 30;
+}
+
+function paintLevel(level) {
+  const label = level.padEnd(5);
+  if (level === "error" || level === "fatal") return color.red(label);
+  if (level === "warn") return color.yellow(label);
+  if (level === "debug" || level === "trace") return color.gray(label);
+  return color.cyan(label);
 }
 
 function formatPinoLine(obj) {
-  const levelNum = typeof obj.level === "number" ? obj.level : 30;
+  const levelNum = typeof obj.level === "number" ? obj.level : levelFromName(String(obj.level ?? "info"));
   const level =
     levelNum >= 50 ? "error" : levelNum >= 40 ? "warn" : levelNum >= 30 ? "info" : "debug";
-  const levelPaint =
-    level === "error"
-      ? color.red
-      : level === "warn"
-        ? color.yellow
-        : level === "debug"
-          ? color.gray
-          : color.cyan;
 
   let time = "";
   if (typeof obj.time === "number") {
     time = new Date(obj.time).toLocaleTimeString(undefined, { hour12: false });
   } else if (typeof obj.time === "string") {
     const d = new Date(obj.time);
-    time = Number.isNaN(d.getTime())
-      ? obj.time
-      : d.toLocaleTimeString(undefined, { hour12: false });
+    // pino-pretty times like "11:23:15" are already local clock strings
+    time = Number.isNaN(d.getTime()) ? obj.time.replace(/[\[\]]/g, "") : d.toLocaleTimeString(undefined, { hour12: false });
   }
 
   const msg = String(obj.msg ?? obj.message ?? "").trim();
@@ -78,22 +137,15 @@ function formatPinoLine(obj) {
     "v",
   ]);
 
-  // Prefer a short field summary for HTTP access logs.
-  if (msg === "http_request" || (obj.method && obj.path && obj.status != null)) {
+  // HTTP access log — compact colored one-liner
+  if (msg === "http_request" || (obj.method && obj.path != null && obj.status != null)) {
     const status = Number(obj.status);
     const statusPaint =
       status >= 500 ? color.red : status >= 400 ? color.yellow : color.green;
-    const method = String(obj.method ?? "?").padEnd(6);
+    const method = color.bold(String(obj.method ?? "?").padEnd(6));
     const path = String(obj.path ?? "");
-    const ms = obj.ms != null ? `${obj.ms}ms` : "";
-    return [
-      time ? color.dim(time) : null,
-      levelPaint(level.padEnd(5)),
-      color.bold(method),
-      path,
-      statusPaint(String(status)),
-      ms ? color.dim(ms) : null,
-    ]
+    const ms = obj.ms != null ? color.dim(`${obj.ms}ms`) : "";
+    return [time ? color.dim(time) : null, paintLevel(level), method, path, statusPaint(String(status)), ms]
       .filter(Boolean)
       .join(" ");
   }
@@ -115,9 +167,9 @@ function formatPinoLine(obj) {
 
   return [
     time ? color.dim(time) : null,
-    levelPaint(level.padEnd(5)),
+    paintLevel(level),
     msg || color.dim("(no message)"),
-    extras.length ? color.dim(extras.slice(0, 6).join(" ")) : null,
+    extras.length ? color.dim(extras.slice(0, 5).join(" ")) : null,
   ]
     .filter(Boolean)
     .join(" ");
@@ -125,7 +177,6 @@ function formatPinoLine(obj) {
 
 /**
  * Truncate a (possibly colored) line so it fits one terminal row.
- * Keeps ANSI sequences intact when possible.
  */
 export function fitWidth(line, columns) {
   const plain = stripAnsi(line);
@@ -149,7 +200,8 @@ export function fitWidth(line, columns) {
 }
 
 /**
- * Soft-wrap a colored line into multiple terminal rows (indent continuation).
+ * Soft-wrap a colored line into multiple terminal rows.
+ * Long dumps lose ANSI on wrap (acceptable).
  */
 export function wrapLine(line, columns, options = {}) {
   const prefix = options.prefix ?? "";
@@ -162,7 +214,6 @@ export function wrapLine(line, columns, options = {}) {
     return [`${prefix}${line}`];
   }
 
-  // Wrap on the plain text, re-apply no colors on wraps (acceptable for long dumps).
   const rows = [];
   let remaining = plain;
   let first = true;
@@ -172,7 +223,6 @@ export function wrapLine(line, columns, options = {}) {
       rows.push(`${first ? prefix : contPrefix}${remaining}`);
       break;
     }
-    // Prefer break at space.
     let cut = remaining.lastIndexOf(" ", max);
     if (cut < max * 0.5) cut = max;
     rows.push(`${first ? prefix : contPrefix}${remaining.slice(0, cut)}`);

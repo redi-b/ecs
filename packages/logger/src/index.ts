@@ -11,8 +11,13 @@ function isDevelopment(environment?: string) {
 }
 
 /**
- * Structured logger. In development, uses pino-pretty for human-readable
- * colored lines unless LOG_PRETTY=0.
+ * Structured logger.
+ *
+ * Under `pnpm dev:apps` / grouped mode, the supervisor sets LOG_PRETTY=0 so
+ * children emit JSON and the parent reformats with colors (child stdout is a
+ * pipe, so pino-pretty colors would die anyway).
+ *
+ * Standalone `pnpm --filter @ecs/platform-api dev` still uses pino-pretty.
  */
 export function createLogger(options: LoggerOptions) {
   const environment = options.environment ?? process.env.NODE_ENV ?? "development";
@@ -33,10 +38,11 @@ export function createLogger(options: LoggerOptions) {
           transport: {
             target: "pino-pretty",
             options: {
-              colorize: process.env.NO_COLOR === undefined,
+              colorize: true,
               translateTime: "HH:MM:ss",
-              ignore: "pid,hostname",
+              ignore: "pid,hostname,service,environment",
               singleLine: true,
+              hideObject: true,
               messageFormat: "{msg}",
             },
           },
