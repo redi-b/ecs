@@ -1,0 +1,61 @@
+{
+  "title": "ትዕዛዞች",
+  "description": "ትዕዛዞችን፣ የክፍያ ሁኔታዎችን እና የትዕዛዝ ማድረስ ሂደትን ይገምግሙ።",
+  "error": {
+    "loadTitle": "ትዕዛዞችን መጫን አልተቻለም"
+  },
+  "detail": {
+    "shellTitle": "የትዕዛዝ ዝርዝሮች",
+    "shellDescription": "ለዚህ ትዕዛዝ የደንበኛ፣ የማድረሻ፣ የክፍያ፣ የማሟላት እና ጠቅላላ ዝርዝሮችን ይገምግሙ።",
+    "notFoundTitle": "ትዕዛዝ አልተገኘም",
+    "notFoundDesc": "ይህ ትዕዛዝ ከተመረጠው የነጋዴ መረጃ ጋር ሊገኝ አልቻለም።",
+    "loadErrorTitle": "ትዕዛዙን መጫን አልተቻለም",
+    "loadErrorDesc": "ዳሽቦርዱ ይህንን ትዕዛዝ መጫን አልቻለም። ገጹን ያድሱ ወይም ቆይተው እንደገና ይሞክሩ።"
+  },
+  "table": {
+    "emptyTitle": "ገና ምንም ትዕዛዝ የለም",
+    "emptyMessage": "ለዚህ ነጋዴ እስካሁን ምንም ትዕዛዝ አልተደረገም።",
+    "filteredEmptyTitle": "የሚዛመድ ትዕዛዝ የለም",
+    "filteredEmptyMessage": "ከፍለጋዎ ወይም ከማጣሪያዎችዎ ጋር የሚዛመድ ምንም ትዕዛዝ አልተገኘም።"
+  },
+  "filter": {
+    "lifecycle": {
+      "all": "ሁሉም ትዕዛዞች",
+      "open": "ክፍት",
+      "completed": "የተጠናቀቁ",
+      "canceled": "የተሰረዙ",
+      "needs_fulfillment": "ማድረስ የሚፈልጉ",
+      "fulfilled": "የደረሱ",
+      "payment_pending": "ክፍያ የሚጠብቁ",
+      "paid": "የተከፈሉ",
+      "label": "የትዕዛዝ ሁኔታ"
+    },
+    "payment": {
+      "all": "ሁሉም ክፍያዎች",
+      "pending": "በመጠባበቅ ላይ",
+      "unpaid": "ያልተከፈለ",
+      "unknown": "ያልታወቀ",
+      "label": "የክፍያ ሁኔታ"
+    },
+    "fulfillment": {
+      "all": "ሁሉም ማድረሶች",
+      "unfulfilled": "ያልተላኩ",
+      "label": "የማድረስ ሁኔታ"
+    },
+    "delivery": {
+      "all": "ሁሉም የማድረሻ አማራጮች",
+      "delivery": "በቤት ማድረስ",
+      "pickup": "በሱቅ መውሰጃ",
+      "none": "ምርጫ የሌለው",
+      "label": "የማድረሻ ምርጫ"
+    },
+    "created": {
+      "all": "ሁሉም ቀናት",
+      "today": "ዛሬ",
+      "last_7_days": "ባለፉት 7 ቀናት",
+      "last_30_days": "ባለፉት 30 ቀናት",
+      "no_date": "ቀን የሌለው",
+      "label": "የተፈጠረበት ቀን"
+    }
+  }
+}

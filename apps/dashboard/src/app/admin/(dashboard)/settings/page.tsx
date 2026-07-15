@@ -3,8 +3,7 @@ import { headers } from "next/headers";
 import { PageShell } from "@/components/app/page-shell";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { SettingsWorkspace } from "@/features/settings/settings-workspace";
-import type { MessageKey } from "@/i18n/messages";
-import { getRequestMessages } from "@/i18n/server";
+import { getTranslations } from "@/i18n/server";
 import { type DashboardSearchParams, getSelectedTenantId } from "@/lib/dashboard-tenant-context";
 import { getMerchantDashboardAccessShell } from "@/lib/merchant-dashboard";
 import { getMerchantDeliverySettings } from "@/lib/merchant-settings";
@@ -19,8 +18,7 @@ type SettingsPageProps = {
 export default async function SettingsPage({ searchParams }: SettingsPageProps) {
   const resolvedSearchParams = (await searchParams) ?? {};
   const selectedTenantId = getSelectedTenantId(resolvedSearchParams);
-  const { messages } = await getRequestMessages();
-  const t = (key: MessageKey) => messages[key];
+  const t = await getTranslations();
   const requestHeaders = await headers();
   const platformApiBaseUrl = process.env.PLATFORM_API_BASE_URL ?? "http://localhost:3000";
   // Settings only needs tenant/domain/actor/storefront — not ops/metrics/billing.

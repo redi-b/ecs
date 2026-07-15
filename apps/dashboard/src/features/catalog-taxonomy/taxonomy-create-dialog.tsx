@@ -35,6 +35,7 @@ import {
   getCategoryDisplayName,
   slugifyTaxonomyHandle,
 } from "@/features/catalog-taxonomy/taxonomy-table-state";
+import type { MessageKey } from "@/i18n/messages";
 import { useI18n } from "@/i18n/provider";
 import { useCreateQueryOpen } from "@/lib/use-create-query-open";
 
@@ -75,8 +76,8 @@ function TaxonomyCreateDialogInner({
   triggerLabel,
 }: TaxonomyCreateDialogProps) {
   const { t } = useI18n();
-  const localizedEntity = t(`taxonomy.entity.${entityLabel}` as any);
-  const localizedEntityPlural = t(`taxonomy.entity.${entityLabel}.plural` as any);
+  const localizedEntity = t(`taxonomy.entity.${entityLabel}.label` as MessageKey);
+  const localizedEntityPlural = t(`taxonomy.entity.${entityLabel}.plural` as MessageKey);
 
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -133,7 +134,7 @@ function TaxonomyCreateDialogInner({
 
     if (!trimmedName) {
       setError(
-        t("taxonomy.create.error.enterName" as any, {
+        t("taxonomy.create.error.enterName", {
           entity: localizedEntity,
           field: nameLabel.toLowerCase(),
         }),
@@ -176,7 +177,7 @@ function TaxonomyCreateDialogInner({
       return;
     }
 
-    toast.success(t("taxonomy.create.success" as any, { entity: capitalize(localizedEntity) }));
+    toast.success(t("taxonomy.create.success", { entity: capitalize(localizedEntity) }));
     setOpen(false);
     resetForm();
     await queryClient.invalidateQueries({ queryKey: [queryKey] });
@@ -204,12 +205,12 @@ function TaxonomyCreateDialogInner({
       <DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-lg">
         <DialogHeader className="gap-1.5 border-b px-4 py-4 text-left sm:px-5">
           <DialogTitle>
-            {t("taxonomy.create.title" as any, { entity: localizedEntity })}
+            {t("taxonomy.create.title", { entity: localizedEntity })}
           </DialogTitle>
           <DialogDescription>
             {entityLabel === "category"
-              ? t("taxonomy.create.category.desc" as any)
-              : t("taxonomy.create.collection.desc" as any)}
+              ? t("taxonomy.create.category.desc")
+              : t("taxonomy.create.collection.desc")}
           </DialogDescription>
         </DialogHeader>
         <form
@@ -223,7 +224,7 @@ function TaxonomyCreateDialogInner({
             {error ? (
               <Alert variant="destructive">
                 <AlertTitle>
-                  {t("taxonomy.create.error.createFailed" as any, {
+                  {t("taxonomy.create.error.createFailed", {
                     entity: capitalize(localizedEntity),
                   })}
                 </AlertTitle>
@@ -244,7 +245,7 @@ function TaxonomyCreateDialogInner({
 
             <Field>
               <FieldLabel htmlFor={`taxonomy-${entityLabel}-handle`}>
-                {t("taxonomy.create.handle" as any)}
+                {t("taxonomy.create.handle")}
               </FieldLabel>
               <InputGroup className="pr-1">
                 <InputGroupInput
@@ -260,8 +261,8 @@ function TaxonomyCreateDialogInner({
                       <Button
                         aria-label={
                           isHandleLocked
-                            ? t("taxonomy.create.unlockHandle" as any)
-                            : t("taxonomy.create.lockHandle" as any)
+                            ? t("taxonomy.create.unlockHandle")
+                            : t("taxonomy.create.lockHandle")
                         }
                         className="rounded-full"
                         onClick={() => setIsHandleLocked((current) => !current)}
@@ -274,14 +275,14 @@ function TaxonomyCreateDialogInner({
                     </TooltipTrigger>
                     <TooltipContent side="top" sideOffset={6}>
                       {isHandleLocked
-                        ? t("taxonomy.create.unlockHandle" as any)
-                        : t("taxonomy.create.lockHandle" as any)}
+                        ? t("taxonomy.create.unlockHandle")
+                        : t("taxonomy.create.lockHandle")}
                     </TooltipContent>
                   </Tooltip>
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button
-                        aria-label={t("taxonomy.create.regenerateHandle" as any, {
+                        aria-label={t("taxonomy.create.regenerateHandle", {
                           entity: localizedEntity,
                         })}
                         className="rounded-full"
@@ -294,7 +295,7 @@ function TaxonomyCreateDialogInner({
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent side="top" sideOffset={6}>
-                      {t("taxonomy.create.regenerateFrom" as any, {
+                      {t("taxonomy.create.regenerateFrom", {
                         field: nameLabel.toLowerCase(),
                       })}
                     </TooltipContent>
@@ -303,25 +304,25 @@ function TaxonomyCreateDialogInner({
               </InputGroup>
               <FieldDescription>
                 {isHandleLocked
-                  ? t("taxonomy.create.handleFollows" as any, {
+                  ? t("taxonomy.create.handleFollows", {
                       entity: localizedEntity,
                       field: nameLabel.toLowerCase(),
                     })
-                  : t("taxonomy.create.handleCustom" as any, { entity: localizedEntity })}
+                  : t("taxonomy.create.handleCustom", { entity: localizedEntity })}
               </FieldDescription>
             </Field>
 
             {entityLabel === "category" ? (
               <Field>
-                <FieldLabel>{t("taxonomy.create.parentCategory" as any)}</FieldLabel>
+                <FieldLabel>{t("taxonomy.create.parentCategory")}</FieldLabel>
                 <Select onValueChange={setParentCategoryId} value={parentCategoryId}>
                   <SelectTrigger className="w-full">
-                    <SelectValue placeholder={t("taxonomy.create.rootCategory" as any)} />
+                    <SelectValue placeholder={t("taxonomy.create.rootCategory")} />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectGroup>
                       <SelectItem value="__root__">
-                        {t("taxonomy.create.rootCategory" as any)}
+                        {t("taxonomy.create.rootCategory")}
                       </SelectItem>
                       {sortedParents.map((category) => (
                         <SelectItem key={category.id} value={category.id}>
@@ -334,17 +335,17 @@ function TaxonomyCreateDialogInner({
                     </SelectGroup>
                   </SelectContent>
                 </Select>
-                <FieldDescription>{t("taxonomy.create.parentDesc" as any)}</FieldDescription>
+                <FieldDescription>{t("taxonomy.create.parentDesc")}</FieldDescription>
               </Field>
             ) : null}
 
             <Field className="flex flex-row items-center justify-between gap-4 rounded-xl border px-3.5 py-3">
               <div className="min-w-0 space-y-1">
                 <FieldLabel className="text-sm" htmlFor={`taxonomy-${entityLabel}-visible`}>
-                  {t("taxonomy.create.visibleLabel" as any)}
+                  {t("taxonomy.create.visibleLabel")}
                 </FieldLabel>
                 <FieldDescription className="text-xs">
-                  {t("taxonomy.create.visibleDesc" as any, {
+                  {t("taxonomy.create.visibleDesc", {
                     entityPlural: localizedEntityPlural,
                   })}
                 </FieldDescription>
@@ -363,12 +364,12 @@ function TaxonomyCreateDialogInner({
               type="button"
               variant="outline"
             >
-              {t("common.cancel" as any)}
+              {t("common.cancel")}
             </Button>
             <Button disabled={isSaving} type="submit">
               {isSaving
-                ? t("taxonomy.create.creating" as any)
-                : t("taxonomy.create.createBtn" as any, { entity: localizedEntity })}
+                ? t("taxonomy.create.creating")
+                : t("taxonomy.create.createBtn", { entity: localizedEntity })}
             </Button>
           </DialogFooter>
         </form>
@@ -382,7 +383,7 @@ function getTaxonomyCreateErrorMessage(
   error: string | undefined,
   t: (key: any, params?: any) => string,
 ) {
-  const localizedEntity = t(`taxonomy.entity.${entityLabel}`);
+  const localizedEntity = t(`taxonomy.entity.${entityLabel}.label` as MessageKey);
 
   if (error === "missing_name" || error === "missing_title") {
     return t("taxonomy.create.error.missing", { entity: localizedEntity });

@@ -27,10 +27,10 @@ export function ListSummary({ count, label }: ListSummaryProps) {
   return (
     <div className="flex items-center justify-between rounded-2xl border bg-card px-4 py-3 text-sm">
       <span className="font-medium text-card-foreground">
-        {t("common.total" as any, { count: formatNumber(count) })}
+        {t("common.total", { count: formatNumber(count) })}
       </span>
       <span className="text-muted-foreground">
-        {t("common.showingMerchant" as any, { label })}
+        {t("common.showingMerchant", { label })}
       </span>
     </div>
   );
@@ -63,8 +63,8 @@ export function PaginationControls({
       summary={
         <span>
           {count === 0
-            ? t("common.noResults" as any)
-            : t("common.showingRange" as any, {
+            ? t("common.noResults")
+            : t("common.showingRange", {
                 from: formatNumber(from),
                 to: formatNumber(to),
                 count: formatNumber(count),

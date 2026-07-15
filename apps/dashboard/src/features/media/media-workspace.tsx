@@ -94,10 +94,10 @@ export function MediaWorkspace({
           <MediaUploadComposer onUploaded={() => void refresh()} />
         </>
       }
-      description={t("media.shellDescription" as any)}
-      title={t("media.shellTitle" as any)}
+      description={t("media.shellDescription")}
+      title={t("media.shellTitle")}
     >
-      <ListSummary count={totalCount} label={t("nav.media" as any).toLowerCase()} />
+      <ListSummary count={totalCount} label={t("nav.media").toLowerCase()} />
       {loadError || initialError ? (
         <Alert variant="destructive">
           <AlertTitle>{t("media.libraryLoadError")}</AlertTitle>

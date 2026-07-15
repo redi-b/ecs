@@ -1,19 +1,19 @@
 import "server-only";
 
-import { cookies } from "next/headers";
+import { getLocale, getTranslations as getNextIntlTranslations } from "next-intl/server";
 
-import { defaultLocale, isAppLocale, localeCookieName } from "./config";
-import { messagesByLocale } from "./messages";
+import type { MessageKey } from "./messages";
 
-export async function getRequestLocale() {
-  const cookieStore = await cookies();
-  const candidate = cookieStore.get(localeCookieName)?.value;
+/**
+ * Server-side translator using full dotted paths (`nav.products`),
+ * matching client `useI18n().t`. Thin wrapper over next-intl for a shared MessageKey type.
+ */
+export async function getTranslations() {
+  const t = await getNextIntlTranslations();
 
-  return isAppLocale(candidate) ? candidate : defaultLocale;
+  return (key: MessageKey, values?: Record<string, string | number | Date>) => t(key, values);
 }
 
-export async function getRequestMessages() {
-  const locale = await getRequestLocale();
-
-  return { locale, messages: messagesByLocale[locale] };
+export async function getRequestLocale() {
+  return getLocale();
 }

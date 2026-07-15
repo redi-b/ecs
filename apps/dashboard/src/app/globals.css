@@ -187,21 +187,36 @@
   }
 
   html {
-    @apply bg-background font-sans;
-    font-family: var(--font-sans);
+    @apply bg-background;
     text-rendering: optimizeLegibility;
   }
 
-  /* Amharic locale: prefer Noto for Ethiopic metrics; Latin still via Geist in the stack. */
+  /*
+   * Amharic: layout also applies next/font className (Noto Sans Ethiopic) on <html>.
+   * Keep stacks for any subtree that resets font-family.
+   */
   html[lang="am"] {
     --font-sans: var(--font-ethiopic), var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
     --font-heading: var(--font-ethiopic), var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+    /* Match Google Fonts preview weight a bit better than super-thin system defaults */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  html[lang="am"] body {
+    font-family: var(--font-ethiopic), var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+    font-weight: 400;
+    letter-spacing: 0; /* tracking-tight on Latin hurts Ethiopic shapes */
   }
 
   body {
     @apply bg-background font-sans text-foreground antialiased;
-    font-family: var(--font-sans);
     min-height: 100vh;
+  }
+
+  /* Headings in Amharic: slightly heavier for legibility (closer to GF samples). */
+  html[lang="am"] :where(h1, h2, h3, h4, .font-semibold, .font-bold) {
+    font-weight: 600;
   }
 
   button:not(:disabled),

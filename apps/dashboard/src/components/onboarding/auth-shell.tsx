@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 
 import { LanguageSwitcher } from "@/components/app/language-switcher";
 import { ThemeToggle } from "@/components/app/theme-toggle";
-import { getRequestMessages } from "@/i18n/server";
+import { getTranslations } from "@/i18n/server";
 import { cn } from "@/lib/utils";
 
 type AuthShellProps = {
@@ -31,9 +31,8 @@ export async function AuthShell({
   layout = "auth",
   toolbar,
 }: AuthShellProps) {
-  const { messages } = await getRequestMessages();
-  const t = (key: keyof typeof messages) => messages[key];
-  const footer = brandFooter ?? t("auth.brandFooter");
+  const t = await getTranslations();
+  const footer = brandFooter ?? t("auth.brandFooter.label");
 
   const tools = (
     <div className="flex shrink-0 items-center gap-0.5 rounded-full border border-border bg-card p-0.5 shadow-sm sm:gap-1 sm:p-1">

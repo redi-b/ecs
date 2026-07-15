@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { slugifyTaxonomyHandle } from "@/features/catalog-taxonomy/taxonomy-table-state";
+import type { MessageKey } from "@/i18n/messages";
 import { useI18n } from "@/i18n/provider";
 
 type TaxonomyFormProps = {
@@ -37,7 +38,7 @@ export function TaxonomyForm({
   const generatedHandle = useMemo(() => slugifyTaxonomyHandle(displayName), [displayName]);
   const HandleLockIcon = isHandleLocked ? AppIcons.lock : AppIcons.lockUnlock;
 
-  const localizedEntity = t(`taxonomy.entity.${entityLabel}` as any);
+  const localizedEntity = t(`taxonomy.entity.${entityLabel}.label` as MessageKey);
 
   function updateDisplayName(nextName: string) {
     setDisplayName(nextName);
@@ -71,7 +72,7 @@ export function TaxonomyForm({
             </Field>
 
             <Field>
-              <FieldLabel htmlFor={`${formId}-handle`}>{t("common.handle" as any)}</FieldLabel>
+              <FieldLabel htmlFor={`${formId}-handle`}>{t("taxonomy.table.handle")}</FieldLabel>
               <InputGroup className="pr-1">
                 <InputGroupInput
                   id={`${formId}-handle`}
@@ -87,8 +88,8 @@ export function TaxonomyForm({
                       <Button
                         aria-label={
                           isHandleLocked
-                            ? t("taxonomy.form.lockHandle" as any)
-                            : t("taxonomy.form.unlockHandle" as any)
+                            ? t("taxonomy.form.lockHandle")
+                            : t("taxonomy.form.unlockHandle")
                         }
                         className="rounded-full"
                         onClick={() => setIsHandleLocked((current) => !current)}
@@ -101,14 +102,14 @@ export function TaxonomyForm({
                     </TooltipTrigger>
                     <TooltipContent side="top" sideOffset={6}>
                       {isHandleLocked
-                        ? t("taxonomy.form.unlockHandle" as any)
-                        : t("taxonomy.form.lockHandle" as any)}
+                        ? t("taxonomy.form.unlockHandle")
+                        : t("taxonomy.form.lockHandle")}
                     </TooltipContent>
                   </Tooltip>
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button
-                        aria-label={t("taxonomy.form.regenerateHandle" as any, { entity: localizedEntity })}
+                        aria-label={t("taxonomy.form.regenerateHandle", { entity: localizedEntity })}
                         className="rounded-full"
                         onClick={regenerateHandle}
                         size="icon-sm"
@@ -119,15 +120,15 @@ export function TaxonomyForm({
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent side="top" sideOffset={6}>
-                      {t("taxonomy.form.regenerateFrom" as any, { label: nameLabel.toLowerCase() })}
+                      {t("taxonomy.form.regenerateFrom", { label: nameLabel.toLowerCase() })}
                     </TooltipContent>
                   </Tooltip>
                 </InputGroupAddon>
               </InputGroup>
               <FieldDescription>
                 {isHandleLocked
-                  ? t("taxonomy.form.handleFollows" as any, { entity: localizedEntity, label: nameLabel.toLowerCase() })
-                  : t("taxonomy.form.handleUnlocked" as any, { entity: localizedEntity })}
+                  ? t("taxonomy.form.handleFollows", { entity: localizedEntity, label: nameLabel.toLowerCase() })
+                  : t("taxonomy.form.handleUnlocked", { entity: localizedEntity })}
               </FieldDescription>
             </Field>
 

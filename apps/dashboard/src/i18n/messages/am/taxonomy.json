@@ -1,0 +1,102 @@
+{
+  "entity": {
+    "category": {
+      "plural": "ምድቦች",
+      "label": "ምድብ"
+    },
+    "collection": {
+      "plural": "ስብስቦች",
+      "label": "ስብስብ"
+    },
+    "order": {
+      "plural": "ትዕዛዞች",
+      "label": "ትዕዛዝ"
+    },
+    "customer": {
+      "plural": "ደንበኞች",
+      "label": "ደንበኛ"
+    },
+    "promotion": {
+      "plural": "ቅናሾች",
+      "label": "ቅናሽ"
+    }
+  },
+  "create": {
+    "title": "{entity} ፍጠር",
+    "category": {
+      "desc": "ምድብ ከተለዋጭ ወላጅ እና የመደብር ገጽ ታይነት ጋር ያክሉ።"
+    },
+    "collection": {
+      "desc": "የስብስብ ስም፣ መለያ እና የመደብር ገጽ ታይነት ያክሉ።"
+    },
+    "error": {
+      "enterName": "እባክዎ የ{entity} {field} ያስገቡ።",
+      "createFailed": "{entity} መፍጠር አልተቻለም",
+      "missing": "ለመቀጠል የ{entity} ስም ያስገቡ።",
+      "backend": "የንግድ ጀርባው (backend) ለጊዜው አይሰራም።",
+      "credentials": "የካታሎግ ለውጦች ለጊዜው አይገኙም። ድጋፍ ሰጪዎችን ያነጋግሩ።",
+      "genericSave": "{entity} ማስቀመጥ አልተቻለም። እንደገና ይሞክሩ።"
+    },
+    "success": "{entity} ተፈጥሯል።",
+    "handle": "መለያ (Handle)",
+    "unlockHandle": "የመለያ ማሻሻያውን ክፈት",
+    "lockHandle": "የመለያ ማሻሻያውን ቆልፍ",
+    "regenerateHandle": "የ{entity} መለያን እንደገና አውጣ",
+    "regenerateFrom": "ከ{field} ላይ እንደገና አውጣ",
+    "handleFollows": "የ{entity} መለያው {field}ን በራስ-ሰር ይከተላል።",
+    "handleCustom": "ለግል ብጁ የ{entity} አድራሻ የመለያ ማሻሻያው ተከፍቷል።",
+    "parentCategory": "ዋና ምድብ",
+    "rootCategory": "ዋና ምድብ (ቁንጮ)",
+    "parentDesc": "ከሌላ ምድብ ስር ያስቀምጡት፣ ወይም እንደ ዋና ምድብ ይተውት።",
+    "visibleLabel": "በመደብር ገጽ ላይ የሚታይ",
+    "visibleDesc": "የተደበቁ {entityPlural} በዳሽቦርዱ ውስጥ ይቆያሉ ነገር ግን በሕዝብ ዝርዝር ውስጥ አይታዩም።",
+    "creating": "በመፍጠር ላይ...",
+    "createBtn": "{entity} ፍጠር",
+    "nameLabel": "ስም",
+    "titleLabel": "ርዕስ",
+    "namePlaceholder": "ቡና",
+    "titlePlaceholder": "ልዩ ምርቶች"
+  },
+  "actions": {
+    "reorder": "ቅደም ተከተል አስተካክል"
+  },
+  "table": {
+    "category": "ምድብ",
+    "handle": "መለያ",
+    "parent": "ዋና ምድብ",
+    "visibility": {
+      "hidden": "የተደበቀ",
+      "public": "ለደንበኛ የሚታይ",
+      "label": "ታይነት"
+    },
+    "order": "ቅደም ተከተል",
+    "updated": "የተሻሻለበት",
+    "actions": {
+      "edit": "{entity} አስተካክል",
+      "copyId": "የ{entity} መለያ ቅዳ",
+      "copyHandle": "መለያ ቅዳ",
+      "delete": "{entity} አጥፋ",
+      "triggerAria": "ለ{name} ተግባራትን ክፈት"
+    },
+    "selectAria": "{name} ምረጥ",
+    "selectAllAria": "ሁሉንም የሚታዩ {entityPlural} ምረጥ",
+    "emptyMessage": "እስካሁን ለዚህ ነጋዴ የተመሳሰለ ምድብ የለም።",
+    "emptyTitle": "ምንም ምድቦች የሉም",
+    "filteredEmptyMessage": "አሁን ባለው ፍለጋ መሰረት ምንም ምድብ አልተገኘም።",
+    "filteredEmptyTitle": "ምንም የሚዛመድ ምድብ የለም"
+  },
+  "delete": {
+    "title": "{entity} አጥፋ",
+    "desc": "እርግጠኛ ነዎት \"{name}\" ማጥፋት ይፈልጋሉ? ይህ ተግባር ሊመለስ አይችልም።",
+    "batchTitle": "{entityPlural} አጥፋ",
+    "batchDesc": "እርግጠኛ ነዎት {count} የተመረጡ {entityPlural} ማጥፋት ይፈልጋሉ? ይህ ተግባር ሊመለስ አይችልም።"
+  },
+  "form": {
+    "unlockHandle": "የአድራሻ ስም (Handle) ማስተካከል ፍቀድ",
+    "lockHandle": "የአድራሻ ስም (Handle) ማስተካከል ዝጋ",
+    "regenerateHandle": "የ{entity} አድራሻ ስም እንደገና ፍጠር",
+    "regenerateFrom": "ከ{label} ላይ እንደገና ፍጠር",
+    "handleFollows": "የ{entity} አድራሻ ስም ከ{label} ጋር አብሮ በራሱ ይፈጠራል።",
+    "handleUnlocked": "የ{entity} አድራሻ ስም ለብቻ ማስተካከል ተፈቅዷል።"
+  }
+}

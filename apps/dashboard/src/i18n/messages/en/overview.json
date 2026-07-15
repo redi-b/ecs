@@ -1,0 +1,7 @@
+{
+  "title": "Overview",
+  "description": "Track sales, orders, storefront activity, and setup progress in one place.",
+  "error": {
+    "loadTitle": "Overview could not be loaded"
+  }
+}

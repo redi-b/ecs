@@ -5,7 +5,7 @@ import { PageShell } from "@/components/app/page-shell";
 import { RefreshButton } from "@/components/app/refresh-button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import type { MessageKey } from "@/i18n/messages";
-import { getRequestMessages } from "@/i18n/server";
+import { getTranslations } from "@/i18n/server";
 import { ProductCreateDialog } from "@/features/products/product-create-dialog";
 import {
   parseProductMediaFilter,
@@ -32,8 +32,7 @@ export default async function MerchantProductsPage({ searchParams }: MerchantPro
   const resolvedSearchParams = (await searchParams) ?? {};
   const listParams = parseListSearchParams(resolvedSearchParams);
   const tenantId = getSelectedTenantId(resolvedSearchParams);
-  const { messages } = await getRequestMessages();
-  const t = (key: MessageKey) => messages[key];
+  const t = await getTranslations();
   const requestHeaders = await headers();
   const cookieHeader = requestHeaders.get("cookie");
   const requestHost = requestHeaders.get("host");

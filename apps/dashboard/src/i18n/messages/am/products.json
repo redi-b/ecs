@@ -1,0 +1,31 @@
+{
+  "title": "ምርቶች",
+  "description": "የነጋዴውን ካታሎግ ምርቶች ይፍጠሩ፣ ይገምግሙ እና ያስተዳድሩ።",
+  "notice": {
+    "created": {
+      "title": "ምርት ተፈጥሯል",
+      "description": "ምርቱ ተፈጥሯል እና አሁን በዚህ የነጋዴ ካታሎግ ውስጥ ይገኛል።"
+    },
+    "updated": {
+      "title": "ምርት ተዘምኗል",
+      "description": "የምርት ለውጦች ተቀምጠዋል እና የካታሎግ ዝርዝሩ ታድሷል።"
+    },
+    "error": {
+      "title": "ምርቱን ማስቀመጥ አልተቻለም"
+    }
+  },
+  "error": {
+    "loadTitle": "ምርቶችን መጫን አልተቻለም"
+  },
+  "detail": {
+    "shellTitle": "የምርት ዝርዝሮች",
+    "shellDescription": "የነጋዴውን የምርት ዝርዝሮች ይገምግሙ እና በመደብሩ ላይ የምርት መረጃዎችን ያሻሽሉ።",
+    "optionsLoadErrorTitle": "የምርት አማራጮችን መጫን አልተቻለም",
+    "optionsLoadErrorDesc": "{labels} መጫን አልተቻለም። ያሉትን ግንኙነቶች እንዳይደመሰሱ ማጣቀሻ መረጃው እስኪጫን ድረስ ማሻሻል ተዘግቷል።",
+    "loadErrorTitle": "ምርቱን መጫን አልተቻለም",
+    "loadErrorDesc": "ቆይተው እንደገና ይሞክሩ።"
+  },
+  "create": {
+    "optionsLoadErrorDesc": "{labels} መጫን አልተቻለም። አሁንም መደበኛ ምርት መፍጠር እና በኋላ ላይ አማራጮችን ማከል ይችላሉ።"
+  }
+}

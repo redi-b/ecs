@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 
 import { AccountMenu } from "@/components/app/account-menu";
 import { AppIcons } from "@/components/app/icons";
+import type { MessageKey } from "@/i18n/messages";
 import { useI18n } from "@/i18n/provider";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
@@ -80,11 +81,11 @@ function useCloseMobileSidebar() {
   };
 }
 
-function getRouteLocalizationKey(id: string) {
+function getRouteLocalizationKey(id: string): MessageKey {
   const camelCased = id.replace(/-([a-z])/g, (_, letter: string | undefined) =>
     letter ? letter.toUpperCase() : "",
   );
-  return `nav.${camelCased}`;
+  return `nav.${camelCased}` as MessageKey;
 }
 
 function NavRouteItem({ pathname, route }: { pathname: string; route: AppRoute }) {
@@ -95,7 +96,7 @@ function NavRouteItem({ pathname, route }: { pathname: string; route: AppRoute }
   const active = isRouteActive(pathname, route);
   const collapsed = state === "collapsed" && !isMobile;
 
-  const localizedTitle = t(getRouteLocalizationKey(route.id) as any) || route.title;
+  const localizedTitle = t(getRouteLocalizationKey(route.id)) || route.title;
 
   if (route.children?.length) {
     // Icon rail hides collapsible subtrees — open nested links in a flyout instead.
@@ -122,7 +123,7 @@ function NavRouteItem({ pathname, route }: { pathname: string; route: AppRoute }
               {route.children.map((child) => (
                 <DropdownMenuItem asChild key={child.id}>
                   <Link href={child.href} onClick={closeMobileSidebar} prefetch={false}>
-                    {t(getRouteLocalizationKey(child.id) as any) || child.title}
+                    {t(getRouteLocalizationKey(child.id)) || child.title}
                   </Link>
                 </DropdownMenuItem>
               ))}
@@ -150,7 +151,7 @@ function NavRouteItem({ pathname, route }: { pathname: string; route: AppRoute }
                 <SidebarMenuSubItem key={child.id}>
                   <SidebarMenuSubButton asChild isActive={isChildRouteActive(pathname, child)}>
                     <Link href={child.href} onClick={closeMobileSidebar} prefetch={false}>
-                      {t(getRouteLocalizationKey(child.id) as any) || child.title}
+                      {t(getRouteLocalizationKey(child.id)) || child.title}
                     </Link>
                   </SidebarMenuSubButton>
                 </SidebarMenuSubItem>
@@ -215,7 +216,7 @@ export function AppSidebar({ actor }: { actor: MerchantDashboardSummary["actor"]
             >
               {section.label ? (
                 <SidebarGroupLabel>
-                  {t(`nav.section.${section.id}` as any) || section.label}
+                  {t(`nav.section.${section.id}` as MessageKey) || section.label}
                 </SidebarGroupLabel>
               ) : null}
               <SidebarGroupContent>

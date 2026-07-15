@@ -5,8 +5,7 @@ import Link from "@/components/app/link";
 import { PageShell } from "@/components/app/page-shell";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import type { MessageKey } from "@/i18n/messages";
-import { getRequestMessages } from "@/i18n/server";
+import { getTranslations } from "@/i18n/server";
 import {
   Empty,
   EmptyDescription,
@@ -36,8 +35,7 @@ type StorefrontDraftPayload = {
 export default async function StorefrontEditorPage({ searchParams }: StorefrontEditorPageProps) {
   const resolvedSearchParams = (await searchParams) ?? {};
   const selectedTenantId = getSelectedTenantId(resolvedSearchParams);
-  const { messages } = await getRequestMessages();
-  const t = (key: MessageKey) => messages[key];
+  const t = await getTranslations();
   const requestHeaders = await headers();
   const platformApiBaseUrl = process.env.PLATFORM_API_BASE_URL ?? "http://localhost:3000";
   // Editor only needs tenant name, domain, publish flag — not ops/metrics/billing.

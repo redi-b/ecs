@@ -1,0 +1,7 @@
+{
+  "title": "Settings",
+  "description": "Manage shop address, checkout fulfillment, storefront status, and account details.",
+  "error": {
+    "loadTitle": "Settings could not be loaded"
+  }
+}

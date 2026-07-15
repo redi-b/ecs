@@ -3,8 +3,7 @@ import { cookies, headers } from "next/headers";
 import { PageShell } from "@/components/app/page-shell";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { BillingWorkspace } from "@/features/billing/billing-workspace";
-import type { MessageKey } from "@/i18n/messages";
-import { getRequestMessages } from "@/i18n/server";
+import { getTranslations } from "@/i18n/server";
 import {
   billingReturnPaidFlag,
   type DashboardSearchParams,
@@ -24,8 +23,7 @@ export default async function BillingPage({ searchParams }: BillingPageProps) {
   const resolvedSearchParams = (await searchParams) ?? {};
   const selectedTenantId = getSelectedTenantId(resolvedSearchParams);
   const returnedFromPayment = billingReturnPaidFlag(resolvedSearchParams);
-  const { messages } = await getRequestMessages();
-  const t = (key: MessageKey) => messages[key];
+  const t = await getTranslations();
   const requestHeaders = await headers();
   const cookieHeader = (await cookies()).toString();
   const requestHost =

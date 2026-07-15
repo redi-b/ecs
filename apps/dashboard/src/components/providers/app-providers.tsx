@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { NextIntlClientProvider } from "next-intl";
 import NextTopLoader from "nextjs-toploader";
 
 import { QueryProvider } from "@/components/providers/query-provider";
@@ -8,7 +9,6 @@ import { ThemeProvider } from "@/components/providers/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import type { AppLocale } from "@/i18n/config";
 import type { Messages } from "@/i18n/messages";
-import { I18nProvider } from "@/i18n/provider";
 
 export function AppProviders({
   children,
@@ -20,7 +20,7 @@ export function AppProviders({
   messages: Messages;
 }) {
   return (
-    <I18nProvider locale={locale} messages={messages}>
+    <NextIntlClientProvider locale={locale} messages={messages}>
       <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
         <QueryProvider>
           {/*
@@ -44,6 +44,6 @@ export function AppProviders({
           <Toaster richColors />
         </QueryProvider>
       </ThemeProvider>
-    </I18nProvider>
+    </NextIntlClientProvider>
   );
 }

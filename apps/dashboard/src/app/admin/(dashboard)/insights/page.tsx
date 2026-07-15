@@ -8,12 +8,10 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
-import type { MessageKey } from "@/i18n/messages";
-import { getRequestMessages } from "@/i18n/server";
+import { getTranslations } from "@/i18n/server";
 
 export default async function InsightsPage() {
-  const { messages } = await getRequestMessages();
-  const t = (key: MessageKey) => messages[key];
+  const t = await getTranslations();
 
   return (
     <PageShell description={t("insights.description")} title={t("insights.title")}>

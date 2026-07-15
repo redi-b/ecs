@@ -1,0 +1,28 @@
+{
+  "title": "Billing",
+  "description": "Review plan details, subscription status, and recent invoices.",
+  "error": {
+    "loadTitle": "Billing could not be loaded"
+  },
+  "empty": {
+    "title": "Billing is not active for this shop",
+    "description": "The account is reachable, but no subscription or invoice state is available yet."
+  },
+  "plan": {
+    "current": "Current plan"
+  },
+  "row": {
+    "price": "Price",
+    "cycle": "Cycle",
+    "subscription": "Subscription",
+    "manualPayment": "Manual payment"
+  },
+  "actions": {
+    "manageSettings": "Manage shop settings"
+  },
+  "invoices": {
+    "title": "Invoices",
+    "description": "Recent invoices and payment state.",
+    "empty": "No invoices have been recorded yet."
+  }
+}

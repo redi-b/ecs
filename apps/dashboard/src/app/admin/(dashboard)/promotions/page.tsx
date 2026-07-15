@@ -6,8 +6,7 @@ import { RefreshButton } from "@/components/app/refresh-button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { PromotionCreateDialog } from "@/features/promotions/promotion-create-dialog";
 import { PromotionsManager } from "@/features/promotions/promotions-manager";
-import type { MessageKey } from "@/i18n/messages";
-import { getRequestMessages } from "@/i18n/server";
+import { getTranslations } from "@/i18n/server";
 import type { DashboardSearchParams } from "@/lib/dashboard-tenant-context";
 import { getMerchantPromotions } from "@/lib/merchant-promotions";
 import { dashboardRoutes } from "@/lib/routes";
@@ -27,8 +26,7 @@ export default async function PromotionsPage({ searchParams }: PromotionsPagePro
     statusRaw === "active" || statusRaw === "inactive" || statusRaw === "draft"
       ? statusRaw
       : undefined;
-  const { messages } = await getRequestMessages();
-  const t = (key: MessageKey) => messages[key];
+  const t = await getTranslations();
   const offset = (listParams.page - 1) * listParams.pageSize;
   const requestHeaders = await headers();
   const result = await getMerchantPromotions({
