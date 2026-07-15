@@ -12,7 +12,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
-import { Separator } from "@/components/ui/separator";
 import { getTenantScopedPath } from "@/lib/dashboard-tenant-context";
 import { mapPlatformErrorMessage } from "@/lib/platform-api/errors";
 import { dashboardRoutes } from "@/lib/routes";
