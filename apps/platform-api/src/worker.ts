@@ -3,6 +3,7 @@ import { createPlatformDb } from "@ecs/db";
 import { startPlatformWorker, type JobHandler } from "@ecs/jobs";
 import { createLogger } from "@ecs/logger";
 import { loadPlatformApiEnvFiles } from "./config/env.js";
+import { createBillingLifecycleHandler } from "./jobs/handlers/billing-lifecycle.js";
 import { createNotificationsDeliverHandler } from "./jobs/handlers/notifications-deliver.js";
 import { systemPingHandler } from "./jobs/handlers/system-ping.js";
 import {
@@ -88,12 +89,15 @@ const worker = startPlatformWorker({
       renderer: notificationRenderer,
       providers: notificationProviders,
     }) as JobHandler,
+    "billing.lifecycle": createBillingLifecycleHandler({
+      db: platformDb.db,
+    }) as JobHandler,
   },
   logger,
 });
 
 logger.info(
-  { handlers: ["system.ping", "notifications.deliver"] },
+  { handlers: ["system.ping", "notifications.deliver", "billing.lifecycle"] },
   "platform worker started",
 );
 

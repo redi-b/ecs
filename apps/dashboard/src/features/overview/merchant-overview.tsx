@@ -95,17 +95,22 @@ type BillingNotice = {
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 const BILLING_REMINDER_WINDOW_DAYS = 7;
 
-/** Only surface billing on overview when something needs action — not as a permanent landing card. */
+/** Only surface billing when action is needed. Free forever plans stay quiet. */
 function getBillingNotice(summary: MerchantDashboardSummary): BillingNotice | null {
   const billing = summary.billing;
-  if (!billing || billing.unavailable) {
+  if (!billing || billing.unavailable || !billing.plan || !billing.subscription) {
+    return null;
+  }
+
+  const isFree =
+    billing.plan.isFree === true || Number(billing.plan.price) === 0;
+  if (isFree) {
     return null;
   }
 
   const now = Date.now();
-  const status = billing.subscription?.status?.toLowerCase() ?? "";
-  const paymentState = billing.subscription?.manualPaymentState?.toLowerCase() ?? "";
-  const periodEnd = billing.subscription?.currentPeriodEnd
+  const status = billing.subscription.status.toLowerCase();
+  const periodEnd = billing.subscription.currentPeriodEnd
     ? new Date(billing.subscription.currentPeriodEnd).getTime()
     : null;
   const daysToPeriodEnd =
@@ -114,14 +119,10 @@ function getBillingNotice(summary: MerchantDashboardSummary): BillingNotice | nu
       : null;
 
   const openInvoice = billing.invoices.find((invoice) => {
+    if (invoice.provider === "trial") return false;
+    if (Number(invoice.amount) === 0) return false;
     const invoiceStatus = invoice.status.toLowerCase();
-    return (
-      invoiceStatus === "open" ||
-      invoiceStatus === "pending" ||
-      invoiceStatus === "unpaid" ||
-      invoiceStatus === "past_due" ||
-      invoiceStatus === "overdue"
-    );
+    return invoiceStatus === "pending" || invoiceStatus === "unpaid" || invoiceStatus === "open";
   });
   const invoiceDueMs = openInvoice?.dueAt ? new Date(openInvoice.dueAt).getTime() : null;
   const daysToInvoiceDue =
@@ -129,53 +130,38 @@ function getBillingNotice(summary: MerchantDashboardSummary): BillingNotice | nu
       ? (invoiceDueMs - now) / MS_PER_DAY
       : null;
 
-  if (status === "past_due" || paymentState === "overdue" || paymentState === "failed") {
+  if (status === "past_due") {
     return {
       tone: "warning",
-      title: "Billing needs attention",
-      description: "Your subscription payment is past due. Review billing to keep the shop active.",
+      title: "Payment past due",
+      description: "Your paid plan period has ended. Open Billing to pay and restore full access.",
     };
   }
 
-  if (status === "canceled" || status === "cancelled" || status === "unpaid") {
+  if (status === "canceled" || status === "cancelled") {
     return {
       tone: "warning",
-      title: "Subscription is not active",
-      description: "Billing is canceled or unpaid. Open billing to restore access.",
+      title: "Subscription cancelled",
+      description: "This shop is not on an active paid plan. Open Billing to choose a plan.",
     };
   }
 
-  if (typeof daysToInvoiceDue === "number" && daysToInvoiceDue < 0) {
+  if (openInvoice && typeof daysToInvoiceDue === "number" && daysToInvoiceDue < 0) {
     return {
       tone: "warning",
-      title: "Invoice is overdue",
-      description: `An invoice was due ${formatReadableDate(openInvoice!.dueAt!)}. Open billing to settle it.`,
+      title: "Invoice overdue",
+      description: `Payment was due ${formatReadableDate(openInvoice.dueAt!)}. Open Billing to pay.`,
     };
   }
 
-  if (typeof daysToInvoiceDue === "number" && daysToInvoiceDue <= BILLING_REMINDER_WINDOW_DAYS) {
+  if (openInvoice) {
     return {
       tone: "reminder",
-      title: "Invoice due soon",
-      description: `Payment is due ${formatReadableDate(openInvoice!.dueAt!)}. Review it in billing when ready.`,
+      title: "Payment due",
+      description: openInvoice.dueAt
+        ? `An invoice is due ${formatReadableDate(openInvoice.dueAt)}. Open Billing to pay with Chapa.`
+        : "You have an open invoice. Open Billing to pay with Chapa.",
     };
-  }
-
-  if (status === "trialing" && typeof daysToPeriodEnd === "number") {
-    if (daysToPeriodEnd < 0) {
-      return {
-        tone: "warning",
-        title: "Trial has ended",
-        description: "Your trial period ended. Open billing to continue on a paid plan.",
-      };
-    }
-    if (daysToPeriodEnd <= BILLING_REMINDER_WINDOW_DAYS) {
-      return {
-        tone: "reminder",
-        title: "Trial ending soon",
-        description: `Trial ends ${formatReadableDate(billing.subscription!.currentPeriodEnd!)}. Contact support to continue on a paid plan.`,
-      };
-    }
   }
 
   if (
@@ -186,8 +172,8 @@ function getBillingNotice(summary: MerchantDashboardSummary): BillingNotice | nu
   ) {
     return {
       tone: "reminder",
-      title: "Renewal coming up",
-      description: `Current period ends ${formatReadableDate(billing.subscription!.currentPeriodEnd!)}.`,
+      title: "Plan period ending soon",
+      description: `Your paid period ends ${formatReadableDate(billing.subscription.currentPeriodEnd!)}. Open Billing to renew.`,
     };
   }
 

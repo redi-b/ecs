@@ -139,6 +139,17 @@ export function BillingWorkspace({
   const isCurrentFree = activePlan.isFree;
   const selectedIsCurrent = chosenPlan.id === activePlan.id;
   const selectedIsFree = chosenPlan.isFree;
+  const periodEndMs = subscription.currentPeriodEnd
+    ? new Date(subscription.currentPeriodEnd).getTime()
+    : null;
+  const daysToPeriodEnd =
+    periodEndMs != null && Number.isFinite(periodEndMs)
+      ? (periodEndMs - Date.now()) / (24 * 60 * 60 * 1000)
+      : null;
+  const inRenewalWindow =
+    !isCurrentFree &&
+    daysToPeriodEnd != null &&
+    daysToPeriodEnd <= 7;
 
   function returnToBillingUrl() {
     const url = new URL(
@@ -186,7 +197,7 @@ export function BillingWorkspace({
   }
 
   function handlePrimaryAction() {
-    if (openInvoice && !selectedIsFree) {
+    if (openInvoice && (!selectedIsFree || selectedIsCurrent)) {
       runBillingAction({
         action: "pay",
         invoiceId: openInvoice.id,
@@ -199,8 +210,16 @@ export function BillingWorkspace({
       return;
     }
 
+    // Renew current paid plan (lead window or past due).
+    if (selectedIsCurrent && !selectedIsFree && (inRenewalWindow || subscription.status === "past_due")) {
+      runBillingAction({
+        action: "upgrade",
+        planId: chosenPlan.id,
+      });
+      return;
+    }
+
     if (selectedIsCurrent && !selectedIsFree) {
-      // Already on paid plan with coverage — no action.
       return;
     }
 
@@ -213,10 +232,20 @@ export function BillingWorkspace({
   }
 
   const primaryLabel = (() => {
-    if (openInvoice && !selectedIsFree) {
+    if (openInvoice && (!selectedIsFree || selectedIsCurrent)) {
       return `Pay ${formatMoney(openInvoice.amount, openInvoice.currency)}`;
     }
-    if (selectedIsCurrent) {
+    if (selectedIsCurrent && selectedIsFree) {
+      return "Current plan";
+    }
+    if (
+      selectedIsCurrent &&
+      !selectedIsFree &&
+      (inRenewalWindow || subscription.status === "past_due")
+    ) {
+      return subscription.status === "past_due" ? "Renew plan" : "Renew period";
+    }
+    if (selectedIsCurrent && !selectedIsFree) {
       return "Current plan";
     }
     if (!selectedIsFree) {
@@ -227,8 +256,14 @@ export function BillingWorkspace({
 
   const primaryDisabled =
     busy ||
-    (selectedIsCurrent && !openInvoice) ||
-    (selectedIsFree && !selectedIsCurrent);
+    (selectedIsFree && !selectedIsCurrent) ||
+    (selectedIsCurrent &&
+      selectedIsFree) ||
+    (selectedIsCurrent &&
+      !selectedIsFree &&
+      !openInvoice &&
+      !inRenewalWindow &&
+      subscription.status !== "past_due");
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-8">
@@ -355,8 +390,12 @@ export function BillingWorkspace({
               ? selectedIsFree
                 ? "You are already on this plan."
                 : openInvoice
-                  ? "Finish payment to keep this plan active."
-                  : "You are already on this plan."
+                  ? "Finish payment to activate or extend this plan."
+                  : inRenewalWindow
+                    ? "Your current period is ending soon. Renew to stay on this plan."
+                    : subscription.status === "past_due"
+                      ? "Your paid period has ended. Renew to continue on this plan."
+                      : "You are already on this plan."
               : selectedIsFree
                 ? "Downgrading to a free plan is not available from this page."
                 : `You will be charged ${formatPlanPrice(chosenPlan.price)} for one month after payment.`}

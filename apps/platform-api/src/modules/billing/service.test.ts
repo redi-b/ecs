@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 
 import {
   BILLING_CHAPA_TX_PREFIX,
+  BILLING_RENEWAL_LEAD_DAYS,
   billingTxRefForInvoice,
   isPlatformBillingTxRef,
 } from "./service.js";
@@ -14,5 +15,11 @@ describe("platform billing Chapa tx refs", () => {
     assert.ok(isPlatformBillingTxRef(tx));
     assert.equal(isPlatformBillingTxRef("chapa_order_123"), false);
     assert.equal(isPlatformBillingTxRef("ecs_bill_abc"), true);
+  });
+});
+
+describe("billing renewal constants", () => {
+  it("uses a one-week lead window for renewals", () => {
+    assert.equal(BILLING_RENEWAL_LEAD_DAYS, 7);
   });
 });
