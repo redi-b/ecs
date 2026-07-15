@@ -30,9 +30,11 @@ export function isPlatformBillingTxRef(txRef: string) {
 }
 
 export function billingTxRefForInvoice(invoiceId: string) {
-  // Chapa tx_ref: alphanumeric + underscore; keep under 50 chars.
-  const compact = invoiceId.replaceAll("-", "").slice(0, 24);
-  return `${BILLING_CHAPA_TX_PREFIX}${compact}`;
+  // Unique every attempt — Chapa rejects reused tx_ref ("already been used").
+  // Format: ecs_bill_{12 hex from invoice}_{8 random} (~29 chars, under Chapa limits).
+  const compact = invoiceId.replaceAll("-", "").slice(0, 12);
+  const suffix = crypto.randomUUID().replaceAll("-", "").slice(0, 8);
+  return `${BILLING_CHAPA_TX_PREFIX}${compact}_${suffix}`;
 }
 
 function serializeDate(value: Date | null) {
@@ -545,7 +547,8 @@ export function createBillingService(db: PlatformDb) {
     },
 
     /**
-     * Bind a Chapa tx_ref on a pending paid invoice. Caller performs Chapa initialize.
+     * Bind a fresh Chapa tx_ref on a pending paid invoice (new ref every attempt).
+     * Caller should first try verifying any prior tx_ref via confirm/complete.
      */
     prepareInvoiceForChapaPayment: async (input: {
       invoiceId: string;
@@ -558,6 +561,7 @@ export function createBillingService(db: PlatformDb) {
           currency: string;
           txRef: string;
           planId: string | null;
+          previousTxRef: string | null;
         }
       | {
           ok: false;
@@ -589,14 +593,22 @@ export function createBillingService(db: PlatformDb) {
         return { ok: false, error: "billing_invoice_is_free", status: 400 };
       }
 
+      const previousTxRef =
+        invoice.providerReference && isPlatformBillingTxRef(invoice.providerReference)
+          ? invoice.providerReference
+          : null;
+
+      // Always mint a new tx_ref so retries work after a prior Chapa initialize.
       const txRef = billingTxRefForInvoice(invoice.id);
-      const planId =
-        invoice.provider?.startsWith("plan:") ? invoice.provider.slice("plan:".length) : null;
+      const planIdFromProvider = invoice.provider?.startsWith("plan:")
+        ? invoice.provider.slice("plan:".length)
+        : null;
 
       await db
         .update(invoices)
         .set({
-          provider: planId ? `plan:${planId}` : invoice.provider,
+          // Keep plan:{id} so completeChapaInvoicePayment knows the target plan.
+          provider: planIdFromProvider ? `plan:${planIdFromProvider}` : invoice.provider,
           providerReference: txRef,
         })
         .where(eq(invoices.id, invoice.id));
@@ -613,7 +625,8 @@ export function createBillingService(db: PlatformDb) {
         amount: invoice.amount,
         currency: invoice.currency,
         txRef,
-        planId,
+        planId: planIdFromProvider,
+        previousTxRef,
       };
     },
 

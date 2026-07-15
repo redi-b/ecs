@@ -94,6 +94,8 @@ export type BillingInvoicePayResult =
       checkoutUrl: string;
       txRef: string;
       invoice: BillingInvoice;
+      /** Prior Chapa charge already succeeded; client should refresh, not open checkout. */
+      alreadyPaid?: boolean;
     }
   | {
       ok: false;

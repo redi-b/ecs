@@ -10,9 +10,13 @@ import {
 
 describe("platform billing Chapa tx refs", () => {
   it("prefixes platform billing refs and rejects commerce-like refs", () => {
-    const tx = billingTxRefForInvoice("a1b2c3d4-e5f6-7890-abcd-ef1234567890");
-    assert.ok(tx.startsWith(BILLING_CHAPA_TX_PREFIX));
-    assert.ok(isPlatformBillingTxRef(tx));
+    const invoiceId = "a1b2c3d4-e5f6-7890-abcd-ef1234567890";
+    const a = billingTxRefForInvoice(invoiceId);
+    const b = billingTxRefForInvoice(invoiceId);
+    assert.ok(a.startsWith(BILLING_CHAPA_TX_PREFIX));
+    assert.ok(isPlatformBillingTxRef(a));
+    // Each pay attempt must mint a unique ref (Chapa rejects reuse).
+    assert.notEqual(a, b);
     assert.equal(isPlatformBillingTxRef("chapa_order_123"), false);
     assert.equal(isPlatformBillingTxRef("ecs_bill_abc"), true);
   });
