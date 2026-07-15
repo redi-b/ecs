@@ -1323,6 +1323,15 @@ describe("platform app storefront, delivery, billing, and operator", () => {
                 isFree: false,
               },
               availablePaidPlans: [],
+              catalog: [
+                {
+                  id: "plan_1",
+                  name: "Starter",
+                  price: "999.00",
+                  isFree: false,
+                  isCurrent: true,
+                },
+              ],
               invoices: [
                 {
                   id: "invoice_1",
@@ -1378,6 +1387,15 @@ describe("platform app storefront, delivery, billing, and operator", () => {
           isFree: false,
         },
         availablePaidPlans: [],
+        catalog: [
+          {
+            id: "plan_1",
+            name: "Starter",
+            price: "999.00",
+            isFree: false,
+            isCurrent: true,
+          },
+        ],
         invoices: [
           {
             id: "invoice_1",

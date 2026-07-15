@@ -257,6 +257,13 @@ export function createBillingService(db: PlatformDb) {
         .limit(20);
 
       const planList = await self().listPlans();
+      const catalog = planList.plans.map((plan) => ({
+        id: plan.id,
+        name: plan.name,
+        price: plan.price,
+        isFree: plan.isFree,
+        isCurrent: plan.id === subscription.planId,
+      }));
       const availablePaidPlans = planList.plans.filter(
         (plan) => !plan.isFree && plan.id !== subscription.planId,
       );
@@ -288,6 +295,7 @@ export function createBillingService(db: PlatformDb) {
             limits: plan.limits,
             features: plan.features,
           })),
+          catalog,
         },
       };
     },

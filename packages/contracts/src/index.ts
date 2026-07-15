@@ -630,6 +630,18 @@ export const merchantDashboardSummarySchema = z.object({
           }),
         )
         .optional(),
+      /** Full active plan catalog for selection UI (includes current plan). */
+      catalog: z
+        .array(
+          z.object({
+            id: z.string().min(1),
+            name: z.string().min(1),
+            price: z.string().min(1),
+            isFree: z.boolean(),
+            isCurrent: z.boolean(),
+          }),
+        )
+        .optional(),
       unavailable: z.boolean(),
     })
     .optional(),
