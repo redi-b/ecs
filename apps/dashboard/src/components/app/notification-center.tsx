@@ -12,6 +12,7 @@ import {
   PopoverTitle,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
 type InboxItem = {
@@ -223,13 +224,12 @@ export function NotificationCenter() {
   }
 
   const label = badgeLabel(count);
-  const unreadInList = items.some((item) => !item.readAt);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
-          aria-label={count > 0 ? `Notifications, ${count} unread` : "Notifications"}
+          aria-label={count > 0 ? `Notifications, ${count} unread` : "Notifications, none unread"}
           className="relative"
           size="icon"
           type="button"
@@ -261,24 +261,20 @@ export function NotificationCenter() {
         <PopoverHeader className="flex flex-row items-center justify-between gap-2 border-b px-3 py-2.5">
           <div className="min-w-0">
             <PopoverTitle className="text-sm font-semibold">Notifications</PopoverTitle>
-            {count > 0 ? (
-              <p className="text-[11px] text-muted-foreground">
-                {count === 1 ? "1 unread" : `${count} unread`}
-              </p>
-            ) : null}
+            <p className="text-[11px] text-muted-foreground">
+              {count === 1 ? "1 unread" : `${count} unread`}
+            </p>
           </div>
-          {unreadInList || count > 0 ? (
-            <Button
-              className="h-7 shrink-0 rounded-full px-2.5 text-xs"
-              disabled={busy || count === 0}
-              size="sm"
-              type="button"
-              variant="ghost"
-              onClick={() => void markAllRead()}
-            >
-              Mark all read
-            </Button>
-          ) : null}
+          <Button
+            className="h-7 shrink-0 rounded-full px-2.5 text-xs"
+            disabled={busy || count === 0}
+            size="sm"
+            type="button"
+            variant="ghost"
+            onClick={() => void markAllRead()}
+          >
+            Mark all read
+          </Button>
         </PopoverHeader>
 
         <div className="max-h-[min(22rem,60vh)] overflow-y-auto">
@@ -327,14 +323,18 @@ export function NotificationCenter() {
                 const unread = !item.readAt;
                 const detail = secondaryBody(item);
                 return (
-                  <li key={item.id}>
+                  <li
+                    key={item.id}
+                    className={cn(
+                      "group/item flex items-stretch",
+                      unread && "bg-primary/[0.04]",
+                    )}
+                  >
                     <button
                       className={cn(
-                        "flex w-full gap-2.5 px-3 py-2.5 text-left transition-colors",
+                        "flex min-w-0 flex-1 gap-2.5 px-3 py-2.5 text-left transition-colors",
                         "hover:bg-muted/70 focus-visible:bg-muted/70 focus-visible:outline-none",
-                        unread && "bg-primary/[0.04]",
                       )}
-                      disabled={busy}
                       type="button"
                       onClick={() => void openItem(item)}
                     >
@@ -350,7 +350,9 @@ export function NotificationCenter() {
                           <span
                             className={cn(
                               "text-sm leading-snug",
-                              unread ? "font-semibold text-foreground" : "font-medium text-foreground/90",
+                              unread
+                                ? "font-semibold text-foreground"
+                                : "font-medium text-foreground/90",
                             )}
                           >
                             {item.title}
@@ -366,6 +368,30 @@ export function NotificationCenter() {
                         ) : null}
                       </span>
                     </button>
+                    {unread ? (
+                      <div className="flex shrink-0 items-start pr-1.5 pt-1.5">
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              aria-label={`Mark “${item.title}” as read`}
+                              className="size-7 rounded-full text-muted-foreground hover:text-foreground"
+                              disabled={busy}
+                              size="icon-sm"
+                              type="button"
+                              variant="ghost"
+                              onClick={(event) => {
+                                event.preventDefault();
+                                event.stopPropagation();
+                                void markRead(item.id);
+                              }}
+                            >
+                              <AppIcons.check className="size-3.5" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent side="left">Mark as read</TooltipContent>
+                        </Tooltip>
+                      </div>
+                    ) : null}
                   </li>
                 );
               })}
