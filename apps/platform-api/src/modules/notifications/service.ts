@@ -6,7 +6,7 @@ import {
   notificationPreferences,
 } from "@ecs/db";
 import type { EnqueueJobInput, EnqueueJobResult } from "@ecs/jobs";
-import { and, eq } from "drizzle-orm";
+import { and, eq, ne } from "drizzle-orm";
 
 import type {
   NotificationChannel,
@@ -109,9 +109,21 @@ export function createNotificationService(
         .from(notificationPreferences)
         .where(eq(notificationPreferences.tenantId, input.tenantId));
 
+      // Email is single-target: if legacy duplicates exist, surface the newest only.
+      const newestEmailByUpdatedAt = preferences
+        .filter((preference) => preference.channel === "email")
+        .sort(
+          (left, right) =>
+            new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime(),
+        )[0];
+      const deduped = preferences.filter((preference) => {
+        if (preference.channel !== "email") return true;
+        return newestEmailByUpdatedAt ? preference.id === newestEmailByUpdatedAt.id : true;
+      });
+
       return {
         ok: true,
-        preferences: preferences.map(serializeNotificationPreference),
+        preferences: deduped.map(serializeNotificationPreference),
       };
     },
     recordNotificationEvent: async (input: {
@@ -371,15 +383,23 @@ export function createNotificationService(
       }
 
       const preference = await db.transaction(async (transaction) => {
+        // Email is single-target per tenant: match on channel so address changes
+        // update the same row instead of inserting a second preference.
+        // Other channels keep target in the uniqueness key.
         const [existing] = await transaction
           .select({ id: notificationPreferences.id })
           .from(notificationPreferences)
           .where(
-            and(
-              eq(notificationPreferences.tenantId, input.tenantId),
-              eq(notificationPreferences.channel, channel),
-              eq(notificationPreferences.target, target),
-            ),
+            channel === "email"
+              ? and(
+                  eq(notificationPreferences.tenantId, input.tenantId),
+                  eq(notificationPreferences.channel, channel),
+                )
+              : and(
+                  eq(notificationPreferences.tenantId, input.tenantId),
+                  eq(notificationPreferences.channel, channel),
+                  eq(notificationPreferences.target, target),
+                ),
           )
           .limit(1);
 
@@ -389,6 +409,7 @@ export function createNotificationService(
               .set({
                 enabled: input.enabled,
                 events,
+                target,
                 updatedAt: new Date(),
               })
               .where(eq(notificationPreferences.id, existing.id))
@@ -406,6 +427,19 @@ export function createNotificationService(
 
         if (!writtenPreference) {
           throw new Error("Notification preference write returned no rows.");
+        }
+
+        // Drop legacy duplicate email rows left by target-keyed upserts.
+        if (channel === "email") {
+          await transaction
+            .delete(notificationPreferences)
+            .where(
+              and(
+                eq(notificationPreferences.tenantId, input.tenantId),
+                eq(notificationPreferences.channel, "email"),
+                ne(notificationPreferences.id, writtenPreference.id),
+              ),
+            );
         }
 
         await transaction.insert(auditLogs).values({

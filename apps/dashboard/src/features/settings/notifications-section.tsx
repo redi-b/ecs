@@ -1,87 +1,88 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
+import { useCallback, useEffect, useId, useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import { AppIcons } from "@/components/app/icons";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
+import { Card, CardContent } from "@/components/ui/card";
+import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupButton,
+  InputGroupInput,
+} from "@/components/ui/input-group";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  buildNotificationEventsPayload,
+  defaultNotificationEvents,
+  isValidNotificationEmail,
+  normalizeNotificationEvents,
+  NotificationAlertsSwitch,
+  NotificationChannelHeader,
+  NotificationEventPicker,
+  NotificationStatusBadge,
+  sameNotificationEvents,
+} from "@/features/settings/notification-channel-ui";
 import { TelegramConnectPanel } from "@/features/settings/telegram-connect-panel";
 import type { NotificationPreference } from "@/lib/merchant-notifications";
 import { mapPlatformErrorMessage } from "@/lib/platform-api/errors";
 import { cn } from "@/lib/utils";
 
-const EVENT_OPTIONS = [
-  { id: "order.created", label: "New orders" },
-  { id: "order.cancelled", label: "Cancelled orders" },
-  { id: "payment.paid", label: "Payments received" },
-  { id: "payment.failed", label: "Payment failures" },
-  { id: "cod_order.created", label: "COD orders" },
-] as const;
-
-const ALWAYS_ON_EVENTS = ["notification.test"] as const;
-
-type EmailDraft = {
-  enabled: boolean;
+type EmailState = {
   target: string;
+  enabled: boolean;
   events: string[];
 };
 
-function emptyEmailDraft(): EmailDraft {
+function emptyEmailState(): EmailState {
   return {
-    enabled: true,
     target: "",
-    events: EVENT_OPTIONS.map((event) => event.id),
+    enabled: true,
+    events: defaultNotificationEvents(),
   };
 }
 
-function draftFromPreferences(preferences: NotificationPreference[]): EmailDraft {
+function emailStateFromPreferences(preferences: NotificationPreference[]): EmailState {
   const match = preferences.find((preference) => preference.channel === "email");
   if (!match) {
-    return emptyEmailDraft();
+    return emptyEmailState();
   }
-
-  const events = match.events.includes("*")
-    ? EVENT_OPTIONS.map((event) => event.id)
-    : EVENT_OPTIONS.map((event) => event.id).filter((id) => match.events.includes(id));
-
   return {
-    enabled: match.enabled,
     target: match.target,
-    events: events.length > 0 ? events : EVENT_OPTIONS.map((event) => event.id),
+    enabled: match.enabled,
+    events: normalizeNotificationEvents(match.events),
   };
-}
-
-function buildEventsPayload(selected: string[]) {
-  return [...new Set([...selected, ...ALWAYS_ON_EVENTS])];
-}
-
-function isValidEmail(value: string) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
-}
-
-function sameEvents(a: string[], b: string[]) {
-  if (a.length !== b.length) return false;
-  const left = [...a].sort();
-  const right = [...b].sort();
-  return left.every((value, index) => value === right[index]);
 }
 
 export function NotificationsSection({ tenantId }: { tenantId: string }) {
+  const emailFieldId = useId();
   const [loadError, setLoadError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [draft, setDraft] = useState<EmailDraft>(emptyEmailDraft());
-  const [savedDraft, setSavedDraft] = useState<EmailDraft>(emptyEmailDraft());
-  const [hasSavedEmail, setHasSavedEmail] = useState(false);
+  const [saved, setSaved] = useState<EmailState>(emptyEmailState());
+  const [emailInput, setEmailInput] = useState("");
+  const [eventsDraft, setEventsDraft] = useState<string[]>(defaultNotificationEvents());
+  const [savingTarget, setSavingTarget] = useState(false);
+  const [savingEvents, setSavingEvents] = useState(false);
   const [isPending, startTransition] = useTransition();
+
+  const hasEmail = saved.target.trim().length > 0;
+  const targetDirty = emailInput.trim() !== saved.target.trim();
+  const eventsDirty = !sameNotificationEvents(eventsDraft, saved.events);
+  const status = !hasEmail ? "not_set_up" : saved.enabled ? "active" : "paused";
+  const mailtoHref =
+    hasEmail && isValidNotificationEmail(saved.target)
+      ? `mailto:${saved.target.trim()}`
+      : null;
+
+  const applyState = useCallback((next: EmailState) => {
+    setSaved(next);
+    setEmailInput(next.target);
+    setEventsDraft(next.events);
+  }, []);
 
   const load = useCallback(async () => {
     setLoadError(null);
@@ -107,34 +108,16 @@ export function NotificationsSection({ tenantId }: { tenantId: string }) {
       const list = Array.isArray(data?.preferences)
         ? (data.preferences as NotificationPreference[])
         : [];
-      const nextDraft = draftFromPreferences(list);
-      setDraft(nextDraft);
-      setSavedDraft(nextDraft);
-      setHasSavedEmail(list.some((p) => p.channel === "email" && p.target.trim().length > 0));
+      applyState(emailStateFromPreferences(list));
     } catch {
       setLoadError(mapPlatformErrorMessage("platform_request_failed"));
     }
-  }, [tenantId]);
+  }, [applyState, tenantId]);
 
   useEffect(() => {
     setLoading(true);
     void load().finally(() => setLoading(false));
   }, [load]);
-
-  const dirty = useMemo(() => {
-    return (
-      draft.enabled !== savedDraft.enabled ||
-      draft.target.trim() !== savedDraft.target.trim() ||
-      !sameEvents(draft.events, savedDraft.events)
-    );
-  }, [draft, savedDraft]);
-
-  const emailActive = hasSavedEmail && draft.enabled;
-  const canTest = hasSavedEmail && savedDraft.enabled && !dirty;
-  const mailtoHref =
-    hasSavedEmail && isValidEmail(savedDraft.target)
-      ? `mailto:${savedDraft.target.trim()}`
-      : null;
 
   function refresh() {
     setRefreshing(true);
@@ -145,53 +128,117 @@ export function NotificationsSection({ tenantId }: { tenantId: string }) {
       .finally(() => setRefreshing(false));
   }
 
-  function saveEmail() {
-    if (!draft.target.trim()) {
+  async function upsertEmail(input: {
+    target: string;
+    enabled: boolean;
+    events: string[];
+    successMessage: string;
+  }) {
+    const response = await fetch(
+      `/admin/settings/notifications?tenantId=${encodeURIComponent(tenantId)}`,
+      {
+        method: "POST",
+        headers: {
+          accept: "application/json",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          action: "upsert",
+          channel: "email",
+          enabled: input.enabled,
+          target: input.target.trim(),
+          events: buildNotificationEventsPayload(input.events),
+        }),
+      },
+    );
+    const data = await response.json().catch(() => undefined);
+    if (!response.ok) {
+      const code =
+        typeof data?.error === "string"
+          ? data.error
+          : typeof data?.message === "string"
+            ? data.message
+            : "notifications_unavailable";
+      toast.error(mapPlatformErrorMessage(code));
+      return false;
+    }
+    toast.success(input.successMessage);
+    await load();
+    return true;
+  }
+
+  function saveTarget() {
+    const target = emailInput.trim();
+    if (!target) {
       toast.error("Enter an email address before saving.");
       return;
     }
-    if (!isValidEmail(draft.target)) {
+    if (!isValidNotificationEmail(target)) {
       toast.error("Enter a valid email address.");
       return;
     }
-    if (draft.events.length === 0) {
+
+    setSavingTarget(true);
+    startTransition(async () => {
+      try {
+        await upsertEmail({
+          target,
+          enabled: hasEmail ? saved.enabled : true,
+          events: hasEmail ? saved.events : defaultNotificationEvents(),
+          successMessage: hasEmail ? "Email address updated" : "Email alerts set up",
+        });
+      } catch {
+        toast.error(mapPlatformErrorMessage("platform_request_failed"));
+      } finally {
+        setSavingTarget(false);
+      }
+    });
+  }
+
+  function saveEvents() {
+    if (!hasEmail) {
+      toast.error("Save an email address first.");
+      return;
+    }
+    if (eventsDraft.length === 0) {
       toast.error("Select at least one event.");
       return;
     }
 
+    setSavingEvents(true);
     startTransition(async () => {
       try {
-        const response = await fetch(
-          `/admin/settings/notifications?tenantId=${encodeURIComponent(tenantId)}`,
-          {
-            method: "POST",
-            headers: {
-              accept: "application/json",
-              "content-type": "application/json",
-            },
-            body: JSON.stringify({
-              action: "upsert",
-              channel: "email",
-              enabled: draft.enabled,
-              target: draft.target.trim(),
-              events: buildEventsPayload(draft.events),
-            }),
-          },
-        );
-        const data = await response.json().catch(() => undefined);
-        if (!response.ok) {
-          const code =
-            typeof data?.error === "string"
-              ? data.error
-              : typeof data?.message === "string"
-                ? data.message
-                : "notifications_unavailable";
-          toast.error(mapPlatformErrorMessage(code));
-          return;
-        }
-        toast.success("Email alerts saved");
-        await load();
+        await upsertEmail({
+          target: saved.target,
+          enabled: saved.enabled,
+          events: eventsDraft,
+          successMessage: "Event preferences saved",
+        });
       } catch {
+        toast.error(mapPlatformErrorMessage("platform_request_failed"));
+      } finally {
+        setSavingEvents(false);
+      }
+    });
+  }
+
+  function toggleEnabled(enabled: boolean) {
+    if (!hasEmail) return;
+    // Optimistic UI; reload reconciles.
+    setSaved((current) => ({ ...current, enabled }));
+    startTransition(async () => {
+      try {
+        const ok = await upsertEmail({
+          target: saved.target,
+          enabled,
+          events: saved.events,
+          successMessage: enabled ? "Alerts resumed" : "Alerts paused",
+        });
+        if (!ok) {
+          setSaved((current) => ({ ...current, enabled: !enabled }));
+        }
+      } catch {
+        setSaved((current) => ({ ...current, enabled: !enabled }));
         toast.error(mapPlatformErrorMessage("platform_request_failed"));
       }
     });
@@ -236,10 +283,6 @@ export function NotificationsSection({ tenantId }: { tenantId: string }) {
     });
   }
 
-  function resetDraft() {
-    setDraft(savedDraft);
-  }
-
   if (loading) {
     return (
       <div className="flex flex-col gap-6">
@@ -248,19 +291,23 @@ export function NotificationsSection({ tenantId }: { tenantId: string }) {
           title="Notifications"
         />
         <Card>
-          <CardHeader className="pb-4">
-            <CardTitle className="text-base">Telegram</CardTitle>
-            <CardDescription>Loading connected accounts…</CardDescription>
-          </CardHeader>
+          <NotificationChannelHeader
+            description="Loading connected accounts…"
+            onRefresh={() => undefined}
+            refreshing
+            title="Telegram"
+          />
           <CardContent>
             <div className="h-24 animate-pulse rounded-lg bg-muted/50" />
           </CardContent>
         </Card>
         <Card>
-          <CardHeader className="pb-4">
-            <CardTitle className="text-base">Email</CardTitle>
-            <CardDescription>Loading email settings…</CardDescription>
-          </CardHeader>
+          <NotificationChannelHeader
+            description="Loading email settings…"
+            onRefresh={() => undefined}
+            refreshing
+            title="Email"
+          />
           <CardContent>
             <div className="h-28 animate-pulse rounded-lg bg-muted/50" />
           </CardContent>
@@ -308,100 +355,100 @@ export function NotificationsSection({ tenantId }: { tenantId: string }) {
       <TelegramConnectPanel tenantId={tenantId} />
 
       <Card>
-        <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0 pb-4">
-          <div className="space-y-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <CardTitle className="text-base">Email</CardTitle>
-              <Badge variant={emailActive ? "secondary" : "outline"}>
-                {emailActive ? "Active" : hasSavedEmail ? "Paused" : "Not set up"}
-              </Badge>
-              {dirty ? (
-                <Badge variant="outline" className="border-amber-500/40 text-amber-700 dark:text-amber-400">
-                  Unsaved
-                </Badge>
-              ) : null}
-            </div>
-            <CardDescription>
-              Send shop event alerts to a mailbox you check regularly.
-            </CardDescription>
-          </div>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                aria-busy={refreshing}
-                aria-label={refreshing ? "Refreshing" : "Refresh email settings"}
-                className="shrink-0"
-                disabled={refreshing || isPending}
-                size="icon-sm"
-                type="button"
-                variant="outline"
-                onClick={refresh}
-              >
-                <AppIcons.refresh className={refreshing ? "animate-spin" : undefined} />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>{refreshing ? "Refreshing" : "Refresh"}</TooltipContent>
-          </Tooltip>
-        </CardHeader>
+        <NotificationChannelHeader
+          badge={<NotificationStatusBadge status={status} />}
+          description="Send shop event alerts to one mailbox for this shop."
+          disabled={isPending}
+          onRefresh={refresh}
+          refreshLabel="Refresh email settings"
+          refreshing={refreshing}
+          title="Email"
+        />
 
         <CardContent className="flex flex-col gap-5">
-          {!hasSavedEmail ? (
-            <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed bg-muted/20 px-4 py-6 text-center">
-              <div className="flex size-11 items-center justify-center rounded-full border bg-background shadow-sm">
-                <AppIcons.mail className="size-5 text-muted-foreground" />
-              </div>
-              <div className="max-w-sm space-y-1">
-                <p className="text-sm font-medium text-foreground">No email alerts yet</p>
-                <p className="text-sm text-muted-foreground">
-                  Add a recipient below to get order and payment updates by email.
-                </p>
-              </div>
-            </div>
-          ) : (
+          <Field>
+            <FieldLabel htmlFor={emailFieldId}>Email address</FieldLabel>
+            <InputGroup>
+              <InputGroupInput
+                autoComplete="email"
+                disabled={isPending || savingTarget}
+                id={emailFieldId}
+                placeholder="you@business.com"
+                type="email"
+                value={emailInput}
+                onChange={(event) => setEmailInput(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.preventDefault();
+                    if (targetDirty && !savingTarget) saveTarget();
+                  }
+                }}
+              />
+              <InputGroupAddon align="inline-end">
+                <InputGroupButton
+                  aria-busy={savingTarget}
+                  className="rounded-full"
+                  disabled={isPending || savingTarget || !targetDirty}
+                  size="xs"
+                  type="button"
+                  variant="secondary"
+                  onClick={saveTarget}
+                >
+                  {savingTarget ? (
+                    <>
+                      <AppIcons.loader className="animate-spin" />
+                      Saving…
+                    </>
+                  ) : (
+                    "Save"
+                  )}
+                </InputGroupButton>
+              </InputGroupAddon>
+            </InputGroup>
+            <FieldDescription>
+              {mailtoHref ? (
+                <span className="inline-flex flex-wrap items-center gap-x-1 gap-y-0.5">
+                  Alerts go to{" "}
+                  <a
+                    className="inline-flex items-center gap-1 font-medium text-foreground underline-offset-4 hover:underline"
+                    href={mailtoHref}
+                  >
+                    {saved.target.trim()}
+                    <AppIcons.externalLink className="size-3 opacity-60" />
+                  </a>
+                  . Change the address above and press Save.
+                </span>
+              ) : (
+                "One inbox for this shop. Press Save to start receiving alerts."
+              )}
+            </FieldDescription>
+          </Field>
+
+          {hasEmail ? (
             <div
               className={cn(
                 "flex flex-col gap-3 rounded-xl border p-3 sm:flex-row sm:items-center sm:justify-between",
-                !draft.enabled && "bg-muted/20 opacity-90",
+                !saved.enabled && "bg-muted/20 opacity-90",
               )}
             >
               <div className="min-w-0">
-                <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                  {mailtoHref ? (
-                    <a
-                      className="inline-flex max-w-full items-center gap-1 truncate text-sm font-semibold text-foreground underline-offset-4 hover:underline"
-                      href={mailtoHref}
-                    >
-                      <span className="truncate">{savedDraft.target.trim()}</span>
-                      <AppIcons.externalLink className="size-3 shrink-0 opacity-60" />
-                    </a>
-                  ) : (
-                    <p className="truncate text-sm font-semibold">{savedDraft.target.trim()}</p>
-                  )}
-                  <Badge variant={savedDraft.enabled ? "secondary" : "outline"}>
-                    {savedDraft.enabled ? "Active" : "Paused"}
-                  </Badge>
-                </div>
-                <p className="mt-0.5 text-xs text-muted-foreground">
-                  Saved recipient for shop event alerts
+                <p className="text-sm font-medium">Delivery</p>
+                <p className="text-xs text-muted-foreground">
+                  Pause without removing the email address.
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-1.5 sm:justify-end">
-                <div className="mr-1 flex items-center gap-2 rounded-full border bg-background px-2.5 py-1">
-                  <span className="text-xs text-muted-foreground">Alerts</span>
-                  <Switch
-                    checked={draft.enabled}
-                    disabled={isPending}
-                    onCheckedChange={(checked) =>
-                      setDraft((current) => ({ ...current, enabled: checked }))
-                    }
-                  />
-                </div>
+                <NotificationAlertsSwitch
+                  checked={saved.enabled}
+                  disabled={isPending}
+                  onCheckedChange={toggleEnabled}
+                />
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
                       aria-label="Send test email"
                       className="rounded-full"
-                      disabled={isPending || !canTest}
+                      disabled={isPending || !saved.enabled || targetDirty}
                       size="sm"
                       type="button"
                       variant="outline"
@@ -411,133 +458,26 @@ export function NotificationsSection({ tenantId }: { tenantId: string }) {
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>
-                    {dirty
-                      ? "Save changes before sending a test"
+                    {targetDirty
+                      ? "Save the email address before sending a test"
                       : "Send a test alert to this address"}
                   </TooltipContent>
                 </Tooltip>
               </div>
             </div>
-          )}
+          ) : null}
 
-          <div className="space-y-4 rounded-xl border bg-muted/15 p-4">
-            <div>
-              <p className="text-sm font-medium">Recipient</p>
-              <p className="text-xs text-muted-foreground">
-                One inbox for this shop. You can change it anytime.
-              </p>
-            </div>
-
-            {!hasSavedEmail ? (
-              <div className="flex items-center justify-between gap-3 rounded-lg border bg-background px-3 py-2.5">
-                <div className="min-w-0">
-                  <p className="text-sm font-medium">Email alerts</p>
-                  <p className="text-xs text-muted-foreground">
-                    Turn off later to pause delivery without removing the address.
-                  </p>
-                </div>
-                <Switch
-                  checked={draft.enabled}
-                  disabled={isPending}
-                  onCheckedChange={(checked) =>
-                    setDraft((current) => ({ ...current, enabled: checked }))
-                  }
-                />
-              </div>
-            ) : null}
-
-            <FieldGroup>
-              <Field>
-                <FieldLabel htmlFor="notif-email-target">Email address</FieldLabel>
-                <Input
-                  id="notif-email-target"
-                  type="email"
-                  autoComplete="email"
-                  value={draft.target}
-                  disabled={isPending}
-                  placeholder="you@business.com"
-                  onChange={(event) =>
-                    setDraft((current) => ({ ...current, target: event.target.value }))
-                  }
-                />
-                <FieldDescription>Where shop event alerts should be delivered.</FieldDescription>
-              </Field>
-            </FieldGroup>
-
-            <div className="space-y-2">
-              <div>
-                <p className="text-sm font-medium">Notify me about</p>
-                <p className="text-xs text-muted-foreground">Choose which events trigger email.</p>
-              </div>
-              <div className="grid gap-2 sm:grid-cols-2">
-                {EVENT_OPTIONS.map((event) => {
-                  const checked = draft.events.includes(event.id);
-                  return (
-                    <label
-                      key={event.id}
-                      className={cn(
-                        "flex cursor-pointer items-center gap-2 rounded-lg border bg-background px-3 py-2 text-sm transition-colors",
-                        checked
-                          ? "border-primary/40 bg-primary/5"
-                          : "border-border hover:bg-muted/40",
-                      )}
-                    >
-                      <Checkbox
-                        checked={checked}
-                        disabled={isPending}
-                        onCheckedChange={(value) =>
-                          setDraft((current) => ({
-                            ...current,
-                            events:
-                              value === true
-                                ? [...new Set([...current.events, event.id])]
-                                : current.events.filter((id) => id !== event.id),
-                          }))
-                        }
-                      />
-                      <span>{event.label}</span>
-                    </label>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className="flex flex-wrap gap-2">
-              <Button
-                className="rounded-full"
-                disabled={isPending || !dirty}
-                size="sm"
-                type="button"
-                onClick={saveEmail}
-              >
-                {isPending ? "Saving…" : hasSavedEmail ? "Save changes" : "Save email"}
-              </Button>
-              {dirty && hasSavedEmail ? (
-                <Button
-                  className="rounded-full"
-                  disabled={isPending}
-                  size="sm"
-                  type="button"
-                  variant="ghost"
-                  onClick={resetDraft}
-                >
-                  Discard
-                </Button>
-              ) : null}
-              {!hasSavedEmail ? (
-                <Button
-                  className="rounded-full"
-                  disabled={isPending || !canTest}
-                  size="sm"
-                  type="button"
-                  variant="outline"
-                  onClick={sendEmailTest}
-                >
-                  Send test
-                </Button>
-              ) : null}
-            </div>
-          </div>
+          {hasEmail ? (
+            <NotificationEventPicker
+              description="Choose which shop events trigger email."
+              dirty={eventsDirty}
+              disabled={isPending}
+              events={eventsDraft}
+              saving={savingEvents}
+              onChange={setEventsDraft}
+              onSave={saveEvents}
+            />
+          ) : null}
         </CardContent>
       </Card>
     </div>

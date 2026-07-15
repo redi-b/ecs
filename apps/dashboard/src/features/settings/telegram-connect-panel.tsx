@@ -7,8 +7,7 @@ import { AppIcons } from "@/components/app/icons";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Dialog,
   DialogClose,
@@ -18,21 +17,20 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Switch } from "@/components/ui/switch";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  buildNotificationEventsPayload,
+  defaultNotificationEvents,
+  normalizeNotificationEvents,
+  NotificationAccountCountBadge,
+  NotificationAlertsSwitch,
+  NotificationChannelHeader,
+  NotificationEventPicker,
+  sameNotificationEvents,
+} from "@/features/settings/notification-channel-ui";
 import type { TelegramDestination } from "@/lib/platform-api/notifications/telegram-client";
 import { mapPlatformErrorMessage } from "@/lib/platform-api/errors";
 import { cn } from "@/lib/utils";
-
-const EVENT_OPTIONS = [
-  { id: "order.created", label: "New orders" },
-  { id: "order.cancelled", label: "Cancelled orders" },
-  { id: "payment.paid", label: "Payments received" },
-  { id: "payment.failed", label: "Payment failures" },
-  { id: "cod_order.created", label: "COD orders" },
-] as const;
-
-const ALWAYS_ON = ["notification.test"] as const;
 
 const CONNECT_STEPS = [
   "We’ll open Telegram with a one-time link for this shop.",
@@ -122,10 +120,12 @@ function DestinationIdentity({ destination }: { destination: TelegramDestination
 
 export function TelegramConnectPanel({ tenantId }: { tenantId: string }) {
   const [destinations, setDestinations] = useState<TelegramDestination[]>([]);
-  const [events, setEvents] = useState<string[]>(EVENT_OPTIONS.map((e) => e.id));
+  const [savedEvents, setSavedEvents] = useState<string[]>(defaultNotificationEvents());
+  const [eventsDraft, setEventsDraft] = useState<string[]>(defaultNotificationEvents());
   const [loadError, setLoadError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [savingEvents, setSavingEvents] = useState(false);
   const [session, setSession] = useState<ConnectSession | null>(null);
   const [connectDialogOpen, setConnectDialogOpen] = useState(false);
   const [removeTarget, setRemoveTarget] = useState<TelegramDestination | null>(null);
@@ -134,6 +134,7 @@ export function TelegramConnectPanel({ tenantId }: { tenantId: string }) {
   const qs = `tenantId=${encodeURIComponent(tenantId)}`;
   const waiting = session?.status === "pending";
   const hasAccounts = destinations.length > 0;
+  const eventsDirty = !sameNotificationEvents(eventsDraft, savedEvents);
 
   const loadDestinations = useCallback(async () => {
     const response = await fetch(`/admin/settings/notifications/telegram?${qs}`, {
@@ -151,12 +152,9 @@ export function TelegramConnectPanel({ tenantId }: { tenantId: string }) {
       : [];
     setDestinations(list);
     if (list[0]?.events?.length) {
-      const selected = EVENT_OPTIONS.map((e) => e.id).filter(
-        (id) => list[0]!.events.includes(id) || list[0]!.events.includes("*"),
-      );
-      if (selected.length > 0) {
-        setEvents(selected);
-      }
+      const next = normalizeNotificationEvents(list[0].events);
+      setSavedEvents(next);
+      setEventsDraft(next);
     }
   }, [qs]);
 
@@ -165,7 +163,6 @@ export function TelegramConnectPanel({ tenantId }: { tenantId: string }) {
     void loadDestinations().finally(() => setLoading(false));
   }, [loadDestinations]);
 
-  // Poll while connect session is pending.
   useEffect(() => {
     if (!session || session.status !== "pending") {
       return;
@@ -318,18 +315,23 @@ export function TelegramConnectPanel({ tenantId }: { tenantId: string }) {
   }
 
   function saveEvents() {
+    setSavingEvents(true);
     startTransition(async () => {
-      const response = await postAction({
-        action: "events",
-        events: [...new Set([...events, ...ALWAYS_ON])],
-      });
-      const data = await response.json().catch(() => undefined);
-      if (!response.ok) {
-        toast.error(apiError(data, "notification_events_invalid"));
-        return;
+      try {
+        const response = await postAction({
+          action: "events",
+          events: buildNotificationEventsPayload(eventsDraft),
+        });
+        const data = await response.json().catch(() => undefined);
+        if (!response.ok) {
+          toast.error(apiError(data, "notification_events_invalid"));
+          return;
+        }
+        toast.success("Event preferences saved");
+        await loadDestinations();
+      } finally {
+        setSavingEvents(false);
       }
-      toast.success("Event preferences saved");
-      await loadDestinations();
     });
   }
 
@@ -360,10 +362,12 @@ export function TelegramConnectPanel({ tenantId }: { tenantId: string }) {
   if (loading) {
     return (
       <Card>
-        <CardHeader className="pb-4">
-          <CardTitle className="text-base">Telegram</CardTitle>
-          <CardDescription>Loading connected accounts…</CardDescription>
-        </CardHeader>
+        <NotificationChannelHeader
+          description="Loading connected accounts…"
+          onRefresh={() => undefined}
+          refreshing
+          title="Telegram"
+        />
         <CardContent>
           <div className="h-24 animate-pulse rounded-lg bg-muted/50" />
         </CardContent>
@@ -399,39 +403,15 @@ export function TelegramConnectPanel({ tenantId }: { tenantId: string }) {
   return (
     <>
       <Card>
-        <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0 pb-4">
-          <div className="space-y-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <CardTitle className="text-base">Telegram</CardTitle>
-              {hasAccounts ? (
-                <Badge variant="outline">
-                  {destinations.length}{" "}
-                  {destinations.length === 1 ? "account" : "accounts"}
-                </Badge>
-              ) : null}
-            </div>
-            <CardDescription>
-              Instant shop event alerts on Telegram. Connect staff phones as needed.
-            </CardDescription>
-          </div>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                aria-busy={refreshing}
-                aria-label={refreshing ? "Refreshing" : "Refresh accounts"}
-                className="shrink-0"
-                disabled={refreshing || isPending}
-                size="icon-sm"
-                type="button"
-                variant="outline"
-                onClick={refreshList}
-              >
-                <AppIcons.refresh className={refreshing ? "animate-spin" : undefined} />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>{refreshing ? "Refreshing" : "Refresh"}</TooltipContent>
-          </Tooltip>
-        </CardHeader>
+        <NotificationChannelHeader
+          badge={<NotificationAccountCountBadge count={destinations.length} />}
+          description="Instant shop event alerts on Telegram. Connect staff phones as needed."
+          disabled={isPending}
+          onRefresh={refreshList}
+          refreshLabel="Refresh accounts"
+          refreshing={refreshing}
+          title="Telegram"
+        />
 
         <CardContent className="flex flex-col gap-5">
           {waiting ? (
@@ -534,14 +514,11 @@ export function TelegramConnectPanel({ tenantId }: { tenantId: string }) {
                 >
                   <DestinationIdentity destination={destination} />
                   <div className="flex flex-wrap items-center gap-1.5 sm:justify-end">
-                    <div className="mr-1 flex items-center gap-2 rounded-full border bg-background px-2.5 py-1">
-                      <span className="text-xs text-muted-foreground">Alerts</span>
-                      <Switch
-                        checked={destination.enabled}
-                        disabled={isPending}
-                        onCheckedChange={(checked) => toggleEnabled(destination.id, checked)}
-                      />
-                    </div>
+                    <NotificationAlertsSwitch
+                      checked={destination.enabled}
+                      disabled={isPending}
+                      onCheckedChange={(checked) => toggleEnabled(destination.id, checked)}
+                    />
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Button
@@ -595,54 +572,15 @@ export function TelegramConnectPanel({ tenantId }: { tenantId: string }) {
           ) : null}
 
           {hasAccounts ? (
-            <div className="space-y-3 rounded-xl border bg-muted/15 p-4">
-              <div className="flex flex-wrap items-start justify-between gap-2">
-                <div>
-                  <p className="text-sm font-medium">Notify me about</p>
-                  <p className="text-xs text-muted-foreground">
-                    Same events for every connected Telegram account.
-                  </p>
-                </div>
-              </div>
-              <div className="grid gap-2 sm:grid-cols-2">
-                {EVENT_OPTIONS.map((event) => {
-                  const checked = events.includes(event.id);
-                  return (
-                    <label
-                      key={event.id}
-                      className={cn(
-                        "flex cursor-pointer items-center gap-2 rounded-lg border bg-background px-3 py-2 text-sm transition-colors",
-                        checked
-                          ? "border-primary/40 bg-primary/5"
-                          : "border-border hover:bg-muted/40",
-                      )}
-                    >
-                      <Checkbox
-                        checked={checked}
-                        disabled={isPending}
-                        onCheckedChange={(value) => {
-                          setEvents((current) =>
-                            value === true
-                              ? [...new Set([...current, event.id])]
-                              : current.filter((id) => id !== event.id),
-                          );
-                        }}
-                      />
-                      <span>{event.label}</span>
-                    </label>
-                  );
-                })}
-              </div>
-              <Button
-                className="rounded-full"
-                disabled={isPending || events.length === 0}
-                size="sm"
-                type="button"
-                onClick={saveEvents}
-              >
-                Save events
-              </Button>
-            </div>
+            <NotificationEventPicker
+              description="Same events for every connected Telegram account."
+              dirty={eventsDirty}
+              disabled={isPending}
+              events={eventsDraft}
+              saving={savingEvents}
+              onChange={setEventsDraft}
+              onSave={saveEvents}
+            />
           ) : null}
         </CardContent>
       </Card>
