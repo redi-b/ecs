@@ -9,7 +9,15 @@
     "emptyTitle": "No promotions yet",
     "emptyMessage": "Create a code for your next campaign. Redemption limits and schedules keep discounts intentional.",
     "filteredEmptyTitle": "No matching promotions",
-    "filteredEmptyMessage": "No promotions match the current search or filters."
+    "filteredEmptyMessage": "No promotions match the current search or filters.",
+    "searchLabel": "Search promotions",
+    "searchPlaceholder": "Search promotion codes…",
+    "clearSearch": "Clear promotion search",
+    "selectedSummary": "{count} selected",
+    "copyCodes": "Copy codes",
+    "promotionCode": "Promotion code",
+    "promotionCodes": "Promotion codes",
+    "codeHeader": "Code"
   },
   "filter": {
     "status": {
@@ -21,13 +29,23 @@
     },
     "offer": {
       "all": "All offer types",
-      "label": "Offer"
+      "label": "Offer",
+      "order": "Order discount",
+      "products": "Product discount",
+      "free_shipping": "Free shipping",
+      "buyget": "Buy X get Y",
+      "percentage": "Percentage",
+      "fixed": "Fixed amount"
     },
     "apply": {
       "all": "All apply options",
       "code": "Code required",
       "auto": "Apply automatically",
-      "label": "Apply"
+      "label": "Apply",
+      "how": "How it applies",
+      "methodsAll": "All methods",
+      "codeRequired": "Promotion code",
+      "automatic": "Automatic"
     }
   },
   "format": {
@@ -36,7 +54,9 @@
     "buyXgetY": "Buy X get Y",
     "shipping": "Shipping",
     "products": "Products",
-    "order": "Order"
+    "order": "Order",
+    "orderDiscount": "Order",
+    "productDiscount": "Products"
   },
   "schedule": {
     "ends": "Ends {date}",

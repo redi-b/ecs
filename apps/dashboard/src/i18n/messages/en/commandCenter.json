@@ -1,8 +1,15 @@
 {
   "openAria": "Open quick search",
-  "searchOrJump": "Search or go...",
+  "searchOrJump": "Jump to a page, run an action, or type to search…",
   "title": "Quick search",
   "description": "Search dashboard navigation and go to a page.",
-  "searchPlaceholder": "Search pages...",
-  "navigationHeading": "Navigation"
+  "searchPlaceholder": "Search pages…",
+  "navigationHeading": "Navigation",
+  "searchingRemote": "Searching products, orders, customers…",
+  "keepTyping": "Keep typing to search your catalog…",
+  "searchFailed": "Search failed",
+  "noMatches": "No matches. Try another term or a create action.",
+  "actionsHeading": "Actions",
+  "loadingMore": "Loading more results…",
+  "searchingShop": "Searching your shop…"
 }

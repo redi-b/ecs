@@ -1,8 +1,15 @@
 {
   "openAria": "ፈጣን ፍለጋ ክፈት",
-  "searchOrJump": "ፈልግ ወይም ሂድ…",
+  "searchOrJump": "ወደ ገጽ ሂድ፣ ድርጊት አስኪድ፣ ወይም ለመፈለግ ጻፍ…",
   "title": "ፈጣን ፍለጋ",
   "description": "የዳሽቦርድ ዳሰሳን ይፈልጉ እና ወደሚፈልጉት ገጽ ይሂዱ።",
   "searchPlaceholder": "ገጾችን ፈልግ…",
-  "navigationHeading": "ዳሰሳ (Navigation)"
+  "navigationHeading": "አሰሳ",
+  "searchingRemote": "ምርቶች፣ ትዕዛዞች፣ ደንበኞች በመፈለግ ላይ…",
+  "keepTyping": "ካታሎግዎን ለመፈለግ መጻፍ ይቀጥሉ…",
+  "searchFailed": "ፍለጋ አልተሳካም",
+  "noMatches": "ምንም ውጤት የለም። ሌላ ቃል ይሞክሩ ወይም ፍጠር ድርጊት ይጠቀሙ።",
+  "actionsHeading": "ድርጊቶች",
+  "loadingMore": "ተጨማሪ ውጤቶች በመጫን ላይ…",
+  "searchingShop": "ሱቅዎን በመፈለግ ላይ…"
 }
