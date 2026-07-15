@@ -18,6 +18,8 @@ import {
 } from "@/components/ui/dialog";
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import type { MessageKey } from "@/i18n/messages";
+import { useI18n } from "@/i18n/provider";
 import type { MerchantCustomer } from "@/lib/merchant-customers";
 
 export function CustomerFormDialog({
@@ -31,6 +33,7 @@ export function CustomerFormDialog({
   open?: boolean | undefined;
   trigger?: ReactNode;
 }) {
+  const { t } = useI18n();
   const router = useRouter();
   const id = useId();
   const isControlled = openProp !== undefined;
@@ -66,7 +69,7 @@ export function CustomerFormDialog({
 
     if (!payload.email) {
       setSaving(false);
-      setError("Enter an email address.");
+      setError(t("customers.detail.enterEmail"));
       return;
     }
 
@@ -88,14 +91,16 @@ export function CustomerFormDialog({
 
     if (!response?.ok) {
       const data = (await response?.json().catch(() => ({}))) as { error?: string };
-      setError(getCustomerErrorMessage(data.error, Boolean(customer)));
+      setError(getCustomerErrorMessage(data.error, Boolean(customer), t));
       return;
     }
 
-    toast.success(customer ? "Customer updated." : "Customer created.");
+    toast.success(customer ? t("customers.detail.toastUpdated") : t("customers.detail.toastCreated"));
     setOpen(false);
     router.refresh();
   }
+
+  const title = customer ? t("customers.detail.editCustomer") : t("customers.detail.addCustomer");
 
   return (
     <Dialog onOpenChange={setOpen} open={open}>
@@ -111,83 +116,79 @@ export function CustomerFormDialog({
             ) : (
               <AppIcons.user data-icon="inline-start" />
             )}
-            {customer ? "Edit customer" : "Add customer"}
+            {title}
           </Button>
         </DialogTrigger>
       )}
       <DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-lg">
         <DialogHeader className="gap-1.5 border-b px-4 py-4 text-left sm:px-5">
-          <DialogTitle>{customer ? "Edit customer" : "Add customer"}</DialogTitle>
-          <DialogDescription>
-            Keep contact details current for orders, support, and follow-ups.
-          </DialogDescription>
+          <DialogTitle>{title}</DialogTitle>
+          <DialogDescription>{t("customers.detail.formDesc")}</DialogDescription>
         </DialogHeader>
-        <form
-          action={(data) => void submit(data)}
-          className="flex flex-col"
-          key={formKey}
-        >
+        <form action={(data) => void submit(data)} className="flex flex-col" key={formKey}>
           <div className="grid gap-4 p-4 sm:grid-cols-2 sm:p-5">
             {error ? (
               <Alert className="sm:col-span-2" variant="destructive">
                 <AlertTitle>
-                  {customer ? "Customer could not be updated" : "Customer could not be created"}
+                  {customer
+                    ? t("customers.detail.updateErrorTitle")
+                    : t("customers.detail.createErrorTitle")}
                 </AlertTitle>
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             ) : null}
 
             <Field>
-              <FieldLabel htmlFor={`${id}-first`}>First name</FieldLabel>
+              <FieldLabel htmlFor={`${id}-first`}>{t("customers.detail.firstName")}</FieldLabel>
               <Input
                 autoComplete="given-name"
                 defaultValue={customer?.firstName ?? ""}
                 id={`${id}-first`}
                 name="firstName"
-                placeholder="Abebe"
+                placeholder={t("customers.detail.firstNamePlaceholder")}
               />
             </Field>
             <Field>
-              <FieldLabel htmlFor={`${id}-last`}>Last name</FieldLabel>
+              <FieldLabel htmlFor={`${id}-last`}>{t("customers.detail.lastName")}</FieldLabel>
               <Input
                 autoComplete="family-name"
                 defaultValue={customer?.lastName ?? ""}
                 id={`${id}-last`}
                 name="lastName"
-                placeholder="Kebede"
+                placeholder={t("customers.detail.lastNamePlaceholder")}
               />
             </Field>
             <Field className="sm:col-span-2">
-              <FieldLabel htmlFor={`${id}-email`}>Email</FieldLabel>
+              <FieldLabel htmlFor={`${id}-email`}>{t("customers.detail.email")}</FieldLabel>
               <Input
                 autoComplete="email"
                 defaultValue={customer?.email ?? ""}
                 id={`${id}-email`}
                 name="email"
-                placeholder="customer@example.com"
+                placeholder={t("customers.detail.emailPlaceholder")}
                 required
                 type="email"
               />
-              <FieldDescription>Used for receipts and account recovery.</FieldDescription>
+              <FieldDescription>{t("customers.detail.emailDesc")}</FieldDescription>
             </Field>
             <Field>
-              <FieldLabel htmlFor={`${id}-phone`}>Phone</FieldLabel>
+              <FieldLabel htmlFor={`${id}-phone`}>{t("customers.detail.phone")}</FieldLabel>
               <Input
                 autoComplete="tel"
                 defaultValue={customer?.phone ?? ""}
                 id={`${id}-phone`}
                 name="phone"
-                placeholder="+251…"
+                placeholder={t("customers.detail.phonePlaceholder")}
               />
             </Field>
             <Field>
-              <FieldLabel htmlFor={`${id}-company`}>Company</FieldLabel>
+              <FieldLabel htmlFor={`${id}-company`}>{t("customers.detail.company")}</FieldLabel>
               <Input
                 autoComplete="organization"
                 defaultValue={customer?.companyName ?? ""}
                 id={`${id}-company`}
                 name="companyName"
-                placeholder="Optional"
+                placeholder={t("customers.detail.companyPlaceholder")}
               />
             </Field>
           </div>
@@ -198,10 +199,14 @@ export function CustomerFormDialog({
               type="button"
               variant="outline"
             >
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button disabled={saving} type="submit">
-              {saving ? "Saving…" : customer ? "Save changes" : "Add customer"}
+              {saving
+                ? t("common.saving")
+                : customer
+                  ? t("customers.detail.saveChanges")
+                  : t("customers.detail.addCustomer")}
             </Button>
           </DialogFooter>
         </form>
@@ -210,23 +215,27 @@ export function CustomerFormDialog({
   );
 }
 
-function getCustomerErrorMessage(error: string | undefined, isEdit: boolean) {
-  if (error === "invalid_customer") return "Check the email and other fields, then try again.";
+function getCustomerErrorMessage(
+  error: string | undefined,
+  isEdit: boolean,
+  t: (key: MessageKey) => string,
+) {
+  if (error === "invalid_customer") return t("customers.detail.error.invalid");
   if (error === "customer_email_conflict") {
     return isEdit
-      ? "Another customer already uses this email."
-      : "This email is already in your customer list.";
+      ? t("customers.detail.error.conflictEdit")
+      : t("customers.detail.error.conflictCreate");
   }
-  if (error === "customer_not_found") return "Customer was not found.";
+  if (error === "customer_not_found") return t("customers.detail.error.notFound");
   if (error === "commerce_backend_unavailable") {
     return isEdit
-      ? "Could not save right now. Try again in a moment."
-      : "Could not add this customer right now. Try again in a moment.";
+      ? t("customers.detail.error.unavailableEdit")
+      : t("customers.detail.error.unavailableCreate");
   }
   if (error === "commerce_credentials_missing" || error === "commerce_credentials_invalid") {
-    return "Customer changes are temporarily unavailable. Contact support.";
+    return t("customers.detail.error.credentials");
   }
   return isEdit
-    ? "Customer could not be updated. Try again."
-    : "Customer could not be created. Try again.";
+    ? t("customers.detail.error.fallbackEdit")
+    : t("customers.detail.error.fallbackCreate");
 }

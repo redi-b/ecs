@@ -100,5 +100,28 @@
     "movedToDraft": "{count} moved to draft.",
     "deleted": "Product deleted.",
     "deleteFailed": "Product could not be deleted."
+  },
+  "edit": {
+    "detailsTitle": "Edit product details",
+    "detailsTrigger": "Edit product details",
+    "detailsDesc": "Update the core product information shown to shoppers.",
+    "organizationTitle": "Edit organization",
+    "organizationTrigger": "Edit product organization",
+    "organizationDesc": "Update how this product is grouped in the catalog.",
+    "mediaTitle": "Edit product media",
+    "mediaTrigger": "Edit product media",
+    "mediaDesc": "Upload images, pick from your library, set a cover, and reorder the gallery.",
+    "title": "Title",
+    "handle": "Handle",
+    "description": "Description",
+    "status": "Status",
+    "titleRequired": "Product title is required.",
+    "saveChanges": "Save changes",
+    "saving": "Saving…",
+    "toastSaved": "Product updated.",
+    "toastError": "Product could not be saved.",
+    "handleHelp": "Leave empty to generate a handle automatically.",
+    "selectStatus": "Select status",
+    "formError": "Check the form and try again."
   }
 }

@@ -35,7 +35,15 @@
       "credentials": "የደንበኛ ለውጦች ለጊዜው አይሰሩም። እባክዎ ድጋፍ ሰጪዎችን ያግኙ።",
       "fallbackEdit": "የደንበኛ መረጃን ማዘመን አልተቻለም። እንደገና ይሞክሩ።",
       "fallbackCreate": "ደንበኛውን መፍጠር አልተቻለም። እንደገና ይሞክሩ።"
-    }
+    },
+    "enterEmail": "ኢሜይል አድራሻ ያስገቡ።",
+    "toastUpdated": "ደንበኛው ተዘምኗል።",
+    "toastCreated": "ደንበኛ ተፈጥሯል።",
+    "saveChanges": "ለውጦችን አስቀምጥ",
+    "firstNamePlaceholder": "አበበ",
+    "lastNamePlaceholder": "ከበደ",
+    "emailPlaceholder": "customer@example.com",
+    "phonePlaceholder": "+251…"
   },
   "table": {
     "emptyTitle": "ገና ምንም ደንበኛ የለም",

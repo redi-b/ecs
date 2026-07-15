@@ -38,6 +38,7 @@ import {
   CollectionPicker,
   NO_COLLECTION_VALUE,
 } from "@/features/products/product-form-fields";
+import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 
 type ProductEditSheetBaseProps = {
@@ -65,6 +66,7 @@ type ProductMediaValues = {
 const PRODUCT_STATUS_OPTIONS = ["draft", "published"] as const;
 
 export function ProductDetailsEditButton({ action, product }: ProductEditSheetBaseProps) {
+  const { t } = useI18n();
   const detailsId = useId();
   const [values, setValues] = useState<ProductDetailsValues>(() => ({
     description: product.description ?? "",
@@ -80,7 +82,7 @@ export function ProductDetailsEditButton({ action, product }: ProductEditSheetBa
         const title = values.title.trim();
 
         if (!title) {
-          throw new Error("Product title is required.");
+          throw new Error(t("products.edit.titleRequired"));
         }
 
         return {
@@ -90,7 +92,7 @@ export function ProductDetailsEditButton({ action, product }: ProductEditSheetBa
           status: values.status,
         };
       }}
-      description="Update the core product information shown to shoppers."
+      description={t("products.edit.detailsDesc")}
       onOpen={() =>
         setValues({
           description: product.description ?? "",
@@ -99,11 +101,11 @@ export function ProductDetailsEditButton({ action, product }: ProductEditSheetBa
           title: product.title ?? "",
         })
       }
-      title="Edit product details"
-      triggerLabel="Edit product details"
+      title={t("products.edit.detailsTitle")}
+      triggerLabel={t("products.edit.detailsTrigger")}
     >
       <Field>
-        <FieldLabel htmlFor={`${detailsId}-title`}>Title</FieldLabel>
+        <FieldLabel htmlFor={`${detailsId}-title`}>{t("products.edit.title")}</FieldLabel>
         <Input
           id={`${detailsId}-title`}
           onChange={(event) => setValues((current) => ({ ...current, title: event.target.value }))}
@@ -112,28 +114,28 @@ export function ProductDetailsEditButton({ action, product }: ProductEditSheetBa
         />
       </Field>
       <Field>
-        <FieldLabel htmlFor={`${detailsId}-handle`}>Handle</FieldLabel>
+        <FieldLabel htmlFor={`${detailsId}-handle`}>{t("products.edit.handle")}</FieldLabel>
         <Input
           id={`${detailsId}-handle`}
           onChange={(event) => setValues((current) => ({ ...current, handle: event.target.value }))}
           value={values.handle}
         />
-        <FieldDescription>Leave empty to generate a handle automatically.</FieldDescription>
+        <FieldDescription>{t("products.edit.handleHelp")}</FieldDescription>
       </Field>
       <Field>
-        <FieldLabel>Status</FieldLabel>
+        <FieldLabel>{t("products.edit.status")}</FieldLabel>
         <Select
           onValueChange={(value) => setValues((current) => ({ ...current, status: value }))}
           value={values.status}
         >
           <SelectTrigger className="w-full">
-            <SelectValue placeholder="Select status" />
+            <SelectValue placeholder={t("products.edit.selectStatus")} />
           </SelectTrigger>
           <SelectContent>
             <SelectGroup>
               {PRODUCT_STATUS_OPTIONS.map((status) => (
                 <SelectItem key={status} value={status}>
-                  {status === "published" ? "Published" : "Draft"}
+                  {status === "published" ? t("products.filter.status.published") : t("products.filter.status.draft")}
                 </SelectItem>
               ))}
             </SelectGroup>
@@ -141,7 +143,7 @@ export function ProductDetailsEditButton({ action, product }: ProductEditSheetBa
         </Select>
       </Field>
       <Field>
-        <FieldLabel htmlFor={`${detailsId}-description`}>Description</FieldLabel>
+        <FieldLabel htmlFor={`${detailsId}-description`}>{t("products.edit.description")}</FieldLabel>
         <Textarea
           id={`${detailsId}-description`}
           onChange={(event) =>
@@ -164,6 +166,7 @@ export function ProductOrganizationEditButton({
   categories: MerchantProductCategory[];
   collections: MerchantProductCollection[];
 }) {
+  const { t } = useI18n();
   const [values, setValues] = useState<ProductOrganizationValues>(() => ({
     categoryIds: product.categoryIds ?? [],
     collectionId: product.collectionId ?? NO_COLLECTION_VALUE,
@@ -186,18 +189,18 @@ export function ProductOrganizationEditButton({
             : null,
         categoryIds: values.categoryIds,
       })}
-      description="Update how this product is grouped in the catalog."
+      description={t("products.edit.organizationDesc")}
       onOpen={() =>
         setValues({
           categoryIds: product.categoryIds ?? [],
           collectionId: product.collectionId ?? NO_COLLECTION_VALUE,
         })
       }
-      title="Edit organization"
-      triggerLabel="Edit product organization"
+      title={t("products.edit.organizationTitle")}
+      triggerLabel={t("products.edit.organizationTrigger")}
     >
       <Field>
-        <FieldLabel>Collection</FieldLabel>
+        <FieldLabel>{t("products.filter.collection.label")}</FieldLabel>
         <CollectionPicker
           collections={collections}
           onChange={(collectionId) => setValues((current) => ({ ...current, collectionId }))}
@@ -206,7 +209,7 @@ export function ProductOrganizationEditButton({
         />
       </Field>
       <Field>
-        <FieldLabel>Categories</FieldLabel>
+        <FieldLabel>{t("products.filter.category.label")}</FieldLabel>
         <CategoryPicker
           categories={categories}
           onChange={(categoryIds) => setValues((current) => ({ ...current, categoryIds }))}
@@ -219,6 +222,7 @@ export function ProductOrganizationEditButton({
 }
 
 export function ProductMediaEditButton({ action, product }: ProductEditSheetBaseProps) {
+  const { t } = useI18n();
   const [values, setValues] = useState<ProductMediaValues>(() => getProductMediaValues(product));
   const imageUrlList = getImageUrls(values.imageUrls);
 
@@ -230,10 +234,10 @@ export function ProductMediaEditButton({ action, product }: ProductEditSheetBase
         imageUrls: getImageUrls(values.imageUrls),
       })}
       contentClassName="sm:max-w-xl"
-      description="Upload images, pick from your library, set a cover, and reorder the gallery."
+      description={t("products.edit.mediaDesc")}
       onOpen={() => setValues(getProductMediaValues(product))}
-      title="Edit product media"
-      triggerLabel="Edit product media"
+      title={t("products.edit.mediaTitle")}
+      triggerLabel={t("products.edit.mediaTrigger")}
     >
       <MediaUploadField
         imageUrls={imageUrlList}
@@ -273,6 +277,7 @@ function ProductEditSheet({
   title: string;
   triggerLabel: string;
 }) {
+  const { t } = useI18n();
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -284,7 +289,7 @@ function ProductEditSheet({
     try {
       payload = buildPayload();
     } catch (error) {
-      setError(error instanceof Error ? error.message : "Check the form and try again.");
+      setError(error instanceof Error ? error.message : t("products.edit.formError"));
       return;
     }
 
@@ -308,7 +313,7 @@ function ProductEditSheet({
       return;
     }
 
-    toast.success("Product updated.");
+    toast.success(t("products.edit.toastSaved"));
     setOpen(false);
     router.refresh();
   }
@@ -349,7 +354,7 @@ function ProductEditSheet({
           <SheetBody className="flex flex-col gap-5">
             {error ? (
               <Alert variant="destructive">
-                <AlertTitle>Product could not be updated</AlertTitle>
+                <AlertTitle>{t("products.edit.toastError")}</AlertTitle>
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             ) : null}
@@ -357,7 +362,7 @@ function ProductEditSheet({
           </SheetBody>
           <SheetFooter>
             <Button disabled={isSaving} type="submit">
-              {isSaving ? "Saving..." : "Save changes"}
+              {isSaving ? t("products.edit.saving") : t("products.edit.saveChanges")}
             </Button>
           </SheetFooter>
         </form>
