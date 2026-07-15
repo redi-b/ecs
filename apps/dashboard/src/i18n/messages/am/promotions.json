@@ -77,7 +77,7 @@
     "partialDeleted": "{deleted} ጠፍተዋል፣ {failed} ማጥፋት አልተቻለም።"
   },
   "create": {
-    "trigger": "ቅናሽ ፍጠር",
+    "trigger": "አዲስ ቅናሽ",
     "stepType": "የቅናሽ አይነት",
     "stepDetails": "ዝርዝር መረጃ",
     "stepSchedule": "መርሐግብር እና በጀት",
@@ -118,7 +118,7 @@
     "budgetSpend": "አጠቃላይ የቅናሽ መጠን",
     "maxUses": "ከፍተኛው አጠቃቀም",
     "maxSpend": "ከፍተኛው ወጪ (ETB)",
-    "toastSuccess": "ቅናሽ ተፈጥሯል።",
+    "toastSuccess": "ቅናሹ ተጨምሯል።",
     "toastError": "ቅናሹን መፍጠር አልተቻለም። እንደገና ይሞክሩ።",
     "startsLabel": "ይጀምራል",
     "endsLabel": "ያበቃል",
