@@ -89,8 +89,11 @@ function formatOverviewPaymentStatus(paymentStatus: string) {
   return "Unpaid";
 }
 
+type MixView = "payment" | "fulfillment" | "lifecycle" | "customers";
+
 export function MerchantOverview({ summary }: MerchantOverviewProps) {
   const [metric, setMetric] = useState<ChartMetric>("revenue");
+  const [mixView, setMixView] = useState<MixView>("payment");
   const operations = summary.operations;
   const series = operations?.series ?? [];
   const hasSeries = series.length > 0;
@@ -146,9 +149,50 @@ export function MerchantOverview({ summary }: MerchantOverviewProps) {
     [operations],
   );
 
+  const mixViews: Array<{
+    id: MixView;
+    label: string;
+    description: string;
+    title: string;
+    subject?: string;
+    rows: Array<{ count: number; label: string }>;
+  }> = [
+    {
+      id: "payment",
+      label: "Payment",
+      description: "Payment state across the recent order sample.",
+      title: "Payments",
+      rows: operations?.breakdowns.paymentStatus ?? [],
+    },
+    {
+      id: "fulfillment",
+      label: "Fulfillment",
+      description: "Where orders sit before completion.",
+      title: "Fulfillment",
+      rows: operations?.breakdowns.fulfillmentStatus ?? [],
+    },
+    {
+      id: "lifecycle",
+      label: "Lifecycle",
+      description: "Current lifecycle state for recent orders.",
+      title: "Orders",
+      rows: operations?.breakdowns.orderStatus ?? [],
+    },
+    {
+      id: "customers",
+      label: "Customers",
+      description: "Repeat behavior across recent customers.",
+      title: "Customers",
+      subject: "customers",
+      rows: customerRows,
+    },
+  ];
+  const activeMix = mixViews.find((view) => view.id === mixView) ?? mixViews[0]!;
+
   return (
-    <section className="flex flex-col gap-4" aria-label="Merchant overview">
-      <div className="grid gap-4 xl:grid-cols-6">
+    <section className="flex flex-col gap-5" aria-label="Merchant overview">
+      {/* Uneven KPI strip (kept intentionally) */}
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
         <MetricCard
           className="xl:col-span-2"
           href={dashboardRoutes.orders}
@@ -186,13 +230,14 @@ export function MerchantOverview({ summary }: MerchantOverviewProps) {
         />
       </div>
 
-      <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1.6fr)_minmax(360px,0.9fr)]">
-        <Card className="overflow-hidden">
+      {/* Primary band: trading + attention (matched min-heights) */}
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.65fr)_minmax(300px,0.85fr)] xl:items-stretch">
+        <Card className="flex min-h-[28rem] flex-col overflow-hidden">
           <CardHeader className="border-b">
             <div>
-              <CardTitle>Trading Activity</CardTitle>
+              <CardTitle>Trading activity</CardTitle>
               <CardDescription>
-                Revenue, order volume, and customer activity from available commerce records.
+                Revenue, orders, and customers from available commerce records.
               </CardDescription>
             </div>
             <div className="col-start-2 row-span-2 row-start-1 self-start justify-self-end">
@@ -210,12 +255,12 @@ export function MerchantOverview({ summary }: MerchantOverviewProps) {
               </Select>
             </div>
           </CardHeader>
-          <CardContent className="overflow-hidden pt-4">
+          <CardContent className="flex flex-1 flex-col overflow-hidden pt-4">
             {hasSeries ? (
-              <ChartContainer className="min-h-80 w-full px-3" config={tradingChartConfig}>
+              <ChartContainer className="min-h-72 w-full flex-1 px-2 sm:min-h-80" config={tradingChartConfig}>
                 <ComposedChart
                   data={tradingRows}
-                  margin={{ bottom: 10, left: 14, right: 42, top: 8 }}
+                  margin={{ bottom: 8, left: 8, right: 28, top: 8 }}
                 >
                   <CartesianGrid vertical={false} />
                   <XAxis
@@ -290,7 +335,7 @@ export function MerchantOverview({ summary }: MerchantOverviewProps) {
                   />
                   <Brush
                     dataKey="date"
-                    height={24}
+                    height={22}
                     stroke="var(--muted-foreground)"
                     travellerWidth={10}
                     tickFormatter={formatShortDate}
@@ -298,7 +343,7 @@ export function MerchantOverview({ summary }: MerchantOverviewProps) {
                 </ComposedChart>
               </ChartContainer>
             ) : (
-              <div className="flex min-h-80 items-center justify-center rounded-lg border bg-muted/30 p-6 text-center text-sm text-muted-foreground">
+              <div className="flex min-h-72 flex-1 items-center justify-center rounded-lg border bg-muted/30 p-6 text-center text-sm text-muted-foreground sm:min-h-80">
                 Commerce activity will appear here after orders are available for this shop.
               </div>
             )}
@@ -309,43 +354,48 @@ export function MerchantOverview({ summary }: MerchantOverviewProps) {
           </CardContent>
         </Card>
 
-        <Card className="self-start">
+        <Card className="flex min-h-[28rem] flex-col">
           <CardHeader className="border-b">
-            <CardTitle>Needs Attention</CardTitle>
-            <CardDescription>Operational queues that usually need the next action.</CardDescription>
+            <CardTitle>Needs attention</CardTitle>
+            <CardDescription>Queues that usually need the next action.</CardDescription>
           </CardHeader>
-          <CardContent className="flex flex-col gap-3 pt-4">
-            {attentionItems.map((item) => (
-              <Link
-                className="flex items-center justify-between gap-3 rounded-lg border bg-background px-3 py-2 text-sm transition-colors hover:bg-muted/50"
-                href={item.href}
-                key={item.label}
-                prefetch={false}
-              >
-                <span className="text-muted-foreground">{item.label}</span>
-                <span className="font-mono font-medium tabular-nums">
-                  {formatNumber(item.value)}
-                </span>
-              </Link>
-            ))}
+          <CardContent className="flex flex-1 flex-col gap-3 pt-4">
+            <div className="flex flex-col gap-2">
+              {attentionItems.map((item) => (
+                <Link
+                  className="flex items-center justify-between gap-3 rounded-lg border bg-background px-3 py-2.5 text-sm transition-colors hover:bg-muted/50"
+                  href={item.href}
+                  key={item.label}
+                  prefetch={false}
+                >
+                  <span className="text-muted-foreground">{item.label}</span>
+                  <span className="font-mono font-medium tabular-nums">
+                    {formatNumber(item.value)}
+                  </span>
+                </Link>
+              ))}
+            </div>
             <Separator />
-            <ReadinessBlock summary={summary} />
+            <div className="mt-auto">
+              <ReadinessBlock summary={summary} />
+            </div>
           </CardContent>
         </Card>
       </div>
 
-      <div className="grid items-start gap-4 xl:grid-cols-2">
-        <Card className="overflow-hidden">
-          <CardHeader>
-            <CardTitle>Basket Quality</CardTitle>
+      {/* Unique charts band — matched heights */}
+      <div className="grid gap-4 md:grid-cols-2 md:items-stretch">
+        <Card className="flex min-h-[22rem] flex-col overflow-hidden">
+          <CardHeader className="pb-2">
+            <CardTitle>Basket quality</CardTitle>
             <CardDescription>Average order value against daily order volume.</CardDescription>
           </CardHeader>
-          <CardContent className="overflow-hidden">
+          <CardContent className="flex flex-1 flex-col overflow-hidden">
             {averageOrderRows.length > 0 ? (
-              <ChartContainer className="min-h-72 w-full px-2" config={averageOrderConfig}>
+              <ChartContainer className="min-h-64 w-full flex-1 px-1" config={averageOrderConfig}>
                 <ComposedChart
                   data={averageOrderRows}
-                  margin={{ bottom: 8, left: 12, right: 34, top: 8 }}
+                  margin={{ bottom: 8, left: 8, right: 24, top: 8 }}
                 >
                   <CartesianGrid vertical={false} />
                   <XAxis
@@ -361,7 +411,7 @@ export function MerchantOverview({ summary }: MerchantOverviewProps) {
                     tickLine={false}
                     axisLine={false}
                     tickMargin={8}
-                    width={54}
+                    width={48}
                     tickFormatter={(value) => compactMoney(Number(value), currencyCode)}
                   />
                   <YAxis yAxisId="orders" orientation="right" hide />
@@ -392,22 +442,24 @@ export function MerchantOverview({ summary }: MerchantOverviewProps) {
                 </ComposedChart>
               </ChartContainer>
             ) : (
-              <p className="text-sm text-muted-foreground">No basket data is available.</p>
+              <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
+                No basket data is available.
+              </div>
             )}
           </CardContent>
         </Card>
 
-        <Card className="overflow-hidden">
-          <CardHeader>
-            <CardTitle>Demand Rhythm</CardTitle>
+        <Card className="flex min-h-[22rem] flex-col overflow-hidden">
+          <CardHeader className="pb-2">
+            <CardTitle>Demand rhythm</CardTitle>
             <CardDescription>Which weekdays carry the most order activity.</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="flex flex-1 flex-col">
             {demandRhythmRows.length > 0 ? (
-              <ChartContainer className="min-h-72 w-full" config={demandRhythmConfig}>
+              <ChartContainer className="min-h-64 w-full flex-1" config={demandRhythmConfig}>
                 <RadarChart
                   data={demandRhythmRows}
-                  margin={{ bottom: 12, left: 18, right: 18, top: 12 }}
+                  margin={{ bottom: 8, left: 12, right: 12, top: 8 }}
                 >
                   <PolarGrid />
                   <PolarAngleAxis dataKey="day" tickLine={false} />
@@ -422,88 +474,127 @@ export function MerchantOverview({ summary }: MerchantOverviewProps) {
                 </RadarChart>
               </ChartContainer>
             ) : (
-              <p className="text-sm text-muted-foreground">No weekday demand data is available.</p>
+              <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
+                No weekday demand data is available.
+              </div>
             )}
           </CardContent>
         </Card>
       </div>
 
-      <div className="grid items-start gap-4 xl:grid-cols-4">
-        <Card className="self-start">
-          <CardHeader>
-            <CardTitle>Payment Mix</CardTitle>
-            <CardDescription>Payment state across the recent order sample.</CardDescription>
+      {/* One mix panel with view switch (replaces 4 uneven donut cards) */}
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] lg:items-stretch">
+        <Card className="flex min-h-[20rem] flex-col">
+          <CardHeader className="border-b">
+            <div>
+              <CardTitle>Order mix</CardTitle>
+              <CardDescription>{activeMix.description}</CardDescription>
+            </div>
+            <div className="col-start-2 row-span-2 row-start-1 self-start justify-self-end">
+              <Select value={mixView} onValueChange={(value) => setMixView(value as MixView)}>
+                <SelectTrigger size="sm" aria-label="Mix view" className="min-w-[8.5rem]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    {mixViews.map((view) => (
+                      <SelectItem key={view.id} value={view.id}>
+                        {view.label}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </div>
           </CardHeader>
-          <CardContent>
-            <StatusDonutChart rows={operations?.breakdowns.paymentStatus ?? []} title="Payments" />
-          </CardContent>
-        </Card>
-
-        <Card className="self-start">
-          <CardHeader>
-            <CardTitle>Fulfillment Mix</CardTitle>
-            <CardDescription>Where orders sit before completion.</CardDescription>
-          </CardHeader>
-          <CardContent>
+          <CardContent className="flex flex-1 flex-col pt-4">
             <StatusDonutChart
-              rows={operations?.breakdowns.fulfillmentStatus ?? []}
-              title="Fulfillment"
+              className="flex-1"
+              rows={activeMix.rows}
+              title={activeMix.title}
+              {...(activeMix.subject ? { subject: activeMix.subject } : {})}
             />
           </CardContent>
         </Card>
 
-        <Card className="self-start">
-          <CardHeader>
-            <CardTitle>Order Lifecycle</CardTitle>
-            <CardDescription>Current lifecycle state for recent orders.</CardDescription>
+        <Card className="flex min-h-[20rem] flex-col">
+          <CardHeader className="border-b">
+            <CardTitle>Recent orders</CardTitle>
+            <CardDescription>Latest orders for this shop.</CardDescription>
           </CardHeader>
-          <CardContent>
-            <StatusDonutChart rows={operations?.breakdowns.orderStatus ?? []} title="Orders" />
-          </CardContent>
-        </Card>
-
-        <Card className="self-start">
-          <CardHeader>
-            <CardTitle>Customer Mix</CardTitle>
-            <CardDescription>Repeat behavior across recent customers.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <StatusDonutChart rows={customerRows} title="Customers" subject="customers" />
+          <CardContent className="flex flex-1 flex-col gap-1 pt-3">
+            {(operations?.recentOrders.length ?? 0) > 0 ? (
+              <div className="flex flex-1 flex-col gap-0.5">
+                {operations?.recentOrders.map((order) => (
+                  <Link
+                    className="flex items-center justify-between gap-3 rounded-lg px-2 py-2 text-sm transition-colors hover:bg-muted/50"
+                    href={dashboardRoutes.orderDetail(order.id)}
+                    key={order.id}
+                    prefetch={false}
+                  >
+                    <span className="min-w-0">
+                      <span className="block truncate font-medium">
+                        {formatOrderReference({ id: order.id })}
+                      </span>
+                      <span className="block truncate text-xs text-muted-foreground">
+                        {order.email ?? "No email"}
+                        {order.paymentStatus
+                          ? ` · ${formatOverviewPaymentStatus(order.paymentStatus)}`
+                          : ""}
+                      </span>
+                    </span>
+                    <span className="shrink-0 font-mono text-xs tabular-nums">
+                      {formatMoney(order.total, order.currencyCode ?? currencyCode)}
+                    </span>
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
+                No recent orders are available.
+              </div>
+            )}
+            <Button asChild className="mt-2 w-full rounded-full" size="sm" variant="outline">
+              <Link href={dashboardRoutes.orders} prefetch={false}>
+                View all orders
+              </Link>
+            </Button>
           </CardContent>
         </Card>
       </div>
 
-      <div className="grid items-start gap-4 lg:grid-cols-3">
-        <Card className="self-start">
-          <CardHeader>
-            <CardTitle>Storefront Signals</CardTitle>
+      {/* Secondary band */}
+      <div className="grid gap-4 md:grid-cols-2 md:items-stretch">
+        <Card className="flex min-h-[16rem] flex-col">
+          <CardHeader className="pb-2">
+            <CardTitle>Storefront signals</CardTitle>
             <CardDescription>
               {summary.analytics?.unavailable
                 ? "Storefront activity will appear after customers visit your shop."
                 : "Top tracked events from the last 30 days."}
             </CardDescription>
           </CardHeader>
-          <CardContent className="flex flex-col gap-2">
+          <CardContent className="flex flex-1 flex-col">
             {topEvents.length > 0 ? (
               <TopEventsChart rows={topEvents} />
             ) : (
-              <p className="text-sm text-muted-foreground">
+              <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
                 No storefront events have been recorded in the selected range.
-              </p>
+              </div>
             )}
           </CardContent>
         </Card>
 
-        <Card className="self-start">
-          <CardHeader>
-            <CardTitle>Billing Snapshot</CardTitle>
+        <Card className="flex min-h-[16rem] flex-col">
+          <CardHeader className="pb-2">
+            <CardTitle>Billing snapshot</CardTitle>
             <CardDescription>
               {summary.billing?.unavailable
                 ? "Billing setup is not complete yet."
                 : "Current subscription and recent invoice state."}
             </CardDescription>
           </CardHeader>
-          <CardContent className="flex flex-col gap-3">
+          <CardContent className="flex flex-1 flex-col gap-3">
             <DetailRow label="Plan" value={summary.billing?.plan?.name ?? "Unavailable"} />
             <DetailRow
               label="Subscription"
@@ -513,45 +604,15 @@ export function MerchantOverview({ summary }: MerchantOverviewProps) {
               label="Invoices"
               value={`${summary.billing?.invoices.length ?? 0} recent records`}
             />
-          </CardContent>
-        </Card>
-
-        <Card className="self-start">
-          <CardHeader>
-            <CardTitle>Recent Orders</CardTitle>
-            <CardDescription>Latest orders for this shop.</CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-2">
-            {(operations?.recentOrders.length ?? 0) > 0 ? (
-              operations?.recentOrders.map((order) => (
-                <Link
-                  className="flex items-center justify-between gap-3 rounded-lg px-1 py-1.5 text-sm hover:bg-muted/50"
-                  href={dashboardRoutes.orderDetail(order.id)}
-                  key={order.id}
-                  prefetch={false}
-                >
-                  <span className="min-w-0">
-                    <span className="block truncate font-medium">
-                      {formatOrderReference({ id: order.id })}
-                    </span>
-                    <span className="block truncate text-xs text-muted-foreground">
-                      {order.email ?? "No email"}
-                      {order.paymentStatus
-                        ? ` · ${formatOverviewPaymentStatus(order.paymentStatus)}`
-                        : ""}
-                    </span>
-                  </span>
-                  <span className="font-mono text-xs tabular-nums">
-                    {formatMoney(order.total, order.currencyCode ?? currencyCode)}
-                  </span>
-                </Link>
-              ))
-            ) : (
-              <p className="text-sm text-muted-foreground">No recent orders are available.</p>
-            )}
+            <Button asChild className="mt-auto w-full rounded-full" size="sm" variant="outline">
+              <Link href={dashboardRoutes.billing} prefetch={false}>
+                Open billing
+              </Link>
+            </Button>
           </CardContent>
         </Card>
       </div>
+
       <LaunchAssistant summary={summary} />
     </section>
   );

@@ -76,10 +76,12 @@ export function StatusDonutChart({
   rows,
   subject = "orders",
   title,
+  className,
 }: {
   rows: Array<{ count: number; label: string }>;
   subject?: string;
   title: string;
+  className?: string;
 }) {
   const total = rows.reduce((sum, row) => sum + row.count, 0);
   const chartRows = rows.slice(0, 5).map((row, index) => ({
@@ -97,12 +99,16 @@ export function StatusDonutChart({
   ) satisfies ChartConfig;
 
   if (rows.length === 0) {
-    return <p className="text-sm text-muted-foreground">No order data is available.</p>;
+    return (
+      <div className={cn("flex min-h-44 items-center justify-center", className)}>
+        <p className="text-sm text-muted-foreground">No order data is available.</p>
+      </div>
+    );
   }
 
   return (
-    <div className="grid gap-3 md:grid-cols-[150px_1fr]">
-      <ChartContainer className="aspect-square min-h-36" config={config}>
+    <div className={cn("grid min-h-44 gap-3 sm:grid-cols-[150px_1fr] sm:items-center", className)}>
+      <ChartContainer className="mx-auto aspect-square h-40 w-40 sm:h-auto sm:min-h-36 sm:w-full" config={config}>
         <PieChart>
           <ChartTooltip content={<ChartTooltipContent hideLabel />} />
           <Pie data={chartRows} dataKey="count" nameKey="label" innerRadius={42} outerRadius={64}>
@@ -121,7 +127,12 @@ export function StatusDonutChart({
         </div>
         {chartRows.map((row) => (
           <div className="flex items-center justify-between gap-3 text-sm" key={row.label}>
-            <span className="truncate capitalize text-muted-foreground">
+            <span className="flex min-w-0 items-center gap-2 truncate capitalize text-muted-foreground">
+              <span
+                aria-hidden
+                className="size-2 shrink-0 rounded-full"
+                style={{ background: row.fill }}
+              />
               {row.label.replaceAll("_", " ")}
             </span>
             <span className="font-mono tabular-nums">{row.count.toLocaleString()}</span>
