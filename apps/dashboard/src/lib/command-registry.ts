@@ -15,6 +15,13 @@ export type CommandDef = {
 };
 
 /** Verb-first actions that navigate to existing create/list UIs. */
+/** Append create= deep-link so list pages open the create dialog. */
+function withCreate(href: string, create: string) {
+  const url = new URL(href, "http://local.invalid");
+  url.searchParams.set("create", create);
+  return `${url.pathname}${url.search}`;
+}
+
 export const commandActions: CommandDef[] = [
   {
     id: "action.create-product",
@@ -22,7 +29,7 @@ export const commandActions: CommandDef[] = [
     keywords: ["new", "add", "catalog", "item"],
     group: "action",
     icon: AppIcons.products,
-    href: dashboardRoutes.products,
+    href: withCreate(dashboardRoutes.products, "product"),
   },
   {
     id: "action.create-category",
@@ -30,7 +37,7 @@ export const commandActions: CommandDef[] = [
     keywords: ["new", "taxonomy", "catalog"],
     group: "action",
     icon: AppIcons.tree,
-    href: dashboardRoutes.productCategoriesNew,
+    href: withCreate(dashboardRoutes.productCategories, "category"),
   },
   {
     id: "action.create-collection",
@@ -38,7 +45,7 @@ export const commandActions: CommandDef[] = [
     keywords: ["new", "taxonomy", "catalog"],
     group: "action",
     icon: AppIcons.folder,
-    href: dashboardRoutes.productCollectionsNew,
+    href: withCreate(dashboardRoutes.productCollections, "collection"),
   },
   {
     id: "action.create-order",
@@ -46,7 +53,7 @@ export const commandActions: CommandDef[] = [
     keywords: ["new", "draft", "sale"],
     group: "action",
     icon: AppIcons.orders,
-    href: dashboardRoutes.orders,
+    href: withCreate(dashboardRoutes.orders, "order"),
   },
   {
     id: "action.customers",
@@ -65,12 +72,12 @@ export const commandActions: CommandDef[] = [
     href: dashboardRoutes.media,
   },
   {
-    id: "action.promotions",
-    label: "Open promotions",
-    keywords: ["discount", "coupon", "code"],
+    id: "action.create-promotion",
+    label: "Create promotion",
+    keywords: ["new", "discount", "coupon", "code"],
     group: "action",
     icon: AppIcons.tag,
-    href: dashboardRoutes.promotions,
+    href: withCreate(dashboardRoutes.promotions, "promotion"),
   },
   {
     id: "action.billing",

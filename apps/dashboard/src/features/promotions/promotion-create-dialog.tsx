@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { AppIcons } from "@/components/app/icons";
@@ -16,6 +16,7 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import { DateTimePicker } from "@/components/ui/datetime-picker";
+import { useCreateQueryOpen } from "@/lib/use-create-query-open";
 import {
   Dialog,
   DialogContent,
@@ -109,6 +110,20 @@ const emptyForm = {
 };
 
 export function PromotionCreateDialog() {
+  return (
+    <Suspense
+      fallback={
+        <Button type="button" disabled>
+          Create promotion
+        </Button>
+      }
+    >
+      <PromotionCreateDialogInner />
+    </Suspense>
+  );
+}
+
+function PromotionCreateDialogInner() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState(0);
@@ -116,6 +131,14 @@ export function PromotionCreateDialog() {
   const [form, setForm] = useState(emptyForm);
   const [catalog, setCatalog] = useState<CatalogProduct[]>([]);
   const [catalogLoading, setCatalogLoading] = useState(false);
+
+  useCreateQueryOpen({
+    values: ["1", "true", "promotion"],
+    onOpen: () => {
+      setStep(0);
+      setOpen(true);
+    },
+  });
 
   useEffect(() => {
     if (!open) return;
