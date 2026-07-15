@@ -51,8 +51,8 @@ const PLATFORM_ERROR_MESSAGES: Record<string, string> = {
   notification_preference_missing:
     "Save your notification settings before sending a test.",
   notification_channel_invalid: "Choose a valid notification channel.",
-  telegram_not_configured:
-    "Telegram alerts are not available right now. Try again later or contact support.",
+  telegram_not_configured: "Telegram alerts are not available for this shop right now.",
+  email_not_configured: "Email alerts are not available for this shop right now.",
   telegram_destination_limit: "You can connect up to 10 Telegram accounts per shop.",
   session_not_found: "That connect link expired. Connect Telegram again.",
   destination_not_found: "That Telegram account is no longer connected.",

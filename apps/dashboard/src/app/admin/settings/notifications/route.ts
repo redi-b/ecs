@@ -24,7 +24,10 @@ export async function GET(request: Request) {
 
     return {
       ok: true,
-      data: { preferences: result.preferences },
+      data: {
+        preferences: result.preferences,
+        channels: result.channels,
+      },
       status: 200,
     };
   });

@@ -552,6 +552,14 @@ export type PlatformAppOptions = {
         txRef: string;
       }) => Promise<MerchantOrderActionResult | { ok: false; error: "order_not_found"; status: 404 }>)
     | undefined;
+  /**
+   * Which delivery channels are configured on this deployment.
+   * Used by the merchant settings UI to show soft unavailable states.
+   */
+  notificationChannelAvailability?: {
+    email: boolean;
+    telegram: boolean;
+  };
   listNotificationPreferences?:
     | ((input: { tenantId: string }) => Promise<NotificationPreferenceListResult>)
     | undefined;

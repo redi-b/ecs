@@ -116,8 +116,17 @@ export function registerMerchantDashboardRoutes(
       tenantId: merchant.result.context.tenantId,
     });
 
+    const channels = options.notificationChannelAvailability ?? {
+      email: true,
+      telegram: true,
+    };
+
     return context.json({
       preferences: preferences.preferences,
+      channels: {
+        email: { available: channels.email === true },
+        telegram: { available: channels.telegram === true },
+      },
     });
   });
 

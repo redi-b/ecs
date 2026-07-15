@@ -14,8 +14,17 @@ export type NotificationPreference = {
   updatedAt: string;
 };
 
+export type NotificationChannelAvailability = {
+  email: boolean;
+  telegram: boolean;
+};
+
 export type NotificationPreferencesResult =
-  | { ok: true; preferences: NotificationPreference[] }
+  | {
+      ok: true;
+      preferences: NotificationPreference[];
+      channels: NotificationChannelAvailability;
+    }
   | { ok: false; message: string; status: number };
 
 export type NotificationPreferenceUpsertResult =
@@ -83,7 +92,24 @@ export async function listMerchantNotificationPreferences(options: {
     ? ((data as { preferences: NotificationPreference[] }).preferences ?? [])
     : [];
 
-  return { ok: true, preferences };
+  const rawChannels = (data as { channels?: unknown })?.channels;
+  const channels: NotificationChannelAvailability = {
+    email:
+      typeof rawChannels === "object" &&
+      rawChannels !== null &&
+      typeof (rawChannels as { email?: { available?: unknown } }).email?.available === "boolean"
+        ? Boolean((rawChannels as { email: { available: boolean } }).email.available)
+        : true,
+    telegram:
+      typeof rawChannels === "object" &&
+      rawChannels !== null &&
+      typeof (rawChannels as { telegram?: { available?: unknown } }).telegram?.available ===
+        "boolean"
+        ? Boolean((rawChannels as { telegram: { available: boolean } }).telegram.available)
+        : true,
+  };
+
+  return { ok: true, preferences, channels };
 }
 
 export async function upsertMerchantNotificationPreference(options: {

@@ -5,6 +5,10 @@ import { createLogger } from "@ecs/logger";
 import { loadPlatformApiEnvFiles } from "./config/env.js";
 import { createNotificationsDeliverHandler } from "./jobs/handlers/notifications-deliver.js";
 import { systemPingHandler } from "./jobs/handlers/system-ping.js";
+import {
+  createResendEmailNotificationProvider,
+  isEmailDeliveryConfigured,
+} from "./modules/notifications/providers/email-provider.js";
 import { createLogNotificationProvider } from "./modules/notifications/providers/log-provider.js";
 import { createProviderRegistry } from "./modules/notifications/providers/registry.js";
 import { createTelegramNotificationProvider } from "./modules/notifications/providers/telegram-provider.js";
@@ -56,8 +60,20 @@ if (telegramBotToken) {
   logger.warn("TELEGRAM_BOT_TOKEN not set; telegram deliveries use log provider");
 }
 
+const resendApiKey = process.env.RESEND_API_KEY?.trim() || "";
+const emailFrom = process.env.EMAIL_FROM?.trim() || "";
+const emailProvider = isEmailDeliveryConfigured(process.env)
+  ? createResendEmailNotificationProvider({ apiKey: resendApiKey, from: emailFrom })
+  : logProvider("email");
+
+if (isEmailDeliveryConfigured(process.env)) {
+  logger.info({ from: emailFrom }, "Email notification provider enabled (Resend)");
+} else {
+  logger.warn("RESEND_API_KEY/EMAIL_FROM not set; email deliveries use log provider");
+}
+
 const notificationProviders = createProviderRegistry([
-  logProvider("email"),
+  emailProvider,
   telegramProvider,
 ]);
 const notificationRenderer = createCodeNotificationRenderer();

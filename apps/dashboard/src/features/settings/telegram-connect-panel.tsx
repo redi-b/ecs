@@ -25,6 +25,7 @@ import {
   NotificationAccountCountBadge,
   NotificationAlertsSwitch,
   NotificationChannelHeader,
+  NotificationChannelUnavailable,
   NotificationEventPicker,
   sameNotificationEvents,
 } from "@/features/settings/notification-channel-ui";
@@ -118,7 +119,13 @@ function DestinationIdentity({ destination }: { destination: TelegramDestination
   );
 }
 
-export function TelegramConnectPanel({ tenantId }: { tenantId: string }) {
+export function TelegramConnectPanel({
+  available = true,
+  tenantId,
+}: {
+  available?: boolean;
+  tenantId: string;
+}) {
   const [destinations, setDestinations] = useState<TelegramDestination[]>([]);
   const [savedEvents, setSavedEvents] = useState<string[]>(defaultNotificationEvents());
   const [eventsDraft, setEventsDraft] = useState<string[]>(defaultNotificationEvents());
@@ -159,9 +166,15 @@ export function TelegramConnectPanel({ tenantId }: { tenantId: string }) {
   }, [qs]);
 
   useEffect(() => {
+    if (!available) {
+      setLoading(false);
+      setLoadError(null);
+      setDestinations([]);
+      return;
+    }
     setLoading(true);
     void loadDestinations().finally(() => setLoading(false));
-  }, [loadDestinations]);
+  }, [available, loadDestinations]);
 
   useEffect(() => {
     if (!session || session.status !== "pending") {
@@ -359,6 +372,26 @@ export function TelegramConnectPanel({ tenantId }: { tenantId: string }) {
     }
   }
 
+  if (!available) {
+    return (
+      <Card>
+        <NotificationChannelHeader
+          description="Instant shop event alerts on Telegram."
+          disabled
+          onRefresh={() => undefined}
+          refreshing={false}
+          title="Telegram"
+        />
+        <CardContent>
+          <NotificationChannelUnavailable
+            description="Telegram isn’t enabled for this environment yet. You can still set up email if it’s available, or check back later."
+            title="Telegram alerts unavailable"
+          />
+        </CardContent>
+      </Card>
+    );
+  }
+
   if (loading) {
     return (
       <Card>
@@ -376,27 +409,57 @@ export function TelegramConnectPanel({ tenantId }: { tenantId: string }) {
   }
 
   if (loadError) {
+    const isNotConfigured =
+      loadError.toLowerCase().includes("not available") ||
+      loadError.toLowerCase().includes("not configured");
+    if (isNotConfigured) {
+      return (
+        <Card>
+          <NotificationChannelHeader
+            description="Instant shop event alerts on Telegram."
+            disabled
+            onRefresh={() => undefined}
+            refreshing={false}
+            title="Telegram"
+          />
+          <CardContent>
+            <NotificationChannelUnavailable
+              description="Telegram isn’t enabled for this environment yet. You can still set up email if it’s available, or check back later."
+              title="Telegram alerts unavailable"
+            />
+          </CardContent>
+        </Card>
+      );
+    }
     return (
-      <Alert variant="destructive">
-        <AlertTitle>Telegram unavailable</AlertTitle>
-        <AlertDescription className="flex flex-col gap-3">
-          <span>
-            {loadError} Try again in a moment. If this keeps happening, contact support.
-          </span>
-          <Button
-            className="w-fit rounded-full"
-            size="sm"
-            type="button"
-            variant="outline"
-            onClick={() => {
-              setLoading(true);
-              void loadDestinations().finally(() => setLoading(false));
-            }}
-          >
-            Try again
-          </Button>
-        </AlertDescription>
-      </Alert>
+      <Card>
+        <NotificationChannelHeader
+          description="Instant shop event alerts on Telegram."
+          onRefresh={refreshList}
+          refreshing={refreshing}
+          title="Telegram"
+        />
+        <CardContent>
+          <Alert variant="destructive">
+            <AlertTitle>Couldn’t load Telegram</AlertTitle>
+            <AlertDescription className="flex flex-col gap-3">
+              <span>Something went wrong loading connected accounts. Try again.</span>
+              <Button
+                className="w-fit rounded-full"
+                size="sm"
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setLoading(true);
+                  void loadDestinations().finally(() => setLoading(false));
+                }}
+              >
+                Try again
+              </Button>
+            </AlertDescription>
+          </Alert>
+        </CardContent>
+      </Card>
     );
   }
 

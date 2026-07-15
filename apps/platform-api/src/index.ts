@@ -30,6 +30,7 @@ import { createMedusaProductService } from "./modules/commerce/product-catalog.j
 import { createDeliverySettingsService } from "./modules/delivery/service.js";
 import { createDomainManagementService } from "./modules/domains/service.js";
 import { createMediaService } from "./modules/media/index.js";
+import { isEmailDeliveryConfigured } from "./modules/notifications/providers/email-provider.js";
 import { createNotificationService } from "./modules/notifications/service.js";
 import { createTelegramConnectService } from "./modules/notifications/telegram-connect.js";
 import { createTenantOnboardingService } from "./modules/onboarding/service.js";
@@ -125,6 +126,18 @@ if (telegramConnectService.isConfigured()) {
 } else {
   logger.warn("TELEGRAM_BOT_TOKEN/USERNAME not set; Telegram connect stays unavailable.");
 }
+
+const emailDeliveryConfigured = isEmailDeliveryConfigured(process.env);
+if (emailDeliveryConfigured) {
+  logger.info({ from: process.env.EMAIL_FROM?.trim() }, "Email delivery configured (Resend).");
+} else {
+  logger.warn("RESEND_API_KEY/EMAIL_FROM not set; email delivery stays unavailable in the dashboard.");
+}
+
+const notificationChannelAvailability = {
+  email: emailDeliveryConfigured,
+  telegram: telegramConnectService.isConfigured(),
+};
 const analyticsService = createAnalyticsService(createDrizzleAnalyticsEventStore(platformDb.db));
 const analyticsInsightsService = createAnalyticsInsightsService(
   createDrizzleAnalyticsInsightsStore(platformDb.db),
@@ -362,6 +375,7 @@ const app = createPlatformApp({
   listMediaAssets: mediaService.listMedia,
   syncProductMedia: mediaService.syncProductMedia,
   listNotificationPreferences: notificationService.listNotificationPreferences,
+  notificationChannelAvailability,
   listTenantsForUser,
   listTenantProvisioningAttempts,
   listPaymentOnboarding: paymentOnboardingService.listPaymentOnboarding,

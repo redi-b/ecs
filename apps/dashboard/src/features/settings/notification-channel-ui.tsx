@@ -152,6 +152,30 @@ export function NotificationAlertsSwitch({
   );
 }
 
+/**
+ * Soft merchant-facing state when a channel is not configured on the deployment.
+ * Do not mention env vars, providers, or server setup.
+ */
+export function NotificationChannelUnavailable({
+  title,
+  description,
+}: {
+  title: string;
+  description: string;
+}) {
+  return (
+    <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed bg-muted/20 px-4 py-8 text-center">
+      <div className="flex size-11 items-center justify-center rounded-full border bg-background shadow-sm">
+        <AppIcons.notifications className="size-5 text-muted-foreground" />
+      </div>
+      <div className="max-w-sm space-y-1">
+        <p className="text-sm font-medium text-foreground">{title}</p>
+        <p className="text-sm text-muted-foreground">{description}</p>
+      </div>
+    </div>
+  );
+}
+
 export function NotificationEventPicker({
   events,
   disabled,

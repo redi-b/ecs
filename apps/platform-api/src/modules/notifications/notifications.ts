@@ -1,8 +1,13 @@
 export { deliverNotificationLog } from "./delivery.js";
+export {
+  createResendEmailNotificationProvider,
+  isEmailDeliveryConfigured,
+} from "./providers/email-provider.js";
 export { createLogNotificationProvider } from "./providers/log-provider.js";
 export { createProviderRegistry } from "./providers/registry.js";
 export type { NotificationProviderRegistry } from "./providers/registry.js";
 export type { NotificationProvider } from "./providers/types.js";
+export { createTelegramNotificationProvider } from "./providers/telegram-provider.js";
 export { createCodeNotificationRenderer } from "./renderer.js";
 export type { NotificationRenderer } from "./renderer.js";
 export {
