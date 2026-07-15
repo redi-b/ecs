@@ -326,7 +326,9 @@ export function CommandCenter() {
             Search or jump…
           </span>
           <KbdGroup className="ml-auto hidden shrink-0 sm:inline-flex">
-            <Kbd>Ctrl</Kbd>
+            <Kbd className={cn(modKey === "⌘" && "min-w-5 px-1 text-[13px] leading-none")}>
+              {modKey}
+            </Kbd>
             <Kbd>K</Kbd>
           </KbdGroup>
         </Button>
