@@ -23,7 +23,7 @@ export default async function BillingPage({ searchParams }: BillingPageProps) {
 
   return (
     <PageShell
-      description="Review your plan, trial or subscription status, invoices, and support options."
+      description="Review your plan, prepaid invoices, and Chapa payments for this shop."
       title="Billing"
     >
       {!result.ok ? (

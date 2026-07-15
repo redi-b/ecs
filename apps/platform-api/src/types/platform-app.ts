@@ -4,7 +4,12 @@ import type {
   AnalyticsEventRecordResult,
   TenantInsightsSummaryResult,
 } from "../modules/analytics/analytics-service.js";
-import type { BillingInvoiceUpdateResult, BillingStatusResult } from "./billing.js";
+import type {
+  BillingInvoicePayResult,
+  BillingInvoiceUpdateResult,
+  BillingPlanUpgradeResult,
+  BillingStatusResult,
+} from "./billing.js";
 import type {
   MerchantCustomerAddressInput,
   MerchantCustomerAddressResult,
@@ -148,6 +153,17 @@ export type PlatformAppOptions = {
     | ((input: { tenantId: string; userId: string }) => Promise<StorefrontPublishResult>)
     | undefined;
   getBillingStatus?: ((input: { tenantId: string }) => Promise<BillingStatusResult>) | undefined;
+  createPlanUpgradeInvoice?:
+    | ((input: { planId: string; tenantId: string }) => Promise<BillingPlanUpgradeResult>)
+    | undefined;
+  initializeBillingInvoicePayment?:
+    | ((input: {
+        invoiceId: string;
+        payerEmail: string;
+        returnUrl: string;
+        tenantId: string;
+      }) => Promise<BillingInvoicePayResult>)
+    | undefined;
   getDashboardMetrics?:
     | ((input: { days: number; tenantId: string }) => Promise<DashboardMetricsResult>)
     | undefined;

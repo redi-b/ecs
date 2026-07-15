@@ -359,6 +359,7 @@ export function createMerchantDashboardSummary(
         subscription: null,
         plan: null,
         invoices: [],
+        availablePaidPlans: [],
         unavailable: true,
       };
     }
@@ -370,6 +371,7 @@ export function createMerchantDashboardSummary(
         subscription: null,
         plan: null,
         invoices: [],
+        availablePaidPlans: [],
         unavailable: true,
       };
     }
@@ -382,6 +384,7 @@ export function createMerchantDashboardSummary(
       subscription: billing.subscription,
       plan: billing.plan,
       invoices: billing.invoices,
+      availablePaidPlans: billing.availablePaidPlans ?? [],
       unavailable: false,
     };
   }

@@ -603,6 +603,7 @@ export const merchantDashboardSummarySchema = z.object({
           price: z.string().min(1),
           limits: z.unknown(),
           features: z.unknown(),
+          isFree: z.boolean().optional(),
         })
         .nullable(),
       invoices: z.array(
@@ -618,6 +619,17 @@ export const merchantDashboardSummarySchema = z.object({
           createdAt: z.string().min(1),
         }),
       ),
+      availablePaidPlans: z
+        .array(
+          z.object({
+            id: z.string().min(1),
+            name: z.string().min(1),
+            price: z.string().min(1),
+            limits: z.unknown(),
+            features: z.unknown(),
+          }),
+        )
+        .optional(),
       unavailable: z.boolean(),
     })
     .optional(),

@@ -24,7 +24,7 @@ import {
   createDrizzleAnalyticsInsightsStore,
 } from "./modules/analytics/analytics-service.js";
 import { createDashboardMetricsService } from "./modules/analytics/dashboard-metrics-service.js";
-import { createBillingService } from "./modules/billing/service.js";
+import { createBillingService, isPlatformBillingTxRef } from "./modules/billing/service.js";
 import { createMedusaOrderService } from "./modules/commerce/order-management.js";
 import { createMedusaProductService } from "./modules/commerce/product-catalog.js";
 import { createDeliverySettingsService } from "./modules/delivery/service.js";
@@ -219,7 +219,17 @@ async function resolveTenantSalesChannelId(tenantId: string) {
 
 const chapaPaymentService = createChapaPaymentService({
   apiUrl: process.env.CHAPA_API_URL,
-  onVerifiedSuccess: async ({ tenantId, txRef }) => {
+  onVerifiedSuccess: async ({ providerReference, tenantId, txRef }) => {
+    // Platform subscription invoices use ecs_bill_* tx_refs (never Medusa order refs).
+    if (isPlatformBillingTxRef(txRef)) {
+      await billingService.completeChapaInvoicePayment({
+        providerReference: providerReference ?? null,
+        tenantId,
+        txRef,
+      });
+      return;
+    }
+
     const salesChannelId = await resolveTenantSalesChannelId(tenantId);
     if (!salesChannelId) {
       return;
@@ -346,6 +356,67 @@ const app = createPlatformApp({
   createTenantShop,
   checkTenantHandleAvailability,
   getBillingStatus: billingService.getBillingStatus,
+  createPlanUpgradeInvoice: billingService.createPlanUpgradeInvoice,
+  initializeBillingInvoicePayment: async (input) => {
+    if (!process.env.CHAPA_SECRET_KEY?.trim()) {
+      return {
+        ok: false as const,
+        error: "billing_chapa_unavailable" as const,
+        status: 503 as const,
+      };
+    }
+    const email = input.payerEmail?.trim();
+    if (!email) {
+      return {
+        ok: false as const,
+        error: "billing_payer_email_required" as const,
+        status: 400 as const,
+      };
+    }
+
+    const prepared = await billingService.prepareInvoiceForChapaPayment({
+      invoiceId: input.invoiceId,
+      tenantId: input.tenantId,
+    });
+    if (!prepared.ok) {
+      return prepared;
+    }
+
+    const platformPublic =
+      process.env.PLATFORM_PUBLIC_BASE_URL?.trim() ||
+      process.env.BETTER_AUTH_URL?.trim() ||
+      "http://api.lvh.me";
+    const callbackUrl = new URL("/platform/payments/chapa/callback", platformPublic);
+    callbackUrl.searchParams.set("tenant_id", input.tenantId);
+    callbackUrl.searchParams.set("tx_ref", prepared.txRef);
+
+    try {
+      const init = await chapaPaymentService.initializePayment({
+        amount: prepared.amount,
+        callbackUrl: callbackUrl.toString(),
+        currency: prepared.currency,
+        description: "ECS Growth plan",
+        email,
+        returnUrl: input.returnUrl,
+        title: "ECS Billing",
+        txRef: prepared.txRef,
+      });
+
+      return {
+        ok: true as const,
+        checkoutUrl: init.checkoutUrl,
+        txRef: init.txRef,
+        invoice: prepared.invoice,
+      };
+    } catch (error) {
+      return {
+        ok: false as const,
+        error: "billing_chapa_init_failed" as const,
+        status: 502 as const,
+        message: error instanceof Error ? error.message : String(error),
+      };
+    }
+  },
   getDashboardMetrics: dashboardMetricsService,
   getDeliverySettings: deliverySettingsService.getDeliverySettings,
   handleChapaPaymentCallback: chapaPaymentService.handleChapaPaymentCallback,

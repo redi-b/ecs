@@ -1,4 +1,10 @@
+"use client";
+
+import type { MerchantDashboardSummary } from "@ecs/contracts";
 import Link from "@/components/app/link";
+import { useRouter } from "next/navigation";
+import { useTransition } from "react";
+import { toast } from "sonner";
 
 import { AppIcons } from "@/components/app/icons";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -7,7 +13,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
 import { Separator } from "@/components/ui/separator";
-import type { MerchantDashboardSummary } from "@ecs/contracts";
+import { getTenantScopedPath } from "@/lib/dashboard-tenant-context";
+import { mapPlatformErrorMessage } from "@/lib/platform-api/errors";
 import { dashboardRoutes } from "@/lib/routes";
 
 /** Limits we do not surface yet (product does not enforce multi-user). */
@@ -31,9 +38,13 @@ const FEATURE_CATALOG: Record<string, FeatureInfo> = {
     label: "Local delivery tools",
     description: "Delivery fees, zones, and phone confirmation at checkout.",
   },
+  freeForever: {
+    label: "Free forever",
+    description: "No subscription payment required on this plan.",
+  },
   trial: {
     label: "Trial access",
-    description: "Temporary access to Starter plan tools.",
+    description: "Temporary access to plan tools.",
   },
 };
 
@@ -42,14 +53,23 @@ export function BillingWorkspace({
 }: {
   summary: MerchantDashboardSummary;
 }) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  const busy = isPending;
+
   const billing = summary.billing;
   const subscription = billing?.subscription;
   const plan = billing?.plan;
+  const isFree =
+    plan?.isFree === true || (plan?.price != null && Number(plan.price) === 0);
   const isTrialing = subscription?.status === "trialing";
-  const isActivePaid = subscription?.status === "active" || subscription?.status === "past_due";
+  const isActivePaid =
+    !isFree && (subscription?.status === "active" || subscription?.status === "past_due");
   const planLimits = filterLimits(asRecord(plan?.limits));
   const planFeatures = filterFeatures(asRecord(plan?.features), isTrialing);
   const invoices = billing?.invoices ?? [];
+  const paidPlans = billing?.availablePaidPlans ?? [];
+  const pendingInvoices = invoices.filter((invoice) => invoice.status === "pending");
 
   if (billing?.unavailable) {
     return (
@@ -64,14 +84,52 @@ export function BillingWorkspace({
     );
   }
 
-  const periodStartLabel = isTrialing ? "Trial started" : "Period started";
-  const periodEndLabel = isTrialing ? "Trial ends" : "Next due";
+  const periodStartLabel = isFree ? "Started" : isTrialing ? "Trial started" : "Period started";
+  const periodEndLabel = isFree ? "Renewal" : isTrialing ? "Trial ends" : "Current period ends";
   const periodStart = subscription?.currentPeriodStart
     ? formatDate(subscription.currentPeriodStart)
     : "—";
-  const periodEnd = subscription?.currentPeriodEnd
-    ? formatDate(subscription.currentPeriodEnd)
-    : "—";
+  const periodEnd = isFree
+    ? "Not required"
+    : subscription?.currentPeriodEnd
+      ? formatDate(subscription.currentPeriodEnd)
+      : "—";
+
+  function runBillingAction(body: Record<string, unknown>) {
+    startTransition(async () => {
+      try {
+        const path = getTenantScopedPath("/admin/billing/actions", summary.tenant.id);
+        const response = await fetch(path, {
+          method: "POST",
+          headers: {
+            accept: "application/json",
+            "content-type": "application/json",
+          },
+          body: JSON.stringify(body),
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          toast.error(
+            mapPlatformErrorMessage(
+              typeof data?.error === "string" ? data.error : "billing_unavailable",
+            ),
+          );
+          return;
+        }
+
+        if (typeof data?.checkoutUrl === "string" && data.checkoutUrl) {
+          toast.success("Redirecting to Chapa…");
+          window.location.href = data.checkoutUrl;
+          return;
+        }
+
+        toast.success("Invoice ready. You can pay with Chapa below.");
+        router.refresh();
+      } catch {
+        toast.error(mapPlatformErrorMessage("platform_request_failed"));
+      }
+    });
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -85,29 +143,42 @@ export function BillingWorkspace({
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
             {plan?.price != null ? formatPlanPrice(plan.price) : "—"}
-            {subscription?.billingCycle ? ` · ${formatCycle(subscription.billingCycle)}` : ""}
-            {subscription?.currentPeriodEnd
-              ? ` · ${periodEndLabel} ${formatDate(subscription.currentPeriodEnd)}`
+            {subscription?.billingCycle && !isFree
+              ? ` · ${formatCycle(subscription.billingCycle)}`
               : ""}
+            {isFree
+              ? " · Free forever"
+              : subscription?.currentPeriodEnd
+                ? ` · ${periodEndLabel} ${formatDate(subscription.currentPeriodEnd)}`
+                : ""}
           </p>
         </div>
         {subscription?.status ? (
-          <Badge className="w-fit capitalize" variant={isTrialing ? "secondary" : "default"}>
-            {formatStatus(subscription.status)}
+          <Badge
+            className="w-fit capitalize"
+            variant={isFree ? "secondary" : isTrialing ? "secondary" : "default"}
+          >
+            {isFree ? "Free" : formatStatus(subscription.status)}
           </Badge>
         ) : null}
       </div>
 
-      {isTrialing ? (
+      {isFree ? (
         <Alert>
-          <AlertTitle>Starter trial is active</AlertTitle>
+          <AlertTitle>Starter is free forever</AlertTitle>
           <AlertDescription>
-            Free trial
-            {subscription?.currentPeriodEnd
-              ? ` through ${formatDate(subscription.currentPeriodEnd)}`
-              : ""}
-            . To continue on a paid plan, contact support and include shop handle{" "}
-            <span className="font-medium text-foreground">{summary.tenant.handle}</span>.
+            No payment is required on Starter. Upgrade to Growth anytime to exercise the paid
+            prepaid flow (invoice + Chapa). Feature gates are not enforced yet.
+          </AlertDescription>
+        </Alert>
+      ) : null}
+
+      {pendingInvoices.length > 0 ? (
+        <Alert>
+          <AlertTitle>Payment due</AlertTitle>
+          <AlertDescription>
+            You have {pendingInvoices.length} open invoice
+            {pendingInvoices.length === 1 ? "" : "s"}. Pay with Chapa to activate or extend Growth.
           </AlertDescription>
         </Alert>
       ) : null}
@@ -116,9 +187,10 @@ export function BillingWorkspace({
         <Metric label="Price" value={plan?.price != null ? formatPlanPrice(plan.price) : "—"} />
         <Metric
           label="Billing cycle"
-          value={subscription?.billingCycle ? formatCycle(subscription.billingCycle) : "—"}
+          value={
+            isFree ? "—" : subscription?.billingCycle ? formatCycle(subscription.billingCycle) : "—"
+          }
         />
-        {/* Timeline left → right: start then end/due */}
         <Metric label={periodStartLabel} value={periodStart} />
         <Metric label={periodEndLabel} value={periodEnd} />
       </div>
@@ -129,8 +201,8 @@ export function BillingWorkspace({
             <CardHeader className="pb-3">
               <CardTitle className="text-base">What this plan includes</CardTitle>
               <CardDescription>
-                {isTrialing
-                  ? "Usage limits during your trial."
+                {isFree
+                  ? "Included with free Starter. Limits are informational only."
                   : isActivePaid
                     ? "Usage limits on your current paid plan."
                     : "Usage limits attached to this plan."}
@@ -194,22 +266,62 @@ export function BillingWorkspace({
 
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-base">Need help?</CardTitle>
+            <CardTitle className="text-base">{isFree ? "Upgrade" : "Account"}</CardTitle>
+            <CardDescription>
+              {isFree
+                ? "Paid plans use prepaid invoices and Chapa."
+                : "Manage this shop and storefront."}
+            </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-2">
-            <Button asChild className="justify-start rounded-full" size="sm" variant="outline">
+            {paidPlans.map((paidPlan) => (
+              <Button
+                key={paidPlan.id}
+                disabled={busy}
+                size="sm"
+                type="button"
+                onClick={() =>
+                  runBillingAction({
+                    action: "upgrade",
+                    planId: paidPlan.id,
+                  })
+                }
+              >
+                Upgrade to {paidPlan.name} ({formatPlanPrice(paidPlan.price)})
+              </Button>
+            ))}
+            {pendingInvoices.map((invoice) => (
+              <Button
+                key={invoice.id}
+                disabled={busy}
+                size="sm"
+                type="button"
+                variant="default"
+                onClick={() => {
+                  const returnUrl = new URL(
+                    getTenantScopedPath(dashboardRoutes.billing, summary.tenant.id),
+                    window.location.origin,
+                  );
+                  returnUrl.searchParams.set("paid", "1");
+                  runBillingAction({
+                    action: "pay",
+                    invoiceId: invoice.id,
+                    returnUrl: returnUrl.toString(),
+                  });
+                }}
+              >
+                Pay {formatMoney(invoice.amount, invoice.currency)} with Chapa
+              </Button>
+            ))}
+            <Button asChild className="justify-start" size="sm" variant="outline">
               <Link href={dashboardRoutes.settings}>Shop settings</Link>
             </Button>
-            <Button asChild className="justify-start rounded-full" size="sm" variant="outline">
+            <Button asChild className="justify-start" size="sm" variant="outline">
               <a href={`//${summary.domain.hostname}`} rel="noreferrer" target="_blank">
                 <AppIcons.externalLink data-icon="inline-start" />
                 View storefront
               </a>
             </Button>
-            <p className="pt-1 text-xs text-muted-foreground">
-              Plan changes and invoices are handled by support for now. Share your shop handle when
-              you reach out.
-            </p>
           </CardContent>
         </Card>
       </div>
@@ -218,19 +330,27 @@ export function BillingWorkspace({
         <CardHeader className="pb-4">
           <CardTitle className="text-base">Invoices</CardTitle>
           <CardDescription>
-            Charges and trial credits for this shop. Paid items extend your active period.
+            {isFree
+              ? "Free Starter never bills. Paid plan invoices appear here after you upgrade."
+              : "Prepaid charges for this shop. Paid invoices extend your active period."}
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-2">
           {invoices.length > 0 ? (
             invoices.map((invoice) => (
               <div
-                className="grid gap-3 rounded-xl border px-3 py-3 text-sm sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:items-center"
+                className="grid gap-3 rounded-xl border px-3 py-3 text-sm sm:grid-cols-[minmax(0,1fr)_auto_auto_auto] sm:items-center"
                 key={invoice.id}
               >
                 <div className="min-w-0">
                   <p className="truncate font-medium">
-                    {invoice.provider === "trial" ? "Trial credit" : shortId(invoice.id)}
+                    {invoice.provider === "trial"
+                      ? "Trial credit"
+                      : invoice.provider === "chapa"
+                        ? "Chapa payment"
+                        : invoice.provider?.startsWith("plan:")
+                          ? "Plan upgrade"
+                          : shortId(invoice.id)}
                   </p>
                   <p className="text-xs text-muted-foreground">
                     Created {formatDate(invoice.createdAt)}
@@ -244,6 +364,29 @@ export function BillingWorkspace({
                 <Badge className="w-fit capitalize" variant="secondary">
                   {invoice.status}
                 </Badge>
+                {invoice.status === "pending" ? (
+                  <Button
+                    disabled={busy}
+                    size="sm"
+                    type="button"
+                    onClick={() => {
+                      const returnUrl = new URL(
+                        getTenantScopedPath(dashboardRoutes.billing, summary.tenant.id),
+                        window.location.origin,
+                      );
+                      returnUrl.searchParams.set("paid", "1");
+                      runBillingAction({
+                        action: "pay",
+                        invoiceId: invoice.id,
+                        returnUrl: returnUrl.toString(),
+                      });
+                    }}
+                  >
+                    Pay
+                  </Button>
+                ) : (
+                  <span className="hidden sm:block" />
+                )}
               </div>
             ))
           ) : (
@@ -251,8 +394,8 @@ export function BillingWorkspace({
           )}
           <Separator className="my-1" />
           <p className="text-xs text-muted-foreground">
-            Need a copy of an invoice or a payment receipt? Contact support with your shop handle
-            and we will send it to you.
+            Payments use Chapa one-shot checkout. Automatic card renewals are not available; each
+            period is prepaid when due.
           </p>
         </CardContent>
       </Card>
@@ -276,7 +419,6 @@ function filterLimits(limits: Record<string, unknown>) {
 function filterFeatures(features: Record<string, unknown>, isTrialing: boolean) {
   return Object.entries(features).filter(([key, enabled]) => {
     if (!enabled) return false;
-    // Redundant with the trial badge when already trialing.
     if (key === "trial" && isTrialing) return false;
     return true;
   });
@@ -347,15 +489,17 @@ function humanizeKey(key: string) {
 
 function formatLimitValue(value: unknown) {
   if (typeof value === "number") {
-    return new Intl.NumberFormat("en").format(value);
+    return value.toLocaleString();
+  }
+  if (typeof value === "string") {
+    return value;
   }
   if (typeof value === "boolean") {
     return value ? "Yes" : "No";
   }
-  if (value == null) return "—";
-  return String(value);
+  return "—";
 }
 
 function shortId(id: string) {
-  return id.length > 12 ? `${id.slice(0, 8)}…` : id;
+  return id.slice(0, 8);
 }

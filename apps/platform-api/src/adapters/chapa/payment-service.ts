@@ -108,8 +108,65 @@ export function createChapaPaymentService(options: ChapaPaymentServiceOptions) {
     return body;
   }
 
+  /**
+   * One-shot checkout for platform subscription invoices (not Medusa commerce).
+   */
+  async function initializePayment(input: {
+    amount: string;
+    callbackUrl: string;
+    currency?: string;
+    description?: string;
+    email: string;
+    firstName?: string;
+    lastName?: string;
+    returnUrl: string;
+    title?: string;
+    txRef: string;
+  }): Promise<{ checkoutUrl: string; txRef: string }> {
+    if (!options.secretKey) {
+      throw new Error("CHAPA_SECRET_KEY is required to initialize Chapa payments.");
+    }
+
+    const response = await fetch(`${apiUrl}/transaction/initialize`, {
+      method: "POST",
+      headers: {
+        authorization: `Bearer ${options.secretKey}`,
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        amount: input.amount,
+        currency: (input.currency ?? "ETB").toUpperCase(),
+        email: input.email,
+        first_name: input.firstName ?? "Merchant",
+        last_name: input.lastName ?? "Owner",
+        tx_ref: input.txRef,
+        callback_url: input.callbackUrl,
+        return_url: input.returnUrl,
+        customization: {
+          title: input.title ?? "ECS Billing",
+          description: input.description ?? "Platform subscription payment",
+        },
+      }),
+    });
+
+    const body = (await response.json().catch(() => undefined)) as
+      | {
+          data?: { checkout_url?: string };
+          message?: string;
+        }
+      | undefined;
+
+    const checkoutUrl = body?.data?.checkout_url?.trim();
+    if (!response.ok || !checkoutUrl) {
+      throw new Error(body?.message ?? "Chapa payment initialization failed.");
+    }
+
+    return { checkoutUrl, txRef: input.txRef };
+  }
+
   return {
     verifyPayment,
+    initializePayment,
 
     handleChapaPaymentCallback: async (input: {
       providerReference?: string | null | undefined;

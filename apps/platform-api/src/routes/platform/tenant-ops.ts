@@ -238,6 +238,103 @@ export function registerPlatformTenantOpsRoutes(
     });
   });
 
+  app.post("/platform/tenants/:tenantId/billing/upgrade", async (context) => {
+    if (!options.createPlanUpgradeInvoice) {
+      return context.json({ error: "billing_unavailable" }, 503);
+    }
+
+    const session = await options.getSession?.(context.req.raw.headers);
+    if (!session) {
+      return context.json({ error: "auth_required" }, 401);
+    }
+
+    const tenantId = context.req.param("tenantId");
+    const authorization = await options.authorizeDashboardForTenant?.({
+      tenantId,
+      userId: session.user.id,
+    });
+    if (!authorization?.ok) {
+      return context.json({ error: "dashboard_forbidden" }, 403);
+    }
+
+    const body = await getJsonBody(context.req.raw);
+    const planId =
+      typeof body === "object" && body && typeof (body as { planId?: unknown }).planId === "string"
+        ? (body as { planId: string }).planId.trim()
+        : "";
+    if (!planId) {
+      return context.json({ error: "billing_plan_required" }, 400);
+    }
+
+    const result = await options.createPlanUpgradeInvoice({ planId, tenantId });
+    if (!result.ok) {
+      return context.json({ error: result.error }, result.status);
+    }
+
+    return context.json({ invoice: result.invoice, reused: result.reused });
+  });
+
+  app.post("/platform/tenants/:tenantId/billing/invoices/:invoiceId/pay", async (context) => {
+    if (!options.initializeBillingInvoicePayment) {
+      return context.json({ error: "billing_unavailable" }, 503);
+    }
+
+    const session = await options.getSession?.(context.req.raw.headers);
+    if (!session) {
+      return context.json({ error: "auth_required" }, 401);
+    }
+
+    const tenantId = context.req.param("tenantId");
+    const invoiceId = context.req.param("invoiceId");
+    const authorization = await options.authorizeDashboardForTenant?.({
+      tenantId,
+      userId: session.user.id,
+    });
+    if (!authorization?.ok) {
+      return context.json({ error: "dashboard_forbidden" }, 403);
+    }
+
+    const body = await getJsonBody(context.req.raw);
+    const returnUrl =
+      typeof body === "object" &&
+      body &&
+      typeof (body as { returnUrl?: unknown }).returnUrl === "string"
+        ? (body as { returnUrl: string }).returnUrl.trim()
+        : "";
+    const payerEmail =
+      (typeof body === "object" &&
+      body &&
+      typeof (body as { email?: unknown }).email === "string"
+        ? (body as { email: string }).email.trim()
+        : "") ||
+      session.user.email?.trim() ||
+      "";
+
+    if (!returnUrl) {
+      return context.json({ error: "billing_return_url_required" }, 400);
+    }
+
+    const result = await options.initializeBillingInvoicePayment({
+      invoiceId,
+      payerEmail,
+      returnUrl,
+      tenantId,
+    });
+
+    if (!result.ok) {
+      return context.json(
+        { error: result.error, message: result.message },
+        result.status,
+      );
+    }
+
+    return context.json({
+      checkoutUrl: result.checkoutUrl,
+      txRef: result.txRef,
+      invoice: result.invoice,
+    });
+  });
+
   app.get("/platform/tenants/:tenantId/domains", async (context) => {
     if (!options.listTenantDomains) {
       return context.json({ error: "domains_unavailable" }, 503);

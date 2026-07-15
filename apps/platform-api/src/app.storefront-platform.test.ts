@@ -1320,7 +1320,9 @@ describe("platform app storefront, delivery, billing, and operator", () => {
                 features: {
                   customDomain: false,
                 },
+                isFree: false,
               },
+              availablePaidPlans: [],
               invoices: [
                 {
                   id: "invoice_1",
@@ -1373,7 +1375,9 @@ describe("platform app storefront, delivery, billing, and operator", () => {
           features: {
             customDomain: false,
           },
+          isFree: false,
         },
+        availablePaidPlans: [],
         invoices: [
           {
             id: "invoice_1",

@@ -511,36 +511,17 @@ export function createTenantShopProvisioningService(options: TenantShopProvision
           })
           .onConflictDoNothing({ target: plans.id });
 
-        const trialStart = new Date();
-        const trialEnd = new Date(trialStart);
-        trialEnd.setUTCDate(trialEnd.getUTCDate() + 14);
-
-        const [trialSubscription] = await transaction
-          .insert(subscriptions)
-          .values({
-            tenantId,
-            planId: DEFAULT_PLAN_IDS.starter,
-            status: "trialing",
-            billingCycle: "monthly",
-            currentPeriodStart: trialStart,
-            currentPeriodEnd: trialEnd,
-            manualPaymentState: "pending",
-          })
-          .returning({ id: subscriptions.id });
-
-        if (trialSubscription?.id) {
-          await transaction.insert(invoices).values({
-            tenantId,
-            subscriptionId: trialSubscription.id,
-            amount: "0",
-            currency: "ETB",
-            status: "paid",
-            dueAt: trialStart,
-            paidAt: trialStart,
-            provider: "trial",
-            providerReference: `trial:${tenantId.slice(0, 8)}`,
-          });
-        }
+        // Free forever Starter — no trial expiry, no payment invoices.
+        const freeStart = new Date();
+        await transaction.insert(subscriptions).values({
+          tenantId,
+          planId: DEFAULT_PLAN_IDS.starter,
+          status: "active",
+          billingCycle: "monthly",
+          currentPeriodStart: freeStart,
+          currentPeriodEnd: null,
+          manualPaymentState: "none",
+        });
 
         return {
           ...createdTenantRow,

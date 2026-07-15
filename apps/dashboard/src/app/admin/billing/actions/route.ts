@@ -1,0 +1,97 @@
+import { NextResponse } from "next/server";
+
+import { withMerchantAction } from "@/lib/platform-api/action-route";
+import { getPlatformApiBaseUrl } from "@/lib/platform-api/client";
+
+/**
+ * Merchant billing mutations:
+ * - upgrade: create pending Growth (or paid plan) invoice
+ * - pay: initialize Chapa checkout for a pending invoice
+ */
+export async function POST(request: Request) {
+  return withMerchantAction(request, async (context) => {
+    if (!context.tenantId) {
+      return { ok: false, message: "tenant_required", status: 400 };
+    }
+
+    const body = (await request.json().catch(() => ({}))) as {
+      action?: string;
+      planId?: string;
+      invoiceId?: string;
+      returnUrl?: string;
+    };
+
+    const action = body.action?.trim();
+    const headers: Record<string, string> = {
+      accept: "application/json",
+      "content-type": "application/json",
+      cookie: context.cookieHeader,
+    };
+    if (context.requestHost) {
+      headers["x-forwarded-host"] = context.requestHost;
+    }
+
+    const base = getPlatformApiBaseUrl();
+
+    if (action === "upgrade") {
+      const planId = body.planId?.trim();
+      if (!planId) {
+        return { ok: false, message: "billing_plan_required", status: 400 };
+      }
+
+      const response = await fetch(
+        `${base}/platform/tenants/${encodeURIComponent(context.tenantId)}/billing/upgrade`,
+        {
+          method: "POST",
+          headers,
+          body: JSON.stringify({ planId }),
+        },
+      );
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        return {
+          ok: false,
+          message:
+            typeof data?.error === "string" ? data.error : "billing_upgrade_failed",
+          status: response.status,
+        };
+      }
+      return { ok: true, data };
+    }
+
+    if (action === "pay") {
+      const invoiceId = body.invoiceId?.trim();
+      if (!invoiceId) {
+        return { ok: false, message: "billing_invoice_required", status: 400 };
+      }
+      const returnUrl =
+        body.returnUrl?.trim() ||
+        new URL("/admin/billing", request.url).toString();
+
+      const response = await fetch(
+        `${base}/platform/tenants/${encodeURIComponent(context.tenantId)}/billing/invoices/${encodeURIComponent(invoiceId)}/pay`,
+        {
+          method: "POST",
+          headers,
+          body: JSON.stringify({ returnUrl }),
+        },
+      );
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        return {
+          ok: false,
+          message:
+            typeof data?.message === "string"
+              ? data.message
+              : typeof data?.error === "string"
+                ? data.error
+                : "billing_pay_failed",
+          status: response.status,
+        };
+      }
+      return { ok: true, data };
+    }
+
+    return { ok: false, message: "invalid_action", status: 400 };
+  });
+}
