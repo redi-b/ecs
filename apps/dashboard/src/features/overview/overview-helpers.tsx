@@ -2,20 +2,8 @@
 
 import type { MerchantDashboardSummary } from "@ecs/contracts";
 import Link from "@/components/app/link";
-import { useEffect, useMemo, useState } from "react";
-import {
-  Bar,
-  BarChart,
-  Cell,
-  Pie,
-  PieChart,
-  PolarAngleAxis,
-  PolarGrid,
-  Radar,
-  RadarChart,
-  XAxis,
-  YAxis,
-} from "recharts";
+import { useEffect, useState } from "react";
+import { Cell, Pie, PieChart } from "recharts";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -23,12 +11,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import {
   type ChartConfig,
   ChartContainer,
-  ChartLegend,
-  ChartLegendContent,
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
-import { Separator } from "@/components/ui/separator";
 import { commerceItems, statusRingColors } from "@/features/overview/overview-config";
 import {
   getLaunchAssistantOpenPreference,
@@ -87,6 +72,7 @@ export function StatusDonutChart({
   const chartRows = rows.slice(0, 5).map((row, index) => ({
     ...row,
     fill: statusRingColors[index % statusRingColors.length] ?? statusRingColors[0],
+    share: total > 0 ? Math.round((row.count / total) * 100) : 0,
   }));
   const config = Object.fromEntries(
     chartRows.map((row) => [
@@ -100,25 +86,25 @@ export function StatusDonutChart({
 
   if (rows.length === 0) {
     return (
-      <div className={cn("flex min-h-44 items-center justify-center", className)}>
+      <div className={cn("flex items-center justify-center py-8", className)}>
         <p className="text-sm text-muted-foreground">No order data is available.</p>
       </div>
     );
   }
 
   return (
-    <div className={cn("grid min-h-44 gap-3 sm:grid-cols-[150px_1fr] sm:items-center", className)}>
-      <ChartContainer className="mx-auto aspect-square h-40 w-40 sm:h-auto sm:min-h-36 sm:w-full" config={config}>
+    <div className={cn("grid gap-4 sm:grid-cols-[7.5rem_1fr] sm:items-center", className)}>
+      <ChartContainer className="mx-auto aspect-square h-36 w-36 sm:h-auto sm:w-full" config={config}>
         <PieChart>
           <ChartTooltip content={<ChartTooltipContent hideLabel />} />
-          <Pie data={chartRows} dataKey="count" nameKey="label" innerRadius={42} outerRadius={64}>
+          <Pie data={chartRows} dataKey="count" nameKey="label" innerRadius={38} outerRadius={58}>
             {chartRows.map((row) => (
               <Cell fill={row.fill} key={row.label} />
             ))}
           </Pie>
         </PieChart>
       </ChartContainer>
-      <div className="flex flex-col justify-center gap-2">
+      <div className="flex flex-col justify-center gap-2.5">
         <div>
           <p className="text-sm font-medium">{title}</p>
           <p className="text-xs text-muted-foreground">
@@ -126,68 +112,48 @@ export function StatusDonutChart({
           </p>
         </div>
         {chartRows.map((row) => (
-          <div className="flex items-center justify-between gap-3 text-sm" key={row.label}>
-            <span className="flex min-w-0 items-center gap-2 truncate capitalize text-muted-foreground">
-              <span
-                aria-hidden
-                className="size-2 shrink-0 rounded-full"
-                style={{ background: row.fill }}
+          <div className="flex flex-col gap-1" key={row.label}>
+            <div className="flex items-center justify-between gap-3 text-sm">
+              <span className="flex min-w-0 items-center gap-2 truncate capitalize text-muted-foreground">
+                <span
+                  aria-hidden
+                  className="size-2 shrink-0 rounded-full"
+                  style={{ background: row.fill }}
+                />
+                {row.label.replaceAll("_", " ")}
+              </span>
+              <span className="shrink-0 font-mono tabular-nums">
+                {row.count.toLocaleString()}
+                <span className="ml-1.5 text-xs text-muted-foreground">{row.share}%</span>
+              </span>
+            </div>
+            <div className="h-1 overflow-hidden rounded-full bg-muted">
+              <div
+                className="h-full rounded-full"
+                style={{ background: row.fill, width: `${row.share}%` }}
               />
-              {row.label.replaceAll("_", " ")}
-            </span>
-            <span className="font-mono tabular-nums">{row.count.toLocaleString()}</span>
+            </div>
           </div>
         ))}
       </div>
     </div>
   );
 }
-
-export function TopEventsChart({ rows }: { rows: Array<{ count: number; eventType: string }> }) {
-  const data = rows.slice(0, 5).map((row) => ({
-    eventType: humanizeEvent(row.eventType),
-    count: row.count,
-  }));
-  const config = {
-    count: {
-      label: "Events",
-      color: "var(--chart-4)",
-    },
-  } satisfies ChartConfig;
-
-  return (
-    <ChartContainer className="min-h-56 w-full" config={config}>
-      <BarChart data={data} layout="vertical" margin={{ left: 8, right: 16 }}>
-        <XAxis type="number" hide />
-        <YAxis
-          type="category"
-          dataKey="eventType"
-          tickLine={false}
-          axisLine={false}
-          width={118}
-          tickMargin={8}
-        />
-        <ChartTooltip content={<ChartTooltipContent hideLabel />} />
-        <Bar dataKey="count" fill="var(--color-count)" radius={4} barSize={16} />
-      </BarChart>
-    </ChartContainer>
-  );
-}
 export function ReadinessBlock({ summary }: { summary: MerchantDashboardSummary }) {
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-2.5 rounded-lg border bg-muted/25 p-3">
       <div className="flex items-center justify-between gap-3">
-        <div>
-          <p className="text-sm font-medium">{summary.tenant.name}</p>
-          <p className="text-xs text-muted-foreground">
+        <div className="min-w-0">
+          <p className="truncate text-sm font-medium">{summary.tenant.name}</p>
+          <p className="truncate text-xs text-muted-foreground">
             /{summary.tenant.handle} · {summary.domain.hostname}
           </p>
         </div>
-        <Badge className="capitalize" variant="secondary">
+        <Badge className="shrink-0 capitalize" variant="secondary">
           {summary.tenant.status}
         </Badge>
       </div>
-      <div className="grid gap-2">
+      <div className="grid gap-1.5">
         {commerceItems.map((item) => (
           <ReadinessRow key={item.key} label={item.label} ready={summary.commerce[item.key]} />
         ))}
