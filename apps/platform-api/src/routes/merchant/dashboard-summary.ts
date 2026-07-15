@@ -360,6 +360,7 @@ export function createMerchantDashboardSummary(
         plan: null,
         invoices: [],
         availablePaidPlans: [],
+        catalog: [],
         unavailable: true,
       };
     }
@@ -372,6 +373,7 @@ export function createMerchantDashboardSummary(
         plan: null,
         invoices: [],
         availablePaidPlans: [],
+        catalog: [],
         unavailable: true,
       };
     }
@@ -385,6 +387,7 @@ export function createMerchantDashboardSummary(
       plan: billing.plan,
       invoices: billing.invoices,
       availablePaidPlans: billing.availablePaidPlans ?? [],
+      catalog: billing.catalog ?? [],
       unavailable: false,
     };
   }

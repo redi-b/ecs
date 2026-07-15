@@ -19,6 +19,14 @@ export type BillingPlanSummary = {
   isFree?: boolean;
 };
 
+export type BillingCatalogPlan = {
+  id: string;
+  name: string;
+  price: string;
+  isFree: boolean;
+  isCurrent: boolean;
+};
+
 export type BillingStatus = {
   subscription: {
     id: string;
@@ -37,8 +45,10 @@ export type BillingStatus = {
     isFree: boolean;
   };
   invoices: BillingInvoice[];
-  /** Paid plans the merchant can upgrade to (excludes current free/paid plan). */
+  /** @deprecated Prefer `catalog`. Paid plans other than the current one. */
   availablePaidPlans: BillingPlanSummary[];
+  /** Active plans for selection UI (order stable by price). */
+  catalog: BillingCatalogPlan[];
 };
 
 export type BillingStatusResult =
