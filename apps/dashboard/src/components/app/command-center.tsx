@@ -41,6 +41,7 @@ import {
   groupLabelForSearchType,
   hrefForSearchHit,
 } from "@/lib/merchant-search";
+import { parseCreateFromHref, requestOpenCreate } from "@/lib/open-create";
 import { cn } from "@/lib/utils";
 
 const REMOTE_MIN_CHARS = 2;
@@ -227,25 +228,44 @@ export function CommandCenter() {
     };
   }, [open, query, tenantId]);
 
+  const closePalette = useCallback(() => {
+    setOpen(false);
+    if (isMobile) setOpenMobile(false);
+  }, [isMobile, setOpenMobile]);
+
   const go = useCallback(
     (href: string, recentItem?: Omit<RecentCommandItem, "at">) => {
       if (recentItem) {
         setRecent(pushRecentCommand(tenantId, recentItem));
       }
       router.push(href);
-      setOpen(false);
-      if (isMobile) setOpenMobile(false);
+      closePalette();
     },
-    [isMobile, router, setOpenMobile, tenantId],
+    [closePalette, router, tenantId],
   );
 
   function selectCommand(command: CommandDef) {
-    go(command.href, {
+    const recentItem = {
       id: command.id,
-      kind: "command",
+      kind: "command" as const,
       label: command.label,
       href: command.href,
-    });
+    };
+
+    // Same-page create: open dialog via event — no Next navigation / RSC reload.
+    const { pathname, create } = parseCreateFromHref(command.href);
+    if (create && typeof window !== "undefined") {
+      const current = window.location.pathname.replace(/\/$/, "") || "/";
+      const target = pathname.replace(/\/$/, "") || "/";
+      if (current === target) {
+        setRecent(pushRecentCommand(tenantId, recentItem));
+        requestOpenCreate(create);
+        closePalette();
+        return;
+      }
+    }
+
+    go(command.href, recentItem);
   }
 
   function selectHit(hit: MerchantSearchHit) {
@@ -270,6 +290,12 @@ export function CommandCenter() {
   const showEmpty =
     !showEmptyQuery && !hasLocal && !hasRemote && !remoteLoading;
 
+  const inputPlaceholder = showEmptyQuery
+    ? "Jump to a page, run an action, or type to search…"
+    : showRemote
+      ? "Searching products, orders, customers…"
+      : "Keep typing to search your catalog…";
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
@@ -279,7 +305,7 @@ export function CommandCenter() {
           aria-label="Open command center"
           size="icon"
           className={cn(
-            "shrink-0 text-muted-foreground",
+            "size-9 shrink-0 text-muted-foreground",
             "sm:h-9 sm:w-auto sm:min-w-60 sm:justify-start sm:gap-2 sm:rounded-xl sm:border sm:border-border/80 sm:bg-background/80 sm:px-3 sm:shadow-sm sm:backdrop-blur-sm",
             "sm:hover:bg-accent/80 sm:hover:text-accent-foreground",
           )}
@@ -296,9 +322,14 @@ export function CommandCenter() {
       </DialogTrigger>
       <DialogContent
         className={cn(
-          "gap-0 overflow-hidden border-border/70 p-0 shadow-2xl sm:max-w-xl",
-          "rounded-2xl bg-popover/95 backdrop-blur-xl",
+          // Mobile: near full-screen sheet from top for thumb reach + more list room.
+          "fixed top-0 left-1/2 z-50 flex max-h-[100dvh] w-full max-w-full -translate-x-1/2 translate-y-0 flex-col gap-0 overflow-hidden rounded-none border-0 p-0 shadow-2xl",
+          "data-open:zoom-in-100 data-closed:zoom-out-100",
+          // Desktop: centered elevated panel.
+          "sm:top-[min(12vh,6rem)] sm:max-h-[min(36rem,80dvh)] sm:max-w-xl sm:rounded-2xl sm:border sm:border-border/70",
+          "bg-popover/95 backdrop-blur-xl",
           "ring-1 ring-black/5 dark:ring-white/10",
+          "pb-[env(safe-area-inset-bottom,0px)]",
         )}
         showCloseButton={false}
       >
@@ -307,18 +338,37 @@ export function CommandCenter() {
           Search pages, products, orders, customers, and run common actions.
         </DialogDescription>
 
+        {/* Mobile drag/close chrome */}
+        <div className="flex items-center justify-between gap-2 border-b border-border/50 px-3 py-2 sm:hidden">
+          <p className="text-sm font-medium">Command center</p>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="size-8"
+            aria-label="Close"
+            onClick={() => setOpen(false)}
+          >
+            <AppIcons.close className="size-4" />
+          </Button>
+        </div>
+
         <Command
           shouldFilter={false}
-          className="rounded-2xl bg-transparent **:data-[slot=command-input-wrapper]:border-b **:data-[slot=command-input-wrapper]:border-border/60 **:data-[slot=command-input-wrapper]:bg-transparent **:data-[slot=command-input-wrapper]:p-3 **:data-[slot=command-input-wrapper]:pb-3"
+          className={cn(
+            "flex min-h-0 flex-1 flex-col rounded-none bg-transparent sm:rounded-2xl",
+            "**:data-[slot=command-input-wrapper]:border-b **:data-[slot=command-input-wrapper]:border-border/60",
+            "**:data-[slot=command-input-wrapper]:bg-transparent **:data-[slot=command-input-wrapper]:p-3",
+          )}
         >
           <CommandInput
-            placeholder="Search pages, products, orders…"
+            placeholder={inputPlaceholder}
             value={query}
             onValueChange={setQuery}
-            className="h-11 text-base placeholder:text-muted-foreground/70"
+            className="h-12 text-base sm:h-11 placeholder:text-muted-foreground/70"
           />
 
-          <CommandList className="max-h-[min(28rem,60vh)] scroll-py-2 px-2 pb-2">
+          <CommandList className="min-h-0 flex-1 scroll-py-2 px-2 pb-2 max-h-none sm:max-h-[min(28rem,55dvh)]">
             {showEmpty ? (
               <CommandEmpty className="py-10 text-muted-foreground">
                 {remoteError ? remoteError : "No matches. Try another term or a create action."}
@@ -467,17 +517,26 @@ export function CommandCenter() {
             ) : null}
           </CommandList>
 
-          <div className="flex items-center justify-between gap-2 border-t border-border/60 bg-muted/30 px-3 py-2 text-[11px] text-muted-foreground">
+          <div className="flex shrink-0 items-center justify-between gap-2 border-t border-border/60 bg-muted/30 px-3 py-2.5 text-[11px] text-muted-foreground sm:py-2">
             <span className="flex items-center gap-1.5">
-              <Kbd className="h-5 min-w-5 px-1">↑</Kbd>
-              <Kbd className="h-5 min-w-5 px-1">↓</Kbd>
-              <span className="hidden sm:inline">to move</span>
-              <Kbd className="ml-1 h-5 px-1.5">↵</Kbd>
-              <span className="hidden sm:inline">to open</span>
+              <span className="sm:hidden">Tap a result to open</span>
+              <span className="hidden items-center gap-1.5 sm:flex">
+                <Kbd className="h-5 min-w-5 px-1">↑</Kbd>
+                <Kbd className="h-5 min-w-5 px-1">↓</Kbd>
+                <span>move</span>
+                <Kbd className="ml-1 h-5 px-1.5">↵</Kbd>
+                <span>open</span>
+              </span>
             </span>
             <span className="flex items-center gap-1">
-              <Kbd className="h-5 px-1.5">esc</Kbd>
-              close
+              <Kbd className="hidden h-5 px-1.5 sm:inline-flex">esc</Kbd>
+              <button
+                type="button"
+                className="text-foreground/80 underline-offset-2 sm:no-underline sm:hover:underline"
+                onClick={() => setOpen(false)}
+              >
+                Close
+              </button>
             </span>
           </div>
         </Command>
