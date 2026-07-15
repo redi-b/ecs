@@ -452,7 +452,7 @@ export function ProductsTable({
     <>
       <DataTable
         bulkActions={(selectedProducts) => (
-          <div className="flex items-center gap-2">
+          <>
             <Button
               onClick={() =>
                 copyToClipboard(
@@ -505,9 +505,9 @@ export function ProductsTable({
               variant="destructive"
             >
               <AppIcons.trash data-icon="inline-start" />
-              Delete selected
+              Delete
             </Button>
-          </div>
+          </>
         )}
         columns={columns}
         data={filteredProducts}

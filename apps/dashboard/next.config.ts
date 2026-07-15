@@ -1,16 +1,24 @@
 import type { NextConfig } from "next";
 import path from "node:path";
 
+const isProd = process.env.NODE_ENV === "production";
+
 const nextConfig: NextConfig = {
   allowedDevOrigins: ["*.lvh.me"],
   output: "standalone",
   outputFileTracingRoot: path.join(process.cwd(), "../.."),
   reactStrictMode: true,
   /**
-   * Belt-and-suspenders with Caddy: hashed `/_next/static/*` chunks are immutable.
-   * RSC/document routes stay dynamic (no long-lived cache) because of cookie auth.
+   * Production only: long-cache hashed `/_next/static/*` chunks.
+   * Applying this in development breaks Next.js HMR (stale JS chunks →
+   * hydration mismatches and hard-refresh-only updates). Caddy still sets
+   * the same header at the edge for deployed traffic.
    */
   async headers() {
+    if (!isProd) {
+      return [];
+    }
+
     return [
       {
         source: "/_next/static/:path*",

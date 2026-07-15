@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 
 import { AppIcons } from "@/components/app/icons";
 import { Button } from "@/components/ui/button";
@@ -16,8 +17,10 @@ type DataTableBulkBarProps = {
 };
 
 /**
- * Floating bulk-action bar.
- * Mobile: stacked card with solid fill (no table bleed-through).
+ * Floating bulk-action bar, portaled to document.body so parent overflow/transforms
+ * (e.g. DataTable's overflow-hidden card) cannot clip it.
+ *
+ * Mobile: full-width dock — summary row + wrapping action chips.
  * Desktop: centered pill.
  */
 export function DataTableBulkBar({
@@ -29,7 +32,12 @@ export function DataTableBulkBar({
 }: DataTableBulkBarProps) {
   const [shouldRender, setShouldRender] = useState(selectedCount > 0);
   const [displayCount, setDisplayCount] = useState(selectedCount);
+  const [mounted, setMounted] = useState(false);
   const isVisible = selectedCount > 0;
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (selectedCount > 0) {
@@ -43,60 +51,65 @@ export function DataTableBulkBar({
     return () => window.clearTimeout(timeout);
   }, [selectedCount]);
 
-  if (!shouldRender) {
+  if (!shouldRender || !mounted) {
     return null;
   }
 
-  return (
+  return createPortal(
     <div
       aria-hidden={!isVisible}
       className={cn(
-        "pointer-events-none fixed inset-x-0 bottom-0 z-50 flex justify-center px-3 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))]",
+        "pointer-events-none fixed inset-x-0 bottom-0 z-[100] flex justify-center p-3 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))]",
         className,
       )}
     >
       <div
         className={cn(
-          // Solid surface — outline buttons are transparent, so the bar must fully occlude table text.
-          "pointer-events-auto flex w-full max-w-lg flex-col gap-2 rounded-2xl border border-border bg-card p-2.5 text-card-foreground shadow-2xl ring-1 ring-black/5",
-          "sm:w-auto sm:max-w-[min(42rem,calc(100vw-2rem))] sm:flex-row sm:items-center sm:gap-3 sm:rounded-full sm:px-3 sm:py-2",
+          "pointer-events-auto w-full max-w-lg rounded-2xl border border-border bg-card text-card-foreground shadow-2xl ring-1 ring-black/5",
+          "sm:w-auto sm:max-w-[min(44rem,calc(100vw-1.5rem))] sm:rounded-full",
           "transition-all duration-200 ease-out",
           isVisible
-            ? "translate-y-0 scale-100 opacity-100"
-            : "pointer-events-none translate-y-3 scale-95 opacity-0",
+            ? "translate-y-0 opacity-100"
+            : "pointer-events-none translate-y-3 opacity-0",
         )}
       >
-        <div className="flex items-center justify-between gap-2 sm:contents">
-          <span className="shrink-0 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary sm:px-3 sm:text-sm">
-            {displayCount} {summaryLabel}
-          </span>
-          <Button
-            aria-label="Clear selection"
-            className="shrink-0 sm:order-last"
-            onClick={onClearSelection}
-            size="icon-sm"
-            type="button"
-            variant="ghost"
-          >
-            <AppIcons.close data-icon="inline-start" />
-          </Button>
-        </div>
-
-        {isVisible && actions ? (
-          <div
-            className={cn(
-              // Force nested action wrappers (usually a single flex div) to wrap on narrow widths.
-              "flex min-w-0 flex-wrap items-center gap-1.5",
-              "[&>div]:flex [&>div]:min-w-0 [&>div]:flex-wrap [&>div]:items-center [&>div]:gap-1.5",
-              // Opaque faces so table rows never show through outline / soft destructive fills.
-              "[&_button[data-variant=outline]]:bg-card",
-              "[&_button[data-variant=destructive]]:bg-card",
-            )}
-          >
-            {actions}
+        {/* Mobile: stacked. Desktop: single row via sm:flex */}
+        <div className="flex flex-col gap-2 p-2.5 sm:flex-row sm:items-center sm:gap-2 sm:px-3 sm:py-2">
+          <div className="flex items-center justify-between gap-2 sm:contents">
+            <span className="inline-flex shrink-0 items-center rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium whitespace-nowrap text-primary sm:px-3 sm:text-sm">
+              {displayCount} {summaryLabel}
+            </span>
+            <Button
+              aria-label="Clear selection"
+              className="shrink-0 sm:order-last"
+              onClick={onClearSelection}
+              size="icon-sm"
+              type="button"
+              variant="ghost"
+            >
+              <AppIcons.close data-icon="inline-start" />
+            </Button>
           </div>
-        ) : null}
+
+          {isVisible && actions ? (
+            <div
+              className={cn(
+                "grid grid-cols-2 gap-1.5 sm:flex sm:flex-nowrap sm:items-center sm:gap-1.5",
+                // Unwrap the common single-div action wrapper so buttons participate in the grid/flex.
+                "[&>div]:contents",
+                // Solid faces — outline/destructive soft fills otherwise show table text.
+                "[&_button]:w-full sm:[&_button]:w-auto",
+                "[&_button[data-variant=outline]]:bg-card",
+                "[&_button[data-variant=destructive]]:bg-card",
+                "[&_button]:justify-center",
+              )}
+            >
+              {actions}
+            </div>
+          ) : null}
+        </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
