@@ -64,8 +64,8 @@ import { cn } from "@/lib/utils";
 
 const SECTION_ICONS: Record<SettingsSectionId, AppIcon> = {
   shop: AppIcons.settings,
-  preferences: AppIcons.star,
-  notifications: AppIcons.star,
+  preferences: AppIcons.preferences,
+  notifications: AppIcons.notifications,
   fulfillment: AppIcons.orders,
   storefront: AppIcons.editor,
   account: AppIcons.user,

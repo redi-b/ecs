@@ -24,7 +24,7 @@ export const SETTINGS_SECTIONS: Array<{
   {
     id: "notifications",
     label: "Notifications",
-    description: "Email and Telegram alerts",
+    description: "Orders, payments, and shop events",
   },
   {
     id: "fulfillment",
