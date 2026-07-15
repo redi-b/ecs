@@ -10,6 +10,7 @@ import { registerMerchantMediaRoutes } from "./media.js";
 import { registerMerchantOrderRoutes } from "./orders.js";
 import { registerMerchantProductRoutes } from "./products.js";
 import { registerMerchantPromotionRoutes } from "./promotions.js";
+import { registerMerchantInboxNotificationRoutes } from "./inbox-notifications.js";
 import { registerMerchantTelegramNotificationRoutes } from "./telegram-notifications.js";
 
 export function registerMerchantRoutes(
@@ -27,4 +28,5 @@ export function registerMerchantRoutes(
   registerMerchantCustomerRoutes(app, options, helpers);
   registerMerchantPromotionRoutes(app, options, helpers);
   registerMerchantTelegramNotificationRoutes(app, options, helpers);
+  registerMerchantInboxNotificationRoutes(app, options, helpers);
 }

@@ -563,6 +563,43 @@ export type PlatformAppOptions = {
   listNotificationPreferences?:
     | ((input: { tenantId: string }) => Promise<NotificationPreferenceListResult>)
     | undefined;
+  listInAppNotifications?:
+    | ((input: {
+        tenantId: string;
+        actorUserId?: string | null;
+        limit?: number;
+        unreadOnly?: boolean;
+      }) => Promise<{
+        items: Array<{
+          id: string;
+          eventType: string;
+          title: string;
+          body: string;
+          href: string | null;
+          readAt: string | null;
+          createdAt: string;
+        }>;
+      }>)
+    | undefined;
+  countInAppNotificationUnread?:
+    | ((input: {
+        tenantId: string;
+        actorUserId?: string | null;
+      }) => Promise<{ count: number }>)
+    | undefined;
+  markInAppNotificationRead?:
+    | ((input: {
+        tenantId: string;
+        id: string;
+        actorUserId?: string | null;
+      }) => Promise<{ ok: true } | { ok: false; error: "not_found"; status: 404 }>)
+    | undefined;
+  markAllInAppNotificationsRead?:
+    | ((input: {
+        tenantId: string;
+        actorUserId?: string | null;
+      }) => Promise<{ ok: true; updated: number }>)
+    | undefined;
   recordNotificationEvent?:
     | ((input: {
         eventType: NotificationEventType;

@@ -48,6 +48,7 @@ const PLATFORM_ERROR_MESSAGES: Record<string, string> = {
   invalid_collection_ids: "Select at least one collection.",
   settings_unavailable: "Shop settings are temporarily unavailable.",
   notifications_unavailable: "Notification settings are temporarily unavailable.",
+  not_found: "That item could not be found.",
   notification_preference_missing:
     "Save your notification settings before sending a test.",
   notification_channel_invalid: "Choose a valid notification channel.",

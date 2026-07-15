@@ -11,6 +11,14 @@ describe("createNotificationService enqueue", () => {
           where: async () => [],
         }),
       }),
+      insert: () => ({
+        values: () => ({
+          onConflictDoNothing: () => ({
+            returning: async () => [{ id: "inbox-1" }],
+          }),
+          returning: async () => [],
+        }),
+      }),
     };
 
     const enqueued: unknown[] = [];
@@ -62,18 +70,40 @@ describe("createNotificationService enqueue", () => {
 
     const insertedPayloads: unknown[] = [];
     const enqueued: unknown[] = [];
+    let selectCall = 0;
 
     const db = {
       select: () => ({
         from: () => ({
-          where: async () => preferences,
+          where: async () => {
+            selectCall += 1;
+            // 1: notification_preferences, 2: notification_destinations
+            if (selectCall === 1) {
+              return preferences;
+            }
+            // Telegram multi-connect destinations empty in this unit test.
+            return [];
+          },
         }),
       }),
       insert: () => ({
-        values: (rows: unknown[]) => {
-          insertedPayloads.push(...rows);
+        values: (rows: unknown) => {
+          // First insert is in-app (single object); later is notification_logs array.
+          if (Array.isArray(rows)) {
+            insertedPayloads.push(...rows);
+            return {
+              onConflictDoNothing: () => ({
+                returning: async () => [],
+              }),
+              returning: async () =>
+                (rows as unknown[]).map((_, index) => ({ id: `log-${index + 1}` })),
+            };
+          }
           return {
-            returning: async () => [{ id: "log-a" }, { id: "log-b" }],
+            onConflictDoNothing: () => ({
+              returning: async () => [{ id: "inbox-1" }],
+            }),
+            returning: async () => [{ id: "inbox-1" }],
           };
         },
       }),
@@ -102,14 +132,15 @@ describe("createNotificationService enqueue", () => {
       payload: { orderDisplayId: "#9" },
     });
 
-    assert.equal(result.logCount, 2);
-    assert.deepEqual(result.logIds, ["log-a", "log-b"]);
-    assert.equal(enqueued.length, 2);
+    // Email preference matches; telegram channel on preferences is ignored (destinations table).
+    assert.equal(result.logCount, 1);
+    assert.deepEqual(result.logIds, ["log-1"]);
+    assert.equal(enqueued.length, 1);
     assert.deepEqual(enqueued[0], {
       name: "notifications.deliver",
-      payload: { notificationLogId: "log-a" },
+      payload: { notificationLogId: "log-1" },
       tenantId: "tenant-1",
-      idempotencyKey: "notifications.deliver:log-a",
+      idempotencyKey: "notifications.deliver:log-1",
     });
     assert.equal(
       (insertedPayloads[0] as { payload: unknown }).payload &&

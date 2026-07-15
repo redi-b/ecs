@@ -3,6 +3,7 @@
 import { AppBreadcrumbs } from "@/components/app/app-breadcrumbs";
 import { CommandCenter } from "@/components/app/command-center";
 import { LanguageSwitcher } from "@/components/app/language-switcher";
+import { NotificationCenter } from "@/components/app/notification-center";
 import { ThemeToggle } from "@/components/app/theme-toggle";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 
@@ -19,6 +20,7 @@ export function AppHeader() {
       </div>
       <div className="flex shrink-0 items-center gap-0.5 sm:gap-1">
         <CommandCenter />
+        <NotificationCenter />
         <LanguageSwitcher />
         <ThemeToggle />
       </div>

@@ -106,3 +106,33 @@ export const telegramConnectSessions = pgTable(
     index("telegram_connect_sessions_tenant_status_idx").on(table.tenantId, table.status),
   ],
 );
+
+/**
+ * Dashboard inbox items (in-app notifications).
+ * userId null = tenant-wide (v1); later personal rows set userId.
+ * Separate from notification_logs (external delivery ledger).
+ */
+export const inAppNotifications = pgTable(
+  "in_app_notifications",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id),
+    /** Better Auth user id when personal; null = visible to all shop members. */
+    userId: text("user_id"),
+    eventType: text("event_type").notNull(),
+    dedupeKey: text("dedupe_key").notNull(),
+    title: text("title").notNull(),
+    body: text("body").notNull(),
+    href: text("href"),
+    payload: jsonb("payload").notNull().default({}),
+    readAt: timestamp("read_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("in_app_notifications_tenant_dedupe_uidx").on(table.tenantId, table.dedupeKey),
+    index("in_app_notifications_tenant_created_idx").on(table.tenantId, table.createdAt),
+    index("in_app_notifications_tenant_unread_idx").on(table.tenantId, table.readAt),
+  ],
+);

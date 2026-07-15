@@ -1,5 +1,12 @@
 export { deliverNotificationLog } from "./delivery.js";
 export {
+  buildInAppDedupeKey,
+  buildInAppHref,
+  createInAppNotificationService,
+  IN_APP_EVENT_SET,
+} from "./inbox.js";
+export type { InAppNotificationService, InAppNotificationView } from "./inbox.js";
+export {
   createResendEmailNotificationProvider,
   isEmailDeliveryConfigured,
 } from "./providers/email-provider.js";

@@ -16,6 +16,7 @@ import type {
   NotificationPreferenceListResult,
   NotificationPreferenceUpsertResult,
 } from "../../types/index.js";
+import { createInAppNotificationService } from "./inbox.js";
 
 type PlatformDb = ReturnType<typeof createPlatformDb>["db"];
 type NotificationPreferenceRow = typeof notificationPreferences.$inferSelect;
@@ -99,8 +100,10 @@ export function createNotificationService(
   options: CreateNotificationServiceOptions = {},
 ) {
   const enqueueJob = options.enqueueJob;
+  const inbox = createInAppNotificationService(db);
 
   return {
+    inbox,
     listNotificationPreferences: async (input: {
       tenantId: string;
     }): Promise<NotificationPreferenceListResult> => {
@@ -131,6 +134,24 @@ export function createNotificationService(
       payload?: unknown;
       tenantId: string;
     }): Promise<NotificationEventRecordResult> => {
+      const payload =
+        input.payload !== undefined && input.payload !== null && typeof input.payload === "object"
+          ? input.payload
+          : {};
+
+      // In-app inbox is independent of email/Telegram configuration.
+      // Failures here must not block external delivery (and vice versa).
+      try {
+        await inbox.tryCreateFromEvent({
+          eventType: input.eventType,
+          payload,
+          tenantId: input.tenantId,
+          userId: null,
+        });
+      } catch {
+        // Swallow — tryCreateFromEvent already isolates errors; belt-and-suspenders.
+      }
+
       // Email (and legacy preference rows) still use notification_preferences.
       // Telegram multi-connect uses notification_destinations.
       const preferences = await db
@@ -180,11 +201,6 @@ export function createNotificationService(
           logIds: [],
         };
       }
-
-      const payload =
-        input.payload !== undefined && input.payload !== null && typeof input.payload === "object"
-          ? input.payload
-          : {};
 
       const inserted = await db
         .insert(notificationLogs)
