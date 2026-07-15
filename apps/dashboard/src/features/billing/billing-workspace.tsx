@@ -68,8 +68,15 @@ export function BillingWorkspace({
   const planLimits = filterLimits(asRecord(plan?.limits));
   const planFeatures = filterFeatures(asRecord(plan?.features), isTrialing);
   const invoices = billing?.invoices ?? [];
+  /** Hide legacy free/trial credits; only real money invoices matter to merchants. */
+  const visibleInvoices = invoices.filter((invoice) => {
+    const amount = Number(invoice.amount);
+    if (invoice.provider === "trial") return false;
+    if (Number.isFinite(amount) && amount === 0 && invoice.status === "paid") return false;
+    return true;
+  });
   const paidPlans = billing?.availablePaidPlans ?? [];
-  const pendingInvoices = invoices.filter((invoice) => invoice.status === "pending");
+  const pendingInvoices = visibleInvoices.filter((invoice) => invoice.status === "pending");
 
   if (billing?.unavailable) {
     return (
@@ -165,10 +172,10 @@ export function BillingWorkspace({
 
       {isFree ? (
         <Alert>
-          <AlertTitle>Starter is free forever</AlertTitle>
+          <AlertTitle>You are on Starter</AlertTitle>
           <AlertDescription>
-            No payment is required on Starter. Upgrade to Growth anytime to exercise the paid
-            prepaid flow (invoice + Chapa). Feature gates are not enforced yet.
+            Starter is free for your shop. You can upgrade to Growth when you want a paid plan
+            period.
           </AlertDescription>
         </Alert>
       ) : null}
@@ -178,7 +185,8 @@ export function BillingWorkspace({
           <AlertTitle>Payment due</AlertTitle>
           <AlertDescription>
             You have {pendingInvoices.length} open invoice
-            {pendingInvoices.length === 1 ? "" : "s"}. Pay with Chapa to activate or extend Growth.
+            {pendingInvoices.length === 1 ? "" : "s"}. Complete payment to activate or extend your
+            paid plan period.
           </AlertDescription>
         </Alert>
       ) : null}
@@ -202,10 +210,10 @@ export function BillingWorkspace({
               <CardTitle className="text-base">What this plan includes</CardTitle>
               <CardDescription>
                 {isFree
-                  ? "Included with free Starter. Limits are informational only."
+                  ? "What comes with free Starter."
                   : isActivePaid
-                    ? "Usage limits on your current paid plan."
-                    : "Usage limits attached to this plan."}
+                    ? "Included with your current paid plan."
+                    : "Included with this plan."}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -266,11 +274,11 @@ export function BillingWorkspace({
 
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-base">{isFree ? "Upgrade" : "Account"}</CardTitle>
+            <CardTitle className="text-base">{isFree ? "Upgrade" : "Quick links"}</CardTitle>
             <CardDescription>
               {isFree
-                ? "Paid plans use prepaid invoices and Chapa."
-                : "Manage this shop and storefront."}
+                ? "Move to a paid plan when you are ready."
+                : "Shop settings and storefront."}
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-2">
@@ -330,39 +338,37 @@ export function BillingWorkspace({
         <CardHeader className="pb-4">
           <CardTitle className="text-base">Invoices</CardTitle>
           <CardDescription>
-            {isFree
-              ? "Free Starter never bills. Paid plan invoices appear here after you upgrade."
-              : "Prepaid charges for this shop. Paid invoices extend your active period."}
+            {visibleInvoices.length === 0
+              ? isFree
+                ? "No charges on Starter. Invoices appear when you upgrade to a paid plan."
+                : "No invoices yet for this shop."
+              : "Payment history and open charges for this shop."}
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-2">
-          {invoices.length > 0 ? (
-            invoices.map((invoice) => (
+          {visibleInvoices.length > 0 ? (
+            visibleInvoices.map((invoice) => (
               <div
                 className="grid gap-3 rounded-xl border px-3 py-3 text-sm sm:grid-cols-[minmax(0,1fr)_auto_auto_auto] sm:items-center"
                 key={invoice.id}
               >
                 <div className="min-w-0">
                   <p className="truncate font-medium">
-                    {invoice.provider === "trial"
-                      ? "Trial credit"
-                      : invoice.provider === "chapa"
-                        ? "Chapa payment"
-                        : invoice.provider?.startsWith("plan:")
-                          ? "Plan upgrade"
-                          : shortId(invoice.id)}
+                    {invoiceLabel(invoice)}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    Created {formatDate(invoice.createdAt)}
-                    {invoice.dueAt ? ` · Due ${formatDate(invoice.dueAt)}` : ""}
-                    {invoice.paidAt ? ` · Paid ${formatDate(invoice.paidAt)}` : ""}
+                    {invoice.paidAt
+                      ? `Paid ${formatDate(invoice.paidAt)}`
+                      : invoice.dueAt
+                        ? `Due ${formatDate(invoice.dueAt)}`
+                        : `Created ${formatDate(invoice.createdAt)}`}
                   </p>
                 </div>
                 <span className="font-mono tabular-nums sm:text-right">
                   {formatMoney(invoice.amount, invoice.currency)}
                 </span>
                 <Badge className="w-fit capitalize" variant="secondary">
-                  {invoice.status}
+                  {invoiceStatusLabel(invoice.status)}
                 </Badge>
                 {invoice.status === "pending" ? (
                   <Button
@@ -390,13 +396,12 @@ export function BillingWorkspace({
               </div>
             ))
           ) : (
-            <p className="text-sm text-muted-foreground">No invoices yet for this shop.</p>
+            <p className="text-sm text-muted-foreground">
+              {isFree
+                ? "Nothing to pay while you are on Starter."
+                : "No invoices yet for this shop."}
+            </p>
           )}
-          <Separator className="my-1" />
-          <p className="text-xs text-muted-foreground">
-            Payments use Chapa one-shot checkout. Automatic card renewals are not available; each
-            period is prepaid when due.
-          </p>
         </CardContent>
       </Card>
     </div>
@@ -500,6 +505,19 @@ function formatLimitValue(value: unknown) {
   return "—";
 }
 
-function shortId(id: string) {
-  return id.slice(0, 8);
+function invoiceLabel(invoice: {
+  provider: string | null;
+  status: string;
+}) {
+  if (invoice.provider === "chapa") return "Plan payment";
+  if (invoice.provider?.startsWith("plan:")) return "Plan upgrade";
+  if (invoice.status === "pending") return "Open invoice";
+  return "Invoice";
+}
+
+function invoiceStatusLabel(status: string) {
+  if (status === "pending") return "Unpaid";
+  if (status === "paid") return "Paid";
+  if (status === "void" || status === "cancelled") return "Cancelled";
+  return status;
 }
