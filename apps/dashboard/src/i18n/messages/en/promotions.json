@@ -121,6 +121,23 @@
     "toastSuccess": "Promotion created.",
     "toastError": "Could not create promotion. Try again.",
     "startsLabel": "Starts",
-    "endsLabel": "Ends"
+    "endsLabel": "Ends",
+    "dialogDescription": "Set the offer type, configure how it applies, then choose a schedule and budget.",
+    "stepShortType": "Type",
+    "stepShortDetails": "Details",
+    "stepShortSchedule": "Schedule",
+    "usageLimit": "Usage limit",
+    "unlimited": "Unlimited",
+    "status": "Status",
+    "statusActive": "Active",
+    "statusDraft": "Draft",
+    "statusInactive": "Inactive",
+    "noMax": "No max",
+    "scheduleTitle": "Schedule",
+    "budgetTitle": "Budget",
+    "optionalStart": "Optional start",
+    "optionalEnd": "Optional end",
+    "campaignPlaceholder": "Summer sale",
+    "creating": "Creating…"
   }
 }

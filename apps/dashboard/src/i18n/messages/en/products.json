@@ -31,7 +31,10 @@
   "filter": {
     "status": {
       "label": "Status",
-      "all": "All statuses"
+      "all": "All statuses",
+      "published": "Published",
+      "draft": "Draft",
+      "unknown": "Unknown"
     },
     "stock": {
       "label": "Stock",
@@ -69,6 +72,33 @@
     "searchPlaceholder": "Search products",
     "clearSearch": "Clear product search",
     "selectedSummary": "{count} selected",
-    "productIds": "Product IDs"
+    "productIds": "Product IDs",
+    "product": "Product",
+    "price": "Price",
+    "organization": "Organization",
+    "variantCount": "{count} variants",
+    "variantCountOne": "1 variant",
+    "notTracked": "Not tracked",
+    "selectAllAria": "Select all visible products",
+    "viewDetails": "View details",
+    "manageInventory": "Manage inventory",
+    "publishProduct": "Publish product",
+    "moveToDraft": "Move to draft",
+    "copyProductId": "Copy product ID",
+    "copyHandle": "Copy handle",
+    "copyPath": "Copy storefront path",
+    "productId": "Product ID",
+    "handle": "Handle",
+    "productPath": "Product path",
+    "deleteProduct": "Delete product",
+    "actionsFor": "Open actions for {name}",
+    "unnamed": "unnamed product",
+    "statusUpdateFailed": "Product status could not be updated. Try again.",
+    "publishing": "Publishing {count}…",
+    "movingToDraft": "Moving {count} to draft…",
+    "published": "{count} published.",
+    "movedToDraft": "{count} moved to draft.",
+    "deleted": "Product deleted.",
+    "deleteFailed": "Product could not be deleted."
   }
 }

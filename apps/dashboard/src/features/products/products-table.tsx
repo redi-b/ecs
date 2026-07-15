@@ -62,24 +62,28 @@ type ProductsTableProps = {
 import {
   getDeletionErrorMessage,
   getProductColumns,
+  getProductStatusFilterOptions,
   getStatusLoadingMessage,
   getStatusSuccessMessage,
   type ProductStatusValue,
-  productStatusFilterOptions,
   setUrlFilter,
 } from "@/features/products/products-table-helpers";
 import { useI18n } from "@/i18n/provider";
 
-async function copyToClipboard(value: string, label: string) {
+async function copyToClipboard(
+  value: string,
+  label: string,
+  t: (key: any, values?: Record<string, string | number>) => string,
+) {
   try {
     const copied = await copyTextToClipboard(value);
     if (!copied) {
-      toast.error("Nothing to copy.");
+      toast.error(t("table.actions.copyEmpty"));
       return;
     }
-    toast.success(`${label} copied`);
+    toast.success(t("table.actions.copySuccess", { label }));
   } catch {
-    toast.error("Could not copy. Try again.");
+    toast.error(t("table.actions.copyFailed"));
   }
 }
 
@@ -205,12 +209,12 @@ export function ProductsTable({
   const handleStatusChange = useCallback(
     (productIds: string[], nextStatus: ProductStatusValue) => {
       return toast.promise(updateProductStatus({ productIds, status: nextStatus }), {
-        error: "Product status could not be updated. Try again.",
-        loading: getStatusLoadingMessage(productIds.length, nextStatus),
-        success: ({ count, status }) => getStatusSuccessMessage(count, status),
+        error: t("products.table.statusUpdateFailed"),
+        loading: getStatusLoadingMessage(productIds.length, nextStatus, t),
+        success: ({ count, status }) => getStatusSuccessMessage(count, status, t),
       });
     },
-    [updateProductStatus],
+    [t, updateProductStatus],
   );
 
   const columns = useMemo(
@@ -221,8 +225,9 @@ export function ProductsTable({
         collections,
         (id) => setDeleteProductId(id),
         handleStatusChange,
+        t,
       ),
-    [categories, collections, handleStatusChange, tenantId],
+    [categories, collections, handleStatusChange, t, tenantId],
   );
 
   const pushServerFilters = useCallback(
@@ -325,7 +330,7 @@ export function ProductsTable({
       id: "status",
       label: t("products.filter.status.label"),
       onChange: (value) => pushServerFilters({ status: value as ProductStatusFilter }),
-      options: productStatusFilterOptions,
+      options: getProductStatusFilterOptions(t),
       value: initialStatus,
     },
     {
@@ -457,9 +462,10 @@ export function ProductsTable({
           <>
             <Button
               onClick={() =>
-                copyToClipboard(
+                void copyToClipboard(
                   selectedProducts.map((product) => product.id).join("\n"),
-                  "Product IDs",
+                  t("products.table.productIds"),
+                  t,
                 )
               }
               size="sm"

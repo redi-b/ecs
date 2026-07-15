@@ -38,6 +38,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 
 type OfferKind =
@@ -50,42 +51,41 @@ type OfferKind =
 
 type CatalogProduct = { id: string; title: string | null; handle: string | null };
 
-const offerOptions: {
-  description: string;
-  id: OfferKind;
-  title: string;
-}[] = [
-  {
-    id: "percentage_order",
-    title: "Percentage off order",
-    description: "Take a percent off the customer’s full order total.",
-  },
-  {
-    id: "fixed_order",
-    title: "Amount off order",
-    description: "Subtract a fixed amount from the order total.",
-  },
-  {
-    id: "percentage_items",
-    title: "Percentage off products",
-    description: "Discount matching products by a percentage.",
-  },
-  {
-    id: "fixed_items",
-    title: "Amount off products",
-    description: "Discount matching products by a fixed amount.",
-  },
-  {
-    id: "buyget",
-    title: "Buy X get Y",
-    description: "When shoppers buy enough items, they get others free.",
-  },
-  {
-    id: "free_shipping",
-    title: "Free shipping",
-    description: "Remove shipping cost on eligible orders.",
-  },
+const offerOptionIds: OfferKind[] = [
+  "percentage_order",
+  "fixed_order",
+  "percentage_items",
+  "fixed_items",
+  "buyget",
+  "free_shipping",
 ];
+
+const offerOptionMessageKeys: Record<
+  OfferKind,
+  { title: "offerOptions.percentageOrder.title" | "offerOptions.fixedOrder.title" | "offerOptions.percentageItems.title" | "offerOptions.fixedItems.title" | "offerOptions.buyget.title" | "offerOptions.freeShipping.title"; desc: "offerOptions.percentageOrder.desc" | "offerOptions.fixedOrder.desc" | "offerOptions.percentageItems.desc" | "offerOptions.fixedItems.desc" | "offerOptions.buyget.desc" | "offerOptions.freeShipping.desc" }
+> = {
+  percentage_order: {
+    title: "offerOptions.percentageOrder.title",
+    desc: "offerOptions.percentageOrder.desc",
+  },
+  fixed_order: {
+    title: "offerOptions.fixedOrder.title",
+    desc: "offerOptions.fixedOrder.desc",
+  },
+  percentage_items: {
+    title: "offerOptions.percentageItems.title",
+    desc: "offerOptions.percentageItems.desc",
+  },
+  fixed_items: {
+    title: "offerOptions.fixedItems.title",
+    desc: "offerOptions.fixedItems.desc",
+  },
+  buyget: { title: "offerOptions.buyget.title", desc: "offerOptions.buyget.desc" },
+  free_shipping: {
+    title: "offerOptions.freeShipping.title",
+    desc: "offerOptions.freeShipping.desc",
+  },
+};
 
 const emptyForm = {
   allocation: "each" as "each" | "across",
@@ -114,7 +114,7 @@ export function PromotionCreateDialog() {
     <Suspense
       fallback={
         <Button type="button" disabled>
-          Create promotion
+          …
         </Button>
       }
     >
@@ -124,6 +124,7 @@ export function PromotionCreateDialog() {
 }
 
 function PromotionCreateDialogInner() {
+  const { t } = useI18n();
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState(0);
@@ -275,10 +276,10 @@ function PromotionCreateDialogInner() {
     }).catch(() => null);
     setSaving(false);
     if (!response?.ok) {
-      toast.error("Promotion could not be created.");
+      toast.error(t("promotions.create.toastError"));
       return;
     }
-    toast.success("Promotion created.");
+    toast.success(t("promotions.create.toastSuccess"));
     setOpen(false);
     reset();
     router.refresh();
@@ -295,17 +296,17 @@ function PromotionCreateDialogInner() {
       <DialogTrigger asChild>
         <Button type="button">
           <AppIcons.tag data-icon="inline-start" />
-          Create promotion
+          {t("promotions.create.trigger")}
         </Button>
       </DialogTrigger>
       <DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-2xl">
         <DialogHeader className="gap-1.5 border-b px-4 py-4 text-left sm:px-5">
-          <DialogTitle>Create promotion</DialogTitle>
+          <DialogTitle>{t("promotions.create.trigger")}</DialogTitle>
           <DialogDescription>
-            Set the offer type, configure how it applies, then choose a schedule and budget.
+            {t("promotions.create.dialogDescription")}
           </DialogDescription>
           <ol className="mt-3 flex flex-wrap gap-2 text-xs">
-            {["Type", "Details", "Schedule"].map((label, index) => (
+            {[t("promotions.create.stepShortType"), t("promotions.create.stepShortDetails"), t("promotions.create.stepShortSchedule")].map((label, index) => (
               <li
                 className={cn(
                   "rounded-full px-2.5 py-1 font-medium",
@@ -326,7 +327,12 @@ function PromotionCreateDialogInner() {
         <div className="max-h-[min(70dvh,36rem)] overflow-y-auto p-4 sm:p-5">
           {step === 0 ? (
             <div className="grid gap-2">
-              {offerOptions.map((option) => {
+              {offerOptionIds.map((optionId) => {
+                const option = {
+                  id: optionId,
+                  title: t(offerOptionMessageKeys[optionId].title),
+                  description: t(offerOptionMessageKeys[optionId].desc),
+                };
                 const selected = form.offerKind === option.id;
                 return (
                   <button
@@ -352,13 +358,13 @@ function PromotionCreateDialogInner() {
             <div className="space-y-5">
               <section className="grid gap-4 sm:grid-cols-2">
                 <div className="sm:col-span-2">
-                  <p className="text-sm font-medium">Basics</p>
+                  <p className="text-sm font-medium">{t("promotions.create.basics")}</p>
                   <p className="mt-0.5 text-xs text-muted-foreground">
-                    Code, status, and whether shoppers must enter the code at checkout.
+                    {t("promotions.create.basicsDesc")}
                   </p>
                 </div>
                 <Field className="sm:col-span-2">
-                  <FieldLabel>Promotion code</FieldLabel>
+                  <FieldLabel>{t("promotions.create.codeLabel")}</FieldLabel>
                   <Input
                     onChange={(event) =>
                       setForm({ ...form, code: event.target.value.toUpperCase().replace(/\s+/g, "") })
@@ -368,12 +374,11 @@ function PromotionCreateDialogInner() {
                     value={form.code}
                   />
                   <FieldDescription>
-                    Use letters and numbers without spaces. Shoppers enter this unless automatic
-                    apply is on.
+                    {t("promotions.create.codeDesc")}
                   </FieldDescription>
                 </Field>
                 <Field>
-                  <FieldLabel>Status</FieldLabel>
+                  <FieldLabel>{t("promotions.create.status")}</FieldLabel>
                   <Select
                     onValueChange={(value: "active" | "inactive" | "draft") =>
                       setForm({ ...form, status: value })
@@ -385,31 +390,31 @@ function PromotionCreateDialogInner() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectGroup>
-                        <SelectItem value="active">Active</SelectItem>
-                        <SelectItem value="draft">Draft</SelectItem>
-                        <SelectItem value="inactive">Inactive</SelectItem>
+                        <SelectItem value="active">{t("promotions.create.statusActive")}</SelectItem>
+                        <SelectItem value="draft">{t("promotions.create.statusDraft")}</SelectItem>
+                        <SelectItem value="inactive">{t("promotions.create.statusInactive")}</SelectItem>
                       </SelectGroup>
                     </SelectContent>
                   </Select>
                 </Field>
                 <Field>
-                  <FieldLabel>Usage limit</FieldLabel>
+                  <FieldLabel>{t("promotions.create.usageLimit")}</FieldLabel>
                   <Input
                     min="1"
                     onChange={(event) => setForm({ ...form, usageLimit: event.target.value })}
-                    placeholder="Unlimited"
+                    placeholder={t("promotions.create.unlimited")}
                     type="number"
                     value={form.usageLimit}
                   />
-                  <FieldDescription>Total redemptions across all orders.</FieldDescription>
+                  <FieldDescription>{t("promotions.create.usageLimitDesc")}</FieldDescription>
                 </Field>
                 <Field className="flex flex-row items-center justify-between gap-4 rounded-xl border px-3.5 py-3 sm:col-span-2">
                   <div className="min-w-0 space-y-1">
                     <FieldLabel className="text-sm" htmlFor="promo-automatic">
-                      Apply automatically
+                      {t("promotions.create.autoLabel")}
                     </FieldLabel>
                     <FieldDescription className="text-xs">
-                      Eligible carts get the discount without entering a code.
+                      {t("promotions.create.autoDesc")}
                     </FieldDescription>
                   </div>
                   <Switch
@@ -422,10 +427,10 @@ function PromotionCreateDialogInner() {
                   <Field className="flex flex-row items-center justify-between gap-4 rounded-xl border px-3.5 py-3 sm:col-span-2">
                     <div className="min-w-0 space-y-1">
                       <FieldLabel className="text-sm" htmlFor="promo-tax">
-                        Apply after tax
+                        {t("promotions.create.taxLabel")}
                       </FieldLabel>
                       <FieldDescription className="text-xs">
-                        When off, the discount is calculated on the cart before tax.
+                        {t("promotions.create.taxDesc")}
                       </FieldDescription>
                     </div>
                     <Switch
@@ -440,11 +445,11 @@ function PromotionCreateDialogInner() {
               {form.offerKind !== "free_shipping" && form.offerKind !== "buyget" ? (
                 <section className="grid gap-4 border-t pt-5 sm:grid-cols-2">
                   <div className="sm:col-span-2">
-                    <p className="text-sm font-medium">Discount value</p>
+                    <p className="text-sm font-medium">{t("promotions.create.valueTitle")}</p>
                   </div>
                   <Field>
                     <FieldLabel>
-                      {derived.method === "percentage" ? "Percent off" : "Amount off (ETB)"}
+                      {derived.method === "percentage" ? t("promotions.create.percentOff") : t("promotions.create.amountOff")}
                     </FieldLabel>
                     <Input
                       min="0.01"
@@ -459,20 +464,20 @@ function PromotionCreateDialogInner() {
                   {derived.targetType === "items" ? (
                     <>
                       <Field>
-                        <FieldLabel>Max quantity per item</FieldLabel>
+                        <FieldLabel>{t("promotions.create.maxQty")}</FieldLabel>
                         <Input
                           min="1"
                           onChange={(event) => setForm({ ...form, maxQuantity: event.target.value })}
-                          placeholder="No max"
+                          placeholder={t("promotions.create.noMax")}
                           type="number"
                           value={form.maxQuantity}
                         />
                         <FieldDescription>
-                          Limit how many units of each matching item can be discounted.
+                          {t("promotions.create.maxQtyDesc")}
                         </FieldDescription>
                       </Field>
                       <Field>
-                        <FieldLabel>Allocation</FieldLabel>
+                        <FieldLabel>{t("promotions.create.allocation")}</FieldLabel>
                         <Select
                           onValueChange={(value: "each" | "across") =>
                             setForm({ ...form, allocation: value })
@@ -484,13 +489,13 @@ function PromotionCreateDialogInner() {
                           </SelectTrigger>
                           <SelectContent>
                             <SelectGroup>
-                              <SelectItem value="each">Each item</SelectItem>
-                              <SelectItem value="across">Across items</SelectItem>
+                              <SelectItem value="each">{t("promotions.create.allocEach")}</SelectItem>
+                              <SelectItem value="across">{t("promotions.create.allocAcross")}</SelectItem>
                             </SelectGroup>
                           </SelectContent>
                         </Select>
                         <FieldDescription>
-                          Each applies the full discount per item; across splits it.
+                          {t("promotions.create.allocDesc")}
                         </FieldDescription>
                       </Field>
                     </>
@@ -501,13 +506,13 @@ function PromotionCreateDialogInner() {
               {form.offerKind === "buyget" ? (
                 <section className="grid gap-4 border-t pt-5 sm:grid-cols-2">
                   <div className="sm:col-span-2">
-                    <p className="text-sm font-medium">Buy X get Y</p>
+                    <p className="text-sm font-medium">{t("offerOptions.buyget.title")}</p>
                     <p className="mt-0.5 text-xs text-muted-foreground">
-                      Set how many items unlock the offer, and how many free items shoppers receive.
+                      {t("promotions.create.buyGetDesc")}
                     </p>
                   </div>
                   <Field>
-                    <FieldLabel>Buy quantity (X)</FieldLabel>
+                    <FieldLabel>{t("promotions.create.buyQty")}</FieldLabel>
                     <Input
                       min="1"
                       onChange={(event) => setForm({ ...form, buyMinQuantity: event.target.value })}
@@ -516,7 +521,7 @@ function PromotionCreateDialogInner() {
                     />
                   </Field>
                   <Field>
-                    <FieldLabel>Get quantity (Y)</FieldLabel>
+                    <FieldLabel>{t("promotions.create.getQty")}</FieldLabel>
                     <Input
                       min="1"
                       onChange={(event) => setForm({ ...form, applyToQuantity: event.target.value })}
@@ -532,13 +537,13 @@ function PromotionCreateDialogInner() {
                   <div>
                     <p className="text-sm font-medium">
                       {form.offerKind === "buyget"
-                        ? "Products that count toward the offer"
-                        : "Products the discount applies to"}
+                        ? t("promotions.create.prodTitleCount")
+                        : t("promotions.create.prodTitleApply")}
                     </p>
                     <p className="mt-0.5 text-xs text-muted-foreground">
-                      Leave empty to apply more broadly once other conditions are added later.
+                      {t("promotions.create.prodDescCommon")}
                       {form.offerKind === "buyget"
-                        ? " For Buy X get Y, select at least the products that unlock free items."
+                        ? t("promotions.create.prodDescBuyGet")
                         : ""}
                     </p>
                   </div>
@@ -550,9 +555,9 @@ function PromotionCreateDialogInner() {
                   />
                   {form.offerKind === "buyget" ? (
                     <div className="space-y-2">
-                      <p className="text-sm font-medium">Free products (optional)</p>
+                      <p className="text-sm font-medium">{t("promotions.create.freeProdTitle")}</p>
                       <p className="text-xs text-muted-foreground">
-                        Defaults to the same products as above if left empty.
+                        {t("promotions.create.freeProdDesc")}
                       </p>
                       <ProductMultiPicker
                         catalog={catalog}
@@ -571,35 +576,35 @@ function PromotionCreateDialogInner() {
             <div className="space-y-5">
               <section className="grid gap-4 sm:grid-cols-2">
                 <div className="sm:col-span-2">
-                  <p className="text-sm font-medium">Schedule</p>
+                  <p className="text-sm font-medium">{t("promotions.create.scheduleTitle")}</p>
                   <p className="mt-0.5 text-xs text-muted-foreground">
-                    Optional start and end times for when this offer is available.
+                    {t("promotions.create.schedDesc")}
                   </p>
                 </div>
                 <Field className="sm:col-span-2">
-                  <FieldLabel>Campaign name</FieldLabel>
+                  <FieldLabel>{t("promotions.create.campName")}</FieldLabel>
                   <Input
                     onChange={(event) => setForm({ ...form, campaignName: event.target.value })}
-                    placeholder={form.code || "Summer sale"}
+                    placeholder={form.code || t("promotions.create.campaignPlaceholder")}
                     value={form.campaignName}
                   />
                   <FieldDescription>
-                    A friendly name for reporting. Defaults to the promotion code.
+                    {t("promotions.create.campNameDesc")}
                   </FieldDescription>
                 </Field>
                 <Field>
-                  <FieldLabel>Starts</FieldLabel>
+                  <FieldLabel>{t("promotions.create.startsLabel")}</FieldLabel>
                   <DateTimePicker
                     onChange={(startsAt) => setForm({ ...form, startsAt })}
-                    placeholder="Optional start"
+                    placeholder={t("promotions.create.optionalStart")}
                     value={form.startsAt}
                   />
                 </Field>
                 <Field>
-                  <FieldLabel>Ends</FieldLabel>
+                  <FieldLabel>{t("promotions.create.endsLabel")}</FieldLabel>
                   <DateTimePicker
                     onChange={(endsAt) => setForm({ ...form, endsAt })}
-                    placeholder="Optional end"
+                    placeholder={t("promotions.create.optionalEnd")}
                     value={form.endsAt}
                   />
                 </Field>
@@ -607,13 +612,13 @@ function PromotionCreateDialogInner() {
 
               <section className="grid gap-4 border-t pt-5 sm:grid-cols-2">
                 <div className="sm:col-span-2">
-                  <p className="text-sm font-medium">Budget</p>
+                  <p className="text-sm font-medium">{t("promotions.create.budgetTitle")}</p>
                   <p className="mt-0.5 text-xs text-muted-foreground">
-                    Cap how often the campaign can be used, or how much total discount it can give.
+                    {t("promotions.create.budgetDesc")}
                   </p>
                 </div>
                 <Field>
-                  <FieldLabel>Budget type</FieldLabel>
+                  <FieldLabel>{t("promotions.create.budgetType")}</FieldLabel>
                   <Select
                     onValueChange={(value: "none" | "usage" | "spend") =>
                       setForm({ ...form, campaignBudgetType: value })
@@ -625,13 +630,13 @@ function PromotionCreateDialogInner() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectGroup>
-                        <SelectItem value="none">No budget cap</SelectItem>
-                        <SelectItem value="usage">Usage count</SelectItem>
+                        <SelectItem value="none">{t("promotions.create.budgetNone")}</SelectItem>
+                        <SelectItem value="usage">{t("promotions.create.budgetUsage")}</SelectItem>
                         <SelectItem
                           disabled={form.offerKind === "buyget" || form.offerKind === "free_shipping"}
                           value="spend"
                         >
-                          Total discounted amount
+                          {t("promotions.create.budgetSpend")}
                         </SelectItem>
                       </SelectGroup>
                     </SelectContent>
@@ -640,7 +645,7 @@ function PromotionCreateDialogInner() {
                 {form.campaignBudgetType !== "none" ? (
                   <Field>
                     <FieldLabel>
-                      {form.campaignBudgetType === "usage" ? "Max uses" : "Max spend (ETB)"}
+                      {form.campaignBudgetType === "usage" ? t("promotions.create.maxUses") : t("promotions.create.maxSpend")}
                     </FieldLabel>
                     <Input
                       min="1"
@@ -660,11 +665,11 @@ function PromotionCreateDialogInner() {
         <DialogFooter className="mx-0 mb-0 rounded-none border-t bg-muted/50 p-4">
           {step > 0 ? (
             <Button onClick={() => setStep((value) => value - 1)} type="button" variant="outline">
-              Back
+              {t("common.back")}
             </Button>
           ) : (
             <Button onClick={() => setOpen(false)} type="button" variant="outline">
-              Cancel
+              {t("common.cancel")}
             </Button>
           )}
           {step < 2 ? (
@@ -673,7 +678,7 @@ function PromotionCreateDialogInner() {
               onClick={() => setStep((value) => value + 1)}
               type="button"
             >
-              Continue
+              {t("common.continue")}
             </Button>
           ) : (
             <Button
@@ -681,7 +686,7 @@ function PromotionCreateDialogInner() {
               onClick={() => void create()}
               type="button"
             >
-              {saving ? "Creating…" : "Create promotion"}
+              {saving ? t("promotions.create.creating") : t("promotions.create.trigger")}
             </Button>
           )}
         </DialogFooter>
@@ -701,6 +706,7 @@ function ProductMultiPicker({
   onChange: (ids: string[]) => void;
   selectedIds: string[];
 }) {
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const selected = useMemo(() => new Set(selectedIds), [selectedIds]);
 
@@ -712,11 +718,11 @@ function ProductMultiPicker({
   const label =
     selectedIds.length === 0
       ? loading
-        ? "Loading products…"
-        : "Select products…"
+        ? t("common.loadingProducts")
+        : t("common.selectProducts")
       : selectedIds.length === 1
-        ? "1 product selected"
-        : `${selectedIds.length} products selected`;
+        ? t("common.productSelected")
+        : t("common.productsSelected", { count: selectedIds.length });
 
   return (
     <Popover onOpenChange={setOpen} open={open}>
@@ -741,12 +747,12 @@ function ProductMultiPicker({
         onOpenAutoFocus={(event) => event.preventDefault()}
       >
         <Command className="h-auto max-h-72 w-full">
-          <CommandInput placeholder="Search products…" />
+          <CommandInput placeholder={t("common.searchProducts")} />
           <CommandList
             className="max-h-60 overflow-y-auto overscroll-contain"
             onWheel={(event) => event.stopPropagation()}
           >
-            <CommandEmpty>No matching products.</CommandEmpty>
+            <CommandEmpty>{t("common.noMatchingProducts")}</CommandEmpty>
             <CommandGroup className="overflow-visible">
               {catalog.map((product) => {
                 const isSelected = selected.has(product.id);
