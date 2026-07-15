@@ -193,7 +193,8 @@ export function BillingWorkspace({
   }
 
   function handlePrimaryAction() {
-    if (openInvoice && (!selectedIsFree || selectedIsCurrent)) {
+    // Pay only when a paid plan is selected (not while browsing free/current free).
+    if (openInvoice && !selectedIsFree) {
       runBillingAction({
         action: "pay",
         invoiceId: openInvoice.id,
@@ -228,7 +229,8 @@ export function BillingWorkspace({
   }
 
   const primaryLabel = (() => {
-    if (openInvoice && (!selectedIsFree || selectedIsCurrent)) {
+    // Pay belongs on paid selection; free selection never shows Pay (open invoice is above).
+    if (openInvoice && !selectedIsFree) {
       return `Pay ${formatMoney(openInvoice.amount, openInvoice.currency)}`;
     }
     if (selectedIsCurrent && selectedIsFree) {
@@ -253,8 +255,7 @@ export function BillingWorkspace({
   const primaryDisabled =
     busy ||
     (selectedIsFree && !selectedIsCurrent) ||
-    (selectedIsCurrent &&
-      selectedIsFree) ||
+    (selectedIsCurrent && selectedIsFree) ||
     (selectedIsCurrent &&
       !selectedIsFree &&
       !openInvoice &&
