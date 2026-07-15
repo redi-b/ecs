@@ -7,6 +7,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { ProductForm } from "@/features/products/product-form";
 import { useProductTaxonomy } from "@/features/products/use-product-taxonomy";
+import { useI18n } from "@/i18n/provider";
 import { useCreateQueryOpen } from "@/lib/use-create-query-open";
 
 type ProductCreateDialogProps = {
@@ -28,6 +29,7 @@ function ProductCreateDialogInner({
   disabledReason,
   tenantId,
 }: ProductCreateDialogProps) {
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const [sessionKey, setSessionKey] = useState(0);
   // Load taxonomy only when the composer opens — not on every products page paint.
@@ -60,7 +62,7 @@ function ProductCreateDialogInner({
         }
         onClose={() => setOpen(false)}
         open={open}
-        submitLabel="Create product"
+        submitLabel={t("products.detail.createProduct")}
       />
     </>
   );
@@ -73,6 +75,7 @@ function CreateProductTrigger({
   disabledReason?: string | undefined;
   onClick?: () => void;
 }) {
+  const { t } = useI18n();
   return (
     <Button
       disabled={Boolean(disabledReason) || !onClick}
@@ -81,28 +84,28 @@ function CreateProductTrigger({
       type="button"
     >
       <AppIcons.products data-icon="inline-start" />
-      Create product
+      {t("products.detail.createProduct")}
     </Button>
   );
 }
 
 function ReferenceDataLoadingAlert() {
+  const { t } = useI18n();
   return (
     <Alert>
-      <AlertTitle>Loading product options</AlertTitle>
-      <AlertDescription>
-        Categories and collections are loading. You can still enter product details.
-      </AlertDescription>
+      <AlertTitle>{t("products.detail.loadingOptionsTitle")}</AlertTitle>
+      <AlertDescription>{t("products.detail.loadingOptionsDesc")}</AlertDescription>
     </Alert>
   );
 }
 
 function ReferenceDataAlert({ labels }: { labels: string[] }) {
+  const { t } = useI18n();
   return (
     <Alert variant="destructive">
-      <AlertTitle>Product options could not be loaded</AlertTitle>
+      <AlertTitle>{t("products.detail.optionsLoadErrorTitle")}</AlertTitle>
       <AlertDescription>
-        {`Could not load ${labels.join(" and ")}. You can still create a basic product and add options later.`}
+        {t("products.create.optionsLoadErrorDesc", { labels: labels.join(` ${t("common.and")} `) })}
       </AlertDescription>
     </Alert>
   );

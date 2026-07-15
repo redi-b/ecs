@@ -28,6 +28,8 @@ import {
   getPaymentLabel,
   getPaymentStatusLabel,
 } from "@/features/orders/order-domain";
+import type { MessageKey } from "@/i18n/messages";
+import { getTranslations } from "@/i18n/server";
 import { getTenantScopedPath } from "@/lib/dashboard-tenant-context";
 import { listEntityLinkClassName } from "@/lib/list-entity-link";
 import { dashboardRoutes } from "@/lib/routes";
@@ -38,6 +40,8 @@ type OrderDetailProps = {
   order: MerchantOrder;
   tenantId?: string | undefined;
 };
+
+type Translate = (key: MessageKey, values?: Record<string, string | number | Date>) => string;
 
 function Section({
   title,
@@ -73,31 +77,34 @@ function Field({ label, value }: { label: string; value: React.ReactNode }) {
   );
 }
 
-function buildActivity(order: MerchantOrder) {
+function buildActivity(order: MerchantOrder, t: Translate) {
   const events: Array<{ at: string | null; label: string }> = [];
-  events.push({ at: order.createdAt, label: "Order received" });
+  events.push({ at: order.createdAt, label: t("orders.detail.activityReceived") });
 
   for (const fulfillment of order.fulfillments ?? []) {
     if (fulfillment.shippedAt) {
-      events.push({ at: fulfillment.shippedAt, label: "Marked ready" });
+      events.push({ at: fulfillment.shippedAt, label: t("orders.detail.activityReady") });
     }
     if (fulfillment.deliveredAt) {
-      events.push({ at: fulfillment.deliveredAt, label: "Handed to customer" });
+      events.push({ at: fulfillment.deliveredAt, label: t("orders.detail.activityHanded") });
     }
     if (fulfillment.canceledAt) {
-      events.push({ at: fulfillment.canceledAt, label: "Fulfillment canceled" });
+      events.push({
+        at: fulfillment.canceledAt,
+        label: t("orders.detail.activityFulfillmentCanceled"),
+      });
     }
   }
 
   if (getPaymentLabel(order) === "paid") {
-    events.push({ at: order.updatedAt, label: "Payment recorded" });
+    events.push({ at: order.updatedAt, label: t("orders.detail.activityPayment") });
   }
 
   if (getOrderProgress(order) === "completed") {
-    events.push({ at: order.updatedAt, label: "Order completed" });
+    events.push({ at: order.updatedAt, label: t("orders.detail.activityCompleted") });
   }
   if (getOrderProgress(order) === "canceled") {
-    events.push({ at: order.updatedAt, label: "Order canceled" });
+    events.push({ at: order.updatedAt, label: t("orders.detail.activityCanceled") });
   }
 
   return events
@@ -105,26 +112,27 @@ function buildActivity(order: MerchantOrder) {
     .sort((a, b) => new Date(a.at!).getTime() - new Date(b.at!).getTime());
 }
 
-export function OrderDetail({ action, order, tenantId }: OrderDetailProps) {
+export async function OrderDetail({ action, order, tenantId }: OrderDetailProps) {
+  const t = await getTranslations();
   const customerName = getOrderCustomerName(order);
   const customerPhone = getOrderCustomerPhone(order);
   const items = order.items ?? [];
   const progress = getOrderProgress(order);
   const steps = [
-    { id: "new", label: "New", done: true },
+    { id: "new", label: t("orders.detail.stepNew"), done: true },
     {
       id: "ready",
-      label: "Ready",
+      label: t("orders.detail.stepReady"),
       done: progress === "ready" || progress === "completed",
     },
     {
       id: "completed",
-      label: "Completed",
+      label: t("orders.detail.stepCompleted"),
       done: progress === "completed",
     },
   ] as const;
 
-  const activity = buildActivity(order);
+  const activity = buildActivity(order, t);
   const address = order.shippingAddress;
   const addressLine = [
     address?.address1,
@@ -134,6 +142,7 @@ export function OrderDetail({ action, order, tenantId }: OrderDetailProps) {
   ]
     .filter(Boolean)
     .join(", ");
+  const ref = formatOrderReference(order);
 
   return (
     <div className="space-y-6">
@@ -142,7 +151,9 @@ export function OrderDetail({ action, order, tenantId }: OrderDetailProps) {
           <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div className="min-w-0 space-y-2">
               <div className="flex flex-wrap items-center gap-2">
-                <CardTitle className="text-xl">Order {formatOrderReference(order)}</CardTitle>
+                <CardTitle className="text-xl">
+                  {t("orders.detail.orderHeading", { ref })}
+                </CardTitle>
                 <OrderProgressBadge order={order} />
                 <OrderPaymentCell order={order} />
               </div>
@@ -170,7 +181,7 @@ export function OrderDetail({ action, order, tenantId }: OrderDetailProps) {
                 ))}
                 {progress === "canceled" ? (
                   <li className="rounded-full border px-2.5 py-0.5 text-xs text-muted-foreground">
-                    Canceled
+                    {t("orders.detail.stepCanceled")}
                   </li>
                 ) : null}
               </ol>
@@ -184,16 +195,16 @@ export function OrderDetail({ action, order, tenantId }: OrderDetailProps) {
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(18rem,0.9fr)]">
         <div className="space-y-6">
-          <Section title="Items">
+          <Section title={t("orders.detail.items")}>
             {items.length === 0 ? (
-              <p className="text-muted-foreground">No line items on this order.</p>
+              <p className="text-muted-foreground">{t("orders.detail.noItems")}</p>
             ) : (
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Item</TableHead>
-                    <TableHead className="w-16 text-right">Qty</TableHead>
-                    <TableHead className="w-28 text-right">Total</TableHead>
+                    <TableHead>{t("orders.detail.item")}</TableHead>
+                    <TableHead className="w-16 text-right">{t("orders.detail.qty")}</TableHead>
+                    <TableHead className="w-28 text-right">{t("orders.detail.total")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -204,6 +215,7 @@ export function OrderDetail({ action, order, tenantId }: OrderDetailProps) {
                           tenantId,
                         )
                       : null;
+                    const itemTitle = item.title ?? t("orders.detail.fallbackItem");
                     return (
                       <TableRow key={item.id}>
                         <TableCell>
@@ -220,14 +232,19 @@ export function OrderDetail({ action, order, tenantId }: OrderDetailProps) {
                             )}
                             <div className="min-w-0">
                               {href ? (
-                                <Link className={cn(listEntityLinkClassName, "truncate")} href={href}>
-                                  {item.title ?? "Item"}
+                                <Link
+                                  className={cn(listEntityLinkClassName, "truncate")}
+                                  href={href}
+                                >
+                                  {itemTitle}
                                 </Link>
                               ) : (
-                                <p className="font-medium">{item.title ?? "Item"}</p>
+                                <p className="font-medium">{itemTitle}</p>
                               )}
                               <p className="text-xs text-muted-foreground">
-                                {formatOrderMoney(item.unitPrice, order.currencyCode)} each
+                                {t("orders.detail.each", {
+                                  price: formatOrderMoney(item.unitPrice, order.currencyCode),
+                                })}
                               </p>
                             </div>
                           </div>
@@ -248,36 +265,39 @@ export function OrderDetail({ action, order, tenantId }: OrderDetailProps) {
             <div className="space-y-1 border-t pt-3 text-sm">
               {order.subtotal != null ? (
                 <div className="flex justify-between gap-4">
-                  <span className="text-muted-foreground">Subtotal</span>
+                  <span className="text-muted-foreground">{t("orders.detail.subtotal")}</span>
                   <span>{formatOrderMoney(order.subtotal, order.currencyCode)}</span>
                 </div>
               ) : null}
               {order.shippingTotal != null ? (
                 <div className="flex justify-between gap-4">
-                  <span className="text-muted-foreground">Delivery</span>
+                  <span className="text-muted-foreground">{t("orders.detail.delivery")}</span>
                   <span>{formatOrderMoney(order.shippingTotal, order.currencyCode)}</span>
                 </div>
               ) : null}
               {order.discountTotal != null && order.discountTotal > 0 ? (
                 <div className="flex justify-between gap-4">
-                  <span className="text-muted-foreground">Discount</span>
+                  <span className="text-muted-foreground">{t("orders.detail.discount")}</span>
                   <span>-{formatOrderMoney(order.discountTotal, order.currencyCode)}</span>
                 </div>
               ) : null}
               <div className="flex justify-between gap-4 font-medium">
-                <span>Total</span>
+                <span>{t("orders.detail.total")}</span>
                 <span>{formatOrderMoney(order.total, order.currencyCode)}</span>
               </div>
             </div>
           </Section>
 
-          <Section title="Activity">
+          <Section title={t("orders.detail.activity")}>
             {activity.length === 0 ? (
-              <p className="text-muted-foreground">No activity yet.</p>
+              <p className="text-muted-foreground">{t("orders.detail.noActivity")}</p>
             ) : (
               <ul className="space-y-2">
                 {activity.map((event, index) => (
-                  <li className="flex items-start justify-between gap-3" key={`${event.label}-${index}`}>
+                  <li
+                    className="flex items-start justify-between gap-3"
+                    key={`${event.label}-${index}`}
+                  >
                     <span>{event.label}</span>
                     <span className="shrink-0 text-xs text-muted-foreground">
                       {formatOrderDateTime(event.at)}
@@ -291,27 +311,32 @@ export function OrderDetail({ action, order, tenantId }: OrderDetailProps) {
 
         <div className="space-y-6">
           <Section
-            title="Payment"
+            title={t("orders.detail.payment")}
             help={{
-              summary: "Payment is separate from packing and handoff.",
-              title: "Payment",
-              body: "Cash sales are marked paid when you receive the money. Online (Chapa) usually updates automatically; use Re-check if it looks stuck.",
+              summary: t("orders.detail.paymentHelpSummary"),
+              title: t("orders.detail.payment"),
+              body: t("orders.detail.paymentHelpBody"),
             }}
           >
-            <Field label="Method" value={getMethodDisplayLabel(getMethodLabel(order))} />
             <Field
-              label="Status"
+              label={t("orders.detail.method")}
+              value={getMethodDisplayLabel(getMethodLabel(order))}
+            />
+            <Field
+              label={t("orders.detail.status")}
               value={
-                <Badge variant="secondary">{getPaymentStatusLabel(getPaymentLabel(order))}</Badge>
+                <Badge variant="secondary">
+                  {getPaymentStatusLabel(getPaymentLabel(order))}
+                </Badge>
               }
             />
-            <Field label="Reference" value={order.paymentReference} />
+            <Field label={t("orders.detail.reference")} value={order.paymentReference} />
           </Section>
 
-          <Section title="Customer">
-            <Field label="Name" value={customerName} />
+          <Section title={t("orders.detail.customer")}>
+            <Field label={t("orders.detail.name")} value={customerName} />
             <Field
-              label="Phone"
+              label={t("orders.detail.phone")}
               value={
                 customerPhone ? (
                   <a className="hover:underline" href={`tel:${customerPhone}`}>
@@ -320,10 +345,10 @@ export function OrderDetail({ action, order, tenantId }: OrderDetailProps) {
                 ) : null
               }
             />
-            <Field label="Email" value={order.email} />
+            <Field label={t("orders.detail.email")} value={order.email} />
             {order.customerId ? (
               <Field
-                label="In customers"
+                label={t("orders.detail.inCustomers")}
                 value={
                   <Link
                     className={cn(listEntityLinkClassName, "inline-flex items-center gap-1")}
@@ -332,7 +357,7 @@ export function OrderDetail({ action, order, tenantId }: OrderDetailProps) {
                       tenantId,
                     )}
                   >
-                    Open in customers list
+                    {t("orders.detail.openInCustomers")}
                     <span aria-hidden className="text-xs">
                       →
                     </span>
@@ -342,18 +367,18 @@ export function OrderDetail({ action, order, tenantId }: OrderDetailProps) {
             ) : null}
           </Section>
 
-          <Section title="Delivery">
+          <Section title={t("orders.detail.deliverySection")}>
             <Field
-              label="Type"
+              label={t("orders.detail.type")}
               value={getDeliveryDisplayLabel(getDeliveryLabel(order))}
             />
-            <Field label="Address" value={addressLine || null} />
-            <Field label="Landmark" value={order.delivery?.landmark} />
-            <Field label="Customer notes" value={order.delivery?.notes} />
+            <Field label={t("orders.detail.address")} value={addressLine || null} />
+            <Field label={t("orders.detail.landmark")} value={order.delivery?.landmark} />
+            <Field label={t("orders.detail.customerNotes")} value={order.delivery?.notes} />
           </Section>
 
           {order.note ? (
-            <Section title="Internal note">
+            <Section title={t("orders.detail.internalNote")}>
               <p className="whitespace-pre-wrap">{order.note}</p>
             </Section>
           ) : null}

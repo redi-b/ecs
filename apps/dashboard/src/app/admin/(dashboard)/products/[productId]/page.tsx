@@ -65,7 +65,9 @@ export default async function MerchantProductDetailPage({
           {productResult.ok ? (
             <ProductDeleteButton
               productId={productResult.product.id}
-              productTitle={productResult.product.title ?? "this product"}
+              productTitle={
+                productResult.product.title ?? t("products.detail.thisProduct")
+              }
               tenantId={tenantId}
             />
           ) : null}
