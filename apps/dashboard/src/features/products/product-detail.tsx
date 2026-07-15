@@ -34,6 +34,7 @@ import {
 import { useProductTaxonomy } from "@/features/products/use-product-taxonomy";
 import { getTenantScopedPath } from "@/lib/dashboard-tenant-context";
 import { dashboardRoutes } from "@/lib/routes";
+import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 
 type ProductDetailProps = {
@@ -43,6 +44,7 @@ type ProductDetailProps = {
 };
 
 export function ProductDetail({ action, product, tenantId }: ProductDetailProps) {
+  const { t } = useI18n();
   const taxonomy = useProductTaxonomy({ tenantId });
   const categories = taxonomy.categories;
   const collections = taxonomy.collections;
@@ -58,14 +60,14 @@ export function ProductDetail({ action, product, tenantId }: ProductDetailProps)
       images.map((image, index) => ({
         altText: product.title,
         displayName: product.title
-          ? `${product.title} · image ${index + 1}`
-          : `Product image ${index + 1}`,
+          ? `${product.title} · ${t("products.detail.productImage")} ${index + 1}`
+          : `${t("products.detail.productImage")} ${index + 1}`,
         id: image.id || image.url,
         publicUrl: image.url,
         subtitle:
-          product.thumbnail && product.thumbnail === image.url ? "Cover image" : image.url,
+          product.thumbnail && product.thumbnail === image.url ? t("products.detail.coverImage") : image.url,
       })),
-    [images, product.thumbnail, product.title],
+    [images, product.thumbnail, product.title, t],
   );
 
   const collection = collections.find((item) => item.id === product.collectionId);
@@ -92,7 +94,7 @@ export function ProductDetail({ action, product, tenantId }: ProductDetailProps)
             />
             <div className="min-w-0 space-y-2">
               <div className="flex flex-wrap items-center gap-2">
-                <CardTitle>{product.title ?? "Untitled product"}</CardTitle>
+                <CardTitle>{product.title ?? t("products.detail.untitled")}</CardTitle>
                 <ProductStatusBadge status={product.status} />
                 <ProductDetailsEditButton action={action} product={product} />
               </div>
@@ -102,8 +104,8 @@ export function ProductDetail({ action, product, tenantId }: ProductDetailProps)
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3 text-sm md:min-w-72">
-            <DetailMetric label="Variants" value={`${product.variants?.length ?? 0}`} />
-            <DetailMetric label="First price" value={formatFirstPrice(product)} />
+            <DetailMetric label={t("products.detail.variants")} value={`${product.variants?.length ?? 0}`} />
+            <DetailMetric label={t("products.detail.firstPrice")} value={formatFirstPrice(product, t)} />
           </div>
         </div>
       </CardHeader>
@@ -111,10 +113,10 @@ export function ProductDetail({ action, product, tenantId }: ProductDetailProps)
         <section className="space-y-2">
           <SectionHeader
             action={<ProductDetailsEditButton action={action} product={product} />}
-            title="Description"
+            title={t("products.detail.description")}
           />
           <p className="text-sm whitespace-pre-wrap text-muted-foreground">
-            {product.description ?? "No description provided."}
+            {product.description ?? t("products.detail.noDescription")}
           </p>
         </section>
 
@@ -128,29 +130,29 @@ export function ProductDetail({ action, product, tenantId }: ProductDetailProps)
                 product={product}
               />
             }
-            title="Organization"
+            title={t("products.detail.organization")}
           />
           <div className="grid gap-4 md:grid-cols-2">
             <DetailField
-              label="Collection"
+              label={t("products.detail.collection")}
               value={
                 <CollectionValue collection={collection} product={product} tenantId={tenantId} />
               }
             />
             <DetailField
-              label="Categories"
+              label={t("products.detail.categories")}
               value={<CategoryValue categories={productCategories} tenantId={tenantId} />}
             />
-            <DetailField label="Created" value={formatDateTime(product.createdAt)} />
-            <DetailField label="Updated" value={formatDateTime(product.updatedAt)} />
+            <DetailField label={t("products.detail.created")} value={formatDateTime(product.createdAt, t)} />
+            <DetailField label={t("products.detail.updated")} value={formatDateTime(product.updatedAt, t)} />
           </div>
         </section>
 
         <section className="space-y-3">
           <SectionHeader
             action={<ProductMediaEditButton action={action} product={product} />}
-            meta={`${images.length} images`}
-            title="Images"
+            meta={t("products.detail.imagesCount", { count: images.length })}
+            title={t("products.detail.images")}
           />
           {images.length ? (
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -162,21 +164,21 @@ export function ProductDetail({ action, product, tenantId }: ProductDetailProps)
                     key={image.id || image.url}
                   >
                     <button
-                      aria-label={`Open image ${index + 1} preview`}
+                      aria-label={t("products.detail.openImagePreview", { n: index + 1 })}
                       className="relative block w-full cursor-zoom-in bg-muted text-left outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring"
                       onClick={() => setLightboxIndex(index)}
                       type="button"
                     >
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
-                        alt={product.title ?? "Product image"}
+                        alt={product.title ?? t("products.detail.productImage")}
                         className="aspect-square w-full object-cover transition-transform duration-200 ease-out group-hover:scale-[1.02]"
                         src={image.url}
                       />
                       <span className="pointer-events-none absolute inset-0 bg-linear-to-t from-black/40 via-transparent to-transparent opacity-0 transition-opacity duration-200 group-hover:opacity-100" />
                       {isCover ? (
                         <span className="absolute top-2 left-2 rounded-full bg-primary px-2 py-0.5 text-[10px] font-medium text-primary-foreground shadow-sm">
-                          Cover
+                          {t("products.detail.cover")}
                         </span>
                       ) : null}
                       <span className="absolute right-2 bottom-2 rounded-full border border-white/20 bg-black/45 p-1.5 text-white opacity-0 shadow-sm transition-opacity duration-200 group-hover:opacity-100">
@@ -309,10 +311,11 @@ function ProductThumbnail({
   src: string | null;
   title: string | null;
 }) {
+  const { t } = useI18n();
   if (!src) {
     return (
       <div className="flex size-20 shrink-0 items-center justify-center rounded-lg border border-dashed bg-muted text-xs font-medium text-muted-foreground">
-        No image
+        {t("products.detail.noImage")}
       </div>
     );
   }
@@ -321,14 +324,14 @@ function ProductThumbnail({
     return (
       <div className="size-20 shrink-0 overflow-hidden rounded-lg border bg-muted">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img alt={title ?? "Product thumbnail"} className="size-full object-cover" src={src} />
+        <img alt={title ?? t("products.detail.productImage")} className="size-full object-cover" src={src} />
       </div>
     );
   }
 
   return (
     <button
-      aria-label="Open cover image preview"
+      aria-label={t("products.detail.openCoverPreview")}
       className={cn(
         "group relative size-20 shrink-0 overflow-hidden rounded-lg border bg-muted",
         "cursor-zoom-in outline-none transition-shadow focus-visible:ring-2 focus-visible:ring-ring",
@@ -338,7 +341,7 @@ function ProductThumbnail({
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        alt={title ?? "Product thumbnail"}
+        alt={title ?? t("products.detail.productImage")}
         className="size-full object-cover transition-transform duration-200 ease-out group-hover:scale-[1.03]"
         src={src}
       />
@@ -388,8 +391,9 @@ function CollectionValue({
   product: MerchantProduct;
   tenantId?: string | undefined;
 }) {
+  const { t } = useI18n();
   if (!product.collectionId) {
-    return <span className="text-muted-foreground">No collection</span>;
+    return <span className="text-muted-foreground">{t("products.filter.collection.none")}</span>;
   }
 
   return (
@@ -407,7 +411,8 @@ function CategoryValue({
   tenantId?: string | undefined;
 }) {
   if (!categories.length) {
-    return <span className="text-muted-foreground">No categories</span>;
+    const { t } = useI18n();
+    return <span className="text-muted-foreground">{t("products.filter.category.none")}</span>;
   }
 
   return (
@@ -443,27 +448,27 @@ function getCategoryLabel(category: MerchantProductCategory) {
   return category.name ?? category.handle ?? category.id;
 }
 
-function formatFirstPrice(product: MerchantProduct) {
+function formatFirstPrice(product: MerchantProduct, t: (key: any) => string) {
   const price = product.variants
     ?.flatMap((variant) => variant.prices)
     .find((variantPrice) => typeof variantPrice.amount === "number" && variantPrice.currencyCode);
 
   if (!price || typeof price.amount !== "number" || !price.currencyCode) {
-    return "No price";
+    return t("products.detail.noPrice");
   }
 
   return `${price.currencyCode.toUpperCase()} ${price.amount}`;
 }
 
-function formatDateTime(value: string | null) {
+function formatDateTime(value: string | null, t: (key: any) => string) {
   if (!value) {
-    return "Never";
+    return t("products.detail.never");
   }
 
   const date = new Date(value);
 
   if (Number.isNaN(date.getTime())) {
-    return "Unknown";
+    return t("products.detail.unknown");
   }
 
   return new Intl.DateTimeFormat("en", {
@@ -500,6 +505,7 @@ export function ProductDeleteButton({
   productTitle: string;
   tenantId?: string | undefined;
 }) {
+  const { t } = useI18n();
   const router = useRouter();
   const queryClient = useQueryClient();
   const [showConfirm, setShowConfirm] = useState(false);
@@ -515,7 +521,7 @@ export function ProductDeleteButton({
       return productId;
     },
     onSuccess: () => {
-      toast.success("Product deleted successfully.");
+      toast.success(t("products.detail.toastDeleted"));
       queryClient.invalidateQueries({ queryKey: ["products"] });
       setShowConfirm(false);
       router.push(getTenantScopedPath(dashboardRoutes.products, tenantId));
@@ -529,20 +535,19 @@ export function ProductDeleteButton({
   return (
     <>
       <Button variant="destructive" onClick={() => setShowConfirm(true)} type="button">
-        Delete product
+        {t("products.table.deleteProduct")}
       </Button>
 
       <AlertDialog open={showConfirm} onOpenChange={setShowConfirm}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete product</AlertDialogTitle>
+            <AlertDialogTitle>{t("products.table.deleteProduct")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete &ldquo;{productTitle}&rdquo;? This action cannot be
-              undone.
+              {t("products.detail.deleteDesc", { title: productTitle })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleteMutation.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={deleteMutation.isPending}>{t("common.cancel")}</AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
               disabled={deleteMutation.isPending}
@@ -551,7 +556,7 @@ export function ProductDeleteButton({
                 deleteMutation.mutate();
               }}
             >
-              {deleteMutation.isPending ? "Deleting..." : "Delete"}
+              {deleteMutation.isPending ? t("common.deleting") : t("products.detail.deleteConfirm")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
