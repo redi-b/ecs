@@ -357,6 +357,34 @@ export type MerchantProductMutation = z.infer<typeof merchantProductMutationSche
 
 export type MerchantProducts = z.infer<typeof merchantProductsSchema>;
 
+/** Aggregated merchant command-center / global search. */
+export const merchantSearchHitTypeSchema = z.enum([
+  "product",
+  "order",
+  "customer",
+  "media",
+  "category",
+  "collection",
+  "promotion",
+]);
+
+export const merchantSearchHitSchema = z.object({
+  id: z.string().min(1),
+  type: merchantSearchHitTypeSchema,
+  label: z.string().min(1),
+  description: z.string().min(1).nullable(),
+  status: z.string().min(1).nullable(),
+});
+
+export const merchantSearchResponseSchema = z.object({
+  results: z.array(merchantSearchHitSchema),
+  query: z.string(),
+});
+
+export type MerchantSearchHitType = z.infer<typeof merchantSearchHitTypeSchema>;
+export type MerchantSearchHit = z.infer<typeof merchantSearchHitSchema>;
+export type MerchantSearchResponse = z.infer<typeof merchantSearchResponseSchema>;
+
 export type MerchantProductStock = z.infer<typeof merchantProductStockSchema>;
 
 export type MerchantProductStockResponse = z.infer<typeof merchantProductStockResponseSchema>;
