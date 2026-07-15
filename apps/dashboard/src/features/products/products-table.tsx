@@ -323,7 +323,7 @@ export function ProductsTable({
     {
       defaultValue: "all",
       id: "status",
-      label: "Status",
+      label: t("products.filter.status.label"),
       onChange: (value) => pushServerFilters({ status: value as ProductStatusFilter }),
       options: productStatusFilterOptions,
       value: initialStatus,
@@ -331,49 +331,49 @@ export function ProductsTable({
     {
       defaultValue: "all",
       id: "stock",
-      label: "Stock",
+      label: t("products.filter.stock.label"),
       onChange: (value) => setClientFilter("stock", value),
       options: [
-        { label: "All stock", value: "all" },
-        { label: "In stock", value: "in_stock" },
-        { label: "Out of stock", value: "out_of_stock" },
-        { label: "Not tracked", value: "not_tracked" },
+        { label: t("products.filter.stock.all"), value: "all" },
+        { label: t("products.filter.stock.in_stock"), value: "in_stock" },
+        { label: t("products.filter.stock.out_of_stock"), value: "out_of_stock" },
+        { label: t("products.filter.stock.not_tracked"), value: "not_tracked" },
       ],
       value: stock,
     },
     {
       defaultValue: "all",
       id: "media",
-      label: "Media",
+      label: t("products.filter.media.label"),
       onChange: (value) => setClientFilter("media", value),
       options: [
-        { label: "All media", value: "all" },
-        { label: "With media", value: "with_media" },
-        { label: "Without media", value: "without_media" },
+        { label: t("products.filter.media.all"), value: "all" },
+        { label: t("products.filter.media.with_media"), value: "with_media" },
+        { label: t("products.filter.media.without_media"), value: "without_media" },
       ],
       value: media,
     },
     {
       defaultValue: "all",
       id: "variantCount",
-      label: "Variants",
+      label: t("products.filter.variants.label"),
       onChange: (value) => setClientFilter("variantCount", value),
       options: [
-        { label: "All variant counts", value: "all" },
-        { label: "No variants", value: "no_variants" },
-        { label: "Single variant", value: "single_variant" },
-        { label: "Multiple variants", value: "multi_variant" },
+        { label: t("products.filter.variants.all"), value: "all" },
+        { label: t("products.filter.variants.no_variants"), value: "no_variants" },
+        { label: t("products.filter.variants.single_variant"), value: "single_variant" },
+        { label: t("products.filter.variants.multi_variant"), value: "multi_variant" },
       ],
       value: variantCount,
     },
     {
       defaultValue: "all",
       id: "collectionId",
-      label: "Collection",
+      label: t("products.filter.collection.label"),
       onChange: (value) => pushServerFilters({ collectionId: value }),
       options: [
-        { label: "All collections", value: "all" },
-        { label: "No collection", value: "none" },
+        { label: t("products.filter.collection.all"), value: "all" },
+        { label: t("products.filter.collection.none"), value: "none" },
         ...collections.map((collection) => ({
           label: collection.title ?? collection.handle ?? collection.id,
           value: collection.id,
@@ -384,11 +384,11 @@ export function ProductsTable({
     {
       defaultValue: "all",
       id: "categoryId",
-      label: "Category",
+      label: t("products.filter.category.label"),
       onChange: (value) => pushServerFilters({ categoryId: value }),
       options: [
-        { label: "All categories", value: "all" },
-        { label: "No category", value: "none" },
+        { label: t("products.filter.category.all"), value: "all" },
+        { label: t("products.filter.category.none"), value: "none" },
         ...categories.map((category) => ({
           label: category.name ?? category.handle ?? category.id,
           value: category.id,
@@ -427,13 +427,13 @@ export function ProductsTable({
     <div className="flex flex-col gap-3">
       <DataTableFilters filters={filters} onClearAll={clearFilters}>
         <ListToolbarSearch
-          clearLabel={t("common.clearSearch")}
-          label={t("nav.products")}
+          clearLabel={t("products.table.clearSearch")}
+          label={t("products.table.searchLabel")}
           onChange={(value) => {
             setSearchValue(value);
             pushServerFilters({ q: value });
           }}
-          placeholder={t("common.searchProducts")}
+          placeholder={t("products.table.searchPlaceholder")}
           value={searchValue}
         />
       </DataTableFilters>
@@ -546,7 +546,7 @@ export function ProductsTable({
                 if (deleteProductId) deleteProductMutation.mutate(deleteProductId);
               }}
             >
-              {deleteProductMutation.isPending ? "Deleting..." : "Delete"}
+              {deleteProductMutation.isPending ? t("common.deleting") : t("common.delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -573,7 +573,7 @@ export function ProductsTable({
                 batchDeleteProductsMutation.mutate(selectedProductIdsForDelete);
               }}
             >
-              {batchDeleteProductsMutation.isPending ? "Deleting..." : "Delete"}
+              {batchDeleteProductsMutation.isPending ? t("common.deleting") : t("common.delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

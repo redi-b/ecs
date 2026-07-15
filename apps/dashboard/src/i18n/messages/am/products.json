@@ -27,5 +27,48 @@
   },
   "create": {
     "optionsLoadErrorDesc": "{labels} መጫን አልተቻለም። አሁንም መደበኛ ምርት መፍጠር እና በኋላ ላይ አማራጮችን ማከል ይችላሉ።"
+  },
+  "filter": {
+    "status": {
+      "label": "ሁኔታ",
+      "all": "ሁሉም ሁኔታዎች"
+    },
+    "stock": {
+      "label": "ክምችት",
+      "all": "ሁሉም ክምችት",
+      "in_stock": "በክምችት አለ",
+      "out_of_stock": "ክምችት አልቋል",
+      "not_tracked": "አይከታተልም"
+    },
+    "media": {
+      "label": "ሚዲያ",
+      "all": "ሁሉም ሚዲያ",
+      "with_media": "ሚዲያ ያለው",
+      "without_media": "ሚዲያ የሌለው"
+    },
+    "variants": {
+      "label": "ተለዋጮች",
+      "all": "ሁሉም የተለዋጭ ብዛት",
+      "no_variants": "ተለዋጭ የለም",
+      "single_variant": "አንድ ተለዋጭ",
+      "multi_variant": "ብዙ ተለዋጮች"
+    },
+    "collection": {
+      "label": "ስብስብ",
+      "all": "ሁሉም ስብስቦች",
+      "none": "ስብስብ የለም"
+    },
+    "category": {
+      "label": "ምድብ",
+      "all": "ሁሉም ምድቦች",
+      "none": "ምድብ የለም"
+    }
+  },
+  "table": {
+    "searchLabel": "ምርቶችን ፈልግ",
+    "searchPlaceholder": "ምርቶችን ፈልግ",
+    "clearSearch": "የምርት ፍለጋን አጽዳ",
+    "selectedSummary": "{count} ተመርጧል",
+    "productIds": "የምርት መለያዎች"
   }
 }

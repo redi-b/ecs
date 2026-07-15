@@ -44,6 +44,7 @@ import {
 import { copyTextToClipboard } from "@/lib/clipboard";
 import { getTenantScopedPath } from "@/lib/dashboard-tenant-context";
 import { dashboardRoutes } from "@/lib/routes";
+import { useI18n } from "@/i18n/provider";
 
 type ProductCollectionsTableProps = {
   collections: MerchantProductCollection[];
@@ -54,31 +55,36 @@ type ProductCollectionsTableProps = {
   tenantId?: string | undefined;
 };
 
-async function copyToClipboard(value: string, label: string) {
+async function copyToClipboard(
+  value: string,
+  label: string,
+  t: (key: any, values?: Record<string, string | number>) => string,
+) {
   try {
     const copied = await copyTextToClipboard(value);
 
     if (!copied) {
-      toast.error("Nothing to copy.");
+      toast.error(t("table.actions.copyEmpty"));
       return;
     }
 
-    toast.success(`${label} copied.`);
+    toast.success(t("table.actions.copySuccess", { label }));
   } catch {
-    toast.error("Could not copy. Try again.");
+    toast.error(t("table.actions.copyFailed"));
   }
 }
 
 function getCollectionColumns(
   onDelete: (collectionId: string) => void,
   onEdit: (collection: MerchantProductCollection) => void,
+  t: (key: any, values?: Record<string, string | number>) => string,
 ): ColumnDef<MerchantProductCollection>[] {
   return [
     {
       id: "select",
       header: ({ table }) => (
         <Checkbox
-          aria-label="Select all visible collections"
+          aria-label={t("taxonomy.table.selectAllAria", { entityPlural: t("taxonomy.entity.collection.plural") })}
           checked={
             table.getIsAllPageRowsSelected() ||
             (table.getIsSomePageRowsSelected() && "indeterminate")
@@ -99,32 +105,32 @@ function getCollectionColumns(
     {
       id: "title",
       accessorFn: (collection) => getCollectionDisplayName(collection),
-      header: ({ column }) => <DataTableHeader column={column} title="Collection" />,
+      header: ({ column }) => <DataTableHeader column={column} title={t("taxonomy.table.collection")} />,
       cell: ({ row }) => (
         <CollectionIdentityCell collection={row.original} onOpen={() => onEdit(row.original)} />
       ),
     },
     {
       accessorKey: "handle",
-      header: ({ column }) => <DataTableHeader column={column} title="Handle" />,
+      header: ({ column }) => <DataTableHeader column={column} title={t("taxonomy.table.handle")} />,
       cell: ({ row }) => <TaxonomyHandleCell handle={row.original.handle} />,
     },
     {
       id: "visibility",
       accessorFn: (collection) => collection.visibility ?? "public",
-      header: ({ column }) => <DataTableHeader column={column} title="Visibility" />,
+      header: ({ column }) => <DataTableHeader column={column} title={t("taxonomy.table.visibility.label")} />,
       cell: ({ row }) => {
         const hidden = row.original.visibility === "hidden";
         return (
           <Badge variant={hidden ? "secondary" : "outline"}>
-            {hidden ? "Hidden" : "Public"}
+            {hidden ? t("taxonomy.table.visibility.hidden") : t("taxonomy.table.visibility.public")}
           </Badge>
         );
       },
     },
     {
       accessorKey: "updatedAt",
-      header: ({ column }) => <DataTableHeader column={column} title="Updated" />,
+      header: ({ column }) => <DataTableHeader column={column} title={t("taxonomy.table.updated")} />,
       cell: ({ row }) => <TaxonomyDateCell value={row.original.updatedAt} />,
     },
     {
@@ -137,27 +143,27 @@ function getCollectionColumns(
             actions={[
               {
                 icon: AppIcons.edit,
-                label: "Edit collection",
+                label: t("taxonomy.table.actions.edit", { entity: t("taxonomy.entity.collection.label") }),
                 onSelect: () => onEdit(collection),
                 type: "button",
               },
               {
                 icon: AppIcons.copy,
-                label: "Copy collection ID",
-                onSelect: () => copyToClipboard(collection.id, "Collection ID"),
+                label: t("taxonomy.table.actions.copyId", { entity: t("taxonomy.entity.collection.label") }),
+                onSelect: () => copyToClipboard(collection.id, t("taxonomy.table.actions.copyId", { entity: t("taxonomy.entity.collection.label") }), t),
                 type: "button",
               },
               {
                 disabled: !collection.handle,
                 icon: AppIcons.copy,
-                label: "Copy handle",
-                onSelect: () => copyToClipboard(collection.handle ?? "", "Handle"),
+                label: t("taxonomy.table.actions.copyHandle"),
+                onSelect: () => copyToClipboard(collection.handle ?? "", t("taxonomy.table.handle"), t),
                 type: "button",
               },
               { id: "danger", type: "separator" },
               {
                 icon: AppIcons.trash,
-                label: "Delete collection",
+                label: t("taxonomy.table.actions.delete", { entity: t("taxonomy.entity.collection.label") }),
                 onSelect: () => onDelete(collection.id),
                 type: "button",
                 variant: "destructive",
@@ -199,6 +205,7 @@ export function ProductCollectionsTable({
   totalCount,
   tenantId,
 }: ProductCollectionsTableProps) {
+  const { t, locale } = useI18n();
   const router = useRouter();
   const queryClient = useQueryClient();
   const [pending, startTransition] = useTransition();
@@ -237,8 +244,9 @@ export function ProductCollectionsTable({
       getCollectionColumns(
         (id) => setDeleteCollectionId(id),
         (collection) => setEditingCollection(collection),
+        t,
       ),
-    [],
+    [t],
   );
 
   const deleteCollectionMutation = useMutation({
@@ -255,7 +263,7 @@ export function ProductCollectionsTable({
       return collectionId;
     },
     onSuccess: () => {
-      toast.success("Product collection deleted successfully.");
+      toast.success(t("taxonomy.create.success", { entity: t("taxonomy.entity.collection.label") }));
       queryClient.invalidateQueries({ queryKey: ["product-collections"] });
       setDeleteCollectionId(null);
       router.refresh();
@@ -283,7 +291,7 @@ export function ProductCollectionsTable({
       return collectionIds;
     },
     onSuccess: () => {
-      toast.success("Selected product collections deleted successfully.");
+      toast.success(t("taxonomy.create.success", { entity: t("taxonomy.entity.collection.plural") }));
       queryClient.invalidateQueries({ queryKey: ["product-collections"] });
       setSelectedCollectionIdsForDelete([]);
       setShowBatchDeleteDialog(false);
@@ -311,14 +319,14 @@ export function ProductCollectionsTable({
   const filters: DataTableFilterDefinition[] = [
     {
       id: "visibility",
-      label: "Visibility",
+      label: t("taxonomy.table.visibility.label"),
       defaultValue: "all",
       value: visibility,
       onChange: (value) => setVisibility(value as TaxonomyVisibilityFilter),
       options: [
-        { label: "All visibility", value: "all" },
-        { label: "Public", value: "public" },
-        { label: "Hidden", value: "hidden" },
+        { label: t("taxonomy.table.visibility.all"), value: "all" },
+        { label: t("taxonomy.table.visibility.public"), value: "public" },
+        { label: t("taxonomy.table.visibility.hidden"), value: "hidden" },
       ],
     },
   ];
@@ -334,13 +342,13 @@ export function ProductCollectionsTable({
         }}
       >
         <ListToolbarSearch
-          clearLabel="Clear collection search"
-          label="Search product collections"
+          clearLabel={t("taxonomy.table.clearCollectionSearch")}
+          label={t("taxonomy.table.searchCollections")}
           onChange={(value) => {
             setSearchValue(value);
             pushQuery(value);
           }}
-          placeholder="Search collections"
+          placeholder={t("taxonomy.table.searchCollectionsPlaceholder")}
           value={searchValue}
         />
       </DataTableFilters>
@@ -374,7 +382,8 @@ export function ProductCollectionsTable({
               onClick={() =>
                 copyToClipboard(
                   selectedCollections.map((collection) => collection.id).join("\n"),
-                  "Collection IDs",
+                  t("taxonomy.table.collectionIds"),
+                  t,
                 )
               }
               size="sm"
@@ -382,7 +391,7 @@ export function ProductCollectionsTable({
               variant="outline"
             >
               <AppIcons.copy data-icon="inline-start" />
-              Copy IDs
+              {t("table.actions.copyIds")}
             </Button>
             <Button
               onClick={() => {
@@ -400,10 +409,10 @@ export function ProductCollectionsTable({
         )}
         columns={columns}
         data={filteredCollections}
-        emptyMessage="No product collections have been synced for this merchant yet."
-        emptyTitle="No collections yet"
-        filteredEmptyMessage="No product collections match the current search."
-        filteredEmptyTitle="No matching collections"
+        emptyMessage={t("table.empty.noItems")}
+        emptyTitle={t("table.empty.noItemsTitle")}
+        filteredEmptyMessage={t("table.empty.filteredNoItems")}
+        filteredEmptyTitle={t("table.empty.filteredNoItemsTitle")}
         getRowId={(collection) => collection.id}
         isFiltered={counts.hasActiveFilter}
         selectedSummaryLabel={(count) => `collection${count === 1 ? "" : "s"} selected`}
@@ -438,7 +447,7 @@ export function ProductCollectionsTable({
               }}
               variant="destructive"
             >
-              {deleteCollectionMutation.isPending ? "Deleting..." : "Delete"}
+              {deleteCollectionMutation.isPending ? t("common.deleting") : t("common.delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -465,7 +474,7 @@ export function ProductCollectionsTable({
               }}
               variant="destructive"
             >
-              {batchDeleteCollectionsMutation.isPending ? "Deleting..." : "Delete"}
+              {batchDeleteCollectionsMutation.isPending ? t("common.deleting") : t("common.delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

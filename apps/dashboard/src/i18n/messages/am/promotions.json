@@ -9,7 +9,15 @@
     "emptyTitle": "ገና ምንም የቅናሽ ማስተዋወቂያ የለም",
     "emptyMessage": "ለሚቀጥለው ዘመቻ ኮድ ይፍጠሩ። የአጠቃቀም ገደቦች እና መርሃግብሮች ቅናሾችን በተሳለጠ ሁኔታ እንዲያስተዳድሩ ይረዳሉ።",
     "filteredEmptyTitle": "የሚዛመድ የቅናሽ ማስተዋወቂያ የለም",
-    "filteredEmptyMessage": "ከፍለጋዎ ወይም ከማጣሪያዎችዎ ጋር የሚዛመድ ምንም ቅናሽ አልተገኘም።"
+    "filteredEmptyMessage": "ከፍለጋዎ ወይም ከማጣሪያዎችዎ ጋር የሚዛመድ ምንም ቅናሽ አልተገኘም።",
+    "searchLabel": "ቅናሾችን ፈልግ",
+    "searchPlaceholder": "የቅናሽ ኮዶችን ፈልግ…",
+    "clearSearch": "የቅናሽ ፍለጋን አጽዳ",
+    "selectedSummary": "{count} ተመርጧል",
+    "copyCodes": "ኮዶችን ቅዳ",
+    "promotionCode": "የቅናሽ ኮድ",
+    "promotionCodes": "የቅናሽ ኮዶች",
+    "codeHeader": "ኮድ"
   },
   "filter": {
     "status": {
@@ -21,13 +29,23 @@
     },
     "offer": {
       "all": "ሁሉም የቅናሽ አይነቶች",
-      "label": "የቅናሽ አይነት"
+      "label": "የቅናሽ አይነት",
+      "order": "የትዕዛዝ ቅናሽ",
+      "products": "የምርት ቅናሽ",
+      "free_shipping": "ነጻ ማድረስ",
+      "buyget": "X ግዛ Y ውሰድ",
+      "percentage": "መቶኛ",
+      "fixed": "ቋሚ መጠን"
     },
     "apply": {
       "all": "ሁሉም የአተገባበር አይነቶች",
       "code": "በኮድ ብቻ",
       "auto": "በራሱ የሚተገበር",
-      "label": "አተገባበር"
+      "label": "አተገባበር",
+      "how": "እንዴት እንደሚተገበር",
+      "methodsAll": "ሁሉም ዘዴዎች",
+      "codeRequired": "የቅናሽ ኮድ",
+      "automatic": "ራስ-ሰር"
     }
   },
   "format": {
@@ -36,7 +54,9 @@
     "buyXgetY": "X ሲገዙ Y ያግኙ",
     "shipping": "ማድረሻ",
     "products": "ምርቶች",
-    "order": "ትዕዛዝ"
+    "order": "ትዕዛዝ",
+    "orderDiscount": "ትዕዛዝ",
+    "productDiscount": "ምርቶች"
   },
   "schedule": {
     "ends": "የሚያበቃው {date}",

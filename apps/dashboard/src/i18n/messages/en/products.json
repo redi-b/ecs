@@ -27,5 +27,48 @@
   },
   "create": {
     "optionsLoadErrorDesc": "Could not load {labels}. You can still create a basic product and add options later."
+  },
+  "filter": {
+    "status": {
+      "label": "Status",
+      "all": "All statuses"
+    },
+    "stock": {
+      "label": "Stock",
+      "all": "All stock",
+      "in_stock": "In stock",
+      "out_of_stock": "Out of stock",
+      "not_tracked": "Not tracked"
+    },
+    "media": {
+      "label": "Media",
+      "all": "All media",
+      "with_media": "With media",
+      "without_media": "Without media"
+    },
+    "variants": {
+      "label": "Variants",
+      "all": "All variant counts",
+      "no_variants": "No variants",
+      "single_variant": "Single variant",
+      "multi_variant": "Multiple variants"
+    },
+    "collection": {
+      "label": "Collection",
+      "all": "All collections",
+      "none": "No collection"
+    },
+    "category": {
+      "label": "Category",
+      "all": "All categories",
+      "none": "No category"
+    }
+  },
+  "table": {
+    "searchLabel": "Search products",
+    "searchPlaceholder": "Search products",
+    "clearSearch": "Clear product search",
+    "selectedSummary": "{count} selected",
+    "productIds": "Product IDs"
   }
 }

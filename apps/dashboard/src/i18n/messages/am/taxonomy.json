@@ -67,7 +67,8 @@
     "visibility": {
       "hidden": "የተደበቀ",
       "public": "ለደንበኛ የሚታይ",
-      "label": "ታይነት"
+      "label": "ታይነት",
+      "all": "ሁሉም ታይነት"
     },
     "order": "ቅደም ተከተል",
     "updated": "የተሻሻለበት",
@@ -83,7 +84,17 @@
     "emptyMessage": "እስካሁን ለዚህ ነጋዴ የተመሳሰለ ምድብ የለም።",
     "emptyTitle": "ምንም ምድቦች የሉም",
     "filteredEmptyMessage": "አሁን ባለው ፍለጋ መሰረት ምንም ምድብ አልተገኘም።",
-    "filteredEmptyTitle": "ምንም የሚዛመድ ምድብ የለም"
+    "filteredEmptyTitle": "ምንም የሚዛመድ ምድብ የለም",
+    "collection": "ስብስብ",
+    "searchCategories": "የምርት ምድቦችን ፈልግ",
+    "searchCategoriesPlaceholder": "ምድቦችን ፈልግ",
+    "clearCategorySearch": "የምድብ ፍለጋን አጽዳ",
+    "searchCollections": "የምርት ስብስቦችን ፈልግ",
+    "searchCollectionsPlaceholder": "ስብስቦችን ፈልግ",
+    "clearCollectionSearch": "የስብስብ ፍለጋን አጽዳ",
+    "categoryIds": "የምድብ መለያዎች",
+    "collectionIds": "የስብስብ መለያዎች",
+    "selectedSummary": "{count} ተመርጧል"
   },
   "delete": {
     "title": "{entity} አጥፋ",

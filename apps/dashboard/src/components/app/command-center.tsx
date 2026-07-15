@@ -43,6 +43,7 @@ import {
 } from "@/lib/merchant-search";
 import { parseCreateFromHref, requestOpenCreate } from "@/lib/open-create";
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/i18n/provider";
 
 const REMOTE_MIN_CHARS = 2;
 const DEBOUNCE_MS = 220;
@@ -115,6 +116,7 @@ function useModKeyLabel() {
 }
 
 export function CommandCenter() {
+  const { t } = useI18n();
   const router = useRouter();
   const { isMobile, setOpenMobile } = useSidebar();
   const [open, setOpen] = useState(false);
@@ -209,7 +211,7 @@ export function CommandCenter() {
               error?: string;
             };
             if (!response.ok) {
-              setRemoteError((prev) => prev ?? data.error ?? "Search failed");
+              setRemoteError((prev) => prev ?? data.error ?? t("commandCenter.searchFailed"));
               return;
             }
             const hits = Array.isArray(data.results) ? data.results : [];
@@ -223,7 +225,7 @@ export function CommandCenter() {
           })
           .catch((error) => {
             if (!active || (error as Error).name === "AbortError") return;
-            setRemoteError((prev) => prev ?? "Search failed");
+            setRemoteError((prev) => prev ?? t("commandCenter.searchFailed"));
           })
           .finally(() => {
             if (!active) return;
@@ -302,10 +304,10 @@ export function CommandCenter() {
     !showEmptyQuery && !hasLocal && !hasRemote && !remoteLoading;
 
   const inputPlaceholder = showEmptyQuery
-    ? "Jump to a page, run an action, or type to search…"
+    ? t("commandCenter.searchOrJump")
     : showRemote
-      ? "Searching products, orders, customers…"
-      : "Keep typing to search your catalog…";
+      ? t("commandCenter.searchingRemote")
+      : t("commandCenter.keepTyping");
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -313,7 +315,7 @@ export function CommandCenter() {
         <Button
           type="button"
           variant="ghost"
-          aria-label="Open command center"
+          aria-label={t("commandCenter.openAria")}
           size="icon"
           className={cn(
             "size-9 shrink-0 text-muted-foreground",
@@ -384,7 +386,7 @@ export function CommandCenter() {
           <CommandList className="min-h-0 flex-1 scroll-py-2 px-2 pb-2 max-h-none sm:max-h-[min(28rem,55dvh)]">
             {showEmpty ? (
               <CommandEmpty className="py-10 text-muted-foreground">
-                {remoteError ? remoteError : "No matches. Try another term or a create action."}
+                {remoteError ? remoteError : t("commandCenter.noMatches")}
               </CommandEmpty>
             ) : null}
 
@@ -422,7 +424,7 @@ export function CommandCenter() {
 
             {actionCommands.length > 0 ? (
               <CommandGroup
-                heading="Actions"
+                heading={t("commandCenter.actionsHeading")}
                 className="**:[[cmdk-group-heading]]:px-2 **:[[cmdk-group-heading]]:pt-3 **:[[cmdk-group-heading]]:pb-1.5 **:[[cmdk-group-heading]]:text-[11px] **:[[cmdk-group-heading]]:font-semibold **:[[cmdk-group-heading]]:tracking-wider **:[[cmdk-group-heading]]:text-muted-foreground/80 **:[[cmdk-group-heading]]:uppercase"
               >
                 {actionCommands.map((command) => (
@@ -493,7 +495,7 @@ export function CommandCenter() {
                   <div className="flex items-center gap-2 px-3 py-2.5 text-xs text-muted-foreground">
                     <AppIcons.loader className="size-3.5 animate-spin opacity-70" />
                     <span>
-                      {hasRemote ? "Loading more results…" : "Searching your shop…"}
+                      {hasRemote ? t("commandCenter.loadingMore") : t("commandCenter.searchingShop")}
                     </span>
                   </div>
                 ) : null}
@@ -509,7 +511,7 @@ export function CommandCenter() {
                   <CommandSeparator className="my-1 bg-border/60" />
                 ) : null}
                 <CommandGroup
-                  heading="Navigation"
+                  heading={t("commandCenter.navigationHeading")}
                   className="**:[[cmdk-group-heading]]:px-2 **:[[cmdk-group-heading]]:pt-3 **:[[cmdk-group-heading]]:pb-1.5 **:[[cmdk-group-heading]]:text-[11px] **:[[cmdk-group-heading]]:font-semibold **:[[cmdk-group-heading]]:tracking-wider **:[[cmdk-group-heading]]:text-muted-foreground/80 **:[[cmdk-group-heading]]:uppercase"
                 >
                   {navCommands.map((command) => (

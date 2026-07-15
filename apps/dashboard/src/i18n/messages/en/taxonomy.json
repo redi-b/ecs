@@ -67,7 +67,8 @@
     "visibility": {
       "hidden": "Hidden",
       "public": "Public",
-      "label": "Visibility"
+      "label": "Visibility",
+      "all": "All visibility"
     },
     "order": "Order",
     "updated": "Updated",
@@ -83,7 +84,17 @@
     "emptyMessage": "No product categories have been synced for this merchant yet.",
     "emptyTitle": "No categories yet",
     "filteredEmptyMessage": "No product categories match the current search.",
-    "filteredEmptyTitle": "No matching categories"
+    "filteredEmptyTitle": "No matching categories",
+    "collection": "Collection",
+    "searchCategories": "Search product categories",
+    "searchCategoriesPlaceholder": "Search categories",
+    "clearCategorySearch": "Clear category search",
+    "searchCollections": "Search product collections",
+    "searchCollectionsPlaceholder": "Search collections",
+    "clearCollectionSearch": "Clear collection search",
+    "categoryIds": "Category IDs",
+    "collectionIds": "Collection IDs",
+    "selectedSummary": "{count} selected"
   },
   "delete": {
     "title": "Delete {entity}",
