@@ -22,9 +22,9 @@
   "filter": {
     "status": {
       "all": "ሁሉም ሁኔታዎች",
-      "active": "ንቁ",
-      "inactive": "ያልነቃ",
-      "draft": "ያልታተመ",
+      "active": "በስራ ላይ",
+      "inactive": "ቆሟል",
+      "draft": "በዝግጅት ላይ",
       "label": "ሁኔታ"
     },
     "offer": {
@@ -33,19 +33,19 @@
       "order": "የትዕዛዝ ቅናሽ",
       "products": "የምርት ቅናሽ",
       "free_shipping": "ነጻ ማድረስ",
-      "buyget": "X ግዛ Y ውሰድ",
-      "percentage": "መቶኛ",
-      "fixed": "ቋሚ መጠን"
+      "buyget": "ገዛና አግኝ",
+      "percentage": "በመቶኛ",
+      "fixed": "በገንዘብ መጠን"
     },
     "apply": {
       "all": "ሁሉም የአተገባበር አይነቶች",
       "code": "በኮድ ብቻ",
       "auto": "በራሱ የሚተገበር",
       "label": "አተገባበር",
-      "how": "እንዴት እንደሚተገበር",
-      "methodsAll": "ሁሉም ዘዴዎች",
-      "codeRequired": "የቅናሽ ኮድ",
-      "automatic": "ራስ-ሰር"
+      "how": "እንዴት ይተገበራል",
+      "methodsAll": "ሁሉም",
+      "codeRequired": "በኮድ",
+      "automatic": "ራስ-ሰር ይተገበር"
     }
   },
   "format": {
@@ -129,9 +129,9 @@
     "usageLimit": "የአጠቃቀም ገደብ",
     "unlimited": "ያልተገደበ",
     "status": "ሁኔታ",
-    "statusActive": "ንቁ",
-    "statusDraft": "ረቂቅ",
-    "statusInactive": "ንቁ ያልሆነ",
+    "statusActive": "በስራ ላይ",
+    "statusDraft": "በዝግጅት ላይ",
+    "statusInactive": "ቆሟል",
     "noMax": "ገደብ የለም",
     "scheduleTitle": "መርሐግብር",
     "budgetTitle": "በጀት",

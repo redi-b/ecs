@@ -32,9 +32,9 @@
     "status": {
       "label": "ሁኔታ",
       "all": "ሁሉም ሁኔታዎች",
-      "published": "ታትሟል",
-      "draft": "ረቂቅ",
-      "unknown": "ያልታወቀ"
+      "published": "በመደብር ይታያል",
+      "draft": "ያልታተመ",
+      "unknown": "ሁኔታ አልታወቀም"
     },
     "stock": {
       "label": "ክምችት",
@@ -82,8 +82,8 @@
     "selectAllAria": "ሁሉንም የሚታዩ ምርቶች ምረጥ",
     "viewDetails": "ዝርዝሮችን እይ",
     "manageInventory": "ክምችት አስተዳድር",
-    "publishProduct": "ምርት አትም",
-    "moveToDraft": "ወደ ረቂቅ አንቀሳቅስ",
+    "publishProduct": "በመደብር አሳይ",
+    "moveToDraft": "ከመደብር አውጣ",
     "copyProductId": "የምርት መለያ ቅዳ",
     "copyHandle": "ሃንድል ቅዳ",
     "copyPath": "የመደብር መንገድ ቅዳ",
@@ -94,10 +94,10 @@
     "actionsFor": "ለ{name} ድርጊቶች ክፈት",
     "unnamed": "ስም የሌለው ምርት",
     "statusUpdateFailed": "የምርት ሁኔታ ማዘመን አልተቻለም። እንደገና ይሞክሩ።",
-    "publishing": "{count} በማተም ላይ…",
-    "movingToDraft": "{count} ወደ ረቂቅ በማንቀሳቀስ ላይ…",
-    "published": "{count} ታትመዋል።",
-    "movedToDraft": "{count} ወደ ረቂቅ ተንቀሳቅሰዋል።",
+    "publishing": "{count} በመደብር ላይ በማሳየት ላይ…",
+    "movingToDraft": "{count} ከመደብር በማውጣት ላይ…",
+    "published": "{count} በመደብር ላይ ይታያሉ።",
+    "movedToDraft": "{count} ከመደብር ወጥተዋል።",
     "deleted": "ምርት ጠፍቷል።",
     "deleteFailed": "ምርት ማጥፋት አልተቻለም።"
   }
