@@ -5,6 +5,7 @@ import { useRouter } from "nextjs-toploader/app";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { AppIcons } from "@/components/app/icons";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Command,
@@ -13,6 +14,7 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
+  CommandSeparator,
 } from "@/components/ui/command";
 import {
   Dialog,
@@ -42,7 +44,23 @@ import {
 import { cn } from "@/lib/utils";
 
 const REMOTE_MIN_CHARS = 2;
-const DEBOUNCE_MS = 250;
+const DEBOUNCE_MS = 220;
+
+/** Progressive waves — core types first, then the rest. */
+const SEARCH_WAVES: MerchantSearchHitType[][] = [
+  ["product", "order", "customer"],
+  ["media", "category", "collection", "promotion"],
+];
+
+const TYPE_ORDER: MerchantSearchHitType[] = [
+  "product",
+  "order",
+  "customer",
+  "media",
+  "category",
+  "collection",
+  "promotion",
+];
 
 function searchTypeIcon(type: MerchantSearchHitType) {
   switch (type) {
@@ -65,13 +83,35 @@ function searchTypeIcon(type: MerchantSearchHitType) {
   }
 }
 
+function IconTile({
+  children,
+  className,
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <span
+      className={cn(
+        "flex size-8 shrink-0 items-center justify-center rounded-lg border border-border/60 bg-muted/50 text-muted-foreground shadow-sm transition-colors",
+        "group-data-selected/command-item:border-primary/20 group-data-selected/command-item:bg-primary/10 group-data-selected/command-item:text-primary",
+        className,
+      )}
+    >
+      {children}
+    </span>
+  );
+}
+
 export function CommandCenter() {
   const router = useRouter();
   const { isMobile, setOpenMobile } = useSidebar();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
-  const [remoteHits, setRemoteHits] = useState<MerchantSearchHit[]>([]);
-  const [remoteLoading, setRemoteLoading] = useState(false);
+  const [remoteByType, setRemoteByType] = useState<
+    Partial<Record<MerchantSearchHitType, MerchantSearchHit[]>>
+  >({});
+  const [pendingWaves, setPendingWaves] = useState(0);
   const [remoteError, setRemoteError] = useState<string | null>(null);
   const [recent, setRecent] = useState<RecentCommandItem[]>([]);
 
@@ -79,9 +119,7 @@ export function CommandCenter() {
     typeof window !== "undefined"
       ? getSelectedTenantId({
           tenantId: new URLSearchParams(window.location.search).get("tenantId") ?? undefined,
-        }) ??
-        // Fallback: shop host has no tenantId in URL; use hostname as recent key.
-        window.location.hostname
+        }) ?? window.location.hostname
       : "default";
 
   const staticCommands = useMemo(() => getAllStaticCommands(), []);
@@ -92,15 +130,11 @@ export function CommandCenter() {
   const actionCommands = filteredCommands.filter((c) => c.group === "action");
   const navCommands = filteredCommands.filter((c) => c.group === "navigation");
 
-  const remoteByType = useMemo(() => {
-    const map = new Map<MerchantSearchHitType, MerchantSearchHit[]>();
-    for (const hit of remoteHits) {
-      const list = map.get(hit.type) ?? [];
-      list.push(hit);
-      map.set(hit.type, list);
-    }
-    return map;
-  }, [remoteHits]);
+  const remoteHitsCount = useMemo(
+    () => Object.values(remoteByType).reduce((sum, list) => sum + (list?.length ?? 0), 0),
+    [remoteByType],
+  );
+  const remoteLoading = pendingWaves > 0;
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
@@ -109,7 +143,6 @@ export function CommandCenter() {
         setOpen((value) => !value);
       }
     }
-
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, []);
@@ -117,61 +150,78 @@ export function CommandCenter() {
   useEffect(() => {
     if (!open) {
       setQuery("");
-      setRemoteHits([]);
+      setRemoteByType({});
       setRemoteError(null);
-      setRemoteLoading(false);
+      setPendingWaves(0);
       return;
     }
     setRecent(loadRecentCommands(tenantId));
   }, [open, tenantId]);
 
+  // Progressive multi-wave search: paint groups as each wave returns.
   useEffect(() => {
     const q = query.trim();
     if (!open || q.length < REMOTE_MIN_CHARS) {
-      setRemoteHits([]);
+      setRemoteByType({});
       setRemoteError(null);
-      setRemoteLoading(false);
+      setPendingWaves(0);
       return;
     }
 
     const controller = new AbortController();
-    setRemoteLoading(true);
+    let active = true;
+    setRemoteByType({});
     setRemoteError(null);
+    setPendingWaves(SEARCH_WAVES.length);
 
-    const timer = window.setTimeout(async () => {
-      try {
-        const params = new URLSearchParams({ q, limit: "6" });
-        // Prefer core types first; include more when useful
-        params.set("types", "product,order,customer,media,category,collection,promotion");
-        if (tenantId && tenantId.includes("-")) {
-          // UUID-like selected tenant from query
+    const timer = window.setTimeout(() => {
+      SEARCH_WAVES.forEach((types) => {
+        const params = new URLSearchParams({
+          q,
+          limit: "6",
+          types: types.join(","),
+        });
+        if (tenantId.includes("-") && tenantId.length > 20) {
           params.set("tenantId", tenantId);
         }
-        const response = await fetch(`/admin/search?${params}`, {
+
+        void fetch(`/admin/search?${params}`, {
           headers: { accept: "application/json" },
           signal: controller.signal,
           cache: "no-store",
-        });
-        const data = (await response.json().catch(() => ({}))) as {
-          results?: MerchantSearchHit[];
-          error?: string;
-        };
-        if (!response.ok) {
-          setRemoteError(data.error ?? "Search failed");
-          setRemoteHits([]);
-          return;
-        }
-        setRemoteHits(Array.isArray(data.results) ? data.results : []);
-      } catch (error) {
-        if ((error as Error).name === "AbortError") return;
-        setRemoteError("Search failed");
-        setRemoteHits([]);
-      } finally {
-        setRemoteLoading(false);
-      }
+        })
+          .then(async (response) => {
+            if (!active) return;
+            const data = (await response.json().catch(() => ({}))) as {
+              results?: MerchantSearchHit[];
+              error?: string;
+            };
+            if (!response.ok) {
+              setRemoteError((prev) => prev ?? data.error ?? "Search failed");
+              return;
+            }
+            const hits = Array.isArray(data.results) ? data.results : [];
+            setRemoteByType((prev) => {
+              const next = { ...prev };
+              for (const type of types) {
+                next[type] = hits.filter((hit) => hit.type === type);
+              }
+              return next;
+            });
+          })
+          .catch((error) => {
+            if (!active || (error as Error).name === "AbortError") return;
+            setRemoteError((prev) => prev ?? "Search failed");
+          })
+          .finally(() => {
+            if (!active) return;
+            setPendingWaves((count) => Math.max(0, count - 1));
+          });
+      });
     }, DEBOUNCE_MS);
 
     return () => {
+      active = false;
       controller.abort();
       window.clearTimeout(timer);
     };
@@ -216,16 +266,9 @@ export function CommandCenter() {
   const showEmptyQuery = query.trim().length === 0;
   const showRemote = query.trim().length >= REMOTE_MIN_CHARS;
   const hasLocal = actionCommands.length > 0 || navCommands.length > 0;
-  const hasRemote = remoteHits.length > 0;
-  const typeOrder: MerchantSearchHitType[] = [
-    "product",
-    "order",
-    "customer",
-    "media",
-    "category",
-    "collection",
-    "promotion",
-  ];
+  const hasRemote = remoteHitsCount > 0;
+  const showEmpty =
+    !showEmptyQuery && !hasLocal && !hasRemote && !remoteLoading;
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -237,37 +280,56 @@ export function CommandCenter() {
           size="icon"
           className={cn(
             "shrink-0 text-muted-foreground",
-            "sm:h-9 sm:w-auto sm:min-w-56 sm:justify-start sm:gap-2 sm:rounded-lg sm:border sm:border-input sm:bg-background sm:px-3 sm:hover:bg-accent sm:hover:text-accent-foreground",
+            "sm:h-9 sm:w-auto sm:min-w-60 sm:justify-start sm:gap-2 sm:rounded-xl sm:border sm:border-border/80 sm:bg-background/80 sm:px-3 sm:shadow-sm sm:backdrop-blur-sm",
+            "sm:hover:bg-accent/80 sm:hover:text-accent-foreground",
           )}
         >
-          <AppIcons.search className="size-4" />
-          <span className="hidden sm:inline">Search or jump…</span>
+          <AppIcons.search className="size-4 opacity-80" />
+          <span className="hidden text-sm text-muted-foreground sm:inline">
+            Search or jump…
+          </span>
           <KbdGroup className="ml-auto hidden shrink-0 sm:inline-flex">
             <Kbd>Ctrl</Kbd>
             <Kbd>K</Kbd>
           </KbdGroup>
         </Button>
       </DialogTrigger>
-      <DialogContent className="overflow-hidden p-0 sm:max-w-lg" showCloseButton={false}>
+      <DialogContent
+        className={cn(
+          "gap-0 overflow-hidden border-border/70 p-0 shadow-2xl sm:max-w-xl",
+          "rounded-2xl bg-popover/95 backdrop-blur-xl",
+          "ring-1 ring-black/5 dark:ring-white/10",
+        )}
+        showCloseButton={false}
+      >
         <DialogTitle className="sr-only">Command center</DialogTitle>
         <DialogDescription className="sr-only">
           Search pages, products, orders, customers, and run common actions.
         </DialogDescription>
-        <Command shouldFilter={false}>
+
+        <Command
+          shouldFilter={false}
+          className="rounded-2xl bg-transparent **:data-[slot=command-input-wrapper]:border-b **:data-[slot=command-input-wrapper]:border-border/60 **:data-[slot=command-input-wrapper]:bg-transparent **:data-[slot=command-input-wrapper]:p-3 **:data-[slot=command-input-wrapper]:pb-3"
+        >
           <CommandInput
             placeholder="Search pages, products, orders…"
             value={query}
             onValueChange={setQuery}
+            className="h-11 text-base placeholder:text-muted-foreground/70"
           />
-          <CommandList>
-            {!hasLocal && !hasRemote && !remoteLoading && !showEmptyQuery ? (
-              <CommandEmpty>
-                {remoteError ? remoteError : "No results found."}
+
+          <CommandList className="max-h-[min(28rem,60vh)] scroll-py-2 px-2 pb-2">
+            {showEmpty ? (
+              <CommandEmpty className="py-10 text-muted-foreground">
+                {remoteError ? remoteError : "No matches. Try another term or a create action."}
               </CommandEmpty>
             ) : null}
 
             {showEmptyQuery && recent.length > 0 ? (
-              <CommandGroup heading="Recent">
+              <CommandGroup
+                heading="Recent"
+                className="**:[[cmdk-group-heading]]:px-2 **:[[cmdk-group-heading]]:pt-3 **:[[cmdk-group-heading]]:pb-1.5 **:[[cmdk-group-heading]]:text-[11px] **:[[cmdk-group-heading]]:font-semibold **:[[cmdk-group-heading]]:tracking-wider **:[[cmdk-group-heading]]:text-muted-foreground/80 **:[[cmdk-group-heading]]:uppercase"
+              >
                 {recent.map((item) => {
                   const Icon =
                     item.kind === "resource" && item.type
@@ -278,83 +340,146 @@ export function CommandCenter() {
                       key={item.id}
                       value={`recent ${item.label} ${item.id}`}
                       onSelect={() => selectRecent(item)}
+                      className="group/command-item gap-3 rounded-xl px-2 py-2.5 data-selected:bg-accent/90"
                     >
-                      <Icon />
-                      <span className="truncate">{item.label}</span>
+                      <IconTile>
+                        <Icon className="size-4" />
+                      </IconTile>
+                      <span className="min-w-0 flex-1 truncate font-medium">{item.label}</span>
+                      <span className="text-[11px] text-muted-foreground/70">Recent</span>
                     </CommandItem>
                   );
                 })}
               </CommandGroup>
             ) : null}
 
+            {showEmptyQuery && recent.length > 0 && actionCommands.length > 0 ? (
+              <CommandSeparator className="my-1 bg-border/60" />
+            ) : null}
+
             {actionCommands.length > 0 ? (
-              <CommandGroup heading="Actions">
+              <CommandGroup
+                heading="Actions"
+                className="**:[[cmdk-group-heading]]:px-2 **:[[cmdk-group-heading]]:pt-3 **:[[cmdk-group-heading]]:pb-1.5 **:[[cmdk-group-heading]]:text-[11px] **:[[cmdk-group-heading]]:font-semibold **:[[cmdk-group-heading]]:tracking-wider **:[[cmdk-group-heading]]:text-muted-foreground/80 **:[[cmdk-group-heading]]:uppercase"
+              >
                 {actionCommands.map((command) => (
                   <CommandItem
                     key={command.id}
                     value={commandSearchValue(command)}
                     onSelect={() => selectCommand(command)}
+                    className="group/command-item gap-3 rounded-xl px-2 py-2.5 data-selected:bg-accent/90"
                   >
-                    <command.icon />
-                    <span>{command.label}</span>
+                    <IconTile>
+                      <command.icon className="size-4" />
+                    </IconTile>
+                    <span className="font-medium">{command.label}</span>
                   </CommandItem>
                 ))}
               </CommandGroup>
             ) : null}
 
             {showRemote ? (
-              remoteLoading && !hasRemote ? (
-                <CommandGroup heading="Searching">
-                  <CommandItem disabled value="loading">
-                    <AppIcons.loader className="animate-spin" />
-                    <span>Searching…</span>
-                  </CommandItem>
-                </CommandGroup>
-              ) : (
-                typeOrder.map((type) => {
-                  const hits = remoteByType.get(type);
+              <>
+                {(hasRemote || remoteLoading) && (hasLocal || showEmptyQuery) ? (
+                  <CommandSeparator className="my-1 bg-border/60" />
+                ) : null}
+
+                {TYPE_ORDER.map((type) => {
+                  const hits = remoteByType[type];
                   if (!hits?.length) return null;
                   const Icon = searchTypeIcon(type);
                   return (
-                    <CommandGroup heading={groupLabelForSearchType(type)} key={type}>
+                    <CommandGroup
+                      key={type}
+                      heading={groupLabelForSearchType(type)}
+                      className="**:[[cmdk-group-heading]]:px-2 **:[[cmdk-group-heading]]:pt-3 **:[[cmdk-group-heading]]:pb-1.5 **:[[cmdk-group-heading]]:text-[11px] **:[[cmdk-group-heading]]:font-semibold **:[[cmdk-group-heading]]:tracking-wider **:[[cmdk-group-heading]]:text-muted-foreground/80 **:[[cmdk-group-heading]]:uppercase"
+                    >
                       {hits.map((hit) => (
                         <CommandItem
                           key={`${hit.type}:${hit.id}`}
                           value={`${hit.type} ${hit.label} ${hit.description ?? ""} ${hit.id}`}
                           onSelect={() => selectHit(hit)}
+                          className="group/command-item gap-3 rounded-xl px-2 py-2.5 data-selected:bg-accent/90"
                         >
-                          <Icon />
-                          <div className="flex min-w-0 flex-col">
-                            <span className="truncate">{hit.label}</span>
+                          <IconTile>
+                            <Icon className="size-4" />
+                          </IconTile>
+                          <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                            <span className="truncate font-medium leading-tight">{hit.label}</span>
                             {hit.description ? (
                               <span className="truncate text-xs text-muted-foreground">
                                 {hit.description}
                               </span>
                             ) : null}
                           </div>
+                          {hit.status ? (
+                            <Badge
+                              variant="secondary"
+                              className="max-w-24 shrink-0 truncate rounded-md px-1.5 py-0 text-[10px] font-medium capitalize"
+                            >
+                              {hit.status}
+                            </Badge>
+                          ) : null}
                         </CommandItem>
                       ))}
                     </CommandGroup>
                   );
-                })
-              )
+                })}
+
+                {remoteLoading ? (
+                  <div className="flex items-center gap-2 px-3 py-2.5 text-xs text-muted-foreground">
+                    <AppIcons.loader className="size-3.5 animate-spin opacity-70" />
+                    <span>
+                      {hasRemote ? "Loading more results…" : "Searching your shop…"}
+                    </span>
+                  </div>
+                ) : null}
+              </>
             ) : null}
 
             {navCommands.length > 0 ? (
-              <CommandGroup heading="Navigation">
-                {navCommands.map((command) => (
-                  <CommandItem
-                    key={command.id}
-                    value={commandSearchValue(command)}
-                    onSelect={() => selectCommand(command)}
-                  >
-                    <command.icon />
-                    <span>{command.label}</span>
-                  </CommandItem>
-                ))}
-              </CommandGroup>
+              <>
+                {(hasRemote || actionCommands.length > 0 || recent.length > 0) &&
+                !showEmptyQuery ? (
+                  <CommandSeparator className="my-1 bg-border/60" />
+                ) : showEmptyQuery && actionCommands.length > 0 ? (
+                  <CommandSeparator className="my-1 bg-border/60" />
+                ) : null}
+                <CommandGroup
+                  heading="Navigation"
+                  className="**:[[cmdk-group-heading]]:px-2 **:[[cmdk-group-heading]]:pt-3 **:[[cmdk-group-heading]]:pb-1.5 **:[[cmdk-group-heading]]:text-[11px] **:[[cmdk-group-heading]]:font-semibold **:[[cmdk-group-heading]]:tracking-wider **:[[cmdk-group-heading]]:text-muted-foreground/80 **:[[cmdk-group-heading]]:uppercase"
+                >
+                  {navCommands.map((command) => (
+                    <CommandItem
+                      key={command.id}
+                      value={commandSearchValue(command)}
+                      onSelect={() => selectCommand(command)}
+                      className="group/command-item gap-3 rounded-xl px-2 py-2.5 data-selected:bg-accent/90"
+                    >
+                      <IconTile>
+                        <command.icon className="size-4" />
+                      </IconTile>
+                      <span className="font-medium">{command.label}</span>
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              </>
             ) : null}
           </CommandList>
+
+          <div className="flex items-center justify-between gap-2 border-t border-border/60 bg-muted/30 px-3 py-2 text-[11px] text-muted-foreground">
+            <span className="flex items-center gap-1.5">
+              <Kbd className="h-5 min-w-5 px-1">↑</Kbd>
+              <Kbd className="h-5 min-w-5 px-1">↓</Kbd>
+              <span className="hidden sm:inline">to move</span>
+              <Kbd className="ml-1 h-5 px-1.5">↵</Kbd>
+              <span className="hidden sm:inline">to open</span>
+            </span>
+            <span className="flex items-center gap-1">
+              <Kbd className="h-5 px-1.5">esc</Kbd>
+              close
+            </span>
+          </div>
         </Command>
       </DialogContent>
     </Dialog>

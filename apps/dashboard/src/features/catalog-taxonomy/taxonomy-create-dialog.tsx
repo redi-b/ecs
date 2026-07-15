@@ -3,7 +3,7 @@
 import type { MerchantProductCategory } from "@ecs/contracts";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { Suspense, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { AppIcons } from "@/components/app/icons";
@@ -35,6 +35,7 @@ import {
   getCategoryDisplayName,
   slugifyTaxonomyHandle,
 } from "@/features/catalog-taxonomy/taxonomy-table-state";
+import { useCreateQueryOpen } from "@/lib/use-create-query-open";
 
 type TaxonomyCreateDialogProps = {
   action: string;
@@ -48,7 +49,21 @@ type TaxonomyCreateDialogProps = {
   triggerLabel: string;
 };
 
-export function TaxonomyCreateDialog({
+export function TaxonomyCreateDialog(props: TaxonomyCreateDialogProps) {
+  return (
+    <Suspense
+      fallback={
+        <Button type="button" disabled>
+          {props.triggerLabel}
+        </Button>
+      }
+    >
+      <TaxonomyCreateDialogInner {...props} />
+    </Suspense>
+  );
+}
+
+function TaxonomyCreateDialogInner({
   action,
   entityLabel,
   nameKey,
@@ -68,6 +83,13 @@ export function TaxonomyCreateDialog({
   const [isVisible, setIsVisible] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+
+  useCreateQueryOpen({
+    values: ["1", "true", entityLabel],
+    onOpen: () => {
+      setOpen(true);
+    },
+  });
   const generatedHandle = useMemo(() => slugifyTaxonomyHandle(displayName), [displayName]);
   const HandleLockIcon = isHandleLocked ? AppIcons.lock : AppIcons.lockUnlock;
 

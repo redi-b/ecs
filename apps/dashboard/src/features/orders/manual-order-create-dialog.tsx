@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { AppIcons } from "@/components/app/icons";
@@ -28,6 +28,7 @@ import {
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { useCreateQueryOpen } from "@/lib/use-create-query-open";
 import { Textarea } from "@/components/ui/textarea";
 import { mapPlatformErrorMessage } from "@/lib/platform-api/errors";
 import { dashboardRoutes } from "@/lib/routes";
@@ -76,11 +77,34 @@ const emptyAddress: AddressForm = {
 };
 
 export function ManualOrderCreateDialog() {
+  return (
+    <Suspense
+      fallback={
+        <Button type="button" disabled>
+          <AppIcons.orders data-icon="inline-start" />
+          Create order
+        </Button>
+      }
+    >
+      <ManualOrderCreateDialogInner />
+    </Suspense>
+  );
+}
+
+function ManualOrderCreateDialogInner() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useCreateQueryOpen({
+    values: ["1", "true", "order"],
+    onOpen: () => {
+      setStep(0);
+      setOpen(true);
+    },
+  });
 
   const [customerMode, setCustomerMode] = useState<"existing" | "new">("existing");
   const [customerId, setCustomerId] = useState<string | null>(null);

@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 
 import { AppIcons } from "@/components/app/icons";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { ProductForm } from "@/features/products/product-form";
 import { useProductTaxonomy } from "@/features/products/use-product-taxonomy";
+import { useCreateQueryOpen } from "@/lib/use-create-query-open";
 
 type ProductCreateDialogProps = {
   action: string;
@@ -14,7 +15,15 @@ type ProductCreateDialogProps = {
   tenantId?: string | undefined;
 };
 
-export function ProductCreateDialog({
+export function ProductCreateDialog(props: ProductCreateDialogProps) {
+  return (
+    <Suspense fallback={<CreateProductTrigger disabledReason={props.disabledReason} />}>
+      <ProductCreateDialogInner {...props} />
+    </Suspense>
+  );
+}
+
+function ProductCreateDialogInner({
   action,
   disabledReason,
   tenantId,
@@ -29,17 +38,14 @@ export function ProductCreateDialog({
     setOpen(true);
   }
 
+  useCreateQueryOpen({
+    values: ["1", "true", "product"],
+    onOpen: openCreateDialog,
+  });
+
   return (
     <>
-      <Button
-        disabled={Boolean(disabledReason)}
-        onClick={openCreateDialog}
-        title={disabledReason}
-        type="button"
-      >
-        <AppIcons.products data-icon="inline-start" />
-        Create product
-      </Button>
+      <CreateProductTrigger disabledReason={disabledReason} onClick={openCreateDialog} />
       <ProductForm
         action={action}
         categories={taxonomy.categories}
@@ -57,6 +63,26 @@ export function ProductCreateDialog({
         submitLabel="Create product"
       />
     </>
+  );
+}
+
+function CreateProductTrigger({
+  disabledReason,
+  onClick,
+}: {
+  disabledReason?: string | undefined;
+  onClick?: () => void;
+}) {
+  return (
+    <Button
+      disabled={Boolean(disabledReason) || !onClick}
+      onClick={onClick}
+      title={disabledReason}
+      type="button"
+    >
+      <AppIcons.products data-icon="inline-start" />
+      Create product
+    </Button>
   );
 }
 
