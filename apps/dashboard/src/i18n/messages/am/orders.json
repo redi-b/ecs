@@ -35,26 +35,26 @@
     "progress": {
       "label": "ሂደት",
       "all": "ሁሉም",
-      "open": "ክፍት",
+      "open": "በሂደት ላይ",
       "new": "አዲስ",
-      "ready": "ዝግጁ",
-      "completed": "ተጠናቋል",
+      "ready": "ለማድረስ ዝግጁ",
+      "completed": "ተጠናቅቋል",
       "canceled": "ተሰርዟል"
     },
     "payment": {
       "label": "ክፍያ",
       "all": "ሁሉም",
-      "unpaid": "ያልተከፈለ",
-      "paid": "ተከፍሏል",
-      "failed": "አልተሳካም",
-      "pending": "በመጠባበቅ ላይ",
-      "unknown": "ያልታወቀ"
+      "unpaid": "ክፍያ አልተደረገም",
+      "paid": "ክፍያ ተከፍሏል",
+      "failed": "ክፍያ አልተሳካም",
+      "pending": "ክፍያ በመጠባበቅ ላይ",
+      "unknown": "የክፍያ ሁኔታ አልታወቀም"
     },
     "method": {
-      "label": "ዘዴ",
+      "label": "የክፍያ ዘዴ",
       "all": "ሁሉም",
-      "cod": "ጥሬ ገንዘብ",
-      "chapa": "ኦንላይን"
+      "cod": "በጥሬ ገንዘብ",
+      "chapa": "በኦንላይን"
     },
     "delivery": {
       "label": "ማድረስ",
@@ -73,13 +73,13 @@
     },
     "lifecycle": {
       "all": "ሁሉም ትዕዛዞች",
-      "open": "ክፍት",
-      "completed": "የተጠናቀቁ",
-      "canceled": "የተሰረዙ",
+      "open": "በሂደት ላይ",
+      "completed": "ተጠናቅቋል",
+      "canceled": "ተሰርዟል",
       "needs_fulfillment": "ማድረስ የሚፈልጉ",
       "fulfilled": "የደረሱ",
-      "payment_pending": "ክፍያ የሚጠብቁ",
-      "paid": "የተከፈሉ",
+      "payment_pending": "ክፍያ በመጠባበቅ ላይ",
+      "paid": "ክፍያ ተከፍሏል",
       "label": "የትዕዛዝ ሁኔታ"
     },
     "fulfillment": {
