@@ -33,56 +33,87 @@ describe("formatMoneyAmount", () => {
 describe("createCodeNotificationRenderer", () => {
   const renderer = createCodeNotificationRenderer();
 
-  it("renders order.created with subject for email", async () => {
+  it("renders rich order.created messages", async () => {
     const result = await renderer.render({
-      channel: "email",
+      channel: "telegram",
       eventType: "order.created",
       tenantId: "tenant-1",
-      recipient: "owner@example.com",
-      payload: { orderDisplayId: "1001", amount: "1200", currencyCode: "etb" },
+      recipient: "123",
+      payload: {
+        orderDisplayId: "10",
+        amount: "10880.000000000000",
+        currencyCode: "etb",
+        customerName: "Abebe Kebede",
+        customerPhone: "+251911000000",
+        customerCity: "Addis Ababa",
+        itemCount: 3,
+        paymentMethod: "cod",
+        deliveryChoice: "delivery",
+      },
     });
 
-    assert.equal(result.subject, "New order #1001");
-    assert.match(result.body, /#1001/);
-    assert.match(result.body, /ETB 1,200/);
-    assert.doesNotMatch(result.body, /Channel:/i);
+    assert.match(result.body, /new order #10/i);
+    assert.match(result.body, /ETB 10,880/);
+    assert.match(result.body, /Customer: Abebe Kebede/);
+    assert.match(result.body, /Phone: \+251911000000/);
+    assert.match(result.body, /Items: 3 items/);
+    assert.match(result.body, /Payment: Cash on delivery/);
+    assert.match(result.body, /Fulfillment: Delivery/);
+    assert.doesNotMatch(result.body, /10880\.000/);
   });
 
-  it("renders cancelled and payment messages cleanly for telegram", async () => {
+  it("renders cancelled and payment messages with details", async () => {
     const cancelled = await renderer.render({
-      channel: "telegram",
+      channel: "in_app",
       eventType: "order.cancelled",
       tenantId: "tenant-1",
-      recipient: "12345",
-      payload: { orderDisplayId: "10", amount: "10880.000000000000", currencyCode: "etb" },
+      recipient: "in_app",
+      payload: {
+        orderDisplayId: "10",
+        amount: "10880",
+        currencyCode: "ETB",
+        customerName: "Sara",
+      },
     });
-    assert.equal(cancelled.subject, undefined);
+    assert.equal(cancelled.subject, "Order #10 cancelled");
     assert.match(cancelled.body, /Order #10 was cancelled/);
-    assert.match(cancelled.body, /ETB 10,880/);
-    assert.doesNotMatch(cancelled.body, /000000/);
+    assert.match(cancelled.body, /Customer: Sara/);
 
     const paid = await renderer.render({
       channel: "telegram",
       eventType: "payment.paid",
       tenantId: "tenant-1",
-      recipient: "12345",
-      payload: { orderDisplayId: 10, amount: 10880, currencyCode: "ETB" },
+      recipient: "123",
+      payload: {
+        orderDisplayId: 10,
+        amount: 10880,
+        currencyCode: "ETB",
+        source: "dashboard_mark_paid",
+        paymentMethod: "cod",
+      },
     });
     assert.match(paid.body, /Payment received for order #10/);
-    assert.match(paid.body, /ETB 10,880/);
+    assert.match(paid.body, /Amount: ETB 10,880/);
+    assert.match(paid.body, /Marked paid in dashboard/);
   });
 
-  it("omits channel jargon from test messages", async () => {
+  it("renders informative test notifications", async () => {
     const result = await renderer.render({
       channel: "telegram",
       eventType: "notification.test",
       tenantId: "tenant-1",
-      recipient: "12345",
-      payload: {},
+      recipient: "123",
+      payload: {
+        shopName: "Bole Stylee",
+        destinationLabel: "@owner_bot",
+        sentAt: "2026-07-15T11:27:00.000Z",
+      },
     });
 
-    assert.equal(result.subject, undefined);
-    assert.match(result.body, /test alert/i);
+    assert.match(result.body, /Test alert for Bole Stylee/);
+    assert.match(result.body, /Delivery is working/);
+    assert.match(result.body, /@owner_bot/);
+    assert.match(result.body, /Settings → Notifications/);
     assert.doesNotMatch(result.body, /Channel:\s*telegram/i);
   });
 

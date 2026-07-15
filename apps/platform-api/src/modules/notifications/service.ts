@@ -4,6 +4,7 @@ import {
   notificationDestinations,
   notificationLogs,
   notificationPreferences,
+  tenants,
 } from "@ecs/db";
 import type { EnqueueJobInput, EnqueueJobResult } from "@ecs/jobs";
 import { and, eq, ne } from "drizzle-orm";
@@ -317,6 +318,56 @@ export function createNotificationService(
         return { ok: false, error: "notification_preference_missing", status: 404 };
       }
 
+      const [tenant] = await db
+        .select({ name: tenants.name })
+        .from(tenants)
+        .where(eq(tenants.id, input.tenantId))
+        .limit(1);
+
+      let destinationLabel: string | undefined;
+      if (channel === "telegram" && input.destinationId?.trim()) {
+        const [destination] = await db
+          .select({ label: notificationDestinations.label })
+          .from(notificationDestinations)
+          .where(
+            and(
+              eq(notificationDestinations.id, input.destinationId.trim()),
+              eq(notificationDestinations.tenantId, input.tenantId),
+            ),
+          )
+          .limit(1);
+        if (destination?.label?.trim()) {
+          destinationLabel = destination.label.trim();
+        }
+      } else if (channel === "email") {
+        destinationLabel = recipient;
+      }
+
+      const testPayload: Record<string, unknown> = {
+        source: "dashboard_test",
+        channel,
+        sentAt: new Date().toISOString(),
+        testId: crypto.randomUUID(),
+      };
+      if (tenant?.name?.trim()) {
+        testPayload.shopName = tenant.name.trim();
+      }
+      if (destinationLabel) {
+        testPayload.destinationLabel = destinationLabel;
+      }
+
+      // In-app feed for tests (independent of external delivery).
+      try {
+        await inbox.tryCreateFromEvent({
+          eventType: "notification.test",
+          payload: testPayload,
+          tenantId: input.tenantId,
+          userId: null,
+        });
+      } catch {
+        // non-blocking
+      }
+
       const [log] = await db
         .insert(notificationLogs)
         .values({
@@ -325,10 +376,7 @@ export function createNotificationService(
           channel,
           recipient,
           status: "pending",
-          payload: {
-            source: "dashboard_test",
-            channel,
-          },
+          payload: testPayload,
         })
         .returning({ id: notificationLogs.id });
 

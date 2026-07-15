@@ -112,7 +112,25 @@ export type OrderNotificationFields = {
   email?: string | null;
   sales_channel_id?: string | null;
   status?: string | null;
+  payment_status?: string | null;
+  metadata?: Record<string, unknown> | null;
+  shipping_address?: {
+    first_name?: string | null;
+    last_name?: string | null;
+    phone?: string | null;
+    city?: string | null;
+  } | null;
+  items?: Array<{ id?: string; quantity?: number | null }> | null;
 };
+
+function pickMetaString(metadata: Record<string, unknown> | null | undefined, ...keys: string[]) {
+  if (!metadata) return undefined;
+  for (const key of keys) {
+    const value = metadata[key];
+    if (typeof value === "string" && value.trim()) return value.trim();
+  }
+  return undefined;
+}
 
 export function buildOrderNotificationPayload(order: OrderNotificationFields) {
   const payload: Record<string, unknown> = {
@@ -137,8 +155,55 @@ export function buildOrderNotificationPayload(order: OrderNotificationFields) {
   if (order.status) {
     payload.orderStatus = order.status;
   }
+  if (order.payment_status) {
+    payload.paymentStatus = order.payment_status;
+  }
   if (order.sales_channel_id) {
     payload.medusaSalesChannelId = order.sales_channel_id;
   }
+
+  const shipping = order.shipping_address;
+  const name = [shipping?.first_name, shipping?.last_name].filter(Boolean).join(" ").trim();
+  if (name) {
+    payload.customerName = name;
+  }
+  const phone =
+    shipping?.phone?.trim() ||
+    pickMetaString(order.metadata, "customer_phone", "phone", "customerPhone");
+  if (phone) {
+    payload.customerPhone = phone;
+  }
+  if (shipping?.city?.trim()) {
+    payload.customerCity = shipping.city.trim();
+  }
+
+  const deliveryChoice = pickMetaString(
+    order.metadata,
+    "delivery_choice",
+    "deliveryChoice",
+    "fulfillment_type",
+  );
+  if (deliveryChoice) {
+    payload.deliveryChoice = deliveryChoice;
+  }
+
+  const paymentMethod = pickMetaString(
+    order.metadata,
+    "payment_method",
+    "paymentMethod",
+    "checkout_type",
+  );
+  if (paymentMethod) {
+    payload.paymentMethod = paymentMethod;
+  }
+
+  if (Array.isArray(order.items) && order.items.length > 0) {
+    const itemCount = order.items.reduce((sum, item) => {
+      const qty = typeof item.quantity === "number" && Number.isFinite(item.quantity) ? item.quantity : 1;
+      return sum + qty;
+    }, 0);
+    payload.itemCount = itemCount;
+  }
+
   return payload;
 }

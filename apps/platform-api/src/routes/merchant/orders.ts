@@ -1,6 +1,7 @@
 import type { Context, Hono } from "hono";
 import type { MerchantOrderAction, PlatformAppOptions, PlatformAppVariables } from "../../app.js";
 import { parseMerchantOrderListQuery } from "../../adapters/medusa/order/list-query.js";
+import { buildPaymentPaidPayload } from "../../modules/notifications/order-payload.js";
 import { getPaginationValue, getRequestHost, storeErrorStatus } from "../shared.js";
 import type { MerchantRouteHelpers } from "./context.js";
 
@@ -182,19 +183,11 @@ export function registerMerchantOrderRoutes(
     // Dashboard mark-paid often does not fire Medusa payment.captured (metadata / mark-as-paid
     // paths). Emit payment.paid from platform so Telegram + in-app stay in sync with Chapa webhooks.
     if (action === "mark-paid" && options.recordNotificationEvent) {
-      const paidOrder = order.order;
       void options
         .recordNotificationEvent({
           tenantId: merchant.result.context.tenantId,
           eventType: "payment.paid",
-          payload: {
-            orderId: paidOrder.id,
-            orderDisplayId:
-              paidOrder.displayId != null ? String(paidOrder.displayId) : paidOrder.id,
-            amount: paidOrder.total != null ? String(paidOrder.total) : undefined,
-            currencyCode: paidOrder.currencyCode ?? undefined,
-            source: "dashboard_mark_paid",
-          },
+          payload: buildPaymentPaidPayload(order.order, "dashboard_mark_paid"),
         })
         .catch(() => undefined);
     }
@@ -265,19 +258,11 @@ export function registerMerchantOrderRoutes(
         return context.json({ error: order.error }, order.status);
       }
       if (markPaid && options.recordNotificationEvent) {
-        const paidOrder = order.order;
         void options
           .recordNotificationEvent({
             tenantId: merchant.result.context.tenantId,
             eventType: "payment.paid",
-            payload: {
-              orderId: paidOrder.id,
-              orderDisplayId:
-                paidOrder.displayId != null ? String(paidOrder.displayId) : paidOrder.id,
-              amount: paidOrder.total != null ? String(paidOrder.total) : undefined,
-              currencyCode: paidOrder.currencyCode ?? undefined,
-              source: "dashboard_finish_mark_paid",
-            },
+            payload: buildPaymentPaidPayload(order.order, "dashboard_finish_mark_paid"),
           })
           .catch(() => undefined);
       }
@@ -303,19 +288,11 @@ export function registerMerchantOrderRoutes(
     }
 
     if (markPaid && options.recordNotificationEvent) {
-      const paidOrder = order.order;
       void options
         .recordNotificationEvent({
           tenantId: merchant.result.context.tenantId,
           eventType: "payment.paid",
-          payload: {
-            orderId: paidOrder.id,
-            orderDisplayId:
-              paidOrder.displayId != null ? String(paidOrder.displayId) : paidOrder.id,
-            amount: paidOrder.total != null ? String(paidOrder.total) : undefined,
-            currencyCode: paidOrder.currencyCode ?? undefined,
-            source: "dashboard_finish_mark_paid",
-          },
+          payload: buildPaymentPaidPayload(order.order, "dashboard_finish_mark_paid"),
         })
         .catch(() => undefined);
     }

@@ -5,6 +5,7 @@ import type {
   PlatformAppVariables,
 } from "../../../app.js";
 import { parseMerchantOrderListQuery } from "../../../adapters/medusa/order/list-query.js";
+import { buildPaymentPaidPayload } from "../../../modules/notifications/order-payload.js";
 import { getPaginationValue } from "../../shared.js";
 
 export function registerPlatformTenantOrdersRoutes(
@@ -169,19 +170,11 @@ export function registerPlatformTenantOrdersRoutes(
     }
 
     if (action === "mark-paid" && options.recordNotificationEvent) {
-      const paidOrder = order.order;
       void options
         .recordNotificationEvent({
           tenantId,
           eventType: "payment.paid",
-          payload: {
-            orderId: paidOrder.id,
-            orderDisplayId:
-              paidOrder.displayId != null ? String(paidOrder.displayId) : paidOrder.id,
-            amount: paidOrder.total != null ? String(paidOrder.total) : undefined,
-            currencyCode: paidOrder.currencyCode ?? undefined,
-            source: "dashboard_mark_paid",
-          },
+          payload: buildPaymentPaidPayload(order.order, "dashboard_mark_paid"),
         })
         .catch(() => undefined);
     }

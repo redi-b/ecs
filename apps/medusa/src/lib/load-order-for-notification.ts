@@ -14,7 +14,23 @@ export type LoadedOrderForNotification = {
   email?: string | null;
   sales_channel_id?: string | null;
   status?: string | null;
+  payment_status?: string | null;
+  metadata?: Record<string, unknown> | null;
+  shipping_address?: {
+    first_name?: string | null;
+    last_name?: string | null;
+    phone?: string | null;
+    city?: string | null;
+  } | null;
+  items?: Array<{ id?: string; quantity?: number | null }> | null;
 };
+
+function asRecord(value: unknown): Record<string, unknown> | null {
+  if (typeof value === "object" && value !== null && !Array.isArray(value)) {
+    return value as Record<string, unknown>;
+  }
+  return null;
+}
 
 export async function loadOrderForNotification(
   query: QueryGraph,
@@ -30,6 +46,14 @@ export async function loadOrderForNotification(
       "email",
       "sales_channel_id",
       "status",
+      "payment_status",
+      "metadata",
+      "shipping_address.first_name",
+      "shipping_address.last_name",
+      "shipping_address.phone",
+      "shipping_address.city",
+      "items.id",
+      "items.quantity",
     ],
     filters: { id: orderId },
   });
@@ -39,9 +63,37 @@ export async function loadOrderForNotification(
     return null;
   }
 
-  const order = row as LoadedOrderForNotification;
-  if (!order.id) {
+  const raw = row as Record<string, unknown>;
+  if (typeof raw.id !== "string" || !raw.id) {
     return null;
   }
-  return order;
+
+  const shipping = asRecord(raw.shipping_address);
+  const metadata = asRecord(raw.metadata);
+  const items = Array.isArray(raw.items) ? raw.items : null;
+
+  return {
+    id: raw.id,
+    display_id:
+      typeof raw.display_id === "number" || typeof raw.display_id === "string"
+        ? raw.display_id
+        : null,
+    currency_code: typeof raw.currency_code === "string" ? raw.currency_code : null,
+    total:
+      typeof raw.total === "number" || typeof raw.total === "string" ? raw.total : null,
+    email: typeof raw.email === "string" ? raw.email : null,
+    sales_channel_id: typeof raw.sales_channel_id === "string" ? raw.sales_channel_id : null,
+    status: typeof raw.status === "string" ? raw.status : null,
+    payment_status: typeof raw.payment_status === "string" ? raw.payment_status : null,
+    metadata,
+    shipping_address: shipping
+      ? {
+          first_name: typeof shipping.first_name === "string" ? shipping.first_name : null,
+          last_name: typeof shipping.last_name === "string" ? shipping.last_name : null,
+          phone: typeof shipping.phone === "string" ? shipping.phone : null,
+          city: typeof shipping.city === "string" ? shipping.city : null,
+        }
+      : null,
+    items: items as LoadedOrderForNotification["items"],
+  };
 }
