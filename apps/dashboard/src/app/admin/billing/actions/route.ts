@@ -56,8 +56,7 @@ export async function POST(request: Request) {
       if (!response.ok) {
         return {
           ok: false,
-          message:
-            typeof data?.error === "string" ? data.error : "billing_upgrade_failed",
+          message: extractErrorText(data) ?? "billing_upgrade_failed",
           status: response.status,
         };
       }
@@ -85,14 +84,10 @@ export async function POST(request: Request) {
       );
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
+        const message = extractErrorText(data) ?? "billing_pay_failed";
         return {
           ok: false,
-          message:
-            typeof data?.message === "string"
-              ? data.message
-              : typeof data?.error === "string"
-                ? data.error
-                : "billing_pay_failed",
+          message,
           status: response.status,
         };
       }
@@ -101,4 +96,16 @@ export async function POST(request: Request) {
 
     return { ok: false, message: "invalid_action", status: 400 };
   });
+}
+
+function extractErrorText(data: unknown): string | null {
+  if (!data || typeof data !== "object" || Array.isArray(data)) return null;
+  const record = data as Record<string, unknown>;
+  if (typeof record.message === "string" && record.message.trim() && record.message !== "[object Object]") {
+    return record.message.trim();
+  }
+  if (typeof record.error === "string" && record.error.trim() && record.error !== "[object Object]") {
+    return record.error.trim();
+  }
+  return null;
 }

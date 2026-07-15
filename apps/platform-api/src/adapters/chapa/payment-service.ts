@@ -47,6 +47,46 @@ function getString(value: unknown) {
   return typeof value === "string" && value.trim() ? value.trim() : undefined;
 }
 
+/** Chapa sometimes returns message as string, array, or nested object. */
+export function formatChapaErrorMessage(message: unknown, httpStatus?: number): string {
+  if (typeof message === "string" && message.trim()) {
+    return message.trim();
+  }
+  if (Array.isArray(message)) {
+    const parts = message
+      .map((item) => formatChapaErrorMessage(item))
+      .filter(Boolean);
+    if (parts.length > 0) return parts.join("; ");
+  }
+  if (message && typeof message === "object") {
+    const record = message as Record<string, unknown>;
+    if (typeof record.message === "string" && record.message.trim()) {
+      return record.message.trim();
+    }
+    const fieldErrors = Object.entries(record)
+      .map(([key, value]) => {
+        if (typeof value === "string" && value.trim()) return `${key}: ${value.trim()}`;
+        if (Array.isArray(value)) {
+          const joined = value.map(String).filter(Boolean).join(", ");
+          return joined ? `${key}: ${joined}` : null;
+        }
+        return null;
+      })
+      .filter((part): part is string => Boolean(part));
+    if (fieldErrors.length > 0) return fieldErrors.join("; ");
+    try {
+      const json = JSON.stringify(message);
+      if (json && json !== "{}" && json !== "[]") return json.slice(0, 300);
+    } catch {
+      // ignore
+    }
+  }
+  if (httpStatus) {
+    return `Chapa payment initialization failed (HTTP ${httpStatus}).`;
+  }
+  return "Chapa payment initialization failed.";
+}
+
 function normalizeStatus(value: string | null | undefined) {
   return value?.trim().toLowerCase();
 }
@@ -110,6 +150,7 @@ export function createChapaPaymentService(options: ChapaPaymentServiceOptions) {
 
   /**
    * One-shot checkout for platform subscription invoices (not Medusa commerce).
+   * Chapa is picky: amount as decimal string, title ≤16 chars; message may be a non-string.
    */
   async function initializePayment(input: {
     amount: string;
@@ -127,38 +168,51 @@ export function createChapaPaymentService(options: ChapaPaymentServiceOptions) {
       throw new Error("CHAPA_SECRET_KEY is required to initialize Chapa payments.");
     }
 
+    const amountNumber = Number(String(input.amount).replace(/,/g, ""));
+    if (!Number.isFinite(amountNumber) || amountNumber <= 0) {
+      throw new Error("Chapa amount must be a positive number.");
+    }
+    // Chapa expects a decimal string (e.g. "2499.00"), not an integer bare form.
+    const amount = amountNumber.toFixed(2);
+    // Official limits: title max 16, description max 50.
+    const title = (input.title ?? "ECS Billing").slice(0, 16);
+    const description = (input.description ?? "Plan payment").slice(0, 50);
+
+    const payload = {
+      amount,
+      currency: (input.currency ?? "ETB").toUpperCase(),
+      email: input.email.trim(),
+      first_name: (input.firstName ?? "Merchant").slice(0, 50),
+      last_name: (input.lastName ?? "Owner").slice(0, 50),
+      tx_ref: input.txRef,
+      callback_url: input.callbackUrl,
+      return_url: input.returnUrl,
+      customization: {
+        title,
+        description,
+      },
+    };
+
     const response = await fetch(`${apiUrl}/transaction/initialize`, {
       method: "POST",
       headers: {
         authorization: `Bearer ${options.secretKey}`,
         "content-type": "application/json",
       },
-      body: JSON.stringify({
-        amount: input.amount,
-        currency: (input.currency ?? "ETB").toUpperCase(),
-        email: input.email,
-        first_name: input.firstName ?? "Merchant",
-        last_name: input.lastName ?? "Owner",
-        tx_ref: input.txRef,
-        callback_url: input.callbackUrl,
-        return_url: input.returnUrl,
-        customization: {
-          title: input.title ?? "ECS Billing",
-          description: input.description ?? "Platform subscription payment",
-        },
-      }),
+      body: JSON.stringify(payload),
     });
 
     const body = (await response.json().catch(() => undefined)) as
       | {
           data?: { checkout_url?: string };
-          message?: string;
+          message?: unknown;
+          status?: string;
         }
       | undefined;
 
     const checkoutUrl = body?.data?.checkout_url?.trim();
     if (!response.ok || !checkoutUrl) {
-      throw new Error(body?.message ?? "Chapa payment initialization failed.");
+      throw new Error(formatChapaErrorMessage(body?.message, response.status));
     }
 
     return { checkoutUrl, txRef: input.txRef };

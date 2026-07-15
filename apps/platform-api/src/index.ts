@@ -395,7 +395,7 @@ const app = createPlatformApp({
         amount: prepared.amount,
         callbackUrl: callbackUrl.toString(),
         currency: prepared.currency,
-        description: "ECS Growth plan",
+        description: "Growth plan",
         email,
         returnUrl: input.returnUrl,
         title: "ECS Billing",
@@ -409,11 +409,25 @@ const app = createPlatformApp({
         invoice: prepared.invoice,
       };
     } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : typeof error === "string"
+            ? error
+            : "Chapa payment initialization failed.";
+      logger.warn(
+        {
+          err: message,
+          invoiceId: input.invoiceId,
+          tenantId: input.tenantId,
+        },
+        "billing_chapa_init_failed",
+      );
       return {
         ok: false as const,
         error: "billing_chapa_init_failed" as const,
         status: 502 as const,
-        message: error instanceof Error ? error.message : String(error),
+        message,
       };
     }
   },

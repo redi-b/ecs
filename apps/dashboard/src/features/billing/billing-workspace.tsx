@@ -174,11 +174,7 @@ export function BillingWorkspace({
         });
         const data = await response.json().catch(() => ({}));
         if (!response.ok) {
-          toast.error(
-            mapPlatformErrorMessage(
-              typeof data?.error === "string" ? data.error : "billing_unavailable",
-            ),
-          );
+          toast.error(toastErrorFromBody(data));
           return;
         }
 
@@ -523,4 +519,21 @@ function invoiceStatusLabel(status: string) {
   if (status === "paid") return "Paid";
   if (status === "void" || status === "cancelled") return "Cancelled";
   return status;
+}
+
+/** Prefer explicit API message; never toast raw objects as [object Object]. */
+function toastErrorFromBody(data: unknown): string {
+  const record =
+    data && typeof data === "object" && !Array.isArray(data)
+      ? (data as Record<string, unknown>)
+      : {};
+  const message = typeof record.message === "string" ? record.message.trim() : "";
+  const error = typeof record.error === "string" ? record.error.trim() : "";
+  if (message && message !== "[object Object]") {
+    return message;
+  }
+  if (error && error !== "[object Object]") {
+    return mapPlatformErrorMessage(error);
+  }
+  return mapPlatformErrorMessage("billing_pay_failed");
 }
