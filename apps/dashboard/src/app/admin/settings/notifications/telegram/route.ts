@@ -20,6 +20,7 @@ export async function GET(request: Request) {
       const result = await getTelegramConnectSession({
         cookieHeader: context.cookieHeader,
         platformApiBaseUrl: context.platformApiBaseUrl,
+        requestHost: context.requestHost,
         sessionId,
         tenantId: context.tenantId,
       });
@@ -36,6 +37,7 @@ export async function GET(request: Request) {
     const result = await listTelegramDestinations({
       cookieHeader: context.cookieHeader,
       platformApiBaseUrl: context.platformApiBaseUrl,
+      requestHost: context.requestHost,
       tenantId: context.tenantId,
     });
     if (!result.ok) {
@@ -62,6 +64,7 @@ export async function POST(request: Request) {
     const common = {
       cookieHeader: context.cookieHeader,
       platformApiBaseUrl: context.platformApiBaseUrl,
+      requestHost: context.requestHost,
       tenantId: context.tenantId,
     };
 

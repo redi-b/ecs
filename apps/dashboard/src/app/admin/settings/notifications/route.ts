@@ -11,6 +11,7 @@ export async function GET(request: Request) {
     const result = await listMerchantNotificationPreferences({
       cookieHeader: context.cookieHeader,
       platformApiBaseUrl: context.platformApiBaseUrl,
+      requestHost: context.requestHost,
       tenantId: context.tenantId,
     });
 
@@ -55,6 +56,7 @@ export async function POST(request: Request) {
         channel,
         cookieHeader: context.cookieHeader,
         platformApiBaseUrl: context.platformApiBaseUrl,
+        requestHost: context.requestHost,
         tenantId: context.tenantId,
       });
 
@@ -93,6 +95,7 @@ export async function POST(request: Request) {
       enabled,
       events,
       platformApiBaseUrl: context.platformApiBaseUrl,
+      requestHost: context.requestHost,
       target,
       tenantId: context.tenantId,
     });

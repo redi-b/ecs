@@ -5,6 +5,21 @@ import {
   normalizeBaseUrl,
 } from "@/lib/platform-api/client";
 
+type PlatformCallOptions = {
+  cookieHeader?: string | null;
+  platformApiBaseUrl: string;
+  requestHost?: string | null;
+  tenantId?: string | null;
+};
+
+function platformHeaders(options: Pick<PlatformCallOptions, "cookieHeader" | "requestHost">) {
+  return createPlatformHeaders({
+    contentType: "json",
+    cookieHeader: options.cookieHeader,
+    requestHost: options.requestHost,
+  });
+}
+
 export type TelegramDestination = {
   id: string;
   label: string;
@@ -44,6 +59,7 @@ async function parseError(response: Response, data: unknown) {
 
 export async function listTelegramDestinations(options: {
   cookieHeader?: string | null;
+  requestHost?: string | null;
   platformApiBaseUrl: string;
   tenantId?: string | null;
 }): Promise<
@@ -54,10 +70,7 @@ export async function listTelegramDestinations(options: {
     telegramUrl(options.platformApiBaseUrl, options.tenantId, "destinations"),
     {
       cache: "no-store",
-      headers: createPlatformHeaders({
-        contentType: "json",
-        cookieHeader: options.cookieHeader,
-      }),
+      headers: platformHeaders(options),
     },
   ).catch(() => null);
 
@@ -76,6 +89,7 @@ export async function listTelegramDestinations(options: {
 
 export async function createTelegramConnectSession(options: {
   cookieHeader?: string | null;
+  requestHost?: string | null;
   platformApiBaseUrl: string;
   tenantId?: string | null;
 }): Promise<
@@ -87,10 +101,7 @@ export async function createTelegramConnectSession(options: {
     {
       method: "POST",
       cache: "no-store",
-      headers: createPlatformHeaders({
-        contentType: "json",
-        cookieHeader: options.cookieHeader,
-      }),
+      headers: platformHeaders(options),
       body: "{}",
     },
   ).catch(() => null);
@@ -111,6 +122,7 @@ export async function createTelegramConnectSession(options: {
 
 export async function getTelegramConnectSession(options: {
   cookieHeader?: string | null;
+  requestHost?: string | null;
   platformApiBaseUrl: string;
   sessionId: string;
   tenantId?: string | null;
@@ -122,10 +134,7 @@ export async function getTelegramConnectSession(options: {
     telegramUrl(options.platformApiBaseUrl, options.tenantId, `connect/${options.sessionId}`),
     {
       cache: "no-store",
-      headers: createPlatformHeaders({
-        contentType: "json",
-        cookieHeader: options.cookieHeader,
-      }),
+      headers: platformHeaders(options),
     },
   ).catch(() => null);
 
@@ -145,6 +154,7 @@ export async function getTelegramConnectSession(options: {
 
 export async function cancelTelegramConnectSession(options: {
   cookieHeader?: string | null;
+  requestHost?: string | null;
   platformApiBaseUrl: string;
   sessionId: string;
   tenantId?: string | null;
@@ -158,10 +168,7 @@ export async function cancelTelegramConnectSession(options: {
     {
       method: "POST",
       cache: "no-store",
-      headers: createPlatformHeaders({
-        contentType: "json",
-        cookieHeader: options.cookieHeader,
-      }),
+      headers: platformHeaders(options),
       body: "{}",
     },
   ).catch(() => null);
@@ -178,6 +185,7 @@ export async function cancelTelegramConnectSession(options: {
 
 export async function removeTelegramDestination(options: {
   cookieHeader?: string | null;
+  requestHost?: string | null;
   destinationId: string;
   platformApiBaseUrl: string;
   tenantId?: string | null;
@@ -191,10 +199,7 @@ export async function removeTelegramDestination(options: {
     {
       method: "DELETE",
       cache: "no-store",
-      headers: createPlatformHeaders({
-        contentType: "json",
-        cookieHeader: options.cookieHeader,
-      }),
+      headers: platformHeaders(options),
     },
   ).catch(() => null);
 
@@ -210,6 +215,7 @@ export async function removeTelegramDestination(options: {
 
 export async function setTelegramDestinationEnabled(options: {
   cookieHeader?: string | null;
+  requestHost?: string | null;
   destinationId: string;
   enabled: boolean;
   platformApiBaseUrl: string;
@@ -227,10 +233,7 @@ export async function setTelegramDestinationEnabled(options: {
     {
       method: "PATCH",
       cache: "no-store",
-      headers: createPlatformHeaders({
-        contentType: "json",
-        cookieHeader: options.cookieHeader,
-      }),
+      headers: platformHeaders(options),
       body: JSON.stringify({ enabled: options.enabled }),
     },
   ).catch(() => null);
@@ -251,6 +254,7 @@ export async function setTelegramDestinationEnabled(options: {
 
 export async function setTelegramSharedEvents(options: {
   cookieHeader?: string | null;
+  requestHost?: string | null;
   events: string[];
   platformApiBaseUrl: string;
   tenantId?: string | null;
@@ -263,10 +267,7 @@ export async function setTelegramSharedEvents(options: {
     {
       method: "POST",
       cache: "no-store",
-      headers: createPlatformHeaders({
-        contentType: "json",
-        cookieHeader: options.cookieHeader,
-      }),
+      headers: platformHeaders(options),
       body: JSON.stringify({ events: options.events }),
     },
   ).catch(() => null);
@@ -286,6 +287,7 @@ export async function setTelegramSharedEvents(options: {
 
 export async function sendTelegramTest(options: {
   cookieHeader?: string | null;
+  requestHost?: string | null;
   destinationId: string;
   platformApiBaseUrl: string;
   tenantId?: string | null;
@@ -298,10 +300,7 @@ export async function sendTelegramTest(options: {
     {
       method: "POST",
       cache: "no-store",
-      headers: createPlatformHeaders({
-        contentType: "json",
-        cookieHeader: options.cookieHeader,
-      }),
+      headers: platformHeaders(options),
       body: JSON.stringify({ destinationId: options.destinationId }),
     },
   ).catch(() => null);

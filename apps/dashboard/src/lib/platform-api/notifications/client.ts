@@ -5,6 +5,17 @@ import {
   normalizeBaseUrl,
 } from "@/lib/platform-api/client";
 
+function platformHeaders(options: {
+  cookieHeader?: string | null | undefined;
+  requestHost?: string | null | undefined;
+}) {
+  return createPlatformHeaders({
+    contentType: "json",
+    cookieHeader: options.cookieHeader,
+    requestHost: options.requestHost,
+  });
+}
+
 export type NotificationPreference = {
   id: string;
   channel: string;
@@ -58,6 +69,7 @@ function notificationsUrl(
 
 export async function listMerchantNotificationPreferences(options: {
   cookieHeader?: string | null | undefined;
+  requestHost?: string | null | undefined;
   fetcher?: typeof fetch;
   platformApiBaseUrl: string;
   tenantId?: string | null | undefined;
@@ -67,10 +79,7 @@ export async function listMerchantNotificationPreferences(options: {
     notificationsUrl(options.platformApiBaseUrl, options.tenantId, "preferences"),
     {
       cache: "no-store",
-      headers: createPlatformHeaders({
-        contentType: "json",
-        cookieHeader: options.cookieHeader,
-      }),
+      headers: platformHeaders(options),
     },
   ).catch(() => null);
 
@@ -115,6 +124,7 @@ export async function listMerchantNotificationPreferences(options: {
 export async function upsertMerchantNotificationPreference(options: {
   channel: string;
   cookieHeader?: string | null | undefined;
+  requestHost?: string | null | undefined;
   enabled: boolean;
   events: string[];
   fetcher?: typeof fetch;
@@ -128,10 +138,7 @@ export async function upsertMerchantNotificationPreference(options: {
     {
       method: "POST",
       cache: "no-store",
-      headers: createPlatformHeaders({
-        contentType: "json",
-        cookieHeader: options.cookieHeader,
-      }),
+      headers: platformHeaders(options),
       body: JSON.stringify({
         channel: options.channel,
         enabled: options.enabled,
@@ -166,6 +173,7 @@ export async function upsertMerchantNotificationPreference(options: {
 export async function sendMerchantNotificationTest(options: {
   channel: string;
   cookieHeader?: string | null | undefined;
+  requestHost?: string | null | undefined;
   fetcher?: typeof fetch;
   platformApiBaseUrl: string;
   tenantId?: string | null | undefined;
@@ -176,10 +184,7 @@ export async function sendMerchantNotificationTest(options: {
     {
       method: "POST",
       cache: "no-store",
-      headers: createPlatformHeaders({
-        contentType: "json",
-        cookieHeader: options.cookieHeader,
-      }),
+      headers: platformHeaders(options),
       body: JSON.stringify({ channel: options.channel }),
     },
   ).catch(() => null);

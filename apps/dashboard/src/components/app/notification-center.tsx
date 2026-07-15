@@ -46,7 +46,10 @@ function badgeLabel(count: number) {
   return String(count);
 }
 
-/** Body lines that only repeat the title are noise in the popover. */
+/**
+ * Compact secondary line for the popover: prefer labeled detail rows
+ * (Order:, Total:, Customer:) and drop headline/footer prose.
+ */
 function secondaryBody(item: InboxItem) {
   const body = item.body?.trim() ?? "";
   if (!body) return null;
@@ -54,12 +57,21 @@ function secondaryBody(item: InboxItem) {
     .split("\n")
     .map((line) => line.trim())
     .filter(Boolean);
-  const title = item.title.trim();
-  const filtered = lines.filter(
-    (line) => line !== title && !title.startsWith(line) && !line.startsWith(title),
-  );
-  if (filtered.length === 0) return null;
-  return filtered.join(" · ");
+  const title = item.title.trim().toLowerCase();
+
+  const details = lines.filter((line) => {
+    const lower = line.toLowerCase();
+    if (lower === title) return false;
+    if (lower.startsWith("open the order") || lower.startsWith("you can")) return false;
+    if (lower.startsWith("no further action") || lower.startsWith("check the order")) return false;
+    if (lower.startsWith("you can ignore")) return false;
+    // Prefer "Label: value" rows from the rich renderer.
+    return line.includes(":");
+  });
+
+  const pick = (details.length > 0 ? details : lines.slice(1)).slice(0, 4);
+  if (pick.length === 0) return null;
+  return pick.join(" · ");
 }
 
 export function NotificationCenter() {
