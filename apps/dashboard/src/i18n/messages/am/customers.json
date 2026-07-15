@@ -43,6 +43,26 @@
     "filteredEmptyTitle": "የሚዛመድ ደንበኛ የለም",
     "filteredEmptyMessage": "ሌላ ስም፣ ኢሜይል፣ ስልክ ወይም ድርጅት ይሞክሩ።",
     "copyEmails": "ኢሜይሎችን ቅዳ",
-    "copyPhones": "ስልኮችን ቅዳ"
+    "copyPhones": "ስልኮችን ቅዳ",
+    "searchLabel": "ደንበኞችን ፈልግ",
+    "searchPlaceholder": "ደንበኞችን ፈልግ",
+    "clearSearch": "የደንበኛ ፍለጋን አጽዳ",
+    "selectedSummary": "{count} ተመርጧል",
+    "emails": "ኢሜይሎች",
+    "phoneNumbers": "የስልክ ቁጥሮች",
+    "addressesCount": "{count} አድራሻዎች",
+    "addressCountOne": "1 አድራሻ",
+    "defaultSet": "ነባሪ ተቀምጧል",
+    "groupCustomer": "ደንበኛ",
+    "noGroups": "ምንም ቡድን አልተመደበም።"
+  },
+  "addresses": {
+    "defaultShipping": "ነባሪ ማድረሻ",
+    "defaultBilling": "ነባሪ ክፍያ",
+    "noDetails": "በፋይል ላይ የአድራሻ ዝርዝር የለም።",
+    "edit": "አርትዕ",
+    "empty": "ገና የተቀመጠ አድራሻ የለም። ለማድረሻ እና ለእጅ ትዕዛዞች አንድ ይጨምሩ።",
+    "savedCount": "{count} የተቀመጡ አድራሻዎች",
+    "savedCountOne": "1 የተቀመጠ አድራሻ"
   }
 }
