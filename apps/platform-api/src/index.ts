@@ -320,6 +320,7 @@ const auth = createPlatformAuth({
 });
 
 const app = createPlatformApp({
+  logger,
   createMerchantPromotion: promotionService.createPromotion,
   authHandler: auth.handler,
   authorizeDashboardForTenant,

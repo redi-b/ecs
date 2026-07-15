@@ -22,7 +22,7 @@ export type LoadedOrderForNotification = {
     phone?: string | null;
     city?: string | null;
   } | null;
-  items?: Array<{ id?: string; quantity?: number | null }> | null;
+  items: Array<{ id?: string; quantity?: number | null }> | null;
 };
 
 function asRecord(value: unknown): Record<string, unknown> | null {
@@ -70,7 +70,22 @@ export async function loadOrderForNotification(
 
   const shipping = asRecord(raw.shipping_address);
   const metadata = asRecord(raw.metadata);
-  const items = Array.isArray(raw.items) ? raw.items : null;
+  const items: Array<{ id?: string; quantity?: number | null }> | null = Array.isArray(
+    raw.items,
+  )
+    ? raw.items.flatMap((entry) => {
+        if (!entry || typeof entry !== "object") return [];
+        const item = entry as Record<string, unknown>;
+        const next: { id?: string; quantity?: number | null } = {};
+        if (typeof item.id === "string") next.id = item.id;
+        if (typeof item.quantity === "number" && Number.isFinite(item.quantity)) {
+          next.quantity = item.quantity;
+        } else if (item.quantity === null) {
+          next.quantity = null;
+        }
+        return [next];
+      })
+    : null;
 
   return {
     id: raw.id,
@@ -94,6 +109,6 @@ export async function loadOrderForNotification(
           city: typeof shipping.city === "string" ? shipping.city : null,
         }
       : null,
-    items: items as LoadedOrderForNotification["items"],
+    items,
   };
 }

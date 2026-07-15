@@ -86,6 +86,11 @@ import type {
 } from "./tenant.js";
 
 export type PlatformAppOptions = {
+  /** Optional structured logger (used for HTTP access logs in development). */
+  logger?: {
+    info: (obj: Record<string, unknown>, msg?: string) => void;
+    debug?: (obj: Record<string, unknown>, msg?: string) => void;
+  };
   listMerchantPromotions?:
     | ((input: {
         limit: number;

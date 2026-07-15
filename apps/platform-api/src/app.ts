@@ -42,11 +42,14 @@ async function maybeAttachRequestIdToErrorBody(response: Response, requestId: st
 export function createPlatformApp(options: PlatformAppOptions) {
   const app = new Hono<{ Variables: PlatformAppVariables }>();
   const medusaStoreFetch = options.medusaStoreFetch ?? fetch;
+  const logRequests =
+    process.env.NODE_ENV === "development" && process.env.HTTP_ACCESS_LOG !== "0";
 
   app.use("*", async (context, next) => {
     const incomingRequestId = context.req.raw.headers.get("x-request-id")?.trim();
     const requestId = incomingRequestId || createRequestId();
     context.set("requestId", requestId);
+    const startedAt = Date.now();
 
     await next();
 
@@ -55,6 +58,24 @@ export function createPlatformApp(options: PlatformAppOptions) {
     if (incomingRequestId && !new URL(context.req.raw.url).pathname.startsWith("/store/")) {
       context.res = await maybeAttachRequestIdToErrorBody(context.res, requestId);
       context.res.headers.set("x-request-id", requestId);
+    }
+
+    if (logRequests && options.logger?.info) {
+      const url = new URL(context.req.url);
+      const path = url.pathname;
+      // Skip noisy probes in the access log.
+      if (path !== "/health" && path !== "/ready" && !path.endsWith("/health")) {
+        options.logger.info(
+          {
+            method: context.req.method,
+            path,
+            status: context.res.status,
+            ms: Date.now() - startedAt,
+            requestId,
+          },
+          "http_request",
+        );
+      }
     }
   });
 

@@ -9,8 +9,13 @@
 import { spawn } from "node:child_process";
 
 import { blank, box, color, heading, info, kv, success } from "./lib/cli.mjs";
+import { fitWidth, formatDevLogLine, stripAnsi, wrapLine } from "./lib/dev-log.mjs";
 
 process.env.NODE_ENV = "development";
+// Prefer human logs from Node services; child pino-pretty still works when installed.
+if (process.env.LOG_PRETTY === undefined) {
+  process.env.LOG_PRETTY = "1";
+}
 
 const args = new Set(process.argv.slice(2));
 const groupedLogs = args.has("--grouped") || process.env.DEV_LOG_MODE === "grouped";
@@ -77,6 +82,9 @@ box([
 ]);
 blank();
 info("Ctrl+C stops all processes");
+if (groupedLogs) {
+  info("Grouped: larger per-service tails, wrapped lines, pretty JSON logs");
+}
 blank();
 
 if (groupedLogs) {
@@ -93,10 +101,11 @@ async function runStreaming(devCommands) {
 
   const writeLine = (state, line) => {
     if (shuttingDown || !line.trim()) return;
+    const formatted = formatDevLogLine(line) ?? line;
     const paint = color[state.color] ?? ((value) => value);
     const stamp = formatClock(new Date());
     const name = state.name.padEnd(nameWidth);
-    process.stdout.write(`${paint(`[${stamp}] ${name}`)} ${line}\n`);
+    process.stdout.write(`${paint(`[${stamp}] ${name}`)} ${formatted}\n`);
   };
 
   for (const state of states.values()) {
@@ -115,7 +124,6 @@ async function runStreaming(devCommands) {
 
   const stop = () => {
     if (shuttingDown) {
-      // Second Ctrl+C — force kill immediately.
       stopAll(states, "SIGKILL");
       return;
     }
@@ -144,8 +152,6 @@ async function runStreaming(devCommands) {
 async function runGrouped(devCommands) {
   const states = spawnServices(devCommands);
   let shuttingDown = false;
-  /** Rows currently painted by the live dashboard (for in-place redraw). */
-  let paintedRows = 0;
   let forceKillTimer;
 
   for (const state of states.values()) {
@@ -167,21 +173,19 @@ async function runGrouped(devCommands) {
 
   const leaveAltScreen = () => {
     if (!process.stdout.isTTY) return;
-    // Show cursor + leave alternate screen (restores prior scrollback).
     process.stdout.write("\x1b[?25h\x1b[?1049l");
   };
 
-  // Alternate screen buffer: live UI never pollutes the main terminal scrollback.
   if (process.stdout.isTTY) {
     process.stdout.write("\x1b[?1049h\x1b[?25l\x1b[H\x1b[2J");
   }
   process.once("exit", leaveAltScreen);
 
   const render = () => {
-    paintedRows = renderGroupedLogs(states, paintedRows);
+    renderGroupedLogs(states);
   };
   render();
-  const renderTimer = setInterval(render, 400);
+  const renderTimer = setInterval(render, 350);
 
   const stop = () => {
     if (shuttingDown) {
@@ -196,15 +200,17 @@ async function runGrouped(devCommands) {
   process.on("SIGINT", stop);
   process.on("SIGTERM", stop);
 
+  // Re-render on resize so wrap width stays correct.
+  process.stdout.on?.("resize", render);
+
   await Promise.all([...states.values()].map((state) => onceExit(state.process)));
   clearInterval(renderTimer);
   clearTimeout(forceKillTimer);
   render();
   leaveAltScreen();
 
-  // Final snapshot on the main screen (one clean block, no live redraw history).
   if (process.stdout.isTTY) {
-    process.stdout.write(buildGroupedFrame(states, Date.now(), process.stdout.columns || 80).join("\n") + "\n");
+    process.stdout.write(buildGroupedFrame(states, Date.now()).join("\n") + "\n");
   }
 
   if (shuttingDown) {
@@ -217,10 +223,6 @@ async function runGrouped(devCommands) {
   process.exitCode = failed ? 1 : 0;
 }
 
-/**
- * Spawn each service in its own process group so Ctrl+C hits only this
- * supervisor — children get a quiet SIGTERM instead of printing SIGINT noise.
- */
 function spawnServices(devCommands) {
   const states = new Map();
 
@@ -228,9 +230,11 @@ function spawnServices(devCommands) {
     const child = spawn(command.command, {
       shell: true,
       stdio: ["ignore", "pipe", "pipe"],
-      // New session/process group on POSIX so the terminal's SIGINT process
-      // group does not include the child trees.
       detached: process.platform !== "win32",
+      env: {
+        ...process.env,
+        FORCE_COLOR: process.env.FORCE_COLOR ?? "1",
+      },
     });
 
     states.set(command.name, {
@@ -238,7 +242,9 @@ function spawnServices(devCommands) {
       buffer: "",
       collapsed: 0,
       exitCode: undefined,
+      // Keep a generous ring buffer; display count is computed from terminal size.
       lines: [],
+      maxBuffer: 80,
       process: child,
       startedAt: Date.now(),
     });
@@ -253,9 +259,8 @@ function appendStreamLines(state, chunk, writeLine) {
   state.buffer = parts.pop() ?? "";
 
   for (const part of parts) {
-    const line = stripAnsi(part).replace(/\r/g, "");
-    if (!line.trim()) continue;
-    writeLine(state, line);
+    if (!part.trim()) continue;
+    writeLine(state, part);
   }
 }
 
@@ -264,44 +269,50 @@ function appendGroupedOutput(state, chunk) {
   const parts = state.buffer.split(/\r?\n/);
   state.buffer = parts.pop() ?? "";
 
-  for (const line of parts) {
-    if (!line.trim()) continue;
-    // Strip child ANSI / CR so our frame stays one terminal row per log line.
-    state.lines.push(stripAnsi(line).replace(/\r/g, ""));
-    if (state.lines.length > 10) {
+  for (const part of parts) {
+    const formatted = formatDevLogLine(part);
+    if (!formatted) continue;
+    state.lines.push(formatted);
+    while (state.lines.length > state.maxBuffer) {
       state.lines.shift();
       state.collapsed += 1;
     }
   }
 }
 
-/**
- * Redraw the live dashboard on the alternate screen buffer.
- * Home + clear + rewrite keeps scrollback clean (no frame history).
- *
- * @returns {number} row count of the frame just painted
- */
-function renderGroupedLogs(states, previousRows) {
-  const now = Date.now();
-  const columns = process.stdout.columns || 80;
-  const frame = buildGroupedFrame(states, now, columns);
-
-  if (!process.stdout.isTTY) {
-    // Non-TTY (piped logs): print a full snapshot once per tick.
-    process.stdout.write(frame.join("\n") + "\n");
-    return frame.length;
-  }
-
-  // On alt-screen, full clear is fine — it never hits the user's main scrollback.
-  void previousRows;
-  process.stdout.write(`\x1b[H\x1b[J${frame.join("\n")}\n`);
-  return frame.length;
+function linesPerService(serviceCount) {
+  const rows = process.stdout.rows || 40;
+  // header + per-service title/blank overhead
+  const overhead = 4 + serviceCount * 3;
+  const available = Math.max(12, rows - overhead);
+  return Math.max(6, Math.floor(available / Math.max(serviceCount, 1)));
 }
 
-function buildGroupedFrame(states, now, columns) {
+function renderGroupedLogs(states) {
+  const frame = buildGroupedFrame(states, Date.now());
+
+  if (!process.stdout.isTTY) {
+    process.stdout.write(frame.join("\n") + "\n");
+    return;
+  }
+
+  // Full redraw on alt-screen (stable; avoids partial-row glitches).
+  process.stdout.write(`\x1b[H\x1b[2J${frame.join("\n")}\n`);
+}
+
+function buildGroupedFrame(states, now) {
+  const columns = process.stdout.columns || 100;
+  const perService = linesPerService(states.size);
   const lines = [];
   lines.push(fitWidth(color.bold("ECS development processes"), columns));
-  lines.push(fitWidth(color.dim("Live tail · last 10 lines per service"), columns));
+  lines.push(
+    fitWidth(
+      color.dim(
+        `Live tail · ~${perService} lines/service · pretty JSON · Ctrl+C to stop`,
+      ),
+      columns,
+    ),
+  );
   lines.push("");
 
   for (const state of states.values()) {
@@ -322,51 +333,38 @@ function buildGroupedFrame(states, now, columns) {
       ),
     );
 
-    if (state.lines.length === 0) {
+    const recent = state.lines.slice(-perService);
+    if (recent.length === 0) {
       lines.push(fitWidth(`  ${color.dim("waiting for output…")}`, columns));
     } else {
-      for (const line of state.lines) {
-        lines.push(fitWidth(`  ${color.dim("│")} ${line}`, columns));
+      for (const line of recent) {
+        // Wrap long lines instead of truncating the start/middle into noise.
+        const wrapped = wrapLine(line, columns, {
+          prefix: `  ${color.dim("│")} `,
+          contPrefix: `  ${color.dim("│")} `,
+        });
+        for (const row of wrapped) {
+          lines.push(row);
+        }
       }
     }
     lines.push("");
   }
 
-  // Drop trailing blank so we don't leave an extra empty row every tick.
   while (lines.length > 0 && lines[lines.length - 1] === "") {
     lines.pop();
   }
 
-  return lines;
-}
-
-/** Visible length without ANSI SGR sequences. */
-function stripAnsi(value) {
-  return value.replace(/\x1b\[[0-9;]*m/g, "");
-}
-
-/** Truncate a (possibly colored) line so it fits one terminal row. */
-function fitWidth(line, columns) {
-  const plain = stripAnsi(line);
-  if (plain.length <= columns) return line;
-  // Prefer truncating the raw string; if colors remain unbalanced the next
-  // \x1b[2K redraw resets the line anyway.
-  const keep = Math.max(0, columns - 1);
-  let visible = 0;
-  let out = "";
-  for (let i = 0; i < line.length; i++) {
-    if (line[i] === "\x1b") {
-      const end = line.indexOf("m", i);
-      if (end === -1) break;
-      out += line.slice(i, end + 1);
-      i = end;
-      continue;
-    }
-    if (visible >= keep) break;
-    out += line[i];
-    visible += 1;
+  // If the frame is taller than the terminal, keep the bottom (most recent sections).
+  const maxRows = (process.stdout.rows || 40) - 1;
+  if (lines.length > maxRows) {
+    return [
+      fitWidth(color.dim(`… ${lines.length - maxRows + 1} rows above (resize terminal for more)`), columns),
+      ...lines.slice(-(maxRows - 1)),
+    ];
   }
-  return `${out}…`;
+
+  return lines;
 }
 
 function formatElapsed(milliseconds) {
@@ -384,7 +382,6 @@ function formatClock(date) {
   return `${hh}:${mm}:${ss}`;
 }
 
-/** Clear the terminal's echoed `^C` on the current line. */
 function clearInlineInterrupt() {
   if (process.stdout.isTTY) {
     process.stdout.write("\r\x1b[2K");
@@ -402,7 +399,6 @@ function killTree(child, signal = "SIGTERM") {
 
   try {
     if (process.platform !== "win32") {
-      // Negative PID targets the process group created via detached: true.
       process.kill(-child.pid, signal);
       return;
     }
