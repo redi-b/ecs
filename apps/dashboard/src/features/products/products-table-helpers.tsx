@@ -52,9 +52,12 @@ import {
   type ProductStockFilter,
   type ProductVariantCountFilter,
 } from "@/features/products/product-table-state";
+import type { MessageKey } from "@/i18n/messages";
 import { copyTextToClipboard } from "@/lib/clipboard";
 import { getTenantScopedPath } from "@/lib/dashboard-tenant-context";
 import { dashboardRoutes } from "@/lib/routes";
+
+type Translate = (key: MessageKey, values?: Record<string, string | number | Date>) => string;
 
 type ProductsTableProps = {
   categories: MerchantProductCategory[];
@@ -72,6 +75,19 @@ type ProductsTableProps = {
   totalCount: number;
 };
 
+export function getProductStatusFilterOptions(t: Translate): Array<{
+  label: string;
+  value: ProductStatusFilter;
+}> {
+  return [
+    { label: t("products.filter.status.all"), value: "all" },
+    { label: t("products.filter.status.published"), value: "published" },
+    { label: t("products.filter.status.draft"), value: "draft" },
+    { label: t("products.filter.status.unknown"), value: "unknown" },
+  ];
+}
+
+/** @deprecated Use getProductStatusFilterOptions(t) — kept for any external imports. */
 export const productStatusFilterOptions: Array<{
   label: string;
   value: ProductStatusFilter;
@@ -84,18 +100,18 @@ export const productStatusFilterOptions: Array<{
 
 export type ProductStatusValue = "draft" | "published";
 
-async function copyToClipboard(value: string, label: string) {
+async function copyToClipboard(value: string, label: string, t: Translate) {
   try {
     const copied = await copyTextToClipboard(value);
 
     if (!copied) {
-      toast.error("Nothing to copy.");
+      toast.error(t("table.actions.copyEmpty"));
       return;
     }
 
-    toast.success(`${label} copied.`);
+    toast.success(t("table.actions.copySuccess", { label }));
   } catch {
-    toast.error("Could not copy. Try again.");
+    toast.error(t("table.actions.copyFailed"));
   }
 }
 
@@ -113,6 +129,7 @@ export function getProductColumns(
   collections: MerchantProductCollection[],
   onDelete: (productId: string) => void,
   onStatusChange: (productIds: string[], status: ProductStatusValue) => void,
+  t: Translate,
 ): ColumnDef<MerchantProduct>[] {
   const categoryById = new Map(categories.map((category) => [category.id, category]));
   const collectionById = new Map(collections.map((collection) => [collection.id, collection]));
@@ -122,7 +139,7 @@ export function getProductColumns(
       id: "select",
       header: ({ table }) => (
         <Checkbox
-          aria-label="Select all visible products"
+          aria-label={t("products.table.selectAllAria")}
           checked={
             table.getIsAllPageRowsSelected() ||
             (table.getIsSomePageRowsSelected() && "indeterminate")
@@ -132,7 +149,9 @@ export function getProductColumns(
       ),
       cell: ({ row }) => (
         <Checkbox
-          aria-label={`Select ${row.original.title ?? row.original.id}`}
+          aria-label={t("table.actions.selectRow", {
+            name: row.original.title ?? row.original.id,
+          })}
           checked={row.getIsSelected()}
           onCheckedChange={(value) => row.toggleSelected(Boolean(value))}
         />
@@ -142,20 +161,26 @@ export function getProductColumns(
     },
     {
       accessorKey: "title",
-      header: ({ column }) => <DataTableHeader column={column} title="Product" />,
+      header: ({ column }) => (
+        <DataTableHeader column={column} title={t("products.table.product")} />
+      ),
       cell: ({ row }) => (
         <ProductIdentityCell product={row.original} tenantId={tenantId ?? undefined} />
       ),
     },
     {
       accessorKey: "status",
-      header: ({ column }) => <DataTableHeader column={column} title="Status" />,
+      header: ({ column }) => (
+        <DataTableHeader column={column} title={t("products.filter.status.label")} />
+      ),
       cell: ({ row }) => <ProductStatusBadge status={row.original.status} />,
     },
     {
       id: "price",
       accessorFn: (product) => getProductPriceSortValue(product),
-      header: ({ column }) => <DataTableHeader column={column} title="Price" />,
+      header: ({ column }) => (
+        <DataTableHeader column={column} title={t("products.table.price")} />
+      ),
       cell: ({ row }) => (
         <span className="text-muted-foreground">{formatProductPriceRange(row.original)}</span>
       ),
@@ -163,13 +188,17 @@ export function getProductColumns(
     {
       id: "variants",
       accessorFn: (product) => product.variants?.length ?? 0,
-      header: ({ column }) => <DataTableHeader column={column} title="Variants" />,
+      header: ({ column }) => (
+        <DataTableHeader column={column} title={t("products.filter.variants.label")} />
+      ),
       cell: ({ row }) => {
         const variantCount = row.original.variants?.length ?? 0;
 
         return (
           <span className="text-muted-foreground">
-            {variantCount} variant{variantCount === 1 ? "" : "s"}
+            {variantCount === 1
+              ? t("products.table.variantCountOne")
+              : t("products.table.variantCount", { count: variantCount })}
           </span>
         );
       },
@@ -177,8 +206,10 @@ export function getProductColumns(
     {
       id: "stock",
       accessorFn: (product) => getProductStockSortValue(product),
-      header: ({ column }) => <DataTableHeader column={column} title="Stock" />,
-      cell: ({ row }) => <ProductStockSummary product={row.original} />,
+      header: ({ column }) => (
+        <DataTableHeader column={column} title={t("products.filter.stock.label")} />
+      ),
+      cell: ({ row }) => <ProductStockSummary product={row.original} t={t} />,
     },
     {
       id: "organization",
@@ -189,7 +220,9 @@ export function getProductColumns(
             : "",
           ...(product.categoryIds ?? []).map((id) => categoryById.get(id)?.name ?? id),
         ].join(" "),
-      header: ({ column }) => <DataTableHeader column={column} title="Organization" />,
+      header: ({ column }) => (
+        <DataTableHeader column={column} title={t("products.table.organization")} />
+      ),
       cell: ({ row }) => (
         <ProductOrganizationSummary
           categoryById={categoryById}
@@ -201,12 +234,16 @@ export function getProductColumns(
     {
       id: "media",
       accessorFn: (product) => getProductMediaCount(product),
-      header: ({ column }) => <DataTableHeader column={column} title="Media" />,
+      header: ({ column }) => (
+        <DataTableHeader column={column} title={t("products.filter.media.label")} />
+      ),
       cell: ({ row }) => <ProductMediaSignal product={row.original} />,
     },
     {
       accessorKey: "updatedAt",
-      header: ({ column }) => <DataTableHeader column={column} title="Updated" />,
+      header: ({ column }) => (
+        <DataTableHeader column={column} title={t("taxonomy.table.updated")} />
+      ),
       cell: ({ row }) => (
         <span className="text-muted-foreground">{formatProductDate(row.original.updatedAt)}</span>
       ),
@@ -222,49 +259,61 @@ export function getProductColumns(
         return (
           <RowActionsMenu
             actions={[
-              { href, icon: AppIcons.eye, label: "View details", type: "link" },
-              { href, icon: AppIcons.products, label: "Manage inventory", type: "link" },
+              { href, icon: AppIcons.eye, label: t("products.table.viewDetails"), type: "link" },
+              {
+                href,
+                icon: AppIcons.products,
+                label: t("products.table.manageInventory"),
+                type: "link",
+              },
               {
                 icon: nextStatus === "published" ? AppIcons.check : AppIcons.eyeOff,
-                label: nextStatus === "published" ? "Publish product" : "Move to draft",
+                label:
+                  nextStatus === "published"
+                    ? t("products.table.publishProduct")
+                    : t("products.table.moveToDraft"),
                 onSelect: () => onStatusChange([product.id], nextStatus),
                 type: "button",
               },
               { id: "identity", type: "separator" },
               {
                 icon: AppIcons.copy,
-                label: "Copy product ID",
-                onSelect: () => copyToClipboard(product.id, "Product ID"),
+                label: t("products.table.copyProductId"),
+                onSelect: () => void copyToClipboard(product.id, t("products.table.productId"), t),
                 type: "button",
               },
               {
                 disabled: !product.handle,
                 icon: AppIcons.copy,
-                label: "Copy handle",
-                onSelect: () => copyToClipboard(product.handle ?? "", "Handle"),
+                label: t("products.table.copyHandle"),
+                onSelect: () =>
+                  void copyToClipboard(product.handle ?? "", t("products.table.handle"), t),
                 type: "button",
               },
               {
                 disabled: !product.handle,
                 icon: AppIcons.externalLink,
-                label: "Copy storefront path",
+                label: t("products.table.copyPath"),
                 onSelect: () =>
-                  copyToClipboard(
+                  void copyToClipboard(
                     product.handle ? `/products/${product.handle}` : "",
-                    "Product path",
+                    t("products.table.productPath"),
+                    t,
                   ),
                 type: "button",
               },
               { id: "danger", type: "separator" },
               {
                 icon: AppIcons.trash,
-                label: "Delete product",
+                label: t("products.table.deleteProduct"),
                 onSelect: () => onDelete(product.id),
                 type: "button",
                 variant: "destructive",
               },
             ]}
-            label={`Open actions for ${product.title || "unnamed product"}`}
+            label={t("products.table.actionsFor", {
+              name: product.title || t("products.table.unnamed"),
+            })}
           />
         );
       },
@@ -274,12 +323,18 @@ export function getProductColumns(
   ];
 }
 
-export function ProductStockSummary({ product }: { product: MerchantProduct }) {
+export function ProductStockSummary({
+  product,
+  t,
+}: {
+  product: MerchantProduct;
+  t?: Translate;
+}) {
   const variants = product.variants ?? [];
   const stocks = variants.map((variant) => variant.stock).filter(isProductStock);
 
   if (!stocks.length) {
-    return <Badge variant="outline">Not tracked</Badge>;
+    return <Badge variant="outline">{t ? t("products.table.notTracked") : "Not tracked"}</Badge>;
   }
 
   const available = stocks.reduce(
@@ -409,17 +464,33 @@ export function getDeletionErrorMessage(error: unknown, resourceName: string) {
   return `Failed to delete ${resourceName.toLowerCase()}. Try again.`;
 }
 
-export function getStatusLoadingMessage(count: number, status: ProductStatusValue) {
+export function getStatusLoadingMessage(
+  count: number,
+  status: ProductStatusValue,
+  t?: Translate,
+) {
+  if (t) {
+    return status === "published"
+      ? t("products.table.publishing", { count })
+      : t("products.table.movingToDraft", { count });
+  }
   const productLabel = count === 1 ? "product" : "products";
-
   return status === "published"
     ? `Publishing ${count} ${productLabel}...`
     : `Moving ${count} ${productLabel} to draft...`;
 }
 
-export function getStatusSuccessMessage(count: number, status: ProductStatusValue) {
+export function getStatusSuccessMessage(
+  count: number,
+  status: ProductStatusValue,
+  t?: Translate,
+) {
+  if (t) {
+    return status === "published"
+      ? t("products.table.published", { count })
+      : t("products.table.movedToDraft", { count });
+  }
   const productLabel = count === 1 ? "product" : "products";
-
   return status === "published"
     ? `${count} ${productLabel} published.`
     : `${count} ${productLabel} moved to draft.`;

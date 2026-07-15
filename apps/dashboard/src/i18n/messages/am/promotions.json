@@ -121,6 +121,23 @@
     "toastSuccess": "ቅናሽ ተፈጥሯል።",
     "toastError": "ቅናሹን መፍጠር አልተቻለም። እንደገና ይሞክሩ።",
     "startsLabel": "ይጀምራል",
-    "endsLabel": "ያበቃል"
+    "endsLabel": "ያበቃል",
+    "dialogDescription": "የቅናሽ አይነት ይምረጡ፣ እንዴት እንደሚተገበር ያዋቅሩ፣ ከዚያ መርሐግብር እና በጀት ይምረጡ።",
+    "stepShortType": "አይነት",
+    "stepShortDetails": "ዝርዝር",
+    "stepShortSchedule": "መርሐግብር",
+    "usageLimit": "የአጠቃቀም ገደብ",
+    "unlimited": "ያልተገደበ",
+    "status": "ሁኔታ",
+    "statusActive": "ንቁ",
+    "statusDraft": "ረቂቅ",
+    "statusInactive": "ንቁ ያልሆነ",
+    "noMax": "ገደብ የለም",
+    "scheduleTitle": "መርሐግብር",
+    "budgetTitle": "በጀት",
+    "optionalStart": "አማራጭ መጀመሪያ",
+    "optionalEnd": "አማራጭ መጨረሻ",
+    "campaignPlaceholder": "የበጋ ሽያጭ",
+    "creating": "በመፍጠር ላይ…"
   }
 }

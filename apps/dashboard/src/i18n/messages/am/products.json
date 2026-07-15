@@ -31,7 +31,10 @@
   "filter": {
     "status": {
       "label": "ሁኔታ",
-      "all": "ሁሉም ሁኔታዎች"
+      "all": "ሁሉም ሁኔታዎች",
+      "published": "ታትሟል",
+      "draft": "ረቂቅ",
+      "unknown": "ያልታወቀ"
     },
     "stock": {
       "label": "ክምችት",
@@ -69,6 +72,33 @@
     "searchPlaceholder": "ምርቶችን ፈልግ",
     "clearSearch": "የምርት ፍለጋን አጽዳ",
     "selectedSummary": "{count} ተመርጧል",
-    "productIds": "የምርት መለያዎች"
+    "productIds": "የምርት መለያዎች",
+    "product": "ምርት",
+    "price": "ዋጋ",
+    "organization": "ድርጅት",
+    "variantCount": "{count} ተለዋጮች",
+    "variantCountOne": "1 ተለዋጭ",
+    "notTracked": "አይከታተልም",
+    "selectAllAria": "ሁሉንም የሚታዩ ምርቶች ምረጥ",
+    "viewDetails": "ዝርዝሮችን እይ",
+    "manageInventory": "ክምችት አስተዳድር",
+    "publishProduct": "ምርት አትም",
+    "moveToDraft": "ወደ ረቂቅ አንቀሳቅስ",
+    "copyProductId": "የምርት መለያ ቅዳ",
+    "copyHandle": "ሃንድል ቅዳ",
+    "copyPath": "የመደብር መንገድ ቅዳ",
+    "productId": "የምርት መለያ",
+    "handle": "ሃንድል",
+    "productPath": "የምርት መንገድ",
+    "deleteProduct": "ምርት አጥፋ",
+    "actionsFor": "ለ{name} ድርጊቶች ክፈት",
+    "unnamed": "ስም የሌለው ምርት",
+    "statusUpdateFailed": "የምርት ሁኔታ ማዘመን አልተቻለም። እንደገና ይሞክሩ።",
+    "publishing": "{count} በማተም ላይ…",
+    "movingToDraft": "{count} ወደ ረቂቅ በማንቀሳቀስ ላይ…",
+    "published": "{count} ታትመዋል።",
+    "movedToDraft": "{count} ወደ ረቂቅ ተንቀሳቅሰዋል።",
+    "deleted": "ምርት ጠፍቷል።",
+    "deleteFailed": "ምርት ማጥፋት አልተቻለም።"
   }
 }
