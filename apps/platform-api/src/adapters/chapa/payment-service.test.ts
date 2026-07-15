@@ -1,7 +1,11 @@
 import assert from "node:assert/strict";
 import { afterEach, describe, it } from "node:test";
 
-import { createChapaPaymentService } from "./payment-service.js";
+import {
+  createChapaPaymentService,
+  isChapaAcceptableEmail,
+  resolveChapaPayerEmail,
+} from "./payment-service.js";
 
 const originalFetch = globalThis.fetch;
 
@@ -249,5 +253,17 @@ describe("createChapaPaymentService", () => {
       txRef: "tx_1",
     });
     assert.equal(notifications.length, 1);
+  });
+});
+
+describe("resolveChapaPayerEmail", () => {
+  it("rejects demo .local addresses and uses fallback", () => {
+    assert.equal(isChapaAcceptableEmail("owner@bole-style.local"), false);
+    assert.equal(isChapaAcceptableEmail("you@gmail.com"), true);
+    assert.equal(
+      resolveChapaPayerEmail("owner@bole-style.local", "you@gmail.com"),
+      "you@gmail.com",
+    );
+    assert.equal(resolveChapaPayerEmail("owner@bole-style.local", ""), null);
   });
 });
