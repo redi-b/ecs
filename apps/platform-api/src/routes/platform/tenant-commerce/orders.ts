@@ -168,6 +168,24 @@ export function registerPlatformTenantOrdersRoutes(
       return context.json({ error: order.error }, order.status);
     }
 
+    if (action === "mark-paid" && options.recordNotificationEvent) {
+      const paidOrder = order.order;
+      void options
+        .recordNotificationEvent({
+          tenantId,
+          eventType: "payment.paid",
+          payload: {
+            orderId: paidOrder.id,
+            orderDisplayId:
+              paidOrder.displayId != null ? String(paidOrder.displayId) : paidOrder.id,
+            amount: paidOrder.total != null ? String(paidOrder.total) : undefined,
+            currencyCode: paidOrder.currencyCode ?? undefined,
+            source: "dashboard_mark_paid",
+          },
+        })
+        .catch(() => undefined);
+    }
+
     return context.json({
       order: order.order,
     });

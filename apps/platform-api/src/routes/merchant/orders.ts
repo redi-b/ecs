@@ -179,6 +179,26 @@ export function registerMerchantOrderRoutes(
       return context.json({ error: order.error }, order.status);
     }
 
+    // Dashboard mark-paid often does not fire Medusa payment.captured (metadata / mark-as-paid
+    // paths). Emit payment.paid from platform so Telegram + in-app stay in sync with Chapa webhooks.
+    if (action === "mark-paid" && options.recordNotificationEvent) {
+      const paidOrder = order.order;
+      void options
+        .recordNotificationEvent({
+          tenantId: merchant.result.context.tenantId,
+          eventType: "payment.paid",
+          payload: {
+            orderId: paidOrder.id,
+            orderDisplayId:
+              paidOrder.displayId != null ? String(paidOrder.displayId) : paidOrder.id,
+            amount: paidOrder.total != null ? String(paidOrder.total) : undefined,
+            currencyCode: paidOrder.currencyCode ?? undefined,
+            source: "dashboard_mark_paid",
+          },
+        })
+        .catch(() => undefined);
+    }
+
     return context.json({
       order: order.order,
     });
@@ -244,6 +264,23 @@ export function registerMerchantOrderRoutes(
       if (!order.ok) {
         return context.json({ error: order.error }, order.status);
       }
+      if (markPaid && options.recordNotificationEvent) {
+        const paidOrder = order.order;
+        void options
+          .recordNotificationEvent({
+            tenantId: merchant.result.context.tenantId,
+            eventType: "payment.paid",
+            payload: {
+              orderId: paidOrder.id,
+              orderDisplayId:
+                paidOrder.displayId != null ? String(paidOrder.displayId) : paidOrder.id,
+              amount: paidOrder.total != null ? String(paidOrder.total) : undefined,
+              currencyCode: paidOrder.currencyCode ?? undefined,
+              source: "dashboard_finish_mark_paid",
+            },
+          })
+          .catch(() => undefined);
+      }
       return context.json({ order: order.order });
     }
 
@@ -263,6 +300,24 @@ export function registerMerchantOrderRoutes(
 
     if (!order.ok) {
       return context.json({ error: order.error }, order.status);
+    }
+
+    if (markPaid && options.recordNotificationEvent) {
+      const paidOrder = order.order;
+      void options
+        .recordNotificationEvent({
+          tenantId: merchant.result.context.tenantId,
+          eventType: "payment.paid",
+          payload: {
+            orderId: paidOrder.id,
+            orderDisplayId:
+              paidOrder.displayId != null ? String(paidOrder.displayId) : paidOrder.id,
+            amount: paidOrder.total != null ? String(paidOrder.total) : undefined,
+            currencyCode: paidOrder.currencyCode ?? undefined,
+            source: "dashboard_finish_mark_paid",
+          },
+        })
+        .catch(() => undefined);
     }
 
     return context.json({ order: order.order });

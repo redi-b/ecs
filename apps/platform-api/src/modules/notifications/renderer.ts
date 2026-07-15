@@ -47,15 +47,16 @@ export function createCodeNotificationRenderer(): NotificationRenderer {
       const amount = pickString(data, "amount", "total", "totalAmount");
       const shop = pickString(data, "shopName", "tenantName");
 
+      // Email + in-app use subject as the short title; chat channels use body only.
       const subjectFor = (title: string) =>
-        input.channel === "email" ? title : undefined;
+        input.channel === "email" || input.channel === "in_app" ? title : undefined;
 
       switch (input.eventType) {
         case "notification.test": {
           const body = [
             "This is a test notification from your shop platform.",
             shop ? `Shop: ${shop}` : null,
-            `Channel: ${input.channel}`,
+            input.channel !== "in_app" ? `Channel: ${input.channel}` : null,
           ]
             .filter(Boolean)
             .join("\n");
@@ -77,6 +78,21 @@ export function createCodeNotificationRenderer(): NotificationRenderer {
             .join("\n");
           const result: RenderNotificationResult = { body };
           const subject = subjectFor(`New order ${orderRef}`);
+          if (subject !== undefined) {
+            result.subject = subject;
+          }
+          return result;
+        }
+        case "order.cancelled": {
+          const body = [
+            `Order ${orderRef} was cancelled`,
+            amount ? `Total: ${amount}` : null,
+            shop ? `Shop: ${shop}` : null,
+          ]
+            .filter(Boolean)
+            .join("\n");
+          const result: RenderNotificationResult = { body };
+          const subject = subjectFor(`Order cancelled ${orderRef}`);
           if (subject !== undefined) {
             result.subject = subject;
           }

@@ -92,8 +92,25 @@ export function NotificationCenter() {
     const id = window.setInterval(() => {
       void refreshCount();
     }, POLL_MS);
-    return () => window.clearInterval(id);
-  }, [refreshCount]);
+
+    function onFocus() {
+      void refreshCount();
+      if (open) {
+        void refreshList();
+      }
+    }
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") {
+        onFocus();
+      }
+    });
+
+    return () => {
+      window.clearInterval(id);
+      window.removeEventListener("focus", onFocus);
+    };
+  }, [open, refreshCount, refreshList]);
 
   useEffect(() => {
     if (open) {
