@@ -1,7 +1,7 @@
 "use client";
 
 import type {
-  MerchantDashboardSummary,
+  MerchantDashboardAccess,
   StorefrontTemplateCatalogItem,
 } from "@ecs/contracts";
 import { useEffect, useId, useRef, useState, useTransition } from "react";
@@ -556,7 +556,7 @@ function ShopSection({
   onNameChange: (value: string) => void;
   onSave: () => void;
   onToggleHandleLock: () => void;
-  summary: MerchantDashboardSummary;
+  summary: MerchantDashboardAccess;
 }) {
   const dirty = nameChanged || handleChanged;
 
@@ -898,7 +898,7 @@ function StorefrontSection({
   summary,
 }: {
   storefrontTemplates: StorefrontTemplateCatalogItem[];
-  summary: MerchantDashboardSummary;
+  summary: MerchantDashboardAccess;
 }) {
   return (
     <div className="flex flex-col gap-6">

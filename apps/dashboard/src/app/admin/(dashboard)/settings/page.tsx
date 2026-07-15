@@ -4,7 +4,7 @@ import { PageShell } from "@/components/app/page-shell";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { SettingsWorkspace } from "@/features/settings/settings-workspace";
 import { type DashboardSearchParams, getSelectedTenantId } from "@/lib/dashboard-tenant-context";
-import { getMerchantDashboardSummary } from "@/lib/merchant-dashboard";
+import { getMerchantDashboardAccessShell } from "@/lib/merchant-dashboard";
 import { getMerchantDeliverySettings } from "@/lib/merchant-settings";
 import { getStorefrontTemplates } from "@/lib/storefront-templates";
 
@@ -18,20 +18,21 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
   const resolvedSearchParams = (await searchParams) ?? {};
   const selectedTenantId = getSelectedTenantId(resolvedSearchParams);
   const requestHeaders = await headers();
-  const result = await getMerchantDashboardSummary({
+  const platformApiBaseUrl = process.env.PLATFORM_API_BASE_URL ?? "http://localhost:3000";
+  // Settings only needs tenant/domain/actor/storefront — not ops/metrics/billing.
+  const result = await getMerchantDashboardAccessShell({
     cookieHeader: requestHeaders.get("cookie"),
-    platformApiBaseUrl: process.env.PLATFORM_API_BASE_URL ?? "http://localhost:3000",
+    platformApiBaseUrl,
     requestHost: requestHeaders.get("host"),
     tenantId: selectedTenantId,
   });
-  const platformApiBaseUrl = process.env.PLATFORM_API_BASE_URL ?? "http://localhost:3000";
   const [delivery, templates] =
-    result.ok && result.summary.tenant.id
+    result.ok && result.access.tenant.id
       ? await Promise.all([
           getMerchantDeliverySettings({
             cookieHeader: requestHeaders.get("cookie"),
             platformApiBaseUrl,
-            tenantId: result.summary.tenant.id,
+            tenantId: result.access.tenant.id,
           }),
           getStorefrontTemplates({
             platformApiBaseUrl,
@@ -56,7 +57,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
           settingsStatus={resolvedSearchParams.settingsStatus}
           storefrontTemplates={templates?.ok ? templates.templates : []}
           templateStatus={resolvedSearchParams.templateStatus}
-          summary={result.summary}
+          summary={result.access}
         />
       )}
     </PageShell>

@@ -35,6 +35,10 @@ export type BillingStatus = {
     manualPaymentState: string;
     currentPeriodStart: string | null;
     currentPeriodEnd: string | null;
+    /** Free plan id scheduled to take effect at period end (no refund). */
+    scheduledPlanId?: string | null;
+    scheduledPlanName?: string | null;
+    scheduledEffectiveAt?: string | null;
   };
   plan: {
     id: string;
@@ -50,6 +54,37 @@ export type BillingStatus = {
   /** Active plans for selection UI (order stable by price). */
   catalog: BillingCatalogPlan[];
 };
+
+export type BillingPlanDowngradeResult =
+  | {
+      ok: true;
+      applied: boolean;
+      scheduled: boolean;
+      effectiveAt: string | null;
+      billing: BillingStatus;
+    }
+  | {
+      ok: false;
+      error:
+        | "billing_not_found"
+        | "billing_plan_not_found"
+        | "billing_plan_not_free"
+        | "billing_already_on_plan"
+        | "billing_not_on_paid_plan";
+      status: 400 | 404;
+    };
+
+export type BillingCancelDowngradeResult =
+  | {
+      ok: true;
+      cancelled: boolean;
+      billing: BillingStatus;
+    }
+  | {
+      ok: false;
+      error: "billing_not_found" | "billing_no_scheduled_downgrade";
+      status: 400 | 404;
+    };
 
 export type BillingStatusResult =
   | {

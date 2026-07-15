@@ -9,7 +9,8 @@ import {
   getSelectedTenantId,
   getTenantScopedPath,
 } from "@/lib/dashboard-tenant-context";
-import { getMerchantDashboardSummary } from "@/lib/merchant-dashboard";
+import { getMerchantBillingStatus } from "@/lib/merchant-billing";
+import { getMerchantDashboardAccessShell } from "@/lib/merchant-dashboard";
 import { getPlatformApiBaseUrl } from "@/lib/platform-api/client";
 import { mapPlatformErrorMessage } from "@/lib/platform-api/errors";
 
@@ -19,39 +20,84 @@ type BillingPageProps = {
 
 export default async function BillingPage({ searchParams }: BillingPageProps) {
   const resolvedSearchParams = (await searchParams) ?? {};
-  const tenantId = getSelectedTenantId(resolvedSearchParams);
+  const selectedTenantId = getSelectedTenantId(resolvedSearchParams);
   const returnedFromPayment = billingReturnPaidFlag(resolvedSearchParams);
   const requestHeaders = await headers();
   const cookieHeader = (await cookies()).toString();
+  const requestHost =
+    requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host");
   const platformApiBaseUrl = getPlatformApiBaseUrl(
     process.env.PLATFORM_API_BASE_URL ?? "http://localhost:3000",
   );
 
-  // After Chapa return_url, re-verify pending invoices (callback often cannot
-  // reach local lvh.me from Chapa's servers).
-  if (returnedFromPayment && tenantId) {
+  // Lean shell for tenant id + storefront hostname (no ops/metrics).
+  // Dedicated billing status for plans/invoices (no Medusa order sampling).
+  const accessPromise = getMerchantDashboardAccessShell({
+    cookieHeader,
+    platformApiBaseUrl,
+    requestHost,
+    tenantId: selectedTenantId,
+  });
+
+  // When tenantId is already known (e.g. Chapa return), confirm + access in parallel.
+  const confirmPromise =
+    returnedFromPayment && selectedTenantId
+      ? fetch(
+          new URL(
+            `platform/tenants/${encodeURIComponent(selectedTenantId)}/billing/confirm`,
+            platformApiBaseUrl,
+          ),
+          {
+            method: "POST",
+            headers: {
+              accept: "application/json",
+              cookie: cookieHeader,
+            },
+            cache: "no-store",
+          },
+        ).catch(() => null)
+      : Promise.resolve(null);
+
+  const [access] = await Promise.all([accessPromise, confirmPromise]);
+
+  if (!access.ok) {
+    return (
+      <PageShell description="Manage your shop plan and payments." title="Billing">
+        <Alert variant="destructive">
+          <AlertTitle>Billing could not be loaded</AlertTitle>
+          <AlertDescription>{mapPlatformErrorMessage(access.message)}</AlertDescription>
+        </Alert>
+      </PageShell>
+    );
+  }
+
+  const tenantId = selectedTenantId ?? access.access.tenant.id;
+
+  // Host-only visits still need confirm after access resolves tenant id.
+  if (returnedFromPayment && !selectedTenantId && tenantId) {
     try {
-      const confirmUrl = new URL(
-        `platform/tenants/${encodeURIComponent(tenantId)}/billing/confirm`,
-        platformApiBaseUrl,
-      );
-      await fetch(confirmUrl, {
-        method: "POST",
-        headers: {
-          accept: "application/json",
-          cookie: cookieHeader,
+      await fetch(
+        new URL(
+          `platform/tenants/${encodeURIComponent(tenantId)}/billing/confirm`,
+          platformApiBaseUrl,
+        ),
+        {
+          method: "POST",
+          headers: {
+            accept: "application/json",
+            cookie: cookieHeader,
+          },
+          cache: "no-store",
         },
-        cache: "no-store",
-      });
+      );
     } catch {
-      // Non-blocking; page still loads billing state.
+      // Non-blocking.
     }
   }
 
-  const result = await getMerchantDashboardSummary({
+  const result = await getMerchantBillingStatus({
     cookieHeader,
     platformApiBaseUrl,
-    requestHost: requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host"),
     tenantId,
   });
 
@@ -60,15 +106,15 @@ export default async function BillingPage({ searchParams }: BillingPageProps) {
       {!result.ok ? (
         <Alert variant="destructive">
           <AlertTitle>Billing could not be loaded</AlertTitle>
-          <AlertDescription>
-            {mapPlatformErrorMessage(result.message)}
-          </AlertDescription>
+          <AlertDescription>{mapPlatformErrorMessage(result.message)}</AlertDescription>
         </Alert>
       ) : (
         <BillingWorkspace
+          billing={result.billing}
+          billingPath={getTenantScopedPath("/admin/billing", tenantId)}
           returnedFromPayment={returnedFromPayment}
-          summary={result.summary}
-          billingPath={getTenantScopedPath("/admin/billing", tenantId ?? result.summary.tenant.id)}
+          storefrontHostname={access.access.domain.hostname}
+          tenantId={tenantId}
         />
       )}
     </PageShell>

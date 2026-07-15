@@ -1,6 +1,6 @@
 import type {
   DeliverySettings,
-  MerchantDashboardSummary,
+  MerchantDashboardAccess,
   StorefrontTemplateCatalogItem,
 } from "@ecs/contracts";
 
@@ -11,7 +11,8 @@ export type SettingsWorkspaceProps = {
   initialTab?: string | undefined;
   settingsStatus?: string | undefined;
   storefrontTemplates: StorefrontTemplateCatalogItem[];
-  summary: MerchantDashboardSummary;
+  /** Access shell only — settings never needs ops/metrics/billing. */
+  summary: MerchantDashboardAccess;
   templateStatus?: string | undefined;
 };
 

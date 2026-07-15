@@ -5,6 +5,7 @@ import { and, desc, eq } from "drizzle-orm";
 import type {
   BillingInvoice,
   BillingInvoiceUpdateResult,
+  BillingStatus,
   BillingStatusResult,
 } from "../../types/index.js";
 
@@ -23,7 +24,26 @@ export const BILLING_CHAPA_TX_PREFIX = "ecs_bill_";
 /** Issue renewal invoices this many days before period end. */
 export const BILLING_RENEWAL_LEAD_DAYS = 7;
 
+/**
+ * Encoded in subscriptions.manual_payment_state when a free-plan downgrade
+ * is scheduled for period end (no refunds — keep paid access until then).
+ */
+export const SCHEDULED_DOWNGRADE_PREFIX = "scheduled_downgrade:";
+
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+export function encodeScheduledDowngrade(planId: string) {
+  return `${SCHEDULED_DOWNGRADE_PREFIX}${planId}`;
+}
+
+export function parseScheduledDowngradePlanId(
+  manualPaymentState: string | null | undefined,
+): string | null {
+  const value = manualPaymentState?.trim() ?? "";
+  if (!value.startsWith(SCHEDULED_DOWNGRADE_PREFIX)) return null;
+  const planId = value.slice(SCHEDULED_DOWNGRADE_PREFIX.length).trim();
+  return planId || null;
+}
 
 export function isPlatformBillingTxRef(txRef: string) {
   return txRef.trim().toLowerCase().startsWith(BILLING_CHAPA_TX_PREFIX);
@@ -54,13 +74,15 @@ function serializeInvoice(invoice: {
 }): BillingInvoice {
   return {
     id: invoice.id,
-    amount: invoice.amount,
+    amount: String(invoice.amount),
     currency: invoice.currency,
     status: invoice.status,
     dueAt: serializeDate(invoice.dueAt),
     paidAt: serializeDate(invoice.paidAt),
-    provider: invoice.provider,
-    providerReference: invoice.providerReference,
+    provider: invoice.provider?.trim() ? invoice.provider.trim() : null,
+    providerReference: invoice.providerReference?.trim()
+      ? invoice.providerReference.trim()
+      : null,
     createdAt: invoice.createdAt.toISOString(),
   };
 }
@@ -227,8 +249,8 @@ export function createBillingService(db: PlatformDb) {
     },
 
     /**
-     * Per-tenant maintenance: renewal invoices near period end, past_due when expired.
-     * Free plans are never touched. Safe to call on every billing read.
+     * Per-tenant maintenance: apply scheduled free downgrades, renewal invoices,
+     * past_due when expired. Free plans are never touched. Safe on every billing read.
      */
     syncTenantBillingLifecycle: async (input: { tenantId: string }) => {
       const [row] = await db
@@ -238,6 +260,7 @@ export function createBillingService(db: PlatformDb) {
           planId: plans.id,
           planPrice: plans.price,
           currentPeriodEnd: subscriptions.currentPeriodEnd,
+          manualPaymentState: subscriptions.manualPaymentState,
         })
         .from(subscriptions)
         .innerJoin(plans, eq(plans.id, subscriptions.planId))
@@ -245,16 +268,34 @@ export function createBillingService(db: PlatformDb) {
         .limit(1);
 
       if (!row || isFreePlanPrice(row.planPrice)) {
-        return { renewed: false, pastDue: false };
+        return { renewed: false, pastDue: false, downgraded: false };
       }
 
       const now = new Date();
+      const scheduledPlanId = parseScheduledDowngradePlanId(row.manualPaymentState);
+      const periodEnded =
+        row.currentPeriodEnd != null && row.currentPeriodEnd.getTime() <= now.getTime();
+
+      // Scheduled free switch at period end (no refund for unused paid days).
+      if (scheduledPlanId && periodEnded) {
+        const applied = await self().applyScheduledDowngrade({
+          tenantId: input.tenantId,
+          subscriptionId: row.subscriptionId,
+          planId: scheduledPlanId,
+        });
+        return { renewed: false, pastDue: false, downgraded: applied };
+      }
+
+      // While a free switch is scheduled, do not create renewal invoices or force past_due.
+      if (scheduledPlanId) {
+        return { renewed: false, pastDue: false, downgraded: false };
+      }
+
       let pastDue = false;
       let renewed = false;
 
       if (
-        row.currentPeriodEnd &&
-        row.currentPeriodEnd.getTime() <= now.getTime() &&
+        periodEnded &&
         (row.status === "active" || row.status === "trialing")
       ) {
         await db
@@ -279,7 +320,223 @@ export function createBillingService(db: PlatformDb) {
         }
       }
 
-      return { renewed, pastDue };
+      return { renewed, pastDue, downgraded: false };
+    },
+
+    /** Apply a free (or other) plan change at period end; void open pay invoices. */
+    applyScheduledDowngrade: async (input: {
+      tenantId: string;
+      subscriptionId: string;
+      planId: string;
+    }) => {
+      const [plan] = await db
+        .select({ id: plans.id, price: plans.price, status: plans.status })
+        .from(plans)
+        .where(and(eq(plans.id, input.planId), eq(plans.status, "active")))
+        .limit(1);
+
+      if (!plan) return false;
+
+      const now = new Date();
+      await db
+        .update(subscriptions)
+        .set({
+          planId: plan.id,
+          status: "active",
+          currentPeriodStart: now,
+          // Free forever has no period end pressure.
+          currentPeriodEnd: isFreePlanPrice(plan.price) ? null : addBillingMonths(now, 1),
+          manualPaymentState: isFreePlanPrice(plan.price) ? "none" : "paid",
+        })
+        .where(
+          and(
+            eq(subscriptions.id, input.subscriptionId),
+            eq(subscriptions.tenantId, input.tenantId),
+          ),
+        );
+
+      await db
+        .update(invoices)
+        .set({ status: "void" })
+        .where(and(eq(invoices.tenantId, input.tenantId), eq(invoices.status, "pending")));
+
+      return true;
+    },
+
+    /**
+     * Schedule free-plan switch at period end, or apply immediately if already expired.
+     * No refunds: paid time is kept until currentPeriodEnd.
+     */
+    schedulePlanDowngrade: async (input: {
+      planId: string;
+      tenantId: string;
+    }): Promise<
+      | {
+          ok: true;
+          applied: boolean;
+          scheduled: boolean;
+          effectiveAt: string | null;
+          billing: BillingStatus;
+        }
+      | {
+          ok: false;
+          error:
+            | "billing_not_found"
+            | "billing_plan_not_found"
+            | "billing_plan_not_free"
+            | "billing_already_on_plan"
+            | "billing_not_on_paid_plan";
+          status: 400 | 404;
+        }
+    > => {
+      await self().ensureFreeSubscription(input);
+
+      const [plan] = await db
+        .select({
+          id: plans.id,
+          name: plans.name,
+          price: plans.price,
+          status: plans.status,
+        })
+        .from(plans)
+        .where(and(eq(plans.id, input.planId), eq(plans.status, "active")))
+        .limit(1);
+
+      if (!plan) {
+        return { ok: false, error: "billing_plan_not_found", status: 404 };
+      }
+
+      if (!isFreePlanPrice(plan.price)) {
+        return { ok: false, error: "billing_plan_not_free", status: 400 };
+      }
+
+      const [subscription] = await db
+        .select({
+          id: subscriptions.id,
+          planId: subscriptions.planId,
+          status: subscriptions.status,
+          currentPeriodEnd: subscriptions.currentPeriodEnd,
+          manualPaymentState: subscriptions.manualPaymentState,
+          planPrice: plans.price,
+        })
+        .from(subscriptions)
+        .innerJoin(plans, eq(plans.id, subscriptions.planId))
+        .where(eq(subscriptions.tenantId, input.tenantId))
+        .limit(1);
+
+      if (!subscription) {
+        return { ok: false, error: "billing_not_found", status: 404 };
+      }
+
+      if (subscription.planId === plan.id) {
+        // Already free; clear any stale schedule.
+        if (parseScheduledDowngradePlanId(subscription.manualPaymentState)) {
+          await db
+            .update(subscriptions)
+            .set({ manualPaymentState: "none" })
+            .where(eq(subscriptions.id, subscription.id));
+        }
+        return { ok: false, error: "billing_already_on_plan", status: 400 };
+      }
+
+      if (isFreePlanPrice(subscription.planPrice)) {
+        return { ok: false, error: "billing_not_on_paid_plan", status: 400 };
+      }
+
+      const now = new Date();
+      const periodActive =
+        subscription.currentPeriodEnd != null &&
+        subscription.currentPeriodEnd.getTime() > now.getTime() &&
+        subscription.status !== "past_due";
+
+      if (!periodActive) {
+        // Past due / expired / no period: switch immediately (nothing left to refund).
+        await self().applyScheduledDowngrade({
+          tenantId: input.tenantId,
+          subscriptionId: subscription.id,
+          planId: plan.id,
+        });
+        const status = await self().getBillingStatus({ tenantId: input.tenantId });
+        if (!status.ok) {
+          return { ok: false, error: "billing_not_found", status: 404 };
+        }
+        return {
+          ok: true,
+          applied: true,
+          scheduled: false,
+          effectiveAt: null,
+          billing: status.billing,
+        };
+      }
+
+      // Keep Growth until period end; cancel open pay/renewal invoices.
+      await db
+        .update(subscriptions)
+        .set({ manualPaymentState: encodeScheduledDowngrade(plan.id) })
+        .where(eq(subscriptions.id, subscription.id));
+
+      await db
+        .update(invoices)
+        .set({ status: "void" })
+        .where(and(eq(invoices.tenantId, input.tenantId), eq(invoices.status, "pending")));
+
+      const status = await self().getBillingStatus({ tenantId: input.tenantId });
+      if (!status.ok) {
+        return { ok: false, error: "billing_not_found", status: 404 };
+      }
+
+      return {
+        ok: true,
+        applied: false,
+        scheduled: true,
+        effectiveAt: serializeDate(subscription.currentPeriodEnd),
+        billing: status.billing,
+      };
+    },
+
+    /** Cancel a scheduled free switch and keep the current paid plan. */
+    cancelScheduledPlanDowngrade: async (input: {
+      tenantId: string;
+    }): Promise<
+      | { ok: true; cancelled: boolean; billing: BillingStatus }
+      | {
+          ok: false;
+          error: "billing_not_found" | "billing_no_scheduled_downgrade";
+          status: 400 | 404;
+        }
+    > => {
+      const [subscription] = await db
+        .select({
+          id: subscriptions.id,
+          manualPaymentState: subscriptions.manualPaymentState,
+          planPrice: plans.price,
+        })
+        .from(subscriptions)
+        .innerJoin(plans, eq(plans.id, subscriptions.planId))
+        .where(eq(subscriptions.tenantId, input.tenantId))
+        .limit(1);
+
+      if (!subscription) {
+        return { ok: false, error: "billing_not_found", status: 404 };
+      }
+
+      if (!parseScheduledDowngradePlanId(subscription.manualPaymentState)) {
+        return { ok: false, error: "billing_no_scheduled_downgrade", status: 400 };
+      }
+
+      await db
+        .update(subscriptions)
+        .set({
+          manualPaymentState: isFreePlanPrice(subscription.planPrice) ? "none" : "paid",
+        })
+        .where(eq(subscriptions.id, subscription.id));
+
+      const status = await self().getBillingStatus({ tenantId: input.tenantId });
+      if (!status.ok) {
+        return { ok: false, error: "billing_not_found", status: 404 };
+      }
+
+      return { ok: true, cancelled: true, billing: status.billing };
     },
 
     /**
@@ -370,7 +627,11 @@ export function createBillingService(db: PlatformDb) {
 
     getBillingStatus: async (input: { tenantId: string }): Promise<BillingStatusResult> => {
       await self().ensureFreeSubscription(input);
-      await self().syncTenantBillingLifecycle(input);
+      try {
+        await self().syncTenantBillingLifecycle(input);
+      } catch {
+        // Lifecycle is best-effort; never block the billing page on it.
+      }
 
       const [subscription] = await db
         .select({
@@ -389,20 +650,66 @@ export function createBillingService(db: PlatformDb) {
         .from(subscriptions)
         .innerJoin(plans, eq(plans.id, subscriptions.planId))
         .where(eq(subscriptions.tenantId, input.tenantId))
+        // Prefer non-null period ends first, but free forever has null end — still returns a row.
         .orderBy(desc(subscriptions.currentPeriodEnd))
         .limit(1);
 
       if (!subscription) {
-        return {
-          ok: false,
-          error: "billing_not_found",
-        };
+        // Last resort: free sub may have failed insert race; try once more.
+        await self().ensureFreeSubscription(input);
+        const [retry] = await db
+          .select({
+            subscriptionId: subscriptions.id,
+            status: subscriptions.status,
+            billingCycle: subscriptions.billingCycle,
+            currentPeriodStart: subscriptions.currentPeriodStart,
+            currentPeriodEnd: subscriptions.currentPeriodEnd,
+            manualPaymentState: subscriptions.manualPaymentState,
+            planId: plans.id,
+            planName: plans.name,
+            planPrice: plans.price,
+            planLimits: plans.limits,
+            planFeatures: plans.features,
+          })
+          .from(subscriptions)
+          .innerJoin(plans, eq(plans.id, subscriptions.planId))
+          .where(eq(subscriptions.tenantId, input.tenantId))
+          .limit(1);
+
+        if (!retry) {
+          return {
+            ok: false,
+            error: "billing_not_found",
+          };
+        }
+
+        return self().buildBillingStatusResult(retry, input.tenantId);
       }
+
+      return self().buildBillingStatusResult(subscription, input.tenantId);
+    },
+
+    buildBillingStatusResult: async (
+      subscription: {
+        subscriptionId: string;
+        status: string;
+        billingCycle: string;
+        currentPeriodStart: Date | null;
+        currentPeriodEnd: Date | null;
+        manualPaymentState: string;
+        planId: string;
+        planName: string;
+        planPrice: string;
+        planLimits: unknown;
+        planFeatures: unknown;
+      },
+      tenantId: string,
+    ): Promise<BillingStatusResult> => {
 
       const invoiceRows = await db
         .select(selectInvoiceFields())
         .from(invoices)
-        .where(eq(invoices.tenantId, input.tenantId))
+        .where(eq(invoices.tenantId, tenantId))
         .orderBy(desc(invoices.createdAt))
         .limit(20);
 
@@ -418,6 +725,15 @@ export function createBillingService(db: PlatformDb) {
         (plan) => !plan.isFree && plan.id !== subscription.planId,
       );
 
+      const scheduledPlanId = parseScheduledDowngradePlanId(subscription.manualPaymentState);
+      const scheduledPlan = scheduledPlanId
+        ? (planList.plans.find((plan) => plan.id === scheduledPlanId) ?? null)
+        : null;
+      // Surface a clean state to clients while schedule is encoded in DB.
+      const clientPaymentState = scheduledPlanId
+        ? "scheduled_downgrade"
+        : subscription.manualPaymentState || "none";
+
       return {
         ok: true,
         billing: {
@@ -425,25 +741,32 @@ export function createBillingService(db: PlatformDb) {
             id: subscription.subscriptionId,
             status: subscription.status,
             billingCycle: subscription.billingCycle,
-            manualPaymentState: subscription.manualPaymentState,
+            manualPaymentState: clientPaymentState,
             currentPeriodStart: serializeDate(subscription.currentPeriodStart),
             currentPeriodEnd: serializeDate(subscription.currentPeriodEnd),
+            scheduledPlanId: scheduledPlan?.id ?? null,
+            scheduledPlanName: scheduledPlan?.name ?? null,
+            /** When a free switch is scheduled, it takes effect at period end. */
+            scheduledEffectiveAt:
+              scheduledPlan && subscription.currentPeriodEnd
+                ? serializeDate(subscription.currentPeriodEnd)
+                : null,
           },
           plan: {
             id: subscription.planId,
             name: subscription.planName,
-            price: subscription.planPrice,
-            limits: subscription.planLimits,
-            features: subscription.planFeatures,
-            isFree: isFreePlanPrice(subscription.planPrice),
+            price: String(subscription.planPrice),
+            limits: subscription.planLimits ?? {},
+            features: subscription.planFeatures ?? {},
+            isFree: isFreePlanPrice(String(subscription.planPrice)),
           },
           invoices: invoiceRows.map((invoice) => serializeInvoice(invoice)),
           availablePaidPlans: availablePaidPlans.map((plan) => ({
             id: plan.id,
             name: plan.name,
-            price: plan.price,
-            limits: plan.limits,
-            features: plan.features,
+            price: String(plan.price),
+            limits: plan.limits ?? {},
+            features: plan.features ?? {},
           })),
           catalog,
         },
@@ -496,6 +819,7 @@ export function createBillingService(db: PlatformDb) {
           planId: subscriptions.planId,
           status: subscriptions.status,
           currentPeriodEnd: subscriptions.currentPeriodEnd,
+          manualPaymentState: subscriptions.manualPaymentState,
         })
         .from(subscriptions)
         .where(eq(subscriptions.tenantId, input.tenantId))
@@ -503,6 +827,14 @@ export function createBillingService(db: PlatformDb) {
 
       if (!subscription) {
         return { ok: false, error: "billing_not_found", status: 404 };
+      }
+
+      // Paying / renewing cancels any free-switch schedule.
+      if (parseScheduledDowngradePlanId(subscription.manualPaymentState)) {
+        await db
+          .update(subscriptions)
+          .set({ manualPaymentState: "paid" })
+          .where(eq(subscriptions.id, subscription.id));
       }
 
       const now = new Date();
@@ -638,6 +970,7 @@ export function createBillingService(db: PlatformDb) {
       const rows = await db
         .select({
           id: invoices.id,
+          tenantId: invoices.tenantId,
           providerReference: invoices.providerReference,
           status: invoices.status,
         })
@@ -652,6 +985,37 @@ export function createBillingService(db: PlatformDb) {
         )
         .map((row) => ({
           invoiceId: row.id,
+          tenantId: row.tenantId,
+          txRef: row.providerReference as string,
+        }));
+    },
+
+    /**
+     * Global sweep of pending ecs_bill_* invoices (worker reconcile job).
+     * Newest first; limited so one run cannot hammer Chapa.
+     */
+    listAllPendingChapaInvoiceTxRefs: async (input?: { limit?: number }) => {
+      const limit = Math.min(Math.max(input?.limit ?? 100, 1), 500);
+      const rows = await db
+        .select({
+          id: invoices.id,
+          tenantId: invoices.tenantId,
+          providerReference: invoices.providerReference,
+        })
+        .from(invoices)
+        .where(eq(invoices.status, "pending"))
+        .orderBy(desc(invoices.createdAt))
+        .limit(limit);
+
+      return rows
+        .filter(
+          (row) =>
+            row.providerReference &&
+            isPlatformBillingTxRef(row.providerReference),
+        )
+        .map((row) => ({
+          invoiceId: row.id,
+          tenantId: row.tenantId,
           txRef: row.providerReference as string,
         }));
     },

@@ -1,8 +1,8 @@
-import type { MerchantDashboardSummary, StorefrontTemplateCatalogItem } from "@ecs/contracts";
+import type { MerchantDashboardAccess, StorefrontTemplateCatalogItem } from "@ecs/contracts";
 
 export function getSelectedTemplateName(
   templates: StorefrontTemplateCatalogItem[],
-  summary: MerchantDashboardSummary,
+  summary: MerchantDashboardAccess,
 ) {
   const selected = templates.find(
     (template) =>

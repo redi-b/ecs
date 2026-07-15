@@ -27,6 +27,7 @@ import {
   createDrizzleAnalyticsInsightsStore,
 } from "./modules/analytics/analytics-service.js";
 import { createDashboardMetricsService } from "./modules/analytics/dashboard-metrics-service.js";
+import { reconcileChapaBillingPayments } from "./modules/billing/reconcile-payments.js";
 import { createBillingService, isPlatformBillingTxRef } from "./modules/billing/service.js";
 import { createMedusaOrderService } from "./modules/commerce/order-management.js";
 import { createMedusaProductService } from "./modules/commerce/product-catalog.js";
@@ -360,33 +361,16 @@ const app = createPlatformApp({
   checkTenantHandleAvailability,
   getBillingStatus: billingService.getBillingStatus,
   createPlanUpgradeInvoice: billingService.createPlanUpgradeInvoice,
+  schedulePlanDowngrade: billingService.schedulePlanDowngrade,
+  cancelScheduledPlanDowngrade: billingService.cancelScheduledPlanDowngrade,
   confirmBillingPayments: async (input) => {
     const pending = await billingService.listPendingChapaInvoiceTxRefs(input);
-    let confirmed = 0;
-    for (const item of pending) {
-      try {
-        const verification = await chapaPaymentService.verifyPayment(item.txRef);
-        const status = String(
-          verification?.data?.status ?? verification?.status ?? "",
-        )
-          .trim()
-          .toLowerCase();
-        if (status !== "success") continue;
-        const result = await billingService.completeChapaInvoicePayment({
-          tenantId: input.tenantId,
-          txRef: item.txRef,
-          providerReference:
-            (typeof verification?.data?.ref_id === "string" && verification.data.ref_id) ||
-            (typeof verification?.data?.reference === "string" &&
-              verification.data.reference) ||
-            item.txRef,
-        });
-        if (result.ok && result.applied) confirmed += 1;
-      } catch {
-        // Keep checking other invoices.
-      }
-    }
-    return { ok: true as const, confirmed, checked: pending.length };
+    const result = await reconcileChapaBillingPayments({
+      items: pending,
+      verifyPayment: (txRef) => chapaPaymentService.verifyPayment(txRef),
+      completePayment: (payload) => billingService.completeChapaInvoicePayment(payload),
+    });
+    return { ok: true as const, confirmed: result.confirmed, checked: result.checked };
   },
   initializeBillingInvoicePayment: async (input) => {
     if (!process.env.CHAPA_SECRET_KEY?.trim()) {

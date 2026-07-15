@@ -16,6 +16,15 @@ export {
 } from "./defaults.js";
 export { createJobsClient } from "./client.js";
 export type { JobsClient, JobsClientOptions } from "./client.js";
+export {
+  scheduleRepeatableJobOnQueue,
+  removeRepeatableJobOnQueue,
+} from "./repeatable.js";
+export type {
+  ScheduleRepeatableJobInput,
+  ScheduleRepeatableJobResult,
+  RemoveRepeatableJobInput,
+} from "./repeatable.js";
 export { startPlatformWorker } from "./worker.js";
 export type { StartPlatformWorkerOptions } from "./worker.js";
 /** Re-export for job handlers that must fail without retry (no direct bullmq imports in apps). */

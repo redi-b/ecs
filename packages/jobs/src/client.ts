@@ -9,6 +9,13 @@ import {
   DEFAULT_REDIS_PREFIX,
 } from "./defaults.js";
 import {
+  removeRepeatableJobOnQueue,
+  scheduleRepeatableJobOnQueue,
+  type RemoveRepeatableJobInput,
+  type ScheduleRepeatableJobInput,
+  type ScheduleRepeatableJobResult,
+} from "./repeatable.js";
+import {
   findJobRunById,
   findJobRunByIdempotency,
   insertJobRun,
@@ -43,14 +50,17 @@ export type JobsQueueLike = {
   add(
     name: string,
     data: {
-      jobRunId: string;
+      jobRunId: string | null;
       tenantId: string | null;
       payload: unknown;
     },
     opts: {
-      jobId: string;
+      jobId?: string;
       attempts: number;
       backoff: { type: "exponential"; delay: number };
+      repeat?: { every: number; key?: string };
+      removeOnComplete?: number | boolean;
+      removeOnFail?: number | boolean;
     },
   ): Promise<{ id?: string | null | undefined }>;
 };
@@ -58,6 +68,12 @@ export type JobsQueueLike = {
 export type JobsClient = {
   enqueueJob(input: EnqueueJobInput): Promise<EnqueueJobResult>;
   getJobRun(id: string): Promise<JobRunRecord | null>;
+  /**
+   * BullMQ native repeatable job (every N ms). Worker creates a job_runs row per fire.
+   * Pass everyMs <= 0 via callers to skip; use removeRepeatableJob to clear.
+   */
+  scheduleRepeatableJob(input: ScheduleRepeatableJobInput): Promise<ScheduleRepeatableJobResult>;
+  removeRepeatableJob(input: RemoveRepeatableJobInput): Promise<boolean>;
   close(): Promise<void>;
 };
 
@@ -185,6 +201,12 @@ export function createJobsClient(options: JobsClientOptions): JobsClient {
     },
     getJobRun(id) {
       return findJobRunById(options.db, id);
+    },
+    scheduleRepeatableJob(input) {
+      return scheduleRepeatableJobOnQueue(queue, input);
+    },
+    removeRepeatableJob(input) {
+      return removeRepeatableJobOnQueue(queue, input);
     },
     async close() {
       await queue.close();

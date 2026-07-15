@@ -140,7 +140,9 @@ export function createTenantDashboardSummaryService(db: PlatformDb) {
         hostname: domains.hostname,
         medusaStoreId: tenants.medusaStoreId,
         medusaSalesChannelId: tenants.medusaSalesChannelId,
+        medusaStockLocationId: tenants.medusaStockLocationId,
         medusaPublishableKeyId: tenants.medusaPublishableKeyId,
+        medusaRegionId: tenants.medusaRegionId,
         publishedRevisionId: storefrontConfigs.publishedRevisionId,
         templateId: storefrontConfigs.draftTemplateId,
         templateKey: storefrontTemplateVersions.templateKey,
@@ -167,8 +169,27 @@ export function createTenantDashboardSummaryService(db: PlatformDb) {
       };
     }
 
+    const context = {
+      domainId: row.domainId,
+      hostname: row.hostname,
+      medusaPublishableKeyId: row.medusaPublishableKeyId,
+      medusaRegionId: row.medusaRegionId,
+      medusaSalesChannelId: row.medusaSalesChannelId,
+      medusaStockLocationId: row.medusaStockLocationId,
+      medusaStoreId: row.medusaStoreId,
+      publishedRevisionId: row.publishedRevisionId,
+      status: row.tenantStatus,
+      templateId: row.templateId,
+      templateKey: row.templateKey,
+      templateVersion: row.templateVersion,
+      tenantHandle: row.tenantHandle,
+      tenantId: row.tenantId,
+      tenantName: row.tenantName,
+    };
+
     return {
       ok: true,
+      context,
       summary: {
         tenant: {
           id: row.tenantId,

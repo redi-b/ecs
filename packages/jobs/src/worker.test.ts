@@ -44,6 +44,7 @@ function createRecordingLifecycle(): JobProcessorLifecycle & {
 function makeJob(overrides?: Partial<PlatformWorkerJob>): PlatformWorkerJob {
   return {
     name: overrides?.name ?? "example.job",
+    id: overrides?.id,
     data: {
       jobRunId: "run-1",
       tenantId: "tenant-1",
@@ -98,6 +99,43 @@ describe("createJobProcessor", () => {
         terminal: true,
       },
     ]);
+  });
+
+  it("synthesizes a jobRunId for BullMQ repeatable jobs (null jobRunId)", async () => {
+    const lifecycle = createRecordingLifecycle();
+    let receivedId: string | undefined;
+
+    const processJob = createJobProcessor({
+      db: fakeDb,
+      handlers: {
+        "billing.reconcile-payments": async (ctx) => {
+          receivedId = ctx.jobRunId;
+          return { ok: true };
+        },
+      },
+      lifecycle,
+    });
+
+    await processJob(
+      makeJob({
+        name: "billing.reconcile-payments",
+        id: "repeat:billing.reconcile-payments:123",
+        data: {
+          jobRunId: null,
+          tenantId: null,
+          payload: { source: "bullmq_repeatable" },
+        },
+      }),
+    );
+
+    assert.equal(receivedId, "repeat:billing.reconcile-payments:123");
+    assert.equal(lifecycle.calls[0]?.op, "markActive");
+    assert.equal(
+      lifecycle.calls[0] && "jobRunId" in lifecycle.calls[0]
+        ? lifecycle.calls[0].jobRunId
+        : null,
+      "repeat:billing.reconcile-payments:123",
+    );
   });
 
   it("invokes handler with correct context and marks completed on success", async () => {

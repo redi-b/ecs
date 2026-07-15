@@ -1,11 +1,17 @@
 import { loadServiceEnv } from "@ecs/config";
 import { createPlatformDb } from "@ecs/db";
-import { startPlatformWorker, type JobHandler } from "@ecs/jobs";
+import { createJobsClient, startPlatformWorker, type JobHandler } from "@ecs/jobs";
 import { createLogger } from "@ecs/logger";
+import { createChapaPaymentService } from "./adapters/chapa/payment-service.js";
 import { loadPlatformApiEnvFiles } from "./config/env.js";
 import { createBillingLifecycleHandler } from "./jobs/handlers/billing-lifecycle.js";
+import { createBillingPaymentReconcileHandler } from "./jobs/handlers/billing-payment-reconcile.js";
 import { createNotificationsDeliverHandler } from "./jobs/handlers/notifications-deliver.js";
 import { systemPingHandler } from "./jobs/handlers/system-ping.js";
+import {
+  parseBillingIntervalMs,
+  registerBillingRepeatableJobs,
+} from "./jobs/schedule-billing-jobs.js";
 import {
   createResendEmailNotificationProvider,
   isEmailDeliveryConfigured,
@@ -79,6 +85,18 @@ const notificationProviders = createProviderRegistry([
 ]);
 const notificationRenderer = createCodeNotificationRenderer();
 
+// Chapa verify for billing reconcile (same secret as HTTP API).
+const chapaPaymentService = createChapaPaymentService({
+  apiUrl: process.env.CHAPA_API_URL,
+  secretKey: process.env.CHAPA_SECRET_KEY,
+});
+
+if (!process.env.CHAPA_SECRET_KEY?.trim()) {
+  logger.warn(
+    "CHAPA_SECRET_KEY not set; billing.reconcile-payments will not be able to verify charges",
+  );
+}
+
 const worker = startPlatformWorker({
   redisUrl,
   db: platformDb.db,
@@ -92,18 +110,55 @@ const worker = startPlatformWorker({
     "billing.lifecycle": createBillingLifecycleHandler({
       db: platformDb.db,
     }) as JobHandler,
+    "billing.reconcile-payments": createBillingPaymentReconcileHandler({
+      db: platformDb.db,
+      verifyPayment: (txRef) => chapaPaymentService.verifyPayment(txRef),
+    }) as JobHandler,
   },
   logger,
 });
 
+const jobsClient = createJobsClient({
+  redisUrl,
+  db: platformDb.db,
+  logger,
+});
+
+void registerBillingRepeatableJobs({
+  jobsClient,
+  logger,
+  reconcileIntervalMs: parseBillingIntervalMs(
+    process.env.BILLING_RECONCILE_INTERVAL_MS,
+    5 * 60 * 1000,
+  ),
+  lifecycleIntervalMs: parseBillingIntervalMs(
+    process.env.BILLING_LIFECYCLE_INTERVAL_MS,
+    60 * 60 * 1000,
+  ),
+}).catch((error) => {
+  logger.warn(
+    { err: error instanceof Error ? error.message : String(error) },
+    "failed to register billing BullMQ repeatables",
+  );
+});
+
 logger.info(
-  { handlers: ["system.ping", "notifications.deliver", "billing.lifecycle"] },
+  {
+    handlers: [
+      "system.ping",
+      "notifications.deliver",
+      "billing.lifecycle",
+      "billing.reconcile-payments",
+    ],
+    schedule: "bullmq_repeatable",
+  },
   "platform worker started",
 );
 
 async function shutdown(signal: string) {
   logger.info({ signal }, "platform worker shutting down");
   try {
+    await jobsClient.close();
     await worker.close();
     await platformDb.pool.end();
   } catch (error) {

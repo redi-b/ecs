@@ -9,9 +9,12 @@ import {
   DEFAULT_REDIS_PREFIX,
 } from "./defaults.js";
 import {
+  findJobRunByIdempotency,
+  insertJobRun,
   markJobRunActive,
   markJobRunCompleted,
   markJobRunFailed,
+  setBullmqJobId,
 } from "./runs.js";
 import type { JobHandler, PlatformDb } from "./types.js";
 
@@ -34,7 +37,11 @@ export type StartPlatformWorkerOptions = {
 };
 
 export type PlatformJobData = {
-  jobRunId: string;
+  /**
+   * One-shot enqueues set this to the job_runs id.
+   * BullMQ repeatables leave it null; the worker inserts a row per fire.
+   */
+  jobRunId: string | null;
   tenantId: string | null;
   payload: unknown;
 };
@@ -42,6 +49,7 @@ export type PlatformJobData = {
 /** Minimal job surface used by the processor so tests can inject fakes. */
 export type PlatformWorkerJob = {
   name: string;
+  id?: string | null | undefined;
   data: PlatformJobData;
   attemptsMade: number;
   opts: {
@@ -102,9 +110,39 @@ export function createJobProcessor(
 
   return async function processJob(job: PlatformWorkerJob): Promise<unknown> {
     const name = job.name;
-    const { jobRunId, payload } = job.data;
+    const payload = job.data.payload;
     const tenantId = job.data.tenantId ?? null;
     const attempt = job.attemptsMade + 1;
+
+    // Repeatable jobs arrive without a pre-created job_runs row.
+    let jobRunId = job.data.jobRunId?.trim() || null;
+    if (!jobRunId) {
+      if (!options.lifecycle) {
+        const idempotencyKey = job.id ? `bullmq:${job.id}` : undefined;
+        // Retries re-use the same BullMQ job id — reuse the job_runs row.
+        if (idempotencyKey) {
+          const existing = await findJobRunByIdempotency(options.db, name, idempotencyKey);
+          if (existing) {
+            jobRunId = existing.id;
+          }
+        }
+        if (!jobRunId) {
+          const run = await insertJobRun(options.db, {
+            name,
+            tenantId,
+            payload: payload ?? {},
+            ...(idempotencyKey ? { idempotencyKey } : {}),
+          });
+          jobRunId = run.id;
+          if (job.id) {
+            await setBullmqJobId(options.db, jobRunId, job.id);
+          }
+        }
+      } else {
+        // Unit tests inject lifecycle without DB insert support.
+        jobRunId = job.id?.trim() || `synthetic:${name}:${attempt}`;
+      }
+    }
 
     const handler = resolveHandler(handlers, name);
     if (!handler) {
