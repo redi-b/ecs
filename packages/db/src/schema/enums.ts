@@ -48,6 +48,13 @@ export const mediaResourceType = pgEnum("media_usage_resource_type", [
   "other",
 ]);
 
+export const telegramConnectSessionStatus = pgEnum("telegram_connect_session_status", [
+  "pending",
+  "consumed",
+  "expired",
+  "cancelled",
+]);
+
 export const jobRunStatus = pgEnum("job_run_status", [
   "queued",
   "active",

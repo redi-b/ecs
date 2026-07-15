@@ -1,5 +1,10 @@
 import type { createPlatformDb } from "@ecs/db";
-import { auditLogs, notificationLogs, notificationPreferences } from "@ecs/db";
+import {
+  auditLogs,
+  notificationDestinations,
+  notificationLogs,
+  notificationPreferences,
+} from "@ecs/db";
 import type { EnqueueJobInput, EnqueueJobResult } from "@ecs/jobs";
 import { and, eq } from "drizzle-orm";
 
@@ -114,6 +119,8 @@ export function createNotificationService(
       payload?: unknown;
       tenantId: string;
     }): Promise<NotificationEventRecordResult> => {
+      // Email (and legacy preference rows) still use notification_preferences.
+      // Telegram multi-connect uses notification_destinations.
       const preferences = await db
         .select()
         .from(notificationPreferences)
@@ -124,9 +131,37 @@ export function createNotificationService(
           ),
         );
 
-      const matchingPreferences = getMatchingPreferences(preferences, input.eventType);
+      const matchingPreferences = getMatchingPreferences(preferences, input.eventType).filter(
+        (preference) => preference.channel !== "telegram",
+      );
 
-      if (matchingPreferences.length === 0) {
+      const destinations = await db
+        .select()
+        .from(notificationDestinations)
+        .where(
+          and(
+            eq(notificationDestinations.tenantId, input.tenantId),
+            eq(notificationDestinations.enabled, true),
+          ),
+        );
+
+      const matchingDestinations = destinations.filter((destination) =>
+        eventMatchesPreference(destination.events, input.eventType),
+      );
+
+      type DeliveryTarget = { channel: string; recipient: string };
+      const targets: DeliveryTarget[] = [
+        ...matchingPreferences.map((preference) => ({
+          channel: preference.channel,
+          recipient: preference.target,
+        })),
+        ...matchingDestinations.map((destination) => ({
+          channel: destination.channel,
+          recipient: destination.target,
+        })),
+      ];
+
+      if (targets.length === 0) {
         return {
           ok: true,
           logCount: 0,
@@ -142,11 +177,11 @@ export function createNotificationService(
       const inserted = await db
         .insert(notificationLogs)
         .values(
-          matchingPreferences.map((preference) => ({
+          targets.map((target) => ({
             tenantId: input.tenantId,
             eventType: input.eventType,
-            channel: preference.channel,
-            recipient: preference.target,
+            channel: target.channel,
+            recipient: target.recipient,
             status: "pending" as const,
             payload,
           })),
@@ -183,12 +218,14 @@ export function createNotificationService(
       };
     },
     /**
-     * Send a test notification for one channel (uses log provider until real channels ship).
-     * Does not require notification.test in preference events — creates a delivery attempt directly.
+     * Send a test notification for one channel/destination.
+     * Telegram: uses notification_destinations (optional destinationId).
+     * Email: uses notification_preferences.
      */
     sendTestNotification: async (input: {
       channel: string;
       tenantId: string;
+      destinationId?: string;
     }): Promise<
       | { ok: true; logId: string; jobEnqueued: boolean }
       | {
@@ -202,19 +239,53 @@ export function createNotificationService(
         return { ok: false, error: "notification_channel_invalid", status: 400 };
       }
 
-      const [preference] = await db
-        .select()
-        .from(notificationPreferences)
-        .where(
-          and(
-            eq(notificationPreferences.tenantId, input.tenantId),
-            eq(notificationPreferences.channel, channel),
-            eq(notificationPreferences.enabled, true),
-          ),
-        )
-        .limit(1);
+      let recipient: string | null = null;
 
-      if (!preference) {
+      if (channel === "telegram") {
+        if (input.destinationId?.trim()) {
+          const [destination] = await db
+            .select()
+            .from(notificationDestinations)
+            .where(
+              and(
+                eq(notificationDestinations.id, input.destinationId.trim()),
+                eq(notificationDestinations.tenantId, input.tenantId),
+                eq(notificationDestinations.channel, "telegram"),
+                eq(notificationDestinations.enabled, true),
+              ),
+            )
+            .limit(1);
+          recipient = destination?.target ?? null;
+        } else {
+          const [destination] = await db
+            .select()
+            .from(notificationDestinations)
+            .where(
+              and(
+                eq(notificationDestinations.tenantId, input.tenantId),
+                eq(notificationDestinations.channel, "telegram"),
+                eq(notificationDestinations.enabled, true),
+              ),
+            )
+            .limit(1);
+          recipient = destination?.target ?? null;
+        }
+      } else {
+        const [preference] = await db
+          .select()
+          .from(notificationPreferences)
+          .where(
+            and(
+              eq(notificationPreferences.tenantId, input.tenantId),
+              eq(notificationPreferences.channel, channel),
+              eq(notificationPreferences.enabled, true),
+            ),
+          )
+          .limit(1);
+        recipient = preference?.target ?? null;
+      }
+
+      if (!recipient) {
         return { ok: false, error: "notification_preference_missing", status: 404 };
       }
 
@@ -223,8 +294,8 @@ export function createNotificationService(
         .values({
           tenantId: input.tenantId,
           eventType: "notification.test",
-          channel: preference.channel,
-          recipient: preference.target,
+          channel,
+          recipient,
           status: "pending",
           payload: {
             source: "dashboard_test",

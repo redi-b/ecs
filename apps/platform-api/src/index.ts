@@ -31,6 +31,7 @@ import { createDeliverySettingsService } from "./modules/delivery/service.js";
 import { createDomainManagementService } from "./modules/domains/service.js";
 import { createMediaService } from "./modules/media/index.js";
 import { createNotificationService } from "./modules/notifications/service.js";
+import { createTelegramConnectService } from "./modules/notifications/telegram-connect.js";
 import { createTenantOnboardingService } from "./modules/onboarding/service.js";
 import { createPaymentOnboardingService } from "./modules/payments/payment-onboarding-service.js";
 import { createStorefrontTemplateService } from "./modules/storefront/template-service.js";
@@ -109,6 +110,21 @@ const notificationService = createNotificationService(platformDb.db, {
       }
     : {}),
 });
+
+const telegramBotToken = process.env.TELEGRAM_BOT_TOKEN?.trim() || "";
+const telegramBotUsername = process.env.TELEGRAM_BOT_USERNAME?.trim() || "";
+const telegramWebhookSecret = process.env.TELEGRAM_WEBHOOK_SECRET?.trim() || "";
+const telegramConnectService = createTelegramConnectService(
+  platformDb.db,
+  telegramBotToken && telegramBotUsername
+    ? { botToken: telegramBotToken, botUsername: telegramBotUsername }
+    : null,
+);
+if (telegramConnectService.isConfigured()) {
+  logger.info({ bot: telegramBotUsername }, "Telegram bot configured for notifications.");
+} else {
+  logger.warn("TELEGRAM_BOT_TOKEN/USERNAME not set; Telegram connect stays unavailable.");
+}
 const analyticsService = createAnalyticsService(createDrizzleAnalyticsEventStore(platformDb.db));
 const analyticsInsightsService = createAnalyticsInsightsService(
   createDrizzleAnalyticsInsightsStore(platformDb.db),
@@ -361,6 +377,15 @@ const app = createPlatformApp({
     platformDb.db,
   ),
   sendTestNotification: notificationService.sendTestNotification,
+  listTelegramDestinations: telegramConnectService.listDestinations,
+  createTelegramConnectSession: telegramConnectService.createConnectSession,
+  getTelegramConnectSession: telegramConnectService.getConnectSession,
+  cancelTelegramConnectSession: telegramConnectService.cancelConnectSession,
+  removeTelegramDestination: telegramConnectService.removeDestination,
+  setTelegramDestinationEnabled: telegramConnectService.setDestinationEnabled,
+  setTelegramSharedEvents: telegramConnectService.setSharedEvents,
+  handleTelegramWebhook: telegramConnectService.handleWebhookUpdate,
+  telegramWebhookSecret: telegramWebhookSecret || undefined,
   reviewPaymentOnboarding: paymentOnboardingService.reviewPaymentOnboarding,
   retryTenantShopProvisioningAttempt,
   selectStorefrontTemplate: storefrontTemplateService.selectStorefrontTemplate,

@@ -85,6 +85,13 @@
       "when": 1784042062571,
       "tag": "0011_luxuriant_princess_powerful",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1784102713762,
+      "tag": "0012_talented_ego",
+      "breakpoints": true
     }
   ]
 }

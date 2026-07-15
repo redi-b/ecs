@@ -51,6 +51,11 @@ const PLATFORM_ERROR_MESSAGES: Record<string, string> = {
   notification_preference_missing:
     "Save an enabled channel target before sending a test notification.",
   notification_channel_invalid: "Choose email or Telegram as the channel.",
+  telegram_not_configured:
+    "Telegram is not configured on the server. Add TELEGRAM_BOT_TOKEN and TELEGRAM_BOT_USERNAME.",
+  telegram_destination_limit: "You can connect up to 10 Telegram accounts per shop.",
+  session_not_found: "That connect link expired. Start Connect Telegram again.",
+  destination_not_found: "That Telegram connection was not found.",
   billing_not_found: "Billing is not active for this shop yet.",
   billing_unavailable: "Billing is temporarily unavailable.",
   template_not_found: "That storefront template could not be found.",

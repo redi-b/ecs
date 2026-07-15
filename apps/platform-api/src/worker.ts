@@ -7,6 +7,7 @@ import { createNotificationsDeliverHandler } from "./jobs/handlers/notifications
 import { systemPingHandler } from "./jobs/handlers/system-ping.js";
 import { createLogNotificationProvider } from "./modules/notifications/providers/log-provider.js";
 import { createProviderRegistry } from "./modules/notifications/providers/registry.js";
+import { createTelegramNotificationProvider } from "./modules/notifications/providers/telegram-provider.js";
 import { createCodeNotificationRenderer } from "./modules/notifications/renderer.js";
 
 loadPlatformApiEnvFiles();
@@ -44,9 +45,20 @@ const logProvider = (channel: string) =>
     },
   });
 
+const telegramBotToken = process.env.TELEGRAM_BOT_TOKEN?.trim() || "";
+const telegramProvider = telegramBotToken
+  ? createTelegramNotificationProvider({ botToken: telegramBotToken })
+  : logProvider("telegram");
+
+if (telegramBotToken) {
+  logger.info("Telegram notification provider enabled");
+} else {
+  logger.warn("TELEGRAM_BOT_TOKEN not set; telegram deliveries use log provider");
+}
+
 const notificationProviders = createProviderRegistry([
   logProvider("email"),
-  logProvider("telegram"),
+  telegramProvider,
 ]);
 const notificationRenderer = createCodeNotificationRenderer();
 

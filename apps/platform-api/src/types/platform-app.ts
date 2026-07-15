@@ -570,6 +570,7 @@ export type PlatformAppOptions = {
     | ((input: {
         channel: string;
         tenantId: string;
+        destinationId?: string;
       }) => Promise<
         | { ok: true; logId: string; jobEnqueued: boolean }
         | {
@@ -579,6 +580,89 @@ export type PlatformAppOptions = {
           }
       >)
     | undefined;
+  listTelegramDestinations?:
+    | ((input: { tenantId: string }) => Promise<{
+        destinations: Array<{
+          id: string;
+          label: string;
+          username: string | null;
+          enabled: boolean;
+          events: string[];
+          connectedAt: string;
+        }>;
+      }>)
+    | undefined;
+  createTelegramConnectSession?:
+    | ((input: { tenantId: string; userId: string }) => Promise<
+        | {
+            ok: true;
+            session: {
+              id: string;
+              status: string;
+              expiresAt: string;
+              deepLink: string;
+            };
+          }
+        | { ok: false; error: string; status: number }
+      >)
+    | undefined;
+  getTelegramConnectSession?:
+    | ((input: { tenantId: string; sessionId: string }) => Promise<
+        | {
+            ok: true;
+            session: {
+              id: string;
+              status: string;
+              expiresAt: string;
+              deepLink: string | null;
+            };
+          }
+        | { ok: false; error: string; status: number }
+      >)
+    | undefined;
+  cancelTelegramConnectSession?:
+    | ((input: {
+        tenantId: string;
+        sessionId: string;
+      }) => Promise<{ ok: true } | { ok: false; error: string; status: number }>)
+    | undefined;
+  removeTelegramDestination?:
+    | ((input: {
+        tenantId: string;
+        destinationId: string;
+      }) => Promise<{ ok: true } | { ok: false; error: string; status: number }>)
+    | undefined;
+  setTelegramDestinationEnabled?:
+    | ((input: {
+        tenantId: string;
+        destinationId: string;
+        enabled: boolean;
+      }) => Promise<
+        | {
+            ok: true;
+            destination: {
+              id: string;
+              label: string;
+              username: string | null;
+              enabled: boolean;
+              events: string[];
+              connectedAt: string;
+            };
+          }
+        | { ok: false; error: string; status: number }
+      >)
+    | undefined;
+  setTelegramSharedEvents?:
+    | ((input: {
+        tenantId: string;
+        events: string[];
+      }) => Promise<
+        | { ok: true; events: string[] }
+        | { ok: false; error: string; status: number }
+      >)
+    | undefined;
+  handleTelegramWebhook?: ((update: unknown) => Promise<unknown>) | undefined;
+  telegramWebhookSecret?: string | undefined;
   upsertNotificationPreference?:
     | ((input: {
         channel: string;

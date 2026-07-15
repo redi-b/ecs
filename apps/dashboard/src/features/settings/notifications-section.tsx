@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
+import { useCallback, useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -11,28 +11,10 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
+import { TelegramConnectPanel } from "@/features/settings/telegram-connect-panel";
 import type { NotificationPreference } from "@/lib/merchant-notifications";
 import { mapPlatformErrorMessage } from "@/lib/platform-api/errors";
 import { cn } from "@/lib/utils";
-
-const CHANNELS = [
-  {
-    id: "email" as const,
-    label: "Email",
-    description: "Operational alerts to a merchant inbox. Real SMTP comes later; tests use the log provider.",
-    targetLabel: "Recipient email",
-    targetPlaceholder: "owner@example.com",
-    targetType: "email",
-  },
-  {
-    id: "telegram" as const,
-    label: "Telegram",
-    description: "Chat ID for bot delivery. Connect flow later; paste chat ID for now.",
-    targetLabel: "Telegram chat ID",
-    targetPlaceholder: "123456789",
-    targetType: "text",
-  },
-] as const;
 
 const EVENT_OPTIONS = [
   { id: "order.created", label: "New orders" },
@@ -42,18 +24,15 @@ const EVENT_OPTIONS = [
   { id: "cod_order.created", label: "COD orders" },
 ] as const;
 
-/** Always included so test sends and future defaults stay valid on the API. */
 const ALWAYS_ON_EVENTS = ["notification.test"] as const;
 
-type ChannelId = (typeof CHANNELS)[number]["id"];
-
-type ChannelDraft = {
+type EmailDraft = {
   enabled: boolean;
   target: string;
   events: string[];
 };
 
-function emptyDraft(): ChannelDraft {
+function emptyEmailDraft(): EmailDraft {
   return {
     enabled: true,
     target: "",
@@ -61,13 +40,10 @@ function emptyDraft(): ChannelDraft {
   };
 }
 
-function draftFromPreferences(
-  channel: ChannelId,
-  preferences: NotificationPreference[],
-): ChannelDraft {
-  const match = preferences.find((preference) => preference.channel === channel);
+function draftFromPreferences(preferences: NotificationPreference[]): EmailDraft {
+  const match = preferences.find((preference) => preference.channel === "email");
   if (!match) {
-    return emptyDraft();
+    return emptyEmailDraft();
   }
 
   const events = match.events.includes("*")
@@ -89,11 +65,7 @@ export function NotificationsSection({ tenantId }: { tenantId: string }) {
   const [preferences, setPreferences] = useState<NotificationPreference[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [drafts, setDrafts] = useState<Record<ChannelId, ChannelDraft>>({
-    email: emptyDraft(),
-    telegram: emptyDraft(),
-  });
-  const [pendingChannel, setPendingChannel] = useState<ChannelId | null>(null);
+  const [draft, setDraft] = useState<EmailDraft>(emptyEmailDraft());
   const [isPending, startTransition] = useTransition();
 
   const load = useCallback(async () => {
@@ -122,50 +94,23 @@ export function NotificationsSection({ tenantId }: { tenantId: string }) {
         ? (data.preferences as NotificationPreference[])
         : [];
       setPreferences(list);
-      setDrafts({
-        email: draftFromPreferences("email", list),
-        telegram: draftFromPreferences("telegram", list),
-      });
+      setDraft(draftFromPreferences(list));
     } catch {
       setLoadError(mapPlatformErrorMessage("platform_request_failed"));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [tenantId]);
 
   useEffect(() => {
     void load();
-  }, [load, tenantId]);
+  }, [load]);
 
-  const configuredChannels = useMemo(
-    () => new Set(preferences.filter((p) => p.enabled).map((p) => p.channel)),
-    [preferences],
-  );
+  const emailConfigured = preferences.some((p) => p.channel === "email" && p.enabled);
 
-  function updateDraft(channel: ChannelId, patch: Partial<ChannelDraft>) {
-    setDrafts((current) => ({
-      ...current,
-      [channel]: { ...current[channel], ...patch },
-    }));
-  }
-
-  function toggleEvent(channel: ChannelId, eventId: string, checked: boolean) {
-    setDrafts((current) => {
-      const draft = current[channel];
-      const events = checked
-        ? [...new Set([...draft.events, eventId])]
-        : draft.events.filter((id) => id !== eventId);
-      return {
-        ...current,
-        [channel]: { ...draft, events },
-      };
-    });
-  }
-
-  function saveChannel(channel: ChannelId) {
-    const draft = drafts[channel];
+  function saveEmail() {
     if (!draft.target.trim()) {
-      toast.error("Enter a destination before saving.");
+      toast.error("Enter an email before saving.");
       return;
     }
     if (draft.events.length === 0) {
@@ -173,7 +118,6 @@ export function NotificationsSection({ tenantId }: { tenantId: string }) {
       return;
     }
 
-    setPendingChannel(channel);
     startTransition(async () => {
       try {
         const response = await fetch(
@@ -186,7 +130,7 @@ export function NotificationsSection({ tenantId }: { tenantId: string }) {
             },
             body: JSON.stringify({
               action: "upsert",
-              channel,
+              channel: "email",
               enabled: draft.enabled,
               target: draft.target.trim(),
               events: buildEventsPayload(draft.events),
@@ -204,18 +148,15 @@ export function NotificationsSection({ tenantId }: { tenantId: string }) {
           toast.error(mapPlatformErrorMessage(code));
           return;
         }
-        toast.success(`${CHANNELS.find((c) => c.id === channel)?.label ?? channel} saved`);
+        toast.success("Email channel saved");
         await load();
       } catch {
         toast.error(mapPlatformErrorMessage("platform_request_failed"));
-      } finally {
-        setPendingChannel(null);
       }
     });
   }
 
-  function sendTest(channel: ChannelId) {
-    setPendingChannel(channel);
+  function sendEmailTest() {
     startTransition(async () => {
       try {
         const response = await fetch(
@@ -228,7 +169,7 @@ export function NotificationsSection({ tenantId }: { tenantId: string }) {
             },
             body: JSON.stringify({
               action: "test",
-              channel,
+              channel: "email",
             }),
           },
         );
@@ -243,16 +184,13 @@ export function NotificationsSection({ tenantId }: { tenantId: string }) {
           toast.error(mapPlatformErrorMessage(code));
           return;
         }
-        const enqueued = data?.jobEnqueued === true;
         toast.success(
-          enqueued
-            ? "Test queued. With the platform worker running, the log provider will mark it sent."
+          data?.jobEnqueued
+            ? "Test queued. Email still uses the log provider (no real SMTP yet)."
             : "Test log created. Start Redis + platform worker to process delivery.",
         );
       } catch {
         toast.error(mapPlatformErrorMessage("platform_request_failed"));
-      } finally {
-        setPendingChannel(null);
       }
     });
   }
@@ -280,115 +218,113 @@ export function NotificationsSection({ tenantId }: { tenantId: string }) {
   return (
     <div className="flex flex-col gap-4">
       <Alert>
-        <AlertTitle>Delivery uses the log provider for now</AlertTitle>
+        <AlertTitle>Telegram is live; email is still log-only</AlertTitle>
         <AlertDescription>
-          Email and Telegram are not sending real messages yet. Saving preferences and sending a
-          test still exercises the jobs pipeline: pending log → worker → <code>sent</code> with a
-          log reference. Wire real providers later without changing this screen.
+          Connect Telegram accounts with the bot (no chat ID). Real email delivery comes later —
+          email test still goes through the jobs pipeline with the log provider.
         </AlertDescription>
       </Alert>
 
-      {CHANNELS.map((channel) => {
-        const draft = drafts[channel.id];
-        const busy = isPending && pendingChannel === channel.id;
-        const configured = configuredChannels.has(channel.id);
+      <TelegramConnectPanel tenantId={tenantId} />
 
-        return (
-          <Card key={channel.id}>
-            <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0">
-              <div className="space-y-1">
-                <CardTitle className="text-base">{channel.label}</CardTitle>
-                <CardDescription>{channel.description}</CardDescription>
-              </div>
-              <Badge variant={configured && draft.enabled ? "secondary" : "outline"}>
-                {configured && draft.enabled ? "Enabled" : "Not active"}
-              </Badge>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-5">
-              <div className="flex items-center justify-between gap-3 rounded-lg border px-3 py-2">
-                <div>
-                  <p className="text-sm font-medium">Enabled</p>
-                  <p className="text-xs text-muted-foreground">
-                    When off, no deliveries are created for this channel.
-                  </p>
-                </div>
-                <Switch
-                  checked={draft.enabled}
-                  disabled={busy}
-                  onCheckedChange={(checked) => updateDraft(channel.id, { enabled: checked })}
-                />
-              </div>
+      <Card>
+        <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0">
+          <div className="space-y-1">
+            <CardTitle className="text-base">Email</CardTitle>
+            <CardDescription>
+              Operational alerts to a merchant inbox. SMTP/provider integration is deferred.
+            </CardDescription>
+          </div>
+          <Badge variant={emailConfigured && draft.enabled ? "secondary" : "outline"}>
+            {emailConfigured && draft.enabled ? "Enabled" : "Not active"}
+          </Badge>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-5">
+          <div className="flex items-center justify-between gap-3 rounded-lg border px-3 py-2">
+            <div>
+              <p className="text-sm font-medium">Enabled</p>
+              <p className="text-xs text-muted-foreground">
+                When off, no email deliveries are created.
+              </p>
+            </div>
+            <Switch
+              checked={draft.enabled}
+              disabled={isPending}
+              onCheckedChange={(checked) => setDraft((current) => ({ ...current, enabled: checked }))}
+            />
+          </div>
 
-              <FieldGroup>
-                <Field>
-                  <FieldLabel htmlFor={`notif-target-${channel.id}`}>{channel.targetLabel}</FieldLabel>
-                  <Input
-                    id={`notif-target-${channel.id}`}
-                    type={channel.targetType}
-                    value={draft.target}
-                    disabled={busy}
-                    placeholder={channel.targetPlaceholder}
-                    onChange={(event) => updateDraft(channel.id, { target: event.target.value })}
-                  />
-                  <FieldDescription>
-                    Stored as the delivery target. Real provider integration will use the same field.
-                  </FieldDescription>
-                </Field>
-              </FieldGroup>
+          <FieldGroup>
+            <Field>
+              <FieldLabel htmlFor="notif-email-target">Recipient email</FieldLabel>
+              <Input
+                id="notif-email-target"
+                type="email"
+                value={draft.target}
+                disabled={isPending}
+                placeholder="owner@example.com"
+                onChange={(event) =>
+                  setDraft((current) => ({ ...current, target: event.target.value }))
+                }
+              />
+              <FieldDescription>Used when email provider is wired.</FieldDescription>
+            </Field>
+          </FieldGroup>
 
-              <div className="space-y-2">
-                <p className="text-sm font-medium">Events</p>
-                <p className="text-xs text-muted-foreground">
-                  Choose which commerce events create deliveries for this channel.
-                </p>
-                <div className="grid gap-2 sm:grid-cols-2">
-                  {EVENT_OPTIONS.map((event) => {
-                    const checked = draft.events.includes(event.id);
-                    return (
-                      <label
-                        key={event.id}
-                        className={cn(
-                          "flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm",
-                          checked ? "border-primary/40 bg-primary/5" : "border-border",
-                        )}
-                      >
-                        <Checkbox
-                          checked={checked}
-                          disabled={busy}
-                          onCheckedChange={(value) =>
-                            toggleEvent(channel.id, event.id, value === true)
-                          }
-                        />
-                        <span>{event.label}</span>
-                      </label>
-                    );
-                  })}
-                </div>
-              </div>
+          <div className="space-y-2">
+            <p className="text-sm font-medium">Events</p>
+            <div className="grid gap-2 sm:grid-cols-2">
+              {EVENT_OPTIONS.map((event) => {
+                const checked = draft.events.includes(event.id);
+                return (
+                  <label
+                    key={event.id}
+                    className={cn(
+                      "flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm",
+                      checked ? "border-primary/40 bg-primary/5" : "border-border",
+                    )}
+                  >
+                    <Checkbox
+                      checked={checked}
+                      disabled={isPending}
+                      onCheckedChange={(value) =>
+                        setDraft((current) => ({
+                          ...current,
+                          events:
+                            value === true
+                              ? [...new Set([...current.events, event.id])]
+                              : current.events.filter((id) => id !== event.id),
+                        }))
+                      }
+                    />
+                    <span>{event.label}</span>
+                  </label>
+                );
+              })}
+            </div>
+          </div>
 
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  className="rounded-full"
-                  disabled={busy}
-                  type="button"
-                  onClick={() => saveChannel(channel.id)}
-                >
-                  {busy ? "Saving…" : "Save channel"}
-                </Button>
-                <Button
-                  className="rounded-full"
-                  disabled={busy || !configured}
-                  type="button"
-                  variant="outline"
-                  onClick={() => sendTest(channel.id)}
-                >
-                  Send test
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        );
-      })}
+          <div className="flex flex-wrap gap-2">
+            <Button
+              className="rounded-full"
+              disabled={isPending}
+              type="button"
+              onClick={saveEmail}
+            >
+              {isPending ? "Saving…" : "Save email"}
+            </Button>
+            <Button
+              className="rounded-full"
+              disabled={isPending || !emailConfigured}
+              type="button"
+              variant="outline"
+              onClick={sendEmailTest}
+            >
+              Send test
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
