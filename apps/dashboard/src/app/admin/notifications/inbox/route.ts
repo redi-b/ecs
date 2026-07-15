@@ -12,13 +12,15 @@ export async function GET(request: Request) {
     const url = new URL(request.url);
     const unreadOnly = url.searchParams.get("unreadOnly") === "true";
     const countOnly = url.searchParams.get("countOnly") === "true";
+    const common = {
+      cookieHeader: context.cookieHeader,
+      platformApiBaseUrl: context.platformApiBaseUrl,
+      requestHost: context.requestHost,
+      tenantId: context.tenantId,
+    };
 
     if (countOnly) {
-      const result = await countInAppNotificationUnread({
-        cookieHeader: context.cookieHeader,
-        platformApiBaseUrl: context.platformApiBaseUrl,
-        tenantId: context.tenantId,
-      });
+      const result = await countInAppNotificationUnread(common);
       if (!result.ok) {
         return {
           ok: false,
@@ -30,9 +32,7 @@ export async function GET(request: Request) {
     }
 
     const result = await listInAppNotifications({
-      cookieHeader: context.cookieHeader,
-      platformApiBaseUrl: context.platformApiBaseUrl,
-      tenantId: context.tenantId,
+      ...common,
       unreadOnly,
     });
     if (!result.ok) {
@@ -53,13 +53,15 @@ export async function POST(request: Request) {
       id?: unknown;
     };
     const action = typeof body.action === "string" ? body.action : "";
+    const common = {
+      cookieHeader: context.cookieHeader,
+      platformApiBaseUrl: context.platformApiBaseUrl,
+      requestHost: context.requestHost,
+      tenantId: context.tenantId,
+    };
 
     if (action === "read-all") {
-      const result = await markAllInAppNotificationsRead({
-        cookieHeader: context.cookieHeader,
-        platformApiBaseUrl: context.platformApiBaseUrl,
-        tenantId: context.tenantId,
-      });
+      const result = await markAllInAppNotificationsRead(common);
       if (!result.ok) {
         return {
           ok: false,
@@ -76,10 +78,8 @@ export async function POST(request: Request) {
         return { ok: false, message: mapPlatformErrorMessage("not_found"), status: 404 };
       }
       const result = await markInAppNotificationRead({
-        cookieHeader: context.cookieHeader,
+        ...common,
         id,
-        platformApiBaseUrl: context.platformApiBaseUrl,
-        tenantId: context.tenantId,
       });
       if (!result.ok) {
         return {

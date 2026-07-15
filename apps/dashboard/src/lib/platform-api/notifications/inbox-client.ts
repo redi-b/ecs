@@ -15,6 +15,14 @@ export type InAppNotificationItem = {
   createdAt: string;
 };
 
+type InboxRequestOptions = {
+  cookieHeader?: string | null;
+  platformApiBaseUrl: string;
+  /** Shop host for host-scoped merchant APIs (required when tenantId is omitted). */
+  requestHost?: string | null;
+  tenantId?: string | null;
+};
+
 function inboxUrl(
   platformApiBaseUrl: string,
   tenantId: string | null | undefined,
@@ -27,6 +35,14 @@ function inboxUrl(
   return new URL(path.replace(/^\//, ""), normalizeBaseUrl(platformApiBaseUrl));
 }
 
+function platformHeaders(options: InboxRequestOptions) {
+  return createPlatformHeaders({
+    contentType: "json",
+    cookieHeader: options.cookieHeader,
+    requestHost: options.requestHost,
+  });
+}
+
 async function parseError(response: Response, data: unknown) {
   const error = platformErrorSchema.safeParse(data);
   return {
@@ -36,12 +52,9 @@ async function parseError(response: Response, data: unknown) {
   };
 }
 
-export async function listInAppNotifications(options: {
-  cookieHeader?: string | null;
-  platformApiBaseUrl: string;
-  tenantId?: string | null;
-  unreadOnly?: boolean;
-}): Promise<
+export async function listInAppNotifications(
+  options: InboxRequestOptions & { unreadOnly?: boolean },
+): Promise<
   | { ok: true; items: InAppNotificationItem[] }
   | { ok: false; message: string; status: number }
 > {
@@ -52,10 +65,7 @@ export async function listInAppNotifications(options: {
 
   const response = await fetch(url, {
     cache: "no-store",
-    headers: createPlatformHeaders({
-      contentType: "json",
-      cookieHeader: options.cookieHeader,
-    }),
+    headers: platformHeaders(options),
   }).catch(() => null);
 
   if (!response) {
@@ -71,19 +81,14 @@ export async function listInAppNotifications(options: {
   return { ok: true, items };
 }
 
-export async function countInAppNotificationUnread(options: {
-  cookieHeader?: string | null;
-  platformApiBaseUrl: string;
-  tenantId?: string | null;
-}): Promise<{ ok: true; count: number } | { ok: false; message: string; status: number }> {
+export async function countInAppNotificationUnread(
+  options: InboxRequestOptions,
+): Promise<{ ok: true; count: number } | { ok: false; message: string; status: number }> {
   const response = await fetch(
     inboxUrl(options.platformApiBaseUrl, options.tenantId, "unread-count"),
     {
       cache: "no-store",
-      headers: createPlatformHeaders({
-        contentType: "json",
-        cookieHeader: options.cookieHeader,
-      }),
+      headers: platformHeaders(options),
     },
   ).catch(() => null);
 
@@ -98,21 +103,15 @@ export async function countInAppNotificationUnread(options: {
   return { ok: true, count };
 }
 
-export async function markInAppNotificationRead(options: {
-  cookieHeader?: string | null;
-  id: string;
-  platformApiBaseUrl: string;
-  tenantId?: string | null;
-}): Promise<{ ok: true } | { ok: false; message: string; status: number }> {
+export async function markInAppNotificationRead(
+  options: InboxRequestOptions & { id: string },
+): Promise<{ ok: true } | { ok: false; message: string; status: number }> {
   const response = await fetch(
     inboxUrl(options.platformApiBaseUrl, options.tenantId, `${options.id}/read`),
     {
       method: "POST",
       cache: "no-store",
-      headers: createPlatformHeaders({
-        contentType: "json",
-        cookieHeader: options.cookieHeader,
-      }),
+      headers: platformHeaders(options),
       body: "{}",
     },
   ).catch(() => null);
@@ -127,20 +126,15 @@ export async function markInAppNotificationRead(options: {
   return { ok: true };
 }
 
-export async function markAllInAppNotificationsRead(options: {
-  cookieHeader?: string | null;
-  platformApiBaseUrl: string;
-  tenantId?: string | null;
-}): Promise<{ ok: true; updated: number } | { ok: false; message: string; status: number }> {
+export async function markAllInAppNotificationsRead(
+  options: InboxRequestOptions,
+): Promise<{ ok: true; updated: number } | { ok: false; message: string; status: number }> {
   const response = await fetch(
     inboxUrl(options.platformApiBaseUrl, options.tenantId, "read-all"),
     {
       method: "POST",
       cache: "no-store",
-      headers: createPlatformHeaders({
-        contentType: "json",
-        cookieHeader: options.cookieHeader,
-      }),
+      headers: platformHeaders(options),
       body: "{}",
     },
   ).catch(() => null);
