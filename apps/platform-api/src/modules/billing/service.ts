@@ -20,6 +20,11 @@ export const DEFAULT_PLAN_IDS = {
 /** Platform-billing Chapa tx_ref prefix (commerce order refs must never use this). */
 export const BILLING_CHAPA_TX_PREFIX = "ecs_bill_";
 
+/** Issue renewal invoices this many days before period end. */
+export const BILLING_RENEWAL_LEAD_DAYS = 7;
+
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
 export function isPlatformBillingTxRef(txRef: string) {
   return txRef.trim().toLowerCase().startsWith(BILLING_CHAPA_TX_PREFIX);
 }
@@ -219,8 +224,151 @@ export function createBillingService(db: PlatformDb) {
       };
     },
 
+    /**
+     * Per-tenant maintenance: renewal invoices near period end, past_due when expired.
+     * Free plans are never touched. Safe to call on every billing read.
+     */
+    syncTenantBillingLifecycle: async (input: { tenantId: string }) => {
+      const [row] = await db
+        .select({
+          subscriptionId: subscriptions.id,
+          status: subscriptions.status,
+          planId: plans.id,
+          planPrice: plans.price,
+          currentPeriodEnd: subscriptions.currentPeriodEnd,
+        })
+        .from(subscriptions)
+        .innerJoin(plans, eq(plans.id, subscriptions.planId))
+        .where(eq(subscriptions.tenantId, input.tenantId))
+        .limit(1);
+
+      if (!row || isFreePlanPrice(row.planPrice)) {
+        return { renewed: false, pastDue: false };
+      }
+
+      const now = new Date();
+      let pastDue = false;
+      let renewed = false;
+
+      if (
+        row.currentPeriodEnd &&
+        row.currentPeriodEnd.getTime() <= now.getTime() &&
+        (row.status === "active" || row.status === "trialing")
+      ) {
+        await db
+          .update(subscriptions)
+          .set({ status: "past_due" })
+          .where(eq(subscriptions.id, row.subscriptionId));
+        pastDue = true;
+      }
+
+      const periodEnd = row.currentPeriodEnd;
+      if (periodEnd) {
+        const leadEnd = new Date(periodEnd.getTime() - BILLING_RENEWAL_LEAD_DAYS * MS_PER_DAY);
+        const inWindow = now.getTime() >= leadEnd.getTime();
+        if (inWindow) {
+          const invoiceResult = await self().ensurePendingPlanInvoice({
+            tenantId: input.tenantId,
+            subscriptionId: row.subscriptionId,
+            planId: row.planId,
+            planPrice: row.planPrice,
+          });
+          renewed = invoiceResult.created;
+        }
+      }
+
+      return { renewed, pastDue };
+    },
+
+    /**
+     * Ensure a pending invoice exists for a paid plan (upgrade or renewal).
+     */
+    ensurePendingPlanInvoice: async (input: {
+      tenantId: string;
+      subscriptionId: string;
+      planId: string;
+      planPrice: string;
+    }): Promise<{ created: boolean; invoiceId: string | null }> => {
+      if (isFreePlanPrice(input.planPrice)) {
+        return { created: false, invoiceId: null };
+      }
+
+      const [existing] = await db
+        .select(selectInvoiceFields())
+        .from(invoices)
+        .where(
+          and(
+            eq(invoices.tenantId, input.tenantId),
+            eq(invoices.status, "pending"),
+            eq(invoices.amount, input.planPrice),
+            eq(invoices.currency, "ETB"),
+          ),
+        )
+        .orderBy(desc(invoices.createdAt))
+        .limit(1);
+
+      if (existing) {
+        if (!existing.provider?.startsWith("plan:")) {
+          await db
+            .update(invoices)
+            .set({ provider: `plan:${input.planId}` })
+            .where(eq(invoices.id, existing.id));
+        }
+        return { created: false, invoiceId: existing.id };
+      }
+
+      const now = new Date();
+      const dueAt = new Date(now);
+      dueAt.setUTCDate(dueAt.getUTCDate() + BILLING_RENEWAL_LEAD_DAYS);
+
+      const [created] = await db
+        .insert(invoices)
+        .values({
+          tenantId: input.tenantId,
+          subscriptionId: input.subscriptionId,
+          amount: input.planPrice,
+          currency: "ETB",
+          status: "pending",
+          dueAt,
+          paidAt: null,
+          provider: `plan:${input.planId}`,
+          providerReference: null,
+        })
+        .returning({ id: invoices.id });
+
+      return { created: Boolean(created), invoiceId: created?.id ?? null };
+    },
+
+    /**
+     * Sweep all paid subscriptions (worker entrypoint).
+     */
+    runBillingLifecycle: async () => {
+      const rows = await db
+        .select({
+          tenantId: subscriptions.tenantId,
+          planPrice: plans.price,
+        })
+        .from(subscriptions)
+        .innerJoin(plans, eq(plans.id, subscriptions.planId));
+
+      let scanned = 0;
+      let renewed = 0;
+      let pastDue = 0;
+
+      for (const row of rows) {
+        if (isFreePlanPrice(row.planPrice)) continue;
+        scanned += 1;
+        const result = await self().syncTenantBillingLifecycle({ tenantId: row.tenantId });
+        if (result.renewed) renewed += 1;
+        if (result.pastDue) pastDue += 1;
+      }
+
+      return { scanned, renewed, pastDue };
+    },
+
     getBillingStatus: async (input: { tenantId: string }): Promise<BillingStatusResult> => {
       await self().ensureFreeSubscription(input);
+      await self().syncTenantBillingLifecycle(input);
 
       const [subscription] = await db
         .select({
@@ -356,76 +504,43 @@ export function createBillingService(db: PlatformDb) {
       }
 
       const now = new Date();
+      // Allow renewal invoices inside the lead window or after period end.
+      const renewalCutoff = now.getTime() + BILLING_RENEWAL_LEAD_DAYS * MS_PER_DAY;
       const stillCovered =
         subscription.planId === plan.id &&
         subscription.status === "active" &&
         subscription.currentPeriodEnd != null &&
-        subscription.currentPeriodEnd > now;
+        subscription.currentPeriodEnd.getTime() > renewalCutoff;
 
       if (stillCovered) {
         return { ok: false, error: "billing_already_on_plan", status: 400 };
       }
 
-      // Reuse an open invoice for this plan amount if present.
-      const [existing] = await db
-        .select(selectInvoiceFields())
-        .from(invoices)
-        .where(
-          and(
-            eq(invoices.tenantId, input.tenantId),
-            eq(invoices.status, "pending"),
-            eq(invoices.amount, plan.price),
-            eq(invoices.currency, "ETB"),
-          ),
-        )
-        .orderBy(desc(invoices.createdAt))
-        .limit(1);
+      const ensured = await self().ensurePendingPlanInvoice({
+        tenantId: input.tenantId,
+        subscriptionId: subscription.id,
+        planId: plan.id,
+        planPrice: plan.price,
+      });
 
-      if (existing) {
-        return { ok: true, invoice: serializeInvoice(existing), reused: true };
-      }
-
-      const dueAt = new Date(now);
-      dueAt.setUTCDate(dueAt.getUTCDate() + 7);
-
-      const [created] = await db
-        .insert(invoices)
-        .values({
-          tenantId: input.tenantId,
-          subscriptionId: subscription.id,
-          amount: plan.price,
-          currency: "ETB",
-          status: "pending",
-          dueAt,
-          paidAt: null,
-          provider: null,
-          providerReference: null,
-        })
-        .returning(selectInvoiceFields());
-
-      if (!created) {
+      if (!ensured.invoiceId) {
         return { ok: false, error: "billing_not_found", status: 404 };
       }
-
-      // Store target plan id in provider field placeholder until pay init
-      // (provider becomes "chapa" on initialize). Target plan lives in reference prefix.
-      await db
-        .update(invoices)
-        .set({
-          provider: `plan:${plan.id}`,
-        })
-        .where(eq(invoices.id, created.id));
 
       const [row] = await db
         .select(selectInvoiceFields())
         .from(invoices)
-        .where(eq(invoices.id, created.id))
+        .where(eq(invoices.id, ensured.invoiceId))
         .limit(1);
+
+      if (!row) {
+        return { ok: false, error: "billing_not_found", status: 404 };
+      }
 
       return {
         ok: true,
-        invoice: serializeInvoice(row ?? created),
-        reused: false,
+        invoice: serializeInvoice(row),
+        reused: !ensured.created,
       };
     },
 

@@ -1,7 +1,7 @@
 # Billing v1: Free forever + Growth (Chapa)
 
 Date: 2026-07-15  
-Status: implementing
+Status: implemented (core + lifecycle)
 
 ## Decisions (product)
 
@@ -26,21 +26,45 @@ Upgrade to Growth
   → callback verify success
   → invoice paid + subscription plan=Growth, period extended, status=active
 
-Renewal (later / same path)
-  → issue pending invoice while on Growth
+Renewal (implemented)
+  → within 7 days of period end (or after end): pending renewal invoice
   → same Pay → Chapa → extend
+  → if period ended unpaid: status past_due (lazy on billing read + worker job)
 ```
 
 ## Free plan rules
 
 - Never create payment invoices for price=0 plans.
-- Trial credit invoices are optional historical; new shops get Free `active` without a pay path.
+- New shops get Free `active` without a pay path.
+- Legacy Starter `trialing` soft-migrates to free forever; paid-plan trials untouched.
 
 ## Chapa isolation
 
 - Commerce order `tx_ref` values do **not** use the `ecs_bill_` prefix.
 - Callback: if `tx_ref` starts with `ecs_bill_`, complete **platform invoice** payment; else existing Medusa capture.
 
-## Non-goals (v1)
+## Lifecycle
 
-- Operator mark paid, grace automation, suspend, multi-plan catalog UI polish, yearly only optional.
+| Trigger | Behavior |
+|---------|----------|
+| `getBillingStatus` / overview load | `syncTenantBillingLifecycle` for that tenant |
+| Worker job `billing.lifecycle` | Sweep all paid subscriptions |
+
+Renewal lead window: **7 days** before `currentPeriodEnd`.
+
+## Done
+
+- Free forever + Growth catalog
+- Upgrade invoice + Chapa pay + period extend
+- Billing page plan selection UX
+- Renewal invoice + past_due
+- Overview notices (paid only)
+
+## Still later (not v1)
+
+- Feature gates / enforcement when suspended
+- Grace period distinct from past_due
+- Suspend storefront automation
+- Operator cash tools
+- Scheduled cron that enqueues `billing.lifecycle` daily (handler exists; schedule ops TBD)
+- Billing email/Telegram dunning notifications
