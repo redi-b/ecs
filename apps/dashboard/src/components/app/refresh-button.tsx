@@ -18,8 +18,8 @@ export function RefreshButton({ label }: RefreshButtonProps) {
   const [isPending, startTransition] = useTransition();
   const RefreshIcon = AppIcons.refresh;
 
-  const resolvedLabel = label ?? t("common.refresh" as any);
-  const pendingLabel = t("common.refreshing" as any);
+  const resolvedLabel = label ?? t("common.refresh");
+  const pendingLabel = t("common.refreshing");
 
   return (
     <Tooltip>

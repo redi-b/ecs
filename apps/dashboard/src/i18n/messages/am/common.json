@@ -1,0 +1,38 @@
+{
+  "continue": "ቀጥል",
+  "back": "ተመለስ",
+  "save": "አስቀምጥ",
+  "cancel": "ይቅር",
+  "notSet": "አልተዘጋጀም",
+  "preview": "ቅድመ እይታ",
+  "total": "{count} በጠቅላላ",
+  "showingMerchant": "የነጋዴውን {label} እያሳየ ነው",
+  "noResults": "ምንም ውጤት አልተገኘም",
+  "showingRange": "ከ{count} ውስጥ ከ{from}–{to} እያሳየ ነው",
+  "clearSearch": "ፍለጋውን አጽዳ",
+  "search": "ፈልግ",
+  "refresh": "አድስ",
+  "refreshing": "በማደስ ላይ...",
+  "view": {
+    "table": "ሰንጠረዥ",
+    "tree": "ቅርንጫፍ"
+  },
+  "delete": "አጥፋ",
+  "deleting": "በማጥፋት ላይ...",
+  "and": "እና",
+  "pagination": {
+    "previous": "ቀዳሚ",
+    "previousAria": "ወደ ቀዳሚው ገጽ",
+    "next": "ቀጣይ",
+    "nextAria": "ወደ ቀጣዩ ገጽ",
+    "pageAria": "ገጽ {page}",
+    "pageOf": "ገጽ {current} ከ {total}"
+  },
+  "saving": "እየተቀመጠ ነው...",
+  "loadingProducts": "ምርቶች በመጫን ላይ...",
+  "selectProducts": "ምርቶችን ይምረጡ...",
+  "productSelected": "1 ምርት ተመርጧል",
+  "productsSelected": "{count} ምርቶች ተመርጠዋል",
+  "searchProducts": "ምርቶችን ይፈልጉ...",
+  "noMatchingProducts": "ምንም የሚዛመድ ምርት አልተገኘም።"
+}

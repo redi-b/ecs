@@ -8,7 +8,7 @@ import { ProductCategoriesTable } from "@/features/catalog-taxonomy/product-cate
 import { TaxonomyCreateDialog } from "@/features/catalog-taxonomy/taxonomy-create-dialog";
 import { getTaxonomyListErrorState } from "@/features/catalog-taxonomy/taxonomy-list-error-state";
 import type { MessageKey } from "@/i18n/messages";
-import { getRequestMessages } from "@/i18n/server";
+import { getTranslations } from "@/i18n/server";
 import {
   type DashboardSearchParams,
   getSelectedTenantId,
@@ -28,8 +28,7 @@ export default async function MerchantProductCategoriesPage({
   const resolvedSearchParams = (await searchParams) ?? {};
   const listParams = parseListSearchParams(resolvedSearchParams);
   const tenantId = getSelectedTenantId(resolvedSearchParams);
-  const { messages } = await getRequestMessages();
-  const t = (key: MessageKey) => messages[key];
+  const t = await getTranslations();
   const requestHeaders = await headers();
   const offset = (listParams.page - 1) * listParams.pageSize;
   const createCategoryAction = getTenantScopedPath(
@@ -61,7 +60,7 @@ export default async function MerchantProductCategoriesPage({
             namePlaceholder={t("taxonomy.create.namePlaceholder")}
             parentOptions={result.ok ? result.categories : []}
             queryKey="product-categories"
-            triggerLabel={t("categories.actions.new" as any)}
+            triggerLabel={t("categories.actions.new")}
           />
         </>
       }

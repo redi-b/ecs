@@ -1,0 +1,61 @@
+{
+  "title": "Orders",
+  "description": "Review orders, payment status, and fulfillment progress.",
+  "error": {
+    "loadTitle": "Orders could not be loaded"
+  },
+  "detail": {
+    "shellTitle": "Order details",
+    "shellDescription": "Review merchant-scoped customer, delivery, payment, fulfillment, and total details for this order.",
+    "notFoundTitle": "Order not found",
+    "notFoundDesc": "This order could not be found for the selected merchant context.",
+    "loadErrorTitle": "Order could not be loaded",
+    "loadErrorDesc": "The dashboard could not load this order. Refresh the page or try again later."
+  },
+  "table": {
+    "emptyTitle": "No orders yet",
+    "emptyMessage": "No orders have been placed for this merchant yet.",
+    "filteredEmptyTitle": "No matching orders",
+    "filteredEmptyMessage": "No orders match the current search or filters."
+  },
+  "filter": {
+    "lifecycle": {
+      "all": "All orders",
+      "open": "Open",
+      "completed": "Completed",
+      "canceled": "Canceled",
+      "needs_fulfillment": "Needs fulfillment",
+      "fulfilled": "Fulfilled",
+      "payment_pending": "Payment pending",
+      "paid": "Paid",
+      "label": "Lifecycle"
+    },
+    "payment": {
+      "all": "All payments",
+      "pending": "Pending",
+      "unpaid": "Unpaid",
+      "unknown": "Unknown",
+      "label": "Payment"
+    },
+    "fulfillment": {
+      "all": "All fulfillment",
+      "unfulfilled": "Unfulfilled",
+      "label": "Fulfillment"
+    },
+    "delivery": {
+      "all": "All delivery",
+      "delivery": "Delivery",
+      "pickup": "Pickup",
+      "none": "No delivery choice",
+      "label": "Delivery"
+    },
+    "created": {
+      "all": "All dates",
+      "today": "Today",
+      "last_7_days": "Last 7 days",
+      "last_30_days": "Last 30 days",
+      "no_date": "No date",
+      "label": "Created"
+    }
+  }
+}

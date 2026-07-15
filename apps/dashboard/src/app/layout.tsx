@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Noto_Sans_Ethiopic } from "next/font/google";
+import { getLocale, getMessages } from "next-intl/server";
 import type { ReactNode } from "react";
 
 import { AppProviders } from "@/components/providers/app-providers";
-import { getRequestMessages } from "@/i18n/server";
+import type { AppLocale } from "@/i18n/config";
+import type { Messages } from "@/i18n/messages";
 import { cn } from "@/lib/utils";
 
 import "./globals.css";
@@ -41,7 +43,8 @@ export const metadata: Metadata = {
 };
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
-  const { locale, messages } = await getRequestMessages();
+  const locale = (await getLocale()) as AppLocale;
+  const messages = (await getMessages()) as Messages;
   const isAmharic = locale === "am";
 
   return (

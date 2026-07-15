@@ -1,0 +1,53 @@
+{
+  "actions": {
+    "copyIdSuccess": "{entity} ID copied to clipboard.",
+    "copyIdsSuccess": "{count} IDs copied to clipboard.",
+    "copyFailed": "Could not copy. Try again.",
+    "copyIds": "Copy IDs",
+    "publish": "Publish",
+    "moveToDraft": "Move to draft",
+    "deleteSelected": "Delete selected",
+    "viewDetails": "View details",
+    "copyEmail": "Copy customer email",
+    "copyEmailSuccess": "Customer email copied to clipboard.",
+    "selectAllVisible": "Select all visible {entity}",
+    "selectRow": "Select {name}",
+    "openActionsFor": "Open actions for {name}",
+    "copyId": "Copy {entity} ID",
+    "copySuccess": "{label} copied.",
+    "copyEmpty": "Nothing to copy.",
+    "copyCodes": "Copy codes",
+    "copyCodesSuccess": "Promotion codes copied to clipboard.",
+    "deletePromotion": "Delete promotion",
+    "deletePromotionsQuestion": "Delete {count} promotions?",
+    "deletePromotionsDescription": "Selected promotion codes will stop working immediately. This cannot be undone.",
+    "deletePromotionQuestion": "Delete promotion?",
+    "deletePromotionDescription": "“{code}” will stop working immediately. This cannot be undone.",
+    "deleting": "Deleting...",
+    "copyPhone": "Copy phone number"
+  },
+  "empty": {
+    "noItems": "No items have been synced yet.",
+    "noItemsTitle": "No items yet",
+    "filteredNoItems": "No items match the current search or filters.",
+    "filteredNoItemsTitle": "No matching items"
+  },
+  "counts": {
+    "filtered": "{filteredCount} of {pageCount} on this page",
+    "unfiltered": "{pageCount} on this page, {totalCount} total"
+  },
+  "selectedCount": "{count} selected",
+  "headers": {
+    "order": "Order",
+    "customer": "Customer",
+    "total": "Total",
+    "payment": "Payment",
+    "fulfillment": "Fulfillment",
+    "status": "Status",
+    "created": "Created",
+    "joined": "Joined",
+    "discount": "Discount",
+    "usage": "Usage",
+    "schedule": "Schedule"
+  }
+}

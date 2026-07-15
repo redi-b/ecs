@@ -1,0 +1,48 @@
+{
+  "title": "Customers",
+  "description": "Understand buyers, maintain contact details, and support repeat customers.",
+  "error": {
+    "loadTitle": "Customers could not be loaded",
+    "loadDescription": "The customers list is temporarily unavailable. Refresh and try again."
+  },
+  "detail": {
+    "shellDescription": "Customer identity, contact information, groups, and saved addresses.",
+    "contact": "Contact",
+    "email": "Email",
+    "phone": "Phone",
+    "company": "Company",
+    "customerSince": "Customer since",
+    "groups": "Groups",
+    "addresses": "Addresses",
+    "noAddresses": "No saved addresses.",
+    "defaultAddressName": "Address",
+    "editCustomer": "Edit customer",
+    "addCustomer": "Add customer",
+    "formDesc": "Keep contact details current for orders, support, and follow-ups.",
+    "updateErrorTitle": "Customer could not be updated",
+    "createErrorTitle": "Customer could not be created",
+    "firstName": "First name",
+    "lastName": "Last name",
+    "emailDesc": "Used for receipts and account recovery.",
+    "companyPlaceholder": "Optional",
+    "error": {
+      "invalid": "Check the email and other fields, then try again.",
+      "conflictEdit": "Another customer already uses this email.",
+      "conflictCreate": "This email is already in your customer list.",
+      "notFound": "Customer was not found.",
+      "unavailableEdit": "Could not save right now. Try again in a moment.",
+      "unavailableCreate": "Could not add this customer right now. Try again in a moment.",
+      "credentials": "Customer changes are temporarily unavailable. Contact support.",
+      "fallbackEdit": "Customer could not be updated. Try again.",
+      "fallbackCreate": "Customer could not be created. Try again."
+    }
+  },
+  "table": {
+    "emptyTitle": "No customers yet",
+    "emptyMessage": "Customers will appear here after their first order or when you add them.",
+    "filteredEmptyTitle": "No matching customers",
+    "filteredEmptyMessage": "Try another name, email, phone, or company.",
+    "copyEmails": "Copy emails",
+    "copyPhones": "Copy phones"
+  }
+}

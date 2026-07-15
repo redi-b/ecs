@@ -1,0 +1,31 @@
+{
+  "title": "Products",
+  "description": "Create, review, and manage merchant-scoped catalog products.",
+  "notice": {
+    "created": {
+      "title": "Product created",
+      "description": "The product was created and is now available in this merchant catalog."
+    },
+    "updated": {
+      "title": "Product updated",
+      "description": "The product changes were saved and the catalog list has been refreshed."
+    },
+    "error": {
+      "title": "Product could not be saved"
+    }
+  },
+  "error": {
+    "loadTitle": "Products could not be loaded"
+  },
+  "detail": {
+    "shellTitle": "Product details",
+    "shellDescription": "Review merchant-scoped product details and update storefront product data.",
+    "optionsLoadErrorTitle": "Product options could not be loaded",
+    "optionsLoadErrorDesc": "Could not load {labels}. Editing is disabled until reference data loads to avoid clearing existing relationships.",
+    "loadErrorTitle": "Product could not be loaded",
+    "loadErrorDesc": "Try again later."
+  },
+  "create": {
+    "optionsLoadErrorDesc": "Could not load {labels}. You can still create a basic product and add options later."
+  }
+}

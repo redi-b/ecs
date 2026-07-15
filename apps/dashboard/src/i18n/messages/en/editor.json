@@ -1,0 +1,14 @@
+{
+  "title": "Editor",
+  "description": "Edit storefront content, visuals, and theme settings in a live preview.",
+  "error": {
+    "loadTitle": "Editor could not be loaded"
+  },
+  "empty": {
+    "title": "Choose a storefront template first",
+    "description": "Select a storefront template before editing copy, images, logo, and theme settings."
+  },
+  "actions": {
+    "openSettings": "Open storefront settings"
+  }
+}

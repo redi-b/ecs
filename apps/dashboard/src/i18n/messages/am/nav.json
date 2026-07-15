@@ -1,0 +1,20 @@
+{
+  "overview": "አጠቃላይ እይታ",
+  "products": "ምርቶች",
+  "productsList": "ሁሉም ምርቶች",
+  "productCategories": "ምድቦች",
+  "productCollections": "ስብስቦች",
+  "orders": "ትዕዛዞች",
+  "customers": "ደንበኞች",
+  "promotions": "ቅናሾች",
+  "media": "ሚዲያ",
+  "editor": "ማስተካከያ",
+  "insights": "የንግድ መረጃዎች",
+  "billing": "ሂሳብ እና ክፍያ",
+  "settings": "ማስተካከያዎች",
+  "section": {
+    "commerce": "ንግድ",
+    "storefront": "የመደብር ገጽ",
+    "insights": "ሪፖርቶች"
+  }
+}

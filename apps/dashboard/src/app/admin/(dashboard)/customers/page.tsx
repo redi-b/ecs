@@ -6,8 +6,7 @@ import { RefreshButton } from "@/components/app/refresh-button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { CustomerFormDialog } from "@/features/customers/customer-form-dialog";
 import { CustomersTable } from "@/features/customers/customers-table";
-import type { MessageKey } from "@/i18n/messages";
-import { getRequestMessages } from "@/i18n/server";
+import { getTranslations } from "@/i18n/server";
 import type { DashboardSearchParams } from "@/lib/dashboard-tenant-context";
 import { getMerchantCustomers } from "@/lib/merchant-customers";
 import { dashboardRoutes } from "@/lib/routes";
@@ -24,8 +23,7 @@ export default async function CustomersPage({ searchParams }: CustomersPageProps
   const highlightCustomerId = Array.isArray(highlightRaw)
     ? highlightRaw[0]
     : highlightRaw;
-  const { messages } = await getRequestMessages();
-  const t = (key: MessageKey) => messages[key];
+  const t = await getTranslations();
   const offset = (listParams.page - 1) * listParams.pageSize;
   const requestHeaders = await headers();
   const result = await getMerchantCustomers({

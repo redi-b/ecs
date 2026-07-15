@@ -1,0 +1,102 @@
+{
+  "entity": {
+    "category": {
+      "plural": "categories",
+      "label": "category"
+    },
+    "collection": {
+      "plural": "collections",
+      "label": "collection"
+    },
+    "order": {
+      "plural": "orders",
+      "label": "order"
+    },
+    "customer": {
+      "plural": "customers",
+      "label": "customer"
+    },
+    "promotion": {
+      "plural": "promotions",
+      "label": "promotion"
+    }
+  },
+  "create": {
+    "title": "Create {entity}",
+    "category": {
+      "desc": "Add a category with an optional parent and storefront visibility."
+    },
+    "collection": {
+      "desc": "Add a collection name, handle, and storefront visibility."
+    },
+    "error": {
+      "enterName": "Enter a {entity} {field}.",
+      "createFailed": "{entity} could not be created",
+      "missing": "Enter a {entity} name before continuing.",
+      "backend": "The commerce backend is temporarily unavailable.",
+      "credentials": "Catalog changes are temporarily unavailable. Contact support.",
+      "genericSave": "{entity} could not be saved. Try again."
+    },
+    "success": "{entity} created.",
+    "handle": "Handle",
+    "unlockHandle": "Unlock handle editing",
+    "lockHandle": "Lock handle editing",
+    "regenerateHandle": "Regenerate {entity} handle",
+    "regenerateFrom": "Regenerate from {field}",
+    "handleFollows": "The {entity} handle follows the {field} automatically.",
+    "handleCustom": "Handle editing is unlocked for a custom {entity} slug.",
+    "parentCategory": "Parent category",
+    "rootCategory": "Root category",
+    "parentDesc": "Nest under another category, or leave as a top-level root.",
+    "visibleLabel": "Visible on storefront",
+    "visibleDesc": "Hidden {entityPlural} stay in the dashboard but are not listed publicly.",
+    "creating": "Creating...",
+    "createBtn": "Create {entity}",
+    "nameLabel": "Name",
+    "titleLabel": "Title",
+    "namePlaceholder": "Coffee",
+    "titlePlaceholder": "Featured"
+  },
+  "actions": {
+    "reorder": "Reorder"
+  },
+  "table": {
+    "category": "Category",
+    "handle": "Handle",
+    "parent": "Parent",
+    "visibility": {
+      "hidden": "Hidden",
+      "public": "Public",
+      "label": "Visibility"
+    },
+    "order": "Order",
+    "updated": "Updated",
+    "actions": {
+      "edit": "Edit {entity}",
+      "copyId": "Copy {entity} ID",
+      "copyHandle": "Copy handle",
+      "delete": "Delete {entity}",
+      "triggerAria": "Open actions for {name}"
+    },
+    "selectAria": "Select {name}",
+    "selectAllAria": "Select all visible {entityPlural}",
+    "emptyMessage": "No product categories have been synced for this merchant yet.",
+    "emptyTitle": "No categories yet",
+    "filteredEmptyMessage": "No product categories match the current search.",
+    "filteredEmptyTitle": "No matching categories"
+  },
+  "delete": {
+    "title": "Delete {entity}",
+    "desc": "Are you sure you want to delete \"{name}\"? This action cannot be undone.",
+    "batchTitle": "Delete {entityPlural}",
+    "batchDesc": "Are you sure you want to delete {count} selected {entityPlural}? This action cannot be undone."
+  },
+  "form": {
+    "unlockHandle": "Unlock handle editing",
+    "lockHandle": "Lock handle editing",
+    "regenerateHandle": "Regenerate {entity} handle",
+    "regenerateFrom": "Regenerate from {label}",
+    "handleFollows": "The {entity} handle follows the {label} automatically.",
+    "handleUnlocked": "Handle editing is unlocked for a custom {entity} slug."
+  }
+}

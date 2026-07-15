@@ -110,7 +110,7 @@ export function PaginationBar({
       <div className="text-sm text-muted-foreground">
         {summary ?? (
           <span>
-            {t("common.pagination.pageOf" as any, {
+            {t("common.pagination.pageOf", {
               current: formatNumber(current),
               total: formatNumber(total),
             })}
@@ -122,12 +122,12 @@ export function PaginationBar({
           children: (
             <>
               <AppIcons.arrowLeft data-icon="inline-start" />
-              <span className="max-sm:sr-only">{t("common.pagination.previous" as any)}</span>
+              <span className="max-sm:sr-only">{t("common.pagination.previous")}</span>
             </>
           ),
           disabled: !canPrev,
           href: canPrev ? getPageHref?.(current - 1) : undefined,
-          label: t("common.pagination.previousAria" as any),
+          label: t("common.pagination.previousAria"),
           onClick: canPrev ? () => onPageChange?.(current - 1) : undefined,
         })}
 
@@ -149,7 +149,7 @@ export function PaginationBar({
             return (
               <Button
                 aria-current="page"
-                aria-label={t("common.pagination.pageAria" as any, { page: formatNumber(item) })}
+                aria-label={t("common.pagination.pageAria", { page: formatNumber(item) })}
                 className="pointer-events-none"
                 key={item}
                 size="sm"
@@ -166,7 +166,7 @@ export function PaginationBar({
             disabled: false,
             href: getPageHref?.(item),
             key: item,
-            label: t("common.pagination.pageAria" as any, { page: formatNumber(item) }),
+            label: t("common.pagination.pageAria", { page: formatNumber(item) }),
             onClick: () => onPageChange?.(item),
             variant: "outline",
           });
@@ -175,13 +175,13 @@ export function PaginationBar({
         {renderControl({
           children: (
             <>
-              <span className="max-sm:sr-only">{t("common.pagination.next" as any)}</span>
+              <span className="max-sm:sr-only">{t("common.pagination.next")}</span>
               <AppIcons.arrowRight data-icon="inline-end" />
             </>
           ),
           disabled: !canNext,
           href: canNext ? getPageHref?.(current + 1) : undefined,
-          label: t("common.pagination.nextAria" as any),
+          label: t("common.pagination.nextAria"),
           onClick: canNext ? () => onPageChange?.(current + 1) : undefined,
         })}
       </div>

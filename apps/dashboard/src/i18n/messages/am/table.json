@@ -1,0 +1,53 @@
+{
+  "actions": {
+    "copyIdSuccess": "የ{entity} መለያ ኮድ ወደ ቅንጥብ ሰሌዳ ተገልብጧል።",
+    "copyIdsSuccess": "{count} መለያዎች ወደ ቅንጥብ ሰሌዳ ተገልብጠዋል።",
+    "copyFailed": "መቅዳት አልተቻለም። እንደገና ይሞክሩ።",
+    "copyIds": "መለያዎችን ቅዳ",
+    "publish": "ለደንበኛ አሳይ",
+    "moveToDraft": "ወደ ያልታተመ ቀይር",
+    "deleteSelected": "የተመረጡትን አጥፋ",
+    "viewDetails": "ዝርዝሮችን እይ",
+    "copyEmail": "የደንበኛ ኢሜይል ቅዳ",
+    "copyEmailSuccess": "የደንበኛ ኢሜይል ወደ ቅንጥብ ሰሌዳ ተገልብጧል።",
+    "selectAllVisible": "ሁሉንም የሚታዩ {entity} ምረጥ",
+    "selectRow": "{name} ምረጥ",
+    "openActionsFor": "ለ{name} ተጨማሪ ድርጊቶች ክፈት",
+    "copyId": "የ{entity} መለያ ኮድ ቅዳ",
+    "copySuccess": "{label} ተገልብጧል።",
+    "copyEmpty": "የሚቀዳ ነገር የለም።",
+    "copyCodes": "የቅናሽ ኮዶችን ቅዳ",
+    "copyCodesSuccess": "የቅናሽ ኮዶች ወደ ቅንጥብ ሰሌዳ ተገልብጠዋል።",
+    "deletePromotion": "ቅናሹን አጥፋ",
+    "deletePromotionsQuestion": "{count} ቅናሾችን ማጥፋት ይፈልጋሉ?",
+    "deletePromotionsDescription": "የተመረጡት የቅናሽ ኮዶች ወዲያውኑ መስራት ያቆማሉ። ይህን ድርጊት መመለስ አይቻልም።",
+    "deletePromotionQuestion": "ቅናሹን ማጥፋት ይፈልጋሉ?",
+    "deletePromotionDescription": "“{code}” ወዲያውኑ መስራት ያቆማል። ይህን ድርጊት መመለስ አይቻልም።",
+    "deleting": "እየጠፋ ነው...",
+    "copyPhone": "የስልክ ቁጥር ቅዳ"
+  },
+  "empty": {
+    "noItems": "እስካሁን ምንም ንጥል ነገር አልተመሳሰለም።",
+    "noItemsTitle": "ምንም ንጥሎች የሉም",
+    "filteredNoItems": "አሁን ባለው ፍለጋ ወይም ማጣሪያ መሰረት ምንም የተዛመደ ነገር አልተገኘም።",
+    "filteredNoItemsTitle": "ምንም የሚዛመድ ነገር የለም"
+  },
+  "counts": {
+    "filtered": "ከዚህ ገጽ ላይ {filteredCount} ከ {pageCount} እያሳየ ነው",
+    "unfiltered": "በዚህ ገጽ ላይ {pageCount}፣ በጠቅላላ {totalCount}"
+  },
+  "selectedCount": "{count} ተመርጧል",
+  "headers": {
+    "order": "ትዕዛዝ",
+    "customer": "ደንበኛ",
+    "total": "ጠቅላላ",
+    "payment": "ክፍያ",
+    "fulfillment": "ትዕዛዝ ማድረስ",
+    "status": "ሁኔታ",
+    "created": "የተፈጠረበት",
+    "joined": "የተቀላቀለበት",
+    "discount": "ቅናሽ",
+    "usage": "አጠቃቀም",
+    "schedule": "ጊዜ ሰሌዳ"
+  }
+}

@@ -6,8 +6,7 @@ import { RefreshButton } from "@/components/app/refresh-button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ManualOrderCreateDialog } from "@/features/orders/manual-order-create-dialog";
 import { parseOrderListFilters } from "@/features/orders/order-domain";
-import type { MessageKey } from "@/i18n/messages";
-import { getRequestMessages } from "@/i18n/server";
+import { getTranslations } from "@/i18n/server";
 import { OrdersTable } from "@/features/orders/orders-table";
 import { type DashboardSearchParams, getSelectedTenantId } from "@/lib/dashboard-tenant-context";
 import { getListErrorState } from "@/lib/list-error-state";
@@ -24,8 +23,7 @@ export default async function MerchantOrdersPage({ searchParams }: MerchantOrder
   const listParams = parseListSearchParams(resolvedSearchParams);
   const filters = parseOrderListFilters(resolvedSearchParams);
   const tenantId = getSelectedTenantId(resolvedSearchParams);
-  const { messages } = await getRequestMessages();
-  const t = (key: MessageKey) => messages[key];
+  const t = await getTranslations();
   const requestHeaders = await headers();
   const offset = (listParams.page - 1) * listParams.pageSize;
 

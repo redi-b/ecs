@@ -1,0 +1,48 @@
+{
+  "title": "ደንበኞች",
+  "description": "ገዥዎችን ይረዱ፣ የመገናኛ ዝርዝሮችን ይያዙ፣ እና ተመላሽ ደንበኞችን ይደግፉ።",
+  "error": {
+    "loadTitle": "ደንበኞችን መጫን አልተቻለም",
+    "loadDescription": "የደንበኞች ዝርዝር ለጊዜው አይገኝም። ያድሱ እና እንደገና ይሞክሩ።"
+  },
+  "detail": {
+    "shellDescription": "የደንበኛ ማንነት፣ የእውቂያ መረጃ፣ ቡድኖች እና የተቀመጡ አድራሻዎች።",
+    "contact": "እውቂያ",
+    "email": "ኢሜይል",
+    "phone": "ስልክ",
+    "company": "ድርጅት",
+    "customerSince": "ደንበኛ የሆነበት ጊዜ",
+    "groups": "ቡድኖች",
+    "addresses": "አድራሻዎች",
+    "noAddresses": "ምንም የተቀመጠ አድራሻ የለም።",
+    "defaultAddressName": "አድራሻ",
+    "editCustomer": "ደንበኛውን አስተካክል",
+    "addCustomer": "ደንበኛ አክል",
+    "formDesc": "ለትዕዛዞች፣ ለድጋፍ እና ለክትትል የእውቂያ ዝርዝሮችን ወቅታዊ ያድርጉ።",
+    "updateErrorTitle": "የደንበኛ መረጃን ማዘመን አልተቻለም",
+    "createErrorTitle": "ደንበኛ መፍጠር አልተቻለም",
+    "firstName": "የመጀመሪያ ስም",
+    "lastName": "የአባት ስም",
+    "emailDesc": "ለደረሰኞች እና ለመለያ መልሶ ማግኛ ያገለግላል።",
+    "companyPlaceholder": "ከተፈለገ ብቻ",
+    "error": {
+      "invalid": "ኢሜይሉን እና ሌሎች ቦታዎችን አረጋግጠው እንደገና ይሞክሩ።",
+      "conflictEdit": "ሌላ ደንበኛ በዚህ ኢሜይል ተመዝግቧል።",
+      "conflictCreate": "ይህ ኢሜይል ቀድሞውኑ በደንበኞች ዝርዝርዎ ውስጥ አለ።",
+      "notFound": "ደንበኛው አልተገኘም።",
+      "unavailableEdit": "በዚህ ሰዓት ማስቀመጥ አልተቻለም። ከጥቂት ጊዜ በኋላ እንደገና ይሞክሩ።",
+      "unavailableCreate": "በዚህ ሰዓት ደንበኛውን ማከል አልተቻለም። ከጥቂት ጊዜ በኋላ እንደገና ይሞክሩ።",
+      "credentials": "የደንበኛ ለውጦች ለጊዜው አይሰሩም። እባክዎ ድጋፍ ሰጪዎችን ያግኙ።",
+      "fallbackEdit": "የደንበኛ መረጃን ማዘመን አልተቻለም። እንደገና ይሞክሩ።",
+      "fallbackCreate": "ደንበኛውን መፍጠር አልተቻለም። እንደገና ይሞክሩ።"
+    }
+  },
+  "table": {
+    "emptyTitle": "ገና ምንም ደንበኛ የለም",
+    "emptyMessage": "ደንበኞች የመጀመሪያ ትዕዛዛቸውን ሲያደርጉ ወይም እርስዎ ሲያክሏቸው እዚህ ይዘረዘራሉ።",
+    "filteredEmptyTitle": "የሚዛመድ ደንበኛ የለም",
+    "filteredEmptyMessage": "ሌላ ስም፣ ኢሜይል፣ ስልክ ወይም ድርጅት ይሞክሩ።",
+    "copyEmails": "ኢሜይሎችን ቅዳ",
+    "copyPhones": "ስልኮችን ቅዳ"
+  }
+}

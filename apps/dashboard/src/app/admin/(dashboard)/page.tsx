@@ -5,8 +5,7 @@ import { PageShell } from "@/components/app/page-shell";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { MerchantOverview } from "@/features/overview/merchant-overview";
-import type { MessageKey } from "@/i18n/messages";
-import { getRequestMessages } from "@/i18n/server";
+import { getTranslations } from "@/i18n/server";
 import { type DashboardSearchParams, getSelectedTenantId } from "@/lib/dashboard-tenant-context";
 import { getMerchantDashboardSummary } from "@/lib/merchant-dashboard";
 import { dashboardRoutes } from "@/lib/routes";
@@ -18,8 +17,7 @@ type MerchantAdminPageProps = {
 export default async function MerchantAdminPage({ searchParams }: MerchantAdminPageProps) {
   const resolvedSearchParams = (await searchParams) ?? {};
   const tenantId = getSelectedTenantId(resolvedSearchParams);
-  const { messages } = await getRequestMessages();
-  const t = (key: MessageKey) => messages[key];
+  const t = await getTranslations();
   const requestHeaders = await headers();
   const result = await getMerchantDashboardSummary({
     cookieHeader: requestHeaders.get("cookie"),

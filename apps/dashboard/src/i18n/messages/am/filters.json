@@ -1,0 +1,11 @@
+{
+  "add": "ማጣሪያ ጨምር",
+  "title": "ማጣሪያዎች",
+  "searchLabel": "{label} ፈልግ...",
+  "searchAll": "ማጣሪያዎችን ፈልግ...",
+  "noValues": "ምንም ውጤት አልተገኘም።",
+  "noFilters": "ምንም ማጣሪያ አልተገኘም።",
+  "clearAll": "ሁሉንም አጽዳ",
+  "is": "ነው",
+  "clearFilterAria": "የ{label} ማጣሪያን አጽዳ"
+}

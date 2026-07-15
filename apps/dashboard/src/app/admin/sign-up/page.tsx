@@ -3,8 +3,7 @@ import { redirect } from "next/navigation";
 
 import { AccountSignUpForm } from "@/components/onboarding/account-signup-form";
 import { AuthShell } from "@/components/onboarding/auth-shell";
-import type { MessageKey } from "@/i18n/messages";
-import { getRequestMessages } from "@/i18n/server";
+import { getTranslations } from "@/i18n/server";
 import { getAuthenticatedDashboardRedirect } from "@/lib/dashboard-auth-redirect";
 import { isCentralDashboardHost } from "@/lib/dashboard-hosts";
 
@@ -17,8 +16,7 @@ type SignUpPageProps = {
 };
 
 export default async function SignUpPage({ searchParams }: SignUpPageProps) {
-  const { messages } = await getRequestMessages();
-  const t = (key: MessageKey) => messages[key];
+  const t = await getTranslations();
   const requestHeaders = await headers();
   const requestHost = requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host");
   const authenticatedRedirect = await getAuthenticatedDashboardRedirect({

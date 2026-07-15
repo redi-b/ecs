@@ -1,0 +1,28 @@
+{
+  "title": "የምርት ምድቦች",
+  "description": "ከካታሎግ ታክሶኖሚ ውስጥ የነጋዴውን የምርት ምድቦች ይገምግሙ።",
+  "notice": {
+    "created": {
+      "title": "ምድብ ተፈጥሯል",
+      "description": "የምርት ምድቡ አሁን ለካታሎግ አደረጃጀት ይገኛል።"
+    },
+    "missingName": {
+      "title": "ምድብ መፍጠር አልተቻለም",
+      "description": "ለመቀጠል የምድብ ስም ያስገቡ።"
+    },
+    "error": {
+      "title": "ምድብ መፍጠር አልተቻለም"
+    }
+  },
+  "error": {
+    "loadTitle": "የምርት ምድቦችን መጫን አልተቻለም"
+  },
+  "actions": {
+    "new": "አዲስ ምድብ"
+  },
+  "create": {
+    "shellTitle": "አዲስ ምድብ",
+    "shellDescription": "የሱቅ ካታሎግ ዳሰሳ እና ምርት ምደባን ለማደራጀት የምርት ምድብ ይፍጠሩ።",
+    "submitLabel": "ምድብ ፍጠር"
+  }
+}

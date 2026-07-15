@@ -1,0 +1,38 @@
+{
+  "continue": "Continue",
+  "back": "Back",
+  "save": "Save",
+  "cancel": "Cancel",
+  "notSet": "Not set",
+  "preview": "Preview",
+  "total": "{count} total",
+  "showingMerchant": "Showing merchant {label}",
+  "noResults": "No results",
+  "showingRange": "Showing {from}–{to} of {count}",
+  "clearSearch": "Clear search",
+  "search": "Search",
+  "refresh": "Refresh",
+  "refreshing": "Refreshing...",
+  "view": {
+    "table": "Table",
+    "tree": "Tree"
+  },
+  "delete": "Delete",
+  "deleting": "Deleting...",
+  "and": "and",
+  "pagination": {
+    "previous": "Previous",
+    "previousAria": "Previous page",
+    "next": "Next",
+    "nextAria": "Next page",
+    "pageAria": "Page {page}",
+    "pageOf": "Page {current} of {total}"
+  },
+  "saving": "Saving...",
+  "loadingProducts": "Loading products…",
+  "selectProducts": "Select products…",
+  "productSelected": "1 product selected",
+  "productsSelected": "{count} products selected",
+  "searchProducts": "Search products…",
+  "noMatchingProducts": "No matching products."
+}
