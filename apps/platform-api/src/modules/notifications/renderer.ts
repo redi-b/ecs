@@ -10,7 +10,13 @@ export type RenderNotificationInput = {
 
 export type RenderNotificationResult = {
   subject?: string;
+  /** Always plain text (in-app body, email text part, logs). */
   body: string;
+  /**
+   * Optional HTML for channels that support rich formatting.
+   * Uses a Telegram-safe subset: <b>, newlines (email providers convert as needed).
+   */
+  html?: string;
   metadata?: Record<string, unknown>;
 };
 
@@ -118,20 +124,55 @@ function formatWhen(iso?: string): string | undefined {
   });
 }
 
-type Detail = { label: string; value: string };
-
-function detailLines(details: Detail[]): string[] {
-  return details
-    .filter((d) => d.value.trim())
-    .map((d) => `${d.label}: ${d.value.trim()}`);
+function escapeHtml(value: string): string {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;");
 }
 
-function composeBody(headline: string, details: Detail[], footer?: string | null): string {
-  const parts = [headline, ...detailLines(details)];
+type Detail = { label: string; value: string };
+
+function cleanDetails(details: Detail[]): Detail[] {
+  return details.filter((d) => d.label.trim() && d.value.trim());
+}
+
+function composePlain(headline: string, details: Detail[], footer?: string | null): string {
+  const rows = cleanDetails(details).map((d) => `${d.label}: ${d.value.trim()}`);
+  const parts = [headline.trim(), ...rows];
   if (footer?.trim()) {
     parts.push("", footer.trim());
   }
   return parts.join("\n");
+}
+
+/**
+ * Telegram-safe HTML (bold labels/headline + newlines).
+ * Email providers map this to a simple HTML body with <br> breaks.
+ */
+function composeHtml(headline: string, details: Detail[], footer?: string | null): string {
+  const lines = [`<b>${escapeHtml(headline.trim())}</b>`];
+  for (const detail of cleanDetails(details)) {
+    lines.push(
+      `<b>${escapeHtml(detail.label)}:</b> ${escapeHtml(detail.value.trim())}`,
+    );
+  }
+  if (footer?.trim()) {
+    lines.push("", escapeHtml(footer.trim()));
+  }
+  return lines.join("\n");
+}
+
+function composeMessage(
+  headline: string,
+  details: Detail[],
+  footer?: string | null,
+): { body: string; html: string } {
+  return {
+    body: composePlain(headline, details, footer),
+    html: composeHtml(headline, details, footer),
+  };
 }
 
 type Context = {
@@ -228,6 +269,7 @@ function orderDetails(ctx: Context, options?: { includePaymentStatus?: boolean }
 
 /**
  * Code-side templates. Merchant-facing, detail-rich when payload allows.
+ * No em dashes in user-facing copy. HTML bold for Telegram/email where supported.
  */
 export function createCodeNotificationRenderer(): NotificationRenderer {
   return {
@@ -238,8 +280,11 @@ export function createCodeNotificationRenderer(): NotificationRenderer {
       const subjectFor = (title: string) =>
         input.channel === "email" || input.channel === "in_app" ? title : undefined;
 
-      const withSubject = (title: string, body: string): RenderNotificationResult => {
-        const result: RenderNotificationResult = { body };
+      const finish = (title: string, message: { body: string; html: string }): RenderNotificationResult => {
+        const result: RenderNotificationResult = {
+          body: message.body,
+          html: message.html,
+        };
         const subject = subjectFor(title);
         if (subject !== undefined) {
           result.subject = subject;
@@ -249,28 +294,30 @@ export function createCodeNotificationRenderer(): NotificationRenderer {
 
       switch (input.eventType) {
         case "notification.test": {
-          const destination = pickScalar(data, "destinationLabel", "targetLabel");
+          // Recipient-facing: they already know they received it. Do not restate the address.
           const channelLabel =
             input.channel === "telegram"
               ? "Telegram"
               : input.channel === "email"
-                ? "Email"
+                ? "email"
                 : "this channel";
-          const title = "Test notification";
+          const title = "Connection looks good";
           const headline = ctx.shop
-            ? `Test alert for ${ctx.shop}`
-            : "Test alert from your shop dashboard";
-          const body = composeBody(
-            headline,
-            [
-              { label: "Status", value: "Delivery is working" },
-              destination ? { label: "Sent to", value: destination } : { label: "Via", value: channelLabel },
-              ctx.when ? { label: "Sent", value: ctx.when } : { label: "Sent", value: "Just now" },
-              ctx.shop ? { label: "Shop", value: ctx.shop } : { label: "", value: "" },
-            ].filter((d) => d.label),
-            "You can ignore this message — it was sent from Settings → Notifications.",
+            ? `${ctx.shop}: ${channelLabel} alerts are working`
+            : `${channelLabel.charAt(0).toUpperCase()}${channelLabel.slice(1)} alerts are working`;
+          return finish(
+            title,
+            composeMessage(
+              headline,
+              [
+                { label: "Status", value: "Delivery succeeded" },
+                ctx.when
+                  ? { label: "Checked", value: ctx.when }
+                  : { label: "Checked", value: "Just now" },
+              ],
+              "This was a test from Settings > Notifications. You can ignore it.",
+            ),
           );
-          return withSubject(title, body);
         }
 
         case "cod_order.created": {
@@ -280,9 +327,9 @@ export function createCodeNotificationRenderer(): NotificationRenderer {
             ctx.orderRef === "order"
               ? "You received a new cash-on-delivery order."
               : `You received a new COD order ${ctx.orderRef}.`;
-          return withSubject(
+          return finish(
             title,
-            composeBody(
+            composeMessage(
               headline,
               orderDetails({
                 ...ctx,
@@ -299,9 +346,9 @@ export function createCodeNotificationRenderer(): NotificationRenderer {
             ctx.orderRef === "order"
               ? "You received a new order."
               : `You received a new order ${ctx.orderRef}.`;
-          return withSubject(
+          return finish(
             title,
-            composeBody(
+            composeMessage(
               headline,
               orderDetails(ctx, { includePaymentStatus: true }),
               "Open the order in your dashboard to review and fulfill it.",
@@ -316,9 +363,9 @@ export function createCodeNotificationRenderer(): NotificationRenderer {
             ctx.orderRef === "order"
               ? "An order was cancelled."
               : `Order ${ctx.orderRef} was cancelled.`;
-          return withSubject(
+          return finish(
             title,
-            composeBody(
+            composeMessage(
               headline,
               orderDetails(ctx, { includePaymentStatus: true }),
               "No further action is required unless you need to restock or refund.",
@@ -328,7 +375,7 @@ export function createCodeNotificationRenderer(): NotificationRenderer {
 
         case "payment.paid": {
           const title =
-            ctx.orderRef === "order" ? "Payment received" : `Payment received · ${ctx.orderRef}`;
+            ctx.orderRef === "order" ? "Payment received" : `Payment received for ${ctx.orderRef}`;
           const headline =
             ctx.orderRef === "order"
               ? "A payment was received."
@@ -337,16 +384,15 @@ export function createCodeNotificationRenderer(): NotificationRenderer {
             ...ctx,
             paymentStatus: ctx.paymentStatus ?? "paid",
           });
-          // Prefer Amount label for payment events
           const mapped = details.map((d) =>
             d.label === "Total" ? { label: "Amount", value: d.value } : d,
           );
           if (ctx.source?.includes("dashboard")) {
             mapped.push({ label: "Recorded as", value: humanizeToken(ctx.source) });
           }
-          return withSubject(
+          return finish(
             title,
-            composeBody(
+            composeMessage(
               headline,
               mapped,
               "You can continue fulfillment for this order in the dashboard.",
@@ -356,7 +402,7 @@ export function createCodeNotificationRenderer(): NotificationRenderer {
 
         case "payment.failed": {
           const title =
-            ctx.orderRef === "order" ? "Payment failed" : `Payment failed · ${ctx.orderRef}`;
+            ctx.orderRef === "order" ? "Payment failed" : `Payment failed for ${ctx.orderRef}`;
           const headline =
             ctx.orderRef === "order"
               ? "A payment failed."
@@ -364,9 +410,9 @@ export function createCodeNotificationRenderer(): NotificationRenderer {
           const details = orderDetails(ctx).map((d) =>
             d.label === "Total" ? { label: "Amount", value: d.value } : d,
           );
-          return withSubject(
+          return finish(
             title,
-            composeBody(
+            composeMessage(
               headline,
               details,
               "Check the order in your dashboard or ask the customer to try again.",
@@ -376,13 +422,9 @@ export function createCodeNotificationRenderer(): NotificationRenderer {
 
         default: {
           const title = "Shop update";
-          return withSubject(
+          return finish(
             title,
-            composeBody(
-              "Something updated in your shop.",
-              orderDetails(ctx),
-              null,
-            ),
+            composeMessage("Something updated in your shop.", orderDetails(ctx), null),
           );
         }
       }

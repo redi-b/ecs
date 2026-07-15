@@ -36,6 +36,14 @@ export function createResendEmailNotificationProvider(
 
       const subject = (input.subject?.trim() || "Shop notification").slice(0, 200);
       const text = input.body.slice(0, 100_000);
+      const htmlSource = input.html?.trim();
+      // Resend HTML: keep bold tags, turn newlines into breaks.
+      const html = htmlSource
+        ? `<div style="font-family:system-ui,-apple-system,Segoe UI,sans-serif;font-size:15px;line-height:1.5;color:#111">${htmlSource
+            .split("\n")
+            .map((line) => (line.trim() ? line : "&nbsp;"))
+            .join("<br/>")}</div>`.slice(0, 100_000)
+        : undefined;
 
       const response = await fetchImpl("https://api.resend.com/emails", {
         method: "POST",
@@ -48,6 +56,7 @@ export function createResendEmailNotificationProvider(
           to: [to],
           subject,
           text,
+          ...(html ? { html } : {}),
         }),
       });
 

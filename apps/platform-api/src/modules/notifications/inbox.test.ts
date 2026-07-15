@@ -39,9 +39,10 @@ describe("buildInAppHref", () => {
 });
 
 describe("IN_APP_EVENT_SET", () => {
-  it("includes core commerce events", () => {
+  it("includes core commerce events and excludes channel tests", () => {
     assert.ok(IN_APP_EVENT_SET.has("order.created"));
     assert.ok(IN_APP_EVENT_SET.has("payment.failed"));
     assert.ok(!IN_APP_EVENT_SET.has("shop.published"));
+    assert.ok(!IN_APP_EVENT_SET.has("notification.test"));
   });
 });

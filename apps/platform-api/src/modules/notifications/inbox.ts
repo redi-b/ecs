@@ -7,14 +7,17 @@ import { createCodeNotificationRenderer } from "./renderer.js";
 
 type PlatformDb = ReturnType<typeof createPlatformDb>["db"];
 
-/** Commerce events that create tenant-wide inbox items in v1. */
+/**
+ * Commerce events that create tenant-wide inbox items in v1.
+ * Channel delivery tests (`notification.test`) are intentionally excluded:
+ * those only verify Telegram/email pipes, not the in-app bell.
+ */
 export const IN_APP_EVENT_SET = new Set<string>([
   "order.created",
   "order.cancelled",
   "payment.paid",
   "payment.failed",
   "cod_order.created",
-  "notification.test",
 ]);
 
 export type InAppNotificationView = {

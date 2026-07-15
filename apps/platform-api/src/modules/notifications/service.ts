@@ -356,17 +356,8 @@ export function createNotificationService(
         testPayload.destinationLabel = destinationLabel;
       }
 
-      // In-app feed for tests (independent of external delivery).
-      try {
-        await inbox.tryCreateFromEvent({
-          eventType: "notification.test",
-          payload: testPayload,
-          tenantId: input.tenantId,
-          userId: null,
-        });
-      } catch {
-        // non-blocking
-      }
+      // Channel tests only go to that channel (Telegram/email). Never write to the
+      // in-app inbox — merchants are verifying external delivery, not the bell feed.
 
       const [log] = await db
         .insert(notificationLogs)

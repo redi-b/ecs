@@ -24,7 +24,8 @@ describe("createResendEmailNotificationProvider", () => {
       recipient: "owner@shop.com",
       eventType: "order.created",
       subject: "New order",
-      body: "You have a new order.",
+      body: "You have a new order.\nOrder: #10",
+      html: "<b>You have a new order.</b>\n<b>Order:</b> #10",
     });
 
     assert.equal(result.providerReference, "resend:msg_123");
@@ -34,7 +35,9 @@ describe("createResendEmailNotificationProvider", () => {
     assert.equal(body.from, "alerts@example.com");
     assert.deepEqual(body.to, ["owner@shop.com"]);
     assert.equal(body.subject, "New order");
-    assert.equal(body.text, "You have a new order.");
+    assert.equal(body.text, "You have a new order.\nOrder: #10");
+    assert.match(body.html, /<b>You have a new order\.<\/b>/);
+    assert.match(body.html, /<br\/>/);
   });
 
   it("throws on provider error responses", async () => {

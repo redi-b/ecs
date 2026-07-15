@@ -22,13 +22,16 @@ export function createTelegramNotificationProvider(
         throw new Error("telegram_bot_token_missing");
       }
 
+      const rich = input.html?.trim();
+      const text = (rich || input.body).slice(0, 4000);
       const response = await fetchImpl(`https://api.telegram.org/bot${botToken}/sendMessage`, {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           chat_id: input.recipient,
-          text: input.body.slice(0, 4000),
+          text,
           disable_web_page_preview: true,
+          ...(rich ? { parse_mode: "HTML" as const } : {}),
         }),
       });
 

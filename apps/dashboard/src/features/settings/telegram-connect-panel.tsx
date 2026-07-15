@@ -36,7 +36,7 @@ import { cn } from "@/lib/utils";
 const CONNECT_STEPS = [
   "We’ll open Telegram with a one-time link for this shop.",
   "Tap Start in the chat so we can send alerts there.",
-  "Come back here — the account appears when connect succeeds.",
+  "Come back here. The account appears when connect succeeds.",
 ] as const;
 
 type ConnectSession = {
@@ -357,7 +357,7 @@ export function TelegramConnectPanel({
         return;
       }
       toast.success(
-        data?.jobEnqueued ? "Test sent — check Telegram." : "Test message requested.",
+        data?.jobEnqueued ? "Test sent. Check Telegram." : "Test message requested.",
       );
     });
   }

@@ -64,7 +64,7 @@ function secondaryBody(item: InboxItem) {
     if (lower === title) return false;
     if (lower.startsWith("open the order") || lower.startsWith("you can")) return false;
     if (lower.startsWith("no further action") || lower.startsWith("check the order")) return false;
-    if (lower.startsWith("you can ignore")) return false;
+    if (lower.startsWith("this was a test")) return false;
     // Prefer "Label: value" rows from the rich renderer.
     return line.includes(":");
   });

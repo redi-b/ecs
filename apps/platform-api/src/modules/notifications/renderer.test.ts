@@ -97,7 +97,7 @@ describe("createCodeNotificationRenderer", () => {
     assert.match(paid.body, /Marked paid in dashboard/);
   });
 
-  it("renders informative test notifications", async () => {
+  it("renders recipient-facing test notifications without restating destination", async () => {
     const result = await renderer.render({
       channel: "telegram",
       eventType: "notification.test",
@@ -110,11 +110,15 @@ describe("createCodeNotificationRenderer", () => {
       },
     });
 
-    assert.match(result.body, /Test alert for Bole Stylee/);
-    assert.match(result.body, /Delivery is working/);
-    assert.match(result.body, /@owner_bot/);
-    assert.match(result.body, /Settings → Notifications/);
-    assert.doesNotMatch(result.body, /Channel:\s*telegram/i);
+    assert.match(result.body, /Bole Stylee.*Telegram alerts are working/i);
+    assert.match(result.body, /Delivery succeeded/);
+    assert.match(result.body, /Settings > Notifications/);
+    // Recipient already received the message; do not echo their handle/email.
+    assert.doesNotMatch(result.body, /@owner_bot/);
+    assert.doesNotMatch(result.body, /Sent to/i);
+    assert.doesNotMatch(result.body, /—/);
+    assert.ok(result.html?.includes("<b>"));
+    assert.match(result.html ?? "", /Bole Stylee/);
   });
 
   it("uses subject for in-app titles", async () => {
@@ -125,6 +129,6 @@ describe("createCodeNotificationRenderer", () => {
       recipient: "in_app",
       payload: { orderDisplayId: "10", amount: "10880", currencyCode: "etb" },
     });
-    assert.equal(result.subject, "Payment received · #10");
+    assert.equal(result.subject, "Payment received for #10");
   });
 });

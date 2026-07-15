@@ -13,8 +13,13 @@ export type SendNotificationInput = {
   eventType: string;
   /** Email-oriented; chat/push providers may ignore. */
   subject?: string;
-  /** Fully rendered body (plain text first; HTML can be added by email provider later). */
+  /** Plain-text body (always present). */
   body: string;
+  /**
+   * Optional HTML body. Telegram uses a safe subset with parse_mode=HTML;
+   * email providers send this as the html part alongside text.
+   */
+  html?: string;
   /** Non-secret extras for providers (locale, order display id, deep links). */
   metadata?: Record<string, unknown>;
 };

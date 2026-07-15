@@ -90,6 +90,9 @@ export async function deliverNotificationLog(
     if (rendered.subject !== undefined) {
       sendInput.subject = rendered.subject;
     }
+    if (rendered.html !== undefined) {
+      sendInput.html = rendered.html;
+    }
     if (rendered.metadata !== undefined) {
       sendInput.metadata = rendered.metadata;
     }
