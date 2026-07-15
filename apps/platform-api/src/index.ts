@@ -411,6 +411,58 @@ const app = createPlatformApp({
       };
     }
 
+    // If a prior Chapa attempt already succeeded but callback never applied, complete it.
+    const pendingRefs = await billingService.listPendingChapaInvoiceTxRefs({
+      tenantId: input.tenantId,
+    });
+    const prior = pendingRefs.find((row) => row.invoiceId === input.invoiceId);
+    if (prior) {
+      try {
+        const verification = await chapaPaymentService.verifyPayment(prior.txRef);
+        const status = String(verification?.data?.status ?? verification?.status ?? "")
+          .trim()
+          .toLowerCase();
+        if (status === "success") {
+          await billingService.completeChapaInvoicePayment({
+            tenantId: input.tenantId,
+            txRef: prior.txRef,
+            providerReference:
+              (typeof verification?.data?.ref_id === "string" && verification.data.ref_id) ||
+              (typeof verification?.data?.reference === "string" &&
+                verification.data.reference) ||
+              prior.txRef,
+          });
+          const statusResult = await billingService.getBillingStatus({
+            tenantId: input.tenantId,
+          });
+          const paidInvoice =
+            statusResult.ok
+              ? statusResult.billing.invoices.find((inv) => inv.id === input.invoiceId)
+              : null;
+          return {
+            ok: true as const,
+            // No new checkout — payment already captured; client should refresh.
+            checkoutUrl: input.returnUrl,
+            txRef: prior.txRef,
+            invoice: paidInvoice ?? {
+              id: input.invoiceId,
+              amount: "0",
+              currency: "ETB",
+              status: "paid",
+              dueAt: null,
+              paidAt: new Date().toISOString(),
+              provider: "chapa",
+              providerReference: prior.txRef,
+              createdAt: new Date().toISOString(),
+            },
+            alreadyPaid: true as const,
+          };
+        }
+      } catch {
+        // Fall through to a new initialize with a fresh tx_ref.
+      }
+    }
+
     const prepared = await billingService.prepareInvoiceForChapaPayment({
       invoiceId: input.invoiceId,
       tenantId: input.tenantId,

@@ -191,13 +191,19 @@ export function BillingWorkspace({
           return;
         }
 
+        if (data?.alreadyPaid === true) {
+          toast.success("Payment confirmed.");
+          router.refresh();
+          return;
+        }
+
         if (typeof data?.checkoutUrl === "string" && data.checkoutUrl) {
           toast.success("Opening secure checkout…");
           window.location.href = data.checkoutUrl;
           return;
         }
 
-        toast.success("Invoice created. You can complete payment below.");
+        toast.success("Invoice ready.");
         router.refresh();
       } catch {
         toast.error(mapPlatformErrorMessage("platform_request_failed"));
@@ -327,10 +333,7 @@ export function BillingWorkspace({
         <Card className="border-primary/30 bg-primary/5">
           <CardHeader className="pb-2">
             <CardTitle className="text-base">Payment required</CardTitle>
-            <CardDescription>
-              Complete payment to start or extend your paid plan. An invoice is created when you
-              choose a paid plan; you can finish anytime.
-            </CardDescription>
+            <CardDescription>Pay to activate or extend your plan.</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
