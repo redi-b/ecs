@@ -13,6 +13,7 @@ import {
   getTenantScopedPath,
 } from "@/lib/dashboard-tenant-context";
 import { getListErrorState, type ListErrorState } from "@/lib/list-error-state";
+import { getTranslations } from "@/i18n/server";
 import { getMerchantProduct, getMerchantProductStock } from "@/lib/merchant-products";
 import { dashboardRoutes } from "@/lib/routes";
 
@@ -25,6 +26,7 @@ export default async function MerchantProductDetailPage({
   params,
   searchParams,
 }: MerchantProductDetailPageProps) {
+  const t = await getTranslations();
   const [{ productId }, resolvedSearchParams] = await Promise.all([params, searchParams]);
   const tenantId = getSelectedTenantId(resolvedSearchParams ?? {});
   const cookieStore = await cookies();
@@ -70,8 +72,12 @@ export default async function MerchantProductDetailPage({
           <RefreshButton />
         </div>
       }
-      description="Review merchant-scoped product details and update storefront product data."
-      title="Product details"
+      description={t("products.detail.shellDescription")}
+      title={
+        productResult.ok
+          ? (productResult.product.title ?? t("products.detail.shellTitle"))
+          : t("products.detail.shellTitle")
+      }
     >
       {setupError ? (
         <ListSetupState state={setupError} />

@@ -68,6 +68,7 @@ import {
   productStatusFilterOptions,
   setUrlFilter,
 } from "@/features/products/products-table-helpers";
+import { useI18n } from "@/i18n/provider";
 
 async function copyToClipboard(value: string, label: string) {
   try {
@@ -96,6 +97,7 @@ export function ProductsTable({
   tenantId,
   totalCount,
 }: ProductsTableProps) {
+  const { t } = useI18n();
   const router = useRouter();
   const queryClient = useQueryClient();
   const taxonomy = useProductTaxonomy({ tenantId });
@@ -425,13 +427,13 @@ export function ProductsTable({
     <div className="flex flex-col gap-3">
       <DataTableFilters filters={filters} onClearAll={clearFilters}>
         <ListToolbarSearch
-          clearLabel="Clear product search"
-          label="Search products"
+          clearLabel={t("common.clearSearch")}
+          label={t("nav.products")}
           onChange={(value) => {
             setSearchValue(value);
             pushServerFilters({ q: value });
           }}
-          placeholder="Search products"
+          placeholder={t("common.searchProducts")}
           value={searchValue}
         />
       </DataTableFilters>
@@ -465,7 +467,7 @@ export function ProductsTable({
               variant="outline"
             >
               <AppIcons.copy data-icon="inline-start" />
-              Copy IDs
+              {t("table.actions.copyIds")}
             </Button>
             <Button
               disabled={isStatusUpdatePending}
@@ -479,7 +481,7 @@ export function ProductsTable({
               type="button"
               variant="outline"
             >
-              Publish
+              {t("table.actions.publish")}
             </Button>
             <Button
               disabled={isStatusUpdatePending}
@@ -493,7 +495,7 @@ export function ProductsTable({
               type="button"
               variant="outline"
             >
-              Move to draft
+              {t("table.actions.moveToDraft")}
             </Button>
             <Button
               onClick={() => {
@@ -511,10 +513,10 @@ export function ProductsTable({
         )}
         columns={columns}
         data={filteredProducts}
-        emptyMessage="No products have been synced for this merchant yet."
-        emptyTitle="No products yet"
-        filteredEmptyMessage="No products match the current search or filters."
-        filteredEmptyTitle="No matching products"
+        emptyMessage={t("table.empty.noItems")}
+        emptyTitle={t("table.empty.noItemsTitle")}
+        filteredEmptyMessage={t("table.empty.filteredNoItems")}
+        filteredEmptyTitle={t("table.empty.filteredNoItemsTitle")}
         getRowId={(product) => product.id}
         isFiltered={counts.hasActiveFilter}
         selectedSummaryLabel={(count) => `product${count === 1 ? "" : "s"} selected`}

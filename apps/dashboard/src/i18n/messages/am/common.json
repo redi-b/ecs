@@ -12,13 +12,13 @@
   "clearSearch": "ፍለጋውን አጽዳ",
   "search": "ፈልግ",
   "refresh": "አድስ",
-  "refreshing": "በማደስ ላይ...",
+  "refreshing": "በማደስ ላይ…",
   "view": {
     "table": "ሰንጠረዥ",
     "tree": "ቅርንጫፍ"
   },
   "delete": "አጥፋ",
-  "deleting": "በማጥፋት ላይ...",
+  "deleting": "በማጥፋት ላይ…",
   "and": "እና",
   "pagination": {
     "previous": "ቀዳሚ",
@@ -28,11 +28,11 @@
     "pageAria": "ገጽ {page}",
     "pageOf": "ገጽ {current} ከ {total}"
   },
-  "saving": "እየተቀመጠ ነው...",
-  "loadingProducts": "ምርቶች በመጫን ላይ...",
-  "selectProducts": "ምርቶችን ይምረጡ...",
+  "saving": "እየተቀመጠ ነው…",
+  "loadingProducts": "ምርቶች በመጫን ላይ…",
+  "selectProducts": "ምርቶችን ይምረጡ…",
   "productSelected": "1 ምርት ተመርጧል",
   "productsSelected": "{count} ምርቶች ተመርጠዋል",
-  "searchProducts": "ምርቶችን ይፈልጉ...",
+  "searchProducts": "ምርቶችን ይፈልጉ…",
   "noMatchingProducts": "ምንም የሚዛመድ ምርት አልተገኘም።"
 }

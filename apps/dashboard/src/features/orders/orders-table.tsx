@@ -32,6 +32,8 @@ import {
   getOrderCustomerPhone,
   type OrderListFilterState,
 } from "@/features/orders/order-domain";
+import type { MessageKey } from "@/i18n/messages";
+import { useI18n } from "@/i18n/provider";
 import { copyTextToClipboard } from "@/lib/clipboard";
 import { getTenantScopedPath } from "@/lib/dashboard-tenant-context";
 import { dashboardRoutes } from "@/lib/routes";
@@ -45,26 +47,30 @@ type OrdersTableProps = {
   totalCount: number;
 };
 
-async function copyToClipboard(value: string, label: string) {
+type Translate = (key: MessageKey, values?: Record<string, string | number | Date>) => string;
+
+async function copyToClipboard(value: string, label: string, t: Translate) {
   try {
     const copied = await copyTextToClipboard(value);
     if (!copied) {
-      toast.error("Nothing to copy.");
+      toast.error(t("table.actions.copyEmpty"));
       return;
     }
-    toast.success(`${label} copied.`);
+    toast.success(t("table.actions.copySuccess", { label }));
   } catch {
-    toast.error("Could not copy. Try again.");
+    toast.error(t("table.actions.copyFailed"));
   }
 }
 
-function getOrderColumns(tenantId?: string): ColumnDef<MerchantOrder>[] {
+function getOrderColumns(t: Translate, tenantId?: string): ColumnDef<MerchantOrder>[] {
   return [
     {
       id: "select",
       header: ({ table }) => (
         <Checkbox
-          aria-label="Select all visible orders"
+          aria-label={t("table.actions.selectAllVisible", {
+            entity: t("taxonomy.entity.order.plural").toLowerCase(),
+          })}
           checked={
             table.getIsAllPageRowsSelected() ||
             (table.getIsSomePageRowsSelected() && "indeterminate")
@@ -74,7 +80,9 @@ function getOrderColumns(tenantId?: string): ColumnDef<MerchantOrder>[] {
       ),
       cell: ({ row }) => (
         <Checkbox
-          aria-label={`Select order ${formatOrderReference(row.original)}`}
+          aria-label={t("orders.table.selectOrderAria", {
+            name: formatOrderReference(row.original),
+          })}
           checked={row.getIsSelected()}
           onCheckedChange={(value) => row.toggleSelected(Boolean(value))}
         />
@@ -85,7 +93,7 @@ function getOrderColumns(tenantId?: string): ColumnDef<MerchantOrder>[] {
     {
       id: "order",
       accessorFn: (order) => formatOrderReference(order),
-      header: ({ column }) => <DataTableHeader column={column} title="Order" />,
+      header: ({ column }) => <DataTableHeader column={column} title={t("table.headers.order")} />,
       cell: ({ row }) => (
         <OrderIdentityCell order={row.original} {...(tenantId ? { tenantId } : {})} />
       ),
@@ -93,70 +101,79 @@ function getOrderColumns(tenantId?: string): ColumnDef<MerchantOrder>[] {
     {
       id: "customer",
       accessorFn: (order) => order.delivery?.customerName ?? order.email ?? "",
-      header: ({ column }) => <DataTableHeader column={column} title="Customer" />,
+      header: ({ column }) => (
+        <DataTableHeader column={column} title={t("table.headers.customer")} />
+      ),
       cell: ({ row }) => <OrderCustomerCell order={row.original} />,
     },
     {
       id: "total",
       accessorFn: (order) => order.total ?? 0,
-      header: ({ column }) => <DataTableHeader column={column} title="Total" />,
+      header: ({ column }) => <DataTableHeader column={column} title={t("table.headers.total")} />,
       cell: ({ row }) => <OrderMoneyCell order={row.original} />,
     },
     {
       id: "payment",
-      header: ({ column }) => <DataTableHeader column={column} title="Payment" />,
+      header: ({ column }) => (
+        <DataTableHeader column={column} title={t("table.headers.payment")} />
+      ),
       cell: ({ row }) => <OrderPaymentCell order={row.original} />,
       enableSorting: false,
     },
     {
       id: "progress",
-      header: ({ column }) => <DataTableHeader column={column} title="Progress" />,
+      header: ({ column }) => (
+        <DataTableHeader column={column} title={t("table.headers.progress")} />
+      ),
       cell: ({ row }) => <OrderProgressBadge order={row.original} />,
       enableSorting: false,
     },
     {
       id: "delivery",
-      header: ({ column }) => <DataTableHeader column={column} title="Delivery" />,
+      header: ({ column }) => (
+        <DataTableHeader column={column} title={t("table.headers.delivery")} />
+      ),
       cell: ({ row }) => <OrderDeliveryCell order={row.original} />,
       enableSorting: false,
     },
     {
       id: "placed",
       accessorFn: (order) => order.createdAt ?? "",
-      header: ({ column }) => <DataTableHeader column={column} title="Placed" />,
+      header: ({ column }) => <DataTableHeader column={column} title={t("table.headers.placed")} />,
       cell: ({ row }) => <OrderPlacedCell order={row.original} />,
     },
     {
       id: "actions",
-      header: () => <span className="sr-only">Actions</span>,
+      header: () => <span className="sr-only">{t("table.headers.actions")}</span>,
       cell: ({ row }) => {
         const order = row.original;
         const phone = getOrderCustomerPhone(order);
         const detailHref = getTenantScopedPath(dashboardRoutes.orderDetail(order.id), tenantId);
+        const ref = formatOrderReference(order);
 
         return (
           <RowActionsMenu
-            label={`Actions for order ${formatOrderReference(order)}`}
+            label={t("orders.table.actionsFor", { name: ref })}
             actions={[
               {
                 type: "link",
-                label: "View details",
+                label: t("table.actions.viewDetails"),
                 href: detailHref,
                 icon: AppIcons.eye,
               },
               {
                 type: "button",
-                label: "Copy order code",
+                label: t("table.actions.copyId", { entity: t("taxonomy.entity.order.label") }),
                 icon: AppIcons.copy,
-                onSelect: () => void copyToClipboard(formatOrderReference(order), "Order code"),
+                onSelect: () => void copyToClipboard(ref, t("orders.table.orderCode"), t),
               },
               ...(phone
                 ? [
                     {
                       type: "button" as const,
-                      label: "Copy phone",
+                      label: t("table.actions.copyPhone"),
                       icon: AppIcons.copy,
-                      onSelect: () => void copyToClipboard(phone, "Phone"),
+                      onSelect: () => void copyToClipboard(phone, t("orders.table.phone"), t),
                     },
                   ]
                 : []),
@@ -181,10 +198,11 @@ export function OrdersTable({
   // (that enables a second client pagination footer).
   void _pageSize;
 
+  const { t } = useI18n();
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [searchValue, setSearchValue] = useState(filters.q);
-  const columns = useMemo(() => getOrderColumns(tenantId), [tenantId]);
+  const columns = useMemo(() => getOrderColumns(t, tenantId), [t, tenantId]);
 
   const pushFilters = useCallback(
     (next: Partial<OrderListFilterState>) => {
@@ -227,75 +245,75 @@ export function OrdersTable({
     () => [
       {
         id: "progress",
-        label: "Progress",
+        label: t("orders.filter.progress.label"),
         defaultValue: "all",
         value: filters.progress,
         options: [
-          { label: "All", value: "all" },
-          { label: "Open", value: "open" },
-          { label: "New", value: "new" },
-          { label: "Ready", value: "ready" },
-          { label: "Completed", value: "completed" },
-          { label: "Canceled", value: "canceled" },
+          { label: t("orders.filter.progress.all"), value: "all" },
+          { label: t("orders.filter.progress.open"), value: "open" },
+          { label: t("orders.filter.progress.new"), value: "new" },
+          { label: t("orders.filter.progress.ready"), value: "ready" },
+          { label: t("orders.filter.progress.completed"), value: "completed" },
+          { label: t("orders.filter.progress.canceled"), value: "canceled" },
         ],
         onChange: (value) =>
           pushFilters({ progress: value as OrderListFilterState["progress"] }),
       },
       {
         id: "payment",
-        label: "Payment",
+        label: t("orders.filter.payment.label"),
         defaultValue: "all",
         value: filters.payment,
         options: [
-          { label: "All", value: "all" },
-          { label: "Unpaid", value: "unpaid" },
-          { label: "Paid", value: "paid" },
-          { label: "Failed", value: "failed" },
+          { label: t("orders.filter.payment.all"), value: "all" },
+          { label: t("orders.filter.payment.unpaid"), value: "unpaid" },
+          { label: t("orders.filter.payment.paid"), value: "paid" },
+          { label: t("orders.filter.payment.failed"), value: "failed" },
         ],
         onChange: (value) =>
           pushFilters({ payment: value as OrderListFilterState["payment"] }),
       },
       {
         id: "method",
-        label: "Method",
+        label: t("orders.filter.method.label"),
         defaultValue: "all",
         value: filters.method,
         options: [
-          { label: "All", value: "all" },
-          { label: "Cash", value: "cod" },
-          { label: "Online", value: "chapa" },
+          { label: t("orders.filter.method.all"), value: "all" },
+          { label: t("orders.filter.method.cod"), value: "cod" },
+          { label: t("orders.filter.method.chapa"), value: "chapa" },
         ],
         onChange: (value) => pushFilters({ method: value as OrderListFilterState["method"] }),
       },
       {
         id: "delivery",
-        label: "Delivery",
+        label: t("orders.filter.delivery.label"),
         defaultValue: "all",
         value: filters.delivery,
         options: [
-          { label: "All", value: "all" },
-          { label: "Local delivery", value: "delivery" },
-          { label: "Pickup", value: "pickup" },
+          { label: t("orders.filter.delivery.all"), value: "all" },
+          { label: t("orders.filter.delivery.delivery"), value: "delivery" },
+          { label: t("orders.filter.delivery.pickup"), value: "pickup" },
         ],
         onChange: (value) =>
           pushFilters({ delivery: value as OrderListFilterState["delivery"] }),
       },
       {
         id: "created",
-        label: "Placed",
+        label: t("orders.filter.created.label"),
         defaultValue: "all",
         value: filters.created,
         options: [
-          { label: "All time", value: "all" },
-          { label: "Today", value: "today" },
-          { label: "Last 7 days", value: "last_7_days" },
-          { label: "Last 30 days", value: "last_30_days" },
+          { label: t("orders.filter.created.all"), value: "all" },
+          { label: t("orders.filter.created.today"), value: "today" },
+          { label: t("orders.filter.created.last_7_days"), value: "last_7_days" },
+          { label: t("orders.filter.created.last_30_days"), value: "last_30_days" },
         ],
         onChange: (value) =>
           pushFilters({ created: value as OrderListFilterState["created"] }),
       },
     ],
-    [filters, pushFilters],
+    [filters, pushFilters, t],
   );
 
   const hasActiveFilters =
@@ -310,13 +328,13 @@ export function OrdersTable({
     <div className="flex flex-col gap-3">
       <DataTableFilters filters={filterDefs} onClearAll={clearFilters}>
         <ListToolbarSearch
-          clearLabel="Clear order search"
-          label="Search orders"
+          clearLabel={t("orders.table.clearSearch")}
+          label={t("orders.table.searchLabel")}
           onChange={(value) => {
             setSearchValue(value);
             pushFilters({ q: value });
           }}
-          placeholder="Search name, phone, order code…"
+          placeholder={t("orders.table.searchPlaceholder")}
           value={searchValue}
         />
       </DataTableFilters>
@@ -338,7 +356,8 @@ export function OrdersTable({
             onClick={() =>
               void copyToClipboard(
                 selectedOrders.map((order) => formatOrderReference(order)).join("\n"),
-                "Order codes",
+                t("orders.table.orderCodes"),
+                t,
               )
             }
             size="sm"
@@ -346,7 +365,7 @@ export function OrdersTable({
             variant="outline"
           >
             <AppIcons.copy data-icon="inline-start" />
-            Copy codes
+            {t("orders.table.copyCodes")}
           </Button>
           <Button
             onClick={() => {
@@ -354,34 +373,34 @@ export function OrdersTable({
                 .map((order) => getOrderCustomerPhone(order))
                 .filter((phone): phone is string => Boolean(phone));
               if (!phones.length) {
-                toast.error("No phone numbers on the selected orders.");
+                toast.error(t("orders.table.noPhonesSelected"));
                 return;
               }
-              void copyToClipboard(phones.join("\n"), "Phone numbers");
+              void copyToClipboard(phones.join("\n"), t("orders.table.phoneNumbers"), t);
             }}
             size="sm"
             type="button"
             variant="outline"
           >
             <AppIcons.copy data-icon="inline-start" />
-            Copy phones
+            {t("orders.table.copyPhones")}
           </Button>
         </div>
       )}
       columns={columns}
       data={orders}
       emptyMessage={
-        hasActiveFilters
-          ? "No orders match these filters."
-          : "No orders yet. Create one or wait for storefront sales."
+        hasActiveFilters ? t("orders.table.filteredEmptyMessage") : t("orders.table.emptyMessage")
       }
-      emptyTitle={hasActiveFilters ? "No matching orders" : "No orders yet"}
-      filteredEmptyMessage="Try clearing filters or searching for another order code, name, or phone."
-      filteredEmptyTitle="No matching orders"
+      emptyTitle={
+        hasActiveFilters ? t("orders.table.filteredEmptyTitle") : t("orders.table.emptyTitle")
+      }
+      filteredEmptyMessage={t("orders.table.filteredEmptyMessage")}
+      filteredEmptyTitle={t("orders.table.filteredEmptyTitle")}
       footer={footer}
       getRowId={(row) => row.id}
       isFiltered={hasActiveFilters}
-      selectedSummaryLabel={(count) => `order${count === 1 ? "" : "s"} selected`}
+      selectedSummaryLabel={(count) => t("orders.table.selectedSummary", { count })}
       toolbar={toolbar}
     />
   );

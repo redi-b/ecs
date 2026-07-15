@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/empty";
 import { OrderDetail } from "@/features/orders/order-detail";
 import { formatOrderReference } from "@/features/orders/order-domain";
+import { getTranslations } from "@/i18n/server";
 import {
   type DashboardSearchParams,
   getSelectedTenantId,
@@ -33,6 +34,7 @@ export default async function MerchantOrderDetailPage({
   params,
   searchParams,
 }: MerchantOrderDetailPageProps) {
+  const t = await getTranslations();
   const [{ orderId }, resolvedSearchParams] = await Promise.all([params, searchParams]);
   const tenantId = getSelectedTenantId(resolvedSearchParams ?? {});
   const cookieStore = await cookies();
@@ -52,8 +54,12 @@ export default async function MerchantOrderDetailPage({
   return (
     <PageShell
       actions={<RefreshButton />}
-      description="Who ordered, what to pack, payment, and handoff."
-      title={result.ok ? `Order ${formatOrderReference(result.order)}` : "Order details"}
+      description={t("orders.detail.shellDescription")}
+      title={
+        result.ok
+          ? `${t("table.headers.order")} ${formatOrderReference(result.order)}`
+          : t("orders.detail.shellTitle")
+      }
     >
       <DashboardBreadcrumbLabel label={breadcrumbLabel} labelKey="order-details" />
       {setupError ? (
@@ -73,29 +79,27 @@ export default async function MerchantOrderDetailPage({
   );
 }
 
-function OrderNotFoundState() {
+async function OrderNotFoundState() {
+  const t = await getTranslations();
   return (
     <Empty className="min-h-[22rem] border bg-card/60">
       <EmptyHeader>
         <EmptyMedia variant="icon">
           <AppIcons.orders />
         </EmptyMedia>
-        <EmptyTitle>Order not found</EmptyTitle>
-        <EmptyDescription>
-          This order could not be found for the selected merchant context.
-        </EmptyDescription>
+        <EmptyTitle>{t("orders.detail.notFoundTitle")}</EmptyTitle>
+        <EmptyDescription>{t("orders.detail.notFoundDesc")}</EmptyDescription>
       </EmptyHeader>
     </Empty>
   );
 }
 
-function OrderLoadAlert() {
+async function OrderLoadAlert() {
+  const t = await getTranslations();
   return (
     <Alert variant="destructive">
-      <AlertTitle>Order could not be loaded</AlertTitle>
-      <AlertDescription>
-        The dashboard could not load this order. Refresh the page or try again later.
-      </AlertDescription>
+      <AlertTitle>{t("orders.detail.loadErrorTitle")}</AlertTitle>
+      <AlertDescription>{t("orders.detail.loadErrorDesc")}</AlertDescription>
     </Alert>
   );
 }

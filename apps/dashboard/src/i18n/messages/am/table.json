@@ -23,7 +23,7 @@
     "deletePromotionsDescription": "የተመረጡት የቅናሽ ኮዶች ወዲያውኑ መስራት ያቆማሉ። ይህን ድርጊት መመለስ አይቻልም።",
     "deletePromotionQuestion": "ቅናሹን ማጥፋት ይፈልጋሉ?",
     "deletePromotionDescription": "“{code}” ወዲያውኑ መስራት ያቆማል። ይህን ድርጊት መመለስ አይቻልም።",
-    "deleting": "እየጠፋ ነው...",
+    "deleting": "እየጠፋ ነው…",
     "copyPhone": "የስልክ ቁጥር ቅዳ"
   },
   "empty": {
@@ -48,6 +48,10 @@
     "joined": "የተቀላቀለበት",
     "discount": "ቅናሽ",
     "usage": "አጠቃቀም",
-    "schedule": "ጊዜ ሰሌዳ"
+    "schedule": "ጊዜ ሰሌዳ",
+    "progress": "ሂደት",
+    "delivery": "ማድረስ",
+    "placed": "የተደረገበት",
+    "actions": "ድርጊቶች"
   }
 }

@@ -23,7 +23,7 @@
     "deletePromotionsDescription": "Selected promotion codes will stop working immediately. This cannot be undone.",
     "deletePromotionQuestion": "Delete promotion?",
     "deletePromotionDescription": "“{code}” will stop working immediately. This cannot be undone.",
-    "deleting": "Deleting...",
+    "deleting": "Deleting…",
     "copyPhone": "Copy phone number"
   },
   "empty": {
@@ -48,6 +48,10 @@
     "joined": "Joined",
     "discount": "Discount",
     "usage": "Usage",
-    "schedule": "Schedule"
+    "schedule": "Schedule",
+    "progress": "Progress",
+    "delivery": "Delivery",
+    "placed": "Placed",
+    "actions": "Actions"
   }
 }

@@ -14,11 +14,63 @@
   },
   "table": {
     "emptyTitle": "ገና ምንም ትዕዛዝ የለም",
-    "emptyMessage": "ለዚህ ነጋዴ እስካሁን ምንም ትዕዛዝ አልተደረገም።",
+    "emptyMessage": "ገና ምንም ትዕዛዝ የለም። አንድ ይፍጠሩ ወይም ከመደብር ሽያጮች ይጠብቁ።",
     "filteredEmptyTitle": "የሚዛመድ ትዕዛዝ የለም",
-    "filteredEmptyMessage": "ከፍለጋዎ ወይም ከማጣሪያዎችዎ ጋር የሚዛመድ ምንም ትዕዛዝ አልተገኘም።"
+    "filteredEmptyMessage": "ከእነዚህ ማጣሪያዎች ጋር የሚዛመድ ትዕዛዝ የለም። ማጣሪያዎችን ያጽዱ ወይም በሌላ ኮድ፣ ስም ወይም ስልክ ይፈልጉ።",
+    "searchLabel": "ትዕዛዞችን ፈልግ",
+    "searchPlaceholder": "ስም፣ ስልክ፣ የትዕዛዝ ኮድ ፈልግ…",
+    "clearSearch": "የትዕዛዝ ፍለጋን አጽዳ",
+    "copyCodes": "ኮዶችን ቅዳ",
+    "copyPhones": "ስልኮችን ቅዳ",
+    "orderCode": "የትዕዛዝ ኮድ",
+    "orderCodes": "የትዕዛዝ ኮዶች",
+    "phone": "ስልክ",
+    "phoneNumbers": "የስልክ ቁጥሮች",
+    "noPhonesSelected": "በተመረጡት ትዕዛዞች ላይ የስልክ ቁጥር የለም።",
+    "selectedSummary": "{count} ተመርጧል",
+    "selectOrderAria": "ትዕዛዝ {name} ምረጥ",
+    "actionsFor": "ለትዕዛዝ {name} ድርጊቶች"
   },
   "filter": {
+    "progress": {
+      "label": "ሂደት",
+      "all": "ሁሉም",
+      "open": "ክፍት",
+      "new": "አዲስ",
+      "ready": "ዝግጁ",
+      "completed": "ተጠናቋል",
+      "canceled": "ተሰርዟል"
+    },
+    "payment": {
+      "label": "ክፍያ",
+      "all": "ሁሉም",
+      "unpaid": "ያልተከፈለ",
+      "paid": "ተከፍሏል",
+      "failed": "አልተሳካም",
+      "pending": "በመጠባበቅ ላይ",
+      "unknown": "ያልታወቀ"
+    },
+    "method": {
+      "label": "ዘዴ",
+      "all": "ሁሉም",
+      "cod": "ጥሬ ገንዘብ",
+      "chapa": "ኦንላይን"
+    },
+    "delivery": {
+      "label": "ማድረስ",
+      "all": "ሁሉም",
+      "delivery": "የአካባቢ ማድረስ",
+      "pickup": "በሱቅ መውሰድ",
+      "none": "ምርጫ የሌለው"
+    },
+    "created": {
+      "label": "የተደረገበት",
+      "all": "ሁሉም ጊዜ",
+      "today": "ዛሬ",
+      "last_7_days": "ባለፉት 7 ቀናት",
+      "last_30_days": "ባለፉት 30 ቀናት",
+      "no_date": "ቀን የሌለው"
+    },
     "lifecycle": {
       "all": "ሁሉም ትዕዛዞች",
       "open": "ክፍት",
@@ -30,32 +82,10 @@
       "paid": "የተከፈሉ",
       "label": "የትዕዛዝ ሁኔታ"
     },
-    "payment": {
-      "all": "ሁሉም ክፍያዎች",
-      "pending": "በመጠባበቅ ላይ",
-      "unpaid": "ያልተከፈለ",
-      "unknown": "ያልታወቀ",
-      "label": "የክፍያ ሁኔታ"
-    },
     "fulfillment": {
       "all": "ሁሉም ማድረሶች",
       "unfulfilled": "ያልተላኩ",
       "label": "የማድረስ ሁኔታ"
-    },
-    "delivery": {
-      "all": "ሁሉም የማድረሻ አማራጮች",
-      "delivery": "በቤት ማድረስ",
-      "pickup": "በሱቅ መውሰጃ",
-      "none": "ምርጫ የሌለው",
-      "label": "የማድረሻ ምርጫ"
-    },
-    "created": {
-      "all": "ሁሉም ቀናት",
-      "today": "ዛሬ",
-      "last_7_days": "ባለፉት 7 ቀናት",
-      "last_30_days": "ባለፉት 30 ቀናት",
-      "no_date": "ቀን የሌለው",
-      "label": "የተፈጠረበት ቀን"
     }
   }
 }

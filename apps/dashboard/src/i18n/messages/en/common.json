@@ -12,13 +12,13 @@
   "clearSearch": "Clear search",
   "search": "Search",
   "refresh": "Refresh",
-  "refreshing": "Refreshing...",
+  "refreshing": "Refreshing…",
   "view": {
     "table": "Table",
     "tree": "Tree"
   },
   "delete": "Delete",
-  "deleting": "Deleting...",
+  "deleting": "Deleting…",
   "and": "and",
   "pagination": {
     "previous": "Previous",
@@ -28,7 +28,7 @@
     "pageAria": "Page {page}",
     "pageOf": "Page {current} of {total}"
   },
-  "saving": "Saving...",
+  "saving": "Saving…",
   "loadingProducts": "Loading products…",
   "selectProducts": "Select products…",
   "productSelected": "1 product selected",
