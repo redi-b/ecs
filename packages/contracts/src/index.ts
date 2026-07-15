@@ -467,6 +467,94 @@ export type NotificationPreferences = z.infer<typeof notificationPreferencesSche
 
 export type NotificationPreferenceMutation = z.infer<typeof notificationPreferenceMutationSchema>;
 
+/**
+ * Dedicated billing status (GET /platform/tenants/:tenantId/billing).
+ * Same plan/sub/invoice shape as dashboard.billing, without the unavailable flag
+ * (dedicated route returns 4xx instead).
+ */
+export const merchantBillingStatusSchema = z.object({
+  subscription: z
+    .object({
+      id: z.string().min(1),
+      status: z.string().min(1),
+      billingCycle: z.string().min(1),
+      manualPaymentState: z.string().min(1),
+      currentPeriodStart: z.string().min(1).nullable(),
+      currentPeriodEnd: z.string().min(1).nullable(),
+      /** Free plan scheduled to start at period end (no refund of remaining paid days). */
+      scheduledPlanId: z.string().min(1).nullable().optional(),
+      scheduledPlanName: z.string().min(1).nullable().optional(),
+      scheduledEffectiveAt: z.string().min(1).nullable().optional(),
+    })
+    .nullable(),
+  plan: z
+    .object({
+      id: z.string().min(1),
+      name: z.string().min(1),
+      price: z.string().min(1),
+      limits: z.unknown(),
+      features: z.unknown(),
+      isFree: z.boolean().optional(),
+    })
+    .nullable(),
+  invoices: z.array(
+    z.object({
+      id: z.string().min(1),
+      amount: z.string().min(1),
+      currency: z.string().min(1),
+      status: z.string().min(1),
+      dueAt: z.string().min(1).nullable(),
+      paidAt: z.string().min(1).nullable(),
+      // Empty string can appear from DB/drivers; treat as null for clients.
+      provider: z.preprocess(
+        (value) => (value === "" ? null : value),
+        z.string().min(1).nullable(),
+      ),
+      providerReference: z.preprocess(
+        (value) => (value === "" ? null : value),
+        z.string().min(1).nullable(),
+      ),
+      createdAt: z.string().min(1),
+    }),
+  ),
+  availablePaidPlans: z
+    .array(
+      z.object({
+        id: z.string().min(1),
+        name: z.string().min(1),
+        price: z.string().min(1),
+        limits: z.unknown(),
+        features: z.unknown(),
+      }),
+    )
+    .optional(),
+  /** Full active plan catalog for selection UI (includes current plan). */
+  catalog: z
+    .array(
+      z.object({
+        id: z.string().min(1),
+        name: z.string().min(1),
+        price: z.string().min(1),
+        isFree: z.boolean(),
+        isCurrent: z.boolean(),
+      }),
+    )
+    .optional(),
+});
+
+/** Dashboard embeds billing with an unavailable flag when status cannot load. */
+export const merchantDashboardBillingSchema = merchantBillingStatusSchema.extend({
+  unavailable: z.boolean(),
+});
+
+export const merchantBillingResponseSchema = z.object({
+  billing: merchantBillingStatusSchema,
+});
+
+export type MerchantBillingStatus = z.infer<typeof merchantBillingStatusSchema>;
+export type MerchantDashboardBilling = z.infer<typeof merchantDashboardBillingSchema>;
+export type MerchantBillingResponse = z.infer<typeof merchantBillingResponseSchema>;
+
 export const merchantDashboardSummarySchema = z.object({
   tenant: z.object({
     id: z.string().min(1),
@@ -584,67 +672,7 @@ export const merchantDashboardSummarySchema = z.object({
       unavailable: z.boolean(),
     })
     .optional(),
-  billing: z
-    .object({
-      subscription: z
-        .object({
-          id: z.string().min(1),
-          status: z.string().min(1),
-          billingCycle: z.string().min(1),
-          manualPaymentState: z.string().min(1),
-          currentPeriodStart: z.string().min(1).nullable(),
-          currentPeriodEnd: z.string().min(1).nullable(),
-        })
-        .nullable(),
-      plan: z
-        .object({
-          id: z.string().min(1),
-          name: z.string().min(1),
-          price: z.string().min(1),
-          limits: z.unknown(),
-          features: z.unknown(),
-          isFree: z.boolean().optional(),
-        })
-        .nullable(),
-      invoices: z.array(
-        z.object({
-          id: z.string().min(1),
-          amount: z.string().min(1),
-          currency: z.string().min(1),
-          status: z.string().min(1),
-          dueAt: z.string().min(1).nullable(),
-          paidAt: z.string().min(1).nullable(),
-          provider: z.string().min(1).nullable(),
-          providerReference: z.string().min(1).nullable(),
-          createdAt: z.string().min(1),
-        }),
-      ),
-      availablePaidPlans: z
-        .array(
-          z.object({
-            id: z.string().min(1),
-            name: z.string().min(1),
-            price: z.string().min(1),
-            limits: z.unknown(),
-            features: z.unknown(),
-          }),
-        )
-        .optional(),
-      /** Full active plan catalog for selection UI (includes current plan). */
-      catalog: z
-        .array(
-          z.object({
-            id: z.string().min(1),
-            name: z.string().min(1),
-            price: z.string().min(1),
-            isFree: z.boolean(),
-            isCurrent: z.boolean(),
-          }),
-        )
-        .optional(),
-      unavailable: z.boolean(),
-    })
-    .optional(),
+  billing: merchantDashboardBillingSchema.optional(),
 });
 
 export type MerchantDashboardSummary = z.infer<typeof merchantDashboardSummarySchema>;

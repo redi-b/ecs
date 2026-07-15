@@ -99,6 +99,13 @@ Shop **create** does not require MinIO. Media uploads do.
 
 The platform image runs two processes from the same image: `platform-api` (HTTP) and `platform-worker` (BullMQ via `@ecs/jobs`). The worker command is `node --import tsx src/worker.ts`. It requires Redis and platform migrations, and is required for background jobs (notifications, billing, imports, and other post-MVP work).
 
+Billing-related **BullMQ repeatable** jobs (registered on worker start; override via env):
+
+- `billing.reconcile-payments` — re-verify pending Chapa plan invoices (`BILLING_RECONCILE_INTERVAL_MS`, default 5 minutes)
+- `billing.lifecycle` — renewals, past_due, scheduled free downgrades (`BILLING_LIFECYCLE_INTERVAL_MS`, default 1 hour)
+
+Set `PLATFORM_PUBLIC_BASE_URL` to the public HTTPS API origin so Chapa `callback_url` works in production.
+
 ## GitHub Actions
 
 The workflow uses the repository `GITHUB_TOKEN` to publish these packages:

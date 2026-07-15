@@ -297,6 +297,75 @@ export function registerPlatformTenantOpsRoutes(
     return context.json({ invoice: result.invoice, reused: result.reused });
   });
 
+  /** Schedule free-plan switch at period end (or apply immediately if period already ended). */
+  app.post("/platform/tenants/:tenantId/billing/downgrade", async (context) => {
+    if (!options.schedulePlanDowngrade) {
+      return context.json({ error: "billing_unavailable" }, 503);
+    }
+
+    const session = await options.getSession?.(context.req.raw.headers);
+    if (!session) {
+      return context.json({ error: "auth_required" }, 401);
+    }
+
+    const tenantId = context.req.param("tenantId");
+    const authorization = await options.authorizeDashboardForTenant?.({
+      tenantId,
+      userId: session.user.id,
+    });
+    if (!authorization?.ok) {
+      return context.json({ error: "dashboard_forbidden" }, 403);
+    }
+
+    const body = await getJsonBody(context.req.raw);
+    const planId =
+      typeof body === "object" && body && typeof (body as { planId?: unknown }).planId === "string"
+        ? (body as { planId: string }).planId.trim()
+        : "";
+    if (!planId) {
+      return context.json({ error: "billing_plan_required" }, 400);
+    }
+
+    const result = await options.schedulePlanDowngrade({ planId, tenantId });
+    if (!result.ok) {
+      return context.json({ error: result.error }, result.status);
+    }
+
+    return context.json({
+      applied: result.applied,
+      scheduled: result.scheduled,
+      effectiveAt: result.effectiveAt,
+      billing: result.billing,
+    });
+  });
+
+  app.post("/platform/tenants/:tenantId/billing/downgrade/cancel", async (context) => {
+    if (!options.cancelScheduledPlanDowngrade) {
+      return context.json({ error: "billing_unavailable" }, 503);
+    }
+
+    const session = await options.getSession?.(context.req.raw.headers);
+    if (!session) {
+      return context.json({ error: "auth_required" }, 401);
+    }
+
+    const tenantId = context.req.param("tenantId");
+    const authorization = await options.authorizeDashboardForTenant?.({
+      tenantId,
+      userId: session.user.id,
+    });
+    if (!authorization?.ok) {
+      return context.json({ error: "dashboard_forbidden" }, 403);
+    }
+
+    const result = await options.cancelScheduledPlanDowngrade({ tenantId });
+    if (!result.ok) {
+      return context.json({ error: result.error }, result.status);
+    }
+
+    return context.json({ cancelled: result.cancelled, billing: result.billing });
+  });
+
   app.post("/platform/tenants/:tenantId/billing/invoices/:invoiceId/pay", async (context) => {
     if (!options.initializeBillingInvoicePayment) {
       return context.json({ error: "billing_unavailable" }, 503);

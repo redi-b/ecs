@@ -28,7 +28,10 @@ export type MerchantDashboardAccessResult =
       status: number;
     };
 
-/** Full overview payload (ops, analytics, billing). Use on overview/billing/settings only. */
+/**
+ * Full overview payload (ops, analytics, billing).
+ * Use on Overview only — Billing has getMerchantBillingStatus; Settings/Editor use the access shell.
+ */
 export async function getMerchantDashboardSummary(options: {
   cookieHeader?: string | null | undefined;
   fetcher?: typeof fetch;
@@ -68,6 +71,13 @@ export async function getMerchantDashboardSummary(options: {
   const parsed = merchantDashboardSummarySchema.safeParse(data);
 
   if (!parsed.success) {
+    if (process.env.NODE_ENV === "development") {
+      console.error(
+        "[merchant-dashboard] summary schema mismatch",
+        parsed.error.flatten(),
+        parsed.error.issues.slice(0, 8),
+      );
+    }
     return {
       ok: false,
       status: 502,

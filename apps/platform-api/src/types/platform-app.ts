@@ -5,8 +5,10 @@ import type {
   TenantInsightsSummaryResult,
 } from "../modules/analytics/analytics-service.js";
 import type {
+  BillingCancelDowngradeResult,
   BillingInvoicePayResult,
   BillingInvoiceUpdateResult,
+  BillingPlanDowngradeResult,
   BillingPlanUpgradeResult,
   BillingStatusResult,
 } from "./billing.js";
@@ -155,6 +157,12 @@ export type PlatformAppOptions = {
   getBillingStatus?: ((input: { tenantId: string }) => Promise<BillingStatusResult>) | undefined;
   createPlanUpgradeInvoice?:
     | ((input: { planId: string; tenantId: string }) => Promise<BillingPlanUpgradeResult>)
+    | undefined;
+  schedulePlanDowngrade?:
+    | ((input: { planId: string; tenantId: string }) => Promise<BillingPlanDowngradeResult>)
+    | undefined;
+  cancelScheduledPlanDowngrade?:
+    | ((input: { tenantId: string }) => Promise<BillingCancelDowngradeResult>)
     | undefined;
   initializeBillingInvoicePayment?:
     | ((input: {

@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/empty";
 import { StorefrontVisualEditor } from "@/features/storefront-editor/storefront-visual-editor";
 import { type DashboardSearchParams, getSelectedTenantId } from "@/lib/dashboard-tenant-context";
-import { getMerchantDashboardSummary } from "@/lib/merchant-dashboard";
+import { getMerchantDashboardAccessShell } from "@/lib/merchant-dashboard";
 import {
   getStorefrontDraft,
   publishStorefrontDraft,
@@ -36,7 +36,8 @@ export default async function StorefrontEditorPage({ searchParams }: StorefrontE
   const selectedTenantId = getSelectedTenantId(resolvedSearchParams);
   const requestHeaders = await headers();
   const platformApiBaseUrl = process.env.PLATFORM_API_BASE_URL ?? "http://localhost:3000";
-  const summary = await getMerchantDashboardSummary({
+  // Editor only needs tenant name, domain, publish flag — not ops/metrics/billing.
+  const access = await getMerchantDashboardAccessShell({
     cookieHeader: requestHeaders.get("cookie"),
     platformApiBaseUrl,
     requestHost: requestHeaders.get("host"),
@@ -44,11 +45,11 @@ export default async function StorefrontEditorPage({ searchParams }: StorefrontE
   });
 
   const draft =
-    summary.ok && summary.summary.tenant.id
+    access.ok && access.access.tenant.id
       ? await getStorefrontDraft({
           cookieHeader: requestHeaders.get("cookie"),
           platformApiBaseUrl,
-          tenantId: summary.summary.tenant.id,
+          tenantId: access.access.tenant.id,
         })
       : null;
 
@@ -58,10 +59,10 @@ export default async function StorefrontEditorPage({ searchParams }: StorefrontE
       description="Edit storefront content, visuals, and theme settings in a live preview."
       title="Editor"
     >
-      {!summary.ok ? (
+      {!access.ok ? (
         <Alert variant="destructive">
           <AlertTitle>Editor could not be loaded</AlertTitle>
-          <AlertDescription>{summary.message}</AlertDescription>
+          <AlertDescription>{access.message}</AlertDescription>
         </Alert>
       ) : !draft?.ok ? (
         <Empty className="min-h-96 border">
@@ -82,10 +83,10 @@ export default async function StorefrontEditorPage({ searchParams }: StorefrontE
         <StorefrontVisualEditor
           draft={draft.draft}
           editorMeta={{
-            initiallyPublished: summary.summary.storefront.isPublished,
-            liveStorefrontUrl: getLiveStorefrontUrl(summary.summary.domain.hostname),
+            initiallyPublished: access.access.storefront.isPublished,
+            liveStorefrontUrl: getLiveStorefrontUrl(access.access.domain.hostname),
             settingsUrl: "/admin/settings?tab=storefront",
-            storefrontName: summary.summary.tenant.name,
+            storefrontName: access.access.tenant.name,
             templateKey: draft.draft.templateKey,
             templateName: getTemplateDisplayName(draft.draft.templateKey),
           }}

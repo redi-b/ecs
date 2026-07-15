@@ -7,6 +7,8 @@ import { getPlatformApiBaseUrl } from "@/lib/platform-api/client";
  * Merchant billing mutations:
  * - upgrade: create pending Growth (or paid plan) invoice
  * - pay: initialize Chapa checkout for a pending invoice
+ * - downgrade: schedule free plan at period end (or apply if expired)
+ * - cancel_downgrade: keep current paid plan
  */
 export async function POST(request: Request) {
   return withMerchantAction(request, async (context) => {
@@ -75,6 +77,51 @@ export async function POST(request: Request) {
         return {
           ok: false,
           message: extractErrorText(data) ?? "billing_upgrade_failed",
+          status: response.status,
+        };
+      }
+      return { ok: true, data };
+    }
+
+    if (action === "downgrade") {
+      const planId = body.planId?.trim();
+      if (!planId) {
+        return { ok: false, message: "billing_plan_required", status: 400 };
+      }
+
+      const response = await fetch(
+        platformUrl(
+          `platform/tenants/${encodeURIComponent(context.tenantId)}/billing/downgrade`,
+        ),
+        {
+          method: "POST",
+          headers,
+          body: JSON.stringify({ planId }),
+        },
+      );
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        return {
+          ok: false,
+          message: extractErrorText(data) ?? "billing_downgrade_failed",
+          status: response.status,
+        };
+      }
+      return { ok: true, data };
+    }
+
+    if (action === "cancel_downgrade") {
+      const response = await fetch(
+        platformUrl(
+          `platform/tenants/${encodeURIComponent(context.tenantId)}/billing/downgrade/cancel`,
+        ),
+        { method: "POST", headers },
+      );
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        return {
+          ok: false,
+          message: extractErrorText(data) ?? "billing_cancel_downgrade_failed",
           status: response.status,
         };
       }

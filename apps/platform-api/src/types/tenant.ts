@@ -223,9 +223,30 @@ export type TenantCommerceContextResult =
       status: 404 | 503;
     };
 
+/** Full tenant context for building the merchant dashboard payload by tenant id. */
+export type TenantDashboardContext = {
+  domainId: string;
+  hostname: string;
+  medusaPublishableKeyId: string | null;
+  medusaRegionId: string | null;
+  medusaSalesChannelId: string | null;
+  medusaStockLocationId: string | null;
+  medusaStoreId: string | null;
+  publishedRevisionId: string | null;
+  status: string;
+  templateId: string | null;
+  templateKey: string | null;
+  templateVersion: number | null;
+  tenantHandle: string;
+  tenantId: string;
+  tenantName: string;
+};
+
 export type TenantDashboardSummaryResult =
   | {
       ok: true;
+      /** Present when the service can resolve commerce/storefront fields for full dashboard. */
+      context?: TenantDashboardContext;
       summary: {
         tenant: {
           id: string;

@@ -1,13 +1,21 @@
 import type { Hono } from "hono";
 
 import type { PlatformAppOptions, PlatformAppVariables } from "../../../app.js";
+import { createMerchantRouteHelpers } from "../../merchant/context.js";
+import { createMerchantDashboardSummary } from "../../merchant/dashboard-summary.js";
 import { getJsonBody, getRequiredBodyString } from "../../shared.js";
 
 export function registerPlatformTenantSettingsRoutes(
   app: Hono<{ Variables: PlatformAppVariables }>,
   options: PlatformAppOptions,
 ) {
-  /** Lean shell for layout auth (tenant path is already light — no Medusa ops). */
+  const { getResolvedCommerce } = createMerchantRouteHelpers(options);
+  const { getMerchantDashboardPayload } = createMerchantDashboardSummary(
+    options,
+    getResolvedCommerce,
+  );
+
+  /** Lean shell for layout auth (no Medusa ops / billing). */
   app.get("/platform/tenants/:tenantId/dashboard/access", async (context) => {
     if (!options.getTenantDashboardSummary) {
       return context.json({ error: "dashboard_summary_unavailable" }, 503);
@@ -41,6 +49,11 @@ export function registerPlatformTenantSettingsRoutes(
     });
   });
 
+  /**
+   * Full merchant dashboard (ops + analytics + billing).
+   * Must match /platform/merchant/dashboard — Chapa return URLs and multi-shop
+   * flows pass tenantId and hit this path; shell-only broke Billing UI.
+   */
   app.get("/platform/tenants/:tenantId/dashboard", async (context) => {
     if (!options.getTenantDashboardSummary) {
       return context.json({ error: "dashboard_summary_unavailable" }, 503);
@@ -66,6 +79,17 @@ export function registerPlatformTenantSettingsRoutes(
 
     if (!result.ok) {
       return context.json({ error: result.error }, result.status);
+    }
+
+    // Prefer full payload when service returns dashboard context (production).
+    // Tests/harnesses without context still get the shell + actor.
+    if (result.context) {
+      return context.json(
+        await getMerchantDashboardPayload({
+          actor: authorization.actor,
+          context: result.context,
+        }),
+      );
     }
 
     return context.json({

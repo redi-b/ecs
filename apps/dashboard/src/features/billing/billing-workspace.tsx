@@ -1,6 +1,6 @@
 "use client";
 
-import type { MerchantDashboardSummary } from "@ecs/contracts";
+import type { MerchantBillingStatus } from "@ecs/contracts";
 import Link from "@/components/app/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
@@ -10,7 +10,13 @@ import { AppIcons } from "@/components/app/icons";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
 import { cn } from "@/lib/utils";
 import { getTenantScopedPath } from "@/lib/dashboard-tenant-context";
 import { mapPlatformErrorMessage } from "@/lib/platform-api/errors";
@@ -24,9 +30,7 @@ type CatalogPlan = {
   isCurrent: boolean;
 };
 
-type InvoiceRow = NonNullable<
-  NonNullable<MerchantDashboardSummary["billing"]>["invoices"]
->[number];
+type InvoiceRow = MerchantBillingStatus["invoices"][number];
 
 /**
  * Merchant-facing plan copy. Not raw DB limits (those are not enforced yet).
@@ -67,11 +71,15 @@ function planCopy(name: string) {
 }
 
 export function BillingWorkspace({
-  summary,
+  billing,
+  tenantId,
+  storefrontHostname,
   returnedFromPayment = false,
   billingPath,
 }: {
-  summary: MerchantDashboardSummary;
+  billing: MerchantBillingStatus;
+  tenantId: string;
+  storefrontHostname: string;
   /** Landed from Chapa return_url with paid=1. */
   returnedFromPayment?: boolean;
   billingPath?: string;
@@ -79,10 +87,9 @@ export function BillingWorkspace({
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const busy = isPending;
-  const billing = summary.billing;
 
   const catalog = useMemo((): CatalogPlan[] => {
-    if (!billing?.plan) return [];
+    if (!billing.plan) return [];
     if (billing.catalog && billing.catalog.length > 0) {
       return billing.catalog;
     }
@@ -113,27 +120,32 @@ export function BillingWorkspace({
     catalog.find((plan) => plan.id === resolvedSelectedId) ?? currentPlan ?? null;
 
   const invoices = useMemo(() => {
-    return (billing?.invoices ?? []).filter((invoice) => {
+    return billing.invoices.filter((invoice) => {
       if (invoice.provider === "trial") return false;
+      if (invoice.status === "void" || invoice.status === "cancelled") return false;
       const amount = Number(invoice.amount);
       if (Number.isFinite(amount) && amount === 0 && invoice.status === "paid") return false;
       return true;
     });
-  }, [billing?.invoices]);
+  }, [billing.invoices]);
 
-  if (billing?.unavailable || !billing?.plan || !billing.subscription || !currentPlan || !selectedPlan) {
+  if (!billing.plan || !billing.subscription || !currentPlan || !selectedPlan) {
     return (
       <Empty className="min-h-96 border">
         <EmptyHeader>
+          <EmptyMedia variant="icon">
+            <AppIcons.billing />
+          </EmptyMedia>
           <EmptyTitle>Billing is not available</EmptyTitle>
           <EmptyDescription>
-            We could not load plan information for this shop. Open billing from the account menu,
-            or refresh this page.
+            Plan details for this shop could not be loaded. Try reloading, or open Billing from
+            your account menu.
           </EmptyDescription>
         </EmptyHeader>
         {billingPath ? (
-          <Button asChild className="mt-4" variant="outline">
+          <Button asChild className="mt-2" variant="outline">
             <Link href={billingPath} prefetch={false}>
+              <AppIcons.refresh data-icon="inline-start" />
               Reload billing
             </Link>
           </Button>
@@ -168,15 +180,31 @@ export function BillingWorkspace({
     // Build with URLSearchParams only — never HTML-entity-encode (&amp;), which
     // Chapa/return redirects may otherwise preserve and break query parsing.
     const url = new URL(dashboardRoutes.billing, window.location.origin);
-    url.searchParams.set("tenantId", summary.tenant.id);
+    url.searchParams.set("tenantId", tenantId);
     url.searchParams.set("paid", "1");
     return url.href;
   }
 
-  function runBillingAction(body: Record<string, unknown>) {
+  const scheduledPlanId = subscription.scheduledPlanId ?? null;
+  const scheduledPlanName = subscription.scheduledPlanName ?? null;
+  const scheduledEffectiveAt = subscription.scheduledEffectiveAt ?? null;
+  const hasScheduledDowngrade = Boolean(scheduledPlanId);
+  const selectedIsScheduledTarget =
+    Boolean(scheduledPlanId) && chosenPlan.id === scheduledPlanId;
+  const periodStillActive =
+    !isCurrentFree &&
+    subscription.status !== "past_due" &&
+    periodEndMs != null &&
+    Number.isFinite(periodEndMs) &&
+    periodEndMs > Date.now();
+
+  function runBillingAction(
+    body: Record<string, unknown>,
+    successMessage = "Invoice ready.",
+  ) {
     startTransition(async () => {
       try {
-        const path = getTenantScopedPath("/admin/billing/actions", summary.tenant.id);
+        const path = getTenantScopedPath("/admin/billing/actions", tenantId);
         const response = await fetch(path, {
           method: "POST",
           headers: {
@@ -203,7 +231,29 @@ export function BillingWorkspace({
           return;
         }
 
-        toast.success("Invoice ready.");
+        if (data?.scheduled === true) {
+          toast.success(
+            data.effectiveAt
+              ? `Switches to free plan on ${formatDate(String(data.effectiveAt))}.`
+              : "Plan change scheduled.",
+          );
+          router.refresh();
+          return;
+        }
+
+        if (data?.applied === true) {
+          toast.success("You are now on the free plan.");
+          router.refresh();
+          return;
+        }
+
+        if (data?.cancelled === true) {
+          toast.success("Scheduled plan change cancelled.");
+          router.refresh();
+          return;
+        }
+
+        toast.success(successMessage);
         router.refresh();
       } catch {
         toast.error(mapPlatformErrorMessage("platform_request_failed"));
@@ -222,6 +272,18 @@ export function BillingWorkspace({
       return;
     }
 
+    // Keep paid plan: cancel scheduled free switch.
+    if (
+      selectedIsCurrent &&
+      !selectedIsFree &&
+      hasScheduledDowngrade &&
+      !inRenewalWindow &&
+      subscription.status !== "past_due"
+    ) {
+      runBillingAction({ action: "cancel_downgrade" }, "Scheduled plan change cancelled.");
+      return;
+    }
+
     if (selectedIsCurrent && selectedIsFree) {
       return;
     }
@@ -236,6 +298,15 @@ export function BillingWorkspace({
     }
 
     if (selectedIsCurrent && !selectedIsFree) {
+      return;
+    }
+
+    // Free plan: schedule at period end, or switch now if period already ended.
+    if (selectedIsFree && !selectedIsCurrent) {
+      runBillingAction({
+        action: "downgrade",
+        planId: chosenPlan.id,
+      });
       return;
     }
 
@@ -258,12 +329,29 @@ export function BillingWorkspace({
     if (
       selectedIsCurrent &&
       !selectedIsFree &&
+      hasScheduledDowngrade &&
+      !inRenewalWindow &&
+      subscription.status !== "past_due"
+    ) {
+      return "Keep this plan";
+    }
+    if (
+      selectedIsCurrent &&
+      !selectedIsFree &&
       (inRenewalWindow || subscription.status === "past_due")
     ) {
       return subscription.status === "past_due" ? "Renew plan" : "Renew period";
     }
     if (selectedIsCurrent && !selectedIsFree) {
       return "Current plan";
+    }
+    if (selectedIsFree && !selectedIsCurrent) {
+      if (selectedIsScheduledTarget) {
+        return "Change scheduled";
+      }
+      return periodStillActive && subscription.currentPeriodEnd
+        ? `Switch after ${formatDate(subscription.currentPeriodEnd)}`
+        : `Switch to ${chosenPlan.name}`;
     }
     if (!selectedIsFree) {
       return `Continue with ${chosenPlan.name}`;
@@ -273,11 +361,12 @@ export function BillingWorkspace({
 
   const primaryDisabled =
     busy ||
-    (selectedIsFree && !selectedIsCurrent) ||
+    (selectedIsFree && selectedIsScheduledTarget) ||
     (selectedIsCurrent && selectedIsFree) ||
     (selectedIsCurrent &&
       !selectedIsFree &&
       !openInvoice &&
+      !hasScheduledDowngrade &&
       !inRenewalWindow &&
       subscription.status !== "past_due");
 
@@ -291,6 +380,11 @@ export function BillingWorkspace({
         <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
           <h2 className="text-2xl font-semibold tracking-tight">{activePlan.name}</h2>
           <Badge variant="secondary">{isCurrentFree ? "Free" : formatStatus(subscription.status)}</Badge>
+          {hasScheduledDowngrade ? (
+            <Badge variant="outline">
+              Switches to {scheduledPlanName ?? "free plan"}
+            </Badge>
+          ) : null}
         </div>
         <p className="text-sm text-muted-foreground">
           {isCurrentFree
@@ -299,6 +393,13 @@ export function BillingWorkspace({
               ? `Paid through ${formatDate(subscription.currentPeriodEnd)} · ${formatPlanPrice(activePlan.price)} / ${formatCycle(subscription.billingCycle)}`
               : `${formatPlanPrice(activePlan.price)} · ${formatCycle(subscription.billingCycle)}`}
         </p>
+        {hasScheduledDowngrade && scheduledEffectiveAt ? (
+          <p className="text-sm text-muted-foreground">
+            Changes to {scheduledPlanName ?? "the free plan"} on{" "}
+            {formatDate(scheduledEffectiveAt)}. No refund for remaining days. You can cancel before
+            then.
+          </p>
+        ) : null}
       </section>
 
       {returnedFromPayment && openInvoice ? (
@@ -434,20 +535,26 @@ export function BillingWorkspace({
                   : "You are already on this plan."
                 : openInvoice
                   ? "Finish payment to activate or extend this plan."
-                  : inRenewalWindow
-                    ? "Your current period is ending soon. Renew to stay on this plan."
-                    : subscription.status === "past_due"
-                      ? "Your paid period has ended. Renew to continue on this plan."
-                      : "You are already on this plan."
+                  : hasScheduledDowngrade
+                    ? `A switch to ${scheduledPlanName ?? "the free plan"} is scheduled. Keep this plan to cancel it.`
+                    : inRenewalWindow
+                      ? "Your current period is ending soon. Renew to stay on this plan."
+                      : subscription.status === "past_due"
+                        ? "Your paid period has ended. Renew to continue on this plan."
+                        : "You are already on this plan."
               : selectedIsFree
-                ? "Downgrading to a free plan is not available from this page."
+                ? selectedIsScheduledTarget
+                  ? `Already scheduled. You stay on ${activePlan.name} until ${formatDate(scheduledEffectiveAt || subscription.currentPeriodEnd || "")}.`
+                  : periodStillActive && subscription.currentPeriodEnd
+                    ? `No refund. You keep ${activePlan.name} until ${formatDate(subscription.currentPeriodEnd)}, then move to ${chosenPlan.name}.`
+                    : `Switch to ${chosenPlan.name} now. Your paid period has already ended.`
                 : openInvoice
                   ? "Complete payment for the open invoice, or continue to confirm this plan."
                   : `You will be charged ${formatPlanPrice(chosenPlan.price)} for one month after payment.`}
           </p>
           <Button
             className="shrink-0 sm:min-w-[12rem]"
-            disabled={primaryDisabled || (selectedIsFree && !selectedIsCurrent)}
+            disabled={primaryDisabled}
             type="button"
             onClick={handlePrimaryAction}
           >
@@ -500,7 +607,7 @@ export function BillingWorkspace({
         {" · "}
         <a
           className="underline-offset-2 hover:underline"
-          href={`//${summary.domain.hostname}`}
+          href={`//${storefrontHostname}`}
           rel="noreferrer"
           target="_blank"
         >

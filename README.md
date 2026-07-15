@@ -56,6 +56,13 @@ Development defaults use `lvh.me`, which resolves to localhost:
 - `http://selam.lvh.me`
 - `http://selam.lvh.me/admin`
 
+### Chapa payments (local notes)
+
+- Platform billing and store checkout both use Chapa. The API sets **callback_url** from `PLATFORM_PUBLIC_BASE_URL` (must be reachable by Chapa in real deploys).
+- Local `*.lvh.me` is not reachable from Chapa’s servers. Billing still completes via **return_url confirm** and the worker job **`billing.reconcile-payments`** (re-verifies pending `ecs_bill_*` invoices). Run `pnpm --filter @ecs/platform-api dev:worker` with Redis.
+- Set `CHAPA_SECRET_KEY` and, for demo `*.local` owner emails, `CHAPA_FALLBACK_EMAIL` to a real mailbox Chapa accepts.
+- Details: `dev-docs/post-mvp/09-billing-v1-free-and-growth.md`.
+
 ## Running Locally
 
 Start infrastructure only:
