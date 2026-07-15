@@ -129,5 +129,14 @@
       "unfulfilled": "Unfulfilled",
       "label": "Fulfillment"
     }
+  },
+  "create": {
+    "trigger": "Create order",
+    "title": "Create order",
+    "description": "Capture a phone or in-person cash sale. Choose a customer, add products, then confirm delivery.",
+    "creating": "Creating…",
+    "stepCustomer": "Customer",
+    "stepItems": "Items",
+    "stepDelivery": "Delivery"
   }
 }

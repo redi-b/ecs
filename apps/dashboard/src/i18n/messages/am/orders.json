@@ -129,5 +129,14 @@
       "unfulfilled": "ያልተላኩ",
       "label": "የማድረስ ሁኔታ"
     }
+  },
+  "create": {
+    "trigger": "አዲስ ትዕዛዝ",
+    "title": "አዲስ ትዕዛዝ",
+    "description": "በስልክ ወይም በአካል የጥሬ ገንዘብ ሽያጭ ይመዝግቡ። ደንበኛ ይምረጡ፣ ምርቶችን ይጨምሩ፣ ከዚያ ማድረስ ያረጋግጡ።",
+    "creating": "በመመዝገብ ላይ…",
+    "stepCustomer": "ደንበኛ",
+    "stepItems": "እቃዎች",
+    "stepDelivery": "ማድረስ"
   }
 }

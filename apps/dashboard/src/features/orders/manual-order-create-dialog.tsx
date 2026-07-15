@@ -32,6 +32,7 @@ import { useCreateQueryOpen } from "@/lib/use-create-query-open";
 import { Textarea } from "@/components/ui/textarea";
 import { mapPlatformErrorMessage } from "@/lib/platform-api/errors";
 import { dashboardRoutes } from "@/lib/routes";
+import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 
 type CatalogVariant = {
@@ -65,8 +66,6 @@ type AddressForm = {
   province: string;
 };
 
-const stepLabels = ["Customer", "Items", "Delivery"] as const;
-
 const emptyAddress: AddressForm = {
   address1: "",
   city: "",
@@ -76,22 +75,26 @@ const emptyAddress: AddressForm = {
   province: "",
 };
 
+function CreateOrderTriggerButton({ disabled }: { disabled?: boolean }) {
+  const { t } = useI18n();
+  return (
+    <Button type="button" disabled={disabled}>
+      <AppIcons.orders data-icon="inline-start" />
+      {t("orders.create.trigger")}
+    </Button>
+  );
+}
+
 export function ManualOrderCreateDialog() {
   return (
-    <Suspense
-      fallback={
-        <Button type="button" disabled>
-          <AppIcons.orders data-icon="inline-start" />
-          Create order
-        </Button>
-      }
-    >
+    <Suspense fallback={<CreateOrderTriggerButton disabled />}>
       <ManualOrderCreateDialogInner />
     </Suspense>
   );
 }
 
 function ManualOrderCreateDialogInner() {
+  const { t } = useI18n();
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState(0);
@@ -369,18 +372,15 @@ function ManualOrderCreateDialogInner() {
       <DialogTrigger asChild>
         <Button type="button">
           <AppIcons.orders data-icon="inline-start" />
-          Create order
+          {t("orders.create.trigger")}
         </Button>
       </DialogTrigger>
       <DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-2xl">
         <DialogHeader className="gap-1.5 border-b px-4 py-4 text-left sm:px-5">
-          <DialogTitle>Create order</DialogTitle>
-          <DialogDescription>
-            Capture a phone or in-person cash sale. Choose a customer, add products, then confirm
-            delivery.
-          </DialogDescription>
+          <DialogTitle>{t("orders.create.title")}</DialogTitle>
+          <DialogDescription>{t("orders.create.description")}</DialogDescription>
           <ol className="mt-3 flex flex-wrap gap-2 text-xs">
-            {stepLabels.map((label, index) => (
+            {[t("orders.create.stepCustomer"), t("orders.create.stepItems"), t("orders.create.stepDelivery")].map((label, index) => (
               <li
                 className={cn(
                   "rounded-full px-2.5 py-1 font-medium",
@@ -734,7 +734,7 @@ function ManualOrderCreateDialogInner() {
                 onClick={() => void create()}
                 type="button"
               >
-                {saving ? "Creating…" : "Create order"}
+                {saving ? t("orders.create.creating") : t("orders.create.trigger")}
               </Button>
             )}
           </div>
