@@ -31,7 +31,10 @@ export async function POST(request: Request) {
       headers["x-forwarded-host"] = context.requestHost;
     }
 
+    // normalizeBaseUrl ends with `/`; join paths via URL so we never hit `//platform/...` (404).
     const base = getPlatformApiBaseUrl();
+    const platformUrl = (path: string) =>
+      new URL(path.replace(/^\//, ""), base).toString();
 
     if (action === "upgrade") {
       const planId = body.planId?.trim();
@@ -40,7 +43,9 @@ export async function POST(request: Request) {
       }
 
       const response = await fetch(
-        `${base}/platform/tenants/${encodeURIComponent(context.tenantId)}/billing/upgrade`,
+        platformUrl(
+          `platform/tenants/${encodeURIComponent(context.tenantId)}/billing/upgrade`,
+        ),
         {
           method: "POST",
           headers,
@@ -69,7 +74,9 @@ export async function POST(request: Request) {
         new URL("/admin/billing", request.url).toString();
 
       const response = await fetch(
-        `${base}/platform/tenants/${encodeURIComponent(context.tenantId)}/billing/invoices/${encodeURIComponent(invoiceId)}/pay`,
+        platformUrl(
+          `platform/tenants/${encodeURIComponent(context.tenantId)}/billing/invoices/${encodeURIComponent(invoiceId)}/pay`,
+        ),
         {
           method: "POST",
           headers,

@@ -153,11 +153,9 @@ export function createBillingService(db: PlatformDb) {
         .limit(1);
 
       if (existing) {
-        // Migrate legacy free trials → free forever (no expiry pressure).
-        if (
-          existing.planId === DEFAULT_PLAN_IDS.starter &&
-          (existing.status === "trialing" || existing.status === "active")
-        ) {
+        // One-time soft migrate: only the free Starter plan. Paid-plan trials
+        // (future Growth trialing) are left alone so we can still use trialing later.
+        if (existing.planId === DEFAULT_PLAN_IDS.starter && existing.status === "trialing") {
           await db
             .update(subscriptions)
             .set({
