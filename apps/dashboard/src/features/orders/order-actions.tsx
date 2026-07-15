@@ -27,6 +27,8 @@ import {
   getRemainingFinishSteps,
   type OrderNextActionType,
 } from "@/features/orders/order-domain";
+import type { MessageKey } from "@/i18n/messages";
+import { useI18n } from "@/i18n/provider";
 
 type PendingKind =
   | { kind: "next"; type: OrderNextActionType }
@@ -42,18 +44,50 @@ type OrderActionsProps = {
   variant?: "card" | "header";
 };
 
-function mapActionError(message: string) {
+type Translate = (key: MessageKey, values?: Record<string, string | number | Date>) => string;
+
+function mapActionError(message: string, t: Translate) {
   switch (message) {
     case "order_not_fulfillable":
-      return "Couldn’t pack this order. Products may not share this shop’s delivery profile — try re-saving the product or contact support.";
+      return t("orders.actions.errFulfillable");
     case "order_fulfillment_not_found":
-      return "Could not find a package to update.";
+      return t("orders.actions.errFulfillmentNotFound");
     case "inventory_location_unavailable":
-      return "Stock location isn’t set up for packing yet.";
+      return t("orders.actions.errInventory");
     case "order_not_found":
-      return "Order not found.";
+      return t("orders.actions.errNotFound");
     default:
-      return message || "Could not update this order.";
+      return message || t("orders.actions.errGeneric");
+  }
+}
+
+function nextActionCopy(type: OrderNextActionType, t: Translate) {
+  switch (type) {
+    case "mark_ready":
+      return { label: t("orders.actions.markReady"), description: t("orders.actions.markReadyDesc") };
+    case "mark_completed":
+      return {
+        label: t("orders.actions.markCompleted"),
+        description: t("orders.actions.markCompletedDesc"),
+      };
+    case "mark_paid":
+      return { label: t("orders.actions.markPaid"), description: t("orders.actions.markPaidDesc") };
+    case "none":
+    default:
+      return { label: t("orders.actions.allDone"), description: t("orders.actions.allDoneDesc") };
+  }
+}
+
+function finishStepLabel(id: string, t: Translate) {
+  switch (id) {
+    case "ready":
+      return t("orders.actions.stepReady");
+    case "completed":
+      return t("orders.actions.stepCompleted");
+    case "paid":
+      return t("orders.actions.stepPaid");
+    default:
+      return id;
   }
 }
 
@@ -80,8 +114,10 @@ async function postOrderAction(
 }
 
 export function OrderActions({ action, order, variant = "card" }: OrderActionsProps) {
+  const { t } = useI18n();
   const router = useRouter();
   const next = useMemo(() => getNextAction(order), [order]);
+  const nextCopy = nextActionCopy(next.type, t);
   const [pending, setPending] = useState<PendingKind | null>(null);
   const [finishIncludePaid, setFinishIncludePaid] = useState(true);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -96,10 +132,9 @@ export function OrderActions({ action, order, variant = "card" }: OrderActionsPr
       if (kind.kind === "next") {
         if (kind.type === "mark_ready") {
           await postOrderAction(action, { action: "fulfill" });
-          return "Order marked ready.";
+          return t("orders.actions.toastReady");
         }
         if (kind.type === "mark_completed") {
-          // Deliver open fulfillments then complete.
           const open = (order.fulfillments ?? []).filter(
             (item) => !item.deliveredAt && !item.canceledAt,
           );
@@ -109,19 +144,18 @@ export function OrderActions({ action, order, variant = "card" }: OrderActionsPr
               fulfillmentId: fulfillment.id,
             });
           }
-          // If no fulfillment yet, finish path handles pack+deliver+complete
           if (open.length === 0) {
             await postOrderAction(action, { action: "finish", markPaid: false });
           } else {
             await postOrderAction(action, { action: "complete" });
           }
-          return "Order marked completed.";
+          return t("orders.actions.toastCompleted");
         }
         if (kind.type === "mark_paid") {
           await postOrderAction(action, { action: "mark-paid" });
-          return "Payment recorded.";
+          return t("orders.actions.toastPaid");
         }
-        return "Done.";
+        return t("orders.actions.toastDone");
       }
 
       if (kind.kind === "finish") {
@@ -129,24 +163,26 @@ export function OrderActions({ action, order, variant = "card" }: OrderActionsPr
           action: "finish",
           markPaid: finishIncludePaid && canMarkPaid(order),
         });
-        return "Remaining steps finished.";
+        return t("orders.actions.toastFinished");
       }
 
       if (kind.kind === "mark_paid") {
         await postOrderAction(action, { action: "mark-paid" });
-        return "Payment recorded.";
+        return t("orders.actions.toastPaid");
       }
 
       if (kind.kind === "recheck") {
         await postOrderAction(action, { action: "recheck-payment" });
-        return "Payment checked with Chapa.";
+        return t("orders.actions.toastRecheck");
       }
 
       await postOrderAction(action, { action: "cancel" });
-      return "Order canceled.";
+      return t("orders.actions.toastCanceled");
     },
     onError: (error) => {
-      setActionError(mapActionError(error instanceof Error ? error.message : "order_action_failed"));
+      setActionError(
+        mapActionError(error instanceof Error ? error.message : "order_action_failed", t),
+      );
     },
     onSuccess: (message) => {
       setActionError(null);
@@ -165,7 +201,7 @@ export function OrderActions({ action, order, variant = "card" }: OrderActionsPr
     const canceled = (order.status ?? "").toLowerCase().includes("cancel");
     return (
       <div className="rounded-xl border border-dashed px-4 py-4 text-sm text-muted-foreground">
-        {canceled ? "This order was canceled." : "No further steps for this order."}
+        {canceled ? t("orders.actions.canceled") : t("orders.actions.noFurther")}
       </div>
     );
   }
@@ -183,11 +219,13 @@ export function OrderActions({ action, order, variant = "card" }: OrderActionsPr
           {variant === "card" ? (
             <div className="flex items-start justify-between gap-2">
               <div>
-                <p className="text-xs font-medium tracking-wide text-primary uppercase">Next</p>
-                <p className="mt-1 text-sm font-medium">{next.label}</p>
-                <p className="mt-1 text-sm text-muted-foreground">{next.description}</p>
+                <p className="text-xs font-medium tracking-wide text-primary uppercase">
+                  {t("orders.actions.next")}
+                </p>
+                <p className="mt-1 text-sm font-medium">{nextCopy.label}</p>
+                <p className="mt-1 text-sm text-muted-foreground">{nextCopy.description}</p>
               </div>
-              <HelpTip summary={next.description} title={next.label} />
+              <HelpTip summary={nextCopy.description} title={nextCopy.label} />
             </div>
           ) : null}
           <Button
@@ -195,7 +233,7 @@ export function OrderActions({ action, order, variant = "card" }: OrderActionsPr
             onClick={() => setPending({ kind: "next", type: next.type })}
             type="button"
           >
-            {next.label}
+            {nextCopy.label}
           </Button>
         </div>
       ) : null}
@@ -208,7 +246,7 @@ export function OrderActions({ action, order, variant = "card" }: OrderActionsPr
             type="button"
             variant="outline"
           >
-            Complete all steps
+            {t("orders.actions.completeAll")}
           </Button>
         ) : null}
         {showMarkPaid && next.type !== "mark_paid" ? (
@@ -218,7 +256,7 @@ export function OrderActions({ action, order, variant = "card" }: OrderActionsPr
             type="button"
             variant="outline"
           >
-            Mark as paid
+            {t("orders.actions.markPaid")}
           </Button>
         ) : null}
         {showRecheck ? (
@@ -228,7 +266,7 @@ export function OrderActions({ action, order, variant = "card" }: OrderActionsPr
             type="button"
             variant="outline"
           >
-            Re-check payment
+            {t("orders.actions.recheckPayment")}
           </Button>
         ) : null}
         {showCancel && !(order.status ?? "").toLowerCase().includes("cancel") ? (
@@ -239,7 +277,7 @@ export function OrderActions({ action, order, variant = "card" }: OrderActionsPr
             type="button"
             variant="ghost"
           >
-            Cancel order
+            {t("orders.actions.cancelOrder")}
           </Button>
         ) : null}
       </div>
@@ -250,7 +288,7 @@ export function OrderActions({ action, order, variant = "card" }: OrderActionsPr
     <div className="space-y-3">
       {actionError ? (
         <Alert variant="destructive">
-          <AlertTitle>Couldn’t update order</AlertTitle>
+          <AlertTitle>{t("orders.actions.updateFailedTitle")}</AlertTitle>
           <AlertDescription>{actionError}</AlertDescription>
         </Alert>
       ) : null}
@@ -267,32 +305,30 @@ export function OrderActions({ action, order, variant = "card" }: OrderActionsPr
           <AlertDialogHeader>
             <AlertDialogTitle>
               {pending?.kind === "cancel"
-                ? "Cancel this order?"
+                ? t("orders.actions.confirmCancelTitle")
                 : pending?.kind === "finish"
-                  ? "Complete all remaining steps?"
+                  ? t("orders.actions.confirmFinishTitle")
                   : pending?.kind === "mark_paid"
-                    ? "Mark as paid?"
+                    ? t("orders.actions.confirmMarkPaidTitle")
                     : pending?.kind === "recheck"
-                      ? "Re-check payment?"
-                      : next.label}
+                      ? t("orders.actions.confirmRecheckTitle")
+                      : nextCopy.label}
             </AlertDialogTitle>
             <AlertDialogDescription asChild>
               <div className="space-y-3 text-sm text-muted-foreground">
                 {pending?.kind === "cancel" ? (
-                  <p className="text-destructive">
-                    This permanently cancels the sale. Only do this if the order will not go ahead.
-                  </p>
+                  <p className="text-destructive">{t("orders.actions.confirmCancelBody")}</p>
                 ) : null}
                 {pending?.kind === "finish" ? (
                   <>
-                    <p>
-                      Runs every open step at once so you don’t click through one by one:
-                    </p>
+                    <p>{t("orders.actions.confirmFinishBody")}</p>
                     <ul className="list-disc space-y-1 pl-5">
                       {finishSteps.map((step) => (
-                        <li key={step.id}>{step.label}</li>
+                        <li key={step.id}>{finishStepLabel(step.id, t)}</li>
                       ))}
-                      {finishSteps.length === 0 ? <li>Close out remaining work</li> : null}
+                      {finishSteps.length === 0 ? (
+                        <li>{t("orders.actions.closeRemaining")}</li>
+                      ) : null}
                     </ul>
                     {canMarkPaid(order) ? (
                       <label className="flex items-center gap-2 text-foreground">
@@ -300,23 +336,25 @@ export function OrderActions({ action, order, variant = "card" }: OrderActionsPr
                           checked={finishIncludePaid}
                           onCheckedChange={(value) => setFinishIncludePaid(Boolean(value))}
                         />
-                        Also mark as paid (cash received)
+                        {t("orders.actions.alsoMarkPaid")}
                       </label>
                     ) : null}
                   </>
                 ) : null}
                 {pending?.kind === "mark_paid" ? (
-                  <p>Record that you received payment for this order.</p>
+                  <p>{t("orders.actions.confirmMarkPaidBody")}</p>
                 ) : null}
                 {pending?.kind === "recheck" ? (
-                  <p>Ask Chapa if this online payment went through, then update the order.</p>
+                  <p>{t("orders.actions.confirmRecheckBody")}</p>
                 ) : null}
-                {pending?.kind === "next" ? <p>{next.description}</p> : null}
+                {pending?.kind === "next" ? <p>{nextCopy.description}</p> : null}
               </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={mutation.isPending}>Back</AlertDialogCancel>
+            <AlertDialogCancel disabled={mutation.isPending}>
+              {t("common.back")}
+            </AlertDialogCancel>
             <AlertDialogAction
               className={
                 pending?.kind === "cancel"
@@ -330,10 +368,10 @@ export function OrderActions({ action, order, variant = "card" }: OrderActionsPr
               }}
             >
               {mutation.isPending
-                ? "Working…"
+                ? t("orders.actions.working")
                 : pending?.kind === "cancel"
-                  ? "Yes, cancel order"
-                  : "Confirm"}
+                  ? t("orders.actions.yesCancel")
+                  : t("orders.actions.confirm")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
