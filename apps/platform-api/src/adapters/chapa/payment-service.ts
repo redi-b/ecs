@@ -47,6 +47,37 @@ function getString(value: unknown) {
   return typeof value === "string" && value.trim() ? value.trim() : undefined;
 }
 
+/**
+ * Chapa validates email strictly (RFC-ish). Demo accounts like
+ * owner@bole-style.local fail with "validation.email".
+ */
+export function resolveChapaPayerEmail(
+  candidate: string | null | undefined,
+  fallback?: string | null | undefined,
+): string | null {
+  const primary = candidate?.trim() ?? "";
+  if (isChapaAcceptableEmail(primary)) {
+    return primary;
+  }
+  const secondary = fallback?.trim() ?? "";
+  if (isChapaAcceptableEmail(secondary)) {
+    return secondary;
+  }
+  return null;
+}
+
+export function isChapaAcceptableEmail(value: string): boolean {
+  const email = value.trim();
+  if (!email) return false;
+  // Basic shape; reject local/dev hosts that fail Chapa's validation.email.
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return false;
+  const host = email.split("@")[1]?.toLowerCase() ?? "";
+  if (host === "localhost" || host.endsWith(".local") || !host.includes(".")) {
+    return false;
+  }
+  return true;
+}
+
 /** Chapa sometimes returns message as string, array, or nested object. */
 export function formatChapaErrorMessage(message: unknown, httpStatus?: number): string {
   if (typeof message === "string" && message.trim()) {

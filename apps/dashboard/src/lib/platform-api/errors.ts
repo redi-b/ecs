@@ -69,7 +69,8 @@ const PLATFORM_ERROR_MESSAGES: Record<string, string> = {
   billing_invoice_is_free: "Free invoices cannot be paid with Chapa.",
   billing_chapa_unavailable: "Card payments are not configured yet.",
   billing_chapa_init_failed: "Could not start Chapa checkout. Try again.",
-  billing_payer_email_required: "Your account email is required to pay with Chapa.",
+  billing_payer_email_required:
+    "A valid email is required for payment. For local demo shops, set CHAPA_FALLBACK_EMAIL in platform-api/.env.",
   billing_upgrade_failed: "Could not create the upgrade invoice.",
   billing_pay_failed: "Could not start payment.",
   billing_return_url_required: "Missing return URL for payment.",

@@ -4,7 +4,10 @@ import { createJobsClient } from "@ecs/jobs";
 import { createLogger } from "@ecs/logger";
 import { serve } from "@hono/node-server";
 import { eq } from "drizzle-orm";
-import { createChapaPaymentService } from "./adapters/chapa/payment-service.js";
+import {
+  createChapaPaymentService,
+  resolveChapaPayerEmail,
+} from "./adapters/chapa/payment-service.js";
 import { createMedusaCommerceProvisioningClient } from "./adapters/medusa/commerce-provisioning.js";
 import { createMedusaCustomerService } from "./adapters/medusa/customer-service.js";
 import { createMedusaManualOrderService } from "./adapters/medusa/manual-order-service.js";
@@ -365,12 +368,18 @@ const app = createPlatformApp({
         status: 503 as const,
       };
     }
-    const email = input.payerEmail?.trim();
+    // Demo shop emails are often *.local — Chapa rejects those (validation.email).
+    const email = resolveChapaPayerEmail(
+      input.payerEmail,
+      process.env.CHAPA_FALLBACK_EMAIL ?? process.env.EMAIL_FROM,
+    );
     if (!email) {
       return {
         ok: false as const,
         error: "billing_payer_email_required" as const,
         status: 400 as const,
+        message:
+          "A valid email is required for Chapa. Set CHAPA_FALLBACK_EMAIL (e.g. you@gmail.com) in platform-api/.env for local demo accounts.",
       };
     }
 
