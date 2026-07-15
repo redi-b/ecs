@@ -104,6 +104,16 @@ function IconTile({
   );
 }
 
+function useModKeyLabel() {
+  // Avoid hydration mismatch: default to Ctrl, swap to ⌘ on Apple platforms after mount.
+  const [modKey, setModKey] = useState("Ctrl");
+  useEffect(() => {
+    const apple = /Mac|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    setModKey(apple ? "⌘" : "Ctrl");
+  }, []);
+  return modKey;
+}
+
 export function CommandCenter() {
   const router = useRouter();
   const { isMobile, setOpenMobile } = useSidebar();
@@ -115,6 +125,7 @@ export function CommandCenter() {
   const [pendingWaves, setPendingWaves] = useState(0);
   const [remoteError, setRemoteError] = useState<string | null>(null);
   const [recent, setRecent] = useState<RecentCommandItem[]>([]);
+  const modKey = useModKeyLabel();
 
   const tenantId =
     typeof window !== "undefined"
