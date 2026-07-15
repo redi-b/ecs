@@ -238,6 +238,29 @@ export function registerPlatformTenantOpsRoutes(
     });
   });
 
+  app.post("/platform/tenants/:tenantId/billing/confirm", async (context) => {
+    if (!options.confirmBillingPayments) {
+      return context.json({ error: "billing_unavailable" }, 503);
+    }
+
+    const session = await options.getSession?.(context.req.raw.headers);
+    if (!session) {
+      return context.json({ error: "auth_required" }, 401);
+    }
+
+    const tenantId = context.req.param("tenantId");
+    const authorization = await options.authorizeDashboardForTenant?.({
+      tenantId,
+      userId: session.user.id,
+    });
+    if (!authorization?.ok) {
+      return context.json({ error: "dashboard_forbidden" }, 403);
+    }
+
+    const result = await options.confirmBillingPayments({ tenantId });
+    return context.json(result);
+  });
+
   app.post("/platform/tenants/:tenantId/billing/upgrade", async (context) => {
     if (!options.createPlanUpgradeInvoice) {
       return context.json({ error: "billing_unavailable" }, 503);

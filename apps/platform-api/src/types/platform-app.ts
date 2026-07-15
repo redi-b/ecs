@@ -164,6 +164,14 @@ export type PlatformAppOptions = {
         tenantId: string;
       }) => Promise<BillingInvoicePayResult>)
     | undefined;
+  /** Re-verify pending Chapa plan invoices after return_url (local/dev without public callback). */
+  confirmBillingPayments?:
+    | ((input: { tenantId: string }) => Promise<{
+        ok: true;
+        confirmed: number;
+        checked: number;
+      }>)
+    | undefined;
   getDashboardMetrics?:
     | ((input: { days: number; tenantId: string }) => Promise<DashboardMetricsResult>)
     | undefined;

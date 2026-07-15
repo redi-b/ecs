@@ -68,8 +68,13 @@ function planCopy(name: string) {
 
 export function BillingWorkspace({
   summary,
+  returnedFromPayment = false,
+  billingPath,
 }: {
   summary: MerchantDashboardSummary;
+  /** Landed from Chapa return_url with paid=1. */
+  returnedFromPayment?: boolean;
+  billingPath?: string;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -122,9 +127,17 @@ export function BillingWorkspace({
         <EmptyHeader>
           <EmptyTitle>Billing is not available</EmptyTitle>
           <EmptyDescription>
-            We could not load plan information for this shop. Try again in a moment.
+            We could not load plan information for this shop. Open billing from the account menu,
+            or refresh this page.
           </EmptyDescription>
         </EmptyHeader>
+        {billingPath ? (
+          <Button asChild className="mt-4" variant="outline">
+            <Link href={billingPath} prefetch={false}>
+              Reload billing
+            </Link>
+          </Button>
+        ) : null}
       </Empty>
     );
   }
@@ -152,12 +165,12 @@ export function BillingWorkspace({
     daysToPeriodEnd <= 7;
 
   function returnToBillingUrl() {
-    const url = new URL(
-      getTenantScopedPath(dashboardRoutes.billing, summary.tenant.id),
-      window.location.origin,
-    );
+    // Build with URLSearchParams only — never HTML-entity-encode (&amp;), which
+    // Chapa/return redirects may otherwise preserve and break query parsing.
+    const url = new URL(dashboardRoutes.billing, window.location.origin);
+    url.searchParams.set("tenantId", summary.tenant.id);
     url.searchParams.set("paid", "1");
-    return url.toString();
+    return url.href;
   }
 
   function runBillingAction(body: Record<string, unknown>) {
@@ -282,13 +295,41 @@ export function BillingWorkspace({
         </p>
       </section>
 
+      {returnedFromPayment && openInvoice ? (
+        <Card className="border-border">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">Checking your payment</CardTitle>
+            <CardDescription>
+              If you finished checkout, confirmation can take a moment. Use Pay again only if the
+              charge did not complete.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      ) : null}
+
+      {returnedFromPayment && !openInvoice && !isCurrentFree ? (
+        <Card className="border-primary/30 bg-primary/5">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">Payment received</CardTitle>
+            <CardDescription>
+              Your paid plan is active
+              {subscription.currentPeriodEnd
+                ? ` through ${formatDate(subscription.currentPeriodEnd)}`
+                : ""}
+              .
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      ) : null}
+
       {/* Open payment — only when something is actually unpaid */}
       {openInvoice ? (
         <Card className="border-primary/30 bg-primary/5">
           <CardHeader className="pb-2">
             <CardTitle className="text-base">Payment required</CardTitle>
             <CardDescription>
-              Complete this payment to start or extend your paid plan period.
+              Complete payment to start or extend your paid plan. An invoice is created when you
+              choose a paid plan; you can finish anytime.
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -385,7 +426,9 @@ export function BillingWorkspace({
           <p className="text-sm text-muted-foreground">
             {selectedIsCurrent
               ? selectedIsFree
-                ? "You are already on this plan."
+                ? openInvoice
+                  ? "You are on Starter. Select Growth to continue payment for the upgrade."
+                  : "You are already on this plan."
                 : openInvoice
                   ? "Finish payment to activate or extend this plan."
                   : inRenewalWindow
@@ -395,7 +438,9 @@ export function BillingWorkspace({
                       : "You are already on this plan."
               : selectedIsFree
                 ? "Downgrading to a free plan is not available from this page."
-                : `You will be charged ${formatPlanPrice(chosenPlan.price)} for one month after payment.`}
+                : openInvoice
+                  ? "Complete payment for the open invoice, or continue to confirm this plan."
+                  : `You will be charged ${formatPlanPrice(chosenPlan.price)} for one month after payment.`}
           </p>
           <Button
             className="shrink-0 sm:min-w-[12rem]"

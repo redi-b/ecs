@@ -36,6 +36,24 @@ export async function POST(request: Request) {
     const platformUrl = (path: string) =>
       new URL(path.replace(/^\//, ""), base).toString();
 
+    if (action === "confirm") {
+      const response = await fetch(
+        platformUrl(
+          `platform/tenants/${encodeURIComponent(context.tenantId)}/billing/confirm`,
+        ),
+        { method: "POST", headers },
+      );
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        return {
+          ok: false,
+          message: extractErrorText(data) ?? "billing_confirm_failed",
+          status: response.status,
+        };
+      }
+      return { ok: true, data };
+    }
+
     if (action === "upgrade") {
       const planId = body.planId?.trim();
       if (!planId) {

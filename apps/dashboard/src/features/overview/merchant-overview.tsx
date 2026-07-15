@@ -104,9 +104,6 @@ function getBillingNotice(summary: MerchantDashboardSummary): BillingNotice | nu
 
   const isFree =
     billing.plan.isFree === true || Number(billing.plan.price) === 0;
-  if (isFree) {
-    return null;
-  }
 
   const now = Date.now();
   const status = billing.subscription.status.toLowerCase();
@@ -130,27 +127,12 @@ function getBillingNotice(summary: MerchantDashboardSummary): BillingNotice | nu
       ? (invoiceDueMs - now) / MS_PER_DAY
       : null;
 
-  if (status === "past_due") {
-    return {
-      tone: "warning",
-      title: "Payment past due",
-      description: "Your paid plan period has ended. Open Billing to pay and restore full access.",
-    };
-  }
-
-  if (status === "canceled" || status === "cancelled") {
-    return {
-      tone: "warning",
-      title: "Subscription cancelled",
-      description: "This shop is not on an active paid plan. Open Billing to choose a plan.",
-    };
-  }
-
+  // Open upgrade/renewal invoice always matters (including free shops mid-upgrade).
   if (openInvoice && typeof daysToInvoiceDue === "number" && daysToInvoiceDue < 0) {
     return {
       tone: "warning",
-      title: "Invoice overdue",
-      description: `Payment was due ${formatReadableDate(openInvoice.dueAt!)}. Open Billing to pay.`,
+      title: "Payment overdue",
+      description: `A plan payment was due ${formatReadableDate(openInvoice.dueAt!)}. Open Billing to finish payment.`,
     };
   }
 
@@ -159,8 +141,28 @@ function getBillingNotice(summary: MerchantDashboardSummary): BillingNotice | nu
       tone: "reminder",
       title: "Payment due",
       description: openInvoice.dueAt
-        ? `An invoice is due ${formatReadableDate(openInvoice.dueAt)}. Open Billing to pay with Chapa.`
-        : "You have an open invoice. Open Billing to pay with Chapa.",
+        ? `A plan payment is due ${formatReadableDate(openInvoice.dueAt)}. Open Billing to pay.`
+        : "You have an open plan payment. Open Billing to pay.",
+    };
+  }
+
+  if (isFree) {
+    return null;
+  }
+
+  if (status === "past_due") {
+    return {
+      tone: "warning",
+      title: "Payment past due",
+      description: "Your paid plan period has ended. Open Billing to pay and continue on this plan.",
+    };
+  }
+
+  if (status === "canceled" || status === "cancelled") {
+    return {
+      tone: "warning",
+      title: "Subscription cancelled",
+      description: "This shop is not on an active paid plan. Open Billing to choose a plan.",
     };
   }
 

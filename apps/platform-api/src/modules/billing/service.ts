@@ -618,6 +618,32 @@ export function createBillingService(db: PlatformDb) {
     },
 
     /**
+     * Find pending platform-billing invoices for a tenant (with Chapa tx refs).
+     * Used to re-verify after return_url when webhook/callback did not run (local dev).
+     */
+    listPendingChapaInvoiceTxRefs: async (input: { tenantId: string }) => {
+      const rows = await db
+        .select({
+          id: invoices.id,
+          providerReference: invoices.providerReference,
+          status: invoices.status,
+        })
+        .from(invoices)
+        .where(and(eq(invoices.tenantId, input.tenantId), eq(invoices.status, "pending")));
+
+      return rows
+        .filter(
+          (row) =>
+            row.providerReference &&
+            isPlatformBillingTxRef(row.providerReference),
+        )
+        .map((row) => ({
+          invoiceId: row.id,
+          txRef: row.providerReference as string,
+        }));
+    },
+
+    /**
      * After Chapa verifies success for an ecs_bill_ tx_ref: mark invoice paid and activate plan period.
      */
     completeChapaInvoicePayment: async (input: {

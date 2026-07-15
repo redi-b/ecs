@@ -360,6 +360,34 @@ const app = createPlatformApp({
   checkTenantHandleAvailability,
   getBillingStatus: billingService.getBillingStatus,
   createPlanUpgradeInvoice: billingService.createPlanUpgradeInvoice,
+  confirmBillingPayments: async (input) => {
+    const pending = await billingService.listPendingChapaInvoiceTxRefs(input);
+    let confirmed = 0;
+    for (const item of pending) {
+      try {
+        const verification = await chapaPaymentService.verifyPayment(item.txRef);
+        const status = String(
+          verification?.data?.status ?? verification?.status ?? "",
+        )
+          .trim()
+          .toLowerCase();
+        if (status !== "success") continue;
+        const result = await billingService.completeChapaInvoicePayment({
+          tenantId: input.tenantId,
+          txRef: item.txRef,
+          providerReference:
+            (typeof verification?.data?.ref_id === "string" && verification.data.ref_id) ||
+            (typeof verification?.data?.reference === "string" &&
+              verification.data.reference) ||
+            item.txRef,
+        });
+        if (result.ok && result.applied) confirmed += 1;
+      } catch {
+        // Keep checking other invoices.
+      }
+    }
+    return { ok: true as const, confirmed, checked: pending.length };
+  },
   initializeBillingInvoicePayment: async (input) => {
     if (!process.env.CHAPA_SECRET_KEY?.trim()) {
       return {
