@@ -35,7 +35,15 @@
       "credentials": "Customer changes are temporarily unavailable. Contact support.",
       "fallbackEdit": "Customer could not be updated. Try again.",
       "fallbackCreate": "Customer could not be created. Try again."
-    }
+    },
+    "enterEmail": "Enter an email address.",
+    "toastUpdated": "Customer updated.",
+    "toastCreated": "Customer created.",
+    "saveChanges": "Save changes",
+    "firstNamePlaceholder": "Abebe",
+    "lastNamePlaceholder": "Kebede",
+    "emailPlaceholder": "customer@example.com",
+    "phonePlaceholder": "+251…"
   },
   "table": {
     "emptyTitle": "No customers yet",

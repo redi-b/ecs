@@ -100,5 +100,28 @@
     "movedToDraft": "{count} ከመደብር ወጥተዋል።",
     "deleted": "ምርት ጠፍቷል።",
     "deleteFailed": "ምርት ማጥፋት አልተቻለም።"
+  },
+  "edit": {
+    "detailsTitle": "የምርት ዝርዝሮችን አርትዕ",
+    "detailsTrigger": "የምርት ዝርዝሮችን አርትዕ",
+    "detailsDesc": "ለገዢዎች የሚታየውን ዋና የምርት መረጃ ያዘምኑ።",
+    "organizationTitle": "ድርጅትን አርትዕ",
+    "organizationTrigger": "የምርት ድርጅትን አርትዕ",
+    "organizationDesc": "ይህ ምርት በካታሎጉ ውስጥ እንዴት እንደሚከፋፈል ያዘምኑ።",
+    "mediaTitle": "የምርት ሚዲያን አርትዕ",
+    "mediaTrigger": "የምርት ሚዲያን አርትዕ",
+    "mediaDesc": "ምስሎችን ይጫኑ፣ ከቤተ-መጻሕፍት ይምረጡ፣ ሽፋን ያዘጋጁ እና ማዕከለ-ሥዕላትን እንደገና ያስተካክሉ።",
+    "title": "ርዕስ",
+    "handle": "ሃንድል",
+    "description": "መግለጫ",
+    "status": "ሁኔታ",
+    "titleRequired": "የምርት ርዕስ ያስፈልጋል።",
+    "saveChanges": "ለውጦችን አስቀምጥ",
+    "saving": "እየተቀመጠ ነው…",
+    "toastSaved": "ምርቱ ተዘምኗል።",
+    "toastError": "ምርቱን ማስቀመጥ አልተቻለም።",
+    "handleHelp": "በራሱ እንዲፈጠር ባዶ ይተዉት።",
+    "selectStatus": "ሁኔታ ይምረጡ",
+    "formError": "ቅጹን ይመልከቱና እንደገና ይሞክሩ።"
   }
 }

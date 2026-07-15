@@ -44,8 +44,8 @@
     "payment": {
       "label": "ክፍያ",
       "all": "ሁሉም",
-      "unpaid": "ክፍያ አልተደረገም",
-      "paid": "ክፍያ ተከፍሏል",
+      "unpaid": "ያልተከፈለ",
+      "paid": "ተከፍሏል",
       "failed": "ክፍያ አልተሳካም",
       "pending": "ክፍያ በመጠባበቅ ላይ",
       "unknown": "የክፍያ ሁኔታ አልታወቀም"
@@ -79,7 +79,7 @@
       "needs_fulfillment": "ማድረስ የሚፈልጉ",
       "fulfilled": "የደረሱ",
       "payment_pending": "ክፍያ በመጠባበቅ ላይ",
-      "paid": "ክፍያ ተከፍሏል",
+      "paid": "የተከፈሉ",
       "label": "የትዕዛዝ ሁኔታ"
     },
     "fulfillment": {
