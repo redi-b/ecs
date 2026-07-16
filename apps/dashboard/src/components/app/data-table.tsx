@@ -33,6 +33,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 
 type DataTableProps<TData> = {
@@ -59,18 +60,22 @@ export function DataTable<TData>({
   columns,
   data,
   emptyMessage,
-  emptyTitle = "No rows yet",
+  emptyTitle,
   filteredEmptyMessage,
-  filteredEmptyTitle = "No matching rows",
+  filteredEmptyTitle,
   footer,
   getRowId,
   globalFilter,
   isFiltered = false,
   onGlobalFilterChange,
   pageSize,
-  selectedSummaryLabel = "selected",
+  selectedSummaryLabel,
   toolbar,
 }: DataTableProps<TData>) {
+  const { t } = useI18n();
+  const resolvedEmptyTitle = emptyTitle ?? t("table.empty.noRowsTitle");
+  const resolvedFilteredEmptyTitle = filteredEmptyTitle ?? t("table.empty.noMatchingRowsTitle");
+  const resolvedSelectedSummaryLabel = selectedSummaryLabel ?? t("common.selected");
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [sorting, setSorting] = useState<SortingState>([]);
   const [pagination, setPagination] = useState<PaginationState>({
@@ -115,11 +120,12 @@ export function DataTable<TData>({
   const visibleColumnCount = table.getVisibleLeafColumns().length || columns.length;
   const emptyStateMessage =
     isFiltered && rows.length === 0 ? (filteredEmptyMessage ?? emptyMessage) : emptyMessage;
-  const emptyStateTitle = isFiltered && rows.length === 0 ? filteredEmptyTitle : emptyTitle;
+  const emptyStateTitle =
+    isFiltered && rows.length === 0 ? resolvedFilteredEmptyTitle : resolvedEmptyTitle;
   const selectedSummary =
-    typeof selectedSummaryLabel === "function"
-      ? selectedSummaryLabel(selectedRows.length)
-      : selectedSummaryLabel;
+    typeof resolvedSelectedSummaryLabel === "function"
+      ? resolvedSelectedSummaryLabel(selectedRows.length)
+      : resolvedSelectedSummaryLabel;
 
   const pageCount = Math.max(1, table.getPageCount());
   const pageIndex = table.getState().pagination.pageIndex;

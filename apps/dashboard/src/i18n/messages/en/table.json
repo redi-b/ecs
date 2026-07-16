@@ -30,7 +30,9 @@
     "noItems": "No items have been synced yet.",
     "noItemsTitle": "No items yet",
     "filteredNoItems": "No items match the current search or filters.",
-    "filteredNoItemsTitle": "No matching items"
+    "filteredNoItemsTitle": "No matching items",
+    "noRowsTitle": "No rows yet",
+    "noMatchingRowsTitle": "No matching rows"
   },
   "counts": {
     "filtered": "{filteredCount} of {pageCount} on this page",

@@ -6,6 +6,7 @@ import { createPortal } from "react-dom";
 
 import { AppIcons } from "@/components/app/icons";
 import { Button } from "@/components/ui/button";
+import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 
 type DataTableBulkBarProps = {
@@ -28,8 +29,10 @@ export function DataTableBulkBar({
   className,
   onClearSelection,
   selectedCount,
-  summaryLabel = "selected",
+  summaryLabel,
 }: DataTableBulkBarProps) {
+  const { t } = useI18n();
+  const resolvedSummaryLabel = summaryLabel ?? t("common.selected");
   const [shouldRender, setShouldRender] = useState(selectedCount > 0);
   const [displayCount, setDisplayCount] = useState(selectedCount);
   const [mounted, setMounted] = useState(false);
@@ -77,10 +80,10 @@ export function DataTableBulkBar({
         <div className="flex flex-col gap-2 p-2.5 sm:flex-row sm:items-center sm:gap-2 sm:px-3 sm:py-2">
           <div className="flex items-center justify-between gap-2 sm:contents">
             <span className="inline-flex shrink-0 items-center rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium whitespace-nowrap text-primary sm:px-3 sm:text-sm">
-              {displayCount} {summaryLabel}
+              {displayCount} {resolvedSummaryLabel}
             </span>
             <Button
-              aria-label="Clear selection"
+              aria-label={t("common.clearSelection")}
               className="shrink-0 sm:order-last"
               onClick={onClearSelection}
               size="icon-sm"

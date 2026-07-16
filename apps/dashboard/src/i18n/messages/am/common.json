@@ -34,5 +34,38 @@
   "productSelected": "1 ምርት ተመርጧል",
   "productsSelected": "{count} ምርቶች ተመርጠዋል",
   "searchProducts": "ምርቶችን ይፈልጉ…",
-  "noMatchingProducts": "ምንም የሚዛመድ ምርት አልተገኘም።"
+  "noMatchingProducts": "ምንም የሚዛመድ ምርት አልተገኘም።",
+  "toggleTheme": "ገጽታ ቀይር",
+  "clearSelection": "ምርጫን አጽዳ",
+  "selected": "ተመርጧል",
+  "updating": "እያደሰ ነው…",
+  "tryAgain": "እንደገና ሞክር",
+  "loading": "በመጫን ላይ",
+  "listStatus": {
+    "onThisPageOne": "በዚህ ገጽ 1",
+    "onThisPage": "በዚህ ገጽ {count}",
+    "ofOnThisPage": "በዚህ ገጽ {filtered} ከ {page}",
+    "noMatches": "ምንም አልተገኘም",
+    "matchOne": "1 ተገኝቷል",
+    "matches": "{count} ተገኝተዋል",
+    "showingMatches": "ከ{total} ውስጥ {page} እያሳየ",
+    "noResultsYet": "ገና ውጤት የለም",
+    "totalOne": "1 በጠቅላላ",
+    "totalCount": "{count} በጠቅላላ",
+    "onPageTotal": "በዚህ ገጽ {page} · በጠቅላላ {total}"
+  },
+  "inbox": {
+    "title": "ማሳወቂያዎች",
+    "unreadOne": "1 ያልተነበበ",
+    "unread": "{count} ያልተነበቡ",
+    "unreadNoneAria": "ማሳወቂያዎች፣ ምንም ያልተነበበ የለም",
+    "unreadAria": "ማሳወቂያዎች፣ {count} ያልተነበቡ",
+    "markAllRead": "ሁሉንም እንደተነበበ",
+    "markAsRead": "እንደተነበበ ምልክት",
+    "markItemReadAria": "“{title}” እንደተነበበ ምልክት",
+    "loadErrorTitle": "ማሳወቂያዎችን መጫን አልተቻለም",
+    "loadErrorDesc": "ግንኙነትዎን ይመልከቱና እንደገና ይሞክሩ።",
+    "emptyTitle": "ሁሉም ተነብቧል",
+    "emptyDesc": "የትዕዛዝ እና የክፍያ ዜናዎች ለዚህ ሱቅ እዚህ ይታያሉ።"
+  }
 }
