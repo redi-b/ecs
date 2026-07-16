@@ -9,6 +9,7 @@ import { BreadcrumbLabelsProvider } from "@/components/app/breadcrumb-labels";
 import { DashboardAccessState } from "@/components/app/dashboard-access-state";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { getTranslations } from "@/i18n/server";
 import {
   DASHBOARD_PATH_HEADER,
   getDashboardAuthRedirectPath,
@@ -21,6 +22,7 @@ import { getPlatformOnboardingState } from "@/lib/platform-onboarding";
 import { getSidebarDefaultOpen, SIDEBAR_COOKIE_NAME } from "@/lib/sidebar-state";
 
 export default async function AdminDashboardLayout({ children }: { children: ReactNode }) {
+  const t = await getTranslations();
   const requestHeaders = await headers();
   const cookieStore = await cookies();
   const sidebarDefaultOpen = getSidebarDefaultOpen(cookieStore.get(SIDEBAR_COOKIE_NAME)?.value);
@@ -42,8 +44,8 @@ export default async function AdminDashboardLayout({ children }: { children: Rea
 
       return (
         <DashboardAccessState
-          description="We could not load your account workspace. Try again in a moment."
-          title="Dashboard could not be loaded"
+          description={t("common.access.loadFailedDesc")}
+          title={t("common.access.loadFailedTitle")}
         />
       );
     }
@@ -75,17 +77,17 @@ export default async function AdminDashboardLayout({ children }: { children: Rea
       return (
         <DashboardAccessState
           actionHref="/admin/sign-in"
-          actionLabel="Use another account"
-          description="This account does not have access to this shop."
-          title="Dashboard access denied"
+          actionLabel={t("common.access.useAnotherAccount")}
+          description={t("common.access.deniedDesc")}
+          title={t("common.access.deniedTitle")}
         />
       );
     }
 
     return (
       <DashboardAccessState
-        description="We could not load this dashboard. Try again in a moment."
-        title="Dashboard temporarily unavailable"
+        description={t("common.access.unavailableDesc")}
+        title={t("common.access.unavailableTitle")}
       />
     );
   }

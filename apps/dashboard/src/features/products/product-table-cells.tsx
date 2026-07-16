@@ -10,6 +10,7 @@ import {
   getProductThumbnail,
   normalizeProductStatus,
 } from "@/features/products/product-table-state";
+import { useI18n } from "@/i18n/provider";
 import { getTenantScopedPath } from "@/lib/dashboard-tenant-context";
 import { listEntityLinkClassName } from "@/lib/list-entity-link";
 import { dashboardRoutes } from "@/lib/routes";
@@ -22,6 +23,7 @@ export function ProductIdentityCell({
   product: MerchantProduct;
   tenantId?: string | undefined;
 }) {
+  const { t } = useI18n();
   const href = getTenantScopedPath(dashboardRoutes.productDetail(product.id), tenantId);
 
   return (
@@ -29,7 +31,7 @@ export function ProductIdentityCell({
       <ProductMediaCell product={product} />
       <div className="flex min-w-0 flex-col gap-1">
         <Link className={cn(listEntityLinkClassName, "truncate")} href={href} prefetch={false}>
-          {product.title ?? "Untitled product"}
+          {product.title ?? t("products.table.untitledProduct")}
         </Link>
         <span className="truncate text-xs text-muted-foreground">
           {product.handle ? `/${product.handle}` : product.id}
@@ -58,23 +60,35 @@ export function ProductMediaCell({ product }: { product: MerchantProduct }) {
 }
 
 export function ProductStatusBadge({ status }: { status: string | null }) {
+  const { t } = useI18n();
   const normalized = normalizeProductStatus(status);
   const variant =
     normalized === "published" ? "default" : normalized === "draft" ? "secondary" : "outline";
+  const label =
+    normalized === "published"
+      ? t("products.table.statusPublished")
+      : normalized === "draft"
+        ? t("products.table.statusDraft")
+        : t("products.table.statusUnknown");
 
   return (
-    <Badge className="rounded-full px-2.5 capitalize" variant={variant}>
-      {normalized.replaceAll("_", " ")}
+    <Badge className="rounded-full px-2.5" variant={variant}>
+      {label}
     </Badge>
   );
 }
 
 export function ProductMediaSignal({ product }: { product: MerchantProduct }) {
+  const { t } = useI18n();
   const count = getProductMediaCount(product);
 
   return (
     <span className="text-muted-foreground">
-      {count ? `${count} asset${count === 1 ? "" : "s"}` : "No media"}
+      {count
+        ? count === 1
+          ? t("products.table.assetOne")
+          : t("products.table.assetCount", { count })
+        : t("products.table.noMedia")}
     </span>
   );
 }

@@ -17,6 +17,8 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
+import { useI18n } from "@/i18n/provider";
+import type { MessageKey } from "@/i18n/messages";
 import { cn } from "@/lib/utils";
 import { getTenantScopedPath } from "@/lib/dashboard-tenant-context";
 import { mapPlatformErrorMessage } from "@/lib/platform-api/errors";
@@ -32,42 +34,37 @@ type CatalogPlan = {
 
 type InvoiceRow = MerchantBillingStatus["invoices"][number];
 
+type Translate = (key: MessageKey, values?: Record<string, string | number | Date>) => string;
+
 /**
- * Merchant-facing plan copy. Not raw DB limits (those are not enforced yet).
+ * Merchant-facing plan copy keys. Not raw DB limits (those are not enforced yet).
  * Unknown future plans fall back to name + price only.
  */
-const PLAN_COPY: Record<
-  string,
-  {
-    tagline: string;
-    highlights: string[];
+function planCopy(name: string, t: Translate) {
+  if (name === "Starter") {
+    return {
+      tagline: t("billing.plans.starter.tagline"),
+      highlights: [
+        t("billing.plans.starter.highlights.storefront"),
+        t("billing.plans.starter.highlights.orders"),
+        t("billing.plans.starter.highlights.noPayment"),
+      ],
+    };
   }
-> = {
-  Starter: {
-    tagline: "Everything you need to run your shop online.",
-    highlights: [
-      "Storefront, catalog, and media",
-      "Orders and customers",
-      "No subscription payment",
-    ],
-  },
-  Growth: {
-    tagline: "Prepaid plan for shops ready to invest in scale.",
-    highlights: [
-      "Everything in Starter",
-      "Monthly prepaid access",
-      "Pay securely with Chapa",
-    ],
-  },
-};
-
-function planCopy(name: string) {
-  return (
-    PLAN_COPY[name] ?? {
-      tagline: "Plan details for your shop.",
-      highlights: [] as string[],
-    }
-  );
+  if (name === "Growth") {
+    return {
+      tagline: t("billing.plans.growth.tagline"),
+      highlights: [
+        t("billing.plans.growth.highlights.everythingStarter"),
+        t("billing.plans.growth.highlights.monthlyPrepaid"),
+        t("billing.plans.growth.highlights.payChapa"),
+      ],
+    };
+  }
+  return {
+    tagline: t("billing.plan.fallbackTagline"),
+    highlights: [] as string[],
+  };
 }
 
 export function BillingWorkspace({
@@ -85,6 +82,7 @@ export function BillingWorkspace({
   billingPath?: string;
 }) {
   const router = useRouter();
+  const { t, locale, formatNumber } = useI18n();
   const [isPending, startTransition] = useTransition();
   const busy = isPending;
 
@@ -136,17 +134,14 @@ export function BillingWorkspace({
           <EmptyMedia variant="icon">
             <AppIcons.billing />
           </EmptyMedia>
-          <EmptyTitle>Billing is not available</EmptyTitle>
-          <EmptyDescription>
-            Plan details for this shop could not be loaded. Try reloading, or open Billing from
-            your account menu.
-          </EmptyDescription>
+          <EmptyTitle>{t("billing.unavailable.title")}</EmptyTitle>
+          <EmptyDescription>{t("billing.unavailable.description")}</EmptyDescription>
         </EmptyHeader>
         {billingPath ? (
           <Button asChild className="mt-2" variant="outline">
             <Link href={billingPath} prefetch={false}>
               <AppIcons.refresh data-icon="inline-start" />
-              Reload billing
+              {t("billing.unavailable.reload")}
             </Link>
           </Button>
         ) : null}
@@ -200,7 +195,7 @@ export function BillingWorkspace({
 
   function runBillingAction(
     body: Record<string, unknown>,
-    successMessage = "Invoice ready.",
+    successMessage = t("billing.toast.invoiceReady"),
   ) {
     startTransition(async () => {
       try {
@@ -220,13 +215,13 @@ export function BillingWorkspace({
         }
 
         if (data?.alreadyPaid === true) {
-          toast.success("Payment confirmed.");
+          toast.success(t("billing.toast.paymentConfirmed"));
           router.refresh();
           return;
         }
 
         if (typeof data?.checkoutUrl === "string" && data.checkoutUrl) {
-          toast.success("Opening secure checkout…");
+          toast.success(t("billing.toast.openingCheckout"));
           window.location.href = data.checkoutUrl;
           return;
         }
@@ -234,21 +229,23 @@ export function BillingWorkspace({
         if (data?.scheduled === true) {
           toast.success(
             data.effectiveAt
-              ? `Switches to free plan on ${formatDate(String(data.effectiveAt))}.`
-              : "Plan change scheduled.",
+              ? t("billing.toast.switchesOn", {
+                  date: formatBillingDate(String(data.effectiveAt), locale),
+                })
+              : t("billing.toast.planChangeScheduled"),
           );
           router.refresh();
           return;
         }
 
         if (data?.applied === true) {
-          toast.success("You are now on the free plan.");
+          toast.success(t("billing.toast.nowOnFree"));
           router.refresh();
           return;
         }
 
         if (data?.cancelled === true) {
-          toast.success("Scheduled plan change cancelled.");
+          toast.success(t("billing.toast.scheduledCancelled"));
           router.refresh();
           return;
         }
@@ -280,7 +277,7 @@ export function BillingWorkspace({
       !inRenewalWindow &&
       subscription.status !== "past_due"
     ) {
-      runBillingAction({ action: "cancel_downgrade" }, "Scheduled plan change cancelled.");
+      runBillingAction({ action: "cancel_downgrade" }, t("billing.toast.scheduledCancelled"));
       return;
     }
 
@@ -321,10 +318,12 @@ export function BillingWorkspace({
   const primaryLabel = (() => {
     // Pay belongs on paid selection; free selection never shows Pay (open invoice is above).
     if (openInvoice && !selectedIsFree) {
-      return `Pay ${formatMoney(openInvoice.amount, openInvoice.currency)}`;
+      return t("billing.payment.payAmount", {
+        amount: formatMoney(openInvoice.amount, openInvoice.currency, formatNumber),
+      });
     }
     if (selectedIsCurrent && selectedIsFree) {
-      return "Current plan";
+      return t("billing.primary.currentPlan");
     }
     if (
       selectedIsCurrent &&
@@ -333,30 +332,34 @@ export function BillingWorkspace({
       !inRenewalWindow &&
       subscription.status !== "past_due"
     ) {
-      return "Keep this plan";
+      return t("billing.primary.keepPlan");
     }
     if (
       selectedIsCurrent &&
       !selectedIsFree &&
       (inRenewalWindow || subscription.status === "past_due")
     ) {
-      return subscription.status === "past_due" ? "Renew plan" : "Renew period";
+      return subscription.status === "past_due"
+        ? t("billing.primary.renewPlan")
+        : t("billing.primary.renewPeriod");
     }
     if (selectedIsCurrent && !selectedIsFree) {
-      return "Current plan";
+      return t("billing.primary.currentPlan");
     }
     if (selectedIsFree && !selectedIsCurrent) {
       if (selectedIsScheduledTarget) {
-        return "Change scheduled";
+        return t("billing.primary.changeScheduled");
       }
       return periodStillActive && subscription.currentPeriodEnd
-        ? `Switch after ${formatDate(subscription.currentPeriodEnd)}`
-        : `Switch to ${chosenPlan.name}`;
+        ? t("billing.primary.switchAfter", {
+            date: formatBillingDate(subscription.currentPeriodEnd, locale),
+          })
+        : t("billing.primary.switchTo", { name: chosenPlan.name });
     }
     if (!selectedIsFree) {
-      return `Continue with ${chosenPlan.name}`;
+      return t("billing.primary.continueWith", { name: chosenPlan.name });
     }
-    return "Select a plan";
+    return t("billing.primary.selectPlan");
   })();
 
   const primaryDisabled =
@@ -370,34 +373,49 @@ export function BillingWorkspace({
       !inRenewalWindow &&
       subscription.status !== "past_due");
 
+  const freePlanLabel = t("billing.plan.freePlan");
+  const theFreePlanLabel = t("billing.plan.theFreePlan");
+
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-8">
       {/* Current plan — single source of truth, one status */}
       <section className="flex flex-col gap-1">
         <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-          Current plan
+          {t("billing.plan.current")}
         </p>
         <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
           <h2 className="text-2xl font-semibold tracking-tight">{activePlan.name}</h2>
-          <Badge variant="secondary">{isCurrentFree ? "Free" : formatStatus(subscription.status)}</Badge>
+          <Badge variant="secondary">
+            {isCurrentFree ? t("billing.plan.free") : formatStatus(subscription.status, t)}
+          </Badge>
           {hasScheduledDowngrade ? (
             <Badge variant="outline">
-              Switches to {scheduledPlanName ?? "free plan"}
+              {t("billing.plan.switchesTo", {
+                name: scheduledPlanName ?? freePlanLabel,
+              })}
             </Badge>
           ) : null}
         </div>
         <p className="text-sm text-muted-foreground">
           {isCurrentFree
-            ? "No payment is required for this shop."
+            ? t("billing.plan.noPaymentRequired")
             : subscription.currentPeriodEnd
-              ? `Paid through ${formatDate(subscription.currentPeriodEnd)} · ${formatPlanPrice(activePlan.price)} / ${formatCycle(subscription.billingCycle)}`
-              : `${formatPlanPrice(activePlan.price)} · ${formatCycle(subscription.billingCycle)}`}
+              ? t("billing.plan.paidThrough", {
+                  date: formatBillingDate(subscription.currentPeriodEnd, locale),
+                  price: formatPlanPrice(activePlan.price, t, formatNumber),
+                  cycle: formatCycle(subscription.billingCycle, t),
+                })
+              : t("billing.plan.priceCycle", {
+                  price: formatPlanPrice(activePlan.price, t, formatNumber),
+                  cycle: formatCycle(subscription.billingCycle, t),
+                })}
         </p>
         {hasScheduledDowngrade && scheduledEffectiveAt ? (
           <p className="text-sm text-muted-foreground">
-            Changes to {scheduledPlanName ?? "the free plan"} on{" "}
-            {formatDate(scheduledEffectiveAt)}. No refund for remaining days. You can cancel before
-            then.
+            {t("billing.plan.scheduledChange", {
+              name: scheduledPlanName ?? theFreePlanLabel,
+              date: formatBillingDate(scheduledEffectiveAt, locale),
+            })}
           </p>
         ) : null}
       </section>
@@ -405,11 +423,8 @@ export function BillingWorkspace({
       {returnedFromPayment && openInvoice ? (
         <Card className="border-border">
           <CardHeader className="pb-2">
-            <CardTitle className="text-base">Checking your payment</CardTitle>
-            <CardDescription>
-              If you finished checkout, confirmation can take a moment. Use Pay again only if the
-              charge did not complete.
-            </CardDescription>
+            <CardTitle className="text-base">{t("billing.payment.checkingTitle")}</CardTitle>
+            <CardDescription>{t("billing.payment.checkingDescription")}</CardDescription>
           </CardHeader>
         </Card>
       ) : null}
@@ -417,13 +432,13 @@ export function BillingWorkspace({
       {returnedFromPayment && !openInvoice && !isCurrentFree ? (
         <Card className="border-primary/30 bg-primary/5">
           <CardHeader className="pb-2">
-            <CardTitle className="text-base">Payment received</CardTitle>
+            <CardTitle className="text-base">{t("billing.payment.receivedTitle")}</CardTitle>
             <CardDescription>
-              Your paid plan is active
               {subscription.currentPeriodEnd
-                ? ` through ${formatDate(subscription.currentPeriodEnd)}`
-                : ""}
-              .
+                ? t("billing.payment.receivedThrough", {
+                    date: formatBillingDate(subscription.currentPeriodEnd, locale),
+                  })
+                : t("billing.payment.receivedActive")}
             </CardDescription>
           </CardHeader>
         </Card>
@@ -433,15 +448,19 @@ export function BillingWorkspace({
       {openInvoice ? (
         <Card className="border-primary/30 bg-primary/5">
           <CardHeader className="pb-2">
-            <CardTitle className="text-base">Payment required</CardTitle>
-            <CardDescription>Pay to activate or extend your plan.</CardDescription>
+            <CardTitle className="text-base">{t("billing.payment.requiredTitle")}</CardTitle>
+            <CardDescription>{t("billing.payment.requiredDescription")}</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="font-medium">{invoiceTitle(openInvoice)}</p>
+              <p className="font-medium">{invoiceTitle(openInvoice, t)}</p>
               <p className="text-sm text-muted-foreground">
-                {formatMoney(openInvoice.amount, openInvoice.currency)}
-                {openInvoice.dueAt ? ` · Due ${formatDate(openInvoice.dueAt)}` : ""}
+                {formatMoney(openInvoice.amount, openInvoice.currency, formatNumber)}
+                {openInvoice.dueAt
+                  ? ` · ${t("billing.payment.due", {
+                      date: formatBillingDate(openInvoice.dueAt, locale),
+                    })}`
+                  : ""}
               </p>
             </div>
             <Button
@@ -455,7 +474,7 @@ export function BillingWorkspace({
                 })
               }
             >
-              Pay with Chapa
+              {t("billing.payment.payWithChapa")}
             </Button>
           </CardContent>
         </Card>
@@ -464,10 +483,8 @@ export function BillingWorkspace({
       {/* Plan selection — scales with catalog length */}
       <section className="flex flex-col gap-3">
         <div>
-          <h3 className="text-base font-semibold">Plans</h3>
-          <p className="text-sm text-muted-foreground">
-            Choose a plan for this shop. You only pay when you select a paid plan.
-          </p>
+          <h3 className="text-base font-semibold">{t("billing.plan.plansHeading")}</h3>
+          <p className="text-sm text-muted-foreground">{t("billing.plan.plansDescription")}</p>
         </div>
 
         <div
@@ -479,7 +496,7 @@ export function BillingWorkspace({
           )}
         >
           {catalog.map((plan) => {
-            const copy = planCopy(plan.name);
+            const copy = planCopy(plan.name, t);
             const selected = plan.id === chosenPlan.id;
             return (
               <button
@@ -499,13 +516,16 @@ export function BillingWorkspace({
                     <p className="mt-0.5 text-sm text-muted-foreground">{copy.tagline}</p>
                   </div>
                   {plan.isCurrent ? (
-                    <Badge variant="secondary">Current</Badge>
+                    <Badge variant="secondary">{t("billing.plan.currentBadge")}</Badge>
                   ) : null}
                 </div>
                 <p className="mt-3 text-lg font-semibold tabular-nums">
-                  {formatPlanPrice(plan.price)}
+                  {formatPlanPrice(plan.price, t, formatNumber)}
                   {!plan.isFree ? (
-                    <span className="text-sm font-normal text-muted-foreground"> / month</span>
+                    <span className="text-sm font-normal text-muted-foreground">
+                      {" "}
+                      {t("billing.plan.perMonth")}
+                    </span>
                   ) : null}
                 </p>
                 {copy.highlights.length > 0 ? (
@@ -531,26 +551,40 @@ export function BillingWorkspace({
             {selectedIsCurrent
               ? selectedIsFree
                 ? openInvoice
-                  ? "You are on Starter. Select Growth to continue payment for the upgrade."
-                  : "You are already on this plan."
+                  ? t("billing.hint.onStarterSelectGrowth")
+                  : t("billing.hint.alreadyOnPlan")
                 : openInvoice
-                  ? "Finish payment to activate or extend this plan."
+                  ? t("billing.hint.finishPayment")
                   : hasScheduledDowngrade
-                    ? `A switch to ${scheduledPlanName ?? "the free plan"} is scheduled. Keep this plan to cancel it.`
+                    ? t("billing.hint.scheduledKeep", {
+                        name: scheduledPlanName ?? theFreePlanLabel,
+                      })
                     : inRenewalWindow
-                      ? "Your current period is ending soon. Renew to stay on this plan."
+                      ? t("billing.hint.endingSoon")
                       : subscription.status === "past_due"
-                        ? "Your paid period has ended. Renew to continue on this plan."
-                        : "You are already on this plan."
+                        ? t("billing.hint.periodEnded")
+                        : t("billing.hint.alreadyOnPlan")
               : selectedIsFree
                 ? selectedIsScheduledTarget
-                  ? `Already scheduled. You stay on ${activePlan.name} until ${formatDate(scheduledEffectiveAt || subscription.currentPeriodEnd || "")}.`
+                  ? t("billing.hint.alreadyScheduled", {
+                      current: activePlan.name,
+                      date: formatBillingDate(
+                        scheduledEffectiveAt || subscription.currentPeriodEnd || "",
+                        locale,
+                      ),
+                    })
                   : periodStillActive && subscription.currentPeriodEnd
-                    ? `No refund. You keep ${activePlan.name} until ${formatDate(subscription.currentPeriodEnd)}, then move to ${chosenPlan.name}.`
-                    : `Switch to ${chosenPlan.name} now. Your paid period has already ended.`
+                    ? t("billing.hint.noRefundKeepUntil", {
+                        current: activePlan.name,
+                        date: formatBillingDate(subscription.currentPeriodEnd, locale),
+                        next: chosenPlan.name,
+                      })
+                    : t("billing.hint.switchNowPeriodEnded", { name: chosenPlan.name })
                 : openInvoice
-                  ? "Complete payment for the open invoice, or continue to confirm this plan."
-                  : `You will be charged ${formatPlanPrice(chosenPlan.price)} for one month after payment.`}
+                  ? t("billing.hint.completeOrContinue")
+                  : t("billing.hint.chargedForMonth", {
+                      price: formatPlanPrice(chosenPlan.price, t, formatNumber),
+                    })}
           </p>
           <Button
             className="shrink-0 sm:min-w-[12rem]"
@@ -567,8 +601,10 @@ export function BillingWorkspace({
       {history.length > 0 ? (
         <section className="flex flex-col gap-3">
           <div>
-            <h3 className="text-base font-semibold">Payment history</h3>
-            <p className="text-sm text-muted-foreground">Past charges for this shop.</p>
+            <h3 className="text-base font-semibold">{t("billing.payment.historyTitle")}</h3>
+            <p className="text-sm text-muted-foreground">
+              {t("billing.payment.historyDescription")}
+            </p>
           </div>
           <ul className="flex flex-col gap-2">
             {history.map((invoice) => (
@@ -577,18 +613,22 @@ export function BillingWorkspace({
                 key={invoice.id}
               >
                 <div className="min-w-0">
-                  <p className="font-medium">{invoiceTitle(invoice)}</p>
+                  <p className="font-medium">{invoiceTitle(invoice, t)}</p>
                   <p className="text-xs text-muted-foreground">
                     {invoice.paidAt
-                      ? `Paid ${formatDate(invoice.paidAt)}`
-                      : `Created ${formatDate(invoice.createdAt)}`}
+                      ? t("billing.payment.paidOn", {
+                          date: formatBillingDate(invoice.paidAt, locale),
+                        })
+                      : t("billing.payment.createdOn", {
+                          date: formatBillingDate(invoice.createdAt, locale),
+                        })}
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="font-mono tabular-nums">
-                    {formatMoney(invoice.amount, invoice.currency)}
+                    {formatMoney(invoice.amount, invoice.currency, formatNumber)}
                   </span>
-                  <Badge variant="secondary">{invoiceStatusLabel(invoice.status)}</Badge>
+                  <Badge variant="secondary">{invoiceStatusLabel(invoice.status, t)}</Badge>
                 </div>
               </li>
             ))}
@@ -602,7 +642,7 @@ export function BillingWorkspace({
           href={dashboardRoutes.settings}
           prefetch={false}
         >
-          Shop settings
+          {t("billing.footer.shopSettings")}
         </Link>
         {" · "}
         <a
@@ -611,69 +651,80 @@ export function BillingWorkspace({
           rel="noreferrer"
           target="_blank"
         >
-          View storefront
+          {t("billing.footer.viewStorefront")}
         </a>
       </p>
     </div>
   );
 }
 
-function formatCycle(cycle: string) {
-  if (cycle === "monthly") return "month";
-  if (cycle === "yearly" || cycle === "annual") return "year";
+function formatCycle(cycle: string, t: Translate) {
+  if (cycle === "monthly") return t("billing.cycle.month");
+  if (cycle === "yearly" || cycle === "annual") return t("billing.cycle.year");
   return cycle;
 }
 
-function formatStatus(status: string) {
-  if (status === "trialing") return "Trial";
-  if (status === "active") return "Active";
-  if (status === "past_due") return "Past due";
-  if (status === "canceled" || status === "cancelled") return "Cancelled";
+function formatStatus(status: string, t: Translate) {
+  if (status === "trialing") return t("billing.status.trial");
+  if (status === "active") return t("billing.status.active");
+  if (status === "past_due") return t("billing.status.pastDue");
+  if (status === "canceled" || status === "cancelled") return t("billing.status.cancelled");
   return status;
 }
 
-function formatDate(value: string) {
-  return new Intl.DateTimeFormat("en", { month: "short", day: "numeric", year: "numeric" }).format(
-    new Date(value),
-  );
+function formatBillingDate(value: string, locale: string) {
+  if (!value) return value;
+  return new Intl.DateTimeFormat(locale, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  }).format(new Date(value));
 }
 
-function formatPlanPrice(price: string) {
+function formatPlanPrice(
+  price: string,
+  t: Translate,
+  formatNumber: (value: number, options?: Intl.NumberFormatOptions) => string,
+) {
   const amount = Number(price);
   if (!Number.isFinite(amount)) return price;
-  if (amount === 0) return "Free";
-  return new Intl.NumberFormat("en-ET", {
+  if (amount === 0) return t("billing.plan.free");
+  return formatNumber(amount, {
     currency: "ETB",
     maximumFractionDigits: 0,
     style: "currency",
-  }).format(amount);
+  });
 }
 
-function formatMoney(amount: string, currency: string) {
+function formatMoney(
+  amount: string,
+  currency: string,
+  formatNumber: (value: number, options?: Intl.NumberFormatOptions) => string,
+) {
   const value = Number(amount);
   if (!Number.isFinite(value)) return `${amount} ${currency.toUpperCase()}`;
   try {
-    return new Intl.NumberFormat("en-ET", {
+    return formatNumber(value, {
       currency: currency.toUpperCase(),
       maximumFractionDigits: 2,
       style: "currency",
-    }).format(value);
+    });
   } catch {
     return `${amount} ${currency.toUpperCase()}`;
   }
 }
 
-function invoiceTitle(invoice: InvoiceRow) {
-  if (invoice.provider === "chapa" || invoice.status === "paid") return "Plan payment";
-  if (invoice.provider?.startsWith("plan:")) return "Plan upgrade";
-  if (invoice.status === "pending") return "Open invoice";
-  return "Invoice";
+function invoiceTitle(invoice: InvoiceRow, t: Translate) {
+  if (invoice.provider === "chapa" || invoice.status === "paid") return t("billing.invoice.planPayment");
+  if (invoice.provider?.startsWith("plan:")) return t("billing.invoice.planUpgrade");
+  if (invoice.status === "pending") return t("billing.invoice.open");
+  return t("billing.invoice.generic");
 }
 
-function invoiceStatusLabel(status: string) {
-  if (status === "pending") return "Unpaid";
-  if (status === "paid") return "Paid";
-  if (status === "void" || status === "cancelled") return "Cancelled";
+function invoiceStatusLabel(status: string, t: Translate) {
+  if (status === "pending") return t("billing.invoice.unpaid");
+  if (status === "paid") return t("billing.invoice.paid");
+  if (status === "void" || status === "cancelled") return t("billing.invoice.cancelled");
   return status;
 }
 

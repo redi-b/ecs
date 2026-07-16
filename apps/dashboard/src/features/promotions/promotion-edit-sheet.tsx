@@ -37,32 +37,42 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Switch } from "@/components/ui/switch";
+import type { MessageKey } from "@/i18n/messages";
+import { useI18n } from "@/i18n/provider";
 import type { MerchantPromotion } from "@/lib/merchant-promotions";
 import { cn } from "@/lib/utils";
 
+type Translate = (key: MessageKey, values?: Record<string, string | number | Date>) => string;
+
 type CatalogProduct = { id: string; title: string | null; handle: string | null };
 
-function offerSummary(promotion: MerchantPromotion) {
+function offerSummary(promotion: MerchantPromotion, t: Translate) {
   if (promotion.promotionType === "buyget") {
-    return `Buy ${promotion.buyMinQuantity ?? "X"} get ${promotion.applyToQuantity ?? "Y"}`;
+    return t("promotions.edit.buyGetSummary", {
+      buy: promotion.buyMinQuantity ?? "X",
+      get: promotion.applyToQuantity ?? "Y",
+    });
   }
   if (
     promotion.targetType === "shipping_methods" &&
     promotion.method === "percentage" &&
     promotion.value >= 100
   ) {
-    return "Free shipping";
+    return t("promotions.edit.freeShipping");
   }
   const amount =
     promotion.method === "percentage"
-      ? `${promotion.value}% off`
-      : `${promotion.value} ${promotion.currencyCode?.toUpperCase() ?? "ETB"} off`;
+      ? t("promotions.edit.percentOffSummary", { value: promotion.value })
+      : t("promotions.edit.amountOffSummary", {
+          value: promotion.value,
+          currency: promotion.currencyCode?.toUpperCase() ?? "ETB",
+        });
   const target =
     promotion.targetType === "items"
-      ? "products"
+      ? t("promotions.edit.targetProducts")
       : promotion.targetType === "shipping_methods"
-        ? "shipping"
-        : "order";
+        ? t("promotions.edit.targetShipping")
+        : t("promotions.edit.targetOrder");
   return `${amount} · ${target}`;
 }
 
@@ -75,6 +85,7 @@ export function PromotionEditSheet({
   open: boolean;
   promotion: MerchantPromotion | null;
 }) {
+  const { t } = useI18n();
   const router = useRouter();
   const [code, setCode] = useState("");
   const [status, setStatus] = useState<MerchantPromotion["status"]>("active");
@@ -161,22 +172,22 @@ export function PromotionEditSheet({
     if (!promotion) return;
     const nextCode = code.trim().toUpperCase().replace(/\s+/g, "");
     if (nextCode.length < 2) {
-      toast.error("Enter a promotion code with at least 2 characters.");
+      toast.error(t("promotions.edit.codeTooShort"));
       return;
     }
     const nextValue = canEditValue ? Number(value) : promotion.value;
     if (canEditValue && (!Number.isFinite(nextValue) || nextValue <= 0)) {
-      toast.error("Enter a valid discount value.");
+      toast.error(t("promotions.edit.invalidValue"));
       return;
     }
     const nextUsageLimit = usageLimit.trim() ? Number(usageLimit) : null;
     if (usageLimit.trim() && (!Number.isFinite(nextUsageLimit) || (nextUsageLimit ?? 0) <= 0)) {
-      toast.error("Usage limit must be a positive number.");
+      toast.error(t("promotions.edit.invalidUsageLimit"));
       return;
     }
     const nextMaxQuantity = maxQuantity.trim() ? Number(maxQuantity) : null;
     if (maxQuantity.trim() && (!Number.isFinite(nextMaxQuantity) || (nextMaxQuantity ?? 0) <= 0)) {
-      toast.error("Max quantity must be a positive number.");
+      toast.error(t("promotions.edit.invalidMaxQty"));
       return;
     }
     const nextBudgetLimit =
@@ -187,7 +198,7 @@ export function PromotionEditSheet({
       campaignBudgetType !== "none" &&
       (!Number.isFinite(nextBudgetLimit) || (nextBudgetLimit ?? 0) <= 0)
     ) {
-      toast.error("Enter a valid campaign budget limit.");
+      toast.error(t("promotions.edit.invalidBudget"));
       return;
     }
 
@@ -225,10 +236,10 @@ export function PromotionEditSheet({
     setSaving(false);
 
     if (!response?.ok) {
-      toast.error("Promotion could not be updated.");
+      toast.error(t("promotions.edit.updateFailed"));
       return;
     }
-    toast.success("Promotion updated.");
+    toast.success(t("promotions.edit.updated"));
     onOpenChange(false);
     router.refresh();
   }
@@ -237,15 +248,15 @@ export function PromotionEditSheet({
     <Sheet onOpenChange={onOpenChange} open={open}>
       <SheetContent className="w-full sm:max-w-lg" side="right">
         <SheetHeader className="px-5 py-4 text-left">
-          <SheetTitle>Edit promotion</SheetTitle>
+          <SheetTitle>{t("promotions.edit.title")}</SheetTitle>
           <SheetDescription>
-            {promotion ? offerSummary(promotion) : "Update code, status, products, and schedule."}
+            {promotion ? offerSummary(promotion, t) : t("promotions.edit.fallbackDesc")}
           </SheetDescription>
         </SheetHeader>
 
         <SheetBody className="grid content-start gap-5 px-5 py-5">
           <Field>
-            <FieldLabel htmlFor="promo-edit-code">Promotion code</FieldLabel>
+            <FieldLabel htmlFor="promo-edit-code">{t("promotions.edit.codeLabel")}</FieldLabel>
             <Input
               id="promo-edit-code"
               onChange={(event) => setCode(event.target.value.toUpperCase().replace(/\s+/g, ""))}
@@ -254,7 +265,7 @@ export function PromotionEditSheet({
           </Field>
 
           <Field>
-            <FieldLabel>Status</FieldLabel>
+            <FieldLabel>{t("promotions.edit.status")}</FieldLabel>
             <Select
               onValueChange={(next: MerchantPromotion["status"]) => setStatus(next)}
               value={status}
@@ -264,9 +275,9 @@ export function PromotionEditSheet({
               </SelectTrigger>
               <SelectContent>
                 <SelectGroup>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="draft">Draft</SelectItem>
-                  <SelectItem value="inactive">Inactive</SelectItem>
+                  <SelectItem value="active">{t("promotions.edit.statusActive")}</SelectItem>
+                  <SelectItem value="draft">{t("promotions.edit.statusDraft")}</SelectItem>
+                  <SelectItem value="inactive">{t("promotions.edit.statusInactive")}</SelectItem>
                 </SelectGroup>
               </SelectContent>
             </Select>
@@ -275,7 +286,7 @@ export function PromotionEditSheet({
           {canEditValue ? (
             <Field>
               <FieldLabel htmlFor="promo-edit-value">
-                {promotion?.method === "percentage" ? "Percent off" : "Amount off (ETB)"}
+                {promotion?.method === "percentage" ? t("promotions.edit.percentOff") : t("promotions.edit.amountOff")}
               </FieldLabel>
               <Input
                 id="promo-edit-value"
@@ -288,28 +299,28 @@ export function PromotionEditSheet({
             </Field>
           ) : (
             <div className="rounded-xl border px-3.5 py-3">
-              <p className="text-sm font-medium">Discount</p>
+              <p className="text-sm font-medium">{t("promotions.edit.discount")}</p>
               <p className="mt-0.5 text-sm text-muted-foreground">
-                {promotion ? offerSummary(promotion) : "—"}
+                {promotion ? offerSummary(promotion, t) : "—"}
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
-                This offer type keeps a fixed discount shape after creation.
+                {t("promotions.edit.fixedShapeHelp")}
               </p>
             </div>
           )}
 
           <Field>
-            <FieldLabel htmlFor="promo-edit-usage">Usage limit</FieldLabel>
+            <FieldLabel htmlFor="promo-edit-usage">{t("promotions.edit.usageLimit")}</FieldLabel>
             <Input
               id="promo-edit-usage"
               min="1"
               onChange={(event) => setUsageLimit(event.target.value)}
-              placeholder="Unlimited"
+              placeholder={t("promotions.edit.unlimited")}
               type="number"
               value={usageLimit}
             />
             <FieldDescription>
-              Total times this promotion can be redeemed. Leave empty for no limit.
+              {t("promotions.edit.usageLimitHelp")}
             </FieldDescription>
           </Field>
 
@@ -317,10 +328,10 @@ export function PromotionEditSheet({
             <div className="space-y-3 rounded-xl border p-4">
               <div>
                 <p className="text-sm font-medium">
-                  {isBuyGet ? "Products that count toward the offer" : "Eligible products"}
+                  {isBuyGet ? t("promotions.edit.productsCountToward") : t("promotions.edit.eligibleProducts")}
                 </p>
                 <p className="mt-0.5 text-xs text-muted-foreground">
-                  Choose which catalog products this promotion targets.
+                  {t("promotions.edit.productsHelp")}
                 </p>
               </div>
               <ProductMultiPicker
@@ -331,7 +342,7 @@ export function PromotionEditSheet({
               />
               {showAllocation ? (
                 <Field>
-                  <FieldLabel>Allocation</FieldLabel>
+                  <FieldLabel>{t("promotions.edit.allocation")}</FieldLabel>
                   <Select
                     onValueChange={(next: "each" | "across") => setAllocation(next)}
                     value={allocation}
@@ -341,8 +352,8 @@ export function PromotionEditSheet({
                     </SelectTrigger>
                     <SelectContent>
                       <SelectGroup>
-                        <SelectItem value="each">Each item</SelectItem>
-                        <SelectItem value="across">Across items</SelectItem>
+                        <SelectItem value="each">{t("promotions.edit.allocEach")}</SelectItem>
+                        <SelectItem value="across">{t("promotions.edit.allocAcross")}</SelectItem>
                       </SelectGroup>
                     </SelectContent>
                   </Select>
@@ -350,12 +361,12 @@ export function PromotionEditSheet({
               ) : null}
               {showAllocation ? (
                 <Field>
-                  <FieldLabel htmlFor="promo-edit-max-qty">Max discounted quantity</FieldLabel>
+                  <FieldLabel htmlFor="promo-edit-max-qty">{t("promotions.edit.maxDiscountedQty")}</FieldLabel>
                   <Input
                     id="promo-edit-max-qty"
                     min="1"
                     onChange={(event) => setMaxQuantity(event.target.value)}
-                    placeholder="No max"
+                    placeholder={t("promotions.edit.noMax")}
                     type="number"
                     value={maxQuantity}
                   />
@@ -364,7 +375,7 @@ export function PromotionEditSheet({
               {isBuyGet ? (
                 <div className="grid gap-3 sm:grid-cols-2">
                   <Field>
-                    <FieldLabel htmlFor="promo-edit-buy-x">Buy quantity (X)</FieldLabel>
+                    <FieldLabel htmlFor="promo-edit-buy-x">{t("promotions.edit.buyQty")}</FieldLabel>
                     <Input
                       id="promo-edit-buy-x"
                       min="1"
@@ -374,7 +385,7 @@ export function PromotionEditSheet({
                     />
                   </Field>
                   <Field>
-                    <FieldLabel htmlFor="promo-edit-get-y">Get quantity (Y)</FieldLabel>
+                    <FieldLabel htmlFor="promo-edit-get-y">{t("promotions.edit.getQty")}</FieldLabel>
                     <Input
                       id="promo-edit-get-y"
                       min="1"
@@ -384,9 +395,9 @@ export function PromotionEditSheet({
                     />
                   </Field>
                   <div className="space-y-2 sm:col-span-2">
-                    <p className="text-sm font-medium">Free products (optional)</p>
+                    <p className="text-sm font-medium">{t("promotions.edit.freeProducts")}</p>
                     <p className="text-xs text-muted-foreground">
-                      Defaults to the same products as above if left empty.
+                      {t("promotions.edit.freeProductsHelp")}
                     </p>
                     <ProductMultiPicker
                       catalog={catalog}
@@ -403,10 +414,10 @@ export function PromotionEditSheet({
           <Field className="flex flex-row items-center justify-between gap-4 rounded-xl border px-3.5 py-3">
             <div className="min-w-0 space-y-1">
               <FieldLabel className="text-sm" htmlFor="promo-edit-automatic">
-                Apply automatically
+                {t("promotions.edit.autoLabel")}
               </FieldLabel>
               <FieldDescription className="text-xs">
-                Eligible carts get the discount without entering a code.
+                {t("promotions.edit.autoDesc")}
               </FieldDescription>
             </div>
             <Switch
@@ -420,10 +431,10 @@ export function PromotionEditSheet({
             <Field className="flex flex-row items-center justify-between gap-4 rounded-xl border px-3.5 py-3">
               <div className="min-w-0 space-y-1">
                 <FieldLabel className="text-sm" htmlFor="promo-edit-tax">
-                  Apply after tax
+                  {t("promotions.edit.taxLabel")}
                 </FieldLabel>
                 <FieldDescription className="text-xs">
-                  When off, the discount is calculated before tax.
+                  {t("promotions.edit.taxDesc")}
                 </FieldDescription>
               </div>
               <Switch
@@ -436,34 +447,34 @@ export function PromotionEditSheet({
 
           <div className="space-y-4 rounded-xl border p-4">
             <div>
-              <p className="text-sm font-medium">Schedule</p>
+              <p className="text-sm font-medium">{t("promotions.edit.schedule")}</p>
               <p className="mt-0.5 text-xs text-muted-foreground">
-                Optional start and end times for when this offer is available.
+                {t("promotions.edit.scheduleHelp")}
               </p>
             </div>
             <Field>
-              <FieldLabel htmlFor="promo-edit-campaign">Campaign name</FieldLabel>
+              <FieldLabel htmlFor="promo-edit-campaign">{t("promotions.edit.campaignName")}</FieldLabel>
               <Input
                 id="promo-edit-campaign"
                 onChange={(event) => setCampaignName(event.target.value)}
-                placeholder={code || "Campaign"}
+                placeholder={code || t("promotions.edit.campaignPlaceholder")}
                 value={campaignName}
               />
             </Field>
             <Field>
-              <FieldLabel>Starts</FieldLabel>
+              <FieldLabel>{t("promotions.edit.starts")}</FieldLabel>
               <DateTimePicker
                 onChange={setStartsAt}
-                placeholder="Optional start"
+                placeholder={t("promotions.edit.optionalStart")}
                 value={startsAt}
               />
             </Field>
             <Field>
-              <FieldLabel>Ends</FieldLabel>
-              <DateTimePicker onChange={setEndsAt} placeholder="Optional end" value={endsAt} />
+              <FieldLabel>{t("promotions.edit.ends")}</FieldLabel>
+              <DateTimePicker onChange={setEndsAt} placeholder={t("promotions.edit.optionalEnd")} value={endsAt} />
             </Field>
             <Field>
-              <FieldLabel>Campaign budget</FieldLabel>
+              <FieldLabel>{t("promotions.edit.campaignBudget")}</FieldLabel>
               <Select
                 onValueChange={(next: "none" | "usage" | "spend") => setCampaignBudgetType(next)}
                 value={campaignBudgetType}
@@ -473,9 +484,9 @@ export function PromotionEditSheet({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
-                    <SelectItem value="none">No budget cap</SelectItem>
-                    <SelectItem value="usage">Limit by redemptions</SelectItem>
-                    <SelectItem value="spend">Limit by spend</SelectItem>
+                    <SelectItem value="none">{t("promotions.edit.budgetNone")}</SelectItem>
+                    <SelectItem value="usage">{t("promotions.edit.budgetUsage")}</SelectItem>
+                    <SelectItem value="spend">{t("promotions.edit.budgetSpend")}</SelectItem>
                   </SelectGroup>
                 </SelectContent>
               </Select>
@@ -483,7 +494,7 @@ export function PromotionEditSheet({
             {campaignBudgetType !== "none" ? (
               <Field>
                 <FieldLabel htmlFor="promo-edit-budget">
-                  {campaignBudgetType === "usage" ? "Max uses" : "Max spend (ETB)"}
+                  {campaignBudgetType === "usage" ? t("promotions.edit.maxUses") : t("promotions.edit.maxSpend")}
                 </FieldLabel>
                 <Input
                   id="promo-edit-budget"
@@ -498,19 +509,22 @@ export function PromotionEditSheet({
 
           {promotion ? (
             <p className="text-xs text-muted-foreground">
-              Used {promotion.usageCount}
-              {promotion.usageLimit != null ? ` of ${promotion.usageLimit}` : ""} time
-              {promotion.usageCount === 1 ? "" : "s"}.
+              {promotion.usageLimit != null
+                ? t("promotions.edit.usedOfLimit", {
+                    count: promotion.usageCount,
+                    limit: promotion.usageLimit,
+                  })
+                : t("promotions.edit.usedCount", { count: promotion.usageCount })}
             </p>
           ) : null}
         </SheetBody>
 
         <SheetFooter className="flex-row justify-end gap-2 px-5 py-4">
           <Button onClick={() => onOpenChange(false)} type="button" variant="outline">
-            Cancel
+            {t("common.cancel")}
           </Button>
           <Button disabled={saving || !promotion} onClick={() => void save()} type="button">
-            {saving ? "Saving…" : "Save changes"}
+            {saving ? t("promotions.edit.saving") : t("promotions.edit.saveChanges")}
           </Button>
         </SheetFooter>
       </SheetContent>
@@ -529,6 +543,7 @@ function ProductMultiPicker({
   onChange: (ids: string[]) => void;
   selectedIds: string[];
 }) {
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const selected = useMemo(() => new Set(selectedIds), [selectedIds]);
 
@@ -540,11 +555,11 @@ function ProductMultiPicker({
   const label =
     selectedIds.length === 0
       ? loading
-        ? "Loading products…"
-        : "Select products…"
+        ? t("promotions.edit.loadingProducts")
+        : t("promotions.edit.selectProducts")
       : selectedIds.length === 1
-        ? "1 product selected"
-        : `${selectedIds.length} products selected`;
+        ? t("promotions.edit.productSelectedOne")
+        : t("promotions.edit.productsSelected", { count: selectedIds.length });
 
   return (
     <Popover onOpenChange={setOpen} open={open}>
@@ -568,9 +583,9 @@ function ProductMultiPicker({
         onOpenAutoFocus={(event) => event.preventDefault()}
       >
         <Command>
-          <CommandInput placeholder="Search products…" />
+          <CommandInput placeholder={t("promotions.edit.searchProducts")} />
           <CommandList className="max-h-52">
-            <CommandEmpty>No matching products.</CommandEmpty>
+            <CommandEmpty>{t("promotions.edit.noMatchingProducts")}</CommandEmpty>
             <CommandGroup>
               {catalog.map((product) => {
                 const isSelected = selected.has(product.id);

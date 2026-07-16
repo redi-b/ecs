@@ -1,5 +1,6 @@
 import { PageShell } from "@/components/app/page-shell";
 import { TaxonomyForm } from "@/features/catalog-taxonomy/taxonomy-form";
+import { getTranslations } from "@/i18n/server";
 import {
   type DashboardSearchParams,
   getSelectedTenantId,
@@ -16,19 +17,20 @@ export default async function MerchantProductCategoryCreatePage({
 }: MerchantProductCategoryCreatePageProps) {
   const resolvedSearchParams = (await searchParams) ?? {};
   const tenantId = getSelectedTenantId(resolvedSearchParams);
+  const t = await getTranslations();
 
   return (
     <PageShell
-      description="Create a product category for organizing storefront catalog navigation and product assignment."
-      title="New category"
+      description={t("categories.create.shellDescription")}
+      title={t("categories.create.shellTitle")}
     >
       <TaxonomyForm
         action={getTenantScopedPath(dashboardRoutes.productCategoryCreateAction, tenantId)}
         entityLabel="category"
         name="name"
-        nameLabel="Name"
+        nameLabel={t("taxonomy.create.nameLabel")}
         namePlaceholder="Coffee beans"
-        submitLabel="Create category"
+        submitLabel={t("categories.create.submitLabel")}
       />
     </PageShell>
   );

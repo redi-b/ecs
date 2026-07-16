@@ -2,12 +2,11 @@
 
 import type { StorefrontTemplateCatalogItem } from "@ecs/contracts";
 import { ExternalLinkIcon } from "lucide-react";
-import Link from "@/components/app/link";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getTemplateTags } from "@/features/settings/settings-helpers";
+import { useI18n } from "@/i18n/provider";
 import { dashboardRoutes } from "@/lib/routes";
 import { cn } from "@/lib/utils";
 
@@ -46,6 +45,7 @@ export function StorefrontTemplateOption({
   template: StorefrontTemplateCatalogItem;
   tenantId: string;
 }) {
+  const { t } = useI18n();
   const selected = currentTemplateKey === template.version.templateKey;
   const tags = getTemplateTags(template);
 
@@ -68,7 +68,7 @@ export function StorefrontTemplateOption({
             <p className="truncate text-sm font-semibold">{template.name}</p>
             <p className="line-clamp-2 text-xs text-muted-foreground">{template.description}</p>
           </div>
-          {selected ? <Badge variant="secondary">Selected</Badge> : null}
+          {selected ? <Badge variant="secondary">{t("settings.storefront.selected")}</Badge> : null}
         </div>
         {tags.length ? (
           <div className="flex flex-wrap gap-1">
@@ -86,7 +86,7 @@ export function StorefrontTemplateOption({
         type="submit"
         variant={selected ? "secondary" : "default"}
       >
-        {selected ? "Selected" : "Use this storefront"}
+        {selected ? t("settings.storefront.selected") : t("settings.storefront.useThis")}
       </Button>
     </form>
   );
@@ -97,6 +97,7 @@ export function StorefrontTemplatePreview({
 }: {
   template: StorefrontTemplateCatalogItem;
 }) {
+  const { t } = useI18n();
   return (
     <div className="aspect-[16/9] overflow-hidden rounded-md border bg-muted">
       <div className="flex h-full flex-col">
@@ -113,7 +114,7 @@ export function StorefrontTemplatePreview({
           <div className="rounded-md bg-primary/20" />
         </div>
       </div>
-      <span className="sr-only">{template.name} preview</span>
+      <span className="sr-only">{t("settings.storefront.preview", { name: template.name })}</span>
     </div>
   );
 }

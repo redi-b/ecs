@@ -4,8 +4,7 @@ import { redirect } from "next/navigation";
 import { AuthShell } from "@/components/onboarding/auth-shell";
 import { ShopOnboardingForm } from "@/components/onboarding/signup-onboarding-form";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import type { MessageKey } from "@/i18n/messages";
-import { getRequestMessages } from "@/i18n/server";
+import { getTranslations } from "@/i18n/server";
 import { isCentralDashboardHost } from "@/lib/dashboard-hosts";
 import { getPlatformOnboardingState } from "@/lib/platform-onboarding";
 import { getStorefrontTemplates } from "@/lib/storefront-templates";
@@ -21,8 +20,7 @@ type OnboardingPageProps = {
 };
 
 export default async function OnboardingPage({ searchParams }: OnboardingPageProps) {
-  const { messages } = await getRequestMessages();
-  const t = (key: MessageKey) => messages[key];
+  const t = await getTranslations();
   const requestHeaders = await headers();
   const isCentralAccess = isCentralDashboardHost(
     requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host"),

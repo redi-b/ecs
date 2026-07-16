@@ -32,6 +32,7 @@ import { useCreateQueryOpen } from "@/lib/use-create-query-open";
 import { Textarea } from "@/components/ui/textarea";
 import { mapPlatformErrorMessage } from "@/lib/platform-api/errors";
 import { dashboardRoutes } from "@/lib/routes";
+import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 
 type CatalogVariant = {
@@ -65,8 +66,6 @@ type AddressForm = {
   province: string;
 };
 
-const stepLabels = ["Customer", "Items", "Delivery"] as const;
-
 const emptyAddress: AddressForm = {
   address1: "",
   city: "",
@@ -76,22 +75,26 @@ const emptyAddress: AddressForm = {
   province: "",
 };
 
+function CreateOrderTriggerButton({ disabled }: { disabled?: boolean }) {
+  const { t } = useI18n();
+  return (
+    <Button type="button" disabled={disabled}>
+      <AppIcons.orders data-icon="inline-start" />
+      {t("orders.create.trigger")}
+    </Button>
+  );
+}
+
 export function ManualOrderCreateDialog() {
   return (
-    <Suspense
-      fallback={
-        <Button type="button" disabled>
-          <AppIcons.orders data-icon="inline-start" />
-          Create order
-        </Button>
-      }
-    >
+    <Suspense fallback={<CreateOrderTriggerButton disabled />}>
       <ManualOrderCreateDialogInner />
     </Suspense>
   );
 }
 
 function ManualOrderCreateDialogInner() {
+  const { t } = useI18n();
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState(0);
@@ -152,11 +155,11 @@ function ManualOrderCreateDialogInner() {
                   : null;
               return {
                 id: variant.id,
-                label: [product.title ?? "Product", variant.title ?? "Default"]
+                label: [product.title ?? t("orders.create.productFallback"), variant.title ?? t("orders.create.defaultOption")]
                   .filter(Boolean)
                   .join(" · "),
                 priceLabel,
-                productTitle: product.title ?? "Product",
+                productTitle: product.title ?? t("orders.create.productFallback"),
                 sku: variant.sku ?? null,
               };
             }),
@@ -330,7 +333,7 @@ function ManualOrderCreateDialogInner() {
       const data = (await response?.json().catch(() => ({}))) as { error?: string };
       setError(
         mapPlatformErrorMessage(data.error, {
-          fallback: "Could not create this order. Check details and try again.",
+          fallback: t("orders.create.toastError"),
           resource: "Order",
         }),
       );
@@ -344,7 +347,7 @@ function ManualOrderCreateDialogInner() {
     toast.success(
       data.order?.id
         ? `Order ${String(data.order.id).replace(/^order_/i, "").slice(-6).toUpperCase()} created.`
-        : "Manual order created.",
+        : t("orders.create.toastCreated"),
     );
     setOpen(false);
     reset();
@@ -369,18 +372,15 @@ function ManualOrderCreateDialogInner() {
       <DialogTrigger asChild>
         <Button type="button">
           <AppIcons.orders data-icon="inline-start" />
-          Create order
+          {t("orders.create.trigger")}
         </Button>
       </DialogTrigger>
       <DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-2xl">
         <DialogHeader className="gap-1.5 border-b px-4 py-4 text-left sm:px-5">
-          <DialogTitle>Create order</DialogTitle>
-          <DialogDescription>
-            Capture a phone or in-person cash sale. Choose a customer, add products, then confirm
-            delivery.
-          </DialogDescription>
+          <DialogTitle>{t("orders.create.title")}</DialogTitle>
+          <DialogDescription>{t("orders.create.description")}</DialogDescription>
           <ol className="mt-3 flex flex-wrap gap-2 text-xs">
-            {stepLabels.map((label, index) => (
+            {[t("orders.create.stepCustomer"), t("orders.create.stepItems"), t("orders.create.stepDelivery")].map((label, index) => (
               <li
                 className={cn(
                   "rounded-full px-2.5 py-1 font-medium",
@@ -401,7 +401,7 @@ function ManualOrderCreateDialogInner() {
         <div className="max-h-[min(70dvh,36rem)] overflow-y-auto p-4 sm:p-5">
           {error ? (
             <Alert className="mb-4" variant="destructive">
-              <AlertTitle>Order not created</AlertTitle>
+              <AlertTitle>{t("orders.create.notCreatedTitle")}</AlertTitle>
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           ) : null}
@@ -419,9 +419,9 @@ function ManualOrderCreateDialogInner() {
                   onClick={() => setCustomerMode("existing")}
                   type="button"
                 >
-                  <p className="text-sm font-medium">Existing customer</p>
+                  <p className="text-sm font-medium">{t("orders.create.existingCustomer")}</p>
                   <p className="mt-0.5 text-xs text-muted-foreground">
-                    Search your shop customers and reuse their profile.
+                    {t("orders.create.existingCustomerDesc")}
                   </p>
                 </button>
                 <button
@@ -434,16 +434,16 @@ function ManualOrderCreateDialogInner() {
                   onClick={switchToNewCustomer}
                   type="button"
                 >
-                  <p className="text-sm font-medium">New customer</p>
+                  <p className="text-sm font-medium">{t("orders.create.newCustomer")}</p>
                   <p className="mt-0.5 text-xs text-muted-foreground">
-                    Enter email and details — we create a Customers profile.
+                    {t("orders.create.newCustomerDesc")}
                   </p>
                 </button>
               </section>
 
               {customerMode === "existing" ? (
                 <Field>
-                  <FieldLabel>Customer</FieldLabel>
+                  <FieldLabel>{t("orders.create.customer")}</FieldLabel>
                   <CustomerPicker
                     catalog={customers}
                     loading={catalogLoading}
@@ -452,27 +452,27 @@ function ManualOrderCreateDialogInner() {
                     selectedLabel={selectedCustomer?.label ?? null}
                   />
                   <FieldDescription>
-                    Can&apos;t find them? Switch to new customer and enter their email.
+                    {t("orders.create.customerNotFound")}
                   </FieldDescription>
                 </Field>
               ) : (
                 <section className="grid gap-4 sm:grid-cols-2">
                   <Field className="sm:col-span-2">
-                    <FieldLabel htmlFor="mo-email">Email</FieldLabel>
+                    <FieldLabel htmlFor="mo-email">{t("orders.create.email")}</FieldLabel>
                     <Input
                       autoComplete="email"
                       id="mo-email"
                       onChange={(event) => setCustomerEmail(event.target.value)}
-                      placeholder="buyer@example.com"
+                      placeholder={t("orders.create.emailPlaceholder")}
                       type="email"
                       value={customerEmail}
                     />
                     <FieldDescription>
-                      Required. Creates or links a customer in this shop.
+                      {t("orders.create.emailDesc")}
                     </FieldDescription>
                   </Field>
                   <Field>
-                    <FieldLabel htmlFor="mo-cf">First name</FieldLabel>
+                    <FieldLabel htmlFor="mo-cf">{t("orders.create.firstName")}</FieldLabel>
                     <Input
                       id="mo-cf"
                       onChange={(event) => setCustomerFirstName(event.target.value)}
@@ -480,7 +480,7 @@ function ManualOrderCreateDialogInner() {
                     />
                   </Field>
                   <Field>
-                    <FieldLabel htmlFor="mo-cl">Last name</FieldLabel>
+                    <FieldLabel htmlFor="mo-cl">{t("orders.create.lastName")}</FieldLabel>
                     <Input
                       id="mo-cl"
                       onChange={(event) => setCustomerLastName(event.target.value)}
@@ -488,11 +488,11 @@ function ManualOrderCreateDialogInner() {
                     />
                   </Field>
                   <Field className="sm:col-span-2">
-                    <FieldLabel htmlFor="mo-cp">Phone</FieldLabel>
+                    <FieldLabel htmlFor="mo-cp">{t("orders.create.phone")}</FieldLabel>
                     <Input
                       id="mo-cp"
                       onChange={(event) => setCustomerPhone(event.target.value)}
-                      placeholder="09…"
+                      placeholder={t("orders.create.phonePlaceholder")}
                       value={customerPhone}
                     />
                   </Field>
@@ -505,9 +505,9 @@ function ManualOrderCreateDialogInner() {
             <div className="space-y-5">
               <section className="space-y-3">
                 <div>
-                  <p className="text-sm font-medium">Products</p>
+                  <p className="text-sm font-medium">{t("orders.create.products")}</p>
                   <p className="mt-0.5 text-xs text-muted-foreground">
-                    Select one or more variants, then set quantities for this order.
+                    {t("orders.create.productsDesc")}
                   </p>
                 </div>
                 <VariantMultiPicker
@@ -520,7 +520,7 @@ function ManualOrderCreateDialogInner() {
 
               {lines.length > 0 ? (
                 <section className="space-y-2 border-t pt-5">
-                  <p className="text-sm font-medium">Quantities</p>
+                  <p className="text-sm font-medium">{t("orders.create.quantities")}</p>
                   <ul className="space-y-2">
                     {lines.map((line) => {
                       const variant = variantById.get(line.variantId);
@@ -534,12 +534,11 @@ function ManualOrderCreateDialogInner() {
                               {variant?.label ?? line.variantId}
                             </p>
                             <p className="truncate text-xs text-muted-foreground">
-                              {[variant?.sku, variant?.priceLabel].filter(Boolean).join(" · ") ||
-                                "Variant"}
+                              {[variant?.sku, variant?.priceLabel].filter(Boolean).join(" · ") || t("orders.create.optionFallback")}
                             </p>
                           </div>
                           <Input
-                            aria-label={`Quantity for ${variant?.label ?? "item"}`}
+                            aria-label={t("orders.create.quantityFor", { name: variant?.label ?? t("orders.create.optionFallback") })}
                             min={1}
                             onChange={(event) =>
                               setLineQuantity(line.variantId, event.target.value)
@@ -548,7 +547,7 @@ function ManualOrderCreateDialogInner() {
                             value={String(line.quantity)}
                           />
                           <Button
-                            aria-label="Remove item"
+                            aria-label={t("orders.create.removeItem")}
                             onClick={() => removeLine(line.variantId)}
                             size="icon-sm"
                             type="button"
@@ -569,27 +568,26 @@ function ManualOrderCreateDialogInner() {
             <div className="space-y-5">
               <section className="grid gap-4 sm:grid-cols-2">
                 <div className="sm:col-span-2">
-                  <p className="text-sm font-medium">Review</p>
+                  <p className="text-sm font-medium">{t("orders.create.review")}</p>
                   <p className="mt-0.5 text-xs text-muted-foreground">
-                    Confirm customer and items, then add delivery details for this cash order.
+                    {t("orders.create.reviewDesc")}
                   </p>
                 </div>
                 <div className="rounded-xl border px-3.5 py-3 sm:col-span-2">
                   <dl className="space-y-1.5 text-sm">
                     <div className="flex justify-between gap-3">
-                      <dt className="text-muted-foreground">Customer</dt>
+                      <dt className="text-muted-foreground">{t("orders.create.customer")}</dt>
                       <dd className="truncate font-medium">{customerEmail || "—"}</dd>
                     </div>
                     <div className="flex justify-between gap-3">
-                      <dt className="text-muted-foreground">Items</dt>
+                      <dt className="text-muted-foreground">{t("orders.create.items")}</dt>
                       <dd className="font-medium">
-                        {lines.reduce((sum, line) => sum + line.quantity, 0)} units · {lines.length}{" "}
-                        line{lines.length === 1 ? "" : "s"}
+                        {t("orders.create.itemsSummary", { units: lines.reduce((sum, line) => sum + line.quantity, 0), lines: lines.length })}
                       </dd>
                     </div>
                     <div className="flex justify-between gap-3">
-                      <dt className="text-muted-foreground">Payment</dt>
-                      <dd className="font-medium">Cash</dd>
+                      <dt className="text-muted-foreground">{t("orders.create.payment")}</dt>
+                      <dd className="font-medium">{t("orders.create.cash")}</dd>
                     </div>
                   </dl>
                 </div>
@@ -598,9 +596,9 @@ function ManualOrderCreateDialogInner() {
               <section className="grid gap-4 border-t pt-5 sm:grid-cols-2">
                 <div className="flex items-start justify-between gap-3 sm:col-span-2">
                   <div>
-                    <p className="text-sm font-medium">Shipping address</p>
+                    <p className="text-sm font-medium">{t("orders.create.shippingAddress")}</p>
                     <p className="mt-0.5 text-xs text-muted-foreground">
-                      Country is always Ethiopia for local delivery.
+                      {t("orders.create.shippingAddressDesc")}
                     </p>
                   </div>
                   <Button
@@ -609,14 +607,14 @@ function ManualOrderCreateDialogInner() {
                     type="button"
                     variant="outline"
                   >
-                    {includeAddress ? "Included" : "Skipped"}
+                    {includeAddress ? t("orders.create.included") : t("orders.create.skipped")}
                   </Button>
                 </div>
 
                 {includeAddress ? (
                   <>
                     <Field>
-                      <FieldLabel htmlFor="mo-af">First name</FieldLabel>
+                      <FieldLabel htmlFor="mo-af">{t("orders.create.firstName")}</FieldLabel>
                       <Input
                         id="mo-af"
                         onChange={(event) =>
@@ -626,7 +624,7 @@ function ManualOrderCreateDialogInner() {
                       />
                     </Field>
                     <Field>
-                      <FieldLabel htmlFor="mo-al">Last name</FieldLabel>
+                      <FieldLabel htmlFor="mo-al">{t("orders.create.lastName")}</FieldLabel>
                       <Input
                         id="mo-al"
                         onChange={(event) =>
@@ -636,18 +634,18 @@ function ManualOrderCreateDialogInner() {
                       />
                     </Field>
                     <Field className="sm:col-span-2">
-                      <FieldLabel htmlFor="mo-a1">Address</FieldLabel>
+                      <FieldLabel htmlFor="mo-a1">{t("orders.create.address")}</FieldLabel>
                       <Input
                         id="mo-a1"
                         onChange={(event) =>
                           setAddress((current) => ({ ...current, address1: event.target.value }))
                         }
-                        placeholder="Street, building, landmark"
+                        placeholder={t("orders.create.addressPlaceholder")}
                         value={address.address1}
                       />
                     </Field>
                     <Field>
-                      <FieldLabel htmlFor="mo-city">City</FieldLabel>
+                      <FieldLabel htmlFor="mo-city">{t("orders.create.city")}</FieldLabel>
                       <Input
                         id="mo-city"
                         onChange={(event) =>
@@ -657,7 +655,7 @@ function ManualOrderCreateDialogInner() {
                       />
                     </Field>
                     <Field>
-                      <FieldLabel htmlFor="mo-zone">Region / zone</FieldLabel>
+                      <FieldLabel htmlFor="mo-zone">{t("orders.create.region")}</FieldLabel>
                       <Input
                         id="mo-zone"
                         onChange={(event) =>
@@ -667,7 +665,7 @@ function ManualOrderCreateDialogInner() {
                       />
                     </Field>
                     <Field>
-                      <FieldLabel htmlFor="mo-ph">Phone</FieldLabel>
+                      <FieldLabel htmlFor="mo-ph">{t("orders.create.phone")}</FieldLabel>
                       <Input
                         id="mo-ph"
                         onChange={(event) =>
@@ -677,9 +675,9 @@ function ManualOrderCreateDialogInner() {
                       />
                     </Field>
                     <Field>
-                      <FieldLabel>Country</FieldLabel>
-                      <Input disabled readOnly value="Ethiopia" />
-                      <FieldDescription>Fixed for this shop&apos;s delivery zone.</FieldDescription>
+                      <FieldLabel>{t("orders.create.country")}</FieldLabel>
+                      <Input disabled readOnly value={t("orders.create.ethiopia")} />
+                      <FieldDescription>{t("orders.create.countryFixed")}</FieldDescription>
                     </Field>
                   </>
                 ) : null}
@@ -687,11 +685,11 @@ function ManualOrderCreateDialogInner() {
 
               <section className="border-t pt-5">
                 <Field>
-                  <FieldLabel htmlFor="mo-note">Internal note</FieldLabel>
+                  <FieldLabel htmlFor="mo-note">{t("orders.create.internalNote")}</FieldLabel>
                   <Textarea
                     id="mo-note"
                     onChange={(event) => setNote(event.target.value)}
-                    placeholder="Optional — cash collection notes, delivery timing, WhatsApp thread…"
+                    placeholder={t("orders.create.notePlaceholder")}
                     rows={2}
                     value={note}
                   />
@@ -705,11 +703,11 @@ function ManualOrderCreateDialogInner() {
           <div className="flex gap-2">
             {step > 0 ? (
               <Button onClick={() => setStep((value) => value - 1)} type="button" variant="outline">
-                Back
+                {t("common.back")}
               </Button>
             ) : (
               <Button onClick={() => setOpen(false)} type="button" variant="outline">
-                Cancel
+                {t("common.cancel")}
               </Button>
             )}
           </div>
@@ -726,7 +724,7 @@ function ManualOrderCreateDialogInner() {
                 }}
                 type="button"
               >
-                Continue
+                {t("common.continue")}
               </Button>
             ) : (
               <Button
@@ -734,7 +732,7 @@ function ManualOrderCreateDialogInner() {
                 onClick={() => void create()}
                 type="button"
               >
-                {saving ? "Creating…" : "Create order"}
+                {saving ? t("orders.create.creating") : t("orders.create.trigger")}
               </Button>
             )}
           </div>
@@ -757,6 +755,7 @@ function CustomerPicker({
   selectedId: string | null;
   selectedLabel: string | null;
 }) {
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
 
   return (
@@ -772,7 +771,7 @@ function CustomerPicker({
           variant="outline"
         >
           <span className="truncate">
-            {loading ? "Loading customers…" : selectedLabel ? selectedLabel : "Select customer…"}
+            {loading ? t("orders.create.loadingCustomers") : selectedLabel ? selectedLabel : t("orders.create.selectCustomer")}
           </span>
           <AppIcons.arrowDown className="size-4 shrink-0 opacity-60" data-icon="inline-end" />
         </Button>
@@ -784,12 +783,12 @@ function CustomerPicker({
         onOpenAutoFocus={(event) => event.preventDefault()}
       >
         <Command className="h-auto max-h-72 w-full">
-          <CommandInput placeholder="Search name or email…" />
+          <CommandInput placeholder={t("orders.create.searchCustomer")} />
           <CommandList
             className="max-h-60 overflow-y-auto overscroll-contain"
             onWheel={(event) => event.stopPropagation()}
           >
-            <CommandEmpty>No matching customers.</CommandEmpty>
+            <CommandEmpty>{t("orders.create.noCustomers")}</CommandEmpty>
             <CommandGroup className="overflow-visible">
               {catalog.map((customer) => {
                 const isSelected = customer.id === selectedId;
@@ -827,6 +826,7 @@ function VariantMultiPicker({
   onChange: (ids: string[]) => void;
   selectedIds: string[];
 }) {
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const selected = useMemo(() => new Set(selectedIds), [selectedIds]);
 
@@ -838,11 +838,11 @@ function VariantMultiPicker({
   const label =
     selectedIds.length === 0
       ? loading
-        ? "Loading products…"
-        : "Select products…"
+        ? t("orders.create.loadingProducts")
+        : t("orders.create.selectProducts")
       : selectedIds.length === 1
-        ? "1 product selected"
-        : `${selectedIds.length} products selected`;
+        ? t("common.productSelected")
+        : t("common.productsSelected", { count: selectedIds.length });
 
   return (
     <Popover onOpenChange={setOpen} open={open}>
@@ -867,12 +867,12 @@ function VariantMultiPicker({
         onOpenAutoFocus={(event) => event.preventDefault()}
       >
         <Command className="h-auto max-h-72 w-full">
-          <CommandInput placeholder="Search product, variant, or SKU…" />
+          <CommandInput placeholder={t("orders.create.searchProducts")} />
           <CommandList
             className="max-h-60 overflow-y-auto overscroll-contain"
             onWheel={(event) => event.stopPropagation()}
           >
-            <CommandEmpty>No matching products.</CommandEmpty>
+            <CommandEmpty>{t("orders.create.noProducts")}</CommandEmpty>
             <CommandGroup className="overflow-visible">
               {catalog.map((variant) => {
                 const isSelected = selected.has(variant.id);

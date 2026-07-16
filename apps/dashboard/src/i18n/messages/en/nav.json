@@ -1,0 +1,28 @@
+{
+  "overview": "Overview",
+  "products": "Products",
+  "productsList": "All products",
+  "productCategories": "Categories",
+  "productCollections": "Collections",
+  "orders": "Orders",
+  "customers": "Customers",
+  "promotions": "Promotions",
+  "media": "Media",
+  "editor": "Editor",
+  "insights": "Insights",
+  "billing": "Billing",
+  "settings": "Settings",
+  "section": {
+    "commerce": "Commerce",
+    "storefront": "Storefront",
+    "insights": "Insights"
+  },
+  "dashboard": "Dashboard",
+  "breadcrumbs": {
+    "newCategory": "New category",
+    "newCollection": "New collection",
+    "productDetails": "Product details",
+    "editProduct": "Edit product",
+    "orderDetails": "Order details"
+  }
+}

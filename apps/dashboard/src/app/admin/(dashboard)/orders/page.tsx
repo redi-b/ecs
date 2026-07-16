@@ -6,6 +6,7 @@ import { RefreshButton } from "@/components/app/refresh-button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ManualOrderCreateDialog } from "@/features/orders/manual-order-create-dialog";
 import { parseOrderListFilters } from "@/features/orders/order-domain";
+import { getTranslations } from "@/i18n/server";
 import { OrdersTable } from "@/features/orders/orders-table";
 import { type DashboardSearchParams, getSelectedTenantId } from "@/lib/dashboard-tenant-context";
 import { getListErrorState } from "@/lib/list-error-state";
@@ -22,6 +23,7 @@ export default async function MerchantOrdersPage({ searchParams }: MerchantOrder
   const listParams = parseListSearchParams(resolvedSearchParams);
   const filters = parseOrderListFilters(resolvedSearchParams);
   const tenantId = getSelectedTenantId(resolvedSearchParams);
+  const t = await getTranslations();
   const requestHeaders = await headers();
   const offset = (listParams.page - 1) * listParams.pageSize;
 
@@ -49,12 +51,12 @@ export default async function MerchantOrdersPage({ searchParams }: MerchantOrder
           <ManualOrderCreateDialog />
         </>
       }
-      description="Track sales, payments, and delivery."
-      title="Orders"
+      description={t("orders.description")}
+      title={t("orders.title")}
     >
       {result.ok ? (
         <>
-          <ListSummary count={result.orders.count} label="orders" />
+          <ListSummary count={result.orders.count} label={t("nav.orders").toLowerCase()} />
           <OrdersTable
             filters={filters}
             footer={
@@ -76,7 +78,7 @@ export default async function MerchantOrdersPage({ searchParams }: MerchantOrder
         <ListSetupState state={errorState} />
       ) : (
         <Alert variant="destructive">
-          <AlertTitle>{errorState?.title ?? "Orders could not be loaded"}</AlertTitle>
+          <AlertTitle>{errorState?.title ?? t("orders.error.loadTitle")}</AlertTitle>
           <AlertDescription>{errorState?.description ?? result.message}</AlertDescription>
         </Alert>
       )}

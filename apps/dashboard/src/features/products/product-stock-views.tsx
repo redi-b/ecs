@@ -15,8 +15,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import type { MessageKey } from "@/i18n/messages";
+import { useI18n } from "@/i18n/provider";
 import { getTenantScopedPath } from "@/lib/dashboard-tenant-context";
 import { dashboardRoutes } from "@/lib/routes";
+
+type Translate = (key: MessageKey, values?: Record<string, string | number | Date>) => string;
 
 type ProductStockPanelProps = {
   action: string;
@@ -49,6 +53,7 @@ export function SingleVariantStockPanel({
   productId: string;
   stockError?: string | undefined;
 }) {
+  const { t } = useI18n();
   const router = useRouter();
   const queryClient = useQueryClient();
   const stockedQuantityInputId = useId();
@@ -64,7 +69,7 @@ export function SingleVariantStockPanel({
       const parsedQuantity = Number.parseInt(stockedQuantity, 10);
 
       if (!Number.isInteger(parsedQuantity) || parsedQuantity < 0) {
-        throw new Error("Enter a whole number stock quantity.");
+        throw new Error(t("products.stock.enterWholeNumber"));
       }
 
       const response = await fetch(action, {
@@ -83,7 +88,7 @@ export function SingleVariantStockPanel({
       };
 
       if (!response.ok || !data.stock) {
-        throw new Error(getStockErrorMessage(data.error));
+        throw new Error(getStockErrorMessage(data.error, t));
       }
 
       return data.stock;
@@ -92,11 +97,12 @@ export function SingleVariantStockPanel({
       setStock(nextStock);
       setActionError(null);
       await queryClient.invalidateQueries({ queryKey: ["product", productId] });
-      toast.success("Stock updated.");
+      toast.success(t("products.stock.toastUpdated"));
       router.refresh();
     },
     onError: (error) => {
-      const message = error instanceof Error ? error.message : "Stock could not be updated.";
+      const message =
+        error instanceof Error ? error.message : t("products.stock.couldNotUpdate");
 
       setActionError(message);
     },
@@ -106,8 +112,8 @@ export function SingleVariantStockPanel({
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Stock</CardTitle>
-          <CardDescription>Track available inventory for this product.</CardDescription>
+          <CardTitle>{t("products.stock.title")}</CardTitle>
+          <CardDescription>{t("products.stock.trackDescription")}</CardDescription>
         </CardHeader>
         <CardContent>
           <StockAlert error={stockError} />
@@ -121,18 +127,31 @@ export function SingleVariantStockPanel({
       <CardHeader>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <CardTitle>Stock</CardTitle>
-            <CardDescription>Inventory at the merchant stock location.</CardDescription>
+            <CardTitle>{t("products.stock.title")}</CardTitle>
+            <CardDescription>{t("products.stock.locationDescription")}</CardDescription>
           </div>
           <StockStateBadge availableQuantity={getAvailableQuantity(stock)} />
         </div>
       </CardHeader>
       <CardContent className="flex flex-col gap-5">
         <div className="grid gap-3 md:grid-cols-4">
-          <StockMetric emphasis label="Available" value={formatQuantity(stock.availableQuantity)} />
-          <StockMetric label="Stocked" value={formatQuantity(stock.stockedQuantity)} />
-          <StockMetric label="Reserved" value={formatQuantity(stock.reservedQuantity)} />
-          <StockMetric label="Incoming" value={formatQuantity(stock.incomingQuantity)} />
+          <StockMetric
+            emphasis
+            label={t("products.stock.available")}
+            value={formatQuantity(stock.availableQuantity, t)}
+          />
+          <StockMetric
+            label={t("products.stock.stocked")}
+            value={formatQuantity(stock.stockedQuantity, t)}
+          />
+          <StockMetric
+            label={t("products.stock.reserved")}
+            value={formatQuantity(stock.reservedQuantity, t)}
+          />
+          <StockMetric
+            label={t("products.stock.incoming")}
+            value={formatQuantity(stock.incomingQuantity, t)}
+          />
         </div>
 
         <form
@@ -144,7 +163,9 @@ export function SingleVariantStockPanel({
         >
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <Field className="max-w-xs flex-1">
-              <FieldLabel htmlFor={stockedQuantityInputId}>Set stocked quantity</FieldLabel>
+              <FieldLabel htmlFor={stockedQuantityInputId}>
+                {t("products.stock.setStockedQuantity")}
+              </FieldLabel>
               <Input
                 id={stockedQuantityInputId}
                 min="0"
@@ -153,17 +174,17 @@ export function SingleVariantStockPanel({
                 type="number"
                 value={stockedQuantity}
               />
-              <FieldDescription>Reserved stock is calculated from orders.</FieldDescription>
+              <FieldDescription>{t("products.stock.reservedHelp")}</FieldDescription>
             </Field>
             <Button disabled={mutation.isPending} type="submit">
-              {mutation.isPending ? "Saving..." : "Save stock"}
+              {mutation.isPending ? t("products.stock.saving") : t("products.stock.saveStock")}
             </Button>
           </div>
         </form>
 
         {actionError ? (
           <Alert variant="destructive">
-            <AlertTitle>Stock could not be updated</AlertTitle>
+            <AlertTitle>{t("products.stock.updateFailedTitle")}</AlertTitle>
             <AlertDescription>{actionError}</AlertDescription>
           </Alert>
         ) : null}
@@ -181,6 +202,7 @@ export function VariantStockPanel({
   tenantId?: string | undefined;
   variants: NonNullable<MerchantProduct["variants"]>;
 }) {
+  const { t } = useI18n();
   const router = useRouter();
   const queryClient = useQueryClient();
   const [stockByVariantId, setStockByVariantId] = useState<Record<string, MerchantProductStock>>(
@@ -211,14 +233,14 @@ export function VariantStockPanel({
         variant.id,
         variant.title,
         variant.sku,
-        formatVariantPrice(variant),
+        formatVariantPrice(variant, t),
         ...(variant.optionValues ?? []).flatMap((option) => [option.optionTitle, option.value]),
       ]
         .filter(Boolean)
         .some((value) => String(value).toLowerCase().includes(needle)),
     );
-  }, [query, variants]);
-  const columns = useMemo(() => getVariantInventoryColumns(), []);
+  }, [query, t, variants]);
+  const columns = useMemo(() => getVariantInventoryColumns(t), [t]);
 
   useEffect(() => {
     let cancelled = false;
@@ -238,7 +260,7 @@ export function VariantStockPanel({
           };
 
           return {
-            error: response?.ok && data.stock ? null : getStockErrorMessage(data.error),
+            error: response?.ok && data.stock ? null : getStockErrorMessage(data.error, t),
             stock: data.stock,
             variantId: variant.id,
           };
@@ -276,7 +298,7 @@ export function VariantStockPanel({
     return () => {
       cancelled = true;
     };
-  }, [productId, tenantId, variants]);
+  }, [productId, t, tenantId, variants]);
 
   const mutation = useMutation({
     mutationFn: async (variantId: string) => {
@@ -284,7 +306,7 @@ export function VariantStockPanel({
       const parsedQuantity = Number.parseInt(rawQuantity, 10);
 
       if (!Number.isInteger(parsedQuantity) || parsedQuantity < 0) {
-        throw new Error("Enter a whole number stock quantity.");
+        throw new Error(t("products.stock.enterWholeNumber"));
       }
 
       const response = await fetch(getVariantStockAction(productId, variantId, tenantId), {
@@ -303,7 +325,7 @@ export function VariantStockPanel({
       };
 
       if (!response.ok || !data.stock) {
-        throw new Error(getStockErrorMessage(data.error));
+        throw new Error(getStockErrorMessage(data.error, t));
       }
 
       return data.stock;
@@ -326,11 +348,12 @@ export function VariantStockPanel({
         return rest;
       });
       await queryClient.invalidateQueries({ queryKey: ["product", productId] });
-      toast.success("Variant stock updated.");
+      toast.success(t("products.stock.toastVariantUpdated"));
       router.refresh();
     },
     onError: (error, variantId) => {
-      const message = error instanceof Error ? error.message : "Stock could not be updated.";
+      const message =
+        error instanceof Error ? error.message : t("products.stock.couldNotUpdate");
 
       setErrorByVariantId((current) => ({
         ...current,
@@ -369,13 +392,13 @@ export function VariantStockPanel({
       <CardHeader>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <CardTitle>Variant stock</CardTitle>
-            <CardDescription>
-              Inventory at the merchant location for each sellable variant.
-            </CardDescription>
+            <CardTitle>{t("products.stock.variantTitle")}</CardTitle>
+            <CardDescription>{t("products.stock.variantDescription")}</CardDescription>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Badge variant="secondary">{variants.length} variants</Badge>
+            <Badge variant="secondary">
+              {t("products.stock.variantsCount", { count: variants.length })}
+            </Badge>
             <StockStateBadge availableQuantity={totalAvailable} />
           </div>
         </div>
@@ -384,27 +407,33 @@ export function VariantStockPanel({
         <div className="grid gap-3 md:grid-cols-3">
           <StockMetric
             emphasis
-            label="Available"
-            value={isLoading ? "Loading..." : String(totalAvailable)}
+            label={t("products.stock.available")}
+            value={isLoading ? t("products.stock.loading") : String(totalAvailable)}
           />
-          <StockMetric label="Stocked" value={isLoading ? "Loading..." : String(totalStocked)} />
-          <StockMetric label="Reserved" value={isLoading ? "Loading..." : String(totalReserved)} />
+          <StockMetric
+            label={t("products.stock.stocked")}
+            value={isLoading ? t("products.stock.loading") : String(totalStocked)}
+          />
+          <StockMetric
+            label={t("products.stock.reserved")}
+            value={isLoading ? t("products.stock.loading") : String(totalReserved)}
+          />
         </div>
 
         <DataTable
           columns={columns}
           data={rows}
-          emptyMessage="No variants match this search."
-          emptyTitle="No matching variants"
+          emptyMessage={t("products.stock.emptyMatchMessage")}
+          emptyTitle={t("products.stock.emptyMatchTitle")}
           getRowId={(row) => row.variant.id}
           isFiltered={Boolean(query.trim())}
           pageSize={8}
           toolbar={
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
               <div>
-                <h3 className="text-sm font-medium">Variant inventory</h3>
+                <h3 className="text-sm font-medium">{t("products.stock.inventoryHeading")}</h3>
                 <p className="text-sm text-muted-foreground">
-                  Search variants, review price, and set stocked quantities.
+                  {t("products.stock.inventoryHelp")}
                 </p>
               </div>
               <div className="relative md:w-72">
@@ -413,10 +442,10 @@ export function VariantStockPanel({
                   data-icon="inline-start"
                 />
                 <Input
-                  aria-label="Search variants"
+                  aria-label={t("products.stock.searchAria")}
                   className="h-9 pl-9"
                   onChange={(event) => setQuery(event.target.value)}
-                  placeholder="Search variant, SKU, option"
+                  placeholder={t("products.stock.searchPlaceholder")}
                   value={query}
                 />
               </div>
@@ -428,17 +457,19 @@ export function VariantStockPanel({
   );
 }
 
-export function getVariantInventoryColumns(): ColumnDef<VariantInventoryRow>[] {
+export function getVariantInventoryColumns(t: Translate): ColumnDef<VariantInventoryRow>[] {
   return [
     {
       accessorFn: (row) => row.variant.title ?? row.variant.id,
-      header: "Variant",
+      header: t("products.stock.colVariant"),
       cell: ({ row }) => {
         const { error, variant } = row.original;
 
         return (
           <div className="w-64 max-w-64 whitespace-normal">
-            <div className="font-medium">{variant.title ?? "Untitled variant"}</div>
+            <div className="font-medium">
+              {variant.title ?? t("products.stock.untitledVariant")}
+            </div>
             <div className="break-all text-xs text-muted-foreground">{variant.id}</div>
             <VariantOptionSummary variant={variant} />
             {error ? <div className="mt-2 text-xs text-destructive">{error}</div> : null}
@@ -448,26 +479,30 @@ export function getVariantInventoryColumns(): ColumnDef<VariantInventoryRow>[] {
     },
     {
       accessorFn: (row) => row.variant.sku ?? "",
-      header: "SKU",
+      header: t("products.stock.colSku"),
       cell: ({ row }) => (
-        <span className="text-muted-foreground">{row.original.variant.sku ?? "No SKU"}</span>
+        <span className="text-muted-foreground">
+          {row.original.variant.sku ?? t("products.stock.noSku")}
+        </span>
       ),
     },
     {
-      accessorFn: (row) => formatVariantPrice(row.variant),
-      header: "Price",
-      cell: ({ row }) => formatVariantPrice(row.original.variant),
+      accessorFn: (row) => formatVariantPrice(row.variant, t),
+      header: t("products.stock.colPrice"),
+      cell: ({ row }) => formatVariantPrice(row.original.variant, t),
     },
     {
       accessorFn: (row) => row.stock?.availableQuantity ?? row.stock?.stockedQuantity ?? 0,
-      header: "Available",
+      header: t("products.stock.colAvailable"),
       cell: ({ row }) => {
         const { isLoading, stock } = row.original;
 
         return (
           <div className="text-right">
             <div className="font-medium">
-              {isLoading ? "Loading..." : formatQuantity(stock?.availableQuantity ?? null)}
+              {isLoading
+                ? t("products.stock.loading")
+                : formatQuantity(stock?.availableQuantity ?? null, t)}
             </div>
             {!isLoading ? (
               <StockStateText
@@ -480,18 +515,18 @@ export function getVariantInventoryColumns(): ColumnDef<VariantInventoryRow>[] {
     },
     {
       accessorFn: (row) => row.stock?.reservedQuantity ?? 0,
-      header: "Reserved",
+      header: t("products.stock.colReserved"),
       cell: ({ row }) => (
         <div className="text-right">
           {row.original.isLoading
-            ? "Loading..."
-            : formatQuantity(row.original.stock?.reservedQuantity ?? null)}
+            ? t("products.stock.loading")
+            : formatQuantity(row.original.stock?.reservedQuantity ?? null, t)}
         </div>
       ),
     },
     {
       id: "actions",
-      header: "Stocked",
+      header: t("products.stock.colStocked"),
       cell: ({ row }) => {
         const item = row.original;
 
@@ -504,7 +539,9 @@ export function getVariantInventoryColumns(): ColumnDef<VariantInventoryRow>[] {
             }}
           >
             <Input
-              aria-label={`Stocked quantity for ${item.variant.title ?? item.variant.id}`}
+              aria-label={t("products.stock.stockedAria", {
+                name: item.variant.title ?? item.variant.id,
+              })}
               className="h-9 w-24"
               min="0"
               onChange={(event) => item.onStockedQuantityChange(event.target.value)}
@@ -513,7 +550,7 @@ export function getVariantInventoryColumns(): ColumnDef<VariantInventoryRow>[] {
               value={item.stockedQuantity}
             />
             <Button disabled={item.isSaving || item.isLoading} size="sm" type="submit">
-              {item.isSaving ? "Saving..." : "Save"}
+              {item.isSaving ? t("products.stock.saving") : t("products.stock.save")}
             </Button>
           </form>
         );
@@ -546,16 +583,20 @@ export function StockMetric({
 }
 
 export function StockStateBadge({ availableQuantity }: { availableQuantity: number }) {
+  const { t } = useI18n();
   return (
     <Badge variant={availableQuantity > 0 ? "default" : "secondary"}>
-      {availableQuantity > 0 ? `${availableQuantity} available` : "Out of stock"}
+      {availableQuantity > 0
+        ? t("products.stock.availableCount", { count: availableQuantity })
+        : t("products.stock.outOfStock")}
     </Badge>
   );
 }
 
 export function StockStateText({ availableQuantity }: { availableQuantity: number | null }) {
+  const { t } = useI18n();
   if (availableQuantity === null) {
-    return <div className="text-xs text-muted-foreground">Not tracked</div>;
+    return <div className="text-xs text-muted-foreground">{t("products.stock.notTracked")}</div>;
   }
 
   return (
@@ -564,7 +605,7 @@ export function StockStateText({ availableQuantity }: { availableQuantity: numbe
         availableQuantity > 0 ? "text-xs text-muted-foreground" : "text-xs text-destructive"
       }
     >
-      {availableQuantity > 0 ? "Ready to sell" : "Needs restock"}
+      {availableQuantity > 0 ? t("products.stock.readyToSell") : t("products.stock.needsRestock")}
     </div>
   );
 }
@@ -574,6 +615,7 @@ export function VariantOptionSummary({
 }: {
   variant: NonNullable<MerchantProduct["variants"]>[number];
 }) {
+  const { t } = useI18n();
   const options = variant.optionValues ?? [];
 
   if (!options.length) {
@@ -585,7 +627,7 @@ export function VariantOptionSummary({
       {options.map((option, index) => (
         <Badge key={`${option.optionTitle}-${option.value}-${index}`} variant="outline">
           {option.optionTitle ? `${option.optionTitle}: ` : ""}
-          {option.value ?? "Unset"}
+          {option.value ?? t("products.stock.unset")}
         </Badge>
       ))}
     </div>
@@ -600,9 +642,12 @@ export function getVariantStockAction(productId: string, variantId: string, tena
 }
 
 export function StockAlert({ error }: { error?: string | undefined }) {
-  const message = getStockErrorMessage(error);
+  const { t } = useI18n();
+  const message = getStockErrorMessage(error, t);
   const title =
-    error === "product_variant_unsupported" ? "Variant stock coming next" : "Stock unavailable";
+    error === "product_variant_unsupported"
+      ? t("products.stock.variantUnsupportedTitle")
+      : t("products.stock.unavailableTitle");
 
   return (
     <Alert variant={error === "product_variant_unsupported" ? "default" : "destructive"}>
@@ -616,42 +661,45 @@ export function getAvailableQuantity(stock: MerchantProductStock) {
   return stock.availableQuantity ?? stock.stockedQuantity ?? 0;
 }
 
-export function formatQuantity(value: number | null) {
-  return typeof value === "number" ? String(value) : "Not available";
+export function formatQuantity(value: number | null, t: Translate) {
+  return typeof value === "number" ? String(value) : t("products.stock.notAvailable");
 }
 
-export function formatVariantPrice(variant: NonNullable<MerchantProduct["variants"]>[number]) {
+export function formatVariantPrice(
+  variant: NonNullable<MerchantProduct["variants"]>[number],
+  t: Translate,
+) {
   const price = variant.prices.find(
     (variantPrice) => typeof variantPrice.amount === "number" && variantPrice.currencyCode,
   );
 
   if (!price || typeof price.amount !== "number" || !price.currencyCode) {
-    return "No price";
+    return t("products.stock.noPrice");
   }
 
   return `${price.currencyCode.toUpperCase()} ${price.amount}`;
 }
 
-export function getStockErrorMessage(error: string | undefined) {
+export function getStockErrorMessage(error: string | undefined, t: Translate) {
   if (error === "product_variant_unsupported") {
-    return "This product has multiple variants. Variant-level stock management is the next stock step.";
+    return t("products.stock.errorVariantUnsupported");
   }
 
   if (error === "product_inventory_unavailable") {
-    return "Stock is not configured for this product yet.";
+    return t("products.stock.errorInventoryUnavailable");
   }
 
   if (error === "inventory_location_unavailable") {
-    return "Stock location is not configured for this shop.";
+    return t("products.stock.errorLocationUnavailable");
   }
 
   if (error === "invalid_stocked_quantity") {
-    return "Enter a whole number stock quantity.";
+    return t("products.stock.errorInvalidQuantity");
   }
 
   if (error === "product_not_found") {
-    return "This product is no longer available.";
+    return t("products.stock.errorNotFound");
   }
 
-  return "Stock data is temporarily unavailable. Try again.";
+  return t("products.stock.errorTemporary");
 }

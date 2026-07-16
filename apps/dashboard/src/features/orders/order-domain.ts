@@ -1,4 +1,7 @@
 import type { MerchantOrder } from "@ecs/contracts";
+import type { MessageKey } from "@/i18n/messages";
+
+type Translate = (key: MessageKey, values?: Record<string, string | number | Date>) => string;
 
 export type OrderProgress = "new" | "ready" | "completed" | "canceled";
 export type OrderPaymentLabel = "unpaid" | "paid" | "failed";
@@ -62,16 +65,16 @@ export function getOrderProgress(order: MerchantOrder): OrderProgress {
   return "new";
 }
 
-export function getOrderProgressLabel(progress: OrderProgress) {
+export function getOrderProgressLabel(progress: OrderProgress, t?: Translate) {
   switch (progress) {
     case "new":
-      return "New";
+      return t ? t("orders.labels.progressNew") : "New";
     case "ready":
-      return "Ready";
+      return t ? t("orders.labels.progressReady") : "Ready";
     case "completed":
-      return "Completed";
+      return t ? t("orders.labels.progressCompleted") : "Completed";
     case "canceled":
-      return "Canceled";
+      return t ? t("orders.labels.progressCanceled") : "Canceled";
   }
 }
 
@@ -86,14 +89,14 @@ export function getPaymentLabel(order: MerchantOrder): OrderPaymentLabel {
   return "unpaid";
 }
 
-export function getPaymentStatusLabel(label: OrderPaymentLabel) {
+export function getPaymentStatusLabel(label: OrderPaymentLabel, t?: Translate) {
   switch (label) {
     case "paid":
-      return "Paid";
+      return t ? t("orders.labels.paymentPaid") : "Paid";
     case "failed":
-      return "Failed";
+      return t ? t("orders.labels.paymentFailed") : "Failed";
     case "unpaid":
-      return "Unpaid";
+      return t ? t("orders.labels.paymentUnpaid") : "Unpaid";
   }
 }
 
@@ -103,25 +106,25 @@ export function getMethodLabel(order: MerchantOrder): OrderMethodLabel {
   return "unknown";
 }
 
-export function getMethodDisplayLabel(method: OrderMethodLabel) {
+export function getMethodDisplayLabel(method: OrderMethodLabel, t?: Translate) {
   switch (method) {
     case "cod":
-      return "Cash";
+      return t ? t("orders.labels.methodCash") : "Cash";
     case "chapa":
-      return "Online";
+      return t ? t("orders.labels.methodOnline") : "Online";
     case "unknown":
-      return "Payment";
+      return t ? t("orders.labels.methodPayment") : "Payment";
   }
 }
 
-export function getMethodShortLabel(method: OrderMethodLabel) {
+export function getMethodShortLabel(method: OrderMethodLabel, t?: Translate) {
   switch (method) {
     case "cod":
-      return "Cash";
+      return t ? t("orders.labels.methodCash") : "Cash";
     case "chapa":
-      return "Online";
+      return t ? t("orders.labels.methodOnline") : "Online";
     case "unknown":
-      return "—";
+      return t ? t("orders.labels.methodUnknown") : "—";
   }
 }
 
@@ -134,18 +137,18 @@ export function getDeliveryLabel(order: MerchantOrder): OrderDeliveryLabel {
   return "unknown";
 }
 
-export function getDeliveryDisplayLabel(label: OrderDeliveryLabel) {
+export function getDeliveryDisplayLabel(label: OrderDeliveryLabel, t?: Translate) {
   switch (label) {
     case "delivery":
-      return "Local delivery";
+      return t ? t("orders.labels.deliveryLocal") : "Local delivery";
     case "pickup":
-      return "Customer pickup";
+      return t ? t("orders.labels.deliveryPickup") : "Customer pickup";
     case "unknown":
-      return "—";
+      return t ? t("orders.labels.deliveryUnknown") : "—";
   }
 }
 
-export function getOrderCustomerName(order: MerchantOrder) {
+export function getOrderCustomerName(order: MerchantOrder, t?: Translate) {
   const fromDelivery = order.delivery?.customerName?.trim();
   if (fromDelivery) return fromDelivery;
 
@@ -155,7 +158,7 @@ export function getOrderCustomerName(order: MerchantOrder) {
     .trim();
   if (fromAddress) return fromAddress;
 
-  return order.email?.trim() || "Customer";
+  return order.email?.trim() || (t ? t("orders.labels.customerFallback") : "Customer");
 }
 
 export function getOrderCustomerPhone(order: MerchantOrder) {
@@ -212,22 +215,32 @@ export function formatOrderRelativeTime(value: string | null | undefined, now = 
   return formatOrderDateTime(value);
 }
 
-export function getOrderItemsSummary(order: MerchantOrder) {
+export function getOrderItemsSummary(order: MerchantOrder, t?: Translate) {
   const items = order.items ?? [];
   const count =
     order.itemCount ??
     items.reduce((sum, item) => sum + (item.quantity ?? 0), 0) ??
     items.length;
 
-  if (!count) return "No items";
-  if (items.length === 0) return count === 1 ? "1 item" : `${count} items`;
+  if (!count) return t ? t("orders.labels.noItems") : "No items";
+  if (items.length === 0) {
+    return count === 1
+      ? t
+        ? t("orders.labels.itemOne")
+        : "1 item"
+      : t
+        ? t("orders.labels.itemsCount", { count })
+        : `${count} items`;
+  }
 
-  const first = items[0]?.title?.trim() || "Item";
+  const first = items[0]?.title?.trim() || (t ? t("orders.labels.itemFallback") : "Item");
   if (items.length === 1) {
     const qty = items[0]?.quantity ?? 1;
     return qty > 1 ? `${first} × ${qty}` : first;
   }
-  return `${first} +${items.length - 1} more`;
+  return t
+    ? t("orders.labels.itemsMore", { first, count: items.length - 1 })
+    : `${first} +${items.length - 1} more`;
 }
 
 export function getNextAction(order: MerchantOrder): OrderNextAction {

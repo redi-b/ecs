@@ -18,14 +18,19 @@ import type {
   ProductOptionDraft,
   VariantMatrixRow,
 } from "@/features/products/product-variant-matrix";
+import { useI18n } from "@/i18n/provider";
 
 export function SimpleProductStockPreview({ values }: { values: ProductFormValues }) {
+  const { t } = useI18n();
   return (
     <div className="grid gap-3 md:grid-cols-3">
-      <VariantMatrixMetric label="Product type" value="Simple product" />
-      <VariantMatrixMetric label="Price" value={formatEtbAmount(values.priceAmount)} />
+      <VariantMatrixMetric label={t("products.formReview.productType")} value={t("products.formReview.simpleProduct")} />
       <VariantMatrixMetric
-        label="Initial stock"
+        label={t("products.formReview.price")}
+        value={formatEtbAmount(values.priceAmount, t)}
+      />
+      <VariantMatrixMetric
+        label={t("products.formReview.initialStock")}
         value={String(parseWholeNumber(values.initialStock) ?? 0)}
       />
     </div>
@@ -33,6 +38,7 @@ export function SimpleProductStockPreview({ values }: { values: ProductFormValue
 }
 
 export function ProductReviewSummary({ values }: { values: ProductFormValues }) {
+  const { t } = useI18n();
   const rows = getVariantRows(values);
   const normalizedOptions = normalizeProductOptions(values.options);
   const totalStock = rows.reduce((total, row) => total + row.stockedQuantity, 0);
@@ -45,46 +51,48 @@ export function ProductReviewSummary({ values }: { values: ProductFormValues }) 
     <div className="grid gap-4">
       <div className="grid gap-3 md:grid-cols-4">
         <VariantMatrixMetric
-          label="Product type"
-          value={values.hasVariants ? "Variant product" : "Simple product"}
+          label={t("products.formReview.productType")}
+          value={values.hasVariants ? t("products.formReview.variantProduct") : t("products.formReview.simpleProduct")}
         />
-        <VariantMatrixMetric label="Sellable rows" value={String(rows.length)} />
+        <VariantMatrixMetric label={t("products.formReview.sellableRows")} value={String(rows.length)} />
         <VariantMatrixMetric
-          label="Price"
+          label={t("products.formReview.price")}
           value={minPrice === maxPrice ? `ETB ${minPrice}` : `ETB ${minPrice} to ${maxPrice}`}
         />
-        <VariantMatrixMetric label="Initial stock" value={String(totalStock)} />
+        <VariantMatrixMetric label={t("products.formReview.initialStock")} value={String(totalStock)} />
       </div>
 
       <div className="rounded-2xl border bg-background p-4">
-        <h3 className="text-sm font-medium">What will be saved</h3>
+        <h3 className="text-sm font-medium">{t("products.formReview.whatWillBeSaved")}</h3>
         <div className="mt-3 grid gap-3 text-sm md:grid-cols-2">
-          <ReviewLine label="Title" value={values.title.trim() || "Untitled product"} />
+          <ReviewLine label={t("products.formReview.title")} value={values.title.trim() || t("products.formReview.untitledProduct")} />
           <ReviewLine
-            label="Status"
-            value={values.status === "published" ? "Published" : "Draft"}
+            label={t("products.formReview.status")}
+            value={values.status === "published" ? t("products.formReview.published") : t("products.formReview.draft")}
           />
           <ReviewLine
-            label="Handle"
-            value={values.handle.trim() ? `/${values.handle.trim()}` : "No handle"}
+            label={t("products.formReview.handle")}
+            value={values.handle.trim() ? `/${values.handle.trim()}` : t("products.formReview.noHandle")}
           />
-          <ReviewLine label="SKU prefix" value={values.skuPrefix.trim() || "No SKU prefix"} />
+          <ReviewLine label={t("products.formReview.skuPrefix")} value={values.skuPrefix.trim() || t("products.formReview.noSkuPrefix")} />
           <ReviewLine
-            label="Options"
+            label={t("products.formReview.options")}
             value={
               values.hasVariants && normalizedOptions.length
                 ? normalizedOptions
                     .map((option) => `${option.title}: ${option.values.join(", ")}`)
                     .join(" | ")
-                : "No shopper options"
+                : t("products.formReview.noShopperOptions")
             }
           />
           <ReviewLine
-            label="Overrides"
+            label={t("products.formReview.overrides")}
             value={
               values.hasVariants
-                ? `${overriddenRows} row${overriddenRows === 1 ? "" : "s"} customized`
-                : "Not applicable"
+                ? overriddenRows === 1
+                  ? t("products.formReview.rowCustomizedOne")
+                  : t("products.formReview.rowsCustomized", { count: overriddenRows })
+                : t("products.formReview.notApplicable")
             }
           />
         </div>
@@ -109,6 +117,7 @@ export function ProductOptionsBuilder({
   onChange: (options: ProductOptionDraft[]) => void;
   options: ProductOptionDraft[];
 }) {
+  const { t } = useI18n();
   const [draftValues, setDraftValues] = useState<Record<number, string>>({});
 
   function addOption(title = "") {
@@ -158,17 +167,23 @@ export function ProductOptionsBuilder({
     });
   }
 
+  const presetOptions = [
+    t("products.formReview.placeholderSize"),
+    t("products.formReview.placeholderColor"),
+    t("products.formReview.placeholderMaterial"),
+  ];
+
   return (
     <div className="flex flex-col gap-4 rounded-2xl border bg-muted/20 p-4">
       <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
         <div className="max-w-2xl">
-          <h3 className="text-sm font-medium">Product options</h3>
+          <h3 className="text-sm font-medium">{t("products.formReview.optionsTitle")}</h3>
           <p className="text-sm text-muted-foreground">
-            Add the attributes shoppers choose from. Each value combination becomes a variant.
+            {t("products.formReview.optionsDesc")}
           </p>
         </div>
         <Button onClick={() => addOption()} size="sm" type="button" variant="outline">
-          Add option
+          {t("products.formReview.addOption")}
         </Button>
       </div>
 
@@ -184,24 +199,28 @@ export function ProductOptionsBuilder({
             >
               <div className="grid gap-4 md:grid-cols-[14rem_minmax(0,1fr)_auto] md:items-start">
                 <Field>
-                  <FieldLabel>Option name</FieldLabel>
+                  <FieldLabel>{t("products.formReview.optionName")}</FieldLabel>
                   <Input
                     onChange={(event) =>
                       updateOption(index, { ...option, title: event.target.value })
                     }
-                    placeholder={index === 0 ? "Size" : "Color"}
+                    placeholder={
+                      index === 0
+                        ? t("products.formReview.placeholderSize")
+                        : t("products.formReview.placeholderColor")
+                    }
                     value={option.title}
                   />
                 </Field>
 
                 <Field>
-                  <FieldLabel>Values</FieldLabel>
+                  <FieldLabel>{t("products.formReview.values")}</FieldLabel>
                   <div className="flex min-h-10 flex-wrap items-center gap-2 rounded-lg border bg-muted/20 px-2 py-2">
                     {option.values.map((value) => (
                       <Badge className="gap-1 rounded-md px-2 py-1" key={value} variant="secondary">
                         {value}
                         <button
-                          aria-label={`Remove ${value}`}
+                          aria-label={t("products.formReview.removeValueAria", { value })}
                           className="ml-1 rounded-sm text-muted-foreground hover:text-foreground"
                           onClick={() => removeValue(index, value)}
                           type="button"
@@ -211,7 +230,9 @@ export function ProductOptionsBuilder({
                       </Badge>
                     ))}
                     <input
-                      aria-label={`Add value for ${option.title || "option"}`}
+                      aria-label={t("products.formReview.addValueAria", {
+                        option: option.title || t("products.formReview.optionFallback"),
+                      })}
                       className="min-w-32 flex-1 bg-transparent px-1 py-1 text-sm outline-none placeholder:text-muted-foreground"
                       onChange={(event) =>
                         setDraftValues((current) => ({
@@ -234,14 +255,14 @@ export function ProductOptionsBuilder({
                         }
                       }}
                       placeholder={
-                        option.values.length ? "Add another value" : "Small, Medium, Large"
+                        option.values.length
+                          ? t("products.formReview.addAnotherValue")
+                          : t("products.formReview.valuePlaceholder")
                       }
                       value={draftValues[index] ?? ""}
                     />
                   </div>
-                  <FieldDescription>
-                    Press Enter or comma to add a value. Paste a comma-separated list to add many.
-                  </FieldDescription>
+                  <FieldDescription>{t("products.formReview.valuesHelp")}</FieldDescription>
                 </Field>
 
                 <Button
@@ -253,7 +274,7 @@ export function ProductOptionsBuilder({
                   type="button"
                   variant="outline"
                 >
-                  Remove
+                  {t("products.formReview.remove")}
                 </Button>
               </div>
             </div>
@@ -261,12 +282,12 @@ export function ProductOptionsBuilder({
         </div>
       ) : (
         <div className="rounded-xl border border-dashed bg-background px-4 py-5">
-          <p className="text-sm font-medium">No options yet</p>
+          <p className="text-sm font-medium">{t("products.formReview.noOptionsYet")}</p>
           <p className="mt-1 text-sm text-muted-foreground">
-            Create a simple product, or add common option groups to generate a variant matrix.
+            {t("products.formReview.noOptionsYetDesc")}
           </p>
           <div className="mt-4 flex flex-wrap gap-2">
-            {["Size", "Color", "Material"].map((title) => (
+            {presetOptions.map((title) => (
               <Button
                 key={title}
                 onClick={() => addOption(title)}
@@ -274,7 +295,7 @@ export function ProductOptionsBuilder({
                 type="button"
                 variant="outline"
               >
-                Add {title}
+                {t("products.formReview.addNamed", { title })}
               </Button>
             ))}
           </div>
@@ -300,6 +321,7 @@ export function VariantMatrixTable({
   rows: VariantMatrixRow[];
   values: ProductFormValues["variantOverrides"];
 }) {
+  const { t } = useI18n();
   const totalStock = rows.reduce((total, row) => total + row.stockedQuantity, 0);
   const prices = rows.map((row) => row.priceAmount);
   const minPrice = Math.min(...prices);
@@ -309,26 +331,34 @@ export function VariantMatrixTable({
   return (
     <div className="flex flex-col gap-4">
       <div className="grid gap-3 md:grid-cols-3">
-        <VariantMatrixMetric label="Variants" value={String(rows.length)} />
-        <VariantMatrixMetric label="Total stocked" value={String(totalStock)} />
-        <VariantMatrixMetric label="Price range" value={priceSummary} />
+        <VariantMatrixMetric label={t("products.formReview.options")} value={String(rows.length)} />
+        <VariantMatrixMetric label={t("products.formReview.totalStocked")} value={String(totalStock)} />
+        <VariantMatrixMetric label={t("products.formReview.priceRange")} value={priceSummary} />
       </div>
 
       <div className="overflow-hidden rounded-2xl border bg-background">
         <div className="flex flex-col gap-1 border-b bg-muted/30 px-4 py-3">
-          <h3 className="text-sm font-medium">Generated variant matrix</h3>
+          <h3 className="text-sm font-medium">{t("products.formReview.matrixTitle")}</h3>
           <p className="text-sm text-muted-foreground">
-            Review every sellable row. Change SKU, price, or stock only where needed.
+            {t("products.formReview.matrixDesc")}
           </p>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[56rem] text-sm">
             <thead className="bg-muted/40 text-muted-foreground">
               <tr>
-                <th className="px-4 py-3 text-left font-medium">Variant</th>
-                <th className="px-4 py-3 text-left font-medium">SKU</th>
-                <th className="px-4 py-3 text-left font-medium">Price</th>
-                <th className="px-4 py-3 text-left font-medium">Initial stock</th>
+                <th className="px-4 py-3 text-left font-medium">
+                  {t("products.formReview.colVariant")}
+                </th>
+                <th className="px-4 py-3 text-left font-medium">
+                  {t("products.formReview.colSku")}
+                </th>
+                <th className="px-4 py-3 text-left font-medium">
+                  {t("products.formReview.colPrice")}
+                </th>
+                <th className="px-4 py-3 text-left font-medium">
+                  {t("products.formReview.colStock")}
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -339,7 +369,8 @@ export function VariantMatrixTable({
                   <tr className="border-t align-top" key={row.key}>
                     <td className="px-4 py-3">
                       <div className="mb-2 font-medium">
-                        {Object.values(row.optionValues).join(" / ") || "Default variant"}
+                        {Object.values(row.optionValues).join(" / ") ||
+                          t("products.formReview.defaultVariant")}
                       </div>
                       <div className="flex flex-wrap gap-1.5">
                         {Object.entries(row.optionValues).length ? (
@@ -354,14 +385,14 @@ export function VariantMatrixTable({
                           ))
                         ) : (
                           <Badge className="rounded-md" variant="secondary">
-                            No options
+                            {t("products.formReview.noOptions")}
                           </Badge>
                         )}
                       </div>
                     </td>
                     <td className="px-4 py-3">
                       <Input
-                        aria-label={`SKU for ${row.key}`}
+                        aria-label={t("products.formReview.skuAria", { key: row.key })}
                         className="h-9"
                         onChange={(event) => onOverrideChange(row.key, { sku: event.target.value })}
                         value={override.sku ?? row.sku}
@@ -371,7 +402,7 @@ export function VariantMatrixTable({
                       <InputGroup className="h-9">
                         <InputGroupAddon>ETB</InputGroupAddon>
                         <InputGroupInput
-                          aria-label={`Price for ${row.key}`}
+                          aria-label={t("products.formReview.priceAria", { key: row.key })}
                           inputMode="numeric"
                           min="0"
                           onChange={(event) =>
@@ -384,7 +415,7 @@ export function VariantMatrixTable({
                     </td>
                     <td className="px-4 py-3">
                       <Input
-                        aria-label={`Stock for ${row.key}`}
+                        aria-label={t("products.formReview.stockAria", { key: row.key })}
                         className="h-9"
                         inputMode="numeric"
                         min="0"

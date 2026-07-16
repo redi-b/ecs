@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { SignInForm } from "@/components/app/sign-in-form";
 import { AuthShell } from "@/components/onboarding/auth-shell";
 import type { MessageKey } from "@/i18n/messages";
-import { getRequestMessages } from "@/i18n/server";
+import { getTranslations } from "@/i18n/server";
 import { getAuthenticatedDashboardRedirect } from "@/lib/dashboard-auth-redirect";
 import { isCentralDashboardHost } from "@/lib/dashboard-hosts";
 
@@ -15,8 +15,7 @@ export default async function AdminSignInPage({
   searchParams?: Promise<{ error?: string; next?: string }>;
 }) {
   const params = await searchParams;
-  const { messages } = await getRequestMessages();
-  const t = (key: MessageKey) => messages[key];
+  const t = await getTranslations();
   const requestHeaders = await headers();
   const requestHost = requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host");
   const authenticatedRedirect = await getAuthenticatedDashboardRedirect({

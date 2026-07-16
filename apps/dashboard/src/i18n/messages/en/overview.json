@@ -1,0 +1,139 @@
+{
+  "title": "Overview",
+  "description": "Track sales, orders, storefront activity, and setup progress in one place.",
+  "error": {
+    "loadTitle": "Overview could not be loaded"
+  },
+  "aria": {
+    "section": "Merchant overview",
+    "chartMetric": "Chart metric",
+    "mixView": "Mix view",
+    "closeLaunch": "Close launch assistant"
+  },
+  "metrics": {
+    "revenue": "Revenue",
+    "orders": "Orders",
+    "products": "Products",
+    "customers": "Customers",
+    "storefrontEvents": "Storefront events",
+    "orderTrend": "Order trend",
+    "aov": "AOV",
+    "noSalesYet": "No sales data yet",
+    "catalogCount": "Catalog count",
+    "repeatCount": "{count} repeat",
+    "analyticsUnavailable": "Analytics unavailable",
+    "last30Days": "Last 30 days",
+    "metricView": "{label} view"
+  },
+  "billing": {
+    "openBilling": "Open billing",
+    "paymentOverdue": "Payment overdue",
+    "paymentOverdueDesc": "A plan payment was due {date}. Open Billing to finish payment.",
+    "paymentDue": "Payment due",
+    "paymentDueDesc": "A plan payment is due {date}. Open Billing to pay.",
+    "paymentDueNoDate": "You have an open plan payment. Open Billing to pay.",
+    "paymentPastDue": "Payment past due",
+    "paymentPastDueDesc": "Your paid plan period has ended. Open Billing to pay and continue on this plan.",
+    "subscriptionCancelled": "Subscription cancelled",
+    "subscriptionCancelledDesc": "This shop is not on an active paid plan. Open Billing to choose a plan.",
+    "periodEnding": "Plan period ending soon",
+    "periodEndingDesc": "Your paid period ends {date}. Open Billing to renew."
+  },
+  "attention": {
+    "title": "Needs attention",
+    "description": "Queues and work waiting on you.",
+    "unfulfilledOrders": "Unfulfilled orders",
+    "unfulfilledHint": "Need packing or handoff",
+    "awaitingPayment": "Awaiting payment",
+    "awaitingPaymentHint": "Still unpaid or pending",
+    "draftProducts": "Draft products",
+    "draftProductsHint": "Not visible in the shop",
+    "waitingOnYou": "Waiting on you",
+    "allOrders": "All orders",
+    "unpaid": "Unpaid",
+    "unfulfilled": "Unfulfilled"
+  },
+  "trading": {
+    "title": "Trading activity",
+    "description": "Revenue, orders, and customers from available commerce records.",
+    "empty": "Commerce activity will appear here after orders are available for this shop."
+  },
+  "basket": {
+    "title": "Basket quality",
+    "description": "Average order value against daily order volume.",
+    "empty": "No basket data is available."
+  },
+  "demand": {
+    "title": "Demand rhythm",
+    "description": "Which weekdays carry the most order activity.",
+    "empty": "No weekday demand data is available."
+  },
+  "mix": {
+    "title": "Order mix",
+    "payment": "Payment",
+    "paymentDesc": "Payment state across the recent order sample.",
+    "paymentsTitle": "Payments",
+    "fulfillment": "Fulfillment",
+    "fulfillmentDesc": "Where orders sit before completion.",
+    "lifecycle": "Lifecycle",
+    "lifecycleDesc": "Current lifecycle state for recent orders.",
+    "customers": "Customers",
+    "customersDesc": "Repeat behavior across recent customers.",
+    "newCustomers": "New",
+    "repeatCustomers": "Repeat"
+  },
+  "recent": {
+    "title": "Recent orders",
+    "description": "Latest orders for this shop.",
+    "empty": "No recent orders are available.",
+    "viewAll": "View all orders",
+    "noEmail": "No email"
+  },
+  "paymentStatus": {
+    "paid": "Paid",
+    "failed": "Failed",
+    "unpaid": "Unpaid"
+  },
+  "readiness": {
+    "salesSetup": "Sales setup",
+    "salesChannel": "Sales channel",
+    "publishedStorefront": "Published storefront",
+    "ready": "Ready",
+    "missing": "Missing"
+  },
+  "donut": {
+    "empty": "No order data is available."
+  },
+  "helpers": {
+    "unavailable": "Unavailable",
+    "noSalesYet": "No sales data yet",
+    "recordsReviewed": "{count} records reviewed"
+  },
+  "launch": {
+    "title": "Launch Assistant",
+    "progress": "{done} of {total} setup items complete",
+    "launchButton": "Launch {done}/{total}",
+    "storefrontSettings": "Storefront settings",
+    "doNotShow": "Do not show again",
+    "hiddenToast": "Launch assistant hidden",
+    "hiddenDesc": "Turn it back on from Settings → Preferences.",
+    "done": "Done",
+    "next": "Next",
+    "open": "Open",
+    "shopProfile": "Shop profile",
+    "shopProfileMissing": "Add shop name and address",
+    "salesSetup": "Sales setup",
+    "salesSetupDesc": "Store and channel",
+    "catalog": "Catalog",
+    "catalogDesc": "{count} products",
+    "storefrontDesign": "Storefront design",
+    "storefrontSelected": "Storefront selected",
+    "chooseStorefront": "Choose a storefront",
+    "publishStorefront": "Publish storefront",
+    "customersCanAccess": "Customers can access the shop",
+    "reviewAndPublish": "Review and publish",
+    "payments": "Payments",
+    "billingConnected": "Billing connected",
+    "paymentPending": "Payment setup pending"
+  }
+}

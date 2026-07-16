@@ -46,9 +46,13 @@
 }
 
 @theme inline {
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-geist-sans);
+  /*
+   * Font stacks use the next/font CSS variables (set on <html>).
+   * Those variables expand to a quoted family name + optional fallback face.
+   */
+  --font-sans: var(--font-geist-sans), var(--font-ethiopic), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+  --font-heading: var(--font-geist-sans), var(--font-ethiopic), ui-sans-serif, system-ui, sans-serif;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -183,15 +187,36 @@
   }
 
   html {
-    @apply bg-background font-sans;
-    font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+    @apply bg-background;
     text-rendering: optimizeLegibility;
   }
 
+  /*
+   * Amharic: layout also applies next/font className (Noto Sans Ethiopic) on <html>.
+   * Keep stacks for any subtree that resets font-family.
+   */
+  html[lang="am"] {
+    --font-sans: var(--font-ethiopic), var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+    --font-heading: var(--font-ethiopic), var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+    /* Match Google Fonts preview weight a bit better than super-thin system defaults */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  html[lang="am"] body {
+    font-family: var(--font-ethiopic), var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+    font-weight: 400;
+    letter-spacing: 0; /* tracking-tight on Latin hurts Ethiopic shapes */
+  }
+
   body {
-    @apply bg-background text-foreground antialiased;
-    font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+    @apply bg-background font-sans text-foreground antialiased;
     min-height: 100vh;
+  }
+
+  /* Headings in Amharic: slightly heavier for legibility (closer to GF samples). */
+  html[lang="am"] :where(h1, h2, h3, h4, .font-semibold, .font-bold) {
+    font-weight: 600;
   }
 
   button:not(:disabled),
@@ -565,4 +590,31 @@
     scroll-behavior: auto !important;
     transition-duration: 1ms !important;
   }
+}
+
+/*
+ * Puck ships unlayered tokens: --puck-font-family: Inter on :root (no Ethiopic).
+ * Unlayered overrides beat @layer puck-tokens. Pin Noto Sans Ethiopic for Amharic.
+ */
+html[lang="am"] {
+  --puck-font-family: var(--font-ethiopic), var(--font-geist-sans), ui-sans-serif, system-ui,
+    sans-serif !important;
+  --puck-font-family-monospaced: var(--font-geist-mono), ui-monospace, monospace !important;
+}
+
+html[lang="am"] .storefront-puck-editor,
+html[lang="am"] .storefront-puck-editor--am,
+.storefront-puck-editor--am {
+  --puck-font-family: var(--font-ethiopic), var(--font-geist-sans), ui-sans-serif, system-ui,
+    sans-serif !important;
+  --puck-font-family-monospaced: var(--font-geist-mono), ui-monospace, monospace !important;
+  font-family: var(--font-ethiopic), var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif !important;
+}
+
+/* Editor chrome (title, badges, toolbar labels). */
+html[lang="am"] .storefront-editor-chrome,
+.storefront-puck-editor--am .storefront-editor-chrome,
+html[lang="am"] .storefront-editor-chrome *,
+.storefront-puck-editor--am .storefront-editor-chrome * {
+  font-family: var(--font-ethiopic), var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif !important;
 }

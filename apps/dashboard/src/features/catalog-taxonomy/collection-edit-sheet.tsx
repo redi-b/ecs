@@ -35,9 +35,13 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { slugifyTaxonomyHandle } from "@/features/catalog-taxonomy/taxonomy-table-state";
+import type { MessageKey } from "@/i18n/messages";
+import { useI18n } from "@/i18n/provider";
 import { getTenantScopedPath } from "@/lib/dashboard-tenant-context";
 import { dashboardRoutes } from "@/lib/routes";
 import { cn } from "@/lib/utils";
+
+type Translate = (key: MessageKey, values?: Record<string, string | number | Date>) => string;
 
 type CollectionEditSheetProps = {
   collection: MerchantProductCollection | null;
@@ -58,6 +62,7 @@ export function CollectionEditSheet({
   open,
   tenantId,
 }: CollectionEditSheetProps) {
+  const { t } = useI18n();
   const router = useRouter();
   const queryClient = useQueryClient();
   const [title, setTitle] = useState("");
@@ -156,16 +161,24 @@ export function CollectionEditSheet({
     setMembershipBusy(false);
 
     if (!response?.ok) {
-      toast.error("Could not update collection products.");
+      toast.error(t("taxonomy.edit.membershipFailed"));
       return;
     }
 
     const added = body.add?.length ?? 0;
     const removed = body.remove?.length ?? 0;
     if (added > 0) {
-      toast.success(added === 1 ? "Product added to collection." : `${added} products added.`);
+      toast.success(
+        added === 1
+          ? t("taxonomy.edit.productAddedOne")
+          : t("taxonomy.edit.productsAdded", { count: added }),
+      );
     } else if (removed > 0) {
-      toast.success(removed === 1 ? "Product removed." : `${removed} products removed.`);
+      toast.success(
+        removed === 1
+          ? t("taxonomy.edit.productRemovedOne")
+          : t("taxonomy.edit.productsRemoved", { count: removed }),
+      );
     }
     setPendingAddIds([]);
     await loadMembership(collection.id);
@@ -176,7 +189,7 @@ export function CollectionEditSheet({
     if (!collection) return;
     const nextTitle = title.trim();
     if (!nextTitle) {
-      setError("Enter a collection title.");
+      setError(t("taxonomy.edit.enterCollectionTitle"));
       return;
     }
 
@@ -206,11 +219,11 @@ export function CollectionEditSheet({
 
     if (!response?.ok) {
       const data = (await response?.json().catch(() => ({}))) as { error?: string };
-      setError(getEditErrorMessage(data.error));
+      setError(getCollectionEditErrorMessage(data.error, t));
       return;
     }
 
-    toast.success("Collection updated.");
+    toast.success(t("taxonomy.edit.collectionUpdated"));
     onOpenChange(false);
     await queryClient.invalidateQueries({ queryKey: ["product-collections"] });
     router.refresh();
@@ -220,10 +233,8 @@ export function CollectionEditSheet({
     <Sheet onOpenChange={onOpenChange} open={open}>
       <SheetContent className="w-full sm:max-w-md" side="right">
         <SheetHeader className="px-5 py-4 text-left">
-          <SheetTitle>Edit collection</SheetTitle>
-          <SheetDescription>
-            Update details, SEO, and which products belong in this collection.
-          </SheetDescription>
+          <SheetTitle>{t("taxonomy.edit.collectionTitle")}</SheetTitle>
+          <SheetDescription>{t("taxonomy.edit.collectionDesc")}</SheetDescription>
         </SheetHeader>
 
         <form
@@ -236,13 +247,13 @@ export function CollectionEditSheet({
           <SheetBody className="grid content-start gap-5 px-5 py-5">
             {error ? (
               <Alert variant="destructive">
-                <AlertTitle>Collection could not be updated</AlertTitle>
+                <AlertTitle>{t("taxonomy.edit.updateFailedCollection")}</AlertTitle>
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             ) : null}
 
             <Field>
-              <FieldLabel htmlFor="collection-edit-title">Title</FieldLabel>
+              <FieldLabel htmlFor="collection-edit-title">{t("taxonomy.edit.title")}</FieldLabel>
               <Input
                 autoComplete="off"
                 id="collection-edit-title"
@@ -257,7 +268,7 @@ export function CollectionEditSheet({
             </Field>
 
             <Field>
-              <FieldLabel htmlFor="collection-edit-handle">Handle</FieldLabel>
+              <FieldLabel htmlFor="collection-edit-handle">{t("taxonomy.edit.handle")}</FieldLabel>
               <InputGroup className="pr-1">
                 <InputGroupInput
                   id="collection-edit-handle"
@@ -270,7 +281,9 @@ export function CollectionEditSheet({
                     <TooltipTrigger asChild>
                       <Button
                         aria-label={
-                          isHandleLocked ? "Unlock handle editing" : "Lock handle editing"
+                          isHandleLocked
+                            ? t("taxonomy.form.unlockHandle")
+                            : t("taxonomy.form.lockHandle")
                         }
                         className="rounded-full"
                         onClick={() => setIsHandleLocked((value) => !value)}
@@ -282,7 +295,9 @@ export function CollectionEditSheet({
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent side="top" sideOffset={6}>
-                      {isHandleLocked ? "Unlock handle editing" : "Lock handle editing"}
+                      {isHandleLocked
+                        ? t("taxonomy.form.unlockHandle")
+                        : t("taxonomy.form.lockHandle")}
                     </TooltipContent>
                   </Tooltip>
                 </InputGroupAddon>
@@ -292,10 +307,10 @@ export function CollectionEditSheet({
             <Field className="flex flex-row items-center justify-between gap-4 rounded-xl border px-3.5 py-3">
               <div className="min-w-0 space-y-1">
                 <FieldLabel className="text-sm" htmlFor="collection-edit-visible">
-                  Visible on storefront
+                  {t("taxonomy.edit.visibleLabel")}
                 </FieldLabel>
                 <FieldDescription className="text-xs">
-                  Hidden collections stay in the dashboard but are not listed publicly.
+                  {t("taxonomy.edit.visibleCollectionDesc")}
                 </FieldDescription>
               </div>
               <Switch
@@ -308,9 +323,9 @@ export function CollectionEditSheet({
             <div className="space-y-3 rounded-xl border p-4">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="text-sm font-medium">Products</p>
+                  <p className="text-sm font-medium">{t("taxonomy.edit.products")}</p>
                   <p className="mt-0.5 text-xs text-muted-foreground">
-                    Search and multi-select products to add. Membership saves immediately.
+                    {t("taxonomy.edit.productsHelp")}
                   </p>
                 </div>
                 {members.length > 0 ? (
@@ -330,10 +345,12 @@ export function CollectionEditSheet({
               />
 
               {membersLoading ? (
-                <p className="text-xs text-muted-foreground">Loading members…</p>
+                <p className="text-xs text-muted-foreground">
+                  {t("taxonomy.edit.loadingMembers")}
+                </p>
               ) : members.length === 0 ? (
                 <p className="rounded-lg border border-dashed px-3 py-4 text-center text-xs text-muted-foreground">
-                  No products in this collection yet.
+                  {t("taxonomy.edit.noProductsYet")}
                 </p>
               ) : (
                 <ul className="max-h-48 divide-y overflow-y-auto rounded-lg border">
@@ -341,7 +358,7 @@ export function CollectionEditSheet({
                     <li className="flex items-center gap-2 px-3 py-2.5" key={product.id}>
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-sm font-medium">
-                          {product.title ?? "Untitled product"}
+                          {product.title ?? t("taxonomy.edit.untitledProduct")}
                         </p>
                         {product.handle ? (
                           <p className="truncate text-xs text-muted-foreground">
@@ -350,7 +367,9 @@ export function CollectionEditSheet({
                         ) : null}
                       </div>
                       <Button
-                        aria-label={`Remove ${product.title ?? "product"}`}
+                        aria-label={t("taxonomy.edit.removeProductAria", {
+                          name: product.title ?? t("taxonomy.edit.productFallback"),
+                        })}
                         disabled={membershipBusy}
                         onClick={() => void mutateMembership({ remove: [product.id] })}
                         size="icon-sm"
@@ -367,28 +386,32 @@ export function CollectionEditSheet({
 
             <div className="space-y-4 rounded-xl border p-4">
               <div>
-                <p className="text-sm font-medium">SEO</p>
+                <p className="text-sm font-medium">{t("taxonomy.edit.seo")}</p>
                 <p className="mt-0.5 text-xs text-muted-foreground">
-                  Optional title and description stored with the collection.
+                  {t("taxonomy.edit.seoCollectionHelp")}
                 </p>
               </div>
               <Field>
-                <FieldLabel htmlFor="collection-edit-seo-title">SEO title</FieldLabel>
+                <FieldLabel htmlFor="collection-edit-seo-title">
+                  {t("taxonomy.edit.seoTitle")}
+                </FieldLabel>
                 <Input
                   id="collection-edit-seo-title"
                   maxLength={120}
                   onChange={(event) => setSeoTitle(event.target.value)}
-                  placeholder="Summer picks"
+                  placeholder={t("taxonomy.edit.seoTitleCollectionPlaceholder")}
                   value={seoTitle}
                 />
               </Field>
               <Field>
-                <FieldLabel htmlFor="collection-edit-seo-description">SEO description</FieldLabel>
+                <FieldLabel htmlFor="collection-edit-seo-description">
+                  {t("taxonomy.edit.seoDescription")}
+                </FieldLabel>
                 <Textarea
                   id="collection-edit-seo-description"
                   maxLength={320}
                   onChange={(event) => setSeoDescription(event.target.value)}
-                  placeholder="Seasonal favorites for your storefront."
+                  placeholder={t("taxonomy.edit.seoDescCollectionPlaceholder")}
                   value={seoDescription}
                 />
               </Field>
@@ -402,10 +425,10 @@ export function CollectionEditSheet({
               type="button"
               variant="outline"
             >
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button disabled={isSaving} type="submit">
-              {isSaving ? "Saving…" : "Save changes"}
+              {isSaving ? t("taxonomy.edit.saving") : t("taxonomy.edit.saveChanges")}
             </Button>
           </SheetFooter>
         </form>
@@ -429,6 +452,7 @@ function ProductAddCombobox({
   onPendingChange: (ids: string[]) => void;
   pendingIds: string[];
 }) {
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const pending = useMemo(() => new Set(pendingIds), [pendingIds]);
 
@@ -443,13 +467,13 @@ function ProductAddCombobox({
   const triggerLabel =
     pendingIds.length === 0
       ? loading
-        ? "Loading products…"
+        ? t("taxonomy.edit.loadingProducts")
         : candidates.length === 0
-          ? "No products left to add"
-          : "Search products to add…"
+          ? t("taxonomy.edit.noProductsLeft")
+          : t("taxonomy.edit.searchProductsToAdd")
       : pendingIds.length === 1
-        ? "1 product selected"
-        : `${pendingIds.length} products selected`;
+        ? t("taxonomy.edit.productSelectedOne")
+        : t("taxonomy.edit.productsSelected", { count: pendingIds.length });
 
   return (
     <div className="space-y-2">
@@ -482,9 +506,9 @@ function ProductAddCombobox({
           onOpenAutoFocus={(event) => event.preventDefault()}
         >
           <Command>
-            <CommandInput placeholder="Search products…" />
+            <CommandInput placeholder={t("taxonomy.edit.searchProducts")} />
             <CommandList className="max-h-52">
-              <CommandEmpty>No matching products.</CommandEmpty>
+              <CommandEmpty>{t("taxonomy.edit.noMatchingProducts")}</CommandEmpty>
               <CommandGroup>
                 {candidates.map((product) => {
                   const isSelected = pending.has(product.id);
@@ -517,7 +541,7 @@ function ProductAddCombobox({
                 type="button"
                 variant="ghost"
               >
-                Clear
+                {t("taxonomy.edit.clear")}
               </Button>
               <Button
                 disabled={disabled}
@@ -528,7 +552,7 @@ function ProductAddCombobox({
                 size="sm"
                 type="button"
               >
-                Add {pendingIds.length}
+                {t("taxonomy.edit.addCount", { count: pendingIds.length })}
               </Button>
             </div>
           ) : null}
@@ -538,14 +562,14 @@ function ProductAddCombobox({
   );
 }
 
-function getEditErrorMessage(error: string | undefined) {
-  if (error === "missing_title") return "Enter a collection title.";
+function getCollectionEditErrorMessage(error: string | undefined, t: Translate) {
+  if (error === "missing_title") return t("taxonomy.edit.enterCollectionTitle");
   if (error === "commerce_backend_unavailable") {
-    return "The commerce backend is temporarily unavailable.";
+    return t("taxonomy.edit.backendUnavailable");
   }
   if (error === "commerce_credentials_missing" || error === "commerce_credentials_invalid") {
-    return "Catalog changes are temporarily unavailable. Contact support.";
+    return t("taxonomy.edit.credentials");
   }
-  if (error === "collection_not_found") return "Collection was not found.";
-  return "Collection could not be saved. Try again.";
+  if (error === "collection_not_found") return t("taxonomy.edit.collectionNotFound");
+  return t("taxonomy.edit.collectionSaveFailed");
 }

@@ -31,6 +31,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { PromotionEditSheet } from "@/features/promotions/promotion-edit-sheet";
 import { copyTextToClipboard } from "@/lib/clipboard";
 import type { MerchantPromotion } from "@/lib/merchant-promotions";
+import type { MessageKey } from "@/i18n/messages";
+import { useI18n } from "@/i18n/provider";
 
 type StatusFilter = "all" | "active" | "draft" | "inactive";
 type OfferFilter =
@@ -44,38 +46,40 @@ type OfferFilter =
   | "fixed";
 type ApplyFilter = "all" | "code" | "automatic";
 
-async function copyToClipboard(value: string, label: string) {
+type Translate = (key: MessageKey, values?: Record<string, string | number | Date>) => string;
+
+async function copyToClipboard(value: string, label: string, t: Translate) {
   try {
     const copied = await copyTextToClipboard(value);
     if (!copied) {
-      toast.error("Nothing to copy.");
+      toast.error(t("table.actions.copyEmpty"));
       return;
     }
-    toast.success(`${label} copied.`);
+    toast.success(t("table.actions.copySuccess", { label }));
   } catch {
-    toast.error("Could not copy. Try again.");
+    toast.error(t("table.actions.copyFailed"));
   }
 }
 
-function formatDiscount(item: MerchantPromotion) {
+function formatDiscount(item: MerchantPromotion, t: Translate) {
   if (item.promotionType === "buyget") {
     const buy = item.buyMinQuantity ?? "X";
     const get = item.applyToQuantity ?? "Y";
-    return `Buy ${buy} get ${get}`;
+    return t("promotions.format.buyGet", { buy: String(buy), get: String(get) });
   }
   if (item.targetType === "shipping_methods" && item.method === "percentage" && item.value >= 100) {
-    return "Free shipping";
+    return t("promotions.format.freeShipping");
   }
   return item.method === "percentage"
     ? `${item.value}%`
     : `${item.value} ${item.currencyCode?.toUpperCase() ?? "ETB"}`;
 }
 
-function formatTarget(item: MerchantPromotion) {
-  if (item.promotionType === "buyget") return "Buy X get Y";
-  if (item.targetType === "shipping_methods") return "Shipping";
-  if (item.targetType === "items") return "Products";
-  return "Order";
+function formatTarget(item: MerchantPromotion, t: Translate) {
+  if (item.promotionType === "buyget") return t("promotions.format.buyXgetY");
+  if (item.targetType === "shipping_methods") return t("promotions.format.shipping");
+  if (item.targetType === "items") return t("promotions.format.products");
+  return t("promotions.format.order");
 }
 
 function isFreeShippingOffer(item: MerchantPromotion) {
@@ -137,6 +141,7 @@ export function PromotionsManager({
   promotions: MerchantPromotion[];
   totalCount: number;
 }) {
+  const { t } = useI18n();
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [searchValue, setSearchValue] = useState(initialQuery);
@@ -187,41 +192,41 @@ export function PromotionsManager({
     {
       defaultValue: "all",
       id: "status",
-      label: "Status",
+      label: t("promotions.filter.status.label"),
       onChange: (value) => pushServerFilters({ status: value as StatusFilter }),
       options: [
-        { label: "All statuses", value: "all" },
-        { label: "Active", value: "active" },
-        { label: "Draft", value: "draft" },
-        { label: "Inactive", value: "inactive" },
+        { label: t("promotions.filter.status.all"), value: "all" },
+        { label: t("promotions.filter.status.active"), value: "active" },
+        { label: t("promotions.filter.status.draft"), value: "draft" },
+        { label: t("promotions.filter.status.inactive"), value: "inactive" },
       ],
       value: initialStatus,
     },
     {
       defaultValue: "all",
       id: "offer",
-      label: "Offer",
+      label: t("promotions.filter.offer.label"),
       onChange: (value) => setOffer(value as OfferFilter),
       options: [
-        { label: "All offers", value: "all" },
-        { label: "Order discount", value: "order" },
-        { label: "Product discount", value: "products" },
-        { label: "Free shipping", value: "free_shipping" },
-        { label: "Buy X get Y", value: "buyget" },
-        { label: "Percentage", value: "percentage" },
-        { label: "Fixed amount", value: "fixed" },
+        { label: t("promotions.filter.offer.all"), value: "all" },
+        { label: t("promotions.filter.offer.order"), value: "order" },
+        { label: t("promotions.filter.offer.products"), value: "products" },
+        { label: t("promotions.filter.offer.free_shipping"), value: "free_shipping" },
+        { label: t("promotions.filter.offer.buyget"), value: "buyget" },
+        { label: t("promotions.filter.offer.percentage"), value: "percentage" },
+        { label: t("promotions.filter.offer.fixed"), value: "fixed" },
       ],
       value: offer,
     },
     {
       defaultValue: "all",
       id: "apply",
-      label: "How it applies",
+      label: t("promotions.filter.apply.how"),
       onChange: (value) => setApply(value as ApplyFilter),
       options: [
-        { label: "All methods", value: "all" },
-        { label: "Promotion code", value: "code" },
-        { label: "Automatic", value: "automatic" },
+        { label: t("promotions.filter.apply.methodsAll"), value: "all" },
+        { label: t("promotions.filter.apply.codeRequired"), value: "code" },
+        { label: t("promotions.filter.apply.automatic"), value: "automatic" },
       ],
       value: apply,
     },
@@ -242,18 +247,18 @@ export function PromotionsManager({
     if (deleted === targets.length) {
       toast.success(
         targets.length === 1
-          ? "Promotion deleted."
-          : `${deleted} promotions deleted.`,
+          ? t("promotions.toast.deleted")
+          : t("promotions.toast.deletedPlural", { count: deleted }),
       );
       router.refresh();
       return;
     }
     if (deleted > 0) {
-      toast.error(`${deleted} deleted, ${targets.length - deleted} could not be removed.`);
+      toast.error(t("promotions.toast.partialDeleted", { deleted, failed: targets.length - deleted }));
       router.refresh();
       return;
     }
-    toast.error("Promotion could not be deleted.");
+    toast.error(t("promotions.toast.deleteFailed"));
   }
 
   const columns = useMemo<ColumnDef<MerchantPromotion>[]>(
@@ -262,7 +267,7 @@ export function PromotionsManager({
         id: "select",
         header: ({ table }) => (
           <Checkbox
-            aria-label="Select all visible promotions"
+            aria-label={t("table.actions.selectAllVisible", { entity: t("taxonomy.entity.promotion.plural").toLowerCase() })}
             checked={
               table.getIsAllPageRowsSelected() ||
               (table.getIsSomePageRowsSelected() && "indeterminate")
@@ -272,7 +277,7 @@ export function PromotionsManager({
         ),
         cell: ({ row }) => (
           <Checkbox
-            aria-label={`Select ${row.original.code}`}
+            aria-label={t("table.actions.selectRow", { name: row.original.code })}
             checked={row.getIsSelected()}
             onCheckedChange={(value) => row.toggleSelected(Boolean(value))}
           />
@@ -282,7 +287,7 @@ export function PromotionsManager({
       },
       {
         accessorKey: "code",
-        header: ({ column }) => <DataTableHeader column={column} title="Code" />,
+        header: ({ column }) => <DataTableHeader column={column} title={t("promotions.table.codeHeader")} />,
         cell: ({ row }) => (
           <button
             className="font-mono text-sm font-medium text-foreground transition-colors hover:text-primary"
@@ -296,22 +301,22 @@ export function PromotionsManager({
       {
         id: "discount",
         accessorFn: (item) => item.value,
-        header: ({ column }) => <DataTableHeader column={column} title="Discount" />,
+        header: ({ column }) => <DataTableHeader column={column} title={t("table.headers.discount")} />,
         cell: ({ row }) => (
           <div className="min-w-0">
-            <p className="text-sm">{formatDiscount(row.original)}</p>
-            <p className="text-xs text-muted-foreground">{formatTarget(row.original)}</p>
+            <p className="text-sm">{formatDiscount(row.original, t)}</p>
+            <p className="text-xs text-muted-foreground">{formatTarget(row.original, t)}</p>
           </div>
         ),
       },
       {
         accessorKey: "status",
-        header: ({ column }) => <DataTableHeader column={column} title="Status" />,
+        header: ({ column }) => <DataTableHeader column={column} title={t("promotions.filter.status.label")} />,
         cell: ({ row }) => (
           <div className="flex flex-wrap items-center gap-1.5">
             <Badge variant={statusBadgeVariant(row.original.status)}>{row.original.status}</Badge>
             {row.original.isAutomatic ? (
-              <Badge variant="outline">Auto</Badge>
+              <Badge variant="outline">{t("promotions.badge.auto")}</Badge>
             ) : null}
           </div>
         ),
@@ -319,7 +324,7 @@ export function PromotionsManager({
       {
         id: "usage",
         accessorFn: (item) => item.usageCount,
-        header: ({ column }) => <DataTableHeader column={column} title="Usage" />,
+        header: ({ column }) => <DataTableHeader column={column} title={t("table.headers.usage")} />,
         cell: ({ row }) => (
           <span className="text-sm text-muted-foreground">
             {row.original.usageCount}
@@ -330,29 +335,29 @@ export function PromotionsManager({
       {
         id: "schedule",
         accessorFn: (item) => item.endsAt ?? item.startsAt ?? "",
-        header: ({ column }) => <DataTableHeader column={column} title="Schedule" />,
+        header: ({ column }) => <DataTableHeader column={column} title={t("table.headers.schedule")} />,
         cell: ({ row }) => {
           const item = row.original;
           if (item.endsAt) {
             return (
               <span className="text-sm text-muted-foreground">
-                Ends {formatScheduleDate(item.endsAt)}
+                {t("promotions.schedule.ends", { date: formatScheduleDate(item.endsAt) })}
               </span>
             );
           }
           if (item.startsAt) {
             return (
               <span className="text-sm text-muted-foreground">
-                Starts {formatScheduleDate(item.startsAt)}
+                {t("promotions.schedule.starts", { date: formatScheduleDate(item.startsAt) })}
               </span>
             );
           }
-          return <span className="text-sm text-muted-foreground">No schedule</span>;
+          return <span className="text-sm text-muted-foreground">{t("promotions.schedule.none")}</span>;
         },
       },
       {
         id: "actions",
-        header: () => <span className="sr-only">Actions</span>,
+        header: () => <span className="sr-only">{t("table.headers.actions")}</span>,
         cell: ({ row }) => {
           const item = row.original;
           return (
@@ -360,26 +365,26 @@ export function PromotionsManager({
               actions={[
                 {
                   icon: AppIcons.edit,
-                  label: "Edit promotion",
+                  label: t("promotions.action.edit"),
                   onSelect: () => setEditing(item),
                   type: "button",
                 },
                 {
                   icon: AppIcons.copy,
-                  label: "Copy code",
-                  onSelect: () => void copyToClipboard(item.code, "Promotion code"),
+                  label: t("promotions.action.copy"),
+                  onSelect: () => void copyToClipboard(item.code, t("promotions.table.promotionCode"), t),
                   type: "button",
                 },
                 { id: "danger", type: "separator" },
                 {
                   icon: AppIcons.trash,
-                  label: "Delete promotion",
+                  label: t("table.actions.deletePromotion"),
                   onSelect: () => setDeleteTarget(item),
                   type: "button",
                   variant: "destructive",
                 },
               ]}
-              label={`Open actions for ${item.code}`}
+              label={t("table.actions.openActionsFor", { name: item.code })}
             />
           );
         },
@@ -387,8 +392,7 @@ export function PromotionsManager({
         enableSorting: false,
       },
     ],
-    // setEditing is stable enough for column identity in this manager.
-    [setEditing],
+    [setEditing, t],
   );
 
   const deleteTargets = deleteTarget ? [deleteTarget] : bulkDeleteTargets;
@@ -402,7 +406,8 @@ export function PromotionsManager({
               onClick={() =>
                 void copyToClipboard(
                   selected.map((item) => item.code).join("\n"),
-                  "Promotion codes",
+                  t("promotions.table.promotionCodes"),
+                  t,
                 )
               }
               size="sm"
@@ -410,7 +415,7 @@ export function PromotionsManager({
               variant="outline"
             >
               <AppIcons.copy data-icon="inline-start" />
-              Copy codes
+              {t("promotions.table.copyCodes")}
             </Button>
             <Button
               onClick={() => setBulkDeleteTargets(selected)}
@@ -419,19 +424,19 @@ export function PromotionsManager({
               variant="destructive"
             >
               <AppIcons.trash data-icon="inline-start" />
-              Delete selected
+              {t("table.actions.deleteSelected")}
             </Button>
           </div>
         )}
         columns={columns}
         data={filtered}
-        emptyMessage="Create a code for your next campaign. Redemption limits and schedules keep discounts intentional."
-        emptyTitle="No promotions yet"
-        filteredEmptyMessage="No promotions match the current search or filters."
-        filteredEmptyTitle="No matching promotions"
+        emptyMessage={t("promotions.table.emptyMessage")}
+        emptyTitle={t("promotions.table.emptyTitle")}
+        filteredEmptyMessage={t("promotions.table.filteredEmptyMessage")}
+        filteredEmptyTitle={t("promotions.table.filteredEmptyTitle")}
         getRowId={(item) => item.id}
         isFiltered={isFiltered}
-        selectedSummaryLabel={(count) => `promotion${count === 1 ? "" : "s"} selected`}
+        selectedSummaryLabel={(count) => t("promotions.table.selectedSummary", { count })}
         footer={footer}
         toolbar={
           <div className="flex flex-col gap-3">
@@ -445,13 +450,13 @@ export function PromotionsManager({
               }}
             >
               <ListToolbarSearch
-                clearLabel="Clear promotion search"
-                label="Search promotions"
+                clearLabel={t("promotions.table.clearSearch")}
+                label={t("promotions.table.searchLabel")}
                 onChange={(value) => {
                   setSearchValue(value);
                   pushServerFilters({ q: value });
                 }}
-                placeholder="Search promotion codes…"
+                placeholder={t("promotions.table.searchPlaceholder")}
                 value={searchValue}
               />
             </DataTableFilters>
@@ -488,17 +493,17 @@ export function PromotionsManager({
           <AlertDialogHeader>
             <AlertDialogTitle>
               {deleteTargets.length > 1
-                ? `Delete ${deleteTargets.length} promotions?`
-                : "Delete promotion?"}
+                ? t("table.actions.deletePromotionsQuestion", { count: deleteTargets.length })
+                : t("table.actions.deletePromotionQuestion")}
             </AlertDialogTitle>
             <AlertDialogDescription>
               {deleteTargets.length > 1
-                ? "Selected promotion codes will stop working immediately. This cannot be undone."
-                : `“${deleteTarget?.code ?? "This code"}” will stop working immediately. This cannot be undone.`}
+                ? t("table.actions.deletePromotionsDescription")
+                : t("table.actions.deletePromotionDescription", { code: deleteTarget?.code ?? "" })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={deleting}>{t("common.cancel")}</AlertDialogCancel>
             <AlertDialogAction
               disabled={deleting || !deleteTargets.length}
               onClick={(event) => {
@@ -507,7 +512,7 @@ export function PromotionsManager({
               }}
               variant="destructive"
             >
-              {deleting ? "Deleting…" : "Delete"}
+              {deleting ? t("common.deleting") : t("common.delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

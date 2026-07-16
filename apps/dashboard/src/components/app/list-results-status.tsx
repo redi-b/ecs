@@ -1,6 +1,7 @@
 "use client";
 
 import { AppIcons } from "@/components/app/icons";
+import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 
 type ListResultsStatusProps = {
@@ -33,6 +34,8 @@ export function ListResultsStatus({
   pending = false,
   totalCount,
 }: ListResultsStatusProps) {
+  const { t, formatNumber } = useI18n();
+
   if (pending) {
     return (
       <p
@@ -44,34 +47,53 @@ export function ListResultsStatus({
         role="status"
       >
         <AppIcons.loader className="size-3.5 shrink-0 animate-spin opacity-70" aria-hidden />
-        <span>Updating…</span>
+        <span>{t("common.updating")}</span>
       </p>
     );
   }
+
+  const fmt = (value: number) => formatNumber(value);
 
   let message: string;
 
   if (hasClientPageFilter && filteredPageCount != null) {
     if (filteredPageCount === pageCount) {
       message =
-        pageCount === 1 ? "1 on this page" : `${formatCount(pageCount)} on this page`;
+        pageCount === 1
+          ? t("common.listStatus.onThisPageOne")
+          : t("common.listStatus.onThisPage", { count: fmt(pageCount) });
     } else {
-      message = `${formatCount(filteredPageCount)} of ${formatCount(pageCount)} on this page`;
+      message = t("common.listStatus.ofOnThisPage", {
+        filtered: fmt(filteredPageCount),
+        page: fmt(pageCount),
+      });
     }
   } else if (hasServerFilter) {
     if (totalCount === 0) {
-      message = "No matches";
+      message = t("common.listStatus.noMatches");
     } else if (pageCount >= totalCount) {
-      message = totalCount === 1 ? "1 match" : `${formatCount(totalCount)} matches`;
+      message =
+        totalCount === 1
+          ? t("common.listStatus.matchOne")
+          : t("common.listStatus.matches", { count: fmt(totalCount) });
     } else {
-      message = `Showing ${formatCount(pageCount)} of ${formatCount(totalCount)} matches`;
+      message = t("common.listStatus.showingMatches", {
+        page: fmt(pageCount),
+        total: fmt(totalCount),
+      });
     }
   } else if (totalCount === 0) {
-    message = "No results yet";
+    message = t("common.listStatus.noResultsYet");
   } else if (pageCount >= totalCount) {
-    message = totalCount === 1 ? "1 total" : `${formatCount(totalCount)} total`;
+    message =
+      totalCount === 1
+        ? t("common.listStatus.totalOne")
+        : t("common.listStatus.totalCount", { count: fmt(totalCount) });
   } else {
-    message = `${formatCount(pageCount)} on this page · ${formatCount(totalCount)} total`;
+    message = t("common.listStatus.onPageTotal", {
+      page: fmt(pageCount),
+      total: fmt(totalCount),
+    });
   }
 
   return (
@@ -79,8 +101,4 @@ export function ListResultsStatus({
       {message}
     </p>
   );
-}
-
-function formatCount(value: number) {
-  return new Intl.NumberFormat("en").format(value);
 }

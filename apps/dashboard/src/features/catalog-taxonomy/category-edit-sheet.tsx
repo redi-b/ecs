@@ -36,8 +36,12 @@ import {
   getCategoryDisplayName,
   slugifyTaxonomyHandle,
 } from "@/features/catalog-taxonomy/taxonomy-table-state";
+import type { MessageKey } from "@/i18n/messages";
+import { useI18n } from "@/i18n/provider";
 import { getTenantScopedPath } from "@/lib/dashboard-tenant-context";
 import { dashboardRoutes } from "@/lib/routes";
+
+type Translate = (key: MessageKey, values?: Record<string, string | number | Date>) => string;
 
 type CategoryEditSheetProps = {
   category: MerchantProductCategory | null;
@@ -54,6 +58,7 @@ export function CategoryEditSheet({
   open,
   tenantId,
 }: CategoryEditSheetProps) {
+  const { t } = useI18n();
   const router = useRouter();
   const queryClient = useQueryClient();
   const [displayName, setDisplayName] = useState("");
@@ -94,7 +99,7 @@ export function CategoryEditSheet({
     if (!category) return;
     const name = displayName.trim();
     if (!name) {
-      setError("Enter a category name.");
+      setError(t("taxonomy.edit.enterCategoryName"));
       return;
     }
 
@@ -126,11 +131,11 @@ export function CategoryEditSheet({
 
     if (!response?.ok) {
       const data = (await response?.json().catch(() => ({}))) as { error?: string };
-      setError(getEditErrorMessage(data.error));
+      setError(getCategoryEditErrorMessage(data.error, t));
       return;
     }
 
-    toast.success("Category updated.");
+    toast.success(t("taxonomy.edit.categoryUpdated"));
     onOpenChange(false);
     await queryClient.invalidateQueries({ queryKey: ["product-categories"] });
     router.refresh();
@@ -140,10 +145,8 @@ export function CategoryEditSheet({
     <Sheet onOpenChange={onOpenChange} open={open}>
       <SheetContent className="w-full sm:max-w-md" side="right">
         <SheetHeader className="px-5 py-4 text-left">
-          <SheetTitle>Edit category</SheetTitle>
-          <SheetDescription>
-            Update name, handle, parent, sibling order, and storefront visibility.
-          </SheetDescription>
+          <SheetTitle>{t("taxonomy.edit.categoryTitle")}</SheetTitle>
+          <SheetDescription>{t("taxonomy.edit.categoryDesc")}</SheetDescription>
         </SheetHeader>
 
         <form
@@ -156,13 +159,13 @@ export function CategoryEditSheet({
           <SheetBody className="grid content-start gap-5 px-5 py-5">
             {error ? (
               <Alert variant="destructive">
-                <AlertTitle>Category could not be updated</AlertTitle>
+                <AlertTitle>{t("taxonomy.edit.updateFailedCategory")}</AlertTitle>
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             ) : null}
 
             <Field>
-              <FieldLabel htmlFor="category-edit-name">Name</FieldLabel>
+              <FieldLabel htmlFor="category-edit-name">{t("taxonomy.edit.name")}</FieldLabel>
               <Input
                 autoComplete="off"
                 id="category-edit-name"
@@ -177,7 +180,7 @@ export function CategoryEditSheet({
             </Field>
 
             <Field>
-              <FieldLabel htmlFor="category-edit-handle">Handle</FieldLabel>
+              <FieldLabel htmlFor="category-edit-handle">{t("taxonomy.edit.handle")}</FieldLabel>
               <InputGroup className="pr-1">
                 <InputGroupInput
                   id="category-edit-handle"
@@ -190,7 +193,9 @@ export function CategoryEditSheet({
                     <TooltipTrigger asChild>
                       <Button
                         aria-label={
-                          isHandleLocked ? "Unlock handle editing" : "Lock handle editing"
+                          isHandleLocked
+                            ? t("taxonomy.form.unlockHandle")
+                            : t("taxonomy.form.lockHandle")
                         }
                         className="rounded-full"
                         onClick={() => setIsHandleLocked((value) => !value)}
@@ -202,7 +207,9 @@ export function CategoryEditSheet({
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent side="top" sideOffset={6}>
-                      {isHandleLocked ? "Unlock handle editing" : "Lock handle editing"}
+                      {isHandleLocked
+                        ? t("taxonomy.form.unlockHandle")
+                        : t("taxonomy.form.lockHandle")}
                     </TooltipContent>
                   </Tooltip>
                 </InputGroupAddon>
@@ -210,14 +217,14 @@ export function CategoryEditSheet({
             </Field>
 
             <Field>
-              <FieldLabel>Parent category</FieldLabel>
+              <FieldLabel>{t("taxonomy.edit.parentCategory")}</FieldLabel>
               <Select onValueChange={setParentCategoryId} value={parentCategoryId}>
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Root category" />
+                  <SelectValue placeholder={t("taxonomy.edit.rootCategory")} />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
-                    <SelectItem value="__root__">Root category</SelectItem>
+                    <SelectItem value="__root__">{t("taxonomy.edit.rootCategory")}</SelectItem>
                     {parentOptions.map((item) => (
                       <SelectItem key={item.id} value={item.id}>
                         {getCategoryDisplayName(item)}
@@ -226,13 +233,13 @@ export function CategoryEditSheet({
                   </SelectGroup>
                 </SelectContent>
               </Select>
-              <FieldDescription>
-                Cannot nest a category under itself or one of its children.
-              </FieldDescription>
+              <FieldDescription>{t("taxonomy.edit.parentHelp")}</FieldDescription>
             </Field>
 
             <Field>
-              <FieldLabel htmlFor="category-edit-rank">Sibling order</FieldLabel>
+              <FieldLabel htmlFor="category-edit-rank">
+                {t("taxonomy.edit.siblingOrder")}
+              </FieldLabel>
               <Input
                 id="category-edit-rank"
                 min={0}
@@ -241,19 +248,16 @@ export function CategoryEditSheet({
                 type="number"
                 value={rank}
               />
-              <FieldDescription>
-                Order among categories that share the same parent. Lower numbers appear first. Prefer
-                drag reorder when reordering many siblings.
-              </FieldDescription>
+              <FieldDescription>{t("taxonomy.edit.siblingOrderHelp")}</FieldDescription>
             </Field>
 
             <Field className="flex flex-row items-center justify-between gap-4 rounded-xl border px-3.5 py-3">
               <div className="min-w-0 space-y-1">
                 <FieldLabel className="text-sm" htmlFor="category-edit-visible">
-                  Visible on storefront
+                  {t("taxonomy.edit.visibleLabel")}
                 </FieldLabel>
                 <FieldDescription className="text-xs">
-                  Hidden categories stay in the dashboard but are not listed publicly.
+                  {t("taxonomy.edit.visibleCategoryDesc")}
                 </FieldDescription>
               </div>
               <Switch
@@ -265,28 +269,32 @@ export function CategoryEditSheet({
 
             <div className="space-y-4 rounded-xl border p-4">
               <div>
-                <p className="text-sm font-medium">SEO</p>
+                <p className="text-sm font-medium">{t("taxonomy.edit.seo")}</p>
                 <p className="mt-0.5 text-xs text-muted-foreground">
-                  Optional title and description stored with the category.
+                  {t("taxonomy.edit.seoCategoryHelp")}
                 </p>
               </div>
               <Field>
-                <FieldLabel htmlFor="category-edit-seo-title">SEO title</FieldLabel>
+                <FieldLabel htmlFor="category-edit-seo-title">
+                  {t("taxonomy.edit.seoTitle")}
+                </FieldLabel>
                 <Input
                   id="category-edit-seo-title"
                   maxLength={120}
                   onChange={(event) => setSeoTitle(event.target.value)}
-                  placeholder="Shop shoes"
+                  placeholder={t("taxonomy.edit.seoTitleCategoryPlaceholder")}
                   value={seoTitle}
                 />
               </Field>
               <Field>
-                <FieldLabel htmlFor="category-edit-seo-description">SEO description</FieldLabel>
+                <FieldLabel htmlFor="category-edit-seo-description">
+                  {t("taxonomy.edit.seoDescription")}
+                </FieldLabel>
                 <Textarea
                   id="category-edit-seo-description"
                   maxLength={320}
                   onChange={(event) => setSeoDescription(event.target.value)}
-                  placeholder="Browse footwear for every day."
+                  placeholder={t("taxonomy.edit.seoDescCategoryPlaceholder")}
                   value={seoDescription}
                 />
               </Field>
@@ -300,10 +308,10 @@ export function CategoryEditSheet({
               type="button"
               variant="outline"
             >
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button disabled={isSaving} type="submit">
-              {isSaving ? "Saving…" : "Save changes"}
+              {isSaving ? t("taxonomy.edit.saving") : t("taxonomy.edit.saveChanges")}
             </Button>
           </SheetFooter>
         </form>
@@ -333,14 +341,14 @@ function collectDescendantIds(rootId: string, categories: MerchantProductCategor
   return result;
 }
 
-function getEditErrorMessage(error: string | undefined) {
-  if (error === "missing_name") return "Enter a category name.";
+function getCategoryEditErrorMessage(error: string | undefined, t: Translate) {
+  if (error === "missing_name") return t("taxonomy.edit.enterCategoryName");
   if (error === "commerce_backend_unavailable") {
-    return "The commerce backend is temporarily unavailable.";
+    return t("taxonomy.edit.backendUnavailable");
   }
   if (error === "commerce_credentials_missing" || error === "commerce_credentials_invalid") {
-    return "Catalog changes are temporarily unavailable. Contact support.";
+    return t("taxonomy.edit.credentials");
   }
-  if (error === "category_not_found") return "Category was not found.";
-  return "Category could not be saved. Try again.";
+  if (error === "category_not_found") return t("taxonomy.edit.categoryNotFound");
+  return t("taxonomy.edit.categorySaveFailed");
 }

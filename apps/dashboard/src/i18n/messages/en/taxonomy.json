@@ -1,0 +1,213 @@
+{
+  "entity": {
+    "category": {
+      "plural": "categories",
+      "label": "category"
+    },
+    "collection": {
+      "plural": "collections",
+      "label": "collection"
+    },
+    "order": {
+      "plural": "orders",
+      "label": "order"
+    },
+    "customer": {
+      "plural": "customers",
+      "label": "customer"
+    },
+    "promotion": {
+      "plural": "promotions",
+      "label": "promotion"
+    }
+  },
+  "create": {
+    "title": "Create {entity}",
+    "category": {
+      "desc": "Add a category with an optional parent and storefront visibility."
+    },
+    "collection": {
+      "desc": "Add a collection name, handle, and storefront visibility."
+    },
+    "error": {
+      "enterName": "Enter a {entity} {field}.",
+      "createFailed": "{entity} could not be created",
+      "missing": "Enter a {entity} name before continuing.",
+      "backend": "The commerce backend is temporarily unavailable.",
+      "credentials": "Catalog changes are temporarily unavailable. Contact support.",
+      "genericSave": "{entity} could not be saved. Try again."
+    },
+    "success": "{entity} created.",
+    "handle": "Handle",
+    "unlockHandle": "Unlock handle editing",
+    "lockHandle": "Lock handle editing",
+    "regenerateHandle": "Regenerate {entity} handle",
+    "regenerateFrom": "Regenerate from {field}",
+    "handleFollows": "The {entity} handle follows the {field} automatically.",
+    "handleCustom": "Handle editing is unlocked for a custom {entity} slug.",
+    "parentCategory": "Parent category",
+    "rootCategory": "Root category",
+    "parentDesc": "Nest under another category, or leave as a top-level root.",
+    "visibleLabel": "Visible on storefront",
+    "visibleDesc": "Hidden {entityPlural} stay in the dashboard but are not listed publicly.",
+    "creating": "Creating...",
+    "createBtn": "Create {entity}",
+    "nameLabel": "Name",
+    "titleLabel": "Title",
+    "namePlaceholder": "Coffee",
+    "titlePlaceholder": "Featured"
+  },
+  "actions": {
+    "reorder": "Reorder"
+  },
+  "table": {
+    "category": "Category",
+    "handle": "Handle",
+    "parent": "Parent",
+    "visibility": {
+      "hidden": "Hidden",
+      "public": "Public",
+      "label": "Visibility",
+      "all": "All visibility"
+    },
+    "order": "Order",
+    "updated": "Updated",
+    "actions": {
+      "edit": "Edit {entity}",
+      "copyId": "Copy {entity} ID",
+      "copyHandle": "Copy handle",
+      "delete": "Delete {entity}",
+      "triggerAria": "Open actions for {name}"
+    },
+    "selectAria": "Select {name}",
+    "selectAllAria": "Select all visible {entityPlural}",
+    "emptyMessage": "No product categories have been synced for this merchant yet.",
+    "emptyTitle": "No categories yet",
+    "filteredEmptyMessage": "No product categories match the current search.",
+    "filteredEmptyTitle": "No matching categories",
+    "collection": "Collection",
+    "searchCategories": "Search product categories",
+    "searchCategoriesPlaceholder": "Search categories",
+    "clearCategorySearch": "Clear category search",
+    "searchCollections": "Search product collections",
+    "searchCollectionsPlaceholder": "Search collections",
+    "clearCollectionSearch": "Clear collection search",
+    "categoryIds": "Category IDs",
+    "collectionIds": "Collection IDs",
+    "selectedSummary": "{count} selected"
+  },
+  "delete": {
+    "title": "Delete {entity}",
+    "desc": "Are you sure you want to delete \"{name}\"? This action cannot be undone.",
+    "batchTitle": "Delete {entityPlural}",
+    "batchDesc": "Are you sure you want to delete {count} selected {entityPlural}? This action cannot be undone."
+  },
+  "form": {
+    "unlockHandle": "Unlock handle editing",
+    "lockHandle": "Lock handle editing",
+    "regenerateHandle": "Regenerate {entity} handle",
+    "regenerateFrom": "Regenerate from {label}",
+    "handleFollows": "The {entity} handle follows the {label} automatically.",
+    "handleUnlocked": "Handle editing is unlocked for a custom {entity} slug."
+  },
+  "edit": {
+    "categoryTitle": "Edit category",
+    "categoryDesc": "Update name, handle, parent, display order, and storefront visibility.",
+    "collectionTitle": "Edit collection",
+    "collectionDesc": "Update details, SEO, and which products belong in this collection.",
+    "updateFailedCategory": "Category could not be updated",
+    "updateFailedCollection": "Collection could not be updated",
+    "name": "Name",
+    "title": "Title",
+    "handle": "Handle",
+    "parentCategory": "Parent category",
+    "rootCategory": "Root category",
+    "parentHelp": "Cannot nest a category under itself or one of its children.",
+    "siblingOrder": "Display order",
+    "siblingOrderHelp": "Order among categories under the same parent. Smaller numbers (0, 1, 2…) appear first in the store. For many categories, use drag Reorder instead.",
+    "visibleLabel": "Visible on storefront",
+    "visibleCategoryDesc": "Hidden categories stay in the dashboard but are not listed publicly.",
+    "visibleCollectionDesc": "Hidden collections stay in the dashboard but are not listed publicly.",
+    "seo": "SEO",
+    "seoCategoryHelp": "Optional title and description stored with the category.",
+    "seoCollectionHelp": "Optional title and description stored with the collection.",
+    "seoTitle": "SEO title",
+    "seoDescription": "SEO description",
+    "seoTitleCategoryPlaceholder": "Shop shoes",
+    "seoDescCategoryPlaceholder": "Browse footwear for every day.",
+    "seoTitleCollectionPlaceholder": "Summer picks",
+    "seoDescCollectionPlaceholder": "Seasonal favorites for your storefront.",
+    "saving": "Saving…",
+    "saveChanges": "Save changes",
+    "enterCategoryName": "Enter a category name.",
+    "enterCollectionTitle": "Enter a collection title.",
+    "categoryUpdated": "Category updated.",
+    "collectionUpdated": "Collection updated.",
+    "categoryNotFound": "Category was not found.",
+    "collectionNotFound": "Collection was not found.",
+    "categorySaveFailed": "Category could not be saved. Try again.",
+    "collectionSaveFailed": "Collection could not be saved. Try again.",
+    "backendUnavailable": "The commerce backend is temporarily unavailable.",
+    "credentials": "Catalog changes are temporarily unavailable. Contact support.",
+    "products": "Products",
+    "productsHelp": "Search and multi-select products to add. Membership saves immediately.",
+    "loadingMembers": "Loading members…",
+    "noProductsYet": "No products in this collection yet.",
+    "untitledProduct": "Untitled product",
+    "removeProductAria": "Remove {name}",
+    "productFallback": "product",
+    "membershipFailed": "Could not update collection products.",
+    "productAddedOne": "Product added to collection.",
+    "productsAdded": "{count} products added.",
+    "productRemovedOne": "Product removed.",
+    "productsRemoved": "{count} products removed.",
+    "loadingProducts": "Loading products…",
+    "noProductsLeft": "No products left to add",
+    "searchProductsToAdd": "Search products to add…",
+    "productSelectedOne": "1 product selected",
+    "productsSelected": "{count} products selected",
+    "searchProducts": "Search products…",
+    "noMatchingProducts": "No matching products.",
+    "clear": "Clear",
+    "addCount": "Add {count}"
+  },
+  "reorder": {
+    "title": "Reorder categories",
+    "description": "Drag categories under the same parent. The top of each list is first in the store (0, then 1, then 2…).",
+    "saveFailed": "Could not save category order.",
+    "saved": "Category order saved.",
+    "saving": "Saving…",
+    "saveOrder": "Save order",
+    "underParent": "Under {name}",
+    "underUnknownParent": "Under unknown parent",
+    "rootCategories": "Root categories",
+    "dragAria": "Drag {name}",
+    "empty": "No categories to reorder yet.",
+    "countOne": "1 category",
+    "count": "{count} categories"
+  },
+  "tree": {
+    "expand": "Expand category",
+    "collapse": "Collapse category"
+  },
+  "listError": {
+    "categoriesLabel": "Product categories",
+    "collectionsLabel": "Product collections",
+    "setupTitle": "Catalog taxonomy setup needs attention",
+    "setupDesc": "{label} could not be loaded because catalog services are not ready. Contact an administrator or retry after setup is complete.",
+    "serviceTitle": "Catalog services are unavailable",
+    "serviceDesc": "{label} could not be loaded right now. Retry after the catalog services are available.",
+    "errorTitle": "{label} could not be loaded",
+    "errorDesc": "Unable to load {label}."
+  },
+  "deleteErrors": {
+    "catalogUnavailable": "Catalog changes are temporarily unavailable. Try again.",
+    "catalogContactSupport": "Catalog changes are temporarily unavailable. Contact support.",
+    "notFound": "{resource} not found.",
+    "failed": "Failed to delete {resource}. Try again."
+  },
+  "cells": {
+    "parentId": "Parent ID",
+    "noDate": "No date"
+  }
+}

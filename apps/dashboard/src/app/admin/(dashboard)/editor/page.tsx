@@ -5,6 +5,7 @@ import Link from "@/components/app/link";
 import { PageShell } from "@/components/app/page-shell";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { getTranslations } from "@/i18n/server";
 import {
   Empty,
   EmptyDescription,
@@ -34,6 +35,7 @@ type StorefrontDraftPayload = {
 export default async function StorefrontEditorPage({ searchParams }: StorefrontEditorPageProps) {
   const resolvedSearchParams = (await searchParams) ?? {};
   const selectedTenantId = getSelectedTenantId(resolvedSearchParams);
+  const t = await getTranslations();
   const requestHeaders = await headers();
   const platformApiBaseUrl = process.env.PLATFORM_API_BASE_URL ?? "http://localhost:3000";
   // Editor only needs tenant name, domain, publish flag — not ops/metrics/billing.
@@ -56,12 +58,12 @@ export default async function StorefrontEditorPage({ searchParams }: StorefrontE
   return (
     <PageShell
       className="gap-4 sm:gap-5"
-      description="Edit storefront content, visuals, and theme settings in a live preview."
-      title="Editor"
+      description={t("editor.description")}
+      title={t("editor.title")}
     >
       {!access.ok ? (
         <Alert variant="destructive">
-          <AlertTitle>Editor could not be loaded</AlertTitle>
+          <AlertTitle>{t("editor.error.loadTitle")}</AlertTitle>
           <AlertDescription>{access.message}</AlertDescription>
         </Alert>
       ) : !draft?.ok ? (
@@ -70,12 +72,12 @@ export default async function StorefrontEditorPage({ searchParams }: StorefrontE
             <EmptyMedia variant="icon">
               <RiLayoutMasonryLine />
             </EmptyMedia>
-            <EmptyTitle>Choose a storefront template first</EmptyTitle>
+            <EmptyTitle>{t("editor.empty.title")}</EmptyTitle>
             <EmptyDescription>
-              Select a storefront template before editing copy, images, logo, and theme settings.
+              {t("editor.empty.description")}
             </EmptyDescription>
             <Button asChild>
-              <Link href="/admin/settings?tab=storefront">Open storefront settings</Link>
+              <Link href="/admin/settings?tab=storefront">{t("editor.actions.openSettings")}</Link>
             </Button>
           </EmptyHeader>
         </Empty>

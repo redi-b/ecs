@@ -1,0 +1,67 @@
+{
+  "title": "Editor",
+  "description": "Edit storefront content, visuals, and theme settings in a live preview.",
+  "error": {
+    "loadTitle": "Editor could not be loaded"
+  },
+  "empty": {
+    "title": "Choose a storefront template first",
+    "description": "Select a storefront template before editing copy, images, logo, and theme settings."
+  },
+  "actions": {
+    "openSettings": "Open storefront settings",
+    "undo": "Undo",
+    "redo": "Redo",
+    "hideOutlines": "Hide editable outlines",
+    "showOutlines": "Show editable outlines",
+    "exitFullscreen": "Exit fullscreen",
+    "fullscreen": "Fullscreen",
+    "openLive": "Open live storefront",
+    "resetEditor": "Reset editor",
+    "resetTitle": "Reset editor changes?",
+    "resetDescription": "This resets the editor to the draft that was loaded when you opened this page.",
+    "resetConfirm": "Reset",
+    "saveDraft": "Save draft",
+    "publish": "Publish"
+  },
+  "status": {
+    "publishedLive": "Published live",
+    "draftSaved": "Draft saved",
+    "unpublishedEdits": "Unpublished edits"
+  },
+  "toast": {
+    "savingDraft": "Saving draft…",
+    "draftSaved": "Draft saved.",
+    "draftSaveFailed": "Draft could not be saved.",
+    "publishing": "Publishing storefront…",
+    "published": "Storefront published.",
+    "publishFailed": "Storefront could not be published.",
+    "reset": "Editor reset to the last loaded draft.",
+    "imageUploaded": "Image uploaded.",
+    "imageImported": "Image imported.",
+    "imageImportFailed": "Could not import this image. Try again.",
+    "unsupportedImage": "Choose a supported image file.",
+    "imageTooLarge": "Images must be 15 MB or smaller.",
+    "imageUploadFailed": "Could not upload this image. Try again."
+  },
+  "panels": {
+    "preview": "Preview",
+    "settings": "Settings"
+  },
+  "shell": {
+    "title": "Storefront editor",
+    "hint": "Click outlined text in the preview, or refine details in settings."
+  },
+  "media": {
+    "referenceSet": "Image reference set",
+    "uploadOrChoose": "Upload a file or choose from your library",
+    "uploading": "Uploading…",
+    "uploadImage": "Upload image",
+    "chooseLibrary": "Choose from library",
+    "clear": "Clear"
+  },
+  "fonts": {
+    "choose": "Choose font",
+    "search": "Search fonts…"
+  }
+}

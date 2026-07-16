@@ -45,7 +45,7 @@ import { NotificationsSection } from "@/features/settings/notifications-section"
 import { getSelectedTemplateName, statusCopy } from "@/features/settings/settings-helpers";
 import {
   parseSettingsSection,
-  SETTINGS_SECTIONS,
+  SETTINGS_SECTION_IDS,
   type SettingsSectionId,
 } from "@/features/settings/settings-nav";
 import {
@@ -54,7 +54,9 @@ import {
   StorefrontTemplateOption,
 } from "@/features/settings/settings-sections";
 import type { Delivery, SettingsWorkspaceProps } from "@/features/settings/settings-types";
-import { deliveryLabels } from "@/features/settings/settings-types";
+import { deliveryFieldKeys } from "@/features/settings/settings-types";
+import { useI18n } from "@/i18n/provider";
+import type { MessageKey } from "@/i18n/messages";
 import {
   isLaunchAssistantHidden,
   setLaunchAssistantHidden,
@@ -81,6 +83,16 @@ type HandleAvailability =
   | { status: "unavailable"; message: string }
   | { status: "invalid"; message: string };
 
+type Translate = (key: MessageKey, values?: Record<string, string | number | Date>) => string;
+
+function sectionLabelKey(id: SettingsSectionId): MessageKey {
+  return `settings.sections.${id}.label` as MessageKey;
+}
+
+function sectionDescriptionKey(id: SettingsSectionId): MessageKey {
+  return `settings.sections.${id}.description` as MessageKey;
+}
+
 export function SettingsWorkspace({
   delivery,
   initialTab,
@@ -90,6 +102,7 @@ export function SettingsWorkspace({
   templateStatus,
 }: SettingsWorkspaceProps) {
   const router = useRouter();
+  const { t } = useI18n();
   const [section, setSection] = useState<SettingsSectionId>(() =>
     parseSettingsSection(initialTab),
   );
@@ -127,12 +140,12 @@ export function SettingsWorkspace({
   useEffect(() => {
     const status = settingsStatus || templateStatus;
     if (!status) return;
-    toast.success(statusCopy(status));
+    toast.success(statusCopy(status, t));
     const url = new URL(window.location.href);
     url.searchParams.delete("settingsStatus");
     url.searchParams.delete("templateStatus");
     router.replace(`${url.pathname}${url.search}`, { scroll: false });
-  }, [router, settingsStatus, templateStatus]);
+  }, [router, settingsStatus, t, templateStatus]);
 
   useEffect(() => {
     if (!handleUnlocked) {
@@ -148,7 +161,7 @@ export function SettingsWorkspace({
     if (!HANDLE_PATTERN.test(normalizedHandle)) {
       setHandleAvailability({
         status: "invalid",
-        message: "Use 3–63 characters: lowercase letters, numbers, and hyphens.",
+        message: t("settings.handle.patternHint"),
       });
       return;
     }
@@ -164,7 +177,7 @@ export function SettingsWorkspace({
       if (!response) {
         setHandleAvailability({
           status: "unavailable",
-          message: "Could not check availability. Try again.",
+          message: t("settings.handle.checkFailed"),
         });
         return;
       }
@@ -178,7 +191,7 @@ export function SettingsWorkspace({
       if (!response.ok || !data.available) {
         setHandleAvailability({
           status: "unavailable",
-          message: formatHandleReason(data.reason),
+          message: formatHandleReason(data.reason, t),
         });
         return;
       }
@@ -194,7 +207,7 @@ export function SettingsWorkspace({
       controller.abort();
       window.clearTimeout(timeout);
     };
-  }, [handleChanged, handleUnlocked, normalizedHandle]);
+  }, [handleChanged, handleUnlocked, normalizedHandle, t]);
 
   function selectSection(next: SettingsSectionId) {
     setSection(next);
@@ -204,7 +217,10 @@ export function SettingsWorkspace({
     router.replace(`${url.pathname}?${url.searchParams.toString()}`, { scroll: false });
   }
 
-  function saveDelivery(nextDelivery: Delivery, label = "Fulfillment settings") {
+  function saveDelivery(
+    nextDelivery: Delivery,
+    label = t("settings.labels.fulfillmentSettings"),
+  ) {
     const previous = deliveryState;
     setDeliveryState(nextDelivery);
 
@@ -242,9 +258,9 @@ export function SettingsWorkspace({
     })();
 
     toast.promise(work, {
-      loading: `Saving ${label.toLowerCase()}…`,
-      success: `${label} saved`,
-      error: `Could not save ${label.toLowerCase()}`,
+      loading: t("settings.toast.savingLabel", { label: label.toLowerCase() }),
+      success: t("settings.toast.savedLabel", { label }),
+      error: t("settings.toast.saveFailedLabel", { label: label.toLowerCase() }),
     });
 
     return work;
@@ -252,7 +268,9 @@ export function SettingsWorkspace({
 
   function saveShopSettings() {
     startTransition(async () => {
-      const toastId = toast.loading(handleChanged ? "Updating shop address…" : "Saving shop…");
+      const toastId = toast.loading(
+        handleChanged ? t("settings.toast.updatingAddress") : t("settings.toast.savingShop"),
+      );
       const response = await fetch(
         `${dashboardRoutes.settings}/actions?tenantId=${summary.tenant.id}`,
         {
@@ -274,14 +292,15 @@ export function SettingsWorkspace({
       };
 
       if (!response?.ok) {
-        toast.error(body.error ? statusCopy(body.error) : "Could not save shop settings.", {
-          id: toastId,
-        });
+        toast.error(
+          body.error ? statusCopy(body.error, t) : t("settings.toast.saveShopFailed"),
+          { id: toastId },
+        );
         return;
       }
 
       if (body.redirectTo || handleChanged) {
-        toast.success("Shop address updated. Redirecting…", { id: toastId });
+        toast.success(t("settings.toast.addressUpdated"), { id: toastId });
         window.location.assign(
           body.redirectTo ?? `${window.location.protocol}//${nextHost}/admin/settings`,
         );
@@ -290,7 +309,7 @@ export function SettingsWorkspace({
 
       setDialogOpen(false);
       setHandleUnlocked(false);
-      toast.success("Shop settings saved.", { id: toastId });
+      toast.success(t("settings.toast.shopSaved"), { id: toastId });
       router.refresh();
     });
   }
@@ -338,7 +357,9 @@ export function SettingsWorkspace({
               onLaunchAssistantChange={(checked) => {
                 setLaunchAssistantHidden(summary.tenant.id, !checked);
                 setShowLaunchAssistant(checked);
-                toast.success(checked ? "Launch assistant enabled" : "Launch assistant hidden");
+                toast.success(
+                  checked ? t("settings.toast.launchEnabled") : t("settings.toast.launchHidden"),
+                );
               }}
               onOpenFulfillment={() => selectSection("fulfillment")}
             />
@@ -363,7 +384,7 @@ export function SettingsWorkspace({
                 if (!deliveryState || savingFee) return;
                 setSavingFee(true);
                 try {
-                  await saveDelivery(deliveryState, "Delivery fee");
+                  await saveDelivery(deliveryState, t("settings.labels.deliveryFee"));
                 } catch {
                   // toast.promise already surfaces the error
                 } finally {
@@ -392,15 +413,18 @@ export function SettingsWorkspace({
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Change shop address?</DialogTitle>
+            <DialogTitle>{t("settings.dialog.changeAddressTitle")}</DialogTitle>
             <DialogDescription>
-              {currentHost} will stop working for this shop. You will be redirected to {nextHost}.
+              {t("settings.dialog.changeAddressDescription", {
+                currentHost,
+                nextHost,
+              })}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <DialogClose asChild>
               <Button className="rounded-full" type="button" variant="outline">
-                Cancel
+                {t("common.cancel")}
               </Button>
             </DialogClose>
             <Button
@@ -409,7 +433,7 @@ export function SettingsWorkspace({
               type="button"
               onClick={saveShopSettings}
             >
-              {isPending ? "Updating…" : "Change address"}
+              {isPending ? t("settings.dialog.updating") : t("settings.dialog.changeAddress")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -425,6 +449,7 @@ function SettingsSectionNav({
   active: SettingsSectionId;
   onSelect: (id: SettingsSectionId) => void;
 }) {
+  const { t } = useI18n();
   const scrollerRef = useRef<HTMLUListElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
@@ -459,7 +484,7 @@ function SettingsSectionNav({
 
   return (
     <nav
-      aria-label="Settings sections"
+      aria-label={t("settings.navAria")}
       className="relative lg:sticky lg:top-20 lg:w-52 lg:shrink-0"
     >
       <div className="relative lg:static">
@@ -485,11 +510,11 @@ function SettingsSectionNav({
           className="flex gap-1.5 overflow-x-auto scroll-smooth px-0.5 pb-1 [scrollbar-width:none] lg:flex-col lg:gap-1 lg:overflow-visible lg:px-0 lg:pb-0 [&::-webkit-scrollbar]:hidden"
           ref={scrollerRef}
         >
-          {SETTINGS_SECTIONS.map((item) => {
-            const isActive = active === item.id;
-            const Icon = SECTION_ICONS[item.id];
+          {SETTINGS_SECTION_IDS.map((id) => {
+            const isActive = active === id;
+            const Icon = SECTION_ICONS[id];
             return (
-              <li className="shrink-0 lg:w-full" key={item.id}>
+              <li className="shrink-0 lg:w-full" key={id}>
                 <button
                   className={cn(
                     "flex w-full items-center gap-2 rounded-full border px-3 py-2 text-left transition-colors lg:rounded-lg lg:border-transparent",
@@ -498,17 +523,17 @@ function SettingsSectionNav({
                       ? "border-border bg-muted text-foreground shadow-sm lg:border-transparent lg:shadow-none"
                       : "border-transparent bg-muted/40 text-muted-foreground hover:bg-muted/70 hover:text-foreground lg:bg-transparent",
                   )}
-                  data-section={item.id}
-                  onClick={() => onSelect(item.id)}
+                  data-section={id}
+                  onClick={() => onSelect(id)}
                   type="button"
                 >
                   <Icon className="size-3.5 shrink-0 opacity-80 lg:mt-0.5" />
                   <span className="min-w-0">
                     <span className="block text-sm font-medium whitespace-nowrap">
-                      {item.label}
+                      {t(sectionLabelKey(id))}
                     </span>
                     <span className="mt-0.5 hidden text-xs text-muted-foreground lg:block">
-                      {item.description}
+                      {t(sectionDescriptionKey(id))}
                     </span>
                   </span>
                 </button>
@@ -558,32 +583,33 @@ function ShopSection({
   onToggleHandleLock: () => void;
   summary: MerchantDashboardAccess;
 }) {
+  const { t } = useI18n();
   const dirty = nameChanged || handleChanged;
 
   return (
     <div className="flex flex-col gap-6">
       <SectionIntro
-        description="Public identity for customers and the hostname used by staff."
-        title="Shop"
+        description={t("settings.shop.intro")}
+        title={t("settings.sections.shop.label")}
       />
       <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_17.5rem]">
         <Card>
           <CardHeader className="pb-4">
-            <CardTitle className="text-base">Shop details</CardTitle>
-            <CardDescription>Name and subdomain for this merchant shop.</CardDescription>
+            <CardTitle className="text-base">{t("settings.shop.detailsTitle")}</CardTitle>
+            <CardDescription>{t("settings.shop.detailsDescription")}</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-5">
             <FieldGroup>
               <Field>
-                <FieldLabel htmlFor={nameId}>Shop name</FieldLabel>
+                <FieldLabel htmlFor={nameId}>{t("settings.shop.name")}</FieldLabel>
                 <Input id={nameId} onChange={(e) => onNameChange(e.target.value)} value={name} />
               </Field>
               <Field>
                 <div className="flex items-center justify-between gap-2">
-                  <FieldLabel htmlFor={handleId}>Shop handle</FieldLabel>
+                  <FieldLabel htmlFor={handleId}>{t("settings.shop.handle")}</FieldLabel>
                   {!handleUnlocked ? (
                     <span className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
-                      Locked
+                      {t("settings.handle.locked")}
                     </span>
                   ) : null}
                 </div>
@@ -605,7 +631,11 @@ function ShopSection({
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <InputGroupButton
-                          aria-label={handleUnlocked ? "Lock shop handle" : "Unlock shop handle"}
+                          aria-label={
+                            handleUnlocked
+                              ? t("settings.handle.lockAria")
+                              : t("settings.handle.unlockAria")
+                          }
                           onClick={onToggleHandleLock}
                           size="icon-xs"
                           type="button"
@@ -614,7 +644,9 @@ function ShopSection({
                         </InputGroupButton>
                       </TooltipTrigger>
                       <TooltipContent>
-                        {handleUnlocked ? "Lock handle" : "Unlock to change handle"}
+                        {handleUnlocked
+                          ? t("settings.handle.lockTooltip")
+                          : t("settings.handle.unlockTooltip")}
                       </TooltipContent>
                     </Tooltip>
                   </InputGroupAddon>
@@ -627,11 +659,8 @@ function ShopSection({
             </FieldGroup>
             {handleChanged ? (
               <Alert>
-                <AlertTitle>Changing the shop address</AlertTitle>
-                <AlertDescription>
-                  The current subdomain stops resolving and this dashboard moves to the new address
-                  after you save.
-                </AlertDescription>
+                <AlertTitle>{t("settings.shop.addressChangeTitle")}</AlertTitle>
+                <AlertDescription>{t("settings.shop.addressChangeDescription")}</AlertDescription>
               </Alert>
             ) : null}
             <div className="flex justify-end">
@@ -642,7 +671,7 @@ function ShopSection({
                 size="sm"
                 type="button"
               >
-                {isPending ? "Saving…" : "Save shop"}
+                {isPending ? t("common.saving") : t("settings.shop.saveShop")}
               </Button>
             </div>
           </CardContent>
@@ -651,27 +680,29 @@ function ShopSection({
         <div className="flex flex-col gap-4">
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-base">Hostname</CardTitle>
+              <CardTitle className="text-base">{t("settings.shop.hostname")}</CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col gap-3">
               <SettingsLinkRow
-                label={handleChanged ? "Current" : "Primary"}
+                label={handleChanged ? t("settings.shop.current") : t("settings.shop.primary")}
                 value={currentHost}
               />
-              {handleChanged ? <SettingsLinkRow label="After save" value={nextHost} /> : null}
-              <SettingsRow label="Status" value={summary.tenant.status} />
+              {handleChanged ? (
+                <SettingsLinkRow label={t("settings.shop.afterSave")} value={nextHost} />
+              ) : null}
+              <SettingsRow label={t("settings.shop.status")} value={summary.tenant.status} />
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-base">Related</CardTitle>
+              <CardTitle className="text-base">{t("settings.shop.related")}</CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col gap-2">
               <Button asChild className="justify-start rounded-full" size="sm" variant="outline">
-                <a href={dashboardRoutes.billing}>Billing & plan</a>
+                <a href={dashboardRoutes.billing}>{t("settings.shop.billingPlan")}</a>
               </Button>
               <Button asChild className="justify-start rounded-full" size="sm" variant="outline">
-                <a href={dashboardRoutes.editor}>Storefront editor</a>
+                <a href={dashboardRoutes.editor}>{t("settings.shop.storefrontEditor")}</a>
               </Button>
             </CardContent>
           </Card>
@@ -682,11 +713,12 @@ function ShopSection({
 }
 
 function HandleStatus({ availability }: { availability: HandleAvailability }) {
+  const { t } = useI18n();
   if (availability.status === "checking") {
     return (
       <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
         <AppIcons.loader className="size-3 animate-spin" />
-        Checking…
+        {t("settings.handle.checking")}
       </span>
     );
   }
@@ -694,7 +726,7 @@ function HandleStatus({ availability }: { availability: HandleAvailability }) {
     return (
       <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-600 dark:text-emerald-400">
         <AppIcons.check className="size-3" />
-        Available
+        {t("settings.handle.available")}
       </span>
     );
   }
@@ -704,7 +736,7 @@ function HandleStatus({ availability }: { availability: HandleAvailability }) {
     );
   }
   if (availability.status === "current") {
-    return <span className="text-xs text-muted-foreground">Current handle</span>;
+    return <span className="text-xs text-muted-foreground">{t("settings.handle.current")}</span>;
   }
   return null;
 }
@@ -719,25 +751,24 @@ function PreferencesSection({
   showLaunchAssistant: boolean;
   tenantId: string;
 }) {
+  const { t } = useI18n();
   return (
     <div className="flex flex-col gap-6">
       <SectionIntro
-        description="Browser and checkout defaults for day-to-day work."
-        title="Preferences"
+        description={t("settings.preferences.intro")}
+        title={t("settings.sections.preferences.label")}
       />
       <div className="grid items-start gap-4 lg:grid-cols-2">
         <Card>
           <CardHeader className="pb-4">
-            <CardTitle className="text-base">Dashboard</CardTitle>
-            <CardDescription>Stored in this browser for the current shop.</CardDescription>
+            <CardTitle className="text-base">{t("settings.preferences.dashboardTitle")}</CardTitle>
+            <CardDescription>{t("settings.preferences.dashboardDescription")}</CardDescription>
           </CardHeader>
           <CardContent>
             <Field className="rounded-lg border p-3" orientation="horizontal">
               <FieldContent>
-                <FieldTitle>Launch assistant</FieldTitle>
-                <FieldDescription>
-                  Show the floating setup assistant on Overview.
-                </FieldDescription>
+                <FieldTitle>{t("settings.preferences.launchTitle")}</FieldTitle>
+                <FieldDescription>{t("settings.preferences.launchDescription")}</FieldDescription>
               </FieldContent>
               <Switch checked={showLaunchAssistant} onCheckedChange={onLaunchAssistantChange} />
             </Field>
@@ -745,18 +776,16 @@ function PreferencesSection({
         </Card>
         <Card>
           <CardHeader className="pb-4">
-            <CardTitle className="text-base">Commerce defaults</CardTitle>
-            <CardDescription>Currency and checkout options for this shop.</CardDescription>
+            <CardTitle className="text-base">{t("settings.preferences.commerceTitle")}</CardTitle>
+            <CardDescription>{t("settings.preferences.commerceDescription")}</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
             <div className="rounded-lg border bg-muted/20 px-3 py-3 text-sm">
-              <p className="font-medium text-foreground">Currency · ETB</p>
-              <p className="mt-1 text-muted-foreground">
-                Storefront prices and fees use Ethiopian Birr. Multi-currency is not available yet.
-              </p>
+              <p className="font-medium text-foreground">{t("settings.preferences.currencyEtb")}</p>
+              <p className="mt-1 text-muted-foreground">{t("settings.preferences.currencyHint")}</p>
             </div>
             <p className="text-sm text-muted-foreground">
-              Delivery, pickup, and phone confirmation live under Fulfillment.
+              {t("settings.preferences.fulfillmentHint")}
             </p>
             <Button
               className="w-fit rounded-full"
@@ -765,7 +794,7 @@ function PreferencesSection({
               type="button"
               variant="outline"
             >
-              Open fulfillment
+              {t("settings.preferences.openFulfillment")}
             </Button>
           </CardContent>
         </Card>
@@ -793,26 +822,27 @@ function FulfillmentSection({
   onSaveFee: () => void;
   savingFee: boolean;
 }) {
+  const { t } = useI18n();
   return (
     <div className="flex flex-col gap-6">
       <SectionIntro
-        description="How customers receive orders at checkout. Switches save immediately."
-        title="Fulfillment"
+        description={t("settings.fulfillment.intro")}
+        title={t("settings.sections.fulfillment.label")}
       />
       <Card>
         <CardHeader className="pb-4">
-          <CardTitle className="text-base">Checkout options</CardTitle>
-          <CardDescription>Control delivery, pickup, and order details collection.</CardDescription>
+          <CardTitle className="text-base">{t("settings.fulfillment.checkoutTitle")}</CardTitle>
+          <CardDescription>{t("settings.fulfillment.checkoutDescription")}</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-5">
           {deliveryState ? (
             <>
               <div className="grid gap-3 sm:grid-cols-2">
-                {deliveryLabels.map((item) => (
+                {deliveryFieldKeys.map((item) => (
                   <Field className="rounded-lg border p-3" key={item.key} orientation="horizontal">
                     <FieldContent>
-                      <FieldTitle>{item.label}</FieldTitle>
-                      <FieldDescription>{item.description}</FieldDescription>
+                      <FieldTitle>{t(item.labelKey)}</FieldTitle>
+                      <FieldDescription>{t(item.descriptionKey)}</FieldDescription>
                     </FieldContent>
                     <Switch
                       checked={deliveryState[item.key]}
@@ -823,7 +853,7 @@ function FulfillmentSection({
                             ...deliveryState,
                             [item.key]: checked,
                           },
-                          item.label,
+                          t(item.labelKey),
                         )
                       }
                     />
@@ -832,7 +862,9 @@ function FulfillmentSection({
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <Field>
-                  <FieldLabel htmlFor={deliveryFeeId}>Default delivery fee</FieldLabel>
+                  <FieldLabel htmlFor={deliveryFeeId}>
+                    {t("settings.fulfillment.defaultFee")}
+                  </FieldLabel>
                   <InputGroup>
                     <InputGroupAddon align="inline-start">
                       <InputGroupText>ETB</InputGroupText>
@@ -864,27 +896,29 @@ function FulfillmentSection({
                         {savingFee ? (
                           <>
                             <AppIcons.loader className="animate-spin" />
-                            Saving…
+                            {t("common.saving")}
                           </>
                         ) : (
-                          "Save"
+                          t("common.save")
                         )}
                       </InputGroupButton>
                     </InputGroupAddon>
                   </InputGroup>
-                  <FieldDescription>Applied when delivery is enabled at checkout.</FieldDescription>
+                  <FieldDescription>{t("settings.fulfillment.feeHint")}</FieldDescription>
                 </Field>
                 <Field>
-                  <FieldLabel htmlFor={currencyId}>Currency</FieldLabel>
+                  <FieldLabel htmlFor={currencyId}>{t("settings.fulfillment.currency")}</FieldLabel>
                   <Input disabled id={currencyId} readOnly value="ETB" />
-                  <FieldDescription>Shop currency is fixed to Ethiopian Birr.</FieldDescription>
+                  <FieldDescription>{t("settings.fulfillment.currencyHint")}</FieldDescription>
                 </Field>
               </div>
             </>
           ) : (
             <Alert>
-              <AlertTitle>Fulfillment settings are unavailable</AlertTitle>
-              <AlertDescription>Try again after checkout setup is complete.</AlertDescription>
+              <AlertTitle>{t("settings.fulfillment.unavailableTitle")}</AlertTitle>
+              <AlertDescription>
+                {t("settings.fulfillment.unavailableDescription")}
+              </AlertDescription>
             </Alert>
           )}
         </CardContent>
@@ -900,19 +934,19 @@ function StorefrontSection({
   storefrontTemplates: StorefrontTemplateCatalogItem[];
   summary: MerchantDashboardAccess;
 }) {
+  const { t } = useI18n();
+  const notSelected = t("settings.storefront.notSelected");
   return (
     <div className="flex flex-col gap-6">
       <SectionIntro
-        description="Template selection and publish state for the customer-facing shop."
-        title="Storefront"
+        description={t("settings.storefront.intro")}
+        title={t("settings.sections.storefront.label")}
       />
       <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_17.5rem]">
         <Card>
           <CardHeader className="pb-4">
-            <CardTitle className="text-base">Design</CardTitle>
-            <CardDescription>
-              Starting template customers see after you publish.
-            </CardDescription>
+            <CardTitle className="text-base">{t("settings.storefront.designTitle")}</CardTitle>
+            <CardDescription>{t("settings.storefront.designDescription")}</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
             {storefrontTemplates.length ? (
@@ -928,44 +962,44 @@ function StorefrontSection({
               </div>
             ) : (
               <Alert>
-                <AlertTitle>No storefronts available</AlertTitle>
-                <AlertDescription>
-                  Storefront selection will be available after templates are seeded.
-                </AlertDescription>
+                <AlertTitle>{t("settings.storefront.noneTitle")}</AlertTitle>
+                <AlertDescription>{t("settings.storefront.noneDescription")}</AlertDescription>
               </Alert>
             )}
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-base">Status</CardTitle>
+            <CardTitle className="text-base">{t("settings.storefront.statusTitle")}</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col gap-3">
             <div className="flex items-center justify-between gap-3 text-sm">
-              <span className="text-muted-foreground">Publication</span>
+              <span className="text-muted-foreground">{t("settings.storefront.publication")}</span>
               <Badge variant={summary.storefront.isPublished ? "default" : "outline"}>
-                {summary.storefront.isPublished ? "Published" : "Draft"}
+                {summary.storefront.isPublished
+                  ? t("settings.storefront.published")
+                  : t("settings.storefront.draft")}
               </Badge>
             </div>
             <SettingsRow
-              label="Selected design"
-              value={getSelectedTemplateName(storefrontTemplates, summary)}
+              label={t("settings.storefront.selectedDesign")}
+              value={getSelectedTemplateName(storefrontTemplates, summary, notSelected)}
             />
             <SettingsRow
-              label="Version"
+              label={t("settings.storefront.version")}
               value={
                 summary.storefront.templateVersion
                   ? `v${summary.storefront.templateVersion}`
-                  : "Not selected"
+                  : notSelected
               }
             />
             <div className="flex flex-col gap-2 pt-1">
               <Button asChild className="rounded-full" size="sm" variant="outline">
-                <a href={dashboardRoutes.editor}>Edit storefront</a>
+                <a href={dashboardRoutes.editor}>{t("settings.storefront.editStorefront")}</a>
               </Button>
               <Button asChild className="rounded-full" size="sm">
                 <a href={`//${summary.domain.hostname}`} rel="noreferrer" target="_blank">
-                  View shop
+                  {t("settings.storefront.viewShop")}
                 </a>
               </Button>
             </div>
@@ -985,9 +1019,9 @@ function SectionIntro({ description, title }: { description: string; title: stri
   );
 }
 
-function formatHandleReason(reason: string | undefined) {
-  if (reason === "taken" || reason === "handle_unavailable") return "Already taken";
-  if (reason === "invalid" || reason === "invalid_handle") return "Invalid handle format";
-  if (reason === "reserved") return "This handle is reserved";
-  return "Not available";
+function formatHandleReason(reason: string | undefined, t: Translate) {
+  if (reason === "taken" || reason === "handle_unavailable") return t("settings.handle.taken");
+  if (reason === "invalid" || reason === "invalid_handle") return t("settings.handle.invalid");
+  if (reason === "reserved") return t("settings.handle.reserved");
+  return t("settings.handle.notAvailable");
 }

@@ -1,0 +1,11 @@
+{
+  "add": "Add filter",
+  "title": "Filters",
+  "searchLabel": "Search {label}…",
+  "searchAll": "Search filters…",
+  "noValues": "No values found.",
+  "noFilters": "No filters found.",
+  "clearAll": "Clear all",
+  "is": "is",
+  "clearFilterAria": "Clear {label} filter"
+}

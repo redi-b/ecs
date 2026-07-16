@@ -6,6 +6,8 @@ import { usePathname } from "next/navigation";
 
 import { AccountMenu } from "@/components/app/account-menu";
 import { AppIcons } from "@/components/app/icons";
+import type { MessageKey } from "@/i18n/messages";
+import { useI18n } from "@/i18n/provider";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   DropdownMenu,
@@ -79,12 +81,22 @@ function useCloseMobileSidebar() {
   };
 }
 
+function getRouteLocalizationKey(id: string): MessageKey {
+  const camelCased = id.replace(/-([a-z])/g, (_, letter: string | undefined) =>
+    letter ? letter.toUpperCase() : "",
+  );
+  return `nav.${camelCased}` as MessageKey;
+}
+
 function NavRouteItem({ pathname, route }: { pathname: string; route: AppRoute }) {
   const { isMobile, state } = useSidebar();
   const closeMobileSidebar = useCloseMobileSidebar();
+  const { t } = useI18n();
   const Icon = route.icon;
   const active = isRouteActive(pathname, route);
   const collapsed = state === "collapsed" && !isMobile;
+
+  const localizedTitle = t(getRouteLocalizationKey(route.id)) || route.title;
 
   if (route.children?.length) {
     // Icon rail hides collapsible subtrees — open nested links in a flyout instead.
@@ -93,9 +105,9 @@ function NavRouteItem({ pathname, route }: { pathname: string; route: AppRoute }
         <SidebarMenuItem>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <SidebarMenuButton className="rounded-xl" isActive={active} tooltip={route.title}>
+              <SidebarMenuButton className="rounded-xl" isActive={active} tooltip={localizedTitle}>
                 <Icon />
-                <span>{route.title}</span>
+                <span>{localizedTitle}</span>
               </SidebarMenuButton>
             </DropdownMenuTrigger>
             <DropdownMenuContent
@@ -105,13 +117,13 @@ function NavRouteItem({ pathname, route }: { pathname: string; route: AppRoute }
               sideOffset={8}
             >
               <DropdownMenuLabel className="text-xs font-medium text-muted-foreground">
-                {route.title}
+                {localizedTitle}
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
               {route.children.map((child) => (
                 <DropdownMenuItem asChild key={child.id}>
                   <Link href={child.href} onClick={closeMobileSidebar} prefetch={false}>
-                    {child.title}
+                    {t(getRouteLocalizationKey(child.id)) || child.title}
                   </Link>
                 </DropdownMenuItem>
               ))}
@@ -127,9 +139,9 @@ function NavRouteItem({ pathname, route }: { pathname: string; route: AppRoute }
       <Collapsible asChild className="group/collapsible" defaultOpen={active}>
         <SidebarMenuItem>
           <CollapsibleTrigger asChild>
-            <SidebarMenuButton className="rounded-xl" isActive={active} tooltip={route.title}>
+            <SidebarMenuButton className="rounded-xl" isActive={active} tooltip={localizedTitle}>
               <Icon />
-              <span>{route.title}</span>
+              <span>{localizedTitle}</span>
               <ChevronIcon className="ml-auto size-4 transition-transform group-data-[collapsible=icon]:hidden group-data-[state=open]/collapsible:rotate-180" />
             </SidebarMenuButton>
           </CollapsibleTrigger>
@@ -139,7 +151,7 @@ function NavRouteItem({ pathname, route }: { pathname: string; route: AppRoute }
                 <SidebarMenuSubItem key={child.id}>
                   <SidebarMenuSubButton asChild isActive={isChildRouteActive(pathname, child)}>
                     <Link href={child.href} onClick={closeMobileSidebar} prefetch={false}>
-                      {child.title}
+                      {t(getRouteLocalizationKey(child.id)) || child.title}
                     </Link>
                   </SidebarMenuSubButton>
                 </SidebarMenuSubItem>
@@ -154,15 +166,15 @@ function NavRouteItem({ pathname, route }: { pathname: string; route: AppRoute }
   return (
     <SidebarMenuItem>
       {route.disabled ? (
-        <SidebarMenuButton className="rounded-xl" disabled isActive={false} tooltip={route.title}>
+        <SidebarMenuButton className="rounded-xl" disabled isActive={false} tooltip={localizedTitle}>
           <Icon />
-          <span>{route.title}</span>
+          <span>{localizedTitle}</span>
         </SidebarMenuButton>
       ) : (
-        <SidebarMenuButton asChild className="rounded-xl" isActive={active} tooltip={route.title}>
+        <SidebarMenuButton asChild className="rounded-xl" isActive={active} tooltip={localizedTitle}>
           <Link href={route.href} onClick={closeMobileSidebar} prefetch={false}>
             <Icon />
-            <span>{route.title}</span>
+            <span>{localizedTitle}</span>
           </Link>
         </SidebarMenuButton>
       )}
@@ -173,6 +185,7 @@ function NavRouteItem({ pathname, route }: { pathname: string; route: AppRoute }
 export function AppSidebar({ actor }: { actor: MerchantDashboardSummary["actor"] }) {
   const pathname = usePathname();
   const closeMobileSidebar = useCloseMobileSidebar();
+  const { t } = useI18n();
 
   return (
     <Sidebar className="border-r" collapsible="icon">
@@ -201,7 +214,11 @@ export function AppSidebar({ actor }: { actor: MerchantDashboardSummary["actor"]
               className="px-3 group-data-[collapsible=icon]:px-2"
               key={section.id}
             >
-              {section.label ? <SidebarGroupLabel>{section.label}</SidebarGroupLabel> : null}
+              {section.label ? (
+                <SidebarGroupLabel>
+                  {t(`nav.section.${section.id}` as MessageKey) || section.label}
+                </SidebarGroupLabel>
+              ) : null}
               <SidebarGroupContent>
                 <SidebarMenu className="gap-1">
                   {routes.map((route) => (

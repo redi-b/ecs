@@ -2,6 +2,7 @@
 
 import { PaginationBar } from "@/components/app/pagination-bar";
 import type { DashboardSearchParams } from "@/lib/dashboard-tenant-context";
+import { useI18n } from "@/i18n/provider";
 
 const TRANSIENT_STATUS_PARAMS = new Set(["categoryStatus", "collectionStatus", "productStatus"]);
 
@@ -21,10 +22,16 @@ type PaginationControlsProps = {
 };
 
 export function ListSummary({ count, label }: ListSummaryProps) {
+  const { t, formatNumber } = useI18n();
+
   return (
     <div className="flex items-center justify-between rounded-2xl border bg-card px-4 py-3 text-sm">
-      <span className="font-medium text-card-foreground">{count.toLocaleString()} total</span>
-      <span className="text-muted-foreground">Showing merchant {label}</span>
+      <span className="font-medium text-card-foreground">
+        {t("common.total", { count: formatNumber(count) })}
+      </span>
+      <span className="text-muted-foreground">
+        {t("common.showingMerchant", { label })}
+      </span>
     </div>
   );
 }
@@ -37,6 +44,7 @@ export function PaginationControls({
   searchParams,
   className,
 }: PaginationControlsProps) {
+  const { t, formatNumber } = useI18n();
   const totalPages = Math.max(1, Math.ceil(count / pageSize));
   const safePage = Math.min(Math.max(1, page), totalPages);
   const from = count === 0 ? 0 : (safePage - 1) * pageSize + 1;
@@ -55,8 +63,12 @@ export function PaginationControls({
       summary={
         <span>
           {count === 0
-            ? "No results"
-            : `Showing ${from.toLocaleString()}–${to.toLocaleString()} of ${count.toLocaleString()}`}
+            ? t("common.noResults")
+            : t("common.showingRange", {
+                from: formatNumber(from),
+                to: formatNumber(to),
+                count: formatNumber(count),
+              })}
         </span>
       }
       totalPages={totalPages}
