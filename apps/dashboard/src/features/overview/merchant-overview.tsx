@@ -42,6 +42,7 @@ import { chartColorConfig } from "@/features/overview/overview-config";
 import { useI18n } from "@/i18n/provider";
 import type { MessageKey } from "@/i18n/messages";
 import {
+  ChartEmptyState,
   compactMoney,
   formatMoney,
   formatNumber,
@@ -411,20 +412,22 @@ export function MerchantOverview({ summary }: MerchantOverviewProps) {
               <CardTitle>{t("overview.trading.title")}</CardTitle>
               <CardDescription>{t("overview.trading.description")}</CardDescription>
             </div>
-            <div className="col-start-2 row-span-2 row-start-1 self-start justify-self-end">
-              <Select value={metric} onValueChange={(value) => setMetric(value as ChartMetric)}>
-                <SelectTrigger size="sm" aria-label={t("overview.aria.chartMetric")}>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectItem value="revenue">{t("overview.metrics.revenue")}</SelectItem>
-                    <SelectItem value="orders">{t("overview.metrics.orders")}</SelectItem>
-                    <SelectItem value="customers">{t("overview.metrics.customers")}</SelectItem>
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-            </div>
+            {hasSeries ? (
+              <div className="col-start-2 row-span-2 row-start-1 self-start justify-self-end">
+                <Select value={metric} onValueChange={(value) => setMetric(value as ChartMetric)}>
+                  <SelectTrigger size="sm" aria-label={t("overview.aria.chartMetric")}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      <SelectItem value="revenue">{t("overview.metrics.revenue")}</SelectItem>
+                      <SelectItem value="orders">{t("overview.metrics.orders")}</SelectItem>
+                      <SelectItem value="customers">{t("overview.metrics.customers")}</SelectItem>
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+              </div>
+            ) : null}
           </CardHeader>
           <CardContent className="flex min-h-0 flex-1 flex-col pt-4">
             {hasSeries ? (
@@ -525,14 +528,20 @@ export function MerchantOverview({ summary }: MerchantOverviewProps) {
                 </div>
               </div>
             ) : (
-              <div className="flex min-h-72 flex-1 items-center justify-center rounded-lg border bg-muted/30 p-6 text-center text-sm text-muted-foreground">
-                {t("overview.trading.empty")}
-              </div>
+              <ChartEmptyState
+                className="min-h-72"
+                ctaHref={dashboardRoutes.orders}
+                ctaLabel={t("overview.trading.emptyCta")}
+                description={t("overview.trading.empty")}
+                title={t("overview.trading.emptyTitle")}
+              />
             )}
-            <div className="mt-3 flex shrink-0 flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
-              <span>{t("overview.metrics.metricView", { label: String(metricLabel) })}</span>
-              <span>{operations?.range.label ?? t("overview.metrics.noSalesYet")}</span>
-            </div>
+            {hasSeries ? (
+              <div className="mt-3 flex shrink-0 flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
+                <span>{t("overview.metrics.metricView", { label: String(metricLabel) })}</span>
+                <span>{operations?.range.label ?? t("overview.metrics.noSalesYet")}</span>
+              </div>
+            ) : null}
           </CardContent>
         </Card>
 
@@ -687,9 +696,10 @@ export function MerchantOverview({ summary }: MerchantOverviewProps) {
                 </ComposedChart>
               </ChartContainer>
             ) : (
-              <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
-                {t("overview.basket.empty")}
-              </div>
+              <ChartEmptyState
+                description={t("overview.basket.empty")}
+                title={t("overview.basket.emptyTitle")}
+              />
             )}
           </CardContent>
         </Card>
@@ -719,9 +729,10 @@ export function MerchantOverview({ summary }: MerchantOverviewProps) {
                 </RadarChart>
               </ChartContainer>
             ) : (
-              <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
-                {t("overview.demand.empty")}
-              </div>
+              <ChartEmptyState
+                description={t("overview.demand.empty")}
+                title={t("overview.demand.emptyTitle")}
+              />
             )}
           </CardContent>
         </Card>
@@ -735,22 +746,29 @@ export function MerchantOverview({ summary }: MerchantOverviewProps) {
               <CardTitle>{t("overview.mix.title")}</CardTitle>
               <CardDescription>{activeMix.description}</CardDescription>
             </div>
-            <div className="col-start-2 row-span-2 row-start-1 self-start justify-self-end">
-              <Select value={mixView} onValueChange={(value) => setMixView(value as MixView)}>
-                <SelectTrigger size="sm" aria-label={t("overview.aria.mixView")} className="min-w-[8.5rem]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    {mixViews.map((view) => (
-                      <SelectItem key={view.id} value={view.id}>
-                        {view.label}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-            </div>
+            {activeMix.rows.length > 0 ||
+            mixViews.some((view) => view.rows.length > 0) ? (
+              <div className="col-start-2 row-span-2 row-start-1 self-start justify-self-end">
+                <Select value={mixView} onValueChange={(value) => setMixView(value as MixView)}>
+                  <SelectTrigger
+                    size="sm"
+                    aria-label={t("overview.aria.mixView")}
+                    className="min-w-[8.5rem]"
+                  >
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      {mixViews.map((view) => (
+                        <SelectItem key={view.id} value={view.id}>
+                          {view.label}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+              </div>
+            ) : null}
           </CardHeader>
           <CardContent className="flex flex-1 flex-col justify-center pt-4">
             <StatusDonutChart

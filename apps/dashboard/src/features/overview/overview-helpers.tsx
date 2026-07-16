@@ -59,6 +59,56 @@ export function MetricCard({
   );
 }
 
+export function ChartEmptyState({
+  className,
+  ctaHref,
+  ctaLabel,
+  description,
+  title,
+}: {
+  className?: string;
+  ctaHref?: string;
+  ctaLabel?: string;
+  description: string;
+  title: string;
+}) {
+  return (
+    <div
+      className={cn(
+        "flex min-h-56 flex-1 flex-col items-center justify-center gap-3 rounded-xl border border-dashed bg-muted/20 px-6 py-10 text-center",
+        className,
+      )}
+    >
+      <span className="flex size-10 items-center justify-center rounded-full border bg-background text-muted-foreground shadow-sm">
+        <svg
+          aria-hidden
+          className="size-4"
+          fill="none"
+          stroke="currentColor"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth="1.75"
+          viewBox="0 0 24 24"
+        >
+          <path d="M3 3v18h18" />
+          <path d="M7 14l4-4 3 3 5-6" />
+        </svg>
+      </span>
+      <div className="max-w-xs space-y-1">
+        <p className="text-sm font-medium text-foreground">{title}</p>
+        <p className="text-xs leading-relaxed text-muted-foreground">{description}</p>
+      </div>
+      {ctaHref && ctaLabel ? (
+        <Button asChild className="mt-1" size="sm" variant="outline">
+          <Link href={ctaHref} prefetch={false}>
+            {ctaLabel}
+          </Link>
+        </Button>
+      ) : null}
+    </div>
+  );
+}
+
 export function StatusDonutChart({
   rows,
   subject = "orders",
@@ -89,9 +139,11 @@ export function StatusDonutChart({
 
   if (rows.length === 0) {
     return (
-      <div className={cn("flex items-center justify-center py-8", className)}>
-        <p className="text-sm text-muted-foreground">{t("overview.donut.empty")}</p>
-      </div>
+      <ChartEmptyState
+        className={cn("min-h-40 py-8", className)}
+        description={t("overview.donut.empty")}
+        title={t("overview.donut.emptyTitle")}
+      />
     );
   }
 

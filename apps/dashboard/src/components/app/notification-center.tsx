@@ -244,7 +244,7 @@ export function NotificationCenter() {
       <PopoverTrigger asChild>
         <Button
           aria-label={count > 0 ? t("common.inbox.unreadAria", { count }) : t("common.inbox.unreadNoneAria")}
-          className="relative"
+          className="relative size-9"
           size="icon"
           type="button"
           variant="ghost"
@@ -269,20 +269,22 @@ export function NotificationCenter() {
       </PopoverTrigger>
       <PopoverContent
         align="end"
-        className="w-[min(100vw-1.5rem,22rem)] gap-0 overflow-hidden p-0"
+        className="w-[min(100vw-1.5rem,24rem)] gap-0 overflow-hidden rounded-xl p-0 shadow-lg"
         sideOffset={8}
       >
-        <PopoverHeader className="flex flex-row items-center justify-between gap-2 border-b px-3 py-2.5">
+        <PopoverHeader className="flex flex-row items-center justify-between gap-2 border-b bg-muted/20 px-3.5 py-3">
           <div className="min-w-0">
-            <PopoverTitle className="text-sm font-semibold">{t("common.inbox.title")}</PopoverTitle>
-            <p className="text-[11px] text-muted-foreground">
+            <PopoverTitle className="text-sm font-semibold tracking-tight">
+              {t("common.inbox.title")}
+            </PopoverTitle>
+            <p className="mt-0.5 text-[11px] text-muted-foreground">
               {count === 1
                 ? t("common.inbox.unreadOne")
                 : t("common.inbox.unread", { count })}
             </p>
           </div>
           <Button
-            className="h-7 shrink-0 rounded-full px-2.5 text-xs"
+            className="h-7 shrink-0 rounded-lg px-2.5 text-xs font-medium"
             disabled={busy || count === 0}
             size="sm"
             type="button"
@@ -293,13 +295,19 @@ export function NotificationCenter() {
           </Button>
         </PopoverHeader>
 
-        <div className="max-h-[min(22rem,60vh)] overflow-y-auto">
+        <div className="max-h-[min(24rem,62vh)] overflow-y-auto">
           {loadingList && items.length === 0 ? (
-            <div className="flex flex-col gap-2 px-3 py-3" aria-busy aria-label={t("common.loading")}>
-              {[0, 1, 2].map((key) => (
-                <div key={key} className="space-y-1.5 rounded-lg border border-transparent py-1">
-                  <div className="h-3.5 w-3/4 animate-pulse rounded bg-muted" />
-                  <div className="h-3 w-1/2 animate-pulse rounded bg-muted/70" />
+            <div className="flex flex-col gap-0 px-1 py-1" aria-busy aria-label={t("common.loading")}>
+              {[0, 1, 2, 3].map((key) => (
+                <div key={key} className="flex gap-2.5 px-3 py-3">
+                  <div className="mt-1.5 size-1.5 shrink-0 animate-pulse rounded-full bg-muted" />
+                  <div className="min-w-0 flex-1 space-y-2">
+                    <div className="flex justify-between gap-3">
+                      <div className="h-3.5 w-[55%] animate-pulse rounded bg-muted" />
+                      <div className="h-3 w-10 animate-pulse rounded bg-muted/70" />
+                    </div>
+                    <div className="h-3 w-[80%] animate-pulse rounded bg-muted/70" />
+                  </div>
                 </div>
               ))}
             </div>
@@ -334,7 +342,7 @@ export function NotificationCenter() {
           ) : null}
 
           {items.length > 0 ? (
-            <ul className="flex flex-col py-1">
+            <ul className="flex flex-col divide-y divide-border/60">
               {items.map((item) => {
                 const unread = !item.readAt;
                 const detail = secondaryBody(item);
@@ -343,13 +351,13 @@ export function NotificationCenter() {
                     key={item.id}
                     className={cn(
                       "group/item flex items-stretch",
-                      unread && "bg-primary/[0.04]",
+                      unread && "bg-primary/[0.045]",
                     )}
                   >
                     <button
                       className={cn(
-                        "flex min-w-0 flex-1 gap-2.5 px-3 py-2.5 text-left transition-colors",
-                        "hover:bg-muted/70 focus-visible:bg-muted/70 focus-visible:outline-none",
+                        "flex min-w-0 flex-1 gap-2.5 px-3.5 py-3 text-left transition-colors",
+                        "hover:bg-muted/60 focus-visible:bg-muted/60 focus-visible:outline-none",
                       )}
                       type="button"
                       onClick={() => void openItem(item)}
@@ -357,8 +365,8 @@ export function NotificationCenter() {
                       <span
                         aria-hidden
                         className={cn(
-                          "mt-1.5 size-1.5 shrink-0 rounded-full",
-                          unread ? "bg-primary" : "bg-transparent",
+                          "mt-1.5 size-2 shrink-0 rounded-full",
+                          unread ? "bg-primary shadow-[0_0_0_3px] shadow-primary/15" : "bg-transparent",
                         )}
                       />
                       <span className="min-w-0 flex-1">
@@ -378,19 +386,19 @@ export function NotificationCenter() {
                           </span>
                         </span>
                         {detail ? (
-                          <span className="mt-0.5 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
+                          <span className="mt-1 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
                             {detail}
                           </span>
                         ) : null}
                       </span>
                     </button>
                     {unread ? (
-                      <div className="flex shrink-0 items-start pr-1.5 pt-1.5">
+                      <div className="flex shrink-0 items-start pr-2 pt-2 opacity-100 sm:opacity-0 sm:transition-opacity sm:group-hover/item:opacity-100 sm:group-focus-within/item:opacity-100">
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <Button
                               aria-label={t("common.inbox.markItemReadAria", { title: item.title })}
-                              className="size-7 rounded-full text-muted-foreground hover:text-foreground"
+                              className="size-7 rounded-lg text-muted-foreground hover:text-foreground"
                               disabled={busy}
                               size="icon-sm"
                               type="button"

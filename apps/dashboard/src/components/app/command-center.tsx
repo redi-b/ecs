@@ -303,11 +303,8 @@ export function CommandCenter() {
   const showEmpty =
     !showEmptyQuery && !hasLocal && !hasRemote && !remoteLoading;
 
-  const inputPlaceholder = showEmptyQuery
-    ? t("commandCenter.searchOrJump")
-    : showRemote
-      ? t("commandCenter.searchingRemote")
-      : t("commandCenter.keepTyping");
+  // Keep placeholder stable — swapping it while typing feels soft/laggy and shifts attention.
+  const inputPlaceholder = t("commandCenter.searchOrJump");
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -319,8 +316,8 @@ export function CommandCenter() {
           size="icon"
           className={cn(
             "size-9 shrink-0 text-muted-foreground",
-            "sm:h-9 sm:w-auto sm:min-w-60 sm:justify-start sm:gap-2 sm:rounded-xl sm:border sm:border-border/80 sm:bg-background/80 sm:px-3 sm:shadow-sm sm:backdrop-blur-sm",
-            "sm:hover:bg-accent/80 sm:hover:text-accent-foreground",
+            "sm:h-9 sm:w-auto sm:min-w-[15.5rem] sm:justify-start sm:gap-2 sm:rounded-xl sm:border sm:border-border/80 sm:bg-background sm:px-3 sm:shadow-sm",
+            "sm:hover:bg-accent sm:hover:text-accent-foreground",
           )}
         >
           <AppIcons.search className="size-4 opacity-80" />
@@ -340,9 +337,9 @@ export function CommandCenter() {
           // Mobile: near full-screen sheet from top for thumb reach + more list room.
           "fixed top-0 left-1/2 z-50 flex max-h-[100dvh] w-full max-w-full -translate-x-1/2 translate-y-0 flex-col gap-0 overflow-hidden rounded-none border-0 p-0 shadow-2xl",
           "data-open:zoom-in-100 data-closed:zoom-out-100",
-          // Desktop: centered elevated panel.
+          // Desktop: solid elevated panel (avoid heavy backdrop-blur over the field — reads soft).
           "sm:top-[min(12vh,6rem)] sm:max-h-[min(36rem,80dvh)] sm:max-w-xl sm:rounded-2xl sm:border sm:border-border/70",
-          "bg-popover/95 backdrop-blur-xl",
+          "bg-popover",
           "ring-1 ring-black/5 dark:ring-white/10",
           "pb-[env(safe-area-inset-bottom,0px)]",
         )}
@@ -372,16 +369,28 @@ export function CommandCenter() {
           shouldFilter={false}
           className={cn(
             "flex min-h-0 flex-1 flex-col rounded-none bg-transparent sm:rounded-2xl",
-            "**:data-[slot=command-input-wrapper]:border-b **:data-[slot=command-input-wrapper]:border-border/60",
-            "**:data-[slot=command-input-wrapper]:bg-transparent **:data-[slot=command-input-wrapper]:p-3",
+            "**:data-[slot=command-input-wrapper]:border-b **:data-[slot=command-input-wrapper]:border-border/50",
+            "**:data-[slot=command-input-wrapper]:bg-muted/20 **:data-[slot=command-input-wrapper]:p-3",
           )}
         >
           <CommandInput
             placeholder={inputPlaceholder}
             value={query}
             onValueChange={setQuery}
-            className="h-12 text-base sm:h-11 placeholder:text-muted-foreground/70"
+            className="h-11 sm:h-10"
           />
+
+          {query.trim().length > 0 && query.trim().length < REMOTE_MIN_CHARS ? (
+            <p className="px-4 pb-1 text-[11px] text-muted-foreground">
+              {t("commandCenter.keepTyping")}
+            </p>
+          ) : null}
+          {showRemote && remoteLoading && !hasRemote ? (
+            <p className="flex items-center gap-1.5 px-4 pb-1 text-[11px] text-muted-foreground">
+              <AppIcons.loader className="size-3 animate-spin opacity-70" />
+              {t("commandCenter.searchingRemote")}
+            </p>
+          ) : null}
 
           <CommandList className="min-h-0 flex-1 scroll-py-2 px-2 pb-2 max-h-none sm:max-h-[min(28rem,55dvh)]">
             {showEmpty ? (
