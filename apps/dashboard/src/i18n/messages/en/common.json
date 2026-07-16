@@ -34,5 +34,38 @@
   "productSelected": "1 product selected",
   "productsSelected": "{count} products selected",
   "searchProducts": "Search products…",
-  "noMatchingProducts": "No matching products."
+  "noMatchingProducts": "No matching products.",
+  "toggleTheme": "Toggle theme",
+  "clearSelection": "Clear selection",
+  "selected": "selected",
+  "updating": "Updating…",
+  "tryAgain": "Try again",
+  "loading": "Loading",
+  "listStatus": {
+    "onThisPageOne": "1 on this page",
+    "onThisPage": "{count} on this page",
+    "ofOnThisPage": "{filtered} of {page} on this page",
+    "noMatches": "No matches",
+    "matchOne": "1 match",
+    "matches": "{count} matches",
+    "showingMatches": "Showing {page} of {total} matches",
+    "noResultsYet": "No results yet",
+    "totalOne": "1 total",
+    "totalCount": "{count} total",
+    "onPageTotal": "{page} on this page · {total} total"
+  },
+  "inbox": {
+    "title": "Notifications",
+    "unreadOne": "1 unread",
+    "unread": "{count} unread",
+    "unreadNoneAria": "Notifications, none unread",
+    "unreadAria": "Notifications, {count} unread",
+    "markAllRead": "Mark all read",
+    "markAsRead": "Mark as read",
+    "markItemReadAria": "Mark “{title}” as read",
+    "loadErrorTitle": "Couldn't load notifications",
+    "loadErrorDesc": "Check your connection and try again.",
+    "emptyTitle": "All caught up",
+    "emptyDesc": "Order and payment updates for this shop will show up here."
+  }
 }

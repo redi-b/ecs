@@ -30,7 +30,9 @@
     "noItems": "እስካሁን ምንም ንጥል ነገር አልተመሳሰለም።",
     "noItemsTitle": "ምንም ንጥሎች የሉም",
     "filteredNoItems": "አሁን ባለው ፍለጋ ወይም ማጣሪያ መሰረት ምንም የተዛመደ ነገር አልተገኘም።",
-    "filteredNoItemsTitle": "ምንም የሚዛመድ ነገር የለም"
+    "filteredNoItemsTitle": "ምንም የሚዛመድ ነገር የለም",
+    "noRowsTitle": "ገና ረድፍ የለም",
+    "noMatchingRowsTitle": "ምንም የሚዛመድ የለም"
   },
   "counts": {
     "filtered": "ከዚህ ገጽ ላይ {filteredCount} ከ {pageCount} እያሳየ ነው",

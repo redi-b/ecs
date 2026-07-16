@@ -6,10 +6,12 @@ import { useEffect, useState } from "react";
 
 import { AppIcons } from "@/components/app/icons";
 import { Button } from "@/components/ui/button";
+import { useI18n } from "@/i18n/provider";
 import { setSharedThemeCookie } from "@/lib/shared-theme";
 import { changeThemeWithTransition } from "@/lib/theme-transition";
 
 export function ThemeToggle() {
+  const { t } = useI18n();
   const { resolvedTheme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
@@ -32,7 +34,7 @@ export function ThemeToggle() {
       type="button"
       variant="ghost"
       size="icon"
-      aria-label="Toggle theme"
+      aria-label={t("common.toggleTheme")}
       onClick={toggleTheme}
       suppressHydrationWarning
     >
