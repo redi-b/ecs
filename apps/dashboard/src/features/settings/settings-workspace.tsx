@@ -42,6 +42,7 @@ import { Switch } from "@/components/ui/switch";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { AccountSecurityPanel } from "@/features/settings/account-security-panel";
 import { NotificationsSection } from "@/features/settings/notifications-section";
+import { PaymentsSection } from "@/features/settings/payments-section";
 import { getSelectedTemplateName, statusCopy } from "@/features/settings/settings-helpers";
 import {
   parseSettingsSection,
@@ -68,6 +69,7 @@ const SECTION_ICONS: Record<SettingsSectionId, AppIcon> = {
   shop: AppIcons.settings,
   preferences: AppIcons.preferences,
   notifications: AppIcons.notifications,
+  payments: AppIcons.billing,
   fulfillment: AppIcons.orders,
   storefront: AppIcons.editor,
   account: AppIcons.user,
@@ -96,6 +98,7 @@ function sectionDescriptionKey(id: SettingsSectionId): MessageKey {
 export function SettingsWorkspace({
   delivery,
   initialTab,
+  payments,
   settingsStatus,
   storefrontTemplates,
   summary,
@@ -368,6 +371,8 @@ export function SettingsWorkspace({
           {section === "notifications" ? (
             <NotificationsSection tenantId={summary.tenant.id} />
           ) : null}
+
+          {section === "payments" ? <PaymentsSection initialPayment={payments} /> : null}
 
           {section === "fulfillment" ? (
             <FulfillmentSection
