@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
+import Link from "@/components/app/link";
 import { AppIcons } from "@/components/app/icons";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -781,11 +782,12 @@ function CustomerPicker({
         className="w-[var(--radix-popover-trigger-width)] overflow-hidden p-0"
         collisionPadding={16}
         onOpenAutoFocus={(event) => event.preventDefault()}
+        onWheel={(event) => event.stopPropagation()}
       >
-        <Command className="h-auto max-h-72 w-full">
+        <Command className="h-auto max-h-72 w-full min-h-0">
           <CommandInput placeholder={t("orders.create.searchCustomer")} />
           <CommandList
-            className="max-h-60 overflow-y-auto overscroll-contain"
+            className="max-h-60 min-h-0 overflow-y-auto overscroll-contain"
             onWheel={(event) => event.stopPropagation()}
           >
             <CommandEmpty>{t("orders.create.noCustomers")}</CommandEmpty>
@@ -865,14 +867,27 @@ function VariantMultiPicker({
         className="w-[var(--radix-popover-trigger-width)] overflow-hidden p-0"
         collisionPadding={16}
         onOpenAutoFocus={(event) => event.preventDefault()}
+        onWheel={(event) => event.stopPropagation()}
       >
-        <Command className="h-auto max-h-72 w-full">
+        <Command className="h-auto max-h-72 w-full min-h-0">
           <CommandInput placeholder={t("orders.create.searchProducts")} />
           <CommandList
-            className="max-h-60 overflow-y-auto overscroll-contain"
+            className="max-h-60 min-h-0 overflow-y-auto overscroll-contain"
             onWheel={(event) => event.stopPropagation()}
           >
-            <CommandEmpty>{t("orders.create.noProducts")}</CommandEmpty>
+            <CommandEmpty>
+              <div className="flex flex-col items-center gap-2 px-3 py-4 text-center">
+                <span className="text-sm text-muted-foreground">
+                  {t("orders.create.noProducts")}
+                </span>
+                <Link
+                  className="text-sm font-medium text-primary hover:underline"
+                  href={`${dashboardRoutes.products}?create=product`}
+                >
+                  {t("commandCenter.actions.createProduct")}
+                </Link>
+              </div>
+            </CommandEmpty>
             <CommandGroup className="overflow-visible">
               {catalog.map((variant) => {
                 const isSelected = selected.has(variant.id);

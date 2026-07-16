@@ -301,10 +301,12 @@
     "noCollection": "No collection",
     "searchCollections": "Search collections…",
     "noCollectionsFound": "No collections found.",
+    "createCollection": "Create collection",
     "selectCategories": "Select categories",
     "selectedCount": "{count} selected",
     "searchCategories": "Search categories…",
     "noCategoriesFound": "No categories found.",
+    "createCategory": "Create category",
     "untitledCollection": "Untitled collection",
     "untitledCategory": "Untitled category",
     "noCategoriesSelected": "No categories selected."

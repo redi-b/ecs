@@ -1,7 +1,7 @@
 "use client";
 
 import type { StorefrontTemplateCatalogItem } from "@ecs/contracts";
-import { useEffect, useId, useMemo, useState, type MouseEvent } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 
 import { AppIcons } from "@/components/app/icons";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -747,91 +747,106 @@ function CategoryCombobox({
     onChange([...next]);
   }
 
-  function remove(option: string, event: MouseEvent) {
-    event.preventDefault();
-    event.stopPropagation();
+  function remove(option: string) {
     onChange(values.filter((value) => value !== option));
   }
 
+  const triggerLabel =
+    values.length === 0
+      ? placeholder
+      : values.length === 1
+        ? values[0]
+        : t("onboarding.categorySelectedCount", { count: values.length });
+
   return (
-    <Popover
-      onOpenChange={(next) => {
-        setOpen(next);
-        if (!next) setQuery("");
-      }}
-      open={open}
-    >
-      <PopoverTrigger asChild>
-        <Button
-          aria-expanded={open}
-          className={cn(
-            "h-auto min-h-11 w-full justify-between rounded-xl px-3 py-2 font-normal shadow-none",
-            values.length === 0 && "text-muted-foreground",
-          )}
-          id={id}
-          role="combobox"
-          type="button"
-          variant="outline"
-        >
-          <span className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5 text-left">
-            {values.length === 0 ? (
-              <span className="truncate">{placeholder}</span>
-            ) : (
-              values.map((value) => (
-                <Badge
-                  className="max-w-full gap-1 rounded-md px-1.5 py-0.5 font-normal"
-                  key={value}
-                  variant="secondary"
-                >
-                  <span className="truncate">{value}</span>
-                  <button
-                    aria-label={t("onboarding.categoryRemove", { value })}
-                    className="rounded-sm opacity-60 hover:opacity-100"
-                    onClick={(event) => remove(value, event)}
-                    type="button"
-                  >
-                    <AppIcons.close className="size-3" />
-                  </button>
-                </Badge>
-              ))
+    <div className="space-y-2">
+      <Popover
+        onOpenChange={(next) => {
+          setOpen(next);
+          if (!next) setQuery("");
+        }}
+        open={open}
+      >
+        <PopoverTrigger asChild>
+          <Button
+            aria-expanded={open}
+            className={cn(
+              "h-11 w-full justify-between rounded-xl px-3 font-normal shadow-none",
+              values.length === 0 && "text-muted-foreground",
             )}
-          </span>
-          <AppIcons.arrowDown className="size-4 shrink-0 opacity-60" data-icon="inline-end" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent align="start" className="w-[var(--radix-popover-trigger-width)] p-0">
-        <Command shouldFilter={false}>
-          <CommandInput
-            autoFocus
-            onValueChange={setQuery}
-            placeholder={searchPlaceholder}
-            value={query}
-          />
-          <CommandList>
-            <CommandEmpty>
-              <span className="block py-6 text-center text-sm text-muted-foreground">
-                {t("onboarding.categoryEmpty")}
-              </span>
-            </CommandEmpty>
-            <CommandGroup>
-              {options.map((option) => {
-                const isSelected = selected.has(option);
-                return (
-                  <CommandItem
-                    data-checked={isSelected ? true : undefined}
-                    key={option}
-                    onSelect={() => toggle(option)}
-                    value={option}
-                  >
-                    <span className="truncate">{option}</span>
-                  </CommandItem>
-                );
-              })}
-            </CommandGroup>
-          </CommandList>
-        </Command>
-      </PopoverContent>
-    </Popover>
+            id={id}
+            role="combobox"
+            type="button"
+            variant="outline"
+          >
+            <span className="min-w-0 flex-1 truncate text-left">{triggerLabel}</span>
+            <AppIcons.arrowDown className="size-4 shrink-0 opacity-60" data-icon="inline-end" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent
+          align="start"
+          className="w-[var(--radix-popover-trigger-width)] overflow-hidden p-0"
+          collisionPadding={16}
+          onWheel={(event) => event.stopPropagation()}
+        >
+          <Command className="h-auto max-h-72 w-full min-h-0" shouldFilter={false}>
+            <CommandInput
+              autoFocus
+              onValueChange={setQuery}
+              placeholder={searchPlaceholder}
+              value={query}
+            />
+            <CommandList
+              className="max-h-60 min-h-0 overflow-y-auto overscroll-contain"
+              onWheel={(event) => event.stopPropagation()}
+            >
+              <CommandEmpty>
+                <span className="block py-6 text-center text-sm text-muted-foreground">
+                  {t("onboarding.categoryEmpty")}
+                </span>
+              </CommandEmpty>
+              <CommandGroup className="overflow-visible">
+                {options.map((option) => {
+                  const isSelected = selected.has(option);
+                  return (
+                    <CommandItem
+                      data-checked={isSelected ? true : undefined}
+                      key={option}
+                      onSelect={() => toggle(option)}
+                      value={option}
+                    >
+                      <span className="truncate">{option}</span>
+                    </CommandItem>
+                  );
+                })}
+              </CommandGroup>
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      </Popover>
+
+      {values.length > 0 ? (
+        <div className="flex flex-wrap gap-1.5">
+          {values.map((value) => (
+            <Badge
+              className="max-w-full gap-1 rounded-md px-1.5 py-0.5 font-normal"
+              key={value}
+              variant="secondary"
+            >
+              <span className="truncate">{value}</span>
+              <button
+                aria-label={t("onboarding.categoryRemove", { value })}
+                className="rounded-sm opacity-60 hover:opacity-100"
+                onClick={() => remove(value)}
+                type="button"
+              >
+                <AppIcons.close className="size-3" />
+              </button>
+            </Badge>
+          ))}
+        </div>
+      ) : null}
+    </div>
   );
 }
 

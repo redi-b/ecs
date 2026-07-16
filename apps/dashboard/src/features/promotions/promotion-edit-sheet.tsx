@@ -5,7 +5,6 @@ import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { AppIcons } from "@/components/app/icons";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -547,76 +546,63 @@ function ProductMultiPicker({
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const selected = useMemo(() => new Set(selectedIds), [selectedIds]);
-  const selectedProducts = useMemo(
-    () =>
-      selectedIds
-        .map((id) => catalog.find((product) => product.id === id))
-        .filter((product): product is CatalogProduct => Boolean(product)),
-    [catalog, selectedIds],
-  );
 
   function toggle(id: string) {
     if (selected.has(id)) onChange(selectedIds.filter((item) => item !== id));
     else onChange([...selectedIds, id]);
   }
 
-  function remove(id: string, event: { preventDefault: () => void; stopPropagation: () => void }) {
-    event.preventDefault();
-    event.stopPropagation();
-    onChange(selectedIds.filter((item) => item !== id));
-  }
+  const label =
+    selectedIds.length === 0
+      ? loading
+        ? t("promotions.edit.loadingProducts")
+        : t("promotions.edit.selectProducts")
+      : selectedIds.length === 1
+        ? t("promotions.edit.productSelectedOne")
+        : t("promotions.edit.productsSelected", { count: selectedIds.length });
 
   return (
     <Popover onOpenChange={setOpen} open={open}>
       <PopoverTrigger asChild>
         <Button
           className={cn(
-            "h-auto min-h-8 w-full justify-between px-2.5 py-1.5 font-normal shadow-none",
+            "h-8 w-full justify-between px-2.5 font-normal shadow-none",
             selectedIds.length === 0 && "text-muted-foreground",
           )}
           role="combobox"
           type="button"
           variant="outline"
         >
-          <span className="flex min-w-0 flex-1 flex-wrap items-center gap-1 text-left">
-            {selectedIds.length === 0 ? (
-              <span className="truncate">
-                {loading
-                  ? t("promotions.edit.loadingProducts")
-                  : t("promotions.edit.selectProducts")}
-              </span>
-            ) : (
-              selectedProducts.map((product) => {
-                const label = product.title ?? product.handle ?? product.id;
-                return (
-                  <Badge
-                    className="max-w-[10rem] gap-1 rounded-md px-1.5 py-0 font-normal"
-                    key={product.id}
-                    variant="secondary"
-                  >
-                    <span className="truncate">{label}</span>
-                    <button
-                      aria-label={label}
-                      className="rounded-sm opacity-60 hover:opacity-100"
-                      onClick={(event) => remove(product.id, event)}
-                      type="button"
-                    >
-                      <AppIcons.close className="size-3" />
-                    </button>
-                  </Badge>
-                );
-              })
-            )}
-          </span>
+          <span className="truncate">{label}</span>
           <AppIcons.arrowDown className="size-4 shrink-0 opacity-60" data-icon="inline-end" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="start" className="w-[var(--radix-popover-trigger-width)] p-0">
-        <Command>
+      <PopoverContent
+        align="start"
+        className="w-[var(--radix-popover-trigger-width)] overflow-hidden p-0"
+        collisionPadding={16}
+        onWheel={(event) => event.stopPropagation()}
+      >
+        <Command className="h-auto max-h-72 w-full min-h-0">
           <CommandInput autoFocus placeholder={t("promotions.edit.searchProducts")} />
-          <CommandList className="max-h-52">
-            <CommandEmpty>{t("promotions.edit.noMatchingProducts")}</CommandEmpty>
-            <CommandGroup>
+          <CommandList
+            className="max-h-60 min-h-0 overflow-y-auto overscroll-contain"
+            onWheel={(event) => event.stopPropagation()}
+          >
+            <CommandEmpty>
+              <div className="flex flex-col items-center gap-2 px-3 py-4 text-center">
+                <span className="text-sm text-muted-foreground">
+                  {t("promotions.edit.noMatchingProducts")}
+                </span>
+                <a
+                  className="text-sm font-medium text-primary hover:underline"
+                  href="/admin/products?create=product"
+                >
+                  {t("commandCenter.actions.createProduct")}
+                </a>
+              </div>
+            </CommandEmpty>
+            <CommandGroup className="overflow-visible">
               {catalog.map((product) => {
                 const isSelected = selected.has(product.id);
                 return (

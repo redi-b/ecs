@@ -6,9 +6,9 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
+import Link from "@/components/app/link";
 import { AppIcons } from "@/components/app/icons";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -350,9 +350,16 @@ export function CollectionEditSheet({
                   {t("taxonomy.edit.loadingMembers")}
                 </p>
               ) : members.length === 0 ? (
-                <p className="rounded-lg border border-dashed px-3 py-4 text-center text-xs text-muted-foreground">
-                  {t("taxonomy.edit.noProductsYet")}
-                </p>
+                <div className="rounded-lg border border-dashed px-3 py-4 text-center text-xs text-muted-foreground">
+                  <p>{t("taxonomy.edit.noProductsYet")}</p>
+                  <Link
+                    className="mt-2 inline-block font-medium text-primary hover:underline"
+                    href={`${dashboardRoutes.products}?create=product`}
+                    prefetch={false}
+                  >
+                    {t("taxonomy.edit.createProduct")}
+                  </Link>
+                </div>
               ) : (
                 <ul className="max-h-48 divide-y overflow-y-auto rounded-lg border">
                   {members.map((product) => (
@@ -465,19 +472,16 @@ function ProductAddCombobox({
     onPendingChange([...pendingIds, id]);
   }
 
-  const pendingProducts = useMemo(
-    () =>
-      pendingIds
-        .map((id) => candidates.find((product) => product.id === id))
-        .filter((product): product is MemberProduct => Boolean(product)),
-    [candidates, pendingIds],
-  );
-
-  function remove(id: string, event: { preventDefault: () => void; stopPropagation: () => void }) {
-    event.preventDefault();
-    event.stopPropagation();
-    onPendingChange(pendingIds.filter((item) => item !== id));
-  }
+  const triggerLabel =
+    pendingIds.length === 0
+      ? loading
+        ? t("taxonomy.edit.loadingProducts")
+        : candidates.length === 0
+          ? t("taxonomy.edit.noProductsLeft")
+          : t("taxonomy.edit.searchProductsToAdd")
+      : pendingIds.length === 1
+        ? t("taxonomy.edit.productSelectedOne")
+        : t("taxonomy.edit.productsSelected", { count: pendingIds.length });
 
   return (
     <div className="space-y-2">
@@ -491,7 +495,7 @@ function ProductAddCombobox({
           <Button
             aria-expanded={open}
             className={cn(
-              "h-auto min-h-8 w-full justify-between px-2.5 py-1.5 font-normal shadow-none",
+              "h-8 w-full justify-between px-2.5 font-normal shadow-none",
               pendingIds.length === 0 && "text-muted-foreground",
             )}
             disabled={disabled || (!loading && candidates.length === 0 && pendingIds.length === 0)}
@@ -500,47 +504,37 @@ function ProductAddCombobox({
             type="button"
             variant="outline"
           >
-            <span className="flex min-w-0 flex-1 flex-wrap items-center gap-1 text-left">
-              {pendingIds.length === 0 ? (
-                <span className="truncate">
-                  {loading
-                    ? t("taxonomy.edit.loadingProducts")
-                    : candidates.length === 0
-                      ? t("taxonomy.edit.noProductsLeft")
-                      : t("taxonomy.edit.searchProductsToAdd")}
-                </span>
-              ) : (
-                pendingProducts.map((product) => {
-                  const label = product.title ?? product.handle ?? product.id;
-                  return (
-                    <Badge
-                      className="max-w-[10rem] gap-1 rounded-md px-1.5 py-0 font-normal"
-                      key={product.id}
-                      variant="secondary"
-                    >
-                      <span className="truncate">{label}</span>
-                      <button
-                        aria-label={label}
-                        className="rounded-sm opacity-60 hover:opacity-100"
-                        onClick={(event) => remove(product.id, event)}
-                        type="button"
-                      >
-                        <AppIcons.close className="size-3" />
-                      </button>
-                    </Badge>
-                  );
-                })
-              )}
-            </span>
+            <span className="truncate">{triggerLabel}</span>
             <AppIcons.arrowDown className="size-4 shrink-0 opacity-60" data-icon="inline-end" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent align="start" className="w-[var(--radix-popover-trigger-width)] p-0">
-          <Command>
+        <PopoverContent
+          align="start"
+          className="w-[var(--radix-popover-trigger-width)] overflow-hidden p-0"
+          collisionPadding={16}
+          onWheel={(event) => event.stopPropagation()}
+        >
+          <Command className="h-auto max-h-72 w-full min-h-0">
             <CommandInput autoFocus placeholder={t("taxonomy.edit.searchProducts")} />
-            <CommandList className="max-h-52">
-              <CommandEmpty>{t("taxonomy.edit.noMatchingProducts")}</CommandEmpty>
-              <CommandGroup>
+            <CommandList
+              className="max-h-60 min-h-0 overflow-y-auto overscroll-contain"
+              onWheel={(event) => event.stopPropagation()}
+            >
+              <CommandEmpty>
+                <div className="flex flex-col items-center gap-2 px-3 py-4 text-center">
+                  <span className="text-sm text-muted-foreground">
+                    {t("taxonomy.edit.noMatchingProducts")}
+                  </span>
+                  <Link
+                    className="text-sm font-medium text-primary hover:underline"
+                    href={`${dashboardRoutes.products}?create=product`}
+                    prefetch={false}
+                  >
+                    {t("taxonomy.edit.createProduct")}
+                  </Link>
+                </div>
+              </CommandEmpty>
+              <CommandGroup className="overflow-visible">
                 {candidates.map((product) => {
                   const isSelected = pending.has(product.id);
                   const label = product.title ?? product.handle ?? product.id;

@@ -1,6 +1,6 @@
 "use client";
 
-import type { MerchantProductCategory } from "@ecs/contracts";
+import type { MerchantProductCategory, MerchantProductCollection } from "@ecs/contracts";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { Suspense, useMemo, useState } from "react";
@@ -39,25 +39,41 @@ import type { MessageKey } from "@/i18n/messages";
 import { useI18n } from "@/i18n/provider";
 import { useCreateQueryOpen } from "@/lib/use-create-query-open";
 
+export type TaxonomyCreatedPayload = {
+  category?: MerchantProductCategory;
+  collection?: MerchantProductCollection;
+  entityLabel: "category" | "collection";
+};
+
 type TaxonomyCreateDialogProps = {
   action: string;
   entityLabel: "category" | "collection";
   nameKey: "name" | "title";
   nameLabel: string;
   namePlaceholder: string;
+  /** Called after a successful create with the new entity when available. */
+  onCreated?: (payload: TaxonomyCreatedPayload) => void;
+  onOpenChange?: (open: boolean) => void;
+  /** Controlled open state (for embedding without page navigation). */
+  open?: boolean;
   /** Existing categories for parent selection (category create only). */
   parentOptions?: MerchantProductCategory[];
   queryKey: string;
-  triggerLabel: string;
+  /** When false, no trigger button is rendered (use controlled open). */
+  showTrigger?: boolean;
+  triggerLabel?: string;
 };
 
 export function TaxonomyCreateDialog(props: TaxonomyCreateDialogProps) {
+  const showTrigger = props.showTrigger ?? true;
   return (
     <Suspense
       fallback={
-        <Button type="button" disabled>
-          {props.triggerLabel}
-        </Button>
+        showTrigger ? (
+          <Button type="button" disabled>
+            {props.triggerLabel}
+          </Button>
+        ) : null
       }
     >
       <TaxonomyCreateDialogInner {...props} />
@@ -71,8 +87,12 @@ function TaxonomyCreateDialogInner({
   nameKey,
   nameLabel,
   namePlaceholder,
+  onCreated,
+  onOpenChange,
+  open: openProp,
   parentOptions = [],
   queryKey,
+  showTrigger = true,
   triggerLabel,
 }: TaxonomyCreateDialogProps) {
   const { t } = useI18n();
@@ -81,7 +101,9 @@ function TaxonomyCreateDialogInner({
 
   const router = useRouter();
   const queryClient = useQueryClient();
-  const [open, setOpen] = useState(false);
+  const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
+  const isControlled = openProp !== undefined;
+  const open = isControlled ? openProp : uncontrolledOpen;
   const [displayName, setDisplayName] = useState("");
   const [handle, setHandle] = useState("");
   const [isHandleLocked, setIsHandleLocked] = useState(true);
@@ -89,6 +111,11 @@ function TaxonomyCreateDialogInner({
   const [isVisible, setIsVisible] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+
+  function setOpen(nextOpen: boolean) {
+    if (!isControlled) setUncontrolledOpen(nextOpen);
+    onOpenChange?.(nextOpen);
+  }
 
   useCreateQueryOpen({
     values: ["1", "true", entityLabel],
@@ -168,7 +195,11 @@ function TaxonomyCreateDialogInner({
       },
       method: "POST",
     }).catch(() => null);
-    const data = (await response?.json().catch(() => ({}))) as { error?: string };
+    const data = (await response?.json().catch(() => ({}))) as {
+      category?: MerchantProductCategory;
+      collection?: MerchantProductCollection;
+      error?: string;
+    };
 
     setIsSaving(false);
 
@@ -180,7 +211,15 @@ function TaxonomyCreateDialogInner({
     toast.success(t("taxonomy.create.success", { entity: capitalize(localizedEntity) }));
     setOpen(false);
     resetForm();
-    await queryClient.invalidateQueries({ queryKey: [queryKey] });
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: [queryKey] }),
+      queryClient.invalidateQueries({ queryKey: ["product-taxonomy"] }),
+    ]);
+    onCreated?.({
+      entityLabel,
+      ...(data.category ? { category: data.category } : {}),
+      ...(data.collection ? { collection: data.collection } : {}),
+    });
     router.refresh();
   }
 
@@ -192,17 +231,22 @@ function TaxonomyCreateDialogInner({
       }}
       open={open}
     >
-      <DialogTrigger asChild>
-        <Button type="button">
-          {entityLabel === "category" ? (
-            <AppIcons.tree data-icon="inline-start" />
-          ) : (
-            <AppIcons.folder data-icon="inline-start" />
-          )}
-          {triggerLabel}
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-lg">
+      {showTrigger ? (
+        <DialogTrigger asChild>
+          <Button type="button">
+            {entityLabel === "category" ? (
+              <AppIcons.tree data-icon="inline-start" />
+            ) : (
+              <AppIcons.folder data-icon="inline-start" />
+            )}
+            {triggerLabel}
+          </Button>
+        </DialogTrigger>
+      ) : null}
+      <DialogContent
+        className="z-[60] gap-0 overflow-hidden p-0 sm:max-w-lg"
+        overlayClassName="z-[60]"
+      >
         <DialogHeader className="gap-1.5 border-b px-4 py-4 text-left sm:px-5">
           <DialogTitle>
             {t("taxonomy.create.title", { entity: localizedEntity })}
@@ -216,7 +260,10 @@ function TaxonomyCreateDialogInner({
         <form
           className="flex flex-col"
           onSubmit={(event) => {
+            // Nested inside product composer (and other host forms). Stop bubble so
+            // the parent form does not submit with incomplete product values.
             event.preventDefault();
+            event.stopPropagation();
             void submitTaxonomy();
           }}
         >

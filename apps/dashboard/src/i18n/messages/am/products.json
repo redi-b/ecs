@@ -301,10 +301,12 @@
     "noCollection": "ስብስብ የለም",
     "searchCollections": "ስብስቦችን ፈልግ…",
     "noCollectionsFound": "ስብስብ አልተገኘም።",
+    "createCollection": "አዲስ ስብስብ",
     "selectCategories": "ምድቦችን ይምረጡ",
     "selectedCount": "{count} ተመርጠዋል",
     "searchCategories": "ምድቦችን ፈልግ…",
     "noCategoriesFound": "ምድብ አልተገኘም።",
+    "createCategory": "አዲስ ምድብ",
     "untitledCollection": "ርዕስ የሌለው ስብስብ",
     "untitledCategory": "ርዕስ የሌለው ምድብ",
     "noCategoriesSelected": "ምድብ አልተመረጠም።"
