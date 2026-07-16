@@ -52,7 +52,20 @@
     "deleteConfirm": "አጥፋ",
     "toastDeleted": "ምርቱ ከካታሎጉ ተወግዷል።",
     "thisProduct": "ይህ ምርት",
-    "noImage": "ምስል የለም"
+    "noImage": "ምስል የለም",
+    "noImagesYet": "ገና የምርት ምስሎች አልተጨመሩም።",
+    "optionsTitle": "የምርት አማራጮች",
+    "variantsCount": "{count} አማራጮች",
+    "noVariantsYet": "ይህ ምርት ገና የሚሸጡ አማራጮች የሉትም።",
+    "simpleProduct": "ቀላል ምርት",
+    "simpleProductHelp": "አንድ የሚሸጥ የምርት መስመር በክምችት ክፍሉ ይተዳደራል።",
+    "deleteFailed": "ምርቱን ማጥፋት አልተቻለም። እንደገና ይሞክሩ።",
+    "notFound": "ምርቱ አልተገኘም።",
+    "catalogUnavailable": "የካታሎግ ለውጦች ለጊዜው አይገኙም። እንደገና ይሞክሩ።",
+    "catalogContactSupport": "የካታሎግ ለውጦች ለጊዜው አይገኙም። ድጋፍን ያግኙ።",
+    "statusPublished": "በመደብር ይታያል",
+    "statusDraft": "በዝግጅት ላይ",
+    "statusUnknown": "ያልታወቀ"
   },
   "create": {
     "optionsLoadErrorDesc": "{labels} መጫን አልተቻለም። አሁንም መደበኛ ምርት መፍጠር እና በኋላ ላይ አማራጮችን ማከል ይችላሉ።"
@@ -359,5 +372,31 @@
     "leaveDesc": "ያደረጓቸው ለውጦች ይጠፋሉ።",
     "stay": "ቆይ",
     "leave": "ውጣ"
+  },
+  "validation": {
+    "titleRequired": "የምርት ርዕስ ያስገቡ።",
+    "priceRequired": "ዋጋ ያስገቡ።",
+    "priceNumbersOnly": "ቁጥሮችን ብቻ ይጠቀሙ።",
+    "priceWholeNumber": "ያለ ንዑስ ነጥብ ወይም ምልክት ሙሉ ቁጥር ዋጋ ይጠቀሙ።",
+    "priceNonNegative": "ዋጋ አሉታዊ መሆን አይችልም።",
+    "stockRequired": "የመጀመሪያ ክምችት መጠን ያስገቡ።",
+    "stockWholeNumber": "ሙሉ ቁጥር የክምችት መጠን ይጠቀሙ።",
+    "stockNonNegative": "ክምችት አሉታዊ መሆን አይችልም።",
+    "imageUrlFull": "በ http:// ወይም https:// የሚጀምሩ ሙሉ የምስል አድራሾችን ይጠቀሙ።",
+    "optionNameRequired": "የአማራጭ ስም ያስገቡ።",
+    "optionValueRequired": "ቢያንስ አንድ የአማራጭ እሴት ያስገቡ።",
+    "reviewFields": "የምርት መስኮቹን ይመልከቱ እና እንደገና ይሞክሩ።",
+    "handleConflict": "ይህ መለያ ሌላ ምርት ሊጠቀምበት ይችላል። መለያውን ቀይረው እንደገና ይሞክሩ።",
+    "writeInvalid": "ይህን ምርት መቀየር አልተቻለም። የተደመቁትን መስኮች ይመልከቱ እና እንደገና ይሞክሩ።",
+    "catalogUnavailable": "የካታሎግ ለውጦች ለጊዜው አይገኙም። እንደገና ይሞክሩ።",
+    "catalogContactSupport": "የካታሎግ ለውጦች ለጊዜው አይገኙም። ድጋፍን ያግኙ።",
+    "saveFailed": "ምርቱን መቀየር አልተቻለም። እንደገና ይሞክሩ።",
+    "noPrice": "ዋጋ የለም"
+  },
+  "editErrors": {
+    "handleConflict": "ሌላ ምርት ያን መለያ እየተጠቀመ ነው።",
+    "notFound": "ይህ ምርት ከእንግዲህ አይገኝም።",
+    "backendUnavailable": "የንግድ ስርዓቱ ለጊዜው አይገኝም።",
+    "saveFailed": "የምርት ዝርዝሮችን መቀየር አልተቻለም። እንደገና ይሞክሩ።"
   }
 }

@@ -25,7 +25,10 @@ export function SimpleProductStockPreview({ values }: { values: ProductFormValue
   return (
     <div className="grid gap-3 md:grid-cols-3">
       <VariantMatrixMetric label={t("products.formReview.productType")} value={t("products.formReview.simpleProduct")} />
-      <VariantMatrixMetric label={t("products.formReview.price")} value={formatEtbAmount(values.priceAmount)} />
+      <VariantMatrixMetric
+        label={t("products.formReview.price")}
+        value={formatEtbAmount(values.priceAmount, t)}
+      />
       <VariantMatrixMetric
         label={t("products.formReview.initialStock")}
         value={String(parseWholeNumber(values.initialStock) ?? 0)}

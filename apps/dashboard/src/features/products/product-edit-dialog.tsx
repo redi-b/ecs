@@ -309,7 +309,7 @@ function ProductEditSheet({
     setIsSaving(false);
 
     if (!response?.ok) {
-      setError(getProductEditErrorMessage(data.error));
+      setError(getProductEditErrorMessage(data.error, t));
       return;
     }
 
@@ -392,18 +392,21 @@ function getImageUrls(value: string) {
     .filter(Boolean);
 }
 
-function getProductEditErrorMessage(error: string | undefined) {
+function getProductEditErrorMessage(
+  error: string | undefined,
+  t: (key: import("@/i18n/messages").MessageKey) => string,
+) {
   if (error === "product_conflict") {
-    return "Another product already uses that handle.";
+    return t("products.editErrors.handleConflict");
   }
 
   if (error === "product_not_found") {
-    return "This product is no longer available.";
+    return t("products.editErrors.notFound");
   }
 
   if (error === "commerce_backend_unavailable") {
-    return "The commerce backend is temporarily unavailable.";
+    return t("products.editErrors.backendUnavailable");
   }
 
-  return "Product details could not be saved. Try again.";
+  return t("products.editErrors.saveFailed");
 }
