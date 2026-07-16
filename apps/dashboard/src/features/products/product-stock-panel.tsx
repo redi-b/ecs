@@ -39,7 +39,6 @@ type VariantInventoryRow = {
 };
 
 import {
-  getStockErrorMessage,
   SingleVariantStockPanel,
   VariantStockPanel,
 } from "@/features/products/product-stock-views";
