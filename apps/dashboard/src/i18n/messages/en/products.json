@@ -128,7 +128,12 @@
     "published": "{count} published.",
     "movedToDraft": "{count} moved to draft.",
     "deleted": "Product deleted.",
-    "deleteFailed": "Product could not be deleted."
+    "deleteFailed": "Product could not be deleted.",
+    "toastDeletedOne": "Product deleted.",
+    "toastDeletedMany": "Selected products deleted.",
+    "toastDeleteFailed": "Could not delete product.",
+    "toastDeleteManyFailed": "Could not delete products.",
+    "toastStatusFailed": "Could not update product status."
   },
   "edit": {
     "detailsTitle": "Edit product details",
@@ -152,5 +157,34 @@
     "handleHelp": "Leave empty to generate a handle automatically.",
     "selectStatus": "Select status",
     "formError": "Check the form and try again."
+  },
+  "formReview": {
+    "productType": "Product type",
+    "simpleProduct": "Simple product",
+    "variantProduct": "Variant product",
+    "price": "Price",
+    "initialStock": "Initial stock",
+    "sellableRows": "Sellable rows",
+    "whatWillBeSaved": "What will be saved",
+    "title": "Title",
+    "untitledProduct": "Untitled product",
+    "status": "Status",
+    "published": "Published",
+    "draft": "Draft",
+    "handle": "Handle",
+    "noHandle": "No handle",
+    "skuPrefix": "SKU prefix",
+    "noSkuPrefix": "No SKU prefix",
+    "options": "Options",
+    "noShopperOptions": "No shopper options",
+    "overrides": "Overrides",
+    "rowsCustomized": "{count} rows customized",
+    "rowCustomizedOne": "1 row customized",
+    "notApplicable": "Not applicable",
+    "totalStocked": "Total stocked",
+    "priceRange": "Price range",
+    "defaultVariant": "Default variant",
+    "addAnotherValue": "Add another value",
+    "valuePlaceholder": "Small, Medium, Large"
   }
 }
