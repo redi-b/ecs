@@ -1,7 +1,139 @@
 {
   "title": "አጠቃላይ እይታ",
-  "description": "ሽያጮችን፣ ትዕዛዞችን፣ የመደብር እንቅስቃሴዎችን እና የማዋቀር ሂደትን በአንድ ቦታ ይከታተሉ።",
+  "description": "ሽያጭ፣ ትዕዛዞች፣ የመደብር ጉብኝት እና ማዋቀር በአንድ ቦታ።",
   "error": {
     "loadTitle": "አጠቃላይ እይታን መጫን አልተቻለም"
+  },
+  "aria": {
+    "section": "አጠቃላይ እይታ",
+    "chartMetric": "ምን እንደሚታይ",
+    "mixView": "እንዴት እንደሚከፈል",
+    "closeLaunch": "የጀማሪ ረዳትን ዝጋ"
+  },
+  "metrics": {
+    "revenue": "ገቢ",
+    "orders": "ትዕዛዞች",
+    "products": "ምርቶች",
+    "customers": "ደንበኞች",
+    "storefrontEvents": "የመደብር ጉብኝት",
+    "orderTrend": "የትዕዛዝ ለውጥ",
+    "aov": "አማካይ ዋጋ",
+    "noSalesYet": "ገና ሽያጭ የለም",
+    "catalogCount": "በካታሎግ",
+    "repeatCount": "{count} ተመላሽ",
+    "analyticsUnavailable": "መረጃ አይገኝም",
+    "last30Days": "ባለፉት 30 ቀናት",
+    "metricView": "{label}"
+  },
+  "billing": {
+    "openBilling": "ክፍያ ክፈት",
+    "paymentOverdue": "ክፍያ ጊዜው አልፏል",
+    "paymentOverdueDesc": "የዕቅድ ክፍያ በ{date} መከፈል ነበረበት። ለመጨረስ ክፍያን ይክፈቱ።",
+    "paymentDue": "ክፍያ ያስፈልጋል",
+    "paymentDueDesc": "የዕቅድ ክፍያ በ{date} ይከፈላል። ለመክፈል ክፍያን ይክፈቱ።",
+    "paymentDueNoDate": "ክፍት የዕቅድ ክፍያ አለዎት። ለመክፈል ክፍያን ይክፈቱ።",
+    "paymentPastDue": "የተከፈለ ጊዜ አልቋል",
+    "paymentPastDueDesc": "የሚከፈል ዕቅድ ጊዜዎ አልቋል። ለመቀጠል ክፍያን ይክፈቱ።",
+    "subscriptionCancelled": "ምዝገባ ተሰርዟል",
+    "subscriptionCancelledDesc": "ይህ ሱቅ በሚከፈል ዕቅድ ላይ አይደለም። ዕቅድ ለመምረጥ ክፍያን ይክፈቱ።",
+    "periodEnding": "የዕቅድ ጊዜ በቅርብ ያበቃል",
+    "periodEndingDesc": "የተከፈለ ጊዜዎ በ{date} ያበቃል። ለማደስ ክፍያን ይክፈቱ።"
+  },
+  "attention": {
+    "title": "ያልተጠናቀቁ",
+    "description": "እርስዎ ማድረግ ያለብዎት።",
+    "unfulfilledOrders": "ያልተላኩ ትዕዛዞች",
+    "unfulfilledHint": "ማሸግ ወይም ማስረከብ",
+    "awaitingPayment": "ክፍያ ያልተጠናቀቀ",
+    "awaitingPaymentHint": "ገና አልተከፈለም",
+    "draftProducts": "በዝግጅት ላይ ያሉ ምርቶች",
+    "draftProductsHint": "በሱቅ አይታዩም",
+    "waitingOnYou": "እርስዎን እየጠበቁ",
+    "allOrders": "ሁሉም ትዕዛዞች",
+    "unpaid": "Unpaid",
+    "unfulfilled": "ያልተላኩ"
+  },
+  "trading": {
+    "title": "ሽያጭ እንዴት እያደገ ነው",
+    "description": "ገቢ፣ ትዕዛዞች እና ደንበኞች በጊዜ።",
+    "empty": "ትዕዛዝ ሲጀመር እዚህ ይታያል።"
+  },
+  "basket": {
+    "title": "አማካይ የትዕዛዝ ዋጋ",
+    "description": "በአንድ ትዕዛዝ ምን ያህል እንደሚሸጥ፣ ከቀን ብዛት ጋር።",
+    "empty": "እስካሁን መረጃ የለም።"
+  },
+  "demand": {
+    "title": "የትኛው ቀን ይበዛል",
+    "description": "ትዕዛዞች በሳምንቱ ቀናት እንዴት እንደሚከፈሉ።",
+    "empty": "እስካሁን መረጃ የለም።"
+  },
+  "mix": {
+    "title": "ትዕዛዞች በሁኔታ",
+    "payment": "ክፍያ",
+    "paymentDesc": "ክፍያ እንዴት እንደተከፈለ።",
+    "paymentsTitle": "ክፍያ",
+    "fulfillment": "ማስረከብ",
+    "fulfillmentDesc": "ትዕዛዞች እስከ መድረስ የት እንዳሉ።",
+    "lifecycle": "ሂደት",
+    "lifecycleDesc": "ትዕዛዞች በምን ሁኔታ ላይ ናቸው።",
+    "customers": "ደንበኞች",
+    "customersDesc": "አዲስ እና ተመላሽ ደንበኞች።",
+    "newCustomers": "አዲስ",
+    "repeatCustomers": "ተመላሽ"
+  },
+  "recent": {
+    "title": "የቅርብ ጊዜ ትዕዛዞች",
+    "description": "ለዚህ ሱቅ የቅርብ ጊዜ ትዕዛዞች።",
+    "empty": "እስካሁን ትዕዛዝ የለም።",
+    "viewAll": "ሁሉንም ይመልከቱ",
+    "noEmail": "ኢሜይል የለም"
+  },
+  "paymentStatus": {
+    "paid": "Paid",
+    "failed": "አልተሳካም",
+    "unpaid": "Unpaid"
+  },
+  "readiness": {
+    "salesSetup": "የሽያጭ ማዋቀር",
+    "salesChannel": "የሽያጭ መንገድ",
+    "publishedStorefront": "ለደንበኞች የሚታይ መደብር",
+    "ready": "ዝግጁ",
+    "missing": "ጎድሏል"
+  },
+  "donut": {
+    "empty": "ትዕዛዝ መረጃ የለም።"
+  },
+  "helpers": {
+    "unavailable": "—",
+    "noSalesYet": "ገና ሽያጭ የለም",
+    "recordsReviewed": "{count} ትዕዛዞች"
+  },
+  "launch": {
+    "title": "የጀማሪ ረዳት",
+    "progress": "ከ{total} ውስጥ {done} ተጠናቅቀዋል",
+    "launchButton": "ጀምር {done}/{total}",
+    "storefrontSettings": "የመደብር ገጽ ማስተካከያ",
+    "doNotShow": "እንደገና አታሳይ",
+    "hiddenToast": "የጀማሪ ረዳት ተደብቋል",
+    "hiddenDesc": "ከማስተካከያዎች → ምርጫዎች እንደገና ማብራት ይችላሉ።",
+    "done": "ተጠናቅቋል",
+    "next": "ቀጣይ",
+    "open": "ክፈት",
+    "shopProfile": "የሱቅ መገለጫ",
+    "shopProfileMissing": "የሱቅ ስም እና አድራሻ ያክሉ",
+    "salesSetup": "የሽያጭ ማዋቀር",
+    "salesSetupDesc": "ሱቅ እና መንገድ",
+    "catalog": "ካታሎግ",
+    "catalogDesc": "{count} ምርቶች",
+    "storefrontDesign": "የመደብር ንድፍ",
+    "storefrontSelected": "መደብር ተመርጧል",
+    "chooseStorefront": "መደብር ይምረጡ",
+    "publishStorefront": "መደብር ለደንበኞች ክፈት",
+    "customersCanAccess": "ደንበኞች ሱቁን ማየት ይችላሉ",
+    "reviewAndPublish": "ይገምግሙና ይክፈቱ",
+    "payments": "ክፍያዎች",
+    "billingConnected": "ክፍያ ተገናኝቷል",
+    "paymentPending": "ክፍያ ገና አልተዘጋጀም"
   }
 }

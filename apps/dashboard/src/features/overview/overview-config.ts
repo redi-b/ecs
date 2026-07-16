@@ -9,51 +9,15 @@ export type MerchantOverviewProps = {
 
 export type ChartMetric = "revenue" | "orders" | "customers";
 
-export const chartConfig = {
-  revenue: {
-    label: "Revenue",
-    color: "var(--chart-1)",
-  },
-  orders: {
-    label: "Orders",
-    color: "var(--chart-2)",
-  },
-  customers: {
-    label: "Customers",
-    color: "var(--chart-3)",
-  },
-} satisfies ChartConfig;
-
-export const tradingChartConfig = {
-  revenue: chartConfig.revenue,
-  orderBars: {
-    label: "Orders",
-    color: "var(--chart-2)",
-  },
-  orderTrend: {
-    label: "Order trend",
-    color: "var(--chart-5)",
-  },
-  customers: chartConfig.customers,
-} satisfies ChartConfig;
-
-export const averageOrderConfig = {
-  averageOrderValue: {
-    label: "AOV",
-    color: "var(--chart-1)",
-  },
-  orders: {
-    label: "Orders",
-    color: "var(--chart-2)",
-  },
-} satisfies ChartConfig;
-
-export const demandRhythmConfig = {
-  orders: {
-    label: "Orders",
-    color: "var(--chart-5)",
-  },
-} satisfies ChartConfig;
+/** Colors only — labels are localized at render time. */
+export const chartColorConfig = {
+  revenue: { color: "var(--chart-1)" },
+  orders: { color: "var(--chart-2)" },
+  customers: { color: "var(--chart-3)" },
+  orderBars: { color: "var(--chart-2)" },
+  orderTrend: { color: "var(--chart-5)" },
+  averageOrderValue: { color: "var(--chart-1)" },
+} as const;
 
 export const statusRingColors = [
   "var(--primary)",
@@ -63,7 +27,4 @@ export const statusRingColors = [
   "oklch(0.73 0.16 145)",
 ] as const;
 
-export const commerceItems = [
-  { key: "hasStore", label: "Sales setup" },
-  { key: "hasSalesChannel", label: "Sales channel" },
-] as const;
+export const commerceItemKeys = ["hasStore", "hasSalesChannel"] as const;
