@@ -18,11 +18,18 @@ export function AppHeader() {
       <div className="min-w-0 flex-1 overflow-hidden">
         <AppBreadcrumbs />
       </div>
-      <div className="flex shrink-0 items-center gap-0.5 sm:gap-1">
+      {/* Primary: search. Secondary: utility icons. Right-end is standard for these actions. */}
+      <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
         <CommandCenter />
-        <NotificationCenter />
-        <LanguageSwitcher />
-        <ThemeToggle />
+        <div
+          aria-hidden="true"
+          className="hidden h-5 w-px shrink-0 bg-border/80 sm:block"
+        />
+        <div className="flex items-center gap-0.5">
+          <NotificationCenter />
+          <LanguageSwitcher />
+          <ThemeToggle />
+        </div>
       </div>
     </header>
   );

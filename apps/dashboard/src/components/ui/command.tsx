@@ -63,37 +63,62 @@ function CommandInput({
 }: React.ComponentProps<typeof CommandPrimitive.Input>) {
   const stringValue = typeof value === "string" ? value : "";
   const inputClassName = cn(
-    "w-full text-sm outline-hidden disabled:cursor-not-allowed disabled:opacity-50",
+    // Crisp type + caret: avoid frosted translucent text paints that look soft.
+    "min-w-0 flex-1 w-full text-[15px] leading-snug font-medium tracking-[-0.01em] text-foreground",
+    "caret-foreground outline-hidden antialiased",
+    "placeholder:font-normal placeholder:tracking-normal placeholder:text-muted-foreground/65",
+    "disabled:cursor-not-allowed disabled:opacity-50",
     className,
   );
 
   return (
     <div data-slot="command-input-wrapper" className="p-1 pb-0">
-      <InputGroup className="h-8! rounded-lg! border-input/30 bg-input/30 shadow-none! *:data-[slot=input-group-addon]:pl-2!">
+      <InputGroup
+        className={cn(
+          "h-10! rounded-xl! border-border/70 bg-background shadow-none!",
+          "dark:bg-background",
+          "*:data-[slot=input-group-addon]:pl-2.5!",
+          "has-[[data-slot=input-group-control]:focus-visible]:border-ring/60",
+          "has-[[data-slot=input-group-control]:focus-visible]:ring-2",
+          "has-[[data-slot=input-group-control]:focus-visible]:ring-ring/30",
+        )}
+      >
+        <InputGroupAddon align="inline-start" className="gap-1 pl-2.5!">
+          <SearchIcon className="size-4 shrink-0 text-muted-foreground" />
+        </InputGroupAddon>
         {typeof value === "string" && onValueChange ? (
           <CommandPrimitive.Input
             data-slot="command-input"
             className={inputClassName}
             onValueChange={onValueChange}
+            spellCheck={false}
+            autoCorrect="off"
+            autoCapitalize="off"
             value={value}
             {...props}
           />
         ) : (
-          <CommandPrimitive.Input data-slot="command-input" className={inputClassName} {...props} />
+          <CommandPrimitive.Input
+            data-slot="command-input"
+            className={inputClassName}
+            spellCheck={false}
+            autoCorrect="off"
+            autoCapitalize="off"
+            {...props}
+          />
         )}
-        <InputGroupAddon className="gap-1">
-          {stringValue ? (
+        {stringValue && onValueChange ? (
+          <InputGroupAddon align="inline-end" className="gap-1 pr-1.5!">
             <button
               aria-label="Clear search"
-              className="grid size-5 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-              onClick={() => onValueChange?.("")}
+              className="grid size-7 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              onClick={() => onValueChange("")}
               type="button"
             >
               <XIcon className="size-3.5" />
             </button>
-          ) : null}
-          <SearchIcon className="size-4 shrink-0 opacity-50" />
-        </InputGroupAddon>
+          </InputGroupAddon>
+        ) : null}
       </InputGroup>
     </div>
   );

@@ -56,17 +56,21 @@
   "trading": {
     "title": "Trading activity",
     "description": "Revenue, orders, and customers from available commerce records.",
-    "empty": "Commerce activity will appear here after orders are available for this shop."
+    "empty": "Commerce activity will appear here after orders are available for this shop.",
+    "emptyTitle": "No sales activity yet",
+    "emptyCta": "Create an order"
   },
   "basket": {
     "title": "Basket quality",
     "description": "Average order value against daily order volume.",
-    "empty": "No basket data is available."
+    "empty": "No basket data is available.",
+    "emptyTitle": "No basket trend yet"
   },
   "demand": {
     "title": "Demand rhythm",
     "description": "Which weekdays carry the most order activity.",
-    "empty": "No weekday demand data is available."
+    "empty": "No weekday demand data is available.",
+    "emptyTitle": "No demand pattern yet"
   },
   "mix": {
     "title": "Order mix",
@@ -102,7 +106,8 @@
     "missing": "Missing"
   },
   "donut": {
-    "empty": "No order data is available."
+    "empty": "No order data is available.",
+    "emptyTitle": "Nothing to break down yet"
   },
   "helpers": {
     "unavailable": "Unavailable",
