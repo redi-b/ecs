@@ -26,7 +26,38 @@ type InboxItem = {
   createdAt: string;
 };
 
+type InboxDetail = {
+  label: string;
+  value: string;
+};
+
 const POLL_MS = 45_000;
+
+/** Labels we suppress in the compact popover (noise / footer prose). */
+const SKIP_BODY_PREFIXES = [
+  "open the order",
+  "you can",
+  "no further action",
+  "check the order",
+  "this was a test",
+  "settings >",
+  "open settings",
+];
+
+/** Prefer these labels first when many detail rows exist. */
+const DETAIL_PRIORITY = [
+  "order",
+  "amount",
+  "total",
+  "customer",
+  "items",
+  "status",
+  "payment",
+  "fulfillment",
+  "phone",
+  "shop",
+  "sent to",
+];
 
 function formatRelativeTime(iso: string, locale: string) {
   const date = new Date(iso);
@@ -48,31 +79,121 @@ function badgeLabel(count: number) {
 }
 
 /**
- * Compact secondary line for the popover: prefer labeled detail rows
- * (Order:, Total:, Customer:) and drop headline/footer prose.
+ * Normalize money strings stored in older notification bodies
+ * (e.g. "10880.000000000000" → "ETB 10,880").
  */
-function secondaryBody(item: InboxItem) {
+export function formatInboxMoney(raw: string, locale = "en"): string {
+  const trimmed = raw.trim();
+  if (!trimmed) return trimmed;
+
+  // Already labeled (ETB 1,200) or non-numeric prose.
+  if (/[a-zA-Z]/.test(trimmed) && !/^\d+(\.\d+)?$/.test(trimmed)) {
+    return trimmed;
+  }
+
+  const numeric = Number(trimmed.replace(/,/g, ""));
+  if (!Number.isFinite(numeric)) return trimmed;
+
+  const amount = new Intl.NumberFormat(locale, {
+    maximumFractionDigits: 2,
+    minimumFractionDigits: 0,
+  }).format(numeric);
+
+  // Bare numbers from order totals are ETB in this product.
+  if (/^\d+(\.\d+)?$/.test(trimmed.replace(/,/g, ""))) {
+    return `ETB ${amount}`;
+  }
+  return amount;
+}
+
+function formatDetailValue(label: string, value: string, locale: string): string {
+  const key = label.trim().toLowerCase();
+  if (key === "amount" || key === "total") {
+    return formatInboxMoney(value, locale);
+  }
+  return value.trim();
+}
+
+/**
+ * Parse multi-line notification bodies into labeled detail rows for the panel.
+ * Tolerates both new (Label: value) and older free-form bodies.
+ */
+export function parseInboxDetails(item: InboxItem, locale = "en"): InboxDetail[] {
   const body = item.body?.trim() ?? "";
-  if (!body) return null;
+  if (!body) return [];
+
   const lines = body
     .split("\n")
     .map((line) => line.trim())
     .filter(Boolean);
   const title = item.title.trim().toLowerCase();
+  const details: InboxDetail[] = [];
 
-  const details = lines.filter((line) => {
+  for (const line of lines) {
     const lower = line.toLowerCase();
-    if (lower === title) return false;
-    if (lower.startsWith("open the order") || lower.startsWith("you can")) return false;
-    if (lower.startsWith("no further action") || lower.startsWith("check the order")) return false;
-    if (lower.startsWith("this was a test")) return false;
-    // Prefer "Label: value" rows from the rich renderer.
-    return line.includes(":");
-  });
+    if (lower === title) continue;
+    if (SKIP_BODY_PREFIXES.some((prefix) => lower.startsWith(prefix))) continue;
 
-  const pick = (details.length > 0 ? details : lines.slice(1)).slice(0, 4);
-  if (pick.length === 0) return null;
-  return pick.join(" · ");
+    const colon = line.indexOf(":");
+    if (colon > 0 && colon < 28) {
+      const label = line.slice(0, colon).trim();
+      const value = line.slice(colon + 1).trim();
+      if (!label || !value) continue;
+      // Skip redundant order ref already in the title.
+      if (
+        label.toLowerCase() === "order" &&
+        title.includes(value.toLowerCase().replace(/^#/, ""))
+      ) {
+        continue;
+      }
+      details.push({
+        label,
+        value: formatDetailValue(label, value, locale),
+      });
+      continue;
+    }
+  }
+
+  if (details.length > 0) {
+    return sortDetails(details).slice(0, 3);
+  }
+
+  // Fallback: non-labeled body — show a short prose snippet (not the title line).
+  const prose = lines.find((line) => line.toLowerCase() !== title);
+  if (!prose) return [];
+  return [{ label: "", value: prose.length > 96 ? `${prose.slice(0, 93)}…` : prose }];
+}
+
+function sortDetails(details: InboxDetail[]): InboxDetail[] {
+  return [...details].sort((a, b) => {
+    const ai = DETAIL_PRIORITY.indexOf(a.label.toLowerCase());
+    const bi = DETAIL_PRIORITY.indexOf(b.label.toLowerCase());
+    return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
+  });
+}
+
+function eventIcon(eventType: string) {
+  const type = eventType.toLowerCase();
+  if (type.includes("payment") || type.includes("paid")) return AppIcons.billing;
+  if (type.includes("cancel")) return AppIcons.close;
+  if (type.includes("order") || type.includes("cod")) return AppIcons.orders;
+  if (type.includes("test") || type.includes("telegram")) return AppIcons.notifications;
+  return AppIcons.notifications;
+}
+
+function eventAccent(eventType: string, unread: boolean) {
+  if (!unread) return "bg-muted text-muted-foreground";
+  const type = eventType.toLowerCase();
+  if (type.includes("payment") || type.includes("paid")) {
+    return "bg-emerald-500/12 text-emerald-700 dark:text-emerald-400";
+  }
+  if (type.includes("cancel")) {
+    return "bg-destructive/10 text-destructive";
+  }
+  if (type.includes("order") || type.includes("cod")) {
+    return "bg-primary/10 text-primary";
+  }
+  return "bg-primary/10 text-primary";
 }
 
 export function NotificationCenter() {
@@ -84,8 +205,21 @@ export function NotificationCenter() {
   const [loadingList, setLoadingList] = useState(false);
   const [listError, setListError] = useState(false);
   const [busy, setBusy] = useState(false);
+  /** Shift panel toward the viewport edge on small screens (lang + theme sit after the bell). */
+  const [alignOffset, setAlignOffset] = useState(0);
   const openRef = useRef(open);
   openRef.current = open;
+
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 639px)");
+    const update = () => {
+      // ~ language + theme icon buttons + gaps to the right of the bell.
+      setAlignOffset(mq.matches ? -72 : 0);
+    };
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
 
   const refreshCount = useCallback(async () => {
     try {
@@ -243,7 +377,11 @@ export function NotificationCenter() {
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
-          aria-label={count > 0 ? t("common.inbox.unreadAria", { count }) : t("common.inbox.unreadNoneAria")}
+          aria-label={
+            count > 0
+              ? t("common.inbox.unreadAria", { count })
+              : t("common.inbox.unreadNoneAria")
+          }
           className="relative size-9"
           size="icon"
           type="button"
@@ -269,7 +407,16 @@ export function NotificationCenter() {
       </PopoverTrigger>
       <PopoverContent
         align="end"
-        className="w-[min(100vw-1.5rem,24rem)] gap-0 overflow-hidden rounded-xl p-0 shadow-lg"
+        alignOffset={alignOffset}
+        // Near the header edge on phones: stay in viewport and hug the actions cluster.
+        avoidCollisions
+        collisionPadding={8}
+        className={cn(
+          "gap-0 overflow-hidden rounded-xl p-0 shadow-lg",
+          // Mobile: nearly full-bleed under the header; desktop: fixed card width.
+          "w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] sm:w-[24rem] sm:max-w-[24rem]",
+        )}
+        side="bottom"
         sideOffset={8}
       >
         <PopoverHeader className="flex flex-row items-center justify-between gap-2 border-b bg-muted/20 px-3.5 py-3">
@@ -295,18 +442,23 @@ export function NotificationCenter() {
           </Button>
         </PopoverHeader>
 
-        <div className="max-h-[min(24rem,62vh)] overflow-y-auto">
+        <div className="max-h-[min(26rem,min(64vh,calc(100dvh-5.5rem)))] overflow-y-auto overscroll-contain">
           {loadingList && items.length === 0 ? (
-            <div className="flex flex-col gap-0 px-1 py-1" aria-busy aria-label={t("common.loading")}>
+            <div
+              className="flex flex-col gap-0 px-1 py-1"
+              aria-busy
+              aria-label={t("common.loading")}
+            >
               {[0, 1, 2, 3].map((key) => (
-                <div key={key} className="flex gap-2.5 px-3 py-3">
-                  <div className="mt-1.5 size-1.5 shrink-0 animate-pulse rounded-full bg-muted" />
+                <div key={key} className="flex gap-3 px-3.5 py-3">
+                  <div className="mt-0.5 size-8 shrink-0 animate-pulse rounded-full bg-muted" />
                   <div className="min-w-0 flex-1 space-y-2">
                     <div className="flex justify-between gap-3">
                       <div className="h-3.5 w-[55%] animate-pulse rounded bg-muted" />
-                      <div className="h-3 w-10 animate-pulse rounded bg-muted/70" />
+                      <div className="h-3 w-14 animate-pulse rounded bg-muted/70" />
                     </div>
-                    <div className="h-3 w-[80%] animate-pulse rounded bg-muted/70" />
+                    <div className="h-3 w-[70%] animate-pulse rounded bg-muted/70" />
+                    <div className="h-3 w-[42%] animate-pulse rounded bg-muted/60" />
                   </div>
                 </div>
               ))}
@@ -316,7 +468,9 @@ export function NotificationCenter() {
           {listError && items.length === 0 ? (
             <div className="px-3 py-8 text-center">
               <p className="text-sm font-medium">{t("common.inbox.loadErrorTitle")}</p>
-              <p className="mt-1 text-xs text-muted-foreground">{t("common.inbox.loadErrorDesc")}</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {t("common.inbox.loadErrorDesc")}
+              </p>
               <Button
                 className="mt-3 rounded-full"
                 size="sm"
@@ -345,19 +499,21 @@ export function NotificationCenter() {
             <ul className="flex flex-col divide-y divide-border/60">
               {items.map((item) => {
                 const unread = !item.readAt;
-                const detail = secondaryBody(item);
+                const details = parseInboxDetails(item, locale);
+                const Icon = eventIcon(item.eventType);
                 return (
                   <li
                     key={item.id}
                     className={cn(
-                      "group/item flex items-stretch",
-                      unread && "bg-primary/[0.045]",
+                      "group/item relative",
+                      unread && "bg-primary/[0.04]",
                     )}
                   >
+                    {/* Open row — simple flex, no reserved action column. */}
                     <button
                       className={cn(
-                        "flex min-w-0 flex-1 gap-2.5 px-3.5 py-3 text-left transition-colors",
-                        "hover:bg-muted/60 focus-visible:bg-muted/60 focus-visible:outline-none",
+                        "flex w-full gap-3 px-3.5 py-3 text-left transition-colors",
+                        "hover:bg-muted/55 focus-visible:bg-muted/55 focus-visible:outline-none",
                       )}
                       type="button"
                       onClick={() => void openItem(item)}
@@ -365,15 +521,19 @@ export function NotificationCenter() {
                       <span
                         aria-hidden
                         className={cn(
-                          "mt-1.5 size-2 shrink-0 rounded-full",
-                          unread ? "bg-primary shadow-[0_0_0_3px] shadow-primary/15" : "bg-transparent",
+                          // Align with the title line (first line of content).
+                          "mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full",
+                          eventAccent(item.eventType, unread),
                         )}
-                      />
+                      >
+                        <Icon className="size-3.5" />
+                      </span>
+
                       <span className="min-w-0 flex-1">
-                        <span className="flex items-start justify-between gap-2">
+                        <span className="flex items-baseline justify-between gap-3">
                           <span
                             className={cn(
-                              "text-sm leading-snug",
+                              "min-w-0 text-sm leading-snug",
                               unread
                                 ? "font-semibold text-foreground"
                                 : "font-medium text-foreground/90",
@@ -381,24 +541,64 @@ export function NotificationCenter() {
                           >
                             {item.title}
                           </span>
-                          <span className="shrink-0 pt-0.5 text-[11px] tabular-nums text-muted-foreground">
+                          <span
+                            className={cn(
+                              "shrink-0 text-[11px] tabular-nums whitespace-nowrap text-muted-foreground transition-opacity",
+                              // Room for absolute check on touch; swap with check on desktop hover.
+                              unread &&
+                                "pr-8 sm:pr-0 sm:group-hover/item:opacity-0 sm:group-focus-within/item:opacity-0",
+                            )}
+                          >
                             {formatRelativeTime(item.createdAt, locale)}
                           </span>
                         </span>
-                        {detail ? (
-                          <span className="mt-1 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
-                            {detail}
+
+                        {details.length > 0 ? (
+                          <span className="mt-1 flex flex-col gap-0.5">
+                            {details.map((detail) =>
+                              detail.label ? (
+                                <span
+                                  className="flex min-w-0 items-baseline gap-1.5 text-xs leading-snug"
+                                  key={`${detail.label}:${detail.value}`}
+                                >
+                                  <span className="shrink-0 text-muted-foreground">
+                                    {detail.label}
+                                  </span>
+                                  <span className="min-w-0 truncate font-medium text-foreground/80">
+                                    {detail.value}
+                                  </span>
+                                </span>
+                              ) : (
+                                <span
+                                  className="line-clamp-2 text-xs leading-relaxed text-muted-foreground"
+                                  key={detail.value}
+                                >
+                                  {detail.value}
+                                </span>
+                              ),
+                            )}
                           </span>
                         ) : null}
                       </span>
                     </button>
+
+                    {/* Absolute mark-read — never takes layout space. */}
                     {unread ? (
-                      <div className="flex shrink-0 items-start pr-2 pt-2 opacity-100 sm:opacity-0 sm:transition-opacity sm:group-hover/item:opacity-100 sm:group-focus-within/item:opacity-100">
+                      <div
+                        className={cn(
+                          "absolute top-2.5 right-2.5 z-10 transition-opacity",
+                          // Desktop: only on hover/focus. Mobile: always (no hover).
+                          "opacity-100 sm:opacity-0",
+                          "sm:group-hover/item:opacity-100 sm:group-focus-within/item:opacity-100",
+                        )}
+                      >
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <Button
-                              aria-label={t("common.inbox.markItemReadAria", { title: item.title })}
-                              className="size-7 rounded-lg text-muted-foreground hover:text-foreground"
+                              aria-label={t("common.inbox.markItemReadAria", {
+                                title: item.title,
+                              })}
+                              className="size-7 rounded-lg bg-popover/95 text-muted-foreground shadow-sm ring-1 ring-border/60 hover:bg-background hover:text-foreground"
                               disabled={busy}
                               size="icon-sm"
                               type="button"
@@ -412,7 +612,9 @@ export function NotificationCenter() {
                               <AppIcons.check className="size-3.5" />
                             </Button>
                           </TooltipTrigger>
-                          <TooltipContent side="left">{t("common.inbox.markAsRead")}</TooltipContent>
+                          <TooltipContent side="left">
+                            {t("common.inbox.markAsRead")}
+                          </TooltipContent>
                         </Tooltip>
                       </div>
                     ) : null}

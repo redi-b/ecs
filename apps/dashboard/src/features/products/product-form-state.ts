@@ -49,6 +49,11 @@ export function getProductPayload(
   options: { includeOptions: boolean },
   t: Translate,
 ) {
+  const priceError = validatePriceAmount(values.priceAmount, t);
+  if (priceError) {
+    throw new Error(priceError);
+  }
+
   const parsed = createProductPayloadSchema(t).safeParse({
     title: values.title,
     description: getNullableString(values.description),
@@ -59,9 +64,7 @@ export function getProductPayload(
       .map((row) => row.trim())
       .filter(Boolean),
     status: values.status,
-    priceAmount: /^\d+$/.test(values.priceAmount.trim())
-      ? Number.parseInt(values.priceAmount.trim(), 10)
-      : undefined,
+    priceAmount: Number.parseInt(values.priceAmount.trim(), 10),
     currencyCode: values.currencyCode,
     options: options.includeOptions ? getProductOptionsPayload(values) : undefined,
     variants: options.includeOptions ? getProductVariantsPayload(values) : undefined,
@@ -74,7 +77,7 @@ export function getProductPayload(
 
   if (!parsed.success) {
     throw new Error(
-      parsed.error.issues[0]?.message ?? t("products.validation.reviewFields"),
+      humanizeZodIssue(parsed.error.issues[0], t) ?? t("products.validation.reviewFields"),
     );
   }
 
@@ -286,6 +289,36 @@ export function getProductMutationError(
 
 export function getErrorMessage(error: unknown, t: Translate) {
   return error instanceof Error ? error.message : t("products.validation.saveFailed");
+}
+
+/** Map raw Zod type errors to product form copy when schema messages are missing. */
+function humanizeZodIssue(
+  issue: { message?: string; path?: PropertyKey[]; code?: string } | undefined,
+  t: Translate,
+) {
+  if (!issue) return undefined;
+
+  const path = issue.path?.map(String).join(".") ?? "";
+  if (path === "priceAmount" || path.endsWith(".priceAmount")) {
+    return t("products.validation.priceRequired");
+  }
+  if (path === "stockedQuantity" || path.endsWith(".stockedQuantity")) {
+    return t("products.validation.stockRequired");
+  }
+  if (path === "title") {
+    return t("products.validation.titleRequired");
+  }
+
+  // Drop unhelpful Zod default type messages in the composer footer.
+  if (
+    issue.message?.startsWith("Invalid input:") ||
+    issue.message?.includes("expected number") ||
+    issue.message?.includes("expected string")
+  ) {
+    return t("products.validation.reviewFields");
+  }
+
+  return issue.message;
 }
 
 export function validateImageUrls(value: string, t: Translate) {

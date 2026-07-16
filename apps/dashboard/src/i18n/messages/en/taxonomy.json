@@ -153,6 +153,7 @@
     "productsHelp": "Search and multi-select products to add. Membership saves immediately.",
     "loadingMembers": "Loading members…",
     "noProductsYet": "No products in this collection yet.",
+    "createProduct": "Create product",
     "untitledProduct": "Untitled product",
     "removeProductAria": "Remove {name}",
     "productFallback": "product",
