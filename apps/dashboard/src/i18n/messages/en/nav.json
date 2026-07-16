@@ -16,5 +16,13 @@
     "commerce": "Commerce",
     "storefront": "Storefront",
     "insights": "Insights"
+  },
+  "dashboard": "Dashboard",
+  "breadcrumbs": {
+    "newCategory": "New category",
+    "newCollection": "New collection",
+    "productDetails": "Product details",
+    "editProduct": "Edit product",
+    "orderDetails": "Order details"
   }
 }

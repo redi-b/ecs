@@ -11,6 +11,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 
 type HelpTipProps = {
@@ -31,9 +32,11 @@ export function HelpTip({
   summary,
   children,
   className,
-  label = "More info",
+  label,
   title,
 }: HelpTipProps) {
+  const { t } = useI18n();
+  const resolvedLabel = label ?? t("common.moreInfo");
   const Icon = AppIcons.question;
 
   return (
@@ -43,7 +46,7 @@ export function HelpTip({
           <TooltipTrigger asChild>
             <PopoverTrigger asChild>
               <Button
-                aria-label={label}
+                aria-label={resolvedLabel}
                 className={cn(
                   "size-5 shrink-0 rounded-full p-0 text-muted-foreground hover:text-foreground",
                   className,

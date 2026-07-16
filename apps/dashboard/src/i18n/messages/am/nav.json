@@ -16,5 +16,13 @@
     "commerce": "ንግድ",
     "storefront": "የመደብር ገጽ",
     "insights": "ሪፖርቶች"
+  },
+  "dashboard": "አጠቃላይ እይታ",
+  "breadcrumbs": {
+    "newCategory": "አዲስ ምድብ",
+    "newCollection": "አዲስ ስብስብ",
+    "productDetails": "የምርት ዝርዝር",
+    "editProduct": "ምርት አስተካክል",
+    "orderDetails": "የትዕዛዝ ዝርዝር"
   }
 }

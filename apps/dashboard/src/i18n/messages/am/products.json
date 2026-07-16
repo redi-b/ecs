@@ -128,7 +128,12 @@
     "published": "{count} በመደብር ላይ ይታያሉ።",
     "movedToDraft": "{count} ከመደብር ወጥተዋል።",
     "deleted": "ምርት ጠፍቷል።",
-    "deleteFailed": "ምርት ማጥፋት አልተቻለም።"
+    "deleteFailed": "ምርት ማጥፋት አልተቻለም።",
+    "toastDeletedOne": "ምርቱ ተሰርዟል።",
+    "toastDeletedMany": "የተመረጡት ምርቶች ተሰርዘዋል።",
+    "toastDeleteFailed": "ምርቱን ማጥፋት አልተቻለም።",
+    "toastDeleteManyFailed": "ምርቶቹን ማጥፋት አልተቻለም።",
+    "toastStatusFailed": "የምርት ሁኔታን መቀየር አልተቻለም።"
   },
   "edit": {
     "detailsTitle": "የምርት ዝርዝሮችን አስተካክል",
@@ -152,5 +157,34 @@
     "handleHelp": "በራሱ እንዲፈጠር ባዶ ይተዉት።",
     "selectStatus": "ሁኔታ ይምረጡ",
     "formError": "ቅጹን ይመልከቱና እንደገና ይሞክሩ።"
+  },
+  "formReview": {
+    "productType": "የምርት አይነት",
+    "simpleProduct": "ቀላል ምርት",
+    "variantProduct": "አማራጭ ያለው ምርት",
+    "price": "ዋጋ",
+    "initialStock": "መጀመሪያ ክምችት",
+    "sellableRows": "የሚሸጡ መስመሮች",
+    "whatWillBeSaved": "የሚቀመጡት",
+    "title": "ርዕስ",
+    "untitledProduct": "ርዕስ የሌለው ምርት",
+    "status": "ሁኔታ",
+    "published": "በመደብር ይታያል",
+    "draft": "በዝግጅት ላይ",
+    "handle": "መለያ",
+    "noHandle": "መለያ የለም",
+    "skuPrefix": "SKU ቅድመ ቅጥያ",
+    "noSkuPrefix": "SKU ቅድመ ቅጥያ የለም",
+    "options": "አማራጮች",
+    "noShopperOptions": "ለደንበኛ አማራጭ የለም",
+    "overrides": "ልዩ ቅንብሮች",
+    "rowsCustomized": "{count} መስመሮች ተስተካክለዋል",
+    "rowCustomizedOne": "1 መስመር ተስተካክሏል",
+    "notApplicable": "አይተገበርም",
+    "totalStocked": "ጠቅላላ ክምችት",
+    "priceRange": "የዋጋ ክልል",
+    "defaultVariant": "መደበኛ አማራጭ",
+    "addAnotherValue": "ሌላ እሴት ጨምር",
+    "valuePlaceholder": "ትንሽ፣ መካከለኛ፣ ትልቅ"
   }
 }

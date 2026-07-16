@@ -67,5 +67,15 @@
     "loadErrorDesc": "ግንኙነትዎን ይመልከቱና እንደገና ይሞክሩ።",
     "emptyTitle": "ሁሉም ተነብቧል",
     "emptyDesc": "የትዕዛዝ እና የክፍያ ዜናዎች ለዚህ ሱቅ እዚህ ይታያሉ።"
+  },
+  "moreInfo": "ተጨማሪ መረጃ",
+  "access": {
+    "loadFailedTitle": "ዳሽቦርዱን መጫን አልተቻለም",
+    "loadFailedDesc": "የመለያ ሥራ ቦታዎን መጫን አልተቻለም። ትንሽ ቆይተው እንደገና ይሞክሩ።",
+    "deniedTitle": "ወደ ዳሽቦርድ መግባት አልተፈቀደም",
+    "deniedDesc": "ይህ መለያ ወደዚህ ሱቅ መድረስ አይችልም።",
+    "useAnotherAccount": "ሌላ መለያ ተጠቀም",
+    "unavailableTitle": "ዳሽቦርዱ ለጊዜው አይገኝም",
+    "unavailableDesc": "ይህን ዳሽቦርድ መጫን አልተቻለም። ትንሽ ቆይተው እንደገና ይሞክሩ።"
   }
 }

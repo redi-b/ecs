@@ -129,18 +129,18 @@ export function ProductsTable({
       const res = await fetch(url, { method: "POST" });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || "Failed to delete product.");
+        throw new Error(err.error || t("products.table.toastDeleteFailed"));
       }
       return productId;
     },
     onSuccess: () => {
-      toast.success("Product deleted successfully.");
+      toast.success(t("products.table.toastDeletedOne"));
       queryClient.invalidateQueries({ queryKey: ["products"] });
       setDeleteProductId(null);
       router.refresh();
     },
     onError: (error) => {
-      toast.error(getDeletionErrorMessage(error, "Product"));
+      toast.error(getDeletionErrorMessage(error, t("nav.products")));
     },
   });
 
@@ -154,19 +154,19 @@ export function ProductsTable({
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || "Failed to delete products.");
+        throw new Error(err.error || t("products.table.toastDeleteManyFailed"));
       }
       return productIds;
     },
     onSuccess: () => {
-      toast.success("Selected products deleted successfully.");
+      toast.success(t("products.table.toastDeletedMany"));
       queryClient.invalidateQueries({ queryKey: ["products"] });
       setSelectedProductIdsForDelete([]);
       setShowBatchDeleteDialog(false);
       router.refresh();
     },
     onError: (error) => {
-      toast.error(getDeletionErrorMessage(error, "Products"));
+      toast.error(getDeletionErrorMessage(error, t("nav.products")));
     },
   });
 
@@ -192,7 +192,7 @@ export function ProductsTable({
 
           if (!res.ok) {
             const err = await res.json().catch(() => ({}));
-            throw new Error(err.error || "Failed to update product status.");
+            throw new Error(err.error || t("products.table.toastStatusFailed"));
           }
         }),
       );
