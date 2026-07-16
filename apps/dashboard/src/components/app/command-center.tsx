@@ -380,18 +380,6 @@ export function CommandCenter() {
             className="h-11 sm:h-10"
           />
 
-          {query.trim().length > 0 && query.trim().length < REMOTE_MIN_CHARS ? (
-            <p className="px-4 pb-1 text-[11px] text-muted-foreground">
-              {t("commandCenter.keepTyping")}
-            </p>
-          ) : null}
-          {showRemote && remoteLoading && !hasRemote ? (
-            <p className="flex items-center gap-1.5 px-4 pb-1 text-[11px] text-muted-foreground">
-              <AppIcons.loader className="size-3 animate-spin opacity-70" />
-              {t("commandCenter.searchingRemote")}
-            </p>
-          ) : null}
-
           <CommandList className="min-h-0 flex-1 scroll-py-2 px-2 pb-2 max-h-none sm:max-h-[min(28rem,55dvh)]">
             {showEmpty ? (
               <CommandEmpty className="py-10 text-muted-foreground">

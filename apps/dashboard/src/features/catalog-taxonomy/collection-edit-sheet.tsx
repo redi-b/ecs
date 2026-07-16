@@ -8,6 +8,7 @@ import { toast } from "sonner";
 
 import { AppIcons } from "@/components/app/icons";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -464,16 +465,19 @@ function ProductAddCombobox({
     onPendingChange([...pendingIds, id]);
   }
 
-  const triggerLabel =
-    pendingIds.length === 0
-      ? loading
-        ? t("taxonomy.edit.loadingProducts")
-        : candidates.length === 0
-          ? t("taxonomy.edit.noProductsLeft")
-          : t("taxonomy.edit.searchProductsToAdd")
-      : pendingIds.length === 1
-        ? t("taxonomy.edit.productSelectedOne")
-        : t("taxonomy.edit.productsSelected", { count: pendingIds.length });
+  const pendingProducts = useMemo(
+    () =>
+      pendingIds
+        .map((id) => candidates.find((product) => product.id === id))
+        .filter((product): product is MemberProduct => Boolean(product)),
+    [candidates, pendingIds],
+  );
+
+  function remove(id: string, event: { preventDefault: () => void; stopPropagation: () => void }) {
+    event.preventDefault();
+    event.stopPropagation();
+    onPendingChange(pendingIds.filter((item) => item !== id));
+  }
 
   return (
     <div className="space-y-2">
@@ -487,7 +491,7 @@ function ProductAddCombobox({
           <Button
             aria-expanded={open}
             className={cn(
-              "h-8 w-full justify-between px-2.5 font-normal shadow-none",
+              "h-auto min-h-8 w-full justify-between px-2.5 py-1.5 font-normal shadow-none",
               pendingIds.length === 0 && "text-muted-foreground",
             )}
             disabled={disabled || (!loading && candidates.length === 0 && pendingIds.length === 0)}
@@ -496,17 +500,44 @@ function ProductAddCombobox({
             type="button"
             variant="outline"
           >
-            <span className="truncate">{triggerLabel}</span>
+            <span className="flex min-w-0 flex-1 flex-wrap items-center gap-1 text-left">
+              {pendingIds.length === 0 ? (
+                <span className="truncate">
+                  {loading
+                    ? t("taxonomy.edit.loadingProducts")
+                    : candidates.length === 0
+                      ? t("taxonomy.edit.noProductsLeft")
+                      : t("taxonomy.edit.searchProductsToAdd")}
+                </span>
+              ) : (
+                pendingProducts.map((product) => {
+                  const label = product.title ?? product.handle ?? product.id;
+                  return (
+                    <Badge
+                      className="max-w-[10rem] gap-1 rounded-md px-1.5 py-0 font-normal"
+                      key={product.id}
+                      variant="secondary"
+                    >
+                      <span className="truncate">{label}</span>
+                      <button
+                        aria-label={label}
+                        className="rounded-sm opacity-60 hover:opacity-100"
+                        onClick={(event) => remove(product.id, event)}
+                        type="button"
+                      >
+                        <AppIcons.close className="size-3" />
+                      </button>
+                    </Badge>
+                  );
+                })
+              )}
+            </span>
             <AppIcons.arrowDown className="size-4 shrink-0 opacity-60" data-icon="inline-end" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent
-          align="start"
-          className="w-[var(--radix-popover-trigger-width)] p-0"
-          onOpenAutoFocus={(event) => event.preventDefault()}
-        >
+        <PopoverContent align="start" className="w-[var(--radix-popover-trigger-width)] p-0">
           <Command>
-            <CommandInput placeholder={t("taxonomy.edit.searchProducts")} />
+            <CommandInput autoFocus placeholder={t("taxonomy.edit.searchProducts")} />
             <CommandList className="max-h-52">
               <CommandEmpty>{t("taxonomy.edit.noMatchingProducts")}</CommandEmpty>
               <CommandGroup>

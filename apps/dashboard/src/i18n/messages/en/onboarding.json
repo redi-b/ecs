@@ -23,6 +23,7 @@
   "categorySelectedCount": "{count} selected",
   "categoryAddCustom": "Add “{value}”",
   "categoryEmpty": "No categories match.",
+  "categoryRemove": "Remove {value}",
   "contactPhoneHelp": "Optional. Used for order and support contact.",
   "templateHelp": "Choose the look that is closest to your brand. You can change it later.",
   "checklist": {

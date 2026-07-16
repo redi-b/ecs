@@ -5,6 +5,7 @@ import { Suspense, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { AppIcons } from "@/components/app/icons";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -709,34 +710,65 @@ function ProductMultiPicker({
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const selected = useMemo(() => new Set(selectedIds), [selectedIds]);
+  const selectedProducts = useMemo(
+    () =>
+      selectedIds
+        .map((id) => catalog.find((product) => product.id === id))
+        .filter((product): product is CatalogProduct => Boolean(product)),
+    [catalog, selectedIds],
+  );
 
   function toggle(id: string) {
     if (selected.has(id)) onChange(selectedIds.filter((item) => item !== id));
     else onChange([...selectedIds, id]);
   }
 
-  const label =
-    selectedIds.length === 0
-      ? loading
-        ? t("common.loadingProducts")
-        : t("common.selectProducts")
-      : selectedIds.length === 1
-        ? t("common.productSelected")
-        : t("common.productsSelected", { count: selectedIds.length });
+  function remove(id: string, event: { preventDefault: () => void; stopPropagation: () => void }) {
+    event.preventDefault();
+    event.stopPropagation();
+    onChange(selectedIds.filter((item) => item !== id));
+  }
 
   return (
     <Popover onOpenChange={setOpen} open={open}>
       <PopoverTrigger asChild>
         <Button
           className={cn(
-            "h-8 w-full justify-between px-2.5 font-normal shadow-none",
+            "h-auto min-h-8 w-full justify-between px-2.5 py-1.5 font-normal shadow-none",
             selectedIds.length === 0 && "text-muted-foreground",
           )}
           role="combobox"
           type="button"
           variant="outline"
         >
-          <span className="truncate">{label}</span>
+          <span className="flex min-w-0 flex-1 flex-wrap items-center gap-1 text-left">
+            {selectedIds.length === 0 ? (
+              <span className="truncate">
+                {loading ? t("common.loadingProducts") : t("common.selectProducts")}
+              </span>
+            ) : (
+              selectedProducts.map((product) => {
+                const label = product.title ?? product.handle ?? product.id;
+                return (
+                  <Badge
+                    className="max-w-[10rem] gap-1 rounded-md px-1.5 py-0 font-normal"
+                    key={product.id}
+                    variant="secondary"
+                  >
+                    <span className="truncate">{label}</span>
+                    <button
+                      aria-label={label}
+                      className="rounded-sm opacity-60 hover:opacity-100"
+                      onClick={(event) => remove(product.id, event)}
+                      type="button"
+                    >
+                      <AppIcons.close className="size-3" />
+                    </button>
+                  </Badge>
+                );
+              })
+            )}
+          </span>
           <AppIcons.arrowDown className="size-4 shrink-0 opacity-60" data-icon="inline-end" />
         </Button>
       </PopoverTrigger>
@@ -744,10 +776,9 @@ function ProductMultiPicker({
         align="start"
         className="w-[var(--radix-popover-trigger-width)] overflow-hidden p-0"
         collisionPadding={16}
-        onOpenAutoFocus={(event) => event.preventDefault()}
       >
         <Command className="h-auto max-h-72 w-full">
-          <CommandInput placeholder={t("common.searchProducts")} />
+          <CommandInput autoFocus placeholder={t("common.searchProducts")} />
           <CommandList
             className="max-h-60 overflow-y-auto overscroll-contain"
             onWheel={(event) => event.stopPropagation()}

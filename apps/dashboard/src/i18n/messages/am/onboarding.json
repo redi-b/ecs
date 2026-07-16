@@ -23,6 +23,7 @@
   "categorySelectedCount": "{count} ተመርጠዋል",
   "categoryAddCustom": "“{value}” ጨምር",
   "categoryEmpty": "ምንም የሚዛመድ ምድብ የለም።",
+  "categoryRemove": "{value}ን አስወግድ",
   "contactPhoneHelp": "አማራጭ። ለትዕዛዝ እና ድጋፍ ግንኙነት ይጠቅማል።",
   "templateHelp": "ከብራንድዎ ቅርብ የሆነውን መልክ ይምረጡ። በኋላ መቀየር ይችላሉ።",
   "checklist": {

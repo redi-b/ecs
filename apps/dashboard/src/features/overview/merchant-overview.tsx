@@ -530,7 +530,7 @@ export function MerchantOverview({ summary }: MerchantOverviewProps) {
             ) : (
               <ChartEmptyState
                 className="min-h-72"
-                ctaHref={dashboardRoutes.orders}
+                ctaHref={`${dashboardRoutes.orders}?create=order`}
                 ctaLabel={t("overview.trading.emptyCta")}
                 description={t("overview.trading.empty")}
                 title={t("overview.trading.emptyTitle")}
