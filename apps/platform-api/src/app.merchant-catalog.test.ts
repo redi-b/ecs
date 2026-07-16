@@ -2692,37 +2692,22 @@ describe("platform app merchant and tenant catalog", () => {
     ]);
   });
 
-  it("initializes Chapa checkout with tenant callback metadata", async () => {
-    const forwardedRequests: Request[] = [];
-    const medusaStoreFetch: typeof fetch = async (request) => {
-      const forwardedRequest = request instanceof Request ? request : new Request(request);
-      forwardedRequests.push(forwardedRequest.clone());
-      const path = new URL(forwardedRequest.url).pathname;
-
-      if (path === "/store/payment-collections") {
-        return Response.json({
-          payment_collection: {
-            id: "paycol_1",
-          },
-        });
-      }
-
-      return Response.json({
-        payment_session: {
-          id: "payses_1",
-          data: {
-            checkout_url: "https://checkout.chapa.co/checkout/test",
-          },
-        },
-      });
-    };
+  it("rejects store Chapa checkout when merchant credentials are missing", async () => {
+    let medusaCalls = 0;
     const app = appWithResolution(
       {
         ok: true,
         context: resolvedTenantContext,
       },
       {
-        medusaStoreFetch,
+        getMerchantChapaCredentials: async () => ({
+          ok: false as const,
+          error: "merchant_chapa_not_configured" as const,
+        }),
+        medusaStoreFetch: async () => {
+          medusaCalls += 1;
+          return Response.json({});
+        },
       },
     );
 
@@ -2738,35 +2723,35 @@ describe("platform app merchant and tenant catalog", () => {
       method: "POST",
     });
 
-    assert.equal(response.status, 200);
+    assert.equal(response.status, 409);
     assert.deepEqual(await response.json(), {
-      checkoutUrl: "https://checkout.chapa.co/checkout/test",
-      paymentSession: {
-        id: "payses_1",
+      error: "merchant_chapa_not_configured",
+    });
+    assert.equal(medusaCalls, 0);
+  });
+
+  it("returns payment options with chapa only when merchant credentials exist", async () => {
+    const app = appWithResolution(
+      {
+        ok: true,
+        context: resolvedTenantContext,
+      },
+      {
+        isMerchantChapaConfigured: async () => true,
+      },
+    );
+
+    const response = await app.request("/store/payment-options", {
+      headers: {
+        Host: "abebe.lvh.me",
       },
     });
-    assert.equal(forwardedRequests.length, 2);
 
-    const paymentCollectionRequest = forwardedRequests[0];
-    const paymentSessionRequest = forwardedRequests[1];
-
-    assert.ok(paymentCollectionRequest);
-    assert.ok(paymentSessionRequest);
-    assert.deepEqual(
-      forwardedRequests.map((request) => [request.method, new URL(request.url).pathname]),
-      [
-        ["POST", "/store/payment-collections"],
-        ["POST", "/store/payment-collections/paycol_1/payment-sessions"],
-      ],
-    );
-    assert.deepEqual(JSON.parse(await paymentCollectionRequest.text()), {
-      cart_id: "cart_1",
-    });
-    assert.deepEqual(JSON.parse(await paymentSessionRequest.text()), {
-      provider_id: "pp_chapa_chapa",
-      data: {
-        callback_url: "http://api.lvh.me/platform/payments/chapa/callback?tenant_id=tenant_1",
-        return_url: "http://abebe.lvh.me/checkout/return",
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), {
+      payment: {
+        cod: true,
+        chapa: true,
       },
     });
   });

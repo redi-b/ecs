@@ -8,7 +8,7 @@ import {
   isAllowedStoreFacadeRoute,
   storeErrorStatus,
 } from "../shared.js";
-import { initializeChapaCheckout } from "./checkout/chapa.js";
+import { completeChapaCheckout, initializeChapaCheckout } from "./checkout/chapa.js";
 import { completeCodCheckout } from "./checkout/cod.js";
 
 type StoreForwardRequestResult =
@@ -137,15 +137,21 @@ async function getTenantScopedStoreForwardRequest(options: {
     medusaUrl.searchParams.set("region_id", options.medusaRegionId);
   }
 
+  const init: RequestInit = {
+    headers,
+    method,
+    redirect: "manual",
+  };
+
+  if (body !== undefined && body !== null) {
+    init.body = body;
+    // Required by undici when sending a body stream from an incoming Request.
+    (init as RequestInit & { duplex?: string }).duplex = "half";
+  }
+
   return {
     ok: true,
-    request: new Request(medusaUrl, {
-      body,
-      duplex: "half",
-      headers,
-      method,
-      redirect: "manual",
-    } as RequestInit),
+    request: new Request(medusaUrl, init),
   };
 }
 
@@ -191,6 +197,22 @@ export function registerStoreFacadeRoutes(
           defaultDeliveryFee: delivery.delivery.defaultDeliveryFee,
           currency: delivery.delivery.currency,
           zones: delivery.delivery.zones,
+        },
+      });
+    }
+
+    if (
+      context.req.raw.method === "GET" &&
+      new URL(context.req.raw.url).pathname === "/store/payment-options"
+    ) {
+      const chapaConfigured = options.isMerchantChapaConfigured
+        ? await options.isMerchantChapaConfigured({ tenantId: result.context.tenantId })
+        : false;
+
+      return context.json({
+        payment: {
+          cod: true,
+          chapa: chapaConfigured,
         },
       });
     }
@@ -250,12 +272,45 @@ export function registerStoreFacadeRoutes(
         return context.json({ error: "commerce_region_unavailable" }, 409);
       }
 
+      if (!options.getMerchantChapaCredentials) {
+        return context.json({ error: "merchant_chapa_not_configured" }, 409);
+      }
+
       try {
         return await initializeChapaCheckout({
+          getMerchantChapaCredentials: options.getMerchantChapaCredentials,
           medusaInternalUrl: options.medusaInternalUrl,
           medusaPublishableKeyId: result.context.medusaPublishableKeyId,
           medusaStoreFetch,
           platformPublicBaseUrl: options.platformPublicBaseUrl,
+          request: context.req.raw,
+          tenantId: result.context.tenantId,
+        });
+      } catch {
+        return context.json({ error: "commerce_backend_unavailable" }, 503);
+      }
+    }
+
+    if (
+      context.req.raw.method === "POST" &&
+      new URL(context.req.raw.url).pathname === "/store/checkout/chapa/complete"
+    ) {
+      if (!result.context.medusaRegionId) {
+        return context.json({ error: "commerce_region_unavailable" }, 409);
+      }
+
+      if (!options.getMerchantChapaCredentials) {
+        return context.json({ error: "merchant_chapa_not_configured" }, 409);
+      }
+
+      try {
+        return await completeChapaCheckout({
+          getMerchantChapaCredentials: options.getMerchantChapaCredentials,
+          medusaInternalUrl: options.medusaInternalUrl,
+          medusaPublishableKeyId: result.context.medusaPublishableKeyId,
+          medusaStoreFetch,
+          recordAnalyticsEvent: options.recordAnalyticsEvent,
+          recordNotificationEvent: options.recordNotificationEvent,
           request: context.req.raw,
           tenantId: result.context.tenantId,
         });
@@ -281,9 +336,15 @@ export function registerStoreFacadeRoutes(
 
     try {
       const medusaResponse = await medusaStoreFetch(forwardRequest.request);
+      // Buffer the body so Node's server does not drop streamed undici responses mid-write
+      // (seen as content-length mismatches / "Internal Server Error" for store GETs).
+      const responseBody = await medusaResponse.arrayBuffer();
+      const responseHeaders = new Headers(medusaResponse.headers);
+      responseHeaders.delete("transfer-encoding");
+      responseHeaders.set("content-length", String(responseBody.byteLength));
 
-      return new Response(medusaResponse.body, {
-        headers: medusaResponse.headers,
+      return new Response(responseBody, {
+        headers: responseHeaders,
         status: medusaResponse.status,
         statusText: medusaResponse.statusText,
       });
