@@ -35,7 +35,7 @@
       "missing": "ለመቀጠል የ{entity} ስም ያስገቡ።",
       "backend": "የንግድ ጀርባው (backend) ለጊዜው አይሰራም።",
       "credentials": "የካታሎግ ለውጦች ለጊዜው አይገኙም። ድጋፍ ሰጪዎችን ያነጋግሩ።",
-      "genericSave": "{entity} ማስቀመጥ አልተቻለም። እንደገና ይሞክሩ።"
+      "genericSave": "{entity} መቀየር አልተቻለም። እንደገና ይሞክሩ።"
     },
     "success": "{entity} ተጨምሯል።",
     "handle": "መለያ (Handle)",

@@ -6,6 +6,16 @@ export type SettingsSectionId =
   | "storefront"
   | "account";
 
+export const SETTINGS_SECTION_IDS: SettingsSectionId[] = [
+  "shop",
+  "preferences",
+  "notifications",
+  "fulfillment",
+  "storefront",
+  "account",
+];
+
+/** @deprecated Prefer SETTINGS_SECTION_IDS + i18n labels in the UI. */
 export const SETTINGS_SECTIONS: Array<{
   description: string;
   id: SettingsSectionId;

@@ -29,6 +29,7 @@ import {
 } from "@/features/settings/notification-channel-ui";
 import { TelegramConnectPanel } from "@/features/settings/telegram-connect-panel";
 import type { NotificationPreference } from "@/lib/merchant-notifications";
+import { useI18n } from "@/i18n/provider";
 import { mapPlatformErrorMessage } from "@/lib/platform-api/errors";
 import { cn } from "@/lib/utils";
 
@@ -59,6 +60,7 @@ function emailStateFromPreferences(preferences: NotificationPreference[]): Email
 }
 
 export function NotificationsSection({ tenantId }: { tenantId: string }) {
+  const { t } = useI18n();
   const emailFieldId = useId();
   const [loadError, setLoadError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -184,11 +186,11 @@ export function NotificationsSection({ tenantId }: { tenantId: string }) {
   function saveTarget() {
     const target = emailInput.trim();
     if (!target) {
-      toast.error("Enter an email address before saving.");
+      toast.error(t("settings.notifications.toast.enterEmail"));
       return;
     }
     if (!isValidNotificationEmail(target)) {
-      toast.error("Enter a valid email address.");
+      toast.error(t("settings.notifications.toast.invalidEmail"));
       return;
     }
 
@@ -199,7 +201,9 @@ export function NotificationsSection({ tenantId }: { tenantId: string }) {
           target,
           enabled: hasEmail ? saved.enabled : true,
           events: hasEmail ? saved.events : defaultNotificationEvents(),
-          successMessage: hasEmail ? "Email address updated" : "Email alerts set up",
+          successMessage: hasEmail
+            ? t("settings.notifications.toast.emailUpdated")
+            : t("settings.notifications.toast.emailSetup"),
         });
       } catch {
         toast.error(mapPlatformErrorMessage("platform_request_failed"));
@@ -211,11 +215,11 @@ export function NotificationsSection({ tenantId }: { tenantId: string }) {
 
   function saveEvents() {
     if (!hasEmail) {
-      toast.error("Save an email address first.");
+      toast.error(t("settings.notifications.toast.saveEmailFirst"));
       return;
     }
     if (eventsDraft.length === 0) {
-      toast.error("Select at least one event.");
+      toast.error(t("settings.notifications.toast.selectEvent"));
       return;
     }
 
@@ -226,7 +230,7 @@ export function NotificationsSection({ tenantId }: { tenantId: string }) {
           target: saved.target,
           enabled: saved.enabled,
           events: eventsDraft,
-          successMessage: "Event preferences saved",
+          successMessage: t("settings.notifications.toast.eventsSaved"),
         });
       } catch {
         toast.error(mapPlatformErrorMessage("platform_request_failed"));
@@ -246,7 +250,9 @@ export function NotificationsSection({ tenantId }: { tenantId: string }) {
           target: saved.target,
           enabled,
           events: saved.events,
-          successMessage: enabled ? "Alerts resumed" : "Alerts paused",
+          successMessage: enabled
+            ? t("settings.notifications.toast.alertsResumed")
+            : t("settings.notifications.toast.alertsPaused"),
         });
         if (!ok) {
           setSaved((current) => ({ ...current, enabled: !enabled }));
@@ -288,8 +294,8 @@ export function NotificationsSection({ tenantId }: { tenantId: string }) {
         }
         toast.success(
           data?.jobEnqueued
-            ? "Test email queued. Check your inbox shortly."
-            : "Test email requested.",
+            ? t("settings.notifications.toast.testQueued")
+            : t("settings.notifications.toast.testRequested"),
         );
       } catch {
         toast.error(mapPlatformErrorMessage("platform_request_failed"));
@@ -301,15 +307,15 @@ export function NotificationsSection({ tenantId }: { tenantId: string }) {
     return (
       <div className="flex flex-col gap-6">
         <SectionIntro
-          description="Get notified when orders, payments, and other shop events happen."
-          title="Notifications"
+          description={t("settings.notifications.intro")}
+          title={t("settings.sections.notifications.label")}
         />
         <Card>
           <NotificationChannelHeader
-            description="Loading connected accounts…"
+            description={t("settings.notifications.loadingTelegram")}
             onRefresh={() => undefined}
             refreshing
-            title="Telegram"
+            title={t("settings.notifications.telegram")}
           />
           <CardContent>
             <div className="h-24 animate-pulse rounded-lg bg-muted/50" />
@@ -317,10 +323,10 @@ export function NotificationsSection({ tenantId }: { tenantId: string }) {
         </Card>
         <Card>
           <NotificationChannelHeader
-            description="Loading email settings…"
+            description={t("settings.notifications.loadingEmail")}
             onRefresh={() => undefined}
             refreshing
-            title="Email"
+            title={t("settings.notifications.email")}
           />
           <CardContent>
             <div className="h-28 animate-pulse rounded-lg bg-muted/50" />
@@ -334,11 +340,11 @@ export function NotificationsSection({ tenantId }: { tenantId: string }) {
     return (
       <div className="flex flex-col gap-6">
         <SectionIntro
-          description="Get notified when orders, payments, and other shop events happen."
-          title="Notifications"
+          description={t("settings.notifications.intro")}
+          title={t("settings.sections.notifications.label")}
         />
         <Alert variant="destructive">
-          <AlertTitle>Couldn’t load notifications</AlertTitle>
+          <AlertTitle>{t("settings.notifications.loadErrorTitle")}</AlertTitle>
           <AlertDescription className="flex flex-col gap-3">
             <span>{loadError}</span>
             <Button
@@ -351,7 +357,7 @@ export function NotificationsSection({ tenantId }: { tenantId: string }) {
                 void load().finally(() => setLoading(false));
               }}
             >
-              Try again
+              {t("settings.notifications.tryAgain")}
             </Button>
           </AlertDescription>
         </Alert>
@@ -362,8 +368,8 @@ export function NotificationsSection({ tenantId }: { tenantId: string }) {
   return (
     <div className="flex flex-col gap-6">
       <SectionIntro
-        description="Get notified when orders, payments, and other shop events happen."
-        title="Notifications"
+        description={t("settings.notifications.intro")}
+        title={t("settings.sections.notifications.label")}
       />
 
       <TelegramConnectPanel available={telegramAvailable} tenantId={tenantId} />
@@ -371,24 +377,24 @@ export function NotificationsSection({ tenantId }: { tenantId: string }) {
       <Card>
         <NotificationChannelHeader
           badge={<NotificationStatusBadge status={status} />}
-          description="Send shop event alerts to one mailbox for this shop."
+          description={t("settings.notifications.emailDescription")}
           disabled={isPending || !emailAvailable}
           onRefresh={refresh}
-          refreshLabel="Refresh email settings"
+          refreshLabel={t("settings.notifications.refreshEmail")}
           refreshing={refreshing}
-          title="Email"
+          title={t("settings.notifications.email")}
         />
 
         <CardContent className="flex flex-col gap-5">
           {!emailAvailable ? (
             <NotificationChannelUnavailable
-              description="Email delivery isn’t enabled for this environment yet. You can still use Telegram if it’s available, or check back later."
-              title="Email alerts unavailable"
+              description={t("settings.notifications.emailUnavailableDescription")}
+              title={t("settings.notifications.emailUnavailableTitle")}
             />
           ) : (
             <>
               <Field>
-                <FieldLabel htmlFor={emailFieldId}>Email address</FieldLabel>
+                <FieldLabel htmlFor={emailFieldId}>{t("settings.notifications.emailAddress")}</FieldLabel>
                 <InputGroup>
                   <InputGroupInput
                     autoComplete="email"
@@ -418,10 +424,10 @@ export function NotificationsSection({ tenantId }: { tenantId: string }) {
                       {savingTarget ? (
                         <>
                           <AppIcons.loader className="animate-spin" />
-                          Saving…
+                          {t("common.saving")}
                         </>
                       ) : (
-                        "Save"
+                        t("common.save")
                       )}
                     </InputGroupButton>
                   </InputGroupAddon>
@@ -429,7 +435,7 @@ export function NotificationsSection({ tenantId }: { tenantId: string }) {
                 <FieldDescription>
                   {mailtoHref ? (
                     <span className="inline-flex flex-wrap items-center gap-x-1 gap-y-0.5">
-                      Alerts go to{" "}
+                      {t("settings.notifications.alertsGoTo")}{" "}
                       <a
                         className="inline-flex items-center gap-1 font-medium text-foreground underline-offset-4 hover:underline"
                         href={mailtoHref}
@@ -437,10 +443,10 @@ export function NotificationsSection({ tenantId }: { tenantId: string }) {
                         {saved.target.trim()}
                         <AppIcons.externalLink className="size-3 opacity-60" />
                       </a>
-                      . Change the address above and press Save.
+                      . {t("settings.notifications.changeAndSave")}
                     </span>
                   ) : (
-                    "One inbox for this shop. Press Save to start receiving alerts."
+                    t("settings.notifications.oneInbox")
                   )}
                 </FieldDescription>
               </Field>
@@ -453,9 +459,9 @@ export function NotificationsSection({ tenantId }: { tenantId: string }) {
                   )}
                 >
                   <div className="min-w-0">
-                    <p className="text-sm font-medium">Delivery</p>
+                    <p className="text-sm font-medium">{t("settings.notifications.delivery")}</p>
                     <p className="text-xs text-muted-foreground">
-                      Pause without removing the email address.
+                      {t("settings.notifications.pauseWithoutRemoving")}
                     </p>
                   </div>
                   <div className="flex flex-wrap items-center gap-1.5 sm:justify-end">
@@ -467,7 +473,7 @@ export function NotificationsSection({ tenantId }: { tenantId: string }) {
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Button
-                          aria-label="Send test email"
+                          aria-label={t("settings.notifications.sendTestAria")}
                           className="rounded-full"
                           disabled={isPending || !saved.enabled || targetDirty}
                           size="sm"
@@ -475,13 +481,13 @@ export function NotificationsSection({ tenantId }: { tenantId: string }) {
                           variant="outline"
                           onClick={sendEmailTest}
                         >
-                          Send test
+                          {t("settings.notifications.sendTest")}
                         </Button>
                       </TooltipTrigger>
                       <TooltipContent>
                         {targetDirty
-                          ? "Save the email address before sending a test"
-                          : "Send a test alert to this address"}
+                          ? t("settings.notifications.saveBeforeTest")
+                          : t("settings.notifications.sendTestHint")}
                       </TooltipContent>
                     </Tooltip>
                   </div>
@@ -490,7 +496,7 @@ export function NotificationsSection({ tenantId }: { tenantId: string }) {
 
               {hasEmail ? (
                 <NotificationEventPicker
-                  description="Choose which shop events trigger email."
+                  description={t("settings.notifications.eventsDescription")}
                   dirty={eventsDirty}
                   disabled={isPending}
                   events={eventsDraft}

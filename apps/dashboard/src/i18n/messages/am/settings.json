@@ -1,7 +1,332 @@
 {
   "title": "ማስተካከያዎች",
-  "description": "የሱቅ አድራሻን፣ የትዕዛዝ ማድረስ ሁኔታዎችን፣ የመደብር ሁኔታን እና የመለያ ዝርዝሮችን ያስተዳድሩ።",
+  "description": "የሱቅ አድራሻን፣ መላኪያ አማራጮችን፣ የመደብር ሁኔታን እና የመለያ ዝርዝሮችን ያስተዳድሩ።",
   "error": {
     "loadTitle": "ማስተካከያዎችን መጫን አልተቻለም"
+  },
+  "navAria": "የማስተካከያ ክፍሎች",
+  "sections": {
+    "shop": {
+      "label": "ሱቅ",
+      "description": "ስም፣ መለያ እና የአድራሻ ስሞች"
+    },
+    "preferences": {
+      "label": "ምርጫዎች",
+      "description": "የዳሽቦርድ እና የትዕዛዝ ነባሪዎች"
+    },
+    "notifications": {
+      "label": "ማሳወቂያዎች",
+      "description": "ትዕዛዞች፣ ክፍያዎች እና የሱቅ ክስተቶች"
+    },
+    "fulfillment": {
+      "label": "መላኪያ",
+      "description": "ደሊቨሪ፣ ከሱቅ መውሰድ እና ክፍያዎች"
+    },
+    "storefront": {
+      "label": "የመደብር ገጽ",
+      "description": "ንድፍ እና ታይነት"
+    },
+    "account": {
+      "label": "መለያ",
+      "description": "መገለጫ፣ የይለፍ ቃል፣ የገቡ ቦታዎች"
+    }
+  },
+  "status": {
+    "settingsUpdated": "ማስተካከያዎች ተቀይረዋል።",
+    "templateSelected": "የመደብር ገጽ ተመርጧል።",
+    "chooseStorefront": "ከመቀጠል በፊት የመደብር ገጽ ይምረጡ።",
+    "templateUnavailable": "ያ የመደብር ገጽ ከእንግዲህ አይገኝም።"
+  },
+  "handle": {
+    "patternHint": "3 እስከ 63 ምልክቶች፡ ትንንሽ ፊደላት፣ ቁጥሮች እና ሰረዞች።",
+    "checkFailed": "መገኘትን ማረጋገጥ አልተቻለም። እንደገና ይሞክሩ።",
+    "taken": "አስቀድሞ ተይዟል",
+    "invalid": "የመለያ ቅርጸት ልክ አይደለም",
+    "reserved": "ይህ መለያ የተጠበቀ ነው",
+    "notAvailable": "አይገኝም",
+    "checking": "በማረጋገጥ ላይ…",
+    "available": "ይገኛል",
+    "current": "የአሁኑ መለያ",
+    "locked": "ተቆልፏል",
+    "lockAria": "የሱቅ መለያን ቆልፍ",
+    "unlockAria": "የሱቅ መለያን ክፈት",
+    "lockTooltip": "መለያን ቆልፍ",
+    "unlockTooltip": "መለያን ለመቀየር ክፈት"
+  },
+  "toast": {
+    "savingLabel": "{label} እየተቀየረ ነው…",
+    "savedLabel": "{label} ተቀይሯል",
+    "saveFailedLabel": "{label} መቀየር አልተቻለም",
+    "updatingAddress": "የሱቅ አድራሻ እየተቀየረ ነው…",
+    "savingShop": "የሱቅ ለውጦች እየተቀየሩ ነው…",
+    "saveShopFailed": "የሱቅ ለውጦችን መቀየር አልተቻለም።",
+    "addressUpdated": "የሱቅ አድራሻ ተቀይሯል። ወደ አዲሱ እያሸጋገርን ነው…",
+    "shopSaved": "የሱቅ ለውጦች ተቀይረዋል።",
+    "launchEnabled": "የጀማሪ ረዳት ተከፍቷል",
+    "launchHidden": "የጀማሪ ረዳት ተደብቋል"
+  },
+  "labels": {
+    "fulfillmentSettings": "የመላኪያ ማስተካከያዎች",
+    "deliveryFee": "የደሊቨሪ ክፍያ"
+  },
+  "dialog": {
+    "changeAddressTitle": "የሱቅ አድራሻ ይቀየር?",
+    "changeAddressDescription": "{currentHost} ለዚህ ሱቅ አይሰራም። ወደ {nextHost} ይዞራሉ።",
+    "updating": "በማዘመን ላይ…",
+    "changeAddress": "አድራሻ ቀይር"
+  },
+  "shop": {
+    "intro": "ለደንበኞች የህዝብ መታወቂያ እና ሰራተኞች የሚጠቀሙበት አድራሻ።",
+    "detailsTitle": "የሱቅ ዝርዝሮች",
+    "detailsDescription": "ደንበኞች የሚያዩት ስም እና የሱቁ የመስመር አድራሻ።",
+    "name": "የሱቅ ስም",
+    "handle": "የሱቅ መለያ",
+    "addressChangeTitle": "የሱቅ አድራሻ ይቀየራል",
+    "addressChangeDescription": "የአሁኑ የሱቅ አድራሻ አይከፈትም። ለውጡ ከተያዘ በኋላ ዳሽቦርዱ ወደ አዲሱ አድራሻ ይሄዳል።",
+    "saveShop": "ለውጦቹን አስቀምጥ",
+    "hostname": "የሱቅ አድራሻ",
+    "current": "አሁን",
+    "primary": "ዋና",
+    "afterSave": "ከለውጡ በኋላ",
+    "status": "ሁኔታ",
+    "related": "ተዛማጅ",
+    "billingPlan": "ክፍያ እና ዕቅድ",
+    "storefrontEditor": "የመደብር ገጽ ማስተካከያ"
+  },
+  "preferences": {
+    "intro": "የዳሽቦርድ እና የትዕዛዝ ነባሪዎች ለዕለታዊ ስራ።",
+    "dashboardTitle": "ዳሽቦርድ",
+    "dashboardDescription": "ለአሁኑ ሱቅ በዚህ ቦታ ብቻ ይቆያል።",
+    "launchTitle": "የጀማሪ ረዳት",
+    "launchDescription": "በአጠቃላይ እይታ ላይ ተንሳፋፊ የማዋቀር ረዳት አሳይ።",
+    "commerceTitle": "የንግድ ነባሪዎች",
+    "commerceDescription": "ለዚህ ሱቅ ምንዛሬ እና የትዕዛዝ አማራጮች።",
+    "currencyEtb": "ምንዛሬ · ETB",
+    "currencyHint": "የመደብር ዋጋዎች እና ክፍያዎች የኢትዮጵያ ብር ይጠቀማሉ። ብዙ ምንዛሬ ገና አይገኝም።",
+    "fulfillmentHint": "ደሊቨሪ፣ ከሱቅ መውሰድ እና የስልክ ማረጋገጫ በመላኪያ ስር ናቸው።",
+    "openFulfillment": "መላኪያ ክፈት"
+  },
+  "fulfillment": {
+    "intro": "ደንበኞች ትዕዛዝ ሲያስገቡ እንዴት እንደሚቀበሉ። መቀያየሪያዎች ወዲያውኑ ይተገበራሉ።",
+    "checkoutTitle": "የትዕዛዝ አማራጮች",
+    "checkoutDescription": "ደሊቨሪ፣ ከሱቅ መውሰድ እና ተጨማሪ ትዕዛዝ መረጃዎችን ይቆጣጠሩ።",
+    "defaultFee": "ነባሪ የደሊቨሪ ክፍያ",
+    "feeHint": "ደሊቨሪ ሲከፈት በትዕዛዝ ጊዜ ይታከላል።",
+    "currency": "ምንዛሬ",
+    "currencyHint": "የሱቅ ምንዛሬ በኢትዮጵያ ብር ብቻ ነው።",
+    "unavailableTitle": "የመላኪያ ማስተካከያዎች አይገኙም",
+    "unavailableDescription": "የትዕዛዝ ማዋቀር ከተጠናቀቀ በኋላ እንደገና ይሞክሩ።",
+    "delivery": {
+      "label": "ደሊቨሪ",
+      "description": "ደንበኞች ወደ ቤታቸው እንዲላክላቸው ይፍቀዱ።"
+    },
+    "pickup": {
+      "label": "ከሱቅ መውሰድ",
+      "description": "ደንበኞች ትዕዛዙን ከሱቅ እንዲወስዱ ይፍቀዱ።"
+    },
+    "phoneConfirmation": {
+      "label": "የስልክ ማረጋገጫ",
+      "description": "ከትዕዛዝ በፊት ስልክ ቁጥር ያስፈልጋል።"
+    },
+    "landmark": {
+      "label": "ቅርብ ምልክት",
+      "description": "ለደሊቨሪ ቅርብ የታወቀ ቦታ ያስፈልጋል።"
+    },
+    "notes": {
+      "label": "የደሊቨሪ ማስታወሻ",
+      "description": "ደንበኞች የመንገድ መመሪያ እንዲጽፉ ይፍቀዱ።"
+    }
+  },
+  "storefront": {
+    "intro": "ደንበኞች የሚያዩት የመደብር ገጽ ንድፍ እና ታይነት።",
+    "designTitle": "ንድፍ",
+    "designDescription": "ገጹ ለደንበኞች ሲከፈት የሚያዩት የመጀመሪያ ንድፍ።",
+    "noneTitle": "ምንም የመደብር ገጽ አይገኝም",
+    "noneDescription": "ንድፎች ከተዘጋጁ በኋላ መምረጥ ይችላሉ።",
+    "statusTitle": "ሁኔታ",
+    "publication": "ታይነት",
+    "published": "ለደንበኞች ይታያል",
+    "draft": "በዝግጅት ላይ",
+    "selectedDesign": "የተመረጠ ንድፍ",
+    "version": "ስሪት",
+    "notSelected": "አልተመረጠም",
+    "editStorefront": "ገጹን አስተካክል",
+    "viewShop": "ሱቁን ይመልከቱ",
+    "selected": "ተመርጧል",
+    "useThis": "ይህን ንድፍ ተጠቀም",
+    "preview": "የ{name} ቅድመ እይታ"
+  },
+  "notifications": {
+    "intro": "ትዕዛዝ፣ ክፍያ እና ሌሎች የሱቅ ክስተቶች ሲከሰቱ ማሳወቂያ ይቀበሉ።",
+    "loadErrorTitle": "ማሳወቂያዎችን መጫን አልተቻለም",
+    "tryAgain": "እንደገና ሞክር",
+    "telegram": "Telegram",
+    "email": "ኢሜይል",
+    "loadingTelegram": "የተገናኙ መለያዎች በመጫን ላይ…",
+    "loadingEmail": "የኢሜይል ማስተካከያዎች በመጫን ላይ…",
+    "emailDescription": "የሱቅ ክስተት ማሳወቂያዎችን ለአንድ የኢሜይል አድራሻ ይላኩ።",
+    "refreshEmail": "የኢሜይል ማስተካከያዎችን አድስ",
+    "emailUnavailableTitle": "የኢሜይል ማሳወቂያ አይገኝም",
+    "emailUnavailableDescription": "የኢሜይል ማሳወቂያ ለዚህ አካባቢ ገና አልተከፈተም። Telegram ካለ ይጠቀሙ፣ ወይም ቆይተው ይመልከቱ።",
+    "emailAddress": "የኢሜይል አድራሻ",
+    "alertsGoTo": "ማሳወቂያዎች ይሄዳሉ ወደ",
+    "changeAndSave": "አድራሻውን ከላይ ቀይረው ያስቀምጡ።",
+    "oneInbox": "ለዚህ ሱቅ አንድ ኢሜይል። ማሳወቂያ ለመቀበል ያስቀምጡ።",
+    "delivery": "መላክ",
+    "pauseWithoutRemoving": "ኢሜይሉን ሳያስወግዱ ማሳወቂያን ያቁሙ።",
+    "sendTest": "ሙከራ ላክ",
+    "sendTestAria": "የሙከራ ኢሜይል ላክ",
+    "saveBeforeTest": "ሙከራ ከመላክ በፊት ኢሜይሉን ያስቀምጡ",
+    "sendTestHint": "ወደዚህ አድራሻ የሙከራ ማሳወቂያ ላክ",
+    "eventsDescription": "የትኞቹ የሱቅ ክስተቶች ኢሜይል እንደሚልኩ ይምረጡ።",
+    "toast": {
+      "enterEmail": "ከማስቀመጥ በፊት የኢሜይል አድራሻ ያስገቡ።",
+      "invalidEmail": "ትክክለኛ የኢሜይል አድራሻ ያስገቡ።",
+      "emailUpdated": "የኢሜይል አድራሻ ተቀይሯል",
+      "emailSetup": "የኢሜይል ማሳወቂያ ተዘጋጀ",
+      "saveEmailFirst": "መጀመሪያ የኢሜይል አድራሻ ያስቀምጡ።",
+      "selectEvent": "ቢያንስ አንድ ክስተት ይምረጡ።",
+      "eventsSaved": "የክስተት ምርጫዎች ተቀይረዋል",
+      "alertsResumed": "ማሳወቂያዎች ቀጥለዋል",
+      "alertsPaused": "ማሳወቂያዎች ቆመዋል",
+      "testQueued": "የሙከራ ኢሜይል ተልኳል። ጥቂት ቆይተው ኢንቦክስዎን ይመልከቱ።",
+      "testRequested": "የሙከራ ኢሜይል ተጠይቋል።"
+    },
+    "status": {
+      "active": "በስራ ላይ",
+      "paused": "ቆሟል",
+      "notSetUp": "አልተዘጋጀም"
+    },
+    "alerts": "ማሳወቂያ",
+    "refreshing": "በማደስ ላይ",
+    "refresh": "አድስ",
+    "accountOne": "መለያ",
+    "accountMany": "መለያዎች",
+    "notifyAbout": "ስለ እነዚህ ንገረኝ",
+    "saveEvents": "ክስተቶቹን አስቀምጥ",
+    "events": {
+      "orderCreated": "አዲስ ትዕዛዞች",
+      "orderCancelled": "የተሰረዙ ትዕዛዞች",
+      "paymentPaid": "የተቀበሉ ክፍያዎች",
+      "paymentFailed": "ያልተሳኩ ክፍያዎች",
+      "codOrder": "በጥሬ ገንዘብ ትዕዛዞች"
+    },
+    "telegramPanel": {
+      "description": "የሱቅ ክስተት ማሳወቂያዎችን በTelegram በፍጥነት ይቀበሉ።",
+      "unavailableTitle": "የTelegram ማሳወቂያ አይገኝም",
+      "unavailableDescription": "Telegram ለዚህ አካባቢ ገና አልተከፈተም። ኢሜይል ካለ ይጠቀሙ፣ ወይም ቆይተው ይመልከቱ።",
+      "connected": "Telegram ተገናኝቷል",
+      "connectFailed": "Telegramን ማገናኘት አልተጀመረም። እንደገና ይሞክሩ።",
+      "linkExpired": "ሊንኩ ጊዜው አልፏል",
+      "linkExpiredDesc": "አዲስ ሊንክ ለማግኘት እንደገና ያገናኙ።",
+      "stillWaiting": "እንጠብቃለን",
+      "stillWaitingDesc": "Telegramን ይክፈቱ፣ Start ይጫኑ፣ ከዚያ እንደገና ያረጋግጡ።",
+      "connectCancelled": "ግንኙነቱ ተሰርዟል",
+      "disconnected": "የTelegram መለያ ተቋርጧል",
+      "alertsResumed": "ማሳወቂያዎች ቀጥለዋል",
+      "alertsPaused": "ማሳወቂያዎች ቆመዋል",
+      "eventsSaved": "የክስተት ምርጫዎች ተቀይረዋል",
+      "testSent": "ሙከራ ተልኳል። Telegramን ይመልከቱ።",
+      "testRequested": "የሙከራ መልእክት ተጠይቋል።",
+      "linkCopied": "ሊንኩ ተቀድቷል",
+      "copyFailed": "ሊንኩን መቅዳት አልተቻለም",
+      "connectedRecently": "በቅርብ ተገናኝቷል",
+      "connectedAt": "ተገናኝቷል",
+      "active": "በስራ ላይ",
+      "paused": "ቆሟል",
+      "step1": "ለዚህ ሱቅ አንድ ጊዜ የሚያገለግል Telegram ሊንክ እንከፍታለን።",
+      "step2": "በቻቱ ውስጥ Start ይጫኑ ማሳወቂያ እንድንልክ።",
+      "step3": "ወደዚህ ይመለሱ። ግንኙነቱ ሲሳካ መለያው ይታያል።",
+      "headerDescription": "የሱቅ ክስተት ማሳወቂያዎችን በTelegram ይቀበሉ። የሰራተኛ ስልኮችን እንደ አስፈላጊነቱ ያገናኙ።",
+      "refreshAccounts": "መለያዎችን አድስ",
+      "sendTestAria": "የሙከራ መልእክት ላክ",
+      "connectAnother": "ሌላ መለያ አገናኝ",
+      "connectTelegram": "Telegram አገናኝ",
+      "connectAnotherTelegram": "ሌላ Telegram መለያ አገናኝ",
+      "eventsShared": "ለሁሉም የተገናኙ Telegram መለያዎች ተመሳሳይ ክስተቶች።",
+      "opening": "በመክፈት ላይ…",
+      "continueTelegram": "ወደ Telegram ቀጥል",
+      "disconnectDesc": "ይህ መለያ የሱቅ ክስተት ማሳወቂያ መቀበል ያቆማል።",
+      "disconnecting": "ግንኙነት በመቋረጥ ላይ…",
+      "disconnect": "አቋርጥ"
+    }
+  },
+  "accountSecurity": {
+    "title": "መለያ",
+    "intro": "የመገለጫ እና የመግቢያ ደህንነት ለዳሽቦርድ መለያዎ።",
+    "addName": "ስምዎን ያክሉ",
+    "displayName": "የሚታይ ስም",
+    "namePlaceholder": "ስምዎ",
+    "nameHint": "በዳሽቦርድ እና በሱቅ ውስጥ ይታያል።",
+    "saveName": "ስሙን አስቀምጥ",
+    "password": "የይለፍ ቃል",
+    "passwordHint": "ከ{email} ጋር የሚጠቀሙትን የይለፍ ቃል ይቀይሩ።",
+    "currentPassword": "የአሁኑ የይለፍ ቃል",
+    "newPassword": "አዲስ የይለፍ ቃል",
+    "confirmPassword": "አዲሱን የይለፍ ቃል ያረጋግጡ",
+    "passwordMin": "ቢያንስ 8 ፊደላት ወይም ቁጥሮች።",
+    "signOutOthers": "ሌሎች ቦታዎችን አውጣ",
+    "signOutOthersHint": "የይለፍ ቃሉ ከተቀየረ በኋላ ሌሎች ቦታዎች ይወጣሉ። እርስዎ እዚህ ይቆያሉ።",
+    "updating": "እየተቀየረ ነው…",
+    "updatePassword": "የይለፍ ቃል ቀይር",
+    "devicesTitle": "የገቡ ቦታዎች",
+    "devicesHint": "ከየት መለያዎ እንደገባ ይመልከቱ። የማታውቁትን ያስወግዱ።",
+    "refreshSessions": "ዝርዝሩን አድስ",
+    "refreshingSessions": "ዝርዝሩ በማደስ ላይ",
+    "refreshing": "በማደስ ላይ",
+    "sessionsUnavailable": "ዝርዝሩ አይገኝም",
+    "loadingSessions": "በመጫን ላይ…",
+    "noSessions": "ምንም የገባ ቦታ አልተገኘም።",
+    "thisDevice": "እዚህ",
+    "ip": "IP",
+    "unknown": "ያልታወቀ",
+    "lastActive": "መጨረሻ የተጠቀሙበት",
+    "signedIn": "የገቡበት",
+    "currentSession": "አሁን እዚህ",
+    "signOut": "ውጣ",
+    "signOutFooter": "ከቦታ ማውጣት እስከ ቀጣይ መግቢያ ድረስ መዳረሻውን ያቆማል።",
+    "signOutTitle": "ከዚህ ቦታ እናውጣ?",
+    "signOutDesc": "{device} ዳሽቦርዱን ለመክፈት እንደገና መግባት ይኖርበታል።",
+    "signOutDescGeneric": "እንደገና መግባት ይኖርበታል።",
+    "signingOut": "በመውጣት ላይ…",
+    "signOutDevice": "አውጣ",
+    "showPassword": "የይለፍ ቃል አሳይ",
+    "hidePassword": "የይለፍ ቃል ደብቅ",
+    "device": {
+      "desktop": "ኮምፒውተር",
+      "ipad": "iPad",
+      "iphone": "iPhone",
+      "androidPhone": "የAndroid ስልክ",
+      "mac": "Mac",
+      "windowsPc": "Windows PC",
+      "linuxPc": "Linux PC",
+      "mobile": "ሞባይል",
+      "unknown": "ያልታወቀ ቦታ"
+    },
+    "os": {
+      "unknown": "ያልታወቀ OS",
+      "browser": "ያልታወቀ",
+      "unknownBrowser": "ያልታወቀ"
+    },
+    "toast": {
+      "nameMin": "ቢያንስ ሁለት ፊደል ያለው ስም ያስገቡ።",
+      "profileOrigin": "የመገለጫ ለውጥ በauth origin ቅንብር ታግዷል።",
+      "profileFailed": "መገለጫዎን መቀየር አልተቻለም።",
+      "profileUpdated": "መገለጫ ተቀይሯል።",
+      "passwordRequired": "የአሁኑን እና አዲሱን የይለፍ ቃል ያስገቡ።",
+      "passwordMin": "አዲሱ የይለፍ ቃል ቢያንስ 8 ፊደላት ወይም ቁጥሮች መሆን አለበት።",
+      "passwordMismatch": "አዲሱ የይለፍ ቃል እና ማረጋገጫው አይዛመዱም።",
+      "passwordWrong": "የአሁኑ የይለፍ ቃል ልክ አይደለም።",
+      "passwordOrigin": "የይለፍ ቃል ለውጥ በauth origin ቅንብር ታግዷል።",
+      "passwordFailed": "የይለፍ ቃል መቀየር አልተቻለም።",
+      "passwordUpdatedOthers": "የይለፍ ቃል ተቀይሯል። ሌሎች ቦታዎች ወጥተዋል።",
+      "passwordUpdated": "የይለፍ ቃል ተቀይሯል።",
+      "cannotRevokeCurrent": "ከዚህ ቦታ ማውጣት አይችሉም።",
+      "revokeOrigin": "ማውጣት በauth origin ቅንብር ታግዷል።",
+      "revokeFailed": "ማውጣት አልተቻለም።",
+      "sessionSignedOut": "ወጥቷል።",
+      "sessionsOrigin": "የገቡ ቦታዎች ዝርዝር በauth origin ቅንብር ታግዷል። trusted origins ካዘመኑ በኋላ platform-apiን እንደገና ያስጀምሩ።",
+      "sessionsFailed": "የገቡ ቦታዎችን መጫን አልተቻለም።"
+    }
   }
 }

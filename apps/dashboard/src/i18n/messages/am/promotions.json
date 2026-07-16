@@ -32,7 +32,7 @@
       "label": "የቅናሽ አይነት",
       "order": "የትዕዛዝ ቅናሽ",
       "products": "የምርት ቅናሽ",
-      "free_shipping": "ነጻ ማድረስ",
+      "free_shipping": "ነጻ ደሊቨሪ",
       "buyget": "ገዛና አግኝ",
       "percentage": "በመቶኛ",
       "fixed": "በገንዘብ መጠን"
@@ -50,9 +50,9 @@
   },
   "format": {
     "buyGet": "{buy} ሲገዙ {get} በነጻ ያግኙ",
-    "freeShipping": "ነጻ ማድረስ",
+    "freeShipping": "ነጻ ደሊቨሪ",
     "buyXgetY": "X ሲገዙ Y ያግኙ",
-    "shipping": "ማድረሻ",
+    "shipping": "ደሊቨሪ",
     "products": "ምርቶች",
     "order": "ትዕዛዝ",
     "orderDiscount": "ትዕዛዝ",

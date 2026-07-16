@@ -11,5 +11,18 @@
   "noMatches": "ምንም ውጤት የለም። ሌላ ቃል ይሞክሩ ወይም ፍጠር ድርጊት ይጠቀሙ።",
   "actionsHeading": "ድርጊቶች",
   "loadingMore": "ተጨማሪ ውጤቶች በመጫን ላይ…",
-  "searchingShop": "ሱቅዎን በመፈለግ ላይ…"
+  "searchingShop": "ሱቅዎን በመፈለግ ላይ…",
+  "recent": "የቅርብ ጊዜ",
+  "results": "ውጤቶች",
+  "actions": {
+    "createProduct": "ምርት ፍጠር",
+    "createCategory": "ምድብ ፍጠር",
+    "createCollection": "ስብስብ ፍጠር",
+    "createOrder": "በእጅ ትዕዛዝ ፍጠር",
+    "openCustomers": "ደንበኞችን ክፈት",
+    "uploadMedia": "ሚዲያ ስቀል",
+    "createPromotion": "ቅናሽ ፍጠር",
+    "openBilling": "ክፍያ ክፈት",
+    "openSettings": "ማስተካከያዎችን ክፈት"
+  }
 }

@@ -136,7 +136,7 @@ export function CommandCenter() {
         }) ?? window.location.hostname
       : "default";
 
-  const staticCommands = useMemo(() => getAllStaticCommands(), []);
+  const staticCommands = useMemo(() => getAllStaticCommands(t), [t]);
   const filteredCommands = useMemo(
     () => filterStaticCommands(query, staticCommands),
     [query, staticCommands],
@@ -411,7 +411,9 @@ export function CommandCenter() {
                         <Icon className="size-4" />
                       </IconTile>
                       <span className="min-w-0 flex-1 truncate font-medium">{item.label}</span>
-                      <span className="text-[11px] text-muted-foreground/70">Recent</span>
+                      <span className="text-[11px] text-muted-foreground/70">
+                        {t("commandCenter.recent")}
+                      </span>
                     </CommandItem>
                   );
                 })}
@@ -456,7 +458,7 @@ export function CommandCenter() {
                   return (
                     <CommandGroup
                       key={type}
-                      heading={groupLabelForSearchType(type)}
+                      heading={groupLabelForSearchType(type, t)}
                       className="**:[[cmdk-group-heading]]:px-2 **:[[cmdk-group-heading]]:pt-3 **:[[cmdk-group-heading]]:pb-1.5 **:[[cmdk-group-heading]]:text-[11px] **:[[cmdk-group-heading]]:font-semibold **:[[cmdk-group-heading]]:tracking-wider **:[[cmdk-group-heading]]:text-muted-foreground/80 **:[[cmdk-group-heading]]:uppercase"
                     >
                       {hits.map((hit) => (

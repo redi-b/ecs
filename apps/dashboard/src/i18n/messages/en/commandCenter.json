@@ -11,5 +11,18 @@
   "noMatches": "No matches. Try another term or a create action.",
   "actionsHeading": "Actions",
   "loadingMore": "Loading more results…",
-  "searchingShop": "Searching your shop…"
+  "searchingShop": "Searching your shop…",
+  "recent": "Recent",
+  "results": "Results",
+  "actions": {
+    "createProduct": "Create product",
+    "createCategory": "Create category",
+    "createCollection": "Create collection",
+    "createOrder": "Create manual order",
+    "openCustomers": "Open customers",
+    "uploadMedia": "Upload media",
+    "createPromotion": "Create promotion",
+    "openBilling": "Open billing",
+    "openSettings": "Open settings"
+  }
 }

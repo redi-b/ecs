@@ -1,7 +1,7 @@
 {
   "continue": "ቀጥል",
   "back": "ተመለስ",
-  "save": "አስቀምጥ",
+  "save": "ቀይር",
   "cancel": "ይቅር",
   "notSet": "አልተዘጋጀም",
   "preview": "ቅድመ እይታ",
@@ -28,7 +28,7 @@
     "pageAria": "ገጽ {page}",
     "pageOf": "ገጽ {current} ከ {total}"
   },
-  "saving": "እየተቀመጠ ነው…",
+  "saving": "እየተቀየረ ነው…",
   "loadingProducts": "ምርቶች በመጫን ላይ…",
   "selectProducts": "ምርቶችን ይምረጡ…",
   "productSelected": "1 ምርት ተመርጧል",
