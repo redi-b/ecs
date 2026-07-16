@@ -1,0 +1,1 @@
+ALTER TABLE "payment_onboarding" ADD COLUMN "secret_key" text;
