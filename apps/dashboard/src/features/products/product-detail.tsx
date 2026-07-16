@@ -194,16 +194,16 @@ export function ProductDetail({ action, product, tenantId }: ProductDetailProps)
             </div>
           ) : (
             <p className="rounded-lg border border-dashed px-4 py-6 text-sm text-muted-foreground">
-              No product images have been added.
+              {t("products.detail.noImagesYet")}
             </p>
           )}
         </section>
 
         <section className="space-y-3">
           <div className="flex items-center justify-between gap-3">
-            <h2 className="text-sm font-medium">Product options</h2>
+            <h2 className="text-sm font-medium">{t("products.detail.optionsTitle")}</h2>
             <span className="text-sm text-muted-foreground">
-              {product.variants?.length ?? 0} variants
+              {t("products.detail.variantsCount", { count: product.variants?.length ?? 0 })}
             </span>
           </div>
           <ProductOptionsSummary product={product} />
@@ -221,13 +221,14 @@ export function ProductDetail({ action, product, tenantId }: ProductDetailProps)
 }
 
 function ProductOptionsSummary({ product }: { product: MerchantProduct }) {
+  const { t } = useI18n();
   const variants = product.variants ?? [];
   const options = getProductOptionGroups(product);
 
   if (!variants.length) {
     return (
       <p className="rounded-lg border border-dashed px-4 py-6 text-sm text-muted-foreground">
-        This product does not have sellable variants yet.
+        {t("products.detail.noVariantsYet")}
       </p>
     );
   }
@@ -235,9 +236,9 @@ function ProductOptionsSummary({ product }: { product: MerchantProduct }) {
   if (!options.length) {
     return (
       <div className="rounded-lg border bg-muted/20 px-4 py-3 text-sm">
-        <div className="font-medium">Simple product</div>
+        <div className="font-medium">{t("products.detail.simpleProduct")}</div>
         <div className="mt-1 text-muted-foreground">
-          One sellable product row is managed in the stock section.
+          {t("products.detail.simpleProductHelp")}
         </div>
       </div>
     );
@@ -353,13 +354,20 @@ function ProductThumbnail({
 }
 
 function ProductStatusBadge({ status }: { status: string | null }) {
+  const { t } = useI18n();
   const normalized = status?.toLowerCase() ?? "unknown";
   const variant =
     normalized === "published" ? "default" : normalized === "draft" ? "secondary" : "outline";
+  const label =
+    normalized === "published"
+      ? t("products.detail.statusPublished")
+      : normalized === "draft"
+        ? t("products.detail.statusDraft")
+        : t("products.detail.statusUnknown");
 
   return (
-    <Badge className="capitalize" variant={variant}>
-      {normalized.replaceAll("_", " ")}
+    <Badge variant={variant}>
+      {label}
     </Badge>
   );
 }
@@ -478,22 +486,25 @@ function formatDateTime(value: string | null, t: (key: any) => string) {
   }).format(date);
 }
 
-function getDeletionErrorMessage(error: unknown, resourceName: string) {
+function getDeletionErrorMessage(
+  error: unknown,
+  t: (key: import("@/i18n/messages").MessageKey) => string,
+) {
   const code = error instanceof Error ? error.message : String(error);
   if (code === "commerce_backend_unavailable") {
-    return "Catalog changes are temporarily unavailable. Try again.";
+    return t("products.detail.catalogUnavailable");
   }
   if (code === "commerce_credentials_missing" || code === "commerce_credentials_invalid") {
-    return "Catalog changes are temporarily unavailable. Contact support.";
+    return t("products.detail.catalogContactSupport");
   }
   if (
     code === "product_not_found" ||
     code === "category_not_found" ||
     code === "collection_not_found"
   ) {
-    return `${resourceName} not found.`;
+    return t("products.detail.notFound");
   }
-  return `Failed to delete ${resourceName.toLowerCase()}. Try again.`;
+  return t("products.detail.deleteFailed");
 }
 
 export function ProductDeleteButton({
@@ -516,7 +527,7 @@ export function ProductDeleteButton({
       const res = await fetch(url, { method: "POST" });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || "Failed to delete product.");
+        throw new Error(err.error || "delete_failed");
       }
       return productId;
     },
@@ -528,7 +539,7 @@ export function ProductDeleteButton({
       router.refresh();
     },
     onError: (error) => {
-      toast.error(getDeletionErrorMessage(error, "Product"));
+      toast.error(getDeletionErrorMessage(error, t));
     },
   });
 

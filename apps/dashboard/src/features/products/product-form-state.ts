@@ -4,14 +4,17 @@ import { z } from "zod";
 import { NO_COLLECTION_VALUE } from "@/features/products/product-form-fields";
 import {
   type ComposerStep,
+  createProductPayloadSchema,
   type ProductFormValues,
-  productPayloadSchema,
 } from "@/features/products/product-form-types";
 import type {
   ProductOptionDraft,
   VariantMatrixRow,
 } from "@/features/products/product-variant-matrix";
 import { buildVariantMatrix } from "@/features/products/product-variant-matrix";
+import type { MessageKey } from "@/i18n/messages";
+
+type Translate = (key: MessageKey, values?: Record<string, string | number | Date>) => string;
 
 export function getProductDefaultValues(product: MerchantProduct | undefined): ProductFormValues {
   const firstPrice = getFirstVariantPrice(product);
@@ -41,8 +44,12 @@ export function getProductDefaultValues(product: MerchantProduct | undefined): P
   };
 }
 
-export function getProductPayload(values: ProductFormValues, options: { includeOptions: boolean }) {
-  const parsed = productPayloadSchema.safeParse({
+export function getProductPayload(
+  values: ProductFormValues,
+  options: { includeOptions: boolean },
+  t: Translate,
+) {
+  const parsed = createProductPayloadSchema(t).safeParse({
     title: values.title,
     description: getNullableString(values.description),
     handle: getNullableString(values.handle),
@@ -66,7 +73,9 @@ export function getProductPayload(values: ProductFormValues, options: { includeO
   });
 
   if (!parsed.success) {
-    throw new Error(parsed.error.issues[0]?.message ?? "Review the product fields and try again.");
+    throw new Error(
+      parsed.error.issues[0]?.message ?? t("products.validation.reviewFields"),
+    );
   }
 
   return parsed.data;
@@ -95,22 +104,23 @@ export function getProductSuccessPath(action: string, productId: string, isEdit:
 export function getFirstInvalidFieldForStep(
   step: ComposerStep["id"],
   values: ProductFormValues,
+  t: Translate,
 ): keyof ProductFormValues | null {
   if (step === "details") {
-    if (validateTitle(values.title)) {
+    if (validateTitle(values.title, t)) {
       return "title";
     }
 
-    if (validateImageUrls(values.imageUrls)) {
+    if (validateImageUrls(values.imageUrls, t)) {
       return "imageUrls";
     }
   }
 
-  if (step === "variants" && validatePriceAmount(values.priceAmount)) {
+  if (step === "variants" && validatePriceAmount(values.priceAmount, t)) {
     return "priceAmount";
   }
 
-  if (step === "variants" && validateInitialStock(values.initialStock)) {
+  if (step === "variants" && validateInitialStock(values.initialStock, t)) {
     return "initialStock";
   }
 
@@ -123,21 +133,21 @@ export function getNullableString(value: string) {
   return trimmed ? trimmed : null;
 }
 
-export function validateTitle(value: string) {
-  return value.trim() ? undefined : "Enter a product title.";
+export function validateTitle(value: string, t: Translate) {
+  return value.trim() ? undefined : t("products.validation.titleRequired");
 }
 
-export function validatePriceAmount(value: string) {
+export function validatePriceAmount(value: string, t: Translate) {
   const trimmed = value.trim();
 
   if (!trimmed) {
-    return "Enter a price.";
+    return t("products.validation.priceRequired");
   }
 
   if (!/^\d+$/.test(trimmed)) {
     return /[a-zA-Z]/.test(trimmed)
-      ? "Use numbers only."
-      : "Use a whole number price without decimals or symbols.";
+      ? t("products.validation.priceNumbersOnly")
+      : t("products.validation.priceWholeNumber");
   }
 
   return undefined;
@@ -214,15 +224,15 @@ export function normalizeProductOptions(options: ProductOptionDraft[]) {
     .filter((option) => option.title && option.values.length);
 }
 
-export function validateInitialStock(value: string) {
+export function validateInitialStock(value: string, t: Translate) {
   const trimmed = value.trim();
 
   if (!trimmed) {
-    return "Enter an initial stock quantity.";
+    return t("products.validation.stockRequired");
   }
 
   if (!/^\d+$/.test(trimmed)) {
-    return "Use a whole number stock quantity.";
+    return t("products.validation.stockWholeNumber");
   }
 
   return undefined;
@@ -234,10 +244,10 @@ export function parseWholeNumber(value: string) {
   return /^\d+$/.test(trimmed) ? Number.parseInt(trimmed, 10) : undefined;
 }
 
-export function formatEtbAmount(value: string) {
+export function formatEtbAmount(value: string, t: Translate) {
   const amount = parseWholeNumber(value);
 
-  return amount === undefined ? "No price" : `ETB ${amount}`;
+  return amount === undefined ? t("products.validation.noPrice") : `ETB ${amount}`;
 }
 
 export class ProductMutationError extends Error {
@@ -250,39 +260,35 @@ export class ProductMutationError extends Error {
   }
 }
 
-export function getProductMutationError(error: string | undefined, status: number) {
+export function getProductMutationError(
+  error: string | undefined,
+  status: number,
+  t: Translate,
+) {
   if (error === "product_conflict" || status === 409) {
-    return new ProductMutationError(
-      "A product with this handle may already exist. Change the handle and try again.",
-      "details",
-    );
+    return new ProductMutationError(t("products.validation.handleConflict"), "details");
   }
 
   if (error === "product_write_invalid" || status === 400 || status === 422) {
-    return new ProductMutationError(
-      "This product could not be saved. Review the highlighted fields and try again.",
-      "details",
-    );
+    return new ProductMutationError(t("products.validation.writeInvalid"), "details");
   }
 
   if (error === "commerce_backend_unavailable") {
-    return new ProductMutationError("Catalog changes are temporarily unavailable. Try again.");
+    return new ProductMutationError(t("products.validation.catalogUnavailable"));
   }
 
   if (error === "commerce_credentials_missing" || error === "commerce_credentials_invalid") {
-    return new ProductMutationError(
-      "Catalog changes are temporarily unavailable. Contact support.",
-    );
+    return new ProductMutationError(t("products.validation.catalogContactSupport"));
   }
 
-  return new ProductMutationError("Product could not be saved. Try again.");
+  return new ProductMutationError(t("products.validation.saveFailed"));
 }
 
-export function getErrorMessage(error: unknown) {
-  return error instanceof Error ? error.message : "Product could not be saved. Try again.";
+export function getErrorMessage(error: unknown, t: Translate) {
+  return error instanceof Error ? error.message : t("products.validation.saveFailed");
 }
 
-export function validateImageUrls(value: string) {
+export function validateImageUrls(value: string, t: Translate) {
   const urls = value
     .split("\n")
     .map((row) => row.trim())
@@ -290,7 +296,7 @@ export function validateImageUrls(value: string) {
 
   for (const url of urls) {
     if (!z.string().url().safeParse(url).success) {
-      return "Use full image URLs that start with http:// or https://.";
+      return t("products.validation.imageUrlFull");
     }
   }
 

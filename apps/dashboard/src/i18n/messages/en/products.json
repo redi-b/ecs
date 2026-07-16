@@ -52,7 +52,20 @@
     "deleteConfirm": "Delete",
     "toastDeleted": "Product deleted.",
     "thisProduct": "this product",
-    "noImage": "No image"
+    "noImage": "No image",
+    "noImagesYet": "No product images have been added.",
+    "optionsTitle": "Product options",
+    "variantsCount": "{count} variants",
+    "noVariantsYet": "This product does not have sellable variants yet.",
+    "simpleProduct": "Simple product",
+    "simpleProductHelp": "One sellable product row is managed in the stock section.",
+    "deleteFailed": "Failed to delete product. Try again.",
+    "notFound": "Product not found.",
+    "catalogUnavailable": "Catalog changes are temporarily unavailable. Try again.",
+    "catalogContactSupport": "Catalog changes are temporarily unavailable. Contact support.",
+    "statusPublished": "Published",
+    "statusDraft": "Draft",
+    "statusUnknown": "Unknown"
   },
   "create": {
     "optionsLoadErrorDesc": "Could not load {labels}. You can still create a basic product and add options later."
@@ -359,5 +372,31 @@
     "leaveDesc": "Changes you made will be lost.",
     "stay": "Stay",
     "leave": "Leave"
+  },
+  "validation": {
+    "titleRequired": "Enter a product title.",
+    "priceRequired": "Enter a price.",
+    "priceNumbersOnly": "Use numbers only.",
+    "priceWholeNumber": "Use a whole number price without decimals or symbols.",
+    "priceNonNegative": "Price cannot be negative.",
+    "stockRequired": "Enter an initial stock quantity.",
+    "stockWholeNumber": "Use a whole number stock quantity.",
+    "stockNonNegative": "Stock cannot be negative.",
+    "imageUrlFull": "Use full image URLs that start with http:// or https://.",
+    "optionNameRequired": "Enter an option name.",
+    "optionValueRequired": "Enter at least one option value.",
+    "reviewFields": "Review the product fields and try again.",
+    "handleConflict": "A product with this handle may already exist. Change the handle and try again.",
+    "writeInvalid": "This product could not be saved. Review the highlighted fields and try again.",
+    "catalogUnavailable": "Catalog changes are temporarily unavailable. Try again.",
+    "catalogContactSupport": "Catalog changes are temporarily unavailable. Contact support.",
+    "saveFailed": "Product could not be saved. Try again.",
+    "noPrice": "No price"
+  },
+  "editErrors": {
+    "handleConflict": "Another product already uses that handle.",
+    "notFound": "This product is no longer available.",
+    "backendUnavailable": "The commerce backend is temporarily unavailable.",
+    "saveFailed": "Product details could not be saved. Try again."
   }
 }

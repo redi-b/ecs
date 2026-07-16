@@ -128,11 +128,11 @@ export function ProductForm({
     onSubmit: async ({ value }) => {
       try {
         setActionError(null);
-        const payload = getProductPayload(value, { includeOptions: !product });
+        const payload = getProductPayload(value, { includeOptions: !product }, t);
 
         await submitMutation.mutateAsync(payload);
       } catch (error) {
-        const message = getErrorMessage(error);
+        const message = getErrorMessage(error, t);
 
         if (error instanceof ProductMutationError && error.step) {
           setActiveStep(error.step);
@@ -158,7 +158,7 @@ export function ProductForm({
       };
 
       if (!response.ok || !data.product) {
-        throw getProductMutationError(data.error, response.status);
+        throw getProductMutationError(data.error, response.status, t);
       }
 
       const mediaResponse = await fetch(
@@ -234,7 +234,7 @@ export function ProductForm({
       return;
     }
 
-    const invalidField = getFirstInvalidFieldForStep(activeStep, form.state.values);
+    const invalidField = getFirstInvalidFieldForStep(activeStep, form.state.values, t);
 
     if (invalidField) {
       form.validateField(invalidField, "submit");
@@ -252,7 +252,7 @@ export function ProductForm({
     const next = PRODUCT_STEPS[currentIndex + 1];
 
     if (!next) {
-      const invalidField = getFirstInvalidFieldForStep(activeStep, form.state.values);
+      const invalidField = getFirstInvalidFieldForStep(activeStep, form.state.values, t);
 
       if (invalidField) {
         form.validateField(invalidField, "submit");
@@ -409,8 +409,8 @@ export function ProductForm({
                         <form.Field
                           name="title"
                           validators={{
-                            onBlur: ({ value }) => validateTitle(value),
-                            onSubmit: ({ value }) => validateTitle(value),
+                            onBlur: ({ value }) => validateTitle(value, t),
+                            onSubmit: ({ value }) => validateTitle(value, t),
                           }}
                         >
                           {(field) => (
@@ -666,8 +666,8 @@ export function ProductForm({
                           <form.Field
                             name="priceAmount"
                             validators={{
-                              onBlur: ({ value }) => validatePriceAmount(value),
-                              onSubmit: ({ value }) => validatePriceAmount(value),
+                              onBlur: ({ value }) => validatePriceAmount(value, t),
+                              onSubmit: ({ value }) => validatePriceAmount(value, t),
                             }}
                           >
                             {(field) => (
@@ -701,8 +701,8 @@ export function ProductForm({
                           <form.Field
                             name="initialStock"
                             validators={{
-                              onBlur: ({ value }) => validateInitialStock(value),
-                              onSubmit: ({ value }) => validateInitialStock(value),
+                              onBlur: ({ value }) => validateInitialStock(value, t),
+                              onSubmit: ({ value }) => validateInitialStock(value, t),
                             }}
                           >
                             {(field) => (
