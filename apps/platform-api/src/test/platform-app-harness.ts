@@ -170,6 +170,11 @@ export function appWithResolution(
     }) => Promise<TenantDomainCreateResult>;
     getBillingStatus?: (input: { tenantId: string }) => Promise<BillingStatusResult>;
     getDeliverySettings?: (input: { tenantId: string }) => Promise<DeliverySettingsResult>;
+    getMerchantChapaCredentials?: (input: { tenantId: string }) => Promise<
+      | { ok: true; secretKey: string; providerAccountRef: string | null }
+      | { ok: false; error: "merchant_chapa_not_configured" }
+    >;
+    isMerchantChapaConfigured?: (input: { tenantId: string }) => Promise<boolean>;
     updateDeliverySettings?: (input: {
       currency: string;
       defaultDeliveryFee: string;
@@ -379,6 +384,8 @@ export function appWithResolution(
     createTenantShop: options?.createTenantShop,
     getBillingStatus: options?.getBillingStatus,
     getDeliverySettings: options?.getDeliverySettings,
+    getMerchantChapaCredentials: options?.getMerchantChapaCredentials,
+    isMerchantChapaConfigured: options?.isMerchantChapaConfigured,
     handleChapaPaymentCallback: options?.handleChapaPaymentCallback,
     getPublishedStorefrontConfig: options?.getPublishedStorefrontConfig,
     getStorefrontDraft: options?.getStorefrontDraft,

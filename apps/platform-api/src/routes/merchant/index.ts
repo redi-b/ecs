@@ -12,6 +12,7 @@ import { registerMerchantProductRoutes } from "./products.js";
 import { registerMerchantPromotionRoutes } from "./promotions.js";
 import { registerMerchantSearchRoutes } from "./search.js";
 import { registerMerchantInboxNotificationRoutes } from "./inbox-notifications.js";
+import { registerMerchantPaymentRoutes } from "./payments.js";
 import { registerMerchantTelegramNotificationRoutes } from "./telegram-notifications.js";
 
 export function registerMerchantRoutes(
@@ -31,4 +32,5 @@ export function registerMerchantRoutes(
   registerMerchantPromotionRoutes(app, options, helpers);
   registerMerchantTelegramNotificationRoutes(app, options, helpers);
   registerMerchantInboxNotificationRoutes(app, options, helpers);
+  registerMerchantPaymentRoutes(app, options, helpers);
 }

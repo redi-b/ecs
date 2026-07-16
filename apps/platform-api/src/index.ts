@@ -156,7 +156,10 @@ const getTenantDashboardSummary = createTenantDashboardSummaryService(platformDb
 const getTenantForUser = createTenantDetailService(platformDb.db);
 const listTenantsForUser = createTenantListService(platformDb.db);
 const tenantStatusService = createTenantStatusService(platformDb.db);
-const paymentOnboardingService = createPaymentOnboardingService(platformDb.db);
+const paymentOnboardingService = createPaymentOnboardingService(platformDb.db, {
+  paymentsCredentialsEncryptionKey:
+    process.env.PAYMENTS_CREDENTIALS_ENCRYPTION_KEY ?? process.env.CHAPA_SECRET_KEY,
+});
 const medusaInternalUrl = process.env.MEDUSA_INTERNAL_URL ?? "http://localhost:9000";
 const customerService = createMedusaCustomerService({
   adminApiToken: process.env.MEDUSA_ADMIN_API_TOKEN,
@@ -508,6 +511,12 @@ const app = createPlatformApp({
   },
   getDashboardMetrics: dashboardMetricsService,
   getDeliverySettings: deliverySettingsService.getDeliverySettings,
+  getMerchantChapaCredentials: paymentOnboardingService.getMerchantChapaCredentials,
+  isMerchantChapaConfigured: paymentOnboardingService.isMerchantChapaConfigured,
+  getMerchantStorePaymentStatus: paymentOnboardingService.getMerchantStorePaymentStatus,
+  setMerchantChapaSecret: paymentOnboardingService.setMerchantChapaSecret,
+  setMerchantChapaOnlineEnabled: paymentOnboardingService.setMerchantChapaOnlineEnabled,
+  clearMerchantChapaSecret: paymentOnboardingService.clearMerchantChapaSecret,
   handleChapaPaymentCallback: chapaPaymentService.handleChapaPaymentCallback,
   getOperatorSupportHistory: supportService.getOperatorSupportHistory,
   getOnboardingState,
