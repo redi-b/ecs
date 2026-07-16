@@ -325,7 +325,7 @@ export function CommandCenter() {
         >
           <AppIcons.search className="size-4 opacity-80" />
           <span className="hidden text-sm text-muted-foreground sm:inline">
-            Search or jump…
+            {t("commandCenter.triggerLabel")}
           </span>
           <KbdGroup className="ml-auto hidden shrink-0 sm:inline-flex">
             <Kbd className={cn(modKey === "⌘" && "min-w-5 px-1 text-[13px] leading-none")}>
@@ -348,20 +348,20 @@ export function CommandCenter() {
         )}
         showCloseButton={false}
       >
-        <DialogTitle className="sr-only">Command center</DialogTitle>
+        <DialogTitle className="sr-only">{t("commandCenter.title")}</DialogTitle>
         <DialogDescription className="sr-only">
-          Search pages, products, orders, customers, and run common actions.
+          {t("commandCenter.dialogDescription")}
         </DialogDescription>
 
         {/* Mobile drag/close chrome */}
         <div className="flex items-center justify-between gap-2 border-b border-border/50 px-3 py-2 sm:hidden">
-          <p className="text-sm font-medium">Command center</p>
+          <p className="text-sm font-medium">{t("commandCenter.title")}</p>
           <Button
             type="button"
             variant="ghost"
             size="icon"
             className="size-8"
-            aria-label="Close"
+            aria-label={t("commandCenter.closeAria")}
             onClick={() => setOpen(false)}
           >
             <AppIcons.close className="size-4" />
@@ -392,7 +392,7 @@ export function CommandCenter() {
 
             {showEmptyQuery && recent.length > 0 ? (
               <CommandGroup
-                heading="Recent"
+                heading={t("commandCenter.recent")}
                 className="**:[[cmdk-group-heading]]:px-2 **:[[cmdk-group-heading]]:pt-3 **:[[cmdk-group-heading]]:pb-1.5 **:[[cmdk-group-heading]]:text-[11px] **:[[cmdk-group-heading]]:font-semibold **:[[cmdk-group-heading]]:tracking-wider **:[[cmdk-group-heading]]:text-muted-foreground/80 **:[[cmdk-group-heading]]:uppercase"
               >
                 {recent.map((item) => {
@@ -536,13 +536,13 @@ export function CommandCenter() {
 
           <div className="flex shrink-0 items-center justify-between gap-2 border-t border-border/60 bg-muted/30 px-3 py-2.5 text-[11px] text-muted-foreground sm:py-2">
             <span className="flex items-center gap-1.5">
-              <span className="sm:hidden">Tap a result to open</span>
+              <span className="sm:hidden">{t("commandCenter.tapToOpen")}</span>
               <span className="hidden items-center gap-1.5 sm:flex">
                 <Kbd className="h-5 min-w-5 px-1">↑</Kbd>
                 <Kbd className="h-5 min-w-5 px-1">↓</Kbd>
-                <span>move</span>
+                <span>{t("commandCenter.move")}</span>
                 <Kbd className="ml-1 h-5 px-1.5">↵</Kbd>
-                <span>open</span>
+                <span>{t("commandCenter.open")}</span>
               </span>
             </span>
             <span className="flex items-center gap-1">
@@ -552,7 +552,7 @@ export function CommandCenter() {
                 className="text-foreground/80 underline-offset-2 sm:no-underline sm:hover:underline"
                 onClick={() => setOpen(false)}
               >
-                Close
+                {t("commandCenter.close")}
               </button>
             </span>
           </div>

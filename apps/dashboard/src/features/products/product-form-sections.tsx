@@ -164,17 +164,23 @@ export function ProductOptionsBuilder({
     });
   }
 
+  const presetOptions = [
+    t("products.formReview.placeholderSize"),
+    t("products.formReview.placeholderColor"),
+    t("products.formReview.placeholderMaterial"),
+  ];
+
   return (
     <div className="flex flex-col gap-4 rounded-2xl border bg-muted/20 p-4">
       <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
         <div className="max-w-2xl">
-          <h3 className="text-sm font-medium">Product options</h3>
+          <h3 className="text-sm font-medium">{t("products.formReview.optionsTitle")}</h3>
           <p className="text-sm text-muted-foreground">
-            Add the attributes shoppers choose from. Each value combination becomes a variant.
+            {t("products.formReview.optionsDesc")}
           </p>
         </div>
         <Button onClick={() => addOption()} size="sm" type="button" variant="outline">
-          Add option
+          {t("products.formReview.addOption")}
         </Button>
       </div>
 
@@ -190,24 +196,28 @@ export function ProductOptionsBuilder({
             >
               <div className="grid gap-4 md:grid-cols-[14rem_minmax(0,1fr)_auto] md:items-start">
                 <Field>
-                  <FieldLabel>Option name</FieldLabel>
+                  <FieldLabel>{t("products.formReview.optionName")}</FieldLabel>
                   <Input
                     onChange={(event) =>
                       updateOption(index, { ...option, title: event.target.value })
                     }
-                    placeholder={index === 0 ? "Size" : "Color"}
+                    placeholder={
+                      index === 0
+                        ? t("products.formReview.placeholderSize")
+                        : t("products.formReview.placeholderColor")
+                    }
                     value={option.title}
                   />
                 </Field>
 
                 <Field>
-                  <FieldLabel>Values</FieldLabel>
+                  <FieldLabel>{t("products.formReview.values")}</FieldLabel>
                   <div className="flex min-h-10 flex-wrap items-center gap-2 rounded-lg border bg-muted/20 px-2 py-2">
                     {option.values.map((value) => (
                       <Badge className="gap-1 rounded-md px-2 py-1" key={value} variant="secondary">
                         {value}
                         <button
-                          aria-label={`Remove ${value}`}
+                          aria-label={t("products.formReview.removeValueAria", { value })}
                           className="ml-1 rounded-sm text-muted-foreground hover:text-foreground"
                           onClick={() => removeValue(index, value)}
                           type="button"
@@ -217,7 +227,9 @@ export function ProductOptionsBuilder({
                       </Badge>
                     ))}
                     <input
-                      aria-label={`Add value for ${option.title || "option"}`}
+                      aria-label={t("products.formReview.addValueAria", {
+                        option: option.title || t("products.formReview.optionFallback"),
+                      })}
                       className="min-w-32 flex-1 bg-transparent px-1 py-1 text-sm outline-none placeholder:text-muted-foreground"
                       onChange={(event) =>
                         setDraftValues((current) => ({
@@ -240,14 +252,14 @@ export function ProductOptionsBuilder({
                         }
                       }}
                       placeholder={
-                        option.values.length ? t("products.formReview.addAnotherValue") : t("products.formReview.valuePlaceholder")
+                        option.values.length
+                          ? t("products.formReview.addAnotherValue")
+                          : t("products.formReview.valuePlaceholder")
                       }
                       value={draftValues[index] ?? ""}
                     />
                   </div>
-                  <FieldDescription>
-                    Press Enter or comma to add a value. Paste a comma-separated list to add many.
-                  </FieldDescription>
+                  <FieldDescription>{t("products.formReview.valuesHelp")}</FieldDescription>
                 </Field>
 
                 <Button
@@ -259,7 +271,7 @@ export function ProductOptionsBuilder({
                   type="button"
                   variant="outline"
                 >
-                  Remove
+                  {t("products.formReview.remove")}
                 </Button>
               </div>
             </div>
@@ -267,12 +279,12 @@ export function ProductOptionsBuilder({
         </div>
       ) : (
         <div className="rounded-xl border border-dashed bg-background px-4 py-5">
-          <p className="text-sm font-medium">No options yet</p>
+          <p className="text-sm font-medium">{t("products.formReview.noOptionsYet")}</p>
           <p className="mt-1 text-sm text-muted-foreground">
-            Create a simple product, or add common option groups to generate a variant matrix.
+            {t("products.formReview.noOptionsYetDesc")}
           </p>
           <div className="mt-4 flex flex-wrap gap-2">
-            {["Size", "Color", "Material"].map((title) => (
+            {presetOptions.map((title) => (
               <Button
                 key={title}
                 onClick={() => addOption(title)}
@@ -280,7 +292,7 @@ export function ProductOptionsBuilder({
                 type="button"
                 variant="outline"
               >
-                Add {title}
+                {t("products.formReview.addNamed", { title })}
               </Button>
             ))}
           </div>
@@ -323,19 +335,27 @@ export function VariantMatrixTable({
 
       <div className="overflow-hidden rounded-2xl border bg-background">
         <div className="flex flex-col gap-1 border-b bg-muted/30 px-4 py-3">
-          <h3 className="text-sm font-medium">Generated variant matrix</h3>
+          <h3 className="text-sm font-medium">{t("products.formReview.matrixTitle")}</h3>
           <p className="text-sm text-muted-foreground">
-            Review every sellable row. Change SKU, price, or stock only where needed.
+            {t("products.formReview.matrixDesc")}
           </p>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[56rem] text-sm">
             <thead className="bg-muted/40 text-muted-foreground">
               <tr>
-                <th className="px-4 py-3 text-left font-medium">Variant</th>
-                <th className="px-4 py-3 text-left font-medium">SKU</th>
-                <th className="px-4 py-3 text-left font-medium">Price</th>
-                <th className="px-4 py-3 text-left font-medium">Initial stock</th>
+                <th className="px-4 py-3 text-left font-medium">
+                  {t("products.formReview.colVariant")}
+                </th>
+                <th className="px-4 py-3 text-left font-medium">
+                  {t("products.formReview.colSku")}
+                </th>
+                <th className="px-4 py-3 text-left font-medium">
+                  {t("products.formReview.colPrice")}
+                </th>
+                <th className="px-4 py-3 text-left font-medium">
+                  {t("products.formReview.colStock")}
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -346,7 +366,8 @@ export function VariantMatrixTable({
                   <tr className="border-t align-top" key={row.key}>
                     <td className="px-4 py-3">
                       <div className="mb-2 font-medium">
-                        {Object.values(row.optionValues).join(" / ") || t("products.formReview.defaultVariant")}
+                        {Object.values(row.optionValues).join(" / ") ||
+                          t("products.formReview.defaultVariant")}
                       </div>
                       <div className="flex flex-wrap gap-1.5">
                         {Object.entries(row.optionValues).length ? (
@@ -361,14 +382,14 @@ export function VariantMatrixTable({
                           ))
                         ) : (
                           <Badge className="rounded-md" variant="secondary">
-                            No options
+                            {t("products.formReview.noOptions")}
                           </Badge>
                         )}
                       </div>
                     </td>
                     <td className="px-4 py-3">
                       <Input
-                        aria-label={`SKU for ${row.key}`}
+                        aria-label={t("products.formReview.skuAria", { key: row.key })}
                         className="h-9"
                         onChange={(event) => onOverrideChange(row.key, { sku: event.target.value })}
                         value={override.sku ?? row.sku}
@@ -378,7 +399,7 @@ export function VariantMatrixTable({
                       <InputGroup className="h-9">
                         <InputGroupAddon>ETB</InputGroupAddon>
                         <InputGroupInput
-                          aria-label={`Price for ${row.key}`}
+                          aria-label={t("products.formReview.priceAria", { key: row.key })}
                           inputMode="numeric"
                           min="0"
                           onChange={(event) =>
@@ -391,7 +412,7 @@ export function VariantMatrixTable({
                     </td>
                     <td className="px-4 py-3">
                       <Input
-                        aria-label={`Stock for ${row.key}`}
+                        aria-label={t("products.formReview.stockAria", { key: row.key })}
                         className="h-9"
                         inputMode="numeric"
                         min="0"
