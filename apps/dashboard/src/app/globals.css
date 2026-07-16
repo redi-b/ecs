@@ -591,3 +591,30 @@
     transition-duration: 1ms !important;
   }
 }
+
+/*
+ * Puck ships unlayered tokens: --puck-font-family: Inter on :root (no Ethiopic).
+ * Unlayered overrides beat @layer puck-tokens. Pin Noto Sans Ethiopic for Amharic.
+ */
+html[lang="am"] {
+  --puck-font-family: var(--font-ethiopic), var(--font-geist-sans), ui-sans-serif, system-ui,
+    sans-serif !important;
+  --puck-font-family-monospaced: var(--font-geist-mono), ui-monospace, monospace !important;
+}
+
+html[lang="am"] .storefront-puck-editor,
+html[lang="am"] .storefront-puck-editor--am,
+.storefront-puck-editor--am {
+  --puck-font-family: var(--font-ethiopic), var(--font-geist-sans), ui-sans-serif, system-ui,
+    sans-serif !important;
+  --puck-font-family-monospaced: var(--font-geist-mono), ui-monospace, monospace !important;
+  font-family: var(--font-ethiopic), var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif !important;
+}
+
+/* Editor chrome (title, badges, toolbar labels). */
+html[lang="am"] .storefront-editor-chrome,
+.storefront-puck-editor--am .storefront-editor-chrome,
+html[lang="am"] .storefront-editor-chrome *,
+.storefront-puck-editor--am .storefront-editor-chrome * {
+  font-family: var(--font-ethiopic), var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif !important;
+}

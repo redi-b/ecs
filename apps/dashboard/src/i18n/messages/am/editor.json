@@ -1,14 +1,67 @@
 {
-  "title": "የይዘት ማስተካከያ (Editor)",
-  "description": "በቀጥታ ቅድመ-እይታ ውስጥ የመደብር ገጽ ይዘትን፣ ምስሎችን እና የገጽታ ቅንብሮችን ያሻሽሉ።",
+  "title": "ማስተካከያ",
+  "description": "በቀጥታ ቅድመ እይታ ውስጥ የመደብር ገጽ ጽሑፍ፣ ምስል እና ገጽታ ይቀይሩ።",
   "error": {
-    "loadTitle": "የይዘት ማስተካከያውን መጫን አልተቻለም"
+    "loadTitle": "ማስተካከያውን መጫን አልተቻለም"
   },
   "empty": {
     "title": "በመጀመሪያ የመደብር ገጽ ንድፍ ይምረጡ",
-    "description": "ጽሑፎችን፣ ምስሎችን፣ አርማዎችን እና የገጽታ ቅንብሮችን ከመቀየርዎ በፊት የመደብር ገጽ ንድፍ ይምረጡ።"
+    "description": "ጽሑፍ፣ ምስል፣ አርማ እና ገጽታ ከመቀየር በፊት ንድፍ ይምረጡ።"
   },
   "actions": {
-    "openSettings": "የመደብር ገጽ ማስተካከያዎችን ክፈት"
+    "openSettings": "የመደብር ገጽ ማስተካከያ ክፈት",
+    "undo": "ተመለስ",
+    "redo": "እንደገና",
+    "hideOutlines": "የሚቀየሩ ቦታዎችን ደብቅ",
+    "showOutlines": "የሚቀየሩ ቦታዎችን አሳይ",
+    "exitFullscreen": "ሙሉ ማያ ውጣ",
+    "fullscreen": "ሙሉ ማያ",
+    "openLive": "ሕያው መደብር ክፈት",
+    "resetEditor": "ማስተካከያውን መልስ",
+    "resetTitle": "ለውጦቹ ይመለሱ?",
+    "resetDescription": "ገጹን ሲከፍቱ የነበረው ይመለሳል።",
+    "resetConfirm": "መልስ",
+    "saveDraft": "ለውጦቹን አስቀምጥ",
+    "publish": "ለደንበኞች ክፈት"
+  },
+  "status": {
+    "publishedLive": "ለደንበኞች ይታያል",
+    "draftSaved": "ለውጦቹ ተቀይረዋል",
+    "unpublishedEdits": "ያልታዩ ለውጦች"
+  },
+  "toast": {
+    "savingDraft": "እየተቀየረ ነው…",
+    "draftSaved": "ለውጦቹ ተቀይረዋል።",
+    "draftSaveFailed": "ለውጦቹን መቀየር አልተቻለም።",
+    "publishing": "መደብሩ ለደንበኞች እየተከፈተ ነው…",
+    "published": "መደብሩ ለደንበኞች ተከፍቷል።",
+    "publishFailed": "መደብሩን መክፈት አልተቻለም።",
+    "reset": "ማስተካከያው ወደ መጀመሪያው ተመልሷል።",
+    "imageUploaded": "ምስሉ ተጭኗል።",
+    "imageImported": "ምስሉ ገብቷል።",
+    "imageImportFailed": "ምስሉን ማስገባት አልተቻለም። እንደገና ይሞክሩ።",
+    "unsupportedImage": "የሚደገፍ የምስል ፋይል ይምረጡ።",
+    "imageTooLarge": "ምስሎች ከ 15 MB መብለጥ የለባቸውም።",
+    "imageUploadFailed": "ምስሉን መጫን አልተቻለም። እንደገና ይሞክሩ።"
+  },
+  "panels": {
+    "preview": "ቅድመ እይታ",
+    "settings": "ማስተካከያዎች"
+  },
+  "shell": {
+    "title": "የመደብር ገጽ ማስተካከያ",
+    "hint": "በቅድመ እይታ ላይ የተከበቡ ጽሑፎችን ይጫኑ፣ ወይም ዝርዝሮችን በማስተካከያዎች ያሻሽሉ።"
+  },
+  "media": {
+    "referenceSet": "ምስል ተመርጧል",
+    "uploadOrChoose": "ፋይል ይጫኑ ወይም ከማከማቻ ይምረጡ",
+    "uploading": "እየተጫነ…",
+    "uploadImage": "ምስል ጫን",
+    "chooseLibrary": "ከማከማቻ ምረጥ",
+    "clear": "አጽዳ"
+  },
+  "fonts": {
+    "choose": "ፊደል ይምረጡ",
+    "search": "ፊደላትን ፈልግ…"
   }
 }
