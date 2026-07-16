@@ -144,8 +144,11 @@ pnpm seed:demo:clean
 
 # checks
 pnpm smoke:commerce
+pnpm smoke:storefront
 pnpm verify:media-cors
 ```
+
+`pnpm smoke:storefront` runs a published shop COD path against Platform `/store/*` (default host `addis-tech.lvh.me`). Shop must be published and Medusa `medusa_publishable_key_id` must store the publishable **token** (`pk_…`), not the api key row id.
 
 `pnpm smoke:commerce` creates an ephemeral smoke tenant (category, collection, product, stock). It expects the platform API and Medusa to already be running, plus a sign-in capable owner account.
 
@@ -189,7 +192,9 @@ The local event bus and in-memory locking warnings from Medusa are expected in d
 
 The platform API supports tenant-scoped catalog, stock, checkout, payment, and order operations through Medusa.
 
-Product stock management currently supports single-variant products. If a product has multiple variants, stock read and update endpoints return `product_variant_unsupported` instead of choosing a variant automatically. Variant-level inventory management should be added before enabling multi-variant product editing in the dashboard.
+Product stock: **per-variant** stock APIs and dashboard UI are the multi-variant path. The product-level stock endpoint still returns `product_variant_unsupported` when a product has multiple variants (it will not pick a variant for you). Prefer variant stock routes for multi-variant products.
+
+Public storefront buyer path (PDP → cart → COD checkout, optional Chapa when merchant-configured) lives in `apps/storefront` — see `dev-docs/post-mvp/12-storefront-commerce-core-plan.md` and `pnpm smoke:storefront`.
 
 ## Project Rules
 
