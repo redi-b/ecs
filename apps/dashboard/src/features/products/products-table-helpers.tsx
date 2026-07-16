@@ -228,6 +228,7 @@ export function getProductColumns(
           categoryById={categoryById}
           collectionById={collectionById}
           product={row.original}
+          t={t}
         />
       ),
     },
@@ -344,7 +345,13 @@ export function ProductStockSummary({
 
   return (
     <Badge variant={available > 0 ? "default" : "secondary"}>
-      {available > 0 ? `${available} available` : "Out of stock"}
+      {available > 0
+        ? t
+          ? t("products.table.availableCount", { count: available })
+          : `${available} available`
+        : t
+          ? t("products.table.outOfStock")
+          : "Out of stock"}
     </Badge>
   );
 }
@@ -353,10 +360,12 @@ export function ProductOrganizationSummary({
   categoryById,
   collectionById,
   product,
+  t,
 }: {
   categoryById: Map<string, MerchantProductCategory>;
   collectionById: Map<string, MerchantProductCollection>;
   product: MerchantProduct;
+  t: Translate;
 }) {
   const collection = product.collectionId ? collectionById.get(product.collectionId) : undefined;
   const categoryIds = product.categoryIds ?? [];
@@ -372,31 +381,37 @@ export function ProductOrganizationSummary({
             <AppIcons.tag className="size-4" />
           </span>
         </TooltipTrigger>
-        <TooltipContent>No collection or categories</TooltipContent>
+        <TooltipContent>{t("products.table.noCollectionOrCategories")}</TooltipContent>
       </Tooltip>
     );
   }
+
+  const firstCategoryName =
+    firstCategory?.name ?? firstCategory?.handle ?? t("products.table.unknownCategory");
 
   return (
     <div className="flex min-w-36 flex-col gap-1.5">
       <OrganizationSignal
         icon={<AppIcons.folder className="size-4" />}
-        tooltip="Collection"
+        tooltip={t("products.table.collection")}
         value={
           product.collectionId
-            ? (collection?.title ?? collection?.handle ?? "Unknown collection")
-            : "No collection"
+            ? (collection?.title ?? collection?.handle ?? t("products.table.unknownCollection"))
+            : t("products.table.noCollection")
         }
       />
       <OrganizationSignal
         icon={<AppIcons.tag className="size-4" />}
-        tooltip="Categories"
+        tooltip={t("products.table.categories")}
         value={
           categoryCount
-            ? `${firstCategory?.name ?? firstCategory?.handle ?? "Unknown category"}${
-                categoryCount > 1 ? ` +${categoryCount - 1}` : ""
-              }`
-            : "No categories"
+            ? categoryCount > 1
+              ? t("products.table.categoriesMore", {
+                  name: firstCategoryName,
+                  count: categoryCount - 1,
+                })
+              : firstCategoryName
+            : t("products.table.noCategories")
         }
       />
     </div>
