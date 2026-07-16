@@ -63,15 +63,15 @@ export function getTaxonomyTableCounts(input: {
   };
 }
 
-export function formatTaxonomyDate(value: string | null) {
+export function formatTaxonomyDate(value: string | null, noDateLabel = "No date") {
   if (!value) {
-    return "No date";
+    return noDateLabel;
   }
 
   const date = new Date(value);
 
   if (Number.isNaN(date.getTime())) {
-    return "No date";
+    return noDateLabel;
   }
 
   return new Intl.DateTimeFormat("en", {

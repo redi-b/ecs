@@ -45,7 +45,7 @@ export default async function MerchantProductCollectionsPage({
     tenantId,
     ...(listParams.q ? { q: listParams.q } : {}),
   });
-  const errorState = result.ok ? null : getTaxonomyListErrorState("collections", result.message);
+  const errorState = result.ok ? null : getTaxonomyListErrorState("collections", result.message, t);
 
   return (
     <PageShell
@@ -130,7 +130,7 @@ function getCollectionNotice(
     };
   }
 
-  const mutationError = getTaxonomyListErrorState("collections", status);
+  const mutationError = getTaxonomyListErrorState("collections", status, t);
 
   if (mutationError.kind === "setup" || mutationError.kind === "service") {
     return null;
