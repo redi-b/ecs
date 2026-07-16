@@ -29,6 +29,10 @@
     "account": {
       "label": "መለያ",
       "description": "መገለጫ፣ የይለፍ ቃል፣ የገቡ ቦታዎች"
+    },
+    "payments": {
+      "label": "ክፍያዎች",
+      "description": "ደንበኞች እንዴት እንደሚከፍሉ"
     }
   },
   "status": {
@@ -337,5 +341,59 @@
     "signOutOthersTitle": "ሌሎች ቦታዎች ይውጡ?",
     "signOutOthersDesc": "{count} ሌላ ቦታ(ዎች) ይወጣሉ። እርስዎ እዚህ ይቆያሉ።",
     "signOutOthersConfirm": "ሌሎቹን አውጣ"
+  },
+  "payments": {
+    "intro": "ደንበኞች ከሱቅዎ ሲገዙ እንዴት እንደሚከፍሉ ይምረጡ።",
+    "status": {
+      "loading": "በመጫን ላይ…",
+      "notConnected": "አልተያያዘም",
+      "off": "ጠፍቷል",
+      "on": "በርቷል"
+    },
+    "cod": {
+      "title": "ጥሬ ገንዘብ",
+      "badge": "ዝግጁ",
+      "description": "ደንበኛው ትዕዛዙ ሲደርስ ወይም ከሱቅ ሲወስድ ይከፍላል።",
+      "hint": "ደሊቨሪ እና ከሱቅ መውሰድን ከመላኪያ ቅንብሮች ያብሩ ወይም ያጥፉ።",
+      "openFulfillment": "መላኪያ ቅንብሮች"
+    },
+    "online": {
+      "title": "ኦንላይን ክፍያ",
+      "description": "ደንበኞች በትዕዛዝ ጊዜ በካርድ ወይም በሞባይል ገንዘብ ይከፍላሉ። ገንዘቡ ወደ የቻፓ መለያዎ ይገባል።",
+      "offerLabel": "በመደብር አሳይ",
+      "offerSwitch": "በርቷል",
+      "offerOnHint": "ገዢዎች በትዕዛዝ ጊዜ ኦንላይን ክፍያ መምረጥ ይችላሉ።",
+      "offerOffHint": "ቻፓ ተያይዟል፣ ነገር ግን እስኪያበሩት ድረስ በትዕዛዝ ጊዜ አይታይም።",
+      "connectedAs": "ተያይዟል · በ {fingerprint} ያበቃል",
+      "connectTitle": "ቻፓን አያይዝ",
+      "connectHint": "የደንበኛ ክፍያ የሚገባበትን የቻፓ መለያ ያያይዙ።",
+      "updateTitle": "ቁልፍ ቀይር",
+      "updateHint": "አሁን ያለውን ለመተካት ብቻ አዲስ የቻፓ ቁልፍ ይለጥፉ።",
+      "step1": "የቻፓ መለያዎን ይክፈቱ እና ቁልፍዎን ይቅዱ።",
+      "step2": "ከታች ይለጥፉ እና ያያይዙ።",
+      "step3": "ሲዘጋጁ «በመደብር አሳይ» ያብሩ።",
+      "secretLabel": "የቻፓ ቁልፍ",
+      "secretPlaceholder": "ቁልፍዎን ይለጥፉ",
+      "secretHint": "ቁልፉን ከቻፓ ጋር እናረጋግጣለን። ሙሉ ቁልፉን ዳግመኛ አናሳይም።",
+      "showKey": "አሳይ",
+      "hideKey": "ደብቅ",
+      "connect": "አያይዝ",
+      "saveUpdate": "አዲስ ቁልፍ አስቀምጥ",
+      "test": "አረጋግጥ",
+      "disconnect": "አቋርጥ",
+      "disconnectHint": "ኦንላይን ክፍያን ከሱቅዎ ያስወግዳል።",
+      "disconnectTitle": "ኦንላይን ክፍያ ይቋረጥ?",
+      "disconnectDescription": "እስከሚያያይዙ ድረስ ደንበኞች ጥሬ ገንዘብ ብቻ ያያሉ። ቀደም ያሉ ትዕዛዞች አይጎዱም።",
+      "disconnectConfirm": "አቋርጥ"
+    },
+    "toast": {
+      "working": "እየተቀየረ ነው…",
+      "connected": "ኦንላይን ክፍያ ተያይዟል",
+      "updated": "ቁልፉ ተቀይሯል",
+      "tested": "ቁልፉ ተረጋግጧል",
+      "toggled": "ለውጦቹ ተቀይረዋል",
+      "disconnected": "ኦንላይን ክፍያ ተቋርጧል",
+      "failed": "ክፍያዎችን መቀየር አልተቻለም"
+    }
   }
 }
