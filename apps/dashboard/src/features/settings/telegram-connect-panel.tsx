@@ -30,14 +30,24 @@ import {
   sameNotificationEvents,
 } from "@/features/settings/notification-channel-ui";
 import type { TelegramDestination } from "@/lib/platform-api/notifications/telegram-client";
+import { useI18n } from "@/i18n/provider";
 import { mapPlatformErrorMessage } from "@/lib/platform-api/errors";
 import { cn } from "@/lib/utils";
 
-const CONNECT_STEPS = [
-  "We’ll open Telegram with a one-time link for this shop.",
-  "Tap Start in the chat so we can send alerts there.",
-  "Come back here. The account appears when connect succeeds.",
-] as const;
+function connectSteps(
+  t: (
+    key:
+      | "settings.notifications.telegramPanel.step1"
+      | "settings.notifications.telegramPanel.step2"
+      | "settings.notifications.telegramPanel.step3",
+  ) => string,
+) {
+  return [
+    t("settings.notifications.telegramPanel.step1"),
+    t("settings.notifications.telegramPanel.step2"),
+    t("settings.notifications.telegramPanel.step3"),
+  ] as const;
+}
 
 type ConnectSession = {
   id: string;
@@ -65,16 +75,17 @@ function telegramProfileUrl(username: string) {
   return `https://t.me/${encodeURIComponent(clean)}`;
 }
 
-function formatConnectedAt(iso: string) {
+function formatConnectedAt(iso: string, locale: string, recentLabel: string, connectedPrefix: string) {
   const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return "Connected recently";
-  return `Connected ${date.toLocaleString(undefined, {
+  if (Number.isNaN(date.getTime())) return recentLabel;
+  return `${connectedPrefix} ${date.toLocaleString(locale, {
     dateStyle: "medium",
     timeStyle: "short",
   })}`;
 }
 
 function DestinationIdentity({ destination }: { destination: TelegramDestination }) {
+  const { t, locale } = useI18n();
   const username = destination.username?.replace(/^@/, "").trim() || null;
   const profileUrl = username ? telegramProfileUrl(username) : null;
   const showUsernameBesideLabel =
@@ -109,11 +120,18 @@ function DestinationIdentity({ destination }: { destination: TelegramDestination
           </a>
         ) : null}
         <Badge variant={destination.enabled ? "secondary" : "outline"}>
-          {destination.enabled ? "Active" : "Paused"}
+          {destination.enabled
+            ? t("settings.notifications.telegramPanel.active")
+            : t("settings.notifications.telegramPanel.paused")}
         </Badge>
       </div>
       <p className="mt-0.5 text-xs text-muted-foreground">
-        {formatConnectedAt(destination.connectedAt)}
+        {formatConnectedAt(
+          destination.connectedAt,
+          locale,
+          t("settings.notifications.telegramPanel.connectedRecently"),
+          t("settings.notifications.telegramPanel.connectedAt"),
+        )}
       </p>
     </div>
   );
@@ -126,6 +144,7 @@ export function TelegramConnectPanel({
   available?: boolean;
   tenantId: string;
 }) {
+  const { t } = useI18n();
   const [destinations, setDestinations] = useState<TelegramDestination[]>([]);
   const [savedEvents, setSavedEvents] = useState<string[]>(defaultNotificationEvents());
   const [eventsDraft, setEventsDraft] = useState<string[]>(defaultNotificationEvents());
@@ -196,7 +215,7 @@ export function TelegramConnectPanel({
         }
         setSession(next);
         if (next.status === "consumed") {
-          toast.success("Telegram connected");
+          toast.success(t("settings.notifications.telegramPanel.connected"));
           setSession(null);
           await loadDestinations();
         }
@@ -236,7 +255,7 @@ export function TelegramConnectPanel({
         }
         const next = data?.session as (ConnectSession & { deepLink: string }) | undefined;
         if (!next?.deepLink) {
-          toast.error("Could not start Telegram connect. Try again.");
+          toast.error(t("settings.notifications.telegramPanel.connectFailed"));
           return;
         }
         setConnectDialogOpen(false);
@@ -269,17 +288,17 @@ export function TelegramConnectPanel({
       }
       setSession(next);
       if (next.status === "consumed") {
-        toast.success("Telegram connected");
+        toast.success(t("settings.notifications.telegramPanel.connected"));
         setSession(null);
         await loadDestinations();
       } else if (next.status === "expired" || next.status === "cancelled") {
-        toast.message("Link expired", {
-          description: "Start connect again for a new link.",
+        toast.message(t("settings.notifications.telegramPanel.linkExpired"), {
+          description: t("settings.notifications.telegramPanel.linkExpiredDesc"),
         });
         setSession(null);
       } else {
-        toast.message("Still waiting", {
-          description: "Open Telegram, tap Start, then check again.",
+        toast.message(t("settings.notifications.telegramPanel.stillWaiting"), {
+          description: t("settings.notifications.telegramPanel.stillWaitingDesc"),
         });
       }
     });
@@ -292,7 +311,7 @@ export function TelegramConnectPanel({
     startTransition(async () => {
       await postAction({ action: "cancel", sessionId: session.id });
       setSession(null);
-      toast.message("Connect cancelled");
+      toast.message(t("settings.notifications.telegramPanel.connectCancelled"));
     });
   }
 
@@ -308,7 +327,7 @@ export function TelegramConnectPanel({
         toast.error(apiError(data, "destination_not_found"));
         return;
       }
-      toast.success("Telegram account disconnected");
+      toast.success(t("settings.notifications.telegramPanel.disconnected"));
       setRemoveTarget(null);
       await loadDestinations();
     });
@@ -322,7 +341,7 @@ export function TelegramConnectPanel({
         toast.error(apiError(data, "destination_not_found"));
         return;
       }
-      toast.success(enabled ? "Alerts resumed" : "Alerts paused");
+      toast.success(enabled ? t("settings.notifications.telegramPanel.alertsResumed") : t("settings.notifications.telegramPanel.alertsPaused"));
       await loadDestinations();
     });
   }
@@ -340,7 +359,7 @@ export function TelegramConnectPanel({
           toast.error(apiError(data, "notification_events_invalid"));
           return;
         }
-        toast.success("Event preferences saved");
+        toast.success(t("settings.notifications.telegramPanel.eventsSaved"));
         await loadDestinations();
       } finally {
         setSavingEvents(false);
@@ -357,7 +376,9 @@ export function TelegramConnectPanel({
         return;
       }
       toast.success(
-        data?.jobEnqueued ? "Test sent. Check Telegram." : "Test message requested.",
+        data?.jobEnqueued
+          ? t("settings.notifications.telegramPanel.testSent")
+          : t("settings.notifications.telegramPanel.testRequested"),
       );
     });
   }
@@ -366,9 +387,9 @@ export function TelegramConnectPanel({
     if (!session?.deepLink) return;
     try {
       await navigator.clipboard.writeText(session.deepLink);
-      toast.success("Link copied");
+      toast.success(t("settings.notifications.telegramPanel.linkCopied"));
     } catch {
-      toast.error("Could not copy link");
+      toast.error(t("settings.notifications.telegramPanel.copyFailed"));
     }
   }
 
@@ -376,16 +397,16 @@ export function TelegramConnectPanel({
     return (
       <Card>
         <NotificationChannelHeader
-          description="Instant shop event alerts on Telegram."
+          description={t("settings.notifications.telegramPanel.description")}
           disabled
           onRefresh={() => undefined}
           refreshing={false}
-          title="Telegram"
+          title={t("settings.notifications.telegram")}
         />
         <CardContent>
           <NotificationChannelUnavailable
-            description="Telegram isn’t enabled for this environment yet. You can still set up email if it’s available, or check back later."
-            title="Telegram alerts unavailable"
+            description={t("settings.notifications.telegramPanel.unavailableDescription")}
+            title={t("settings.notifications.telegramPanel.unavailableTitle")}
           />
         </CardContent>
       </Card>
@@ -396,10 +417,10 @@ export function TelegramConnectPanel({
     return (
       <Card>
         <NotificationChannelHeader
-          description="Loading connected accounts…"
+          description={t("settings.notifications.loadingTelegram")}
           onRefresh={() => undefined}
           refreshing
-          title="Telegram"
+          title={t("settings.notifications.telegram")}
         />
         <CardContent>
           <div className="h-24 animate-pulse rounded-lg bg-muted/50" />
@@ -416,16 +437,16 @@ export function TelegramConnectPanel({
       return (
         <Card>
           <NotificationChannelHeader
-            description="Instant shop event alerts on Telegram."
+            description={t("settings.notifications.telegramPanel.description")}
             disabled
             onRefresh={() => undefined}
             refreshing={false}
-            title="Telegram"
+            title={t("settings.notifications.telegram")}
           />
           <CardContent>
             <NotificationChannelUnavailable
-              description="Telegram isn’t enabled for this environment yet. You can still set up email if it’s available, or check back later."
-              title="Telegram alerts unavailable"
+              description={t("settings.notifications.telegramPanel.unavailableDescription")}
+              title={t("settings.notifications.telegramPanel.unavailableTitle")}
             />
           </CardContent>
         </Card>
@@ -434,10 +455,10 @@ export function TelegramConnectPanel({
     return (
       <Card>
         <NotificationChannelHeader
-          description="Instant shop event alerts on Telegram."
+          description={t("settings.notifications.telegramPanel.description")}
           onRefresh={refreshList}
           refreshing={refreshing}
-          title="Telegram"
+          title={t("settings.notifications.telegram")}
         />
         <CardContent>
           <Alert variant="destructive">
@@ -468,12 +489,12 @@ export function TelegramConnectPanel({
       <Card>
         <NotificationChannelHeader
           badge={<NotificationAccountCountBadge count={destinations.length} />}
-          description="Instant shop event alerts on Telegram. Connect staff phones as needed."
+          description={t("settings.notifications.telegramPanel.headerDescription")}
           disabled={isPending}
           onRefresh={refreshList}
-          refreshLabel="Refresh accounts"
+          refreshLabel={t("settings.notifications.telegramPanel.refreshAccounts")}
           refreshing={refreshing}
-          title="Telegram"
+          title={t("settings.notifications.telegram")}
         />
 
         <CardContent className="flex flex-col gap-5">
@@ -585,7 +606,7 @@ export function TelegramConnectPanel({
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Button
-                          aria-label="Send test message"
+                          aria-label={t("settings.notifications.telegramPanel.sendTestAria")}
                           className="rounded-full"
                           disabled={isPending || !destination.enabled}
                           size="sm"
@@ -629,14 +650,14 @@ export function TelegramConnectPanel({
                 variant={hasAccounts ? "outline" : "default"}
                 onClick={() => setConnectDialogOpen(true)}
               >
-                {hasAccounts ? "Connect another account" : "Connect Telegram"}
+                {hasAccounts ? t("settings.notifications.telegramPanel.connectAnother") : t("settings.notifications.telegramPanel.connectTelegram")}
               </Button>
             </div>
           ) : null}
 
           {hasAccounts ? (
             <NotificationEventPicker
-              description="Same events for every connected Telegram account."
+              description={t("settings.notifications.telegramPanel.eventsShared")}
               dirty={eventsDirty}
               disabled={isPending}
               events={eventsDraft}
@@ -652,14 +673,14 @@ export function TelegramConnectPanel({
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>
-              {hasAccounts ? "Connect another Telegram account" : "Connect Telegram"}
+              {hasAccounts ? t("settings.notifications.telegramPanel.connectAnotherTelegram") : t("settings.notifications.telegramPanel.connectTelegram")}
             </DialogTitle>
             <DialogDescription>
               You’ll leave this page briefly to authorize alerts in Telegram.
             </DialogDescription>
           </DialogHeader>
           <ol className="space-y-3 py-1">
-            {CONNECT_STEPS.map((step, index) => (
+            {connectSteps(t).map((step, index) => (
               <li className="flex gap-3 text-sm" key={step}>
                 <span className="flex size-6 shrink-0 items-center justify-center rounded-full border bg-muted/40 text-xs font-semibold text-muted-foreground">
                   {index + 1}
@@ -683,7 +704,7 @@ export function TelegramConnectPanel({
               type="button"
               onClick={startConnect}
             >
-              {isPending ? "Opening…" : "Continue to Telegram"}
+              {isPending ? t("settings.notifications.telegramPanel.opening") : t("settings.notifications.telegramPanel.continueTelegram")}
               {!isPending ? <AppIcons.externalLink className="size-3.5" /> : null}
             </Button>
           </DialogFooter>
@@ -702,7 +723,7 @@ export function TelegramConnectPanel({
             <DialogDescription>
               {removeTarget
                 ? `${removeTarget.label} will stop receiving shop event alerts. You can connect again anytime.`
-                : "This account will stop receiving shop event alerts."}
+                : t("settings.notifications.telegramPanel.disconnectDesc")}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -718,7 +739,7 @@ export function TelegramConnectPanel({
               variant="destructive"
               onClick={confirmRemove}
             >
-              {isPending ? "Disconnecting…" : "Disconnect"}
+              {isPending ? t("settings.notifications.telegramPanel.disconnecting") : t("settings.notifications.telegramPanel.disconnect")}
             </Button>
           </DialogFooter>
         </DialogContent>

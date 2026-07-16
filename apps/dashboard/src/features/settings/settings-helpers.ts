@@ -1,8 +1,11 @@
 import type { MerchantDashboardAccess, StorefrontTemplateCatalogItem } from "@ecs/contracts";
 
+import type { MessageKey } from "@/i18n/messages";
+
 export function getSelectedTemplateName(
   templates: StorefrontTemplateCatalogItem[],
   summary: MerchantDashboardAccess,
+  notSelectedLabel = "Not selected",
 ) {
   const selected = templates.find(
     (template) =>
@@ -14,7 +17,7 @@ export function getSelectedTemplateName(
     selected?.name ??
     summary.storefront.templateKey ??
     summary.storefront.templateId ??
-    "Not selected"
+    notSelectedLabel
   );
 }
 
@@ -24,21 +27,26 @@ export function getTemplateTags(template: StorefrontTemplateCatalogItem) {
     : [];
 }
 
-export function statusCopy(value: string) {
+export function statusCopy(
+  value: string,
+  t?: (key: MessageKey) => string,
+): string {
   if (value === "settings_updated") {
-    return "Settings saved.";
+    return t ? t("settings.status.settingsUpdated") : "Settings saved.";
   }
 
   if (value === "template_selected") {
-    return "Storefront selected.";
+    return t ? t("settings.status.templateSelected") : "Storefront selected.";
   }
 
   if (value === "missing_template" || value === "missing_template_key") {
-    return "Choose a storefront before saving.";
+    return t ? t("settings.status.chooseStorefront") : "Choose a storefront before saving.";
   }
 
   if (value === "template_not_found" || value === "template_unavailable") {
-    return "That storefront is no longer available.";
+    return t
+      ? t("settings.status.templateUnavailable")
+      : "That storefront is no longer available.";
   }
 
   return value.replaceAll("_", " ");

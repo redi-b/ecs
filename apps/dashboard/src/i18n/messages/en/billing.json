@@ -8,8 +8,112 @@
     "title": "Billing is not active for this shop",
     "description": "The account is reachable, but no subscription or invoice state is available yet."
   },
+  "unavailable": {
+    "title": "Billing is not available",
+    "description": "Plan details for this shop could not be loaded. Try reloading, or open Billing from your account menu.",
+    "reload": "Reload billing"
+  },
   "plan": {
-    "current": "Current plan"
+    "current": "Current plan",
+    "currentBadge": "Current",
+    "free": "Free",
+    "plansHeading": "Plans",
+    "plansDescription": "Choose a plan for this shop. You only pay when you select a paid plan.",
+    "perMonth": "/ month",
+    "fallbackTagline": "Plan details for your shop.",
+    "noPaymentRequired": "No payment is required for this shop.",
+    "paidThrough": "Paid through {date} · {price} / {cycle}",
+    "priceCycle": "{price} · {cycle}",
+    "switchesTo": "Switches to {name}",
+    "freePlan": "free plan",
+    "theFreePlan": "the free plan",
+    "scheduledChange": "Changes to {name} on {date}. No refund for remaining days. You can cancel before then."
+  },
+  "plans": {
+    "starter": {
+      "tagline": "Everything you need to run your shop online.",
+      "highlights": {
+        "storefront": "Storefront, catalog, and media",
+        "orders": "Orders and customers",
+        "noPayment": "No subscription payment"
+      }
+    },
+    "growth": {
+      "tagline": "Prepaid plan for shops ready to invest in scale.",
+      "highlights": {
+        "everythingStarter": "Everything in Starter",
+        "monthlyPrepaid": "Monthly prepaid access",
+        "payChapa": "Pay securely with Chapa"
+      }
+    }
+  },
+  "status": {
+    "trial": "Trial",
+    "active": "Active",
+    "pastDue": "Past due",
+    "cancelled": "Cancelled"
+  },
+  "cycle": {
+    "month": "month",
+    "year": "year"
+  },
+  "payment": {
+    "checkingTitle": "Checking your payment",
+    "checkingDescription": "If you finished checkout, confirmation can take a moment. Use Pay again only if the charge did not complete.",
+    "receivedTitle": "Payment received",
+    "receivedActive": "Your paid plan is active.",
+    "receivedThrough": "Your paid plan is active through {date}.",
+    "requiredTitle": "Payment required",
+    "requiredDescription": "Pay to activate or extend your plan.",
+    "due": "Due {date}",
+    "payWithChapa": "Pay with Chapa",
+    "payAmount": "Pay {amount}",
+    "historyTitle": "Payment history",
+    "historyDescription": "Past charges for this shop.",
+    "paidOn": "Paid {date}",
+    "createdOn": "Created {date}"
+  },
+  "invoice": {
+    "planPayment": "Plan payment",
+    "planUpgrade": "Plan upgrade",
+    "open": "Open invoice",
+    "generic": "Invoice",
+    "unpaid": "Unpaid",
+    "paid": "Paid",
+    "cancelled": "Cancelled"
+  },
+  "primary": {
+    "currentPlan": "Current plan",
+    "keepPlan": "Keep this plan",
+    "renewPlan": "Renew plan",
+    "renewPeriod": "Renew period",
+    "changeScheduled": "Change scheduled",
+    "switchAfter": "Switch after {date}",
+    "switchTo": "Switch to {name}",
+    "continueWith": "Continue with {name}",
+    "selectPlan": "Select a plan"
+  },
+  "hint": {
+    "onStarterSelectGrowth": "You are on Starter. Select Growth to continue payment for the upgrade.",
+    "alreadyOnPlan": "You are already on this plan.",
+    "finishPayment": "Finish payment to activate or extend this plan.",
+    "scheduledKeep": "A switch to {name} is scheduled. Keep this plan to cancel it.",
+    "endingSoon": "Your current period is ending soon. Renew to stay on this plan.",
+    "periodEnded": "Your paid period has ended. Renew to continue on this plan.",
+    "alreadyScheduled": "Already scheduled. You stay on {current} until {date}.",
+    "noRefundKeepUntil": "No refund. You keep {current} until {date}, then move to {next}.",
+    "switchNowPeriodEnded": "Switch to {name} now. Your paid period has already ended.",
+    "completeOrContinue": "Complete payment for the open invoice, or continue to confirm this plan.",
+    "chargedForMonth": "You will be charged {price} for one month after payment."
+  },
+  "toast": {
+    "invoiceReady": "Invoice ready.",
+    "paymentConfirmed": "Payment confirmed.",
+    "openingCheckout": "Opening secure checkout…",
+    "switchesOn": "Switches to free plan on {date}.",
+    "planChangeScheduled": "Plan change scheduled.",
+    "nowOnFree": "You are now on the free plan.",
+    "scheduledCancelled": "Scheduled plan change cancelled."
   },
   "row": {
     "price": "Price",
@@ -19,6 +123,10 @@
   },
   "actions": {
     "manageSettings": "Manage shop settings"
+  },
+  "footer": {
+    "shopSettings": "Shop settings",
+    "viewStorefront": "View storefront"
   },
   "invoices": {
     "title": "Invoices",

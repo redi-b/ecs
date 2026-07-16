@@ -42,7 +42,7 @@
     "customer": "ደንበኛ",
     "total": "ጠቅላላ",
     "payment": "ክፍያ",
-    "fulfillment": "ትዕዛዝ ማድረስ",
+    "fulfillment": "ማስረከብ",
     "status": "ሁኔታ",
     "created": "የተጨመረበት",
     "joined": "የተቀላቀለበት",
@@ -50,7 +50,7 @@
     "usage": "አጠቃቀም",
     "schedule": "ጊዜ ሰሌዳ",
     "progress": "ሂደት",
-    "delivery": "ማድረስ",
+    "delivery": "ደሊቨሪ",
     "placed": "የተደረገበት",
     "actions": "ድርጊቶች"
   }

@@ -9,6 +9,8 @@ import { CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { useI18n } from "@/i18n/provider";
+import type { MessageKey } from "@/i18n/messages";
 import { cn } from "@/lib/utils";
 
 /**
@@ -24,11 +26,11 @@ import { cn } from "@/lib/utils";
  */
 
 export const NOTIFICATION_EVENT_OPTIONS = [
-  { id: "order.created", label: "New orders" },
-  { id: "order.cancelled", label: "Cancelled orders" },
-  { id: "payment.paid", label: "Payments received" },
-  { id: "payment.failed", label: "Payment failures" },
-  { id: "cod_order.created", label: "COD orders" },
+  { id: "order.created", labelKey: "settings.notifications.events.orderCreated" as MessageKey },
+  { id: "order.cancelled", labelKey: "settings.notifications.events.orderCancelled" as MessageKey },
+  { id: "payment.paid", labelKey: "settings.notifications.events.paymentPaid" as MessageKey },
+  { id: "payment.failed", labelKey: "settings.notifications.events.paymentFailed" as MessageKey },
+  { id: "cod_order.created", labelKey: "settings.notifications.events.codOrder" as MessageKey },
 ] as const;
 
 export const ALWAYS_ON_NOTIFICATION_EVENTS = ["notification.test"] as const;
@@ -72,7 +74,7 @@ export function NotificationChannelHeader({
   refreshing,
   disabled,
   onRefresh,
-  refreshLabel = "Refresh",
+  refreshLabel,
 }: {
   title: string;
   description: string;
@@ -82,6 +84,10 @@ export function NotificationChannelHeader({
   onRefresh: () => void;
   refreshLabel?: string;
 }) {
+  const { t } = useI18n();
+  const resolvedRefresh = refreshLabel ?? t("settings.notifications.refresh");
+  const refreshingLabel = t("settings.notifications.refreshing");
+
   return (
     <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0 pb-4">
       <div className="space-y-1">
@@ -95,7 +101,7 @@ export function NotificationChannelHeader({
         <TooltipTrigger asChild>
           <Button
             aria-busy={refreshing}
-            aria-label={refreshing ? "Refreshing" : refreshLabel}
+            aria-label={refreshing ? refreshingLabel : resolvedRefresh}
             className="shrink-0"
             disabled={disabled || refreshing}
             size="icon-sm"
@@ -106,7 +112,7 @@ export function NotificationChannelHeader({
             <AppIcons.refresh className={refreshing ? "animate-spin" : undefined} />
           </Button>
         </TooltipTrigger>
-        <TooltipContent>{refreshing ? "Refreshing" : refreshLabel}</TooltipContent>
+        <TooltipContent>{refreshing ? refreshingLabel : resolvedRefresh}</TooltipContent>
       </Tooltip>
     </CardHeader>
   );
@@ -117,20 +123,25 @@ export function NotificationStatusBadge({
 }: {
   status: "active" | "paused" | "not_set_up";
 }) {
+  const { t } = useI18n();
   if (status === "active") {
-    return <Badge variant="secondary">Active</Badge>;
+    return <Badge variant="secondary">{t("settings.notifications.status.active")}</Badge>;
   }
   if (status === "paused") {
-    return <Badge variant="outline">Paused</Badge>;
+    return <Badge variant="outline">{t("settings.notifications.status.paused")}</Badge>;
   }
-  return <Badge variant="outline">Not set up</Badge>;
+  return <Badge variant="outline">{t("settings.notifications.status.notSetUp")}</Badge>;
 }
 
 export function NotificationAccountCountBadge({ count }: { count: number }) {
+  const { t } = useI18n();
   if (count <= 0) return null;
   return (
     <Badge variant="outline">
-      {count} {count === 1 ? "account" : "accounts"}
+      {count}{" "}
+      {count === 1
+        ? t("settings.notifications.accountOne")
+        : t("settings.notifications.accountMany")}
     </Badge>
   );
 }
@@ -144,9 +155,10 @@ export function NotificationAlertsSwitch({
   disabled?: boolean;
   onCheckedChange: (checked: boolean) => void;
 }) {
+  const { t } = useI18n();
   return (
     <div className="flex items-center gap-2 rounded-full border bg-background px-2.5 py-1">
-      <span className="text-xs text-muted-foreground">Alerts</span>
+      <span className="text-xs text-muted-foreground">{t("settings.notifications.alerts")}</span>
       <Switch checked={checked} disabled={disabled} onCheckedChange={onCheckedChange} />
     </div>
   );
@@ -193,10 +205,11 @@ export function NotificationEventPicker({
   onChange: (events: string[]) => void;
   onSave: () => void;
 }) {
+  const { t } = useI18n();
   return (
     <div className="space-y-3 rounded-xl border bg-muted/15 p-4">
       <div>
-        <p className="text-sm font-medium">Notify me about</p>
+        <p className="text-sm font-medium">{t("settings.notifications.notifyAbout")}</p>
         <p className="text-xs text-muted-foreground">{description}</p>
       </div>
       <div className="grid gap-2 sm:grid-cols-2">
@@ -224,7 +237,7 @@ export function NotificationEventPicker({
                   );
                 }}
               />
-              <span>{event.label}</span>
+              <span>{t(event.labelKey)}</span>
             </label>
           );
         })}
@@ -236,7 +249,7 @@ export function NotificationEventPicker({
         type="button"
         onClick={onSave}
       >
-        {saving ? "Saving…" : "Save events"}
+        {saving ? t("common.saving") : t("settings.notifications.saveEvents")}
       </Button>
     </div>
   );

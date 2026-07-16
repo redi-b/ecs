@@ -4,6 +4,8 @@ import type {
   StorefrontTemplateCatalogItem,
 } from "@ecs/contracts";
 
+import type { MessageKey } from "@/i18n/messages";
+
 export type Delivery = DeliverySettings["delivery"];
 
 export type SettingsWorkspaceProps = {
@@ -23,6 +25,39 @@ export type DeliveryKey =
   | "phoneConfirmationRequired"
   | "pickupEnabled";
 
+export const deliveryFieldKeys: Array<{
+  descriptionKey: MessageKey;
+  key: DeliveryKey;
+  labelKey: MessageKey;
+}> = [
+  {
+    key: "deliveryEnabled",
+    labelKey: "settings.fulfillment.delivery.label",
+    descriptionKey: "settings.fulfillment.delivery.description",
+  },
+  {
+    key: "pickupEnabled",
+    labelKey: "settings.fulfillment.pickup.label",
+    descriptionKey: "settings.fulfillment.pickup.description",
+  },
+  {
+    key: "phoneConfirmationRequired",
+    labelKey: "settings.fulfillment.phoneConfirmation.label",
+    descriptionKey: "settings.fulfillment.phoneConfirmation.description",
+  },
+  {
+    key: "landmarkRequired",
+    labelKey: "settings.fulfillment.landmark.label",
+    descriptionKey: "settings.fulfillment.landmark.description",
+  },
+  {
+    key: "notesEnabled",
+    labelKey: "settings.fulfillment.notes.label",
+    descriptionKey: "settings.fulfillment.notes.description",
+  },
+];
+
+/** @deprecated Prefer deliveryFieldKeys + i18n in the UI. */
 export const deliveryLabels: Array<{
   description: string;
   key: DeliveryKey;

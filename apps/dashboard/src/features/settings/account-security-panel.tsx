@@ -29,6 +29,8 @@ import {
 } from "@/components/ui/input-group";
 import { Switch } from "@/components/ui/switch";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { useI18n } from "@/i18n/provider";
+import type { MessageKey } from "@/i18n/messages";
 import { cn } from "@/lib/utils";
 
 type AccountSession = {
@@ -58,6 +60,7 @@ export function AccountSecurityPanel({
   email: string;
   initialName: string | null;
 }) {
+  const { t, locale } = useI18n();
   const router = useRouter();
   const { setActorName } = useActorOrFallback({
     email,
@@ -103,8 +106,8 @@ export function AccountSecurityPanel({
       setSessions([]);
       setSessionsError(
         data?.error === "auth_origin_rejected"
-          ? "Session list blocked by auth origin settings. Restart platform-api after updating trusted origins."
-          : "Could not load active sessions.",
+          ? t("settings.accountSecurity.toast.sessionsOrigin")
+          : t("settings.accountSecurity.toast.sessionsFailed"),
       );
       setLoadingSessions(false);
       return;
@@ -112,7 +115,7 @@ export function AccountSecurityPanel({
 
     setSessions(data?.sessions ?? []);
     setLoadingSessions(false);
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     void loadSessions();
@@ -125,7 +128,7 @@ export function AccountSecurityPanel({
   async function saveProfile() {
     const trimmed = name.trim();
     if (trimmed.length < 2) {
-      toast.error("Enter a name with at least 2 characters.");
+      toast.error(t("settings.accountSecurity.toast.nameMin"));
       return;
     }
     setSavingProfile(true);
@@ -140,28 +143,28 @@ export function AccountSecurityPanel({
       const data = (await response?.json().catch(() => null)) as { error?: string } | null;
       toast.error(
         data?.error === "auth_origin_rejected"
-          ? "Profile update blocked by auth origin settings."
-          : "Could not update your profile.",
+          ? t("settings.accountSecurity.toast.profileOrigin")
+          : t("settings.accountSecurity.toast.profileFailed"),
       );
       return;
     }
 
     setActorName(trimmed);
-    toast.success("Profile updated.");
+    toast.success(t("settings.accountSecurity.toast.profileUpdated"));
     router.refresh();
   }
 
   async function savePassword() {
     if (!currentPassword || !newPassword) {
-      toast.error("Enter your current and new password.");
+      toast.error(t("settings.accountSecurity.toast.passwordRequired"));
       return;
     }
     if (newPassword.length < 8) {
-      toast.error("New password must be at least 8 characters.");
+      toast.error(t("settings.accountSecurity.toast.passwordMin"));
       return;
     }
     if (newPassword !== confirmPassword) {
-      toast.error("New password and confirmation do not match.");
+      toast.error(t("settings.accountSecurity.toast.passwordMismatch"));
       return;
     }
 
@@ -181,12 +184,12 @@ export function AccountSecurityPanel({
       const data = (await response?.json().catch(() => null)) as { error?: string } | null;
       toast.error(
         data?.error === "invalid_current_password"
-          ? "Current password is incorrect."
+          ? t("settings.accountSecurity.toast.passwordWrong")
           : data?.error === "password_too_short"
-            ? "New password must be at least 8 characters."
+            ? t("settings.accountSecurity.toast.passwordMin")
             : data?.error === "auth_origin_rejected"
-              ? "Password change blocked by auth origin settings."
-              : "Could not change password.",
+              ? t("settings.accountSecurity.toast.passwordOrigin")
+              : t("settings.accountSecurity.toast.passwordFailed"),
       );
       return;
     }
@@ -196,8 +199,8 @@ export function AccountSecurityPanel({
     setConfirmPassword("");
     toast.success(
       revokeOtherSessions
-        ? "Password updated. Other devices were signed out."
-        : "Password updated.",
+        ? t("settings.accountSecurity.toast.passwordUpdatedOthers")
+        : t("settings.accountSecurity.toast.passwordUpdated"),
     );
     void loadSessions();
   }
@@ -222,15 +225,15 @@ export function AccountSecurityPanel({
       const data = (await response?.json().catch(() => null)) as { error?: string } | null;
       toast.error(
         data?.error === "cannot_revoke_current"
-          ? "You cannot sign out this device from here."
+          ? t("settings.accountSecurity.toast.cannotRevokeCurrent")
           : data?.error === "auth_origin_rejected"
-            ? "Revoke blocked by auth origin settings."
-            : "Could not sign out that session.",
+            ? t("settings.accountSecurity.toast.revokeOrigin")
+            : t("settings.accountSecurity.toast.revokeFailed"),
       );
       return;
     }
 
-    toast.success("Session signed out.");
+    toast.success(t("settings.accountSecurity.toast.sessionSignedOut"));
     void loadSessions();
   }
 
@@ -242,9 +245,9 @@ export function AccountSecurityPanel({
   return (
     <div className="flex flex-col gap-8">
       <div>
-        <h2 className="text-base font-semibold tracking-tight">Account</h2>
+        <h2 className="text-base font-semibold tracking-tight">{t("settings.accountSecurity.title")}</h2>
         <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-          Profile and sign-in security for your dashboard login.
+          {t("settings.accountSecurity.intro")}
         </p>
       </div>
 
@@ -254,20 +257,20 @@ export function AccountSecurityPanel({
             {initials}
           </div>
           <div className="min-w-0">
-            <p className="truncate text-sm font-semibold">{name.trim() || "Add your name"}</p>
+            <p className="truncate text-sm font-semibold">{name.trim() || t("settings.accountSecurity.addName")}</p>
             <p className="truncate text-xs text-muted-foreground">{email}</p>
           </div>
         </div>
         <div className="flex flex-col gap-4 px-4 py-4 sm:px-5">
           <Field>
-            <FieldLabel htmlFor={nameId}>Display name</FieldLabel>
+            <FieldLabel htmlFor={nameId}>{t("settings.accountSecurity.displayName")}</FieldLabel>
             <Input
               id={nameId}
               onChange={(event) => setName(event.target.value)}
-              placeholder="Your name"
+              placeholder={t("settings.accountSecurity.namePlaceholder")}
               value={name}
             />
-            <FieldDescription>Shown in the sidebar and across this shop.</FieldDescription>
+            <FieldDescription>{t("settings.accountSecurity.nameHint")}</FieldDescription>
           </Field>
           <div className="flex justify-end">
             <Button
@@ -277,7 +280,7 @@ export function AccountSecurityPanel({
               size="sm"
               type="button"
             >
-              {savingProfile ? "Saving…" : "Save name"}
+              {savingProfile ? t("common.saving") : t("settings.accountSecurity.saveName")}
             </Button>
           </div>
         </div>
@@ -285,9 +288,9 @@ export function AccountSecurityPanel({
 
       <section className="overflow-hidden rounded-lg border">
         <div className="border-b px-4 py-3.5 sm:px-5">
-          <h3 className="text-sm font-semibold">Password</h3>
+          <h3 className="text-sm font-semibold">{t("settings.accountSecurity.password")}</h3>
           <p className="mt-0.5 text-xs text-muted-foreground">
-            Change the password used with {email}.
+            {t("settings.accountSecurity.passwordHint", { email })}
           </p>
         </div>
         <div className="flex flex-col gap-4 px-4 py-4 sm:px-5">
@@ -295,7 +298,7 @@ export function AccountSecurityPanel({
             <PasswordField
               autoComplete="current-password"
               id={currentPasswordId}
-              label="Current password"
+              label={t("settings.accountSecurity.currentPassword")}
               onChange={setCurrentPassword}
               onToggle={() => setShowCurrent((v) => !v)}
               value={currentPassword}
@@ -304,9 +307,9 @@ export function AccountSecurityPanel({
             <div className="grid gap-4 sm:grid-cols-2">
               <PasswordField
                 autoComplete="new-password"
-                description="At least 8 characters."
+                description={t("settings.accountSecurity.passwordMin")}
                 id={newPasswordId}
-                label="New password"
+                label={t("settings.accountSecurity.newPassword")}
                 onChange={setNewPassword}
                 onToggle={() => setShowNew((v) => !v)}
                 value={newPassword}
@@ -315,7 +318,7 @@ export function AccountSecurityPanel({
               <PasswordField
                 autoComplete="new-password"
                 id={confirmPasswordId}
-                label="Confirm new password"
+                label={t("settings.accountSecurity.confirmPassword")}
                 onChange={setConfirmPassword}
                 onToggle={() => setShowConfirm((v) => !v)}
                 value={confirmPassword}
@@ -325,9 +328,9 @@ export function AccountSecurityPanel({
           </FieldGroup>
           <div className="flex items-start justify-between gap-3 rounded-lg border bg-muted/15 px-3 py-3">
             <div className="min-w-0 space-y-0.5">
-              <p className="text-sm font-medium">Sign out other devices</p>
+              <p className="text-sm font-medium">{t("settings.accountSecurity.signOutOthers")}</p>
               <p className="text-xs text-muted-foreground">
-                Ends every other session after the password changes. This device stays signed in.
+                {t("settings.accountSecurity.signOutOthersHint")}
               </p>
             </div>
             <Switch checked={revokeOtherSessions} onCheckedChange={setRevokeOtherSessions} />
@@ -340,7 +343,7 @@ export function AccountSecurityPanel({
               size="sm"
               type="button"
             >
-              {savingPassword ? "Updating…" : "Update password"}
+              {savingPassword ? t("settings.accountSecurity.updating") : t("settings.accountSecurity.updatePassword")}
             </Button>
           </div>
         </div>
@@ -349,16 +352,16 @@ export function AccountSecurityPanel({
       <section className="overflow-hidden rounded-lg border">
         <div className="flex items-start justify-between gap-3 border-b px-4 py-3.5 sm:px-5">
           <div className="min-w-0">
-            <h3 className="text-sm font-semibold">Signed-in devices</h3>
+            <h3 className="text-sm font-semibold">{t("settings.accountSecurity.devicesTitle")}</h3>
             <p className="mt-0.5 text-xs text-muted-foreground">
-              Active browsers for this account. Remove any you do not recognize.
+              {t("settings.accountSecurity.devicesHint")}
             </p>
           </div>
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
                 aria-busy={loadingSessions}
-                aria-label={loadingSessions ? "Refreshing sessions" : "Refresh sessions"}
+                aria-label={loadingSessions ? t("settings.accountSecurity.refreshingSessions") : t("settings.accountSecurity.refreshSessions")}
                 className="rounded-full"
                 disabled={loadingSessions}
                 onClick={() => void loadSessions()}
@@ -370,25 +373,25 @@ export function AccountSecurityPanel({
               </Button>
             </TooltipTrigger>
             <TooltipContent>
-              {loadingSessions ? "Refreshing" : "Refresh sessions"}
+              {loadingSessions ? t("settings.accountSecurity.refreshing") : t("settings.accountSecurity.refreshSessions")}
             </TooltipContent>
           </Tooltip>
         </div>
         <div className="flex flex-col gap-3 p-3 sm:p-4">
           {sessionsError ? (
             <Alert variant="destructive">
-              <AlertTitle>Sessions unavailable</AlertTitle>
+              <AlertTitle>{t("settings.accountSecurity.sessionsUnavailable")}</AlertTitle>
               <AlertDescription>{sessionsError}</AlertDescription>
             </Alert>
           ) : null}
           {loadingSessions ? (
-            <p className="px-1 py-3 text-sm text-muted-foreground">Loading sessions…</p>
+            <p className="px-1 py-3 text-sm text-muted-foreground">{t("settings.accountSecurity.loadingSessions")}</p>
           ) : sessions.length === 0 ? (
-            <p className="px-1 py-3 text-sm text-muted-foreground">No active sessions found.</p>
+            <p className="px-1 py-3 text-sm text-muted-foreground">{t("settings.accountSecurity.noSessions")}</p>
           ) : (
             <ul className="flex flex-col gap-3">
               {sessions.map((session) => {
-                const info = parseUserAgent(session.userAgent);
+                const info = parseUserAgent(session.userAgent, t);
                 return (
                   <li
                     className={cn(
@@ -406,7 +409,7 @@ export function AccountSecurityPanel({
                           <div className="flex flex-wrap items-center gap-2">
                             <p className="text-sm font-semibold">{info.deviceLabel}</p>
                             {session.isCurrent ? (
-                              <Badge variant="secondary">This device</Badge>
+                              <Badge variant="secondary">{t("settings.accountSecurity.thisDevice")}</Badge>
                             ) : null}
                           </div>
                           <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-muted-foreground">
@@ -423,27 +426,27 @@ export function AccountSecurityPanel({
                             <p className="inline-flex items-center gap-1.5">
                               <AppIcons.mapPin className="size-3.5 shrink-0" />
                               <span>
-                                IP{" "}
+                                {t("settings.accountSecurity.ip")}{" "}
                                 <span className="font-medium text-foreground/80">
-                                  {session.ipAddress || "Unknown"}
+                                  {session.ipAddress || t("settings.accountSecurity.unknown")}
                                 </span>
                               </span>
                             </p>
                             <p className="inline-flex items-center gap-1.5">
                               <AppIcons.time className="size-3.5 shrink-0" />
                               <span>
-                                Last active{" "}
+                                {t("settings.accountSecurity.lastActive")}{" "}
                                 <span className="font-medium text-foreground/80">
-                                  {formatDateTime(session.updatedAt)}
+                                  {formatDateTime(session.updatedAt, locale)}
                                 </span>
                               </span>
                             </p>
                             <p className="inline-flex items-center gap-1.5 sm:col-span-2">
                               <AppIcons.calendar className="size-3.5 shrink-0" />
                               <span>
-                                Signed in{" "}
+                                {t("settings.accountSecurity.signedIn")}{" "}
                                 <span className="font-medium text-foreground/80">
-                                  {formatDateTime(session.createdAt)}
+                                  {formatDateTime(session.createdAt, locale)}
                                 </span>
                               </span>
                             </p>
@@ -452,7 +455,7 @@ export function AccountSecurityPanel({
                       </div>
                       {session.isCurrent ? (
                         <span className="self-start text-xs font-medium text-muted-foreground sm:pt-1">
-                          Current session
+                          {t("settings.accountSecurity.currentSession")}
                         </span>
                       ) : (
                         <Button
@@ -463,7 +466,7 @@ export function AccountSecurityPanel({
                           type="button"
                           variant="destructive"
                         >
-                          Sign out
+                          {t("settings.accountSecurity.signOut")}
                         </Button>
                       )}
                     </div>
@@ -475,7 +478,7 @@ export function AccountSecurityPanel({
         </div>
         <div className="border-t px-4 py-3 sm:px-5">
           <p className="text-xs text-muted-foreground">
-            Signing out a device ends its access until the next successful sign-in.
+            {t("settings.accountSecurity.signOutFooter")}
           </p>
         </div>
       </section>
@@ -488,17 +491,19 @@ export function AccountSecurityPanel({
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Sign out this device?</AlertDialogTitle>
+            <AlertDialogTitle>{t("settings.accountSecurity.signOutTitle")}</AlertDialogTitle>
             <AlertDialogDescription>
               {pendingRevoke
-                ? `${parseUserAgent(pendingRevoke.userAgent).deviceLabel}${
-                    pendingRevoke.ipAddress ? ` (${pendingRevoke.ipAddress})` : ""
-                  } will need to sign in again to access the dashboard.`
-                : "This device will need to sign in again."}
+                ? t("settings.accountSecurity.signOutDesc", {
+                    device: `${parseUserAgent(pendingRevoke.userAgent, t).deviceLabel}${
+                      pendingRevoke.ipAddress ? ` (${pendingRevoke.ipAddress})` : ""
+                    }`,
+                  })
+                : t("settings.accountSecurity.signOutDescGeneric")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="rounded-full" disabled={Boolean(revokingToken)}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel className="rounded-full" disabled={Boolean(revokingToken)}>{t("common.cancel")}</AlertDialogCancel>
             <AlertDialogAction
               className="rounded-full bg-destructive text-destructive-foreground hover:bg-destructive/90"
               disabled={Boolean(revokingToken)}
@@ -507,7 +512,7 @@ export function AccountSecurityPanel({
                 void confirmRevokeSession();
               }}
             >
-              {revokingToken ? "Signing out…" : "Sign out device"}
+              {revokingToken ? t("settings.accountSecurity.signingOut") : t("settings.accountSecurity.signOutDevice")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -535,9 +540,12 @@ function PasswordField({
   value: string;
   visible: boolean;
 }) {
+  const { t } = useI18n();
   // Eye = password is hidden (click to show). Eye-off = password is visible (click to hide).
   const PasswordIcon = visible ? AppIcons.eyeOff : AppIcons.eye;
-  const tip = visible ? "Hide password" : "Show password";
+  const tip = visible
+    ? t("settings.accountSecurity.hidePassword")
+    : t("settings.accountSecurity.showPassword");
 
   return (
     <Field>
@@ -571,7 +579,10 @@ function PasswordField({
   );
 }
 
-function parseUserAgent(userAgent: string | null): DeviceInfo {
+function parseUserAgent(
+  userAgent: string | null,
+  t: (key: MessageKey) => string,
+): DeviceInfo {
   const ua = userAgent?.toLowerCase() ?? "";
   const raw = userAgent?.trim() || "";
 
@@ -583,35 +594,35 @@ function parseUserAgent(userAgent: string | null): DeviceInfo {
   const isLinux = ua.includes("linux") && !isAndroid;
 
   let DeviceIcon: AppIcon = AppIcons.computer;
-  let deviceLabel = "Desktop";
+  let deviceLabel = t("settings.accountSecurity.device.desktop");
   if (isIos && ua.includes("ipad")) {
     DeviceIcon = AppIcons.smartphone;
-    deviceLabel = "iPad";
+    deviceLabel = t("settings.accountSecurity.device.ipad");
   } else if (isIos) {
     DeviceIcon = AppIcons.smartphone;
-    deviceLabel = "iPhone";
+    deviceLabel = t("settings.accountSecurity.device.iphone");
   } else if (isAndroid && isMobile) {
     DeviceIcon = AppIcons.smartphone;
-    deviceLabel = "Android phone";
+    deviceLabel = t("settings.accountSecurity.device.androidPhone");
   } else if (isMac) {
     DeviceIcon = AppIcons.macbook;
-    deviceLabel = "Mac";
+    deviceLabel = t("settings.accountSecurity.device.mac");
   } else if (isWindows) {
     DeviceIcon = AppIcons.computer;
-    deviceLabel = "Windows PC";
+    deviceLabel = t("settings.accountSecurity.device.windowsPc");
   } else if (isLinux) {
     DeviceIcon = AppIcons.computer;
-    deviceLabel = "Linux PC";
+    deviceLabel = t("settings.accountSecurity.device.linuxPc");
   } else if (isMobile) {
     DeviceIcon = AppIcons.smartphone;
-    deviceLabel = "Mobile device";
+    deviceLabel = t("settings.accountSecurity.device.mobile");
   } else if (!raw) {
     DeviceIcon = AppIcons.global;
-    deviceLabel = "Unknown device";
+    deviceLabel = t("settings.accountSecurity.device.unknown");
   }
 
   let OsIcon: AppIcon = AppIcons.global;
-  let os = "Unknown OS";
+  let os = t("settings.accountSecurity.os.unknown");
   if (isIos) {
     OsIcon = AppIcons.apple;
     const match = raw.match(/OS (\d+[._]\d+)/i);
@@ -636,7 +647,7 @@ function parseUserAgent(userAgent: string | null): DeviceInfo {
   }
 
   let BrowserIcon: AppIcon = AppIcons.global;
-  let browser = "Unknown browser";
+  let browser = t("settings.accountSecurity.os.unknownBrowser");
   if (ua.includes("edg/") || ua.includes("edgios") || ua.includes("edga")) {
     BrowserIcon = AppIcons.edge;
     browser = "Microsoft Edge";
@@ -650,14 +661,14 @@ function parseUserAgent(userAgent: string | null): DeviceInfo {
     BrowserIcon = AppIcons.safari;
     browser = "Safari";
   } else if (raw) {
-    browser = "Browser";
+    browser = t("settings.accountSecurity.os.browser");
   }
 
   return { browser, BrowserIcon, deviceLabel, DeviceIcon, os, OsIcon };
 }
 
-function formatDateTime(value: string) {
-  return new Intl.DateTimeFormat("en", {
+function formatDateTime(value: string, locale: string) {
+  return new Intl.DateTimeFormat(locale, {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(new Date(value));
