@@ -1,8 +1,11 @@
 {
   "openAria": "Open quick search",
+  "triggerLabel": "Search or jump…",
   "searchOrJump": "Jump to a page, run an action, or type to search…",
   "title": "Quick search",
   "description": "Search dashboard navigation and go to a page.",
+  "dialogDescription": "Search pages, products, orders, customers, and run common actions.",
+  "closeAria": "Close",
   "searchPlaceholder": "Search pages…",
   "navigationHeading": "Navigation",
   "searchingRemote": "Searching products, orders, customers…",
@@ -14,6 +17,10 @@
   "searchingShop": "Searching your shop…",
   "recent": "Recent",
   "results": "Results",
+  "tapToOpen": "Tap a result to open",
+  "move": "move",
+  "open": "open",
+  "close": "Close",
   "actions": {
     "createProduct": "Create product",
     "createCategory": "Create category",
