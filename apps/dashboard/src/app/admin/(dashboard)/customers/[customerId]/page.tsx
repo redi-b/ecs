@@ -9,6 +9,7 @@ import {
   CustomerAddressDialog,
 } from "@/features/customers/customer-address-dialog";
 import { CustomerFormDialog } from "@/features/customers/customer-form-dialog";
+import { getTranslations } from "@/i18n/server";
 import { getMerchantCustomer } from "@/lib/merchant-customers";
 
 export default async function CustomerDetailPage({
@@ -16,6 +17,7 @@ export default async function CustomerDetailPage({
 }: {
   params: Promise<{ customerId: string }>;
 }) {
+  const t = await getTranslations();
   const { customerId } = await params;
   const h = await headers();
   const result = await getMerchantCustomer(
@@ -29,21 +31,23 @@ export default async function CustomerDetailPage({
   if (!result.ok) notFound();
   const customer = result.customer;
   const name = [customer.firstName, customer.lastName].filter(Boolean).join(" ") || customer.email;
+  const notSet = t("common.notSet");
+
   return (
     <PageShell
       actions={<CustomerFormDialog customer={customer} />}
-      description="Customer identity, contact information, groups, and saved addresses."
+      description={t("customers.detail.shellDescription")}
       title={name}
     >
       <div className="grid gap-4 lg:grid-cols-3">
         <section className="rounded-2xl border bg-card p-5 lg:col-span-2">
-          <h2 className="text-sm font-semibold">Contact</h2>
+          <h2 className="text-sm font-semibold">{t("customers.detail.contact")}</h2>
           <dl className="mt-4 grid gap-4 sm:grid-cols-2">
-            <Item label="Email" value={customer.email} />
-            <Item label="Phone" value={customer.phone || "Not set"} />
-            <Item label="Company" value={customer.companyName || "Not set"} />
+            <Item label={t("customers.detail.email")} value={customer.email} />
+            <Item label={t("customers.detail.phone")} value={customer.phone || notSet} />
+            <Item label={t("customers.detail.company")} value={customer.companyName || notSet} />
             <Item
-              label="Customer since"
+              label={t("customers.detail.customerSince")}
               value={new Intl.DateTimeFormat("en", { dateStyle: "long" }).format(
                 new Date(customer.createdAt),
               )}
@@ -51,29 +55,30 @@ export default async function CustomerDetailPage({
           </dl>
         </section>
         <section className="rounded-2xl border bg-card p-5">
-          <h2 className="text-sm font-semibold">Groups</h2>
+          <h2 className="text-sm font-semibold">{t("customers.detail.groups")}</h2>
           <div className="mt-4 flex flex-wrap gap-2">
             {customer.groups.length ? (
               customer.groups.map((group) => (
                 <Badge key={group.id} variant="secondary">
                   {group.name.startsWith("Tenant ") || group.name.startsWith("Shop ")
-                    ? "Customer"
+                    ? t("customers.table.groupCustomer")
                     : group.name}
                 </Badge>
               ))
             ) : (
-              <p className="text-sm text-muted-foreground">No groups assigned.</p>
+              <p className="text-sm text-muted-foreground">{t("customers.table.noGroups")}</p>
             )}
           </div>
         </section>
         <section className="rounded-2xl border bg-card p-5 lg:col-span-3">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <h2 className="text-sm font-semibold">Addresses</h2>
+              <h2 className="text-sm font-semibold">{t("customers.detail.addresses")}</h2>
               {customer.addresses.length ? (
                 <p className="mt-1 text-xs text-muted-foreground">
-                  {customer.addresses.length} saved address
-                  {customer.addresses.length === 1 ? "" : "es"}
+                  {customer.addresses.length === 1
+                    ? t("customers.addresses.savedCountOne")
+                    : t("customers.addresses.savedCount", { count: customer.addresses.length })}
                 </p>
               ) : null}
             </div>
@@ -98,7 +103,9 @@ export default async function CustomerDetailPage({
                     <div className="flex flex-wrap items-start justify-between gap-2">
                       <div className="min-w-0">
                         <p className="text-sm font-medium">
-                          {address.addressName || address.address1 || "Address"}
+                          {address.addressName ||
+                            address.address1 ||
+                            t("customers.detail.defaultAddressName")}
                         </p>
                         {contact ? (
                           <p className="mt-0.5 text-xs text-muted-foreground">{contact}</p>
@@ -106,15 +113,15 @@ export default async function CustomerDetailPage({
                       </div>
                       <div className="flex flex-wrap gap-1.5">
                         {address.isDefaultShipping ? (
-                          <Badge variant="secondary">Default shipping</Badge>
+                          <Badge variant="secondary">{t("customers.addresses.defaultShipping")}</Badge>
                         ) : null}
                         {address.isDefaultBilling ? (
-                          <Badge variant="outline">Default billing</Badge>
+                          <Badge variant="outline">{t("customers.addresses.defaultBilling")}</Badge>
                         ) : null}
                       </div>
                     </div>
                     <p className="text-sm text-muted-foreground">
-                      {line || "No address details on file."}
+                      {line || t("customers.addresses.noDetails")}
                     </p>
                     {address.phone ? (
                       <p className="text-xs text-muted-foreground">{address.phone}</p>
@@ -125,7 +132,7 @@ export default async function CustomerDetailPage({
                         customerId={customer.id}
                         trigger={
                           <Button size="sm" type="button" variant="outline">
-                            Edit
+                            {t("customers.addresses.edit")}
                           </Button>
                         }
                       />
@@ -139,9 +146,7 @@ export default async function CustomerDetailPage({
               })}
             </div>
           ) : (
-            <p className="mt-3 text-sm text-muted-foreground">
-              No saved addresses yet. Add one for deliveries and manual orders.
-            </p>
+            <p className="mt-3 text-sm text-muted-foreground">{t("customers.addresses.empty")}</p>
           )}
         </section>
       </div>

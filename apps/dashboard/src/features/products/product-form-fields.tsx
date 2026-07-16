@@ -21,6 +21,7 @@ import {
   buildCategoryTree,
   flattenCategoryTree,
 } from "@/features/catalog-taxonomy/taxonomy-table-state";
+import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 
 export const NO_COLLECTION_VALUE = "__none";
@@ -62,6 +63,7 @@ export function CollectionPicker({
   selectedCollection: MerchantProductCollection | undefined;
   value: string;
 }) {
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
 
   return (
@@ -69,16 +71,18 @@ export function CollectionPicker({
       <PopoverTrigger asChild>
         <Button className="w-full justify-between" type="button" variant="outline">
           <span className="truncate">
-            {selectedCollection ? getCollectionLabel(selectedCollection) : "No collection"}
+            {selectedCollection
+              ? getCollectionLabel(selectedCollection, t("products.formPicker.untitledCollection"))
+              : t("products.formPicker.noCollection")}
           </span>
           <AppIcons.arrowDown data-icon="inline-end" />
         </Button>
       </PopoverTrigger>
       <PopoverContent align="start" className="w-[min(28rem,calc(100vw-2rem))] p-1">
         <Command>
-          <CommandInput placeholder="Search collections..." />
+          <CommandInput placeholder={t("products.formPicker.searchCollections")} />
           <CommandList>
-            <CommandEmpty>No collections found.</CommandEmpty>
+            <CommandEmpty>{t("products.formPicker.noCollectionsFound")}</CommandEmpty>
             <CommandGroup>
               <CommandItem
                 data-checked={value === NO_COLLECTION_VALUE}
@@ -86,9 +90,9 @@ export function CollectionPicker({
                   onChange(NO_COLLECTION_VALUE);
                   setOpen(false);
                 }}
-                value="No collection"
+                value={t("products.formPicker.noCollection")}
               >
-                No collection
+                {t("products.formPicker.noCollection")}
               </CommandItem>
               {collections.map((collection) => (
                 <CommandItem
@@ -100,7 +104,9 @@ export function CollectionPicker({
                   }}
                   value={`${collection.title ?? ""} ${collection.handle ?? ""}`}
                 >
-                  <span className="truncate">{getCollectionLabel(collection)}</span>
+                  <span className="truncate">
+                    {getCollectionLabel(collection, t("products.formPicker.untitledCollection"))}
+                  </span>
                   {collection.handle ? (
                     <span className="ml-auto text-xs text-muted-foreground">
                       {collection.handle}
@@ -127,6 +133,7 @@ export function CategoryPicker({
   selectedCategories: MerchantProductCategory[];
   value: string[];
 }) {
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const treeRows = useMemo(
     () => flattenCategoryTree(buildCategoryTree(categories)),
@@ -148,21 +155,24 @@ export function CategoryPicker({
           <Button className="w-full justify-between" type="button" variant="outline">
             <span className="truncate">
               {selectedCategories.length
-                ? `${selectedCategories.length} selected`
-                : "Select categories"}
+                ? t("products.formPicker.selectedCount", { count: selectedCategories.length })
+                : t("products.formPicker.selectCategories")}
             </span>
             <AppIcons.arrowDown data-icon="inline-end" />
           </Button>
         </PopoverTrigger>
         <PopoverContent align="start" className="w-[min(30rem,calc(100vw-2rem))] p-1">
           <Command>
-            <CommandInput placeholder="Search categories…" />
+            <CommandInput placeholder={t("products.formPicker.searchCategories")} />
             <CommandList className="max-h-72">
-              <CommandEmpty>No categories found.</CommandEmpty>
+              <CommandEmpty>{t("products.formPicker.noCategoriesFound")}</CommandEmpty>
               <CommandGroup>
                 {treeRows.map((node) => {
                   const category = node.category;
-                  const label = getCategoryLabel(category);
+                  const label = getCategoryLabel(
+                    category,
+                    t("products.formPicker.untitledCategory"),
+                  );
                   return (
                     <CommandItem
                       data-checked={value.includes(category.id) ? true : undefined}
@@ -198,12 +208,12 @@ export function CategoryPicker({
         <div className="flex flex-wrap gap-2">
           {selectedCategories.map((category) => (
             <Badge key={category.id} variant="secondary">
-              {getCategoryLabel(category)}
+              {getCategoryLabel(category, t("products.formPicker.untitledCategory"))}
             </Badge>
           ))}
         </div>
       ) : (
-        <FieldDescription>No categories selected.</FieldDescription>
+        <FieldDescription>{t("products.formPicker.noCategoriesSelected")}</FieldDescription>
       )}
     </div>
   );
@@ -225,10 +235,13 @@ export function hasFieldError(field: {
   return field.state.meta.isTouched && field.state.meta.errors.length > 0;
 }
 
-function getCollectionLabel(collection: MerchantProductCollection) {
-  return collection.title ?? collection.handle ?? "Untitled collection";
+function getCollectionLabel(
+  collection: MerchantProductCollection,
+  untitledFallback: string,
+) {
+  return collection.title ?? collection.handle ?? untitledFallback;
 }
 
-function getCategoryLabel(category: MerchantProductCategory) {
-  return category.name ?? category.handle ?? "Untitled category";
+function getCategoryLabel(category: MerchantProductCategory, untitledFallback: string) {
+  return category.name ?? category.handle ?? untitledFallback;
 }

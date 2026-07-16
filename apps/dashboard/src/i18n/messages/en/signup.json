@@ -1,0 +1,10 @@
+{
+  "error": {
+    "sessionMissing": "Account was created, but the session did not start. Sign in to continue.",
+    "unavailable": "Signup is temporarily unavailable.",
+    "emailExists": "An account with that email already exists.",
+    "required": "Complete the required fields.",
+    "passwordShort": "Use at least 8 characters for the password.",
+    "failed": "Signup could not be completed."
+  }
+}

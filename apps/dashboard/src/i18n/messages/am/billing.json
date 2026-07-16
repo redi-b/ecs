@@ -1,0 +1,136 @@
+{
+  "title": "ሂሳብ እና ክፍያ",
+  "description": "የዕቅድ ዝርዝሮችን፣ የደንበኝነት ምዝገባ ሁኔታን እና የቅርብ ጊዜ ደረሰኞችን ይገምግሙ።",
+  "error": {
+    "loadTitle": "የክፍያ መረጃዎችን መጫን አልተቻለም"
+  },
+  "empty": {
+    "title": "ክፍያ ለዚህ ሱቅ ገቢር አልተደረገም",
+    "description": "መለያው ሊደረስበት ይችላል፣ ነገር ግን ምንም የደንበኝነት ምዝገባ ወይም የክፍያ መጠየቂያ ሁኔታ ገና አልተገኘም።"
+  },
+  "unavailable": {
+    "title": "ክፍያ አይገኝም",
+    "description": "ለዚህ ሱቅ የዕቅድ ዝርዝሮችን መጫን አልተቻለም። እንደገና ይሞክሩ፣ ወይም ከመለያ ክፍያን ይክፈቱ።",
+    "reload": "ክፍያን እንደገና ጫን"
+  },
+  "plan": {
+    "current": "የአሁኑ ዕቅድ",
+    "currentBadge": "አሁን",
+    "free": "ነፃ",
+    "plansHeading": "ዕቅዶች",
+    "plansDescription": "ለዚህ ሱቅ ዕቅድ ይምረጡ። ክፍያ የሚጠይቁ ዕቅድ ሲመርጡ ብቻ ይከፍላሉ።",
+    "perMonth": "/ ወር",
+    "fallbackTagline": "ለሱቅዎ የዕቅድ ዝርዝሮች።",
+    "noPaymentRequired": "ለዚህ ሱቅ ክፍያ አያስፈልግም።",
+    "paidThrough": "እስከ {date} ተከፍሏል · {price} / {cycle}",
+    "priceCycle": "{price} · {cycle}",
+    "switchesTo": "ወደ {name} ይቀየራል",
+    "freePlan": "ነፃ ዕቅድ",
+    "theFreePlan": "ነፃው ዕቅድ",
+    "scheduledChange": "በ{date} ወደ {name} ይቀየራል። ለቀሩት ቀናት ተመላሽ ክፍያ የለም። ከዚያ በፊት ማቋረጥ ይችላሉ።"
+  },
+  "plans": {
+    "starter": {
+      "tagline": "ሱቅዎን በመስመር ላይ ለማስኬድ የሚያስፈልጉዎት ሁሉ።",
+      "highlights": {
+        "storefront": "መደብር፣ ካታሎግ እና ሚዲያ",
+        "orders": "ትዕዛዞች እና ደንበኞች",
+        "noPayment": "የደንበኝነት ክፍያ የለም"
+      }
+    },
+    "growth": {
+      "tagline": "ለማደግ ዝግጁ ለሆኑ ሱቆች የቅድሚያ ክፍያ ዕቅድ።",
+      "highlights": {
+        "everythingStarter": "በStarter ያሉ ሁሉም",
+        "monthlyPrepaid": "ወርሃዊ ቅድሚያ ክፍያ",
+        "payChapa": "በChapa በደህንነት ይክፈሉ"
+      }
+    }
+  },
+  "status": {
+    "trial": "ሙከራ",
+    "active": "በስራ ላይ",
+    "pastDue": "ጊዜው ያለፈ",
+    "cancelled": "ተሰርዟል"
+  },
+  "cycle": {
+    "month": "ወር",
+    "year": "ዓመት"
+  },
+  "payment": {
+    "checkingTitle": "ክፍያዎን በማረጋገጥ ላይ",
+    "checkingDescription": "ቼክአውት ካጠናቀቁ፣ ማረጋገጫ ትንሽ ሊወስድ ይችላል። ክፍያው ካልተጠናቀቀ ብቻ እንደገና ይክፈሉ።",
+    "receivedTitle": "ክፍያ ተቀብሏል",
+    "receivedActive": "የሚከፈል ዕቅድዎ አሁን በስራ ላይ ነው።",
+    "receivedThrough": "የሚከፈል ዕቅድዎ እስከ {date} በስራ ላይ ነው።",
+    "requiredTitle": "ክፍያ ያስፈልጋል",
+    "requiredDescription": "ዕቅድዎን ለማግበር ወይም ለማራዘም ይክፈሉ።",
+    "due": "የመክፈያ ቀን {date}",
+    "payWithChapa": "በChapa ይክፈሉ",
+    "payAmount": "{amount} ይክፈሉ",
+    "historyTitle": "የክፍያ ታሪክ",
+    "historyDescription": "ለዚህ ሱቅ ያለፉ ክፍያዎች።",
+    "paidOn": "ተከፍሏል {date}",
+    "createdOn": "ተፈጥሯል {date}"
+  },
+  "invoice": {
+    "planPayment": "የዕቅድ ክፍያ",
+    "planUpgrade": "የዕቅድ ማሻሻያ",
+    "open": "ክፍት የክፍያ መጠየቂያ",
+    "generic": "የክፍያ መጠየቂያ",
+    "unpaid": "Unpaid",
+    "paid": "Paid",
+    "cancelled": "ተሰርዟል"
+  },
+  "primary": {
+    "currentPlan": "የአሁኑ ዕቅድ",
+    "keepPlan": "ይህን ዕቅድ አቆይ",
+    "renewPlan": "ዕቅድ አድስ",
+    "renewPeriod": "ጊዜ አድስ",
+    "changeScheduled": "ለውጥ ተይዟል",
+    "switchAfter": "ከ{date} በኋላ ቀይር",
+    "switchTo": "ወደ {name} ቀይር",
+    "continueWith": "በ{name} ቀጥል",
+    "selectPlan": "ዕቅድ ይምረጡ"
+  },
+  "hint": {
+    "onStarterSelectGrowth": "በStarter ላይ ነዎት። ለማሻሻያ ክፍያ ለመቀጠል Growth ይምረጡ።",
+    "alreadyOnPlan": "አስቀድመው በዚህ ዕቅድ ላይ ነዎት።",
+    "finishPayment": "ዕቅዱን ለማግበር ወይም ለማራዘም ክፍያውን ያጠናቁ።",
+    "scheduledKeep": "ወደ {name} መቀየር ተይዟል። ለመሰረዝ ይህን ዕቅድ ያቆዩ።",
+    "endingSoon": "የአሁኑ ጊዜዎ በቅርብ ያበቃል። በዚህ ዕቅድ ለመቆየት ያድሱ።",
+    "periodEnded": "የተከፈለ ጊዜዎ አልቋል። በዚህ ዕቅድ ለመቀጠል ያድሱ።",
+    "alreadyScheduled": "አስቀድሞ ተይዟል። እስከ {date} በ{current} ላይ ይቆያሉ።",
+    "noRefundKeepUntil": "ተመላሽ የለም። እስከ {date} {current} ይቆያሉ፣ ከዚያ ወደ {next} ይሄዳሉ።",
+    "switchNowPeriodEnded": "አሁን ወደ {name} ይቀይሩ። የተከፈለ ጊዜዎ አስቀድሞ አልቋል።",
+    "completeOrContinue": "ክፍት የክፍያ መጠየቂያውን ይክፈሉ፣ ወይም ይህን ዕቅድ ለማረጋገጥ ይቀጥሉ።",
+    "chargedForMonth": "ከክፍያ በኋላ ለአንድ ወር {price} ይከፍላሉ።"
+  },
+  "toast": {
+    "invoiceReady": "የክፍያ መጠየቂያ ዝግጁ ነው።",
+    "paymentConfirmed": "ክፍያ ተረጋግጧል።",
+    "openingCheckout": "ደህንነቱ የተጠበቀ ክፍያ በመክፈት ላይ…",
+    "switchesOn": "በ{date} ወደ ነፃ ዕቅድ ይቀየራል።",
+    "planChangeScheduled": "የዕቅድ ለውጥ ተይዟል።",
+    "nowOnFree": "አሁን በነፃ ዕቅድ ላይ ነዎት።",
+    "scheduledCancelled": "የተያዘው የዕቅድ ለውጥ ተሰርዟል።"
+  },
+  "row": {
+    "price": "ዋጋ",
+    "cycle": "ዑደት",
+    "subscription": "ምዝገባ",
+    "manualPayment": "በእጅ የሚከፈል ክፍያ"
+  },
+  "actions": {
+    "manageSettings": "የሱቅ ማስተካከያዎችን ያስተዳድሩ"
+  },
+  "footer": {
+    "shopSettings": "የሱቅ ማስተካከያዎች",
+    "viewStorefront": "መደብሩን ይመልከቱ"
+  },
+  "invoices": {
+    "title": "ደረሰኞች",
+    "description": "የቅርብ ጊዜ ደረሰኞች እና የክፍያ ሁኔታ።",
+    "empty": "እስካሁን ምንም ደረሰኝ አልተመዘገበም።"
+  }
+}

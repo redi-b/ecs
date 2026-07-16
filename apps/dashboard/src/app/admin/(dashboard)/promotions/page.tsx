@@ -6,6 +6,7 @@ import { RefreshButton } from "@/components/app/refresh-button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { PromotionCreateDialog } from "@/features/promotions/promotion-create-dialog";
 import { PromotionsManager } from "@/features/promotions/promotions-manager";
+import { getTranslations } from "@/i18n/server";
 import type { DashboardSearchParams } from "@/lib/dashboard-tenant-context";
 import { getMerchantPromotions } from "@/lib/merchant-promotions";
 import { dashboardRoutes } from "@/lib/routes";
@@ -25,6 +26,7 @@ export default async function PromotionsPage({ searchParams }: PromotionsPagePro
     statusRaw === "active" || statusRaw === "inactive" || statusRaw === "draft"
       ? statusRaw
       : undefined;
+  const t = await getTranslations();
   const offset = (listParams.page - 1) * listParams.pageSize;
   const requestHeaders = await headers();
   const result = await getMerchantPromotions({
@@ -45,12 +47,12 @@ export default async function PromotionsPage({ searchParams }: PromotionsPagePro
           <PromotionCreateDialog />
         </>
       }
-      description="Create intentional discounts with clear schedules and redemption safeguards."
-      title="Promotions & discounts"
+      description={t("promotions.description")}
+      title={t("promotions.title")}
     >
       {result.ok ? (
         <>
-          <ListSummary count={result.promotions.count} label="promotions" />
+          <ListSummary count={result.promotions.count} label={t("nav.promotions").toLowerCase()} />
           <PromotionsManager
             footer={
               <PaginationControls
@@ -69,9 +71,9 @@ export default async function PromotionsPage({ searchParams }: PromotionsPagePro
         </>
       ) : (
         <Alert variant="destructive">
-          <AlertTitle>Promotions could not be loaded</AlertTitle>
+          <AlertTitle>{t("promotions.error.loadTitle")}</AlertTitle>
           <AlertDescription>
-            The promotions list is temporarily unavailable. Refresh and try again.
+            {t("promotions.error.loadDescription")}
           </AlertDescription>
         </Alert>
       )}

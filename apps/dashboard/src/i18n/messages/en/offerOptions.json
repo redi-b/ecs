@@ -1,0 +1,26 @@
+{
+  "percentageOrder": {
+    "title": "Percentage off order",
+    "desc": "Take a percent off the customer’s full order total."
+  },
+  "fixedOrder": {
+    "title": "Amount off order",
+    "desc": "Subtract a fixed amount from the order total."
+  },
+  "percentageItems": {
+    "title": "Percentage off products",
+    "desc": "Discount matching products by a percentage."
+  },
+  "fixedItems": {
+    "title": "Amount off products",
+    "desc": "Discount matching products by a fixed amount."
+  },
+  "buyget": {
+    "title": "Buy X get Y",
+    "desc": "When shoppers buy enough items, they get others free."
+  },
+  "freeShipping": {
+    "title": "Free shipping",
+    "desc": "Remove shipping cost on eligible orders."
+  }
+}

@@ -43,6 +43,7 @@ import {
 } from "@/lib/merchant-search";
 import { parseCreateFromHref, requestOpenCreate } from "@/lib/open-create";
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/i18n/provider";
 
 const REMOTE_MIN_CHARS = 2;
 const DEBOUNCE_MS = 220;
@@ -115,6 +116,7 @@ function useModKeyLabel() {
 }
 
 export function CommandCenter() {
+  const { t } = useI18n();
   const router = useRouter();
   const { isMobile, setOpenMobile } = useSidebar();
   const [open, setOpen] = useState(false);
@@ -134,7 +136,7 @@ export function CommandCenter() {
         }) ?? window.location.hostname
       : "default";
 
-  const staticCommands = useMemo(() => getAllStaticCommands(), []);
+  const staticCommands = useMemo(() => getAllStaticCommands(t), [t]);
   const filteredCommands = useMemo(
     () => filterStaticCommands(query, staticCommands),
     [query, staticCommands],
@@ -209,7 +211,7 @@ export function CommandCenter() {
               error?: string;
             };
             if (!response.ok) {
-              setRemoteError((prev) => prev ?? data.error ?? "Search failed");
+              setRemoteError((prev) => prev ?? data.error ?? t("commandCenter.searchFailed"));
               return;
             }
             const hits = Array.isArray(data.results) ? data.results : [];
@@ -223,7 +225,7 @@ export function CommandCenter() {
           })
           .catch((error) => {
             if (!active || (error as Error).name === "AbortError") return;
-            setRemoteError((prev) => prev ?? "Search failed");
+            setRemoteError((prev) => prev ?? t("commandCenter.searchFailed"));
           })
           .finally(() => {
             if (!active) return;
@@ -302,10 +304,10 @@ export function CommandCenter() {
     !showEmptyQuery && !hasLocal && !hasRemote && !remoteLoading;
 
   const inputPlaceholder = showEmptyQuery
-    ? "Jump to a page, run an action, or type to search…"
+    ? t("commandCenter.searchOrJump")
     : showRemote
-      ? "Searching products, orders, customers…"
-      : "Keep typing to search your catalog…";
+      ? t("commandCenter.searchingRemote")
+      : t("commandCenter.keepTyping");
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -313,7 +315,7 @@ export function CommandCenter() {
         <Button
           type="button"
           variant="ghost"
-          aria-label="Open command center"
+          aria-label={t("commandCenter.openAria")}
           size="icon"
           className={cn(
             "size-9 shrink-0 text-muted-foreground",
@@ -323,7 +325,7 @@ export function CommandCenter() {
         >
           <AppIcons.search className="size-4 opacity-80" />
           <span className="hidden text-sm text-muted-foreground sm:inline">
-            Search or jump…
+            {t("commandCenter.triggerLabel")}
           </span>
           <KbdGroup className="ml-auto hidden shrink-0 sm:inline-flex">
             <Kbd className={cn(modKey === "⌘" && "min-w-5 px-1 text-[13px] leading-none")}>
@@ -346,20 +348,20 @@ export function CommandCenter() {
         )}
         showCloseButton={false}
       >
-        <DialogTitle className="sr-only">Command center</DialogTitle>
+        <DialogTitle className="sr-only">{t("commandCenter.title")}</DialogTitle>
         <DialogDescription className="sr-only">
-          Search pages, products, orders, customers, and run common actions.
+          {t("commandCenter.dialogDescription")}
         </DialogDescription>
 
         {/* Mobile drag/close chrome */}
         <div className="flex items-center justify-between gap-2 border-b border-border/50 px-3 py-2 sm:hidden">
-          <p className="text-sm font-medium">Command center</p>
+          <p className="text-sm font-medium">{t("commandCenter.title")}</p>
           <Button
             type="button"
             variant="ghost"
             size="icon"
             className="size-8"
-            aria-label="Close"
+            aria-label={t("commandCenter.closeAria")}
             onClick={() => setOpen(false)}
           >
             <AppIcons.close className="size-4" />
@@ -384,13 +386,13 @@ export function CommandCenter() {
           <CommandList className="min-h-0 flex-1 scroll-py-2 px-2 pb-2 max-h-none sm:max-h-[min(28rem,55dvh)]">
             {showEmpty ? (
               <CommandEmpty className="py-10 text-muted-foreground">
-                {remoteError ? remoteError : "No matches. Try another term or a create action."}
+                {remoteError ? remoteError : t("commandCenter.noMatches")}
               </CommandEmpty>
             ) : null}
 
             {showEmptyQuery && recent.length > 0 ? (
               <CommandGroup
-                heading="Recent"
+                heading={t("commandCenter.recent")}
                 className="**:[[cmdk-group-heading]]:px-2 **:[[cmdk-group-heading]]:pt-3 **:[[cmdk-group-heading]]:pb-1.5 **:[[cmdk-group-heading]]:text-[11px] **:[[cmdk-group-heading]]:font-semibold **:[[cmdk-group-heading]]:tracking-wider **:[[cmdk-group-heading]]:text-muted-foreground/80 **:[[cmdk-group-heading]]:uppercase"
               >
                 {recent.map((item) => {
@@ -409,7 +411,9 @@ export function CommandCenter() {
                         <Icon className="size-4" />
                       </IconTile>
                       <span className="min-w-0 flex-1 truncate font-medium">{item.label}</span>
-                      <span className="text-[11px] text-muted-foreground/70">Recent</span>
+                      <span className="text-[11px] text-muted-foreground/70">
+                        {t("commandCenter.recent")}
+                      </span>
                     </CommandItem>
                   );
                 })}
@@ -422,7 +426,7 @@ export function CommandCenter() {
 
             {actionCommands.length > 0 ? (
               <CommandGroup
-                heading="Actions"
+                heading={t("commandCenter.actionsHeading")}
                 className="**:[[cmdk-group-heading]]:px-2 **:[[cmdk-group-heading]]:pt-3 **:[[cmdk-group-heading]]:pb-1.5 **:[[cmdk-group-heading]]:text-[11px] **:[[cmdk-group-heading]]:font-semibold **:[[cmdk-group-heading]]:tracking-wider **:[[cmdk-group-heading]]:text-muted-foreground/80 **:[[cmdk-group-heading]]:uppercase"
               >
                 {actionCommands.map((command) => (
@@ -454,7 +458,7 @@ export function CommandCenter() {
                   return (
                     <CommandGroup
                       key={type}
-                      heading={groupLabelForSearchType(type)}
+                      heading={groupLabelForSearchType(type, t)}
                       className="**:[[cmdk-group-heading]]:px-2 **:[[cmdk-group-heading]]:pt-3 **:[[cmdk-group-heading]]:pb-1.5 **:[[cmdk-group-heading]]:text-[11px] **:[[cmdk-group-heading]]:font-semibold **:[[cmdk-group-heading]]:tracking-wider **:[[cmdk-group-heading]]:text-muted-foreground/80 **:[[cmdk-group-heading]]:uppercase"
                     >
                       {hits.map((hit) => (
@@ -493,7 +497,7 @@ export function CommandCenter() {
                   <div className="flex items-center gap-2 px-3 py-2.5 text-xs text-muted-foreground">
                     <AppIcons.loader className="size-3.5 animate-spin opacity-70" />
                     <span>
-                      {hasRemote ? "Loading more results…" : "Searching your shop…"}
+                      {hasRemote ? t("commandCenter.loadingMore") : t("commandCenter.searchingShop")}
                     </span>
                   </div>
                 ) : null}
@@ -509,7 +513,7 @@ export function CommandCenter() {
                   <CommandSeparator className="my-1 bg-border/60" />
                 ) : null}
                 <CommandGroup
-                  heading="Navigation"
+                  heading={t("commandCenter.navigationHeading")}
                   className="**:[[cmdk-group-heading]]:px-2 **:[[cmdk-group-heading]]:pt-3 **:[[cmdk-group-heading]]:pb-1.5 **:[[cmdk-group-heading]]:text-[11px] **:[[cmdk-group-heading]]:font-semibold **:[[cmdk-group-heading]]:tracking-wider **:[[cmdk-group-heading]]:text-muted-foreground/80 **:[[cmdk-group-heading]]:uppercase"
                 >
                   {navCommands.map((command) => (
@@ -532,13 +536,13 @@ export function CommandCenter() {
 
           <div className="flex shrink-0 items-center justify-between gap-2 border-t border-border/60 bg-muted/30 px-3 py-2.5 text-[11px] text-muted-foreground sm:py-2">
             <span className="flex items-center gap-1.5">
-              <span className="sm:hidden">Tap a result to open</span>
+              <span className="sm:hidden">{t("commandCenter.tapToOpen")}</span>
               <span className="hidden items-center gap-1.5 sm:flex">
                 <Kbd className="h-5 min-w-5 px-1">↑</Kbd>
                 <Kbd className="h-5 min-w-5 px-1">↓</Kbd>
-                <span>move</span>
+                <span>{t("commandCenter.move")}</span>
                 <Kbd className="ml-1 h-5 px-1.5">↵</Kbd>
-                <span>open</span>
+                <span>{t("commandCenter.open")}</span>
               </span>
             </span>
             <span className="flex items-center gap-1">
@@ -548,7 +552,7 @@ export function CommandCenter() {
                 className="text-foreground/80 underline-offset-2 sm:no-underline sm:hover:underline"
                 onClick={() => setOpen(false)}
               >
-                Close
+                {t("commandCenter.close")}
               </button>
             </span>
           </div>

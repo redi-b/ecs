@@ -12,6 +12,7 @@ import {
   getCategoryDisplayName,
   type CategoryTreeNode,
 } from "@/features/catalog-taxonomy/taxonomy-table-state";
+import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 
 type CategoryTreeViewProps = {
@@ -96,6 +97,7 @@ function TreeRow({
   onEdit: () => void;
   onToggle: () => void;
 }) {
+  const { t } = useI18n();
   const hidden = node.category.visibility === "hidden";
 
   return (
@@ -107,7 +109,9 @@ function TreeRow({
         {hasChildren ? (
           <button
             aria-expanded={!collapsed}
-            aria-label={collapsed ? "Expand category" : "Collapse category"}
+            aria-label={
+              collapsed ? t("taxonomy.tree.expand") : t("taxonomy.tree.collapse")
+            }
             className="grid size-7 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
             onClick={onToggle}
             type="button"

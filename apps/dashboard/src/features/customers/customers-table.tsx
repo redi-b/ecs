@@ -21,6 +21,8 @@ import { copyTextToClipboard } from "@/lib/clipboard";
 import type { MerchantCustomer } from "@/lib/merchant-customers";
 import { listEntityActionClassName } from "@/lib/list-entity-link";
 import { dashboardRoutes } from "@/lib/routes";
+import type { MessageKey } from "@/i18n/messages";
+import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 
 function customerDisplayName(customer: MerchantCustomer) {
@@ -29,16 +31,18 @@ function customerDisplayName(customer: MerchantCustomer) {
   );
 }
 
-async function copyToClipboard(value: string, label: string) {
+type Translate = (key: MessageKey, values?: Record<string, string | number | Date>) => string;
+
+async function copyToClipboard(value: string, label: string, t: Translate) {
   try {
     const copied = await copyTextToClipboard(value);
     if (!copied) {
-      toast.error("Nothing to copy.");
+      toast.error(t("table.actions.copyEmpty"));
       return;
     }
-    toast.success(`${label} copied.`);
+    toast.success(t("table.actions.copySuccess", { label }));
   } catch {
-    toast.error("Could not copy. Try again.");
+    toast.error(t("table.actions.copyFailed"));
   }
 }
 
@@ -56,6 +60,7 @@ export function CustomersTable({
   initialQuery?: string | undefined;
   totalCount: number;
 }) {
+  const { t, locale } = useI18n();
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [searchValue, setSearchValue] = useState(initialQuery);
@@ -102,7 +107,7 @@ export function CustomersTable({
         id: "select",
         header: ({ table }) => (
           <Checkbox
-            aria-label="Select all visible customers"
+            aria-label={t("table.actions.selectAllVisible", { entity: t("taxonomy.entity.customer.plural").toLowerCase() })}
             checked={
               table.getIsAllPageRowsSelected() ||
               (table.getIsSomePageRowsSelected() && "indeterminate")
@@ -112,7 +117,7 @@ export function CustomersTable({
         ),
         cell: ({ row }) => (
           <Checkbox
-            aria-label={`Select ${customerDisplayName(row.original)}`}
+            aria-label={t("table.actions.selectRow", { name: customerDisplayName(row.original) })}
             checked={row.getIsSelected()}
             onCheckedChange={(value) => row.toggleSelected(Boolean(value))}
           />
@@ -123,7 +128,7 @@ export function CustomersTable({
       {
         id: "name",
         accessorFn: (customer) => customerDisplayName(customer),
-        header: ({ column }) => <DataTableHeader column={column} title="Customer" />,
+        header: ({ column }) => <DataTableHeader column={column} title={t("table.headers.customer")} />,
         cell: ({ row }) => {
           const isHighlighted = highlightedId === row.original.id;
           return (
@@ -149,21 +154,21 @@ export function CustomersTable({
       },
       {
         accessorKey: "phone",
-        header: ({ column }) => <DataTableHeader column={column} title="Phone" />,
+        header: ({ column }) => <DataTableHeader column={column} title={t("customers.detail.phone")} />,
         cell: ({ row }) => (
           <span className="text-sm text-muted-foreground">{row.original.phone || "—"}</span>
         ),
       },
       {
         id: "groups",
-        header: ({ column }) => <DataTableHeader column={column} title="Groups" />,
+        header: ({ column }) => <DataTableHeader column={column} title={t("customers.detail.groups")} />,
         cell: ({ row }) => (
           <div className="flex flex-wrap gap-1">
             {row.original.groups.length ? (
               row.original.groups.map((group) => (
                 <Badge key={group.id} variant="secondary">
                   {group.name.startsWith("Tenant ") || group.name.startsWith("Shop ")
-                    ? "Customer"
+                    ? t("customers.table.groupCustomer")
                     : group.name}
                 </Badge>
               ))
@@ -177,7 +182,7 @@ export function CustomersTable({
       {
         id: "addresses",
         accessorFn: (customer) => customer.addresses.length,
-        header: ({ column }) => <DataTableHeader column={column} title="Addresses" />,
+        header: ({ column }) => <DataTableHeader column={column} title={t("customers.detail.addresses")} />,
         cell: ({ row }) => {
           const count = row.original.addresses.length;
           if (!count) {
@@ -189,11 +194,11 @@ export function CustomersTable({
           return (
             <div className="flex flex-wrap items-center gap-1.5">
               <span className="text-sm tabular-nums text-muted-foreground">
-                {count} address{count === 1 ? "" : "es"}
+                {count === 1 ? t("customers.table.addressCountOne") : t("customers.table.addressesCount", { count })}
               </span>
               {hasDefault ? (
                 <Badge className="font-normal" variant="outline">
-                  Default set
+                  {t("customers.table.defaultSet")}
                 </Badge>
               ) : null}
             </div>
@@ -202,10 +207,10 @@ export function CustomersTable({
       },
       {
         accessorKey: "createdAt",
-        header: ({ column }) => <DataTableHeader column={column} title="Joined" />,
+        header: ({ column }) => <DataTableHeader column={column} title={t("table.headers.joined")} />,
         cell: ({ row }) => (
           <span className="text-sm text-muted-foreground">
-            {new Intl.DateTimeFormat("en", { dateStyle: "medium" }).format(
+            {new Intl.DateTimeFormat(locale, { dateStyle: "medium" }).format(
               new Date(row.original.createdAt),
             )}
           </span>
@@ -213,7 +218,7 @@ export function CustomersTable({
       },
       {
         id: "actions",
-        header: () => <span className="sr-only">Actions</span>,
+        header: () => <span className="sr-only">{t("table.headers.actions")}</span>,
         cell: ({ row }) => {
           const customer = row.original;
           return (
@@ -222,31 +227,31 @@ export function CustomersTable({
                 {
                   href: dashboardRoutes.customerDetail(customer.id),
                   icon: AppIcons.eye,
-                  label: "View details",
+                  label: t("table.actions.viewDetails"),
                   type: "link",
                 },
                 {
                   icon: AppIcons.edit,
-                  label: "Edit customer",
+                  label: t("customers.detail.editCustomer"),
                   onSelect: () => setEditing(customer),
                   type: "button",
                 },
                 { id: "copy", type: "separator" },
                 {
                   icon: AppIcons.copy,
-                  label: "Copy email",
-                  onSelect: () => void copyToClipboard(customer.email, "Email"),
+                  label: t("table.actions.copyEmail"),
+                  onSelect: () => void copyToClipboard(customer.email, t("customers.detail.email"), t),
                   type: "button",
                 },
                 {
                   disabled: !customer.phone,
                   icon: AppIcons.copy,
-                  label: "Copy phone",
-                  onSelect: () => void copyToClipboard(customer.phone ?? "", "Phone"),
+                  label: t("table.actions.copyPhone"),
+                  onSelect: () => void copyToClipboard(customer.phone ?? "", t("customers.detail.phone"), t),
                   type: "button",
                 },
               ]}
-              label={`Open actions for ${customerDisplayName(customer)}`}
+              label={t("table.actions.openActionsFor", { name: customerDisplayName(customer) })}
             />
           );
         },
@@ -254,7 +259,7 @@ export function CustomersTable({
         enableSorting: false,
       },
     ],
-    [highlightedId],
+    [highlightedId, t, locale],
   );
 
   useEffect(() => {
@@ -272,7 +277,8 @@ export function CustomersTable({
               onClick={() =>
                 void copyToClipboard(
                   selectedCustomers.map((customer) => customer.email).join("\n"),
-                  "Emails",
+                  t("customers.table.emails"),
+                  t,
                 )
               }
               size="sm"
@@ -280,7 +286,7 @@ export function CustomersTable({
               variant="outline"
             >
               <AppIcons.copy data-icon="inline-start" />
-              Copy emails
+              {t("customers.table.copyEmails")}
             </Button>
             <Button
               disabled={!selectedCustomers.some((customer) => customer.phone)}
@@ -290,7 +296,8 @@ export function CustomersTable({
                     .map((customer) => customer.phone)
                     .filter((phone): phone is string => Boolean(phone))
                     .join("\n"),
-                  "Phone numbers",
+                  t("customers.table.phoneNumbers"),
+                  t,
                 )
               }
               size="sm"
@@ -298,19 +305,19 @@ export function CustomersTable({
               variant="outline"
             >
               <AppIcons.copy data-icon="inline-start" />
-              Copy phones
+              {t("customers.table.copyPhones")}
             </Button>
           </div>
         )}
         columns={columns}
         data={customers}
-        emptyMessage="Customers will appear here after their first order or when you add them."
-        emptyTitle="No customers yet"
-        filteredEmptyMessage="Try another name, email, phone, or company."
-        filteredEmptyTitle="No matching customers"
+        emptyMessage={t("customers.table.emptyMessage")}
+        emptyTitle={t("customers.table.emptyTitle")}
+        filteredEmptyMessage={t("customers.table.filteredEmptyMessage")}
+        filteredEmptyTitle={t("customers.table.filteredEmptyTitle")}
         getRowId={(row) => row.id}
         isFiltered={hasActiveFilter}
-        selectedSummaryLabel={(count) => `customer${count === 1 ? "" : "s"} selected`}
+        selectedSummaryLabel={(count) => t("customers.table.selectedSummary", { count })}
         footer={footer}
         toolbar={
           <div className="flex flex-col gap-3">
@@ -322,13 +329,13 @@ export function CustomersTable({
               }}
             >
               <ListToolbarSearch
-                clearLabel="Clear customer search"
-                label="Search customers"
+                clearLabel={t("customers.table.clearSearch")}
+                label={t("customers.table.searchLabel")}
                 onChange={(value) => {
                   setSearchValue(value);
                   pushQuery(value);
                 }}
-                placeholder="Search customers"
+                placeholder={t("customers.table.searchPlaceholder")}
                 value={searchValue}
               />
             </DataTableFilters>

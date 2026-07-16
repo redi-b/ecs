@@ -35,9 +35,13 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { getCategoryDisplayName } from "@/features/catalog-taxonomy/taxonomy-table-state";
+import type { MessageKey } from "@/i18n/messages";
+import { useI18n } from "@/i18n/provider";
 import { getTenantScopedPath } from "@/lib/dashboard-tenant-context";
 import { dashboardRoutes } from "@/lib/routes";
 import { cn } from "@/lib/utils";
+
+type Translate = (key: MessageKey, values?: Record<string, string | number | Date>) => string;
 
 type CategoryReorderSheetProps = {
   categories: MerchantProductCategory[];
@@ -58,6 +62,7 @@ export function CategoryReorderSheet({
   open,
   tenantId,
 }: CategoryReorderSheetProps) {
+  const { t } = useI18n();
   const router = useRouter();
   const queryClient = useQueryClient();
   const [groups, setGroups] = useState<SiblingGroup[]>([]);
@@ -70,8 +75,8 @@ export function CategoryReorderSheet({
 
   useEffect(() => {
     if (!open) return;
-    setGroups(buildSiblingGroups(categories));
-  }, [categories, open]);
+    setGroups(buildSiblingGroups(categories, t));
+  }, [categories, open, t]);
 
   async function saveOrder() {
     const items = groups.flatMap((group) =>
@@ -94,11 +99,11 @@ export function CategoryReorderSheet({
     setIsSaving(false);
 
     if (!response?.ok) {
-      toast.error("Could not save category order.");
+      toast.error(t("taxonomy.reorder.saveFailed"));
       return;
     }
 
-    toast.success("Category order saved.");
+    toast.success(t("taxonomy.reorder.saved"));
     onOpenChange(false);
     await queryClient.invalidateQueries({ queryKey: ["product-categories"] });
     router.refresh();
@@ -126,15 +131,13 @@ export function CategoryReorderSheet({
     <Sheet onOpenChange={onOpenChange} open={open}>
       <SheetContent className="w-full sm:max-w-lg" side="right">
         <SheetHeader className="px-5 py-4 text-left">
-          <SheetTitle>Reorder categories</SheetTitle>
-          <SheetDescription>
-            Drag siblings within the same parent. Lower positions appear first on the storefront.
-          </SheetDescription>
+          <SheetTitle>{t("taxonomy.reorder.title")}</SheetTitle>
+          <SheetDescription>{t("taxonomy.reorder.description")}</SheetDescription>
         </SheetHeader>
 
         <SheetBody className="space-y-6 px-5 py-5">
           {groups.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No categories to reorder yet.</p>
+            <p className="text-sm text-muted-foreground">{t("taxonomy.reorder.empty")}</p>
           ) : null}
           {groups.map((group) => (
             <section className="space-y-2" key={group.parentId ?? "__root__"}>
@@ -143,7 +146,9 @@ export function CategoryReorderSheet({
                   {group.parentLabel}
                 </p>
                 <p className="mt-0.5 text-xs text-muted-foreground">
-                  {group.items.length} {group.items.length === 1 ? "category" : "categories"}
+                  {group.items.length === 1
+                    ? t("taxonomy.reorder.countOne")
+                    : t("taxonomy.reorder.count", { count: group.items.length })}
                 </p>
               </div>
               <DndContext
@@ -168,10 +173,10 @@ export function CategoryReorderSheet({
 
         <SheetFooter className="flex-row justify-end gap-2 px-5 py-4">
           <Button disabled={isSaving} onClick={() => onOpenChange(false)} type="button" variant="outline">
-            Cancel
+            {t("common.cancel")}
           </Button>
           <Button disabled={isSaving || groups.length === 0} onClick={() => void saveOrder()} type="button">
-            {isSaving ? "Saving…" : "Save order"}
+            {isSaving ? t("taxonomy.reorder.saving") : t("taxonomy.reorder.saveOrder")}
           </Button>
         </SheetFooter>
       </SheetContent>
@@ -186,6 +191,7 @@ function SortableCategoryRow({
   category: MerchantProductCategory;
   index: number;
 }) {
+  const { t } = useI18n();
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: category.id,
   });
@@ -203,7 +209,9 @@ function SortableCategoryRow({
       }}
     >
       <button
-        aria-label={`Drag ${getCategoryDisplayName(category)}`}
+        aria-label={t("taxonomy.reorder.dragAria", {
+          name: getCategoryDisplayName(category),
+        })}
         className="grid size-8 shrink-0 place-items-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
         type="button"
         {...attributes}
@@ -222,7 +230,10 @@ function SortableCategoryRow({
   );
 }
 
-function buildSiblingGroups(categories: MerchantProductCategory[]): SiblingGroup[] {
+function buildSiblingGroups(
+  categories: MerchantProductCategory[],
+  t: Translate,
+): SiblingGroup[] {
   const byId = new Map(categories.map((category) => [category.id, category]));
   const buckets = new Map<string, MerchantProductCategory[]>();
 
@@ -245,10 +256,10 @@ function buildSiblingGroups(categories: MerchantProductCategory[]): SiblingGroup
     groups.push({
       parentId,
       parentLabel: parent
-        ? `Under ${getCategoryDisplayName(parent)}`
+        ? t("taxonomy.reorder.underParent", { name: getCategoryDisplayName(parent) })
         : parentId
-          ? "Under unknown parent"
-          : "Root categories",
+          ? t("taxonomy.reorder.underUnknownParent")
+          : t("taxonomy.reorder.rootCategories"),
       items,
     });
   }

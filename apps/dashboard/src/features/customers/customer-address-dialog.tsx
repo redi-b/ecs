@@ -19,7 +19,11 @@ import {
 } from "@/components/ui/dialog";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import type { MessageKey } from "@/i18n/messages";
+import { useI18n } from "@/i18n/provider";
 import type { MerchantCustomerAddress } from "@/lib/merchant-customers";
+
+type Translate = (key: MessageKey, values?: Record<string, string | number | Date>) => string;
 
 export type CustomerAddressFormValues = {
   address1: string;
@@ -80,6 +84,7 @@ export function CustomerAddressDialog({
   customerId: string;
   trigger?: ReactNode;
 }) {
+  const { t } = useI18n();
   const router = useRouter();
   const id = useId();
   const [open, setOpen] = useState(false);
@@ -104,7 +109,7 @@ export function CustomerAddressDialog({
   async function submit() {
     if (saving) return;
     if (!values.address1.trim() && !values.city.trim()) {
-      setError("Enter a street address or city.");
+      setError(t("customers.addresses.enterStreetOrCity"));
       return;
     }
 
@@ -144,11 +149,11 @@ export function CustomerAddressDialog({
 
     if (!response?.ok) {
       const data = (await response?.json().catch(() => ({}))) as { error?: string };
-      setError(getAddressErrorMessage(data.error));
+      setError(getAddressErrorMessage(data.error, t));
       return;
     }
 
-    toast.success(isEdit ? "Address updated." : "Address added.");
+    toast.success(isEdit ? t("customers.addresses.toastUpdated") : t("customers.addresses.toastAdded"));
     setOpen(false);
     router.refresh();
   }
@@ -165,12 +170,12 @@ export function CustomerAddressDialog({
             {isEdit ? (
               <>
                 <AppIcons.edit data-icon="inline-start" />
-                Edit
+                {t("customers.addresses.edit")}
               </>
             ) : (
               <>
                 <AppIcons.user data-icon="inline-start" />
-                Add address
+                {t("customers.addresses.add")}
               </>
             )}
           </Button>
@@ -178,29 +183,29 @@ export function CustomerAddressDialog({
       )}
       <DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-lg">
         <DialogHeader className="gap-1.5 border-b px-4 py-4 text-left sm:px-5">
-          <DialogTitle>{isEdit ? "Edit address" : "Add address"}</DialogTitle>
+          <DialogTitle>{isEdit ? t("customers.addresses.editTitle") : t("customers.addresses.addTitle")}</DialogTitle>
           <DialogDescription>
-            Saved addresses are available for manual orders and support.
+            {t("customers.addresses.formDesc")}
           </DialogDescription>
         </DialogHeader>
         <div className="grid max-h-[min(70vh,32rem)] gap-4 overflow-y-auto p-4 sm:grid-cols-2 sm:p-5">
           {error ? (
             <Alert className="sm:col-span-2" variant="destructive">
-              <AlertTitle>Address could not be saved</AlertTitle>
+              <AlertTitle>{t("customers.addresses.saveFailedTitle")}</AlertTitle>
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           ) : null}
           <Field>
-            <FieldLabel htmlFor={`${id}-name`}>Label</FieldLabel>
+            <FieldLabel htmlFor={`${id}-name`}>{t("customers.addresses.label")}</FieldLabel>
             <Input
               id={`${id}-name`}
               onChange={(event) => setField("addressName", event.target.value)}
-              placeholder="Home, Work…"
+              placeholder={t("customers.addresses.labelPlaceholder")}
               value={values.addressName}
             />
           </Field>
           <Field>
-            <FieldLabel htmlFor={`${id}-phone`}>Phone</FieldLabel>
+            <FieldLabel htmlFor={`${id}-phone`}>{t("customers.addresses.phone")}</FieldLabel>
             <Input
               id={`${id}-phone`}
               onChange={(event) => setField("phone", event.target.value)}
@@ -209,7 +214,7 @@ export function CustomerAddressDialog({
             />
           </Field>
           <Field>
-            <FieldLabel htmlFor={`${id}-first`}>First name</FieldLabel>
+            <FieldLabel htmlFor={`${id}-first`}>{t("customers.addresses.firstName")}</FieldLabel>
             <Input
               id={`${id}-first`}
               onChange={(event) => setField("firstName", event.target.value)}
@@ -217,7 +222,7 @@ export function CustomerAddressDialog({
             />
           </Field>
           <Field>
-            <FieldLabel htmlFor={`${id}-last`}>Last name</FieldLabel>
+            <FieldLabel htmlFor={`${id}-last`}>{t("customers.addresses.lastName")}</FieldLabel>
             <Input
               id={`${id}-last`}
               onChange={(event) => setField("lastName", event.target.value)}
@@ -225,7 +230,7 @@ export function CustomerAddressDialog({
             />
           </Field>
           <Field className="sm:col-span-2">
-            <FieldLabel htmlFor={`${id}-company`}>Company</FieldLabel>
+            <FieldLabel htmlFor={`${id}-company`}>{t("customers.addresses.company")}</FieldLabel>
             <Input
               id={`${id}-company`}
               onChange={(event) => setField("company", event.target.value)}
@@ -233,16 +238,16 @@ export function CustomerAddressDialog({
             />
           </Field>
           <Field className="sm:col-span-2">
-            <FieldLabel htmlFor={`${id}-a1`}>Street address</FieldLabel>
+            <FieldLabel htmlFor={`${id}-a1`}>{t("customers.addresses.street")}</FieldLabel>
             <Input
               id={`${id}-a1`}
               onChange={(event) => setField("address1", event.target.value)}
-              placeholder="Bole Atlas, near …"
+              placeholder={t("customers.addresses.streetPlaceholder")}
               value={values.address1}
             />
           </Field>
           <Field className="sm:col-span-2">
-            <FieldLabel htmlFor={`${id}-a2`}>Apartment, floor (optional)</FieldLabel>
+            <FieldLabel htmlFor={`${id}-a2`}>{t("customers.addresses.apartment")}</FieldLabel>
             <Input
               id={`${id}-a2`}
               onChange={(event) => setField("address2", event.target.value)}
@@ -250,16 +255,16 @@ export function CustomerAddressDialog({
             />
           </Field>
           <Field>
-            <FieldLabel htmlFor={`${id}-city`}>City</FieldLabel>
+            <FieldLabel htmlFor={`${id}-city`}>{t("customers.addresses.city")}</FieldLabel>
             <Input
               id={`${id}-city`}
               onChange={(event) => setField("city", event.target.value)}
-              placeholder="Addis Ababa"
+              placeholder={t("customers.addresses.cityPlaceholder")}
               value={values.city}
             />
           </Field>
           <Field>
-            <FieldLabel htmlFor={`${id}-province`}>Subcity / province</FieldLabel>
+            <FieldLabel htmlFor={`${id}-province`}>{t("customers.addresses.province")}</FieldLabel>
             <Input
               id={`${id}-province`}
               onChange={(event) => setField("province", event.target.value)}
@@ -267,7 +272,7 @@ export function CustomerAddressDialog({
             />
           </Field>
           <Field>
-            <FieldLabel htmlFor={`${id}-postal`}>Postal code</FieldLabel>
+            <FieldLabel htmlFor={`${id}-postal`}>{t("customers.addresses.postalCode")}</FieldLabel>
             <Input
               id={`${id}-postal`}
               onChange={(event) => setField("postalCode", event.target.value)}
@@ -275,7 +280,7 @@ export function CustomerAddressDialog({
             />
           </Field>
           <Field>
-            <FieldLabel htmlFor={`${id}-country`}>Country code</FieldLabel>
+            <FieldLabel htmlFor={`${id}-country`}>{t("customers.addresses.countryCode")}</FieldLabel>
             <Input
               id={`${id}-country`}
               maxLength={2}
@@ -290,20 +295,20 @@ export function CustomerAddressDialog({
                 checked={values.isDefaultShipping}
                 onCheckedChange={(checked) => setField("isDefaultShipping", Boolean(checked))}
               />
-              Default shipping address
+              {t("customers.addresses.defaultShippingLabel")}
             </label>
             <label className="flex items-center gap-2 text-sm">
               <Checkbox
                 checked={values.isDefaultBilling}
                 onCheckedChange={(checked) => setField("isDefaultBilling", Boolean(checked))}
               />
-              Default billing address
+              {t("customers.addresses.defaultBillingLabel")}
             </label>
           </div>
         </div>
         <DialogFooter className="border-t bg-muted/30 px-4 py-3 sm:px-5">
           <Button onClick={() => setOpen(false)} type="button" variant="outline">
-            Cancel
+            {t("common.cancel")}
           </Button>
           <Button
             aria-busy={saving}
@@ -314,12 +319,12 @@ export function CustomerAddressDialog({
             {saving ? (
               <>
                 <AppIcons.loader className="animate-spin" data-icon="inline-start" />
-                Saving…
+                {t("customers.addresses.saving")}
               </>
             ) : isEdit ? (
-              "Save address"
+              t("customers.addresses.saveAddress")
             ) : (
-              "Add address"
+              t("customers.addresses.add")
             )}
           </Button>
         </DialogFooter>
@@ -335,6 +340,7 @@ export function CustomerAddressDeleteButton({
   addressId: string;
   customerId: string;
 }) {
+  const { t } = useI18n();
   const router = useRouter();
   const [deleting, setDeleting] = useState(false);
 
@@ -350,10 +356,10 @@ export function CustomerAddressDeleteButton({
     ).catch(() => null);
     setDeleting(false);
     if (!response?.ok) {
-      toast.error("Address could not be removed.");
+      toast.error(t("customers.addresses.toastRemoveFailed"));
       return;
     }
-    toast.success("Address removed.");
+    toast.success(t("customers.addresses.toastRemoved"));
     router.refresh();
   }
 
@@ -371,23 +377,23 @@ export function CustomerAddressDeleteButton({
       ) : (
         <AppIcons.trash data-icon="inline-start" />
       )}
-      Remove
+      {t("customers.addresses.remove")}
     </Button>
   );
 }
 
-function getAddressErrorMessage(code?: string) {
+function getAddressErrorMessage(code: string | undefined, t: Translate) {
   switch (code) {
     case "customer_not_found":
-      return "Customer was not found.";
+      return t("customers.addresses.errorCustomerNotFound");
     case "customer_address_not_found":
-      return "Address was not found.";
+      return t("customers.addresses.errorAddressNotFound");
     case "invalid_customer_address":
-      return "Check the address details and try again.";
+      return t("customers.addresses.errorInvalid");
     case "commerce_credentials_invalid":
     case "commerce_backend_unavailable":
-      return "Customer addresses are temporarily unavailable. Try again.";
+      return t("customers.addresses.errorUnavailable");
     default:
-      return "Address could not be saved. Try again.";
+      return t("customers.addresses.errorSaveFailed");
   }
 }

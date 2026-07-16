@@ -13,6 +13,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 
 type InboxItem = {
@@ -27,17 +28,17 @@ type InboxItem = {
 
 const POLL_MS = 45_000;
 
-function formatRelativeTime(iso: string) {
+function formatRelativeTime(iso: string, locale: string) {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return "";
   const deltaSec = Math.round((date.getTime() - Date.now()) / 1000);
   const abs = Math.abs(deltaSec);
-  const rtf = new Intl.RelativeTimeFormat(undefined, { numeric: "auto" });
+  const rtf = new Intl.RelativeTimeFormat(locale, { numeric: "auto" });
   if (abs < 60) return rtf.format(Math.min(0, deltaSec), "second");
   if (abs < 3600) return rtf.format(Math.round(deltaSec / 60), "minute");
   if (abs < 86_400) return rtf.format(Math.round(deltaSec / 3600), "hour");
   if (abs < 86_400 * 7) return rtf.format(Math.round(deltaSec / 86_400), "day");
-  return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  return date.toLocaleDateString(locale, { month: "short", day: "numeric" });
 }
 
 function badgeLabel(count: number) {
@@ -75,6 +76,7 @@ function secondaryBody(item: InboxItem) {
 }
 
 export function NotificationCenter() {
+  const { t, locale } = useI18n();
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [count, setCount] = useState(0);
@@ -241,7 +243,7 @@ export function NotificationCenter() {
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
-          aria-label={count > 0 ? `Notifications, ${count} unread` : "Notifications, none unread"}
+          aria-label={count > 0 ? t("common.inbox.unreadAria", { count }) : t("common.inbox.unreadNoneAria")}
           className="relative"
           size="icon"
           type="button"
@@ -272,9 +274,11 @@ export function NotificationCenter() {
       >
         <PopoverHeader className="flex flex-row items-center justify-between gap-2 border-b px-3 py-2.5">
           <div className="min-w-0">
-            <PopoverTitle className="text-sm font-semibold">Notifications</PopoverTitle>
+            <PopoverTitle className="text-sm font-semibold">{t("common.inbox.title")}</PopoverTitle>
             <p className="text-[11px] text-muted-foreground">
-              {count === 1 ? "1 unread" : `${count} unread`}
+              {count === 1
+                ? t("common.inbox.unreadOne")
+                : t("common.inbox.unread", { count })}
             </p>
           </div>
           <Button
@@ -285,13 +289,13 @@ export function NotificationCenter() {
             variant="ghost"
             onClick={() => void markAllRead()}
           >
-            Mark all read
+            {t("common.inbox.markAllRead")}
           </Button>
         </PopoverHeader>
 
         <div className="max-h-[min(22rem,60vh)] overflow-y-auto">
           {loadingList && items.length === 0 ? (
-            <div className="flex flex-col gap-2 px-3 py-3" aria-busy aria-label="Loading">
+            <div className="flex flex-col gap-2 px-3 py-3" aria-busy aria-label={t("common.loading")}>
               {[0, 1, 2].map((key) => (
                 <div key={key} className="space-y-1.5 rounded-lg border border-transparent py-1">
                   <div className="h-3.5 w-3/4 animate-pulse rounded bg-muted" />
@@ -303,8 +307,8 @@ export function NotificationCenter() {
 
           {listError && items.length === 0 ? (
             <div className="px-3 py-8 text-center">
-              <p className="text-sm font-medium">Couldn’t load notifications</p>
-              <p className="mt-1 text-xs text-muted-foreground">Check your connection and try again.</p>
+              <p className="text-sm font-medium">{t("common.inbox.loadErrorTitle")}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{t("common.inbox.loadErrorDesc")}</p>
               <Button
                 className="mt-3 rounded-full"
                 size="sm"
@@ -312,7 +316,7 @@ export function NotificationCenter() {
                 variant="outline"
                 onClick={() => void refreshList()}
               >
-                Try again
+                {t("common.tryAgain")}
               </Button>
             </div>
           ) : null}
@@ -322,9 +326,9 @@ export function NotificationCenter() {
               <span className="mb-2 flex size-9 items-center justify-center rounded-full border bg-muted/40">
                 <AppIcons.notifications className="size-4 text-muted-foreground" />
               </span>
-              <p className="text-sm font-medium">All caught up</p>
+              <p className="text-sm font-medium">{t("common.inbox.emptyTitle")}</p>
               <p className="mt-1 max-w-[16rem] text-xs text-muted-foreground">
-                Order and payment updates for this shop will show up here.
+                {t("common.inbox.emptyDesc")}
               </p>
             </div>
           ) : null}
@@ -370,7 +374,7 @@ export function NotificationCenter() {
                             {item.title}
                           </span>
                           <span className="shrink-0 pt-0.5 text-[11px] tabular-nums text-muted-foreground">
-                            {formatRelativeTime(item.createdAt)}
+                            {formatRelativeTime(item.createdAt, locale)}
                           </span>
                         </span>
                         {detail ? (
@@ -385,7 +389,7 @@ export function NotificationCenter() {
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <Button
-                              aria-label={`Mark “${item.title}” as read`}
+                              aria-label={t("common.inbox.markItemReadAria", { title: item.title })}
                               className="size-7 rounded-full text-muted-foreground hover:text-foreground"
                               disabled={busy}
                               size="icon-sm"
@@ -400,7 +404,7 @@ export function NotificationCenter() {
                               <AppIcons.check className="size-3.5" />
                             </Button>
                           </TooltipTrigger>
-                          <TooltipContent side="left">Mark as read</TooltipContent>
+                          <TooltipContent side="left">{t("common.inbox.markAsRead")}</TooltipContent>
                         </Tooltip>
                       </div>
                     ) : null}

@@ -20,6 +20,7 @@ import {
   getPaymentLabel,
   getPaymentStatusLabel,
 } from "@/features/orders/order-domain";
+import { useI18n } from "@/i18n/provider";
 import { getTenantScopedPath } from "@/lib/dashboard-tenant-context";
 import { listEntityLinkClassName } from "@/lib/list-entity-link";
 import { dashboardRoutes } from "@/lib/routes";
@@ -49,7 +50,8 @@ export function OrderPlacedCell({ order }: { order: MerchantOrder }) {
 }
 
 export function OrderCustomerCell({ order }: { order: MerchantOrder }) {
-  const name = getOrderCustomerName(order);
+  const { t } = useI18n();
+  const name = getOrderCustomerName(order, t);
   const phone = getOrderCustomerPhone(order);
   const secondary = phone || order.email || null;
 
@@ -72,7 +74,10 @@ export function OrderCustomerCell({ order }: { order: MerchantOrder }) {
 }
 
 export function OrderItemsCell({ order }: { order: MerchantOrder }) {
-  return <p className="max-w-[14rem] truncate text-sm">{getOrderItemsSummary(order)}</p>;
+  const { t } = useI18n();
+  return (
+    <p className="max-w-[14rem] truncate text-sm">{getOrderItemsSummary(order, t)}</p>
+  );
 }
 
 export function OrderMoneyCell({ order }: { order: MerchantOrder }) {
@@ -84,13 +89,14 @@ export function OrderMoneyCell({ order }: { order: MerchantOrder }) {
 }
 
 export function OrderPaymentCell({ order }: { order: MerchantOrder }) {
+  const { t } = useI18n();
   const method = getMethodLabel(order);
   const payment = getPaymentLabel(order);
 
   return (
     <div className="flex flex-wrap items-center gap-1.5">
       <Badge variant="outline" className="font-normal">
-        {getMethodShortLabel(method)}
+        {getMethodShortLabel(method, t)}
       </Badge>
       <Badge
         variant="secondary"
@@ -101,13 +107,14 @@ export function OrderPaymentCell({ order }: { order: MerchantOrder }) {
           payment === "failed" && "bg-red-500/10 text-red-700 dark:text-red-400",
         )}
       >
-        {getPaymentStatusLabel(payment)}
+        {getPaymentStatusLabel(payment, t)}
       </Badge>
     </div>
   );
 }
 
 export function OrderProgressBadge({ order }: { order: MerchantOrder }) {
+  const { t } = useI18n();
   const progress = getOrderProgress(order);
   return (
     <Badge
@@ -120,14 +127,17 @@ export function OrderProgressBadge({ order }: { order: MerchantOrder }) {
         progress === "canceled" && "text-muted-foreground",
       )}
     >
-      {getOrderProgressLabel(progress)}
+      {getOrderProgressLabel(progress, t)}
     </Badge>
   );
 }
 
 export function OrderDeliveryCell({ order }: { order: MerchantOrder }) {
+  const { t } = useI18n();
   const label = getDeliveryLabel(order);
   return (
-    <span className="text-sm text-muted-foreground">{getDeliveryDisplayLabel(label)}</span>
+    <span className="text-sm text-muted-foreground">
+      {getDeliveryDisplayLabel(label, t)}
+    </span>
   );
 }

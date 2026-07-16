@@ -7,6 +7,8 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ProductCollectionsTable } from "@/features/catalog-taxonomy/product-collections-table";
 import { TaxonomyCreateDialog } from "@/features/catalog-taxonomy/taxonomy-create-dialog";
 import { getTaxonomyListErrorState } from "@/features/catalog-taxonomy/taxonomy-list-error-state";
+import type { MessageKey } from "@/i18n/messages";
+import { getTranslations } from "@/i18n/server";
 import {
   type DashboardSearchParams,
   getSelectedTenantId,
@@ -26,13 +28,14 @@ export default async function MerchantProductCollectionsPage({
   const resolvedSearchParams = (await searchParams) ?? {};
   const listParams = parseListSearchParams(resolvedSearchParams);
   const tenantId = getSelectedTenantId(resolvedSearchParams);
+  const t = await getTranslations();
   const requestHeaders = await headers();
   const offset = (listParams.page - 1) * listParams.pageSize;
   const createCollectionAction = getTenantScopedPath(
     dashboardRoutes.productCollectionCreateAction,
     tenantId,
   );
-  const collectionNotice = getCollectionNotice(resolvedSearchParams.collectionStatus);
+  const collectionNotice = getCollectionNotice(resolvedSearchParams.collectionStatus, t);
   const result = await getMerchantProductCollections({
     cookieHeader: requestHeaders.get("cookie"),
     limit: listParams.pageSize,
@@ -42,7 +45,7 @@ export default async function MerchantProductCollectionsPage({
     tenantId,
     ...(listParams.q ? { q: listParams.q } : {}),
   });
-  const errorState = result.ok ? null : getTaxonomyListErrorState("collections", result.message);
+  const errorState = result.ok ? null : getTaxonomyListErrorState("collections", result.message, t);
 
   return (
     <PageShell
@@ -53,15 +56,15 @@ export default async function MerchantProductCollectionsPage({
             action={createCollectionAction}
             entityLabel="collection"
             nameKey="title"
-            nameLabel="Title"
-            namePlaceholder="Featured"
+            nameLabel={t("taxonomy.create.titleLabel")}
+            namePlaceholder={t("taxonomy.create.titlePlaceholder")}
             queryKey="product-collections"
-            triggerLabel="New collection"
+            triggerLabel={t("collections.actions.new")}
           />
         </>
       }
-      description="Review merchant-scoped product collections from the catalog taxonomy."
-      title="Product collections"
+      description={t("collections.description")}
+      title={t("collections.title")}
     >
       {collectionNotice ? (
         <Alert variant={collectionNotice.variant}>
@@ -71,7 +74,7 @@ export default async function MerchantProductCollectionsPage({
       ) : null}
       {result.ok ? (
         <>
-          <ListSummary count={result.count} label="product collections" />
+          <ListSummary count={result.count} label={t("nav.productCollections").toLowerCase()} />
           <ProductCollectionsTable
             collections={result.collections}
             footer={
@@ -93,7 +96,7 @@ export default async function MerchantProductCollectionsPage({
         <ListSetupState state={errorState} />
       ) : (
         <Alert variant="destructive">
-          <AlertTitle>{errorState?.title ?? "Product collections could not be loaded"}</AlertTitle>
+          <AlertTitle>{errorState?.title ?? t("collections.error.loadTitle")}</AlertTitle>
           <AlertDescription>{errorState?.description ?? result.message}</AlertDescription>
         </Alert>
       )}
@@ -101,7 +104,10 @@ export default async function MerchantProductCollectionsPage({
   );
 }
 
-function getCollectionNotice(collectionStatus: string | string[] | undefined) {
+function getCollectionNotice(
+  collectionStatus: string | string[] | undefined,
+  t: (key: MessageKey) => string,
+) {
   const status = Array.isArray(collectionStatus) ? collectionStatus[0] : collectionStatus;
 
   if (!status) {
@@ -111,20 +117,20 @@ function getCollectionNotice(collectionStatus: string | string[] | undefined) {
   if (status === "collection_created") {
     return {
       variant: "default" as const,
-      title: "Collection created",
-      description: "The product collection is now available for catalog organization.",
+      title: t("collections.notice.created.title"),
+      description: t("collections.notice.created.description"),
     };
   }
 
   if (status === "missing_title") {
     return {
       variant: "destructive" as const,
-      title: "Collection could not be created",
-      description: "Enter a collection title before continuing.",
+      title: t("collections.notice.missingTitle.title"),
+      description: t("collections.notice.missingTitle.description"),
     };
   }
 
-  const mutationError = getTaxonomyListErrorState("collections", status);
+  const mutationError = getTaxonomyListErrorState("collections", status, t);
 
   if (mutationError.kind === "setup" || mutationError.kind === "service") {
     return null;
@@ -132,7 +138,7 @@ function getCollectionNotice(collectionStatus: string | string[] | undefined) {
 
   return {
     variant: "destructive" as const,
-    title: "Collection could not be created",
+    title: t("collections.notice.error.title"),
     description: mutationError.description,
   };
 }

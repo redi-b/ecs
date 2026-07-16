@@ -91,23 +91,26 @@ export function hrefForSearchHit(hit: MerchantSearchHit): string {
   }
 }
 
-export function groupLabelForSearchType(type: MerchantSearchHitType): string {
+export function groupLabelForSearchType(
+  type: MerchantSearchHitType,
+  t?: (key: "nav.products" | "nav.orders" | "nav.customers" | "nav.media" | "nav.productCategories" | "nav.productCollections" | "nav.promotions" | "commandCenter.results") => string,
+): string {
   switch (type) {
     case "product":
-      return "Products";
+      return t ? t("nav.products") : "Products";
     case "order":
-      return "Orders";
+      return t ? t("nav.orders") : "Orders";
     case "customer":
-      return "Customers";
+      return t ? t("nav.customers") : "Customers";
     case "media":
-      return "Media";
+      return t ? t("nav.media") : "Media";
     case "category":
-      return "Categories";
+      return t ? t("nav.productCategories") : "Categories";
     case "collection":
-      return "Collections";
+      return t ? t("nav.productCollections") : "Collections";
     case "promotion":
-      return "Promotions";
+      return t ? t("nav.promotions") : "Promotions";
     default:
-      return "Results";
+      return t ? t("commandCenter.results") : "Results";
   }
 }

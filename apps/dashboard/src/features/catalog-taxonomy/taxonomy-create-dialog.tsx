@@ -35,6 +35,8 @@ import {
   getCategoryDisplayName,
   slugifyTaxonomyHandle,
 } from "@/features/catalog-taxonomy/taxonomy-table-state";
+import type { MessageKey } from "@/i18n/messages";
+import { useI18n } from "@/i18n/provider";
 import { useCreateQueryOpen } from "@/lib/use-create-query-open";
 
 type TaxonomyCreateDialogProps = {
@@ -73,6 +75,10 @@ function TaxonomyCreateDialogInner({
   queryKey,
   triggerLabel,
 }: TaxonomyCreateDialogProps) {
+  const { t } = useI18n();
+  const localizedEntity = t(`taxonomy.entity.${entityLabel}.label` as MessageKey);
+  const localizedEntityPlural = t(`taxonomy.entity.${entityLabel}.plural` as MessageKey);
+
   const router = useRouter();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
@@ -127,7 +133,12 @@ function TaxonomyCreateDialogInner({
     const trimmedName = displayName.trim();
 
     if (!trimmedName) {
-      setError(`Enter a ${entityLabel} ${nameLabel.toLowerCase()}.`);
+      setError(
+        t("taxonomy.create.error.enterName", {
+          entity: localizedEntity,
+          field: nameLabel.toLowerCase(),
+        }),
+      );
       return;
     }
 
@@ -162,11 +173,11 @@ function TaxonomyCreateDialogInner({
     setIsSaving(false);
 
     if (!response?.ok) {
-      setError(getTaxonomyCreateErrorMessage(entityLabel, data.error));
+      setError(getTaxonomyCreateErrorMessage(entityLabel, data.error, t));
       return;
     }
 
-    toast.success(`${capitalize(entityLabel)} created.`);
+    toast.success(t("taxonomy.create.success", { entity: capitalize(localizedEntity) }));
     setOpen(false);
     resetForm();
     await queryClient.invalidateQueries({ queryKey: [queryKey] });
@@ -193,11 +204,13 @@ function TaxonomyCreateDialogInner({
       </DialogTrigger>
       <DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-lg">
         <DialogHeader className="gap-1.5 border-b px-4 py-4 text-left sm:px-5">
-          <DialogTitle>Create {entityLabel}</DialogTitle>
+          <DialogTitle>
+            {t("taxonomy.create.title", { entity: localizedEntity })}
+          </DialogTitle>
           <DialogDescription>
             {entityLabel === "category"
-              ? "Add a category with an optional parent and storefront visibility."
-              : "Add a collection name, handle, and storefront visibility."}
+              ? t("taxonomy.create.category.desc")
+              : t("taxonomy.create.collection.desc")}
           </DialogDescription>
         </DialogHeader>
         <form
@@ -210,7 +223,11 @@ function TaxonomyCreateDialogInner({
           <div className="grid gap-4 p-4 sm:p-5">
             {error ? (
               <Alert variant="destructive">
-                <AlertTitle>{capitalize(entityLabel)} could not be created</AlertTitle>
+                <AlertTitle>
+                  {t("taxonomy.create.error.createFailed", {
+                    entity: capitalize(localizedEntity),
+                  })}
+                </AlertTitle>
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             ) : null}
@@ -227,7 +244,9 @@ function TaxonomyCreateDialogInner({
             </Field>
 
             <Field>
-              <FieldLabel htmlFor={`taxonomy-${entityLabel}-handle`}>Handle</FieldLabel>
+              <FieldLabel htmlFor={`taxonomy-${entityLabel}-handle`}>
+                {t("taxonomy.create.handle")}
+              </FieldLabel>
               <InputGroup className="pr-1">
                 <InputGroupInput
                   id={`taxonomy-${entityLabel}-handle`}
@@ -241,7 +260,9 @@ function TaxonomyCreateDialogInner({
                     <TooltipTrigger asChild>
                       <Button
                         aria-label={
-                          isHandleLocked ? "Unlock handle editing" : "Lock handle editing"
+                          isHandleLocked
+                            ? t("taxonomy.create.unlockHandle")
+                            : t("taxonomy.create.lockHandle")
                         }
                         className="rounded-full"
                         onClick={() => setIsHandleLocked((current) => !current)}
@@ -253,13 +274,17 @@ function TaxonomyCreateDialogInner({
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent side="top" sideOffset={6}>
-                      {isHandleLocked ? "Unlock handle editing" : "Lock handle editing"}
+                      {isHandleLocked
+                        ? t("taxonomy.create.unlockHandle")
+                        : t("taxonomy.create.lockHandle")}
                     </TooltipContent>
                   </Tooltip>
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button
-                        aria-label={`Regenerate ${entityLabel} handle`}
+                        aria-label={t("taxonomy.create.regenerateHandle", {
+                          entity: localizedEntity,
+                        })}
                         className="rounded-full"
                         onClick={regenerateHandle}
                         size="icon-sm"
@@ -270,28 +295,35 @@ function TaxonomyCreateDialogInner({
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent side="top" sideOffset={6}>
-                      Regenerate from {nameLabel.toLowerCase()}
+                      {t("taxonomy.create.regenerateFrom", {
+                        field: nameLabel.toLowerCase(),
+                      })}
                     </TooltipContent>
                   </Tooltip>
                 </InputGroupAddon>
               </InputGroup>
               <FieldDescription>
                 {isHandleLocked
-                  ? `The ${entityLabel} handle follows the ${nameLabel.toLowerCase()} automatically.`
-                  : `Handle editing is unlocked for a custom ${entityLabel} slug.`}
+                  ? t("taxonomy.create.handleFollows", {
+                      entity: localizedEntity,
+                      field: nameLabel.toLowerCase(),
+                    })
+                  : t("taxonomy.create.handleCustom", { entity: localizedEntity })}
               </FieldDescription>
             </Field>
 
             {entityLabel === "category" ? (
               <Field>
-                <FieldLabel>Parent category</FieldLabel>
+                <FieldLabel>{t("taxonomy.create.parentCategory")}</FieldLabel>
                 <Select onValueChange={setParentCategoryId} value={parentCategoryId}>
                   <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Root category" />
+                    <SelectValue placeholder={t("taxonomy.create.rootCategory")} />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectGroup>
-                      <SelectItem value="__root__">Root category</SelectItem>
+                      <SelectItem value="__root__">
+                        {t("taxonomy.create.rootCategory")}
+                      </SelectItem>
                       {sortedParents.map((category) => (
                         <SelectItem key={category.id} value={category.id}>
                           {getCategoryDisplayName(category)}
@@ -303,20 +335,19 @@ function TaxonomyCreateDialogInner({
                     </SelectGroup>
                   </SelectContent>
                 </Select>
-                <FieldDescription>
-                  Nest under another category, or leave as a top-level root.
-                </FieldDescription>
+                <FieldDescription>{t("taxonomy.create.parentDesc")}</FieldDescription>
               </Field>
             ) : null}
 
             <Field className="flex flex-row items-center justify-between gap-4 rounded-xl border px-3.5 py-3">
               <div className="min-w-0 space-y-1">
                 <FieldLabel className="text-sm" htmlFor={`taxonomy-${entityLabel}-visible`}>
-                  Visible on storefront
+                  {t("taxonomy.create.visibleLabel")}
                 </FieldLabel>
                 <FieldDescription className="text-xs">
-                  Hidden {entityLabel === "category" ? "categories" : "collections"} stay in the
-                  dashboard but are not listed publicly.
+                  {t("taxonomy.create.visibleDesc", {
+                    entityPlural: localizedEntityPlural,
+                  })}
                 </FieldDescription>
               </div>
               <Switch
@@ -333,10 +364,12 @@ function TaxonomyCreateDialogInner({
               type="button"
               variant="outline"
             >
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button disabled={isSaving} type="submit">
-              {isSaving ? "Creating…" : `Create ${entityLabel}`}
+              {isSaving
+                ? t("taxonomy.create.creating")
+                : t("taxonomy.create.createBtn", { entity: localizedEntity })}
             </Button>
           </DialogFooter>
         </form>
@@ -348,20 +381,23 @@ function TaxonomyCreateDialogInner({
 function getTaxonomyCreateErrorMessage(
   entityLabel: "category" | "collection",
   error: string | undefined,
+  t: (key: any, params?: any) => string,
 ) {
+  const localizedEntity = t(`taxonomy.entity.${entityLabel}.label` as MessageKey);
+
   if (error === "missing_name" || error === "missing_title") {
-    return `Enter a ${entityLabel} name before continuing.`;
+    return t("taxonomy.create.error.missing", { entity: localizedEntity });
   }
 
   if (error === "commerce_backend_unavailable") {
-    return "The commerce backend is temporarily unavailable.";
+    return t("taxonomy.create.error.backend");
   }
 
   if (error === "commerce_credentials_missing" || error === "commerce_credentials_invalid") {
-    return "Catalog changes are temporarily unavailable. Contact support.";
+    return t("taxonomy.create.error.credentials");
   }
 
-  return `${capitalize(entityLabel)} could not be saved. Try again.`;
+  return t("taxonomy.create.error.genericSave", { entity: capitalize(localizedEntity) });
 }
 
 function capitalize(value: string) {

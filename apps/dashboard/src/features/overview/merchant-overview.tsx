@@ -38,12 +38,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { ChartMetric, MerchantOverviewProps } from "@/features/overview/overview-config";
-import {
-  averageOrderConfig,
-  chartConfig,
-  demandRhythmConfig,
-  tradingChartConfig,
-} from "@/features/overview/overview-config";
+import { chartColorConfig } from "@/features/overview/overview-config";
+import { useI18n } from "@/i18n/provider";
+import type { MessageKey } from "@/i18n/messages";
 import {
   compactMoney,
   formatMoney,
@@ -61,15 +58,18 @@ import { formatOrderReference } from "@/features/orders/order-domain";
 import { dashboardRoutes } from "@/lib/routes";
 import { cn } from "@/lib/utils";
 
-function formatOverviewPaymentStatus(paymentStatus: string) {
+function formatOverviewPaymentStatus(
+  paymentStatus: string,
+  t: (key: MessageKey) => string,
+) {
   const value = paymentStatus.trim().toLowerCase();
   if (value.includes("captured") || value === "paid" || value.includes("refund")) {
-    return "Paid";
+    return t("overview.paymentStatus.paid");
   }
   if (value.includes("fail") || value === "canceled" || value === "cancelled") {
-    return "Failed";
+    return t("overview.paymentStatus.failed");
   }
-  return "Unpaid";
+  return t("overview.paymentStatus.unpaid");
 }
 
 function isOpenPaymentStatus(status: string | null | undefined) {
@@ -96,7 +96,11 @@ const MS_PER_DAY = 24 * 60 * 60 * 1000;
 const BILLING_REMINDER_WINDOW_DAYS = 7;
 
 /** Only surface billing when action is needed. Free forever plans stay quiet. */
-function getBillingNotice(summary: MerchantDashboardSummary): BillingNotice | null {
+function getBillingNotice(
+  summary: MerchantDashboardSummary,
+  t: (key: MessageKey, values?: Record<string, string | number | Date>) => string,
+  locale: string,
+): BillingNotice | null {
   const billing = summary.billing;
   if (!billing || billing.unavailable || !billing.plan || !billing.subscription) {
     return null;
@@ -131,18 +135,22 @@ function getBillingNotice(summary: MerchantDashboardSummary): BillingNotice | nu
   if (openInvoice && typeof daysToInvoiceDue === "number" && daysToInvoiceDue < 0) {
     return {
       tone: "warning",
-      title: "Payment overdue",
-      description: `A plan payment was due ${formatReadableDate(openInvoice.dueAt!)}. Open Billing to finish payment.`,
+      title: t("overview.billing.paymentOverdue"),
+      description: t("overview.billing.paymentOverdueDesc", {
+        date: formatReadableDate(openInvoice.dueAt!, locale),
+      }),
     };
   }
 
   if (openInvoice) {
     return {
       tone: "reminder",
-      title: "Payment due",
+      title: t("overview.billing.paymentDue"),
       description: openInvoice.dueAt
-        ? `A plan payment is due ${formatReadableDate(openInvoice.dueAt)}. Open Billing to pay.`
-        : "You have an open plan payment. Open Billing to pay.",
+        ? t("overview.billing.paymentDueDesc", {
+            date: formatReadableDate(openInvoice.dueAt, locale),
+          })
+        : t("overview.billing.paymentDueNoDate"),
     };
   }
 
@@ -153,16 +161,16 @@ function getBillingNotice(summary: MerchantDashboardSummary): BillingNotice | nu
   if (status === "past_due") {
     return {
       tone: "warning",
-      title: "Payment past due",
-      description: "Your paid plan period has ended. Open Billing to pay and continue on this plan.",
+      title: t("overview.billing.paymentPastDue"),
+      description: t("overview.billing.paymentPastDueDesc"),
     };
   }
 
   if (status === "canceled" || status === "cancelled") {
     return {
       tone: "warning",
-      title: "Subscription cancelled",
-      description: "This shop is not on an active paid plan. Open Billing to choose a plan.",
+      title: t("overview.billing.subscriptionCancelled"),
+      description: t("overview.billing.subscriptionCancelledDesc"),
     };
   }
 
@@ -174,8 +182,10 @@ function getBillingNotice(summary: MerchantDashboardSummary): BillingNotice | nu
   ) {
     return {
       tone: "reminder",
-      title: "Plan period ending soon",
-      description: `Your paid period ends ${formatReadableDate(billing.subscription.currentPeriodEnd!)}. Open Billing to renew.`,
+      title: t("overview.billing.periodEnding"),
+      description: t("overview.billing.periodEndingDesc", {
+        date: formatReadableDate(billing.subscription.currentPeriodEnd!, locale),
+      }),
     };
   }
 
@@ -183,8 +193,32 @@ function getBillingNotice(summary: MerchantDashboardSummary): BillingNotice | nu
 }
 
 export function MerchantOverview({ summary }: MerchantOverviewProps) {
+  const { t, locale } = useI18n();
   const [metric, setMetric] = useState<ChartMetric>("revenue");
   const [mixView, setMixView] = useState<MixView>("payment");
+
+  const tradingChartConfig = useMemo(
+    () => ({
+      revenue: { label: t("overview.metrics.revenue"), ...chartColorConfig.revenue },
+      orderBars: { label: t("overview.metrics.orders"), ...chartColorConfig.orderBars },
+      orderTrend: { label: t("overview.metrics.orderTrend"), ...chartColorConfig.orderTrend },
+      customers: { label: t("overview.metrics.customers"), ...chartColorConfig.customers },
+    }),
+    [t],
+  );
+  const averageOrderConfig = useMemo(
+    () => ({
+      averageOrderValue: { label: t("overview.metrics.aov"), ...chartColorConfig.averageOrderValue },
+      orders: { label: t("overview.metrics.orders"), ...chartColorConfig.orders },
+    }),
+    [t],
+  );
+  const demandRhythmConfig = useMemo(
+    () => ({
+      orders: { label: t("overview.metrics.orders"), ...chartColorConfig.orders },
+    }),
+    [t],
+  );
   const operations = summary.operations;
   const series = operations?.series ?? [];
   const hasSeries = series.length > 0;
@@ -194,7 +228,12 @@ export function MerchantOverview({ summary }: MerchantOverviewProps) {
     orderTrend: row.orders,
   }));
   const currencyCode = operations?.totals.currencyCode?.toUpperCase() ?? "ETB";
-  const metricLabel = chartConfig[metric].label;
+  const metricLabel =
+    metric === "revenue"
+      ? t("overview.metrics.revenue")
+      : metric === "orders"
+        ? t("overview.metrics.orders")
+        : t("overview.metrics.customers");
   const averageOrderRows = series
     .filter((row) => row.orders > 0)
     .map((row) => ({
@@ -208,11 +247,11 @@ export function MerchantOverview({ summary }: MerchantOverviewProps) {
     typeof operations.customers.repeat === "number"
       ? [
           {
-            label: "New",
+            label: t("overview.mix.newCustomers"),
             count: Math.max(operations.customers.unique - operations.customers.repeat, 0),
           },
           {
-            label: "Repeat",
+            label: t("overview.mix.repeatCustomers"),
             count: operations.customers.repeat,
           },
         ].filter((row) => row.count > 0)
@@ -221,25 +260,25 @@ export function MerchantOverview({ summary }: MerchantOverviewProps) {
   const attentionItems = useMemo(
     () => [
       {
-        label: "Unfulfilled orders",
+        label: t("overview.attention.unfulfilledOrders"),
         value: operations?.attention.unfulfilledOrders,
         href: dashboardRoutes.orders,
-        hint: "Need packing or handoff",
+        hint: t("overview.attention.unfulfilledHint"),
       },
       {
-        label: "Awaiting payment",
+        label: t("overview.attention.awaitingPayment"),
         value: operations?.attention.unpaidOrders,
         href: dashboardRoutes.orders,
-        hint: "Still unpaid or pending",
+        hint: t("overview.attention.awaitingPaymentHint"),
       },
       {
-        label: "Draft products",
+        label: t("overview.attention.draftProducts"),
         value: operations?.attention.draftProducts,
         href: dashboardRoutes.products,
-        hint: "Not visible in the shop",
+        hint: t("overview.attention.draftProductsHint"),
       },
     ],
-    [operations],
+    [operations, t],
   );
 
   const waitingOrders = useMemo(() => {
@@ -254,14 +293,14 @@ export function MerchantOverview({ summary }: MerchantOverviewProps) {
         return {
           ...order,
           reasons: [
-            needsPayment ? "Unpaid" : null,
-            needsFulfillment ? "Unfulfilled" : null,
+            needsPayment ? t("overview.attention.unpaid") : null,
+            needsFulfillment ? t("overview.attention.unfulfilled") : null,
           ].filter((reason): reason is string => Boolean(reason)),
         };
       })
       .filter((order): order is NonNullable<typeof order> => order != null)
       .slice(0, 2);
-  }, [operations?.recentOrders]);
+  }, [operations?.recentOrders, t]);
 
   const mixViews: Array<{
     id: MixView;
@@ -273,75 +312,75 @@ export function MerchantOverview({ summary }: MerchantOverviewProps) {
   }> = [
     {
       id: "payment",
-      label: "Payment",
-      description: "Payment state across the recent order sample.",
-      title: "Payments",
+      label: t("overview.mix.payment"),
+      description: t("overview.mix.paymentDesc"),
+      title: t("overview.mix.paymentsTitle"),
       rows: operations?.breakdowns.paymentStatus ?? [],
     },
     {
       id: "fulfillment",
-      label: "Fulfillment",
-      description: "Where orders sit before completion.",
-      title: "Fulfillment",
+      label: t("overview.mix.fulfillment"),
+      description: t("overview.mix.fulfillmentDesc"),
+      title: t("overview.mix.fulfillment"),
       rows: operations?.breakdowns.fulfillmentStatus ?? [],
     },
     {
       id: "lifecycle",
-      label: "Lifecycle",
-      description: "Current lifecycle state for recent orders.",
-      title: "Orders",
+      label: t("overview.mix.lifecycle"),
+      description: t("overview.mix.lifecycleDesc"),
+      title: t("overview.metrics.orders"),
       rows: operations?.breakdowns.orderStatus ?? [],
     },
     {
       id: "customers",
-      label: "Customers",
-      description: "Repeat behavior across recent customers.",
-      title: "Customers",
+      label: t("overview.mix.customers"),
+      description: t("overview.mix.customersDesc"),
+      title: t("overview.mix.customers"),
       subject: "customers",
       rows: customerRows,
     },
   ];
   const activeMix = mixViews.find((view) => view.id === mixView) ?? mixViews[0]!;
-  const billingNotice = getBillingNotice(summary);
+  const billingNotice = getBillingNotice(summary, t, locale);
 
   return (
-    <section className="flex flex-col gap-4" aria-label="Merchant overview">
+    <section className="flex flex-col gap-4" aria-label={t("overview.aria.section")}>
       {/* Uneven KPI strip (kept intentionally) */}
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
         <MetricCard
           className="xl:col-span-2"
           href={dashboardRoutes.orders}
-          label="Revenue"
-          note={operations?.range.label ?? "No sales data yet"}
-          value={formatMoney(operations?.totals.revenue, currencyCode)}
+          label={t("overview.metrics.revenue")}
+          note={operations?.range.label ?? t("overview.metrics.noSalesYet")}
+          value={formatMoney(operations?.totals.revenue, currencyCode, locale)}
         />
         <MetricCard
           className="xl:col-span-1"
           href={dashboardRoutes.orders}
-          label="Orders"
-          note={sampleNote(operations?.range.sampledOrderCount)}
-          value={formatNumber(operations?.totals.orders)}
+          label={t("overview.metrics.orders")}
+          note={sampleNote(operations?.range.sampledOrderCount, t, locale)}
+          value={formatNumber(operations?.totals.orders, locale)}
         />
         <MetricCard
           className="xl:col-span-1"
           href={dashboardRoutes.products}
-          label="Products"
-          note="Catalog count"
-          value={formatNumber(operations?.totals.products)}
+          label={t("overview.metrics.products")}
+          note={t("overview.metrics.catalogCount")}
+          value={formatNumber(operations?.totals.products, locale)}
         />
         <MetricCard
           className="xl:col-span-1"
           href={dashboardRoutes.orders}
-          label="Customers"
-          note={`${formatNumber(operations?.customers.repeat)} repeat`}
-          value={formatNumber(operations?.customers.unique)}
+          label={t("overview.metrics.customers")}
+          note={t("overview.metrics.repeatCount", { count: formatNumber(operations?.customers.repeat, locale) })}
+          value={formatNumber(operations?.customers.unique, locale)}
         />
         <MetricCard
           className="xl:col-span-1"
           href={dashboardRoutes.insights}
-          label="Storefront events"
-          note={summary.analytics?.unavailable ? "Analytics unavailable" : "Last 30 days"}
-          value={formatNumber(summary.analytics?.totals.storefrontEvents)}
+          label={t("overview.metrics.storefrontEvents")}
+          note={summary.analytics?.unavailable ? t("overview.metrics.analyticsUnavailable") : t("overview.metrics.last30Days")}
+          value={formatNumber(summary.analytics?.totals.storefrontEvents, locale)}
         />
       </div>
 
@@ -358,7 +397,7 @@ export function MerchantOverview({ summary }: MerchantOverviewProps) {
           </div>
           <Button asChild className="shrink-0 self-start sm:self-center" size="sm" variant="outline">
             <Link href={dashboardRoutes.billing} prefetch={false}>
-              Open billing
+              {t("overview.billing.openBilling")}
             </Link>
           </Button>
         </Alert>
@@ -369,21 +408,19 @@ export function MerchantOverview({ summary }: MerchantOverviewProps) {
         <Card className="flex min-h-0 flex-col overflow-hidden">
           <CardHeader className="shrink-0 border-b">
             <div>
-              <CardTitle>Trading activity</CardTitle>
-              <CardDescription>
-                Revenue, orders, and customers from available commerce records.
-              </CardDescription>
+              <CardTitle>{t("overview.trading.title")}</CardTitle>
+              <CardDescription>{t("overview.trading.description")}</CardDescription>
             </div>
             <div className="col-start-2 row-span-2 row-start-1 self-start justify-self-end">
               <Select value={metric} onValueChange={(value) => setMetric(value as ChartMetric)}>
-                <SelectTrigger size="sm" aria-label="Chart metric">
+                <SelectTrigger size="sm" aria-label={t("overview.aria.chartMetric")}>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
-                    <SelectItem value="revenue">Revenue</SelectItem>
-                    <SelectItem value="orders">Orders</SelectItem>
-                    <SelectItem value="customers">Customers</SelectItem>
+                    <SelectItem value="revenue">{t("overview.metrics.revenue")}</SelectItem>
+                    <SelectItem value="orders">{t("overview.metrics.orders")}</SelectItem>
+                    <SelectItem value="customers">{t("overview.metrics.customers")}</SelectItem>
                   </SelectGroup>
                 </SelectContent>
               </Select>
@@ -409,7 +446,7 @@ export function MerchantOverview({ summary }: MerchantOverviewProps) {
                         axisLine={false}
                         tickMargin={8}
                         minTickGap={28}
-                        tickFormatter={formatShortDate}
+                        tickFormatter={(v) => formatShortDate(String(v), locale)}
                       />
                       <YAxis
                         yAxisId="value"
@@ -419,14 +456,14 @@ export function MerchantOverview({ summary }: MerchantOverviewProps) {
                         width={44}
                         tickFormatter={(value) =>
                           metric === "revenue"
-                            ? compactMoney(Number(value), currencyCode)
+                            ? compactMoney(Number(value), currencyCode, locale)
                             : String(value)
                         }
                       />
                       <ChartTooltip
                         content={
                           <ChartTooltipContent
-                            labelFormatter={(value) => formatReadableDate(String(value))}
+                            labelFormatter={(value) => formatReadableDate(String(value), locale)}
                             formatter={(value, name) => (
                               <>
                                 <span className="text-muted-foreground">
@@ -436,7 +473,7 @@ export function MerchantOverview({ summary }: MerchantOverviewProps) {
                                 </span>
                                 <span className="font-mono font-medium tabular-nums">
                                   {name === "revenue"
-                                    ? formatMoney(Number(value), currencyCode)
+                                    ? formatMoney(Number(value), currencyCode, locale)
                                     : Number(value).toLocaleString()}
                                 </span>
                               </>
@@ -481,7 +518,7 @@ export function MerchantOverview({ summary }: MerchantOverviewProps) {
                         height={22}
                         stroke="var(--muted-foreground)"
                         travellerWidth={10}
-                        tickFormatter={formatShortDate}
+                        tickFormatter={(v) => formatShortDate(String(v), locale)}
                       />
                     </ComposedChart>
                   </ChartContainer>
@@ -489,20 +526,20 @@ export function MerchantOverview({ summary }: MerchantOverviewProps) {
               </div>
             ) : (
               <div className="flex min-h-72 flex-1 items-center justify-center rounded-lg border bg-muted/30 p-6 text-center text-sm text-muted-foreground">
-                Commerce activity will appear here after orders are available for this shop.
+                {t("overview.trading.empty")}
               </div>
             )}
             <div className="mt-3 flex shrink-0 flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
-              <span>{String(metricLabel)} view</span>
-              <span>{operations?.range.label ?? "No sales data yet"}</span>
+              <span>{t("overview.metrics.metricView", { label: String(metricLabel) })}</span>
+              <span>{operations?.range.label ?? t("overview.metrics.noSalesYet")}</span>
             </div>
           </CardContent>
         </Card>
 
         <Card className="flex h-full flex-col">
           <CardHeader className="shrink-0 border-b pb-3">
-            <CardTitle>Needs attention</CardTitle>
-            <CardDescription>Queues and work waiting on you.</CardDescription>
+            <CardTitle>{t("overview.attention.title")}</CardTitle>
+            <CardDescription>{t("overview.attention.description")}</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-1 flex-col gap-3 pt-4">
             <div className="flex flex-col gap-2">
@@ -530,7 +567,7 @@ export function MerchantOverview({ summary }: MerchantOverviewProps) {
                         hot ? "text-primary" : "text-muted-foreground",
                       )}
                     >
-                      {formatNumber(item.value)}
+                      {formatNumber(item.value, locale)}
                     </span>
                   </Link>
                 );
@@ -541,14 +578,14 @@ export function MerchantOverview({ summary }: MerchantOverviewProps) {
               <div className="flex flex-col gap-2">
                 <div className="flex items-center justify-between gap-2">
                   <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-                    Waiting on you
+                    {t("overview.attention.waitingOnYou")}
                   </p>
                   <Link
                     className="text-xs text-muted-foreground hover:text-foreground"
                     href={dashboardRoutes.orders}
                     prefetch={false}
                   >
-                    All orders
+                    {t("overview.attention.allOrders")}
                   </Link>
                 </div>
                 <div className="flex flex-col gap-1">
@@ -576,7 +613,7 @@ export function MerchantOverview({ summary }: MerchantOverviewProps) {
                         </span>
                       </span>
                       <span className="shrink-0 font-mono text-xs tabular-nums">
-                        {formatMoney(order.total, order.currencyCode ?? currencyCode)}
+                        {formatMoney(order.total, order.currencyCode ?? currencyCode, locale)}
                       </span>
                     </Link>
                   ))}
@@ -595,8 +632,8 @@ export function MerchantOverview({ summary }: MerchantOverviewProps) {
       <div className="grid gap-4 md:grid-cols-2 md:items-stretch">
         <Card className="flex min-h-[22rem] flex-col overflow-hidden">
           <CardHeader className="pb-2">
-            <CardTitle>Basket quality</CardTitle>
-            <CardDescription>Average order value against daily order volume.</CardDescription>
+            <CardTitle>{t("overview.basket.title")}</CardTitle>
+            <CardDescription>{t("overview.basket.description")}</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-1 flex-col overflow-hidden">
             {averageOrderRows.length > 0 ? (
@@ -612,7 +649,7 @@ export function MerchantOverview({ summary }: MerchantOverviewProps) {
                     axisLine={false}
                     tickMargin={8}
                     minTickGap={28}
-                    tickFormatter={formatShortDate}
+                    tickFormatter={(v) => formatShortDate(String(v), locale)}
                   />
                   <YAxis
                     yAxisId="money"
@@ -620,13 +657,13 @@ export function MerchantOverview({ summary }: MerchantOverviewProps) {
                     axisLine={false}
                     tickMargin={8}
                     width={48}
-                    tickFormatter={(value) => compactMoney(Number(value), currencyCode)}
+                    tickFormatter={(value) => compactMoney(Number(value), currencyCode, locale)}
                   />
                   <YAxis yAxisId="orders" orientation="right" hide />
                   <ChartTooltip
                     content={
                       <ChartTooltipContent
-                        labelFormatter={(value) => formatReadableDate(String(value))}
+                        labelFormatter={(value) => formatReadableDate(String(value), locale)}
                       />
                     }
                   />
@@ -651,7 +688,7 @@ export function MerchantOverview({ summary }: MerchantOverviewProps) {
               </ChartContainer>
             ) : (
               <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
-                No basket data is available.
+                {t("overview.basket.empty")}
               </div>
             )}
           </CardContent>
@@ -659,8 +696,8 @@ export function MerchantOverview({ summary }: MerchantOverviewProps) {
 
         <Card className="flex min-h-[22rem] flex-col overflow-hidden">
           <CardHeader className="pb-2">
-            <CardTitle>Demand rhythm</CardTitle>
-            <CardDescription>Which weekdays carry the most order activity.</CardDescription>
+            <CardTitle>{t("overview.demand.title")}</CardTitle>
+            <CardDescription>{t("overview.demand.description")}</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-1 flex-col">
             {demandRhythmRows.length > 0 ? (
@@ -683,7 +720,7 @@ export function MerchantOverview({ summary }: MerchantOverviewProps) {
               </ChartContainer>
             ) : (
               <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
-                No weekday demand data is available.
+                {t("overview.demand.empty")}
               </div>
             )}
           </CardContent>
@@ -695,12 +732,12 @@ export function MerchantOverview({ summary }: MerchantOverviewProps) {
         <Card className="flex flex-col">
           <CardHeader className="border-b pb-3">
             <div>
-              <CardTitle>Order mix</CardTitle>
+              <CardTitle>{t("overview.mix.title")}</CardTitle>
               <CardDescription>{activeMix.description}</CardDescription>
             </div>
             <div className="col-start-2 row-span-2 row-start-1 self-start justify-self-end">
               <Select value={mixView} onValueChange={(value) => setMixView(value as MixView)}>
-                <SelectTrigger size="sm" aria-label="Mix view" className="min-w-[8.5rem]">
+                <SelectTrigger size="sm" aria-label={t("overview.aria.mixView")} className="min-w-[8.5rem]">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -726,8 +763,8 @@ export function MerchantOverview({ summary }: MerchantOverviewProps) {
 
         <Card className="flex flex-col">
           <CardHeader className="border-b pb-3">
-            <CardTitle>Recent orders</CardTitle>
-            <CardDescription>Latest orders for this shop.</CardDescription>
+            <CardTitle>{t("overview.recent.title")}</CardTitle>
+            <CardDescription>{t("overview.recent.description")}</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-1 flex-col gap-1 pt-3">
             {(operations?.recentOrders.length ?? 0) > 0 ? (
@@ -744,26 +781,26 @@ export function MerchantOverview({ summary }: MerchantOverviewProps) {
                         {formatOrderReference({ id: order.id })}
                       </span>
                       <span className="block truncate text-xs text-muted-foreground">
-                        {order.email ?? "No email"}
+                        {order.email ?? t("overview.recent.noEmail")}
                         {order.paymentStatus
-                          ? ` · ${formatOverviewPaymentStatus(order.paymentStatus)}`
+                          ? ` · ${formatOverviewPaymentStatus(order.paymentStatus, t)}`
                           : ""}
                       </span>
                     </span>
                     <span className="shrink-0 font-mono text-xs tabular-nums">
-                      {formatMoney(order.total, order.currencyCode ?? currencyCode)}
+                      {formatMoney(order.total, order.currencyCode ?? currencyCode, locale)}
                     </span>
                   </Link>
                 ))}
               </div>
             ) : (
               <div className="flex flex-1 items-center justify-center py-8 text-sm text-muted-foreground">
-                No recent orders are available.
+                {t("overview.recent.empty")}
               </div>
             )}
             <Button asChild className="mt-auto w-full rounded-full" size="sm" variant="outline">
               <Link href={dashboardRoutes.orders} prefetch={false}>
-                View all orders
+                {t("overview.recent.viewAll")}
               </Link>
             </Button>
           </CardContent>

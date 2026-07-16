@@ -9,6 +9,9 @@ import type { ReactNode } from "react";
 import { z } from "zod";
 
 import type { ProductOptionDraft } from "@/features/products/product-variant-matrix";
+import type { MessageKey } from "@/i18n/messages";
+
+type Translate = (key: MessageKey, values?: Record<string, string | number | Date>) => string;
 
 export type ProductFormProps = {
   action: string;
@@ -61,36 +64,57 @@ export const PRODUCT_STEPS: ComposerStep[] = [
   { id: "review", label: "Review", shortLabel: "Review" },
 ];
 
-export const productPayloadSchema = z.object({
-  title: z.string().trim().min(1, "Enter a product title."),
-  description: z.string().trim().nullable(),
-  handle: z.string().trim().nullable(),
-  thumbnail: z.string().trim().nullable(),
-  imageUrls: z
-    .array(z.string().trim().url("Use full image URLs that start with http:// or https://."))
-    .optional(),
-  status: z.enum(["draft", "published"]),
-  priceAmount: z.number().int().nonnegative("Price cannot be negative."),
-  currencyCode: z.literal("etb"),
-  options: z
-    .array(
-      z.object({
-        title: z.string().trim().min(1, "Enter an option name."),
-        values: z.array(z.string().trim().min(1)).min(1, "Enter at least one option value."),
-      }),
-    )
-    .optional(),
-  variants: z
-    .array(
-      z.object({
-        optionValues: z.record(z.string().min(1), z.string().min(1)),
-        sku: z.string().trim().nullable(),
-        priceAmount: z.number().int().nonnegative("Price cannot be negative."),
-        currencyCode: z.literal("etb"),
-        stockedQuantity: z.number().int().nonnegative("Stock cannot be negative."),
-      }),
-    )
-    .optional(),
-  collectionId: z.string().trim().nullable(),
-  categoryIds: z.array(z.string().min(1)),
+/** English-default schema for type inference and non-UI parse paths. */
+export const productPayloadSchema = createProductPayloadSchema((key) => {
+  const fallback: Record<string, string> = {
+    "products.validation.titleRequired": "Enter a product title.",
+    "products.validation.imageUrlFull":
+      "Use full image URLs that start with http:// or https://.",
+    "products.validation.priceNonNegative": "Price cannot be negative.",
+    "products.validation.optionNameRequired": "Enter an option name.",
+    "products.validation.optionValueRequired": "Enter at least one option value.",
+    "products.validation.stockNonNegative": "Stock cannot be negative.",
+  };
+  return fallback[key] ?? key;
 });
+
+export function createProductPayloadSchema(t: Translate) {
+  return z.object({
+    title: z.string().trim().min(1, t("products.validation.titleRequired")),
+    description: z.string().trim().nullable(),
+    handle: z.string().trim().nullable(),
+    thumbnail: z.string().trim().nullable(),
+    imageUrls: z
+      .array(z.string().trim().url(t("products.validation.imageUrlFull")))
+      .optional(),
+    status: z.enum(["draft", "published"]),
+    priceAmount: z.number().int().nonnegative(t("products.validation.priceNonNegative")),
+    currencyCode: z.literal("etb"),
+    options: z
+      .array(
+        z.object({
+          title: z.string().trim().min(1, t("products.validation.optionNameRequired")),
+          values: z
+            .array(z.string().trim().min(1))
+            .min(1, t("products.validation.optionValueRequired")),
+        }),
+      )
+      .optional(),
+    variants: z
+      .array(
+        z.object({
+          optionValues: z.record(z.string().min(1), z.string().min(1)),
+          sku: z.string().trim().nullable(),
+          priceAmount: z.number().int().nonnegative(t("products.validation.priceNonNegative")),
+          currencyCode: z.literal("etb"),
+          stockedQuantity: z
+            .number()
+            .int()
+            .nonnegative(t("products.validation.stockNonNegative")),
+        }),
+      )
+      .optional(),
+    collectionId: z.string().trim().nullable(),
+    categoryIds: z.array(z.string().min(1)),
+  });
+}

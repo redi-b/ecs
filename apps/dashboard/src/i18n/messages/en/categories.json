@@ -1,0 +1,28 @@
+{
+  "title": "Product categories",
+  "description": "Review merchant-scoped product categories from the catalog taxonomy.",
+  "notice": {
+    "created": {
+      "title": "Category created",
+      "description": "The product category is now available for catalog organization."
+    },
+    "missingName": {
+      "title": "Category could not be created",
+      "description": "Enter a category name before continuing."
+    },
+    "error": {
+      "title": "Category could not be created"
+    }
+  },
+  "error": {
+    "loadTitle": "Product categories could not be loaded"
+  },
+  "actions": {
+    "new": "New category"
+  },
+  "create": {
+    "shellTitle": "New category",
+    "shellDescription": "Create a product category for organizing storefront catalog navigation and product assignment.",
+    "submitLabel": "Create category"
+  }
+}

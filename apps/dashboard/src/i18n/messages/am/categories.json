@@ -1,0 +1,28 @@
+{
+  "title": "የምርት ምድቦች",
+  "description": "የሱቅዎን የምርት ምድቦች ይመልከቱ እና ያደራጁ።",
+  "notice": {
+    "created": {
+      "title": "ምድቡ ተጨምሯል",
+      "description": "ምድቡ አሁን ለካታሎግ አደረጃጀት ይገኛል።"
+    },
+    "missingName": {
+      "title": "ምድብ መፍጠር አልተቻለም",
+      "description": "ለመቀጠል የምድብ ስም ያስገቡ።"
+    },
+    "error": {
+      "title": "ምድብ መፍጠር አልተቻለም"
+    }
+  },
+  "error": {
+    "loadTitle": "የምርት ምድቦችን መጫን አልተቻለም"
+  },
+  "actions": {
+    "new": "አዲስ ምድብ"
+  },
+  "create": {
+    "shellTitle": "አዲስ ምድብ",
+    "shellDescription": "ምርቶችን በቡድን ለማደራጀት እና በመደብር ለማሳየት አዲስ ምድብ ይፍጠሩ።",
+    "submitLabel": "ምድብ ፍጠር"
+  }
+}

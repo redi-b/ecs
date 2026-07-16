@@ -79,7 +79,7 @@ export function MediaWorkspace({
             <TooltipTrigger asChild>
               <Button
                 aria-busy={refreshing}
-                aria-label={refreshing ? "Refreshing" : t("media.refresh")}
+                aria-label={refreshing ? t("common.refreshing") : t("media.refresh")}
                 disabled={refreshing}
                 onClick={() => void refresh()}
                 size="icon-sm"
@@ -89,15 +89,17 @@ export function MediaWorkspace({
                 <AppIcons.refresh className={refreshing ? "animate-spin" : undefined} />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>{refreshing ? "Refreshing" : t("media.refresh")}</TooltipContent>
+            <TooltipContent>
+              {refreshing ? t("common.refreshing") : t("media.refresh")}
+            </TooltipContent>
           </Tooltip>
           <MediaUploadComposer onUploaded={() => void refresh()} />
         </>
       }
-      description="Upload, organize, and reuse merchant images across products and future storefront experiences."
-      title="Media"
+      description={t("media.shellDescription")}
+      title={t("media.shellTitle")}
     >
-      <ListSummary count={totalCount} label="media assets" />
+      <ListSummary count={totalCount} label={t("nav.media").toLowerCase()} />
       {loadError || initialError ? (
         <Alert variant="destructive">
           <AlertTitle>{t("media.libraryLoadError")}</AlertTitle>

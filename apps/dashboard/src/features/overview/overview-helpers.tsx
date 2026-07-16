@@ -14,7 +14,9 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
-import { commerceItems, statusRingColors } from "@/features/overview/overview-config";
+import { commerceItemKeys, statusRingColors } from "@/features/overview/overview-config";
+import { useI18n } from "@/i18n/provider";
+import type { MessageKey } from "@/i18n/messages";
 import {
   getLaunchAssistantOpenPreference,
   isLaunchAssistantHidden,
@@ -68,6 +70,7 @@ export function StatusDonutChart({
   title: string;
   className?: string;
 }) {
+  const { t } = useI18n();
   const total = rows.reduce((sum, row) => sum + row.count, 0);
   const chartRows = rows.slice(0, 5).map((row, index) => ({
     ...row,
@@ -87,7 +90,7 @@ export function StatusDonutChart({
   if (rows.length === 0) {
     return (
       <div className={cn("flex items-center justify-center py-8", className)}>
-        <p className="text-sm text-muted-foreground">No order data is available.</p>
+        <p className="text-sm text-muted-foreground">{t("overview.donut.empty")}</p>
       </div>
     );
   }
@@ -140,6 +143,11 @@ export function StatusDonutChart({
   );
 }
 export function ReadinessBlock({ summary }: { summary: MerchantDashboardSummary }) {
+  const { t } = useI18n();
+  const commerceLabels: Record<(typeof commerceItemKeys)[number], MessageKey> = {
+    hasStore: "overview.readiness.salesSetup",
+    hasSalesChannel: "overview.readiness.salesChannel",
+  };
   return (
     <div className="flex flex-col gap-2.5 rounded-lg border bg-muted/25 p-3">
       <div className="flex items-center justify-between gap-3">
@@ -154,17 +162,21 @@ export function ReadinessBlock({ summary }: { summary: MerchantDashboardSummary 
         </Badge>
       </div>
       <div className="grid gap-1.5">
-        {commerceItems.map((item) => (
-          <ReadinessRow key={item.key} label={item.label} ready={summary.commerce[item.key]} />
+        {commerceItemKeys.map((key) => (
+          <ReadinessRow key={key} label={t(commerceLabels[key])} ready={summary.commerce[key]} />
         ))}
-        <ReadinessRow label="Published storefront" ready={summary.storefront.isPublished} />
+        <ReadinessRow
+          label={t("overview.readiness.publishedStorefront")}
+          ready={summary.storefront.isPublished}
+        />
       </div>
     </div>
   );
 }
 
 export function LaunchAssistant({ summary }: { summary: MerchantDashboardSummary }) {
-  const items = getLaunchChecklistItems(summary);
+  const { t } = useI18n();
+  const items = getLaunchChecklistItems(summary, t);
   const completedCount = items.filter((item) => item.ready).length;
   const complete = completedCount === items.length;
   const [hydrated, setHydrated] = useState(false);
@@ -201,8 +213,8 @@ export function LaunchAssistant({ summary }: { summary: MerchantDashboardSummary
 
   function dismissAssistant() {
     setLaunchAssistantHidden(summary.tenant.id, true);
-    toast("Launch assistant hidden", {
-      description: "Turn it back on from Settings → Preferences.",
+    toast(t("overview.launch.hiddenToast"), {
+      description: t("overview.launch.hiddenDesc"),
     });
   }
 
@@ -233,13 +245,13 @@ export function LaunchAssistant({ summary }: { summary: MerchantDashboardSummary
       >
         <div className="flex items-start justify-between gap-3 border-b p-4">
           <div>
-            <p className="text-sm font-semibold">Launch Assistant</p>
+            <p className="text-sm font-semibold">{t("overview.launch.title")}</p>
             <p className="text-xs text-muted-foreground">
-              {completedCount} of {items.length} setup items complete
+              {t("overview.launch.progress", { done: completedCount, total: items.length })}
             </p>
           </div>
           <Button
-            aria-label="Close launch assistant"
+            aria-label={t("overview.aria.closeLaunch")}
             className="text-xl leading-none"
             size="icon"
             type="button"
@@ -279,7 +291,11 @@ export function LaunchAssistant({ summary }: { summary: MerchantDashboardSummary
                 </span>
               </span>
               <Badge variant={item.ready ? "secondary" : item.current ? "default" : "outline"}>
-                {item.ready ? "Done" : item.current ? "Next" : "Open"}
+                {item.ready
+                  ? t("overview.launch.done")
+                  : item.current
+                    ? t("overview.launch.next")
+                    : t("overview.launch.open")}
               </Badge>
             </Link>
           ))}
@@ -287,11 +303,11 @@ export function LaunchAssistant({ summary }: { summary: MerchantDashboardSummary
         <div className="flex items-center justify-between gap-3 border-t p-3">
           <Button asChild size="sm" variant="outline">
             <Link href={`${dashboardRoutes.settings}?tab=storefront`} prefetch={false}>
-              Storefront settings
+              {t("overview.launch.storefrontSettings")}
             </Link>
           </Button>
           <Button size="sm" type="button" variant="ghost" onClick={dismissAssistant}>
-            Do not show again
+            {t("overview.launch.doNotShow")}
           </Button>
         </div>
       </div>
@@ -302,13 +318,16 @@ export function LaunchAssistant({ summary }: { summary: MerchantDashboardSummary
         type="button"
         onClick={openAssistant}
       >
-        Launch {completedCount}/{items.length}
+        {t("overview.launch.launchButton", { done: completedCount, total: items.length })}
       </Button>
     </div>
   );
 }
 
-export function getLaunchChecklistItems(summary: MerchantDashboardSummary) {
+export function getLaunchChecklistItems(
+  summary: MerchantDashboardSummary,
+  t: (key: MessageKey, values?: Record<string, string | number | Date>) => string,
+) {
   const hasShopProfile = Boolean(
     summary.tenant.name.trim() && summary.tenant.handle.trim() && summary.domain.hostname.trim(),
   );
@@ -331,38 +350,48 @@ export function getLaunchChecklistItems(summary: MerchantDashboardSummary) {
 
   return [
     {
-      label: "Shop profile",
-      description: hasShopProfile ? summary.domain.hostname : "Add shop name and address",
+      label: t("overview.launch.shopProfile"),
+      description: hasShopProfile
+        ? summary.domain.hostname
+        : t("overview.launch.shopProfileMissing"),
       ready: hasShopProfile,
       href: dashboardRoutes.settings,
     },
     {
-      label: "Sales setup",
-      description: "Store and channel",
+      label: t("overview.launch.salesSetup"),
+      description: t("overview.launch.salesSetupDesc"),
       ready: hasSalesBackend,
       href: dashboardRoutes.settings,
     },
     {
-      label: "Catalog",
-      description: `${formatNumber(summary.operations?.totals.products)} products`,
+      label: t("overview.launch.catalog"),
+      description: t("overview.launch.catalogDesc", {
+        count: formatNumber(summary.operations?.totals.products),
+      }),
       ready: hasCatalog,
       href: dashboardRoutes.products,
     },
     {
-      label: "Storefront design",
-      description: hasStorefrontDraft ? "Storefront selected" : "Choose a storefront",
+      label: t("overview.launch.storefrontDesign"),
+      description: hasStorefrontDraft
+        ? t("overview.launch.storefrontSelected")
+        : t("overview.launch.chooseStorefront"),
       ready: hasStorefrontDraft,
       href: `${dashboardRoutes.settings}?tab=storefront`,
     },
     {
-      label: "Publish storefront",
-      description: hasPublishedStorefront ? "Customers can access the shop" : "Review and publish",
+      label: t("overview.launch.publishStorefront"),
+      description: hasPublishedStorefront
+        ? t("overview.launch.customersCanAccess")
+        : t("overview.launch.reviewAndPublish"),
       ready: hasPublishedStorefront,
       href: dashboardRoutes.editor,
     },
     {
-      label: "Payments",
-      description: hasPayments ? "Billing connected" : "Payment setup pending",
+      label: t("overview.launch.payments"),
+      description: hasPayments
+        ? t("overview.launch.billingConnected")
+        : t("overview.launch.paymentPending"),
       ready: hasPayments,
       href: dashboardRoutes.billing,
     },
@@ -370,6 +399,7 @@ export function getLaunchChecklistItems(summary: MerchantDashboardSummary) {
 }
 
 export function ReadinessRow({ label, ready }: { label: string; ready: boolean }) {
+  const { t } = useI18n();
   return (
     <div className="flex items-center justify-between gap-3 text-sm">
       <span className="text-muted-foreground">{label}</span>
@@ -377,7 +407,7 @@ export function ReadinessRow({ label, ready }: { label: string; ready: boolean }
         className={cn(!ready && "text-muted-foreground")}
         variant={ready ? "default" : "outline"}
       >
-        {ready ? "Ready" : "Missing"}
+        {ready ? t("overview.readiness.ready") : t("overview.readiness.missing")}
       </Badge>
     </div>
   );
@@ -392,24 +422,28 @@ export function DetailRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-export function formatNumber(value: number | null | undefined) {
-  return typeof value === "number" ? value.toLocaleString() : "Unavailable";
+export function formatNumber(value: number | null | undefined, locale = "en") {
+  return typeof value === "number" ? value.toLocaleString(locale) : "—";
 }
 
-export function formatMoney(value: number | null | undefined, currencyCode: string) {
+export function formatMoney(
+  value: number | null | undefined,
+  currencyCode: string,
+  locale = "en",
+) {
   if (typeof value !== "number") {
-    return "Unavailable";
+    return "—";
   }
 
-  return new Intl.NumberFormat("en", {
+  return new Intl.NumberFormat(locale, {
     currency: currencyCode || "ETB",
     maximumFractionDigits: 0,
     style: "currency",
   }).format(value);
 }
 
-export function compactMoney(value: number, currencyCode: string) {
-  return new Intl.NumberFormat("en", {
+export function compactMoney(value: number, currencyCode: string, locale = "en") {
+  return new Intl.NumberFormat(locale, {
     currency: currencyCode || "ETB",
     notation: "compact",
     maximumFractionDigits: 1,
@@ -417,12 +451,12 @@ export function compactMoney(value: number, currencyCode: string) {
   }).format(value);
 }
 
-export function formatShortDate(value: string) {
-  return new Intl.DateTimeFormat("en", { month: "short", day: "numeric" }).format(new Date(value));
+export function formatShortDate(value: string, locale = "en") {
+  return new Intl.DateTimeFormat(locale, { month: "short", day: "numeric" }).format(new Date(value));
 }
 
-export function formatReadableDate(value: string) {
-  return new Intl.DateTimeFormat("en", {
+export function formatReadableDate(value: string, locale = "en") {
+  return new Intl.DateTimeFormat(locale, {
     month: "short",
     day: "numeric",
     year: "numeric",
@@ -453,10 +487,14 @@ export function getDemandRhythmRows(series: Array<{ date: string; orders: number
     .filter((row) => row.orders > 0);
 }
 
-export function sampleNote(value: number | undefined) {
+export function sampleNote(
+  value: number | undefined,
+  t: (key: MessageKey, values?: Record<string, string | number | Date>) => string,
+  locale = "en",
+) {
   if (typeof value !== "number") {
-    return "No sales data yet";
+    return t("overview.helpers.noSalesYet");
   }
 
-  return `${value.toLocaleString()} records reviewed`;
+  return t("overview.helpers.recordsReviewed", { count: value.toLocaleString(locale) });
 }

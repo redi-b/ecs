@@ -15,6 +15,7 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 
 export type DataTableFilterOption = {
@@ -44,6 +45,7 @@ export function DataTableFilters({
   filters,
   onClearAll,
 }: DataTableFiltersProps) {
+  const { t } = useI18n();
   const [addFilterOpen, setAddFilterOpen] = useState(false);
   const [pendingFilterId, setPendingFilterId] = useState<string | null>(null);
   const [filterSearch, setFilterSearch] = useState("");
@@ -80,7 +82,7 @@ export function DataTableFilters({
                   variant="outline"
                 >
                   <AppIcons.filter data-icon="inline-start" />
-                  Add filter
+                  {t("filters.add")}
                 </Button>
               </PopoverTrigger>
               <PopoverContent
@@ -107,7 +109,7 @@ export function DataTableFilters({
                         variant="ghost"
                       >
                         <AppIcons.arrowLeft data-icon="inline-start" />
-                        Filters
+                        {t("filters.title")}
                       </Button>
                     </div>
                   ) : null}
@@ -116,15 +118,15 @@ export function DataTableFilters({
                       onValueChange={setFilterSearch}
                       placeholder={
                         pendingFilter
-                          ? `Search ${pendingFilter.label.toLowerCase()}…`
-                          : "Search filters…"
+                          ? t("filters.searchLabel", { label: pendingFilter.label.toLowerCase() })
+                          : t("filters.searchAll")
                       }
                       value={filterSearch}
                     />
                     <CommandList className="max-h-64">
                       {pendingFilter ? (
                         <>
-                          <CommandEmpty>No values found.</CommandEmpty>
+                          <CommandEmpty>{t("filters.noValues")}</CommandEmpty>
                           <CommandGroup heading={pendingFilter.label}>
                             {getSelectableFilterOptions(pendingFilter).map((option) => (
                               <CommandItem
@@ -146,7 +148,7 @@ export function DataTableFilters({
                         </>
                       ) : (
                         <>
-                          <CommandEmpty>No filters found.</CommandEmpty>
+                          <CommandEmpty>{t("filters.noFilters")}</CommandEmpty>
                           <CommandGroup>
                             {availableFilters.map((filter) => (
                               <CommandItem
@@ -175,7 +177,7 @@ export function DataTableFilters({
               variant="ghost"
             >
               <AppIcons.close data-icon="inline-start" />
-              Clear all
+              {t("filters.clearAll")}
             </Button>
           ) : null}
         </div>
@@ -188,6 +190,7 @@ export function DataTableFilters({
 }
 
 function DataTableAppliedFilterChip({ filter }: { filter: DataTableFilterDefinition }) {
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const [optionSearch, setOptionSearch] = useState("");
 
@@ -211,12 +214,12 @@ function DataTableAppliedFilterChip({ filter }: { filter: DataTableFilterDefinit
             type="button"
           >
             <span className="text-xs">{filter.label}</span>
-            <span className="text-[11px] opacity-60">is</span>
+            <span className="text-[11px] opacity-60">{t("filters.is")}</span>
             <span className="font-medium text-foreground">{getFilterValueLabel(filter)}</span>
           </button>
         </PopoverTrigger>
         <Button
-          aria-label={`Clear ${filter.label} filter`}
+          aria-label={t("filters.clearFilterAria", { label: filter.label })}
           className="h-full rounded-none border-l px-1.5"
           onClick={() => filter.onChange(filter.defaultValue)}
           size="icon-sm"
@@ -234,11 +237,11 @@ function DataTableAppliedFilterChip({ filter }: { filter: DataTableFilterDefinit
         <Command>
           <CommandInput
             onValueChange={setOptionSearch}
-            placeholder={`Search ${filter.label.toLowerCase()}…`}
+            placeholder={t("filters.searchLabel", { label: filter.label.toLowerCase() })}
             value={optionSearch}
           />
           <CommandList className="max-h-64">
-            <CommandEmpty>No values found.</CommandEmpty>
+            <CommandEmpty>{t("filters.noValues")}</CommandEmpty>
             <CommandGroup heading={filter.label}>
               {getSelectableFilterOptions(filter).map((option) => (
                 <CommandItem

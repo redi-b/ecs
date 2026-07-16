@@ -1,0 +1,332 @@
+{
+  "title": "Settings",
+  "description": "Manage shop address, checkout fulfillment, storefront status, and account details.",
+  "error": {
+    "loadTitle": "Settings could not be loaded"
+  },
+  "navAria": "Settings sections",
+  "sections": {
+    "shop": {
+      "label": "Shop",
+      "description": "Name, handle, and hostnames"
+    },
+    "preferences": {
+      "label": "Preferences",
+      "description": "Dashboard and checkout defaults"
+    },
+    "notifications": {
+      "label": "Notifications",
+      "description": "Orders, payments, and shop events"
+    },
+    "fulfillment": {
+      "label": "Fulfillment",
+      "description": "Delivery, pickup, and fees"
+    },
+    "storefront": {
+      "label": "Storefront",
+      "description": "Template and publication"
+    },
+    "account": {
+      "label": "Account",
+      "description": "Profile, password, sessions"
+    }
+  },
+  "status": {
+    "settingsUpdated": "Settings saved.",
+    "templateSelected": "Storefront selected.",
+    "chooseStorefront": "Choose a storefront before saving.",
+    "templateUnavailable": "That storefront is no longer available."
+  },
+  "handle": {
+    "patternHint": "Use 3–63 characters: lowercase letters, numbers, and hyphens.",
+    "checkFailed": "Could not check availability. Try again.",
+    "taken": "Already taken",
+    "invalid": "Invalid handle format",
+    "reserved": "This handle is reserved",
+    "notAvailable": "Not available",
+    "checking": "Checking…",
+    "available": "Available",
+    "current": "Current handle",
+    "locked": "Locked",
+    "lockAria": "Lock shop handle",
+    "unlockAria": "Unlock shop handle",
+    "lockTooltip": "Lock handle",
+    "unlockTooltip": "Unlock to change handle"
+  },
+  "toast": {
+    "savingLabel": "Saving {label}…",
+    "savedLabel": "{label} saved",
+    "saveFailedLabel": "Could not save {label}",
+    "updatingAddress": "Updating shop address…",
+    "savingShop": "Saving shop…",
+    "saveShopFailed": "Could not save shop settings.",
+    "addressUpdated": "Shop address updated. Redirecting…",
+    "shopSaved": "Shop settings saved.",
+    "launchEnabled": "Launch assistant enabled",
+    "launchHidden": "Launch assistant hidden"
+  },
+  "labels": {
+    "fulfillmentSettings": "Fulfillment settings",
+    "deliveryFee": "Delivery fee"
+  },
+  "dialog": {
+    "changeAddressTitle": "Change shop address?",
+    "changeAddressDescription": "{currentHost} will stop working for this shop. You will be redirected to {nextHost}.",
+    "updating": "Updating…",
+    "changeAddress": "Change address"
+  },
+  "shop": {
+    "intro": "Public identity for customers and the hostname used by staff.",
+    "detailsTitle": "Shop details",
+    "detailsDescription": "Name and subdomain for this merchant shop.",
+    "name": "Shop name",
+    "handle": "Shop handle",
+    "addressChangeTitle": "Changing the shop address",
+    "addressChangeDescription": "The current subdomain stops resolving and this dashboard moves to the new address after you save.",
+    "saveShop": "Save shop",
+    "hostname": "Hostname",
+    "current": "Current",
+    "primary": "Primary",
+    "afterSave": "After save",
+    "status": "Status",
+    "related": "Related",
+    "billingPlan": "Billing & plan",
+    "storefrontEditor": "Storefront editor"
+  },
+  "preferences": {
+    "intro": "Browser and checkout defaults for day-to-day work.",
+    "dashboardTitle": "Dashboard",
+    "dashboardDescription": "Stored in this browser for the current shop.",
+    "launchTitle": "Launch assistant",
+    "launchDescription": "Show the floating setup assistant on Overview.",
+    "commerceTitle": "Commerce defaults",
+    "commerceDescription": "Currency and checkout options for this shop.",
+    "currencyEtb": "Currency · ETB",
+    "currencyHint": "Storefront prices and fees use Ethiopian Birr. Multi-currency is not available yet.",
+    "fulfillmentHint": "Delivery, pickup, and phone confirmation live under Fulfillment.",
+    "openFulfillment": "Open fulfillment"
+  },
+  "fulfillment": {
+    "intro": "How customers receive orders at checkout. Switches save immediately.",
+    "checkoutTitle": "Checkout options",
+    "checkoutDescription": "Control delivery, pickup, and order details collection.",
+    "defaultFee": "Default delivery fee",
+    "feeHint": "Applied when delivery is enabled at checkout.",
+    "currency": "Currency",
+    "currencyHint": "Shop currency is fixed to Ethiopian Birr.",
+    "unavailableTitle": "Fulfillment settings are unavailable",
+    "unavailableDescription": "Try again after checkout setup is complete.",
+    "delivery": {
+      "label": "Delivery",
+      "description": "Allow customers to choose local delivery."
+    },
+    "pickup": {
+      "label": "Pickup",
+      "description": "Allow customers to collect orders."
+    },
+    "phoneConfirmation": {
+      "label": "Phone confirmation",
+      "description": "Require a phone number before checkout."
+    },
+    "landmark": {
+      "label": "Delivery landmark",
+      "description": "Require a nearby landmark for delivery."
+    },
+    "notes": {
+      "label": "Delivery notes",
+      "description": "Let customers add delivery instructions."
+    }
+  },
+  "storefront": {
+    "intro": "Template selection and publish state for the customer-facing shop.",
+    "designTitle": "Design",
+    "designDescription": "Starting template customers see after you publish.",
+    "noneTitle": "No storefronts available",
+    "noneDescription": "Storefront selection will be available after templates are seeded.",
+    "statusTitle": "Status",
+    "publication": "Publication",
+    "published": "Published",
+    "draft": "Draft",
+    "selectedDesign": "Selected design",
+    "version": "Version",
+    "notSelected": "Not selected",
+    "editStorefront": "Edit storefront",
+    "viewShop": "View shop",
+    "selected": "Selected",
+    "useThis": "Use this storefront",
+    "preview": "{name} preview"
+  },
+  "notifications": {
+    "intro": "Get notified when orders, payments, and other shop events happen.",
+    "loadErrorTitle": "Couldn't load notifications",
+    "tryAgain": "Try again",
+    "telegram": "Telegram",
+    "email": "Email",
+    "loadingTelegram": "Loading connected accounts…",
+    "loadingEmail": "Loading email settings…",
+    "emailDescription": "Send shop event alerts to one mailbox for this shop.",
+    "refreshEmail": "Refresh email settings",
+    "emailUnavailableTitle": "Email alerts unavailable",
+    "emailUnavailableDescription": "Email alerts aren't enabled for this environment yet. You can still use Telegram if it's available, or check back later.",
+    "emailAddress": "Email address",
+    "alertsGoTo": "Alerts go to",
+    "changeAndSave": "Change the address above and press Save.",
+    "oneInbox": "One inbox for this shop. Press Save to start receiving alerts.",
+    "delivery": "Delivery",
+    "pauseWithoutRemoving": "Pause without removing the email address.",
+    "sendTest": "Send test",
+    "sendTestAria": "Send test email",
+    "saveBeforeTest": "Save the email address before sending a test",
+    "sendTestHint": "Send a test alert to this address",
+    "eventsDescription": "Choose which shop events trigger email.",
+    "toast": {
+      "enterEmail": "Enter an email address before saving.",
+      "invalidEmail": "Enter a valid email address.",
+      "emailUpdated": "Email address updated",
+      "emailSetup": "Email alerts set up",
+      "saveEmailFirst": "Save an email address first.",
+      "selectEvent": "Select at least one event.",
+      "eventsSaved": "Event preferences saved",
+      "alertsResumed": "Alerts resumed",
+      "alertsPaused": "Alerts paused",
+      "testQueued": "Test email queued. Check your inbox shortly.",
+      "testRequested": "Test email requested."
+    },
+    "status": {
+      "active": "Active",
+      "paused": "Paused",
+      "notSetUp": "Not set up"
+    },
+    "alerts": "Alerts",
+    "refreshing": "Refreshing",
+    "refresh": "Refresh",
+    "accountOne": "account",
+    "accountMany": "accounts",
+    "notifyAbout": "Notify me about",
+    "saveEvents": "Save events",
+    "events": {
+      "orderCreated": "New orders",
+      "orderCancelled": "Cancelled orders",
+      "paymentPaid": "Payments received",
+      "paymentFailed": "Payment failures",
+      "codOrder": "COD orders"
+    },
+    "telegramPanel": {
+      "description": "Instant shop event alerts on Telegram.",
+      "unavailableTitle": "Telegram alerts unavailable",
+      "unavailableDescription": "Telegram isn't enabled for this environment yet. You can still set up email if it's available, or check back later.",
+      "connected": "Telegram connected",
+      "connectFailed": "Could not start Telegram connect. Try again.",
+      "linkExpired": "Link expired",
+      "linkExpiredDesc": "Start connect again for a new link.",
+      "stillWaiting": "Still waiting",
+      "stillWaitingDesc": "Open Telegram, tap Start, then check again.",
+      "connectCancelled": "Connect cancelled",
+      "disconnected": "Telegram account disconnected",
+      "alertsResumed": "Alerts resumed",
+      "alertsPaused": "Alerts paused",
+      "eventsSaved": "Event preferences saved",
+      "testSent": "Test sent. Check Telegram.",
+      "testRequested": "Test message requested.",
+      "linkCopied": "Link copied",
+      "copyFailed": "Could not copy link",
+      "connectedRecently": "Connected recently",
+      "connectedAt": "Connected",
+      "active": "Active",
+      "paused": "Paused",
+      "step1": "We'll open Telegram with a one-time link for this shop.",
+      "step2": "Tap Start in the chat so we can send alerts there.",
+      "step3": "Come back here. The account appears when connect succeeds.",
+      "headerDescription": "Instant shop event alerts on Telegram. Connect staff phones as needed.",
+      "refreshAccounts": "Refresh accounts",
+      "sendTestAria": "Send test message",
+      "connectAnother": "Connect another account",
+      "connectTelegram": "Connect Telegram",
+      "connectAnotherTelegram": "Connect another Telegram account",
+      "eventsShared": "Same events for every connected Telegram account.",
+      "opening": "Opening…",
+      "continueTelegram": "Continue to Telegram",
+      "disconnectDesc": "This account will stop receiving shop event alerts.",
+      "disconnecting": "Disconnecting…",
+      "disconnect": "Disconnect"
+    }
+  },
+  "accountSecurity": {
+    "title": "Account",
+    "intro": "Profile and sign-in security for your dashboard login.",
+    "addName": "Add your name",
+    "displayName": "Display name",
+    "namePlaceholder": "Your name",
+    "nameHint": "Shown in the sidebar and across this shop.",
+    "saveName": "Save name",
+    "password": "Password",
+    "passwordHint": "Change the password used with {email}.",
+    "currentPassword": "Current password",
+    "newPassword": "New password",
+    "confirmPassword": "Confirm new password",
+    "passwordMin": "At least 8 characters.",
+    "signOutOthers": "Sign out other devices",
+    "signOutOthersHint": "Ends every other session after the password changes. This device stays signed in.",
+    "updating": "Updating…",
+    "updatePassword": "Update password",
+    "devicesTitle": "Signed-in devices",
+    "devicesHint": "Active browsers for this account. Remove any you do not recognize.",
+    "refreshSessions": "Refresh sessions",
+    "refreshingSessions": "Refreshing sessions",
+    "refreshing": "Refreshing",
+    "sessionsUnavailable": "Sessions unavailable",
+    "loadingSessions": "Loading sessions…",
+    "noSessions": "No active sessions found.",
+    "thisDevice": "This device",
+    "ip": "IP",
+    "unknown": "Unknown",
+    "lastActive": "Last active",
+    "signedIn": "Signed in",
+    "currentSession": "Current session",
+    "signOut": "Sign out",
+    "signOutFooter": "Signing out a device ends its access until the next successful sign-in.",
+    "signOutTitle": "Sign out this device?",
+    "signOutDesc": "{device} will need to sign in again to access the dashboard.",
+    "signOutDescGeneric": "This device will need to sign in again.",
+    "signingOut": "Signing out…",
+    "signOutDevice": "Sign out device",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
+    "device": {
+      "desktop": "Desktop",
+      "ipad": "iPad",
+      "iphone": "iPhone",
+      "androidPhone": "Android phone",
+      "mac": "Mac",
+      "windowsPc": "Windows PC",
+      "linuxPc": "Linux PC",
+      "mobile": "Mobile device",
+      "unknown": "Unknown device"
+    },
+    "os": {
+      "unknown": "Unknown OS",
+      "browser": "Browser",
+      "unknownBrowser": "Unknown browser"
+    },
+    "toast": {
+      "nameMin": "Enter a name with at least 2 characters.",
+      "profileOrigin": "Profile update blocked by auth origin settings.",
+      "profileFailed": "Could not update your profile.",
+      "profileUpdated": "Profile updated.",
+      "passwordRequired": "Enter your current and new password.",
+      "passwordMin": "New password must be at least 8 characters.",
+      "passwordMismatch": "New password and confirmation do not match.",
+      "passwordWrong": "Current password is incorrect.",
+      "passwordOrigin": "Password change blocked by auth origin settings.",
+      "passwordFailed": "Could not change password.",
+      "passwordUpdatedOthers": "Password updated. Other devices were signed out.",
+      "passwordUpdated": "Password updated.",
+      "cannotRevokeCurrent": "You cannot sign out this device from here.",
+      "revokeOrigin": "Revoke blocked by auth origin settings.",
+      "revokeFailed": "Could not sign out that session.",
+      "sessionSignedOut": "Session signed out.",
+      "sessionsOrigin": "Session list blocked by auth origin settings. Restart platform-api after updating trusted origins.",
+      "sessionsFailed": "Could not load active sessions."
+    }
+  }
+}

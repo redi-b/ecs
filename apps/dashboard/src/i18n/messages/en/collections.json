@@ -1,0 +1,28 @@
+{
+  "title": "Product collections",
+  "description": "Review merchant-scoped product collections from the catalog taxonomy.",
+  "notice": {
+    "created": {
+      "title": "Collection created",
+      "description": "The product collection is now available for catalog organization."
+    },
+    "missingTitle": {
+      "title": "Collection could not be created",
+      "description": "Enter a collection title before continuing."
+    },
+    "error": {
+      "title": "Collection could not be created"
+    }
+  },
+  "error": {
+    "loadTitle": "Product collections could not be loaded"
+  },
+  "actions": {
+    "new": "New collection"
+  },
+  "create": {
+    "shellTitle": "New collection",
+    "shellDescription": "Create a product collection for grouping related catalog items and campaign merchandising.",
+    "submitLabel": "Create collection"
+  }
+}

@@ -75,6 +75,7 @@ import {
 } from "@/features/products/product-form-state";
 import type { ComposerStep, ProductFormProps } from "@/features/products/product-form-types";
 import { PRODUCT_STEPS, type productPayloadSchema } from "@/features/products/product-form-types";
+import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 
 export function ProductForm({
@@ -88,6 +89,7 @@ export function ProductForm({
   returnHref,
   submitLabel,
 }: ProductFormProps) {
+  const { t } = useI18n();
   const router = useRouter();
   const queryClient = useQueryClient();
   const [activeStep, setActiveStep] = useState<ComposerStep["id"]>("details");
@@ -96,16 +98,41 @@ export function ProductForm({
   const [actionError, setActionError] = useState<string | null>(null);
   const [exitIntent, setExitIntent] = useState<(() => void) | null>(null);
   const defaultValues = useMemo(() => getProductDefaultValues(product), [product]);
+  const steps = useMemo<ComposerStep[]>(
+    () => [
+      {
+        id: "details",
+        label: t("products.composer.stepDetails"),
+        shortLabel: t("products.composer.stepDetailsShort"),
+      },
+      {
+        id: "organize",
+        label: t("products.composer.stepOrganize"),
+        shortLabel: t("products.composer.stepOrganizeShort"),
+      },
+      {
+        id: "variants",
+        label: t("products.composer.stepVariants"),
+        shortLabel: t("products.composer.stepVariantsShort"),
+      },
+      {
+        id: "review",
+        label: t("products.composer.stepReview"),
+        shortLabel: t("products.composer.stepReviewShort"),
+      },
+    ],
+    [t],
+  );
   const form = useForm({
     defaultValues,
     onSubmit: async ({ value }) => {
       try {
         setActionError(null);
-        const payload = getProductPayload(value, { includeOptions: !product });
+        const payload = getProductPayload(value, { includeOptions: !product }, t);
 
         await submitMutation.mutateAsync(payload);
       } catch (error) {
-        const message = getErrorMessage(error);
+        const message = getErrorMessage(error, t);
 
         if (error instanceof ProductMutationError && error.step) {
           setActiveStep(error.step);
@@ -131,7 +158,7 @@ export function ProductForm({
       };
 
       if (!response.ok || !data.product) {
-        throw getProductMutationError(data.error, response.status);
+        throw getProductMutationError(data.error, response.status, t);
       }
 
       const mediaResponse = await fetch(
@@ -146,14 +173,14 @@ export function ProductForm({
         },
       );
       if (!mediaResponse.ok)
-        toast.warning("Product saved, but media usage could not be synchronized.");
+        toast.warning(t("products.composer.mediaSyncWarn"));
 
       return data.product;
     },
     onSuccess: async (savedProduct) => {
       await queryClient.invalidateQueries({ queryKey: ["products"] });
       await queryClient.invalidateQueries({ queryKey: ["product", savedProduct.id] });
-      toast.success(product ? "Product updated." : "Product created.");
+      toast.success(product ? t("products.composer.toastUpdated") : t("products.composer.toastCreated"));
       if (onClose) {
         onClose();
       } else {
@@ -207,7 +234,7 @@ export function ProductForm({
       return;
     }
 
-    const invalidField = getFirstInvalidFieldForStep(activeStep, form.state.values);
+    const invalidField = getFirstInvalidFieldForStep(activeStep, form.state.values, t);
 
     if (invalidField) {
       form.validateField(invalidField, "submit");
@@ -225,7 +252,7 @@ export function ProductForm({
     const next = PRODUCT_STEPS[currentIndex + 1];
 
     if (!next) {
-      const invalidField = getFirstInvalidFieldForStep(activeStep, form.state.values);
+      const invalidField = getFirstInvalidFieldForStep(activeStep, form.state.values, t);
 
       if (invalidField) {
         form.validateField(invalidField, "submit");
@@ -289,16 +316,16 @@ export function ProductForm({
           showCloseButton={false}
         >
           <DialogTitle className="sr-only">
-            {product ? "Edit product" : "Create product"}
+            {product ? t("products.composer.editTitle") : t("products.composer.createTitle")}
           </DialogTitle>
           <DialogDescription className="sr-only">
-            Complete product details, organization, variants, and review before saving.
+            {t("products.composer.dialogDesc")}
           </DialogDescription>
           <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-background">
             <div className="flex shrink-0 flex-col border-b bg-background lg:grid lg:grid-cols-[minmax(0,16rem)_minmax(0,1fr)_minmax(0,12rem)]">
               <div className="flex items-center gap-2 border-b p-3 lg:border-r lg:border-b-0">
                 <Button
-                  aria-label="Close product composer"
+                  aria-label={t("products.composer.closeAria")}
                   onClick={closeComposer}
                   size="icon-sm"
                   type="button"
@@ -310,13 +337,13 @@ export function ProductForm({
                   esc
                 </Badge>
                 <span className="min-w-0 truncate text-sm font-medium text-foreground sm:font-normal sm:text-muted-foreground">
-                  {product ? "Edit product" : "Create product"}
+                  {product ? t("products.composer.editTitle") : t("products.composer.createTitle")}
                 </span>
                 <div className="ml-auto lg:hidden">
                   <form.Subscribe selector={(state) => state.values.status}>
                     {(status) => (
                       <Badge variant={status === "published" ? "default" : "secondary"}>
-                        {status === "published" ? "Published" : "Draft"}
+                        {status === "published" ? t("products.composer.published") : t("products.composer.draft")}
                       </Badge>
                     )}
                   </form.Subscribe>
@@ -324,7 +351,7 @@ export function ProductForm({
               </div>
 
               <div className="grid grid-cols-4 border-b lg:border-b-0">
-                {PRODUCT_STEPS.map((step) => (
+                {steps.map((step) => (
                   <button
                     className={cn(
                       "flex min-h-11 min-w-0 flex-col items-center justify-center gap-1 border-r px-1.5 py-2 text-xs text-muted-foreground transition-colors last:border-r-0 hover:bg-muted/60 hover:text-foreground sm:min-h-12 sm:flex-row sm:gap-2 sm:px-3 sm:text-sm",
@@ -353,7 +380,7 @@ export function ProductForm({
                 <form.Subscribe selector={(state) => state.values.status}>
                   {(status) => (
                     <Badge variant={status === "published" ? "default" : "secondary"}>
-                      {status === "published" ? "Published" : "Draft"}
+                      {status === "published" ? t("products.composer.published") : t("products.composer.draft")}
                     </Badge>
                   )}
                 </form.Subscribe>
@@ -374,28 +401,30 @@ export function ProductForm({
                   {activeStep === "details" ? (
                     <section className="flex flex-col gap-5">
                       <ComposerSection
-                        description="Start with the information shoppers will recognize first."
-                        title="General"
+                        description={t("products.composer.basicsDesc")}
+                        title={t("products.composer.basicsTitle")}
                       />
 
                       <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
                         <form.Field
                           name="title"
                           validators={{
-                            onBlur: ({ value }) => validateTitle(value),
-                            onSubmit: ({ value }) => validateTitle(value),
+                            onBlur: ({ value }) => validateTitle(value, t),
+                            onSubmit: ({ value }) => validateTitle(value, t),
                           }}
                         >
                           {(field) => (
                             <Field data-invalid={hasFieldError(field)}>
-                              <FieldLabel htmlFor={field.name}>Title</FieldLabel>
+                              <FieldLabel htmlFor={field.name}>
+                                {t("products.composer.fieldTitle")}
+                              </FieldLabel>
                               <Input
                                 aria-invalid={hasFieldError(field)}
                                 id={field.name}
                                 name={field.name}
                                 onBlur={field.handleBlur}
                                 onChange={(event) => updateTitle(event.target.value)}
-                                placeholder="Coffee beans"
+                                placeholder={t("products.composer.titlePlaceholder")}
                                 value={field.state.value}
                               />
                               <FieldError
@@ -409,7 +438,9 @@ export function ProductForm({
                         <form.Field name="handle">
                           {(field) => (
                             <Field>
-                              <FieldLabel htmlFor={field.name}>Handle</FieldLabel>
+                              <FieldLabel htmlFor={field.name}>
+                                {t("products.composer.fieldHandle")}
+                              </FieldLabel>
                               <InputGroup className="pr-1">
                                 <InputGroupInput
                                   id={field.name}
@@ -435,7 +466,7 @@ export function ProductForm({
                                       );
                                     }
                                   }}
-                                  placeholder="coffee-beans"
+                                  placeholder={t("products.composer.handlePlaceholder")}
                                   readOnly={isHandleLocked}
                                   value={field.state.value}
                                 />
@@ -445,8 +476,8 @@ export function ProductForm({
                                       <Button
                                         aria-label={
                                           isHandleLocked
-                                            ? "Unlock handle editing"
-                                            : "Lock handle editing"
+                                            ? t("products.composer.unlockHandle")
+                                            : t("products.composer.lockHandle")
                                         }
                                         className="rounded-full"
                                         onClick={() => setIsHandleLocked((current) => !current)}
@@ -459,14 +490,14 @@ export function ProductForm({
                                     </TooltipTrigger>
                                     <TooltipContent side="top" sideOffset={6}>
                                       {isHandleLocked
-                                        ? "Unlock handle editing"
-                                        : "Lock handle editing"}
+                                        ? t("products.composer.unlockHandle")
+                                        : t("products.composer.lockHandle")}
                                     </TooltipContent>
                                   </Tooltip>
                                   <Tooltip>
                                     <TooltipTrigger asChild>
                                       <Button
-                                        aria-label="Regenerate handle from title"
+                                        aria-label={t("products.composer.regenerateHandle")}
                                         className="rounded-full"
                                         onClick={regenerateHandle}
                                         size="icon-sm"
@@ -477,15 +508,15 @@ export function ProductForm({
                                       </Button>
                                     </TooltipTrigger>
                                     <TooltipContent side="top" sideOffset={6}>
-                                      Regenerate from title
+                                      {t("products.composer.regenerateFromTitle")}
                                     </TooltipContent>
                                   </Tooltip>
                                 </InputGroupAddon>
                               </InputGroup>
                               <FieldDescription>
                                 {isHandleLocked
-                                  ? "Uses the product title automatically."
-                                  : "Use a custom URL handle."}
+                                  ? t("products.composer.autoHandle")
+                                  : t("products.composer.customHandle")}
                               </FieldDescription>
                             </Field>
                           )}
@@ -495,14 +526,16 @@ export function ProductForm({
                       <form.Field name="description">
                         {(field) => (
                           <Field>
-                            <FieldLabel htmlFor={field.name}>Description</FieldLabel>
+                            <FieldLabel htmlFor={field.name}>
+                              {t("products.composer.fieldDescription")}
+                            </FieldLabel>
                             <Textarea
                               className="min-h-28"
                               id={field.name}
                               name={field.name}
                               onBlur={field.handleBlur}
                               onChange={(event) => field.handleChange(event.target.value)}
-                              placeholder="Describe the product for the storefront."
+                              placeholder={t("products.composer.descriptionPlaceholder")}
                               value={field.state.value}
                             />
                           </Field>
@@ -512,8 +545,8 @@ export function ProductForm({
                       <Separator />
 
                       <ComposerSection
-                        description="Upload, review, and arrange clear product photos."
-                        title="Media"
+                        description={t("products.composer.mediaDesc")}
+                        title={t("products.composer.mediaTitle")}
                       />
 
                       <form.Subscribe
@@ -538,15 +571,17 @@ export function ProductForm({
                   {activeStep === "organize" ? (
                     <section className="flex flex-col gap-5">
                       <ComposerSection
-                        description="Choose where this product appears in the catalog."
-                        title="Organize"
+                        description={t("products.composer.organizeDesc")}
+                        title={t("products.composer.organizeTitle")}
                       />
 
                       <div className="grid gap-4 md:grid-cols-2">
                         <form.Field name="status">
                           {(field) => (
                             <Field>
-                              <FieldLabel htmlFor={field.name}>Status</FieldLabel>
+                              <FieldLabel htmlFor={field.name}>
+                                {t("products.composer.fieldStatus")}
+                              </FieldLabel>
                               <Select
                                 onValueChange={(value) =>
                                   field.handleChange(value === "published" ? "published" : "draft")
@@ -554,12 +589,16 @@ export function ProductForm({
                                 value={field.state.value}
                               >
                                 <SelectTrigger className="w-full" id={field.name}>
-                                  <SelectValue placeholder="Select status" />
+                                  <SelectValue placeholder={t("products.composer.selectStatus")} />
                                 </SelectTrigger>
                                 <SelectContent>
                                   <SelectGroup>
-                                    <SelectItem value="draft">Draft</SelectItem>
-                                    <SelectItem value="published">Published</SelectItem>
+                                    <SelectItem value="draft">
+                                      {t("products.composer.draft")}
+                                    </SelectItem>
+                                    <SelectItem value="published">
+                                      {t("products.composer.published")}
+                                    </SelectItem>
                                   </SelectGroup>
                                 </SelectContent>
                               </Select>
@@ -570,7 +609,7 @@ export function ProductForm({
                         <form.Field name="collectionId">
                           {(field) => (
                             <Field>
-                              <FieldLabel>Collection</FieldLabel>
+                              <FieldLabel>{t("products.composer.fieldCollection")}</FieldLabel>
                               <CollectionPicker
                                 collections={collections}
                                 onChange={field.handleChange}
@@ -587,8 +626,12 @@ export function ProductForm({
                       <form.Field name="categoryIds">
                         {(field) => (
                           <FieldSet>
-                            <FieldLegend variant="label">Categories</FieldLegend>
-                            <FieldDescription>Select all categories that apply.</FieldDescription>
+                            <FieldLegend variant="label">
+                              {t("products.composer.fieldCategories")}
+                            </FieldLegend>
+                            <FieldDescription>
+                              {t("products.composer.categoriesHelp")}
+                            </FieldDescription>
                             <CategoryPicker
                               categories={categories}
                               onChange={field.handleChange}
@@ -606,29 +649,32 @@ export function ProductForm({
                   {activeStep === "variants" ? (
                     <section className="flex flex-col gap-5">
                       <ComposerSection
-                        description="Set the default selling price and stocked quantity. Enable variants only when shoppers choose between options like size or color."
-                        title="Pricing and stock"
+                        description={t("products.composer.pricingDesc")}
+                        title={t("products.composer.pricingTitle")}
                       />
 
                       <div className="rounded-2xl border bg-background p-4">
                         <div className="mb-4 flex flex-col gap-1">
-                          <h3 className="text-sm font-medium">Default selling settings</h3>
+                          <h3 className="text-sm font-medium">
+                            {t("products.composer.defaultSellingTitle")}
+                          </h3>
                           <p className="text-sm text-muted-foreground">
-                            These values apply to the product. When variants are enabled, they
-                            become the defaults for every generated row.
+                            {t("products.composer.defaultSellingDesc")}
                           </p>
                         </div>
                         <div className="grid gap-4 md:grid-cols-4">
                           <form.Field
                             name="priceAmount"
                             validators={{
-                              onBlur: ({ value }) => validatePriceAmount(value),
-                              onSubmit: ({ value }) => validatePriceAmount(value),
+                              onBlur: ({ value }) => validatePriceAmount(value, t),
+                              onSubmit: ({ value }) => validatePriceAmount(value, t),
                             }}
                           >
                             {(field) => (
                               <Field data-invalid={hasFieldError(field)}>
-                                <FieldLabel htmlFor={field.name}>Price</FieldLabel>
+                                <FieldLabel htmlFor={field.name}>
+                                  {t("products.composer.fieldPrice")}
+                                </FieldLabel>
                                 <InputGroup>
                                   <InputGroupAddon>ETB</InputGroupAddon>
                                   <InputGroupInput
@@ -655,13 +701,15 @@ export function ProductForm({
                           <form.Field
                             name="initialStock"
                             validators={{
-                              onBlur: ({ value }) => validateInitialStock(value),
-                              onSubmit: ({ value }) => validateInitialStock(value),
+                              onBlur: ({ value }) => validateInitialStock(value, t),
+                              onSubmit: ({ value }) => validateInitialStock(value, t),
                             }}
                           >
                             {(field) => (
                               <Field data-invalid={hasFieldError(field)}>
-                                <FieldLabel htmlFor={field.name}>Stocked</FieldLabel>
+                                <FieldLabel htmlFor={field.name}>
+                                  {t("products.composer.fieldStocked")}
+                                </FieldLabel>
                                 <Input
                                   aria-invalid={hasFieldError(field)}
                                   id={field.name}
@@ -685,7 +733,9 @@ export function ProductForm({
                           <form.Field name="skuPrefix">
                             {(field) => (
                               <Field>
-                                <FieldLabel htmlFor={field.name}>SKU prefix</FieldLabel>
+                                <FieldLabel htmlFor={field.name}>
+                                  {t("products.composer.fieldSkuPrefix")}
+                                </FieldLabel>
                                 <Input
                                   id={field.name}
                                   name={field.name}
@@ -701,14 +751,18 @@ export function ProductForm({
                           <form.Field name="currencyCode">
                             {(field) => (
                               <Field data-disabled>
-                                <FieldLabel htmlFor={field.name}>Currency</FieldLabel>
+                                <FieldLabel htmlFor={field.name}>
+                                  {t("products.composer.fieldCurrency")}
+                                </FieldLabel>
                                 <Input
                                   id={field.name}
                                   name={field.name}
                                   readOnly
                                   value={field.state.value.toUpperCase()}
                                 />
-                                <FieldDescription>Fixed for this merchant market.</FieldDescription>
+                                <FieldDescription>
+                                  {t("products.composer.currencyHelp")}
+                                </FieldDescription>
                               </Field>
                             )}
                           </form.Field>
@@ -720,13 +774,15 @@ export function ProductForm({
                           {(field) => (
                             <div className="flex items-start justify-between gap-4 rounded-2xl border bg-muted/20 p-4">
                               <div className="max-w-2xl">
-                                <h3 className="text-sm font-medium">This product has variants</h3>
+                                <h3 className="text-sm font-medium">
+                                  {t("products.composer.hasVariantsTitle")}
+                                </h3>
                                 <p className="mt-1 text-sm text-muted-foreground">
-                                  Turn this on for products sold in multiple option combinations.
+                                  {t("products.composer.hasVariantsDesc")}
                                 </p>
                               </div>
                               <Switch
-                                aria-label="Enable product variants"
+                                aria-label={t("products.composer.enableVariantsAria")}
                                 checked={field.state.value}
                                 onCheckedChange={(checked) => {
                                   field.handleChange(checked);
@@ -780,8 +836,8 @@ export function ProductForm({
                   {activeStep === "review" ? (
                     <section className="flex flex-col gap-5">
                       <ComposerSection
-                        description="Confirm the catalog details that will be saved."
-                        title="Review"
+                        description={t("products.composer.reviewDesc")}
+                        title={t("products.composer.reviewTitle")}
                       />
                       <form.Subscribe selector={(state) => state.values}>
                         {(values) => <ProductReviewSummary values={values} />}
@@ -801,14 +857,14 @@ export function ProductForm({
                       </p>
                     ) : (
                       <p className="text-xs text-muted-foreground sm:text-sm">
-                        {isDirty ? "Unsaved changes" : "No unsaved changes"}
+                        {isDirty ? t("products.composer.unsavedChanges") : t("products.composer.noUnsavedChanges")}
                       </p>
                     )
                   }
                 </form.Subscribe>
                 <div className={dialogFooterActionsClassName}>
                   <Button onClick={closeComposer} type="button" variant="outline">
-                    Cancel
+                    {t("common.cancel")}
                   </Button>
                   <Button
                     disabled={submitMutation.isPending}
@@ -816,10 +872,10 @@ export function ProductForm({
                     type="button"
                   >
                     {submitMutation.isPending
-                      ? "Saving..."
+                      ? t("products.composer.saving")
                       : activeStep === "review"
                         ? submitLabel
-                        : "Continue"}
+                        : t("products.composer.continue")}
                   </Button>
                 </div>
               </div>
@@ -834,13 +890,17 @@ export function ProductForm({
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Leave without saving?</AlertDialogTitle>
-            <AlertDialogDescription>Changes you made will be lost.</AlertDialogDescription>
+            <AlertDialogTitle>{t("products.composer.leaveTitle")}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t("products.composer.leaveDesc")}
+            </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={cancelExit}>Stay</AlertDialogCancel>
+            <AlertDialogCancel onClick={cancelExit}>
+              {t("products.composer.stay")}
+            </AlertDialogCancel>
             <AlertDialogAction onClick={confirmExit} variant="destructive">
-              Leave
+              {t("products.composer.leave")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

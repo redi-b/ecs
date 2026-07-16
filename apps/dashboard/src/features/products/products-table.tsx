@@ -62,23 +62,28 @@ type ProductsTableProps = {
 import {
   getDeletionErrorMessage,
   getProductColumns,
+  getProductStatusFilterOptions,
   getStatusLoadingMessage,
   getStatusSuccessMessage,
   type ProductStatusValue,
-  productStatusFilterOptions,
   setUrlFilter,
 } from "@/features/products/products-table-helpers";
+import { useI18n } from "@/i18n/provider";
 
-async function copyToClipboard(value: string, label: string) {
+async function copyToClipboard(
+  value: string,
+  label: string,
+  t: (key: any, values?: Record<string, string | number>) => string,
+) {
   try {
     const copied = await copyTextToClipboard(value);
     if (!copied) {
-      toast.error("Nothing to copy.");
+      toast.error(t("table.actions.copyEmpty"));
       return;
     }
-    toast.success(`${label} copied`);
+    toast.success(t("table.actions.copySuccess", { label }));
   } catch {
-    toast.error("Could not copy. Try again.");
+    toast.error(t("table.actions.copyFailed"));
   }
 }
 
@@ -96,6 +101,7 @@ export function ProductsTable({
   tenantId,
   totalCount,
 }: ProductsTableProps) {
+  const { t } = useI18n();
   const router = useRouter();
   const queryClient = useQueryClient();
   const taxonomy = useProductTaxonomy({ tenantId });
@@ -123,18 +129,18 @@ export function ProductsTable({
       const res = await fetch(url, { method: "POST" });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || "Failed to delete product.");
+        throw new Error(err.error || t("products.table.toastDeleteFailed"));
       }
       return productId;
     },
     onSuccess: () => {
-      toast.success("Product deleted successfully.");
+      toast.success(t("products.table.toastDeletedOne"));
       queryClient.invalidateQueries({ queryKey: ["products"] });
       setDeleteProductId(null);
       router.refresh();
     },
     onError: (error) => {
-      toast.error(getDeletionErrorMessage(error, "Product"));
+      toast.error(getDeletionErrorMessage(error, t("nav.products")));
     },
   });
 
@@ -148,19 +154,19 @@ export function ProductsTable({
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || "Failed to delete products.");
+        throw new Error(err.error || t("products.table.toastDeleteManyFailed"));
       }
       return productIds;
     },
     onSuccess: () => {
-      toast.success("Selected products deleted successfully.");
+      toast.success(t("products.table.toastDeletedMany"));
       queryClient.invalidateQueries({ queryKey: ["products"] });
       setSelectedProductIdsForDelete([]);
       setShowBatchDeleteDialog(false);
       router.refresh();
     },
     onError: (error) => {
-      toast.error(getDeletionErrorMessage(error, "Products"));
+      toast.error(getDeletionErrorMessage(error, t("nav.products")));
     },
   });
 
@@ -186,7 +192,7 @@ export function ProductsTable({
 
           if (!res.ok) {
             const err = await res.json().catch(() => ({}));
-            throw new Error(err.error || "Failed to update product status.");
+            throw new Error(err.error || t("products.table.toastStatusFailed"));
           }
         }),
       );
@@ -203,12 +209,12 @@ export function ProductsTable({
   const handleStatusChange = useCallback(
     (productIds: string[], nextStatus: ProductStatusValue) => {
       return toast.promise(updateProductStatus({ productIds, status: nextStatus }), {
-        error: "Product status could not be updated. Try again.",
-        loading: getStatusLoadingMessage(productIds.length, nextStatus),
-        success: ({ count, status }) => getStatusSuccessMessage(count, status),
+        error: t("products.table.statusUpdateFailed"),
+        loading: getStatusLoadingMessage(productIds.length, nextStatus, t),
+        success: ({ count, status }) => getStatusSuccessMessage(count, status, t),
       });
     },
-    [updateProductStatus],
+    [t, updateProductStatus],
   );
 
   const columns = useMemo(
@@ -219,8 +225,9 @@ export function ProductsTable({
         collections,
         (id) => setDeleteProductId(id),
         handleStatusChange,
+        t,
       ),
-    [categories, collections, handleStatusChange, tenantId],
+    [categories, collections, handleStatusChange, t, tenantId],
   );
 
   const pushServerFilters = useCallback(
@@ -321,57 +328,57 @@ export function ProductsTable({
     {
       defaultValue: "all",
       id: "status",
-      label: "Status",
+      label: t("products.filter.status.label"),
       onChange: (value) => pushServerFilters({ status: value as ProductStatusFilter }),
-      options: productStatusFilterOptions,
+      options: getProductStatusFilterOptions(t),
       value: initialStatus,
     },
     {
       defaultValue: "all",
       id: "stock",
-      label: "Stock",
+      label: t("products.filter.stock.label"),
       onChange: (value) => setClientFilter("stock", value),
       options: [
-        { label: "All stock", value: "all" },
-        { label: "In stock", value: "in_stock" },
-        { label: "Out of stock", value: "out_of_stock" },
-        { label: "Not tracked", value: "not_tracked" },
+        { label: t("products.filter.stock.all"), value: "all" },
+        { label: t("products.filter.stock.in_stock"), value: "in_stock" },
+        { label: t("products.filter.stock.out_of_stock"), value: "out_of_stock" },
+        { label: t("products.filter.stock.not_tracked"), value: "not_tracked" },
       ],
       value: stock,
     },
     {
       defaultValue: "all",
       id: "media",
-      label: "Media",
+      label: t("products.filter.media.label"),
       onChange: (value) => setClientFilter("media", value),
       options: [
-        { label: "All media", value: "all" },
-        { label: "With media", value: "with_media" },
-        { label: "Without media", value: "without_media" },
+        { label: t("products.filter.media.all"), value: "all" },
+        { label: t("products.filter.media.with_media"), value: "with_media" },
+        { label: t("products.filter.media.without_media"), value: "without_media" },
       ],
       value: media,
     },
     {
       defaultValue: "all",
       id: "variantCount",
-      label: "Variants",
+      label: t("products.filter.variants.label"),
       onChange: (value) => setClientFilter("variantCount", value),
       options: [
-        { label: "All variant counts", value: "all" },
-        { label: "No variants", value: "no_variants" },
-        { label: "Single variant", value: "single_variant" },
-        { label: "Multiple variants", value: "multi_variant" },
+        { label: t("products.filter.variants.all"), value: "all" },
+        { label: t("products.filter.variants.no_variants"), value: "no_variants" },
+        { label: t("products.filter.variants.single_variant"), value: "single_variant" },
+        { label: t("products.filter.variants.multi_variant"), value: "multi_variant" },
       ],
       value: variantCount,
     },
     {
       defaultValue: "all",
       id: "collectionId",
-      label: "Collection",
+      label: t("products.filter.collection.label"),
       onChange: (value) => pushServerFilters({ collectionId: value }),
       options: [
-        { label: "All collections", value: "all" },
-        { label: "No collection", value: "none" },
+        { label: t("products.filter.collection.all"), value: "all" },
+        { label: t("products.filter.collection.none"), value: "none" },
         ...collections.map((collection) => ({
           label: collection.title ?? collection.handle ?? collection.id,
           value: collection.id,
@@ -382,11 +389,11 @@ export function ProductsTable({
     {
       defaultValue: "all",
       id: "categoryId",
-      label: "Category",
+      label: t("products.filter.category.label"),
       onChange: (value) => pushServerFilters({ categoryId: value }),
       options: [
-        { label: "All categories", value: "all" },
-        { label: "No category", value: "none" },
+        { label: t("products.filter.category.all"), value: "all" },
+        { label: t("products.filter.category.none"), value: "none" },
         ...categories.map((category) => ({
           label: category.name ?? category.handle ?? category.id,
           value: category.id,
@@ -425,13 +432,13 @@ export function ProductsTable({
     <div className="flex flex-col gap-3">
       <DataTableFilters filters={filters} onClearAll={clearFilters}>
         <ListToolbarSearch
-          clearLabel="Clear product search"
-          label="Search products"
+          clearLabel={t("products.table.clearSearch")}
+          label={t("products.table.searchLabel")}
           onChange={(value) => {
             setSearchValue(value);
             pushServerFilters({ q: value });
           }}
-          placeholder="Search products"
+          placeholder={t("products.table.searchPlaceholder")}
           value={searchValue}
         />
       </DataTableFilters>
@@ -455,9 +462,10 @@ export function ProductsTable({
           <>
             <Button
               onClick={() =>
-                copyToClipboard(
+                void copyToClipboard(
                   selectedProducts.map((product) => product.id).join("\n"),
-                  "Product IDs",
+                  t("products.table.productIds"),
+                  t,
                 )
               }
               size="sm"
@@ -465,7 +473,7 @@ export function ProductsTable({
               variant="outline"
             >
               <AppIcons.copy data-icon="inline-start" />
-              Copy IDs
+              {t("table.actions.copyIds")}
             </Button>
             <Button
               disabled={isStatusUpdatePending}
@@ -479,7 +487,7 @@ export function ProductsTable({
               type="button"
               variant="outline"
             >
-              Publish
+              {t("table.actions.publish")}
             </Button>
             <Button
               disabled={isStatusUpdatePending}
@@ -493,7 +501,7 @@ export function ProductsTable({
               type="button"
               variant="outline"
             >
-              Move to draft
+              {t("table.actions.moveToDraft")}
             </Button>
             <Button
               onClick={() => {
@@ -511,10 +519,10 @@ export function ProductsTable({
         )}
         columns={columns}
         data={filteredProducts}
-        emptyMessage="No products have been synced for this merchant yet."
-        emptyTitle="No products yet"
-        filteredEmptyMessage="No products match the current search or filters."
-        filteredEmptyTitle="No matching products"
+        emptyMessage={t("table.empty.noItems")}
+        emptyTitle={t("table.empty.noItemsTitle")}
+        filteredEmptyMessage={t("table.empty.filteredNoItems")}
+        filteredEmptyTitle={t("table.empty.filteredNoItemsTitle")}
         getRowId={(product) => product.id}
         isFiltered={counts.hasActiveFilter}
         selectedSummaryLabel={(count) => `product${count === 1 ? "" : "s"} selected`}
@@ -544,7 +552,7 @@ export function ProductsTable({
                 if (deleteProductId) deleteProductMutation.mutate(deleteProductId);
               }}
             >
-              {deleteProductMutation.isPending ? "Deleting..." : "Delete"}
+              {deleteProductMutation.isPending ? t("common.deleting") : t("common.delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -571,7 +579,7 @@ export function ProductsTable({
                 batchDeleteProductsMutation.mutate(selectedProductIdsForDelete);
               }}
             >
-              {batchDeleteProductsMutation.isPending ? "Deleting..." : "Delete"}
+              {batchDeleteProductsMutation.isPending ? t("common.deleting") : t("common.delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

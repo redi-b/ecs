@@ -67,6 +67,7 @@ import {
 import { MediaLibraryDialog } from "@/features/media/media-library-dialog";
 import { MediaUrlImportField } from "@/features/media/media-url-import-field";
 import { uploadMediaFile } from "@/features/media/upload-media-file";
+import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 import {
   buildDraftPayload,
@@ -99,19 +100,20 @@ export function PuckDataOverride({ data }: { data: Data | null }) {
 }
 
 export function PublicationStatusBadge({ status }: { status: PublicationStatus }) {
+  const { t } = useI18n();
   const copy = {
     published: {
-      label: "Published live",
+      label: t("editor.status.publishedLive"),
       tone: "bg-primary text-primary-foreground",
       dot: "bg-primary-foreground",
     },
     "saved-draft": {
-      label: "Draft saved",
+      label: t("editor.status.draftSaved"),
       tone: "bg-muted text-foreground",
       dot: "bg-muted-foreground",
     },
     unsaved: {
-      label: "Unpublished edits",
+      label: t("editor.status.unpublishedEdits"),
       tone: "bg-accent text-accent-foreground",
       dot: "bg-accent-foreground",
     },
@@ -160,6 +162,7 @@ export function StorefrontEditorActions({
   onUndo: () => void;
   showEditHints: boolean;
 }) {
+  const { t } = useI18n();
   const [hasMounted, setHasMounted] = useState(false);
 
   useEffect(() => {
@@ -171,21 +174,21 @@ export function StorefrontEditorActions({
       <div className="flex flex-wrap items-center gap-1 sm:gap-2">
         <ToolbarIconButton
           disabled={hasMounted ? !canUndo : undefined}
-          label="Undo"
+          label={t("editor.actions.undo")}
           onClick={onUndo}
         >
           <RiArrowGoBackLine data-icon="inline-start" />
         </ToolbarIconButton>
         <ToolbarIconButton
           disabled={hasMounted ? !canRedo : undefined}
-          label="Redo"
+          label={t("editor.actions.redo")}
           onClick={onRedo}
         >
           <RiArrowGoForwardLine data-icon="inline-start" />
         </ToolbarIconButton>
         <Separator className="mx-0.5 hidden h-5 sm:mx-1 sm:block" orientation="vertical" />
         <ToolbarIconButton
-          label={showEditHints ? "Hide editable outlines" : "Show editable outlines"}
+          label={showEditHints ? t("editor.actions.hideOutlines") : t("editor.actions.showOutlines")}
           onClick={onToggleEditHints}
           pressed={showEditHints}
         >
@@ -196,7 +199,7 @@ export function StorefrontEditorActions({
           )}
         </ToolbarIconButton>
         <ToolbarIconButton
-          label={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
+          label={isFullscreen ? t("editor.actions.exitFullscreen") : t("editor.actions.fullscreen")}
           onClick={onToggleFullscreen}
         >
           {isFullscreen ? (
@@ -205,7 +208,7 @@ export function StorefrontEditorActions({
             <RiFullscreenLine data-icon="inline-start" />
           )}
         </ToolbarIconButton>
-        <ToolbarIconButton asChild label="Open live storefront">
+        <ToolbarIconButton asChild label={t("editor.actions.openLive")}>
           <a href={editorMeta.liveStorefrontUrl} rel="noreferrer" target="_blank">
             <RiExternalLinkLine data-icon="inline-start" />
           </a>
@@ -216,22 +219,22 @@ export function StorefrontEditorActions({
               <AlertDialogTrigger asChild>
                 <Button size="icon-sm" type="button" variant="ghost">
                   <RiRefreshLine />
-                  <span className="sr-only">Reset editor</span>
+                  <span className="sr-only">{t("editor.actions.resetEditor")}</span>
                 </Button>
               </AlertDialogTrigger>
             </TooltipTrigger>
-            <TooltipContent>Reset editor</TooltipContent>
+            <TooltipContent>{t("editor.actions.resetEditor")}</TooltipContent>
           </Tooltip>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Reset editor changes?</AlertDialogTitle>
+              <AlertDialogTitle>{t("editor.actions.resetTitle")}</AlertDialogTitle>
               <AlertDialogDescription>
-                This resets the editor to the draft that was loaded when you opened this page.
+                {t("editor.actions.resetDescription")}
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={onReset}>Reset</AlertDialogAction>
+              <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
+              <AlertDialogAction onClick={onReset}>{t("editor.actions.resetConfirm")}</AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
@@ -246,7 +249,7 @@ export function StorefrontEditorActions({
           variant="outline"
         >
           <RiSave3Line data-icon="inline-start" />
-          Save draft
+          {t("editor.actions.saveDraft")}
         </Button>
         <Button
           className="min-w-0"
@@ -256,7 +259,7 @@ export function StorefrontEditorActions({
           type="button"
         >
           <RiRocketLine data-icon="inline-start" />
-          Publish
+          {t("editor.actions.publish")}
         </Button>
       </div>
     </div>
@@ -332,12 +335,13 @@ export function StorefrontEditorShell({
   publicationStatus: PublicationStatus;
   showEditHints: boolean;
 }) {
+  const { t } = useI18n();
   const data = useStorefrontPuck((api) => api.appState.data);
   const props = getStorefrontPageProps(data);
   const [mobilePanel, setMobilePanel] = useState<EditorMobilePanel>("preview");
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border bg-background shadow-sm">
+    <div className="storefront-editor-chrome flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border bg-background shadow-sm">
       <div className="flex shrink-0 flex-col gap-3 border-b bg-muted/30 px-3 py-3 sm:px-4">
         <div className="flex min-w-0 items-start gap-3">
           <div className="grid size-9 shrink-0 place-items-center rounded-lg border bg-background shadow-sm sm:size-10">
@@ -345,12 +349,12 @@ export function StorefrontEditorShell({
           </div>
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
-              <div className="text-sm font-semibold">Storefront editor</div>
+              <div className="text-sm font-semibold">{t("editor.shell.title")}</div>
               <Badge variant="secondary">{editorMeta.templateName}</Badge>
               <PublicationStatusBadge status={publicationStatus} />
             </div>
             <div className="mt-0.5 hidden text-xs text-muted-foreground sm:block">
-              Click outlined text in the preview, or refine details in settings.
+              {t("editor.shell.hint")}
             </div>
           </div>
         </div>
@@ -375,8 +379,8 @@ export function StorefrontEditorShell({
       <div className="grid shrink-0 grid-cols-2 border-b bg-background p-1 lg:hidden">
         {(
           [
-            { id: "preview", label: "Preview" },
-            { id: "settings", label: "Settings" },
+            { id: "preview", label: t("editor.panels.preview") },
+            { id: "settings", label: t("editor.panels.settings") },
           ] as const
         ).map((tab) => (
           <button
@@ -552,6 +556,7 @@ export function ImageReferenceControl({
   onChange: (value: string | undefined) => void;
   value: string;
 }) {
+  const { t } = useI18n();
   const imageUrl = isPreviewImageUrl(value) ? value : "";
 
   return (
@@ -568,7 +573,7 @@ export function ImageReferenceControl({
         <div className="min-w-0 flex-1">
           <div className="text-sm font-medium">{label}</div>
           <div className="text-xs text-pretty text-muted-foreground">
-            {value ? "Image reference set" : "Upload a file or choose from your library"}
+            {value ? t("editor.media.referenceSet") : t("editor.media.uploadOrChoose")}
           </div>
         </div>
         {value ? (
@@ -579,7 +584,7 @@ export function ImageReferenceControl({
             type="button"
             variant="ghost"
           >
-            Clear
+            {t("editor.media.clear")}
           </Button>
         ) : null}
       </div>
@@ -589,6 +594,7 @@ export function ImageReferenceControl({
 }
 
 function EditorImageSourceActions({ onPicked }: { onPicked: (url: string | undefined) => void }) {
+  const { t } = useI18n();
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
 
@@ -599,15 +605,15 @@ function EditorImageSourceActions({ onPicked }: { onPicked: (url: string | undef
     try {
       const url = await uploadMediaFile(file);
       onPicked(url);
-      toast.success("Image uploaded.");
+      toast.success(t("editor.toast.imageUploaded"));
     } catch (error) {
       const code = error instanceof Error ? error.message : "upload_failed";
       toast.error(
         code === "invalid_type"
-          ? "Choose a supported image file."
+          ? t("editor.toast.unsupportedImage")
           : code === "too_large"
-            ? "Images must be 15 MB or smaller."
-            : "Could not upload this image. Try again.",
+            ? t("editor.toast.imageTooLarge")
+            : t("editor.toast.imageUploadFailed"),
       );
     } finally {
       setUploading(false);
@@ -634,7 +640,7 @@ function EditorImageSourceActions({ onPicked }: { onPicked: (url: string | undef
           variant="outline"
         >
           <RiImageLine data-icon="inline-start" />
-          {uploading ? "Uploading…" : "Upload image"}
+          {uploading ? t("editor.media.uploading") : t("editor.media.uploadImage")}
         </Button>
         <MediaLibraryDialog
           onSelect={(assets) => {
@@ -643,7 +649,7 @@ function EditorImageSourceActions({ onPicked }: { onPicked: (url: string | undef
           }}
           selectionMode="single"
           triggerClassName="w-full min-w-0 sm:w-auto"
-          triggerLabel="Choose from library"
+          triggerLabel={t("editor.media.chooseLibrary")}
           triggerSize="sm"
           triggerVariant="outline"
         />
@@ -656,9 +662,9 @@ function EditorImageSourceActions({ onPicked }: { onPicked: (url: string | undef
             try {
               const publicUrl = await uploadMediaFile(file);
               onPicked(publicUrl);
-              toast.success("Image imported.");
+              toast.success(t("editor.toast.imageImported"));
             } catch {
-              toast.error("Could not import this image. Try again.");
+              toast.error(t("editor.toast.imageImportFailed"));
             }
           })();
         }}
@@ -717,19 +723,20 @@ export function FontSelect({
   onChange: (value: string) => void;
   value: string;
 }) {
+  const { t } = useI18n();
   return (
     <Popover>
       <PopoverTrigger asChild>
         <Button className="w-full min-w-0 justify-between gap-2" type="button" variant="outline">
           <span className="min-w-0 truncate" style={{ fontFamily: value }}>
-            {value || "Choose font"}
+            {value || t("editor.fonts.choose")}
           </span>
           <RiEditLine className="shrink-0" data-icon="inline-end" />
         </Button>
       </PopoverTrigger>
       <PopoverContent align="start" className={cn(POPOVER_MOTION_CLASSNAME, "p-0")}>
         <Command>
-          <CommandInput placeholder="Search fonts..." />
+          <CommandInput placeholder={t("editor.fonts.search")} />
           <CommandList>
             <CommandEmpty>No font found.</CommandEmpty>
             <CommandGroup>

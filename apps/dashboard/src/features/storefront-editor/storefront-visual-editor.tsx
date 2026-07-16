@@ -68,6 +68,7 @@ import {
   HISTORY_LIMIT,
   useStorefrontPuck,
 } from "@/features/storefront-editor/editor-config";
+import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 import {
   buildDraftPayload,
@@ -88,6 +89,7 @@ export function StorefrontVisualEditor({
   onPublish,
   onSave,
 }: StorefrontVisualEditorProps) {
+  const { t, locale } = useI18n();
   const initialData = useMemo(() => buildPuckData(draft), [draft]);
   const initialSnapshot = useMemo(() => serializeEditorData(initialData), [initialData]);
   const initialPublishedSnapshot = useMemo(() => {
@@ -175,10 +177,10 @@ export function StorefrontVisualEditor({
 
     setIsPending(true);
     toast.promise(promise, {
-      error: (error) => getErrorMessage(error, "Draft could not be saved."),
+      error: (error) => getErrorMessage(error, t("editor.toast.draftSaveFailed")),
       finally: () => setIsPending(false),
-      loading: "Saving draft...",
-      success: "Draft saved.",
+      loading: t("editor.toast.savingDraft"),
+      success: t("editor.toast.draftSaved"),
     });
   }
 
@@ -204,10 +206,10 @@ export function StorefrontVisualEditor({
 
     setIsPending(true);
     toast.promise(promise, {
-      error: (error) => getErrorMessage(error, "Storefront could not be published."),
+      error: (error) => getErrorMessage(error, t("editor.toast.publishFailed")),
       finally: () => setIsPending(false),
-      loading: "Publishing storefront...",
-      success: "Storefront published.",
+      loading: t("editor.toast.publishing"),
+      success: t("editor.toast.published"),
     });
   }
 
@@ -322,7 +324,7 @@ export function StorefrontVisualEditor({
     setHistoryIndex(0);
     setSavedSnapshot(initialSnapshot);
     setPublishedSnapshot(initialPublishedSnapshot);
-    toast("Editor reset to the last loaded draft.");
+    toast(t("editor.toast.reset"));
   }
 
   const currentSnapshot = serializeEditorData(editorData);
@@ -336,6 +338,8 @@ export function StorefrontVisualEditor({
     <div
       className={cn(
         "storefront-puck-editor flex min-h-0 flex-1 flex-col transition-all duration-300 ease-out",
+        // Pin Ethiopic UI face so Puck's Inter tokens cannot fall back to a system Amharic font.
+        locale === "am" && "storefront-puck-editor--am",
         isFullscreen &&
           "fixed inset-0 z-50 animate-in fade-in-0 bg-background p-2 duration-200 sm:p-3",
       )}
