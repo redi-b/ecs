@@ -60,12 +60,9 @@ async function findExistingTenantCommerceResourcesUnsafe({
     },
   });
 
-  const publishableKeyId = await findOneId(query, {
-    entity: "api_key",
-    filters: {
-      title: `${input.name} Storefront`,
-      type: "publishable",
-    },
+  // Store facade needs the publishable token (pk_…), never the api_key row id (apk_…).
+  const publishableKeyId = await findPublishableKeyToken(query, {
+    title: `${input.name} Storefront`,
   });
 
   const regionId = await findOneId(query, {
@@ -157,6 +154,43 @@ async function findOneId(
   }
 
   return row.id;
+}
+
+async function findPublishableKeyToken(
+  query: QueryGraph,
+  input: {
+    title: string;
+  },
+) {
+  const { data } = await query.graph({
+    entity: "api_key",
+    fields: ["id", "token"],
+    filters: {
+      title: input.title,
+      type: "publishable",
+    },
+    pagination: {
+      take: 1,
+      skip: 0,
+    },
+  });
+
+  const [row] = data;
+  if (!isRecord(row)) {
+    return undefined;
+  }
+
+  if (typeof row.token === "string" && row.token.trim()) {
+    const token = row.token.trim();
+    // Never return apk_ ids — store facade requires the publishable token.
+    if (token.startsWith("apk_")) {
+      return undefined;
+    }
+    return token;
+  }
+
+  // Do not fall back to api_key id (apk_…): Medusa Store API rejects it.
+  return undefined;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
