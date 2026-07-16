@@ -58,19 +58,19 @@
     "description": "Revenue, orders, and customers from available commerce records.",
     "empty": "Commerce activity will appear here after orders are available for this shop.",
     "emptyTitle": "No sales activity yet",
-    "emptyCta": "Create an order"
+    "emptyCta": "Draft order"
   },
   "basket": {
     "title": "Basket quality",
     "description": "Average order value against daily order volume.",
-    "empty": "No basket data is available.",
-    "emptyTitle": "No basket trend yet"
+    "empty": "Average order value shows up after you have orders with totals.",
+    "emptyTitle": "No order totals yet"
   },
   "demand": {
     "title": "Demand rhythm",
     "description": "Which weekdays carry the most order activity.",
-    "empty": "No weekday demand data is available.",
-    "emptyTitle": "No demand pattern yet"
+    "empty": "Weekday demand shows after a few days of orders.",
+    "emptyTitle": "Not enough order days yet"
   },
   "mix": {
     "title": "Order mix",
