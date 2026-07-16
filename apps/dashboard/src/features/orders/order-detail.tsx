@@ -114,7 +114,7 @@ function buildActivity(order: MerchantOrder, t: Translate) {
 
 export async function OrderDetail({ action, order, tenantId }: OrderDetailProps) {
   const t = await getTranslations();
-  const customerName = getOrderCustomerName(order);
+  const customerName = getOrderCustomerName(order, t);
   const customerPhone = getOrderCustomerPhone(order);
   const items = order.items ?? [];
   const progress = getOrderProgress(order);
@@ -320,13 +320,13 @@ export async function OrderDetail({ action, order, tenantId }: OrderDetailProps)
           >
             <Field
               label={t("orders.detail.method")}
-              value={getMethodDisplayLabel(getMethodLabel(order))}
+              value={getMethodDisplayLabel(getMethodLabel(order), t)}
             />
             <Field
               label={t("orders.detail.status")}
               value={
                 <Badge variant="secondary">
-                  {getPaymentStatusLabel(getPaymentLabel(order))}
+                  {getPaymentStatusLabel(getPaymentLabel(order), t)}
                 </Badge>
               }
             />
@@ -370,7 +370,7 @@ export async function OrderDetail({ action, order, tenantId }: OrderDetailProps)
           <Section title={t("orders.detail.deliverySection")}>
             <Field
               label={t("orders.detail.type")}
-              value={getDeliveryDisplayLabel(getDeliveryLabel(order))}
+              value={getDeliveryDisplayLabel(getDeliveryLabel(order), t)}
             />
             <Field label={t("orders.detail.address")} value={addressLine || null} />
             <Field label={t("orders.detail.landmark")} value={order.delivery?.landmark} />
