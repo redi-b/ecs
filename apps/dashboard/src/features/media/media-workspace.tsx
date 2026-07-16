@@ -79,7 +79,7 @@ export function MediaWorkspace({
             <TooltipTrigger asChild>
               <Button
                 aria-busy={refreshing}
-                aria-label={refreshing ? "Refreshing" : t("media.refresh")}
+                aria-label={refreshing ? t("common.refreshing") : t("media.refresh")}
                 disabled={refreshing}
                 onClick={() => void refresh()}
                 size="icon-sm"
@@ -89,7 +89,9 @@ export function MediaWorkspace({
                 <AppIcons.refresh className={refreshing ? "animate-spin" : undefined} />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>{refreshing ? "Refreshing" : t("media.refresh")}</TooltipContent>
+            <TooltipContent>
+              {refreshing ? t("common.refreshing") : t("media.refresh")}
+            </TooltipContent>
           </Tooltip>
           <MediaUploadComposer onUploaded={() => void refresh()} />
         </>

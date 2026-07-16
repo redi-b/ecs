@@ -392,7 +392,7 @@ export function ProductCategoriesTable({
               variant="outline"
             >
               <AppIcons.arrowUpDown data-icon="inline-start" />
-              Reorder
+              {t("taxonomy.actions.reorder")}
             </Button>
           </>
         }

@@ -6,6 +6,8 @@ import { PageShell } from "@/components/app/page-shell";
 import { RefreshButton } from "@/components/app/refresh-button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ProductForm } from "@/features/products/product-form";
+import type { MessageKey } from "@/i18n/messages";
+import { getTranslations } from "@/i18n/server";
 import {
   type DashboardSearchParams,
   getSelectedTenantId,
@@ -18,6 +20,8 @@ import {
   getMerchantProductCollectionsCached,
 } from "@/lib/merchant-products-rsc";
 import { dashboardRoutes } from "@/lib/routes";
+
+type Translate = (key: MessageKey, values?: Record<string, string | number | Date>) => string;
 
 type MerchantProductEditPageProps = {
   params: Promise<{ productId: string }>;
@@ -33,6 +37,7 @@ export default async function MerchantProductEditPage({
   params,
   searchParams,
 }: MerchantProductEditPageProps) {
+  const t = await getTranslations();
   const [{ productId }, resolvedSearchParams] = await Promise.all([params, searchParams]);
   const tenantId = getSelectedTenantId(resolvedSearchParams ?? {});
   const cookieStore = await cookies();
@@ -70,8 +75,8 @@ export default async function MerchantProductEditPage({
     ? null
     : getListErrorState("products", productResult.message);
   const referenceDataErrors = [
-    getReferenceDataError("Categories", categoriesResult),
-    getReferenceDataError("Collections", collectionsResult),
+    getReferenceDataError(t("taxonomy.entity.category.plural"), categoriesResult),
+    getReferenceDataError(t("taxonomy.entity.collection.plural"), collectionsResult),
   ].filter((error): error is ReferenceDataError => Boolean(error));
   const setupError =
     productErrorState?.kind === "setup" || productErrorState?.kind === "service"
@@ -84,8 +89,8 @@ export default async function MerchantProductEditPage({
   return (
     <PageShell
       actions={<RefreshButton />}
-      description="Update storefront product data with a guided product composer."
-      title="Edit product"
+      description={t("products.detail.shellDescription")}
+      title={t("products.composer.editTitle")}
     >
       {setupError ? (
         <ListSetupState state={setupError} />
@@ -95,7 +100,7 @@ export default async function MerchantProductEditPage({
             label={productResult.product.title ?? productResult.product.handle ?? null}
             labelKey="product-details"
           />
-          {optionErrors.length ? <ReferenceDataAlert errors={optionErrors} /> : null}
+          {optionErrors.length ? <ReferenceDataAlert errors={optionErrors} t={t} /> : null}
           {optionErrors.length ? null : (
             <ProductForm
               action={getTenantScopedPath(
@@ -109,12 +114,12 @@ export default async function MerchantProductEditPage({
                 dashboardRoutes.productDetail(productResult.product.id),
                 tenantId,
               )}
-              submitLabel="Save product"
+              submitLabel={t("products.edit.saveChanges")}
             />
           )}
         </>
       ) : (
-        <ProductLoadAlert state={productErrorState} />
+        <ProductLoadAlert state={productErrorState} t={t} />
       )}
     </PageShell>
   );
@@ -136,24 +141,38 @@ function getReferenceDataError(
   };
 }
 
-function ReferenceDataAlert({ errors }: { errors: ReferenceDataError[] }) {
-  const labels = errors.map((error) => error.label.toLowerCase()).join(" and ");
+function ReferenceDataAlert({
+  errors,
+  t,
+}: {
+  errors: ReferenceDataError[];
+  t: Translate;
+}) {
+  const labels = errors.map((error) => error.label).join(` ${t("common.and")} `);
 
   return (
     <Alert variant="destructive">
-      <AlertTitle>Product options could not be loaded</AlertTitle>
+      <AlertTitle>{t("products.detail.optionsLoadErrorTitle")}</AlertTitle>
       <AlertDescription>
-        {`Could not load ${labels}. Editing is disabled until reference data loads to avoid clearing existing relationships.`}
+        {t("products.detail.optionsLoadErrorDesc", { labels })}
       </AlertDescription>
     </Alert>
   );
 }
 
-function ProductLoadAlert({ state }: { state: ListErrorState | null }) {
+function ProductLoadAlert({
+  state,
+  t,
+}: {
+  state: ListErrorState | null;
+  t: Translate;
+}) {
   return (
     <Alert variant="destructive">
-      <AlertTitle>Product could not be loaded</AlertTitle>
-      <AlertDescription>{state?.description ?? "Try again later."}</AlertDescription>
+      <AlertTitle>{t("products.detail.loadErrorTitle")}</AlertTitle>
+      <AlertDescription>
+        {state?.description ?? t("products.detail.loadErrorDesc")}
+      </AlertDescription>
     </Alert>
   );
 }

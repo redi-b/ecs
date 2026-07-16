@@ -116,11 +116,14 @@ export default async function MerchantProductDetailPage({
   );
 }
 
-function ProductLoadAlert({ state }: { state: ListErrorState | null }) {
+async function ProductLoadAlert({ state }: { state: ListErrorState | null }) {
+  const t = await getTranslations();
   return (
     <Alert variant="destructive">
-      <AlertTitle>Product could not be loaded</AlertTitle>
-      <AlertDescription>{state?.description ?? "Try again later."}</AlertDescription>
+      <AlertTitle>{t("products.detail.loadErrorTitle")}</AlertTitle>
+      <AlertDescription>
+        {state?.description ?? t("products.detail.loadErrorDesc")}
+      </AlertDescription>
     </Alert>
   );
 }
