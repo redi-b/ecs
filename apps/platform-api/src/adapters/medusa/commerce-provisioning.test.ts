@@ -26,7 +26,7 @@ describe("createMedusaCommerceProvisioningClient", () => {
               storeId: "store_1",
               salesChannelId: "sc_1",
               stockLocationId: "sloc_1",
-              publishableKeyId: "apk_1",
+              publishableKeyId: "pk_test_token",
               regionId: "reg_1",
               shippingProfileId: "shp_1",
               fulfillmentSetId: "fuset_1",
@@ -54,7 +54,7 @@ describe("createMedusaCommerceProvisioningClient", () => {
         storeId: "store_1",
         salesChannelId: "sc_1",
         stockLocationId: "sloc_1",
-        publishableKeyId: "apk_1",
+        publishableKeyId: "pk_test_token",
         regionId: "reg_1",
         shippingProfileId: "shp_1",
         fulfillmentSetId: "fuset_1",
@@ -80,6 +80,43 @@ describe("createMedusaCommerceProvisioningClient", () => {
       fetch: async () => {
         throw new Error("should not call Medusa without the internal token");
       },
+    });
+
+    assert.deepEqual(
+      await provisionCommerceResources({
+        handle: "abebe",
+        name: "Abebe Market",
+        platformTenantId: "tenant_1",
+        requestedByUserId: "user_1",
+      }),
+      {
+        ok: false,
+        error: "commerce_backend_unavailable",
+      },
+    );
+  });
+
+  it("fails closed when publishableKeyId is an api_key id (apk_) instead of a token (pk_)", async () => {
+    const provisionCommerceResources = createMedusaCommerceProvisioningClient({
+      internalApiToken: "internal-token",
+      medusaInternalUrl: "http://medusa:9000",
+      fetch: async () =>
+        Response.json(
+          {
+            resources: {
+              storeId: "store_1",
+              salesChannelId: "sc_1",
+              stockLocationId: "sloc_1",
+              publishableKeyId: "apk_1",
+              regionId: "reg_1",
+              shippingProfileId: "shp_1",
+              fulfillmentSetId: "fuset_1",
+              serviceZoneId: "serzo_1",
+              shippingOptionId: "so_1",
+            },
+          },
+          { status: 201 },
+        ),
     });
 
     assert.deepEqual(

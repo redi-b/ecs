@@ -31,6 +31,12 @@ type MedusaCommerceProvisioningClientOptions = {
   medusaInternalUrl: string;
 };
 
+/** Medusa Store API x-publishable-api-key value: token (pk_…), not row id (apk_…). */
+export function isPublishableStoreToken(value: string): boolean {
+  const token = value.trim();
+  return token.startsWith("pk_") && token.length > 3 && !token.startsWith("apk_");
+}
+
 export function createMedusaCommerceProvisioningClient(
   options: MedusaCommerceProvisioningClientOptions,
 ) {
@@ -89,9 +95,20 @@ export function createMedusaCommerceProvisioningClient(
         };
       }
 
+      // Store facade needs the publishable *token* (pk_…), never the api_key row id (apk_…).
+      if (!isPublishableStoreToken(resources.publishableKeyId)) {
+        return {
+          ok: false,
+          error: "commerce_backend_unavailable",
+        };
+      }
+
       return {
         ok: true,
-        resources,
+        resources: {
+          ...resources,
+          publishableKeyId: resources.publishableKeyId.trim(),
+        },
       };
     } catch {
       return {
