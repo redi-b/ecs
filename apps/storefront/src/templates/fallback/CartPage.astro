@@ -1,0 +1,106 @@
+---
+import StoreShell from "../../components/shell/StoreShell.astro";
+import type { StoreCart } from "../../lib/commerce/types";
+import { formatMoney } from "../../lib/money";
+
+interface Props {
+  tenantName: string;
+  cartCount: number;
+  primaryColor?: string;
+  cart: StoreCart | null;
+  error?: string | null;
+}
+
+const { tenantName, cartCount, primaryColor, cart, error } = Astro.props;
+const items = cart?.items ?? [];
+---
+
+<StoreShell tenantName={tenantName} cartCount={cartCount} title="Cart" primaryColor={primaryColor}>
+  <h1 class="sf-title">Cart</h1>
+  {
+    error && (
+      <div class="sf-notice sf-notice-error" role="alert">
+        {error}
+      </div>
+    )
+  }
+
+  {
+    items.length === 0 ? (
+      <div class="sf-notice" role="status">
+        <p>Your cart is empty.</p>
+        <div class="sf-actions">
+          <a class="sf-btn" href="/products">
+            Browse products
+          </a>
+        </div>
+      </div>
+    ) : (
+      <>
+        <table class="sf-table">
+          <thead>
+            <tr>
+              <th>Item</th>
+              <th>Qty</th>
+              <th>Total</th>
+              <th />
+            </tr>
+          </thead>
+          <tbody>
+            {items.map((item) => (
+              <tr>
+                <td>
+                  <strong>{item.title ?? "Item"}</strong>
+                  {item.variantTitle && <div class="sf-muted">{item.variantTitle}</div>}
+                  {item.productHandle && (
+                    <div>
+                      <a href={`/products/${encodeURIComponent(item.productHandle)}`}>View</a>
+                    </div>
+                  )}
+                </td>
+                <td>
+                  <form method="post" action="/actions/cart/update" class="sf-row">
+                    <input type="hidden" name="lineItemId" value={item.id} />
+                    <input
+                      name="quantity"
+                      type="number"
+                      min="1"
+                      value={String(item.quantity)}
+                      style="width: 4.5rem"
+                      aria-label={`Quantity for ${item.title ?? "item"}`}
+                    />
+                    <button class="sf-btn sf-btn-secondary" type="submit">
+                      Update
+                    </button>
+                  </form>
+                </td>
+                <td>{formatMoney(item.total ?? item.unitPrice, cart?.currencyCode)}</td>
+                <td>
+                  <form method="post" action="/actions/cart/remove">
+                    <input type="hidden" name="lineItemId" value={item.id} />
+                    <button class="sf-btn sf-btn-secondary" type="submit">
+                      Remove
+                    </button>
+                  </form>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+
+        <p>
+          <strong>Subtotal:</strong> {formatMoney(cart?.itemTotal ?? cart?.total, cart?.currencyCode)}
+        </p>
+
+        <div class="sf-actions">
+          <a class="sf-btn sf-btn-secondary" href="/products">
+            Continue shopping
+          </a>
+          <a class="sf-btn" href="/checkout">
+            Checkout
+          </a>
+        </div>
+      </>
+    )
+  }
+</StoreShell>
