@@ -1,0 +1,125 @@
+---
+import StoreShell from "../../components/shell/StoreShell.astro";
+import type { StoreProduct, StoreProductVariant } from "../../lib/commerce/types";
+import { formatMoney } from "../../lib/money";
+
+interface Props {
+  tenantName: string;
+  cartCount: number;
+  primaryColor?: string;
+  product: StoreProduct | null;
+  handle: string;
+  notice?: string | null;
+  error?: string | null;
+}
+
+const { tenantName, cartCount, primaryColor, product, handle, notice, error } = Astro.props;
+
+const defaultVariant: StoreProductVariant | null =
+  product?.variants.find((variant: StoreProductVariant) => variant.inStock) ??
+  product?.variants[0] ??
+  null;
+---
+
+{
+  !product ? (
+    <StoreShell tenantName={tenantName} cartCount={cartCount} title="Not found" primaryColor={primaryColor}>
+      <div class="sf-notice" role="status">
+        <h1 class="sf-title">Product not found</h1>
+        <p class="sf-lede">This product is unavailable or does not exist.</p>
+        <a class="sf-btn sf-btn-secondary" href="/products">
+          Back to products
+        </a>
+      </div>
+    </StoreShell>
+  ) : (
+    <StoreShell
+      tenantName={tenantName}
+      cartCount={cartCount}
+      title={product.title ?? "Product"}
+      primaryColor={primaryColor}
+    >
+      {notice === "added" && (
+        <div class="sf-notice sf-notice-ok" role="status">
+          Added to cart. <a href="/cart">View cart</a>
+        </div>
+      )}
+      {error && (
+        <div class="sf-notice sf-notice-error" role="alert">
+          {error}
+        </div>
+      )}
+
+      <div class="sf-pdp">
+        <div>
+          {product.thumbnail ? (
+            <img class="sf-pdp-media" src={product.thumbnail} alt="" />
+          ) : (
+            <div class="sf-pdp-media" aria-hidden="true" />
+          )}
+        </div>
+        <div class="sf-stack">
+          <div>
+            <p class="sf-muted">
+              <a href="/products">Products</a>
+            </p>
+            <h1 class="sf-title">{product.title ?? "Product"}</h1>
+            <p class="sf-card-price">
+              {formatMoney(
+                defaultVariant?.priceAmount ?? product.priceAmount,
+                defaultVariant?.currencyCode ?? product.currencyCode,
+              )}
+            </p>
+          </div>
+          {product.description && <p class="sf-lede">{product.description}</p>}
+
+          <form method="post" action="/actions/cart/add" class="sf-stack">
+            {product.variants.length > 1 ? (
+              <div class="sf-field">
+                <label for="variantId">Option</label>
+                <select id="variantId" name="variantId" required>
+                  {product.variants.map((variant: StoreProductVariant) => (
+                    <option
+                      value={variant.id}
+                      selected={variant.id === defaultVariant?.id}
+                      disabled={!variant.inStock}
+                    >
+                      {(variant.title ||
+                        variant.optionValues.map((v) => v.value).join(" / ") ||
+                        "Variant") +
+                        (variant.inStock ? "" : " (out of stock)") +
+                        (variant.priceAmount != null
+                          ? ` — ${formatMoney(variant.priceAmount, variant.currencyCode)}`
+                          : "")}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ) : (
+              <input type="hidden" name="variantId" value={defaultVariant?.id ?? ""} />
+            )}
+
+            <div class="sf-field">
+              <label for="quantity">Quantity</label>
+              <input id="quantity" name="quantity" type="number" min="1" value="1" required />
+            </div>
+
+            <input type="hidden" name="returnTo" value={`/products/${encodeURIComponent(handle)}`} />
+
+            <button
+              class="sf-btn"
+              type="submit"
+              disabled={
+                !defaultVariant ||
+                (!defaultVariant.inStock &&
+                  product.variants.every((v: StoreProductVariant) => !v.inStock))
+              }
+            >
+              Add to cart
+            </button>
+          </form>
+        </div>
+      </div>
+    </StoreShell>
+  )
+}

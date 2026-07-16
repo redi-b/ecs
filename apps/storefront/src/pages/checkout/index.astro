@@ -1,0 +1,71 @@
+---
+import StoreUnavailable from "../../components/shell/StoreUnavailable.astro";
+import { getStorePaymentOptions } from "../../lib/commerce/checkout";
+import { getStoreDeliveryOptions } from "../../lib/commerce/delivery";
+import { isStoreError } from "../../lib/commerce/result";
+import { listStoreShippingOptions } from "../../lib/commerce/shipping";
+import type { StoreShippingOption } from "../../lib/commerce/types";
+import { loadPageContext } from "../../lib/page-context";
+import { getPrimaryColor } from "../../lib/theme";
+import { resolveRendererSlot } from "../../templates/registry";
+
+const ctx = await loadPageContext(Astro.request);
+if (!ctx.ok) {
+  Astro.response.status = ctx.status;
+}
+
+const deliveryResult = ctx.ok
+  ? await getStoreDeliveryOptions({
+      platformApiBaseUrl: ctx.platformApiBaseUrl,
+      requestHost: ctx.requestHost,
+    })
+  : null;
+const delivery =
+  deliveryResult && !isStoreError(deliveryResult) ? deliveryResult.delivery : null;
+
+const paymentResult = ctx.ok
+  ? await getStorePaymentOptions({
+      platformApiBaseUrl: ctx.platformApiBaseUrl,
+      requestHost: ctx.requestHost,
+    })
+  : null;
+const payment =
+  paymentResult && !isStoreError(paymentResult)
+    ? paymentResult.payment
+    : { cod: true, chapa: false };
+
+const shippingResult =
+  ctx.ok && ctx.cartId
+    ? await listStoreShippingOptions({
+        cartId: ctx.cartId,
+        platformApiBaseUrl: ctx.platformApiBaseUrl,
+        requestHost: ctx.requestHost,
+      })
+    : null;
+const shippingOptions: StoreShippingOption[] =
+  shippingResult && !isStoreError(shippingResult) ? shippingResult.shippingOptions : [];
+const shippingError =
+  shippingResult && isStoreError(shippingResult) ? shippingResult.message : null;
+
+const Checkout = ctx.ok
+  ? resolveRendererSlot(ctx.config.storefront.templateKey, "Checkout")
+  : null;
+---
+
+{
+  !ctx.ok || !Checkout ? (
+    <StoreUnavailable message={ctx.ok ? "Template unavailable" : ctx.message} />
+  ) : (
+    <Checkout
+      tenantName={ctx.config.tenant.name}
+      cartCount={ctx.cartCount}
+      primaryColor={getPrimaryColor(ctx.config.storefront.themeTokens)}
+      cart={ctx.cart}
+      delivery={delivery}
+      payment={payment}
+      shippingOptions={shippingOptions}
+      shippingError={shippingError}
+      error={Astro.url.searchParams.get("error")}
+    />
+  )
+}

@@ -1,0 +1,25 @@
+---
+interface Props {
+  message: string;
+  title?: string;
+}
+
+const { message, title = "Store unavailable" } = Astro.props;
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <link rel="stylesheet" href="/styles/commerce.css" />
+  </head>
+  <body>
+    <main class="sf-main">
+      <div class="sf-notice sf-notice-error">
+        <h1 class="sf-title">{title}</h1>
+        <p>{message}</p>
+      </div>
+    </main>
+  </body>
+</html>

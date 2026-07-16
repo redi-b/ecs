@@ -1,0 +1,53 @@
+---
+import StoreShell from "../../components/shell/StoreShell.astro";
+import { formatMoney } from "../../lib/money";
+import type { LastOrderCookie } from "../../lib/session/cart-cookie";
+
+interface Props {
+  tenantName: string;
+  cartCount: number;
+  primaryColor?: string;
+  orderId: string;
+  lastOrder: LastOrderCookie | null;
+}
+
+const { tenantName, cartCount, primaryColor, orderId, lastOrder } = Astro.props;
+const matches = Boolean(lastOrder && lastOrder.id === orderId);
+---
+
+<StoreShell tenantName={tenantName} cartCount={cartCount} title="Order" primaryColor={primaryColor}>
+  <h1 class="sf-title">Order confirmed</h1>
+  {
+    matches ? (
+      <div class="sf-notice sf-notice-ok" role="status">
+        <p>Thanks — we received your order.</p>
+        <p>
+          <strong>Order ID:</strong> {orderId}
+        </p>
+        {lastOrder?.total != null && (
+          <p>
+            <strong>Total:</strong> {formatMoney(lastOrder.total, lastOrder.currencyCode)}
+          </p>
+        )}
+        <p class="sf-muted">
+          Keep this page or your phone number handy if the shop contacts you about delivery.
+        </p>
+      </div>
+    ) : (
+      <div class="sf-notice" role="status">
+        <p>
+          Order <strong>{orderId}</strong>
+        </p>
+        <p class="sf-muted">
+          If you just completed checkout, your order was placed. For privacy we only show full
+          confirmation details right after purchase on this device.
+        </p>
+      </div>
+    )
+  }
+  <div class="sf-actions">
+    <a class="sf-btn" href="/products">
+      Continue shopping
+    </a>
+  </div>
+</StoreShell>

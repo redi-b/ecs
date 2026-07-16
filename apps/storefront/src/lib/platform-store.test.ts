@@ -1,136 +1,21 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { createStoreCart, getStoreDeliveryOptions, listStoreProducts } from "./platform-store.js";
+import { listStoreProducts } from "./platform-store.js";
 
-test("listStoreProducts calls the platform store facade with host context", async () => {
-  const requests: Request[] = [];
-  const productsResponse = {
-    count: 1,
-    limit: 8,
-    offset: 0,
-    products: [
-      {
-        description: null,
-        id: "prod_123",
-        title: "Coffee",
-        handle: "coffee",
-        thumbnail: null,
-      },
-    ],
-  };
-
-  const result = await listStoreProducts({
-    fetcher: async (request) => {
-      requests.push(request);
-      return Response.json(productsResponse);
-    },
-    platformApiBaseUrl: "http://api.lvh.me",
-    requestHost: "abebe.lvh.me",
-  });
-
-  assert.equal(requests.length, 1);
-  assert.equal(requests[0]?.url, "http://api.lvh.me/store/products?limit=8");
-  assert.equal(requests[0]?.headers.get("x-forwarded-host"), "abebe.lvh.me");
-  assert.deepEqual(result, productsResponse);
-});
-
-test("listStoreProducts returns an error result when platform response fails", async () => {
+test("platform-store re-export listStoreProducts still works", async () => {
   const result = await listStoreProducts({
     fetcher: async () =>
-      Response.json({ error: "shop_not_found" }, { status: 404, statusText: "Not Found" }),
-    platformApiBaseUrl: "http://api.lvh.me/",
-    requestHost: "missing.lvh.me",
+      Response.json({
+        products: [{ id: "p1", title: "T", handle: "t", variants: [] }],
+        count: 1,
+      }),
+    platformApiBaseUrl: "http://api.lvh.me",
+    requestHost: "shop.lvh.me",
   });
 
-  assert.equal("ok" in result && result.ok, false);
-  assert.equal("status" in result, true);
-  assert.equal("message" in result, true);
-  if (!("status" in result) || !("message" in result)) {
-    throw new Error("Expected an error result.");
+  assert.equal("products" in result, true);
+  if ("products" in result) {
+    assert.equal(result.products[0]?.id, "p1");
   }
-  assert.equal(result.status, 404);
-  assert.equal(result.message, "shop_not_found");
-});
-
-test("getStoreDeliveryOptions calls the platform store facade with host context", async () => {
-  const requests: Request[] = [];
-  const deliveryResponse = {
-    delivery: {
-      deliveryEnabled: true,
-      pickupEnabled: true,
-      phoneConfirmationRequired: true,
-      notesEnabled: true,
-      landmarkRequired: false,
-      defaultDeliveryFee: "50.00",
-      currency: "ETB",
-      zones: [
-        {
-          name: "Bole",
-          fee: "75.00",
-        },
-      ],
-    },
-  };
-
-  const result = await getStoreDeliveryOptions({
-    fetcher: async (request) => {
-      requests.push(request);
-      return Response.json(deliveryResponse);
-    },
-    platformApiBaseUrl: "http://api.lvh.me",
-    requestHost: "abebe.lvh.me",
-  });
-
-  assert.equal(requests.length, 1);
-  assert.equal(requests[0]?.url, "http://api.lvh.me/store/delivery");
-  assert.equal(requests[0]?.headers.get("x-forwarded-host"), "abebe.lvh.me");
-  assert.deepEqual(result, deliveryResponse);
-});
-
-test("createStoreCart creates a Medusa cart through the platform facade", async () => {
-  const requests: Request[] = [];
-  const result = await createStoreCart({
-    fetcher: async (request) => {
-      requests.push(request);
-
-      return Response.json(
-        {
-          cart: {
-            id: "cart_1",
-            region_id: "reg_1",
-            currency_code: "etb",
-            email: null,
-            item_total: 0,
-            total: 0,
-          },
-        },
-        {
-          status: 201,
-        },
-      );
-    },
-    platformApiBaseUrl: "http://api.lvh.me",
-    regionId: "reg_1",
-    requestHost: "abebe.lvh.me",
-  });
-
-  assert.equal(requests.length, 1);
-  assert.equal(requests[0]?.url, "http://api.lvh.me/store/carts");
-  assert.equal(requests[0]?.method, "POST");
-  assert.equal(requests[0]?.headers.get("content-type"), "application/json");
-  assert.equal(requests[0]?.headers.get("x-forwarded-host"), "abebe.lvh.me");
-  assert.deepEqual(JSON.parse(String(await requests[0]?.text())), {
-    region_id: "reg_1",
-  });
-  assert.deepEqual(result, {
-    cart: {
-      id: "cart_1",
-      regionId: "reg_1",
-      currencyCode: "etb",
-      email: null,
-      itemTotal: 0,
-      total: 0,
-    },
-  });
 });

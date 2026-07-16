@@ -129,16 +129,24 @@ function isRenderableImageUrl(value: string | undefined) {
         <ul class="product-grid">
           {products.map((product) => (
             <li class="product">
-              {product.thumbnail ? (
-                <img src={product.thumbnail} alt="" loading="lazy" />
-              ) : (
-                <div class="product-image" aria-hidden="true" />
-              )}
-              <h3>{product.title ?? "Untitled product"}</h3>
-              {product.description && <p>{product.description}</p>}
+              <a
+                class="product-link"
+                href={product.handle ? `/products/${encodeURIComponent(product.handle)}` : "/products"}
+              >
+                {product.thumbnail ? (
+                  <img src={product.thumbnail} alt="" loading="lazy" />
+                ) : (
+                  <div class="product-image" aria-hidden="true" />
+                )}
+                <h3>{product.title ?? "Untitled product"}</h3>
+                {product.description && <p>{product.description}</p>}
+              </a>
             </li>
           ))}
         </ul>
+        <p class="all-products">
+          <a class="primary-link" href="/products">View all products</a>
+        </p>
       ) : (
         <div class="notice" role="status">
           <h3>No products yet</h3>
@@ -361,10 +369,20 @@ function isRenderableImageUrl(value: string | undefined) {
     width: 100%;
   }
 
+  .product-link {
+    color: inherit;
+    display: block;
+    text-decoration: none;
+  }
+
   .product h3,
   .notice h3 {
     font-size: 1rem;
     margin-bottom: 8px;
+  }
+
+  .all-products {
+    margin-top: 20px;
   }
 
   .product p,
