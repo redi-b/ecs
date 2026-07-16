@@ -1,37 +1,43 @@
 import type { ListErrorState } from "@/lib/list-error-state";
 import { getListErrorState } from "@/lib/list-error-state";
+import type { MessageKey } from "@/i18n/messages";
 
 type TaxonomyListKind = "categories" | "collections";
+type Translate = (key: MessageKey, values?: Record<string, string | number | Date>) => string;
 
-export function getTaxonomyListErrorState(kind: TaxonomyListKind, message: string): ListErrorState {
+export function getTaxonomyListErrorState(
+  kind: TaxonomyListKind,
+  message: string,
+  t: Translate,
+): ListErrorState {
   const state = getListErrorState("products", message);
-  const label = kind === "categories" ? "Product categories" : "Product collections";
-  const lowerLabel = label.toLowerCase();
+  const label =
+    kind === "categories"
+      ? t("taxonomy.listError.categoriesLabel")
+      : t("taxonomy.listError.collectionsLabel");
 
   if (state.kind === "setup") {
     return {
       kind: "setup",
-      title: "Catalog taxonomy setup needs attention",
-      description:
-        `${label} could not be loaded because catalog services are not ready. ` +
-        "Contact an administrator or retry after setup is complete.",
+      title: t("taxonomy.listError.setupTitle"),
+      description: t("taxonomy.listError.setupDesc", { label }),
     };
   }
 
   if (state.kind === "service") {
     return {
       kind: "service",
-      title: "Catalog services are unavailable",
-      description:
-        `${label} could not be loaded right now. ` +
-        "Retry after the catalog services are available.",
+      title: t("taxonomy.listError.serviceTitle"),
+      description: t("taxonomy.listError.serviceDesc", { label }),
     };
   }
 
   return {
     kind: "error",
-    title: `${label} could not be loaded`,
+    title: t("taxonomy.listError.errorTitle", { label }),
     description:
-      state.description === message ? `Unable to load ${lowerLabel}.` : state.description,
+      state.description === message
+        ? t("taxonomy.listError.errorDesc", { label: label.toLowerCase() })
+        : state.description,
   };
 }

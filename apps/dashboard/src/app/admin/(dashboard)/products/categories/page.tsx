@@ -45,7 +45,7 @@ export default async function MerchantProductCategoriesPage({
     tenantId,
     ...(listParams.q ? { q: listParams.q } : {}),
   });
-  const errorState = result.ok ? null : getTaxonomyListErrorState("categories", result.message);
+  const errorState = result.ok ? null : getTaxonomyListErrorState("categories", result.message, t);
 
   return (
     <PageShell
@@ -131,7 +131,7 @@ function getCategoryNotice(
     };
   }
 
-  const mutationError = getTaxonomyListErrorState("categories", status);
+  const mutationError = getTaxonomyListErrorState("categories", status, t);
 
   if (mutationError.kind === "setup" || mutationError.kind === "service") {
     return null;

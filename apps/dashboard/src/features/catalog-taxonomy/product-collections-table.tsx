@@ -179,22 +179,26 @@ function getCollectionColumns(
   ];
 }
 
-function getDeletionErrorMessage(error: unknown, resourceName: string) {
+function getDeletionErrorMessage(
+  error: unknown,
+  resource: string,
+  t: (key: import("@/i18n/messages").MessageKey, values?: Record<string, string | number | Date>) => string,
+) {
   const code = error instanceof Error ? error.message : String(error);
   if (code === "commerce_backend_unavailable") {
-    return "Catalog changes are temporarily unavailable. Try again.";
+    return t("taxonomy.deleteErrors.catalogUnavailable");
   }
   if (code === "commerce_credentials_missing" || code === "commerce_credentials_invalid") {
-    return "Catalog changes are temporarily unavailable. Contact support.";
+    return t("taxonomy.deleteErrors.catalogContactSupport");
   }
   if (
     code === "product_not_found" ||
     code === "category_not_found" ||
     code === "collection_not_found"
   ) {
-    return `${resourceName} not found.`;
+    return t("taxonomy.deleteErrors.notFound", { resource });
   }
-  return `Failed to delete ${resourceName.toLowerCase()}. Try again.`;
+  return t("taxonomy.deleteErrors.failed", { resource });
 }
 
 export function ProductCollectionsTable({
@@ -269,7 +273,9 @@ export function ProductCollectionsTable({
       router.refresh();
     },
     onError: (error) => {
-      toast.error(getDeletionErrorMessage(error, "Product collection"));
+      toast.error(
+        getDeletionErrorMessage(error, t("taxonomy.entity.collection.label"), t),
+      );
     },
   });
 
@@ -298,7 +304,9 @@ export function ProductCollectionsTable({
       router.refresh();
     },
     onError: (error) => {
-      toast.error(getDeletionErrorMessage(error, "Product collections"));
+      toast.error(
+        getDeletionErrorMessage(error, t("taxonomy.entity.collection.plural"), t),
+      );
     },
   });
 

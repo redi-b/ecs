@@ -1,3 +1,5 @@
+"use client";
+
 import type { MerchantProductCategory, MerchantProductCollection } from "@ecs/contracts";
 
 import {
@@ -5,6 +7,7 @@ import {
   getCategoryDisplayName,
   getCollectionDisplayName,
 } from "@/features/catalog-taxonomy/taxonomy-table-state";
+import { useI18n } from "@/i18n/provider";
 import { listEntityActionClassName } from "@/lib/list-entity-link";
 import { cn } from "@/lib/utils";
 
@@ -82,14 +85,19 @@ export function CategoryParentCell({
   parentCategory?: MerchantProductCategory | undefined;
   parentCategoryId: string | null;
 }) {
+  const { t } = useI18n();
   if (!parentCategoryId) {
-    return <span className="text-muted-foreground">Root category</span>;
+    return (
+      <span className="text-muted-foreground">{t("taxonomy.edit.rootCategory")}</span>
+    );
   }
 
   return (
     <div className="min-w-44">
       <div className="font-medium text-card-foreground">
-        {parentCategory ? getCategoryDisplayName(parentCategory) : "Parent ID"}
+        {parentCategory
+          ? getCategoryDisplayName(parentCategory)
+          : t("taxonomy.cells.parentId")}
       </div>
       <div className="mt-1 max-w-56 truncate font-mono text-xs text-muted-foreground">
         {parentCategoryId}
@@ -99,5 +107,10 @@ export function CategoryParentCell({
 }
 
 export function TaxonomyDateCell({ value }: { value: string | null }) {
-  return <span className="text-muted-foreground">{formatTaxonomyDate(value)}</span>;
+  const { t } = useI18n();
+  return (
+    <span className="text-muted-foreground">
+      {formatTaxonomyDate(value, t("taxonomy.cells.noDate"))}
+    </span>
+  );
 }
