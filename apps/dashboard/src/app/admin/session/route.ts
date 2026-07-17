@@ -167,6 +167,10 @@ async function getPostSignInRedirectPath(input: {
   return body.primaryTenant?.dashboardUrl ?? "/admin/onboarding";
 }
 
+function getPlatformBaseUrl() {
+  return normalizeBaseUrl(process.env.PLATFORM_API_BASE_URL ?? "http://localhost:3000");
+}
+
 function getSafeNextPath(value: FormDataEntryValue | string | null) {
   if (typeof value !== "string" || !value.startsWith("/") || value.startsWith("//")) {
     return "/admin";
