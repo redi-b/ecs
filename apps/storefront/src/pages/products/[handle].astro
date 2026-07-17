@@ -1,0 +1,51 @@
+---
+import StoreUnavailable from "../../components/shell/StoreUnavailable.astro";
+import { getStoreProductByHandle } from "../../lib/commerce/products";
+import { isStoreError } from "../../lib/commerce/result";
+import type { StoreProduct } from "../../lib/commerce/types";
+import { loadPageContext } from "../../lib/page-context";
+import { getPrimaryColor } from "../../lib/theme";
+import { resolveRendererSlot } from "../../templates/registry";
+
+const ctx = await loadPageContext(Astro.request);
+const handle = Astro.params.handle ?? "";
+
+if (!ctx.ok) {
+  Astro.response.status = ctx.status;
+}
+
+const productResult =
+  ctx.ok && handle
+    ? await getStoreProductByHandle({
+        handle,
+        platformApiBaseUrl: ctx.platformApiBaseUrl,
+        requestHost: ctx.requestHost,
+        regionId: ctx.config.commerce.regionId,
+      })
+    : null;
+
+if (productResult && isStoreError(productResult)) {
+  Astro.response.status = productResult.status;
+}
+
+const product: StoreProduct | null =
+  productResult && !isStoreError(productResult) ? productResult.product : null;
+
+const Product = ctx.ok ? resolveRendererSlot(ctx.config.storefront.templateKey, "Product") : null;
+---
+
+{
+  !ctx.ok || !Product ? (
+    <StoreUnavailable message={ctx.ok ? "Template unavailable" : ctx.message} />
+  ) : (
+    <Product
+      tenantName={ctx.config.tenant.name}
+      cartCount={ctx.cartCount}
+      primaryColor={getPrimaryColor(ctx.config.storefront.themeTokens)}
+      product={product}
+      handle={handle}
+      notice={Astro.url.searchParams.get("notice")}
+      error={Astro.url.searchParams.get("error")}
+    />
+  )
+}

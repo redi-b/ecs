@@ -35,6 +35,7 @@
     "check:fix": "biome check --write .",
 
     "smoke:commerce": "node scripts/smoke-commerce.mjs",
+    "smoke:storefront": "node scripts/smoke-storefront-cod.mjs",
     "verify:media-cors": "node scripts/verify-media-cors.mjs"
   },
   "devDependencies": {

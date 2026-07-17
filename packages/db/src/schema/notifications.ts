@@ -22,6 +22,18 @@ export const paymentOnboarding = pgTable("payment_onboarding", {
   requiredDocuments: jsonb("required_documents").notNull().default([]),
   notes: text("notes"),
   providerAccountRef: text("provider_account_ref"),
+  /**
+   * Merchant-owned Chapa secret for **store** checkout only (encrypted at rest when possible).
+   * Never use platform env CHAPA_SECRET_KEY for merchant orders.
+   * Never return this field on merchant/public APIs.
+   */
+  secretKey: text("secret_key"),
+  /** Merchant opted in to show Chapa on storefront (requires valid secret). */
+  onlineEnabled: boolean("online_enabled").notNull().default(false),
+  /** Last successful automated key validation. */
+  credentialsValidatedAt: timestamp("credentials_validated_at", { withTimezone: true }),
+  /** Optional non-secret fingerprint (e.g. last 4) for UI. */
+  secretFingerprint: text("secret_fingerprint"),
 });
 
 export const notificationPreferences = pgTable("notification_preferences", {

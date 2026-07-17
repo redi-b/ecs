@@ -1,0 +1,33 @@
+---
+import StoreUnavailable from "../../components/shell/StoreUnavailable.astro";
+import { loadPageContext } from "../../lib/page-context";
+import { getLastOrderFromRequest } from "../../lib/session/cart-cookie";
+import { getPrimaryColor } from "../../lib/theme";
+import { resolveRendererSlot } from "../../templates/registry";
+
+const ctx = await loadPageContext(Astro.request);
+const orderId = Astro.params.id ?? "";
+const lastOrder = getLastOrderFromRequest(Astro.request);
+
+if (!ctx.ok) {
+  Astro.response.status = ctx.status;
+}
+
+const OrderConfirm = ctx.ok
+  ? resolveRendererSlot(ctx.config.storefront.templateKey, "OrderConfirm")
+  : null;
+---
+
+{
+  !ctx.ok || !OrderConfirm ? (
+    <StoreUnavailable message={ctx.ok ? "Template unavailable" : ctx.message} />
+  ) : (
+    <OrderConfirm
+      tenantName={ctx.config.tenant.name}
+      cartCount={ctx.cartCount}
+      primaryColor={getPrimaryColor(ctx.config.storefront.themeTokens)}
+      orderId={orderId}
+      lastOrder={lastOrder}
+    />
+  )
+}

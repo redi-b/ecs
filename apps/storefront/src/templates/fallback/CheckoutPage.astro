@@ -1,0 +1,192 @@
+---
+import StoreShell from "../../components/shell/StoreShell.astro";
+import type {
+  StoreCart,
+  StoreDeliveryOptions,
+  StorePaymentOptions,
+  StoreShippingOption,
+} from "../../lib/commerce/types";
+import { formatMoney } from "../../lib/money";
+
+interface Props {
+  tenantName: string;
+  cartCount: number;
+  primaryColor?: string;
+  cart: StoreCart | null;
+  delivery: StoreDeliveryOptions | null;
+  payment: StorePaymentOptions;
+  shippingOptions: StoreShippingOption[];
+  shippingError?: string | null;
+  error?: string | null;
+}
+
+const {
+  tenantName,
+  cartCount,
+  primaryColor,
+  cart,
+  delivery,
+  payment,
+  shippingOptions,
+  shippingError,
+  error,
+} = Astro.props;
+
+const items = cart?.items ?? [];
+const deliveryChoiceDefault =
+  delivery?.deliveryEnabled ? "delivery" : delivery?.pickupEnabled ? "pickup" : "delivery";
+const canPlaceOrder = items.length > 0 && shippingOptions.length > 0;
+---
+
+<StoreShell
+  tenantName={tenantName}
+  cartCount={cartCount}
+  title="Checkout"
+  primaryColor={primaryColor}
+>
+  <h1 class="sf-title">Checkout</h1>
+
+  {
+    error && (
+      <div class="sf-notice sf-notice-error" role="alert">
+        {error}
+      </div>
+    )
+  }
+
+  {
+    items.length === 0 ? (
+      <div class="sf-notice" role="status">
+        <p>Your cart is empty.</p>
+        <a class="sf-btn" href="/products">
+          Browse products
+        </a>
+      </div>
+    ) : (
+      <div class="sf-stack">
+        <div class="sf-notice">
+          <strong>{items.length}</strong> line(s) ·{" "}
+          {formatMoney(cart?.total ?? cart?.itemTotal, cart?.currencyCode)}
+        </div>
+
+        {shippingOptions.length === 0 && (
+          <div class="sf-notice" role="status">
+            <p>
+              <strong>Shipping is not ready for this cart yet.</strong>
+            </p>
+            <p class="sf-muted">
+              {shippingError
+                ? `Details: ${shippingError}`
+                : "This shop may still be setting up delivery rates, or the cart needs a moment after adding items. Try going back to the cart and returning, or contact the shop for cash-on-delivery by phone."}
+            </p>
+            <div class="sf-actions">
+              <a class="sf-btn sf-btn-secondary" href="/cart">
+                Back to cart
+              </a>
+              <a class="sf-btn sf-btn-secondary" href="/products">
+                Keep shopping
+              </a>
+            </div>
+          </div>
+        )}
+
+        <form method="post" action="/actions/checkout/cod" class="sf-stack">
+          <div class="sf-field">
+            <label for="name">Full name</label>
+            <input id="name" name="name" required autocomplete="name" />
+          </div>
+          <div class="sf-field">
+            <label for="phone">Phone</label>
+            <input id="phone" name="phone" required autocomplete="tel" />
+          </div>
+          <div class="sf-field">
+            <label for="email">Email (optional)</label>
+            <input id="email" name="email" type="email" autocomplete="email" />
+          </div>
+
+          <div class="sf-field">
+            <label for="deliveryChoice">Delivery</label>
+            <select id="deliveryChoice" name="deliveryChoice" required>
+              {delivery?.deliveryEnabled !== false && (
+                <option value="delivery" selected={deliveryChoiceDefault === "delivery"}>
+                  Delivery
+                </option>
+              )}
+              {delivery?.pickupEnabled && (
+                <option value="pickup" selected={deliveryChoiceDefault === "pickup"}>
+                  Pickup
+                </option>
+              )}
+            </select>
+          </div>
+
+          <div class="sf-field">
+            <label for="address1">Address</label>
+            <input id="address1" name="address1" required autocomplete="street-address" />
+          </div>
+          <div class="sf-field">
+            <label for="city">City</label>
+            <input
+              id="city"
+              name="city"
+              required
+              autocomplete="address-level2"
+              value="Addis Ababa"
+            />
+          </div>
+          <div class="sf-field">
+            <label for="landmark">
+              Landmark{delivery?.landmarkRequired ? " (required)" : " (optional)"}
+            </label>
+            <input id="landmark" name="landmark" required={Boolean(delivery?.landmarkRequired)} />
+          </div>
+
+          {delivery?.notesEnabled !== false && (
+            <div class="sf-field">
+              <label for="notes">Notes (optional)</label>
+              <textarea id="notes" name="notes" />
+            </div>
+          )}
+
+          {shippingOptions.length > 0 && (
+            <div class="sf-field">
+              <label for="shippingOptionId">Shipping option</label>
+              <select id="shippingOptionId" name="shippingOptionId" required>
+                {shippingOptions.map((option) => (
+                  <option value={option.id}>
+                    {(option.name ?? "Shipping") +
+                      (option.amount != null
+                        ? ` — ${formatMoney(option.amount, option.currencyCode ?? cart?.currencyCode)}`
+                        : "")}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          <div class="sf-actions">
+            {payment.cod && canPlaceOrder && (
+              <button class="sf-btn" type="submit">
+                Place order (Cash on delivery)
+              </button>
+            )}
+            {payment.chapa && canPlaceOrder && (
+              <button class="sf-btn sf-btn-secondary" type="submit" formaction="/actions/checkout/chapa">
+                Pay with Chapa
+              </button>
+            )}
+            {!payment.chapa && (
+              <p class="sf-muted">
+                Online payment appears when this shop enables its own Chapa account. Cash on delivery
+                still works when shipping is available.
+              </p>
+            )}
+            <a class="sf-btn sf-btn-secondary" href="/cart">
+              Back to cart
+            </a>
+          </div>
+        </form>
+      </div>
+    )
+  }
+</StoreShell>

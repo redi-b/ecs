@@ -1,0 +1,45 @@
+---
+interface Props {
+  tenantName: string;
+  cartCount?: number;
+  title?: string;
+  primaryColor?: string;
+}
+
+const { tenantName, cartCount = 0, title, primaryColor } = Astro.props;
+const pageTitle = title ? `${title} · ${tenantName}` : tenantName;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{pageTitle}</title>
+    <link rel="stylesheet" href="/styles/commerce.css" />
+  </head>
+  <body style={primaryColor ? `--sf-primary: ${primaryColor}` : undefined}>
+    <div class="sf-shell">
+      <header class="sf-header">
+        <a class="sf-brand" href="/">{tenantName}</a>
+        <nav class="sf-nav" aria-label="Store">
+          <a href="/products">Products</a>
+          <a href="/cart">
+            Cart
+            {
+              cartCount > 0 && (
+                <span class="sf-badge" aria-live="polite">{cartCount}</span>
+              )
+            }
+          </a>
+        </nav>
+      </header>
+      <main class="sf-main">
+        <slot />
+      </main>
+      <footer class="sf-footer">
+        <p>{tenantName}</p>
+      </footer>
+    </div>
+  </body>
+</html>

@@ -7,6 +7,7 @@ import { getTranslations } from "@/i18n/server";
 import { type DashboardSearchParams, getSelectedTenantId } from "@/lib/dashboard-tenant-context";
 import { getMerchantDashboardAccessShell } from "@/lib/merchant-dashboard";
 import { getMerchantDeliverySettings } from "@/lib/merchant-settings";
+import { getMerchantPaymentsStatus } from "@/lib/platform-api/payments/client";
 import { getStorefrontTemplates } from "@/lib/storefront-templates";
 
 type SettingsPageProps = {
@@ -21,6 +22,10 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
   const t = await getTranslations();
   const requestHeaders = await headers();
   const platformApiBaseUrl = process.env.PLATFORM_API_BASE_URL ?? "http://localhost:3000";
+  const supportUrl = process.env.MERCHANT_SUPPORT_URL?.trim();
+  const supportEmail = process.env.MERCHANT_SUPPORT_EMAIL?.trim();
+  const paymentsSupportHref =
+    supportUrl || (supportEmail ? `mailto:${supportEmail}` : null);
   // Settings only needs tenant/domain/actor/storefront — not ops/metrics/billing.
   const result = await getMerchantDashboardAccessShell({
     cookieHeader: requestHeaders.get("cookie"),
@@ -28,7 +33,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
     requestHost: requestHeaders.get("host"),
     tenantId: selectedTenantId,
   });
-  const [delivery, templates] =
+  const [delivery, templates, payments] =
     result.ok && result.access.tenant.id
       ? await Promise.all([
           getMerchantDeliverySettings({
@@ -39,8 +44,13 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
           getStorefrontTemplates({
             platformApiBaseUrl,
           }),
+          getMerchantPaymentsStatus({
+            cookieHeader: requestHeaders.get("cookie"),
+            platformApiBaseUrl,
+            requestHost: requestHeaders.get("host"),
+          }),
         ])
-      : [null, null];
+      : [null, null, null];
 
   return (
     <PageShell
@@ -58,6 +68,8 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
         <SettingsWorkspace
           delivery={delivery?.ok ? delivery.delivery : null}
           initialTab={resolvedSearchParams.tab}
+          payments={payments?.ok ? payments.payment : null}
+          paymentsSupportHref={paymentsSupportHref}
           settingsStatus={resolvedSearchParams.settingsStatus}
           storefrontTemplates={templates?.ok ? templates.templates : []}
           templateStatus={resolvedSearchParams.templateStatus}

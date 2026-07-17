@@ -251,7 +251,24 @@ export const provisionTenantCommerceResourcesWorkflow = createWorkflow(
         storeId: requireFirst(data.stores, "Store").id,
         salesChannelId: requireFirst(data.salesChannels, "Sales channel").id,
         stockLocationId: requireFirst(data.stockLocations, "Stock location").id,
-        publishableKeyId: requireFirst(data.apiKeys, "API key").id,
+        // Store API requires the publishable *token* (pk_…), never the row id (apk_…).
+        // Platform injects this value as x-publishable-api-key on /store/* facade calls.
+        publishableKeyId: (() => {
+          const key = requireFirst(data.apiKeys, "API key") as {
+            id?: string;
+            token?: string;
+          };
+          const token = typeof key.token === "string" ? key.token.trim() : "";
+          if (!token) {
+            throw new Error(
+              "Publishable API key token missing after create. Refusing to store api_key id.",
+            );
+          }
+          if (token.startsWith("apk_")) {
+            throw new Error("Publishable API key resolved to an id (apk_…); expected token (pk_…).");
+          }
+          return token;
+        })(),
         regionId: requireFirst(data.regions, "Region").id,
         shippingProfileId: requireFirst(data.shippingProfiles, "Shipping profile").id,
         fulfillmentSetId: requireFirst(data.fulfillmentSets, "Fulfillment set").id,

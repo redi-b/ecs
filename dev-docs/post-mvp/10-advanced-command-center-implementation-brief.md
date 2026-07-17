@@ -1,7 +1,7 @@
 # Advanced Command Center — Research & Design
 
 Date: 2026-07-15  
-Status: design draft (ready to grill / implement after review)  
+Status: implemented (v1) — registry, actions, progressive remote search; brief body may still describe older nav-only assumptions  
 Supersedes: 2026-07-08 stub in the same path
 
 ## Purpose

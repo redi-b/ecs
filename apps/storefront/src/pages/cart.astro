@@ -1,0 +1,27 @@
+---
+import StoreUnavailable from "../components/shell/StoreUnavailable.astro";
+import { loadPageContext } from "../lib/page-context";
+import { getPrimaryColor } from "../lib/theme";
+import { resolveRendererSlot } from "../templates/registry";
+
+const ctx = await loadPageContext(Astro.request);
+if (!ctx.ok) {
+  Astro.response.status = ctx.status;
+}
+
+const Cart = ctx.ok ? resolveRendererSlot(ctx.config.storefront.templateKey, "Cart") : null;
+---
+
+{
+  !ctx.ok || !Cart ? (
+    <StoreUnavailable message={ctx.ok ? "Template unavailable" : ctx.message} />
+  ) : (
+    <Cart
+      tenantName={ctx.config.tenant.name}
+      cartCount={ctx.cartCount}
+      primaryColor={getPrimaryColor(ctx.config.storefront.themeTokens)}
+      cart={ctx.cart}
+      error={Astro.url.searchParams.get("error")}
+    />
+  )
+}
