@@ -208,12 +208,18 @@
     "accountMany": "accounts",
     "notifyAbout": "Notify me about",
     "saveEvents": "Save events",
+    "eventGroups": {
+      "commerce": "Commerce",
+      "commerceDesc": "Orders, payments, and stock from your shop.",
+      "system": "System",
+      "systemDesc": "Subscription and account alerts."
+    },
     "events": {
       "orderCreated": "New orders",
       "orderCancelled": "Cancelled orders",
       "paymentPaid": "Payments received",
       "paymentFailed": "Payment failures",
-      "inventoryLow": "Low stock",
+      "inventoryLow": "Low stock after sales",
       "billingPastDue": "Subscription past due",
       "billingInvoiceReady": "Billing invoice ready"
     },
