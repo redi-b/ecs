@@ -13,6 +13,8 @@ export type SettingsWorkspaceProps = {
   delivery: Delivery | null;
   initialTab?: string | undefined;
   payments: MerchantPaymentsStatus | null;
+  /** mailto: or https — merchant support for Chapa setup help. */
+  paymentsSupportHref?: string | null | undefined;
   settingsStatus?: string | undefined;
   storefrontTemplates: StorefrontTemplateCatalogItem[];
   /** Access shell only — settings never needs ops/metrics/billing. */

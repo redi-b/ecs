@@ -44,6 +44,8 @@ import { cn } from "@/lib/utils";
 
 type PaymentsSectionProps = {
   initialPayment: MerchantPaymentsStatus | null;
+  /** mailto: or https URL for merchant support (Chapa setup help). */
+  supportHref?: string | null;
 };
 
 type OnlineStatus = "loading" | "not_connected" | "off" | "on";
@@ -68,22 +70,49 @@ function OnlineStatusBadge({ status }: { status: OnlineStatus }) {
   return <Badge variant="outline">{t("settings.payments.status.notConnected")}</Badge>;
 }
 
-export function PaymentsSection({ initialPayment }: PaymentsSectionProps) {
+const emptyPaymentsStatus = (): MerchantPaymentsStatus => ({
+  cod: true,
+  chapa: {
+    configured: false,
+    onlineEnabled: false,
+    credentialsValidated: false,
+    secretFingerprint: null,
+    status: "not_configured",
+  },
+});
+
+export function PaymentsSection({ initialPayment, supportHref = null }: PaymentsSectionProps) {
   const { t } = useI18n();
   const secretId = useId();
   const [payment, setPayment] = useState<MerchantPaymentsStatus | null>(initialPayment);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [secretKey, setSecretKey] = useState("");
   const [showKey, setShowKey] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   const refresh = useCallback(async () => {
-    const response = await fetch("/admin/settings/payments", {
-      cache: "no-store",
-      headers: { accept: "application/json" },
-    });
-    const data = await response.json().catch(() => undefined);
-    if (response.ok && data?.payment) {
-      setPayment(data.payment as MerchantPaymentsStatus);
+    try {
+      const response = await fetch("/admin/settings/payments", {
+        cache: "no-store",
+        headers: { accept: "application/json" },
+      });
+      const data = await response.json().catch(() => undefined);
+      if (response.ok && data?.payment) {
+        setPayment(data.payment as MerchantPaymentsStatus);
+        setLoadError(null);
+        return;
+      }
+      const code =
+        (typeof data?.error === "string" && data.error) ||
+        (typeof data?.message === "string" && data.message) ||
+        response.statusText ||
+        "payments_status_unavailable";
+      // Avoid infinite "Loading…" when the BFF/platform route is missing or failing.
+      setPayment(emptyPaymentsStatus());
+      setLoadError(code);
+    } catch {
+      setPayment(emptyPaymentsStatus());
+      setLoadError("payments_status_unavailable");
     }
   }, []);
 
@@ -124,17 +153,10 @@ export function PaymentsSection({ initialPayment }: PaymentsSectionProps) {
         }
         if (data?.payment) {
           setPayment(data.payment as MerchantPaymentsStatus);
+          setLoadError(null);
         } else if (action === "clear") {
-          setPayment({
-            cod: true,
-            chapa: {
-              configured: false,
-              onlineEnabled: false,
-              credentialsValidated: false,
-              secretFingerprint: null,
-              status: "not_configured",
-            },
-          });
+          setPayment(emptyPaymentsStatus());
+          setLoadError(null);
         } else {
           await refresh();
         }
@@ -204,6 +226,26 @@ export function PaymentsSection({ initialPayment }: PaymentsSectionProps) {
         <CardContent className="flex flex-col gap-5">
           {status === "loading" ? (
             <div className="h-24 animate-pulse rounded-xl bg-muted/50" />
+          ) : null}
+
+          {loadError && status !== "loading" ? (
+            <div className="rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+              <p>
+                {mapPlatformErrorMessage(loadError, {
+                  fallback: t("settings.payments.loadError"),
+                })}
+              </p>
+              <Button
+                className="mt-2 rounded-full"
+                disabled={isPending}
+                onClick={() => void refresh()}
+                size="sm"
+                type="button"
+                variant="outline"
+              >
+                {t("settings.payments.retry")}
+              </Button>
+            </div>
           ) : null}
 
           {/* Connected: offer on storefront */}
@@ -350,6 +392,36 @@ export function PaymentsSection({ initialPayment }: PaymentsSectionProps) {
                 {t("settings.payments.online.test")}
               </Button>
             </div>
+          </div>
+
+          {/* Support / guided setup */}
+          <div
+            className={cn(
+              "flex flex-col gap-3 rounded-xl border p-4 sm:flex-row sm:items-start sm:justify-between",
+              connected ? "border-border bg-background" : "border-border bg-muted/25",
+            )}
+          >
+            <div className="flex min-w-0 items-start gap-3">
+              <div className="flex size-10 shrink-0 items-center justify-center rounded-xl border bg-background">
+                <AppIcons.question className="size-5 text-muted-foreground" />
+              </div>
+              <div className="min-w-0 space-y-1">
+                <p className="text-sm font-medium">{t("settings.payments.online.helpTitle")}</p>
+                <p className="text-sm text-muted-foreground">
+                  {connected
+                    ? t("settings.payments.online.helpBodyConnected")
+                    : t("settings.payments.online.helpBody")}
+                </p>
+              </div>
+            </div>
+            {supportHref ? (
+              <Button asChild className="w-full shrink-0 rounded-full sm:w-auto" size="sm" variant="outline">
+                <a href={supportHref} rel="noopener noreferrer" target={supportHref.startsWith("http") ? "_blank" : undefined}>
+                  <AppIcons.mail className="size-3.5" />
+                  {t("settings.payments.online.helpCta")}
+                </a>
+              </Button>
+            ) : null}
           </div>
 
           {connected ? (
