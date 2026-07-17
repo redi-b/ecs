@@ -23,6 +23,12 @@ describe("isAllowedNotificationEventType", () => {
   });
 
   it("rejects unknown events", () => {
-    assert.equal(isAllowedNotificationEventType("inventory.low"), false);
+    assert.equal(isAllowedNotificationEventType("marketing.blast"), false);
+  });
+
+  it("accepts inventory and billing merchant events", () => {
+    assert.equal(isAllowedNotificationEventType("inventory.low"), true);
+    assert.equal(isAllowedNotificationEventType("billing.past_due"), true);
+    assert.equal(isAllowedNotificationEventType("billing.invoice_ready"), true);
   });
 });

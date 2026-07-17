@@ -213,7 +213,9 @@
       "orderCancelled": "Cancelled orders",
       "paymentPaid": "Payments received",
       "paymentFailed": "Payment failures",
-      "codOrder": "COD orders"
+      "inventoryLow": "Low stock",
+      "billingPastDue": "Subscription past due",
+      "billingInvoiceReady": "Billing invoice ready"
     },
     "telegramPanel": {
       "description": "Instant shop event alerts on Telegram.",

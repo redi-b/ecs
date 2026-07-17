@@ -35,8 +35,11 @@ const allowedChannels = new Set<NotificationChannel>(["email", "telegram"]);
 const allowedEvents = new Set<NotificationEventType>([
   // Legacy alias still accepted on record, then canonicalized to order.created.
   "cod_order.created",
+  "billing.invoice_ready",
+  "billing.past_due",
   "chapa.onboarding_needs_review",
   "domain.misconfigured",
+  "inventory.low",
   "notification.test",
   "order.created",
   "order.cancelled",
@@ -81,26 +84,42 @@ function eventMatchesPreference(events: unknown, eventType: NotificationEventTyp
   return false;
 }
 
-/** Events that should fire at most once per order (platform + Medusa both may emit). */
-const COMMERCE_ORDER_DEDUPE_EVENTS = new Set<string>([
+/** Events that should fire at most once per entity key (24h window). */
+const DEDUPE_EVENTS = new Set<string>([
   "order.created",
   "order.cancelled",
   "payment.paid",
   "payment.failed",
+  "inventory.low",
+  "billing.past_due",
+  "billing.invoice_ready",
 ]);
 
-function extractOrderIdFromPayload(payload: unknown): string | null {
+function extractDedupeEntityId(eventType: string, payload: unknown): string | null {
   if (typeof payload !== "object" || payload === null) {
     return null;
   }
   const record = payload as Record<string, unknown>;
-  for (const key of ["orderId", "order_id"]) {
-    const value = record[key];
-    if (typeof value === "string" && value.trim()) {
-      return value.trim();
+  const pick = (...keys: string[]) => {
+    for (const key of keys) {
+      const value = record[key];
+      if (typeof value === "string" && value.trim()) {
+        return value.trim();
+      }
     }
+    return null;
+  };
+
+  if (eventType === "inventory.low") {
+    return pick("variantId", "variant_id", "productId", "product_id", "inventoryItemId");
   }
-  return null;
+  if (eventType === "billing.past_due") {
+    return pick("subscriptionId", "tenantId") ?? "subscription";
+  }
+  if (eventType === "billing.invoice_ready") {
+    return pick("invoiceId", "invoice_id", "subscriptionId");
+  }
+  return pick("orderId", "order_id");
 }
 
 function getMatchingPreferences(
@@ -207,10 +226,10 @@ export function createNotificationService(
         // Swallow — tryCreateFromEvent already isolates errors; belt-and-suspenders.
       }
 
-      // Platform checkout + Medusa subscribers can both emit the same commerce event.
-      // Skip creating additional external delivery logs when we already notified for this order.
-      const orderId = extractOrderIdFromPayload(payload);
-      if (orderId && COMMERCE_ORDER_DEDUPE_EVENTS.has(eventType)) {
+      // Platform + Medusa (or lifecycle retries) can emit the same logical event twice.
+      // Skip additional external delivery logs within a 24h window for the same entity.
+      const entityId = extractDedupeEntityId(eventType, payload);
+      if (entityId && DEDUPE_EVENTS.has(eventType)) {
         const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000);
         const [existing] = await db
           .select({ id: notificationLogs.id })
@@ -221,8 +240,12 @@ export function createNotificationService(
               eq(notificationLogs.eventType, eventType),
               gte(notificationLogs.createdAt, cutoff),
               or(
-                sql`${notificationLogs.payload}->>'orderId' = ${orderId}`,
-                sql`${notificationLogs.payload}->>'order_id' = ${orderId}`,
+                sql`${notificationLogs.payload}->>'orderId' = ${entityId}`,
+                sql`${notificationLogs.payload}->>'order_id' = ${entityId}`,
+                sql`${notificationLogs.payload}->>'variantId' = ${entityId}`,
+                sql`${notificationLogs.payload}->>'productId' = ${entityId}`,
+                sql`${notificationLogs.payload}->>'invoiceId' = ${entityId}`,
+                sql`${notificationLogs.payload}->>'subscriptionId' = ${entityId}`,
               ),
             ),
           )

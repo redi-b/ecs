@@ -213,7 +213,9 @@
       "orderCancelled": "የተሰረዙ ትዕዛዞች",
       "paymentPaid": "የተቀበሉ ክፍያዎች",
       "paymentFailed": "ያልተሳኩ ክፍያዎች",
-      "codOrder": "በጥሬ ገንዘብ ትዕዛዞች"
+      "inventoryLow": "ዝቅተኛ ክምችት",
+      "billingPastDue": "የደንበኝነት ክፍያ አልፏል",
+      "billingInvoiceReady": "የክፍያ ደረሰኝ ዝግጁ ነው"
     },
     "telegramPanel": {
       "description": "የሱቅ ክስተት ማሳወቂያዎችን በTelegram በፍጥነት ይቀበሉ።",

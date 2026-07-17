@@ -606,6 +606,8 @@ export function createBillingService(db: PlatformDb) {
         .select({
           tenantId: subscriptions.tenantId,
           planPrice: plans.price,
+          planName: plans.name,
+          subscriptionId: subscriptions.id,
         })
         .from(subscriptions)
         .innerJoin(plans, eq(plans.id, subscriptions.planId));
@@ -613,16 +615,45 @@ export function createBillingService(db: PlatformDb) {
       let scanned = 0;
       let renewed = 0;
       let pastDue = 0;
+      const notifications: Array<{
+        tenantId: string;
+        eventType: "billing.past_due" | "billing.invoice_ready";
+        payload: Record<string, unknown>;
+      }> = [];
 
       for (const row of rows) {
         if (isFreePlanPrice(row.planPrice)) continue;
         scanned += 1;
         const result = await self().syncTenantBillingLifecycle({ tenantId: row.tenantId });
-        if (result.renewed) renewed += 1;
-        if (result.pastDue) pastDue += 1;
+        if (result.renewed) {
+          renewed += 1;
+          notifications.push({
+            tenantId: row.tenantId,
+            eventType: "billing.invoice_ready",
+            payload: {
+              subscriptionId: row.subscriptionId,
+              planName: row.planName,
+              amount: String(row.planPrice),
+              currencyCode: "ETB",
+            },
+          });
+        }
+        if (result.pastDue) {
+          pastDue += 1;
+          notifications.push({
+            tenantId: row.tenantId,
+            eventType: "billing.past_due",
+            payload: {
+              subscriptionId: row.subscriptionId,
+              planName: row.planName,
+              amount: String(row.planPrice),
+              currencyCode: "ETB",
+            },
+          });
+        }
       }
 
-      return { scanned, renewed, pastDue };
+      return { scanned, renewed, pastDue, notifications };
     },
 
     getBillingStatus: async (input: { tenantId: string }): Promise<BillingStatusResult> => {
