@@ -41,12 +41,25 @@
 		}
 	}
 
-	# Public object reads for media uploads (path-style bucket URLs → SeaweedFS S3).
+	# Public S3 API (path-style) + browser presigned PUT/GET → SeaweedFS.
+	# Critical: preserve original Host so AWS SigV4 matches the presigned URL.
 	@media host media.{$BASE_DOMAIN}
 	handle @media {
-		# Product thumbs / library assets are content-addressed or infrequently overwritten.
-		header Cache-Control "public, max-age=604800, stale-while-revalidate=86400"
-		reverse_proxy seaweedfs:8333
+		@media_get method GET HEAD
+		handle @media_get {
+			# Long-cache only reads of product/library objects.
+			header Cache-Control "public, max-age=604800, stale-while-revalidate=86400"
+			reverse_proxy seaweedfs:8333 {
+				header_up Host {host}
+			}
+		}
+
+		# PUT/POST/DELETE/OPTIONS (presigned uploads + CORS preflight).
+		handle {
+			reverse_proxy seaweedfs:8333 {
+				header_up Host {host}
+			}
+		}
 	}
 
 	@storefront host *.{$BASE_DOMAIN}
