@@ -6,19 +6,9 @@ import { toast } from "sonner";
 
 import { AppIcons } from "@/components/app/icons";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
 import { DateTimePicker } from "@/components/ui/datetime-picker";
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
@@ -37,10 +27,14 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Switch } from "@/components/ui/switch";
+import {
+  ProductCatalogPickerDialog,
+  ProductCatalogPickerTrigger,
+  type ProductCatalogPickItem,
+} from "@/features/products/product-catalog-picker-dialog";
 import type { MessageKey } from "@/i18n/messages";
 import { useI18n } from "@/i18n/provider";
 import type { MerchantPromotion } from "@/lib/merchant-promotions";
-import { cn } from "@/lib/utils";
 
 type Translate = (key: MessageKey, values?: Record<string, string | number | Date>) => string;
 
@@ -545,85 +539,36 @@ function ProductMultiPicker({
 }) {
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
-  const selected = useMemo(() => new Set(selectedIds), [selectedIds]);
-
-  function toggle(id: string) {
-    if (selected.has(id)) onChange(selectedIds.filter((item) => item !== id));
-    else onChange([...selectedIds, id]);
-  }
-
-  const label =
-    selectedIds.length === 0
-      ? loading
-        ? t("promotions.edit.loadingProducts")
-        : t("promotions.edit.selectProducts")
-      : selectedIds.length === 1
-        ? t("promotions.edit.productSelectedOne")
-        : t("promotions.edit.productsSelected", { count: selectedIds.length });
+  const items = useMemo<ProductCatalogPickItem[]>(
+    () =>
+      catalog.map((product) => ({
+        id: product.id,
+        title: product.title ?? product.handle ?? product.id,
+        subtitle: product.handle ? `/${product.handle}` : null,
+        searchText: [product.title, product.handle, product.id].filter(Boolean).join(" "),
+      })),
+    [catalog],
+  );
 
   return (
-    <Popover onOpenChange={setOpen} open={open}>
-      <PopoverTrigger asChild>
-        <Button
-          className={cn(
-            "h-8 w-full justify-between px-2.5 font-normal shadow-none",
-            selectedIds.length === 0 && "text-muted-foreground",
-          )}
-          role="combobox"
-          type="button"
-          variant="outline"
-        >
-          <span className="truncate">{label}</span>
-          <AppIcons.arrowDown className="size-4 shrink-0 opacity-60" data-icon="inline-end" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent
-        align="start"
-        className="w-[var(--radix-popover-trigger-width)] overflow-hidden p-0"
-        collisionPadding={16}
-        onWheel={(event) => event.stopPropagation()}
-      >
-        <Command className="h-auto max-h-72 w-full min-h-0">
-          <CommandInput autoFocus placeholder={t("promotions.edit.searchProducts")} />
-          <CommandList
-            className="max-h-60 min-h-0 overflow-y-auto overscroll-contain"
-            onWheel={(event) => event.stopPropagation()}
-          >
-            <CommandEmpty>
-              <div className="flex flex-col items-center gap-2 px-3 py-4 text-center">
-                <span className="text-sm text-muted-foreground">
-                  {t("promotions.edit.noMatchingProducts")}
-                </span>
-                <a
-                  className="text-sm font-medium text-primary hover:underline"
-                  href="/admin/products?create=product"
-                >
-                  {t("commandCenter.actions.createProduct")}
-                </a>
-              </div>
-            </CommandEmpty>
-            <CommandGroup className="overflow-visible">
-              {catalog.map((product) => {
-                const isSelected = selected.has(product.id);
-                return (
-                  <CommandItem
-                    data-checked={isSelected ? true : undefined}
-                    key={product.id}
-                    onSelect={() => toggle(product.id)}
-                    value={`${product.title ?? ""} ${product.handle ?? ""} ${product.id}`}
-                  >
-                    <Checkbox checked={isSelected} tabIndex={-1} />
-                    <span className="min-w-0 flex-1 truncate">
-                      {product.title ?? product.handle ?? product.id}
-                    </span>
-                  </CommandItem>
-                );
-              })}
-            </CommandGroup>
-          </CommandList>
-        </Command>
-      </PopoverContent>
-    </Popover>
+    <>
+      <ProductCatalogPickerTrigger
+        loading={loading}
+        onClick={() => setOpen(true)}
+        selectedCount={selectedIds.length}
+      />
+      <ProductCatalogPickerDialog
+        items={items}
+        loading={loading}
+        onConfirm={onChange}
+        onOpenChange={setOpen}
+        open={open}
+        searchPlaceholder={t("promotions.edit.searchProducts")}
+        selectedIds={selectedIds}
+        selectionMode="multiple"
+        title={t("promotions.edit.eligibleProducts")}
+      />
+    </>
   );
 }
 

@@ -29,6 +29,11 @@ import {
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  ProductCatalogPickerDialog,
+  ProductCatalogPickerTrigger,
+  type ProductCatalogPickItem,
+} from "@/features/products/product-catalog-picker-dialog";
 import { useCreateQueryOpen } from "@/lib/use-create-query-open";
 import { Textarea } from "@/components/ui/textarea";
 import { mapPlatformErrorMessage } from "@/lib/platform-api/errors";
@@ -125,6 +130,7 @@ function ManualOrderCreateDialogInner() {
   const [variants, setVariants] = useState<CatalogVariant[]>([]);
   const [customers, setCustomers] = useState<CustomerOption[]>([]);
   const [catalogLoading, setCatalogLoading] = useState(false);
+  const [productPickerOpen, setProductPickerOpen] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -209,6 +215,20 @@ function ManualOrderCreateDialogInner() {
 
   const variantById = useMemo(
     () => new Map(variants.map((variant) => [variant.id, variant])),
+    [variants],
+  );
+
+  const productPickerItems = useMemo<ProductCatalogPickItem[]>(
+    () =>
+      variants.map((variant) => ({
+        id: variant.id,
+        title: variant.label,
+        subtitle: [variant.sku, variant.productTitle].filter(Boolean).join(" · ") || null,
+        meta: variant.priceLabel,
+        searchText: [variant.label, variant.sku, variant.productTitle, variant.id]
+          .filter(Boolean)
+          .join(" "),
+      })),
     [variants],
   );
 
@@ -511,11 +531,23 @@ function ManualOrderCreateDialogInner() {
                     {t("orders.create.productsDesc")}
                   </p>
                 </div>
-                <VariantMultiPicker
-                  catalog={variants}
+                <ProductCatalogPickerTrigger
+                  disabled={catalogLoading && variants.length === 0}
                   loading={catalogLoading}
-                  onChange={setSelectedVariantIds}
+                  onClick={() => setProductPickerOpen(true)}
+                  selectedCount={lines.length}
+                />
+                <ProductCatalogPickerDialog
+                  description={t("orders.create.productsDesc")}
+                  items={productPickerItems}
+                  loading={catalogLoading}
+                  onConfirm={setSelectedVariantIds}
+                  onOpenChange={setProductPickerOpen}
+                  open={productPickerOpen}
+                  searchPlaceholder={t("orders.create.searchProducts")}
                   selectedIds={lines.map((line) => line.variantId)}
+                  selectionMode="multiple"
+                  title={t("orders.create.products")}
                 />
               </section>
 
@@ -806,103 +838,6 @@ function CustomerPicker({
                   >
                     <Checkbox checked={isSelected} tabIndex={-1} />
                     <span className="min-w-0 flex-1 truncate">{customer.label}</span>
-                  </CommandItem>
-                );
-              })}
-            </CommandGroup>
-          </CommandList>
-        </Command>
-      </PopoverContent>
-    </Popover>
-  );
-}
-
-function VariantMultiPicker({
-  catalog,
-  loading,
-  onChange,
-  selectedIds,
-}: {
-  catalog: CatalogVariant[];
-  loading: boolean;
-  onChange: (ids: string[]) => void;
-  selectedIds: string[];
-}) {
-  const { t } = useI18n();
-  const [open, setOpen] = useState(false);
-  const selected = useMemo(() => new Set(selectedIds), [selectedIds]);
-
-  function toggle(id: string) {
-    if (selected.has(id)) onChange(selectedIds.filter((item) => item !== id));
-    else onChange([...selectedIds, id]);
-  }
-
-  const label =
-    selectedIds.length === 0
-      ? loading
-        ? t("orders.create.loadingProducts")
-        : t("orders.create.selectProducts")
-      : selectedIds.length === 1
-        ? t("common.productSelected")
-        : t("common.productsSelected", { count: selectedIds.length });
-
-  return (
-    <Popover onOpenChange={setOpen} open={open}>
-      <PopoverTrigger asChild>
-        <Button
-          className={cn(
-            "h-8 w-full justify-between px-2.5 font-normal shadow-none",
-            selectedIds.length === 0 && "text-muted-foreground",
-          )}
-          role="combobox"
-          type="button"
-          variant="outline"
-        >
-          <span className="truncate">{label}</span>
-          <AppIcons.arrowDown className="size-4 shrink-0 opacity-60" data-icon="inline-end" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent
-        align="start"
-        className="w-[var(--radix-popover-trigger-width)] overflow-hidden p-0"
-        collisionPadding={16}
-        onOpenAutoFocus={(event) => event.preventDefault()}
-        onWheel={(event) => event.stopPropagation()}
-      >
-        <Command className="h-auto max-h-72 w-full min-h-0">
-          <CommandInput placeholder={t("orders.create.searchProducts")} />
-          <CommandList
-            className="max-h-60 min-h-0 overflow-y-auto overscroll-contain"
-            onWheel={(event) => event.stopPropagation()}
-          >
-            <CommandEmpty>
-              <div className="flex flex-col items-center gap-2 px-3 py-4 text-center">
-                <span className="text-sm text-muted-foreground">
-                  {t("orders.create.noProducts")}
-                </span>
-                <Link
-                  className="text-sm font-medium text-primary hover:underline"
-                  href={`${dashboardRoutes.products}?create=product`}
-                >
-                  {t("commandCenter.actions.createProduct")}
-                </Link>
-              </div>
-            </CommandEmpty>
-            <CommandGroup className="overflow-visible">
-              {catalog.map((variant) => {
-                const isSelected = selected.has(variant.id);
-                return (
-                  <CommandItem
-                    data-checked={isSelected ? true : undefined}
-                    key={variant.id}
-                    onSelect={() => toggle(variant.id)}
-                    value={`${variant.label} ${variant.sku ?? ""} ${variant.productTitle}`}
-                  >
-                    <Checkbox checked={isSelected} tabIndex={-1} />
-                    <span className="min-w-0 flex-1 truncate">
-                      {variant.label}
-                      {variant.sku ? ` · ${variant.sku}` : ""}
-                    </span>
                   </CommandItem>
                 );
               })}

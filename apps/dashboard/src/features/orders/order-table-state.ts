@@ -52,9 +52,12 @@ export function filterOrdersForTable(orders: MerchantOrder[], input: OrderTableF
 }
 
 export function getOrderSearchText(order: MerchantOrder) {
+  const code = formatOrderReference(order);
   return [
     order.id,
-    formatOrderReference(order),
+    order.id.replace(/^order_/i, ""),
+    order.id.slice(-6),
+    code,
     typeof order.displayId === "number" ? String(order.displayId) : null,
     order.email,
     getOrderCustomerName(order),
@@ -63,6 +66,7 @@ export function getOrderSearchText(order: MerchantOrder) {
     order.delivery?.customerPhone,
     order.delivery?.choice,
     order.delivery?.landmark,
+    order.paymentMethod,
     order.status,
     order.paymentStatus,
     order.fulfillmentStatus,
@@ -206,11 +210,13 @@ export function getOrderTableCounts(input: {
 /**
  * Shop-friendly order code from Medusa id.
  * Avoid global display_id — it increments across the whole shared commerce DB.
+ * Same algorithm as order-domain.formatOrderReference (list UI + search).
  */
 export function formatOrderReference(order: Pick<MerchantOrder, "id">) {
-  const raw = order.id.replace(/^order_/i, "");
-  const tail = raw.slice(-6).toUpperCase();
-  return tail || order.id.slice(-6).toUpperCase();
+  const id = order.id ?? "";
+  const raw = id.replace(/^order_/i, "");
+  const tail = (raw || id).slice(-6).toUpperCase();
+  return tail || id.slice(-6).toUpperCase();
 }
 
 export function formatOrderDisplayId(order: MerchantOrder) {

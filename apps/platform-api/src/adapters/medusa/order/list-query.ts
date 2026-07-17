@@ -178,31 +178,51 @@ export function orderMatchesDelivery(order: MerchantOrder, delivery: MerchantOrd
   return choice.includes("deliver") || choice === "shipping" || choice === "local_delivery";
 }
 
+/** Shop-facing short code shown in the dashboard (last 6 of Medusa id, sans order_ prefix). */
+export function formatMerchantOrderCode(orderId: string) {
+  const raw = orderId.replace(/^order_/i, "");
+  const tail = (raw || orderId).slice(-6);
+  return tail.toUpperCase();
+}
+
 export function orderMatchesQuery(order: MerchantOrder, q: string) {
   const needle = normalizeKey(q);
   if (!needle) return true;
 
+  const code = formatMerchantOrderCode(order.id);
   const haystack = [
     order.id,
-    order.displayId != null ? String(order.displayId) : "",
+    order.id.replace(/^order_/i, ""),
     order.id.slice(-6),
+    code,
+    code.toLowerCase(),
+    order.displayId != null ? String(order.displayId) : "",
     order.email,
     order.customerId,
     order.note,
     order.paymentReference,
+    order.paymentMethod,
     order.delivery?.customerName,
     order.delivery?.customerPhone,
     order.delivery?.landmark,
     order.delivery?.notes,
+    order.delivery?.choice,
     order.shippingAddress?.firstName,
     order.shippingAddress?.lastName,
     order.shippingAddress?.phone,
     order.shippingAddress?.address1,
+    order.shippingAddress?.city,
     ...(order.items ?? []).map((item) => item.title),
+    ...(order.items ?? []).map((item) => item.variantId),
   ]
     .filter((part): part is string => typeof part === "string" && part.length > 0)
     .join(" ")
     .toLowerCase();
+
+  // Exact short-code match first (users paste the 6-char order code from the list).
+  if (code.toLowerCase() === needle || code.toLowerCase().includes(needle)) {
+    return true;
+  }
 
   return haystack.includes(needle);
 }

@@ -33,9 +33,9 @@ export function ProductIdentityCell({
         <Link className={cn(listEntityLinkClassName, "truncate")} href={href} prefetch={false}>
           {product.title ?? t("products.table.untitledProduct")}
         </Link>
-        <span className="truncate text-xs text-muted-foreground">
-          {product.handle ? `/${product.handle}` : product.id}
-        </span>
+        {product.handle ? (
+          <span className="truncate text-xs text-muted-foreground">/{product.handle}</span>
+        ) : null}
       </div>
     </div>
   );

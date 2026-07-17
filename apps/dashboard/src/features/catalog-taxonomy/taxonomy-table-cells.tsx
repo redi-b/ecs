@@ -18,6 +18,7 @@ type TaxonomyIdentityCellProps = {
 };
 
 export function TaxonomyIdentityCell({ entity, label, onOpen }: TaxonomyIdentityCellProps) {
+  const handle = "handle" in entity ? entity.handle : null;
   return (
     <div className="min-w-48">
       {onOpen ? (
@@ -31,9 +32,9 @@ export function TaxonomyIdentityCell({ entity, label, onOpen }: TaxonomyIdentity
       ) : (
         <div className="font-medium text-card-foreground">{label}</div>
       )}
-      <div className="mt-1 max-w-64 truncate font-mono text-xs text-muted-foreground">
-        {entity.id}
-      </div>
+      {handle ? (
+        <div className="mt-1 max-w-64 truncate text-xs text-muted-foreground">/{handle}</div>
+      ) : null}
     </div>
   );
 }
@@ -92,18 +93,21 @@ export function CategoryParentCell({
     );
   }
 
-  return (
-    <div className="min-w-44">
-      <div className="font-medium text-card-foreground">
-        {parentCategory
-          ? getCategoryDisplayName(parentCategory)
-          : t("taxonomy.cells.parentId")}
+  if (parentCategory) {
+    const handle = parentCategory.handle;
+    return (
+      <div className="min-w-44">
+        <div className="font-medium text-card-foreground">
+          {getCategoryDisplayName(parentCategory)}
+        </div>
+        {handle ? (
+          <div className="mt-1 max-w-56 truncate text-xs text-muted-foreground">/{handle}</div>
+        ) : null}
       </div>
-      <div className="mt-1 max-w-56 truncate font-mono text-xs text-muted-foreground">
-        {parentCategoryId}
-      </div>
-    </div>
-  );
+    );
+  }
+
+  return <span className="text-muted-foreground">{t("taxonomy.cells.parentId")}</span>;
 }
 
 export function TaxonomyDateCell({ value }: { value: string | null }) {

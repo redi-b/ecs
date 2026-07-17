@@ -400,5 +400,17 @@
     "notFound": "ይህ ምርት ከእንግዲህ አይገኝም።",
     "backendUnavailable": "የንግድ ስርዓቱ ለጊዜው አይገኝም።",
     "saveFailed": "የምርት ዝርዝሮችን መቀየር አልተቻለም። እንደገና ይሞክሩ።"
+  },
+  "catalogPicker": {
+    "descriptionMultiple": "ካታሎጉን ይፈልጉ እና የሚጨምሩ ምርቶችን ይምረጡ።",
+    "descriptionSingle": "ካታሎጉን ይፈልጉ እና አንድ ምርት ይምረጡ።",
+    "count": "{count} ይገኛሉ",
+    "emptyTitle": "እስካሁን ምርት የለም",
+    "emptyDescription": "መጀመሪያ ምርት ይፍጠሩ፣ ከዚያ ወደዚህ ተመልሰው ይጨምሩ።",
+    "tryDifferentSearch": "የተለየ ስም፣ handle ወይም SKU ይሞክሩ።",
+    "noneSelected": "ምንም አልተመረጠም",
+    "addSelected": "የተመረጡትን ጨምር",
+    "browseCatalog": "ካታሎግን አስስ",
+    "changeSelection": "ምርጫን ቀይር"
   }
 }

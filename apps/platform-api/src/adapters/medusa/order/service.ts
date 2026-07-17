@@ -339,7 +339,14 @@ export function createMedusaOrderService(options: {
       while (matched.length < input.offset + input.limit && scanOffset < POST_FILTER_SCAN_LIMIT) {
         const page = await fetchOrderPage({
           ...input,
-          // Keep Medusa-side payment/date/q when present; progress/method/delivery post-filter.
+          // Keep Medusa-side payment/date filters. Do NOT send free-text `q` to Medusa —
+          // its search misses shop order codes (last-6) and several local fields; we match
+          // those in applyOrderListPostFilters after scanning the sales channel window.
+          q: undefined,
+          // progress / method / delivery are derived labels — post-filter only.
+          progress: undefined,
+          paymentMethod: undefined,
+          delivery: undefined,
           limit: POST_FILTER_PAGE_SIZE,
           offset: scanOffset,
         });

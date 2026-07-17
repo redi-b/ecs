@@ -136,7 +136,9 @@ describe("createMedusaOrderService", () => {
     assert.equal(result.ok, true);
     assert.ok(forwardedRequest);
     const url = new URL(forwardedRequest.url);
-    assert.equal(url.searchParams.get("q"), "abebe");
+    // Free-text `q` is matched locally (order codes, phones, delivery) so it must
+    // not be sent to Medusa — Medusa search misses shop short codes.
+    assert.equal(url.searchParams.get("q"), null);
     assert.ok(url.searchParams.getAll("payment_status[]").includes("not_paid"));
     assert.equal(url.searchParams.get("created_at[$gte]"), "2026-07-01T00:00:00.000Z");
     assert.equal(url.searchParams.get("created_at[$lte]"), "2026-07-13T00:00:00.000Z");
