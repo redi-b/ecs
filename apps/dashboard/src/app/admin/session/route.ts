@@ -52,7 +52,7 @@ export async function POST(request: Request) {
   }
 
   // Shop hosts: credentials alone are not enough — user must be a member of *this* shop.
-  // Do not set session cookies if membership fails (avoids "signed in but forbidden" limbo).
+  // Do not set session cookies if membership fails; revoke the server session immediately.
   if (!isCentralDashboardHost(forwardedHost)) {
     const cookieHeader = getCookieHeader(authResult.cookies);
     const allowed = await sessionCanAccessShopHost({
@@ -61,6 +61,11 @@ export async function POST(request: Request) {
     });
 
     if (!allowed) {
+      await revokePlatformSession({
+        cookieHeader,
+        forwardedHost,
+        forwardedProto,
+      });
       return failSignIn(request, nextPath, "shop_access_denied", wantsJson);
     }
   }
@@ -243,6 +248,29 @@ function getRequestClientIp(request: Request) {
     if (trimmed) return trimmed;
   }
   return null;
+}
+
+/** Drop the just-created platform session when shop membership is denied. */
+async function revokePlatformSession(input: {
+  cookieHeader: string;
+  forwardedHost: string;
+  forwardedProto: string;
+}) {
+  if (!input.cookieHeader.trim()) {
+    return;
+  }
+
+  const baseUrl = process.env.PLATFORM_API_BASE_URL ?? "http://localhost:3000";
+  await fetch(new URL("/platform/auth/sign-out", normalizeBaseUrl(baseUrl)), {
+    cache: "no-store",
+    headers: {
+      cookie: input.cookieHeader,
+      origin: `${input.forwardedProto}://${input.forwardedHost}`,
+      "x-forwarded-host": input.forwardedHost,
+      "x-forwarded-proto": input.forwardedProto,
+    },
+    method: "POST",
+  }).catch(() => null);
 }
 
 async function signInWithPlatformAuth(input: {
