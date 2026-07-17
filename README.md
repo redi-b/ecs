@@ -107,7 +107,7 @@ Demo credentials:
 
 | Shop | Dashboard | Owner | Password |
 | --- | --- | --- | --- |
-| Addis Tech Hub | `http://addis-tech.lvh.me/admin` | `owner@addis-tech.local` | `password1234` |
+| Addis Tech Hub | `http://addistech.lvh.me/admin` | `owner@addistech.local` | `password1234` |
 | Bole Style | `http://bole-style.lvh.me/admin` | `owner@bole-style.local` | `password1234` |
 
 - Onboarding test: `http://dashboard.lvh.me` → sign up → create shop  
@@ -148,7 +148,7 @@ pnpm smoke:storefront
 pnpm verify:media-cors
 ```
 
-`pnpm smoke:storefront` runs a published shop COD path against Platform `/store/*` (default host `addis-tech.lvh.me`). Shop must be published and Medusa `medusa_publishable_key_id` must store the publishable **token** (`pk_…`), not the api key row id.
+`pnpm smoke:storefront` runs a published shop COD path against Platform `/store/*` (default host `addistech.lvh.me`). Shop must be published and Medusa `medusa_publishable_key_id` must store the publishable **token** (`pk_…`), not the api key row id.
 
 `pnpm smoke:commerce` creates an ephemeral smoke tenant (category, collection, product, stock). It expects the platform API and Medusa to already be running, plus a sign-in capable owner account.
 
@@ -156,7 +156,7 @@ The smoke script uses these defaults:
 
 - `PLATFORM_API_URL=http://localhost:3000`
 - `PLATFORM_ORIGIN=http://dashboard.lvh.me`
-- `SMOKE_OWNER_EMAIL=owner@addis-tech.local`
+- `SMOKE_OWNER_EMAIL=owner@addistech.local`
 - `SMOKE_OWNER_PASSWORD=password1234`
 
 Override those values in the shell if your local setup is different.

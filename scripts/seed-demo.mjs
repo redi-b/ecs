@@ -73,15 +73,15 @@ if (clean) {
   success("Demo data reversed");
   blank();
   kv([
-    ["Removed", "addis-tech + bole-style shops, owners, catalog, metrics"],
+    ["Removed", "addistech + bole-style shops, owners, catalog, metrics"],
     ["Kept", "bootstrap token, plans, non-demo tenants"],
   ]);
 } else {
   success("Demo data ready");
   blank();
   kv([
-    ["Tech shop", "http://addis-tech.lvh.me/admin"],
-    ["", "owner@addis-tech.local / password1234"],
+    ["Tech shop", "http://addistech.lvh.me/admin"],
+    ["", "owner@addistech.local / password1234"],
     ["Fashion shop", "http://bole-style.lvh.me/admin"],
     ["", "owner@bole-style.local / password1234"],
     ["Reverse", "pnpm seed:demo:clean"],
