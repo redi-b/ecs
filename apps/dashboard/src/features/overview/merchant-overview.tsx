@@ -440,7 +440,8 @@ export function MerchantOverview({ summary }: MerchantOverviewProps) {
                   >
                     <ComposedChart
                       data={tradingRows}
-                      margin={{ bottom: 8, left: 8, right: 28, top: 8 }}
+                      // left margin + YAxis width must fit compact "ETB 60K" ticks
+                      margin={{ bottom: 8, left: 4, right: 20, top: 8 }}
                     >
                       <CartesianGrid vertical={false} />
                       <XAxis
@@ -455,8 +456,8 @@ export function MerchantOverview({ summary }: MerchantOverviewProps) {
                         yAxisId="value"
                         tickLine={false}
                         axisLine={false}
-                        tickMargin={8}
-                        width={44}
+                        tickMargin={6}
+                        width={58}
                         tickFormatter={(value) =>
                           metric === "revenue"
                             ? compactMoney(Number(value), currencyCode, locale)
@@ -649,7 +650,7 @@ export function MerchantOverview({ summary }: MerchantOverviewProps) {
               <ChartContainer className="min-h-64 w-full flex-1 px-1" config={averageOrderConfig}>
                 <ComposedChart
                   data={averageOrderRows}
-                  margin={{ bottom: 8, left: 8, right: 24, top: 8 }}
+                  margin={{ bottom: 8, left: 4, right: 20, top: 8 }}
                 >
                   <CartesianGrid vertical={false} />
                   <XAxis
@@ -664,8 +665,8 @@ export function MerchantOverview({ summary }: MerchantOverviewProps) {
                     yAxisId="money"
                     tickLine={false}
                     axisLine={false}
-                    tickMargin={8}
-                    width={48}
+                    tickMargin={6}
+                    width={58}
                     tickFormatter={(value) => compactMoney(Number(value), currencyCode, locale)}
                   />
                   <YAxis yAxisId="orders" orientation="right" hide />
