@@ -57,9 +57,20 @@ Deployments run platform and Medusa migrations as one-shot services before start
 
 The Medusa migration and application containers use writable root filesystems because Medusa discovers and manages module directories at runtime. They still run as a non-root user with `no-new-privileges`. The platform API, dashboard, storefront, and Caddy remain read-only.
 
-### After first deploy (required)
+### After first deploy
 
-Production does **not** need demo seeds for real merchants. Migrations + template sync already run on deploy.
+Production does **not** need demo seeds for real merchants. Migrations + template sync run on deploy.
+
+**Medusa admin credentials:** platform-api bootstraps automatically on startup when `MEDUSA_ADMIN_API_TOKEN` is unset. It calls Medusa’s internal bootstrap route (authenticated with `PLATFORM_INTERNAL_API_TOKEN`), then stores the secret encrypted in `platform_system_secrets`. Encryption uses `PLATFORM_SECRETS_ENCRYPTION_KEY` if set, otherwise `BETTER_AUTH_SECRET`.
+
+- Leave `MEDUSA_ADMIN_API_TOKEN` empty for auto-bootstrap (recommended).
+- Set `MEDUSA_ADMIN_API_TOKEN` only to override (local tooling, rotation, break-glass).
+
+Optional manual seed (break-glass):
+
+```sh
+docker compose exec medusa node_modules/.bin/medusa exec ./src/scripts/seed.js
+```
 
 ### Optional demo seed (showcase / staging)
 
@@ -75,17 +86,8 @@ docker compose exec platform-api node --import tsx src/seeds/demo-seed.ts --clea
 
 If backdating logs `localhost:5432`, the process is missing `MEDUSA_DATABASE_URL` (should be `postgres://…@postgres:5432/medusa_db` on Dokploy, not localhost).
 
-1. Env: `MINIO_ROOT_PASSWORD`, media CORS/public URL, empty `MEDUSA_ADMIN_API_TOKEN` until step 2  
-2. Deploy  
-3. Create Medusa secret key (token shown **once**):
-
-```sh
-docker compose run --rm medusa node_modules/.bin/medusa exec ./src/scripts/seed.js
-```
-
-4. Set `MEDUSA_ADMIN_API_TOKEN` from `medusaAdminApiToken` in the JSON output  
-5. Restart **platform-api**  
-6. Sign up on the dashboard and create a shop  
+1. Deploy (migrations + auto Medusa admin bootstrap)
+2. Sign up on the dashboard and create a shop  
 
 Debug shop create: platform-api `[platform/tenants]`, dashboard `[onboarding/submit]`.
 

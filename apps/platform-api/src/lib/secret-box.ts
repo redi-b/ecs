@@ -24,12 +24,12 @@ export function isEncryptedSecret(value: string) {
 }
 
 /**
- * Encrypt merchant payment secrets at rest.
- * Requires PAYMENTS_CREDENTIALS_ENCRYPTION_KEY (or falls back to insecure dev-only hash of empty → throws).
+ * Encrypt secrets at rest (AES-GCM). Used for merchant payment credentials
+ * and platform system secrets (e.g. Medusa admin token).
  */
 export function encryptSecret(plaintext: string, encryptionKey: string | undefined) {
   if (!encryptionKey?.trim()) {
-    throw new Error("PAYMENTS_CREDENTIALS_ENCRYPTION_KEY is required to store payment secrets.");
+    throw new Error("Encryption key is required to store secrets.");
   }
   const key = deriveKey(encryptionKey);
   const iv = randomBytes(12);
@@ -45,7 +45,7 @@ export function decryptSecret(payload: string, encryptionKey: string | undefined
     return payload;
   }
   if (!encryptionKey?.trim()) {
-    throw new Error("PAYMENTS_CREDENTIALS_ENCRYPTION_KEY is required to read payment secrets.");
+    throw new Error("Encryption key is required to read secrets.");
   }
   const body = payload.slice(PREFIX.length);
   const [ivB64, tagB64, dataB64] = body.split(".");
