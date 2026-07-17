@@ -560,7 +560,7 @@ export function ProductDeleteButton({
           <AlertDialogFooter>
             <AlertDialogCancel disabled={deleteMutation.isPending}>{t("common.cancel")}</AlertDialogCancel>
             <AlertDialogAction
-              className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+              variant="destructive"
               disabled={deleteMutation.isPending}
               onClick={(e) => {
                 e.preventDefault();

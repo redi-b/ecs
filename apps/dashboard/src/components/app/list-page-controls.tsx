@@ -45,9 +45,15 @@ export function PaginationControls({
   className,
 }: PaginationControlsProps) {
   const { t, formatNumber } = useI18n();
+
+  // Nothing to page through — empty table panel already covers this state.
+  if (count === 0) {
+    return null;
+  }
+
   const totalPages = Math.max(1, Math.ceil(count / pageSize));
   const safePage = Math.min(Math.max(1, page), totalPages);
-  const from = count === 0 ? 0 : (safePage - 1) * pageSize + 1;
+  const from = (safePage - 1) * pageSize + 1;
   const to = Math.min(count, safePage * pageSize);
 
   // Build hrefs on the client so Server Components never pass a function prop.
@@ -62,13 +68,11 @@ export function PaginationControls({
       page={safePage}
       summary={
         <span>
-          {count === 0
-            ? t("common.noResults")
-            : t("common.showingRange", {
-                from: formatNumber(from),
-                to: formatNumber(to),
-                count: formatNumber(count),
-              })}
+          {t("common.showingRange", {
+            from: formatNumber(from),
+            to: formatNumber(to),
+            count: formatNumber(count),
+          })}
         </span>
       }
       totalPages={totalPages}

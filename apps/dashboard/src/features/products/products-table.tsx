@@ -510,7 +510,7 @@ export function ProductsTable({
               }}
               size="sm"
               type="button"
-              variant="destructive"
+              variant="destructive-outline"
             >
               <AppIcons.trash data-icon="inline-start" />
               Delete
@@ -525,7 +525,7 @@ export function ProductsTable({
         filteredEmptyTitle={t("table.empty.filteredNoItemsTitle")}
         getRowId={(product) => product.id}
         isFiltered={counts.hasActiveFilter}
-        selectedSummaryLabel={(count) => `product${count === 1 ? "" : "s"} selected`}
+        selectedSummaryLabel={t("products.table.selectedSummary")}
         toolbar={toolbar}
         footer={footer}
       />
@@ -545,7 +545,7 @@ export function ProductsTable({
           <AlertDialogFooter>
             <AlertDialogCancel disabled={deleteProductMutation.isPending}>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+              variant="destructive"
               disabled={deleteProductMutation.isPending}
               onClick={(e) => {
                 e.preventDefault();
@@ -572,7 +572,7 @@ export function ProductsTable({
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction
-              className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+              variant="destructive"
               disabled={batchDeleteProductsMutation.isPending}
               onClick={(e) => {
                 e.preventDefault();

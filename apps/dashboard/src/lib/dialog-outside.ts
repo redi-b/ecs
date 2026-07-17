@@ -15,6 +15,8 @@ const FLOATING_UI_SELECTOR = [
   "[data-slot='select-item']",
   "[data-slot='command']",
   "[data-datetime-picker]",
+  // Portaled bulk selection dock — clicks must not dismiss the mobile sidebar sheet.
+  "[data-slot='data-table-bulk-bar']",
   "[data-radix-select-content]",
   "[data-radix-select-viewport]",
   "[data-radix-popper-content-wrapper]",

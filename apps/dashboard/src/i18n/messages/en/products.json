@@ -113,7 +113,7 @@
     "searchLabel": "Search products",
     "searchPlaceholder": "Search products",
     "clearSearch": "Clear product search",
-    "selectedSummary": "{count} selected",
+    "selectedSummary": "selected",
     "productIds": "Product IDs",
     "product": "Product",
     "price": "Price",

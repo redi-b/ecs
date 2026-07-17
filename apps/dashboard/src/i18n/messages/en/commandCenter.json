@@ -1,7 +1,8 @@
 {
   "openAria": "Open quick search",
   "triggerLabel": "Search or jump…",
-  "searchOrJump": "Jump to a page, run an action, or type to search…",
+  "searchOrJump": "Search or jump…",
+  "searchOrJumpLong": "Jump to a page, run an action, or type to search…",
   "title": "Quick search",
   "description": "Search dashboard navigation and go to a page.",
   "dialogDescription": "Search pages, products, orders, customers, and run common actions.",

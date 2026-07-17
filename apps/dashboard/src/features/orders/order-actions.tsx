@@ -356,16 +356,12 @@ export function OrderActions({ action, order, variant = "card" }: OrderActionsPr
               {t("common.back")}
             </AlertDialogCancel>
             <AlertDialogAction
-              className={
-                pending?.kind === "cancel"
-                  ? "bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                  : undefined
-              }
               disabled={mutation.isPending || !pending}
               onClick={(event) => {
                 event.preventDefault();
                 if (pending) mutation.mutate(pending);
               }}
+              variant={pending?.kind === "cancel" ? "destructive" : "default"}
             >
               {mutation.isPending
                 ? t("orders.actions.working")

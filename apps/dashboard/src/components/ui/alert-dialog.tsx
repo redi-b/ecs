@@ -137,12 +137,10 @@ function AlertDialogAction({
 }: React.ComponentProps<typeof AlertDialogPrimitive.Action> &
   Pick<React.ComponentProps<typeof Button>, "variant" | "size">) {
   return (
-    <Button variant={variant} size={size} asChild>
-      <AlertDialogPrimitive.Action
-        data-slot="alert-dialog-action"
-        className={cn(className)}
-        {...props}
-      />
+    // Apply variant/className on Button so asChild merges styles onto the action correctly.
+    // Destructive confirms must pass variant="destructive" (not only className overrides).
+    <Button variant={variant} size={size} className={className} asChild>
+      <AlertDialogPrimitive.Action data-slot="alert-dialog-action" {...props} />
     </Button>
   );
 }

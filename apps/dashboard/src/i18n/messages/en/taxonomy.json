@@ -94,7 +94,7 @@
     "clearCollectionSearch": "Clear collection search",
     "categoryIds": "Category IDs",
     "collectionIds": "Collection IDs",
-    "selectedSummary": "{count} selected"
+    "selectedSummary": "selected"
   },
   "delete": {
     "title": "Delete {entity}",

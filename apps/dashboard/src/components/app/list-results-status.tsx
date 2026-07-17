@@ -83,7 +83,8 @@ export function ListResultsStatus({
       });
     }
   } else if (totalCount === 0) {
-    message = t("common.listStatus.noResultsYet");
+    // True empty catalog — the table empty panel already says this; avoid a third label.
+    return null;
   } else if (pageCount >= totalCount) {
     message =
       totalCount === 1

@@ -485,7 +485,15 @@ function SettingsSectionNav({
   return (
     <nav
       aria-label={t("settings.navAria")}
-      className="relative lg:sticky lg:top-20 lg:w-52 lg:shrink-0"
+      className={cn(
+        // Stay pinned while settings content scrolls (under sticky AppHeader).
+        "sticky z-20 self-start bg-background/95 backdrop-blur-sm supports-backdrop-filter:bg-background/85",
+        // Mobile: horizontal chips under the 3.5rem / 4rem app header.
+        "top-14 -mx-1 px-1 py-1.5 sm:top-16",
+        // Desktop: sidebar column beside the form.
+        "lg:top-20 lg:w-52 lg:shrink-0 lg:bg-transparent lg:px-0 lg:py-0 lg:backdrop-blur-none",
+        "lg:max-h-[calc(100dvh-6rem)] lg:overflow-y-auto",
+      )}
     >
       <div className="relative lg:static">
         <div

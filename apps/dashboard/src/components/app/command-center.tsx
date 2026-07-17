@@ -303,8 +303,19 @@ export function CommandCenter() {
   const showEmpty =
     !showEmptyQuery && !hasLocal && !hasRemote && !remoteLoading;
 
-  // Keep placeholder stable — swapping it while typing feels soft/laggy and shifts attention.
-  const inputPlaceholder = t("commandCenter.searchOrJump");
+  // Short placeholder on narrow viewports so the field does not overflow.
+  const [inputPlaceholder, setInputPlaceholder] = useState(t("commandCenter.searchOrJump"));
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 640px)");
+    const update = () => {
+      setInputPlaceholder(
+        mq.matches ? t("commandCenter.searchOrJumpLong") : t("commandCenter.searchOrJump"),
+      );
+    };
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, [t]);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>

@@ -317,7 +317,7 @@ export function CustomersTable({
         filteredEmptyTitle={t("customers.table.filteredEmptyTitle")}
         getRowId={(row) => row.id}
         isFiltered={hasActiveFilter}
-        selectedSummaryLabel={(count) => t("customers.table.selectedSummary", { count })}
+        selectedSummaryLabel={t("customers.table.selectedSummary")}
         footer={footer}
         toolbar={
           <div className="flex flex-col gap-3">
