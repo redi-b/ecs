@@ -57,7 +57,7 @@ describe("createCodeNotificationRenderer", () => {
       },
     });
 
-    assert.match(result.body, /new order 0H3FR2/i);
+    assert.match(result.body, /new COD order 0H3FR2/i);
     assert.match(result.body, /ETB 10,880/);
     assert.match(result.body, /Customer: Abebe Kebede/);
     assert.match(result.body, /Phone: \+251911000000/);

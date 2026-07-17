@@ -16,7 +16,6 @@ export const DEFAULT_TELEGRAM_EVENTS = [
   "order.cancelled",
   "payment.paid",
   "payment.failed",
-  "cod_order.created",
   "notification.test",
 ] as const;
 

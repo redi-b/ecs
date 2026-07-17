@@ -33,6 +33,7 @@ export type CreateNotificationServiceOptions = {
 
 const allowedChannels = new Set<NotificationChannel>(["email", "telegram"]);
 const allowedEvents = new Set<NotificationEventType>([
+  // Legacy alias still accepted on record, then canonicalized to order.created.
   "cod_order.created",
   "chapa.onboarding_needs_review",
   "domain.misconfigured",
@@ -51,12 +52,33 @@ const allowedEvents = new Set<NotificationEventType>([
   "shop.suspended",
 ]);
 
+/** Map deprecated event ids to the canonical type used for delivery + prefs. */
+export function canonicalizeNotificationEventType(
+  eventType: string,
+): NotificationEventType | string {
+  if (eventType === "cod_order.created") {
+    return "order.created";
+  }
+  return eventType;
+}
+
 export function isAllowedNotificationEventType(eventType: string): eventType is NotificationEventType {
-  return allowedEvents.has(eventType as NotificationEventType);
+  const canonical = canonicalizeNotificationEventType(eventType);
+  return allowedEvents.has(canonical as NotificationEventType) || allowedEvents.has(eventType as NotificationEventType);
 }
 
 function eventMatchesPreference(events: unknown, eventType: NotificationEventType) {
-  return Array.isArray(events) && (events.includes(eventType) || events.includes("*"));
+  if (!Array.isArray(events)) {
+    return false;
+  }
+  if (events.includes("*") || events.includes(eventType)) {
+    return true;
+  }
+  // Merchants who only opted into legacy COD still receive unified order.created.
+  if (eventType === "order.created" && events.includes("cod_order.created")) {
+    return true;
+  }
+  return false;
 }
 
 function getMatchingPreferences(
@@ -69,13 +91,15 @@ function getMatchingPreferences(
 function serializeNotificationPreference(
   preference: NotificationPreferenceRow,
 ): NotificationPreference {
+  const rawEvents = Array.isArray(preference.events)
+    ? preference.events.filter((event): event is string => typeof event === "string")
+    : [];
   return {
     id: preference.id,
     channel: preference.channel,
     enabled: preference.enabled,
-    events: Array.isArray(preference.events)
-      ? preference.events.filter((event): event is string => typeof event === "string")
-      : [],
+    // Surface canonical ids (legacy cod_order.created → order.created).
+    events: normalizeEvents(rawEvents),
     target: preference.target,
     updatedAt: preference.updatedAt.toISOString(),
   };
@@ -86,7 +110,14 @@ function normalizeChannel(channel: string) {
 }
 
 function normalizeEvents(events: string[]) {
-  return [...new Set(events.map((event) => event.trim()).filter(Boolean))];
+  return [
+    ...new Set(
+      events
+        .map((event) => event.trim())
+        .filter(Boolean)
+        .map((event) => canonicalizeNotificationEventType(event)),
+    ),
+  ];
 }
 
 function errorMessage(error: unknown): string {
@@ -135,6 +166,7 @@ export function createNotificationService(
       payload?: unknown;
       tenantId: string;
     }): Promise<NotificationEventRecordResult> => {
+      const eventType = canonicalizeNotificationEventType(input.eventType) as NotificationEventType;
       const payload =
         input.payload !== undefined && input.payload !== null && typeof input.payload === "object"
           ? input.payload
@@ -144,7 +176,7 @@ export function createNotificationService(
       // Failures here must not block external delivery (and vice versa).
       try {
         await inbox.tryCreateFromEvent({
-          eventType: input.eventType,
+          eventType,
           payload,
           tenantId: input.tenantId,
           userId: null,
@@ -165,7 +197,7 @@ export function createNotificationService(
           ),
         );
 
-      const matchingPreferences = getMatchingPreferences(preferences, input.eventType).filter(
+      const matchingPreferences = getMatchingPreferences(preferences, eventType).filter(
         (preference) => preference.channel !== "telegram",
       );
 
@@ -180,7 +212,7 @@ export function createNotificationService(
         );
 
       const matchingDestinations = destinations.filter((destination) =>
-        eventMatchesPreference(destination.events, input.eventType),
+        eventMatchesPreference(destination.events, eventType),
       );
 
       type DeliveryTarget = { channel: string; recipient: string };
@@ -208,7 +240,7 @@ export function createNotificationService(
         .values(
           targets.map((target) => ({
             tenantId: input.tenantId,
-            eventType: input.eventType,
+            eventType,
             channel: target.channel,
             recipient: target.recipient,
             status: "pending" as const,

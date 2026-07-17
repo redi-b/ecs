@@ -17,7 +17,6 @@ export const IN_APP_EVENT_SET = new Set<string>([
   "order.cancelled",
   "payment.paid",
   "payment.failed",
-  "cod_order.created",
 ]);
 
 export type InAppNotificationView = {
@@ -88,7 +87,7 @@ export function buildInAppHref(eventType: string, payload: unknown): string | nu
     orderId &&
     (eventType.startsWith("order.") ||
       eventType.startsWith("payment.") ||
-      eventType === "cod_order.created")
+      eventType === "cod_order.created") // legacy inbox rows
   ) {
     return `/admin/orders/${encodeURIComponent(orderId)}`;
   }
@@ -96,7 +95,7 @@ export function buildInAppHref(eventType: string, payload: unknown): string | nu
   if (
     eventType.startsWith("order.") ||
     eventType.startsWith("payment.") ||
-    eventType === "cod_order.created"
+    eventType === "cod_order.created" // legacy inbox rows
   ) {
     return "/admin/orders";
   }
