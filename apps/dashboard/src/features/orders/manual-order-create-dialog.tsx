@@ -44,6 +44,7 @@ import { cn } from "@/lib/utils";
 type CatalogVariant = {
   id: string;
   label: string;
+  options: Record<string, string>;
   priceLabel: string | null;
   productId: string;
   productTitle: string;
@@ -160,6 +161,10 @@ function ManualOrderCreateDialogInner() {
             prices?: Array<{ amount?: number | null; currencyCode?: string | null }>;
             sku?: string | null;
             title?: string | null;
+            optionValues?: Array<{
+              optionTitle?: string | null;
+              value?: string | null;
+            }>;
           }>;
         }>;
         count?: number;
@@ -180,9 +185,17 @@ function ManualOrderCreateDialogInner() {
               : null;
           const productTitle = product.title ?? t("orders.create.productFallback");
           const variantTitle = variant.title ?? t("orders.create.defaultOption");
+          const options: Record<string, string> = {};
+          for (const option of variant.optionValues ?? []) {
+            const title = option.optionTitle?.trim();
+            const value = option.value?.trim();
+            if (!title || !value || title === "Default") continue;
+            options[title] = value;
+          }
           return {
             id: variant.id,
             label: [productTitle, variantTitle].filter(Boolean).join(" · "),
+            options,
             priceLabel,
             productId: product.id,
             productTitle,
@@ -276,12 +289,14 @@ function ManualOrderCreateDialogInner() {
         title: variant.variantTitle,
         sku: variant.sku,
         priceLabel: variant.priceLabel,
+        options: variant.options,
       });
       product.searchText = [
         product.searchText,
         variant.variantTitle,
         variant.sku,
         variant.id,
+        ...Object.values(variant.options),
       ]
         .filter(Boolean)
         .join(" ");
@@ -628,7 +643,14 @@ function ManualOrderCreateDialogInner() {
                               {variant?.label ?? line.variantId}
                             </p>
                             <p className="truncate text-xs text-muted-foreground">
-                              {[variant?.sku, variant?.priceLabel].filter(Boolean).join(" · ") || t("orders.create.optionFallback")}
+                              {[
+                                variant?.sku
+                                  ? t("products.catalogPicker.skuLabel", { sku: variant.sku })
+                                  : null,
+                                variant?.priceLabel,
+                              ]
+                                .filter(Boolean)
+                                .join(" · ") || t("orders.create.optionFallback")}
                             </p>
                           </div>
                           <Input

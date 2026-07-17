@@ -193,13 +193,15 @@ export function formatOrderDateTime(value: string | null | undefined) {
   if (!value) return "—";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "—";
-  // Pin locale — `undefined` can yield odd month forms (e.g. "M07") in some runtimes.
+  // Fixed locale + 2-digit hour/minute so server and client never disagree
+  // (e.g. "0:07" vs "00:07" under hour: "numeric").
   return new Intl.DateTimeFormat("en-GB", {
     day: "numeric",
     month: "short",
     year: "numeric",
-    hour: "numeric",
+    hour: "2-digit",
     minute: "2-digit",
+    hour12: false,
   }).format(date);
 }
 
