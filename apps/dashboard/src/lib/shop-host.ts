@@ -1,4 +1,4 @@
-import { isCentralDashboardHost } from "./dashboard-hosts.js";
+import { isCentralDashboardHost } from "./dashboard-hosts";
 
 export type ShopHostValidation =
   | { ok: true }
