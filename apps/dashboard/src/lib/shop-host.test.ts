@@ -27,6 +27,26 @@ describe("validateShopHost", () => {
     });
     assert.deepEqual(result, { ok: false, error: "shop_not_found" });
   });
+
+  it("returns tenant name when host is valid", async () => {
+    const result = await validateShopHost({
+      forwardedHost: "bole-style.lvh.me",
+      platformApiBaseUrl: "http://platform.test",
+      fetcher: async () =>
+        Response.json({
+          tenant: {
+            id: "t1",
+            name: "Bole Style",
+            handle: "bole-style",
+            hostname: "bole-style.lvh.me",
+          },
+        }),
+    });
+    assert.equal(result.ok, true);
+    if (result.ok) {
+      assert.equal(result.tenant?.name, "Bole Style");
+    }
+  });
 });
 
 describe("sessionCanAccessShopHost", () => {

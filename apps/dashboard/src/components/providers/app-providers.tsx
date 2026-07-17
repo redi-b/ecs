@@ -9,19 +9,23 @@ import { ThemeProvider } from "@/components/providers/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import type { AppLocale } from "@/i18n/config";
 import type { Messages } from "@/i18n/messages";
+import type { SharedTheme } from "@/lib/shared-theme";
 
 export function AppProviders({
   children,
   locale,
   messages,
+  theme = "system",
 }: {
   children: ReactNode;
   locale: AppLocale;
   messages: Messages;
+  /** From ecs-theme cookie (server) so first paint matches preference. */
+  theme?: SharedTheme;
 }) {
   return (
     <NextIntlClientProvider locale={locale} messages={messages}>
-      <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+      <ThemeProvider attribute="class" defaultTheme={theme} enableSystem storageKey="ecs-theme-ls">
         <QueryProvider>
           {/*
             Shows on <Link> navigations (and history changes).

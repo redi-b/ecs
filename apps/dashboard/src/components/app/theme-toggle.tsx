@@ -26,6 +26,11 @@ export function ThemeToggle() {
     const nextTheme = isDark ? "light" : "dark";
 
     setSharedThemeCookie(nextTheme);
+    try {
+      localStorage.setItem("ecs-theme-ls", nextTheme);
+    } catch {
+      // private mode
+    }
     changeThemeWithTransition(setTheme, nextTheme, event);
   }
 
