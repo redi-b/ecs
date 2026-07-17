@@ -12,7 +12,16 @@
  *
  *   pnpm seed:demo --strict   # fail if Medusa commerce is incomplete
  *
- * Prerequisites: `pnpm seed --write-env`, Medusa + platform DB + SeaweedFS running.
+ * Prerequisites: Medusa + platform DB + media storage running.
+ *
+ * Medusa admin token resolution (same as platform-api runtime):
+ *   1. MEDUSA_ADMIN_API_TOKEN env (optional override)
+ *   2. Encrypted platform_system_secrets (prod auto-bootstrap)
+ *   3. Internal bootstrap via PLATFORM_INTERNAL_API_TOKEN
+ *
+ * Media uploads (server-side PutObject):
+ *   Prefer MEDIA_S3_INTERNAL_ENDPOINT (e.g. http://seaweedfs:8333 in Docker)
+ *   for S3 API; MEDIA_S3_PUBLIC_BASE_URL still builds browser-facing URLs.
  */
 import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { existsSync, readFileSync } from "node:fs";
@@ -47,6 +56,7 @@ import {
 import { hashPassword } from "better-auth/crypto";
 import { and, eq, inArray } from "drizzle-orm";
 
+import { resolveMedusaAdminToken } from "../adapters/medusa/admin-token.js";
 import { createMedusaCommerceProvisioningClient } from "../adapters/medusa/commerce-provisioning.js";
 import { getPlatformApiServiceDir, loadPlatformApiEnvFiles } from "../config/env.js";
 import { DEFAULT_PLAN_IDS, createBillingService } from "../modules/billing/service.js";
@@ -83,7 +93,8 @@ const medusaInternalUrl = (process.env.MEDUSA_INTERNAL_URL ?? "http://localhost:
   /\/$/,
   "",
 );
-const medusaAdminApiToken = process.env.MEDUSA_ADMIN_API_TOKEN?.trim() ?? "";
+/** Resolved in main() via env → encrypted DB → bootstrap (prod leaves env empty). */
+let medusaAdminApiToken = process.env.MEDUSA_ADMIN_API_TOKEN?.trim() ?? "";
 const platformInternalApiToken =
   process.env.PLATFORM_INTERNAL_API_TOKEN ??
   (process.env.NODE_ENV === "production" ? undefined : "development-platform-internal-token");
@@ -152,19 +163,24 @@ async function main() {
     return;
   }
 
+  await ensureMedusaAdminTokenForSeed();
   if (!medusaAdminApiToken) {
     const message =
-      "MEDUSA_ADMIN_API_TOKEN is not set. Run `pnpm seed --write-env` first, then re-run seed:demo.";
+      "No Medusa admin token (env empty, DB secret missing, bootstrap failed). " +
+      "Ensure Medusa is up, PLATFORM_INTERNAL_API_TOKEN matches Medusa, and platform-api has bootstrapped once — " +
+      "or set MEDUSA_ADMIN_API_TOKEN / run local `pnpm seed --write-env`.";
     if (!allowPartial) throw new Error(message);
     console.warn(`[seed:demo] ${message}`);
   } else {
     const medusaReady = await preflightMedusa();
     if (!medusaReady) {
-      const message = `Medusa is not reachable at ${medusaInternalUrl}. Start apps (pnpm dev:apps) then re-run seed:demo.`;
+      const message = `Medusa is not reachable at ${medusaInternalUrl}.`;
       if (!allowPartial) throw new Error(message);
       console.warn(`[seed:demo] ${message}`);
     }
   }
+
+  logMediaSeedConfig();
 
   // Idempotent path: do not wipe platform tenants. Refresh commerce per shop instead.
   const billing = createBillingService(platformDb.db);
@@ -932,6 +948,54 @@ async function preflightMedusa() {
   }
 }
 
+/**
+ * Prod leaves MEDUSA_ADMIN_API_TOKEN empty; token lives in platform_system_secrets
+ * after platform-api bootstrap. Seed must use the same resolution path.
+ */
+async function ensureMedusaAdminTokenForSeed() {
+  if (medusaAdminApiToken) {
+    console.info(
+      `[seed:demo] Using MEDUSA_ADMIN_API_TOKEN from env (fingerprint …${medusaAdminApiToken.slice(-4)})`,
+    );
+    return;
+  }
+
+  const result = await resolveMedusaAdminToken({
+    db: platformDb.db,
+    medusaInternalUrl,
+    internalApiToken: platformInternalApiToken,
+    envToken: process.env.MEDUSA_ADMIN_API_TOKEN,
+    logger: {
+      info: (fields, msg) => console.info(`[seed:demo] ${msg}`, fields),
+      warn: (fields, msg) => console.warn(`[seed:demo] ${msg}`, fields),
+      error: (fields, msg) => console.error(`[seed:demo] ${msg}`, fields),
+    },
+  });
+
+  if (result.ok) {
+    medusaAdminApiToken = result.token;
+    console.info(
+      `[seed:demo] Medusa admin token ready (source=${result.source}, fingerprint …${result.token.slice(-4)})`,
+    );
+    return;
+  }
+
+  console.warn(`[seed:demo] Could not resolve Medusa admin token: ${result.error}`);
+}
+
+function logMediaSeedConfig() {
+  const config = getMediaS3Config();
+  if (!config) {
+    console.warn(
+      "[seed:demo] MEDIA_S3_BUCKET / ACCESS_KEY / SECRET not set — product images will use remote fallback URLs only.",
+    );
+    return;
+  }
+  console.info(
+    `[seed:demo] Media S3: bucket=${config.bucket} apiEndpoint=${config.endpoint ?? "(default AWS)"} publicBase=${config.publicBaseUrl ?? "(none)"} pathStyle=${config.forcePathStyle}`,
+  );
+}
+
 /** Keep stable demo user IDs when the owner email changes. */
 async function maybeRenameDemoUser(shop: DemoShopDefinition) {
   const [byId] = await platformDb.db
@@ -1025,16 +1089,53 @@ async function maybeRenameDemoTenantHandle(shop: DemoShopDefinition) {
   );
 }
 
+/**
+ * Server-side seed uploads should hit object storage on the Docker network
+ * (http://seaweedfs:8333), not the public MEDIA_S3_ENDPOINT (https://media.…),
+ * which often fails TLS/signature via Caddy for PutObject from platform-api.
+ */
+function resolveMediaS3ApiEndpoint(): string | undefined {
+  const internal = process.env.MEDIA_S3_INTERNAL_ENDPOINT?.trim();
+  if (internal) return internal.replace(/\/$/, "");
+
+  // Dokploy / compose service DNS when running inside the stack.
+  if (process.env.MEDIA_S3_USE_DOCKER_INTERNAL === "true") {
+    return "http://seaweedfs:8333";
+  }
+
+  // Heuristic: public media host in prod compose — prefer in-network Seaweed.
+  const publicEndpoint = process.env.MEDIA_S3_ENDPOINT?.trim();
+  if (
+    publicEndpoint &&
+    (publicEndpoint.includes("media.") || publicEndpoint.startsWith("https://")) &&
+    (process.env.HOSTNAME === "platform-api" ||
+      process.env.SERVICE_NAME === "platform-api" ||
+      Boolean(process.env.PLATFORM_DATABASE_URL?.includes("@postgres")))
+  ) {
+    return "http://seaweedfs:8333";
+  }
+
+  return publicEndpoint?.replace(/\/$/, "") || undefined;
+}
+
 function getMediaS3Config() {
   const bucket = process.env.MEDIA_S3_BUCKET?.trim();
   const accessKeyId = process.env.MEDIA_S3_ACCESS_KEY_ID?.trim();
   const secretAccessKey = process.env.MEDIA_S3_SECRET_ACCESS_KEY?.trim();
   if (!bucket || !accessKeyId || !secretAccessKey) return null;
+
+  // Path-style is required for SeaweedFS; default true when endpoint is set.
+  const forcePathStyleEnv = process.env.MEDIA_S3_FORCE_PATH_STYLE?.trim().toLowerCase();
+  const forcePathStyle =
+    forcePathStyleEnv === "true" ||
+    forcePathStyleEnv === "1" ||
+    (forcePathStyleEnv !== "false" && Boolean(resolveMediaS3ApiEndpoint()));
+
   return {
     accessKeyId,
     bucket,
-    endpoint: process.env.MEDIA_S3_ENDPOINT?.trim() || undefined,
-    forcePathStyle: process.env.MEDIA_S3_FORCE_PATH_STYLE === "true",
+    endpoint: resolveMediaS3ApiEndpoint(),
+    forcePathStyle,
     publicBaseUrl: process.env.MEDIA_S3_PUBLIC_BASE_URL?.trim() || undefined,
     region: process.env.MEDIA_S3_REGION?.trim() || "us-east-1",
     secretAccessKey,
@@ -1050,7 +1151,27 @@ function createSeedS3Client(config: NonNullable<ReturnType<typeof getMediaS3Conf
     ...(config.endpoint ? { endpoint: config.endpoint } : {}),
     forcePathStyle: config.forcePathStyle,
     region: config.region,
+    // Seaweed / path-style often rejects checksum headers added by newer SDK defaults.
+    requestChecksumCalculation: "WHEN_REQUIRED",
+    responseChecksumValidation: "WHEN_REQUIRED",
   });
+}
+
+function formatS3Error(error: unknown) {
+  if (!error || typeof error !== "object") return String(error);
+  const err = error as {
+    message?: string;
+    name?: string;
+    Code?: string;
+    $metadata?: { httpStatusCode?: number };
+  };
+  const parts = [
+    err.name,
+    err.Code,
+    err.$metadata?.httpStatusCode != null ? `http=${err.$metadata.httpStatusCode}` : null,
+    err.message,
+  ].filter(Boolean);
+  return parts.join(" ") || String(error);
 }
 
 async function resetTenantDemoMedia(tenantId: string) {
@@ -1126,10 +1247,14 @@ async function seedProductMediaAssets(input: {
       );
     } catch (error) {
       console.warn(
-        `[seed:demo] Seaweed upload failed for ${filename}: ${
-          error instanceof Error ? error.message : String(error)
-        }`,
+        `[seed:demo] Media upload failed for ${filename} → ${config.endpoint ?? "default"}/${config.bucket}/${objectKey}: ${formatS3Error(error)}`,
       );
+      if (index === 0) {
+        console.warn(
+          "[seed:demo] Hint: in Docker/Dokploy set MEDIA_S3_INTERNAL_ENDPOINT=http://seaweedfs:8333 " +
+            "(server PutObject). Keep MEDIA_S3_PUBLIC_BASE_URL for browser URLs.",
+        );
+      }
       continue;
     }
 
