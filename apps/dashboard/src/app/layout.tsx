@@ -59,16 +59,18 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
     <html
       lang={locale}
       suppressHydrationWarning
-      className={cn(
-        // CSS variables must live on <html> so theme tokens can resolve them.
-        geistSans.variable,
-        geistMono.variable,
-        notoEthiopic.variable,
-        // Explicit face for Amharic — does not rely on font-family stack fallback.
-        isAmharic && notoEthiopic.className,
-      )}
+      // Keep className stable across locale refreshes. Locale-specific font
+      // faces go on <body>. Putting changing classes here makes RSC refresh
+      // replace the whole attribute and strip next-themes' `dark` class.
+      className={cn(geistSans.variable, geistMono.variable, notoEthiopic.variable)}
     >
-      <body className={cn("min-h-dvh font-sans antialiased", !isAmharic && geistSans.className)}>
+      <body
+        className={cn(
+          "min-h-dvh font-sans antialiased",
+          // Explicit Ethiopic face for Amharic; Geist for other locales.
+          isAmharic ? notoEthiopic.className : geistSans.className,
+        )}
+      >
         <AppProviders locale={locale} messages={messages}>
           {children}
         </AppProviders>
