@@ -69,7 +69,7 @@
     "phone": "ስልክ",
     "phoneNumbers": "የስልክ ቁጥሮች",
     "noPhonesSelected": "በተመረጡት ትዕዛዞች ላይ የስልክ ቁጥር የለም።",
-    "selectedSummary": "{count} ተመርጧል",
+    "selectedSummary": "ተመርጧል",
     "selectOrderAria": "ትዕዛዝ {name} ምረጥ",
     "actionsFor": "ለትዕዛዝ {name} ድርጊቶች"
   },

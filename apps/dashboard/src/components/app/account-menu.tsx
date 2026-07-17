@@ -92,11 +92,18 @@ export function AccountMenu({ actor }: { actor: MerchantDashboardSummary["actor"
             </SidebarMenuButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent
-            side={collapsed ? "right" : "top"}
-            align={collapsed ? "end" : "center"}
-            sideOffset={collapsed ? 10 : 16}
+            // Mobile: match the account row width so the menu is not a wider floating card.
+            // Desktop collapsed rail: open to the right; expanded: open above, start-aligned.
+            side={isMobile || !collapsed ? "top" : "right"}
+            align={isMobile || !collapsed ? "start" : "end"}
+            sideOffset={isMobile ? 8 : collapsed ? 10 : 8}
             collisionPadding={12}
-            className="w-56 rounded-xl"
+            className={cn(
+              "rounded-xl p-1.5",
+              isMobile
+                ? "w-[var(--radix-dropdown-menu-trigger-width)] min-w-0 max-w-[calc(100vw-1.5rem)]"
+                : "w-56",
+            )}
           >
             <DropdownMenuLabel className="px-2 py-1.5">
               <span className="block truncate text-sm font-medium text-popover-foreground">

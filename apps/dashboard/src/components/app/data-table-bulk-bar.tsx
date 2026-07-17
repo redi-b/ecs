@@ -6,6 +6,7 @@ import { createPortal } from "react-dom";
 
 import { AppIcons } from "@/components/app/icons";
 import { Button } from "@/components/ui/button";
+import { useSidebar } from "@/components/ui/sidebar";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 
@@ -14,6 +15,10 @@ type DataTableBulkBarProps = {
   className?: string;
   onClearSelection: () => void;
   selectedCount: number;
+  /**
+   * Text after the count only (e.g. "selected" → "2 selected").
+   * Do not include the count — the bar always prefixes `selectedCount`.
+   */
   summaryLabel?: string;
 };
 
@@ -23,6 +28,9 @@ type DataTableBulkBarProps = {
  *
  * Mobile: full-width dock — summary row + wrapping action chips.
  * Desktop: centered pill.
+ *
+ * When the mobile sidebar sheet is open, the bar hides so it does not sit above
+ * the scrim or steal dismiss events from the sheet.
  */
 export function DataTableBulkBar({
   actions,
@@ -32,11 +40,16 @@ export function DataTableBulkBar({
   summaryLabel,
 }: DataTableBulkBarProps) {
   const { t } = useI18n();
+  const { isMobile, openMobile } = useSidebar();
   const resolvedSummaryLabel = summaryLabel ?? t("common.selected");
   const [shouldRender, setShouldRender] = useState(selectedCount > 0);
   const [displayCount, setDisplayCount] = useState(selectedCount);
   const [mounted, setMounted] = useState(false);
   const isVisible = selectedCount > 0;
+  // Bulk bar is z-100; mobile sidebar sheet is z-50. Hide while the nav is open
+  // so the dock is not layered over the scrim / does not dismiss the sheet.
+  const hiddenForMobileSidebar = isMobile && openMobile;
+  const showBar = isVisible && !hiddenForMobileSidebar;
 
   useEffect(() => {
     setMounted(true);
@@ -60,7 +73,8 @@ export function DataTableBulkBar({
 
   return createPortal(
     <div
-      aria-hidden={!isVisible}
+      aria-hidden={!showBar}
+      data-slot="data-table-bulk-bar"
       className={cn(
         "pointer-events-none fixed inset-x-0 bottom-0 z-[100] flex justify-center p-3 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))]",
         className,
@@ -71,7 +85,7 @@ export function DataTableBulkBar({
           "pointer-events-auto w-full max-w-lg rounded-2xl border border-border bg-card text-card-foreground shadow-2xl ring-1 ring-black/5",
           "sm:w-auto sm:max-w-[min(44rem,calc(100vw-1.5rem))] sm:rounded-full",
           "transition-all duration-200 ease-out",
-          isVisible
+          showBar
             ? "translate-y-0 opacity-100"
             : "pointer-events-none translate-y-3 opacity-0",
         )}
@@ -94,16 +108,16 @@ export function DataTableBulkBar({
             </Button>
           </div>
 
-          {isVisible && actions ? (
+          {showBar && actions ? (
             <div
               className={cn(
                 "grid grid-cols-2 gap-1.5 sm:flex sm:flex-nowrap sm:items-center sm:gap-1.5",
                 // Unwrap the common single-div action wrapper so buttons participate in the grid/flex.
                 "[&>div]:contents",
-                // Solid faces — outline/destructive soft fills otherwise show table text.
+                // Solid faces so outline chips stay readable over the table.
                 "[&_button]:w-full sm:[&_button]:w-auto",
                 "[&_button[data-variant=outline]]:bg-card",
-                "[&_button[data-variant=destructive]]:bg-card",
+                "[&_button[data-variant=destructive-outline]]:bg-card",
                 "[&_button]:justify-center",
               )}
             >

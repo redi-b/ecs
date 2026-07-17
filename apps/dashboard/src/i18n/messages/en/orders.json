@@ -69,7 +69,7 @@
     "phone": "Phone",
     "phoneNumbers": "Phone numbers",
     "noPhonesSelected": "No phone numbers on the selected orders.",
-    "selectedSummary": "{count} selected",
+    "selectedSummary": "selected",
     "selectOrderAria": "Select order {name}",
     "actionsFor": "Actions for order {name}"
   },

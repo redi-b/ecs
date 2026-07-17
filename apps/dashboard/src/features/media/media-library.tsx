@@ -506,7 +506,7 @@ export function MediaLibrary({
         }}
         size="sm"
         type="button"
-        variant="destructive"
+        variant="destructive-outline"
       >
         <AppIcons.trash data-icon="inline-start" />
         {t("media.deleteSelected")}
@@ -545,10 +545,31 @@ export function MediaLibrary({
               <div className="flex items-center gap-3 border-b px-4 py-2.5">
                 <Checkbox
                   aria-label={t("media.selectAll")}
-                  checked={allPageSelected}
+                  checked={
+                    allPageSelected
+                      ? true
+                      : selectedAssets.length > 0
+                        ? "indeterminate"
+                        : false
+                  }
                   onCheckedChange={(checked) => toggleSelectPage(checked === true)}
                 />
-                <span className="text-xs text-muted-foreground">{t("media.selectAll")}</span>
+                <span className="min-w-0 flex-1 text-xs text-muted-foreground">
+                  {selectedAssets.length > 0
+                    ? t("media.selectionStatus", { count: selectedAssets.length })
+                    : t("media.selectAll")}
+                </span>
+                {selectedAssets.length > 0 ? (
+                  <Button
+                    className="shrink-0"
+                    onClick={() => setSelectedIds(new Set())}
+                    size="sm"
+                    type="button"
+                    variant="ghost"
+                  >
+                    {t("common.clearSelection")}
+                  </Button>
+                ) : null}
               </div>
 
               <div className="grid gap-4 p-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -592,12 +613,14 @@ export function MediaLibrary({
                           </span>
                         </span>
                       </button>
-                      <div className="flex items-center gap-2 border-t p-3">
+                      <div className="flex min-w-0 items-center gap-2 border-t p-3">
                         <AssetName asset={asset} onOpen={() => setEditing(asset)} />
-                        <RowActionsMenu
-                          actions={assetActions(asset)}
-                          label={t("media.rowActions")}
-                        />
+                        <div className="shrink-0">
+                          <RowActionsMenu
+                            actions={assetActions(asset)}
+                            label={t("media.rowActions")}
+                          />
+                        </div>
                       </div>
                     </article>
                   );
@@ -635,7 +658,10 @@ export function MediaLibrary({
             selectedCount={selectedAssets.length}
             summaryLabel={t("media.selectedSummary")}
           />
-          {footer ? <div className="border-t bg-muted/10 px-3 py-2">{footer}</div> : null}
+          {/* Same rule as DataTable: no empty pagination strip under an empty library. */}
+          {footer && filtered.length > 0 ? (
+            <div className="shrink-0 border-t bg-muted/10 px-3 py-2">{footer}</div>
+          ) : null}
         </div>
       )}
 
@@ -702,17 +728,20 @@ export function MediaLibrary({
 function AssetName({ asset, onOpen }: { asset: MediaAsset; onOpen?: () => void }) {
   const dimensions = mediaAssetDimensionsLabel(asset);
   return (
-    <div className="min-w-0 flex-1">
+    <div className="min-w-0 flex-1 overflow-hidden">
       {onOpen ? (
         <button
-          className="truncate text-sm font-medium text-foreground transition-colors hover:text-primary"
+          className="block w-full min-w-0 truncate text-left text-sm font-medium text-foreground transition-colors hover:text-primary"
           onClick={onOpen}
+          title={asset.displayName}
           type="button"
         >
           {asset.displayName}
         </button>
       ) : (
-        <p className="truncate text-sm font-medium">{asset.displayName}</p>
+        <p className="truncate text-sm font-medium" title={asset.displayName}>
+          {asset.displayName}
+        </p>
       )}
       <p className="truncate text-xs text-muted-foreground">
         {dimensions ? `${dimensions} · ` : ""}

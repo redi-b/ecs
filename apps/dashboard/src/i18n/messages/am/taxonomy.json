@@ -94,7 +94,7 @@
     "clearCollectionSearch": "የስብስብ ፍለጋን አጽዳ",
     "categoryIds": "የምድብ መለያዎች",
     "collectionIds": "የስብስብ መለያዎች",
-    "selectedSummary": "{count} ተመርጧል"
+    "selectedSummary": "ተመርጧል"
   },
   "delete": {
     "title": "{entity} አጥፋ",

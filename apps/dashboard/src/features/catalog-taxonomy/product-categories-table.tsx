@@ -445,60 +445,64 @@ export function ProductCategoriesTable({
         tenantId={tenantId}
       />
       {viewMode === "tree" ? (
-        <div className="space-y-3">
-          {toolbar}
+        // Same card shell as DataTable so Table / Tree views feel like one control.
+        <div className="mb-4 flex w-full min-w-0 flex-col overflow-hidden rounded-[1.35rem] border bg-card/95 lg:mb-6">
+          <div className="shrink-0 border-b bg-muted/20 p-3">{toolbar}</div>
           <CategoryTreeView
             categories={filteredCategories}
+            embedded
             onEdit={(category) => setEditingCategory(category)}
             query={initialQuery}
           />
-          {footer}
+          {footer && filteredCategories.length > 0 ? (
+            <div className="shrink-0 border-t bg-muted/10 px-3 py-2">{footer}</div>
+          ) : null}
         </div>
       ) : (
-      <DataTable
-        bulkActions={(selectedCategories) => (
-          <div className="flex items-center gap-2">
-            <Button
-              onClick={() =>
-                copyToClipboard(
-                  selectedCategories.map((category) => category.id).join("\n"),
-                  t("taxonomy.table.categoryIds"),
-                  t,
-                )
-              }
-              size="sm"
-              type="button"
-              variant="outline"
-            >
-              <AppIcons.copy data-icon="inline-start" />
-              {t("table.actions.copyIds")}
-            </Button>
-            <Button
-              onClick={() => {
-                setSelectedCategoryIdsForDelete(selectedCategories.map((c) => c.id));
-                setShowBatchDeleteDialog(true);
-              }}
-              size="sm"
-              type="button"
-              variant="destructive"
-            >
-              <AppIcons.trash data-icon="inline-start" />
-              Delete selected
-            </Button>
-          </div>
-        )}
-        columns={columns}
-        data={filteredCategories}
-        emptyMessage={t("taxonomy.table.emptyMessage")}
-        emptyTitle={t("taxonomy.table.emptyTitle")}
-        filteredEmptyMessage={t("taxonomy.table.filteredEmptyMessage")}
-        filteredEmptyTitle={t("taxonomy.table.filteredEmptyTitle")}
-        getRowId={(category) => category.id}
-        isFiltered={counts.hasActiveFilter}
-        selectedSummaryLabel={(count) => `categor${count === 1 ? "y" : "ies"} selected`}
-        toolbar={toolbar}
-        footer={footer}
-      />
+        <DataTable
+          bulkActions={(selectedCategories) => (
+            <div className="flex items-center gap-2">
+              <Button
+                onClick={() =>
+                  copyToClipboard(
+                    selectedCategories.map((category) => category.id).join("\n"),
+                    t("taxonomy.table.categoryIds"),
+                    t,
+                  )
+                }
+                size="sm"
+                type="button"
+                variant="outline"
+              >
+                <AppIcons.copy data-icon="inline-start" />
+                {t("table.actions.copyIds")}
+              </Button>
+              <Button
+                onClick={() => {
+                  setSelectedCategoryIdsForDelete(selectedCategories.map((c) => c.id));
+                  setShowBatchDeleteDialog(true);
+                }}
+                size="sm"
+                type="button"
+                variant="destructive-outline"
+              >
+                <AppIcons.trash data-icon="inline-start" />
+                Delete selected
+              </Button>
+            </div>
+          )}
+          columns={columns}
+          data={filteredCategories}
+          emptyMessage={t("taxonomy.table.emptyMessage")}
+          emptyTitle={t("taxonomy.table.emptyTitle")}
+          filteredEmptyMessage={t("taxonomy.table.filteredEmptyMessage")}
+          filteredEmptyTitle={t("taxonomy.table.filteredEmptyTitle")}
+          getRowId={(category) => category.id}
+          isFiltered={counts.hasActiveFilter}
+          selectedSummaryLabel={t("taxonomy.table.selectedSummary")}
+          toolbar={toolbar}
+          footer={footer}
+        />
       )}
 
       <AlertDialog

@@ -168,5 +168,6 @@
   "imageSingular": "image",
   "imagePlural": "images",
   "shellTitle": "Media",
-  "shellDescription": "Upload, organize, and reuse merchant images across products and future storefront experiences."
+  "shellDescription": "Upload, organize, and reuse merchant images across products and future storefront experiences.",
+  "selectionStatus": "{count} selected"
 }

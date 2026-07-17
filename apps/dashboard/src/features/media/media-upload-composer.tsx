@@ -375,116 +375,121 @@ export function MediaUploadComposer({ onUploaded }: { onUploaded: () => void }) 
             <DialogDescription>{t("media.uploadComposerDescription")}</DialogDescription>
           </DialogHeader>
 
-          <div className="grid min-h-0 flex-1 gap-0 overflow-hidden lg:grid-cols-[minmax(0,1fr)_minmax(16rem,18rem)]">
-            <div className="flex min-h-0 flex-col gap-4 overflow-y-auto overscroll-contain p-4 sm:p-5">
-              <button
-                className={cn(
-                  "group relative flex min-h-32 w-full shrink-0 flex-col items-center justify-center gap-3 rounded-2xl border border-dashed px-4 py-6 text-center transition-colors sm:min-h-36 sm:px-6 sm:py-7",
-                  "bg-muted/15 hover:border-primary/40 hover:bg-muted/30",
-                )}
-                onClick={() => inputRef.current?.click()}
-                type="button"
-              >
-                <span className="grid size-12 place-items-center rounded-2xl border bg-background shadow-sm transition-transform duration-200 ease-out group-hover:scale-[1.02]">
-                  <AppIcons.upload className="size-5 text-muted-foreground" />
-                </span>
-                <div>
-                  <p className="text-sm font-medium">{t("media.dropZoneHint")}</p>
-                  <p className="mt-1 text-xs text-muted-foreground">{t("media.supportedFormats")}</p>
-                </div>
-                <span className="inline-flex items-center rounded-full border bg-background px-3 py-1 text-xs font-medium">
-                  {t("media.browseFiles")}
-                </span>
-              </button>
-
-              <div className="min-w-0 shrink-0 rounded-2xl border bg-card/60 p-3 sm:p-3.5">
-                <p className="mb-2 text-xs font-medium text-muted-foreground">
-                  {t("media.importUrlSection")}
-                </p>
-                <MediaUrlImportField
-                  disabled={uploading}
-                  onImported={(file) => addFiles([file])}
-                  size="sm"
-                />
-              </div>
-
-              {/* Compact summary on mobile (desktop uses the right aside). */}
-              <div className="flex shrink-0 items-center justify-between gap-2 rounded-xl border bg-muted/20 px-3 py-2.5 text-xs sm:text-sm lg:hidden">
-                <span className="text-muted-foreground">
-                  {t("media.readyCount", { count: stagedFiles.length })}
-                </span>
-                <span className="font-medium tabular-nums">{formatBytes(totalBytes)}</span>
-              </div>
-
-              {stagedFiles.length ? (
-                <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain rounded-2xl border">
-                  <ul className="grid grid-cols-2 gap-3 p-3 sm:grid-cols-3 md:grid-cols-4">
-                    {stagedFiles.map((file, index) => (
-                      <li
-                        className="group/item relative overflow-hidden rounded-xl border bg-card shadow-sm"
-                        key={file.id}
-                      >
-                        <button
-                          className="block w-full text-left"
-                          onClick={() => setPreviewIndex(index)}
-                          type="button"
-                        >
-                          <div className="relative aspect-square bg-muted">
-                            {/* biome-ignore lint/performance/noImgElement: Local object URL preview. */}
-                            <img
-                              alt=""
-                              className="size-full object-cover transition-transform duration-200 ease-out group-hover/item:scale-[1.02]"
-                              src={previewUrls.current.get(file.id)}
-                            />
-                            <span className="absolute inset-0 grid place-items-center bg-black/0 opacity-0 transition-all duration-200 ease-out group-hover/item:bg-black/25 group-hover/item:opacity-100">
-                              <span className="rounded-full border border-white/20 bg-black/50 p-2 text-white">
-                                <AppIcons.expand className="size-4" />
-                              </span>
-                            </span>
-                          </div>
-                        </button>
-                        <div className="flex items-start gap-1 border-t p-2">
-                          <div className="min-w-0 flex-1">
-                            <p className="truncate text-xs font-medium">{file.name}</p>
-                            <p className="text-[11px] text-muted-foreground">
-                              {formatBytes(file.size ?? 0)}
-                            </p>
-                          </div>
-                          <Button
-                            aria-label={t("media.remove")}
-                            onClick={() => uppy.removeFile(file.id)}
-                            size="icon-xs"
-                            type="button"
-                            variant="ghost"
-                          >
-                            <AppIcons.close />
-                          </Button>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ) : (
-                <div className="flex min-h-28 shrink-0 flex-col items-center justify-center rounded-2xl border border-dashed bg-muted/10 px-4 py-8 text-center sm:min-h-44 sm:px-6 sm:py-10">
-                  <span className="mb-3 grid size-11 place-items-center rounded-xl border bg-background text-muted-foreground">
-                    <AppIcons.image />
+          {/*
+            Single scroll region for the body so staged previews keep their natural
+            height (nested flex-1 + overflow was crushing the preview cards on mobile).
+          */}
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+            <div className="grid gap-0 lg:grid-cols-[minmax(0,1fr)_minmax(16rem,18rem)] lg:min-h-full">
+              <div className="flex flex-col gap-4 p-4 sm:p-5">
+                <button
+                  className={cn(
+                    "group relative flex min-h-32 w-full shrink-0 flex-col items-center justify-center gap-3 rounded-2xl border border-dashed px-4 py-6 text-center transition-colors sm:min-h-36 sm:px-6 sm:py-7",
+                    "bg-muted/15 hover:border-primary/40 hover:bg-muted/30",
+                  )}
+                  onClick={() => inputRef.current?.click()}
+                  type="button"
+                >
+                  <span className="grid size-12 place-items-center rounded-2xl border bg-background shadow-sm transition-transform duration-200 ease-out group-hover:scale-[1.02]">
+                    <AppIcons.upload className="size-5 text-muted-foreground" />
                   </span>
-                  <p className="text-sm font-medium">{t("media.reviewEmpty")}</p>
+                  <div>
+                    <p className="text-sm font-medium">{t("media.dropZoneHint")}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">{t("media.supportedFormats")}</p>
+                  </div>
+                  <span className="inline-flex items-center rounded-full border bg-background px-3 py-1 text-xs font-medium">
+                    {t("media.browseFiles")}
+                  </span>
+                </button>
+
+                <div className="min-w-0 shrink-0 rounded-2xl border bg-card/60 p-3 sm:p-3.5">
+                  <p className="mb-2 text-xs font-medium text-muted-foreground">
+                    {t("media.importUrlSection")}
+                  </p>
+                  <MediaUrlImportField
+                    disabled={uploading}
+                    onImported={(file) => addFiles([file])}
+                    size="sm"
+                  />
                 </div>
-              )}
 
-              <Button
-                className="w-full shrink-0 lg:hidden"
-                onClick={() => inputRef.current?.click()}
-                type="button"
-                variant="outline"
-              >
-                <AppIcons.image data-icon="inline-start" />
-                {t("media.addMore")}
-              </Button>
-            </div>
+                {/* Compact summary on mobile (desktop uses the right aside). */}
+                <div className="flex shrink-0 items-center justify-between gap-2 rounded-xl border bg-muted/20 px-3 py-2.5 text-xs sm:text-sm lg:hidden">
+                  <span className="text-muted-foreground">
+                    {t("media.readyCount", { count: stagedFiles.length })}
+                  </span>
+                  <span className="font-medium tabular-nums">{formatBytes(totalBytes)}</span>
+                </div>
 
-            <aside className="hidden flex-col gap-4 border-t bg-muted/15 p-4 sm:p-5 lg:flex lg:border-t-0 lg:border-l">
+                {stagedFiles.length ? (
+                  <div className="shrink-0 rounded-2xl border">
+                    <ul className="grid grid-cols-2 gap-3 p-3 sm:grid-cols-3 md:grid-cols-4">
+                      {stagedFiles.map((file, index) => (
+                        <li
+                          className="group/item relative overflow-hidden rounded-xl border bg-card shadow-sm"
+                          key={file.id}
+                        >
+                          <button
+                            className="block w-full text-left"
+                            onClick={() => setPreviewIndex(index)}
+                            type="button"
+                          >
+                            <div className="relative aspect-square bg-muted">
+                              {/* biome-ignore lint/performance/noImgElement: Local object URL preview. */}
+                              <img
+                                alt=""
+                                className="size-full object-cover transition-transform duration-200 ease-out group-hover/item:scale-[1.02]"
+                                src={previewUrls.current.get(file.id)}
+                              />
+                              <span className="absolute inset-0 grid place-items-center bg-black/0 opacity-0 transition-all duration-200 ease-out group-hover/item:bg-black/25 group-hover/item:opacity-100">
+                                <span className="rounded-full border border-white/20 bg-black/50 p-2 text-white">
+                                  <AppIcons.expand className="size-4" />
+                                </span>
+                              </span>
+                            </div>
+                          </button>
+                          <div className="flex items-start gap-1 border-t p-2">
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate text-xs font-medium">{file.name}</p>
+                              <p className="text-[11px] text-muted-foreground">
+                                {formatBytes(file.size ?? 0)}
+                              </p>
+                            </div>
+                            <Button
+                              aria-label={t("media.remove")}
+                              onClick={() => uppy.removeFile(file.id)}
+                              size="icon-xs"
+                              type="button"
+                              variant="ghost"
+                            >
+                              <AppIcons.close />
+                            </Button>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : (
+                  <div className="flex min-h-28 shrink-0 flex-col items-center justify-center rounded-2xl border border-dashed bg-muted/10 px-4 py-8 text-center sm:min-h-44 sm:px-6 sm:py-10">
+                    <span className="mb-3 grid size-11 place-items-center rounded-xl border bg-background text-muted-foreground">
+                      <AppIcons.image />
+                    </span>
+                    <p className="text-sm font-medium">{t("media.reviewEmpty")}</p>
+                  </div>
+                )}
+
+                <Button
+                  className="w-full shrink-0 lg:hidden"
+                  onClick={() => inputRef.current?.click()}
+                  type="button"
+                  variant="outline"
+                >
+                  <AppIcons.image data-icon="inline-start" />
+                  {t("media.addMore")}
+                </Button>
+              </div>
+
+              <aside className="hidden flex-col gap-4 border-t bg-muted/15 p-4 sm:p-5 lg:flex lg:border-t-0 lg:border-l lg:min-h-full">
               <div>
                 <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
                   {t("media.readyCount", { count: stagedFiles.length })}
@@ -526,6 +531,7 @@ export function MediaUploadComposer({ onUploaded }: { onUploaded: () => void }) 
                 </Button>
               </div>
             </aside>
+            </div>
           </div>
 
           {/*

@@ -421,7 +421,7 @@ export function PromotionsManager({
               onClick={() => setBulkDeleteTargets(selected)}
               size="sm"
               type="button"
-              variant="destructive"
+              variant="destructive-outline"
             >
               <AppIcons.trash data-icon="inline-start" />
               {t("table.actions.deleteSelected")}
@@ -436,7 +436,7 @@ export function PromotionsManager({
         filteredEmptyTitle={t("promotions.table.filteredEmptyTitle")}
         getRowId={(item) => item.id}
         isFiltered={isFiltered}
-        selectedSummaryLabel={(count) => t("promotions.table.selectedSummary", { count })}
+        selectedSummaryLabel={t("promotions.table.selectedSummary")}
         footer={footer}
         toolbar={
           <div className="flex flex-col gap-3">

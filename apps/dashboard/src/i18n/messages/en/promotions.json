@@ -13,7 +13,7 @@
     "searchLabel": "Search promotions",
     "searchPlaceholder": "Search promotion codes…",
     "clearSearch": "Clear promotion search",
-    "selectedSummary": "{count} selected",
+    "selectedSummary": "selected",
     "copyCodes": "Copy codes",
     "promotionCode": "Promotion code",
     "promotionCodes": "Promotion codes",

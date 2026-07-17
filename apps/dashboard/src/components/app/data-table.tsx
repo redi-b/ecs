@@ -13,7 +13,7 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import type * as React from "react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { DataTableBulkBar } from "@/components/app/data-table-bulk-bar";
 import { AppIcons } from "@/components/app/icons";
@@ -117,7 +117,6 @@ export function DataTable<TData>({
 
   const rows = table.getRowModel().rows;
   const selectedRows = table.getFilteredSelectedRowModel().rows;
-  const visibleColumnCount = table.getVisibleLeafColumns().length || columns.length;
   const emptyStateMessage =
     isFiltered && rows.length === 0 ? (filteredEmptyMessage ?? emptyMessage) : emptyMessage;
   const emptyStateTitle =
@@ -130,6 +129,35 @@ export function DataTable<TData>({
   const pageCount = Math.max(1, table.getPageCount());
   const pageIndex = table.getState().pagination.pageIndex;
   const showClientPagination = isPaginated && data.length > 0;
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+
+    function update() {
+      if (!el) return;
+      const max = el.scrollWidth - el.clientWidth;
+      setCanScrollLeft(max > 4 && el.scrollLeft > 4);
+      setCanScrollRight(max > 4 && el.scrollLeft < max - 4);
+    }
+
+    update();
+    el.addEventListener("scroll", update, { passive: true });
+    const observer = new ResizeObserver(update);
+    observer.observe(el);
+    // Table width can change when data/columns reflow.
+    const tableEl = el.querySelector("table");
+    if (tableEl) observer.observe(tableEl);
+    return () => {
+      el.removeEventListener("scroll", update);
+      observer.disconnect();
+    };
+  }, [rows.length, data.length, columns.length]);
+
+  const isEmpty = rows.length === 0;
 
   return (
     <div className="mb-4 flex w-full min-w-0 flex-col overflow-hidden rounded-[1.35rem] border bg-card/95 lg:mb-6">
@@ -137,82 +165,106 @@ export function DataTable<TData>({
         <div className="shrink-0 border-b bg-muted/20 p-3">{toolbar}</div>
       ) : null}
 
-      {/*
-        Scroll region owns vertical overflow so:
-        - thead can stick at top of the table body
-        - footer pagination stays visible without scrolling past every row
-      */}
-      <div className="relative max-h-[min(36rem,calc(100dvh-14rem))] min-h-0 overflow-auto">
-        <Table className="min-w-max">
-          <TableHeader className="sticky top-0 z-30 [&_tr]:border-b-0">
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow className="border-b-0 hover:bg-transparent" key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
-                  <TableHead
-                    className={cn(
-                      // Solid surface. Use 1px box-shadow (not border-b): sticky table cells
-                      // paint body rows over CSS borders while scrolling.
-                      "h-11 bg-card px-4 text-xs uppercase text-muted-foreground sticky top-0",
-                      "shadow-[0_1px_0_0_var(--border)]",
-                      getStickyColumnClass(header.column.id, true),
-                    )}
-                    key={header.id}
-                  >
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(header.column.columnDef.header, header.getContext())}
-                  </TableHead>
-                ))}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {rows.length ? (
-              rows.map((row) => (
-                <TableRow
-                  className="group/row transition-colors hover:bg-muted/40 data-[state=selected]:bg-primary/5 data-[state=selected]:hover:bg-primary/10"
-                  data-state={row.getIsSelected() ? "selected" : undefined}
-                  key={row.id}
-                >
-                  {row.getVisibleCells().map((cell) => {
-                    const isSticky = cell.column.id === "select" || cell.column.id === "actions";
-                    return (
-                      <TableCell
+      {isEmpty ? (
+        // Empty: no wide table chrome, headers, or scroll arrows — a single clear panel.
+        <div className="flex min-h-56 items-center justify-center px-5 py-12 sm:min-h-64 sm:px-8">
+          <Empty className="max-w-sm border-0 p-0">
+            <EmptyHeader>
+              <EmptyMedia variant="icon">
+                <AppIcons.search data-icon="inline-start" />
+              </EmptyMedia>
+              <EmptyTitle>{emptyStateTitle}</EmptyTitle>
+              <EmptyDescription>{emptyStateMessage}</EmptyDescription>
+            </EmptyHeader>
+          </Empty>
+        </div>
+      ) : (
+        /*
+          Scroll region owns vertical overflow so:
+          - thead can stick at top of the table body
+          - footer pagination stays visible without scrolling past every row
+        */
+        <div className="relative min-h-0">
+          <div
+            className="max-h-[min(36rem,calc(100dvh-14rem))] min-h-0 overflow-auto"
+            ref={scrollRef}
+          >
+            <Table className="min-w-max">
+              <TableHeader className="sticky top-0 z-30 [&_tr]:border-b-0">
+                {table.getHeaderGroups().map((headerGroup) => (
+                  <TableRow className="border-b-0 hover:bg-transparent" key={headerGroup.id}>
+                    {headerGroup.headers.map((header) => (
+                      <TableHead
                         className={cn(
-                          "px-4 py-3",
-                          isSticky
-                            ? getStickyColumnClass(cell.column.id, false, row.getIsSelected())
-                            : cn(
-                                "bg-card group-hover/row:bg-muted/40",
-                                row.getIsSelected() && "bg-primary/5 group-hover/row:bg-primary/10",
-                              ),
+                          // Solid surface. Use 1px box-shadow (not border-b): sticky table cells
+                          // paint body rows over CSS borders while scrolling.
+                          "h-11 bg-card px-4 text-xs uppercase text-muted-foreground sticky top-0",
+                          "shadow-[0_1px_0_0_var(--border)]",
+                          getStickyColumnClass(header.column.id, true),
                         )}
-                        key={cell.id}
+                        key={header.id}
                       >
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                      </TableCell>
-                    );
-                  })}
-                </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell className="h-52 px-4" colSpan={visibleColumnCount}>
-                  <Empty className="border-0">
-                    <EmptyHeader>
-                      <EmptyMedia variant="icon">
-                        <AppIcons.search data-icon="inline-start" />
-                      </EmptyMedia>
-                      <EmptyTitle>{emptyStateTitle}</EmptyTitle>
-                      <EmptyDescription>{emptyStateMessage}</EmptyDescription>
-                    </EmptyHeader>
-                  </Empty>
-                </TableCell>
-              </TableRow>
+                        {header.isPlaceholder
+                          ? null
+                          : flexRender(header.column.columnDef.header, header.getContext())}
+                      </TableHead>
+                    ))}
+                  </TableRow>
+                ))}
+              </TableHeader>
+              <TableBody>
+                {rows.map((row) => (
+                  <TableRow
+                    className="group/row transition-colors hover:bg-muted/40 data-[state=selected]:bg-primary/5 data-[state=selected]:hover:bg-primary/10"
+                    data-state={row.getIsSelected() ? "selected" : undefined}
+                    key={row.id}
+                  >
+                    {row.getVisibleCells().map((cell) => {
+                      const isSticky = cell.column.id === "select" || cell.column.id === "actions";
+                      return (
+                        <TableCell
+                          className={cn(
+                            "px-4 py-3",
+                            isSticky
+                              ? getStickyColumnClass(cell.column.id, false, row.getIsSelected())
+                              : cn(
+                                  "bg-card group-hover/row:bg-muted/40",
+                                  row.getIsSelected() && "bg-primary/5 group-hover/row:bg-primary/10",
+                                ),
+                          )}
+                          key={cell.id}
+                        >
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </TableCell>
+                      );
+                    })}
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+
+          {/* Horizontal scroll affordance — only when the table has rows and overflows. */}
+          <div
+            aria-hidden
+            className={cn(
+              "pointer-events-none absolute inset-y-0 left-0 z-40 flex w-9 items-center justify-start bg-linear-to-r from-card via-card/90 to-transparent pl-1 transition-opacity",
+              canScrollLeft ? "opacity-100" : "opacity-0",
             )}
-          </TableBody>
-        </Table>
-      </div>
+          >
+            <AppIcons.arrowLeft className="size-3.5 text-muted-foreground" />
+          </div>
+          <div
+            aria-hidden
+            className={cn(
+              "pointer-events-none absolute inset-y-0 right-0 z-40 flex w-9 items-center justify-end bg-linear-to-l from-card via-card/90 to-transparent pr-1 transition-opacity",
+              canScrollRight ? "opacity-100" : "opacity-0",
+            )}
+          >
+            <AppIcons.arrowRight className="size-3.5 text-muted-foreground" />
+          </div>
+        </div>
+      )}
 
       <DataTableBulkBar
         actions={bulkActions?.(selectedRows.map((row) => row.original))}
@@ -231,7 +283,8 @@ export function DataTable<TData>({
         </div>
       ) : null}
 
-      {footer ? (
+      {/* Skip empty-list footers (e.g. "No results" + page 1) — the empty panel is enough. */}
+      {footer && !isEmpty ? (
         <div className="shrink-0 border-t bg-muted/10 px-3 py-2">{footer}</div>
       ) : null}
     </div>

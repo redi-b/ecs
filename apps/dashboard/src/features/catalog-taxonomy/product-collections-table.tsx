@@ -408,7 +408,7 @@ export function ProductCollectionsTable({
               }}
               size="sm"
               type="button"
-              variant="destructive"
+              variant="destructive-outline"
             >
               <AppIcons.trash data-icon="inline-start" />
               Delete selected
@@ -423,7 +423,7 @@ export function ProductCollectionsTable({
         filteredEmptyTitle={t("table.empty.filteredNoItemsTitle")}
         getRowId={(collection) => collection.id}
         isFiltered={counts.hasActiveFilter}
-        selectedSummaryLabel={(count) => `collection${count === 1 ? "" : "s"} selected`}
+        selectedSummaryLabel={t("taxonomy.table.selectedSummary")}
         toolbar={toolbar}
         footer={footer}
       />

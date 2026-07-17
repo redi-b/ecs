@@ -400,7 +400,7 @@ export function OrdersTable({
       footer={footer}
       getRowId={(row) => row.id}
       isFiltered={hasActiveFilters}
-      selectedSummaryLabel={(count) => t("orders.table.selectedSummary", { count })}
+      selectedSummaryLabel={t("orders.table.selectedSummary")}
       toolbar={toolbar}
     />
   );

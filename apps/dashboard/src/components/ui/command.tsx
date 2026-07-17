@@ -64,9 +64,10 @@ function CommandInput({
   const stringValue = typeof value === "string" ? value : "";
   const inputClassName = cn(
     // Crisp type + caret: avoid frosted translucent text paints that look soft.
-    "min-w-0 flex-1 w-full text-[15px] leading-snug font-medium tracking-[-0.01em] text-foreground",
+    // Mobile: smaller type so long placeholders fit; desktop keeps 15px.
+    "min-w-0 flex-1 w-full text-sm leading-snug font-medium tracking-[-0.01em] text-foreground sm:text-[15px]",
     "caret-foreground outline-hidden antialiased",
-    "placeholder:font-normal placeholder:tracking-normal placeholder:text-muted-foreground/65",
+    "placeholder:truncate placeholder:font-normal placeholder:tracking-normal placeholder:text-muted-foreground/65",
     "disabled:cursor-not-allowed disabled:opacity-50",
     className,
   );

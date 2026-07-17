@@ -55,7 +55,7 @@
     "searchLabel": "Search customers",
     "searchPlaceholder": "Search customers",
     "clearSearch": "Clear customer search",
-    "selectedSummary": "{count} selected",
+    "selectedSummary": "selected",
     "emails": "Emails",
     "phoneNumbers": "Phone numbers",
     "addressesCount": "{count} addresses",

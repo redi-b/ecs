@@ -92,7 +92,7 @@
   "rowActions": "የፋይል ድርጊቶች",
   "selectAsset": "{name} ምረጥ",
   "selectAll": "ሁሉንም የሚታዩ ፋይሎች ምረጥ",
-  "selectedSummary": "ተመርጠዋል",
+  "selectedSummary": "ተመርጧል",
   "deleteSelected": "የተመረጡትን አጥፋ",
   "allTypes": "ሁሉም የፋይል ዓይነቶች",
   "fileSize": "የፋይል መጠን",
@@ -168,5 +168,6 @@
   "imageSingular": "ምስል",
   "imagePlural": "ምስሎች",
   "shellTitle": "ሚዲያ",
-  "shellDescription": "የምርት ምስሎችን ይጫኑ፣ ያደራጁ እና ለምርቶች ወይም ለወደፊቱ የመደብር ገጽታዎች እንደገና ይጠቀሙባቸው።"
+  "shellDescription": "የምርት ምስሎችን ይጫኑ፣ ያደራጁ እና ለምርቶች ወይም ለወደፊቱ የመደብር ገጽታዎች እንደገና ይጠቀሙባቸው።",
+  "selectionStatus": "{count} ተመርጧል"
 }
