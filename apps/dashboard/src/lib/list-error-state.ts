@@ -1,6 +1,6 @@
 import { mapPlatformErrorMessage } from "@/lib/platform-api/errors";
 
-type ListKind = "orders" | "products";
+export type ListKind = "orders" | "products" | "customers" | "promotions";
 
 export type ListErrorState = {
   kind: "error" | "service" | "setup";
@@ -9,14 +9,14 @@ export type ListErrorState = {
 };
 
 export function getListErrorState(kind: ListKind, message: string): ListErrorState {
+  const plural = pluralLabel(kind);
+  const singular = singularLabel(kind);
+
   if (message === "commerce_credentials_missing") {
     return {
       kind: "setup",
       title: "Commerce connection needs attention",
-      description:
-        kind === "products"
-          ? "Product data is not ready yet. Check the shop setup or contact support."
-          : "Order data is not ready yet. Check the shop setup or contact support.",
+      description: `${singular} data is not ready yet. Check the shop setup or contact support.`,
     };
   }
 
@@ -24,15 +24,18 @@ export function getListErrorState(kind: ListKind, message: string): ListErrorSta
     return {
       kind: "setup",
       title: "Commerce connection needs attention",
-      description: `${capitalize(kind)} are temporarily unavailable. Check the shop setup or contact support.`,
+      description: `${plural} are temporarily unavailable. Check the shop setup or contact support.`,
     };
   }
 
   if (message === "commerce_sales_channel_unavailable") {
     return {
       kind: "setup",
-      title: kind === "products" ? "Product channel is not ready" : "Order channel is not ready",
-      description: `${capitalize(kind)} will appear after sales setup is complete.`,
+      title:
+        kind === "products" || kind === "orders"
+          ? `${singular} channel is not ready`
+          : "Sales channel is not ready",
+      description: `${plural} will appear after sales setup is complete.`,
     };
   }
 
@@ -40,7 +43,7 @@ export function getListErrorState(kind: ListKind, message: string): ListErrorSta
     return {
       kind: "setup",
       title: "Shop region is not ready",
-      description: `${capitalize(kind)} will appear after regional checkout setup is complete.`,
+      description: `${plural} will appear after regional checkout setup is complete.`,
     };
   }
 
@@ -70,14 +73,27 @@ export function getListErrorState(kind: ListKind, message: string): ListErrorSta
 
   return {
     kind: "error",
-    title: `${capitalize(kind)} could not be loaded`,
+    title: `${plural} could not be loaded`,
     description: mapPlatformErrorMessage(message, {
-      fallback: message || `${capitalize(kind)} could not be loaded.`,
-      resource: capitalize(kind),
+      fallback: message || `${plural} could not be loaded.`,
+      resource: plural,
     }),
   };
 }
 
-function capitalize(value: string) {
-  return `${value.charAt(0).toUpperCase()}${value.slice(1)}`;
+function singularLabel(kind: ListKind) {
+  switch (kind) {
+    case "products":
+      return "Product";
+    case "orders":
+      return "Order";
+    case "customers":
+      return "Customer";
+    case "promotions":
+      return "Promotion";
+  }
+}
+
+function pluralLabel(kind: ListKind) {
+  return `${singularLabel(kind)}s`;
 }
