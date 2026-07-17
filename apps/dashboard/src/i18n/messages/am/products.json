@@ -430,6 +430,7 @@
     "selectCombination": "ምረጥ",
     "fromPrice": "ከ {price}",
     "selectedCountShort": "{count} ተመርጠዋል",
-    "addedHint": "ተጨምሯል — ተጨማሪ ከፈለጉ ሌላ ይምረጡ"
+    "addedHint": "ተጨምሯል — ተጨማሪ ከፈለጉ ሌላ ይምረጡ",
+    "addSelectedCount": "የተመረጡ {count} ጨምር"
   }
 }

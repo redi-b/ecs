@@ -815,43 +815,40 @@ function ManualOrderCreateDialogInner() {
           ) : null}
         </div>
 
-        <DialogFooter className="mx-0 mb-0 rounded-none border-t bg-muted/50 p-4 sm:justify-between">
-          <div className="flex gap-2">
-            {step > 0 ? (
-              <Button onClick={() => setStep((value) => value - 1)} type="button" variant="outline">
-                {t("common.back")}
-              </Button>
-            ) : (
-              <Button onClick={() => setOpen(false)} type="button" variant="outline">
-                {t("common.cancel")}
-              </Button>
-            )}
-          </div>
-          <div className="flex gap-2">
-            {step < 2 ? (
-              <Button
-                disabled={
-                  (step === 0 && !canContinueFromCustomer()) ||
-                  (step === 1 && !canContinueFromItems())
-                }
-                onClick={() => {
-                  setError(null);
-                  setStep((value) => value + 1);
-                }}
-                type="button"
-              >
-                {t("common.continue")}
-              </Button>
-            ) : (
-              <Button
-                disabled={saving || !canContinueFromCustomer() || !canContinueFromItems()}
-                onClick={() => void create()}
-                type="button"
-              >
-                {saving ? t("orders.create.creating") : t("orders.create.trigger")}
-              </Button>
-            )}
-          </div>
+        {/* Same footer pattern as promotions/taxonomy: cancel/back first, primary last. */}
+        <DialogFooter className="mx-0 mb-0 rounded-none border-t bg-muted/50 p-4">
+          {step > 0 ? (
+            <Button onClick={() => setStep((value) => value - 1)} type="button" variant="outline">
+              {t("common.back")}
+            </Button>
+          ) : (
+            <Button onClick={() => setOpen(false)} type="button" variant="outline">
+              {t("common.cancel")}
+            </Button>
+          )}
+          {step < 2 ? (
+            <Button
+              disabled={
+                (step === 0 && !canContinueFromCustomer()) ||
+                (step === 1 && !canContinueFromItems())
+              }
+              onClick={() => {
+                setError(null);
+                setStep((value) => value + 1);
+              }}
+              type="button"
+            >
+              {t("common.continue")}
+            </Button>
+          ) : (
+            <Button
+              disabled={saving || !canContinueFromCustomer() || !canContinueFromItems()}
+              onClick={() => void create()}
+              type="button"
+            >
+              {saving ? t("orders.create.creating") : t("orders.create.trigger")}
+            </Button>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>

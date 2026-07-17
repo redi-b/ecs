@@ -430,6 +430,7 @@
     "selectCombination": "Select",
     "fromPrice": "from {price}",
     "selectedCountShort": "{count} selected",
-    "addedHint": "Added — pick another combo if you need more"
+    "addedHint": "Added — pick another combo if you need more",
+    "addSelectedCount": "Add {count} selected"
   }
 }
