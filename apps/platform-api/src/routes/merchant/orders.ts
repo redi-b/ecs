@@ -1,7 +1,10 @@
 import type { Context, Hono } from "hono";
 import type { MerchantOrderAction, PlatformAppOptions, PlatformAppVariables } from "../../app.js";
 import { parseMerchantOrderListQuery } from "../../adapters/medusa/order/list-query.js";
-import { buildPaymentPaidPayload } from "../../modules/notifications/order-payload.js";
+import {
+  buildOrderCancelledPayload,
+  buildPaymentPaidPayload,
+} from "../../modules/notifications/order-payload.js";
 import { getPaginationValue, getRequestHost, storeErrorStatus } from "../shared.js";
 import type { MerchantRouteHelpers } from "./context.js";
 
@@ -188,6 +191,18 @@ export function registerMerchantOrderRoutes(
           tenantId: merchant.result.context.tenantId,
           eventType: "payment.paid",
           payload: buildPaymentPaidPayload(order.order, "dashboard_mark_paid"),
+        })
+        .catch(() => undefined);
+    }
+
+    // Cancel also emits via Medusa order.canceled subscriber; platform emit is a backup.
+    // recordNotificationEvent dedupes per order so merchants get one alert.
+    if (action === "cancel" && options.recordNotificationEvent) {
+      void options
+        .recordNotificationEvent({
+          tenantId: merchant.result.context.tenantId,
+          eventType: "order.cancelled",
+          payload: buildOrderCancelledPayload(order.order, "dashboard_cancel"),
         })
         .catch(() => undefined);
     }
