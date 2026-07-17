@@ -280,15 +280,15 @@
     "thisDevice": "እዚህ",
     "ip": "IP",
     "unknown": "ያልታወቀ",
-    "lastActive": "መጨረሻ የተጠቀሙበት",
-    "signedIn": "የገቡበት",
+    "lastActive": "መጨረሻ እንቅስቃሴ",
+    "signedIn": "የገባበት",
     "currentSession": "አሁን እዚህ",
     "signOut": "ውጣ",
     "signOutFooter": "ከቦታ ማውጣት እስከ ቀጣይ መግቢያ ድረስ መዳረሻውን ያቆማል።",
     "signOutTitle": "ከዚህ ቦታ እናውጣ?",
     "signOutDesc": "{device} ዳሽቦርዱን ለመክፈት እንደገና መግባት ይኖርበታል።",
     "signOutDescGeneric": "እንደገና መግባት ይኖርበታል።",
-    "signingOut": "በመውጣት ላይ…",
+    "signingOut": "በማውጣት ላይ…",
     "signOutDevice": "አውጣ",
     "showPassword": "የይለፍ ቃል አሳይ",
     "hidePassword": "የይለፍ ቃል ደብቅ",
@@ -296,17 +296,18 @@
       "desktop": "ኮምፒውተር",
       "ipad": "iPad",
       "iphone": "iPhone",
-      "androidPhone": "የAndroid ስልክ",
+      "androidPhone": "Android ስልክ",
+      "androidTablet": "Android ታብሌት",
       "mac": "Mac",
-      "windowsPc": "Windows PC",
-      "linuxPc": "Linux PC",
+      "windowsPc": "Windows",
+      "linuxPc": "Linux",
       "mobile": "ሞባይል",
       "unknown": "ያልታወቀ ቦታ"
     },
     "os": {
-      "unknown": "ያልታወቀ OS",
-      "browser": "ያልታወቀ",
-      "unknownBrowser": "ያልታወቀ"
+      "unknown": "ያልታወቀ",
+      "browser": "አሳሽ",
+      "unknownBrowser": "ያልታወቀ አሳሽ"
     },
     "toast": {
       "nameMin": "ቢያንስ ሁለት ፊደል ያለው ስም ያስገቡ።",
@@ -322,11 +323,19 @@
       "passwordUpdatedOthers": "የይለፍ ቃል ተቀይሯል። ሌሎች ቦታዎች ወጥተዋል።",
       "passwordUpdated": "የይለፍ ቃል ተቀይሯል።",
       "cannotRevokeCurrent": "ከዚህ ቦታ ማውጣት አይችሉም።",
-      "revokeOrigin": "ማውጣት በauth origin ቅንብር ታግዷል።",
+      "revokeOrigin": "ማውጣት ታግዷል። እንደገና ይሞክሩ።",
       "revokeFailed": "ማውጣት አልተቻለም።",
       "sessionSignedOut": "ወጥቷል።",
-      "sessionsOrigin": "የገቡ ቦታዎች ዝርዝር በauth origin ቅንብር ታግዷል። trusted origins ካዘመኑ በኋላ platform-apiን እንደገና ያስጀምሩ።",
-      "sessionsFailed": "የገቡ ቦታዎችን መጫን አልተቻለም።"
-    }
+      "sessionsOrigin": "ዝርዝሩ ታግዷል። በኋላ እንደገና ይሞክሩ።",
+      "sessionsFailed": "የገቡ ቦታዎችን መጫን አልተቻለም።",
+      "revokeOthersFailed": "ሌሎች ቦታዎችን ማውጣት አልተቻለም።",
+      "othersSignedOut": "ሌሎች ቦታዎች ወጥተዋል።"
+    },
+    "showMoreSessions": "ተጨማሪ {remaining} አሳይ",
+    "localIp": "ከዚህ ኮምፒውተር",
+    "signOutOthersAction": "ሌሎች ቦታዎችን አውጣ",
+    "signOutOthersTitle": "ሌሎች ቦታዎች ይውጡ?",
+    "signOutOthersDesc": "{count} ሌላ ቦታ(ዎች) ይወጣሉ። እርስዎ እዚህ ይቆያሉ።",
+    "signOutOthersConfirm": "ሌሎቹን አውጣ"
   }
 }

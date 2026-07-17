@@ -34,10 +34,12 @@ export async function POST(request: Request) {
   }
 
   const authResult = await signInWithPlatformAuth({
+    clientIp: getRequestClientIp(request),
     email: email.trim().toLowerCase(),
     forwardedHost,
     forwardedProto,
     password,
+    userAgent: request.headers.get("user-agent"),
   });
 
   if (!authResult.ok) {
@@ -244,11 +246,28 @@ function getCookieHeader(cookies: string[]) {
     .join("; ");
 }
 
+function getRequestClientIp(request: Request) {
+  const candidates = [
+    request.headers.get("cf-connecting-ip"),
+    request.headers.get("true-client-ip"),
+    request.headers.get("x-real-ip"),
+    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim(),
+    request.headers.get("x-client-ip"),
+  ];
+  for (const value of candidates) {
+    const trimmed = value?.trim();
+    if (trimmed) return trimmed;
+  }
+  return null;
+}
+
 async function signInWithPlatformAuth(input: {
+  clientIp?: string | null | undefined;
   email: string;
   forwardedHost: string;
   forwardedProto: string;
   password: string;
+  userAgent?: string | null | undefined;
 }) {
   const baseUrl = process.env.PLATFORM_API_BASE_URL ?? "http://localhost:3000";
   const client = createAuthClient({
@@ -267,6 +286,14 @@ async function signInWithPlatformAuth(input: {
         origin: `${input.forwardedProto}://${input.forwardedHost}`,
         "x-forwarded-host": input.forwardedHost,
         "x-forwarded-proto": input.forwardedProto,
+        // Capture the browser identity on the session (not the dashboard server).
+        ...(input.clientIp
+          ? {
+              "x-forwarded-for": input.clientIp,
+              "x-real-ip": input.clientIp,
+            }
+          : {}),
+        ...(input.userAgent ? { "user-agent": input.userAgent } : {}),
       },
       onResponse: (context) => {
         cookies.push(...getSetCookieValues(context.response.headers));

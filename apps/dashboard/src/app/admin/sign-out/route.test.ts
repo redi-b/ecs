@@ -60,9 +60,14 @@ test("POST /admin/sign-out signs out through Platform auth and forwards clearing
   assert.equal(response.headers.get("location"), "http://abebe.lvh.me/admin/sign-in");
   const setCookie = response.headers.get("set-cookie") ?? "";
 
+  // Active brand prefix (default ecs) + legacy better-auth for migration clears.
   assert.match(
     setCookie,
-    /better-auth\.session_token=; Max-Age=0; HttpOnly; SameSite=Lax; Domain=\.lvh\.me; Path=\//,
+    /ecs\.session_token=; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly; SameSite=Lax; Domain=\.lvh\.me; Path=\//,
+  );
+  assert.match(
+    setCookie,
+    /__Secure-ecs\.session_token=; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly; SameSite=Lax; Secure; Domain=\.lvh\.me; Path=\//,
   );
   assert.match(
     setCookie,
@@ -71,10 +76,6 @@ test("POST /admin/sign-out signs out through Platform auth and forwards clearing
   assert.match(
     setCookie,
     /__Secure-better-auth\.session_token=; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly; SameSite=Lax; Secure; Domain=\.lvh\.me; Path=\//,
-  );
-  assert.notEqual(
-    setCookie,
-    "better-auth.session_token=; Max-Age=0; HttpOnly; SameSite=Lax; Domain=.lvh.me; Path=/",
   );
   assert.equal(forwardedRequest?.method, "POST");
   assert.equal(forwardedRequest?.url, "http://platform.test/platform/auth/sign-out");

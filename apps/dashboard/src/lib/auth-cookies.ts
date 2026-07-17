@@ -1,8 +1,9 @@
+import {
+  getAuthSessionCookieNames,
+  getAuthSessionCookieNamesToClear,
+} from "@ecs/config";
+
 const defaultSharedCookieDomain = ".lvh.me";
-const betterAuthSessionCookieNames = [
-  "better-auth.session_token",
-  "__Secure-better-auth.session_token",
-];
 
 export function getSharedAuthCookie(cookie: string) {
   if (!cookie.trim()) {
@@ -20,14 +21,23 @@ export function getSharedAuthCookie(cookie: string) {
   return [...withoutScopedAttributes, `Domain=${sharedDomain}`, "Path=/"].join("; ");
 }
 
+/**
+ * Clear session cookies for the active brand prefix and legacy `better-auth.*`
+ * (so renames do not leave orphan sessions in the browser).
+ */
 export function getSharedAuthCookieClears() {
   const sharedDomain = getSharedCookieDomain();
 
-  return betterAuthSessionCookieNames.map((name) => {
+  return getAuthSessionCookieNamesToClear().map((name) => {
     const secure = name.startsWith("__Secure-") ? "; Secure" : "";
 
     return `${name}=; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly; SameSite=Lax${secure}; Domain=${sharedDomain}; Path=/`;
   });
+}
+
+/** Active session cookie names (current prefix only — for reading the live session). */
+export function getAuthSessionCookieNamesForDashboard() {
+  return getAuthSessionCookieNames();
 }
 
 function getSharedCookieDomain() {
