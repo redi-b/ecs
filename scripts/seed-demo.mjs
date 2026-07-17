@@ -11,7 +11,9 @@
  *   pnpm seed:unseed
  *   pnpm seed:demo --clean
  *
- * Prerequisites: pnpm seed --write-env, Medusa reachable for full catalog.
+ * Prerequisites: Medusa + platform DB (+ media storage for Seaweed images).
+ * Medusa admin token: env override optional; seed also reads encrypted DB secret
+ * or bootstraps via PLATFORM_INTERNAL_API_TOKEN (Dokploy prod path).
  */
 import {
   blank,
@@ -46,7 +48,9 @@ kv([
 blank();
 
 if (!process.env.MEDUSA_ADMIN_API_TOKEN?.trim() && !clean) {
-  warn("MEDUSA_ADMIN_API_TOKEN is not set. Run `pnpm seed --write-env` for commerce catalog.");
+  info(
+    "MEDUSA_ADMIN_API_TOKEN unset — seed will use platform_system_secrets or bootstrap (prod-friendly).",
+  );
   blank();
 }
 

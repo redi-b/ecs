@@ -76,28 +76,46 @@ docker compose exec medusa node_modules/.bin/medusa exec ./src/scripts/seed.js
 
 Demo seed runs **inside** the `platform-api` container (no host `pnpm` required). Compose injects both `PLATFORM_DATABASE_URL` and `MEDUSA_DATABASE_URL` so order **backdating** can open Medusa’s Postgres directly.
 
+**Medusa admin token:** leave `MEDUSA_ADMIN_API_TOKEN` empty. After platform-api has started once (auto-bootstrap into `platform_system_secrets`), demo-seed resolves the same encrypted secret (or re-bootstraps via `PLATFORM_INTERNAL_API_TOKEN`). You do **not** need to put a key in `.env` for seed.
+
+**Media:** seed PutObject uses `MEDIA_S3_INTERNAL_ENDPOINT` (default `http://seaweedfs:8333`), not the public `MEDIA_S3_ENDPOINT`. Browser URLs still use `MEDIA_S3_PUBLIC_BASE_URL`.
+
 ```sh
-# Seed demo shops + catalog + backdated orders
+# Ensure platform-api has started at least once (token bootstrap), then:
 docker compose exec platform-api node --import tsx src/seeds/demo-seed.ts
 
 # Remove demo data
 docker compose exec platform-api node --import tsx src/seeds/demo-seed.ts --clean
 ```
 
+Logs to expect:
+
+- `[seed:demo] Medusa admin token ready (source=db|bootstrap|env, …)`
+- `[seed:demo] Media S3: bucket=… apiEndpoint=http://seaweedfs:8333 …`
+
+If media uploads fail, confirm Seaweed is healthy and `MEDIA_S3_INTERNAL_ENDPOINT=http://seaweedfs:8333` is set on platform-api.
+
 If backdating logs `localhost:5432`, the process is missing `MEDUSA_DATABASE_URL` (should be `postgres://…@postgres:5432/medusa_db` on Dokploy, not localhost).
 
 1. Deploy (migrations + auto Medusa admin bootstrap)
-2. Sign up on the dashboard and create a shop  
+2. Optional: `docker compose exec platform-api node --import tsx src/seeds/demo-seed.ts`
+3. Or sign up on the dashboard and create a shop  
 
 Debug shop create: platform-api `[platform/tenants]`, dashboard `[onboarding/submit]`.
 
 ### Media (SeaweedFS S3)
 
-This stack runs **SeaweedFS** (S3-compatible) for product and library uploads (replaces MinIO). Set `MEDIA_S3_SECRET_ACCESS_KEY` (and optionally `MEDIA_S3_ACCESS_KEY_ID` / `MEDIA_S3_BUCKET`) in Dokploy. Platform API uses the public `MEDIA_S3_ENDPOINT` (presigned uploads via `media.${BASE_DOMAIN}`); Caddy reverse-proxies that host to `seaweedfs:8333`. Public object URLs use `MEDIA_S3_PUBLIC_BASE_URL` (path-style `…/ecs-media/…`).
+This stack runs **SeaweedFS** (S3-compatible) for product and library uploads (replaces MinIO). Set `MEDIA_S3_SECRET_ACCESS_KEY` (and optionally `MEDIA_S3_ACCESS_KEY_ID` / `MEDIA_S3_BUCKET`) in Dokploy.
 
-Point DNS for `media.${BASE_DOMAIN}` at the same Caddy/Traefik entry used by other app hosts, and set `MEDIA_S3_CORS_ALLOW_ORIGIN` to your dashboard origin so browser uploads can preflight.
+| Variable | Used for |
+|----------|----------|
+| `MEDIA_S3_ENDPOINT` | Browser **presigned** uploads (public `https://media.${BASE_DOMAIN}`) |
+| `MEDIA_S3_INTERNAL_ENDPOINT` | Server **PutObject** (demo-seed); default `http://seaweedfs:8333` |
+| `MEDIA_S3_PUBLIC_BASE_URL` | Object URLs stored on media assets / product images |
 
-Shop **create** does not require object storage. Media uploads do.
+Caddy reverse-proxies `media.${BASE_DOMAIN}` → `seaweedfs:8333`. Point DNS for `media.${BASE_DOMAIN}` at the same entry used by other app hosts, and set `MEDIA_S3_CORS_ALLOW_ORIGIN` to your dashboard origin so browser uploads can preflight.
+
+Shop **create** does not require object storage. Media uploads and full demo seed images do.
 
 **Cutover from MinIO:** drop the old `minio-data` volume (or leave it unused), set the new `MEDIA_S3_*` secrets, redeploy. Re-upload media or reseed — no automatic object migration.
 
