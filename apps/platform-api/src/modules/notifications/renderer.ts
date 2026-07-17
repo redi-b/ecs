@@ -440,6 +440,76 @@ export function createCodeNotificationRenderer(): NotificationRenderer {
           );
         }
 
+        case "inventory.low": {
+          const productLabel =
+            pickScalar(asRecord(input.payload), "productTitle", "title", "productId") ?? "a product";
+          const qty =
+            pickScalar(asRecord(input.payload), "availableQuantity", "stockedQuantity", "quantity") ??
+            "low";
+          const title = "Low stock";
+          return finish(
+            title,
+            composeMessage(
+              `Stock is running low for ${productLabel}.`,
+              cleanDetails([
+                { label: "Product", value: productLabel },
+                { label: "Available", value: String(qty) },
+                pickScalar(asRecord(input.payload), "variantTitle")
+                  ? {
+                      label: "Variant",
+                      value: pickScalar(asRecord(input.payload), "variantTitle") as string,
+                    }
+                  : { label: "", value: "" },
+              ]),
+              "Restock in the dashboard so customers can keep ordering.",
+            ),
+          );
+        }
+
+        case "billing.past_due": {
+          const planName = pickScalar(asRecord(input.payload), "planName") ?? "your plan";
+          return finish(
+            "Subscription past due",
+            composeMessage(
+              `Payment for ${planName} is past due.`,
+              cleanDetails([
+                { label: "Plan", value: planName },
+                pickScalar(asRecord(input.payload), "amount")
+                  ? {
+                      label: "Amount",
+                      value:
+                        formatMoneyAmount(
+                          pickScalar(asRecord(input.payload), "amount"),
+                          pickScalar(asRecord(input.payload), "currencyCode", "currency"),
+                        ) ?? String(pickScalar(asRecord(input.payload), "amount")),
+                    }
+                  : { label: "", value: "" },
+              ]),
+              "Open Billing in your dashboard to pay and keep Growth features active.",
+            ),
+          );
+        }
+
+        case "billing.invoice_ready": {
+          const planName = pickScalar(asRecord(input.payload), "planName") ?? "your plan";
+          const amount =
+            formatMoneyAmount(
+              pickScalar(asRecord(input.payload), "amount"),
+              pickScalar(asRecord(input.payload), "currencyCode", "currency"),
+            ) ?? pickScalar(asRecord(input.payload), "amount");
+          return finish(
+            "Invoice ready",
+            composeMessage(
+              `A renewal invoice is ready for ${planName}.`,
+              cleanDetails([
+                { label: "Plan", value: planName },
+                amount ? { label: "Amount", value: amount } : { label: "", value: "" },
+              ]),
+              "Open Billing in your dashboard to pay before the period ends.",
+            ),
+          );
+        }
+
         default: {
           const title = "Shop update";
           return finish(

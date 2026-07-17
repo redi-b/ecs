@@ -20,6 +20,7 @@ import { createLogNotificationProvider } from "./modules/notifications/providers
 import { createProviderRegistry } from "./modules/notifications/providers/registry.js";
 import { createTelegramNotificationProvider } from "./modules/notifications/providers/telegram-provider.js";
 import { createCodeNotificationRenderer } from "./modules/notifications/renderer.js";
+import { createNotificationService } from "./modules/notifications/service.js";
 
 loadPlatformApiEnvFiles();
 
@@ -85,6 +86,16 @@ const notificationProviders = createProviderRegistry([
 ]);
 const notificationRenderer = createCodeNotificationRenderer();
 
+const jobsClient = createJobsClient({
+  redisUrl,
+  db: platformDb.db,
+  logger,
+});
+
+const notificationService = createNotificationService(platformDb.db, {
+  enqueueJob: (input) => jobsClient.enqueueJob(input),
+});
+
 // Chapa verify for billing reconcile (same secret as HTTP API).
 const chapaPaymentService = createChapaPaymentService({
   apiUrl: process.env.CHAPA_API_URL,
@@ -109,18 +120,13 @@ const worker = startPlatformWorker({
     }) as JobHandler,
     "billing.lifecycle": createBillingLifecycleHandler({
       db: platformDb.db,
+      recordNotificationEvent: notificationService.recordNotificationEvent,
     }) as JobHandler,
     "billing.reconcile-payments": createBillingPaymentReconcileHandler({
       db: platformDb.db,
       verifyPayment: (txRef) => chapaPaymentService.verifyPayment(txRef),
     }) as JobHandler,
   },
-  logger,
-});
-
-const jobsClient = createJobsClient({
-  redisUrl,
-  db: platformDb.db,
   logger,
 });
 

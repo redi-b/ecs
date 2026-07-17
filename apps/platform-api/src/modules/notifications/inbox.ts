@@ -17,6 +17,9 @@ export const IN_APP_EVENT_SET = new Set<string>([
   "order.cancelled",
   "payment.paid",
   "payment.failed",
+  "inventory.low",
+  "billing.past_due",
+  "billing.invoice_ready",
 ]);
 
 export type InAppNotificationView = {
@@ -54,8 +57,19 @@ function pickString(record: Record<string, unknown>, ...keys: string[]): string 
 export function buildInAppDedupeKey(eventType: string, payload: unknown): string {
   const data = asRecord(payload);
   const entity =
-    pickString(data, "orderId", "order_id", "orderDisplayId", "displayId", "txRef", "eventId") ??
-    null;
+    pickString(
+      data,
+      "orderId",
+      "order_id",
+      "orderDisplayId",
+      "displayId",
+      "txRef",
+      "eventId",
+      "variantId",
+      "productId",
+      "invoiceId",
+      "subscriptionId",
+    ) ?? null;
 
   if (eventType === "notification.test") {
     const testId = pickString(data, "testId", "id") ?? crypto.randomUUID();
@@ -82,6 +96,7 @@ export function buildInAppDedupeKey(eventType: string, payload: unknown): string
 export function buildInAppHref(eventType: string, payload: unknown): string | null {
   const data = asRecord(payload);
   const orderId = pickString(data, "orderId", "order_id");
+  const productId = pickString(data, "productId", "product_id");
 
   if (
     orderId &&
@@ -98,6 +113,17 @@ export function buildInAppHref(eventType: string, payload: unknown): string | nu
     eventType === "cod_order.created" // legacy inbox rows
   ) {
     return "/admin/orders";
+  }
+
+  if (eventType === "inventory.low" && productId) {
+    return `/admin/products/${encodeURIComponent(productId)}`;
+  }
+  if (eventType === "inventory.low") {
+    return "/admin/products";
+  }
+
+  if (eventType.startsWith("billing.")) {
+    return "/admin/billing";
   }
 
   return null;

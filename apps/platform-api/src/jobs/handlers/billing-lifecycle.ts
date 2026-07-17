@@ -2,6 +2,7 @@ import type { createPlatformDb } from "@ecs/db";
 import type { JobHandler } from "@ecs/jobs";
 
 import { createBillingService } from "../../modules/billing/service.js";
+import type { NotificationEventType } from "../../types/index.js";
 
 type PlatformDb = ReturnType<typeof createPlatformDb>["db"];
 
@@ -13,14 +14,34 @@ type PlatformDb = ReturnType<typeof createPlatformDb>["db"];
  */
 export function createBillingLifecycleHandler(options: {
   db: PlatformDb;
+  recordNotificationEvent?: (input: {
+    eventType: NotificationEventType;
+    payload?: unknown;
+    tenantId: string;
+  }) => Promise<unknown>;
 }): JobHandler {
   const billing = createBillingService(options.db);
 
   return async () => {
     const result = await billing.runBillingLifecycle();
+
+    if (options.recordNotificationEvent) {
+      for (const item of result.notifications ?? []) {
+        void options
+          .recordNotificationEvent({
+            tenantId: item.tenantId,
+            eventType: item.eventType,
+            payload: item.payload,
+          })
+          .catch(() => undefined);
+      }
+    }
+
     return {
       ok: true as const,
-      ...result,
+      scanned: result.scanned,
+      renewed: result.renewed,
+      pastDue: result.pastDue,
     };
   };
 }

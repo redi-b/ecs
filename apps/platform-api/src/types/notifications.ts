@@ -1,7 +1,10 @@
 export type NotificationEventType =
   | "cod_order.created"
+  | "billing.invoice_ready"
+  | "billing.past_due"
   | "chapa.onboarding_needs_review"
   | "domain.misconfigured"
+  | "inventory.low"
   | "notification.test"
   | "order.created"
   | "order.cancelled"

@@ -16,6 +16,9 @@ export const DEFAULT_TELEGRAM_EVENTS = [
   "order.cancelled",
   "payment.paid",
   "payment.failed",
+  "inventory.low",
+  "billing.past_due",
+  "billing.invoice_ready",
   "notification.test",
 ] as const;
 
