@@ -252,7 +252,7 @@ export function ProductCatalogPickerDialog({
         id: item.id,
         title: item.title,
         handle: item.subtitle?.startsWith("/") ? item.subtitle.slice(1) : null,
-        thumbnailUrl: item.thumbnailUrl,
+        thumbnailUrl: item.thumbnailUrl ?? null,
         searchText: item.searchText,
       }),
     );
@@ -863,7 +863,13 @@ function SelectionMark({ selected }: { selected: boolean }) {
   );
 }
 
-function ProductPickThumb({ title, url }: { title: string; url?: string | null }) {
+function ProductPickThumb({
+  title,
+  url,
+}: {
+  title: string;
+  url?: string | null | undefined;
+}) {
   if (url) {
     return (
       // biome-ignore lint/performance/noImgElement: product thumbnail from commerce CDN

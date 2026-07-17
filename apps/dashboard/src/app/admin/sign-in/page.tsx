@@ -9,7 +9,11 @@ import type { MessageKey } from "@/i18n/messages";
 import { getTranslations } from "@/i18n/server";
 import { getAuthenticatedDashboardRedirect } from "@/lib/dashboard-auth-redirect";
 import { isCentralDashboardHost } from "@/lib/dashboard-hosts";
-import { getCentralDashboardUrl, validateShopHost } from "@/lib/shop-host";
+import {
+  getCentralDashboardUrl,
+  validateShopHost,
+  type ShopHostValidation,
+} from "@/lib/shop-host";
 
 export default async function AdminSignInPage({
   searchParams,
@@ -21,10 +25,11 @@ export default async function AdminSignInPage({
   const requestHeaders = await headers();
   const requestHost = requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host");
   const isCentralAccess = isCentralDashboardHost(requestHost);
-  const shopHost =
+  // Type as ShopHostValidation — do not use `as const` alone ({ ok: true } lacks `tenant`).
+  const shopHost: ShopHostValidation =
     !isCentralAccess && requestHost
       ? await validateShopHost({ forwardedHost: requestHost })
-      : ({ ok: true } as const);
+      : { ok: true };
 
   if (!shopHost.ok) {
     if (shopHost.error === "shop_not_found") {
