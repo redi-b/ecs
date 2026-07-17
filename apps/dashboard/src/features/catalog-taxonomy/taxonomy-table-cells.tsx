@@ -17,8 +17,9 @@ type TaxonomyIdentityCellProps = {
   onOpen?: (() => void) | undefined;
 };
 
-export function TaxonomyIdentityCell({ entity, label, onOpen }: TaxonomyIdentityCellProps) {
-  const handle = "handle" in entity ? entity.handle : null;
+export function TaxonomyIdentityCell({ entity: _entity, label, onOpen }: TaxonomyIdentityCellProps) {
+  // Handle lives in its own table column — keep the name cell name-only.
+  void _entity;
   return (
     <div className="min-w-48">
       {onOpen ? (
@@ -32,9 +33,6 @@ export function TaxonomyIdentityCell({ entity, label, onOpen }: TaxonomyIdentity
       ) : (
         <div className="font-medium text-card-foreground">{label}</div>
       )}
-      {handle ? (
-        <div className="mt-1 max-w-64 truncate text-xs text-muted-foreground">/{handle}</div>
-      ) : null}
     </div>
   );
 }
@@ -94,16 +92,10 @@ export function CategoryParentCell({
   }
 
   if (parentCategory) {
-    const handle = parentCategory.handle;
     return (
-      <div className="min-w-44">
-        <div className="font-medium text-card-foreground">
-          {getCategoryDisplayName(parentCategory)}
-        </div>
-        {handle ? (
-          <div className="mt-1 max-w-56 truncate text-xs text-muted-foreground">/{handle}</div>
-        ) : null}
-      </div>
+      <span className="font-medium text-card-foreground">
+        {getCategoryDisplayName(parentCategory)}
+      </span>
     );
   }
 

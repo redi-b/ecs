@@ -49,6 +49,7 @@ type MemberProduct = {
   id: string;
   title: string | null;
   handle: string | null;
+  thumbnail?: string | null;
 };
 
 export function CollectionEditSheet({
@@ -123,6 +124,7 @@ export function CollectionEditSheet({
             id: product.id,
             title: product.title ?? null,
             handle: product.handle ?? null,
+            thumbnail: product.thumbnail ?? null,
           }))
         : [],
     );
@@ -132,6 +134,7 @@ export function CollectionEditSheet({
             id: product.id,
             title: product.title ?? null,
             handle: product.handle ?? null,
+            thumbnail: product.thumbnail ?? null,
           }))
         : [],
     );
@@ -463,6 +466,7 @@ function CollectionProductAddPicker({
         id: product.id,
         title: product.title ?? product.handle ?? t("taxonomy.edit.untitledProduct"),
         subtitle: product.handle ? `/${product.handle}` : null,
+        thumbnailUrl: product.thumbnail ?? null,
         searchText: [product.title, product.handle, product.id].filter(Boolean).join(" "),
       })),
     [candidates, t],

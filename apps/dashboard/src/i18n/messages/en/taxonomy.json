@@ -55,7 +55,8 @@
     "nameLabel": "Name",
     "titleLabel": "Title",
     "namePlaceholder": "Coffee",
-    "titlePlaceholder": "Featured"
+    "titlePlaceholder": "Featured",
+    "searchParent": "Search parent categories…"
   },
   "actions": {
     "reorder": "Reorder"

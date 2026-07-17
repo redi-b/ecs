@@ -38,7 +38,12 @@ import type { MerchantPromotion } from "@/lib/merchant-promotions";
 
 type Translate = (key: MessageKey, values?: Record<string, string | number | Date>) => string;
 
-type CatalogProduct = { id: string; title: string | null; handle: string | null };
+type CatalogProduct = {
+  id: string;
+  title: string | null;
+  handle: string | null;
+  thumbnail: string | null;
+};
 
 function offerSummary(promotion: MerchantPromotion, t: Translate) {
   if (promotion.promotionType === "buyget") {
@@ -146,7 +151,12 @@ export function PromotionEditSheet({
     })
       .then(async (response) => {
         const data = (await response.json().catch(() => ({}))) as {
-          products?: Array<{ id: string; title?: string | null; handle?: string | null }>;
+          products?: Array<{
+            id: string;
+            title?: string | null;
+            handle?: string | null;
+            thumbnail?: string | null;
+          }>;
         };
         setCatalog(
           response.ok && Array.isArray(data.products)
@@ -154,6 +164,7 @@ export function PromotionEditSheet({
                 id: product.id,
                 title: product.title ?? null,
                 handle: product.handle ?? null,
+                thumbnail: product.thumbnail ?? null,
               }))
             : [],
         );
@@ -545,6 +556,7 @@ function ProductMultiPicker({
         id: product.id,
         title: product.title ?? product.handle ?? product.id,
         subtitle: product.handle ? `/${product.handle}` : null,
+        thumbnailUrl: product.thumbnail,
         searchText: [product.title, product.handle, product.id].filter(Boolean).join(" "),
       })),
     [catalog],
