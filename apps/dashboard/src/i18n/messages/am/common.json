@@ -73,8 +73,9 @@
     "loadFailedTitle": "ዳሽቦርዱን መጫን አልተቻለም",
     "loadFailedDesc": "የመለያ ሥራ ቦታዎን መጫን አልተቻለም። ትንሽ ቆይተው እንደገና ይሞክሩ።",
     "deniedTitle": "ወደ ዳሽቦርድ መግባት አልተፈቀደም",
-    "deniedDesc": "ይህ መለያ ወደዚህ ሱቅ መድረስ አይችልም።",
+    "deniedDesc": "ይህ መለያ ወደዚህ ሱቅ መድረስ አይችልም። የሚገባዎትን ሱቅ ለመክፈት ከዋናው ዳሽቦርድ ይግቡ።",
     "useAnotherAccount": "ሌላ መለያ ተጠቀም",
+    "goToYourDashboard": "ወደ ዋናው ዳሽቦርድ ይሂዱ",
     "unavailableTitle": "ዳሽቦርዱ ለጊዜው አይገኝም",
     "unavailableDesc": "ይህን ዳሽቦርድ መጫን አልተቻለም። ትንሽ ቆይተው እንደገና ይሞክሩ።"
   }

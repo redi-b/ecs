@@ -4,6 +4,10 @@ import { NextResponse } from "next/server";
 import { getSharedAuthCookie } from "@/lib/auth-cookies";
 import { isCentralDashboardHost } from "@/lib/dashboard-hosts";
 import { requestWantsJson } from "@/lib/request-wants-json";
+import {
+  sessionCanAccessShopHost,
+  validateShopHost,
+} from "@/lib/shop-host";
 
 export async function POST(request: Request) {
   const wantsJson = requestWantsJson(request);
@@ -23,11 +27,7 @@ export async function POST(request: Request) {
   const forwardedHost =
     request.headers.get("x-forwarded-host") ?? request.headers.get("host") ?? "";
   const forwardedProto = request.headers.get("x-forwarded-proto") ?? "http";
-  const hostResult = isCentralDashboardHost(forwardedHost)
-    ? ({ ok: true } as const)
-    : await validateShopHost({
-        forwardedHost,
-      });
+  const hostResult = await validateShopHost({ forwardedHost });
 
   if (!hostResult.ok) {
     return failSignIn(request, nextPath, hostResult.error, wantsJson);
@@ -49,6 +49,20 @@ export async function POST(request: Request) {
       authResult.status === 401 ? "invalid_credentials" : "auth_unavailable",
       wantsJson,
     );
+  }
+
+  // Shop hosts: credentials alone are not enough — user must be a member of *this* shop.
+  // Do not set session cookies if membership fails (avoids "signed in but forbidden" limbo).
+  if (!isCentralDashboardHost(forwardedHost)) {
+    const cookieHeader = getCookieHeader(authResult.cookies);
+    const allowed = await sessionCanAccessShopHost({
+      cookieHeader,
+      forwardedHost,
+    });
+
+    if (!allowed) {
+      return failSignIn(request, nextPath, "shop_access_denied", wantsJson);
+    }
   }
 
   const redirectPath = await getPostSignInRedirectPath({
@@ -99,7 +113,10 @@ async function readSignInPayload(request: Request) {
 function failSignIn(request: Request, nextPath: string, error: string, wantsJson: boolean) {
   if (wantsJson) {
     const status =
-      error === "invalid_credentials" || error === "missing_email" || error === "missing_password"
+      error === "invalid_credentials" ||
+      error === "missing_email" ||
+      error === "missing_password" ||
+      error === "shop_access_denied"
         ? 401
         : error === "shop_not_found" || error === "shop_unavailable"
           ? 404
@@ -143,39 +160,6 @@ async function getPostSignInRedirectPath(input: {
   };
 
   return body.primaryTenant?.dashboardUrl ?? "/admin/onboarding";
-}
-
-async function validateShopHost(input: { forwardedHost: string }) {
-  const response = await fetch(new URL("/platform/merchant/host", getPlatformBaseUrl()), {
-    cache: "no-store",
-    headers: {
-      "x-forwarded-host": input.forwardedHost,
-    },
-  }).catch(() => null);
-
-  if (!response) {
-    return {
-      ok: false,
-      error: "auth_unavailable",
-    } as const;
-  }
-
-  if (!response.ok) {
-    const body = (await response.json().catch(() => ({}))) as { error?: string };
-
-    return {
-      ok: false,
-      error: body.error === "shop_not_found" ? "shop_not_found" : "shop_unavailable",
-    } as const;
-  }
-
-  return {
-    ok: true,
-  } as const;
-}
-
-function getPlatformBaseUrl() {
-  return normalizeBaseUrl(process.env.PLATFORM_API_BASE_URL ?? "http://localhost:3000");
 }
 
 function getSafeNextPath(value: FormDataEntryValue | string | null) {

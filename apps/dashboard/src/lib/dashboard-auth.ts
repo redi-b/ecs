@@ -20,6 +20,10 @@ export type MerchantDashboardAccess =
     }
   | {
       ok: false;
+      kind: "shop_not_found";
+    }
+  | {
+      ok: false;
       kind: "unavailable";
       message: string;
     };
@@ -48,6 +52,13 @@ export async function getMerchantDashboardAccess(options: {
       ok: false,
       kind: "forbidden",
       message: result.message,
+    };
+  }
+
+  if (result.status === 404 || result.message === "shop_not_found") {
+    return {
+      ok: false,
+      kind: "shop_not_found",
     };
   }
 

@@ -149,6 +149,8 @@ function mapAuthError(code: string | undefined, t: (key: MessageKey) => string) 
       return t("auth.error.shopNotFound");
     case "shop_unavailable":
       return t("auth.error.shopUnavailable");
+    case "shop_access_denied":
+      return t("auth.error.shopAccessDenied");
     default:
       return t("auth.error.failed");
   }

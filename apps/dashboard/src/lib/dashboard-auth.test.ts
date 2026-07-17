@@ -120,4 +120,19 @@ describe("getMerchantDashboardAccess", () => {
       ok: false,
     });
   });
+
+  it("maps shop_not_found to shop_not_found", async () => {
+    const access = await getMerchantDashboardAccess({
+      getAccess: async () => ({
+        ok: false,
+        message: "shop_not_found",
+        status: 404,
+      }),
+    });
+
+    assert.deepEqual(access, {
+      kind: "shop_not_found",
+      ok: false,
+    });
+  });
 });

@@ -3,11 +3,13 @@ import Link from "@/components/app/link";
 import { redirect } from "next/navigation";
 
 import { SignInForm } from "@/components/app/sign-in-form";
+import { DashboardAccessState } from "@/components/app/dashboard-access-state";
 import { AuthShell } from "@/components/onboarding/auth-shell";
 import type { MessageKey } from "@/i18n/messages";
 import { getTranslations } from "@/i18n/server";
 import { getAuthenticatedDashboardRedirect } from "@/lib/dashboard-auth-redirect";
 import { isCentralDashboardHost } from "@/lib/dashboard-hosts";
+import { getCentralDashboardUrl, validateShopHost } from "@/lib/shop-host";
 
 export default async function AdminSignInPage({
   searchParams,
@@ -18,6 +20,34 @@ export default async function AdminSignInPage({
   const t = await getTranslations();
   const requestHeaders = await headers();
   const requestHost = requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host");
+  const isCentralAccess = isCentralDashboardHost(requestHost);
+
+  if (!isCentralAccess && requestHost) {
+    const hostResult = await validateShopHost({ forwardedHost: requestHost });
+    if (!hostResult.ok) {
+      if (hostResult.error === "shop_not_found") {
+        return (
+          <DashboardAccessState
+            actionHref={getCentralDashboardUrl("/admin/sign-in")}
+            actionLabel={t("auth.shopMissing.cta")}
+            description={t("auth.shopMissing.description")}
+            title={t("auth.shopMissing.title")}
+          />
+        );
+      }
+      if (hostResult.error === "shop_unavailable") {
+        return (
+          <DashboardAccessState
+            actionHref={getCentralDashboardUrl("/admin/sign-in")}
+            actionLabel={t("auth.shopMissing.cta")}
+            description={t("auth.error.shopUnavailable")}
+            title={t("auth.error.shopUnavailable")}
+          />
+        );
+      }
+    }
+  }
+
   const authenticatedRedirect = await getAuthenticatedDashboardRedirect({
     cookieHeader: requestHeaders.get("cookie"),
     platformApiBaseUrl: process.env.PLATFORM_API_BASE_URL ?? "http://localhost:3000",
@@ -28,9 +58,9 @@ export default async function AdminSignInPage({
     redirect(authenticatedRedirect);
   }
 
-  const isCentralAccess = isCentralDashboardHost(requestHost);
   const nextPath = getSafeNextPath(params?.next);
   const errorMessage = getErrorMessage(params?.error, t);
+  const centralSignIn = getCentralDashboardUrl("/admin/sign-in");
 
   return (
     <AuthShell
@@ -68,7 +98,17 @@ export default async function AdminSignInPage({
               {t("auth.createAccount")}
             </Link>
           </p>
-        ) : null}
+        ) : (
+          <p className="mt-7 border-t pt-6 text-center text-sm text-muted-foreground">
+            {t("auth.shopWrongHostHint")}{" "}
+            <a
+              className="font-medium text-primary underline-offset-4 hover:underline"
+              href={centralSignIn}
+            >
+              {t("auth.shopWrongHostCta")}
+            </a>
+          </p>
+        )}
       </div>
     </AuthShell>
   );
@@ -100,6 +140,8 @@ function getErrorMessage(value: string | undefined, t: (key: MessageKey) => stri
       return t("auth.error.shopNotFound");
     case "shop_unavailable":
       return t("auth.error.shopUnavailable");
+    case "shop_access_denied":
+      return t("auth.error.shopAccessDenied");
     default:
       return t("auth.error.failed");
   }

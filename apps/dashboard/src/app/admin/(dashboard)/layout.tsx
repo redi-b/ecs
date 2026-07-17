@@ -19,6 +19,7 @@ import { isCentralDashboardHost } from "@/lib/dashboard-hosts";
 import { getSelectedTenantId } from "@/lib/dashboard-tenant-context";
 import { getMerchantDashboardAccessShell } from "@/lib/merchant-dashboard";
 import { getPlatformOnboardingState } from "@/lib/platform-onboarding";
+import { getCentralDashboardUrl } from "@/lib/shop-host";
 import { getSidebarDefaultOpen, SIDEBAR_COOKIE_NAME } from "@/lib/sidebar-state";
 
 export default async function AdminDashboardLayout({ children }: { children: ReactNode }) {
@@ -73,11 +74,22 @@ export default async function AdminDashboardLayout({ children }: { children: Rea
       redirect(getDashboardAuthRedirectPath(currentPath));
     }
 
+    if (access.kind === "shop_not_found") {
+      return (
+        <DashboardAccessState
+          actionHref={getCentralDashboardUrl("/admin/sign-in")}
+          actionLabel={t("auth.shopMissing.cta")}
+          description={t("auth.shopMissing.description")}
+          title={t("auth.shopMissing.title")}
+        />
+      );
+    }
+
     if (access.kind === "forbidden") {
       return (
         <DashboardAccessState
-          actionHref="/admin/sign-in"
-          actionLabel={t("common.access.useAnotherAccount")}
+          actionHref={getCentralDashboardUrl("/admin/sign-in")}
+          actionLabel={t("common.access.goToYourDashboard")}
           description={t("common.access.deniedDesc")}
           title={t("common.access.deniedTitle")}
         />
