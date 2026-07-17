@@ -33,6 +33,7 @@ import { copyTextToClipboard } from "@/lib/clipboard";
 import type { MerchantPromotion } from "@/lib/merchant-promotions";
 import type { MessageKey } from "@/i18n/messages";
 import { useI18n } from "@/i18n/provider";
+import { mapPlatformErrorMessage, readPlatformErrorMessage } from "@/lib/platform-api/errors";
 
 type StatusFilter = "all" | "active" | "draft" | "inactive";
 type OfferFilter =
@@ -235,11 +236,19 @@ export function PromotionsManager({
   async function deletePromotions(targets: MerchantPromotion[]) {
     setDeleting(true);
     let deleted = 0;
+    let lastFailureMessage: string | null = null;
     for (const item of targets) {
       const response = await fetch(`/admin/promotions/actions/${encodeURIComponent(item.id)}`, {
         method: "DELETE",
       }).catch(() => null);
-      if (response?.ok) deleted += 1;
+      if (response?.ok) {
+        deleted += 1;
+        continue;
+      }
+      lastFailureMessage = await readPlatformErrorMessage(response, {
+        fallback: t("promotions.toast.deleteFailed"),
+        resource: "Promotion",
+      });
     }
     setDeleting(false);
     setDeleteTarget(null);
@@ -258,7 +267,13 @@ export function PromotionsManager({
       router.refresh();
       return;
     }
-    toast.error(t("promotions.toast.deleteFailed"));
+    toast.error(
+      lastFailureMessage ??
+        mapPlatformErrorMessage(null, {
+          fallback: t("promotions.toast.deleteFailed"),
+          resource: "Promotion",
+        }),
+    );
   }
 
   const columns = useMemo<ColumnDef<MerchantPromotion>[]>(

@@ -7,6 +7,7 @@ import { getTranslations } from "@/i18n/server";
 import { type DashboardSearchParams, getSelectedTenantId } from "@/lib/dashboard-tenant-context";
 import { getMerchantDashboardAccessShell } from "@/lib/merchant-dashboard";
 import { getMerchantDeliverySettings } from "@/lib/merchant-settings";
+import { mapPlatformErrorMessage } from "@/lib/platform-api/errors";
 import { getMerchantPaymentsStatus } from "@/lib/platform-api/payments/client";
 import { getStorefrontTemplates } from "@/lib/storefront-templates";
 
@@ -62,7 +63,9 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
       {!result.ok ? (
         <Alert variant="destructive">
           <AlertTitle>{t("settings.error.loadTitle")}</AlertTitle>
-          <AlertDescription>{result.message}</AlertDescription>
+          <AlertDescription>
+            {mapPlatformErrorMessage(result.message, { resource: "Settings" })}
+          </AlertDescription>
         </Alert>
       ) : (
         <SettingsWorkspace
