@@ -133,11 +133,13 @@ This stack runs **SeaweedFS** (S3-compatible) for product and library uploads (r
 
 | Variable | Used for |
 |----------|----------|
-| `MEDIA_S3_ENDPOINT` | Browser **presigned** uploads (public `https://media.${BASE_DOMAIN}`) |
-| `MEDIA_S3_INTERNAL_ENDPOINT` | Server **PutObject** (demo-seed); default `http://seaweedfs:8333` |
+| `MEDIA_S3_ENDPOINT` | Browser **presigned** PUT host (public `https://media.${BASE_DOMAIN}`) |
+| `MEDIA_S3_INTERNAL_ENDPOINT` | Server Head/Put/Delete + demo-seed; default `http://seaweedfs:8333` |
 | `MEDIA_S3_PUBLIC_BASE_URL` | Object URLs stored on media assets / product images |
 
-Caddy reverse-proxies `media.${BASE_DOMAIN}` → `seaweedfs:8333`. Point DNS for `media.${BASE_DOMAIN}` at the same entry used by other app hosts, and set `MEDIA_S3_CORS_ALLOW_ORIGIN` to your dashboard origin so browser uploads can preflight.
+Caddy reverse-proxies `media.${BASE_DOMAIN}` → `seaweedfs:8333` and **preserves the original `Host` header** so SigV4 on browser PUTs still matches. Point DNS for `media.${BASE_DOMAIN}` at the same entry used by other app hosts, and set `MEDIA_S3_CORS_ALLOW_ORIGIN` to your dashboard origin so browser uploads can preflight.
+
+If uploads fail with red network rows on the media host: confirm (1) Host is preserved, (2) presigned URLs lack `x-amz-checksum-*` query params (platform-api disables flexible checksums), (3) CORS allows the dashboard origin.
 
 Shop **create** does not require object storage. Media uploads and full demo seed images do.
 

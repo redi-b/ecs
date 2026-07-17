@@ -14,11 +14,19 @@ export function createMediaStorageFromEnv(env: NodeJS.ProcessEnv = process.env):
     return createUnavailableStorageAdapter();
   }
 
+  const forcePathStyleEnv = env.MEDIA_S3_FORCE_PATH_STYLE?.trim().toLowerCase();
+  const forcePathStyle =
+    forcePathStyleEnv === "true" ||
+    forcePathStyleEnv === "1" ||
+    // Path-style is required for SeaweedFS and most self-hosted S3 APIs.
+    (forcePathStyleEnv !== "false" && Boolean(env.MEDIA_S3_ENDPOINT?.trim()));
+
   return createS3StorageAdapter({
     accessKeyId,
     bucket,
     endpoint: env.MEDIA_S3_ENDPOINT?.trim() || undefined,
-    forcePathStyle: env.MEDIA_S3_FORCE_PATH_STYLE === "true",
+    forcePathStyle,
+    internalEndpoint: env.MEDIA_S3_INTERNAL_ENDPOINT?.trim() || undefined,
     publicBaseUrl: env.MEDIA_S3_PUBLIC_BASE_URL?.trim() || undefined,
     region: env.MEDIA_S3_REGION?.trim() || "auto",
     secretAccessKey,
