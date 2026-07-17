@@ -319,8 +319,10 @@ export function SettingsWorkspace({
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-8">
+    <div className="flex min-w-0 flex-col gap-4">
+      {/* min-w-0: allow the chip strip to shrink so overflow-x scrolls inside the nav,
+          not the page (flex default min-width:auto expands to fit all chips). */}
+      <div className="flex min-w-0 flex-col gap-6 lg:flex-row lg:items-start lg:gap-8">
         <SettingsSectionNav active={section} onSelect={selectSection} />
 
         <div className="min-w-0 flex-1">
@@ -487,7 +489,11 @@ function SettingsSectionNav({
     const el = scrollerRef.current;
     if (!el) return;
     const activeButton = el.querySelector<HTMLElement>(`[data-section="${active}"]`);
-    activeButton?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+    if (!activeButton) return;
+    // Scroll only the chip strip — scrollIntoView can jank the whole page on mobile.
+    const left =
+      activeButton.offsetLeft - (el.clientWidth - activeButton.offsetWidth) / 2;
+    el.scrollTo({ left: Math.max(0, left), behavior: "smooth" });
   }, [active]);
 
   return (
@@ -495,15 +501,16 @@ function SettingsSectionNav({
       aria-label={t("settings.navAria")}
       className={cn(
         // Stay pinned while settings content scrolls (under sticky AppHeader).
-        "sticky z-20 self-start bg-background/95 backdrop-blur-sm supports-backdrop-filter:bg-background/85",
+        // min-w-0 + max-w-full: contain chip strip so swipes scroll the strip, not the page.
+        "sticky z-20 min-w-0 max-w-full self-start bg-background/95 backdrop-blur-sm supports-backdrop-filter:bg-background/85",
         // Mobile: horizontal chips under the 3.5rem / 4rem app header.
         "top-14 -mx-1 px-1 py-1.5 sm:top-16",
         // Desktop: sidebar column beside the form.
-        "lg:top-20 lg:w-52 lg:shrink-0 lg:bg-transparent lg:px-0 lg:py-0 lg:backdrop-blur-none",
+        "lg:top-20 lg:w-52 lg:max-w-none lg:shrink-0 lg:bg-transparent lg:px-0 lg:py-0 lg:backdrop-blur-none",
         "lg:max-h-[calc(100dvh-6rem)] lg:overflow-y-auto",
       )}
     >
-      <div className="relative lg:static">
+      <div className="relative min-w-0 lg:static">
         <div
           aria-hidden
           className={cn(
@@ -523,7 +530,12 @@ function SettingsSectionNav({
           <AppIcons.arrowRight className="size-3.5 text-muted-foreground" />
         </div>
         <ul
-          className="flex gap-1.5 overflow-x-auto scroll-smooth px-0.5 pb-1 [scrollbar-width:none] lg:flex-col lg:gap-1 lg:overflow-visible lg:px-0 lg:pb-0 [&::-webkit-scrollbar]:hidden"
+          className={cn(
+            "flex min-w-0 gap-1.5 overflow-x-auto overflow-y-hidden overscroll-x-contain scroll-smooth px-0.5 pb-1",
+            // Prefer horizontal pan on the strip so the page does not steal the gesture.
+            "touch-pan-x [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
+            "lg:flex-col lg:gap-1 lg:overflow-visible lg:px-0 lg:pb-0 lg:touch-auto",
+          )}
           ref={scrollerRef}
         >
           {SETTINGS_SECTION_IDS.map((id) => {
