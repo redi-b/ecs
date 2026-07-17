@@ -139,9 +139,22 @@ export function parseInboxDetails(item: InboxItem, locale = "en"): InboxDetail[]
       const label = line.slice(0, colon).trim();
       const value = line.slice(colon + 1).trim();
       if (!label || !value) continue;
+      const labelKey = label.toLowerCase();
+      // Skip provider payment refs and other noisy technical rows.
+      if (
+        labelKey === "reference" ||
+        labelKey === "tx ref" ||
+        labelKey === "payment reference" ||
+        labelKey === "provider reference"
+      ) {
+        continue;
+      }
+      if (looksLikeUglyPaymentRef(value)) {
+        continue;
+      }
       // Skip redundant order ref already in the title.
       if (
-        label.toLowerCase() === "order" &&
+        labelKey === "order" &&
         title.includes(value.toLowerCase().replace(/^#/, ""))
       ) {
         continue;
@@ -170,6 +183,15 @@ function sortDetails(details: InboxDetail[]): InboxDetail[] {
     const bi = DETAIL_PRIORITY.indexOf(b.label.toLowerCase());
     return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
   });
+}
+
+/** Provider/tx refs that should never clutter the inbox panel. */
+function looksLikeUglyPaymentRef(value: string) {
+  const v = value.trim();
+  if (v.length > 28) return true;
+  if (/^(chapa|tx|ecs_|pay_|ref_|tr-)/i.test(v)) return true;
+  if (/^[0-9a-f]{16,}$/i.test(v)) return true;
+  return false;
 }
 
 function eventIcon(eventType: string) {

@@ -8,13 +8,17 @@ import {
 } from "./renderer.js";
 
 describe("formatOrderRef", () => {
-  it("prefixes numeric display ids", () => {
+  it("prefixes numeric display ids for legacy payloads", () => {
     assert.equal(formatOrderRef("10"), "#10");
     assert.equal(formatOrderRef("#10"), "#10");
   });
 
-  it("hides long medusa order ids", () => {
-    assert.equal(formatOrderRef("order_01KXE59NRXJY6H5P2T4F0H3FR2"), "order");
+  it("turns medusa order ids into short shop codes", () => {
+    assert.equal(formatOrderRef("order_01KXE59NRXJY6H5P2T4F0H3FR2"), "0H3FR2");
+  });
+
+  it("keeps short alphanumeric codes", () => {
+    assert.equal(formatOrderRef("ab12cd"), "AB12CD");
   });
 });
 
@@ -40,7 +44,7 @@ describe("createCodeNotificationRenderer", () => {
       tenantId: "tenant-1",
       recipient: "123",
       payload: {
-        orderDisplayId: "10",
+        orderId: "order_01KXE59NRXJY6H5P2T4F0H3FR2",
         amount: "10880.000000000000",
         currencyCode: "etb",
         customerName: "Abebe Kebede",
@@ -49,10 +53,11 @@ describe("createCodeNotificationRenderer", () => {
         itemCount: 3,
         paymentMethod: "cod",
         deliveryChoice: "delivery",
+        paymentReference: "CHAPA-ugly-tx-ref-should-not-appear",
       },
     });
 
-    assert.match(result.body, /new order #10/i);
+    assert.match(result.body, /new order 0H3FR2/i);
     assert.match(result.body, /ETB 10,880/);
     assert.match(result.body, /Customer: Abebe Kebede/);
     assert.match(result.body, /Phone: \+251911000000/);
@@ -60,6 +65,8 @@ describe("createCodeNotificationRenderer", () => {
     assert.match(result.body, /Payment: Cash on delivery/);
     assert.match(result.body, /Fulfillment: Delivery/);
     assert.doesNotMatch(result.body, /10880\.000/);
+    assert.doesNotMatch(result.body, /CHAPA-ugly/i);
+    assert.doesNotMatch(result.body, /Reference:/i);
   });
 
   it("renders cancelled and payment messages with details", async () => {
@@ -69,14 +76,14 @@ describe("createCodeNotificationRenderer", () => {
       tenantId: "tenant-1",
       recipient: "in_app",
       payload: {
-        orderDisplayId: "10",
+        orderId: "order_01TESTCANCELCODE99",
         amount: "10880",
         currencyCode: "ETB",
         customerName: "Sara",
       },
     });
-    assert.equal(cancelled.subject, "Order #10 cancelled");
-    assert.match(cancelled.body, /Order #10 was cancelled/);
+    assert.equal(cancelled.subject, "Order CODE99 cancelled");
+    assert.match(cancelled.body, /Order CODE99 was cancelled/);
     assert.match(cancelled.body, /Customer: Sara/);
 
     const paid = await renderer.render({
@@ -85,16 +92,18 @@ describe("createCodeNotificationRenderer", () => {
       tenantId: "tenant-1",
       recipient: "123",
       payload: {
-        orderDisplayId: 10,
+        orderId: "order_01TESTPAYMENTPAID1",
         amount: 10880,
         currencyCode: "ETB",
         source: "dashboard_mark_paid",
         paymentMethod: "cod",
+        txRef: "ecs_pay_should_not_show",
       },
     });
-    assert.match(paid.body, /Payment received for order #10/);
+    assert.match(paid.body, /Payment received for order TPAID1/i);
     assert.match(paid.body, /Amount: ETB 10,880/);
     assert.match(paid.body, /Marked paid in dashboard/);
+    assert.doesNotMatch(paid.body, /ecs_pay/i);
   });
 
   it("renders recipient-facing test notifications without restating destination", async () => {
@@ -127,8 +136,13 @@ describe("createCodeNotificationRenderer", () => {
       eventType: "payment.paid",
       tenantId: "tenant-1",
       recipient: "in_app",
-      payload: { orderDisplayId: "10", amount: "10880", currencyCode: "etb" },
+      payload: {
+        orderId: "order_01ABCDEFGHJKLMN",
+        amount: "10880",
+        currencyCode: "etb",
+      },
     });
-    assert.equal(result.subject, "Payment received for #10");
+    // order_01ABCDEFGHJKLMN → last 6 = HJKLMN
+    assert.equal(result.subject, "Payment received for HJKLMN");
   });
 });

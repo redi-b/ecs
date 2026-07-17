@@ -12,13 +12,12 @@ export function buildPaymentPaidPayload(
   const deliveryName = order.delivery?.customerName?.trim();
   const payload: Record<string, unknown> = {
     orderId: order.id,
+    // Shop-facing code (renderer derives short code from orderId).
+    orderCode: formatOrderCode(order.id),
     source,
     paidAt: new Date().toISOString(),
     paymentStatus: "paid",
   };
-  if (order.displayId != null) {
-    payload.orderDisplayId = String(order.displayId);
-  }
   if (order.total != null) {
     payload.amount = String(order.total);
   }
@@ -31,9 +30,7 @@ export function buildPaymentPaidPayload(
   if (order.paymentMethod) {
     payload.paymentMethod = order.paymentMethod;
   }
-  if (order.paymentReference) {
-    payload.paymentReference = order.paymentReference;
-  }
+  // Do not put raw provider payment references in notification payloads.
   if (customerName || deliveryName) {
     payload.customerName = customerName || deliveryName;
   }
@@ -51,4 +48,10 @@ export function buildPaymentPaidPayload(
     payload.deliveryChoice = order.delivery.choice;
   }
   return payload;
+}
+
+/** Last 6 of Medusa order id — same convention as the merchant dashboard. */
+function formatOrderCode(orderId: string) {
+  const raw = orderId.replace(/^order_/i, "");
+  return (raw.slice(-6) || orderId.slice(-6)).toUpperCase();
 }
