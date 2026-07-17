@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, it } from "node:test";
 
-import { loadServiceEnvFiles } from "./index.js";
+import { loadServiceEnvFiles } from "./index";
 
 describe("loadServiceEnvFiles", () => {
   it("loads root and service env files without overriding existing environment values", () => {

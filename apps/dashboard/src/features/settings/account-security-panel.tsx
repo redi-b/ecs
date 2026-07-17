@@ -31,7 +31,10 @@ import { Switch } from "@/components/ui/switch";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useI18n } from "@/i18n/provider";
 import type { MessageKey } from "@/i18n/messages";
+import { parseDeviceFromUserAgent } from "@/lib/device-from-user-agent";
 import { cn } from "@/lib/utils";
+
+const SESSIONS_PAGE_SIZE = 5;
 
 type AccountSession = {
   createdAt: string;
@@ -86,10 +89,19 @@ export function AccountSecurityPanel({
   const [savingPassword, setSavingPassword] = useState(false);
 
   const [sessions, setSessions] = useState<AccountSession[]>([]);
+  const [sessionsVisible, setSessionsVisible] = useState(SESSIONS_PAGE_SIZE);
   const [loadingSessions, setLoadingSessions] = useState(true);
   const [sessionsError, setSessionsError] = useState<string | null>(null);
   const [revokingToken, setRevokingToken] = useState<string | null>(null);
   const [pendingRevoke, setPendingRevoke] = useState<AccountSession | null>(null);
+  const [pendingRevokeOthers, setPendingRevokeOthers] = useState(false);
+  const [revokingOthers, setRevokingOthers] = useState(false);
+  /** Browser UA for current session when server never stored one (legacy / proxy gaps). */
+  const [browserUserAgent, setBrowserUserAgent] = useState<string | null>(null);
+
+  useEffect(() => {
+    setBrowserUserAgent(typeof navigator !== "undefined" ? navigator.userAgent : null);
+  }, []);
 
   const loadSessions = useCallback(async () => {
     setLoadingSessions(true);
@@ -114,6 +126,7 @@ export function AccountSecurityPanel({
     }
 
     setSessions(data?.sessions ?? []);
+    setSessionsVisible(SESSIONS_PAGE_SIZE);
     setLoadingSessions(false);
   }, [t]);
 
@@ -237,6 +250,32 @@ export function AccountSecurityPanel({
     void loadSessions();
   }
 
+  async function confirmRevokeOtherSessions() {
+    setRevokingOthers(true);
+    const response = await fetch("/admin/account/sessions", {
+      body: JSON.stringify({ revokeOthers: true }),
+      headers: { accept: "application/json", "content-type": "application/json" },
+      method: "POST",
+    }).catch(() => null);
+    setRevokingOthers(false);
+    setPendingRevokeOthers(false);
+
+    if (!response?.ok) {
+      const data = (await response?.json().catch(() => null)) as { error?: string } | null;
+      toast.error(
+        data?.error === "auth_origin_rejected"
+          ? t("settings.accountSecurity.toast.revokeOrigin")
+          : t("settings.accountSecurity.toast.revokeOthersFailed"),
+      );
+      return;
+    }
+
+    toast.success(t("settings.accountSecurity.toast.othersSignedOut"));
+    void loadSessions();
+  }
+
+  const otherSessionCount = sessions.filter((session) => !session.isCurrent).length;
+
   const initials = getInitials(name.trim() || email);
   const nameDirty = name.trim() !== (initialName ?? "").trim();
   const passwordReady =
@@ -350,32 +389,46 @@ export function AccountSecurityPanel({
       </section>
 
       <section className="overflow-hidden rounded-lg border">
-        <div className="flex items-start justify-between gap-3 border-b px-4 py-3.5 sm:px-5">
+        <div className="flex flex-col gap-3 border-b px-4 py-3.5 sm:flex-row sm:items-start sm:justify-between sm:px-5">
           <div className="min-w-0">
             <h3 className="text-sm font-semibold">{t("settings.accountSecurity.devicesTitle")}</h3>
             <p className="mt-0.5 text-xs text-muted-foreground">
               {t("settings.accountSecurity.devicesHint")}
             </p>
           </div>
-          <Tooltip>
-            <TooltipTrigger asChild>
+          <div className="flex shrink-0 flex-wrap items-center gap-2">
+            {otherSessionCount > 0 ? (
               <Button
-                aria-busy={loadingSessions}
-                aria-label={loadingSessions ? t("settings.accountSecurity.refreshingSessions") : t("settings.accountSecurity.refreshSessions")}
                 className="rounded-full"
-                disabled={loadingSessions}
-                onClick={() => void loadSessions()}
-                size="icon-sm"
+                disabled={loadingSessions || revokingOthers}
+                onClick={() => setPendingRevokeOthers(true)}
+                size="sm"
                 type="button"
-                variant="outline"
+                variant="destructive-outline"
               >
-                <AppIcons.refresh className={loadingSessions ? "animate-spin" : undefined} />
+                {t("settings.accountSecurity.signOutOthersAction")}
               </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              {loadingSessions ? t("settings.accountSecurity.refreshing") : t("settings.accountSecurity.refreshSessions")}
-            </TooltipContent>
-          </Tooltip>
+            ) : null}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  aria-busy={loadingSessions}
+                  aria-label={loadingSessions ? t("settings.accountSecurity.refreshingSessions") : t("settings.accountSecurity.refreshSessions")}
+                  className="rounded-full"
+                  disabled={loadingSessions}
+                  onClick={() => void loadSessions()}
+                  size="icon-sm"
+                  type="button"
+                  variant="outline"
+                >
+                  <AppIcons.refresh className={loadingSessions ? "animate-spin" : undefined} />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                {loadingSessions ? t("settings.accountSecurity.refreshing") : t("settings.accountSecurity.refreshSessions")}
+              </TooltipContent>
+            </Tooltip>
+          </div>
         </div>
         <div className="flex flex-col gap-3 p-3 sm:p-4">
           {sessionsError ? (
@@ -389,91 +442,112 @@ export function AccountSecurityPanel({
           ) : sessions.length === 0 ? (
             <p className="px-1 py-3 text-sm text-muted-foreground">{t("settings.accountSecurity.noSessions")}</p>
           ) : (
-            <ul className="flex flex-col gap-3">
-              {sessions.map((session) => {
-                const info = parseUserAgent(session.userAgent, t);
-                return (
-                  <li
-                    className={cn(
-                      "rounded-lg border px-4 py-4",
-                      session.isCurrent && "border-primary/25 bg-muted/20",
-                    )}
-                    key={session.id}
-                  >
-                    <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                      <div className="flex min-w-0 items-start gap-3.5">
-                        <div className="grid size-11 shrink-0 place-items-center rounded-lg bg-muted text-foreground">
-                          <info.DeviceIcon className="size-5" />
-                        </div>
-                        <div className="min-w-0 space-y-2">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <p className="text-sm font-semibold">{info.deviceLabel}</p>
-                            {session.isCurrent ? (
-                              <Badge variant="secondary">{t("settings.accountSecurity.thisDevice")}</Badge>
-                            ) : null}
-                          </div>
-                          <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-muted-foreground">
-                            <span className="inline-flex items-center gap-1.5">
-                              <info.OsIcon className="size-3.5 shrink-0" />
-                              {info.os}
-                            </span>
-                            <span className="inline-flex items-center gap-1.5">
-                              <info.BrowserIcon className="size-3.5 shrink-0" />
-                              {info.browser}
-                            </span>
-                          </div>
-                          <div className="grid gap-1.5 text-xs text-muted-foreground sm:grid-cols-2">
-                            <p className="inline-flex items-center gap-1.5">
-                              <AppIcons.mapPin className="size-3.5 shrink-0" />
-                              <span>
-                                {t("settings.accountSecurity.ip")}{" "}
-                                <span className="font-medium text-foreground/80">
-                                  {session.ipAddress || t("settings.accountSecurity.unknown")}
-                                </span>
-                              </span>
-                            </p>
-                            <p className="inline-flex items-center gap-1.5">
-                              <AppIcons.time className="size-3.5 shrink-0" />
-                              <span>
-                                {t("settings.accountSecurity.lastActive")}{" "}
-                                <span className="font-medium text-foreground/80">
-                                  {formatDateTime(session.updatedAt, locale)}
-                                </span>
-                              </span>
-                            </p>
-                            <p className="inline-flex items-center gap-1.5 sm:col-span-2">
-                              <AppIcons.calendar className="size-3.5 shrink-0" />
-                              <span>
-                                {t("settings.accountSecurity.signedIn")}{" "}
-                                <span className="font-medium text-foreground/80">
-                                  {formatDateTime(session.createdAt, locale)}
-                                </span>
-                              </span>
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                      {session.isCurrent ? (
-                        <span className="self-start text-xs font-medium text-muted-foreground sm:pt-1">
-                          {t("settings.accountSecurity.currentSession")}
-                        </span>
-                      ) : (
-                        <Button
-                          className="rounded-full shrink-0 self-start"
-                          disabled={revokingToken === session.token}
-                          onClick={() => setPendingRevoke(session)}
-                          size="sm"
-                          type="button"
-                          variant="destructive"
-                        >
-                          {t("settings.accountSecurity.signOut")}
-                        </Button>
+            <>
+              <ul className="flex flex-col gap-3">
+                {sessions.slice(0, sessionsVisible).map((session) => {
+                  const resolvedUa =
+                    session.userAgent ||
+                    (session.isCurrent ? browserUserAgent : null);
+                  const info = parseUserAgent(resolvedUa, t);
+                  const ipLabel = formatSessionIp(session.ipAddress, t);
+                  return (
+                    <li
+                      className={cn(
+                        "rounded-lg border px-4 py-4",
+                        session.isCurrent && "border-primary/25 bg-muted/20",
                       )}
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
+                      key={session.id}
+                    >
+                      <div className="flex flex-col gap-3">
+                        <div className="flex min-w-0 items-start gap-3.5">
+                          <div className="grid size-11 shrink-0 place-items-center rounded-lg bg-muted text-foreground">
+                            <info.DeviceIcon className="size-5" />
+                          </div>
+                          <div className="min-w-0 flex-1 space-y-2">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <p className="text-sm font-semibold">{info.deviceLabel}</p>
+                              {session.isCurrent ? (
+                                <Badge variant="secondary">{t("settings.accountSecurity.thisDevice")}</Badge>
+                              ) : null}
+                            </div>
+                            <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-muted-foreground">
+                              <span className="inline-flex items-center gap-1.5">
+                                <info.OsIcon className="size-3.5 shrink-0" />
+                                {info.os}
+                              </span>
+                              <span className="inline-flex items-center gap-1.5">
+                                <info.BrowserIcon className="size-3.5 shrink-0" />
+                                {info.browser}
+                              </span>
+                            </div>
+                            <div className="grid gap-1.5 text-xs text-muted-foreground sm:grid-cols-2">
+                              <p className="inline-flex items-center gap-1.5">
+                                <AppIcons.mapPin className="size-3.5 shrink-0" />
+                                <span>
+                                  {t("settings.accountSecurity.ip")}{" "}
+                                  <span className="font-medium text-foreground/80">{ipLabel}</span>
+                                </span>
+                              </p>
+                              <p className="inline-flex items-center gap-1.5">
+                                <AppIcons.time className="size-3.5 shrink-0" />
+                                <span>
+                                  {t("settings.accountSecurity.lastActive")}{" "}
+                                  <span className="font-medium text-foreground/80">
+                                    {formatDateTime(session.updatedAt, locale)}
+                                  </span>
+                                </span>
+                              </p>
+                              <p className="inline-flex items-center gap-1.5 sm:col-span-2">
+                                <AppIcons.calendar className="size-3.5 shrink-0" />
+                                <span>
+                                  {t("settings.accountSecurity.signedIn")}{" "}
+                                  <span className="font-medium text-foreground/80">
+                                    {formatDateTime(session.createdAt, locale)}
+                                  </span>
+                                </span>
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                        {session.isCurrent ? (
+                          <p className="text-xs font-medium text-muted-foreground">
+                            {t("settings.accountSecurity.currentSession")}
+                          </p>
+                        ) : (
+                          <Button
+                            className="w-full rounded-full sm:w-auto sm:self-end"
+                            disabled={revokingToken === session.token}
+                            onClick={() => setPendingRevoke(session)}
+                            size="sm"
+                            type="button"
+                            variant="destructive-outline"
+                          >
+                            {t("settings.accountSecurity.signOut")}
+                          </Button>
+                        )}
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+              {sessions.length > sessionsVisible ? (
+                <div className="pt-1">
+                  <Button
+                    className="w-full rounded-full sm:w-auto"
+                    onClick={() =>
+                      setSessionsVisible((count) => count + SESSIONS_PAGE_SIZE)
+                    }
+                    size="sm"
+                    type="button"
+                    variant="outline"
+                  >
+                    {t("settings.accountSecurity.showMoreSessions", {
+                      remaining: sessions.length - sessionsVisible,
+                    })}
+                  </Button>
+                </div>
+              ) : null}
+            </>
           )}
         </div>
         <div className="border-t px-4 py-3 sm:px-5">
@@ -495,7 +569,11 @@ export function AccountSecurityPanel({
             <AlertDialogDescription>
               {pendingRevoke
                 ? t("settings.accountSecurity.signOutDesc", {
-                    device: `${parseUserAgent(pendingRevoke.userAgent, t).deviceLabel}${
+                    device: `${parseUserAgent(
+                      pendingRevoke.userAgent ||
+                        (pendingRevoke.isCurrent ? browserUserAgent : null),
+                      t,
+                    ).deviceLabel}${
                       pendingRevoke.ipAddress ? ` (${pendingRevoke.ipAddress})` : ""
                     }`,
                   })
@@ -505,7 +583,8 @@ export function AccountSecurityPanel({
           <AlertDialogFooter>
             <AlertDialogCancel className="rounded-full" disabled={Boolean(revokingToken)}>{t("common.cancel")}</AlertDialogCancel>
             <AlertDialogAction
-              className="rounded-full bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className="rounded-full"
+              variant="destructive"
               disabled={Boolean(revokingToken)}
               onClick={(event) => {
                 event.preventDefault();
@@ -513,6 +592,42 @@ export function AccountSecurityPanel({
               }}
             >
               {revokingToken ? t("settings.accountSecurity.signingOut") : t("settings.accountSecurity.signOutDevice")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog
+        open={pendingRevokeOthers}
+        onOpenChange={(open) => {
+          if (!open && !revokingOthers) setPendingRevokeOthers(false);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("settings.accountSecurity.signOutOthersTitle")}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t("settings.accountSecurity.signOutOthersDesc", {
+                count: otherSessionCount,
+              })}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="rounded-full" disabled={revokingOthers}>
+              {t("common.cancel")}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className="rounded-full"
+              disabled={revokingOthers}
+              onClick={(event) => {
+                event.preventDefault();
+                void confirmRevokeOtherSessions();
+              }}
+              variant="destructive"
+            >
+              {revokingOthers
+                ? t("settings.accountSecurity.signingOut")
+                : t("settings.accountSecurity.signOutOthersConfirm")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -583,88 +698,82 @@ function parseUserAgent(
   userAgent: string | null,
   t: (key: MessageKey) => string,
 ): DeviceInfo {
-  const ua = userAgent?.toLowerCase() ?? "";
-  const raw = userAgent?.trim() || "";
+  const parsed = parseDeviceFromUserAgent(userAgent, {
+    browser: t("settings.accountSecurity.os.unknownBrowser"),
+    deviceLabel: t("settings.accountSecurity.device.unknown"),
+    os: t("settings.accountSecurity.os.unknown"),
+  });
 
-  const isIos = /iphone|ipad|ipod/.test(ua);
-  const isAndroid = ua.includes("android");
-  const isMobile = isIos || isAndroid || /mobile|opera mini/.test(ua);
-  const isMac = ua.includes("mac os") || ua.includes("macintosh");
-  const isWindows = ua.includes("windows");
-  const isLinux = ua.includes("linux") && !isAndroid;
-
-  let DeviceIcon: AppIcon = AppIcons.computer;
-  let deviceLabel = t("settings.accountSecurity.device.desktop");
-  if (isIos && ua.includes("ipad")) {
-    DeviceIcon = AppIcons.smartphone;
-    deviceLabel = t("settings.accountSecurity.device.ipad");
-  } else if (isIos) {
-    DeviceIcon = AppIcons.smartphone;
-    deviceLabel = t("settings.accountSecurity.device.iphone");
-  } else if (isAndroid && isMobile) {
-    DeviceIcon = AppIcons.smartphone;
-    deviceLabel = t("settings.accountSecurity.device.androidPhone");
-  } else if (isMac) {
-    DeviceIcon = AppIcons.macbook;
-    deviceLabel = t("settings.accountSecurity.device.mac");
-  } else if (isWindows) {
-    DeviceIcon = AppIcons.computer;
-    deviceLabel = t("settings.accountSecurity.device.windowsPc");
-  } else if (isLinux) {
-    DeviceIcon = AppIcons.computer;
-    deviceLabel = t("settings.accountSecurity.device.linuxPc");
-  } else if (isMobile) {
-    DeviceIcon = AppIcons.smartphone;
-    deviceLabel = t("settings.accountSecurity.device.mobile");
-  } else if (!raw) {
-    DeviceIcon = AppIcons.global;
+  // Map form factor / known names back onto localized labels when we recognize them.
+  let deviceLabel = parsed.deviceLabel;
+  if (parsed.form === "unknown") {
     deviceLabel = t("settings.accountSecurity.device.unknown");
+  } else if (parsed.deviceLabel === "iPad") {
+    deviceLabel = t("settings.accountSecurity.device.ipad");
+  } else if (parsed.deviceLabel === "iPhone") {
+    deviceLabel = t("settings.accountSecurity.device.iphone");
+  } else if (parsed.deviceLabel === "Android phone") {
+    deviceLabel = t("settings.accountSecurity.device.androidPhone");
+  } else if (parsed.deviceLabel === "Android tablet") {
+    deviceLabel = t("settings.accountSecurity.device.androidTablet");
+  } else if (parsed.deviceLabel === "Mac") {
+    deviceLabel = t("settings.accountSecurity.device.mac");
+  } else if (parsed.deviceLabel === "Windows PC") {
+    deviceLabel = t("settings.accountSecurity.device.windowsPc");
+  } else if (parsed.deviceLabel === "Linux PC") {
+    deviceLabel = t("settings.accountSecurity.device.linuxPc");
+  } else if (parsed.deviceLabel === "Mobile device" || parsed.deviceLabel === "Tablet") {
+    deviceLabel = t("settings.accountSecurity.device.mobile");
+  } else if (parsed.deviceLabel === "Desktop") {
+    deviceLabel = t("settings.accountSecurity.device.desktop");
   }
 
-  let OsIcon: AppIcon = AppIcons.global;
-  let os = t("settings.accountSecurity.os.unknown");
-  if (isIos) {
-    OsIcon = AppIcons.apple;
-    const match = raw.match(/OS (\d+[._]\d+)/i);
-    os = match ? `iOS ${match[1]?.replace("_", ".")}` : "iOS";
-  } else if (isAndroid) {
-    OsIcon = AppIcons.android;
-    const match = raw.match(/Android ([\d.]+)/i);
-    os = match ? `Android ${match[1]}` : "Android";
-  } else if (isMac) {
-    OsIcon = AppIcons.apple;
-    const match = raw.match(/Mac OS X ([\d_]+)/i);
-    os = match ? `macOS ${match[1]?.replaceAll("_", ".")}` : "macOS";
-  } else if (isWindows) {
-    OsIcon = AppIcons.windows;
-    if (ua.includes("windows nt 10")) os = "Windows 10/11";
-    else if (ua.includes("windows nt 6.3")) os = "Windows 8.1";
-    else if (ua.includes("windows nt 6.1")) os = "Windows 7";
-    else os = "Windows";
-  } else if (isLinux) {
-    OsIcon = AppIcons.ubuntu;
-    os = "Linux";
-  }
-
-  let BrowserIcon: AppIcon = AppIcons.global;
-  let browser = t("settings.accountSecurity.os.unknownBrowser");
-  if (ua.includes("edg/") || ua.includes("edgios") || ua.includes("edga")) {
-    BrowserIcon = AppIcons.edge;
-    browser = "Microsoft Edge";
-  } else if (ua.includes("firefox") || ua.includes("fxios")) {
-    BrowserIcon = AppIcons.firefox;
-    browser = "Firefox";
-  } else if (ua.includes("crios") || (ua.includes("chrome") && !ua.includes("edg"))) {
-    BrowserIcon = AppIcons.chrome;
-    browser = "Chrome";
-  } else if (ua.includes("safari") && !ua.includes("chrome") && !ua.includes("crios")) {
-    BrowserIcon = AppIcons.safari;
-    browser = "Safari";
-  } else if (raw) {
+  let browser = parsed.browser;
+  if (parsed.browserKind === "unknown") {
+    browser = t("settings.accountSecurity.os.unknownBrowser");
+  } else if (parsed.browserKind === "other") {
     browser = t("settings.accountSecurity.os.browser");
   }
 
-  return { browser, BrowserIcon, deviceLabel, DeviceIcon, os, OsIcon };
+  const DeviceIcon: AppIcon =
+    parsed.form === "phone" || parsed.form === "tablet"
+      ? AppIcons.smartphone
+      : parsed.form === "desktop"
+        ? parsed.osKind === "macos"
+          ? AppIcons.macbook
+          : AppIcons.computer
+        : AppIcons.global;
+
+  const OsIcon: AppIcon =
+    parsed.osKind === "ios" || parsed.osKind === "macos"
+      ? AppIcons.apple
+      : parsed.osKind === "android"
+        ? AppIcons.android
+        : parsed.osKind === "windows"
+          ? AppIcons.windows
+          : parsed.osKind === "linux"
+            ? AppIcons.ubuntu
+            : AppIcons.global;
+
+  const BrowserIcon: AppIcon =
+    parsed.browserKind === "chrome"
+      ? AppIcons.chrome
+      : parsed.browserKind === "safari"
+        ? AppIcons.safari
+        : parsed.browserKind === "firefox"
+          ? AppIcons.firefox
+          : parsed.browserKind === "edge"
+            ? AppIcons.edge
+            : AppIcons.global;
+
+  return {
+    browser,
+    BrowserIcon,
+    deviceLabel,
+    DeviceIcon,
+    os: parsed.osKind === "unknown" ? t("settings.accountSecurity.os.unknown") : parsed.os,
+    OsIcon,
+  };
 }
 
 function formatDateTime(value: string, locale: string) {
@@ -672,6 +781,18 @@ function formatDateTime(value: string, locale: string) {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(new Date(value));
+}
+
+function formatSessionIp(
+  ip: string | null,
+  t: (key: MessageKey) => string,
+) {
+  if (!ip?.trim()) return t("settings.accountSecurity.unknown");
+  const value = ip.trim();
+  if (value === "127.0.0.1" || value === "::1" || value === "localhost") {
+    return t("settings.accountSecurity.localIp");
+  }
+  return value;
 }
 
 function getInitials(value: string) {

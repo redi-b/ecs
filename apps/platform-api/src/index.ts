@@ -318,9 +318,11 @@ async function recheckMerchantOrderPayment(input: {
 const auth = createPlatformAuth({
   baseUrl: process.env.BETTER_AUTH_URL ?? "http://api.lvh.me",
   cookieDomain: process.env.BETTER_AUTH_COOKIE_DOMAIN,
+  // Brand cookies as ecs.* unless overridden (see @ecs/config getAuthCookiePrefix).
+  cookiePrefix: process.env.BETTER_AUTH_COOKIE_PREFIX,
   db: platformDb.db,
   secret:
-    process.env.BETTER_AUTH_SECRET ?? "development-better-auth-secret-change-before-production",
+    process.env.BETTER_AUTH_SECRET ?? "development-ecs-auth-secret-change-before-production",
   trustedOrigins: parseTrustedOrigins(process.env.BETTER_AUTH_TRUSTED_ORIGINS) ?? [
     "http://api.lvh.me",
     "http://dashboard.lvh.me",

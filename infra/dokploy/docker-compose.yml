@@ -27,6 +27,7 @@ x-platform-environment: &platform-environment
   BETTER_AUTH_URL: https://api.${BASE_DOMAIN}
   BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?set BETTER_AUTH_SECRET}
   BETTER_AUTH_COOKIE_DOMAIN: .${BASE_DOMAIN}
+  BETTER_AUTH_COOKIE_PREFIX: ${BETTER_AUTH_COOKIE_PREFIX:-ecs}
   BETTER_AUTH_TRUSTED_ORIGINS: https://dashboard.${BASE_DOMAIN},https://*.${BASE_DOMAIN}
   MEDIA_STORAGE_PROVIDER: s3
   MEDIA_S3_ENDPOINT: ${MEDIA_S3_ENDPOINT:-https://media.${BASE_DOMAIN}}
@@ -251,6 +252,8 @@ services:
       PLATFORM_API_BASE_URL: http://platform-api:3000
       DASHBOARD_PUBLIC_BASE_URL: https://dashboard.${BASE_DOMAIN}
       DASHBOARD_AUTH_COOKIE_DOMAIN: .${BASE_DOMAIN}
+      # Must match platform-api BETTER_AUTH_COOKIE_PREFIX (session clear / current session).
+      BETTER_AUTH_COOKIE_PREFIX: ${BETTER_AUTH_COOKIE_PREFIX:-ecs}
       STOREFRONT_PUBLIC_BASE_DOMAIN: ${BASE_DOMAIN}
     expose:
       - "3001"

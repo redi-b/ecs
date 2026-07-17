@@ -301,7 +301,8 @@
       "windowsPc": "Windows PC",
       "linuxPc": "Linux PC",
       "mobile": "Mobile device",
-      "unknown": "Unknown device"
+      "unknown": "Unknown device",
+      "androidTablet": "Android tablet"
     },
     "os": {
       "unknown": "Unknown OS",
@@ -326,7 +327,15 @@
       "revokeFailed": "Could not sign out that session.",
       "sessionSignedOut": "Session signed out.",
       "sessionsOrigin": "Session list blocked by auth origin settings. Restart platform-api after updating trusted origins.",
-      "sessionsFailed": "Could not load active sessions."
-    }
+      "sessionsFailed": "Could not load active sessions.",
+      "revokeOthersFailed": "Could not sign out other sessions.",
+      "othersSignedOut": "Other devices were signed out."
+    },
+    "showMoreSessions": "Show {remaining} more",
+    "localIp": "Local (this machine)",
+    "signOutOthersAction": "Sign out other devices",
+    "signOutOthersTitle": "Sign out other devices?",
+    "signOutOthersDesc": "{count} other session(s) will be signed out. This device stays signed in.",
+    "signOutOthersConfirm": "Sign out others"
   }
 }

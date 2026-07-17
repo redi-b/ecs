@@ -2,6 +2,15 @@ import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { z } from "zod";
 
+export {
+  DEFAULT_AUTH_COOKIE_PREFIX,
+  LEGACY_AUTH_COOKIE_PREFIX,
+  getAuthCookiePrefix,
+  getAuthSessionCookieBaseName,
+  getAuthSessionCookieNames,
+  getAuthSessionCookieNamesToClear,
+} from "./auth-cookies";
+
 export const serviceEnvSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   SERVICE_NAME: z.string().min(1).default("ecs-service"),

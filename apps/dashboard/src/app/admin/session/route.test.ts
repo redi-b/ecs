@@ -63,6 +63,9 @@ test("POST /admin/session signs in through the Better Auth email endpoint and fo
     new Request("http://dashboard.test/admin/session", {
       body,
       headers: {
+        "user-agent":
+          "Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148 Safari/604.1",
+        "x-forwarded-for": "203.0.113.50",
         "x-forwarded-host": "dashboard.lvh.me",
         "x-forwarded-proto": "http",
       },
@@ -85,6 +88,9 @@ test("POST /admin/session signs in through the Better Auth email endpoint and fo
   assert.equal(forwardedRequest?.headers.get("origin"), "http://dashboard.lvh.me");
   assert.equal(forwardedRequest?.headers.get("x-forwarded-host"), "dashboard.lvh.me");
   assert.equal(forwardedRequest?.headers.get("x-forwarded-proto"), "http");
+  assert.equal(forwardedRequest?.headers.get("x-forwarded-for"), "203.0.113.50");
+  assert.equal(forwardedRequest?.headers.get("x-real-ip"), "203.0.113.50");
+  assert.match(forwardedRequest?.headers.get("user-agent") ?? "", /iPhone/);
 });
 
 test("POST /admin/session rejects unsafe next redirects", async () => {

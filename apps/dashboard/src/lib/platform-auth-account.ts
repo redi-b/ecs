@@ -12,12 +12,16 @@ export type AccountSession = {
 };
 
 export type AuthRequestContext = {
+  /** Client IP from the browser request (for better-auth session capture). */
+  clientIp?: string | null | undefined;
   cookieHeader?: string | null | undefined;
   /** Full origin of the dashboard request, e.g. http://bole-style.lvh.me:3001 */
   origin?: string | null | undefined;
   platformApiBaseUrl?: string | null | undefined;
   requestHost?: string | null | undefined;
   requestProto?: string | null | undefined;
+  /** Browser user-agent from the original client request. */
+  userAgent?: string | null | undefined;
 };
 
 function authUrl(path: string, baseUrl?: string | null) {
@@ -56,6 +60,15 @@ function authHeaders(options: AuthRequestContext & { json?: boolean | undefined 
   }
   if (options.requestProto?.trim()) {
     headers.set("x-forwarded-proto", options.requestProto.trim());
+  }
+  // Forward real client identity so better-auth stores IP/UA on sessions
+  // (dashboard proxies auth instead of the browser calling platform-api directly).
+  if (options.clientIp?.trim()) {
+    headers.set("x-forwarded-for", options.clientIp.trim());
+    headers.set("x-real-ip", options.clientIp.trim());
+  }
+  if (options.userAgent?.trim()) {
+    headers.set("user-agent", options.userAgent.trim());
   }
 
   return headers;
@@ -206,6 +219,61 @@ export async function revokeAccountSession(
 
   if (!response.ok) {
     return { ok: false as const, message: "session_revoke_failed", status: response.status };
+  }
+
+  return { ok: true as const };
+}
+
+/**
+ * Revoke every session except the caller's.
+ * Prefer Better Auth's revoke-other-sessions; fall back to per-token revoke-session
+ * (same path as single-device sign-out) if that endpoint rejects the proxied request.
+ */
+export async function revokeOtherAccountSessions(
+  options: AuthRequestContext & {
+    /** Tokens for sessions that are not the current browser session. */
+    otherTokens?: string[] | undefined;
+  },
+) {
+  // Empty JSON body — some Better Auth / better-call parsers 400 on Content-Type: json with no body.
+  const response = await fetch(
+    authUrl("/platform/auth/revoke-other-sessions", options.platformApiBaseUrl),
+    {
+      body: "{}",
+      headers: authHeaders({ ...options, json: true }),
+      method: "POST",
+    },
+  ).catch(() => null);
+
+  if (response?.ok) {
+    return { ok: true as const };
+  }
+
+  // Fallback: revoke each other session individually (known-good path).
+  const tokens = (options.otherTokens ?? []).map((t) => t.trim()).filter(Boolean);
+  if (!tokens.length) {
+    if (!response) {
+      return { ok: false as const, message: "auth_unavailable", status: 503 };
+    }
+    const data = (await response.json().catch(() => null)) as {
+      code?: string;
+      message?: string;
+    } | null;
+    return {
+      ok: false as const,
+      message: data?.code || data?.message || "session_revoke_failed",
+      status: response.status,
+    };
+  }
+
+  let failed = 0;
+  for (const token of tokens) {
+    const one = await revokeAccountSession({ ...options, token });
+    if (!one.ok) failed += 1;
+  }
+
+  if (failed === tokens.length) {
+    return { ok: false as const, message: "session_revoke_failed", status: 502 };
   }
 
   return { ok: true as const };

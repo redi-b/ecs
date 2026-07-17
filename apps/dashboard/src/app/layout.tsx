@@ -38,8 +38,16 @@ const notoEthiopic = Noto_Sans_Ethiopic({
 });
 
 export const metadata: Metadata = {
-  title: "ECS Dashboard",
+  applicationName: "ECS",
+  title: {
+    default: "ECS Dashboard",
+    template: "%s · ECS",
+  },
   description: "Merchant console for commerce operations",
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
