@@ -12,8 +12,9 @@
  *
  *   pnpm seed:demo --strict   # fail if Medusa commerce is incomplete
  *
- * Prerequisites: `pnpm seed --write-env`, Medusa + platform DB running.
+ * Prerequisites: `pnpm seed --write-env`, Medusa + platform DB + SeaweedFS running.
  */
+import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { loadServiceEnv } from "@ecs/config";
@@ -24,9 +25,11 @@ import {
   dailyMetrics,
   deliverySettings,
   domains,
+  inAppNotifications,
   invoices,
   mediaAssets,
   mediaUsages,
+  notificationDestinations,
   notificationLogs,
   notificationPreferences,
   operatorNotes,
@@ -34,6 +37,7 @@ import {
   storefrontConfigs,
   storefrontRevisions,
   subscriptions,
+  telegramConnectSessions,
   tenantMemberships,
   tenantOnboarding,
   tenantProvisioningAttempts,
@@ -50,6 +54,9 @@ import { createTenantShopProvisioningService } from "../modules/tenants/shop-pro
 import {
   DEMO_OWNER_PASSWORD,
   DEMO_SEED_MARKER,
+  LEGACY_DEMO_EMAILS,
+  LEGACY_DEMO_HANDLES,
+  type DemoProduct,
   type DemoShopDefinition,
   demoImageUrl,
   demoShops,
@@ -106,8 +113,26 @@ type CommerceResources = {
 type ProductSeedResult = {
   id: string;
   title: string;
-  variants?: Array<{ id: string; title: string }>;
+  variants?: Array<{ id: string; title: string; sku?: string | null }>;
 };
+
+/** 1×1 PNG used when picsum is unreachable (offline / CI). */
+const FALLBACK_PNG = Buffer.from(
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
+  "base64",
+);
+
+const DEMO_NOTIFICATION_EVENTS = [
+  "order.created",
+  "order.cancelled",
+  "order.confirmed",
+  "order.ready",
+  "order.out_for_delivery",
+  "order.delivered",
+  "payment.paid",
+  "payment.failed",
+  "inventory.low",
+] as const;
 
 async function main() {
   if (cleanOnly) {
@@ -132,6 +157,13 @@ async function main() {
       "MEDUSA_ADMIN_API_TOKEN is not set. Run `pnpm seed --write-env` first, then re-run seed:demo.";
     if (!allowPartial) throw new Error(message);
     console.warn(`[seed:demo] ${message}`);
+  } else {
+    const medusaReady = await preflightMedusa();
+    if (!medusaReady) {
+      const message = `Medusa is not reachable at ${medusaInternalUrl}. Start apps (pnpm dev:apps) then re-run seed:demo.`;
+      if (!allowPartial) throw new Error(message);
+      console.warn(`[seed:demo] ${message}`);
+    }
   }
 
   // Idempotent path: do not wipe platform tenants. Refresh commerce per shop instead.
@@ -173,8 +205,8 @@ async function main() {
   console.info(`
 Demo shops ready (safe to re-run).
 
-  Tech shop:    http://addis-tech.${platformBaseDomain}/admin
-  Owner:        owner@addis-tech.local
+  Tech shop:    http://addistech.${platformBaseDomain}/admin
+  Owner:        owner@addistech.local
   Password:     ${DEMO_OWNER_PASSWORD}
 
   Fashion shop: http://bole-style.${platformBaseDomain}/admin
@@ -191,6 +223,10 @@ async function seedShop(
 ) {
   const passwordHash = await hashPassword(DEMO_OWNER_PASSWORD);
 
+  // Rename path: stable demo tenant id may still use a legacy handle (e.g. addis-tech → addistech).
+  await maybeRenameDemoTenantHandle(shop);
+  await maybeRenameDemoUser(shop);
+
   await platformDb.db
     .insert(users)
     .values({
@@ -203,8 +239,9 @@ async function seedShop(
       status: "active",
     })
     .onConflictDoUpdate({
-      target: users.email,
+      target: users.id,
       set: {
+        email: shop.user.email,
         emailVerified: true,
         name: shop.user.name,
         phone: shop.user.phone,
@@ -303,6 +340,7 @@ async function seedShop(
 
   await seedMetrics(provisioned.tenant.id);
   await seedAnalyticsEvents(provisioned.tenant.id, shop.tenant.handle);
+  const platformExtras = await seedPlatformExtras(shop, provisioned.tenant.id, userId, commerce);
 
   // Ensure trial billing row exists (provisioning may already insert one).
   await createBillingService(platformDb.db).ensureTrialSubscription({
@@ -317,6 +355,7 @@ async function seedShop(
     user: shop.user.email,
     dashboard: `http://${hostname}/admin`,
     commerce,
+    platform: platformExtras,
   };
 }
 
@@ -374,8 +413,14 @@ async function seedCommerce(
     shop_handle: shop.tenant.handle,
   };
 
-  const categories: Array<{ id: string; name: string }> = [];
-  for (const category of shop.categories) {
+  // Nested categories: parents first, then children with parent_category_id.
+  const categoryByHandle = new Map<string, { id: string; name: string }>();
+  const roots = shop.categories.filter((category) => !category.parentHandle);
+  const children = shop.categories.filter((category) => category.parentHandle);
+  for (const category of [...roots, ...children]) {
+    const parentId = category.parentHandle
+      ? categoryByHandle.get(category.parentHandle)?.id
+      : undefined;
     const result = await medusaPost<{ product_category?: { id: string; name: string } }>(
       "/admin/product-categories",
       {
@@ -384,12 +429,16 @@ async function seedCommerce(
         is_internal: false,
         metadata,
         name: category.name,
+        ...(parentId ? { parent_category_id: parentId } : {}),
       },
     );
-    if (result?.product_category) categories.push(result.product_category);
+    if (result?.product_category) {
+      categoryByHandle.set(category.handle, result.product_category);
+    }
   }
+  const categories = [...categoryByHandle.values()];
 
-  const collections: Array<{ id: string; title: string }> = [];
+  const collectionByHandle = new Map<string, { id: string; title: string }>();
   for (const collection of shop.collections) {
     const result = await medusaPost<{ collection?: { id: string; title: string } }>(
       "/admin/collections",
@@ -399,50 +448,90 @@ async function seedCommerce(
         title: collection.title,
       },
     );
-    if (result?.collection) collections.push(result.collection);
+    if (result?.collection) {
+      collectionByHandle.set(collection.handle, result.collection);
+    }
   }
+  const collections = [...collectionByHandle.values()];
+
+  // Wipe prior demo media for this tenant so re-seed refreshes Seaweed + library.
+  await resetTenantDemoMedia(tenantId);
 
   const products: ProductSeedResult[] = [];
+  let mediaAssetsCreated = 0;
+  let variantsStocked = 0;
+
   for (const [index, product] of shop.products.entries()) {
-    const category = categories[index % categories.length];
-    const collection = collections[index % collections.length];
-    const image = demoImageUrl(product.imageCategory);
+    const category =
+      (product.categoryHandle
+        ? categoryByHandle.get(product.categoryHandle)
+        : undefined) ?? categories[index % Math.max(categories.length, 1)];
+    const collection =
+      (product.collectionHandle
+        ? collectionByHandle.get(product.collectionHandle)
+        : undefined) ?? collections[index % Math.max(collections.length, 1)];
+
+    const imageCount = product.imageCount ?? 2;
+    const uploaded = await seedProductMediaAssets({
+      imageCategory: product.imageCategory,
+      imageCount,
+      productHandle: product.handle,
+      productTitle: product.title,
+      tenantId,
+      userId,
+    });
+    mediaAssetsCreated += uploaded.length;
+    const imageUrls = uploaded.map((asset) => asset.publicUrl).filter(Boolean) as string[];
+    // Fallback remote URLs if Seaweed is down so products still get thumbnails.
+    if (!imageUrls.length) {
+      for (let i = 0; i < imageCount; i += 1) {
+        imageUrls.push(demoImageUrl(product.imageCategory, i));
+      }
+    }
+    const thumbnail = imageUrls[0] ?? demoImageUrl(product.imageCategory, 0);
 
     const result = await medusaPost<{ product?: ProductSeedResult }>("/admin/products", {
       categories: category ? [{ id: category.id }] : [],
       collection_id: collection?.id,
       description: product.description,
       handle: product.handle,
-      images: [{ url: image }],
+      images: imageUrls.map((url) => ({ url })),
       metadata,
-      options: [
-        {
-          title: product.optionTitle,
-          values: product.variants.map((variant) => variant.option),
-        },
-      ],
+      options: product.options.map((option) => ({
+        title: option.title,
+        values: [...option.values],
+      })),
       sales_channels: [{ id: resources.salesChannelId }],
       shipping_profile_id: resources.shippingProfileId,
       status: "published",
-      thumbnail: image,
+      thumbnail,
       title: product.title,
       variants: product.variants.map((variant) => ({
         manage_inventory: true,
-        options: { [product.optionTitle]: variant.option },
+        options: variant.options,
         prices: [{ amount: variant.price, currency_code: "etb" }],
         // Prefix SKUs with tenant short id so re-seeds after soft-delete do not collide.
         sku: `${tenantId.slice(0, 8)}_${variant.sku}`.slice(0, 64),
-        title: variant.title,
+        title: variant.title ?? `${product.title} / ${Object.values(variant.options).join(" / ")}`,
       })),
     });
 
     if (result?.product?.id) {
       // Create response may omit variants; re-fetch so orders can use variant ids.
       const detailed = await medusaGet<{ product?: ProductSeedResult }>(
-        `/admin/products/${encodeURIComponent(result.product.id)}?fields=id,title,variants.id,variants.title`,
+        `/admin/products/${encodeURIComponent(result.product.id)}?fields=id,title,variants.id,variants.title,variants.sku`,
       );
-      products.push(detailed?.product ?? result.product);
-      await seedProductStock(result.product.id, resources, 25 + (index % 10) * 5);
+      const seededProduct = detailed?.product ?? result.product;
+      products.push(seededProduct);
+      variantsStocked += await seedProductStock(result.product.id, resources, product);
+      if (uploaded.length) {
+        await linkMediaUsages({
+          assets: uploaded,
+          productId: result.product.id,
+          tenantId,
+          thumbnailUrl: thumbnail,
+        });
+      }
     }
   }
 
@@ -462,26 +551,76 @@ async function seedCommerce(
   await cleanTenantPromotions(tenantId, shop.tenant.handle);
   const promotionsCreated = await seedPromotions(tenantId, shop.tenant.handle, products);
 
-  // Cash (COD) draft orders → convert a few to real orders, dates spread for charts/list.
+  const orderSummary = await seedDemoOrders({
+    customerIds,
+    metadata,
+    products,
+    resources,
+    shop,
+  });
+
+  return {
+    skipped: false,
+    categories: categories.length,
+    collections: collections.length,
+    products: products.length,
+    variantsStocked,
+    mediaAssets: mediaAssetsCreated,
+    customers: customersCreated,
+    promotions: promotionsCreated,
+    orders: orderSummary.orders,
+    drafts: orderSummary.drafts,
+    cancelled: orderSummary.cancelled,
+    completed: orderSummary.completed,
+    createdBy: userId,
+  };
+}
+
+async function seedDemoOrders(input: {
+  customerIds: string[];
+  metadata: Record<string, string>;
+  products: ProductSeedResult[];
+  resources: CommerceResources;
+  shop: DemoShopDefinition;
+}) {
+  const { customerIds, metadata, products, resources, shop } = input;
   const variants = products.flatMap((product) =>
     (product.variants ?? []).map((variant) => ({
       productTitle: product.title,
       variantId: variant.id,
     })),
   );
-  let ordersCreated = 0;
-  const orderCount = Math.min(10, variants.length, Math.max(shop.customers.length * 2, 4));
+
+  let orders = 0;
+  let drafts = 0;
+  let cancelled = 0;
+  let completed = 0;
+  const orderCount = Math.min(14, Math.max(shop.customers.length * 2, 6), Math.max(variants.length, 1));
   const orderIdsToBackdate: Array<{ id: string; createdAt: Date }> = [];
 
   for (let index = 0; index < orderCount; index += 1) {
-    const variant = variants[index];
+    const primary = variants[index % variants.length];
+    const secondary = variants[(index + 3) % variants.length];
     const customer = shop.customers[index % shop.customers.length];
-    if (!variant || !customer) continue;
+    if (!primary || !customer) continue;
 
-    // Spread across ~35 days: newest first index, older as index grows.
     const daysAgo = Math.min(34, Math.round((index / Math.max(orderCount - 1, 1)) * 34));
     const placedAt = addDays(new Date(), -daysAgo);
     placedAt.setUTCHours(9 + (index % 9), (index * 11) % 60, index % 60, 0);
+
+    const items = [
+      {
+        quantity: (index % 3) + 1,
+        variant_id: primary.variantId,
+      },
+    ];
+    // Multi-line on most orders for a richer list/detail UI.
+    if (secondary && secondary.variantId !== primary.variantId && index % 3 !== 0) {
+      items.push({
+        quantity: 1 + (index % 2),
+        variant_id: secondary.variantId,
+      });
+    }
 
     const draft = await medusaPost<{ draft_order?: { id: string }; order?: { id: string } }>(
       "/admin/draft-orders",
@@ -491,64 +630,66 @@ async function seedCommerce(
         ...(customerIds[index % customerIds.length]
           ? { customer_id: customerIds[index % customerIds.length] }
           : {}),
-        items: [
-          {
-            quantity: (index % 3) + 1,
-            variant_id: variant.variantId,
-          },
-        ],
+        items,
         metadata: {
           ...metadata,
           created_from: "demo_seed",
           checkout_type: "cod",
           payment_method: "cod",
-          // Alternate delivery vs pickup so the orders list has real delivery types.
           delivery_choice: index % 3 === 0 ? "pickup" : "delivery",
           customer_name: `${customer.firstName} ${customer.lastName}`.trim(),
           customer_phone: customer.phone,
-          note: "Demo cash order",
+          note:
+            index % 5 === 0
+              ? "Please call before delivery — demo note"
+              : "Demo cash order",
           demo_placed_at: placedAt.toISOString(),
         },
         region_id: resources.regionId,
         sales_channel_id: resources.salesChannelId,
         shipping_address: demoAddress(customer),
-        // Do not pass shipping_methods on create — Medusa requires name/amount there
-        // and rejects the whole draft. Shipping can be added later via edit endpoints.
       },
     );
 
     const draftId = draft?.draft_order?.id ?? draft?.order?.id;
     if (!draftId) continue;
 
-    // Convert most orders; leave every 4th as an open draft.
-    if (index % 4 !== 3) {
-      const converted = await medusaPost<{ order?: { id: string } }>(
-        `/admin/draft-orders/${encodeURIComponent(draftId)}/convert-to-order`,
+    // Leave every 5th as an open draft; convert the rest.
+    if (index % 5 === 4) {
+      await backdateMedusaDraftOrder(draftId, placedAt);
+      drafts += 1;
+      orders += 1;
+      continue;
+    }
+
+    const converted = await medusaPost<{ order?: { id: string } }>(
+      `/admin/draft-orders/${encodeURIComponent(draftId)}/convert-to-order`,
+      {},
+    );
+    const orderId = converted?.order?.id;
+    if (!orderId) continue;
+
+    orderIdsToBackdate.push({ id: orderId, createdAt: placedAt });
+    orders += 1;
+
+    // Status mix: cancel some, complete some; rest stay open.
+    if (index % 7 === 1) {
+      const cancelledOk = await medusaPost(
+        `/admin/orders/${encodeURIComponent(orderId)}/cancel`,
         {},
       );
-      if (converted?.order?.id) {
-        orderIdsToBackdate.push({ id: converted.order.id, createdAt: placedAt });
-        ordersCreated += 1;
-      }
-    } else {
-      // Draft orders live in draft_order table — still count for seed summary.
-      await backdateMedusaDraftOrder(draftId, placedAt);
-      ordersCreated += 1;
+      if (cancelledOk) cancelled += 1;
+    } else if (index % 4 === 0) {
+      const completedOk = await medusaPost(
+        `/admin/orders/${encodeURIComponent(orderId)}/complete`,
+        {},
+      );
+      if (completedOk) completed += 1;
     }
   }
 
   await backdateMedusaOrders(orderIdsToBackdate);
-
-  return {
-    skipped: false,
-    categories: categories.length,
-    collections: collections.length,
-    products: products.length,
-    customers: customersCreated,
-    promotions: promotionsCreated,
-    orders: ordersCreated,
-    createdBy: userId,
-  };
+  return { orders, drafts, cancelled, completed };
 }
 
 async function ensureTenantCustomerGroup(tenantId: string, handle: string) {
@@ -733,34 +874,500 @@ async function seedPromotions(
 async function seedProductStock(
   productId: string,
   resources: CommerceResources,
-  stockedQuantity: number,
+  product: DemoProduct,
 ) {
   const detail = await medusaGet<{
     product?: {
       variants?: Array<{
         id?: string;
+        sku?: string | null;
+        title?: string | null;
         inventory_items?: Array<{ inventory_item_id?: string }>;
       }>;
     };
   }>(
-    `/admin/products/${encodeURIComponent(productId)}?fields=id,variants.id,variants.inventory_items.inventory_item_id`,
+    `/admin/products/${encodeURIComponent(productId)}?fields=id,variants.id,variants.sku,variants.title,variants.inventory_items.inventory_item_id`,
   );
 
-  for (const variant of detail?.product?.variants ?? []) {
+  let stocked = 0;
+  const medusaVariants = detail?.product?.variants ?? [];
+  for (const [index, variant] of medusaVariants.entries()) {
     const inventoryItemId = variant.inventory_items?.[0]?.inventory_item_id;
     if (!inventoryItemId) continue;
 
-    await medusaPost(`/admin/inventory-items/${encodeURIComponent(inventoryItemId)}/location-levels`, {
-      location_id: resources.stockLocationId,
-      stocked_quantity: stockedQuantity,
-    }).catch(() => null);
+    const definition =
+      product.variants.find((item) => {
+        const skuTail = item.sku;
+        return Boolean(variant.sku?.endsWith(skuTail) || variant.sku?.includes(skuTail));
+      }) ?? product.variants[index];
+    const stockedQuantity =
+      definition?.stock ?? (25 + (index % 5) * 5);
+
+    await medusaPost(
+      `/admin/inventory-items/${encodeURIComponent(inventoryItemId)}/location-levels`,
+      {
+        location_id: resources.stockLocationId,
+        stocked_quantity: stockedQuantity,
+      },
+    ).catch(() => null);
 
     // If level already exists, try update.
     await medusaPost(
       `/admin/inventory-items/${encodeURIComponent(inventoryItemId)}/location-levels/${encodeURIComponent(resources.stockLocationId)}`,
       { stocked_quantity: stockedQuantity },
     ).catch(() => null);
+    stocked += 1;
   }
+  return stocked;
+}
+
+async function preflightMedusa() {
+  try {
+    const response = await fetch(`${medusaInternalUrl}/health`, {
+      signal: AbortSignal.timeout(4000),
+    });
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
+
+/** Keep stable demo user IDs when the owner email changes. */
+async function maybeRenameDemoUser(shop: DemoShopDefinition) {
+  const [byId] = await platformDb.db
+    .select({ id: users.id, email: users.email })
+    .from(users)
+    .where(eq(users.id, shop.ids.user))
+    .limit(1);
+
+  if (byId && byId.email !== shop.user.email) {
+    // Free the new email if a stray row owns it.
+    const [emailOwner] = await platformDb.db
+      .select({ id: users.id })
+      .from(users)
+      .where(eq(users.email, shop.user.email))
+      .limit(1);
+    if (emailOwner && emailOwner.id !== shop.ids.user) {
+      await platformDb.db.delete(accounts).where(eq(accounts.userId, emailOwner.id));
+      await platformDb.db.delete(users).where(eq(users.id, emailOwner.id));
+    }
+    await platformDb.db
+      .update(users)
+      .set({
+        email: shop.user.email,
+        name: shop.user.name,
+        phone: shop.user.phone,
+        status: "active",
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, shop.ids.user));
+    console.info(`[seed:demo] Renamed demo owner ${byId.email} → ${shop.user.email}`);
+  }
+
+  // Drop legacy emails that no longer map to fixtures (e.g. owner@addis-tech.local).
+  for (const legacyEmail of LEGACY_DEMO_EMAILS) {
+    if (legacyEmail === shop.user.email) continue;
+    const [legacy] = await platformDb.db
+      .select({ id: users.id })
+      .from(users)
+      .where(eq(users.email, legacyEmail))
+      .limit(1);
+    if (!legacy || legacy.id === shop.ids.user) continue;
+    await platformDb.db.delete(accounts).where(eq(accounts.userId, legacy.id));
+    await platformDb.db.delete(users).where(eq(users.id, legacy.id));
+  }
+}
+
+/** Keep stable demo tenant IDs when the public handle changes. */
+async function maybeRenameDemoTenantHandle(shop: DemoShopDefinition) {
+  const [existing] = await platformDb.db
+    .select({ id: tenants.id, handle: tenants.handle })
+    .from(tenants)
+    .where(eq(tenants.id, shop.ids.tenant))
+    .limit(1);
+  if (!existing || existing.handle === shop.tenant.handle) return;
+
+  const hostname = `${shop.tenant.handle}.${platformBaseDomain}`;
+  const taken = await platformDb.db
+    .select({ id: tenants.id })
+    .from(tenants)
+    .where(eq(tenants.handle, shop.tenant.handle))
+    .limit(1);
+  if (taken[0] && taken[0].id !== shop.ids.tenant) {
+    console.warn(
+      `[seed:demo] Cannot rename ${existing.handle} → ${shop.tenant.handle}: handle already used by ${taken[0].id}`,
+    );
+    return;
+  }
+
+  await platformDb.db
+    .update(tenants)
+    .set({
+      handle: shop.tenant.handle,
+      name: shop.tenant.name,
+      updatedAt: new Date(),
+    })
+    .where(eq(tenants.id, shop.ids.tenant));
+
+  await platformDb.db
+    .update(domains)
+    .set({
+      hostname,
+      status: "active",
+      verificationStatus: "verified",
+      sslStatus: "active",
+      updatedAt: new Date(),
+    })
+    .where(and(eq(domains.tenantId, shop.ids.tenant), eq(domains.isPrimary, true)));
+
+  console.info(
+    `[seed:demo] Renamed demo tenant handle ${existing.handle} → ${shop.tenant.handle} (${hostname})`,
+  );
+}
+
+function getMediaS3Config() {
+  const bucket = process.env.MEDIA_S3_BUCKET?.trim();
+  const accessKeyId = process.env.MEDIA_S3_ACCESS_KEY_ID?.trim();
+  const secretAccessKey = process.env.MEDIA_S3_SECRET_ACCESS_KEY?.trim();
+  if (!bucket || !accessKeyId || !secretAccessKey) return null;
+  return {
+    accessKeyId,
+    bucket,
+    endpoint: process.env.MEDIA_S3_ENDPOINT?.trim() || undefined,
+    forcePathStyle: process.env.MEDIA_S3_FORCE_PATH_STYLE === "true",
+    publicBaseUrl: process.env.MEDIA_S3_PUBLIC_BASE_URL?.trim() || undefined,
+    region: process.env.MEDIA_S3_REGION?.trim() || "us-east-1",
+    secretAccessKey,
+  };
+}
+
+function createSeedS3Client(config: NonNullable<ReturnType<typeof getMediaS3Config>>) {
+  return new S3Client({
+    credentials: {
+      accessKeyId: config.accessKeyId,
+      secretAccessKey: config.secretAccessKey,
+    },
+    ...(config.endpoint ? { endpoint: config.endpoint } : {}),
+    forcePathStyle: config.forcePathStyle,
+    region: config.region,
+  });
+}
+
+async function resetTenantDemoMedia(tenantId: string) {
+  await platformDb.db.delete(mediaUsages).where(eq(mediaUsages.tenantId, tenantId));
+  await platformDb.db.delete(mediaAssets).where(eq(mediaAssets.tenantId, tenantId));
+}
+
+async function fetchDemoImageBytes(seed: string): Promise<{ bytes: Buffer; mimeType: string }> {
+  const url = demoImageUrl(seed.replace(/^ecs-/, "").split("-")[0] ?? seed, 0);
+  // Prefer a unique picsum seed derived from the full key.
+  const picsum = `https://picsum.photos/seed/${encodeURIComponent(seed)}/900/900`;
+  try {
+    const response = await fetch(picsum, {
+      redirect: "follow",
+      signal: AbortSignal.timeout(12_000),
+    });
+    if (response.ok) {
+      const bytes = Buffer.from(await response.arrayBuffer());
+      if (bytes.byteLength > 0) {
+        const mimeType = response.headers.get("content-type")?.split(";")[0]?.trim() || "image/jpeg";
+        return { bytes, mimeType };
+      }
+    }
+  } catch {
+    // fall through
+  }
+  void url;
+  return { bytes: FALLBACK_PNG, mimeType: "image/png" };
+}
+
+type SeededMediaAsset = {
+  id: string;
+  publicUrl: string | null;
+};
+
+async function seedProductMediaAssets(input: {
+  imageCategory: string;
+  imageCount: number;
+  productHandle: string;
+  productTitle: string;
+  tenantId: string;
+  userId: string;
+}): Promise<SeededMediaAsset[]> {
+  const config = getMediaS3Config();
+  if (!config) {
+    console.warn("[seed:demo] MEDIA_S3_* not configured — product images will use remote URLs only.");
+    return [];
+  }
+
+  const client = createSeedS3Client(config);
+  const assets: SeededMediaAsset[] = [];
+
+  for (let index = 0; index < input.imageCount; index += 1) {
+    const seed = `ecs-${input.productHandle}-${index}`;
+    const { bytes, mimeType } = await fetchDemoImageBytes(seed);
+    const ext = mimeType.includes("png") ? "png" : "jpg";
+    const filename = `${input.productHandle}-${index + 1}.${ext}`;
+    const assetId = crypto.randomUUID();
+    const objectKey = `tenants/${input.tenantId}/product/${assetId}/${filename}`;
+    const publicUrl = config.publicBaseUrl
+      ? `${config.publicBaseUrl.replace(/\/$/, "")}/${objectKey}`
+      : null;
+
+    try {
+      await client.send(
+        new PutObjectCommand({
+          Body: bytes,
+          Bucket: config.bucket,
+          ContentLength: bytes.byteLength,
+          ContentType: mimeType,
+          Key: objectKey,
+        }),
+      );
+    } catch (error) {
+      console.warn(
+        `[seed:demo] Seaweed upload failed for ${filename}: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+      continue;
+    }
+
+    await platformDb.db.insert(mediaAssets).values({
+      accessMode: "public",
+      altText: `${input.productTitle} photo ${index + 1}`,
+      bucket: config.bucket,
+      byteSize: bytes.byteLength,
+      createdByUserId: input.userId,
+      displayName: filename,
+      filename,
+      height: 900,
+      id: assetId,
+      mimeType,
+      objectKey,
+      publicUrl,
+      status: "ready",
+      storageProvider: "s3",
+      tenantId: input.tenantId,
+      width: 900,
+    });
+
+    assets.push({ id: assetId, publicUrl });
+  }
+
+  return assets;
+}
+
+async function linkMediaUsages(input: {
+  assets: SeededMediaAsset[];
+  productId: string;
+  tenantId: string;
+  thumbnailUrl: string;
+}) {
+  const rows = input.assets
+    .filter((asset) => asset.publicUrl)
+    .map((asset, position) => ({
+      field: "images",
+      isPrimary: asset.publicUrl === input.thumbnailUrl || position === 0,
+      mediaAssetId: asset.id,
+      position,
+      resourceId: input.productId,
+      resourceType: "product" as const,
+      tenantId: input.tenantId,
+    }));
+  if (!rows.length) return;
+  await platformDb.db.insert(mediaUsages).values(rows);
+}
+
+async function seedPlatformExtras(
+  shop: DemoShopDefinition,
+  tenantId: string,
+  userId: string,
+  commerce: Record<string, unknown>,
+) {
+  await platformDb.db
+    .insert(deliverySettings)
+    .values({
+      tenantId,
+      deliveryEnabled: true,
+      pickupEnabled: true,
+      phoneConfirmationRequired: true,
+      notesEnabled: true,
+      landmarkRequired: false,
+      defaultDeliveryFee: "75",
+      currency: "ETB",
+      zones: [
+        { name: "Bole", fee: "75.00" },
+        { name: "Kazanchis", fee: "80.00" },
+        { name: "CMC", fee: "90.00" },
+        { name: "Megenagna", fee: "85.00" },
+        { name: "Piassa", fee: "95.00" },
+        { name: "Sarbet", fee: "90.00" },
+        { name: "Old Airport", fee: "85.00" },
+      ],
+      updatedAt: new Date(),
+    })
+    .onConflictDoUpdate({
+      target: deliverySettings.tenantId,
+      set: {
+        deliveryEnabled: true,
+        pickupEnabled: true,
+        phoneConfirmationRequired: true,
+        notesEnabled: true,
+        landmarkRequired: false,
+        defaultDeliveryFee: "75",
+        currency: "ETB",
+        zones: [
+          { name: "Bole", fee: "75.00" },
+          { name: "Kazanchis", fee: "80.00" },
+          { name: "CMC", fee: "90.00" },
+          { name: "Megenagna", fee: "85.00" },
+          { name: "Piassa", fee: "95.00" },
+          { name: "Sarbet", fee: "90.00" },
+          { name: "Old Airport", fee: "85.00" },
+        ],
+        updatedAt: new Date(),
+      },
+    });
+
+  // Email preference (no Telegram destinations — needs bot connect).
+  const existingPrefs = await platformDb.db
+    .select({ id: notificationPreferences.id })
+    .from(notificationPreferences)
+    .where(
+      and(
+        eq(notificationPreferences.tenantId, tenantId),
+        eq(notificationPreferences.channel, "email"),
+      ),
+    )
+    .limit(1);
+
+  if (existingPrefs[0]?.id) {
+    await platformDb.db
+      .update(notificationPreferences)
+      .set({
+        enabled: true,
+        events: [...DEMO_NOTIFICATION_EVENTS],
+        target: shop.user.email,
+        updatedAt: new Date(),
+      })
+      .where(eq(notificationPreferences.id, existingPrefs[0].id));
+  } else {
+    await platformDb.db.insert(notificationPreferences).values({
+      tenantId,
+      channel: "email",
+      enabled: true,
+      target: shop.user.email,
+      events: [...DEMO_NOTIFICATION_EVENTS],
+    });
+  }
+
+  // Payment onboarding stub (no secret — COD-only until merchant configures Chapa).
+  const existingPayment = await platformDb.db
+    .select({ id: paymentOnboarding.id })
+    .from(paymentOnboarding)
+    .where(
+      and(eq(paymentOnboarding.tenantId, tenantId), eq(paymentOnboarding.provider, "chapa")),
+    )
+    .limit(1);
+
+  if (existingPayment[0]?.id) {
+    await platformDb.db
+      .update(paymentOnboarding)
+      .set({
+        notes: shop.paymentOnboarding.notes,
+        status: shop.paymentOnboarding.status,
+        onlineEnabled: false,
+        secretKey: null,
+        secretFingerprint: null,
+        credentialsValidatedAt: null,
+      })
+      .where(eq(paymentOnboarding.id, existingPayment[0].id));
+  } else {
+    await platformDb.db.insert(paymentOnboarding).values({
+      tenantId,
+      provider: "chapa",
+      status: shop.paymentOnboarding.status,
+      notes: shop.paymentOnboarding.notes,
+      onlineEnabled: false,
+      requiredDocuments: [],
+    });
+  }
+
+  // Inbox samples (tenant-wide). Replace prior demo rows via dedupe keys.
+  const inboxRows = [
+    {
+      dedupeKey: `demo:${tenantId}:order.created`,
+      eventType: "order.created",
+      title: "New cash order",
+      body: "A demo COD order was placed and needs confirmation.",
+      href: "/admin/orders",
+      readAt: null as Date | null,
+    },
+    {
+      dedupeKey: `demo:${tenantId}:inventory.low`,
+      eventType: "inventory.low",
+      title: "Low stock on popular SKUs",
+      body: "Some demo variants are at or near zero stock — restock from Products.",
+      href: "/admin/products",
+      readAt: null as Date | null,
+    },
+    {
+      dedupeKey: `demo:${tenantId}:payment.paid`,
+      eventType: "payment.paid",
+      title: "Payment received",
+      body: "A demo payment.paid event for the inbox UI (read).",
+      href: "/admin/orders",
+      readAt: addDays(new Date(), -1),
+    },
+    {
+      dedupeKey: `demo:${tenantId}:order.cancelled`,
+      eventType: "order.cancelled",
+      title: "Order cancelled",
+      body: "A customer cancelled a demo order.",
+      href: "/admin/orders",
+      readAt: addDays(new Date(), -2),
+    },
+  ];
+
+  for (const row of inboxRows) {
+    await platformDb.db
+      .insert(inAppNotifications)
+      .values({
+        body: row.body,
+        dedupeKey: row.dedupeKey,
+        eventType: row.eventType,
+        href: row.href,
+        payload: {
+          demo_seed: DEMO_SEED_MARKER,
+          shop_handle: shop.tenant.handle,
+        },
+        readAt: row.readAt,
+        tenantId,
+        title: row.title,
+        userId: null,
+      })
+      .onConflictDoUpdate({
+        target: [inAppNotifications.tenantId, inAppNotifications.dedupeKey],
+        set: {
+          body: row.body,
+          eventType: row.eventType,
+          href: row.href,
+          readAt: row.readAt,
+          title: row.title,
+        },
+      });
+  }
+
+  void userId;
+  void commerce;
+
+  return {
+    deliveryZones: 7,
+    notificationPrefs: 1,
+    inbox: inboxRows.length,
+    paymentOnboarding: shop.paymentOnboarding.status,
+  };
 }
 
 function demoAddress(customer: DemoShopDefinition["customers"][number]) {
@@ -885,8 +1492,14 @@ function addDays(value: Date, days: number) {
 }
 
 async function cleanAllDemoData() {
-  const handles = demoShops.map((shop) => shop.tenant.handle);
-  const emails = demoShops.map((shop) => shop.user.email);
+  const handles = [
+    ...demoShops.map((shop) => shop.tenant.handle),
+    ...LEGACY_DEMO_HANDLES,
+  ];
+  const emails = [
+    ...demoShops.map((shop) => shop.user.email),
+    ...LEGACY_DEMO_EMAILS,
+  ];
   const tenantIds = demoShops.map((shop) => shop.ids.tenant);
 
   const existingTenants = await platformDb.db
@@ -905,10 +1518,29 @@ async function cleanAllDemoData() {
   let commerce = { categories: 0, collections: 0, customers: 0, orders: 0, products: 0, promotions: 0 };
 
   for (const shop of demoShops) {
-    const live = existingTenants.find((row) => row.handle === shop.tenant.handle);
+    const live =
+      existingTenants.find((row) => row.handle === shop.tenant.handle) ??
+      existingTenants.find((row) => row.id === shop.ids.tenant);
     const tenantId = live?.id ?? shop.ids.tenant;
     const channelId = live?.medusaSalesChannelId ?? null;
+    // Also pass legacy handles so catalog rows tagged with old shop_handle are removed.
     const removed = await cleanShopCommerce(shop.tenant.handle, tenantId, channelId);
+    commerce = {
+      categories: commerce.categories + removed.categories,
+      collections: commerce.collections + removed.collections,
+      customers: commerce.customers + removed.customers,
+      orders: commerce.orders + removed.orders,
+      products: commerce.products + removed.products,
+      promotions: commerce.promotions + removed.promotions,
+    };
+  }
+
+  // Legacy handle commerce (e.g. addis-tech) when stable tenant row already gone.
+  for (const legacyHandle of LEGACY_DEMO_HANDLES) {
+    if (demoShops.some((shop) => shop.tenant.handle === legacyHandle)) continue;
+    const live = existingTenants.find((row) => row.handle === legacyHandle);
+    if (!live) continue;
+    const removed = await cleanShopCommerce(legacyHandle, live.id, live.medusaSalesChannelId);
     commerce = {
       categories: commerce.categories + removed.categories,
       collections: commerce.collections + removed.collections,
@@ -962,6 +1594,15 @@ async function cleanAllDemoData() {
       .delete(notificationLogs)
       .where(inArray(notificationLogs.tenantId, idsToRemove));
     await platformDb.db
+      .delete(notificationDestinations)
+      .where(inArray(notificationDestinations.tenantId, idsToRemove));
+    await platformDb.db
+      .delete(telegramConnectSessions)
+      .where(inArray(telegramConnectSessions.tenantId, idsToRemove));
+    await platformDb.db
+      .delete(inAppNotifications)
+      .where(inArray(inAppNotifications.tenantId, idsToRemove));
+    await platformDb.db
       .delete(operatorNotes)
       .where(inArray(operatorNotes.tenantId, idsToRemove));
     await platformDb.db.delete(mediaUsages).where(inArray(mediaUsages.tenantId, idsToRemove));
@@ -994,9 +1635,26 @@ function isDemoMetadata(
   handle: string,
 ) {
   if (!metadata) return false;
-  if (metadata.demo_seed === DEMO_SEED_MARKER) return true;
+  // Always scope to this tenant/handle so multi-shop re-seeds do not cross-delete.
   if (metadata.platform_tenant_id === tenantId) return true;
   if (metadata.shop_handle === handle) return true;
+  // Renamed tech shop: old handle still tags catalog on the same stable tenant id path above;
+  // when cleaning by legacy handle, match products tagged with that handle.
+  if (
+    (LEGACY_DEMO_HANDLES as readonly string[]).includes(handle) &&
+    metadata.shop_handle === handle
+  ) {
+    return true;
+  }
+  if (
+    handle === "addistech" &&
+    metadata.shop_handle === "addis-tech" &&
+    (metadata.platform_tenant_id === tenantId ||
+      metadata.demo_seed === DEMO_SEED_MARKER ||
+      metadata.demo_seed === "ecs-demo-v2")
+  ) {
+    return true;
+  }
   return false;
 }
 
@@ -1023,10 +1681,15 @@ async function cleanShopCommerce(
   summary.orders = await cleanDemoOrders({
     demoEmails,
     handle,
-    salesChannelId,
     tenantId,
+    ...(salesChannelId !== undefined ? { salesChannelId } : {}),
   });
-  await cleanDemoDraftOrders({ demoEmails, handle, salesChannelId, tenantId });
+  await cleanDemoDraftOrders({
+    demoEmails,
+    handle,
+    tenantId,
+    ...(salesChannelId !== undefined ? { salesChannelId } : {}),
+  });
 
   const shop = demoShops.find((item) => item.tenant.handle === handle);
   const shopProductHandles = new Set(shop?.products.map((item) => item.handle) ?? []);
@@ -1061,6 +1724,8 @@ async function cleanShopCommerce(
   }
 
   const shopCategoryHandles = new Set(shop?.categories.map((item) => item.handle) ?? []);
+  // Collect matching categories, then delete children before parents (Medusa FK).
+  const categoriesToDelete: Array<{ id: string; handle?: string | null }> = [];
   for await (const category of paginateMedusaList<{
     handle?: string | null;
     id: string;
@@ -1070,9 +1735,20 @@ async function cleanShopCommerce(
       isDemoMetadata(category.metadata, tenantId, handle) ||
       (category.handle && shopCategoryHandles.has(category.handle))
     ) {
-      await medusaDelete(`/admin/product-categories/${encodeURIComponent(category.id)}`);
-      summary.categories += 1;
+      categoriesToDelete.push(category);
     }
+  }
+  const parentHandles = new Set(
+    (shop?.categories ?? []).filter((item) => !item.parentHandle).map((item) => item.handle),
+  );
+  categoriesToDelete.sort((a, b) => {
+    const aParent = a.handle && parentHandles.has(a.handle) ? 1 : 0;
+    const bParent = b.handle && parentHandles.has(b.handle) ? 1 : 0;
+    return aParent - bParent;
+  });
+  for (const category of categoriesToDelete) {
+    await medusaDelete(`/admin/product-categories/${encodeURIComponent(category.id)}`);
+    summary.categories += 1;
   }
 
   // Demo customers (by known emails).

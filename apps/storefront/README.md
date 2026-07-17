@@ -39,7 +39,7 @@ Status: `dev-docs/00-current-status.md`
 
 With apps running (`pnpm dev` / `pnpm dev:apps`):
 
-- Demo shop: `http://addis-tech.lvh.me` (via Caddy)
+- Demo shop: `http://addistech.lvh.me` (via Caddy)
 - Browse → add to cart → checkout COD
 
 COD needs Medusa shipping options for the cart. Chapa requires merchant credentials set on the tenant (not implemented as merchant dashboard UI yet; operator/DB for now).

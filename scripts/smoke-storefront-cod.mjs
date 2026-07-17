@@ -4,14 +4,14 @@
  *
  * Prerequisites: platform-api + Medusa running, shop published, products + shipping exist.
  *
- *   SMOKE_STORE_HOST=addis-tech.lvh.me pnpm smoke:storefront
+ *   SMOKE_STORE_HOST=addistech.lvh.me pnpm smoke:storefront
  */
 
 const platformApiUrl = (process.env.PLATFORM_API_URL ?? "http://localhost:3000").replace(
   /\/$/,
   "",
 );
-const storeHost = process.env.SMOKE_STORE_HOST ?? "addis-tech.lvh.me";
+const storeHost = process.env.SMOKE_STORE_HOST ?? "addistech.lvh.me";
 
 function headers(extra = {}) {
   return {

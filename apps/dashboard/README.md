@@ -27,7 +27,7 @@ Merchant dashboard pages under `/admin` are protected by the server-side dashboa
 
 Local development demo seed credentials (`pnpm seed:demo`):
 
-- Tech shop: `owner@addis-tech.local` / `password1234` → `http://addis-tech.lvh.me/admin`
+- Tech shop: `owner@addistech.local` / `password1234` → `http://addistech.lvh.me/admin`
 - Fashion shop: `owner@bole-style.local` / `password1234` → `http://bole-style.lvh.me/admin`
 
 The dashboard signs in through `POST /admin/session`, which proxies Better Auth email sign-in to Platform API and forwards the Better Auth session cookie back to the browser.
