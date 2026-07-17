@@ -1,10 +1,11 @@
 "use client";
 
 import { ThemeProvider as NextThemesProvider, useTheme } from "next-themes";
+import { useLocale } from "next-intl";
 import type { ComponentProps } from "react";
 import { useEffect } from "react";
 
-import { getSharedThemeFromCookie } from "@/lib/shared-theme";
+import { getSharedThemeFromCookie, type SharedTheme } from "@/lib/shared-theme";
 
 /**
  * next-themes injects an inline <script> to set the theme before hydration (FOUC).
@@ -36,16 +37,33 @@ export function ThemeProvider({ children, ...props }: ComponentProps<typeof Next
   );
 }
 
+function applyThemeClass(theme: SharedTheme) {
+  const root = document.documentElement;
+  const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+  const dark = theme === "dark" || (theme === "system" && prefersDark);
+  root.classList.toggle("dark", dark);
+  root.style.colorScheme = dark ? "dark" : "light";
+}
+
 function SharedThemeBridge() {
-  const { setTheme } = useTheme();
+  const { setTheme, theme: activeTheme } = useTheme();
+  // Locale changes trigger router.refresh(); re-apply theme if RSC touched <html>.
+  const locale = useLocale();
 
   useEffect(() => {
-    const theme = getSharedThemeFromCookie();
+    const fromCookie = getSharedThemeFromCookie();
+    const theme = fromCookie ?? (activeTheme as SharedTheme | undefined);
 
-    if (theme) {
-      setTheme(theme);
+    if (!theme || (theme !== "dark" && theme !== "light" && theme !== "system")) {
+      return;
     }
-  }, [setTheme]);
+
+    if (fromCookie) {
+      setTheme(fromCookie);
+    }
+    // Force the class even when next-themes short-circuits same-value setTheme.
+    applyThemeClass(theme);
+  }, [setTheme, activeTheme, locale]);
 
   return null;
 }
