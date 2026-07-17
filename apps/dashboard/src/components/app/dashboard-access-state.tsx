@@ -15,6 +15,8 @@ export function DashboardAccessState({
   description,
   title,
 }: DashboardAccessStateProps) {
+  const isExternal = Boolean(actionHref && /^https?:\/\//i.test(actionHref));
+
   return (
     <main className="grid min-h-svh place-items-center bg-background p-6 text-foreground">
       <section className="flex w-full max-w-md flex-col gap-4 rounded-2xl border bg-card p-6">
@@ -24,7 +26,11 @@ export function DashboardAccessState({
         </div>
         {actionHref && actionLabel ? (
           <Button asChild className="self-start">
-            <Link href={actionHref}>{actionLabel}</Link>
+            {isExternal ? (
+              <a href={actionHref}>{actionLabel}</a>
+            ) : (
+              <Link href={actionHref}>{actionLabel}</Link>
+            )}
           </Button>
         ) : null}
       </section>

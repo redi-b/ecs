@@ -73,8 +73,9 @@
     "loadFailedTitle": "Dashboard could not be loaded",
     "loadFailedDesc": "We could not load your account workspace. Try again in a moment.",
     "deniedTitle": "Dashboard access denied",
-    "deniedDesc": "This account does not have access to this shop.",
+    "deniedDesc": "This account does not have access to this shop. Sign in from the main dashboard to open a shop you belong to.",
     "useAnotherAccount": "Use another account",
+    "goToYourDashboard": "Go to main dashboard",
     "unavailableTitle": "Dashboard temporarily unavailable",
     "unavailableDesc": "We could not load this dashboard. Try again in a moment."
   }
