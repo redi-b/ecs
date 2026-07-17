@@ -10,19 +10,9 @@ import Link from "@/components/app/link";
 import { AppIcons } from "@/components/app/icons";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Sheet,
   SheetBody,
@@ -36,11 +26,15 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { slugifyTaxonomyHandle } from "@/features/catalog-taxonomy/taxonomy-table-state";
+import {
+  ProductCatalogPickerDialog,
+  ProductCatalogPickerTrigger,
+  type ProductCatalogPickItem,
+} from "@/features/products/product-catalog-picker-dialog";
 import type { MessageKey } from "@/i18n/messages";
 import { useI18n } from "@/i18n/provider";
 import { getTenantScopedPath } from "@/lib/dashboard-tenant-context";
 import { dashboardRoutes } from "@/lib/routes";
-import { cn } from "@/lib/utils";
 
 type Translate = (key: MessageKey, values?: Record<string, string | number | Date>) => string;
 
@@ -336,7 +330,7 @@ export function CollectionEditSheet({
                 ) : null}
               </div>
 
-              <ProductAddCombobox
+              <CollectionProductAddPicker
                 candidates={addCandidates}
                 disabled={membershipBusy || membersLoading}
                 loading={membersLoading}
@@ -445,7 +439,7 @@ export function CollectionEditSheet({
   );
 }
 
-function ProductAddCombobox({
+function CollectionProductAddPicker({
   candidates,
   disabled,
   loading,
@@ -462,127 +456,55 @@ function ProductAddCombobox({
 }) {
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
-  const pending = useMemo(() => new Set(pendingIds), [pendingIds]);
 
-  function toggle(id: string) {
-    if (pending.has(id)) {
-      onPendingChange(pendingIds.filter((item) => item !== id));
-      return;
-    }
-    onPendingChange([...pendingIds, id]);
-  }
-
-  const triggerLabel =
-    pendingIds.length === 0
-      ? loading
-        ? t("taxonomy.edit.loadingProducts")
-        : candidates.length === 0
-          ? t("taxonomy.edit.noProductsLeft")
-          : t("taxonomy.edit.searchProductsToAdd")
-      : pendingIds.length === 1
-        ? t("taxonomy.edit.productSelectedOne")
-        : t("taxonomy.edit.productsSelected", { count: pendingIds.length });
+  const items = useMemo<ProductCatalogPickItem[]>(
+    () =>
+      candidates.map((product) => ({
+        id: product.id,
+        title: product.title ?? product.handle ?? t("taxonomy.edit.untitledProduct"),
+        subtitle: product.handle ? `/${product.handle}` : null,
+        searchText: [product.title, product.handle, product.id].filter(Boolean).join(" "),
+      })),
+    [candidates, t],
+  );
 
   return (
     <div className="space-y-2">
-      <Popover
-        onOpenChange={(next) => {
-          setOpen(next);
+      <ProductCatalogPickerTrigger
+        disabled={disabled || (!loading && candidates.length === 0 && pendingIds.length === 0)}
+        label={
+          pendingIds.length === 0
+            ? loading
+              ? t("taxonomy.edit.loadingProducts")
+              : candidates.length === 0
+                ? t("taxonomy.edit.noProductsLeft")
+                : t("products.catalogPicker.browseCatalog")
+            : pendingIds.length === 1
+              ? t("taxonomy.edit.productSelectedOne")
+              : t("taxonomy.edit.productsSelected", { count: pendingIds.length })
+        }
+        loading={loading}
+        onClick={() => setOpen(true)}
+        selectedCount={pendingIds.length}
+      />
+      <ProductCatalogPickerDialog
+        confirmLabel={t("products.catalogPicker.addSelected")}
+        description={t("taxonomy.edit.productsHelp")}
+        emptyDescription={t("taxonomy.edit.noProductsLeft")}
+        emptyTitle={t("taxonomy.edit.noProductsYet")}
+        items={items}
+        loading={loading}
+        onConfirm={(ids) => {
+          onPendingChange(ids);
+          onAdd(ids);
         }}
+        onOpenChange={setOpen}
         open={open}
-      >
-        <PopoverTrigger asChild>
-          <Button
-            aria-expanded={open}
-            className={cn(
-              "h-8 w-full justify-between px-2.5 font-normal shadow-none",
-              pendingIds.length === 0 && "text-muted-foreground",
-            )}
-            disabled={disabled || (!loading && candidates.length === 0 && pendingIds.length === 0)}
-            id="collection-edit-add-product"
-            role="combobox"
-            type="button"
-            variant="outline"
-          >
-            <span className="truncate">{triggerLabel}</span>
-            <AppIcons.arrowDown className="size-4 shrink-0 opacity-60" data-icon="inline-end" />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent
-          align="start"
-          className="w-[var(--radix-popover-trigger-width)] overflow-hidden p-0"
-          collisionPadding={16}
-          onWheel={(event) => event.stopPropagation()}
-        >
-          <Command className="h-auto max-h-72 w-full min-h-0">
-            <CommandInput autoFocus placeholder={t("taxonomy.edit.searchProducts")} />
-            <CommandList
-              className="max-h-60 min-h-0 overflow-y-auto overscroll-contain"
-              onWheel={(event) => event.stopPropagation()}
-            >
-              <CommandEmpty>
-                <div className="flex flex-col items-center gap-2 px-3 py-4 text-center">
-                  <span className="text-sm text-muted-foreground">
-                    {t("taxonomy.edit.noMatchingProducts")}
-                  </span>
-                  <Link
-                    className="text-sm font-medium text-primary hover:underline"
-                    href={`${dashboardRoutes.products}?create=product`}
-                    prefetch={false}
-                  >
-                    {t("taxonomy.edit.createProduct")}
-                  </Link>
-                </div>
-              </CommandEmpty>
-              <CommandGroup className="overflow-visible">
-                {candidates.map((product) => {
-                  const isSelected = pending.has(product.id);
-                  const label = product.title ?? product.handle ?? product.id;
-                  return (
-                    <CommandItem
-                      data-checked={isSelected ? true : undefined}
-                      key={product.id}
-                      onSelect={() => toggle(product.id)}
-                      value={`${product.title ?? ""} ${product.handle ?? ""} ${product.id}`}
-                    >
-                      <Checkbox checked={isSelected} tabIndex={-1} />
-                      <span className="min-w-0 flex-1 truncate">{label}</span>
-                      {product.handle ? (
-                        <span className="ml-auto max-w-[40%] truncate text-xs text-muted-foreground">
-                          /{product.handle}
-                        </span>
-                      ) : null}
-                    </CommandItem>
-                  );
-                })}
-              </CommandGroup>
-            </CommandList>
-          </Command>
-          {pendingIds.length > 0 ? (
-            <div className="flex items-center justify-between gap-2 border-t p-2">
-              <Button
-                onClick={() => onPendingChange([])}
-                size="sm"
-                type="button"
-                variant="ghost"
-              >
-                {t("taxonomy.edit.clear")}
-              </Button>
-              <Button
-                disabled={disabled}
-                onClick={() => {
-                  onAdd(pendingIds);
-                  setOpen(false);
-                }}
-                size="sm"
-                type="button"
-              >
-                {t("taxonomy.edit.addCount", { count: pendingIds.length })}
-              </Button>
-            </div>
-          ) : null}
-        </PopoverContent>
-      </Popover>
+        searchPlaceholder={t("taxonomy.edit.searchProducts")}
+        selectedIds={pendingIds}
+        selectionMode="multiple"
+        title={t("taxonomy.edit.products")}
+      />
     </div>
   );
 }

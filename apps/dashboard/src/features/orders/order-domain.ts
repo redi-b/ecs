@@ -29,9 +29,15 @@ function normalize(value: string | null | undefined) {
   return value?.trim().toLowerCase() ?? "";
 }
 
+/**
+ * Shop-facing order code from Medusa id (last 6 chars after stripping `order_`).
+ * Keep in sync with platform-api `formatMerchantOrderCode` / list search.
+ */
 export function formatOrderReference(order: Pick<MerchantOrder, "id">) {
   const id = order.id ?? "";
-  return id.length <= 6 ? id.toUpperCase() : id.slice(-6).toUpperCase();
+  const raw = id.replace(/^order_/i, "");
+  const tail = (raw || id).slice(-6).toUpperCase();
+  return tail || id.slice(-6).toUpperCase();
 }
 
 export function getOrderProgress(order: MerchantOrder): OrderProgress {

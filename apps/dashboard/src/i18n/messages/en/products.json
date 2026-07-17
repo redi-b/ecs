@@ -400,5 +400,17 @@
     "notFound": "This product is no longer available.",
     "backendUnavailable": "The commerce backend is temporarily unavailable.",
     "saveFailed": "Product details could not be saved. Try again."
+  },
+  "catalogPicker": {
+    "descriptionMultiple": "Search the catalog and pick products or options to add.",
+    "descriptionSingle": "Search the catalog and pick one product.",
+    "count": "{count} available",
+    "emptyTitle": "No products yet",
+    "emptyDescription": "Create a product first, then come back to add it here.",
+    "tryDifferentSearch": "Try a different name, handle, or SKU.",
+    "noneSelected": "Nothing selected",
+    "addSelected": "Add selected",
+    "browseCatalog": "Browse catalog",
+    "changeSelection": "Change selection"
   }
 }
