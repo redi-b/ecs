@@ -24,7 +24,8 @@ Public requests resolve tenant context from the host, load the published storefr
 - Commerce ops: `src/lib/commerce/*` (reusable; templates should stay thin later)
 - Session: `ecs_cart_id` cookie
 - Platform calls: `PLATFORM_API_BASE_URL` + `x-forwarded-host`
-- **Chapa:** per-merchant secret on `payment_onboarding.secret_key` — never platform billing `CHAPA_SECRET_KEY`
+- **Chapa:** per-merchant secret on `payment_onboarding.secret_key` (never platform billing `CHAPA_SECRET_KEY`)
+- **CSRF / reverse proxy:** `astro.config.mjs` sets `security.allowedDomains` so form POSTs work when TLS terminates at Caddy (Origin is `https://…`, Node would otherwise see `http://…`)
 
 Plans:
 
