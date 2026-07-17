@@ -9,9 +9,9 @@ export type ProductListUrlInput = {
 };
 
 /**
- * List/table payload: identity, cover thumb, taxonomy ids, price+stock hooks.
- * Intentionally omits description, gallery images, variant options, and sales_channels
- * (channel is already applied via sales_channel_id[]). Detail keeps the full set.
+ * List/table payload: identity, cover thumb, taxonomy ids, price+stock hooks,
+ * and variant option axes (Size/Color) for pickers.
+ * Omits description, gallery images, and sales_channels (channel via sales_channel_id[]).
  */
 export const PRODUCT_LIST_FIELDS = [
   "id",
@@ -24,6 +24,8 @@ export const PRODUCT_LIST_FIELDS = [
   "variants.id",
   "variants.title",
   "variants.sku",
+  "variants.options.value",
+  "variants.options.option.title",
   "variants.prices.amount",
   "variants.prices.currency_code",
   "variants.inventory_items.inventory_item_id",

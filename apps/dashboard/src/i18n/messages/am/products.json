@@ -412,12 +412,24 @@
     "addSelected": "የተመረጡትን ጨምር",
     "browseCatalog": "ካታሎግን አስስ",
     "changeSelection": "ምርጫን ቀይር",
-    "descriptionVariants": "ምርቶችን ይመልከቱ፣ ከዚያ የሚፈልጉትን አማራጮች ይምረጡ።",
+    "descriptionVariants": "ምርቶችን ይመልከቱ፣ ከዚያ መጠን፣ ቀለም እና ሌሎች አማራጮችን ይምረጡ።",
     "optionCount": "{count} አማራጮች",
     "selectedOf": "{selected} ከ {total} ተመርጠዋል",
     "defaultOption": "ነባሪ አማራጭ",
     "loadMore": "ተጨማሪ ምርቶች",
     "oneOptionSelected": "1 አማራጭ ተመርጧል",
-    "optionsSelected": "{count} አማራጮች ተመርጠዋል"
+    "optionsSelected": "{count} አማራጮች ተመርጠዋል",
+    "skuLabel": "SKU {sku}",
+    "chooseOptions": "አማራጮችን ምረጥ",
+    "optionsHeading": "አማራጮች",
+    "doneOptions": "ተከናውኗል",
+    "pickOptionFor": "ለ{product} አማራጭ ይምረጡ",
+    "completeOptions": "ከላይ ያሉትን አማራጮች ይምረጡ",
+    "readyToAdd": "ዝግጁ",
+    "addCombination": "ጨምር",
+    "selectCombination": "ምረጥ",
+    "fromPrice": "ከ {price}",
+    "selectedCountShort": "{count} ተመርጠዋል",
+    "addedHint": "ተጨምሯል — ተጨማሪ ከፈለጉ ሌላ ይምረጡ"
   }
 }

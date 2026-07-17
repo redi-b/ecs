@@ -412,12 +412,24 @@
     "addSelected": "Add selected",
     "browseCatalog": "Browse catalog",
     "changeSelection": "Change selection",
-    "descriptionVariants": "Browse products, then pick the options you need.",
+    "descriptionVariants": "Browse products, then pick Size, Color, and other options — not every combo at once.",
     "optionCount": "{count} options",
     "selectedOf": "{selected} of {total} selected",
     "defaultOption": "Default option",
     "loadMore": "Load more products",
     "oneOptionSelected": "1 option selected",
-    "optionsSelected": "{count} options selected"
+    "optionsSelected": "{count} options selected",
+    "skuLabel": "SKU {sku}",
+    "chooseOptions": "Choose options",
+    "optionsHeading": "Options",
+    "doneOptions": "Done",
+    "pickOptionFor": "Pick an option for {product}",
+    "completeOptions": "Choose each option above",
+    "readyToAdd": "Ready",
+    "addCombination": "Add",
+    "selectCombination": "Select",
+    "fromPrice": "from {price}",
+    "selectedCountShort": "{count} selected",
+    "addedHint": "Added — pick another combo if you need more"
   }
 }

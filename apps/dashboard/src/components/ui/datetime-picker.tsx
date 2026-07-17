@@ -23,8 +23,8 @@ const HOURS_24 = Array.from({ length: 24 }, (_, index) => index);
 const HOURS_12 = Array.from({ length: 12 }, (_, index) => index + 1);
 
 /** Fixed list viewport height so columns always scroll (not grow with content). */
-const TIME_LIST_HEIGHT_PX = 220;
-const TIME_ITEM_HEIGHT_PX = 36;
+const TIME_LIST_HEIGHT_PX = 208;
+const TIME_ITEM_HEIGHT_PX = 32;
 
 type TimeFormat = "12h" | "24h";
 type Period = "AM" | "PM";
@@ -170,7 +170,7 @@ export function DateTimePicker({
       <PopoverContent
         align="start"
         className={cn(
-          "w-[min(28rem,calc(100vw-1.5rem))] gap-0 overflow-hidden rounded-2xl border bg-popover p-0 shadow-lg ring-1 ring-foreground/5",
+          "w-[min(26rem,calc(100vw-1.5rem))] gap-0 overflow-hidden rounded-2xl border bg-popover p-0 shadow-lg ring-1 ring-foreground/5",
           "duration-200 ease-out",
           "data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-open:slide-in-from-top-1",
           "data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95 data-closed:slide-out-to-top-1",
@@ -201,16 +201,8 @@ export function DateTimePicker({
           </div>
         </div>
 
-        <div
-          className={cn(
-            "grid gap-0",
-            // Give the time columns room so hour/min/period never feel crushed.
-            timeFormat === "12h"
-              ? "sm:grid-cols-[minmax(0,1fr)_minmax(12.5rem,14rem)]"
-              : "sm:grid-cols-[minmax(0,1fr)_minmax(10.5rem,12rem)]",
-          )}
-        >
-          <div className="p-3 sm:border-r sm:p-4">
+        <div className="grid gap-0 sm:grid-cols-[minmax(16rem,1fr)_minmax(10rem,11rem)]">
+          <div className="min-w-0 p-4 sm:border-r">
             <Calendar
               month={month}
               onMonthChange={setMonth}
@@ -220,21 +212,19 @@ export function DateTimePicker({
           </div>
 
           <div className="flex min-h-0 flex-col border-t sm:border-t-0">
-            <div className="shrink-0 border-b px-3 py-2.5 sm:px-3.5">
+            <div className="shrink-0 border-b px-3 py-2">
               <p className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
                 Time
               </p>
-              <p className="mt-0.5 text-sm font-semibold tabular-nums tracking-tight">
-                {displayTime}
-              </p>
+              <p className="mt-0.5 text-sm font-semibold tabular-nums">{displayTime}</p>
             </div>
 
             <div
               className={cn(
-                "grid min-h-0 divide-x",
+                "grid min-h-0",
                 timeFormat === "12h" ? "grid-cols-3" : "grid-cols-2",
               )}
-              style={{ height: TIME_LIST_HEIGHT_PX + 32 }}
+              style={{ height: TIME_LIST_HEIGHT_PX + 28 }}
             >
               {timeFormat === "24h" ? (
                 <TimeColumn
@@ -343,12 +333,12 @@ function TimeColumn({
   }, [value, options]);
 
   return (
-    <div className="flex min-h-0 min-w-0 flex-col overflow-hidden">
-      <p className="shrink-0 border-b px-1.5 py-2 text-center text-[10px] font-medium tracking-wide text-muted-foreground uppercase">
+    <div className="flex min-h-0 min-w-0 flex-col overflow-hidden border-l first:border-l-0">
+      <p className="shrink-0 border-b px-2 py-1.5 text-center text-[10px] font-medium tracking-wide text-muted-foreground uppercase">
         {label}
       </p>
       <div
-        className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-1.5 py-2 [scrollbar-width:thin] [-webkit-overflow-scrolling:touch]"
+        className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-1.5 [scrollbar-gutter:stable] [-webkit-overflow-scrolling:touch]"
         onTouchMove={(event) => event.stopPropagation()}
         onWheel={(event) => {
           // Keep the wheel on this list; don't let the dialog/page steal it.
@@ -357,13 +347,13 @@ function TimeColumn({
         ref={listRef}
         style={{ height: TIME_LIST_HEIGHT_PX, maxHeight: TIME_LIST_HEIGHT_PX }}
       >
-        <div className="flex flex-col gap-1">
+        <div className="flex flex-col gap-0.5">
           {options.map((option) => {
             const active = option === value;
             return (
               <button
                 className={cn(
-                  "h-9 shrink-0 rounded-full text-sm tabular-nums transition-colors outline-none",
+                  "h-8 shrink-0 rounded-lg text-sm tabular-nums transition-colors outline-none",
                   "hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 focus-visible:ring-ring/50",
                   active &&
                     "bg-primary font-semibold text-primary-foreground shadow-sm hover:bg-primary/90 hover:text-primary-foreground",
@@ -384,8 +374,8 @@ function TimeColumn({
 }
 
 function expectedScrollTop(index: number) {
-  // Rough center: item offset + half item − half viewport. gap-1 ≈ 4px.
-  const itemStride = TIME_ITEM_HEIGHT_PX + 4;
+  // Rough center: item offset + half item − half viewport. gap-0.5 ≈ 2px.
+  const itemStride = TIME_ITEM_HEIGHT_PX + 2;
   const top = index * itemStride + TIME_ITEM_HEIGHT_PX / 2 - TIME_LIST_HEIGHT_PX / 2;
   return Math.max(0, top);
 }
@@ -398,12 +388,12 @@ function PeriodColumn({
   onChange: (period: Period) => void;
 }) {
   return (
-    <div className="flex min-h-0 min-w-0 flex-col overflow-hidden">
-      <p className="shrink-0 border-b px-1.5 py-2 text-center text-[10px] font-medium tracking-wide text-muted-foreground uppercase">
+    <div className="flex min-h-0 min-w-0 flex-col overflow-hidden border-l">
+      <p className="shrink-0 border-b px-2 py-1.5 text-center text-[10px] font-medium tracking-wide text-muted-foreground uppercase">
         AM/PM
       </p>
       <div
-        className="flex flex-col justify-center gap-2 px-1.5 py-3"
+        className="flex flex-col gap-1 overflow-y-auto p-1.5"
         style={{ height: TIME_LIST_HEIGHT_PX, maxHeight: TIME_LIST_HEIGHT_PX }}
       >
         {(["AM", "PM"] as const).map((period) => {
@@ -411,7 +401,7 @@ function PeriodColumn({
           return (
             <button
               className={cn(
-                "h-11 shrink-0 rounded-full text-sm font-semibold transition-colors outline-none",
+                "h-10 shrink-0 rounded-lg text-sm font-medium transition-colors outline-none",
                 "hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 focus-visible:ring-ring/50",
                 active &&
                   "bg-primary text-primary-foreground shadow-sm hover:bg-primary/90 hover:text-primary-foreground",

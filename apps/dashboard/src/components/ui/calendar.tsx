@@ -122,7 +122,7 @@ export function Calendar({
         </div>
       ) : (
         <div className="animate-in fade-in-0 duration-150">
-          <div className="mb-1 grid grid-cols-7 gap-1">
+          <div className="mb-2 grid grid-cols-7">
             {WEEKDAYS.map((day) => (
               <div
                 className="grid h-8 place-items-center text-[11px] font-medium text-muted-foreground"
@@ -132,7 +132,11 @@ export function Calendar({
               </div>
             ))}
           </div>
-          <div className="grid grid-cols-7 gap-1">
+          {/*
+            Day buttons fill their grid cell (not fixed size-9 that can overflow/overlap).
+            gap keeps circles separated.
+          */}
+          <div className="grid grid-cols-7 gap-1.5">
             {days.map((day) => {
               const inMonth = isSameMonth(day, month);
               const selectedDay = selected ? isSameDay(day, selected) : false;
@@ -142,7 +146,8 @@ export function Calendar({
                   aria-current={today ? "date" : undefined}
                   aria-selected={selectedDay}
                   className={cn(
-                    "relative grid size-9 place-items-center justify-self-center rounded-full text-sm transition-all outline-none",
+                    "relative aspect-square w-full max-h-10 place-self-center rounded-full text-sm transition-all outline-none",
+                    "grid place-items-center",
                     "hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 focus-visible:ring-ring/50",
                     !inMonth && "text-muted-foreground/40",
                     today &&
