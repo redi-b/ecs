@@ -135,12 +135,10 @@ function pickMetaString(metadata: Record<string, unknown> | null | undefined, ..
 export function buildOrderNotificationPayload(order: OrderNotificationFields) {
   const payload: Record<string, unknown> = {
     orderId: order.id,
+    // Shop-facing short code (dashboard/notifications use last 6 of Medusa id).
+    orderCode: formatOrderCode(order.id),
     source: "medusa",
   };
-  if (order.display_id != null) {
-    // Numeric display id only — renderer formats as #N for merchants.
-    payload.orderDisplayId = String(order.display_id);
-  }
   if (order.currency_code) {
     payload.currencyCode = String(order.currency_code).toUpperCase();
   }
@@ -206,4 +204,9 @@ export function buildOrderNotificationPayload(order: OrderNotificationFields) {
   }
 
   return payload;
+}
+
+function formatOrderCode(orderId: string) {
+  const raw = orderId.replace(/^order_/i, "");
+  return (raw.slice(-6) || orderId.slice(-6)).toUpperCase();
 }

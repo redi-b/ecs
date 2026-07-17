@@ -44,16 +44,33 @@ function pickScalar(record: Record<string, unknown>, ...keys: string[]): string 
   return undefined;
 }
 
-/** Prefer merchant-facing display ids (#10) over Medusa resource ids. */
+/**
+ * Shop-friendly order code for merchants.
+ * Prefer short codes derived from Medusa `order_…` ids (last 6 chars).
+ * Avoid sequential global display_id numbers — those increment across the shared DB.
+ */
 export function formatOrderRef(raw: string | undefined): string {
   if (!raw?.trim()) return "order";
   const value = raw.trim();
   if (value === "unknown") return "order";
-  if (/^order_[a-zA-Z0-9]+$/i.test(value) || value.length > 24) {
-    return "order";
+
+  // Medusa resource id → short shop code (matches dashboard formatOrderReference).
+  if (/^order_[a-zA-Z0-9]+$/i.test(value)) {
+    const tail = value.replace(/^order_/i, "").slice(-6).toUpperCase();
+    return tail || "order";
   }
+
+  // Explicit short codes (already formatted).
+  if (/^[A-Z0-9]{4,10}$/i.test(value) && !/^\d+$/.test(value)) {
+    return value.toUpperCase();
+  }
+
+  // Legacy numeric display ids — still show as #N for already-queued events.
   if (value.startsWith("#")) return value;
   if (/^\d+$/.test(value)) return `#${value}`;
+
+  // Long opaque strings (payment refs, etc.) are not merchant-friendly.
+  if (value.length > 16) return "order";
   return value;
 }
 
@@ -193,8 +210,9 @@ type Context = {
 };
 
 function buildContext(data: Record<string, unknown>): Context {
+  // Prefer Medusa order id → shop code. Fall back to orderCode, then legacy display id.
   const orderRef = formatOrderRef(
-    pickScalar(data, "orderDisplayId", "displayId", "orderId", "txRef"),
+    pickScalar(data, "orderId", "order_id", "orderCode", "orderDisplayId", "displayId"),
   );
   const amount = formatMoneyAmount(
     pickScalar(data, "amount", "total", "totalAmount"),
@@ -213,7 +231,8 @@ function buildContext(data: Record<string, unknown>): Context {
     paymentStatus: pickScalar(data, "paymentStatus", "payment_status", "status"),
     deliveryChoice: pickScalar(data, "deliveryChoice", "delivery_choice"),
     itemCount: itemCountRaw,
-    txRef: pickScalar(data, "txRef", "providerReference", "paymentReference"),
+    // Keep raw payment refs out of merchant-facing copy (ugly provider/tx strings).
+    txRef: undefined,
     source: pickScalar(data, "source", "paid_via"),
     when: formatWhen(pickScalar(data, "sentAt", "paidAt", "createdAt", "occurredAt")),
   };
@@ -255,9 +274,7 @@ function orderDetails(ctx: Context, options?: { includePaymentStatus?: boolean }
   if (options?.includePaymentStatus && ctx.paymentStatus) {
     details.push({ label: "Payment status", value: humanizeToken(ctx.paymentStatus) });
   }
-  if (ctx.txRef) {
-    details.push({ label: "Reference", value: ctx.txRef });
-  }
+  // Intentionally omit provider payment references (tx_ref / chapa ids) from merchant copy.
   if (ctx.shop) {
     details.push({ label: "Shop", value: ctx.shop });
   }
