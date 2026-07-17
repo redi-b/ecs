@@ -255,6 +255,8 @@ services:
       # Must match platform-api BETTER_AUTH_COOKIE_PREFIX (session clear / current session).
       BETTER_AUTH_COOKIE_PREFIX: ${BETTER_AUTH_COOKIE_PREFIX:-ecs}
       STOREFRONT_PUBLIC_BASE_DOMAIN: ${BASE_DOMAIN}
+      MERCHANT_SUPPORT_URL: ${MERCHANT_SUPPORT_URL:-}
+      MERCHANT_SUPPORT_EMAIL: ${MERCHANT_SUPPORT_EMAIL:-}
     expose:
       - "3001"
     healthcheck:

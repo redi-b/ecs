@@ -99,6 +99,7 @@ export function SettingsWorkspace({
   delivery,
   initialTab,
   payments,
+  paymentsSupportHref = null,
   settingsStatus,
   storefrontTemplates,
   summary,
@@ -372,7 +373,9 @@ export function SettingsWorkspace({
             <NotificationsSection tenantId={summary.tenant.id} />
           ) : null}
 
-          {section === "payments" ? <PaymentsSection initialPayment={payments} /> : null}
+          {section === "payments" ? (
+            <PaymentsSection initialPayment={payments} supportHref={paymentsSupportHref} />
+          ) : null}
 
           {section === "fulfillment" ? (
             <FulfillmentSection

@@ -344,6 +344,8 @@
   },
   "payments": {
     "intro": "Choose how customers pay when they order from your shop.",
+    "loadError": "Could not load payment settings. Try again.",
+    "retry": "Retry",
     "status": {
       "loading": "Loading…",
       "notConnected": "Not set up",
@@ -380,6 +382,10 @@
       "connect": "Connect",
       "saveUpdate": "Save new key",
       "test": "Test connection",
+      "helpTitle": "Need help with Chapa?",
+      "helpBody": "No account yet, not sure how to get a key, or prefer we handle it? Contact support. We can set up Chapa for you or show you how to connect it.",
+      "helpBodyConnected": "Questions about your connection, a new key, or payouts? Support can help without you digging through Chapa alone.",
+      "helpCta": "Contact support",
       "disconnect": "Disconnect",
       "disconnectHint": "Removes online payment from your shop.",
       "disconnectTitle": "Disconnect online payments?",

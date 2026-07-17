@@ -22,6 +22,10 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
   const t = await getTranslations();
   const requestHeaders = await headers();
   const platformApiBaseUrl = process.env.PLATFORM_API_BASE_URL ?? "http://localhost:3000";
+  const supportUrl = process.env.MERCHANT_SUPPORT_URL?.trim();
+  const supportEmail = process.env.MERCHANT_SUPPORT_EMAIL?.trim();
+  const paymentsSupportHref =
+    supportUrl || (supportEmail ? `mailto:${supportEmail}` : null);
   // Settings only needs tenant/domain/actor/storefront — not ops/metrics/billing.
   const result = await getMerchantDashboardAccessShell({
     cookieHeader: requestHeaders.get("cookie"),
@@ -65,6 +69,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
           delivery={delivery?.ok ? delivery.delivery : null}
           initialTab={resolvedSearchParams.tab}
           payments={payments?.ok ? payments.payment : null}
+          paymentsSupportHref={paymentsSupportHref}
           settingsStatus={resolvedSearchParams.settingsStatus}
           storefrontTemplates={templates?.ok ? templates.templates : []}
           templateStatus={resolvedSearchParams.templateStatus}
