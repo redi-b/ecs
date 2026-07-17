@@ -1,7 +1,14 @@
 import { isCentralDashboardHost } from "./dashboard-hosts";
 
+export type ShopHostTenant = {
+  id: string;
+  name: string;
+  handle: string;
+  hostname: string;
+};
+
 export type ShopHostValidation =
-  | { ok: true }
+  | { ok: true; tenant?: ShopHostTenant }
   | { ok: false; error: "shop_not_found" | "shop_unavailable" | "auth_unavailable" };
 
 /**
@@ -35,6 +42,28 @@ export async function validateShopHost(options: {
     return {
       ok: false,
       error: body.error === "shop_not_found" ? "shop_not_found" : "shop_unavailable",
+    };
+  }
+
+  const body = (await response.json().catch(() => ({}))) as {
+    tenant?: { id?: string; name?: string; handle?: string; hostname?: string };
+  };
+  const tenant = body.tenant;
+  if (
+    tenant &&
+    typeof tenant.id === "string" &&
+    typeof tenant.name === "string" &&
+    typeof tenant.handle === "string" &&
+    typeof tenant.hostname === "string"
+  ) {
+    return {
+      ok: true,
+      tenant: {
+        id: tenant.id,
+        name: tenant.name,
+        handle: tenant.handle,
+        hostname: tenant.hostname,
+      },
     };
   }
 

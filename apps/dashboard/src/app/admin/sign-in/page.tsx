@@ -21,30 +21,31 @@ export default async function AdminSignInPage({
   const requestHeaders = await headers();
   const requestHost = requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host");
   const isCentralAccess = isCentralDashboardHost(requestHost);
+  const shopHost =
+    !isCentralAccess && requestHost
+      ? await validateShopHost({ forwardedHost: requestHost })
+      : ({ ok: true } as const);
 
-  if (!isCentralAccess && requestHost) {
-    const hostResult = await validateShopHost({ forwardedHost: requestHost });
-    if (!hostResult.ok) {
-      if (hostResult.error === "shop_not_found") {
-        return (
-          <DashboardAccessState
-            actionHref={getCentralDashboardUrl("/admin/sign-in")}
-            actionLabel={t("auth.shopMissing.cta")}
-            description={t("auth.shopMissing.description")}
-            title={t("auth.shopMissing.title")}
-          />
-        );
-      }
-      if (hostResult.error === "shop_unavailable") {
-        return (
-          <DashboardAccessState
-            actionHref={getCentralDashboardUrl("/admin/sign-in")}
-            actionLabel={t("auth.shopMissing.cta")}
-            description={t("auth.error.shopUnavailable")}
-            title={t("auth.error.shopUnavailable")}
-          />
-        );
-      }
+  if (!shopHost.ok) {
+    if (shopHost.error === "shop_not_found") {
+      return (
+        <DashboardAccessState
+          actionHref={getCentralDashboardUrl("/admin/sign-in")}
+          actionLabel={t("auth.shopMissing.cta")}
+          description={t("auth.shopMissing.description")}
+          title={t("auth.shopMissing.title")}
+        />
+      );
+    }
+    if (shopHost.error === "shop_unavailable") {
+      return (
+        <DashboardAccessState
+          actionHref={getCentralDashboardUrl("/admin/sign-in")}
+          actionLabel={t("auth.shopMissing.cta")}
+          description={t("auth.error.shopUnavailable")}
+          title={t("auth.error.shopUnavailable")}
+        />
+      );
     }
   }
 
@@ -61,11 +62,17 @@ export default async function AdminSignInPage({
   const nextPath = getSafeNextPath(params?.next);
   const errorMessage = getErrorMessage(params?.error, t);
   const centralSignIn = getCentralDashboardUrl("/admin/sign-in");
+  const shopName =
+    shopHost.ok && shopHost.tenant?.name?.trim() ? shopHost.tenant.name.trim() : null;
 
   return (
     <AuthShell
       brandDescription={
-        isCentralAccess ? t("auth.centralBrandDescription") : t("auth.shopBrandDescription")
+        isCentralAccess
+          ? t("auth.centralBrandDescription")
+          : shopName
+            ? t("auth.shopBrandDescriptionNamed", { shopName })
+            : t("auth.shopBrandDescription")
       }
       brandFooter={t("auth.brandFooter.signIn")}
       brandPoints={
@@ -73,18 +80,28 @@ export default async function AdminSignInPage({
           ? [t("auth.brandPoint.catalog"), t("auth.brandPoint.orders"), t("auth.brandPoint.storefront")]
           : [t("auth.brandPoint.shopAccess"), t("auth.brandPoint.teamReady")]
       }
-      brandTitle={isCentralAccess ? t("auth.centralBrandTitle") : t("auth.shopBrandTitle")}
+      brandTitle={
+        isCentralAccess
+          ? t("auth.centralBrandTitle")
+          : shopName
+            ? t("auth.shopBrandTitleNamed", { shopName })
+            : t("auth.shopBrandTitle")
+      }
     >
       <div className="rounded-2xl border border-border bg-card p-7 shadow-sm sm:p-9">
         <div className="mb-7">
           <p className="text-xs font-semibold tracking-[0.06em] text-muted-foreground uppercase">
-            {t("auth.merchantConsole")}
+            {shopName ?? t("auth.merchantConsole")}
           </p>
           <h2 className="mt-2.5 text-xl font-semibold tracking-tight sm:text-[1.35rem]">
             {t("auth.signIn")}
           </h2>
           <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-            {isCentralAccess ? t("auth.centralDescription") : t("auth.shopDescription")}
+            {isCentralAccess
+              ? t("auth.centralDescription")
+              : shopName
+                ? t("auth.shopDescriptionNamed", { shopName })
+                : t("auth.shopDescription")}
           </p>
         </div>
         <SignInForm errorMessage={errorMessage} nextPath={nextPath} />
@@ -100,12 +117,11 @@ export default async function AdminSignInPage({
           </p>
         ) : (
           <p className="mt-7 border-t pt-6 text-center text-sm text-muted-foreground">
-            {t("auth.shopWrongHostHint")}{" "}
             <a
               className="font-medium text-primary underline-offset-4 hover:underline"
               href={centralSignIn}
             >
-              {t("auth.shopWrongHostCta")}
+              {t("auth.mainSignInLink")}
             </a>
           </p>
         )}

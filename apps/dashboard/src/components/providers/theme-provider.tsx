@@ -5,14 +5,16 @@ import { useLocale } from "next-intl";
 import type { ComponentProps } from "react";
 import { useEffect } from "react";
 
-import { getSharedThemeFromCookie, type SharedTheme } from "@/lib/shared-theme";
+import {
+  getSharedThemeFromCookie,
+  setSharedThemeCookie,
+  type SharedTheme,
+} from "@/lib/shared-theme";
 
 /**
- * next-themes injects an inline <script> to set the theme before hydration (FOUC).
- * React 19 warns when client components render <script> tags; the script still
- * runs correctly from the SSR HTML. See:
- * - https://github.com/pacocoursey/next-themes/issues/387
- * - https://github.com/shadcn-ui/ui/issues/10104
+ * next-themes injects an inline <script> for localStorage FOUC prevention.
+ * We also set ecs-theme (parent-domain cookie) and a blocking cookie script in layout
+ * so theme survives dashboard.* ↔ shop.* navigation where localStorage is origin-scoped.
  */
 if (typeof window !== "undefined" && process.env.NODE_ENV === "development") {
   const originalError = console.error;
@@ -47,22 +49,28 @@ function applyThemeClass(theme: SharedTheme) {
 
 function SharedThemeBridge() {
   const { setTheme, theme: activeTheme } = useTheme();
-  // Locale changes trigger router.refresh(); re-apply theme if RSC touched <html>.
   const locale = useLocale();
 
+  // Cookie is source of truth across subdomains; localStorage is origin-only.
   useEffect(() => {
     const fromCookie = getSharedThemeFromCookie();
-    const theme = fromCookie ?? (activeTheme as SharedTheme | undefined);
-
-    if (!theme || (theme !== "dark" && theme !== "light" && theme !== "system")) {
+    if (fromCookie) {
+      setTheme(fromCookie);
+      applyThemeClass(fromCookie);
+      try {
+        localStorage.setItem("ecs-theme-ls", fromCookie);
+      } catch {
+        // private mode
+      }
       return;
     }
 
-    if (fromCookie) {
-      setTheme(fromCookie);
+    const theme = (activeTheme as SharedTheme | undefined) ?? "system";
+    if (theme === "dark" || theme === "light" || theme === "system") {
+      // Persist resolved choice onto parent domain so the next shop host inherits it.
+      setSharedThemeCookie(theme);
+      applyThemeClass(theme);
     }
-    // Force the class even when next-themes short-circuits same-value setTheme.
-    applyThemeClass(theme);
   }, [setTheme, activeTheme, locale]);
 
   return null;
