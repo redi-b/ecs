@@ -1,0 +1,69 @@
+---
+import ProductCard from "../../components/commerce/ProductCard.astro";
+import StoreShell from "../../components/shell/StoreShell.astro";
+import type { StoreProduct } from "../../lib/commerce/types";
+
+interface Props {
+  tenantName: string;
+  cartCount: number;
+  primaryColor?: string;
+  products: StoreProduct[];
+  errorMessage?: string | null;
+  hasPrev: boolean;
+  hasNext: boolean;
+  prevHref?: string;
+  nextHref?: string;
+}
+
+const {
+  tenantName,
+  cartCount,
+  primaryColor,
+  products,
+  errorMessage,
+  hasPrev,
+  hasNext,
+  prevHref,
+  nextHref,
+} = Astro.props;
+---
+
+<StoreShell tenantName={tenantName} cartCount={cartCount} title="Products" primaryColor={primaryColor}>
+  <h1 class="sf-title">Products</h1>
+  <p class="sf-lede">Browse everything available in this shop.</p>
+
+  {
+    errorMessage ? (
+      <div class="sf-notice sf-notice-error" role="alert">
+        Could not load products: {errorMessage}
+      </div>
+    ) : products.length === 0 ? (
+      <div class="sf-notice" role="status">
+        No products yet.
+      </div>
+    ) : (
+      <ul class="sf-grid">
+        {products.map((product) => (
+          <ProductCard product={product} />
+        ))}
+      </ul>
+    )
+  }
+
+  {
+    (hasPrev || hasNext) && (
+      <div class="sf-actions">
+        {hasPrev && prevHref && (
+          <a class="sf-btn sf-btn-secondary" href={prevHref}>
+            Previous
+          </a>
+        )}
+        {hasNext && nextHref && (
+          <a class="sf-btn sf-btn-secondary" href={nextHref}>
+            Next
+          </a>
+        )}
+      </div>
+    )
+  }
+</StoreShell>

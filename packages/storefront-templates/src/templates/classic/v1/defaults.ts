@@ -7,7 +7,7 @@ export const classicV1Defaults: ClassicV1Data = {
   },
   header: {
     navigation: [
-      { label: "Shop", href: "/" },
+      { label: "Shop", href: "/products" },
       { label: "Contact", href: "#contact" },
     ],
   },
@@ -16,7 +16,7 @@ export const classicV1Defaults: ClassicV1Data = {
       title: "Your shop, online",
       subtitle: "Browse products and place an order in minutes.",
       primaryCtaLabel: "Shop products",
-      primaryCtaHref: "/",
+      primaryCtaHref: "/products",
     },
     featuredProducts: {
       title: "Featured products",

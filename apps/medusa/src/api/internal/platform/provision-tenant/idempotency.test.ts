@@ -43,6 +43,12 @@ describe("findExistingTenantCommerceResources", () => {
 
           const id = idsByEntity.get(input.entity);
 
+          if (input.entity === "api_key" && id) {
+            return {
+              data: [{ id, token: "pk_test_token" }],
+            };
+          }
+
           return {
             data: id ? [{ id }] : [],
           };
@@ -54,7 +60,7 @@ describe("findExistingTenantCommerceResources", () => {
       storeId: "store_1",
       salesChannelId: "sc_1",
       stockLocationId: "sloc_1",
-      publishableKeyId: "apk_1",
+      publishableKeyId: "pk_test_token",
       regionId: "reg_1",
       shippingProfileId: "shp_1",
       fulfillmentSetId: "fuset_1",
@@ -137,6 +143,41 @@ describe("findExistingTenantCommerceResources", () => {
         graph: async (input) => ({
           data: input.entity === "store" ? [{ id: "store_1" }] : [],
         }),
+      },
+    });
+
+    assert.equal(result, undefined);
+  });
+
+  it("returns undefined when api_key has only an id and no publishable token", async () => {
+    const idsByEntity = new Map([
+      ["store", "store_1"],
+      ["stock_location", "sloc_1"],
+      ["sales_channel", "sc_1"],
+      ["api_key", "apk_1"],
+      ["region", "reg_1"],
+      ["shipping_profile", "shp_1"],
+      ["fulfillment_set", "fuset_1"],
+      ["service_zone", "serzo_1"],
+      ["shipping_option", "so_1"],
+    ]);
+
+    const result = await findExistingTenantCommerceResources({
+      input: {
+        handle: "abebe",
+        name: "Abebe Market",
+        platformTenantId: "tenant_1",
+        requestedByUserId: "user_1",
+      },
+      query: {
+        graph: async (input) => {
+          const id = idsByEntity.get(input.entity);
+          // Token missing or id-shaped — must not fall back to apk_…
+          if (input.entity === "api_key" && id) {
+            return { data: [{ id }] };
+          }
+          return { data: id ? [{ id }] : [] };
+        },
       },
     });
 

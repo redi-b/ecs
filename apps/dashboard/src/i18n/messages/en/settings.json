@@ -1,6 +1,6 @@
 {
   "title": "Settings",
-  "description": "Manage shop address, checkout fulfillment, storefront status, and account details.",
+  "description": "Manage shop address, payments, fulfillment, storefront status, and account details.",
   "error": {
     "loadTitle": "Settings could not be loaded"
   },
@@ -29,6 +29,10 @@
     "account": {
       "label": "Account",
       "description": "Profile, password, sessions"
+    },
+    "payments": {
+      "label": "Payments",
+      "description": "How customers pay"
     }
   },
   "status": {
@@ -337,5 +341,65 @@
     "signOutOthersTitle": "Sign out other devices?",
     "signOutOthersDesc": "{count} other session(s) will be signed out. This device stays signed in.",
     "signOutOthersConfirm": "Sign out others"
+  },
+  "payments": {
+    "intro": "Choose how customers pay when they order from your shop.",
+    "loadError": "Could not load payment settings. Try again.",
+    "retry": "Retry",
+    "status": {
+      "loading": "Loading…",
+      "notConnected": "Not set up",
+      "off": "Off",
+      "on": "On"
+    },
+    "cod": {
+      "title": "Cash on delivery",
+      "badge": "Available",
+      "description": "Customers pay when their order is delivered or picked up.",
+      "hint": "Turn delivery and pickup on or off under Fulfillment.",
+      "openFulfillment": "Fulfillment settings"
+    },
+    "online": {
+      "title": "Pay online",
+      "description": "Customers pay with card or mobile money at checkout. Money goes to your Chapa account.",
+      "offerLabel": "Show on your storefront",
+      "offerSwitch": "Enabled",
+      "offerOnHint": "Shoppers can choose online payment at checkout.",
+      "offerOffHint": "Connected, but hidden at checkout until you turn this on.",
+      "connectedAs": "Connected · ends in {fingerprint}",
+      "connectTitle": "Connect Chapa",
+      "connectHint": "Link the Chapa account where you want customer payments to arrive.",
+      "updateTitle": "Update connection",
+      "updateHint": "Paste a new secret key only if you need to replace the current one.",
+      "step1": "Open your Chapa dashboard and copy your secret key.",
+      "step2": "Paste it below and connect.",
+      "step3": "Turn on “Show on your storefront” when you are ready.",
+      "secretLabel": "Secret key",
+      "secretPlaceholder": "Paste your secret key",
+      "secretHint": "We check the key with Chapa and never show it again in full.",
+      "showKey": "Show key",
+      "hideKey": "Hide key",
+      "connect": "Connect",
+      "saveUpdate": "Save new key",
+      "test": "Test connection",
+      "helpTitle": "Need help with Chapa?",
+      "helpBody": "No account yet, not sure how to get a key, or prefer we handle it? Contact support. We can set up Chapa for you or show you how to connect it.",
+      "helpBodyConnected": "Questions about your connection, a new key, or payouts? Support can help without you digging through Chapa alone.",
+      "helpCta": "Contact support",
+      "disconnect": "Disconnect",
+      "disconnectHint": "Removes online payment from your shop.",
+      "disconnectTitle": "Disconnect online payments?",
+      "disconnectDescription": "Customers will only see cash on delivery until you connect again. Orders already placed are not affected.",
+      "disconnectConfirm": "Disconnect"
+    },
+    "toast": {
+      "working": "Updating…",
+      "connected": "Online payments connected",
+      "updated": "Connection updated",
+      "tested": "Connection looks good",
+      "toggled": "Storefront payment option updated",
+      "disconnected": "Online payments disconnected",
+      "failed": "Could not update payments"
+    }
   }
 }

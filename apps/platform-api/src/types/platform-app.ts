@@ -186,6 +186,57 @@ export type PlatformAppOptions = {
   getDeliverySettings?:
     | ((input: { tenantId: string }) => Promise<DeliverySettingsResult>)
     | undefined;
+  /** Merchant store Chapa credentials — never platform billing env key. */
+  getMerchantChapaCredentials?:
+    | ((input: {
+        tenantId: string;
+        requireOnlineEnabled?: boolean;
+      }) => Promise<
+        | { ok: true; secretKey: string; providerAccountRef: string | null }
+        | { ok: false; error: "merchant_chapa_not_configured" }
+      >)
+    | undefined;
+  isMerchantChapaConfigured?: ((input: { tenantId: string }) => Promise<boolean>) | undefined;
+  getMerchantStorePaymentStatus?:
+    | ((input: { tenantId: string }) => Promise<{
+        ok: true;
+        payment: {
+          cod: true;
+          chapa: {
+            configured: boolean;
+            onlineEnabled: boolean;
+            credentialsValidated: boolean;
+            secretFingerprint: string | null;
+            status: string;
+          };
+        };
+      }>)
+    | undefined;
+  setMerchantChapaSecret?:
+    | ((input: {
+        tenantId: string;
+        secretKey: string;
+        userId?: string;
+        onlineEnabled?: boolean;
+        providerAccountRef?: string | null;
+      }) => Promise<
+        | { ok: true; fingerprint: string }
+        | { ok: false; error: "payment_provider_invalid" | "encryption_unavailable" }
+      >)
+    | undefined;
+  setMerchantChapaOnlineEnabled?:
+    | ((input: {
+        tenantId: string;
+        onlineEnabled: boolean;
+        userId?: string;
+      }) => Promise<{ ok: true } | { ok: false; error: "merchant_chapa_not_configured" }>)
+    | undefined;
+  clearMerchantChapaSecret?:
+    | ((input: {
+        tenantId: string;
+        userId?: string;
+      }) => Promise<{ ok: true } | { ok: false; error: "merchant_chapa_not_configured" }>)
+    | undefined;
   updateDeliverySettings?:
     | ((input: {
         currency: string;

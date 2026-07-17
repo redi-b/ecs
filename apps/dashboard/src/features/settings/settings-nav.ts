@@ -2,6 +2,7 @@ export type SettingsSectionId =
   | "shop"
   | "preferences"
   | "notifications"
+  | "payments"
   | "fulfillment"
   | "storefront"
   | "account";
@@ -10,6 +11,7 @@ export const SETTINGS_SECTION_IDS: SettingsSectionId[] = [
   "shop",
   "preferences",
   "notifications",
+  "payments",
   "fulfillment",
   "storefront",
   "account",
@@ -37,6 +39,11 @@ export const SETTINGS_SECTIONS: Array<{
     description: "Orders, payments, and shop events",
   },
   {
+    id: "payments",
+    label: "Payments",
+    description: "COD and online payments",
+  },
+  {
     id: "fulfillment",
     label: "Fulfillment",
     description: "Delivery, pickup, and fees",
@@ -58,6 +65,7 @@ export function parseSettingsSection(value: string | undefined): SettingsSection
     value === "shop" ||
     value === "preferences" ||
     value === "notifications" ||
+    value === "payments" ||
     value === "fulfillment" ||
     value === "storefront" ||
     value === "account"

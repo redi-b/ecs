@@ -1,0 +1,28 @@
+---
+import { formatMoney } from "../../lib/money";
+import type { StoreProduct } from "../../lib/commerce/types";
+
+interface Props {
+  product: StoreProduct;
+}
+
+const { product } = Astro.props;
+const href = product.handle ? `/products/${encodeURIComponent(product.handle)}` : "#";
+const title = product.title ?? "Product";
+---
+
+<li>
+  <a class="sf-card" href={href}>
+    {
+      product.thumbnail ? (
+        <img class="sf-card-media" src={product.thumbnail} alt="" loading="lazy" />
+      ) : (
+        <div class="sf-card-media-placeholder" aria-hidden="true" />
+      )
+    }
+    <div class="sf-card-body">
+      <h3 class="sf-card-title">{title}</h3>
+      <p class="sf-card-price">{formatMoney(product.priceAmount, product.currencyCode)}</p>
+    </div>
+  </a>
+</li>

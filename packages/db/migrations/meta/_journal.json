@@ -99,6 +99,20 @@
       "when": 1784107172137,
       "tag": "0013_careful_reptil",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1784230413123,
+      "tag": "0014_curly_katie_power",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1784234627630,
+      "tag": "0015_lucky_terror",
+      "breakpoints": true
     }
   ]
 }

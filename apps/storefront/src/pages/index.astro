@@ -16,12 +16,17 @@ const productsResult = configResult.ok
   ? await listStoreProducts({
       platformApiBaseUrl,
       requestHost,
+      regionId: configResult.config.commerce.regionId,
+      limit: 8,
     })
   : { ok: false as const, status: configResult.status, message: configResult.message };
 const renderer = configResult.ok
   ? getStorefrontRenderer(configResult.config.storefront.templateKey)
   : undefined;
-const Home = renderer?.Home;
+// Dynamic template component (Astro); type is intentionally loose in registry contract.
+const Home = renderer?.Home as
+  | ((props: Record<string, unknown>) => unknown)
+  | undefined;
 
 if (!configResult.ok) {
   Astro.response.status = configResult.status;

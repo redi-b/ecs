@@ -1,0 +1,59 @@
+---
+import StoreUnavailable from "../../components/shell/StoreUnavailable.astro";
+import { listStoreProducts } from "../../lib/commerce/products";
+import { isStoreError } from "../../lib/commerce/result";
+import type { StoreProduct } from "../../lib/commerce/types";
+import { loadPageContext } from "../../lib/page-context";
+import { getPrimaryColor } from "../../lib/theme";
+import { resolveRendererSlot } from "../../templates/registry";
+
+const ctx = await loadPageContext(Astro.request);
+if (!ctx.ok) {
+  Astro.response.status = ctx.status;
+}
+
+const limit = 24;
+const offset = Math.max(0, Number(Astro.url.searchParams.get("offset") ?? "0") || 0);
+
+const productsResult = ctx.ok
+  ? await listStoreProducts({
+      platformApiBaseUrl: ctx.platformApiBaseUrl,
+      requestHost: ctx.requestHost,
+      regionId: ctx.config.commerce.regionId,
+      limit,
+      offset,
+    })
+  : null;
+
+const products: StoreProduct[] =
+  productsResult && !isStoreError(productsResult) ? productsResult.products : [];
+const count =
+  productsResult && !isStoreError(productsResult)
+    ? (productsResult.count ?? products.length)
+    : 0;
+const errorMessage = productsResult && isStoreError(productsResult) ? productsResult.message : null;
+const hasPrev = offset > 0;
+const hasNext = offset + limit < count;
+
+const ProductList = ctx.ok
+  ? resolveRendererSlot(ctx.config.storefront.templateKey, "ProductList")
+  : null;
+---
+
+{
+  !ctx.ok || !ProductList ? (
+    <StoreUnavailable message={ctx.ok ? "Template unavailable" : ctx.message} />
+  ) : (
+    <ProductList
+      tenantName={ctx.config.tenant.name}
+      cartCount={ctx.cartCount}
+      primaryColor={getPrimaryColor(ctx.config.storefront.themeTokens)}
+      products={products}
+      errorMessage={errorMessage}
+      hasPrev={hasPrev}
+      hasNext={hasNext}
+      prevHref={hasPrev ? `/products?offset=${Math.max(0, offset - limit)}` : undefined}
+      nextHref={hasNext ? `/products?offset=${offset + limit}` : undefined}
+    />
+  )
+}
