@@ -411,6 +411,13 @@
     "noneSelected": "Nothing selected",
     "addSelected": "Add selected",
     "browseCatalog": "Browse catalog",
-    "changeSelection": "Change selection"
+    "changeSelection": "Change selection",
+    "descriptionVariants": "Browse products, then pick the options you need.",
+    "optionCount": "{count} options",
+    "selectedOf": "{selected} of {total} selected",
+    "defaultOption": "Default option",
+    "loadMore": "Load more products",
+    "oneOptionSelected": "1 option selected",
+    "optionsSelected": "{count} options selected"
   }
 }

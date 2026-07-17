@@ -55,7 +55,8 @@
     "nameLabel": "ስም",
     "titleLabel": "ርዕስ",
     "namePlaceholder": "ቡና",
-    "titlePlaceholder": "ልዩ ምርቶች"
+    "titlePlaceholder": "ልዩ ምርቶች",
+    "searchParent": "የወላጅ ምድቦችን ፈልግ…"
   },
   "actions": {
     "reorder": "ቅደም ተከተል አስተካክል"

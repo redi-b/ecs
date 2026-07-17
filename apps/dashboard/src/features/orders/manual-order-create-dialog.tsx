@@ -32,7 +32,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import {
   ProductCatalogPickerDialog,
   ProductCatalogPickerTrigger,
-  type ProductCatalogPickItem,
+  type ProductCatalogPickProduct,
 } from "@/features/products/product-catalog-picker-dialog";
 import { useCreateQueryOpen } from "@/lib/use-create-query-open";
 import { Textarea } from "@/components/ui/textarea";
@@ -45,8 +45,11 @@ type CatalogVariant = {
   id: string;
   label: string;
   priceLabel: string | null;
+  productId: string;
   productTitle: string;
   sku: string | null;
+  thumbnailUrl: string | null;
+  variantTitle: string;
 };
 
 type CustomerOption = {
@@ -130,82 +133,115 @@ function ManualOrderCreateDialogInner() {
   const [variants, setVariants] = useState<CatalogVariant[]>([]);
   const [customers, setCustomers] = useState<CustomerOption[]>([]);
   const [catalogLoading, setCatalogLoading] = useState(false);
+  const [catalogLoadingMore, setCatalogLoadingMore] = useState(false);
+  const [catalogOffset, setCatalogOffset] = useState(0);
+  const [catalogHasMore, setCatalogHasMore] = useState(false);
   const [productPickerOpen, setProductPickerOpen] = useState(false);
+
+  const CATALOG_PAGE = 40;
+
+  async function loadProductCatalog(offset: number, append: boolean) {
+    if (append) setCatalogLoadingMore(true);
+    else setCatalogLoading(true);
+
+    try {
+      const response = await fetch(
+        `/admin/products/actions/list?limit=${CATALOG_PAGE}&offset=${offset}`,
+        { headers: { accept: "application/json" } },
+      );
+      const data = (await response.json().catch(() => ({}))) as {
+        products?: Array<{
+          id: string;
+          title?: string | null;
+          handle?: string | null;
+          thumbnail?: string | null;
+          variants?: Array<{
+            id: string;
+            prices?: Array<{ amount?: number | null; currencyCode?: string | null }>;
+            sku?: string | null;
+            title?: string | null;
+          }>;
+        }>;
+        count?: number;
+      };
+
+      if (!response.ok || !Array.isArray(data.products)) {
+        if (!append) setVariants([]);
+        setCatalogHasMore(false);
+        return;
+      }
+
+      const nextVariants = data.products.flatMap((product) =>
+        (product.variants ?? []).map((variant) => {
+          const price = variant.prices?.[0];
+          const priceLabel =
+            price?.amount != null
+              ? formatPrice(price.amount, price.currencyCode ?? "etb")
+              : null;
+          const productTitle = product.title ?? t("orders.create.productFallback");
+          const variantTitle = variant.title ?? t("orders.create.defaultOption");
+          return {
+            id: variant.id,
+            label: [productTitle, variantTitle].filter(Boolean).join(" · "),
+            priceLabel,
+            productId: product.id,
+            productTitle,
+            sku: variant.sku ?? null,
+            thumbnailUrl: product.thumbnail ?? null,
+            variantTitle,
+          } satisfies CatalogVariant;
+        }),
+      );
+
+      setVariants((current) => (append ? [...current, ...nextVariants] : nextVariants));
+      const total = typeof data.count === "number" ? data.count : offset + data.products.length;
+      const nextOffset = offset + data.products.length;
+      setCatalogOffset(nextOffset);
+      setCatalogHasMore(nextOffset < total && data.products.length >= CATALOG_PAGE);
+    } catch {
+      if (!append) setVariants([]);
+      setCatalogHasMore(false);
+    } finally {
+      setCatalogLoading(false);
+      setCatalogLoadingMore(false);
+    }
+  }
 
   useEffect(() => {
     if (!open) return;
 
-    setCatalogLoading(true);
-    void Promise.all([
-      fetch("/admin/products/actions/list?limit=100", {
-        headers: { accept: "application/json" },
-      })
-        .then(async (response) => {
-          const data = (await response.json().catch(() => ({}))) as {
-            products?: Array<{
-              title?: string | null;
-              variants?: Array<{
-                id: string;
-                prices?: Array<{ amount?: number | null; currencyCode?: string | null }>;
-                sku?: string | null;
-                title?: string | null;
-              }>;
-            }>;
+    setCatalogOffset(0);
+    void loadProductCatalog(0, false);
+
+    void fetch("/admin/customers/actions/list?limit=100", {
+      headers: { accept: "application/json" },
+    })
+      .then(async (response) => {
+        const data = (await response.json().catch(() => ({}))) as {
+          customers?: Array<{
+            email: string;
+            firstName?: string | null;
+            id: string;
+            lastName?: string | null;
+            phone?: string | null;
+          }>;
+        };
+        if (!response.ok || !Array.isArray(data.customers)) return [] as CustomerOption[];
+        return data.customers.map((customer) => {
+          const name = [customer.firstName, customer.lastName].filter(Boolean).join(" ").trim();
+          return {
+            email: customer.email,
+            firstName: customer.firstName ?? null,
+            id: customer.id,
+            label: name ? `${name} · ${customer.email}` : customer.email,
+            lastName: customer.lastName ?? null,
+            phone: customer.phone ?? null,
           };
-          if (!response.ok || !Array.isArray(data.products)) return [] as CatalogVariant[];
-          return data.products.flatMap((product) =>
-            (product.variants ?? []).map((variant) => {
-              const price = variant.prices?.[0];
-              const priceLabel =
-                price?.amount != null
-                  ? formatPrice(price.amount, price.currencyCode ?? "etb")
-                  : null;
-              return {
-                id: variant.id,
-                label: [product.title ?? t("orders.create.productFallback"), variant.title ?? t("orders.create.defaultOption")]
-                  .filter(Boolean)
-                  .join(" · "),
-                priceLabel,
-                productTitle: product.title ?? t("orders.create.productFallback"),
-                sku: variant.sku ?? null,
-              };
-            }),
-          );
-        })
-        .catch(() => [] as CatalogVariant[]),
-      fetch("/admin/customers/actions/list?limit=100", {
-        headers: { accept: "application/json" },
+        });
       })
-        .then(async (response) => {
-          const data = (await response.json().catch(() => ({}))) as {
-            customers?: Array<{
-              email: string;
-              firstName?: string | null;
-              id: string;
-              lastName?: string | null;
-              phone?: string | null;
-            }>;
-          };
-          if (!response.ok || !Array.isArray(data.customers)) return [] as CustomerOption[];
-          return data.customers.map((customer) => {
-            const name = [customer.firstName, customer.lastName].filter(Boolean).join(" ").trim();
-            return {
-              email: customer.email,
-              firstName: customer.firstName ?? null,
-              id: customer.id,
-              label: name ? `${name} · ${customer.email}` : customer.email,
-              lastName: customer.lastName ?? null,
-              phone: customer.phone ?? null,
-            };
-          });
-        })
-        .catch(() => [] as CustomerOption[]),
-    ])
-      .then(([nextVariants, nextCustomers]) => {
-        setVariants(nextVariants);
-        setCustomers(nextCustomers);
-      })
-      .finally(() => setCatalogLoading(false));
+      .catch(() => [] as CustomerOption[])
+      .then((nextCustomers) => setCustomers(nextCustomers));
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- load once when dialog opens
   }, [open]);
 
   const selectedCustomer = useMemo(
@@ -218,19 +254,40 @@ function ManualOrderCreateDialogInner() {
     [variants],
   );
 
-  const productPickerItems = useMemo<ProductCatalogPickItem[]>(
-    () =>
-      variants.map((variant) => ({
+  const productPickerCatalog = useMemo<ProductCatalogPickProduct[]>(() => {
+    const byProduct = new Map<
+      string,
+      ProductCatalogPickProduct & { variants: NonNullable<ProductCatalogPickProduct["variants"]> }
+    >();
+    for (const variant of variants) {
+      let product = byProduct.get(variant.productId);
+      if (!product) {
+        product = {
+          id: variant.productId,
+          title: variant.productTitle,
+          thumbnailUrl: variant.thumbnailUrl,
+          searchText: [variant.productTitle, variant.productId].filter(Boolean).join(" "),
+          variants: [],
+        };
+        byProduct.set(variant.productId, product);
+      }
+      product.variants.push({
         id: variant.id,
-        title: variant.label,
-        subtitle: [variant.sku, variant.productTitle].filter(Boolean).join(" · ") || null,
-        meta: variant.priceLabel,
-        searchText: [variant.label, variant.sku, variant.productTitle, variant.id]
-          .filter(Boolean)
-          .join(" "),
-      })),
-    [variants],
-  );
+        title: variant.variantTitle,
+        sku: variant.sku,
+        priceLabel: variant.priceLabel,
+      });
+      product.searchText = [
+        product.searchText,
+        variant.variantTitle,
+        variant.sku,
+        variant.id,
+      ]
+        .filter(Boolean)
+        .join(" ");
+    }
+    return [...byProduct.values()];
+  }, [variants]);
 
   function reset() {
     setStep(0);
@@ -539,14 +596,18 @@ function ManualOrderCreateDialogInner() {
                 />
                 <ProductCatalogPickerDialog
                   description={t("orders.create.productsDesc")}
-                  items={productPickerItems}
+                  hasMore={catalogHasMore}
                   loading={catalogLoading}
+                  loadingMore={catalogLoadingMore}
                   onConfirm={setSelectedVariantIds}
+                  onLoadMore={() => void loadProductCatalog(catalogOffset, true)}
                   onOpenChange={setProductPickerOpen}
                   open={productPickerOpen}
+                  products={productPickerCatalog}
                   searchPlaceholder={t("orders.create.searchProducts")}
                   selectedIds={lines.map((line) => line.variantId)}
                   selectionMode="multiple"
+                  selectionTarget="variant"
                   title={t("orders.create.products")}
                 />
               </section>

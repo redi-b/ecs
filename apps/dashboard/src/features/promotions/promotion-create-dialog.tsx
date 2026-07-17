@@ -34,6 +34,7 @@ import {
   type ProductCatalogPickItem,
 } from "@/features/products/product-catalog-picker-dialog";
 import { useI18n } from "@/i18n/provider";
+import { cn } from "@/lib/utils";
 
 type OfferKind =
   | "percentage_order"
@@ -43,7 +44,12 @@ type OfferKind =
   | "buyget"
   | "free_shipping";
 
-type CatalogProduct = { id: string; title: string | null; handle: string | null };
+type CatalogProduct = {
+  id: string;
+  title: string | null;
+  handle: string | null;
+  thumbnail: string | null;
+};
 
 const offerOptionIds: OfferKind[] = [
   "percentage_order",
@@ -143,7 +149,12 @@ function PromotionCreateDialogInner() {
     })
       .then(async (response) => {
         const data = (await response.json().catch(() => ({}))) as {
-          products?: Array<{ id: string; title?: string | null; handle?: string | null }>;
+          products?: Array<{
+            id: string;
+            title?: string | null;
+            handle?: string | null;
+            thumbnail?: string | null;
+          }>;
         };
         setCatalog(
           response.ok && Array.isArray(data.products)
@@ -151,6 +162,7 @@ function PromotionCreateDialogInner() {
                 id: product.id,
                 title: product.title ?? null,
                 handle: product.handle ?? null,
+                thumbnail: product.thumbnail ?? null,
               }))
             : [],
         );
@@ -708,6 +720,7 @@ function ProductMultiPicker({
         id: product.id,
         title: product.title ?? product.handle ?? product.id,
         subtitle: product.handle ? `/${product.handle}` : null,
+        thumbnailUrl: product.thumbnail,
         searchText: [product.title, product.handle, product.id].filter(Boolean).join(" "),
       })),
     [catalog],

@@ -411,6 +411,13 @@
     "noneSelected": "ምንም አልተመረጠም",
     "addSelected": "የተመረጡትን ጨምር",
     "browseCatalog": "ካታሎግን አስስ",
-    "changeSelection": "ምርጫን ቀይር"
+    "changeSelection": "ምርጫን ቀይር",
+    "descriptionVariants": "ምርቶችን ይመልከቱ፣ ከዚያ የሚፈልጉትን አማራጮች ይምረጡ።",
+    "optionCount": "{count} አማራጮች",
+    "selectedOf": "{selected} ከ {total} ተመርጠዋል",
+    "defaultOption": "ነባሪ አማራጭ",
+    "loadMore": "ተጨማሪ ምርቶች",
+    "oneOptionSelected": "1 አማራጭ ተመርጧል",
+    "optionsSelected": "{count} አማራጮች ተመርጠዋል"
   }
 }

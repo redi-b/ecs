@@ -14,14 +14,6 @@ import { Input } from "@/components/ui/input";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   Sheet,
   SheetBody,
   SheetContent,
@@ -32,6 +24,7 @@ import {
 } from "@/components/ui/sheet";
 import { Switch } from "@/components/ui/switch";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { ParentCategoryCombobox } from "@/features/catalog-taxonomy/parent-category-combobox";
 import {
   getCategoryDisplayName,
   slugifyTaxonomyHandle,
@@ -218,21 +211,13 @@ export function CategoryEditSheet({
 
             <Field>
               <FieldLabel>{t("taxonomy.edit.parentCategory")}</FieldLabel>
-              <Select onValueChange={setParentCategoryId} value={parentCategoryId}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder={t("taxonomy.edit.rootCategory")} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectItem value="__root__">{t("taxonomy.edit.rootCategory")}</SelectItem>
-                    {parentOptions.map((item) => (
-                      <SelectItem key={item.id} value={item.id}>
-                        {getCategoryDisplayName(item)}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
+              <ParentCategoryCombobox
+                onChange={setParentCategoryId}
+                options={parentOptions}
+                rootLabel={t("taxonomy.edit.rootCategory")}
+                searchPlaceholder={t("taxonomy.create.searchParent")}
+                value={parentCategoryId}
+              />
               <FieldDescription>{t("taxonomy.edit.parentHelp")}</FieldDescription>
             </Field>
 

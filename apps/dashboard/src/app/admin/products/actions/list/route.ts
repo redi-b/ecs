@@ -20,6 +20,8 @@ export async function GET(request: Request) {
       return { ok: false, message: result.message, status: result.status };
     }
 
+    // `getMerchantProducts` returns the full list payload as `products`
+    // ({ products, count, limit, offset }) for pagination-aware pickers.
     return { ok: true, data: result.products };
   });
 }

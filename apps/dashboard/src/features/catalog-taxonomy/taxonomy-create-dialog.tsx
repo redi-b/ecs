@@ -21,16 +21,9 @@ import {
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { ParentCategoryCombobox } from "@/features/catalog-taxonomy/parent-category-combobox";
 import {
   getCategoryDisplayName,
   slugifyTaxonomyHandle,
@@ -362,26 +355,13 @@ function TaxonomyCreateDialogInner({
             {entityLabel === "category" ? (
               <Field>
                 <FieldLabel>{t("taxonomy.create.parentCategory")}</FieldLabel>
-                <Select onValueChange={setParentCategoryId} value={parentCategoryId}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder={t("taxonomy.create.rootCategory")} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectGroup>
-                      <SelectItem value="__root__">
-                        {t("taxonomy.create.rootCategory")}
-                      </SelectItem>
-                      {sortedParents.map((category) => (
-                        <SelectItem key={category.id} value={category.id}>
-                          {getCategoryDisplayName(category)}
-                          {category.handle ? (
-                            <span className="ml-2 text-muted-foreground">/{category.handle}</span>
-                          ) : null}
-                        </SelectItem>
-                      ))}
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
+                <ParentCategoryCombobox
+                  onChange={setParentCategoryId}
+                  options={sortedParents}
+                  rootLabel={t("taxonomy.create.rootCategory")}
+                  searchPlaceholder={t("taxonomy.create.searchParent")}
+                  value={parentCategoryId}
+                />
                 <FieldDescription>{t("taxonomy.create.parentDesc")}</FieldDescription>
               </Field>
             ) : null}
