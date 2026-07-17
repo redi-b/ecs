@@ -12,7 +12,7 @@
     "dev:apps:grouped": "node scripts/dev-apps.mjs --grouped",
     "dev:apps:split-medusa": "node scripts/dev-apps.mjs --split-medusa",
     "dev:grouped": "node scripts/dev.mjs --grouped",
-    "dev:infra": "docker compose -f infra/compose/docker-compose.yml up -d --wait --wait-timeout 90 postgres redis minio caddy && docker compose -f infra/compose/docker-compose.yml run --rm minio-init",
+    "dev:infra": "docker compose -f infra/compose/docker-compose.yml up -d --wait --wait-timeout 90 postgres redis seaweedfs caddy",
     "dev:down": "docker compose -f infra/compose/docker-compose.yml down",
     "dev:logs": "docker compose -f infra/compose/docker-compose.yml logs -f --tail=100",
     "dev:turbo": "turbo dev",

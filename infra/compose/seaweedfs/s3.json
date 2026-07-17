@@ -1,0 +1,18 @@
+{
+  "identities": [
+    {
+      "name": "anonymous",
+      "actions": ["Read", "List"]
+    },
+    {
+      "name": "ecs",
+      "credentials": [
+        {
+          "accessKey": "ecs",
+          "secretKey": "ecs-media-development"
+        }
+      ],
+      "actions": ["Admin", "Read", "Write", "List", "Tagging"]
+    }
+  ]
+}
