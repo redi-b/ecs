@@ -2655,21 +2655,13 @@ describe("platform app merchant and tenant catalog", () => {
     });
     assert.deepEqual(notificationEvents, [
       {
-        eventType: "cod_order.created",
-        payload: {
-          cartId: "cart_1",
-          deliveryChoice: "delivery",
-          orderId: "order_1",
-        },
-        tenantId: "tenant_1",
-      },
-      {
         eventType: "order.created",
         payload: {
           cartId: "cart_1",
           deliveryChoice: "delivery",
           orderId: "order_1",
           paymentMethod: "cod",
+          paymentStatus: "pending",
         },
         tenantId: "tenant_1",
       },

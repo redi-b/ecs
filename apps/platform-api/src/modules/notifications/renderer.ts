@@ -337,38 +337,41 @@ export function createCodeNotificationRenderer(): NotificationRenderer {
           );
         }
 
-        case "cod_order.created": {
-          const title =
-            ctx.orderRef === "order" ? "New COD order" : `New COD order ${ctx.orderRef}`;
-          const headline =
-            ctx.orderRef === "order"
-              ? "You received a new cash-on-delivery order."
-              : `You received a new COD order ${ctx.orderRef}.`;
-          return finish(
-            title,
-            composeMessage(
-              headline,
-              orderDetails({
-                ...ctx,
-                paymentMethod: ctx.paymentMethod ?? "cod",
-              }),
-              "Open the order in your dashboard to confirm and prepare fulfillment.",
-            ),
-          );
-        }
-
+        // Legacy cod_order.created still renders if present in old logs; new emits use order.created only.
+        case "cod_order.created":
         case "order.created": {
-          const title = ctx.orderRef === "order" ? "New order" : `New order ${ctx.orderRef}`;
-          const headline =
-            ctx.orderRef === "order"
+          const isCod =
+            input.eventType === "cod_order.created" ||
+            (ctx.paymentMethod?.toLowerCase() === "cod" ||
+              ctx.paymentMethod?.toLowerCase() === "cash on delivery");
+          const title = isCod
+            ? ctx.orderRef === "order"
+              ? "New COD order"
+              : `New COD order ${ctx.orderRef}`
+            : ctx.orderRef === "order"
+              ? "New order"
+              : `New order ${ctx.orderRef}`;
+          const headline = isCod
+            ? ctx.orderRef === "order"
+              ? "You received a new cash-on-delivery order."
+              : `You received a new COD order ${ctx.orderRef}.`
+            : ctx.orderRef === "order"
               ? "You received a new order."
               : `You received a new order ${ctx.orderRef}.`;
           return finish(
             title,
             composeMessage(
               headline,
-              orderDetails(ctx, { includePaymentStatus: true }),
-              "Open the order in your dashboard to review and fulfill it.",
+              orderDetails(
+                {
+                  ...ctx,
+                  paymentMethod: ctx.paymentMethod ?? (isCod ? "cod" : undefined),
+                },
+                { includePaymentStatus: true },
+              ),
+              isCod
+                ? "Open the order in your dashboard to confirm and prepare fulfillment."
+                : "Open the order in your dashboard to review and fulfill it.",
             ),
           );
         }

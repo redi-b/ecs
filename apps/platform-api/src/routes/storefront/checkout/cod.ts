@@ -314,27 +314,18 @@ export async function completeCodCheckout(options: {
 
   if (orderId && options.recordNotificationEvent) {
     try {
-      await Promise.all([
-        options.recordNotificationEvent({
-          eventType: "cod_order.created",
-          payload: {
-            cartId: input.cartId,
-            deliveryChoice: input.deliveryChoice,
-            orderId,
-          },
-          tenantId: options.tenantId,
-        }),
-        options.recordNotificationEvent({
-          eventType: "order.created",
-          payload: {
-            cartId: input.cartId,
-            deliveryChoice: input.deliveryChoice,
-            orderId,
-            paymentMethod: "cod",
-          },
-          tenantId: options.tenantId,
-        }),
-      ]);
+      // Single merchant event: order.created carries paymentMethod (no parallel cod_order.created).
+      await options.recordNotificationEvent({
+        eventType: "order.created",
+        payload: {
+          cartId: input.cartId,
+          deliveryChoice: input.deliveryChoice,
+          orderId,
+          paymentMethod: "cod",
+          paymentStatus: "pending",
+        },
+        tenantId: options.tenantId,
+      });
     } catch {
       // Notification logging must not fail a completed checkout.
     }

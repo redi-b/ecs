@@ -30,8 +30,10 @@ export const NOTIFICATION_EVENT_OPTIONS = [
   { id: "order.cancelled", labelKey: "settings.notifications.events.orderCancelled" as MessageKey },
   { id: "payment.paid", labelKey: "settings.notifications.events.paymentPaid" as MessageKey },
   { id: "payment.failed", labelKey: "settings.notifications.events.paymentFailed" as MessageKey },
-  { id: "cod_order.created", labelKey: "settings.notifications.events.codOrder" as MessageKey },
 ] as const;
+
+/** Legacy pref id still stored for some tenants; treated as order.created. */
+export const LEGACY_COD_ORDER_EVENT = "cod_order.created";
 
 export const ALWAYS_ON_NOTIFICATION_EVENTS = ["notification.test"] as const;
 
@@ -46,14 +48,19 @@ export function normalizeNotificationEvents(events: string[] | undefined | null)
   if (events.includes("*")) {
     return defaultNotificationEvents();
   }
+  const expanded = events.flatMap((id) =>
+    id === LEGACY_COD_ORDER_EVENT ? ["order.created"] : [id],
+  );
   const selected = NOTIFICATION_EVENT_OPTIONS.map((event) => event.id).filter((id) =>
-    events.includes(id),
+    expanded.includes(id),
   );
   return selected.length > 0 ? selected : defaultNotificationEvents();
 }
 
 export function buildNotificationEventsPayload(selected: string[]) {
-  return [...new Set([...selected, ...ALWAYS_ON_NOTIFICATION_EVENTS])];
+  // Drop legacy COD event; order.created covers COD via payload.paymentMethod.
+  const cleaned = selected.filter((id) => id !== LEGACY_COD_ORDER_EVENT);
+  return [...new Set([...cleaned, ...ALWAYS_ON_NOTIFICATION_EVENTS])];
 }
 
 export function sameNotificationEvents(a: string[], b: string[]) {
