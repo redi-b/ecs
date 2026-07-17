@@ -111,7 +111,7 @@ Demo credentials:
 | Bole Style | `http://bole-style.lvh.me/admin` | `owner@bole-style.local` | `password1234` |
 
 - Onboarding test: `http://dashboard.lvh.me` → sign up → create shop  
-- Merchant image uploads use MinIO (`MEDIA_S3_*`).
+- Merchant image uploads use SeaweedFS S3 (`MEDIA_S3_*`; local compose service `seaweedfs`).
 
 ### Start apps
 

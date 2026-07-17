@@ -28,45 +28,31 @@ services:
       timeout: 5s
       retries: 20
 
-  minio:
-    image: minio/minio:RELEASE.2025-09-07T16-13-09Z
-    command: server /data --console-address ":9001"
+  # S3-compatible media store (SeaweedFS). App still uses MEDIA_S3_* only.
+  seaweedfs:
+    image: chrislusf/seaweedfs:4.00
+    hostname: seaweedfs
+    entrypoint: ["/bin/sh", "/seaweedfs-entrypoint.sh"]
     environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-ecs}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-ecs-media-development}
-      # Development default accepts every origin because shops use dynamic *.lvh.me hosts.
-      # Production deployments must override this with their exact dashboard origins.
-      MINIO_API_CORS_ALLOW_ORIGIN: ${MINIO_API_CORS_ALLOW_ORIGIN:-*}
+      S3_BUCKET: ${MEDIA_S3_BUCKET:-ecs-media}
+      SEAWEED_IP: seaweedfs
+      # Dev: allow every origin (shops use dynamic *.lvh.me hosts).
+      S3_ALLOWED_ORIGINS: ${MEDIA_S3_CORS_ALLOW_ORIGIN:-*}
     ports:
-      - "${MINIO_API_HOST_PORT:-9002}:9000"
-      - "${MINIO_CONSOLE_HOST_PORT:-9003}:9001"
+      # Keep host :9002 so existing MEDIA_S3_ENDPOINT=http://localhost:9002 still works.
+      - "${MEDIA_S3_HOST_PORT:-9002}:8333"
+      # Optional filer UI for debugging (was MinIO console :9003).
+      - "${SEAWEED_FILER_HOST_PORT:-9003}:8888"
     volumes:
-      - minio-data:/data
+      - seaweed-data:/data
+      - ./seaweedfs/entrypoint.sh:/seaweedfs-entrypoint.sh:ro
+      - ./seaweedfs/s3.json:/etc/seaweedfs/s3.json:ro
     healthcheck:
-      # MinIO image ships curl; ready when the API answers.
-      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8333/"]
       interval: 5s
       timeout: 5s
-      retries: 20
-
-  # One-shot bucket bootstrap. Do NOT include this service in `up --wait` —
-  # compose treats a successful exit as failure for waited services.
-  minio-init:
-    image: minio/mc:RELEASE.2025-08-13T08-35-41Z
-    depends_on:
-      minio:
-        condition: service_healthy
-    restart: "no"
-    entrypoint: ["/bin/sh", "-c"]
-    command:
-      - >-
-        until mc alias set local http://minio:9000 "$${MINIO_ROOT_USER}" "$${MINIO_ROOT_PASSWORD}"; do sleep 2; done;
-        mc mb --ignore-existing "local/$${MINIO_BUCKET}";
-        mc anonymous set download "local/$${MINIO_BUCKET}"
-    environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-ecs}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-ecs-media-development}
-      MINIO_BUCKET: ${MINIO_BUCKET:-ecs-media}
+      retries: 30
+      start_period: 15s
 
   caddy:
     image: caddy:2.10-alpine
@@ -87,6 +73,6 @@ services:
 
 volumes:
   postgres-data:
-  minio-data:
+  seaweed-data:
   caddy-data:
   caddy-config:

@@ -41,12 +41,12 @@
 		}
 	}
 
-	# Public object reads for media uploads (path-style bucket URLs).
+	# Public object reads for media uploads (path-style bucket URLs → SeaweedFS S3).
 	@media host media.{$BASE_DOMAIN}
 	handle @media {
 		# Product thumbs / library assets are content-addressed or infrequently overwritten.
 		header Cache-Control "public, max-age=604800, stale-while-revalidate=86400"
-		reverse_proxy minio:9000
+		reverse_proxy seaweedfs:8333
 	}
 
 	@storefront host *.{$BASE_DOMAIN}

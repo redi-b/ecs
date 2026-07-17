@@ -91,13 +91,15 @@ If backdating logs `localhost:5432`, the process is missing `MEDUSA_DATABASE_URL
 
 Debug shop create: platform-api `[platform/tenants]`, dashboard `[onboarding/submit]`.
 
-### Media (MinIO)
+### Media (SeaweedFS S3)
 
-This stack runs MinIO for product and library uploads. Set `MINIO_ROOT_PASSWORD` (and optionally `MINIO_ROOT_USER` / `MINIO_BUCKET`) in Dokploy. Platform API talks to MinIO on the internal network (`http://minio:9000`) and serves public object URLs through `MEDIA_S3_PUBLIC_BASE_URL`.
+This stack runs **SeaweedFS** (S3-compatible) for product and library uploads (replaces MinIO). Set `MEDIA_S3_SECRET_ACCESS_KEY` (and optionally `MEDIA_S3_ACCESS_KEY_ID` / `MEDIA_S3_BUCKET`) in Dokploy. Platform API uses the public `MEDIA_S3_ENDPOINT` (presigned uploads via `media.${BASE_DOMAIN}`); Caddy reverse-proxies that host to `seaweedfs:8333`. Public object URLs use `MEDIA_S3_PUBLIC_BASE_URL` (path-style `…/ecs-media/…`).
 
-Point DNS for `media.${BASE_DOMAIN}` at the same Caddy/Traefik entry used by other app hosts, and set `MINIO_API_CORS_ALLOW_ORIGIN` to your dashboard origin so browser uploads can preflight.
+Point DNS for `media.${BASE_DOMAIN}` at the same Caddy/Traefik entry used by other app hosts, and set `MEDIA_S3_CORS_ALLOW_ORIGIN` to your dashboard origin so browser uploads can preflight.
 
-Shop **create** does not require MinIO. Media uploads do.
+Shop **create** does not require object storage. Media uploads do.
+
+**Cutover from MinIO:** drop the old `minio-data` volume (or leave it unused), set the new `MEDIA_S3_*` secrets, redeploy. Re-upload media or reseed — no automatic object migration.
 
 The platform image runs two processes from the same image: `platform-api` (HTTP) and `platform-worker` (BullMQ via `@ecs/jobs`). The worker command is `node --import tsx src/worker.ts`. It requires Redis and platform migrations, and is required for background jobs (notifications, billing, imports, and other post-MVP work).
 
