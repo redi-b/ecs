@@ -7,7 +7,7 @@ import {
   tenants,
 } from "@ecs/db";
 import type { EnqueueJobInput, EnqueueJobResult } from "@ecs/jobs";
-import { and, eq, ne } from "drizzle-orm";
+import { and, eq, gte, ne, or, sql } from "drizzle-orm";
 
 import type {
   NotificationChannel,
@@ -79,6 +79,28 @@ function eventMatchesPreference(events: unknown, eventType: NotificationEventTyp
     return true;
   }
   return false;
+}
+
+/** Events that should fire at most once per order (platform + Medusa both may emit). */
+const COMMERCE_ORDER_DEDUPE_EVENTS = new Set<string>([
+  "order.created",
+  "order.cancelled",
+  "payment.paid",
+  "payment.failed",
+]);
+
+function extractOrderIdFromPayload(payload: unknown): string | null {
+  if (typeof payload !== "object" || payload === null) {
+    return null;
+  }
+  const record = payload as Record<string, unknown>;
+  for (const key of ["orderId", "order_id"]) {
+    const value = record[key];
+    if (typeof value === "string" && value.trim()) {
+      return value.trim();
+    }
+  }
+  return null;
 }
 
 function getMatchingPreferences(
@@ -183,6 +205,36 @@ export function createNotificationService(
         });
       } catch {
         // Swallow — tryCreateFromEvent already isolates errors; belt-and-suspenders.
+      }
+
+      // Platform checkout + Medusa subscribers can both emit the same commerce event.
+      // Skip creating additional external delivery logs when we already notified for this order.
+      const orderId = extractOrderIdFromPayload(payload);
+      if (orderId && COMMERCE_ORDER_DEDUPE_EVENTS.has(eventType)) {
+        const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000);
+        const [existing] = await db
+          .select({ id: notificationLogs.id })
+          .from(notificationLogs)
+          .where(
+            and(
+              eq(notificationLogs.tenantId, input.tenantId),
+              eq(notificationLogs.eventType, eventType),
+              gte(notificationLogs.createdAt, cutoff),
+              or(
+                sql`${notificationLogs.payload}->>'orderId' = ${orderId}`,
+                sql`${notificationLogs.payload}->>'order_id' = ${orderId}`,
+              ),
+            ),
+          )
+          .limit(1);
+
+        if (existing) {
+          return {
+            ok: true,
+            logCount: 0,
+            logIds: [],
+          };
+        }
       }
 
       // Email (and legacy preference rows) still use notification_preferences.

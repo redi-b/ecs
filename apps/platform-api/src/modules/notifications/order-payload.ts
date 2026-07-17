@@ -1,9 +1,9 @@
 import type { MerchantOrder } from "../../types/index.js";
 
-/** Build a rich, non-secret payload for payment.paid (and similar) from a merchant order. */
-export function buildPaymentPaidPayload(
+/** Shared merchant-facing fields for order/payment notifications (no secrets). */
+export function buildMerchantOrderNotificationPayload(
   order: MerchantOrder,
-  source: string,
+  extras?: Record<string, unknown>,
 ): Record<string, unknown> {
   const customerName = [order.shippingAddress?.firstName, order.shippingAddress?.lastName]
     .filter(Boolean)
@@ -12,11 +12,8 @@ export function buildPaymentPaidPayload(
   const deliveryName = order.delivery?.customerName?.trim();
   const payload: Record<string, unknown> = {
     orderId: order.id,
-    // Shop-facing code (renderer derives short code from orderId).
     orderCode: formatOrderCode(order.id),
-    source,
-    paidAt: new Date().toISOString(),
-    paymentStatus: "paid",
+    ...extras,
   };
   if (order.total != null) {
     payload.amount = String(order.total);
@@ -30,7 +27,9 @@ export function buildPaymentPaidPayload(
   if (order.paymentMethod) {
     payload.paymentMethod = order.paymentMethod;
   }
-  // Do not put raw provider payment references in notification payloads.
+  if (order.paymentStatus) {
+    payload.paymentStatus = order.paymentStatus;
+  }
   if (customerName || deliveryName) {
     payload.customerName = customerName || deliveryName;
   }
@@ -48,6 +47,28 @@ export function buildPaymentPaidPayload(
     payload.deliveryChoice = order.delivery.choice;
   }
   return payload;
+}
+
+/** Build a rich, non-secret payload for payment.paid (and similar) from a merchant order. */
+export function buildPaymentPaidPayload(
+  order: MerchantOrder,
+  source: string,
+): Record<string, unknown> {
+  return buildMerchantOrderNotificationPayload(order, {
+    source,
+    paidAt: new Date().toISOString(),
+    paymentStatus: "paid",
+  });
+}
+
+export function buildOrderCancelledPayload(
+  order: MerchantOrder,
+  source = "dashboard_cancel",
+): Record<string, unknown> {
+  return buildMerchantOrderNotificationPayload(order, {
+    source,
+    orderStatus: "canceled",
+  });
 }
 
 /** Last 6 of Medusa order id — same convention as the merchant dashboard. */
