@@ -1,5 +1,6 @@
 import { headers } from "next/headers";
 
+import { ListSetupState } from "@/components/app/list-error-state";
 import { ListSummary, PaginationControls } from "@/components/app/list-page-controls";
 import { PageShell } from "@/components/app/page-shell";
 import { RefreshButton } from "@/components/app/refresh-button";
@@ -8,6 +9,7 @@ import { PromotionCreateDialog } from "@/features/promotions/promotion-create-di
 import { PromotionsManager } from "@/features/promotions/promotions-manager";
 import { getTranslations } from "@/i18n/server";
 import type { DashboardSearchParams } from "@/lib/dashboard-tenant-context";
+import { getListErrorState } from "@/lib/list-error-state";
 import { getMerchantPromotions } from "@/lib/merchant-promotions";
 import { dashboardRoutes } from "@/lib/routes";
 import { parseListSearchParams } from "@/lib/url-state";
@@ -38,6 +40,7 @@ export default async function PromotionsPage({ searchParams }: PromotionsPagePro
     ...(listParams.q ? { query: listParams.q } : {}),
     ...(status ? { status } : {}),
   });
+  const errorState = result.ok ? null : getListErrorState("promotions", result.message);
 
   return (
     <PageShell
@@ -69,11 +72,13 @@ export default async function PromotionsPage({ searchParams }: PromotionsPagePro
             totalCount={result.promotions.count}
           />
         </>
+      ) : errorState?.kind === "setup" || errorState?.kind === "service" ? (
+        <ListSetupState state={errorState} />
       ) : (
         <Alert variant="destructive">
-          <AlertTitle>{t("promotions.error.loadTitle")}</AlertTitle>
+          <AlertTitle>{errorState?.title ?? t("promotions.error.loadTitle")}</AlertTitle>
           <AlertDescription>
-            {t("promotions.error.loadDescription")}
+            {errorState?.description ?? t("promotions.error.loadDescription")}
           </AlertDescription>
         </Alert>
       )}

@@ -10,11 +10,22 @@ describe("getListErrorState", () => {
       kind: "setup",
       title: "Commerce connection needs attention",
     });
+    assert.deepEqual(getListErrorState("customers", "commerce_credentials_missing"), {
+      description: "Customer data is not ready yet. Check the shop setup or contact support.",
+      kind: "setup",
+      title: "Commerce connection needs attention",
+    });
   });
 
   it("maps invalid commerce credentials to a setup state", () => {
     assert.deepEqual(getListErrorState("products", "commerce_credentials_invalid"), {
       description: "Products are temporarily unavailable. Check the shop setup or contact support.",
+      kind: "setup",
+      title: "Commerce connection needs attention",
+    });
+    assert.deepEqual(getListErrorState("promotions", "commerce_credentials_invalid"), {
+      description:
+        "Promotions are temporarily unavailable. Check the shop setup or contact support.",
       kind: "setup",
       title: "Commerce connection needs attention",
     });
@@ -25,6 +36,11 @@ describe("getListErrorState", () => {
       description: "Products will appear after sales setup is complete.",
       kind: "setup",
       title: "Product channel is not ready",
+    });
+    assert.deepEqual(getListErrorState("customers", "commerce_sales_channel_unavailable"), {
+      description: "Customers will appear after sales setup is complete.",
+      kind: "setup",
+      title: "Sales channel is not ready",
     });
   });
 
@@ -44,9 +60,19 @@ describe("getListErrorState", () => {
     });
   });
 
-  it("maps commerce backend failures to a service state", () => {
+  it("maps commerce backend failures to a service state for all list kinds", () => {
     assert.deepEqual(getListErrorState("orders", "commerce_backend_unavailable"), {
       description: "We could not load orders. Try again in a moment.",
+      kind: "service",
+      title: "Commerce service is temporarily unavailable",
+    });
+    assert.deepEqual(getListErrorState("customers", "commerce_backend_unavailable"), {
+      description: "We could not load customers. Try again in a moment.",
+      kind: "service",
+      title: "Commerce service is temporarily unavailable",
+    });
+    assert.deepEqual(getListErrorState("promotions", "commerce_backend_unavailable"), {
+      description: "We could not load promotions. Try again in a moment.",
       kind: "service",
       title: "Commerce service is temporarily unavailable",
     });

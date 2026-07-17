@@ -1,7 +1,9 @@
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 
+import { ListSetupState } from "@/components/app/list-error-state";
 import { PageShell } from "@/components/app/page-shell";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -10,6 +12,7 @@ import {
 } from "@/features/customers/customer-address-dialog";
 import { CustomerFormDialog } from "@/features/customers/customer-form-dialog";
 import { getTranslations } from "@/i18n/server";
+import { getListErrorState } from "@/lib/list-error-state";
 import { getMerchantCustomer } from "@/lib/merchant-customers";
 
 export default async function CustomerDetailPage({
@@ -28,7 +31,27 @@ export default async function CustomerDetailPage({
     },
     customerId,
   );
-  if (!result.ok) notFound();
+  if (!result.ok) {
+    if (result.message === "customer_not_found" || result.status === 404) {
+      notFound();
+    }
+    const errorState = getListErrorState("customers", result.message);
+    return (
+      <PageShell
+        description={t("customers.detail.shellDescription")}
+        title={t("customers.title")}
+      >
+        {errorState.kind === "setup" || errorState.kind === "service" ? (
+          <ListSetupState state={errorState} />
+        ) : (
+          <Alert variant="destructive">
+            <AlertTitle>{errorState.title}</AlertTitle>
+            <AlertDescription>{errorState.description}</AlertDescription>
+          </Alert>
+        )}
+      </PageShell>
+    );
+  }
   const customer = result.customer;
   const name = [customer.firstName, customer.lastName].filter(Boolean).join(" ") || customer.email;
   const notSet = t("common.notSet");
