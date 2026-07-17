@@ -98,8 +98,48 @@ const PLATFORM_ERROR_MESSAGES: Record<string, string> = {
   invalid_order_response: "Order data was incomplete. Try again.",
   invalid_products_response: "Product data was incomplete. Try again.",
   invalid_product_response: "Product data was incomplete. Try again.",
+  customer_not_found: "This customer could not be found.",
+  customer_email_conflict: "Another customer already uses this email.",
+  invalid_customer: "Check the customer details and try again.",
+  customer_request_failed: "Customer data is temporarily unavailable. Try again.",
+  promotion_not_found: "This promotion could not be found.",
+  promotion_create_failed: "Could not create this promotion. Try again.",
+  promotion_update_failed: "Could not update this promotion. Try again.",
+  promotion_delete_failed: "Could not delete this promotion. Try again.",
+  invalid_promotion: "Check the promotion details and try again.",
+  media_list_failed: "Media library is temporarily unavailable. Try again.",
+  media_storage_unavailable: "Media storage is not available right now.",
+  media_asset_not_found: "That media file could not be found.",
+  invalid_media_list_response: "Media data was incomplete. Try again.",
+  invalid_media_asset: "That media file could not be processed.",
+  media_upload_not_found: "Upload did not finish. Try again.",
+  media_object_mismatch: "Uploaded file did not match what was expected.",
+  media_asset_in_use: "This file is still used by a product and cannot be deleted.",
   network: "Network error. Check your connection and try again.",
 };
+
+/** Read `{ error }` from a failed platform/action response and map to merchant copy. */
+export async function readPlatformErrorMessage(
+  response: Response | null,
+  options: PlatformErrorMessageOptions = {},
+) {
+  if (!response) {
+    return mapPlatformErrorMessage("network", options);
+  }
+
+  const data = (await response
+    .clone()
+    .json()
+    .catch(() => null)) as { error?: unknown; message?: unknown } | null;
+  const code =
+    typeof data?.error === "string"
+      ? data.error
+      : typeof data?.message === "string"
+        ? data.message
+        : null;
+
+  return mapPlatformErrorMessage(code, options);
+}
 
 export function mapPlatformErrorMessage(
   error: string | null | undefined,

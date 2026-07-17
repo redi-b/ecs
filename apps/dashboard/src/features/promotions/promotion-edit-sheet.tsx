@@ -35,6 +35,7 @@ import {
 import type { MessageKey } from "@/i18n/messages";
 import { useI18n } from "@/i18n/provider";
 import type { MerchantPromotion } from "@/lib/merchant-promotions";
+import { readPlatformErrorMessage } from "@/lib/platform-api/errors";
 
 type Translate = (key: MessageKey, values?: Record<string, string | number | Date>) => string;
 
@@ -241,7 +242,12 @@ export function PromotionEditSheet({
     setSaving(false);
 
     if (!response?.ok) {
-      toast.error(t("promotions.edit.updateFailed"));
+      toast.error(
+        await readPlatformErrorMessage(response, {
+          fallback: t("promotions.edit.updateFailed"),
+          resource: "Promotion",
+        }),
+      );
       return;
     }
     toast.success(t("promotions.edit.updated"));

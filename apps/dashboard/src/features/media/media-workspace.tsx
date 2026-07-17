@@ -12,6 +12,7 @@ import { MediaLibrary } from "@/features/media/media-library";
 import { MediaUploadComposer } from "@/features/media/media-upload-composer";
 import { useI18n } from "@/i18n/provider";
 import type { MediaAsset } from "@/lib/merchant-media";
+import { mapPlatformErrorMessage } from "@/lib/platform-api/errors";
 
 export function MediaWorkspace({
   children,
@@ -103,7 +104,12 @@ export function MediaWorkspace({
       {loadError || initialError ? (
         <Alert variant="destructive">
           <AlertTitle>{t("media.libraryLoadError")}</AlertTitle>
-          <AlertDescription>{t("media.libraryLoadErrorDescription")}</AlertDescription>
+          <AlertDescription>
+            {mapPlatformErrorMessage(initialError, {
+              fallback: t("media.libraryLoadErrorDescription"),
+              resource: "Media",
+            })}
+          </AlertDescription>
         </Alert>
       ) : null}
       <MediaLibrary

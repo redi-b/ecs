@@ -16,6 +16,7 @@ import {
 import { StorefrontVisualEditor } from "@/features/storefront-editor/storefront-visual-editor";
 import { type DashboardSearchParams, getSelectedTenantId } from "@/lib/dashboard-tenant-context";
 import { getMerchantDashboardAccessShell } from "@/lib/merchant-dashboard";
+import { mapPlatformErrorMessage } from "@/lib/platform-api/errors";
 import {
   getStorefrontDraft,
   publishStorefrontDraft,
@@ -64,7 +65,9 @@ export default async function StorefrontEditorPage({ searchParams }: StorefrontE
       {!access.ok ? (
         <Alert variant="destructive">
           <AlertTitle>{t("editor.error.loadTitle")}</AlertTitle>
-          <AlertDescription>{access.message}</AlertDescription>
+          <AlertDescription>
+            {mapPlatformErrorMessage(access.message, { resource: "Editor" })}
+          </AlertDescription>
         </Alert>
       ) : !draft?.ok ? (
         <Empty className="min-h-96 border">

@@ -8,6 +8,7 @@ import { MerchantOverview } from "@/features/overview/merchant-overview";
 import { getTranslations } from "@/i18n/server";
 import { type DashboardSearchParams, getSelectedTenantId } from "@/lib/dashboard-tenant-context";
 import { getMerchantDashboardSummary } from "@/lib/merchant-dashboard";
+import { mapPlatformErrorMessage } from "@/lib/platform-api/errors";
 import { dashboardRoutes } from "@/lib/routes";
 
 type MerchantAdminPageProps = {
@@ -50,7 +51,9 @@ export default async function MerchantAdminPage({ searchParams }: MerchantAdminP
       ) : (
         <Alert variant="destructive">
           <AlertTitle>{t("overview.error.loadTitle")}</AlertTitle>
-          <AlertDescription>{result.message}</AlertDescription>
+          <AlertDescription>
+            {mapPlatformErrorMessage(result.message, { resource: "Dashboard" })}
+          </AlertDescription>
         </Alert>
       )}
     </PageShell>

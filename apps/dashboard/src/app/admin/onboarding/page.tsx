@@ -6,6 +6,7 @@ import { ShopOnboardingForm } from "@/components/onboarding/signup-onboarding-fo
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { getTranslations } from "@/i18n/server";
 import { isCentralDashboardHost } from "@/lib/dashboard-hosts";
+import { mapPlatformErrorMessage } from "@/lib/platform-api/errors";
 import { getPlatformOnboardingState } from "@/lib/platform-onboarding";
 import { getStorefrontTemplates } from "@/lib/storefront-templates";
 
@@ -89,7 +90,11 @@ export default async function OnboardingPage({ searchParams }: OnboardingPagePro
       {!templatesResult.ok ? (
         <Alert className="mb-6" variant="destructive">
           <AlertTitle>{t("onboarding.templatesUnavailable")}</AlertTitle>
-          <AlertDescription>{templatesResult.message}</AlertDescription>
+          <AlertDescription>
+            {mapPlatformErrorMessage(templatesResult.message, {
+              fallback: t("onboarding.templatesUnavailable"),
+            })}
+          </AlertDescription>
         </Alert>
       ) : null}
 

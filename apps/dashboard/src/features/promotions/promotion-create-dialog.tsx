@@ -34,6 +34,7 @@ import {
   type ProductCatalogPickItem,
 } from "@/features/products/product-catalog-picker-dialog";
 import { useI18n } from "@/i18n/provider";
+import { readPlatformErrorMessage } from "@/lib/platform-api/errors";
 import { cn } from "@/lib/utils";
 
 type OfferKind =
@@ -282,7 +283,12 @@ function PromotionCreateDialogInner() {
     }).catch(() => null);
     setSaving(false);
     if (!response?.ok) {
-      toast.error(t("promotions.create.toastError"));
+      toast.error(
+        await readPlatformErrorMessage(response, {
+          fallback: t("promotions.create.toastError"),
+          resource: "Promotion",
+        }),
+      );
       return;
     }
     toast.success(t("promotions.create.toastSuccess"));
