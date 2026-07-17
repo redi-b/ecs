@@ -8,10 +8,10 @@ export type ResolveMedusaAdminTokenOptions = {
   db: SystemSecretsDb;
   medusaInternalUrl: string;
   internalApiToken: string | undefined;
-  /** Env override (break-glass / local). Wins when non-empty. */
+  /** Env override (break-glass / local). Preferred when non-empty and valid. */
   envToken?: string | undefined;
   fetchImpl?: typeof fetch;
-  /** Persist env token into DB when DB row is empty (optional convenience). */
+  /** Persist a working token into encrypted DB (default true). */
   persistEnvTokenToDb?: boolean;
   logger?: {
     info?: (fields: Record<string, unknown>, msg: string) => void;
@@ -24,11 +24,21 @@ export type ResolveMedusaAdminTokenResult =
   | { ok: true; token: string; source: "env" | "db" | "bootstrap" }
   | { ok: false; error: string };
 
-async function probeAdminToken(
+export type ProbeAdminTokenResult =
+  | { ok: true; reachable: true }
+  | { ok: false; reachable: true; status: number }
+  | { ok: false; reachable: false };
+
+/**
+ * Probe a Medusa secret admin token.
+ * - reachable:false → Medusa down (do not discard a stored token yet)
+ * - ok:false + reachable → token rejected (401/403) or unexpected
+ */
+export async function probeAdminTokenDetailed(
   medusaInternalUrl: string,
   token: string,
-  fetchImpl: typeof fetch,
-): Promise<boolean> {
+  fetchImpl: typeof fetch = fetch,
+): Promise<ProbeAdminTokenResult> {
   const base = medusaInternalUrl.replace(/\/$/, "");
   try {
     const response = await fetchImpl(`${base}/admin/regions?limit=1`, {
@@ -36,16 +46,27 @@ async function probeAdminToken(
         authorization: `Basic ${token}`,
         accept: "application/json",
       },
+      signal: AbortSignal.timeout(5000),
     });
-    // 401/403 = bad token; other errors may be transient — treat 2xx/404 as usable enough
     if (response.status === 401 || response.status === 403) {
-      return false;
+      return { ok: false, reachable: true, status: response.status };
     }
-    return true;
+    // 2xx/404/etc. while Medusa is up — treat as usable enough for admin auth.
+    return { ok: true, reachable: true };
   } catch {
-    // Medusa not reachable yet — do not discard a stored token
-    return true;
+    return { ok: false, reachable: false };
   }
+}
+
+async function probeAdminToken(
+  medusaInternalUrl: string,
+  token: string,
+  fetchImpl: typeof fetch,
+): Promise<"valid" | "invalid" | "unreachable"> {
+  const result = await probeAdminTokenDetailed(medusaInternalUrl, token, fetchImpl);
+  if (result.ok) return "valid";
+  if (!result.reachable) return "unreachable";
+  return "invalid";
 }
 
 async function requestBootstrapToken(options: {
@@ -65,6 +86,7 @@ async function requestBootstrapToken(options: {
       body: JSON.stringify({
         forceNewKey: options.forceNewKey === true,
       }),
+      signal: AbortSignal.timeout(20_000),
     });
 
     const data = (await response.json().catch(() => undefined)) as
@@ -91,8 +113,26 @@ async function requestBootstrapToken(options: {
   }
 }
 
+async function persistToken(
+  secrets: ReturnType<typeof createSystemSecretsService>,
+  token: string,
+  logger: ResolveMedusaAdminTokenOptions["logger"],
+) {
+  try {
+    await secrets.setSecret(MEDUSA_ADMIN_TOKEN_SECRET_KEY, token);
+  } catch (error) {
+    logger?.warn?.(
+      { err: error instanceof Error ? error.message : "persist_failed" },
+      "medusa_admin_token_persist_skipped",
+    );
+  }
+}
+
 /**
  * Resolve Medusa secret admin API token: env → encrypted DB → internal bootstrap.
+ *
+ * Always probes when Medusa is reachable so a wiped Medusa / rotated key cannot
+ * leave platform-api stuck returning 401 on every catalog call.
  */
 export async function resolveMedusaAdminToken(
   options: ResolveMedusaAdminTokenOptions,
@@ -100,33 +140,51 @@ export async function resolveMedusaAdminToken(
   const fetchImpl = options.fetchImpl ?? fetch;
   const secrets = createSystemSecretsService(options.db);
   const envToken = options.envToken?.trim() || process.env.MEDUSA_ADMIN_API_TOKEN?.trim() || "";
+  const shouldPersist = options.persistEnvTokenToDb !== false;
 
   if (envToken) {
-    if (options.persistEnvTokenToDb !== false) {
-      try {
+    const envProbe = await probeAdminToken(options.medusaInternalUrl, envToken, fetchImpl);
+    if (envProbe === "valid" || envProbe === "unreachable") {
+      if (shouldPersist && envProbe === "valid") {
+        // Overwrite stale DB secrets after Medusa re-seed (was: only insert when empty).
         const existing = await secrets.getSecret(MEDUSA_ADMIN_TOKEN_SECRET_KEY);
-        if (!existing) {
-          await secrets.setSecret(MEDUSA_ADMIN_TOKEN_SECRET_KEY, envToken);
+        if (existing !== envToken) {
+          await persistToken(secrets, envToken, options.logger);
         }
-      } catch (error) {
+      }
+      if (envProbe === "unreachable") {
         options.logger?.warn?.(
-          { err: error instanceof Error ? error.message : "persist_failed" },
-          "medusa_admin_token_env_persist_skipped",
+          { fingerprint: envToken.slice(-4) },
+          "medusa_admin_token_env_unverified_medusa_unreachable",
         );
       }
+      return { ok: true, token: envToken, source: "env" };
     }
-    return { ok: true, token: envToken, source: "env" };
+
+    options.logger?.warn?.(
+      { fingerprint: envToken.slice(-4) },
+      "medusa_admin_token_env_invalid_falling_through",
+    );
   }
 
   return secrets.withBootstrapLock(async () => {
     // Re-check DB under lock (another replica may have bootstrapped).
     const fromDb = await secrets.getSecret(MEDUSA_ADMIN_TOKEN_SECRET_KEY);
     if (fromDb) {
-      const valid = await probeAdminToken(options.medusaInternalUrl, fromDb, fetchImpl);
-      if (valid) {
+      const dbProbe = await probeAdminToken(options.medusaInternalUrl, fromDb, fetchImpl);
+      if (dbProbe === "valid" || dbProbe === "unreachable") {
+        if (dbProbe === "unreachable") {
+          options.logger?.warn?.(
+            { fingerprint: fromDb.slice(-4) },
+            "medusa_admin_token_db_unverified_medusa_unreachable",
+          );
+        }
         return { ok: true, token: fromDb, source: "db" };
       }
-      options.logger?.warn?.({}, "medusa_admin_token_db_invalid_rebootstrap");
+      options.logger?.warn?.(
+        { fingerprint: fromDb.slice(-4) },
+        "medusa_admin_token_db_invalid_rebootstrap",
+      );
     }
 
     if (!options.internalApiToken?.trim()) {
@@ -140,22 +198,25 @@ export async function resolveMedusaAdminToken(
       medusaInternalUrl: options.medusaInternalUrl,
       internalApiToken: options.internalApiToken,
       fetchImpl,
-      forceNewKey: Boolean(fromDb),
+      // Always mint a fresh key when previous material was invalid or missing.
+      forceNewKey: true,
     });
 
     if (!bootstrapped.ok) {
       return bootstrapped;
     }
 
-    try {
-      await secrets.setSecret(MEDUSA_ADMIN_TOKEN_SECRET_KEY, bootstrapped.token);
-    } catch (error) {
-      options.logger?.error?.(
-        { err: error instanceof Error ? error.message : "encrypt_failed" },
-        "medusa_admin_token_persist_failed",
-      );
-      // Still return token for this process lifetime
-      return { ok: true, token: bootstrapped.token, source: "bootstrap" };
+    if (shouldPersist) {
+      try {
+        await secrets.setSecret(MEDUSA_ADMIN_TOKEN_SECRET_KEY, bootstrapped.token);
+      } catch (error) {
+        options.logger?.error?.(
+          { err: error instanceof Error ? error.message : "encrypt_failed" },
+          "medusa_admin_token_persist_failed",
+        );
+        // Still return token for this process lifetime
+        return { ok: true, token: bootstrapped.token, source: "bootstrap" };
+      }
     }
 
     options.logger?.info?.(
