@@ -8,6 +8,7 @@ import {
   createChapaPaymentService,
   resolveChapaPayerEmail,
 } from "./adapters/chapa/payment-service.js";
+import { resolveMedusaAdminToken } from "./adapters/medusa/admin-token.js";
 import { createMedusaCommerceProvisioningClient } from "./adapters/medusa/commerce-provisioning.js";
 import { createMedusaCustomerService } from "./adapters/medusa/customer-service.js";
 import { createMedusaManualOrderService } from "./adapters/medusa/manual-order-service.js";
@@ -161,12 +162,41 @@ const paymentOnboardingService = createPaymentOnboardingService(platformDb.db, {
     process.env.PAYMENTS_CREDENTIALS_ENCRYPTION_KEY ?? process.env.CHAPA_SECRET_KEY,
 });
 const medusaInternalUrl = process.env.MEDUSA_INTERNAL_URL ?? "http://localhost:9000";
+const platformInternalApiToken =
+  process.env.PLATFORM_INTERNAL_API_TOKEN ??
+  (process.env.NODE_ENV === "production" ? undefined : "development-platform-internal-token");
+
+const medusaAdminTokenResult = await resolveMedusaAdminToken({
+  db: platformDb.db,
+  medusaInternalUrl,
+  internalApiToken: platformInternalApiToken,
+  envToken: process.env.MEDUSA_ADMIN_API_TOKEN,
+  logger,
+});
+if (!medusaAdminTokenResult.ok) {
+  logger.error(
+    { error: medusaAdminTokenResult.error },
+    "medusa_admin_token_unavailable — catalog and shop provisioning will fail until bootstrap succeeds",
+  );
+  if (process.env.NODE_ENV === "production") {
+    process.exit(1);
+  }
+}
+const medusaAdminApiToken =
+  medusaAdminTokenResult.ok ? medusaAdminTokenResult.token : (process.env.MEDUSA_ADMIN_API_TOKEN ?? "");
+if (medusaAdminTokenResult.ok) {
+  logger.info(
+    { source: medusaAdminTokenResult.source, fingerprint: medusaAdminApiToken.slice(-4) },
+    "medusa_admin_token_ready",
+  );
+}
+
 const customerService = createMedusaCustomerService({
-  adminApiToken: process.env.MEDUSA_ADMIN_API_TOKEN,
+  adminApiToken: medusaAdminApiToken,
   medusaInternalUrl,
 });
 const promotionService = createMedusaPromotionService({
-  adminApiToken: process.env.MEDUSA_ADMIN_API_TOKEN,
+  adminApiToken: medusaAdminApiToken,
   medusaInternalUrl,
 });
 const platformPublicBaseUrl =
@@ -184,9 +214,6 @@ const getOnboardingState = createPlatformOnboardingStateService({
   db: platformDb.db,
   listTenantsForUser,
 });
-const platformInternalApiToken =
-  process.env.PLATFORM_INTERNAL_API_TOKEN ??
-  (process.env.NODE_ENV === "production" ? undefined : "development-platform-internal-token");
 const provisionCommerceResources = createMedusaCommerceProvisioningClient({
   internalApiToken: platformInternalApiToken,
   medusaInternalUrl,
@@ -203,15 +230,15 @@ const retryTenantShopProvisioningAttempt = createTenantShopProvisioningRetryServ
 });
 const listTenantProvisioningAttempts = createTenantProvisioningAttemptListService(platformDb.db);
 const orderService = createMedusaOrderService({
-  adminApiToken: process.env.MEDUSA_ADMIN_API_TOKEN,
+  adminApiToken: medusaAdminApiToken,
   medusaInternalUrl,
 });
 const manualOrderService = createMedusaManualOrderService({
-  adminApiToken: process.env.MEDUSA_ADMIN_API_TOKEN,
+  adminApiToken: medusaAdminApiToken,
   medusaInternalUrl,
 });
 const productService = createMedusaProductService({
-  adminApiToken: process.env.MEDUSA_ADMIN_API_TOKEN,
+  adminApiToken: medusaAdminApiToken,
   medusaInternalUrl,
 });
 

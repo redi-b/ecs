@@ -1,10 +1,13 @@
 #!/usr/bin/env node
 /**
- * Bootstrap after empty/migrated databases.
+ * Bootstrap after empty/migrated databases (local convenience).
  *
  * 1. Medusa: ETB region + secret Admin API key
  * 2. Platform: sync storefront templates
  * 3. Optionally write MEDUSA_ADMIN_API_TOKEN to apps/platform-api/.env
+ *
+ * Production: leave MEDUSA_ADMIN_API_TOKEN empty; platform-api auto-bootstraps
+ * and stores the token encrypted in platform_system_secrets.
  *
  *   pnpm seed
  *   pnpm seed --write-env

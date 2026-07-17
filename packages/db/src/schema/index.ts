@@ -11,4 +11,5 @@ export * from "./notifications.js";
 export * from "./onboarding.js";
 export * from "./provisioning.js";
 export * from "./storefront.js";
+export * from "./system-secrets.js";
 export * from "./tenants.js";
