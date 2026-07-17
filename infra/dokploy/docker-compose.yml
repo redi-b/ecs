@@ -306,18 +306,27 @@ services:
       - traefik.enable=true
       - traefik.docker.network=dokploy-network
       - traefik.http.services.ecs-caddy.loadbalancer.server.port=80
-      - traefik.http.routers.ecs-caddy-http.rule=HostRegexp(`{subdomain:[a-z0-9-]+}.${BASE_DOMAIN}`)
+      # HTTP → HTTPS for app traffic. Exclude ACME challenge paths so Let's Encrypt
+      # HTTP-01 can complete for per-shop (on-demand) certificates.
+      - traefik.http.routers.ecs-caddy-http.rule=HostRegexp(`{subdomain:[a-z0-9-]+}.${BASE_DOMAIN}`) && !PathPrefix(`/.well-known/acme-challenge/`)
       - traefik.http.routers.ecs-caddy-http.ruleSyntax=v2
       - traefik.http.routers.ecs-caddy-http.entrypoints=web
+      - traefik.http.routers.ecs-caddy-http.priority=10
       - traefik.http.routers.ecs-caddy-http.middlewares=ecs-caddy-https-redirect
       - traefik.http.routers.ecs-caddy-http.service=ecs-caddy
       - traefik.http.middlewares.ecs-caddy-https-redirect.redirectscheme.scheme=https
       - traefik.http.middlewares.ecs-caddy-https-redirect.redirectscheme.permanent=true
+      # Catch-all HTTPS for tenant shop hosts (and any one-level subdomain).
+      # tls.certresolver issues a normal (non-wildcard) LE cert per hostname on first use
+      # via HTTP-01 — no DNS-01 wildcard cert required.
       - traefik.http.routers.ecs-caddy-https.rule=HostRegexp(`{subdomain:[a-z0-9-]+}.${BASE_DOMAIN}`)
       - traefik.http.routers.ecs-caddy-https.ruleSyntax=v2
       - traefik.http.routers.ecs-caddy-https.entrypoints=websecure
+      - traefik.http.routers.ecs-caddy-https.priority=10
       - traefik.http.routers.ecs-caddy-https.tls=true
+      - traefik.http.routers.ecs-caddy-https.tls.certresolver=letsencrypt
       - traefik.http.routers.ecs-caddy-https.service=ecs-caddy
+      # Explicit hosts keep stable certs + higher priority than the catch-all.
       - traefik.http.routers.ecs-caddy-demo-certs.rule=Host(`dashboard.${BASE_DOMAIN}`) || Host(`api.${BASE_DOMAIN}`) || Host(`shop.${BASE_DOMAIN}`) || Host(`media.${BASE_DOMAIN}`)
       - traefik.http.routers.ecs-caddy-demo-certs.entrypoints=websecure
       - traefik.http.routers.ecs-caddy-demo-certs.priority=100

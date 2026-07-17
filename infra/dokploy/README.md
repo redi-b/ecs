@@ -37,15 +37,39 @@ Better Auth issues secure session cookies for the shared `.${BASE_DOMAIN}` paren
 
 The wildcard record does not cover the bare `ecs.example.com` host. Add that record separately only if the bare host will be used.
 
-Wildcard DNS and wildcard TLS are separate concerns. The included demo certificate router uses ordinary Let's Encrypt certificates for `dashboard`, `api`, and `shop`, while the wildcard router forwards every one-level tenant hostname. New tenant hosts will show a certificate warning until a certificate for `*.ecs.example.com` is imported into Dokploy. Caddy intentionally handles internal HTTP only.
+Wildcard **DNS** and wildcard **TLS** are separate concerns.
+
+**TLS (current approach — option 1, on-demand per host):**
+
+| Hosts | Certificate |
+|-------|-------------|
+| `dashboard`, `api`, `shop`, `media` | Explicit Traefik router + Let's Encrypt HTTP-01 (priority 100) |
+| Any other `{shop}.${BASE_DOMAIN}` | Catch-all router + **same** `letsencrypt` resolver — Traefik requests a **normal (non-wildcard)** cert for that hostname on first HTTPS visit |
+
+You do **not** need a manual `*.BASE_DOMAIN` certificate for shop storefronts. Requirements:
+
+1. DNS: `*.${BASE_DOMAIN}` A/AAAA (or CNAME) pointing at the Traefik entry (same as today).
+2. Port **80** publicly reachable so ACME HTTP-01 can succeed (challenge path is not redirected to HTTPS).
+3. Traefik cert resolver name **`letsencrypt`** (Dokploy default) with HTTP challenge on the `web` entrypoint.
+
+**Caveats:**
+
+- First HTTPS hit to a new shop may take a few seconds while Let's Encrypt issues the cert; rare temporary TLS errors on that first request are expected.
+- Let's Encrypt rate limits apply (roughly 50 new certs per registered domain per week). Burst-creating many shops can hit the limit.
+- Caddy only speaks **HTTP** internally; public TLS terminates at Traefik.
+
+Optional later upgrade: DNS-01 **wildcard** cert if you prefer one cert for all shops (not required with this setup).
 
 ## Dokploy configuration
 
 1. Create a Compose service from this repository and use `infra/dokploy/docker-compose.yml`.
 2. Copy the values from `infra/dokploy/.env.example` into the Dokploy environment editor and replace every placeholder.
 3. Configure GHCR credentials in Dokploy if the packages are private.
-4. Configure the wildcard domain to target the `caddy` service on port `80` and let Dokploy handle public TLS.
-5. Deploy with `IMAGE_TAG=main` after the GitHub Actions workflow has published the images.
+4. Point wildcard DNS (`*.${BASE_DOMAIN}`) at the host / Traefik that fronts this stack. Do **not** create conflicting per-shop domain entries in Dokploy’s Domains UI for the same hosts (they duplicate routers). Traefik labels on `caddy` own routing + LE certs.
+5. Confirm Dokploy/Traefik has cert resolver **`letsencrypt`** with **HTTP-01** on entrypoint `web` (standard Dokploy setup).
+6. Deploy with `IMAGE_TAG=main` after the GitHub Actions workflow has published the images.
+
+After deploy, open `https://<any-new-shop>.${BASE_DOMAIN}` once; the cert should become valid without importing a wildcard PEM.
 
 Use URL-safe database passwords or percent-encode reserved characters in both database URLs. The two database URLs must use the same credentials configured for the Postgres service.
 
