@@ -208,12 +208,18 @@
     "accountMany": "መለያዎች",
     "notifyAbout": "ስለ እነዚህ ንገረኝ",
     "saveEvents": "ክስተቶቹን አስቀምጥ",
+    "eventGroups": {
+      "commerce": "ንግድ",
+      "commerceDesc": "ከሱቅዎ የሚመጡ ትዕዛዞች፣ ክፍያዎች እና ክምችት።",
+      "system": "ስርዓት",
+      "systemDesc": "የደንበኝነት እና የመለያ ማሳወቂያዎች።"
+    },
     "events": {
       "orderCreated": "አዲስ ትዕዛዞች",
       "orderCancelled": "የተሰረዙ ትዕዛዞች",
       "paymentPaid": "የተቀበሉ ክፍያዎች",
       "paymentFailed": "ያልተሳኩ ክፍያዎች",
-      "inventoryLow": "ዝቅተኛ ክምችት",
+      "inventoryLow": "ከሽያጭ በኋላ ዝቅተኛ ክምችት",
       "billingPastDue": "የደንበኝነት ክፍያ አልፏል",
       "billingInvoiceReady": "የክፍያ ደረሰኝ ዝግጁ ነው"
     },

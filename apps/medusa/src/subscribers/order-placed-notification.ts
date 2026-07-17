@@ -1,5 +1,6 @@
 import type { SubscriberArgs, SubscriberConfig } from "@medusajs/framework";
 
+import { emitLowStockNotificationsForOrder } from "../lib/inventory-low-notification";
 import { loadOrderForNotification } from "../lib/load-order-for-notification";
 import {
   buildOrderNotificationPayload,
@@ -8,7 +9,7 @@ import {
 } from "../lib/platform-notifications";
 
 /**
- * order.placed → platform order.created notification (log provider until real channels ship).
+ * order.placed → platform order.created + sales-driven inventory.low when stock is low.
  */
 export default async function orderPlacedNotificationHandler({
   event: { data },
@@ -44,12 +45,28 @@ export default async function orderPlacedNotificationHandler({
       logger.error(
         `failed to emit platform notification for order.placed (orderId=${orderId}, error=${result.error}, status=${result.status ?? "n/a"})`,
       );
-      return;
+    } else {
+      logger.info(
+        `emitted platform notification for order.placed (orderId=${orderId}, eventType=${eventType})`,
+      );
     }
 
-    logger.info(
-      `emitted platform notification for order.placed (orderId=${orderId}, eventType=${eventType})`,
-    );
+    // Sales-driven only: after inventory is reserved/decreased by the order.
+    try {
+      const lowStock = await emitLowStockNotificationsForOrder(container, {
+        orderId: order.id,
+        medusaSalesChannelId: order.sales_channel_id,
+      });
+      if (lowStock.emitted > 0) {
+        logger.info(
+          `low-stock alerts after order.placed (orderId=${orderId}, checked=${lowStock.checked}, emitted=${lowStock.emitted})`,
+        );
+      }
+    } catch (lowStockError) {
+      logger.error(
+        `low-stock check failed after order.placed (orderId=${orderId}, err=${lowStockError instanceof Error ? lowStockError.message : String(lowStockError)})`,
+      );
+    }
   } catch (error) {
     logger.error(
       `order.placed notification handler error (orderId=${orderId}, err=${error instanceof Error ? error.message : String(error)})`,

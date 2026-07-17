@@ -38,6 +38,28 @@ export const NOTIFICATION_EVENT_OPTIONS = [
   },
 ] as const;
 
+/** Group labels for the event picker — commerce (shop ops) vs system (account/billing). */
+export const NOTIFICATION_EVENT_GROUPS = [
+  {
+    id: "commerce",
+    labelKey: "settings.notifications.eventGroups.commerce" as MessageKey,
+    descriptionKey: "settings.notifications.eventGroups.commerceDesc" as MessageKey,
+    eventIds: [
+      "order.created",
+      "order.cancelled",
+      "payment.paid",
+      "payment.failed",
+      "inventory.low",
+    ] as const,
+  },
+  {
+    id: "system",
+    labelKey: "settings.notifications.eventGroups.system" as MessageKey,
+    descriptionKey: "settings.notifications.eventGroups.systemDesc" as MessageKey,
+    eventIds: ["billing.past_due", "billing.invoice_ready"] as const,
+  },
+] as const;
+
 /** Legacy pref id still stored for some tenants; treated as order.created. */
 export const LEGACY_COD_ORDER_EVENT = "cod_order.created";
 
@@ -219,41 +241,57 @@ export function NotificationEventPicker({
   onSave: () => void;
 }) {
   const { t } = useI18n();
+  const eventById = new Map(NOTIFICATION_EVENT_OPTIONS.map((event) => [event.id, event]));
+
   return (
     <div className="space-y-3 rounded-xl border bg-muted/15 p-4">
       <div>
         <p className="text-sm font-medium">{t("settings.notifications.notifyAbout")}</p>
         <p className="text-xs text-muted-foreground">{description}</p>
       </div>
-      <div className="grid gap-2 sm:grid-cols-2">
-        {NOTIFICATION_EVENT_OPTIONS.map((event) => {
-          const checked = events.includes(event.id);
-          return (
-            <label
-              key={event.id}
-              className={cn(
-                "flex cursor-pointer items-center gap-2 rounded-lg border bg-background px-3 py-2 text-sm transition-colors",
-                checked
-                  ? "border-primary/40 bg-primary/5"
-                  : "border-border hover:bg-muted/40",
-                disabled && "cursor-not-allowed opacity-60",
-              )}
-            >
-              <Checkbox
-                checked={checked}
-                disabled={disabled}
-                onCheckedChange={(value) => {
-                  onChange(
-                    value === true
-                      ? [...new Set([...events, event.id])]
-                      : events.filter((id) => id !== event.id),
-                  );
-                }}
-              />
-              <span>{t(event.labelKey)}</span>
-            </label>
-          );
-        })}
+      <div className="space-y-4">
+        {NOTIFICATION_EVENT_GROUPS.map((group) => (
+          <div key={group.id} className="space-y-2">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                {t(group.labelKey)}
+              </p>
+              <p className="text-xs text-muted-foreground">{t(group.descriptionKey)}</p>
+            </div>
+            <div className="grid gap-2 sm:grid-cols-2">
+              {group.eventIds.map((eventId) => {
+                const event = eventById.get(eventId);
+                if (!event) return null;
+                const checked = events.includes(event.id);
+                return (
+                  <label
+                    key={event.id}
+                    className={cn(
+                      "flex cursor-pointer items-center gap-2 rounded-lg border bg-background px-3 py-2 text-sm transition-colors",
+                      checked
+                        ? "border-primary/40 bg-primary/5"
+                        : "border-border hover:bg-muted/40",
+                      disabled && "cursor-not-allowed opacity-60",
+                    )}
+                  >
+                    <Checkbox
+                      checked={checked}
+                      disabled={disabled}
+                      onCheckedChange={(value) => {
+                        onChange(
+                          value === true
+                            ? [...new Set([...events, event.id])]
+                            : events.filter((id) => id !== event.id),
+                        );
+                      }}
+                    />
+                    <span>{t(event.labelKey)}</span>
+                  </label>
+                );
+              })}
+            </div>
+          </div>
+        ))}
       </div>
       <Button
         className="rounded-full"

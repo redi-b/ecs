@@ -2,10 +2,6 @@ import type { Hono } from "hono";
 
 import type { PlatformAppOptions, PlatformAppVariables } from "../../app.js";
 import {
-  buildInventoryLowPayload,
-  shouldNotifyLowStock,
-} from "../../modules/notifications/inventory-low.js";
-import {
   getJsonBody,
   getOptionalBodyNumber,
   getOptionalBodyString,
@@ -318,12 +314,6 @@ export function registerMerchantProductRoutes(
       return context.json({ error: stock.error }, stock.status);
     }
 
-    maybeNotifyLowStock(options, {
-      tenantId: result.context.tenantId,
-      productId,
-      stock: stock.stock,
-    });
-
     return context.json({
       stock: stock.stock,
     });
@@ -456,12 +446,6 @@ export function registerMerchantProductRoutes(
       return context.json({ error: stock.error }, stock.status);
     }
 
-    maybeNotifyLowStock(options, {
-      tenantId: result.context.tenantId,
-      productId,
-      stock: stock.stock,
-    });
-
     return context.json({
       stock: stock.stock,
     });
@@ -561,43 +545,4 @@ export function registerMerchantProductRoutes(
     if (!result.ok) return context.json({ error: result.error }, result.status);
     return context.json(result);
   });
-}
-
-function maybeNotifyLowStock(
-  options: PlatformAppOptions,
-  input: {
-    tenantId: string;
-    productId: string;
-    stock: {
-      availableQuantity?: number | null;
-      stockedQuantity?: number | null;
-      variantId?: string | null;
-    };
-  },
-) {
-  if (!options.recordNotificationEvent) {
-    return;
-  }
-
-  const available =
-    input.stock.availableQuantity != null && Number.isFinite(input.stock.availableQuantity)
-      ? input.stock.availableQuantity
-      : input.stock.stockedQuantity;
-
-  if (!shouldNotifyLowStock(available)) {
-    return;
-  }
-
-  void options
-    .recordNotificationEvent({
-      tenantId: input.tenantId,
-      eventType: "inventory.low",
-      payload: buildInventoryLowPayload({
-        productId: input.productId,
-        variantId: input.stock.variantId,
-        availableQuantity: available,
-        stockedQuantity: input.stock.stockedQuantity,
-      }),
-    })
-    .catch(() => undefined);
 }
