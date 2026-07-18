@@ -2,8 +2,14 @@ import type { createPlatformDb } from "@ecs/db";
 import { notificationLogs } from "@ecs/db";
 import { eq } from "drizzle-orm";
 
+import { buildOrderActionKeyboard } from "./telegram-callback-tokens.js";
 import type { NotificationProviderRegistry } from "./providers/registry.js";
 import type { NotificationRenderer } from "./renderer.js";
+
+const TELEGRAM_ORDER_ACTION_EVENTS = new Set([
+  "order.created",
+  "cod_order.created",
+]);
 
 type PlatformDb = ReturnType<typeof createPlatformDb>["db"];
 
@@ -12,6 +18,17 @@ export type DeliverNotificationLogInput = {
   notificationLogId: string;
   renderer: NotificationRenderer;
   providers: NotificationProviderRegistry;
+  /**
+   * Optional: attach Telegram order action buttons for linked operators only.
+   * Worker/API pass this when Telegram shop tools are configured.
+   */
+  telegramOrderActions?: {
+    secret: string;
+    isOperatorChat: (input: {
+      tenantId: string;
+      chatId: string;
+    }) => Promise<{ allowed: boolean }>;
+  };
 };
 
 export type DeliverNotificationLogResult =
@@ -95,6 +112,35 @@ export async function deliverNotificationLog(
     }
     if (rendered.metadata !== undefined) {
       sendInput.metadata = rendered.metadata;
+    }
+
+    if (
+      log.channel === "telegram" &&
+      TELEGRAM_ORDER_ACTION_EVENTS.has(log.eventType) &&
+      input.telegramOrderActions
+    ) {
+      const payload =
+        log.payload && typeof log.payload === "object" && !Array.isArray(log.payload)
+          ? (log.payload as Record<string, unknown>)
+          : {};
+      const orderIdRaw = payload.orderId ?? payload.order_id;
+      const orderId = typeof orderIdRaw === "string" ? orderIdRaw.trim() : "";
+      if (orderId) {
+        const access = await input.telegramOrderActions.isOperatorChat({
+          tenantId: log.tenantId,
+          chatId: log.recipient,
+        });
+        if (access.allowed) {
+          const keyboard = buildOrderActionKeyboard({
+            orderId,
+            tenantId: log.tenantId,
+            secret: input.telegramOrderActions.secret,
+          });
+          if (keyboard) {
+            sendInput.replyMarkup = keyboard;
+          }
+        }
+      }
     }
 
     const sendResult = await provider.send(sendInput);

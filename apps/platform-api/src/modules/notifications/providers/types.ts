@@ -22,6 +22,8 @@ export type SendNotificationInput = {
   html?: string;
   /** Non-secret extras for providers (locale, order display id, deep links). */
   metadata?: Record<string, unknown>;
+  /** Telegram inline keyboard (or other channel-specific control markup). */
+  replyMarkup?: unknown;
 };
 
 export type SendNotificationResult = {

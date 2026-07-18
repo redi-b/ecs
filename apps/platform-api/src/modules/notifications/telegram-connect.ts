@@ -128,6 +128,8 @@ export type TelegramConnectServiceOptions = {
     firstName?: string | null;
     lastName?: string | null;
   }) => Promise<{ handled: boolean; reason?: string }>;
+  /** Inline button callbacks (order mark paid / details). */
+  handleCallbackQuery?: (update: unknown) => Promise<{ handled: boolean; reason?: string }>;
 };
 
 export function createTelegramConnectService(
@@ -361,6 +363,18 @@ export function createTelegramConnectService(
 
       if (typeof update !== "object" || update === null) {
         return { handled: false as const, reason: "invalid_update" as const };
+      }
+
+      if (
+        "callback_query" in update &&
+        (update as { callback_query?: unknown }).callback_query != null &&
+        serviceOptions?.handleCallbackQuery
+      ) {
+        try {
+          return await serviceOptions.handleCallbackQuery(update);
+        } catch {
+          return { handled: true as const, reason: "callback_error" as const };
+        }
       }
 
       const message = (update as { message?: unknown }).message;
