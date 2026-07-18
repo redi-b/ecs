@@ -866,6 +866,16 @@ export const storefrontPublishSchema = z.object({
 
 export type StorefrontPublish = z.infer<typeof storefrontPublishSchema>;
 
+/** Response after pausing/unpublishing a shop (live storefront goes offline). */
+export const storefrontUnpublishSchema = z.object({
+  storefront: z.object({
+    tenantId: z.string().min(1),
+    isPublished: z.literal(false),
+  }),
+});
+
+export type StorefrontUnpublish = z.infer<typeof storefrontUnpublishSchema>;
+
 export const publishedStorefrontConfigSchema = z.object({
   tenant: z.object({
     id: z.string().min(1),

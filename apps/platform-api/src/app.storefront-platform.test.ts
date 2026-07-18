@@ -633,6 +633,58 @@ describe("platform app storefront, delivery, billing, and operator", () => {
     });
   });
 
+  it("unpublishes a storefront for an authorized tenant member", async () => {
+    let unpublishInput: { tenantId: string; userId: string } | undefined;
+    const app = appWithResolution(
+      { ok: false, error: "shop_context_required" },
+      {
+        authorizeDashboardForTenant: async () => ({
+          ok: true,
+          actor: {
+            id: "user_1",
+            email: "owner@abebe.local",
+            name: "Abebe Owner",
+            role: "owner",
+          },
+        }),
+        getSession: async () => ({
+          user: {
+            id: "user_1",
+            email: "owner@abebe.local",
+            name: "Abebe Owner",
+          },
+        }),
+        unpublishStorefront: async (input) => {
+          unpublishInput = input;
+
+          return {
+            ok: true,
+            storefront: {
+              tenantId: input.tenantId,
+              isPublished: false as const,
+            },
+          };
+        },
+      },
+    );
+
+    const response = await app.request("/platform/tenants/tenant_1/storefront/unpublish", {
+      method: "POST",
+    });
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(unpublishInput, {
+      tenantId: "tenant_1",
+      userId: "user_1",
+    });
+    assert.deepEqual(await response.json(), {
+      storefront: {
+        tenantId: "tenant_1",
+        isPublished: false,
+      },
+    });
+  });
+
   it("returns delivery settings for an authorized tenant member", async () => {
     let deliveryInput: { tenantId: string } | undefined;
     const app = appWithResolution(

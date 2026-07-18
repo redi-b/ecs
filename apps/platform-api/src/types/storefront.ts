@@ -72,6 +72,19 @@ export type StorefrontPublishResult =
       error: "invalid_storefront_draft" | "storefront_draft_not_found";
     };
 
+export type StorefrontUnpublishResult =
+  | {
+      ok: true;
+      storefront: {
+        tenantId: string;
+        isPublished: false;
+      };
+    }
+  | {
+      ok: false;
+      error: "storefront_draft_not_found";
+    };
+
 export type PublishedStorefrontConfigResult =
   | {
       ok: true;

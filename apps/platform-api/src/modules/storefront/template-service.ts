@@ -19,6 +19,7 @@ import type {
   StorefrontPublishResult,
   StorefrontTemplateCatalogItem,
   StorefrontTemplateSelectionResult,
+  StorefrontUnpublishResult,
 } from "../../types/index.js";
 
 type PlatformDb = ReturnType<typeof createPlatformDb>["db"];
@@ -413,6 +414,71 @@ export function createStorefrontTemplateService(db: PlatformDb) {
           templateVersion: published.templateVersion,
           templateKey: published.templateKey,
           publishedAt: published.publishedAt.toISOString(),
+        },
+      };
+    },
+    /**
+     * Take the live shop offline without deleting the draft.
+     * Clears publishedRevisionId so host resolution returns shop_unpublished.
+     */
+    unpublishStorefront: async (input: {
+      tenantId: string;
+      userId: string;
+    }): Promise<StorefrontUnpublishResult> => {
+      const [existing] = await db
+        .select({
+          tenantId: storefrontConfigs.tenantId,
+          publishedRevisionId: storefrontConfigs.publishedRevisionId,
+        })
+        .from(storefrontConfigs)
+        .where(eq(storefrontConfigs.tenantId, input.tenantId))
+        .limit(1);
+
+      if (!existing) {
+        return {
+          ok: false,
+          error: "storefront_draft_not_found",
+        };
+      }
+
+      // Idempotent: already paused is still success.
+      if (!existing.publishedRevisionId) {
+        return {
+          ok: true,
+          storefront: {
+            tenantId: existing.tenantId,
+            isPublished: false,
+          },
+        };
+      }
+
+      await db.transaction(async (transaction) => {
+        await transaction
+          .update(storefrontConfigs)
+          .set({
+            publishedRevisionId: null,
+            publishedAt: null,
+            updatedAt: new Date(),
+          })
+          .where(eq(storefrontConfigs.tenantId, input.tenantId));
+
+        await transaction.insert(auditLogs).values({
+          actorUserId: input.userId,
+          tenantId: input.tenantId,
+          action: "storefront.unpublished",
+          targetType: "storefront_config",
+          targetId: input.tenantId,
+          metadata: {
+            previousPublishedRevisionId: existing.publishedRevisionId,
+          },
+        });
+      });
+
+      return {
+        ok: true,
+        storefront: {
+          tenantId: existing.tenantId,
+          isPublished: false,
         },
       };
     },

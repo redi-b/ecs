@@ -271,6 +271,13 @@ export function appWithResolution(
       tenantId: string;
       userId: string;
     }) => Promise<StorefrontPublishResult>;
+    unpublishStorefront?: (input: {
+      tenantId: string;
+      userId: string;
+    }) => Promise<{
+      ok: true;
+      storefront: { tenantId: string; isPublished: false };
+    } | { ok: false; error: string }>;
     createOperatorSupportNote?: (input: {
       body: string;
       operatorUserId: string;
@@ -428,6 +435,7 @@ export function appWithResolution(
     updateBillingInvoiceStatus: options?.updateBillingInvoiceStatus,
     updateDeliverySettings: options?.updateDeliverySettings,
     publishStorefrontDraft: options?.publishStorefrontDraft,
+    unpublishStorefront: options?.unpublishStorefront,
     recordAnalyticsEvent: options?.recordAnalyticsEvent,
     recordNotificationEvent: options?.recordNotificationEvent,
     retryTenantShopProvisioningAttempt: options?.retryTenantShopProvisioningAttempt,

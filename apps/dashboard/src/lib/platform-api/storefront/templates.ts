@@ -4,10 +4,12 @@ import {
   type StorefrontPublish,
   type StorefrontTemplateCatalogItem,
   type StorefrontTemplateSelection,
+  type StorefrontUnpublish,
   storefrontDraftSchema,
   storefrontPublishSchema,
   storefrontTemplateCatalogSchema,
   storefrontTemplateSelectionSchema,
+  storefrontUnpublishSchema,
 } from "@ecs/contracts";
 import { createPlatformHeaders, normalizeBaseUrl } from "@/lib/platform-api/client";
 
@@ -50,6 +52,17 @@ export type StorefrontPublishResult =
   | {
       ok: true;
       publish: StorefrontPublish["storefront"];
+    }
+  | {
+      ok: false;
+      message: string;
+      status: number;
+    };
+
+export type StorefrontUnpublishResult =
+  | {
+      ok: true;
+      unpublish: StorefrontUnpublish["storefront"];
     }
   | {
       ok: false;
@@ -203,6 +216,43 @@ export async function publishStorefrontDraft(options: {
   };
 }
 
+export async function unpublishStorefront(options: {
+  cookieHeader?: string | null | undefined;
+  fetcher?: typeof fetch;
+  platformApiBaseUrl: string;
+  tenantId: string;
+}): Promise<StorefrontUnpublishResult> {
+  const fetcher = options.fetcher ?? fetch;
+  const response = await fetcher(
+    getStorefrontUnpublishUrl(options.platformApiBaseUrl, options.tenantId),
+    {
+      cache: "no-store",
+      headers: getJsonHeaders(options.cookieHeader),
+      method: "POST",
+    },
+  );
+  const data = await response.json().catch(() => undefined);
+
+  if (!response.ok) {
+    return getPlatformError(response, data, "Storefront unpublish failed");
+  }
+
+  const parsed = storefrontUnpublishSchema.safeParse(data);
+
+  if (!parsed.success) {
+    return {
+      ok: false,
+      status: 502,
+      message: "invalid_storefront_unpublish_response",
+    };
+  }
+
+  return {
+    ok: true,
+    unpublish: parsed.data.storefront,
+  };
+}
+
 export async function selectStorefrontTemplate(options: {
   cookieHeader?: string | null | undefined;
   fetcher?: typeof fetch;
@@ -275,6 +325,13 @@ function getStorefrontDraftUrl(platformApiBaseUrl: string, tenantId: string) {
 function getStorefrontPublishUrl(platformApiBaseUrl: string, tenantId: string) {
   return new URL(
     `/platform/tenants/${encodeURIComponent(tenantId)}/storefront/publish`,
+    normalizeBaseUrl(platformApiBaseUrl),
+  );
+}
+
+function getStorefrontUnpublishUrl(platformApiBaseUrl: string, tenantId: string) {
+  return new URL(
+    `/platform/tenants/${encodeURIComponent(tenantId)}/storefront/unpublish`,
     normalizeBaseUrl(platformApiBaseUrl),
   );
 }

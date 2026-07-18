@@ -161,7 +161,16 @@
     "useThis": "Use this storefront",
     "selecting": "Switching…",
     "selectFailed": "Could not switch storefront. Try again.",
-    "preview": "{name} preview"
+    "preview": "{name} preview",
+    "pauseShop": "Pause shop",
+    "pauseShopTitle": "Pause the live shop?",
+    "pauseShopDescription": "Customers will see that the store is unavailable. Your draft stays saved so you can publish again anytime.",
+    "pauseShopConfirm": "Pause shop",
+    "pauseShopPending": "Pausing…",
+    "pauseShopSuccess": "Shop paused. The live storefront is offline.",
+    "pauseShopFailed": "Could not pause the shop. Try again.",
+    "paused": "Paused",
+    "publishHint": "Publish from the editor when you are ready to go live again."
   },
   "notifications": {
     "intro": "Get notified when orders, payments, and other shop events happen.",
