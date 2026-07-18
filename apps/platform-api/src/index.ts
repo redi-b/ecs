@@ -44,6 +44,11 @@ import {
 import { createTelegramConnectService } from "./modules/notifications/telegram-connect.js";
 import { createTelegramOperatorService } from "./modules/notifications/telegram-operator.js";
 import { startTelegramPolling } from "./modules/notifications/telegram-polling.js";
+import {
+  handleTelegramToolsCallback,
+  handleTelegramToolsMessage,
+  type TelegramToolsDeps,
+} from "./modules/notifications/telegram-tools.js";
 import { createTenantOnboardingService } from "./modules/onboarding/service.js";
 import { createPaymentOnboardingService } from "./modules/payments/payment-onboarding-service.js";
 import { createStorefrontTemplateService } from "./modules/storefront/template-service.js";
@@ -145,10 +150,21 @@ const telegramOrderBridge: {
   }) => ReturnType<ReturnType<typeof createMedusaOrderService>["getMerchantOrder"]>);
 } = { mutateMerchantOrder: null, getMerchantOrder: null };
 
+/** Filled after commerce services are ready. */
+const telegramToolsBridge: { deps: TelegramToolsDeps | null } = { deps: null };
+
 const telegramConnectService = createTelegramConnectService(platformDb.db, telegramBotConfig, {
   consumeOperatorStart: (input) => telegramOperatorService.consumeOperatorStart(input),
   handleCallbackQuery: async (update) => {
-    if (!telegramBotToken || !telegramOrderBridge.mutateMerchantOrder) {
+    if (!telegramBotToken) {
+      return { handled: true, reason: "actions_unavailable" };
+    }
+    // Tools menu callbacks first (t:*)
+    if (telegramToolsBridge.deps) {
+      const tools = await handleTelegramToolsCallback(telegramToolsBridge.deps, update);
+      if (tools.handled) return tools;
+    }
+    if (!telegramOrderBridge.mutateMerchantOrder) {
       return { handled: true, reason: "actions_unavailable" };
     }
     return handleTelegramCallbackQuery(
@@ -156,7 +172,12 @@ const telegramConnectService = createTelegramConnectService(platformDb.db, teleg
         db: platformDb.db,
         botToken: telegramBotToken,
         operatorService: telegramOperatorService,
-        mutateMerchantOrder: telegramOrderBridge.mutateMerchantOrder,
+        mutateMerchantOrder: (input) =>
+          telegramOrderBridge.mutateMerchantOrder!({
+            action: input.action as "mark-paid" | "fulfill" | "cancel",
+            orderId: input.orderId,
+            salesChannelId: input.salesChannelId,
+          }),
         ...(telegramOrderBridge.getMerchantOrder
           ? { getMerchantOrder: telegramOrderBridge.getMerchantOrder }
           : {}),
@@ -164,6 +185,12 @@ const telegramConnectService = createTelegramConnectService(platformDb.db, teleg
       },
       update,
     );
+  },
+  handleToolsMessage: async (input) => {
+    if (!telegramToolsBridge.deps) {
+      return { handled: false, reason: "tools_unavailable" };
+    }
+    return handleTelegramToolsMessage(telegramToolsBridge.deps, input);
   },
 });
 const telegramPollingEnabled =
@@ -312,6 +339,31 @@ const productService = createMedusaProductService({
   adminApiToken: medusaAdminApiToken,
   medusaInternalUrl,
 });
+if (telegramBotToken) {
+  telegramToolsBridge.deps = {
+    db: platformDb.db,
+    botToken: telegramBotToken,
+    operatorService: telegramOperatorService,
+    listMerchantOrders: async (input) => {
+      const result = await orderService.listMerchantOrders({
+        limit: input.limit,
+        offset: input.offset,
+        salesChannelId: input.salesChannelId,
+      });
+      if (!result.ok) return result;
+      return { ok: true, orders: result.orders, count: result.count };
+    },
+    listMerchantProducts: (input) => productService.listMerchantProducts(input),
+    updateMerchantProductVariantStock: (input) =>
+      productService.updateMerchantProductVariantStock(input),
+    createManualOrder: (input) =>
+      manualOrderService.createManualOrder({
+        ...input,
+        note: input.note ?? null,
+        shippingOptionId: input.shippingOptionId ?? null,
+      }),
+  };
+}
 
 async function resolveTenantSalesChannelId(tenantId: string) {
   const [row] = await platformDb.db
