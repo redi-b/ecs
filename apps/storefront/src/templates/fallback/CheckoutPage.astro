@@ -78,12 +78,10 @@ const canPlaceOrder = items.length > 0 && shippingOptions.length > 0;
           {shippingOptions.length === 0 && (
             <div class="sf-notice" role="status">
               <p>
-                <strong>Shipping is not ready for this cart yet.</strong>
+                <strong>Delivery options are not available yet.</strong>
               </p>
               <p class="sf-muted">
-                {shippingError
-                  ? `Details: ${shippingError}`
-                  : "This shop may still be setting up delivery rates, or the cart needs a moment after adding items. Try going back to the cart and returning."}
+                Please go back to your cart and try checkout again in a moment.
               </p>
               <div class="sf-actions">
                 <a class="sf-btn sf-btn-secondary" href="/cart">
@@ -163,7 +161,7 @@ const canPlaceOrder = items.length > 0 && shippingOptions.length > 0;
                     <option value={option.id}>
                       {(option.name ?? "Shipping") +
                         (option.amount != null
-                          ? ` — ${formatMoney(option.amount, option.currencyCode ?? cart?.currencyCode)}`
+                          ? ` · ${formatMoney(option.amount, option.currencyCode ?? cart?.currencyCode)}`
                           : "")}
                     </option>
                   ))}
@@ -188,8 +186,8 @@ const canPlaceOrder = items.length > 0 && shippingOptions.length > 0;
               )}
               {!payment.chapa && (
                 <p class="sf-muted">
-                  Online payment appears when this shop enables Chapa. Cash on delivery still works
-                  when shipping is available.
+                  Online payment is not available for this order. You can still pay with cash on
+                  delivery when shipping is available.
                 </p>
               )}
               <a class="sf-btn sf-btn-secondary" href="/cart">

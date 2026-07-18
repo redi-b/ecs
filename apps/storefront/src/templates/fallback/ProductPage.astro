@@ -107,7 +107,7 @@ const defaultVariant: StoreProductVariant | null =
                         "Variant") +
                         (variant.inStock ? "" : " (out of stock)") +
                         (variant.priceAmount != null
-                          ? ` — ${formatMoney(variant.priceAmount, variant.currencyCode)}`
+                          ? ` · ${formatMoney(variant.priceAmount, variant.currencyCode)}`
                           : "")}
                     </option>
                   ))}

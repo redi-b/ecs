@@ -90,7 +90,7 @@ const showCollections =
             </a>
           ) : (
             <a class="at-btn at-btn-ghost" href="/products">
-              Full catalog
+              Browse all
             </a>
           )
         }
@@ -147,9 +147,9 @@ const showCollections =
       storeError ? (
         <div class="at-notice">
           <p>
-            <strong>Catalog unavailable</strong>
+            <strong>Products could not be loaded</strong>
           </p>
-          <p class="at-muted">{storeError.message}</p>
+          <p class="at-muted">Please try again in a moment.</p>
         </div>
       ) : products.length > 0 ? (
         <>
@@ -195,7 +195,7 @@ const showCollections =
           <p>
             <strong>No products yet</strong>
           </p>
-          <p class="at-muted">Publish products in the dashboard to populate this section.</p>
+          <p class="at-muted">Check back soon for new arrivals.</p>
         </div>
       )
     }
@@ -204,15 +204,15 @@ const showCollections =
   <section class="at-trust at-reveal" aria-label="Why shop here">
     <div class="at-trust-item">
       <strong>Local delivery</strong>
-      <p>Delivery and pickup options set by this shop.</p>
+      <p>Delivery and pickup available at checkout.</p>
     </div>
     <div class="at-trust-item">
       <strong>Cash on delivery</strong>
-      <p>Pay when your order arrives, where enabled.</p>
+      <p>Pay when your order arrives.</p>
     </div>
     <div class="at-trust-item">
       <strong>Clear options</strong>
-      <p>Pick size, color, and more before you add to cart.</p>
+      <p>Choose size, color, and more before you buy.</p>
     </div>
   </section>
 </Layout>

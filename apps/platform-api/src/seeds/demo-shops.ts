@@ -113,7 +113,7 @@ function matrixProduct(
     imageCount: 3,
     description:
       description ??
-      `${title} — curated for Ethiopian shoppers. Local delivery and cash on delivery ready.`,
+      `${title}. Local delivery and cash on delivery available.`,
     options: optionAxes,
     variants: combos.map((options, index) => {
       const label = optionAxes.map((axis) => options[axis.title]).join(" / ");

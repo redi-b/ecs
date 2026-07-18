@@ -36,8 +36,8 @@ if (!ctx.ok) {
     {
       !ctx.ok ? (
         <main class="unavailable">
-          <p class="eyebrow">Store unavailable</p>
-          <h1>This storefront is not available.</h1>
+          <p class="eyebrow">Shop unavailable</p>
+          <h1>This shop is not available right now.</h1>
           <p>{ctx.message}</p>
         </main>
       ) : Home ? (
@@ -52,9 +52,9 @@ if (!ctx.ok) {
         />
       ) : (
         <main class="unavailable">
-          <p class="eyebrow">Configuration error</p>
-          <h1>This storefront template is not supported.</h1>
-          <p>{ctx.config.storefront.templateKey}</p>
+          <p class="eyebrow">Shop unavailable</p>
+          <h1>This shop could not be displayed.</h1>
+          <p>Please try again later.</p>
         </main>
       )
     }

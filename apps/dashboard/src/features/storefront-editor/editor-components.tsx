@@ -275,12 +275,12 @@ export function StorefrontEditorActions({
               <AlertDialogFooter>
                 <AlertDialogCancel disabled={isPending}>{t("common.cancel")}</AlertDialogCancel>
                 <AlertDialogAction
-                  className="bg-destructive text-white hover:bg-destructive/90"
                   disabled={isPending}
                   onClick={(event) => {
                     event.preventDefault();
                     onUnpublish();
                   }}
+                  variant="destructive"
                 >
                   {t("editor.actions.pauseConfirm")}
                 </AlertDialogAction>

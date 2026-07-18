@@ -14,15 +14,15 @@ export const classicV1Defaults: ClassicV1Data = {
   },
   home: {
     hero: {
-      title: "Shop built for how you sell",
-      subtitle: "Browse the catalog, add to cart, and checkout with delivery or pickup.",
-      primaryCtaLabel: "Browse the shop",
+      title: "Find something you love",
+      subtitle: "Browse new arrivals, pick your options, and check out with delivery or pickup.",
+      primaryCtaLabel: "Shop now",
       primaryCtaHref: "/products",
       secondaryCtaLabel: "View cart",
       secondaryCtaHref: "/cart",
     },
     featuredProducts: {
-      title: "In stock now",
+      title: "Featured",
       productIds: [],
     },
     collectionsStrip: {
@@ -31,7 +31,7 @@ export const classicV1Defaults: ClassicV1Data = {
     },
   },
   footer: {
-    blurb: "Cash on delivery, local pickup, and product options that stay clear.",
+    blurb: "Delivery, pickup, and cash on delivery when available.",
     socialLinks: [],
   },
 };

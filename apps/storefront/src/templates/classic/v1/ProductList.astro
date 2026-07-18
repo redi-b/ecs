@@ -90,8 +90,8 @@ function clearFilterHref(key: "q" | "collection" | "category" | "order") {
     <div>
       <h1 class="at-h1">Shop</h1>
       <p class="at-lede" style="margin-bottom:0">
-        {errorMessage ? "Could not load the catalog." : resultLabel}
-        {filters.q ? ` for “${filters.q}”` : ""}
+        {errorMessage ? "Products could not be loaded." : resultLabel}
+        {filters.q ? ` for "${filters.q}"` : ""}
       </p>
     </div>
   </div>
@@ -136,8 +136,8 @@ function clearFilterHref(key: "q" | "collection" | "category" | "order") {
       <select id="order" name="order">
         <option value="" selected={!filters.order}>Featured</option>
         <option value="created_at" selected={filters.order === "created_at"}>Newest</option>
-        <option value="title" selected={filters.order === "title"}>Title A–Z</option>
-        <option value="-title" selected={filters.order === "-title"}>Title Z–A</option>
+        <option value="title" selected={filters.order === "title"}>Title A-Z</option>
+        <option value="-title" selected={filters.order === "-title"}>Title Z-A</option>
       </select>
     </div>
     <button class="at-btn" type="submit">
@@ -196,7 +196,7 @@ function clearFilterHref(key: "q" | "collection" | "category" | "order") {
   {
     errorMessage ? (
       <div class="at-notice at-notice-error" role="alert">
-        Could not load products: {errorMessage}
+        Products could not be loaded. Please try again.
       </div>
     ) : products.length === 0 ? (
       <div class="at-notice" role="status">

@@ -30,7 +30,7 @@ const matches = Boolean(lastOrder && lastOrder.id === orderId);
     matches ? (
       <div class="sf-notice sf-notice-ok" role="status">
         <p>
-          <strong>Thanks — we received your order.</strong>
+          <strong>Thanks, we received your order.</strong>
         </p>
         <p>
           <strong>Order ID:</strong> {orderId}
@@ -50,8 +50,8 @@ const matches = Boolean(lastOrder && lastOrder.id === orderId);
           Order <strong>{orderId}</strong>
         </p>
         <p class="sf-muted">
-          If you just completed checkout, your order was placed. For privacy we only show full
-          confirmation details right after purchase on this device.
+          If you just finished checkout, your order was placed. Full confirmation details are shown
+          right after purchase on this device.
         </p>
       </div>
     )
