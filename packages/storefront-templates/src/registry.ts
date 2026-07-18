@@ -7,8 +7,7 @@ export const storefrontTemplates = [
     versionId: "00000000-0000-4000-8000-000000000004",
     slug: "classic",
     name: "Classic",
-    description:
-      "Modern premium storefront with collections, filters, multi-option variants, and full checkout.",
+    description: "A polished shop layout for product browsing and checkout.",
     version: 1,
     templateKey: "classic@1",
     componentRegistryVersion: "built-in-v1",
