@@ -38,6 +38,7 @@ import { createMediaService } from "./modules/media/index.js";
 import { isEmailDeliveryConfigured } from "./modules/notifications/providers/email-provider.js";
 import { createNotificationService } from "./modules/notifications/service.js";
 import { createTelegramConnectService } from "./modules/notifications/telegram-connect.js";
+import { createTelegramOperatorService } from "./modules/notifications/telegram-operator.js";
 import { createTenantOnboardingService } from "./modules/onboarding/service.js";
 import { createPaymentOnboardingService } from "./modules/payments/payment-onboarding-service.js";
 import { createStorefrontTemplateService } from "./modules/storefront/template-service.js";
@@ -120,14 +121,16 @@ const notificationService = createNotificationService(platformDb.db, {
 const telegramBotToken = process.env.TELEGRAM_BOT_TOKEN?.trim() || "";
 const telegramBotUsername = process.env.TELEGRAM_BOT_USERNAME?.trim() || "";
 const telegramWebhookSecret = process.env.TELEGRAM_WEBHOOK_SECRET?.trim() || "";
-const telegramConnectService = createTelegramConnectService(
-  platformDb.db,
+const telegramBotConfig =
   telegramBotToken && telegramBotUsername
     ? { botToken: telegramBotToken, botUsername: telegramBotUsername }
-    : null,
-);
+    : null;
+const telegramOperatorService = createTelegramOperatorService(platformDb.db, telegramBotConfig);
+const telegramConnectService = createTelegramConnectService(platformDb.db, telegramBotConfig, {
+  consumeOperatorStart: (input) => telegramOperatorService.consumeOperatorStart(input),
+});
 if (telegramConnectService.isConfigured()) {
-  logger.info({ bot: telegramBotUsername }, "Telegram bot configured for notifications.");
+  logger.info({ bot: telegramBotUsername }, "Telegram bot configured for notifications and shop tools.");
 } else {
   logger.warn("TELEGRAM_BOT_TOKEN/USERNAME not set; Telegram connect stays unavailable.");
 }
@@ -600,6 +603,13 @@ const app = createPlatformApp({
   removeTelegramDestination: telegramConnectService.removeDestination,
   setTelegramDestinationEnabled: telegramConnectService.setDestinationEnabled,
   setTelegramSharedEvents: telegramConnectService.setSharedEvents,
+  listTelegramOperatorBindings: telegramOperatorService.listBindings,
+  createTelegramOperatorLinkSession: telegramOperatorService.createLinkSession,
+  getTelegramOperatorLinkSession: telegramOperatorService.getLinkSession,
+  cancelTelegramOperatorLinkSession: telegramOperatorService.cancelLinkSession,
+  removeTelegramOperatorBinding: telegramOperatorService.removeBinding,
+  setTelegramOperatorBindingEnabled: telegramOperatorService.setBindingEnabled,
+  isTelegramOperatorChatForActions: telegramOperatorService.isOperatorChatForActions,
   handleTelegramWebhook: telegramConnectService.handleWebhookUpdate,
   telegramWebhookSecret: telegramWebhookSecret || undefined,
   reviewPaymentOnboarding: paymentOnboardingService.reviewPaymentOnboarding,

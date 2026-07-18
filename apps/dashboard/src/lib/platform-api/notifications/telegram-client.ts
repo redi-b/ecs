@@ -322,3 +322,203 @@ export async function sendTelegramTest(options: {
     jobEnqueued: (data as { jobEnqueued?: boolean })?.jobEnqueued === true,
   };
 }
+
+export type TelegramOperatorBinding = {
+  id: string;
+  label: string;
+  username: string | null;
+  enabled: boolean;
+  telegramUserId: string;
+  linkedAt: string;
+};
+
+export async function listTelegramOperatorBindings(options: {
+  cookieHeader?: string | null;
+  requestHost?: string | null;
+  platformApiBaseUrl: string;
+  tenantId?: string | null;
+}): Promise<
+  | { ok: true; bindings: TelegramOperatorBinding[] }
+  | { ok: false; message: string; status: number }
+> {
+  const response = await fetch(
+    telegramUrl(options.platformApiBaseUrl, options.tenantId, "operators"),
+    {
+      cache: "no-store",
+      headers: platformHeaders(options),
+    },
+  ).catch(() => null);
+
+  if (!response) {
+    return { ok: false, status: 503, message: "platform_request_failed" };
+  }
+  const data = await response.json().catch(() => undefined);
+  if (!response.ok) {
+    return parseError(response, data);
+  }
+  const bindings = Array.isArray((data as { bindings?: unknown })?.bindings)
+    ? ((data as { bindings: TelegramOperatorBinding[] }).bindings ?? [])
+    : [];
+  return { ok: true, bindings };
+}
+
+export async function createTelegramOperatorLinkSession(options: {
+  cookieHeader?: string | null;
+  requestHost?: string | null;
+  platformApiBaseUrl: string;
+  tenantId?: string | null;
+}): Promise<
+  | { ok: true; session: TelegramConnectSession & { deepLink: string } }
+  | { ok: false; message: string; status: number }
+> {
+  const response = await fetch(
+    telegramUrl(options.platformApiBaseUrl, options.tenantId, "operators/link"),
+    {
+      method: "POST",
+      cache: "no-store",
+      headers: platformHeaders(options),
+      body: "{}",
+    },
+  ).catch(() => null);
+
+  if (!response) {
+    return { ok: false, status: 503, message: "platform_request_failed" };
+  }
+  const data = await response.json().catch(() => undefined);
+  if (!response.ok) {
+    return parseError(response, data);
+  }
+  const session = (data as { session?: TelegramConnectSession & { deepLink: string } })?.session;
+  if (!session?.id || !session.deepLink) {
+    return { ok: false, status: 502, message: "invalid_telegram_session" };
+  }
+  return { ok: true, session };
+}
+
+export async function getTelegramOperatorLinkSession(options: {
+  cookieHeader?: string | null;
+  requestHost?: string | null;
+  platformApiBaseUrl: string;
+  sessionId: string;
+  tenantId?: string | null;
+}): Promise<
+  | { ok: true; session: TelegramConnectSession }
+  | { ok: false; message: string; status: number }
+> {
+  const response = await fetch(
+    telegramUrl(
+      options.platformApiBaseUrl,
+      options.tenantId,
+      `operators/link/${options.sessionId}`,
+    ),
+    {
+      cache: "no-store",
+      headers: platformHeaders(options),
+    },
+  ).catch(() => null);
+
+  if (!response) {
+    return { ok: false, status: 503, message: "platform_request_failed" };
+  }
+  const data = await response.json().catch(() => undefined);
+  if (!response.ok) {
+    return parseError(response, data);
+  }
+  const session = (data as { session?: TelegramConnectSession })?.session;
+  if (!session?.id) {
+    return { ok: false, status: 502, message: "invalid_telegram_session" };
+  }
+  return { ok: true, session };
+}
+
+export async function cancelTelegramOperatorLinkSession(options: {
+  cookieHeader?: string | null;
+  requestHost?: string | null;
+  platformApiBaseUrl: string;
+  sessionId: string;
+  tenantId?: string | null;
+}): Promise<{ ok: true } | { ok: false; message: string; status: number }> {
+  const response = await fetch(
+    telegramUrl(
+      options.platformApiBaseUrl,
+      options.tenantId,
+      `operators/link/${options.sessionId}/cancel`,
+    ),
+    {
+      method: "POST",
+      cache: "no-store",
+      headers: platformHeaders(options),
+      body: "{}",
+    },
+  ).catch(() => null);
+
+  if (!response) {
+    return { ok: false, status: 503, message: "platform_request_failed" };
+  }
+  if (!response.ok) {
+    const data = await response.json().catch(() => undefined);
+    return parseError(response, data);
+  }
+  return { ok: true };
+}
+
+export async function removeTelegramOperatorBinding(options: {
+  cookieHeader?: string | null;
+  requestHost?: string | null;
+  bindingId: string;
+  platformApiBaseUrl: string;
+  tenantId?: string | null;
+}): Promise<{ ok: true } | { ok: false; message: string; status: number }> {
+  const response = await fetch(
+    telegramUrl(options.platformApiBaseUrl, options.tenantId, `operators/${options.bindingId}`),
+    {
+      method: "DELETE",
+      cache: "no-store",
+      headers: platformHeaders(options),
+    },
+  ).catch(() => null);
+
+  if (!response) {
+    return { ok: false, status: 503, message: "platform_request_failed" };
+  }
+  if (!response.ok) {
+    const data = await response.json().catch(() => undefined);
+    return parseError(response, data);
+  }
+  return { ok: true };
+}
+
+export async function setTelegramOperatorBindingEnabled(options: {
+  cookieHeader?: string | null;
+  requestHost?: string | null;
+  bindingId: string;
+  enabled: boolean;
+  platformApiBaseUrl: string;
+  tenantId?: string | null;
+}): Promise<
+  | { ok: true; binding: TelegramOperatorBinding }
+  | { ok: false; message: string; status: number }
+> {
+  const response = await fetch(
+    telegramUrl(options.platformApiBaseUrl, options.tenantId, `operators/${options.bindingId}`),
+    {
+      method: "PATCH",
+      cache: "no-store",
+      headers: platformHeaders(options),
+      body: JSON.stringify({ enabled: options.enabled }),
+    },
+  ).catch(() => null);
+
+  if (!response) {
+    return { ok: false, status: 503, message: "platform_request_failed" };
+  }
+  const data = await response.json().catch(() => undefined);
+  if (!response.ok) {
+    return parseError(response, data);
+  }
+  const binding = (data as { binding?: TelegramOperatorBinding })?.binding;
+  if (!binding?.id) {
+    return { ok: false, status: 502, message: "invalid_telegram_binding" };
+  }
+  return { ok: true, binding };
+}

@@ -282,6 +282,25 @@
       "disconnectDesc": "ይህ መለያ የሱቅ ክስተት ማሳወቂያ መቀበል ያቆማል።",
       "disconnecting": "ግንኙነት በመቋረጥ ላይ…",
       "disconnect": "አቋርጥ"
+    },
+    "shopTools": {
+      "title": "የTelegram የሱቅ መሳሪያዎች",
+      "description": "ከቻት ሱቁን ለመምራት Telegramዎን ያገናኙ።",
+      "intro": "ከማሳወቂያ መላኪያ የተለየ ነው። ባለቤቶች እና አስተዳዳሪዎች የራሳቸውን Telegram ማገናኘት ይችላሉ። የትዕዛዝ አዝራሮች ለተገናኙ መለያዎች ብቻ ይታያሉ።",
+      "empty": "ለሱቅ መሳሪያዎች የተገናኘ Telegram መለያ የለም።",
+      "link": "Telegramዬን አገናኝ",
+      "linkFailed": "ግንኙነቱን ማስጀመር አልተቻለም። እንደገና ይሞክሩ።",
+      "waiting": "Telegramን በመጠባበቅ ላይ…",
+      "openBot": "ቦቱን እንደገና ክፈት",
+      "linked": "Telegram ለሱቅ መሳሪያዎች ተገናኝቷል",
+      "unlinked": "Telegram ከሱቅ መሳሪያዎች ተቋርጧል",
+      "remove": "አስወግድ",
+      "enable": "አንቃ",
+      "disable": "አቁም",
+      "enabled": "በስራ ላይ",
+      "disabled": "ቆሟል",
+      "unavailableTitle": "የሱቅ መሳሪያዎች አይገኙም",
+      "unavailable": "Telegram ለዚህ አካባቢ ገና አልተከፈተም።"
     }
   },
   "accountSecurity": {

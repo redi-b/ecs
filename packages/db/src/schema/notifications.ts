@@ -120,6 +120,63 @@ export const telegramConnectSessions = pgTable(
 );
 
 /**
+ * Links a Telegram identity to a platform membership for shop tools (writes).
+ * Separate from notification_destinations (alert sinks).
+ * @see dev-docs/superpowers/specs/2026-07-18-telegram-merchant-tools-design.md
+ */
+export const telegramOperatorBindings = pgTable(
+  "telegram_operator_bindings",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id),
+    /** Platform / Better Auth user id. */
+    userId: text("user_id").notNull(),
+    /** Telegram update.from.id (stable). */
+    telegramUserId: text("telegram_user_id").notNull(),
+    /** Private chat id used for tools (usually same as user id). */
+    telegramChatId: text("telegram_chat_id").notNull(),
+    username: text("username"),
+    label: text("label").notNull().default(""),
+    enabled: boolean("enabled").notNull().default(true),
+    lastSeenAt: timestamp("last_seen_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("telegram_operator_bindings_tenant_tg_user_uidx").on(
+      table.tenantId,
+      table.telegramUserId,
+    ),
+    uniqueIndex("telegram_operator_bindings_tenant_user_uidx").on(table.tenantId, table.userId),
+    index("telegram_operator_bindings_tg_user_idx").on(table.telegramUserId),
+    index("telegram_operator_bindings_tg_chat_idx").on(table.telegramChatId),
+  ],
+);
+
+/** Short-lived deep-link sessions to create operator bindings. */
+export const telegramOperatorLinkSessions = pgTable(
+  "telegram_operator_link_sessions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    token: text("token").notNull(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id),
+    userId: text("user_id").notNull(),
+    status: telegramConnectSessionStatus("status").notNull().default("pending"),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    consumedAt: timestamp("consumed_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("telegram_operator_link_sessions_token_uidx").on(table.token),
+    index("telegram_operator_link_sessions_tenant_status_idx").on(table.tenantId, table.status),
+  ],
+);
+
+/**
  * Dashboard inbox items (in-app notifications).
  * userId null = tenant-wide (v1); later personal rows set userId.
  * Separate from notification_logs (external delivery ledger).

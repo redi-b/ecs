@@ -270,5 +270,145 @@ export function registerMerchantTelegramNotificationRoutes(
         jobEnqueued: result.jobEnqueued,
       });
     });
+
+    // --- Shop tools (operator bindings): separate from alert destinations ---
+
+    app.get(`${base}/operators`, async (context) => {
+      if (!options.listTelegramOperatorBindings) {
+        return context.json({ error: "telegram_not_configured" }, 503);
+      }
+      const auth = await resolveTenantContext(
+        context,
+        options,
+        helpers,
+        withTenant ? context.req.param("tenantId") : undefined,
+      );
+      if (!auth.ok) {
+        return auth.response;
+      }
+      const result = await options.listTelegramOperatorBindings({ tenantId: auth.tenantId });
+      return context.json(result);
+    });
+
+    app.post(`${base}/operators/link`, async (context) => {
+      if (!options.createTelegramOperatorLinkSession) {
+        return context.json({ error: "telegram_not_configured" }, 503);
+      }
+      const auth = await resolveTenantContext(
+        context,
+        options,
+        helpers,
+        withTenant ? context.req.param("tenantId") : undefined,
+      );
+      if (!auth.ok) {
+        return auth.response;
+      }
+      const result = await options.createTelegramOperatorLinkSession({
+        tenantId: auth.tenantId,
+        userId: auth.userId,
+      });
+      if (!result.ok) {
+        return context.json({ error: result.error }, asStatus(result.status));
+      }
+      return context.json({ session: result.session });
+    });
+
+    app.get(`${base}/operators/link/:sessionId`, async (context) => {
+      if (!options.getTelegramOperatorLinkSession) {
+        return context.json({ error: "telegram_not_configured" }, 503);
+      }
+      const auth = await resolveTenantContext(
+        context,
+        options,
+        helpers,
+        withTenant ? context.req.param("tenantId") : undefined,
+      );
+      if (!auth.ok) {
+        return auth.response;
+      }
+      const result = await options.getTelegramOperatorLinkSession({
+        tenantId: auth.tenantId,
+        sessionId: context.req.param("sessionId"),
+      });
+      if (!result.ok) {
+        return context.json({ error: result.error }, asStatus(result.status));
+      }
+      return context.json({ session: result.session });
+    });
+
+    app.post(`${base}/operators/link/:sessionId/cancel`, async (context) => {
+      if (!options.cancelTelegramOperatorLinkSession) {
+        return context.json({ error: "telegram_not_configured" }, 503);
+      }
+      const auth = await resolveTenantContext(
+        context,
+        options,
+        helpers,
+        withTenant ? context.req.param("tenantId") : undefined,
+      );
+      if (!auth.ok) {
+        return auth.response;
+      }
+      const result = await options.cancelTelegramOperatorLinkSession({
+        tenantId: auth.tenantId,
+        sessionId: context.req.param("sessionId"),
+      });
+      if (!result.ok) {
+        return context.json({ error: result.error }, asStatus(result.status));
+      }
+      return context.json({ ok: true });
+    });
+
+    app.delete(`${base}/operators/:bindingId`, async (context) => {
+      if (!options.removeTelegramOperatorBinding) {
+        return context.json({ error: "telegram_not_configured" }, 503);
+      }
+      const auth = await resolveTenantContext(
+        context,
+        options,
+        helpers,
+        withTenant ? context.req.param("tenantId") : undefined,
+      );
+      if (!auth.ok) {
+        return auth.response;
+      }
+      const result = await options.removeTelegramOperatorBinding({
+        tenantId: auth.tenantId,
+        bindingId: context.req.param("bindingId"),
+      });
+      if (!result.ok) {
+        return context.json({ error: result.error }, asStatus(result.status));
+      }
+      return context.json({ ok: true });
+    });
+
+    app.patch(`${base}/operators/:bindingId`, async (context) => {
+      if (!options.setTelegramOperatorBindingEnabled) {
+        return context.json({ error: "telegram_not_configured" }, 503);
+      }
+      const auth = await resolveTenantContext(
+        context,
+        options,
+        helpers,
+        withTenant ? context.req.param("tenantId") : undefined,
+      );
+      if (!auth.ok) {
+        return auth.response;
+      }
+      const body = await getJsonBody(context.req.raw);
+      const enabled = getOptionalBodyBoolean(body, "enabled");
+      if (enabled === undefined) {
+        return context.json({ error: "invalid_enabled" }, 400);
+      }
+      const result = await options.setTelegramOperatorBindingEnabled({
+        tenantId: auth.tenantId,
+        bindingId: context.req.param("bindingId"),
+        enabled,
+      });
+      if (!result.ok) {
+        return context.json({ error: result.error }, asStatus(result.status));
+      }
+      return context.json({ binding: result.binding });
+    });
   }
 }

@@ -28,6 +28,7 @@ import {
   sameNotificationEvents,
 } from "@/features/settings/notification-channel-ui";
 import { TelegramConnectPanel } from "@/features/settings/telegram-connect-panel";
+import { TelegramShopToolsPanel } from "@/features/settings/telegram-shop-tools-panel";
 import type { NotificationPreference } from "@/lib/merchant-notifications";
 import { useI18n } from "@/i18n/provider";
 import { mapPlatformErrorMessage } from "@/lib/platform-api/errors";
@@ -373,6 +374,8 @@ export function NotificationsSection({ tenantId }: { tenantId: string }) {
       />
 
       <TelegramConnectPanel available={telegramAvailable} tenantId={tenantId} />
+
+      <TelegramShopToolsPanel available={telegramAvailable} tenantId={tenantId} />
 
       <Card>
         <NotificationChannelHeader
