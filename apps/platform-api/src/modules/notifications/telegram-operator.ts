@@ -6,7 +6,7 @@ import {
   tenantMemberships,
   tenants,
 } from "@ecs/db";
-import { and, desc, eq, gt, or } from "drizzle-orm";
+import { and, desc, eq, or } from "drizzle-orm";
 
 import { sendTelegramBotMessage } from "./providers/telegram-provider.js";
 
@@ -17,7 +17,7 @@ export type TelegramConnectConfig = {
   botUsername: string;
 };
 
-const SESSION_TTL_MS = 15 * 60 * 1000;
+const SESSION_TTL_MS = 30 * 60 * 1000;
 /** Deep-link payload prefix: /start op_<token> */
 export const OPERATOR_START_PREFIX = "op_";
 
@@ -32,8 +32,9 @@ export type TelegramOperatorBindingView = {
   linkedAt: string;
 };
 
+/** Lowercase hex only — safe for Telegram start payloads (64 char max). */
 function createToken() {
-  return randomBytes(16).toString("base64url");
+  return randomBytes(16).toString("hex");
 }
 
 function buildOperatorDeepLink(botUsername: string, token: string) {
@@ -383,22 +384,40 @@ export function createTelegramOperatorService(
       const [session] = await db
         .select()
         .from(telegramOperatorLinkSessions)
-        .where(
-          and(
-            eq(telegramOperatorLinkSessions.token, token),
-            eq(telegramOperatorLinkSessions.status, "pending"),
-            gt(telegramOperatorLinkSessions.expiresAt, new Date()),
-          ),
-        )
+        .where(eq(telegramOperatorLinkSessions.token, token.trim()))
         .limit(1);
 
       if (!session) {
         await sendTelegramBotMessage({
           botToken: config.botToken,
           chatId: input.chatId,
-          text: "This shop tools link is invalid or expired. Open your dashboard and enable shop tools again.",
+          text: "This link is no longer valid. Open Settings → Telegram in your dashboard and create a new link.",
         }).catch(() => undefined);
         return { handled: true as const, reason: "invalid_token" as const };
+      }
+
+      if (session.status === "consumed") {
+        await sendTelegramBotMessage({
+          botToken: config.botToken,
+          chatId: input.chatId,
+          text: "This Telegram account is already linked for shop management.",
+        }).catch(() => undefined);
+        return { handled: true as const, reason: "already_consumed" as const };
+      }
+
+      if (session.status !== "pending" || session.expiresAt.getTime() <= Date.now()) {
+        if (session.status === "pending") {
+          await db
+            .update(telegramOperatorLinkSessions)
+            .set({ status: "expired" })
+            .where(eq(telegramOperatorLinkSessions.id, session.id));
+        }
+        await sendTelegramBotMessage({
+          botToken: config.botToken,
+          chatId: input.chatId,
+          text: "This link has expired. Open Settings → Telegram in your dashboard for a fresh link.",
+        }).catch(() => undefined);
+        return { handled: true as const, reason: "expired_token" as const };
       }
 
       const membership = await getActiveWriteMembership(db, {
@@ -516,12 +535,10 @@ export function createTelegramOperatorService(
         botToken: config.botToken,
         chatId: input.chatId,
         text: [
-          `Shop tools linked for ${shopLabel}.`,
+          `You are linked for shop management on ${shopLabel}.`,
           "",
-          "This account can use management actions for this shop.",
-          "Order alerts with action buttons will only appear here if this chat is also connected for notifications.",
-          "",
-          "Alert delivery is still managed separately under Notifications in the dashboard.",
+          "You can use this chat for everyday management when those actions are available.",
+          "To receive order alerts here as well, connect Telegram under Notifications in the dashboard.",
         ].join("\n"),
       }).catch(() => undefined);
 

@@ -53,6 +53,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { AccountSecurityPanel } from "@/features/settings/account-security-panel";
 import { NotificationsSection } from "@/features/settings/notifications-section";
 import { PaymentsSection } from "@/features/settings/payments-section";
+import { TelegramSection } from "@/features/settings/telegram-section";
 import { getSelectedTemplateName, statusCopy } from "@/features/settings/settings-helpers";
 import {
   parseSettingsSection,
@@ -80,6 +81,7 @@ const SECTION_ICONS: Record<SettingsSectionId, AppIcon> = {
   shop: AppIcons.settings,
   preferences: AppIcons.preferences,
   notifications: AppIcons.notifications,
+  telegram: AppIcons.smartphone,
   payments: AppIcons.billing,
   fulfillment: AppIcons.orders,
   storefront: AppIcons.editor,
@@ -384,6 +386,10 @@ export function SettingsWorkspace({
 
           {section === "notifications" ? (
             <NotificationsSection tenantId={summary.tenant.id} />
+          ) : null}
+
+          {section === "telegram" ? (
+            <TelegramSection tenantId={summary.tenant.id} />
           ) : null}
 
           {section === "payments" ? (
