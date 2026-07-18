@@ -135,7 +135,7 @@ const telegramCallbackSecret = resolveTelegramCallbackSecret();
 /** Set after `orderService` is created. */
 const telegramOrderBridge: {
   mutateMerchantOrder: null | ((input: {
-    action: "mark-paid";
+    action: "mark-paid" | "fulfill" | "cancel";
     orderId: string;
     salesChannelId: string;
   }) => ReturnType<ReturnType<typeof createMedusaOrderService>["mutateMerchantOrder"]>);
@@ -295,7 +295,7 @@ const orderService = createMedusaOrderService({
 });
 telegramOrderBridge.mutateMerchantOrder = (input) =>
   orderService.mutateMerchantOrder({
-    action: input.action,
+    action: input.action as "mark-paid" | "fulfill" | "cancel",
     orderId: input.orderId,
     salesChannelId: input.salesChannelId,
   });

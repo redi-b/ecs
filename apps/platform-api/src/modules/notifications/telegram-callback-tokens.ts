@@ -1,15 +1,22 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 
-/** Telegram callback_data max length is 64 bytes. Keep tokens compact. */
-export type TelegramOrderAction = "paid" | "details";
+/**
+ * Telegram callback_data max length is 64 bytes.
+ * Codes are single letters so several actions fit with Medusa order ids.
+ */
+export type TelegramOrderAction = "paid" | "ready" | "cancel" | "details";
 
 const ACTION_CODE: Record<TelegramOrderAction, string> = {
   paid: "p",
+  ready: "r",
+  cancel: "c",
   details: "d",
 };
 
 const CODE_ACTION: Record<string, TelegramOrderAction> = {
   p: "paid",
+  r: "ready",
+  c: "cancel",
   d: "details",
 };
 
@@ -44,7 +51,7 @@ function safeEqualHex(a: string, b: string) {
 
 /**
  * Build callback_data for an order action button.
- * Format: `{code}|{orderId}|{exp}|{sig12}` (fits 64-byte Telegram limit for typical Medusa ids).
+ * Format: `{code}|{orderId}|{exp}|{sig12}`
  */
 export function buildOrderActionCallbackData(input: {
   action: TelegramOrderAction;
@@ -68,7 +75,6 @@ export function parseOrderActionCallbackData(
   data: string,
   input: {
     secret: string;
-    /** Candidate tenant ids (from operator bindings for this Telegram user). */
     tenantIds: string[];
   },
 ):
@@ -94,6 +100,10 @@ export function parseOrderActionCallbackData(
   return { ok: false, reason: "bad_sig" };
 }
 
+/**
+ * Keyboard for new-order alerts (COD-friendly daily ops).
+ * Row 1: money / prep · Row 2: details / cancel
+ */
 export function buildOrderActionKeyboard(input: {
   orderId: string;
   tenantId: string;
@@ -105,18 +115,34 @@ export function buildOrderActionKeyboard(input: {
     tenantId: input.tenantId,
     secret: input.secret,
   });
+  const ready = buildOrderActionCallbackData({
+    action: "ready",
+    orderId: input.orderId,
+    tenantId: input.tenantId,
+    secret: input.secret,
+  });
   const details = buildOrderActionCallbackData({
     action: "details",
     orderId: input.orderId,
     tenantId: input.tenantId,
     secret: input.secret,
   });
-  if (!paid || !details) return null;
+  const cancel = buildOrderActionCallbackData({
+    action: "cancel",
+    orderId: input.orderId,
+    tenantId: input.tenantId,
+    secret: input.secret,
+  });
+  if (!paid || !ready || !details || !cancel) return null;
   return {
     inline_keyboard: [
       [
         { text: "Mark paid", callback_data: paid },
+        { text: "Mark ready", callback_data: ready },
+      ],
+      [
         { text: "Details", callback_data: details },
+        { text: "Cancel order", callback_data: cancel },
       ],
     ],
   };
