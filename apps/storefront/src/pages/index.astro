@@ -30,15 +30,13 @@ if (!ctx.ok) {
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width" />
-    <title>{ctx.ok ? ctx.config.tenant.name : "Store unavailable"}</title>
+    <title>{ctx.ok ? ctx.config.tenant.name : "Shop unavailable"}</title>
   </head>
   <body>
     {
       !ctx.ok ? (
         <main class="unavailable">
-          <p class="eyebrow">Shop unavailable</p>
-          <h1>This shop is not available right now.</h1>
-          <p>{ctx.message}</p>
+          <h1>{ctx.message}</h1>
         </main>
       ) : Home ? (
         <Home
@@ -52,9 +50,7 @@ if (!ctx.ok) {
         />
       ) : (
         <main class="unavailable">
-          <p class="eyebrow">Shop unavailable</p>
-          <h1>This shop could not be displayed.</h1>
-          <p>Please try again later.</p>
+          <h1>Please try again later.</h1>
         </main>
       )
     }
@@ -68,34 +64,18 @@ if (!ctx.ok) {
 
   .unavailable {
     margin: 0 auto;
-    max-width: 720px;
-    padding: 72px 20px;
+    max-width: 36rem;
+    padding: 20vh 1.5rem 4rem;
     font-family:
       Outfit, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   }
 
-  .eyebrow {
-    color: #9bc4a0;
-    font-size: 0.875rem;
-    font-weight: 800;
-    margin: 0 0 12px;
-    text-transform: uppercase;
-  }
-
-  h1,
-  p {
-    margin-top: 0;
-  }
-
   h1 {
-    font-size: clamp(2rem, 6vw, 3rem);
-    line-height: 1.05;
-    margin-bottom: 20px;
-  }
-
-  p {
-    color: #6b7280;
-    font-size: 1.05rem;
-    line-height: 1.7;
+    margin: 0;
+    color: #111827;
+    font-size: clamp(1.5rem, 4vw, 2rem);
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1.25;
   }
 </style>
