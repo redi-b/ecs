@@ -2,7 +2,7 @@
 import StoreUnavailable from "../../components/shell/StoreUnavailable.astro";
 import { loadPageContext } from "../../lib/page-context";
 import { getLastOrderFromRequest } from "../../lib/session/cart-cookie";
-import { getPrimaryColor } from "../../lib/theme";
+import { getPrimaryColor, themeFromTokens } from "../../lib/theme";
 import { resolveRendererSlot } from "../../templates/registry";
 
 const ctx = await loadPageContext(Astro.request);
@@ -26,6 +26,7 @@ const OrderConfirm = ctx.ok
       tenantName={ctx.config.tenant.name}
       cartCount={ctx.cartCount}
       primaryColor={getPrimaryColor(ctx.config.storefront.themeTokens)}
+      theme={themeFromTokens(ctx.config.storefront.themeTokens)}
       orderId={orderId}
       lastOrder={lastOrder}
     />

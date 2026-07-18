@@ -2,11 +2,14 @@
 import ProductCard from "../../components/commerce/ProductCard.astro";
 import StoreShell from "../../components/shell/StoreShell.astro";
 import type { StoreProduct } from "../../lib/commerce/types";
+import type { ShellTheme } from "../../lib/theme";
 
 interface Props {
   tenantName: string;
   cartCount: number;
   primaryColor?: string;
+  theme?: ShellTheme;
+  currentPath?: string;
   products: StoreProduct[];
   errorMessage?: string | null;
   hasPrev: boolean;
@@ -19,6 +22,8 @@ const {
   tenantName,
   cartCount,
   primaryColor,
+  theme,
+  currentPath = "/products",
   products,
   errorMessage,
   hasPrev,
@@ -28,7 +33,15 @@ const {
 } = Astro.props;
 ---
 
-<StoreShell tenantName={tenantName} cartCount={cartCount} title="Products" primaryColor={primaryColor}>
+<StoreShell
+  tenantName={tenantName}
+  cartCount={cartCount}
+  title="Products"
+  primaryColor={primaryColor}
+  theme={theme}
+  currentPath={currentPath}
+>
+  <p class="sf-eyebrow">Catalog</p>
   <h1 class="sf-title">Products</h1>
   <p class="sf-lede">Browse everything available in this shop.</p>
 
@@ -39,7 +52,8 @@ const {
       </div>
     ) : products.length === 0 ? (
       <div class="sf-notice" role="status">
-        No products yet.
+        <p><strong>No products yet.</strong></p>
+        <p class="sf-muted">Check back soon — this shop is still stocking the shelves.</p>
       </div>
     ) : (
       <ul class="sf-grid">
