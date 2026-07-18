@@ -1163,12 +1163,13 @@ function StorefrontSection({
                         {t("common.cancel")}
                       </AlertDialogCancel>
                       <AlertDialogAction
-                        className="rounded-full bg-destructive text-white hover:bg-destructive/90"
+                        className="rounded-full"
                         disabled={pausing}
                         onClick={(event) => {
                           event.preventDefault();
                           void pauseShop();
                         }}
+                        variant="destructive"
                       >
                         {t("settings.storefront.pauseShopConfirm")}
                       </AlertDialogAction>

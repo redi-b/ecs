@@ -4,7 +4,7 @@ export function formatMoney(
   currencyCode: string | null | undefined = "ETB",
 ) {
   if (amount == null || !Number.isFinite(amount)) {
-    return "—";
+    return "-";
   }
 
   const code = (currencyCode ?? "ETB").toUpperCase();

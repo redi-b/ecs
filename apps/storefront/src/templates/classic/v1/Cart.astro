@@ -38,8 +38,8 @@ const items = cart?.items ?? [];
   <h1 class="at-h1">Cart</h1>
   <p class="at-lede">
     {items.length === 0
-      ? "Your bag is empty."
-      : `${items.length} line item${items.length === 1 ? "" : "s"} ready for checkout.`}
+      ? "Your cart is empty."
+      : `${items.length} item${items.length === 1 ? "" : "s"} ready for checkout.`}
   </p>
 
   {
@@ -56,7 +56,7 @@ const items = cart?.items ?? [];
         <p>
           <strong>Your cart is empty</strong>
         </p>
-        <p class="at-muted">Browse the catalog and add something you like.</p>
+        <p class="at-muted">Browse the shop and add something you like.</p>
         <div class="at-actions">
           <a class="at-btn" href="/products">
             Browse products

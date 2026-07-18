@@ -58,12 +58,12 @@ const {
   {
     errorMessage ? (
       <div class="sf-notice sf-notice-error" role="alert">
-        Could not load products: {errorMessage}
+        Products could not be loaded. Please try again.
       </div>
     ) : products.length === 0 ? (
       <div class="sf-notice" role="status">
         <p><strong>No products yet.</strong></p>
-        <p class="sf-muted">Check back soon — this shop is still stocking the shelves.</p>
+        <p class="sf-muted">Check back soon for new arrivals.</p>
       </div>
     ) : (
       <ul class="sf-grid">

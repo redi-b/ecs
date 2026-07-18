@@ -94,12 +94,10 @@ const canPlaceOrder = items.length > 0 && shippingOptions.length > 0;
           {shippingOptions.length === 0 ? (
             <div class="at-notice" role="status">
               <p>
-                <strong>Shipping is not ready for this cart yet</strong>
+                <strong>Delivery options are not available yet</strong>
               </p>
               <p class="at-muted">
-                {shippingError
-                  ? `Details: ${shippingError}`
-                  : "This shop may still be setting up delivery rates, or the cart needs a moment after adding items. Try going back to the cart and returning."}
+                Please go back to your cart and try checkout again in a moment.
               </p>
               <div class="at-actions">
                 <a class="at-btn at-btn-ghost" href="/cart">
@@ -197,12 +195,12 @@ const canPlaceOrder = items.length > 0 && shippingOptions.length > 0;
             <section class="at-panel at-form-section">
               <h2>Payment</h2>
               <p class="at-muted" style="margin:0 0 1rem">
-                Choose how you want to pay. Available methods are set by this shop.
+                Choose how you want to pay.
               </p>
               <div class="at-actions">
                 {payment.cod && canPlaceOrder ? (
                   <button class="at-btn at-btn-accent" type="submit">
-                    Place order - Cash on delivery
+                    Place order · Cash on delivery
                   </button>
                 ) : null}
                 {payment.chapa && canPlaceOrder ? (
@@ -212,7 +210,8 @@ const canPlaceOrder = items.length > 0 && shippingOptions.length > 0;
                 ) : null}
                 {!payment.chapa ? (
                   <p class="at-muted" style="margin:0;flex:1 1 100%">
-                    Online payment appears when this shop enables Chapa.
+                    Online payment is not available for this order. You can still pay with cash on
+                    delivery when shipping is available.
                   </p>
                 ) : null}
                 <a class="at-btn at-btn-ghost" href="/cart">
