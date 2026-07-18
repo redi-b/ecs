@@ -5,7 +5,7 @@ import {
   telegramConnectSessions,
   tenants,
 } from "@ecs/db";
-import { and, count, desc, eq, gt } from "drizzle-orm";
+import { and, count, desc, eq } from "drizzle-orm";
 
 import { sendTelegramBotMessage } from "./providers/telegram-provider.js";
 
@@ -23,7 +23,7 @@ export const DEFAULT_TELEGRAM_EVENTS = [
 ] as const;
 
 export const MAX_TELEGRAM_DESTINATIONS = 10;
-const SESSION_TTL_MS = 15 * 60 * 1000;
+const SESSION_TTL_MS = 30 * 60 * 1000;
 
 export type TelegramConnectConfig = {
   botToken: string;
@@ -39,13 +39,40 @@ export type TelegramDestinationView = {
   connectedAt: string;
 };
 
+/**
+ * Telegram start payloads only allow A–Z, a–z, 0–9, _ and - (max 64 chars).
+ * Prefer lowercase hex so clients never mangle case-sensitive base64url.
+ */
 function createConnectToken() {
-  return randomBytes(16).toString("base64url");
+  return randomBytes(16).toString("hex");
 }
 
 function buildDeepLink(botUsername: string, token: string) {
   const user = botUsername.replace(/^@/, "").trim();
+  // Telegram start payload must stay unencoded in practice for some clients;
+  // hex tokens need no encoding. Keep encodeURIComponent for safety.
   return `https://t.me/${user}?start=${encodeURIComponent(token)}`;
+}
+
+/** Extract /start payload from Telegram message text. */
+export function parseTelegramStartPayload(text: string): string | null {
+  const trimmed = text.trim();
+  // /start PAYLOAD  |  /start@BotName PAYLOAD
+  const match = trimmed.match(/^\/start(?:@[A-Za-z0-9_]+)?(?:\s+(.+))?$/i);
+  if (!match) return null;
+  const payload = (match[1] ?? "").trim();
+  return payload || null;
+}
+
+async function findConnectSessionByToken(db: PlatformDb, token: string) {
+  const normalized = token.trim();
+  if (!normalized) return null;
+  const [session] = await db
+    .select()
+    .from(telegramConnectSessions)
+    .where(eq(telegramConnectSessions.token, normalized))
+    .limit(1);
+  return session ?? null;
 }
 
 function displayLabel(input: {
@@ -369,66 +396,98 @@ export function createTelegramConnectService(
         await sendTelegramBotMessage({
           botToken: config.botToken,
           chatId,
-          text: "Open Notifications in your shop dashboard and tap Connect Telegram to link this chat.",
+          text: "To connect this chat, open your shop dashboard → Settings → Notifications, then choose Connect Telegram.",
         }).catch(() => undefined);
         return { handled: true as const, reason: "help" as const };
       }
 
-      const token = text.replace(/^\/start(@\w+)?\s*/i, "").trim();
+      const token = parseTelegramStartPayload(text);
       if (!token) {
         await sendTelegramBotMessage({
           botToken: config.botToken,
           chatId,
-          text: "Open Notifications in your shop dashboard and tap Connect Telegram to link this chat.",
+          text: "To connect this chat, open your shop dashboard → Settings → Notifications, then choose Connect Telegram and open the new link.",
         }).catch(() => undefined);
         return { handled: true as const, reason: "missing_token" as const };
       }
 
-      // Operator shop-tools link: /start op_<token> (handled by telegram-operator service).
-      if (token.startsWith("op_") && serviceOptions?.consumeOperatorStart) {
+      // Operator shop-tools link: /start op_<token>
+      if (token.startsWith("op_")) {
+        if (!serviceOptions?.consumeOperatorStart) {
+          await sendTelegramBotMessage({
+            botToken: config.botToken,
+            chatId,
+            text: "Shop management links are not available right now. Please try again later from the dashboard.",
+          }).catch(() => undefined);
+          return { handled: true as const, reason: "operator_unavailable" as const };
+        }
         const fromUser = typeof from === "object" && from !== null ? from : null;
         const telegramUserIdRaw =
           fromUser && typeof (fromUser as { id?: unknown }).id !== "undefined"
             ? String((fromUser as { id: unknown }).id)
             : chatId;
-        return serviceOptions.consumeOperatorStart({
-          startPayload: token,
-          chatId,
-          telegramUserId: telegramUserIdRaw,
-          username:
-            fromUser && typeof (fromUser as { username?: unknown }).username === "string"
-              ? String((fromUser as { username: string }).username)
-              : null,
-          firstName:
-            fromUser && typeof (fromUser as { first_name?: unknown }).first_name === "string"
-              ? String((fromUser as { first_name: string }).first_name)
-              : null,
-          lastName:
-            fromUser && typeof (fromUser as { last_name?: unknown }).last_name === "string"
-              ? String((fromUser as { last_name: string }).last_name)
-              : null,
-        });
+        try {
+          return await serviceOptions.consumeOperatorStart({
+            startPayload: token,
+            chatId,
+            telegramUserId: telegramUserIdRaw,
+            username:
+              fromUser && typeof (fromUser as { username?: unknown }).username === "string"
+                ? String((fromUser as { username: string }).username)
+                : null,
+            firstName:
+              fromUser && typeof (fromUser as { first_name?: unknown }).first_name === "string"
+                ? String((fromUser as { first_name: string }).first_name)
+                : null,
+            lastName:
+              fromUser && typeof (fromUser as { last_name?: unknown }).last_name === "string"
+                ? String((fromUser as { last_name: string }).last_name)
+                : null,
+          });
+        } catch {
+          await sendTelegramBotMessage({
+            botToken: config.botToken,
+            chatId,
+            text: "Could not finish linking shop management. Request a new link from the dashboard and try again.",
+          }).catch(() => undefined);
+          return { handled: true as const, reason: "operator_error" as const };
+        }
       }
 
-      const [session] = await db
-        .select()
-        .from(telegramConnectSessions)
-        .where(
-          and(
-            eq(telegramConnectSessions.token, token),
-            eq(telegramConnectSessions.status, "pending"),
-            gt(telegramConnectSessions.expiresAt, new Date()),
-          ),
-        )
-        .limit(1);
+      const session = await findConnectSessionByToken(db, token);
+      const nowMs = Date.now();
 
       if (!session) {
         await sendTelegramBotMessage({
           botToken: config.botToken,
           chatId,
-          text: "This connect link is invalid or expired. Go back to your dashboard and try Connect Telegram again.",
+          text: "This link is no longer valid. In your dashboard, choose Connect Telegram again and open the new link right away.",
         }).catch(() => undefined);
         return { handled: true as const, reason: "invalid_token" as const };
+      }
+
+      if (session.status === "consumed") {
+        await sendTelegramBotMessage({
+          botToken: config.botToken,
+          chatId,
+          text: "This chat is already connected. You can manage alert settings in the dashboard.",
+        }).catch(() => undefined);
+        return { handled: true as const, reason: "already_consumed" as const };
+      }
+
+      if (session.status !== "pending" || session.expiresAt.getTime() <= nowMs) {
+        if (session.status === "pending") {
+          await db
+            .update(telegramConnectSessions)
+            .set({ status: "expired" })
+            .where(eq(telegramConnectSessions.id, session.id));
+        }
+        await sendTelegramBotMessage({
+          botToken: config.botToken,
+          chatId,
+          text: "This link has expired. In your dashboard, choose Connect Telegram again for a fresh link.",
+        }).catch(() => undefined);
+        return { handled: true as const, reason: "expired_token" as const };
       }
 
       const [countRow] = await db
