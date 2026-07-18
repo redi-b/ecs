@@ -1,290 +1,218 @@
 ---
-import { classicV1DataSchema, themeTokensSchema } from "@ecs/storefront-templates";
-
 import type {
   StorefrontError,
   StoreProduct,
   StoreProductsResponse,
 } from "../../../lib/platform-store";
+import { listStoreCollections } from "../../../lib/commerce/catalog";
+import { isStoreError } from "../../../lib/commerce/result";
+import { formatMoney } from "../../../lib/money";
+import Layout from "./Layout.astro";
+import {
+  classicShellTheme,
+  isImageUrl,
+  parseClassicData,
+  parseClassicTheme,
+} from "./lib";
 
-// biome-ignore lint/correctness/noUnusedVariables: Astro uses Props for component prop typing.
 interface Props {
   data: unknown;
   productsResult: StoreProductsResponse | StorefrontError;
   tenantName: string;
   themeTokens: unknown;
+  platformApiBaseUrl?: string;
+  requestHost?: string | null;
+  cartCount?: number;
 }
 
-const { data, productsResult, tenantName, themeTokens } = Astro.props;
-const parsedData = classicV1DataSchema.safeParse(data);
-const parsedTheme = themeTokensSchema.safeParse(themeTokens);
-const templateData = parsedData.success
-  ? parsedData.data
-  : classicV1DataSchema.parse({
-      header: { navigation: [] },
-      home: {
-        hero: {
-          title: tenantName,
-          primaryCtaLabel: "Shop products",
-          primaryCtaHref: "/products",
-        },
-        featuredProducts: { title: "Featured products", productIds: [] },
-      },
-      footer: { socialLinks: [] },
-    });
-const theme = parsedTheme.success
-  ? parsedTheme.data
-  : themeTokensSchema.parse({
-      colors: {
-        background: "#f6f1ea",
-        foreground: "#1c1917",
-        primary: "#0f4c3a",
-        muted: "#ebe4d8",
-      },
-      typography: { headingFont: "Fraunces", bodyFont: "DM Sans" },
-      radius: "md",
-    });
+const {
+  data,
+  productsResult,
+  tenantName,
+  themeTokens,
+  platformApiBaseUrl = "http://localhost:3000",
+  requestHost = null,
+  cartCount = 0,
+} = Astro.props;
+
+const templateData = parseClassicData(data, tenantName);
+const theme = parseClassicTheme(themeTokens);
+const shellTheme = classicShellTheme(theme);
 const products: StoreProduct[] = "products" in productsResult ? productsResult.products : [];
 const storeError = "message" in productsResult ? productsResult : null;
-const radius = theme.radius === "none" ? "0" : theme.radius === "md" ? "18px" : "14px";
-const logoUrl = isRenderableImageUrl(templateData.header.logoAssetId)
+const logoUrl = isImageUrl(templateData.header.logoAssetId)
   ? templateData.header.logoAssetId
   : null;
-const heroImageUrl = isRenderableImageUrl(templateData.home.hero.imageAssetId)
+const heroImageUrl = isImageUrl(templateData.home.hero.imageAssetId)
   ? templateData.home.hero.imageAssetId
   : null;
 
-function isRenderableImageUrl(value: string | undefined) {
-  if (!value) return false;
-  return /^https?:\/\//i.test(value) || /^data:image\//i.test(value);
-}
+const collectionsResult = await listStoreCollections({
+  platformApiBaseUrl,
+  requestHost,
+  limit: 12,
+});
+const collections =
+  !isStoreError(collectionsResult) ? collectionsResult.collections : [];
+const showCollections =
+  templateData.home.collectionsStrip?.enabled !== false && collections.length > 0;
 ---
 
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta name="theme-color" content={theme.colors.primary} />
-    <title>{tenantName}</title>
-    <link rel="stylesheet" href="/styles/commerce.css" />
-  </head>
-  <body
-    style={`--sf-bg: ${theme.colors.background}; --sf-fg: ${theme.colors.foreground}; --sf-primary: ${theme.colors.primary}; --sf-muted: ${theme.colors.muted}; --sf-radius: ${radius}; --sf-heading-font: ${theme.typography.headingFont}; --sf-body-font: ${theme.typography.bodyFont};`}
-  >
-    <div class="sf-shell">
+<Layout
+  tenantName={tenantName}
+  cartCount={cartCount}
+  theme={shellTheme}
+  announcement={templateData.announcement?.enabled ? templateData.announcement.text : null}
+  nav={templateData.header.navigation}
+  logoUrl={logoUrl}
+  footerPhone={templateData.footer.phone}
+  footerAddress={templateData.footer.address}
+  footerBlurb={templateData.footer.blurb}
+  footerLinks={templateData.footer.socialLinks}
+  currentPath="/"
+>
+  <section class="at-hero at-reveal">
+    <div class="at-hero-copy">
+      <h1 class="at-h1">{templateData.home.hero.title}</h1>
       {
-        templateData.announcement?.enabled && (
-          <div class="sf-announcement" role="status">{templateData.announcement.text}</div>
-        )
+        templateData.home.hero.subtitle ? (
+          <p class="at-lede">{templateData.home.hero.subtitle}</p>
+        ) : null
       }
-
-      <div class="sf-header-wrap">
-        <header class="sf-header">
-          <a class="sf-brand" href="/">
-            {logoUrl && <img class="sf-brand-mark" src={logoUrl} alt="" loading="eager" />}
-            <span>{tenantName}</span>
-          </a>
-          <nav class="sf-nav" aria-label="Store navigation">
-            {templateData.header.navigation.map((item) => (
-              <a href={item.href}>{item.label}</a>
-            ))}
-            <a class="sf-cart-link" href="/cart">
-              Cart
-            </a>
-          </nav>
-        </header>
-      </div>
-
-      <main class="sf-main">
-        <section class="sf-hero">
-          <div class="sf-hero-copy">
-            <p class="sf-eyebrow">{tenantName}</p>
-            <h1 class="sf-title" style="font-size:clamp(2.4rem,7vw,3.75rem);max-width:14ch">
-              {templateData.home.hero.title}
-            </h1>
-            {
-              templateData.home.hero.subtitle && (
-                <p class="sf-lede">{templateData.home.hero.subtitle}</p>
-              )
-            }
-            <div class="sf-actions" style="margin-top:0.5rem">
-              <a class="sf-btn sf-btn-accent" href={templateData.home.hero.primaryCtaHref}>
-                {templateData.home.hero.primaryCtaLabel}
-              </a>
-              <a class="sf-btn sf-btn-secondary" href="/products">All products</a>
-            </div>
-          </div>
-          {
-            heroImageUrl ? (
-              <figure class="sf-hero-media">
-                <img src={heroImageUrl} alt="" loading="eager" />
-              </figure>
-            ) : (
-              <div class="sf-hero-media sf-hero-media-empty" aria-hidden="true">
-                <span>Your products · Your story</span>
-              </div>
-            )
-          }
-        </section>
-
-        <section id="products" aria-labelledby="products-title">
-          <div class="sf-section-head">
-            <div>
-              <p class="sf-eyebrow">Catalog</p>
-              <h2 id="products-title" class="sf-title" style="font-size:1.65rem;margin:0">
-                {templateData.home.featuredProducts.title}
-              </h2>
-            </div>
-            {!storeError && products.length > 0 && (
-              <p class="sf-muted" style="margin:0">{products.length} available</p>
-            )}
-          </div>
-
-          {
-            storeError ? (
-              <div class="sf-notice" role="status">
-                <p>
-                  <strong>Products are unavailable</strong>
-                </p>
-                <p class="sf-muted">
-                  The shop is online, but the catalog could not load: {storeError.message}.
-                </p>
-              </div>
-            ) : products.length > 0 ? (
-              <>
-                <ul class="sf-grid">
-                  {products.map((product) => (
-                    <li>
-                      <a
-                        class="sf-card"
-                        href={
-                          product.handle
-                            ? `/products/${encodeURIComponent(product.handle)}`
-                            : "/products"
-                        }
-                      >
-                        {product.thumbnail ? (
-                          <img
-                            class="sf-card-media"
-                            src={product.thumbnail}
-                            alt=""
-                            loading="lazy"
-                          />
-                        ) : (
-                          <div class="sf-card-media-placeholder" aria-hidden="true" />
-                        )}
-                        <div class="sf-card-body">
-                          <h3 class="sf-card-title">{product.title ?? "Untitled product"}</h3>
-                          {product.description && (
-                            <p class="sf-muted" style="margin:0;font-size:0.9rem;line-height:1.45">
-                              {product.description.length > 90
-                                ? `${product.description.slice(0, 90)}…`
-                                : product.description}
-                            </p>
-                          )}
-                        </div>
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-                <div class="sf-actions">
-                  <a class="sf-btn" href="/products">
-                    View all products
-                  </a>
-                </div>
-              </>
-            ) : (
-              <div class="sf-notice" role="status">
-                <p>
-                  <strong>No products yet</strong>
-                </p>
-                <p class="sf-muted">This shop is published and ready for products.</p>
-              </div>
-            )
-          }
-        </section>
-      </main>
-
-      <footer id="contact" class="sf-footer">
-        <div>
-          <strong>{tenantName}</strong>
-          {templateData.footer.address && <p style="margin:0.25rem 0 0">{templateData.footer.address}</p>}
-          {templateData.footer.phone && <p style="margin:0.25rem 0 0">{templateData.footer.phone}</p>}
-        </div>
+      <div class="at-actions">
+        <a class="at-btn" href={templateData.home.hero.primaryCtaHref}>
+          {templateData.home.hero.primaryCtaLabel}
+        </a>
         {
-          templateData.footer.socialLinks.length > 0 ? (
-            <nav class="sf-footer-nav" aria-label="Social links">
-              {templateData.footer.socialLinks.map((item) => (
-                <a href={item.href}>{item.label}</a>
-              ))}
-            </nav>
+          templateData.home.hero.secondaryCtaLabel && templateData.home.hero.secondaryCtaHref ? (
+            <a class="at-btn at-btn-ghost" href={templateData.home.hero.secondaryCtaHref}>
+              {templateData.home.hero.secondaryCtaLabel}
+            </a>
           ) : (
-            <nav class="sf-footer-nav" aria-label="Footer">
-              <a href="/products">Shop</a>
-              <a href="/cart">Cart</a>
-            </nav>
+            <a class="at-btn at-btn-ghost" href="/products">
+              Full catalog
+            </a>
           )
         }
-      </footer>
+      </div>
     </div>
-  </body>
-</html>
-
-<style>
-  .sf-hero {
-    display: grid;
-    gap: 2.5rem;
-    align-items: center;
-    padding: 0.5rem 0 3rem;
-  }
-
-  @media (min-width: 880px) {
-    .sf-hero {
-      grid-template-columns: minmax(0, 1.1fr) minmax(280px, 0.9fr);
-      gap: 3rem;
-      min-height: 28rem;
+    {
+      heroImageUrl ? (
+        <figure class="at-hero-media at-bezel">
+          <div class="at-bezel-inner">
+            <img src={heroImageUrl} alt="" loading="eager" />
+          </div>
+        </figure>
+      ) : (
+        <div class="at-hero-media at-bezel" aria-hidden="true">
+          <div class="at-bezel-inner at-hero-placeholder">
+            <span>{tenantName}</span>
+          </div>
+        </div>
+      )
     }
+  </section>
+
+  {
+    showCollections ? (
+      <section class="at-block at-reveal" aria-labelledby="collections-title">
+        <div class="at-section-head">
+          <h2 class="at-h2" id="collections-title">
+            {templateData.home.collectionsStrip?.title ?? "Collections"}
+          </h2>
+          <a class="at-text-link" href="/products">
+            View all
+          </a>
+        </div>
+        <div class="at-strip">
+          {collections.map((collection) => (
+            <a href={`/products?collection=${encodeURIComponent(collection.id)}`}>
+              {collection.title ?? "Collection"}
+            </a>
+          ))}
+        </div>
+      </section>
+    ) : null
   }
 
-  .sf-hero-media {
-    margin: 0;
-    aspect-ratio: 4 / 3;
-    border-radius: calc(var(--sf-radius) * 1.15);
-    overflow: hidden;
-    border: 1px solid var(--sf-border);
-    box-shadow: var(--sf-shadow);
-    background: var(--sf-muted);
-  }
+  <section class="at-block at-reveal" id="products" aria-labelledby="featured-title">
+    <div class="at-section-head">
+      <h2 class="at-h2" id="featured-title">{templateData.home.featuredProducts.title}</h2>
+      {!storeError && products.length > 0 ? (
+        <p class="at-muted" style="margin:0">{products.length} available</p>
+      ) : null}
+    </div>
 
-  .sf-hero-media img {
-    display: block;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
+    {
+      storeError ? (
+        <div class="at-notice">
+          <p>
+            <strong>Catalog unavailable</strong>
+          </p>
+          <p class="at-muted">{storeError.message}</p>
+        </div>
+      ) : products.length > 0 ? (
+        <>
+          <ul class="at-grid">
+            {products.map((product) => {
+              const inStock = product.variants.some((v) => v.inStock) || product.variants.length === 0;
+              return (
+                <li>
+                  <a
+                    class="at-card"
+                    href={
+                      product.handle
+                        ? `/products/${encodeURIComponent(product.handle)}`
+                        : "/products"
+                    }
+                  >
+                    <div class="at-card-media">
+                      {product.thumbnail ? (
+                        <img src={product.thumbnail} alt="" loading="lazy" />
+                      ) : null}
+                      {!inStock ? <span class="at-badge-corner">Sold out</span> : null}
+                    </div>
+                    <h3 class="at-card-title">{product.title ?? "Product"}</h3>
+                    {product.collectionTitle ? (
+                      <p class="at-card-meta">{product.collectionTitle}</p>
+                    ) : null}
+                    <p class="at-card-price">
+                      {formatMoney(product.priceAmount, product.currencyCode)}
+                    </p>
+                  </a>
+                </li>
+              );
+            })}
+          </ul>
+          <div class="at-actions">
+            <a class="at-btn at-btn-ghost" href="/products">
+              View all products
+            </a>
+          </div>
+        </>
+      ) : (
+        <div class="at-notice">
+          <p>
+            <strong>No products yet</strong>
+          </p>
+          <p class="at-muted">Publish products in the dashboard to populate this section.</p>
+        </div>
+      )
+    }
+  </section>
 
-  .sf-hero-media-empty {
-    display: grid;
-    place-items: center;
-    background:
-      radial-gradient(circle at 30% 20%, color-mix(in srgb, var(--sf-accent) 22%, transparent), transparent 55%),
-      linear-gradient(145deg, var(--sf-muted), color-mix(in srgb, var(--sf-primary) 12%, var(--sf-muted)));
-    color: color-mix(in srgb, var(--sf-fg) 55%, transparent);
-    font-family: var(--sf-heading-font);
-    font-weight: 600;
-    font-size: 1.15rem;
-    letter-spacing: -0.02em;
-    text-align: center;
-    padding: 2rem;
-  }
-
-  .sf-section-head {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: flex-end;
-    justify-content: space-between;
-    gap: 1rem;
-    margin-bottom: 1.25rem;
-  }
-</style>
+  <section class="at-trust at-reveal" aria-label="Why shop here">
+    <div class="at-trust-item">
+      <strong>Local delivery</strong>
+      <p>Delivery and pickup options set by this shop.</p>
+    </div>
+    <div class="at-trust-item">
+      <strong>Cash on delivery</strong>
+      <p>Pay when your order arrives, where enabled.</p>
+    </div>
+    <div class="at-trust-item">
+      <strong>Clear options</strong>
+      <p>Pick size, color, and more before you add to cart.</p>
+    </div>
+  </section>
+</Layout>

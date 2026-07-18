@@ -48,7 +48,6 @@ import {
 import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -341,7 +340,7 @@ export function StorefrontEditorShell({
   const [mobilePanel, setMobilePanel] = useState<EditorMobilePanel>("preview");
 
   return (
-    <div className="storefront-editor-chrome flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border bg-background shadow-sm">
+    <div className="storefront-editor-chrome flex flex-col rounded-xl border bg-background shadow-sm">
       <div className="flex shrink-0 flex-col gap-3 border-b bg-muted/30 px-3 py-3 sm:px-4">
         <div className="flex min-w-0 items-start gap-3">
           <div className="grid size-9 shrink-0 place-items-center rounded-lg border bg-background shadow-sm sm:size-10">
@@ -399,22 +398,25 @@ export function StorefrontEditorShell({
         ))}
       </div>
 
+      {/*
+        Row height comes from the preview only.
+        Settings uses min-h-0 so its content cannot grow the grid row; it scrolls inside.
+        Page still scrolls when the pointer is over the preview.
+      */}
       <div
         className={cn(
-          "grid min-h-0 flex-1 bg-muted/30 transition-[height] duration-300 ease-out",
-          // Viewport-based height without forcing a 42rem floor on phones.
-          "h-[max(22rem,calc(100dvh-13.5rem))] sm:h-[max(28rem,calc(100dvh-14rem))] lg:h-[max(32rem,calc(100dvh-15rem))] lg:grid-cols-[minmax(0,1fr)_minmax(18rem,24rem)]",
-          isFullscreen && "h-[calc(100dvh-7.5rem)] sm:h-[calc(100dvh-6.5rem)]",
+          "grid bg-muted/30 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,24rem)]",
+          isFullscreen && "min-h-[calc(100dvh-7.5rem)]",
         )}
         data-edit-hints={showEditHints ? "on" : "off"}
       >
         <div
           className={cn(
-            "min-h-0 overflow-auto p-3 sm:p-5",
+            "p-3 sm:p-5",
             mobilePanel !== "preview" && "max-lg:hidden",
           )}
         >
-          <div className="mx-auto max-w-6xl overflow-hidden rounded-xl border bg-background shadow-sm transition-all duration-300 ease-out">
+          <div className="mx-auto max-w-6xl overflow-hidden rounded-xl border bg-background shadow-sm">
             <TemplatePreview
               props={props}
               storefrontName={editorMeta.storefrontName}
@@ -424,7 +426,11 @@ export function StorefrontEditorShell({
         </div>
         <aside
           className={cn(
-            "flex min-h-0 flex-col border-t bg-background lg:border-l lg:border-t-0",
+            "flex flex-col overflow-hidden border-t bg-background",
+            // Critical: min-h-0 so settings content does not expand the grid row.
+            // h-0 + min-h-full = fill the row height set by the preview column.
+            "max-lg:max-h-[min(70dvh,40rem)]",
+            "lg:h-0 lg:min-h-full lg:border-l lg:border-t-0",
             mobilePanel !== "settings" && "max-lg:hidden",
           )}
         >
@@ -453,9 +459,10 @@ export function StorefrontSettingsPanel() {
   const dispatch = useStorefrontPuck((api) => api.dispatch);
   const props = getStorefrontPageProps(data);
 
+  // No overscroll-contain: at top/bottom, wheel continues to page scroll (natural chaining).
   return (
-    <ScrollArea className="min-h-0 flex-1">
-      <div className="flex flex-col gap-3 p-4 pb-8">
+    <div className="min-h-0 flex-1 overflow-y-auto">
+      <div className="flex flex-col gap-3 p-4 pb-10">
         {classicV1EditorManifest.sections.map((section) => (
           <section
             className="min-w-0 overflow-hidden rounded-xl border bg-card shadow-sm"
@@ -493,7 +500,7 @@ export function StorefrontSettingsPanel() {
           </section>
         ))}
       </div>
-    </ScrollArea>
+    </div>
   );
 }
 
@@ -890,17 +897,22 @@ export function UnsupportedTemplatePreview({ templateKey }: { templateKey: strin
 export function ClassicV1StorefrontPreview(
   props: StorefrontPageProps & { storefrontName?: string },
 ) {
+  // Match live classic storefront: Syne display + Outfit body (always loaded).
+  const headingFont = props.headingFont?.trim() || "Syne";
+  const bodyFont = props.bodyFont?.trim() || "Outfit";
   const theme = {
     backgroundColor: props.backgroundColor || "#ffffff",
     color: props.foregroundColor || "#111827",
-    fontFamily: props.bodyFont || "Inter",
+    fontFamily: `"${bodyFont}", Outfit, ui-sans-serif, system-ui, sans-serif`,
   };
   const primaryColor = props.primaryColor || "#0f766e";
   const mutedColor = props.mutedColor || "#f3f4f6";
   const storefrontName = props.storefrontName || "Storefront";
+  const displayFace = `"${headingFont}", Syne, ui-sans-serif, system-ui, sans-serif`;
 
   return (
     <main className="min-h-full bg-background" style={theme}>
+      <link href={previewGoogleFontsHref([headingFont, bodyFont])} rel="stylesheet" />
       <div
         className="px-5 py-2.5 text-center text-sm font-semibold text-white"
         style={{ backgroundColor: primaryColor }}
@@ -923,7 +935,9 @@ export function ClassicV1StorefrontPreview(
             value={props.logoAssetId}
             variant="logo"
           />
-          <span className="font-semibold">{storefrontName}</span>
+          <span className="font-bold tracking-tight" style={{ fontFamily: displayFace }}>
+            {storefrontName}
+          </span>
         </div>
         <nav className="flex items-center gap-5">
           <a
@@ -951,8 +965,8 @@ export function ClassicV1StorefrontPreview(
             {storefrontName}
           </p>
           <h1
-            className="max-w-3xl whitespace-pre-line text-[clamp(2.75rem,6vw,4.5rem)] font-bold leading-none tracking-normal"
-            style={{ fontFamily: props.headingFont || "Inter" }}
+            className="max-w-3xl whitespace-pre-line text-[clamp(2.75rem,6vw,4.5rem)] font-bold leading-none tracking-tight"
+            style={{ fontFamily: displayFace }}
           >
             <EditableText
               fallback="Your shop, online"
@@ -970,10 +984,10 @@ export function ClassicV1StorefrontPreview(
             />
           </p>
           <a
-            className="inline-flex h-11 w-fit items-center rounded-md px-5 text-sm font-medium text-white"
+            className="inline-flex h-11 min-w-[9.5rem] items-center justify-center rounded-full px-6 text-sm font-semibold text-white"
             href={props.primaryCtaHref || "/"}
             onClick={preventPreviewLink}
-            style={{ backgroundColor: primaryColor }}
+            style={{ backgroundColor: primaryColor, color: "#ffffff" }}
           >
             <EditableText
               fallback="Shop products"
@@ -991,7 +1005,10 @@ export function ClassicV1StorefrontPreview(
         />
       </section>
       <section className="mx-auto max-w-5xl px-8 pb-12 pt-8">
-        <h2 className="text-2xl font-semibold tracking-normal">
+        <h2
+          className="text-2xl font-bold tracking-tight"
+          style={{ fontFamily: displayFace }}
+        >
           <EditableText
             fallback="Featured products"
             propName="productSectionTitle"
@@ -1009,7 +1026,7 @@ export function ClassicV1StorefrontPreview(
       </section>
       <footer className="mx-auto flex max-w-5xl justify-between gap-5 border-t px-8 py-8 text-sm">
         <div className="flex flex-col gap-1">
-          <strong>{storefrontName}</strong>
+          <strong style={{ fontFamily: displayFace }}>{storefrontName}</strong>
           <EditableText fallback="Phone" propName="footerPhone" value={props.footerPhone} />
           <EditableText
             fallback="Address"
@@ -1021,6 +1038,32 @@ export function ClassicV1StorefrontPreview(
       </footer>
     </main>
   );
+}
+
+/** Load Syne/Outfit (and draft theme fonts) for the visual editor twin. */
+function previewGoogleFontsHref(names: string[]) {
+  const catalog: Record<string, string> = {
+    Syne: "Syne:wght@500;600;700;800",
+    Outfit: "Outfit:wght@400;500;600;700",
+    Inter: "Inter:wght@400;500;600;700",
+    Geist: "Geist:wght@400;500;600;700",
+    Manrope: "Manrope:wght@400;500;600;700",
+    "DM Sans": "DM+Sans:wght@400;500;600;700",
+    "Plus Jakarta Sans": "Plus+Jakarta+Sans:wght@400;500;600;700",
+    "Nunito Sans": "Nunito+Sans:wght@400;500;600;700",
+    "Source Sans 3": "Source+Sans+3:wght@400;500;600;700",
+    Figtree: "Figtree:wght@400;500;600;700",
+  };
+  const seen = new Set<string>();
+  const families: string[] = [];
+  for (const name of [...names, "Syne", "Outfit"]) {
+    const spec = catalog[name];
+    if (spec && !seen.has(spec)) {
+      seen.add(spec);
+      families.push(spec);
+    }
+  }
+  return `https://fonts.googleapis.com/css2?${families.map((f) => `family=${f}`).join("&")}&display=swap`;
 }
 
 export function EditableText({

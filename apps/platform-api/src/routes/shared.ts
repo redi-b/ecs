@@ -64,6 +64,22 @@ export function isAllowedStoreFacadeRoute(request: Request) {
     return true;
   }
 
+  if (method === "GET" && path === "/store/collections") {
+    return true;
+  }
+
+  if (method === "GET" && /^\/store\/collections\/[^/]+$/.test(path)) {
+    return true;
+  }
+
+  if (method === "GET" && path === "/store/product-categories") {
+    return true;
+  }
+
+  if (method === "GET" && /^\/store\/product-categories\/[^/]+$/.test(path)) {
+    return true;
+  }
+
   if (method === "POST" && path === "/store/carts") {
     return true;
   }

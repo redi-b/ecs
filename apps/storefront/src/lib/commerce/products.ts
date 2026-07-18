@@ -10,10 +10,14 @@ const PRODUCT_FIELDS = [
   "+variants.allow_backorder",
   "+variants.sku",
   "*options",
+  "*options.values",
   "*images",
+  "*collection",
+  "*categories",
   "+thumbnail",
   "+handle",
   "+description",
+  "+collection_id",
 ].join(",");
 
 export async function listStoreProducts(
@@ -21,6 +25,10 @@ export async function listStoreProducts(
     limit?: number;
     offset?: number;
     regionId?: string | null;
+    q?: string | null;
+    collectionId?: string | null;
+    categoryId?: string | null;
+    order?: string | null;
   },
 ): Promise<StoreProductsResponse | StorefrontError> {
   const response = await storeFetch({
@@ -31,6 +39,14 @@ export async function listStoreProducts(
       offset: options.offset ?? 0,
       region_id: options.regionId,
       fields: PRODUCT_FIELDS,
+      ...(options.q?.trim() ? { q: options.q.trim() } : {}),
+      ...(options.collectionId?.trim()
+        ? { collection_id: options.collectionId.trim() }
+        : {}),
+      ...(options.categoryId?.trim()
+        ? { category_id: options.categoryId.trim() }
+        : {}),
+      ...(options.order?.trim() ? { order: options.order.trim() } : {}),
     },
   });
   const data = await response.json().catch(() => undefined);

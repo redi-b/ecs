@@ -1,0 +1,260 @@
+---
+import type {
+  StoreCart,
+  StoreDeliveryOptions,
+  StorePaymentOptions,
+  StoreShippingOption,
+} from "../../../lib/commerce/types";
+import { formatMoney } from "../../../lib/money";
+import type { ShellTheme } from "../../../lib/theme";
+import Layout from "./Layout.astro";
+
+interface Props {
+  tenantName: string;
+  cartCount: number;
+  primaryColor?: string;
+  theme?: ShellTheme & { accent?: string };
+  currentPath?: string;
+  cart: StoreCart | null;
+  delivery: StoreDeliveryOptions | null;
+  payment: StorePaymentOptions;
+  shippingOptions: StoreShippingOption[];
+  shippingError?: string | null;
+  error?: string | null;
+}
+
+const {
+  tenantName,
+  cartCount,
+  primaryColor,
+  theme,
+  currentPath = "/checkout",
+  cart,
+  delivery,
+  payment,
+  shippingOptions,
+  shippingError,
+  error,
+} = Astro.props;
+
+const items = cart?.items ?? [];
+const deliveryChoiceDefault =
+  delivery?.deliveryEnabled ? "delivery" : delivery?.pickupEnabled ? "pickup" : "delivery";
+const canPlaceOrder = items.length > 0 && shippingOptions.length > 0;
+---
+
+<Layout
+  tenantName={tenantName}
+  cartCount={cartCount}
+  primaryColor={primaryColor}
+  theme={theme}
+  currentPath={currentPath}
+  title="Checkout"
+  showSearch={false}
+>
+  <nav class="at-breadcrumbs" aria-label="Breadcrumb">
+    <a href="/">Home</a>
+    <span aria-hidden="true">/</span>
+    <a href="/cart">Cart</a>
+    <span aria-hidden="true">/</span>
+    <span>Checkout</span>
+  </nav>
+
+  <h1 class="at-h1">Checkout</h1>
+
+  <ol class="at-steps" aria-label="Checkout progress">
+    <li class="is-done">Cart</li>
+    <li class="is-current" aria-current="step">Details</li>
+    <li>Confirm</li>
+  </ol>
+
+  {
+    error ? (
+      <div class="at-notice at-notice-error" role="alert">
+        {error}
+      </div>
+    ) : null
+  }
+
+  {
+    items.length === 0 ? (
+      <div class="at-notice" role="status">
+        <p>
+          <strong>Your cart is empty</strong>
+        </p>
+        <div class="at-actions">
+          <a class="at-btn" href="/products">
+            Browse products
+          </a>
+        </div>
+      </div>
+    ) : (
+      <div class="at-checkout">
+        <div>
+          {shippingOptions.length === 0 ? (
+            <div class="at-notice" role="status">
+              <p>
+                <strong>Shipping is not ready for this cart yet</strong>
+              </p>
+              <p class="at-muted">
+                {shippingError
+                  ? `Details: ${shippingError}`
+                  : "This shop may still be setting up delivery rates, or the cart needs a moment after adding items. Try going back to the cart and returning."}
+              </p>
+              <div class="at-actions">
+                <a class="at-btn at-btn-ghost" href="/cart">
+                  Back to cart
+                </a>
+              </div>
+            </div>
+          ) : null}
+
+          <form method="post" action="/actions/checkout/cod" class="at-checkout-form">
+            <section class="at-panel at-form-section">
+              <h2>Contact</h2>
+              <div class="at-form-grid">
+                <div class="at-field">
+                  <label for="name">Full name</label>
+                  <input id="name" name="name" required autocomplete="name" />
+                </div>
+                <div class="at-field">
+                  <label for="phone">Phone</label>
+                  <input id="phone" name="phone" required autocomplete="tel" inputmode="tel" />
+                </div>
+                <div class="at-field at-field-full">
+                  <label for="email">Email (optional)</label>
+                  <input id="email" name="email" type="email" autocomplete="email" />
+                </div>
+              </div>
+            </section>
+
+            <section class="at-panel at-form-section">
+              <h2>Delivery</h2>
+              <div class="at-form-grid">
+                <div class="at-field">
+                  <label for="deliveryChoice">Method</label>
+                  <select id="deliveryChoice" name="deliveryChoice" required>
+                    {delivery?.deliveryEnabled !== false ? (
+                      <option value="delivery" selected={deliveryChoiceDefault === "delivery"}>
+                        Delivery
+                      </option>
+                    ) : null}
+                    {delivery?.pickupEnabled ? (
+                      <option value="pickup" selected={deliveryChoiceDefault === "pickup"}>
+                        Pickup
+                      </option>
+                    ) : null}
+                  </select>
+                </div>
+                <div class="at-field">
+                  <label for="city">City</label>
+                  <input
+                    id="city"
+                    name="city"
+                    required
+                    autocomplete="address-level2"
+                    value="Addis Ababa"
+                  />
+                </div>
+                <div class="at-field at-field-full">
+                  <label for="address1">Address</label>
+                  <input id="address1" name="address1" required autocomplete="street-address" />
+                </div>
+                <div class="at-field at-field-full">
+                  <label for="landmark">
+                    Landmark{delivery?.landmarkRequired ? " (required)" : " (optional)"}
+                  </label>
+                  <input
+                    id="landmark"
+                    name="landmark"
+                    required={Boolean(delivery?.landmarkRequired)}
+                  />
+                </div>
+                {delivery?.notesEnabled !== false ? (
+                  <div class="at-field at-field-full">
+                    <label for="notes">Order notes (optional)</label>
+                    <textarea id="notes" name="notes" rows="3" />
+                  </div>
+                ) : null}
+                {shippingOptions.length > 0 ? (
+                  <div class="at-field at-field-full">
+                    <label for="shippingOptionId">Shipping option</label>
+                    <select id="shippingOptionId" name="shippingOptionId" required>
+                      {shippingOptions.map((option) => (
+                        <option value={option.id}>
+                          {(option.name ?? "Shipping") +
+                            (option.amount != null
+                              ? ` - ${formatMoney(option.amount, option.currencyCode ?? cart?.currencyCode)}`
+                              : "")}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                ) : null}
+              </div>
+            </section>
+
+            <section class="at-panel at-form-section">
+              <h2>Payment</h2>
+              <p class="at-muted" style="margin:0 0 1rem">
+                Choose how you want to pay. Available methods are set by this shop.
+              </p>
+              <div class="at-actions">
+                {payment.cod && canPlaceOrder ? (
+                  <button class="at-btn at-btn-accent" type="submit">
+                    Place order - Cash on delivery
+                  </button>
+                ) : null}
+                {payment.chapa && canPlaceOrder ? (
+                  <button class="at-btn" type="submit" formaction="/actions/checkout/chapa">
+                    Pay with Chapa
+                  </button>
+                ) : null}
+                {!payment.chapa ? (
+                  <p class="at-muted" style="margin:0;flex:1 1 100%">
+                    Online payment appears when this shop enables Chapa.
+                  </p>
+                ) : null}
+                <a class="at-btn at-btn-ghost" href="/cart">
+                  Back to cart
+                </a>
+              </div>
+            </section>
+          </form>
+        </div>
+
+        <aside class="at-panel at-checkout-summary" aria-label="Order summary">
+          <h2>Order summary</h2>
+          <ul class="at-summary-items">
+            {items.map((item) => (
+              <li class="at-summary-item">
+                <div class="at-summary-thumb">
+                  {item.thumbnail ? <img src={item.thumbnail} alt="" /> : null}
+                </div>
+                <div>
+                  <div>
+                    {item.quantity}× {item.title ?? "Item"}
+                  </div>
+                  {item.variantTitle ? (
+                    <div class="at-muted" style="font-size:0.85rem">
+                      {item.variantTitle}
+                    </div>
+                  ) : null}
+                </div>
+                <span>{formatMoney(item.total ?? item.unitPrice, cart?.currencyCode)}</span>
+              </li>
+            ))}
+          </ul>
+          <div class="at-summary-line total">
+            <span>Total</span>
+            <span>{formatMoney(cart?.total ?? cart?.itemTotal, cart?.currencyCode)}</span>
+          </div>
+          <p class="at-trust-note">
+            Your phone number is used to confirm delivery. We do not store card details on this
+            storefront.
+          </p>
+        </aside>
+      </div>
+    )
+  }
+</Layout>

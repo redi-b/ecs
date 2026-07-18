@@ -35,6 +35,8 @@ export const useStorefrontPuck = createUsePuck();
 export const HISTORY_LIMIT = 60;
 export const HISTORY_COMMIT_DELAY_MS = 700;
 export const FONT_OPTIONS = [
+  "Syne",
+  "Outfit",
   "Inter",
   "Geist",
   "Manrope",

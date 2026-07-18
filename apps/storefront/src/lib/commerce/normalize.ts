@@ -97,6 +97,10 @@ export function normalizeProduct(value: unknown): StoreProduct {
       thumbnail: null,
       images: [],
       variants: [],
+      options: [],
+      collectionId: null,
+      collectionTitle: null,
+      categoryIds: [],
       priceAmount: null,
       currencyCode: null,
     };
@@ -107,12 +111,50 @@ export function normalizeProduct(value: unknown): StoreProduct {
     .map((variant) => normalizeVariant(variant, productOptions))
     .filter((variant): variant is StoreProductVariant => Boolean(variant));
 
+  const options = productOptions
+    .map((option) => {
+      if (!isRecord(option)) return null;
+      const id = getString(option.id) ?? "";
+      const title = getString(option.title) ?? getString(option.name) ?? "Option";
+      const values: string[] = [];
+      if (Array.isArray(option.values)) {
+        for (const entry of option.values) {
+          const v =
+            typeof entry === "string"
+              ? entry
+              : isRecord(entry)
+                ? (getString(entry.value) ?? getString(entry.name) ?? "")
+                : "";
+          if (v && !values.includes(v)) values.push(v);
+        }
+      }
+      // Fall back to values present on variants.
+      if (!values.length) {
+        for (const variant of variants) {
+          for (const ov of variant.optionValues) {
+            if (ov.optionTitle === title && !values.includes(ov.value)) values.push(ov.value);
+          }
+        }
+      }
+      return id || title ? { id: id || title, title, values } : null;
+    })
+    .filter((option): option is NonNullable<typeof option> => Boolean(option));
+
   const images: string[] = [];
   if (Array.isArray(value.images)) {
     for (const image of value.images) {
       const url = isRecord(image) ? getString(image.url) : getString(image);
       if (url) images.push(url);
     }
+  }
+
+  const collection = isRecord(value.collection) ? value.collection : null;
+  const categories = Array.isArray(value.categories) ? value.categories : [];
+  const categoryIds: string[] = [];
+  for (const category of categories) {
+    if (!isRecord(category)) continue;
+    const id = getString(category.id);
+    if (id) categoryIds.push(id);
   }
 
   const thumbnail = getString(value.thumbnail) ?? images[0] ?? null;
@@ -126,6 +168,10 @@ export function normalizeProduct(value: unknown): StoreProduct {
     thumbnail,
     images,
     variants,
+    options,
+    collectionId: getString(value.collection_id) ?? getString(collection?.id),
+    collectionTitle: getString(collection?.title),
+    categoryIds,
     priceAmount: priced?.priceAmount ?? null,
     currencyCode: priced?.currencyCode ?? null,
   };

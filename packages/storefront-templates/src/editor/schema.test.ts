@@ -34,4 +34,6 @@ test("classic v1 editor manifest maps every field to a unique preview prop", () 
   assert.ok(props.includes("heroTitle"));
   assert.ok(props.includes("primaryColor"));
   assert.ok(props.includes("productSectionTitle"));
+  assert.ok(props.includes("accentColor"));
+  assert.equal(parsed.templateKey, "classic@1");
 });

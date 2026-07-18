@@ -1,0 +1,264 @@
+---
+import type { StoreCategory, StoreCollection, StoreProduct } from "../../../lib/commerce/types";
+import { formatMoney } from "../../../lib/money";
+import type { ShellTheme } from "../../../lib/theme";
+import Layout from "./Layout.astro";
+
+interface Props {
+  tenantName: string;
+  cartCount: number;
+  primaryColor?: string;
+  theme?: ShellTheme & { accent?: string };
+  currentPath?: string;
+  products: StoreProduct[];
+  errorMessage?: string | null;
+  hasPrev: boolean;
+  hasNext: boolean;
+  prevHref?: string;
+  nextHref?: string;
+  collections?: StoreCollection[];
+  categories?: StoreCategory[];
+  filters?: {
+    q?: string;
+    collectionId?: string;
+    categoryId?: string;
+    order?: string;
+  };
+  totalCount?: number;
+}
+
+const {
+  tenantName,
+  cartCount,
+  primaryColor,
+  theme,
+  currentPath = "/products",
+  products,
+  errorMessage,
+  hasPrev,
+  hasNext,
+  prevHref,
+  nextHref,
+  collections = [],
+  categories = [],
+  filters = {},
+  totalCount,
+} = Astro.props;
+
+const activeCollection = collections.find((c) => c.id === filters.collectionId);
+const activeCategory = categories.find((c) => c.id === filters.categoryId);
+const resultLabel =
+  totalCount != null
+    ? `${totalCount} product${totalCount === 1 ? "" : "s"}`
+    : `${products.length} product${products.length === 1 ? "" : "s"}`;
+
+function clearFilterHref(key: "q" | "collection" | "category" | "order") {
+  const params = new URLSearchParams();
+  if (key !== "q" && filters.q) params.set("q", filters.q);
+  if (key !== "collection" && filters.collectionId) params.set("collection", filters.collectionId);
+  if (key !== "category" && filters.categoryId) params.set("category", filters.categoryId);
+  if (key !== "order" && filters.order) params.set("order", filters.order);
+  const qs = params.toString();
+  return qs ? `/products?${qs}` : "/products";
+}
+---
+
+<Layout
+  tenantName={tenantName}
+  cartCount={cartCount}
+  primaryColor={primaryColor}
+  theme={theme}
+  currentPath={currentPath}
+  title="Shop"
+  searchQuery={filters.q}
+>
+  <nav class="at-breadcrumbs" aria-label="Breadcrumb">
+    <a href="/">Home</a>
+    <span aria-hidden="true">/</span>
+    <span>Shop</span>
+    {
+      activeCollection ? (
+        <>
+          <span aria-hidden="true">/</span>
+          <span>{activeCollection.title ?? "Collection"}</span>
+        </>
+      ) : null
+    }
+  </nav>
+
+  <div class="at-plp-head">
+    <div>
+      <h1 class="at-h1">Shop</h1>
+      <p class="at-lede" style="margin-bottom:0">
+        {errorMessage ? "Could not load the catalog." : resultLabel}
+        {filters.q ? ` for “${filters.q}”` : ""}
+      </p>
+    </div>
+  </div>
+
+  <form class="at-toolbar" method="get" action="/products">
+    <div class="at-field">
+      <label for="q">Search</label>
+      <input id="q" name="q" type="search" placeholder="Search products" value={filters.q ?? ""} />
+    </div>
+    {
+      collections.length > 0 ? (
+        <div class="at-field">
+          <label for="collection">Collection</label>
+          <select id="collection" name="collection">
+            <option value="">All collections</option>
+            {collections.map((collection) => (
+              <option value={collection.id} selected={filters.collectionId === collection.id}>
+                {collection.title ?? collection.handle ?? collection.id}
+              </option>
+            ))}
+          </select>
+        </div>
+      ) : null
+    }
+    {
+      categories.length > 0 ? (
+        <div class="at-field">
+          <label for="category">Category</label>
+          <select id="category" name="category">
+            <option value="">All categories</option>
+            {categories.map((category) => (
+              <option value={category.id} selected={filters.categoryId === category.id}>
+                {category.name ?? category.handle ?? category.id}
+              </option>
+            ))}
+          </select>
+        </div>
+      ) : null
+    }
+    <div class="at-field">
+      <label for="order">Sort</label>
+      <select id="order" name="order">
+        <option value="" selected={!filters.order}>Featured</option>
+        <option value="created_at" selected={filters.order === "created_at"}>Newest</option>
+        <option value="title" selected={filters.order === "title"}>Title A–Z</option>
+        <option value="-title" selected={filters.order === "-title"}>Title Z–A</option>
+      </select>
+    </div>
+    <button class="at-btn" type="submit">
+      Apply
+    </button>
+  </form>
+
+  {
+    filters.q || filters.collectionId || filters.categoryId || filters.order ? (
+      <div class="at-active-filters" aria-label="Active filters">
+        {filters.q ? (
+          <a class="at-chip-filter" href={clearFilterHref("q")}>
+            Search: {filters.q} <span aria-hidden="true">×</span>
+          </a>
+        ) : null}
+        {activeCollection ? (
+          <a class="at-chip-filter" href={clearFilterHref("collection")}>
+            {activeCollection.title ?? "Collection"} <span aria-hidden="true">×</span>
+          </a>
+        ) : null}
+        {activeCategory ? (
+          <a class="at-chip-filter" href={clearFilterHref("category")}>
+            {activeCategory.name ?? "Category"} <span aria-hidden="true">×</span>
+          </a>
+        ) : null}
+        {filters.order ? (
+          <a class="at-chip-filter" href={clearFilterHref("order")}>
+            Sorted <span aria-hidden="true">×</span>
+          </a>
+        ) : null}
+        <a class="at-text-link" href="/products">
+          Clear all
+        </a>
+      </div>
+    ) : null
+  }
+
+  {
+    collections.length > 0 ? (
+      <div class="at-strip" aria-label="Collections">
+        <a href="/products" aria-current={!filters.collectionId ? "true" : undefined}>
+          All
+        </a>
+        {collections.map((collection) => (
+          <a
+            href={`/products?collection=${encodeURIComponent(collection.id)}`}
+            aria-current={filters.collectionId === collection.id ? "true" : undefined}
+          >
+            {collection.title ?? "Collection"}
+          </a>
+        ))}
+      </div>
+    ) : null
+  }
+
+  {
+    errorMessage ? (
+      <div class="at-notice at-notice-error" role="alert">
+        Could not load products: {errorMessage}
+      </div>
+    ) : products.length === 0 ? (
+      <div class="at-notice" role="status">
+        <p>
+          <strong>No matching products</strong>
+        </p>
+        <p class="at-muted">Try clearing filters or browsing another collection.</p>
+        <div class="at-actions">
+          <a class="at-btn at-btn-ghost" href="/products">
+            Reset filters
+          </a>
+        </div>
+      </div>
+    ) : (
+      <ul class="at-grid">
+        {products.map((product) => {
+          const inStock = product.variants.some((v) => v.inStock) || product.variants.length === 0;
+          return (
+            <li>
+              <a
+                class="at-card"
+                href={product.handle ? `/products/${encodeURIComponent(product.handle)}` : "#"}
+              >
+                <div class="at-card-media">
+                  {product.thumbnail ? (
+                    <img src={product.thumbnail} alt="" loading="lazy" />
+                  ) : null}
+                  {!inStock ? <span class="at-badge-corner">Sold out</span> : null}
+                </div>
+                <h3 class="at-card-title">{product.title ?? "Product"}</h3>
+                {product.collectionTitle ? (
+                  <p class="at-card-meta">{product.collectionTitle}</p>
+                ) : null}
+                <p class="at-card-price">
+                  {formatMoney(product.priceAmount, product.currencyCode)}
+                </p>
+              </a>
+            </li>
+          );
+        })}
+      </ul>
+    )
+  }
+
+  {
+    (hasPrev || hasNext) && (
+      <nav class="at-actions at-pagination" aria-label="Pagination">
+        {hasPrev && prevHref ? (
+          <a class="at-btn at-btn-ghost" href={prevHref} rel="prev">
+            Previous
+          </a>
+        ) : (
+          <span class="at-btn at-btn-ghost" aria-disabled="true" style="opacity:0.4;pointer-events:none">
+            Previous
+          </span>
+        )}
+        {hasNext && nextHref ? (
+          <a class="at-btn at-btn-ghost" href={nextHref} rel="next">
+            Next
+          </a>
+        ) : null}
+      </nav>
+    )
+  }
+</Layout>

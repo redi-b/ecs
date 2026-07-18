@@ -1,6 +1,6 @@
 ---
 import StoreUnavailable from "../../components/shell/StoreUnavailable.astro";
-import { getStoreProductByHandle } from "../../lib/commerce/products";
+import { listStoreProducts, getStoreProductByHandle } from "../../lib/commerce/products";
 import { isStoreError } from "../../lib/commerce/result";
 import type { StoreProduct } from "../../lib/commerce/types";
 import { loadPageContext } from "../../lib/page-context";
@@ -31,6 +31,34 @@ if (productResult && isStoreError(productResult)) {
 const product: StoreProduct | null =
   productResult && !isStoreError(productResult) ? productResult.product : null;
 
+let relatedProducts: StoreProduct[] = [];
+if (ctx.ok && product?.collectionId) {
+  const relatedResult = await listStoreProducts({
+    platformApiBaseUrl: ctx.platformApiBaseUrl,
+    requestHost: ctx.requestHost,
+    regionId: ctx.config.commerce.regionId,
+    collectionId: product.collectionId,
+    limit: 8,
+  });
+  if (!isStoreError(relatedResult)) {
+    relatedProducts = relatedResult.products
+      .filter((item) => item.id !== product.id)
+      .slice(0, 4);
+  }
+} else if (ctx.ok && product) {
+  const relatedResult = await listStoreProducts({
+    platformApiBaseUrl: ctx.platformApiBaseUrl,
+    requestHost: ctx.requestHost,
+    regionId: ctx.config.commerce.regionId,
+    limit: 8,
+  });
+  if (!isStoreError(relatedResult)) {
+    relatedProducts = relatedResult.products
+      .filter((item) => item.id !== product.id)
+      .slice(0, 4);
+  }
+}
+
 const Product = ctx.ok ? resolveRendererSlot(ctx.config.storefront.templateKey, "Product") : null;
 ---
 
@@ -48,6 +76,7 @@ const Product = ctx.ok ? resolveRendererSlot(ctx.config.storefront.templateKey, 
       handle={handle}
       notice={Astro.url.searchParams.get("notice")}
       error={Astro.url.searchParams.get("error")}
+      relatedProducts={relatedProducts}
     />
   )
 }

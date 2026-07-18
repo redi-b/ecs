@@ -1,0 +1,162 @@
+---
+import type { StoreCart } from "../../../lib/commerce/types";
+import { formatMoney } from "../../../lib/money";
+import type { ShellTheme } from "../../../lib/theme";
+import Layout from "./Layout.astro";
+
+interface Props {
+  tenantName: string;
+  cartCount: number;
+  primaryColor?: string;
+  theme?: ShellTheme & { accent?: string };
+  currentPath?: string;
+  cart: StoreCart | null;
+  error?: string | null;
+}
+
+const { tenantName, cartCount, primaryColor, theme, currentPath = "/cart", cart, error } =
+  Astro.props;
+const items = cart?.items ?? [];
+---
+
+<Layout
+  tenantName={tenantName}
+  cartCount={cartCount}
+  primaryColor={primaryColor}
+  theme={theme}
+  currentPath={currentPath}
+  title="Cart"
+>
+  <nav class="at-breadcrumbs" aria-label="Breadcrumb">
+    <a href="/">Home</a>
+    <span aria-hidden="true">/</span>
+    <a href="/products">Shop</a>
+    <span aria-hidden="true">/</span>
+    <span>Cart</span>
+  </nav>
+
+  <h1 class="at-h1">Cart</h1>
+  <p class="at-lede">
+    {items.length === 0
+      ? "Your bag is empty."
+      : `${items.length} line item${items.length === 1 ? "" : "s"} ready for checkout.`}
+  </p>
+
+  {
+    error ? (
+      <div class="at-notice at-notice-error" role="alert">
+        {error}
+      </div>
+    ) : null
+  }
+
+  {
+    items.length === 0 ? (
+      <div class="at-notice" role="status">
+        <p>
+          <strong>Your cart is empty</strong>
+        </p>
+        <p class="at-muted">Browse the catalog and add something you like.</p>
+        <div class="at-actions">
+          <a class="at-btn" href="/products">
+            Browse products
+          </a>
+        </div>
+      </div>
+    ) : (
+      <div class="at-cart-layout">
+        <ul class="at-cart-lines">
+          {items.map((item) => (
+            <li class="at-cart-line">
+              <div class="at-cart-thumb">
+                {item.thumbnail ? (
+                  <img src={item.thumbnail} alt="" loading="lazy" />
+                ) : (
+                  <span class="at-cart-thumb-fallback" aria-hidden="true" />
+                )}
+              </div>
+              <div class="at-cart-line-body">
+                <div class="at-cart-line-top">
+                  <div>
+                    {item.productHandle ? (
+                      <a
+                        class="at-cart-title"
+                        href={`/products/${encodeURIComponent(item.productHandle)}`}
+                      >
+                        {item.title ?? "Item"}
+                      </a>
+                    ) : (
+                      <strong class="at-cart-title">{item.title ?? "Item"}</strong>
+                    )}
+                    {item.variantTitle ? (
+                      <div class="at-muted">{item.variantTitle}</div>
+                    ) : null}
+                  </div>
+                  <div class="at-cart-line-price">
+                    {formatMoney(item.total ?? item.unitPrice, cart?.currencyCode)}
+                  </div>
+                </div>
+                <div class="at-cart-line-actions">
+                  <form method="post" action="/actions/cart/update" class="at-row">
+                    <input type="hidden" name="lineItemId" value={item.id} />
+                    <label class="at-sr-only" for={`qty-${item.id}`}>
+                      Quantity for {item.title ?? "item"}
+                    </label>
+                    <input
+                      id={`qty-${item.id}`}
+                      name="quantity"
+                      type="number"
+                      min="1"
+                      value={String(item.quantity)}
+                      class="at-qty-input"
+                    />
+                    <button class="at-btn at-btn-ghost at-btn-sm" type="submit">
+                      Update
+                    </button>
+                  </form>
+                  <form method="post" action="/actions/cart/remove">
+                    <input type="hidden" name="lineItemId" value={item.id} />
+                    <button class="at-btn at-btn-ghost at-btn-sm" type="submit">
+                      Remove
+                    </button>
+                  </form>
+                </div>
+              </div>
+            </li>
+          ))}
+        </ul>
+
+        <aside class="at-panel at-cart-summary" aria-label="Order summary">
+          <h2>Summary</h2>
+          <div class="at-summary-line">
+            <span>Subtotal</span>
+            <span>{formatMoney(cart?.itemTotal ?? cart?.total, cart?.currencyCode)}</span>
+          </div>
+          {cart?.shippingTotal != null ? (
+            <div class="at-summary-line">
+              <span>Shipping</span>
+              <span>{formatMoney(cart.shippingTotal, cart?.currencyCode)}</span>
+            </div>
+          ) : (
+            <div class="at-summary-line at-muted">
+              <span>Shipping</span>
+              <span>Calculated at checkout</span>
+            </div>
+          )}
+          <div class="at-summary-line total">
+            <span>Total</span>
+            <span>{formatMoney(cart?.total ?? cart?.itemTotal, cart?.currencyCode)}</span>
+          </div>
+          <div class="at-actions" style="margin-top:1.25rem">
+            <a class="at-btn at-btn-accent at-btn-block" href="/checkout">
+              Checkout
+            </a>
+            <a class="at-btn at-btn-ghost at-btn-block" href="/products">
+              Keep shopping
+            </a>
+          </div>
+        </aside>
+      </div>
+    )
+  }
+</Layout>
