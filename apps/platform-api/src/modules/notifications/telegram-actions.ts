@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 
 import type { MerchantOrder, MerchantOrderAction, MerchantOrderActionResult } from "../../types/index.js";
 import {
+  buildOrderActionKeyboard,
   createTelegramCallbackSecret,
   parseOrderActionCallbackData,
   type TelegramOrderAction,
@@ -257,19 +258,32 @@ export async function handleTelegramCallbackQuery(
     text: successCopy(parsed.action, parsed.orderId),
   }).catch(() => undefined);
 
-  // Destructive / terminal actions clear buttons so they are not double-tapped.
-  if (messageId != null && (parsed.action === "paid" || parsed.action === "cancel")) {
-    await editTelegramMessageReplyMarkup({
-      botToken: deps.botToken,
-      chatId,
-      messageId,
-      replyMarkup: { inline_keyboard: [] },
-    }).catch(() => undefined);
-  }
-
-  // After "ready", leave buttons so they can still mark paid or cancel.
-  if (messageId != null && parsed.action === "ready") {
-    // keep markup
+  if (messageId != null) {
+    if (parsed.action === "cancel") {
+      // Terminal: order is gone from the workflow.
+      await editTelegramMessageReplyMarkup({
+        botToken: deps.botToken,
+        chatId,
+        messageId,
+        replyMarkup: { inline_keyboard: [] },
+      }).catch(() => undefined);
+    } else {
+      // Drop only the action just used; keep the rest (e.g. paid → still ready/details/cancel).
+      const nextKeyboard = buildOrderActionKeyboard({
+        orderId: parsed.orderId,
+        tenantId: parsed.tenantId,
+        secret: deps.secret,
+        exclude: [parsed.action],
+      });
+      if (nextKeyboard) {
+        await editTelegramMessageReplyMarkup({
+          botToken: deps.botToken,
+          chatId,
+          messageId,
+          replyMarkup: nextKeyboard,
+        }).catch(() => undefined);
+      }
+    }
   }
 
   await sendTelegramBotMessage({

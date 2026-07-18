@@ -102,48 +102,44 @@ export function parseOrderActionCallbackData(
 
 /**
  * Keyboard for new-order alerts (COD-friendly daily ops).
- * Row 1: money / prep · Row 2: details / cancel
+ * Pass `exclude` after an action succeeds so that button is dropped
+ * without wiping the rest of the row.
  */
 export function buildOrderActionKeyboard(input: {
   orderId: string;
   tenantId: string;
   secret: string;
+  exclude?: TelegramOrderAction[];
 }): { inline_keyboard: Array<Array<{ text: string; callback_data: string }>> } | null {
-  const paid = buildOrderActionCallbackData({
-    action: "paid",
-    orderId: input.orderId,
-    tenantId: input.tenantId,
-    secret: input.secret,
-  });
-  const ready = buildOrderActionCallbackData({
-    action: "ready",
-    orderId: input.orderId,
-    tenantId: input.tenantId,
-    secret: input.secret,
-  });
-  const details = buildOrderActionCallbackData({
-    action: "details",
-    orderId: input.orderId,
-    tenantId: input.tenantId,
-    secret: input.secret,
-  });
-  const cancel = buildOrderActionCallbackData({
-    action: "cancel",
-    orderId: input.orderId,
-    tenantId: input.tenantId,
-    secret: input.secret,
-  });
-  if (!paid || !ready || !details || !cancel) return null;
-  return {
-    inline_keyboard: [
-      [
-        { text: "Mark paid", callback_data: paid },
-        { text: "Mark ready", callback_data: ready },
-      ],
-      [
-        { text: "Details", callback_data: details },
-        { text: "Cancel order", callback_data: cancel },
-      ],
-    ],
-  };
+  const exclude = new Set(input.exclude ?? []);
+  const specs: Array<{ action: TelegramOrderAction; text: string }> = [
+    { action: "paid", text: "Mark paid" },
+    { action: "ready", text: "Mark ready" },
+    { action: "details", text: "Details" },
+    { action: "cancel", text: "Cancel order" },
+  ];
+
+  const buttons: Array<{ text: string; callback_data: string }> = [];
+  for (const spec of specs) {
+    if (exclude.has(spec.action)) continue;
+    const data = buildOrderActionCallbackData({
+      action: spec.action,
+      orderId: input.orderId,
+      tenantId: input.tenantId,
+      secret: input.secret,
+    });
+    if (!data) return null;
+    buttons.push({ text: spec.text, callback_data: data });
+  }
+
+  if (buttons.length === 0) {
+    return { inline_keyboard: [] };
+  }
+
+  // Pair into rows of two for a compact keyboard.
+  const rows: Array<Array<{ text: string; callback_data: string }>> = [];
+  for (let i = 0; i < buttons.length; i += 2) {
+    rows.push(buttons.slice(i, i + 2));
+  }
+  return { inline_keyboard: rows };
 }

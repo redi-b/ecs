@@ -64,5 +64,18 @@ describe("telegram callback tokens", () => {
     assert.equal(keyboard.inline_keyboard[1]?.[0]?.text, "Details");
     assert.equal(keyboard.inline_keyboard[1]?.[1]?.text, "Cancel order");
   });
+
+  it("can exclude actions already used (e.g. after mark paid)", () => {
+    const keyboard = buildOrderActionKeyboard({
+      orderId,
+      tenantId,
+      secret,
+      exclude: ["paid"],
+    });
+    assert.ok(keyboard);
+    const labels = keyboard.inline_keyboard.flat().map((b) => b.text);
+    assert.deepEqual(labels, ["Mark ready", "Details", "Cancel order"]);
+  });
 });
+
 
