@@ -1189,17 +1189,11 @@ function StorefrontSection({
         </CardHeader>
         <CardContent className="flex flex-col gap-3">
           {storefrontTemplates.length ? (
-            <div
-              className={cn(
-                "grid gap-3",
-                singleTemplate ? "max-w-xl" : "sm:grid-cols-2",
-              )}
-            >
+            <div className={cn("grid gap-3", singleTemplate ? "max-w-lg" : "sm:grid-cols-2")}>
               {storefrontTemplates.map((template) => (
                 <StorefrontTemplateOption
                   currentTemplateKey={activeKey}
                   key={template.version.templateKey}
-                  layout={singleTemplate ? "compact" : "card"}
                   onSelected={setSelectedKey}
                   template={template}
                   tenantId={summary.tenant.id}
