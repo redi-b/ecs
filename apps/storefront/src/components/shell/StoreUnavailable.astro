@@ -6,7 +6,7 @@ interface Props {
   title?: string;
 }
 
-const { message, title = "Shop unavailable" } = Astro.props;
+const { message } = Astro.props;
 const friendly = customerFacingStoreError(message);
 ---
 
@@ -14,14 +14,13 @@ const friendly = customerFacingStoreError(message);
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>{title}</title>
+    <title>Shop unavailable</title>
     <link rel="stylesheet" href="/styles/commerce.css" />
   </head>
   <body>
     <main class="sf-main">
-      <div class="sf-notice sf-notice-error">
-        <h1 class="sf-title">{title}</h1>
-        <p>{friendly}</p>
+      <div class="sf-notice">
+        <h1 class="sf-title" style="font-size:clamp(1.5rem,4vw,2rem);margin:0">{friendly}</h1>
       </div>
     </main>
   </body>
