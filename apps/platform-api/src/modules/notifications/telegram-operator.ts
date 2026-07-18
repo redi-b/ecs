@@ -537,8 +537,8 @@ export function createTelegramOperatorService(
         text: [
           `You are linked for shop management on ${shopLabel}.`,
           "",
-          "Send /menu for Today, Stock, and Offline sale.",
-          "Order alerts can include action buttons in this chat if you also connect under Notifications.",
+          "Send Menu (or /menu) for Today, Stock, and Sale.",
+          "For order alerts in this chat, also connect under Settings → Notifications.",
         ].join("\n"),
       }).catch(() => undefined);
 
