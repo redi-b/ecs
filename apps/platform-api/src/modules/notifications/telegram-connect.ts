@@ -183,13 +183,14 @@ export function createTelegramConnectService(
         };
       }
 
-      // Cancel prior pending sessions for this tenant (single active flow).
+      // Cancel only this user's prior pending links (avoid killing other staff's links).
       await db
         .update(telegramConnectSessions)
         .set({ status: "cancelled" })
         .where(
           and(
             eq(telegramConnectSessions.tenantId, input.tenantId),
+            eq(telegramConnectSessions.createdByUserId, input.userId),
             eq(telegramConnectSessions.status, "pending"),
           ),
         );
