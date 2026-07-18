@@ -39,6 +39,7 @@ import { isEmailDeliveryConfigured } from "./modules/notifications/providers/ema
 import { createNotificationService } from "./modules/notifications/service.js";
 import { createTelegramConnectService } from "./modules/notifications/telegram-connect.js";
 import { createTelegramOperatorService } from "./modules/notifications/telegram-operator.js";
+import { startTelegramPolling } from "./modules/notifications/telegram-polling.js";
 import { createTenantOnboardingService } from "./modules/onboarding/service.js";
 import { createPaymentOnboardingService } from "./modules/payments/payment-onboarding-service.js";
 import { createStorefrontTemplateService } from "./modules/storefront/template-service.js";
@@ -129,8 +130,28 @@ const telegramOperatorService = createTelegramOperatorService(platformDb.db, tel
 const telegramConnectService = createTelegramConnectService(platformDb.db, telegramBotConfig, {
   consumeOperatorStart: (input) => telegramOperatorService.consumeOperatorStart(input),
 });
+const telegramPollingEnabled =
+  process.env.TELEGRAM_POLLING === "1" ||
+  process.env.TELEGRAM_POLLING?.toLowerCase() === "true" ||
+  (process.env.NODE_ENV === "development" &&
+    process.env.TELEGRAM_POLLING !== "0" &&
+    process.env.TELEGRAM_POLLING?.toLowerCase() !== "false");
+
 if (telegramConnectService.isConfigured()) {
-  logger.info({ bot: telegramBotUsername }, "Telegram bot configured for notifications and shop tools.");
+  logger.info(
+    { bot: telegramBotUsername, polling: telegramPollingEnabled },
+    "Telegram bot configured for notifications and shop tools.",
+  );
+  if (telegramPollingEnabled) {
+    logger.info(
+      "TELEGRAM_POLLING on: local long-polling will receive /start connect updates (webhook cleared).",
+    );
+  } else {
+    logger.warn(
+      "TELEGRAM_POLLING off: connect only works if Telegram webhook hits THIS process. " +
+        "If webhook still points at production while you develop locally, connect will always fail.",
+    );
+  }
 } else {
   logger.warn("TELEGRAM_BOT_TOKEN/USERNAME not set; Telegram connect stays unavailable.");
 }
@@ -652,6 +673,7 @@ const port = Number.parseInt(process.env.PORT ?? "3000", 10);
 
 async function shutdown(signal: string) {
   logger.info({ signal }, "platform api shutting down");
+  telegramPollingAbort.abort();
   try {
     if (jobsClient) {
       await jobsClient.close();
@@ -670,6 +692,17 @@ process.on("SIGINT", () => {
 process.on("SIGTERM", () => {
   void shutdown("SIGTERM");
 });
+
+const telegramPollingAbort = new AbortController();
+
+if (telegramConnectService.isConfigured() && telegramPollingEnabled && telegramBotToken) {
+  void startTelegramPolling({
+    botToken: telegramBotToken,
+    handleUpdate: (update) => telegramConnectService.handleWebhookUpdate(update),
+    logger,
+    signal: telegramPollingAbort.signal,
+  });
+}
 
 serve(
   {

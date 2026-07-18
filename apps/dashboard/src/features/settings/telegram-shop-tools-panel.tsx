@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import { AppIcons } from "@/components/app/icons";
@@ -49,7 +49,8 @@ function formatLinkedAt(iso: string, locale: string) {
 }
 
 /**
- * Link a personal Telegram account for shop management (not alert delivery).
+ * Link a personal Telegram account for shop management.
+ * Mirrors the Notifications → Telegram connect UX (dialog steps + waiting banner).
  */
 export function TelegramShopToolsPanel({
   available,
@@ -68,8 +69,10 @@ export function TelegramShopToolsPanel({
   const [linkSession, setLinkSession] = useState<LinkSession | null>(null);
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
   const [removeTarget, setRemoveTarget] = useState<TelegramOperatorBinding | null>(null);
+  const linkingLock = useRef(false);
 
   const waiting = Boolean(linkSession && linkSession.status === "pending");
+  const hasAccounts = bindings.length > 0;
 
   const loadBindings = useCallback(async () => {
     if (!available) {
@@ -146,6 +149,8 @@ export function TelegramShopToolsPanel({
   }
 
   function startLink() {
+    if (linkingLock.current || isPending) return;
+    linkingLock.current = true;
     startTransition(async () => {
       try {
         const response = await postAction({ action: "link" });
@@ -164,6 +169,8 @@ export function TelegramShopToolsPanel({
         window.open(next.deepLink, "_blank", "noopener,noreferrer");
       } catch {
         toast.error(mapPlatformErrorMessage("platform_request_failed"));
+      } finally {
+        linkingLock.current = false;
       }
     });
   }
@@ -217,6 +224,16 @@ export function TelegramShopToolsPanel({
         toast.error(mapPlatformErrorMessage("platform_request_failed"));
       }
     });
+  }
+
+  async function copyDeepLink() {
+    if (!linkSession?.deepLink) return;
+    try {
+      await navigator.clipboard.writeText(linkSession.deepLink);
+      toast.success(t("settings.telegram.linkCopied"));
+    } catch {
+      toast.error(t("settings.telegram.copyFailed"));
+    }
   }
 
   if (!available) {
@@ -310,12 +327,18 @@ export function TelegramShopToolsPanel({
     );
   }
 
+  const linkSteps = [
+    t("settings.telegram.step1"),
+    t("settings.telegram.step2"),
+    t("settings.telegram.step3"),
+  ] as const;
+
   return (
     <>
       <Card>
         <NotificationChannelHeader
           badge={
-            bindings.length > 0 ? (
+            hasAccounts ? (
               <Badge variant="secondary" className="font-medium">
                 {bindings.length === 1
                   ? t("settings.telegram.accountOne")
@@ -359,12 +382,24 @@ export function TelegramShopToolsPanel({
                         <AppIcons.externalLink className="size-3.5" />
                       </Button>
                     ) : null}
+                    {linkSession?.deepLink ? (
+                      <Button
+                        className="rounded-full"
+                        size="sm"
+                        type="button"
+                        variant="outline"
+                        onClick={() => void copyDeepLink()}
+                      >
+                        <AppIcons.copy className="size-3.5" />
+                        {t("settings.telegram.copyLink")}
+                      </Button>
+                    ) : null}
                     <Button
                       className="rounded-full"
                       disabled={isPending}
                       size="sm"
                       type="button"
-                      variant="outline"
+                      variant="ghost"
                       onClick={cancelLink}
                     >
                       {t("common.cancel")}
@@ -375,40 +410,37 @@ export function TelegramShopToolsPanel({
             </div>
           ) : null}
 
-          <div className="rounded-xl border bg-muted/20 px-4 py-3">
-            <p className="text-sm font-medium text-foreground">{t("settings.telegram.howTitle")}</p>
-            <ol className="mt-2 list-decimal space-y-1.5 ps-4 text-sm text-muted-foreground">
-              <li>{t("settings.telegram.step1")}</li>
-              <li>{t("settings.telegram.step2")}</li>
-              <li>{t("settings.telegram.step3")}</li>
-            </ol>
-          </div>
-
-          {bindings.length === 0 && !waiting ? (
-            <div className="rounded-xl border border-dashed px-4 py-8 text-center">
-              <p className="text-sm font-medium">{t("settings.telegram.emptyTitle")}</p>
-              <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
-                {t("settings.telegram.emptyBody")}
-              </p>
+          {!hasAccounts && !waiting ? (
+            <div className="flex flex-col items-center gap-4 rounded-xl border border-dashed bg-muted/20 px-4 py-8 text-center">
+              <div className="flex size-11 items-center justify-center rounded-full border bg-background shadow-sm">
+                <AppIcons.smartphone className="size-5 text-muted-foreground" />
+              </div>
+              <div className="max-w-sm space-y-1">
+                <p className="text-sm font-medium text-foreground">
+                  {t("settings.telegram.emptyTitle")}
+                </p>
+                <p className="text-sm text-muted-foreground">{t("settings.telegram.emptyBody")}</p>
+              </div>
               <Button
-                className="mt-4 rounded-full"
+                className="rounded-full"
                 disabled={isPending}
-                size="sm"
                 type="button"
                 onClick={() => setLinkDialogOpen(true)}
               >
                 {t("settings.telegram.link")}
               </Button>
             </div>
-          ) : (
+          ) : null}
+
+          {hasAccounts ? (
             <ul className="flex flex-col gap-2">
               {bindings.map((binding) => {
                 const linkedAt = formatLinkedAt(binding.linkedAt, locale);
                 return (
                   <li
                     className={cn(
-                      "flex flex-col gap-3 rounded-xl border px-3.5 py-3 sm:flex-row sm:items-center sm:justify-between",
-                      !binding.enabled && "opacity-80",
+                      "flex flex-col gap-3 rounded-xl border p-3 transition-colors sm:flex-row sm:items-center sm:justify-between",
+                      !binding.enabled && "bg-muted/20 opacity-90",
                     )}
                     key={binding.id}
                   >
@@ -430,7 +462,7 @@ export function TelegramShopToolsPanel({
                         ) : null}
                       </div>
                     </div>
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-wrap items-center gap-1.5 sm:justify-end">
                       <Button
                         className="rounded-full"
                         disabled={isPending}
@@ -444,55 +476,66 @@ export function TelegramShopToolsPanel({
                           : t("settings.telegram.enable")}
                       </Button>
                       <Button
+                        aria-label={t("settings.telegram.remove")}
                         className="rounded-full"
                         disabled={isPending}
                         onClick={() => setRemoveTarget(binding)}
-                        size="sm"
+                        size="icon-sm"
                         type="button"
-                        variant="ghost"
+                        variant="destructive"
                       >
-                        {t("settings.telegram.remove")}
+                        <AppIcons.trash />
                       </Button>
                     </div>
                   </li>
                 );
               })}
             </ul>
-          )}
+          ) : null}
 
-          {bindings.length > 0 || waiting ? (
-            <div className="flex flex-wrap gap-2">
+          {hasAccounts || waiting ? (
+            <div className="flex flex-wrap items-center gap-2">
               <Button
                 className="rounded-full"
                 disabled={isPending || waiting}
-                size="sm"
                 type="button"
-                variant="outline"
+                variant={hasAccounts ? "outline" : "default"}
                 onClick={() => setLinkDialogOpen(true)}
               >
-                {t("settings.telegram.linkAnother")}
+                {hasAccounts ? t("settings.telegram.linkAnother") : t("settings.telegram.link")}
               </Button>
             </div>
           ) : null}
 
-          <p className="text-xs leading-relaxed text-muted-foreground">
-            {t("settings.telegram.alertsNote")}
-          </p>
+          {hasAccounts ? (
+            <p className="text-xs leading-relaxed text-muted-foreground">
+              {t("settings.telegram.alertsNote")}
+            </p>
+          ) : null}
         </CardContent>
       </Card>
 
       <Dialog open={linkDialogOpen} onOpenChange={setLinkDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>{t("settings.telegram.linkDialogTitle")}</DialogTitle>
+            <DialogTitle>
+              {hasAccounts
+                ? t("settings.telegram.linkAnother")
+                : t("settings.telegram.linkDialogTitle")}
+            </DialogTitle>
             <DialogDescription>{t("settings.telegram.linkDialogDescription")}</DialogDescription>
           </DialogHeader>
-          <ol className="list-decimal space-y-2 ps-4 text-sm text-muted-foreground">
-            <li>{t("settings.telegram.step1")}</li>
-            <li>{t("settings.telegram.step2")}</li>
-            <li>{t("settings.telegram.step3")}</li>
+          <ol className="space-y-3 py-1">
+            {linkSteps.map((step, index) => (
+              <li className="flex gap-3 text-sm" key={step}>
+                <span className="flex size-6 shrink-0 items-center justify-center rounded-full border bg-muted/40 text-xs font-semibold text-muted-foreground">
+                  {index + 1}
+                </span>
+                <span className="pt-0.5 text-muted-foreground">{step}</span>
+              </li>
+            ))}
           </ol>
-          <DialogFooter className="gap-2 sm:gap-0">
+          <DialogFooter>
             <DialogClose asChild>
               <Button className="rounded-full" type="button" variant="outline">
                 {t("common.cancel")}
@@ -505,13 +548,14 @@ export function TelegramShopToolsPanel({
               onClick={startLink}
             >
               {isPending ? t("settings.telegram.opening") : t("settings.telegram.continueTelegram")}
+              {!isPending ? <AppIcons.externalLink className="size-3.5" /> : null}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       <Dialog
-        open={Boolean(removeTarget)}
+        open={removeTarget !== null}
         onOpenChange={(open) => {
           if (!open) setRemoveTarget(null);
         }}
@@ -525,7 +569,7 @@ export function TelegramShopToolsPanel({
               })}
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter className="gap-2 sm:gap-0">
+          <DialogFooter>
             <DialogClose asChild>
               <Button className="rounded-full" type="button" variant="outline">
                 {t("common.cancel")}
