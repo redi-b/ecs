@@ -93,7 +93,7 @@ export async function getStoreProductByHandle(
   const product = products[0];
 
   if (!product?.id) {
-    return { ok: false, status: 404, message: "product_not_found" };
+    return { ok: false, status: 404, message: "This product is unavailable or does not exist." };
   }
 
   return { product };
@@ -121,7 +121,7 @@ export async function getStoreProductById(
 
   const product = normalizeProduct(isRecord(data) ? data.product : data);
   if (!product.id) {
-    return { ok: false, status: 404, message: "product_not_found" };
+    return { ok: false, status: 404, message: "This product is unavailable or does not exist." };
   }
 
   return { product };

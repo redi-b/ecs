@@ -4,6 +4,8 @@ import {
   publishedStorefrontConfigSchema,
 } from "@ecs/contracts";
 
+import { customerFacingStoreError } from "./commerce/errors.js";
+
 export type StorefrontConfigResult =
   | {
       ok: true;
@@ -35,7 +37,9 @@ export async function getPublishedStorefrontConfig(options: {
     return {
       ok: false,
       status: response.status,
-      message: error.success ? error.data.error : response.statusText || "Config request failed",
+      message: customerFacingStoreError(
+        error.success ? error.data.error : response.statusText || "config_request_failed",
+      ),
     };
   }
 
@@ -45,7 +49,7 @@ export async function getPublishedStorefrontConfig(options: {
     return {
       ok: false,
       status: 502,
-      message: "invalid_storefront_config_response",
+      message: customerFacingStoreError("invalid_storefront_config_response"),
     };
   }
 

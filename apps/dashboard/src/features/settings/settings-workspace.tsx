@@ -979,15 +979,17 @@ function StorefrontSection({
   const [selectedKey, setSelectedKey] = useState(summary.storefront.templateKey);
   const [isPublished, setIsPublished] = useState(summary.storefront.isPublished);
   const [pausing, setPausing] = useState(false);
+  const [publishing, setPublishing] = useState(false);
   const activeKey = selectedKey ?? summary.storefront.templateKey;
   const singleTemplate = storefrontTemplates.length === 1;
+  const busy = pausing || publishing;
 
   useEffect(() => {
     setIsPublished(summary.storefront.isPublished);
   }, [summary.storefront.isPublished]);
 
   async function pauseShop() {
-    if (pausing || !isPublished) return;
+    if (busy || !isPublished) return;
     setPausing(true);
     try {
       const response = await fetch(dashboardRoutes.storefrontUnpublish, {
@@ -1015,6 +1017,40 @@ function StorefrontSection({
       toast.error(t("settings.storefront.pauseShopFailed"));
     } finally {
       setPausing(false);
+    }
+  }
+
+  async function publishShop() {
+    if (busy || isPublished) return;
+    setPublishing(true);
+    try {
+      const response = await fetch(dashboardRoutes.storefrontPublish, {
+        method: "POST",
+        headers: {
+          accept: "application/json",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({ tenantId: summary.tenant.id }),
+      });
+      const data = (await response.json().catch(() => null)) as {
+        ok?: boolean;
+        message?: string;
+      } | null;
+
+      if (!response.ok || !data?.ok) {
+        toast.error(
+          data?.message?.replaceAll("_", " ") || t("settings.storefront.publishShopFailed"),
+        );
+        return;
+      }
+
+      setIsPublished(true);
+      toast.success(t("settings.storefront.publishShopSuccess"));
+      router.refresh();
+    } catch {
+      toast.error(t("settings.storefront.publishShopFailed"));
+    } finally {
+      setPublishing(false);
     }
   }
 
@@ -1105,7 +1141,7 @@ function StorefrontSection({
                   <AlertDialogTrigger asChild>
                     <Button
                       className="rounded-full"
-                      disabled={pausing}
+                      disabled={busy}
                       size="sm"
                       type="button"
                       variant="destructive"
@@ -1127,7 +1163,7 @@ function StorefrontSection({
                         {t("common.cancel")}
                       </AlertDialogCancel>
                       <AlertDialogAction
-                        className="rounded-full"
+                        className="rounded-full bg-destructive text-white hover:bg-destructive/90"
                         disabled={pausing}
                         onClick={(event) => {
                           event.preventDefault();
@@ -1139,7 +1175,19 @@ function StorefrontSection({
                     </AlertDialogFooter>
                   </AlertDialogContent>
                 </AlertDialog>
-              ) : null}
+              ) : (
+                <Button
+                  className="rounded-full"
+                  disabled={busy}
+                  onClick={() => void publishShop()}
+                  size="sm"
+                  type="button"
+                >
+                  {publishing
+                    ? t("settings.storefront.publishShopPending")
+                    : t("settings.storefront.publishShop")}
+                </Button>
+              )}
             </div>
           </CardContent>
         </Card>

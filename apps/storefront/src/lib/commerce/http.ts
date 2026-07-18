@@ -1,3 +1,4 @@
+import { customerFacingStoreError } from "./errors.js";
 import type { HostedStoreRequest, StorefrontError } from "./types.js";
 
 export function normalizeBaseUrl(value: string) {
@@ -23,11 +24,11 @@ export function getErrorMessage(data: unknown, fallback: string) {
     const error = data.error ?? data.message;
 
     if (typeof error === "string" && error.trim()) {
-      return error;
+      return customerFacingStoreError(error);
     }
   }
 
-  return fallback || "Store request failed";
+  return customerFacingStoreError(fallback || "Something went wrong. Please try again.");
 }
 
 export function asError(status: number, data: unknown, fallback: string): StorefrontError {
