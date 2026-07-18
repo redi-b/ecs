@@ -15,6 +15,13 @@ export type CreateNotificationsDeliverHandlerOptions = {
   db: PlatformDb;
   renderer: NotificationRenderer;
   providers: NotificationProviderRegistry;
+  telegramOrderActions?: {
+    secret: string;
+    isOperatorChat: (input: {
+      tenantId: string;
+      chatId: string;
+    }) => Promise<{ allowed: boolean }>;
+  };
 };
 
 function readNotificationLogId(payload: unknown): string | null {
@@ -39,6 +46,9 @@ export function createNotificationsDeliverHandler(
       notificationLogId,
       renderer: options.renderer,
       providers: options.providers,
+      ...(options.telegramOrderActions
+        ? { telegramOrderActions: options.telegramOrderActions }
+        : {}),
     });
 
     if (result.ok) {

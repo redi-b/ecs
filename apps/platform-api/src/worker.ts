@@ -21,6 +21,8 @@ import { createProviderRegistry } from "./modules/notifications/providers/regist
 import { createTelegramNotificationProvider } from "./modules/notifications/providers/telegram-provider.js";
 import { createCodeNotificationRenderer } from "./modules/notifications/renderer.js";
 import { createNotificationService } from "./modules/notifications/service.js";
+import { resolveTelegramCallbackSecret } from "./modules/notifications/telegram-actions.js";
+import { createTelegramOperatorService } from "./modules/notifications/telegram-operator.js";
 
 loadPlatformApiEnvFiles();
 
@@ -58,6 +60,7 @@ const logProvider = (channel: string) =>
   });
 
 const telegramBotToken = process.env.TELEGRAM_BOT_TOKEN?.trim() || "";
+const telegramBotUsername = process.env.TELEGRAM_BOT_USERNAME?.trim() || "";
 const telegramProvider = telegramBotToken
   ? createTelegramNotificationProvider({ botToken: telegramBotToken })
   : logProvider("telegram");
@@ -67,6 +70,15 @@ if (telegramBotToken) {
 } else {
   logger.warn("TELEGRAM_BOT_TOKEN not set; telegram deliveries use log provider");
 }
+
+const telegramOperatorService =
+  telegramBotToken && telegramBotUsername
+    ? createTelegramOperatorService(platformDb.db, {
+        botToken: telegramBotToken,
+        botUsername: telegramBotUsername,
+      })
+    : null;
+const telegramCallbackSecret = resolveTelegramCallbackSecret();
 
 const resendApiKey = process.env.RESEND_API_KEY?.trim() || "";
 const emailFrom = process.env.EMAIL_FROM?.trim() || "";
@@ -117,6 +129,17 @@ const worker = startPlatformWorker({
       db: platformDb.db,
       renderer: notificationRenderer,
       providers: notificationProviders,
+      ...(telegramOperatorService
+        ? {
+            telegramOrderActions: {
+              secret: telegramCallbackSecret,
+              isOperatorChat: async (input) => {
+                const result = await telegramOperatorService.isOperatorChatForActions(input);
+                return { allowed: result.allowed };
+              },
+            },
+          }
+        : {}),
     }) as JobHandler,
     "billing.lifecycle": createBillingLifecycleHandler({
       db: platformDb.db,

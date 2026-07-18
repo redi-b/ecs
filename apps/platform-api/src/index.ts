@@ -37,6 +37,10 @@ import { createDomainManagementService } from "./modules/domains/service.js";
 import { createMediaService } from "./modules/media/index.js";
 import { isEmailDeliveryConfigured } from "./modules/notifications/providers/email-provider.js";
 import { createNotificationService } from "./modules/notifications/service.js";
+import {
+  handleTelegramCallbackQuery,
+  resolveTelegramCallbackSecret,
+} from "./modules/notifications/telegram-actions.js";
 import { createTelegramConnectService } from "./modules/notifications/telegram-connect.js";
 import { createTelegramOperatorService } from "./modules/notifications/telegram-operator.js";
 import { startTelegramPolling } from "./modules/notifications/telegram-polling.js";
@@ -127,8 +131,40 @@ const telegramBotConfig =
     ? { botToken: telegramBotToken, botUsername: telegramBotUsername }
     : null;
 const telegramOperatorService = createTelegramOperatorService(platformDb.db, telegramBotConfig);
+const telegramCallbackSecret = resolveTelegramCallbackSecret();
+/** Set after `orderService` is created. */
+const telegramOrderBridge: {
+  mutateMerchantOrder: null | ((input: {
+    action: "mark-paid";
+    orderId: string;
+    salesChannelId: string;
+  }) => ReturnType<ReturnType<typeof createMedusaOrderService>["mutateMerchantOrder"]>);
+  getMerchantOrder: null | ((input: {
+    orderId: string;
+    salesChannelId: string;
+  }) => ReturnType<ReturnType<typeof createMedusaOrderService>["getMerchantOrder"]>);
+} = { mutateMerchantOrder: null, getMerchantOrder: null };
+
 const telegramConnectService = createTelegramConnectService(platformDb.db, telegramBotConfig, {
   consumeOperatorStart: (input) => telegramOperatorService.consumeOperatorStart(input),
+  handleCallbackQuery: async (update) => {
+    if (!telegramBotToken || !telegramOrderBridge.mutateMerchantOrder) {
+      return { handled: true, reason: "actions_unavailable" };
+    }
+    return handleTelegramCallbackQuery(
+      {
+        db: platformDb.db,
+        botToken: telegramBotToken,
+        operatorService: telegramOperatorService,
+        mutateMerchantOrder: telegramOrderBridge.mutateMerchantOrder,
+        ...(telegramOrderBridge.getMerchantOrder
+          ? { getMerchantOrder: telegramOrderBridge.getMerchantOrder }
+          : {}),
+        secret: telegramCallbackSecret,
+      },
+      update,
+    );
+  },
 });
 const telegramPollingEnabled =
   process.env.TELEGRAM_POLLING === "1" ||
@@ -257,6 +293,17 @@ const orderService = createMedusaOrderService({
   adminApiToken: medusaAdminApiToken,
   medusaInternalUrl,
 });
+telegramOrderBridge.mutateMerchantOrder = (input) =>
+  orderService.mutateMerchantOrder({
+    action: input.action,
+    orderId: input.orderId,
+    salesChannelId: input.salesChannelId,
+  });
+telegramOrderBridge.getMerchantOrder = (input) =>
+  orderService.getMerchantOrder({
+    orderId: input.orderId,
+    salesChannelId: input.salesChannelId,
+  });
 const manualOrderService = createMedusaManualOrderService({
   adminApiToken: medusaAdminApiToken,
   medusaInternalUrl,

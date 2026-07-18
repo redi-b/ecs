@@ -55,7 +55,7 @@ export async function startTelegramPolling(options: {
             timeout: 25,
             allowed_updates: ["message", "callback_query"],
           }),
-          signal: options.signal,
+          ...(options.signal ? { signal: options.signal } : {}),
         });
         const data = (await response.json().catch(() => null)) as {
           ok?: boolean;
