@@ -5,33 +5,74 @@ import { getPlatformApiBaseUrl, getRequestOrigin } from "@/lib/platform-api";
 import { selectStorefrontTemplate } from "@/lib/storefront-templates";
 
 export async function POST(request: Request) {
-  const formData = await request.formData();
-  const tenantId = formData.get("tenantId");
-  const templateKey = formData.get("templateKey");
-  const returnTo = formData.get("returnTo");
-  const safeReturnTo = typeof returnTo === "string" ? getSafeReturnTo(returnTo) : "/admin";
-
-  if (typeof tenantId !== "string" || !tenantId.trim()) {
-    return redirectToAdmin(request, "missing_tenant", null, safeReturnTo);
-  }
-
-  if (typeof templateKey !== "string" || !templateKey.trim()) {
-    return redirectToAdmin(request, "missing_template", tenantId, safeReturnTo);
-  }
-
   const cookieStore = await cookies();
+  const cookieHeader = cookieStore.toString();
+  const contentType = request.headers.get("content-type") ?? "";
+  const wantsJson =
+    contentType.includes("application/json") ||
+    (request.headers.get("accept") ?? "").includes("application/json");
+
+  let tenantId = "";
+  let templateKey = "";
+  let returnTo = "/admin";
+
+  if (contentType.includes("application/json")) {
+    const body = (await request.json().catch(() => null)) as {
+      tenantId?: unknown;
+      templateKey?: unknown;
+      returnTo?: unknown;
+    } | null;
+    tenantId = typeof body?.tenantId === "string" ? body.tenantId.trim() : "";
+    templateKey = typeof body?.templateKey === "string" ? body.templateKey.trim() : "";
+    if (typeof body?.returnTo === "string") {
+      returnTo = getSafeReturnTo(body.returnTo);
+    }
+  } else {
+    const formData = await request.formData();
+    const rawTenant = formData.get("tenantId");
+    const rawTemplate = formData.get("templateKey");
+    const rawReturn = formData.get("returnTo");
+    tenantId = typeof rawTenant === "string" ? rawTenant.trim() : "";
+    templateKey = typeof rawTemplate === "string" ? rawTemplate.trim() : "";
+    if (typeof rawReturn === "string") {
+      returnTo = getSafeReturnTo(rawReturn);
+    }
+  }
+
+  if (!tenantId) {
+    return wantsJson
+      ? NextResponse.json({ ok: false, message: "missing_tenant" }, { status: 400 })
+      : redirectToAdmin(request, "missing_tenant", null, returnTo);
+  }
+
+  if (!templateKey) {
+    return wantsJson
+      ? NextResponse.json({ ok: false, message: "missing_template" }, { status: 400 })
+      : redirectToAdmin(request, "missing_template", tenantId, returnTo);
+  }
+
   const result = await selectStorefrontTemplate({
-    cookieHeader: cookieStore.toString(),
+    cookieHeader,
     platformApiBaseUrl: getPlatformApiBaseUrl(),
-    tenantId: tenantId.trim(),
-    templateKey: templateKey.trim(),
+    tenantId,
+    templateKey,
   });
 
   if (!result.ok) {
-    return redirectToAdmin(request, result.message, tenantId, safeReturnTo);
+    return wantsJson
+      ? NextResponse.json({ ok: false, message: result.message }, { status: result.status })
+      : redirectToAdmin(request, result.message, tenantId, returnTo);
   }
 
-  return redirectToAdmin(request, "template_selected", tenantId, safeReturnTo);
+  if (wantsJson) {
+    return NextResponse.json({
+      ok: true,
+      message: "template_selected",
+      selection: result.selection,
+    });
+  }
+
+  return redirectToAdmin(request, "template_selected", tenantId, returnTo);
 }
 
 function redirectToAdmin(

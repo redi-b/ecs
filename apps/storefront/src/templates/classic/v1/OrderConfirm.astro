@@ -1,0 +1,76 @@
+---
+import { formatMoney } from "../../../lib/money";
+import type { LastOrderCookie } from "../../../lib/session/cart-cookie";
+import type { ShellTheme } from "../../../lib/theme";
+import Layout from "./Layout.astro";
+
+interface Props {
+  tenantName: string;
+  cartCount: number;
+  primaryColor?: string;
+  theme?: ShellTheme & { accent?: string };
+  orderId: string;
+  lastOrder: LastOrderCookie | null;
+}
+
+const { tenantName, cartCount, primaryColor, theme, orderId, lastOrder } = Astro.props;
+const matches = Boolean(lastOrder && lastOrder.id === orderId);
+---
+
+<Layout
+  tenantName={tenantName}
+  cartCount={cartCount}
+  primaryColor={primaryColor}
+  theme={theme}
+  title="Order"
+  showSearch={false}
+>
+  <ol class="at-steps" aria-label="Checkout progress">
+    <li class="is-done">Cart</li>
+    <li class="is-done">Details</li>
+    <li class="is-current" aria-current="step">Confirm</li>
+  </ol>
+
+  <h1 class="at-h1">Order confirmed</h1>
+
+  {
+    matches ? (
+      <div class="at-notice at-notice-ok" role="status">
+        <p>
+          <strong>Thanks, we received your order.</strong>
+        </p>
+        <p>
+          <strong>Order ID:</strong>{" "}
+          <code class="at-order-id">{orderId}</code>
+        </p>
+        {lastOrder?.total != null ? (
+          <p>
+            <strong>Total:</strong> {formatMoney(lastOrder.total, lastOrder.currencyCode)}
+          </p>
+        ) : null}
+        <p class="at-muted">
+          Keep this page or your phone number handy if the shop contacts you about delivery.
+        </p>
+      </div>
+    ) : (
+      <div class="at-notice" role="status">
+        <p>
+          Order <code class="at-order-id">{orderId}</code>
+        </p>
+        <p class="at-muted">
+          If you just completed checkout, your order was placed. For privacy we only show full
+          confirmation details right after purchase on this device.
+        </p>
+      </div>
+    )
+  }
+
+  <div class="at-actions">
+    <a class="at-btn at-btn-accent" href="/products">
+      Continue shopping
+    </a>
+    <a class="at-btn at-btn-ghost" href="/">
+      Home
+    </a>
+  </div>
+</Layout>

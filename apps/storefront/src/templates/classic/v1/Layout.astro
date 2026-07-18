@@ -1,0 +1,278 @@
+---
+import type { ShellTheme } from "../../../lib/theme";
+
+interface NavItem {
+  label: string;
+  href: string;
+}
+
+interface Props {
+  tenantName: string;
+  cartCount?: number;
+  title?: string;
+  theme?: ShellTheme & { accent?: string };
+  primaryColor?: string;
+  announcement?: string | null;
+  nav?: NavItem[];
+  footerPhone?: string | null;
+  footerAddress?: string | null;
+  footerBlurb?: string | null;
+  footerLinks?: NavItem[];
+  logoUrl?: string | null;
+  currentPath?: string;
+  searchQuery?: string | null;
+  showSearch?: boolean;
+}
+
+const {
+  tenantName,
+  cartCount = 0,
+  title,
+  theme = {},
+  primaryColor,
+  announcement,
+  nav,
+  footerPhone,
+  footerAddress,
+  footerBlurb,
+  footerLinks = [],
+  logoUrl,
+  currentPath,
+  searchQuery = "",
+  showSearch = true,
+} = Astro.props;
+
+const pageTitle = title ? `${title} · ${tenantName}` : tenantName;
+const primary = theme.primary ?? primaryColor ?? "#9bc4a0";
+// Classic always ships Syne + Outfit (matches editor twin). Theme fonts layer on top when set.
+const headingFont = theme.headingFont?.trim() || "Syne";
+const bodyFont = theme.bodyFont?.trim() || "Outfit";
+const surface = theme.muted ?? null;
+const onPrimary = contrastOn(primary);
+const onAccent = contrastOn(theme.accent ?? "#d4785a");
+
+const style = [
+  theme.background ? `--at-bg: ${theme.background}` : null,
+  theme.foreground ? `--at-fg: ${theme.foreground}` : null,
+  `--at-primary: ${primary}`,
+  `--at-on-primary: ${onPrimary}`,
+  theme.muted ? `--at-muted: ${theme.muted}` : null,
+  surface ? `--at-surface: ${surface}` : null,
+  theme.accent ? `--at-accent: ${theme.accent}` : null,
+  `--at-on-accent: ${onAccent}`,
+  // Unquoted single-word families + Syne/Outfit fallbacks so we never render as "missing font → system".
+  `--at-display: ${cssFontStack(headingFont, "Syne")}`,
+  `--at-sans: ${cssFontStack(bodyFont, "Outfit")}`,
+  theme.radius ? `--at-radius: ${theme.radius}` : null,
+]
+  .filter(Boolean)
+  .join("; ");
+
+// Always load Syne + Outfit; add merchant fonts when different.
+const googleFontsHref = buildGoogleFontsHref([headingFont, bodyFont, "Syne", "Outfit"]);
+
+function cssFontStack(primaryName: string, fallback: string) {
+  const quote = (name: string) => (name.includes(" ") ? `"${name}"` : name);
+  const parts = [quote(primaryName)];
+  if (primaryName !== fallback) parts.push(quote(fallback));
+  parts.push("ui-sans-serif", "system-ui", "sans-serif");
+  return parts.join(", ");
+}
+
+function contrastOn(hex: string) {
+  const raw = hex.replace("#", "").trim();
+  // Expand #RGB
+  const full =
+    /^[0-9a-fA-F]{3}$/.test(raw)
+      ? raw
+          .split("")
+          .map((c) => c + c)
+          .join("")
+      : raw;
+  if (!/^[0-9a-fA-F]{6}$/.test(full)) return "#ffffff";
+  const r = Number.parseInt(full.slice(0, 2), 16);
+  const g = Number.parseInt(full.slice(2, 4), 16);
+  const b = Number.parseInt(full.slice(4, 6), 16);
+  // Relative luminance (sRGB-ish). Dark greens like #0F4C3A need light labels.
+  const luminance = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+  return luminance > 0.55 ? "#0b0f0d" : "#ffffff";
+}
+
+function buildGoogleFontsHref(names: string[]) {
+  const catalog: Record<string, string> = {
+    Syne: "Syne:wght@500;600;700;800",
+    Outfit: "Outfit:wght@400;500;600;700",
+    Inter: "Inter:wght@400;500;600;700",
+    Geist: "Geist:wght@400;500;600;700",
+    Manrope: "Manrope:wght@400;500;600;700",
+    "DM Sans": "DM+Sans:wght@400;500;600;700",
+    "Plus Jakarta Sans": "Plus+Jakarta+Sans:wght@400;500;600;700",
+    "Nunito Sans": "Nunito+Sans:wght@400;500;600;700",
+    "Source Sans 3": "Source+Sans+3:wght@400;500;600;700",
+    Newsreader: "Newsreader:wght@400;500;600;700",
+    "Cormorant Garamond": "Cormorant+Garamond:wght@400;500;600;700",
+    Figtree: "Figtree:wght@400;500;600;700",
+    "Instrument Serif": "Instrument+Serif:ital@0;1",
+  };
+  const seen = new Set<string>();
+  const families: string[] = [];
+  for (const name of names) {
+    const spec = catalog[name];
+    if (spec && !seen.has(spec)) {
+      seen.add(spec);
+      families.push(spec);
+    }
+  }
+  if (!families.length) {
+    families.push("Syne:wght@500;600;700;800", "Outfit:wght@400;500;600;700");
+  }
+  return `https://fonts.googleapis.com/css2?${families.map((f) => `family=${f}`).join("&")}&display=swap`;
+}
+
+const links =
+  nav && nav.length
+    ? nav
+    : [
+        { label: "Shop", href: "/products" },
+        { label: "Contact", href: "#contact" },
+      ];
+const mainLinks = links.filter((item) => !item.href.startsWith("/cart"));
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content={theme.background ?? "#0b0f0d"} />
+    <title>{pageTitle}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href={googleFontsHref} />
+    <link rel="stylesheet" href="/styles/classic.css" />
+  </head>
+  <body class="at-body" style={style || undefined}>
+    <div class="at-shell">
+      {announcement ? <div class="at-announcement">{announcement}</div> : null}
+      <div class="at-header-bar">
+        <header class="at-header">
+          <a class="at-brand" href="/">
+            {logoUrl ? <img src={logoUrl} alt="" /> : null}
+            <span>{tenantName}</span>
+          </a>
+
+          <nav class="at-nav at-nav-desktop" aria-label="Store">
+            {
+              mainLinks.map((item) => (
+                <a
+                  href={item.href}
+                  aria-current={
+                    currentPath &&
+                    (currentPath === item.href ||
+                      (item.href !== "/" && currentPath.startsWith(item.href)))
+                      ? "page"
+                      : undefined
+                  }
+                >
+                  {item.label}
+                </a>
+              ))
+            }
+          </nav>
+
+          <div class="at-header-actions">
+            {
+              showSearch ? (
+                <form class="at-header-search" method="get" action="/products" role="search">
+                  <label class="at-sr-only" for="header-q">
+                    Search products
+                  </label>
+                  <input
+                    id="header-q"
+                    name="q"
+                    type="search"
+                    placeholder="Search"
+                    value={searchQuery ?? ""}
+                    autocomplete="off"
+                  />
+                </form>
+              ) : null
+            }
+            <a class="at-cart" href="/cart">
+              Cart
+              {
+                cartCount > 0 ? (
+                  <span class="at-badge" aria-live="polite">
+                    {cartCount}
+                  </span>
+                ) : null
+              }
+            </a>
+            <button
+              type="button"
+              class="at-menu-btn"
+              data-menu-toggle
+              aria-expanded="false"
+              aria-controls="mobile-nav"
+              aria-label="Open menu"
+            >
+              <span></span>
+              <span></span>
+            </button>
+          </div>
+        </header>
+        <div class="at-mobile-nav" id="mobile-nav" hidden data-mobile-nav>
+          <nav aria-label="Mobile">
+            {
+              mainLinks.map((item) => (
+                <a href={item.href}>{item.label}</a>
+              ))
+            }
+            <a href="/cart">Cart{cartCount > 0 ? ` (${cartCount})` : ""}</a>
+            <a href="/products">All products</a>
+          </nav>
+        </div>
+      </div>
+      <main class="at-main">
+        <slot />
+      </main>
+      <footer class="at-footer" id="contact">
+        <div>
+          <strong>{tenantName}</strong>
+          {footerBlurb ? <p style="margin:0.35rem 0 0;max-width:28rem">{footerBlurb}</p> : null}
+          {footerAddress ? <p style="margin:0.35rem 0 0">{footerAddress}</p> : null}
+          {footerPhone ? <p style="margin:0.35rem 0 0">{footerPhone}</p> : null}
+        </div>
+        <nav class="at-footer-nav" aria-label="Footer">
+          {
+            footerLinks.length
+              ? footerLinks.map((item) => <a href={item.href}>{item.label}</a>)
+              : [
+                  <a href="/products">Shop</a>,
+                  <a href="/cart">Cart</a>,
+                ]
+          }
+        </nav>
+      </footer>
+    </div>
+    <script is:inline>
+      (() => {
+        const btn = document.querySelector("[data-menu-toggle]");
+        const panel = document.querySelector("[data-mobile-nav]");
+        if (!btn || !panel) return;
+        btn.addEventListener("click", () => {
+          const open = panel.hasAttribute("hidden");
+          if (open) {
+            panel.removeAttribute("hidden");
+            btn.setAttribute("aria-expanded", "true");
+            btn.setAttribute("aria-label", "Close menu");
+          } else {
+            panel.setAttribute("hidden", "");
+            btn.setAttribute("aria-expanded", "false");
+            btn.setAttribute("aria-label", "Open menu");
+          }
+        });
+      })();
+    </script>
+  </body>
+</html>

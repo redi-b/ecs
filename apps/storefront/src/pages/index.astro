@@ -1,35 +1,26 @@
 ---
 import { listStoreProducts } from "../lib/platform-store";
-import { getPublishedStorefrontConfig } from "../lib/storefront-config";
+import { loadPageContext } from "../lib/page-context";
 import { getStorefrontRenderer } from "../templates/registry";
 
-const platformApiBaseUrl = process.env.PLATFORM_API_BASE_URL ?? "http://localhost:3000";
-const requestHost =
-  Astro.request.headers.get("x-forwarded-host") ?? Astro.request.headers.get("host");
-const configResult = await getPublishedStorefrontConfig({
-  platformApiBaseUrl,
-  requestHost,
-});
+const ctx = await loadPageContext(Astro.request);
 
-// biome-ignore lint/correctness/noUnusedVariables: Used by the Astro template below.
-const productsResult = configResult.ok
+const productsResult = ctx.ok
   ? await listStoreProducts({
-      platformApiBaseUrl,
-      requestHost,
-      regionId: configResult.config.commerce.regionId,
+      platformApiBaseUrl: ctx.platformApiBaseUrl,
+      requestHost: ctx.requestHost,
+      regionId: ctx.config.commerce.regionId,
       limit: 8,
     })
-  : { ok: false as const, status: configResult.status, message: configResult.message };
-const renderer = configResult.ok
-  ? getStorefrontRenderer(configResult.config.storefront.templateKey)
-  : undefined;
-// Dynamic template component (Astro); type is intentionally loose in registry contract.
+  : { ok: false as const, status: ctx.status, message: ctx.message };
+
+const renderer = ctx.ok ? getStorefrontRenderer(ctx.config.storefront.templateKey) : undefined;
 const Home = renderer?.Home as
   | ((props: Record<string, unknown>) => unknown)
   | undefined;
 
-if (!configResult.ok) {
-  Astro.response.status = configResult.status;
+if (!ctx.ok) {
+  Astro.response.status = ctx.status;
 } else if (!Home) {
   Astro.response.status = 500;
 }
@@ -39,28 +30,31 @@ if (!configResult.ok) {
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width" />
-    <title>{configResult.ok ? configResult.config.tenant.name : "Store unavailable"}</title>
+    <title>{ctx.ok ? ctx.config.tenant.name : "Store unavailable"}</title>
   </head>
   <body>
     {
-      !configResult.ok ? (
+      !ctx.ok ? (
         <main class="unavailable">
           <p class="eyebrow">Store unavailable</p>
           <h1>This storefront is not available.</h1>
-          <p>{configResult.message}</p>
+          <p>{ctx.message}</p>
         </main>
       ) : Home ? (
         <Home
-          data={configResult.config.storefront.data}
+          data={ctx.config.storefront.data}
           productsResult={productsResult}
-          tenantName={configResult.config.tenant.name}
-          themeTokens={configResult.config.storefront.themeTokens}
+          tenantName={ctx.config.tenant.name}
+          themeTokens={ctx.config.storefront.themeTokens}
+          platformApiBaseUrl={ctx.platformApiBaseUrl}
+          requestHost={ctx.requestHost}
+          cartCount={ctx.cartCount}
         />
       ) : (
         <main class="unavailable">
           <p class="eyebrow">Configuration error</p>
           <h1>This storefront template is not supported.</h1>
-          <p>{configResult.config.storefront.templateKey}</p>
+          <p>{ctx.config.storefront.templateKey}</p>
         </main>
       )
     }
@@ -70,23 +64,20 @@ if (!configResult.ok) {
 <style>
   :global(body) {
     margin: 0;
-    background: #f8fafc;
-    color: #111827;
-    font-family:
-      Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   }
 
   .unavailable {
     margin: 0 auto;
     max-width: 720px;
     padding: 72px 20px;
+    font-family:
+      Outfit, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   }
 
   .eyebrow {
-    color: #0f766e;
+    color: #9bc4a0;
     font-size: 0.875rem;
     font-weight: 800;
-    letter-spacing: 0;
     margin: 0 0 12px;
     text-transform: uppercase;
   }
@@ -97,15 +88,14 @@ if (!configResult.ok) {
   }
 
   h1 {
-    font-size: clamp(2.5rem, 8vw, 4.75rem);
-    letter-spacing: 0;
-    line-height: 0.98;
+    font-size: clamp(2rem, 6vw, 3rem);
+    line-height: 1.05;
     margin-bottom: 20px;
   }
 
   p {
-    color: #4b5563;
-    font-size: 1.125rem;
+    color: #6b7280;
+    font-size: 1.05rem;
     line-height: 1.7;
   }
 </style>

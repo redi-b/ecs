@@ -136,6 +136,12 @@ export const classicV1EditorSchema = {
           kind: "color",
         },
         {
+          path: "themeTokens.colors.accent",
+          prop: "accentColor",
+          label: "Accent color",
+          kind: "color",
+        },
+        {
           path: "themeTokens.typography.headingFont",
           prop: "headingFont",
           label: "Heading font",

@@ -1,0 +1,437 @@
+---
+import type { StoreProduct, StoreProductVariant } from "../../../lib/commerce/types";
+import { formatMoney } from "../../../lib/money";
+import type { ShellTheme } from "../../../lib/theme";
+import Layout from "./Layout.astro";
+
+interface Props {
+  tenantName: string;
+  cartCount: number;
+  primaryColor?: string;
+  theme?: ShellTheme & { accent?: string };
+  currentPath?: string;
+  product: StoreProduct | null;
+  handle: string;
+  notice?: string | null;
+  error?: string | null;
+  relatedProducts?: StoreProduct[];
+}
+
+const {
+  tenantName,
+  cartCount,
+  primaryColor,
+  theme,
+  currentPath,
+  product,
+  handle,
+  notice,
+  error,
+  relatedProducts = [],
+} = Astro.props;
+
+const defaultVariant: StoreProductVariant | null =
+  product?.variants.find((variant) => variant.inStock) ?? product?.variants[0] ?? null;
+
+const optionAxes =
+  product?.options?.length
+    ? product.options
+    : (() => {
+        const map = new Map<string, Set<string>>();
+        for (const variant of product?.variants ?? []) {
+          for (const ov of variant.optionValues) {
+            if (!map.has(ov.optionTitle)) map.set(ov.optionTitle, new Set());
+            map.get(ov.optionTitle)!.add(ov.value);
+          }
+        }
+        return [...map.entries()].map(([title, values], index) => ({
+          id: `opt-${index}`,
+          title,
+          values: [...values],
+        }));
+      })();
+
+const variantsPayload = (product?.variants ?? []).map((variant) => ({
+  id: variant.id,
+  inStock: variant.inStock,
+  title: variant.title,
+  priceAmount: variant.priceAmount,
+  currencyCode: variant.currencyCode,
+  optionValues: Object.fromEntries(
+    variant.optionValues.map((ov) => [ov.optionTitle, ov.value]),
+  ),
+}));
+
+const gallery = product
+  ? product.images.length
+    ? product.images
+    : product.thumbnail
+      ? [product.thumbnail]
+      : []
+  : [];
+
+const jsonLd = product
+  ? {
+      "@context": "https://schema.org",
+      "@type": "Product",
+      name: product.title,
+      description: product.description,
+      image: gallery,
+      sku: defaultVariant?.sku,
+      offers: {
+        "@type": "Offer",
+        priceCurrency: (defaultVariant?.currencyCode ?? product.currencyCode ?? "ETB").toUpperCase(),
+        price: defaultVariant?.priceAmount ?? product.priceAmount,
+        availability: defaultVariant?.inStock
+          ? "https://schema.org/InStock"
+          : "https://schema.org/OutOfStock",
+        url: `/products/${encodeURIComponent(handle)}`,
+      },
+    }
+  : null;
+---
+
+{
+  !product ? (
+    <Layout
+      tenantName={tenantName}
+      cartCount={cartCount}
+      primaryColor={primaryColor}
+      theme={theme}
+      currentPath={currentPath}
+      title="Not found"
+    >
+      <div class="at-notice">
+        <h1 class="at-h1">Product not found</h1>
+        <p class="at-lede">This product is unavailable or does not exist.</p>
+        <a class="at-btn at-btn-ghost" href="/products">
+          Back to shop
+        </a>
+      </div>
+    </Layout>
+  ) : (
+    <Layout
+      tenantName={tenantName}
+      cartCount={cartCount}
+      primaryColor={primaryColor}
+      theme={theme}
+      currentPath={currentPath}
+      title={product.title ?? "Product"}
+    >
+      {jsonLd ? (
+        <script
+          is:inline
+          type="application/ld+json"
+          set:html={JSON.stringify(jsonLd)}
+        />
+      ) : null}
+
+      <nav class="at-breadcrumbs" aria-label="Breadcrumb">
+        <a href="/">Home</a>
+        <span aria-hidden="true">/</span>
+        <a href="/products">Shop</a>
+        {product.collectionTitle && product.collectionId ? (
+          <>
+            <span aria-hidden="true">/</span>
+            <a href={`/products?collection=${encodeURIComponent(product.collectionId)}`}>
+              {product.collectionTitle}
+            </a>
+          </>
+        ) : null}
+        <span aria-hidden="true">/</span>
+        <span>{product.title}</span>
+      </nav>
+
+      {notice === "added" ? (
+        <div class="at-notice at-notice-ok" role="status">
+          Added to cart.{" "}
+          <a href="/cart">
+            <strong>View cart</strong>
+          </a>
+          {" · "}
+          <a href="/checkout">
+            <strong>Checkout</strong>
+          </a>
+        </div>
+      ) : null}
+      {error ? (
+        <div class="at-notice at-notice-error" role="alert">
+          {error}
+        </div>
+      ) : null}
+
+      <div class="at-pdp" data-atelier-pdp>
+        <div class="at-gallery">
+          <div class="at-gallery-main" data-gallery-main>
+            {gallery[0] ? <img src={gallery[0]} alt={product.title ?? ""} /> : null}
+          </div>
+          {gallery.length > 1 ? (
+            <div class="at-gallery-thumbs">
+              {gallery.map((src, index) => (
+                <button
+                  type="button"
+                  data-gallery-thumb={src}
+                  aria-current={index === 0 ? "true" : undefined}
+                  aria-label={`View image ${index + 1}`}
+                >
+                  <img src={src} alt="" />
+                </button>
+              ))}
+            </div>
+          ) : null}
+        </div>
+
+        <div class="at-stack at-pdp-buy">
+          <div>
+            {product.collectionTitle ? (
+              <p class="at-card-meta" style="margin:0 0 0.35rem">
+                <a
+                  href={`/products?collection=${encodeURIComponent(product.collectionId ?? "")}`}
+                >
+                  {product.collectionTitle}
+                </a>
+              </p>
+            ) : null}
+            <h1 class="at-h1 at-pdp-title">{product.title}</h1>
+            <p class="at-card-price at-pdp-price" data-price>
+              {formatMoney(
+                defaultVariant?.priceAmount ?? product.priceAmount,
+                defaultVariant?.currencyCode ?? product.currencyCode,
+              )}
+            </p>
+            <p class="at-stock" data-stock>
+              {defaultVariant?.inStock ? "In stock" : "Out of stock"}
+              {defaultVariant?.sku ? (
+                <span class="at-muted"> · SKU {defaultVariant.sku}</span>
+              ) : null}
+            </p>
+          </div>
+
+          {product.description ? (
+            <div class="at-description">
+              <h2 class="at-h3">About this product</h2>
+              <p class="at-lede" style="margin:0">{product.description}</p>
+            </div>
+          ) : null}
+
+          <form method="post" action="/actions/cart/add" class="at-stack" data-add-form>
+            <input type="hidden" name="variantId" value={defaultVariant?.id ?? ""} data-variant-id />
+            <input type="hidden" name="returnTo" value={`/products/${encodeURIComponent(handle)}`} />
+
+            {optionAxes.map((axis) => (
+              <fieldset class="at-option-group" data-option-axis={axis.title}>
+                <legend>{axis.title}</legend>
+                <div class="at-option-chips">
+                  {axis.values.map((value) => {
+                    const selected = defaultVariant?.optionValues.some(
+                      (ov) => ov.optionTitle === axis.title && ov.value === value,
+                    );
+                    return (
+                      <button
+                        type="button"
+                        class="at-chip"
+                        data-option-title={axis.title}
+                        data-option-value={value}
+                        aria-pressed={selected ? "true" : "false"}
+                      >
+                        {value}
+                      </button>
+                    );
+                  })}
+                </div>
+              </fieldset>
+            ))}
+
+            <div class="at-qty-row">
+              <div class="at-field at-field-qty">
+                <label for="quantity">Quantity</label>
+                <input id="quantity" name="quantity" type="number" min="1" value="1" required />
+              </div>
+              <button
+                class="at-btn at-btn-accent at-btn-block"
+                type="submit"
+                data-add-btn
+                disabled={!defaultVariant?.inStock}
+              >
+                Add to cart
+              </button>
+            </div>
+          </form>
+
+          <ul class="at-trust-mini">
+            <li>Cash on delivery when enabled</li>
+            <li>Local delivery and pickup options</li>
+            <li>Confirm options before checkout</li>
+          </ul>
+        </div>
+      </div>
+
+      {
+        relatedProducts.length > 0 ? (
+          <section class="at-block" aria-labelledby="related-title" style="margin-top:3rem">
+            <div class="at-section-head">
+              <h2 class="at-h2" id="related-title">
+                You may also like
+              </h2>
+            </div>
+            <ul class="at-grid">
+              {relatedProducts.map((item) => (
+                <li>
+                  <a
+                    class="at-card"
+                    href={item.handle ? `/products/${encodeURIComponent(item.handle)}` : "/products"}
+                  >
+                    <div class="at-card-media">
+                      {item.thumbnail ? <img src={item.thumbnail} alt="" loading="lazy" /> : null}
+                    </div>
+                    <h3 class="at-card-title">{item.title ?? "Product"}</h3>
+                    <p class="at-card-price">
+                      {formatMoney(item.priceAmount, item.currencyCode)}
+                    </p>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ) : null
+      }
+
+      <div class="at-sticky-atc" data-sticky-atc>
+        <div>
+          <strong>{product.title}</strong>
+          <span data-price-sticky>
+            {formatMoney(
+              defaultVariant?.priceAmount ?? product.priceAmount,
+              defaultVariant?.currencyCode ?? product.currencyCode,
+            )}
+          </span>
+        </div>
+        <button
+          class="at-btn at-btn-accent"
+          type="button"
+          data-sticky-add
+          disabled={!defaultVariant?.inStock}
+        >
+          Add to cart
+        </button>
+      </div>
+
+      <script is:inline type="application/json" id="atelier-variants" set:html={JSON.stringify(variantsPayload)} />
+      <script is:inline>
+        (() => {
+          const root = document.querySelector("[data-atelier-pdp]");
+          if (!root) return;
+
+          /** @type {{ id: string; inStock: boolean; title?: string; priceAmount?: number; currencyCode?: string; optionValues: Record<string, string> }[]} */
+          const variants = JSON.parse(
+            document.getElementById("atelier-variants")?.textContent || "[]",
+          );
+          /** @type {Record<string, string>} */
+          const selected = {};
+          for (const axis of root.querySelectorAll("[data-option-axis]")) {
+            const title = axis.getAttribute("data-option-axis");
+            const pressed = axis.querySelector('[aria-pressed="true"]');
+            if (title && pressed) {
+              selected[title] = pressed.getAttribute("data-option-value") || "";
+            }
+          }
+
+          function formatPrice(amount, currency) {
+            try {
+              return new Intl.NumberFormat(undefined, {
+                style: "currency",
+                currency: (currency || "ETB").toUpperCase(),
+              }).format(amount);
+            } catch {
+              return String(amount);
+            }
+          }
+
+          function findVariant() {
+            return variants.find((variant) => {
+              const entries = Object.entries(variant.optionValues || {});
+              if (!entries.length && variants.length === 1) return true;
+              return entries.every(([title, value]) => selected[title] === value);
+            });
+          }
+
+          function refresh() {
+            const variant = findVariant();
+            const idInput = /** @type {HTMLInputElement | null} */ (
+              root.querySelector("[data-variant-id]")
+            );
+            const priceEl = root.querySelector("[data-price]");
+            const stickyPrice = document.querySelector("[data-price-sticky]");
+            const stockEl = root.querySelector("[data-stock]");
+            const addBtn = /** @type {HTMLButtonElement | null} */ (
+              root.querySelector("[data-add-btn]")
+            );
+            const stickyAdd = /** @type {HTMLButtonElement | null} */ (
+              document.querySelector("[data-sticky-add]")
+            );
+            if (idInput) idInput.value = variant?.id || "";
+            if (variant?.priceAmount != null) {
+              const text = formatPrice(variant.priceAmount, variant.currencyCode);
+              if (priceEl) priceEl.textContent = text;
+              if (stickyPrice) stickyPrice.textContent = text;
+            }
+            if (stockEl) {
+              stockEl.textContent = variant?.inStock ? "In stock" : "Out of stock";
+            }
+            if (addBtn) addBtn.disabled = !variant?.inStock;
+            if (stickyAdd) stickyAdd.disabled = !variant?.inStock;
+
+            for (const chip of root.querySelectorAll("[data-option-title]")) {
+              const button = /** @type {HTMLButtonElement} */ (chip);
+              const title = button.getAttribute("data-option-title");
+              const value = button.getAttribute("data-option-value");
+              if (!title || !value) continue;
+              const probe = { ...selected, [title]: value };
+              const possible = variants.some((entry) =>
+                Object.entries(probe).every(
+                  ([t, v]) => !entry.optionValues[t] || entry.optionValues[t] === v,
+                ),
+              );
+              button.disabled = !possible;
+              button.setAttribute("aria-pressed", selected[title] === value ? "true" : "false");
+            }
+          }
+
+          root.addEventListener("click", (event) => {
+            const target = /** @type {HTMLElement | null} */ (event.target);
+            if (!target) return;
+            const chip = target.closest("[data-option-title]");
+            if (chip instanceof HTMLButtonElement && root.contains(chip) && !chip.disabled) {
+              const title = chip.getAttribute("data-option-title");
+              const value = chip.getAttribute("data-option-value");
+              if (title && value) {
+                selected[title] = value;
+                refresh();
+              }
+            }
+            const thumb = target.closest("[data-gallery-thumb]");
+            if (thumb instanceof HTMLElement && root.contains(thumb)) {
+              const src = thumb.getAttribute("data-gallery-thumb");
+              const main = root.querySelector("[data-gallery-main] img");
+              if (src && main) main.setAttribute("src", src);
+              for (const button of root.querySelectorAll("[data-gallery-thumb]")) {
+                button.removeAttribute("aria-current");
+              }
+              thumb.setAttribute("aria-current", "true");
+            }
+          });
+
+          const stickyAdd = document.querySelector("[data-sticky-add]");
+          stickyAdd?.addEventListener("click", () => {
+            const form = root.querySelector("[data-add-form]");
+            if (form instanceof HTMLFormElement && !stickyAdd.hasAttribute("disabled")) {
+              form.requestSubmit();
+            }
+          });
+
+          refresh();
+        })();
+      </script>
+    </Layout>
+  )
+}

@@ -25,6 +25,12 @@ export type StoreProductVariant = {
   optionValues: Array<{ optionTitle: string; value: string }>;
 };
 
+export type StoreProductOption = {
+  id: string;
+  title: string;
+  values: string[];
+};
+
 export type StoreProduct = {
   id: string;
   title: string | null;
@@ -33,8 +39,25 @@ export type StoreProduct = {
   thumbnail: string | null;
   images: string[];
   variants: StoreProductVariant[];
+  options: StoreProductOption[];
+  collectionId: string | null;
+  collectionTitle: string | null;
+  categoryIds: string[];
   priceAmount: number | null;
   currencyCode: string | null;
+};
+
+export type StoreCollection = {
+  id: string;
+  title: string | null;
+  handle: string | null;
+};
+
+export type StoreCategory = {
+  id: string;
+  name: string | null;
+  handle: string | null;
+  parentCategoryId: string | null;
 };
 
 export type StoreProductsResponse = {

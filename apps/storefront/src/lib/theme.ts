@@ -16,6 +16,7 @@ export type ShellTheme = {
   foreground?: string;
   primary?: string;
   muted?: string;
+  accent?: string;
   headingFont?: string;
   bodyFont?: string;
   radius?: string;
@@ -25,7 +26,13 @@ export type ShellTheme = {
 export function themeFromTokens(themeTokens: unknown): ShellTheme {
   if (!themeTokens || typeof themeTokens !== "object") return {};
   const t = themeTokens as {
-    colors?: { background?: string; foreground?: string; primary?: string; muted?: string };
+    colors?: {
+      background?: string;
+      foreground?: string;
+      primary?: string;
+      muted?: string;
+      accent?: string;
+    };
     typography?: { headingFont?: string; bodyFont?: string };
     radius?: "none" | "sm" | "md";
   };
@@ -36,6 +43,7 @@ export function themeFromTokens(themeTokens: unknown): ShellTheme {
     ...(t.colors?.foreground ? { foreground: t.colors.foreground } : {}),
     ...(t.colors?.primary ? { primary: t.colors.primary } : {}),
     ...(t.colors?.muted ? { muted: t.colors.muted } : {}),
+    ...(t.colors?.accent ? { accent: t.colors.accent } : {}),
     ...(t.typography?.headingFont ? { headingFont: t.typography.headingFont } : {}),
     ...(t.typography?.bodyFont ? { bodyFont: t.typography.bodyFont } : {}),
     ...(radius ? { radius } : {}),

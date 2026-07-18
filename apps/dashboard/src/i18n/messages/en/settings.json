@@ -145,6 +145,7 @@
     "intro": "Template selection and publish state for the customer-facing shop.",
     "designTitle": "Design",
     "designDescription": "Starting template customers see after you publish.",
+    "designDescriptionSingle": "Your shop uses the Classic storefront. Customize look and content in the editor, then publish.",
     "noneTitle": "No storefronts available",
     "noneDescription": "Storefront selection will be available after templates are seeded.",
     "statusTitle": "Status",
@@ -158,6 +159,8 @@
     "viewShop": "View shop",
     "selected": "Selected",
     "useThis": "Use this storefront",
+    "selecting": "Switching…",
+    "selectFailed": "Could not switch storefront. Try again.",
     "preview": "{name} preview"
   },
   "notifications": {

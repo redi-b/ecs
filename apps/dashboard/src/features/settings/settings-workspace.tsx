@@ -964,6 +964,10 @@ function StorefrontSection({
 }) {
   const { t } = useI18n();
   const notSelected = t("settings.storefront.notSelected");
+  const [selectedKey, setSelectedKey] = useState(summary.storefront.templateKey);
+  const activeKey = selectedKey ?? summary.storefront.templateKey;
+  const singleTemplate = storefrontTemplates.length === 1;
+
   return (
     <div className="flex flex-col gap-6">
       <SectionIntro
@@ -974,15 +978,25 @@ function StorefrontSection({
         <Card>
           <CardHeader className="pb-4">
             <CardTitle className="text-base">{t("settings.storefront.designTitle")}</CardTitle>
-            <CardDescription>{t("settings.storefront.designDescription")}</CardDescription>
+            <CardDescription>
+              {singleTemplate
+                ? t("settings.storefront.designDescriptionSingle")
+                : t("settings.storefront.designDescription")}
+            </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
             {storefrontTemplates.length ? (
-              <div className="grid gap-3 lg:grid-cols-2">
+              <div
+                className={cn(
+                  "grid gap-3",
+                  singleTemplate ? "max-w-xl" : "lg:grid-cols-2",
+                )}
+              >
                 {storefrontTemplates.map((template) => (
                   <StorefrontTemplateOption
-                    currentTemplateKey={summary.storefront.templateKey}
+                    currentTemplateKey={activeKey}
                     key={template.version.templateKey}
+                    onSelected={setSelectedKey}
                     template={template}
                     tenantId={summary.tenant.id}
                   />
@@ -1011,7 +1025,10 @@ function StorefrontSection({
             </div>
             <SettingsRow
               label={t("settings.storefront.selectedDesign")}
-              value={getSelectedTemplateName(storefrontTemplates, summary, notSelected)}
+              value={
+                storefrontTemplates.find((item) => item.version.templateKey === activeKey)?.name ??
+                getSelectedTemplateName(storefrontTemplates, summary, notSelected)
+              }
             />
             <SettingsRow
               label={t("settings.storefront.version")}

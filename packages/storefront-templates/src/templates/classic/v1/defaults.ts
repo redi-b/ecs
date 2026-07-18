@@ -1,43 +1,53 @@
-import type { ClassicV1Data, ThemeTokens } from "./schema";
+import type { ClassicThemeTokens, ClassicV1Data } from "./schema";
 
 export const classicV1Defaults: ClassicV1Data = {
   announcement: {
     enabled: true,
-    text: "Free local pickup · Cash on delivery available",
+    text: "Local delivery and pickup across Addis",
   },
   header: {
     navigation: [
       { label: "Shop", href: "/products" },
+      { label: "Collections", href: "/products" },
       { label: "Contact", href: "#contact" },
     ],
   },
   home: {
     hero: {
-      title: "Crafted for everyday commerce",
-      subtitle: "Browse the catalog, add to cart, and checkout in a few taps — delivery or pickup.",
+      title: "Shop built for how you sell",
+      subtitle: "Browse the catalog, add to cart, and checkout with delivery or pickup.",
       primaryCtaLabel: "Browse the shop",
       primaryCtaHref: "/products",
+      secondaryCtaLabel: "View cart",
+      secondaryCtaHref: "/cart",
     },
     featuredProducts: {
-      title: "Featured picks",
+      title: "In stock now",
       productIds: [],
+    },
+    collectionsStrip: {
+      title: "Collections",
+      enabled: true,
     },
   },
   footer: {
+    blurb: "Cash on delivery, local pickup, and product options that stay clear.",
     socialLinks: [],
   },
 };
 
-export const classicV1ThemeTokens: ThemeTokens = {
+/** Cold forest luxury: bone on deep green-black, sage primary, clay accent. */
+export const classicV1ThemeTokens: ClassicThemeTokens = {
   colors: {
-    background: "#f6f1ea",
-    foreground: "#1c1917",
-    primary: "#0f4c3a",
-    muted: "#ebe4d8",
+    background: "#0b0f0d",
+    foreground: "#e6ebe4",
+    primary: "#9bc4a0",
+    muted: "#141a16",
+    accent: "#d4785a",
   },
   typography: {
-    headingFont: "Fraunces",
-    bodyFont: "DM Sans",
+    headingFont: "Syne",
+    bodyFont: "Outfit",
   },
-  radius: "md",
+  radius: "sm",
 };

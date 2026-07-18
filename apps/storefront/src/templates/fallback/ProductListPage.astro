@@ -1,7 +1,7 @@
 ---
 import ProductCard from "../../components/commerce/ProductCard.astro";
 import StoreShell from "../../components/shell/StoreShell.astro";
-import type { StoreProduct } from "../../lib/commerce/types";
+import type { StoreCategory, StoreCollection, StoreProduct } from "../../lib/commerce/types";
 import type { ShellTheme } from "../../lib/theme";
 
 interface Props {
@@ -16,6 +16,16 @@ interface Props {
   hasNext: boolean;
   prevHref?: string;
   nextHref?: string;
+  /** Optional filters (used by premium templates; ignored by classic shell). */
+  collections?: StoreCollection[];
+  categories?: StoreCategory[];
+  filters?: {
+    q?: string;
+    collectionId?: string;
+    categoryId?: string;
+    order?: string;
+  };
+  totalCount?: number;
 }
 
 const {
