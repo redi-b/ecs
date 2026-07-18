@@ -106,7 +106,8 @@ export function formatMoneyAmount(
   return formatted;
 }
 
-function humanizeToken(value: string): string {
+/** Merchant-facing labels for payment, fulfillment, and method codes. */
+export function humanizeToken(value: string): string {
   const key = value.trim().toLowerCase().replace(/[_-]+/g, " ");
   const map: Record<string, string> = {
     cod: "Cash on delivery",
@@ -116,11 +117,27 @@ function humanizeToken(value: string): string {
     cash: "Cash",
     card: "Card",
     captured: "Paid",
+    paid: "Paid",
     awaiting: "Awaiting payment",
+    "awaiting payment": "Awaiting payment",
     "not paid": "Unpaid",
+    not_paid: "Unpaid",
+    unpaid: "Unpaid",
+    "partially refunded": "Partially refunded",
+    refunded: "Refunded",
+    "requires action": "Needs attention",
+    "not fulfilled": "Not prepared",
+    not_fulfilled: "Not prepared",
+    fulfilled: "Ready",
+    "partially fulfilled": "Partly ready",
+    shipped: "Out for delivery",
+    "partially shipped": "Partly shipped",
+    delivered: "Delivered",
     canceled: "Cancelled",
     cancelled: "Cancelled",
     pending: "Pending",
+    processing: "Processing",
+    completed: "Completed",
     success: "Successful",
     failed: "Failed",
     "dashboard mark paid": "Marked paid in dashboard",
@@ -128,7 +145,10 @@ function humanizeToken(value: string): string {
     "dashboard test": "Dashboard test",
   };
   if (map[key]) return map[key];
-  return key.replace(/\b\w/g, (char) => char.toUpperCase());
+  // Collapse leftover snake_case after normalize.
+  const spaced = key.replace(/\s+/g, " ").trim();
+  if (map[spaced]) return map[spaced];
+  return spaced.replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
 function formatWhen(iso?: string): string | undefined {

@@ -12,8 +12,8 @@ describe("telegram callback tokens", () => {
   const tenantId = "11111111-2222-4333-8444-555555555555";
   const orderId = "order_01HTESTORDERID99";
 
-  it("round-trips mark-paid and details callbacks under 64 bytes", () => {
-    for (const action of ["paid", "details"] as const) {
+  it("round-trips all order actions under 64 bytes", () => {
+    for (const action of ["paid", "ready", "cancel", "details"] as const) {
       const data = buildOrderActionCallbackData({
         action,
         orderId,
@@ -55,11 +55,14 @@ describe("telegram callback tokens", () => {
     assert.equal(wrongSecret.ok, false);
   });
 
-  it("builds a two-button keyboard", () => {
+  it("builds a four-button keyboard in two rows", () => {
     const keyboard = buildOrderActionKeyboard({ orderId, tenantId, secret });
     assert.ok(keyboard);
-    assert.equal(keyboard.inline_keyboard[0]?.length, 2);
+    assert.equal(keyboard.inline_keyboard.length, 2);
     assert.equal(keyboard.inline_keyboard[0]?.[0]?.text, "Mark paid");
-    assert.equal(keyboard.inline_keyboard[0]?.[1]?.text, "Details");
+    assert.equal(keyboard.inline_keyboard[0]?.[1]?.text, "Mark ready");
+    assert.equal(keyboard.inline_keyboard[1]?.[0]?.text, "Details");
+    assert.equal(keyboard.inline_keyboard[1]?.[1]?.text, "Cancel order");
   });
 });
+
