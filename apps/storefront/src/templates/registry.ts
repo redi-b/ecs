@@ -2,7 +2,16 @@
  * Static template registry. Keys must match platform `template_key` values.
  * Never load template modules from merchant or database input.
  *
+ * ## Adding a template
+ * 1. Create `src/templates/<name>/v1/` with Astro page slots (Home required).
+ * 2. Add schema/defaults under `packages/storefront-templates`.
+ * 3. Register `"name@1"` below (point optional slots at custom pages or omit → fallback).
+ * 4. Sync templates to platform DB.
+ *
+ * Missing optional slots fall back to `templates/fallback/*` (shared functional UI).
+ *
  * @see dev-docs/post-mvp/14-storefront-completeness-and-templates-plan.md
+ * @see templates/README.md
  */
 import ClassicV1Home from "./classic/v1/Home.astro";
 import FallbackCartPage from "./fallback/CartPage.astro";
@@ -21,13 +30,18 @@ const fallbacks = {
 } as const;
 
 /**
- * classic@1 currently supplies Home only; commerce pages use shared fallbacks
- * until template-specific Astro pages are registered.
+ * classic@1 — default complete storefront.
+ * Commerce slots use the shared polished fallbacks (design system in commerce.css).
+ * Premium templates override only the slots they redesign.
  */
 export const storefrontRenderers: Record<string, StorefrontRenderer> = {
   "classic@1": {
     Home: ClassicV1Home,
-    ...fallbacks,
+    ProductList: FallbackProductListPage,
+    Product: FallbackProductPage,
+    Cart: FallbackCartPage,
+    Checkout: FallbackCheckoutPage,
+    OrderConfirm: FallbackOrderConfirmPage,
   },
 };
 

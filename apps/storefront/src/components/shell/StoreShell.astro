@@ -1,44 +1,136 @@
 ---
+import type { ShellTheme } from "../../lib/theme";
+import { shellStyle } from "../../lib/theme";
+
+interface NavItem {
+  label: string;
+  href: string;
+}
+
 interface Props {
   tenantName: string;
   cartCount?: number;
   title?: string;
   primaryColor?: string;
+  theme?: ShellTheme;
+  announcement?: string | null;
+  nav?: NavItem[];
+  footerPhone?: string | null;
+  footerAddress?: string | null;
+  footerLinks?: NavItem[];
+  logoUrl?: string | null;
+  /** Path for aria-current on nav */
+  currentPath?: string;
 }
 
-const { tenantName, cartCount = 0, title, primaryColor } = Astro.props;
+const {
+  tenantName,
+  cartCount = 0,
+  title,
+  primaryColor,
+  theme = {},
+  announcement,
+  nav,
+  footerPhone,
+  footerAddress,
+  footerLinks = [],
+  logoUrl,
+  currentPath,
+} = Astro.props;
+
 const pageTitle = title ? `${title} · ${tenantName}` : tenantName;
+const style = shellStyle(theme, primaryColor);
+const links: NavItem[] =
+  nav && nav.length > 0
+    ? nav
+    : [
+        { label: "Shop", href: "/products" },
+        { label: "Cart", href: "/cart" },
+      ];
+// Cart is always visible as a dedicated control; avoid duplicating in nav list.
+const mainLinks = links.filter((item) => !item.href.startsWith("/cart"));
 ---
 
 <!doctype html>
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content={theme.primary ?? primaryColor ?? "#0f4c3a"} />
     <title>{pageTitle}</title>
     <link rel="stylesheet" href="/styles/commerce.css" />
   </head>
-  <body style={primaryColor ? `--sf-primary: ${primaryColor}` : undefined}>
+  <body style={style}>
     <div class="sf-shell">
-      <header class="sf-header">
-        <a class="sf-brand" href="/">{tenantName}</a>
-        <nav class="sf-nav" aria-label="Store">
-          <a href="/products">Products</a>
-          <a href="/cart">
-            Cart
-            {
-              cartCount > 0 && (
-                <span class="sf-badge" aria-live="polite">{cartCount}</span>
-              )
-            }
+      {
+        announcement ? (
+          <div class="sf-announcement" role="status">{announcement}</div>
+        ) : null
+      }
+      <div class="sf-header-wrap">
+        <header class="sf-header">
+          <a class="sf-brand" href="/">
+            {logoUrl ? <img class="sf-brand-mark" src={logoUrl} alt="" /> : null}
+            <span>{tenantName}</span>
           </a>
-        </nav>
-      </header>
+          <nav class="sf-nav" aria-label="Store">
+            {
+              mainLinks.map((item) => (
+                <a
+                  href={item.href}
+                  aria-current={
+                    currentPath &&
+                    (currentPath === item.href ||
+                      (item.href !== "/" && currentPath.startsWith(item.href)))
+                      ? "page"
+                      : undefined
+                  }
+                >
+                  {item.label}
+                </a>
+              ))
+            }
+            <a class="sf-cart-link" href="/cart">
+              Cart
+              {
+                cartCount > 0 ? (
+                  <span class="sf-badge" aria-live="polite">
+                    {cartCount}
+                  </span>
+                ) : null
+              }
+            </a>
+          </nav>
+        </header>
+      </div>
       <main class="sf-main">
         <slot />
       </main>
       <footer class="sf-footer">
-        <p>{tenantName}</p>
+        <div>
+          <strong>{tenantName}</strong>
+          {footerAddress ? <p style="margin:0.25rem 0 0">{footerAddress}</p> : null}
+          {footerPhone ? <p style="margin:0.25rem 0 0">{footerPhone}</p> : null}
+          {
+            !footerAddress && !footerPhone ? (
+              <p style="margin:0.25rem 0 0">Thanks for shopping with us.</p>
+            ) : null
+          }
+        </div>
+        {
+          footerLinks.length > 0 ? (
+            <nav class="sf-footer-nav" aria-label="Footer">
+              {footerLinks.map((item) => (
+                <a href={item.href}>{item.label}</a>
+              ))}
+            </nav>
+          ) : (
+            <nav class="sf-footer-nav" aria-label="Footer">
+              <a href="/products">Shop</a>
+              <a href="/cart">Cart</a>
+            </nav>
+          )
+        }
       </footer>
     </div>
   </body>

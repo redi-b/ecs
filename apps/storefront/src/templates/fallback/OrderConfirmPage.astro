@@ -2,25 +2,36 @@
 import StoreShell from "../../components/shell/StoreShell.astro";
 import { formatMoney } from "../../lib/money";
 import type { LastOrderCookie } from "../../lib/session/cart-cookie";
+import type { ShellTheme } from "../../lib/theme";
 
 interface Props {
   tenantName: string;
   cartCount: number;
   primaryColor?: string;
+  theme?: ShellTheme;
   orderId: string;
   lastOrder: LastOrderCookie | null;
 }
 
-const { tenantName, cartCount, primaryColor, orderId, lastOrder } = Astro.props;
+const { tenantName, cartCount, primaryColor, theme, orderId, lastOrder } = Astro.props;
 const matches = Boolean(lastOrder && lastOrder.id === orderId);
 ---
 
-<StoreShell tenantName={tenantName} cartCount={cartCount} title="Order" primaryColor={primaryColor}>
+<StoreShell
+  tenantName={tenantName}
+  cartCount={cartCount}
+  title="Order"
+  primaryColor={primaryColor}
+  theme={theme}
+>
+  <p class="sf-eyebrow">Success</p>
   <h1 class="sf-title">Order confirmed</h1>
   {
     matches ? (
       <div class="sf-notice sf-notice-ok" role="status">
-        <p>Thanks — we received your order.</p>
+        <p>
+          <strong>Thanks — we received your order.</strong>
+        </p>
         <p>
           <strong>Order ID:</strong> {orderId}
         </p>
@@ -46,7 +57,7 @@ const matches = Boolean(lastOrder && lastOrder.id === orderId);
     )
   }
   <div class="sf-actions">
-    <a class="sf-btn" href="/products">
+    <a class="sf-btn sf-btn-accent" href="/products">
       Continue shopping
     </a>
   </div>

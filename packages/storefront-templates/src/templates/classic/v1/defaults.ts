@@ -3,7 +3,7 @@ import type { ClassicV1Data, ThemeTokens } from "./schema";
 export const classicV1Defaults: ClassicV1Data = {
   announcement: {
     enabled: true,
-    text: "Now accepting orders online.",
+    text: "Free local pickup · Cash on delivery available",
   },
   header: {
     navigation: [
@@ -13,13 +13,13 @@ export const classicV1Defaults: ClassicV1Data = {
   },
   home: {
     hero: {
-      title: "Your shop, online",
-      subtitle: "Browse products and place an order in minutes.",
-      primaryCtaLabel: "Shop products",
+      title: "Crafted for everyday commerce",
+      subtitle: "Browse the catalog, add to cart, and checkout in a few taps — delivery or pickup.",
+      primaryCtaLabel: "Browse the shop",
       primaryCtaHref: "/products",
     },
     featuredProducts: {
-      title: "Featured products",
+      title: "Featured picks",
       productIds: [],
     },
   },
@@ -30,14 +30,14 @@ export const classicV1Defaults: ClassicV1Data = {
 
 export const classicV1ThemeTokens: ThemeTokens = {
   colors: {
-    background: "#ffffff",
-    foreground: "#111827",
-    primary: "#0f766e",
-    muted: "#f3f4f6",
+    background: "#f6f1ea",
+    foreground: "#1c1917",
+    primary: "#0f4c3a",
+    muted: "#ebe4d8",
   },
   typography: {
-    headingFont: "Inter",
-    bodyFont: "Inter",
+    headingFont: "Fraunces",
+    bodyFont: "DM Sans",
   },
-  radius: "sm",
+  radius: "md",
 };

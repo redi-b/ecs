@@ -4,7 +4,7 @@ import { listStoreProducts } from "../../lib/commerce/products";
 import { isStoreError } from "../../lib/commerce/result";
 import type { StoreProduct } from "../../lib/commerce/types";
 import { loadPageContext } from "../../lib/page-context";
-import { getPrimaryColor } from "../../lib/theme";
+import { getPrimaryColor, themeFromTokens } from "../../lib/theme";
 import { resolveRendererSlot } from "../../templates/registry";
 
 const ctx = await loadPageContext(Astro.request);
@@ -48,6 +48,8 @@ const ProductList = ctx.ok
       tenantName={ctx.config.tenant.name}
       cartCount={ctx.cartCount}
       primaryColor={getPrimaryColor(ctx.config.storefront.themeTokens)}
+      theme={themeFromTokens(ctx.config.storefront.themeTokens)}
+      currentPath="/products"
       products={products}
       errorMessage={errorMessage}
       hasPrev={hasPrev}

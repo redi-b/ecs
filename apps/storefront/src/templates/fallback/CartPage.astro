@@ -2,20 +2,32 @@
 import StoreShell from "../../components/shell/StoreShell.astro";
 import type { StoreCart } from "../../lib/commerce/types";
 import { formatMoney } from "../../lib/money";
+import type { ShellTheme } from "../../lib/theme";
 
 interface Props {
   tenantName: string;
   cartCount: number;
   primaryColor?: string;
+  theme?: ShellTheme;
+  currentPath?: string;
   cart: StoreCart | null;
   error?: string | null;
 }
 
-const { tenantName, cartCount, primaryColor, cart, error } = Astro.props;
+const { tenantName, cartCount, primaryColor, theme, currentPath = "/cart", cart, error } =
+  Astro.props;
 const items = cart?.items ?? [];
 ---
 
-<StoreShell tenantName={tenantName} cartCount={cartCount} title="Cart" primaryColor={primaryColor}>
+<StoreShell
+  tenantName={tenantName}
+  cartCount={cartCount}
+  title="Cart"
+  primaryColor={primaryColor}
+  theme={theme}
+  currentPath={currentPath}
+>
+  <p class="sf-eyebrow">Your bag</p>
   <h1 class="sf-title">Cart</h1>
   {
     error && (
@@ -28,7 +40,10 @@ const items = cart?.items ?? [];
   {
     items.length === 0 ? (
       <div class="sf-notice" role="status">
-        <p>Your cart is empty.</p>
+        <p>
+          <strong>Your cart is empty.</strong>
+        </p>
+        <p class="sf-muted">Browse the catalog and add something you like.</p>
         <div class="sf-actions">
           <a class="sf-btn" href="/products">
             Browse products
@@ -88,17 +103,19 @@ const items = cart?.items ?? [];
           </tbody>
         </table>
 
-        <p>
-          <strong>Subtotal:</strong> {formatMoney(cart?.itemTotal ?? cart?.total, cart?.currencyCode)}
-        </p>
-
-        <div class="sf-actions">
-          <a class="sf-btn sf-btn-secondary" href="/products">
-            Continue shopping
-          </a>
-          <a class="sf-btn" href="/checkout">
-            Checkout
-          </a>
+        <div class="sf-panel" style="margin-top:1.25rem;max-width:24rem;margin-left:auto">
+          <div class="sf-summary-line total">
+            <span>Subtotal</span>
+            <span>{formatMoney(cart?.itemTotal ?? cart?.total, cart?.currencyCode)}</span>
+          </div>
+          <div class="sf-actions">
+            <a class="sf-btn sf-btn-accent" href="/checkout">
+              Checkout
+            </a>
+            <a class="sf-btn sf-btn-secondary" href="/products">
+              Keep shopping
+            </a>
+          </div>
         </div>
       </>
     )

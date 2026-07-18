@@ -2,18 +2,22 @@
 import StoreShell from "../../components/shell/StoreShell.astro";
 import type { StoreProduct, StoreProductVariant } from "../../lib/commerce/types";
 import { formatMoney } from "../../lib/money";
+import type { ShellTheme } from "../../lib/theme";
 
 interface Props {
   tenantName: string;
   cartCount: number;
   primaryColor?: string;
+  theme?: ShellTheme;
+  currentPath?: string;
   product: StoreProduct | null;
   handle: string;
   notice?: string | null;
   error?: string | null;
 }
 
-const { tenantName, cartCount, primaryColor, product, handle, notice, error } = Astro.props;
+const { tenantName, cartCount, primaryColor, theme, currentPath, product, handle, notice, error } =
+  Astro.props;
 
 const defaultVariant: StoreProductVariant | null =
   product?.variants.find((variant: StoreProductVariant) => variant.inStock) ??
@@ -23,8 +27,16 @@ const defaultVariant: StoreProductVariant | null =
 
 {
   !product ? (
-    <StoreShell tenantName={tenantName} cartCount={cartCount} title="Not found" primaryColor={primaryColor}>
+    <StoreShell
+      tenantName={tenantName}
+      cartCount={cartCount}
+      title="Not found"
+      primaryColor={primaryColor}
+      theme={theme}
+      currentPath={currentPath}
+    >
       <div class="sf-notice" role="status">
+        <p class="sf-eyebrow">Unavailable</p>
         <h1 class="sf-title">Product not found</h1>
         <p class="sf-lede">This product is unavailable or does not exist.</p>
         <a class="sf-btn sf-btn-secondary" href="/products">
@@ -38,10 +50,15 @@ const defaultVariant: StoreProductVariant | null =
       cartCount={cartCount}
       title={product.title ?? "Product"}
       primaryColor={primaryColor}
+      theme={theme}
+      currentPath={currentPath}
     >
       {notice === "added" && (
         <div class="sf-notice sf-notice-ok" role="status">
-          Added to cart. <a href="/cart">View cart</a>
+          Added to cart.{" "}
+          <a href="/cart">
+            <strong>View cart</strong>
+          </a>
         </div>
       )}
       {error && (
@@ -64,16 +81,16 @@ const defaultVariant: StoreProductVariant | null =
               <a href="/products">Products</a>
             </p>
             <h1 class="sf-title">{product.title ?? "Product"}</h1>
-            <p class="sf-card-price">
+            <p class="sf-card-price" style="font-size:1.25rem;margin-top:0.35rem">
               {formatMoney(
                 defaultVariant?.priceAmount ?? product.priceAmount,
                 defaultVariant?.currencyCode ?? product.currencyCode,
               )}
             </p>
           </div>
-          {product.description && <p class="sf-lede">{product.description}</p>}
+          {product.description && <p class="sf-lede" style="margin-bottom:0">{product.description}</p>}
 
-          <form method="post" action="/actions/cart/add" class="sf-stack">
+          <form method="post" action="/actions/cart/add" class="sf-stack" style="margin-top:0.5rem">
             {product.variants.length > 1 ? (
               <div class="sf-field">
                 <label for="variantId">Option</label>
@@ -107,7 +124,7 @@ const defaultVariant: StoreProductVariant | null =
             <input type="hidden" name="returnTo" value={`/products/${encodeURIComponent(handle)}`} />
 
             <button
-              class="sf-btn"
+              class="sf-btn sf-btn-accent"
               type="submit"
               disabled={
                 !defaultVariant ||
