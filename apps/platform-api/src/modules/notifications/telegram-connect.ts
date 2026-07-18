@@ -128,8 +128,17 @@ export type TelegramConnectServiceOptions = {
     firstName?: string | null;
     lastName?: string | null;
   }) => Promise<{ handled: boolean; reason?: string }>;
-  /** Inline button callbacks (order mark paid / details). */
+  /** Inline button callbacks (order mark paid / details / tools). */
   handleCallbackQuery?: (update: unknown) => Promise<{ handled: boolean; reason?: string }>;
+  /**
+   * Linked-operator text handling: /menu, wizards, etc.
+   * Return handled=false to fall through to default connect help.
+   */
+  handleToolsMessage?: (input: {
+    chatId: string;
+    telegramUserId: string;
+    text: string;
+  }) => Promise<{ handled: boolean; reason?: string }>;
 };
 
 export function createTelegramConnectService(
@@ -407,21 +416,44 @@ export function createTelegramConnectService(
         return { handled: true as const, reason: "group_rejected" as const };
       }
 
-      if (typeof text !== "string" || !text.startsWith("/start")) {
+      if (typeof text !== "string") {
+        return { handled: false as const, reason: "no_text" as const };
+      }
+
+      const fromUser = typeof from === "object" && from !== null ? from : null;
+      const telegramUserId =
+        fromUser && typeof (fromUser as { id?: unknown }).id !== "undefined"
+          ? String((fromUser as { id: unknown }).id)
+          : chatId;
+
+      // Tools / menu / wizards for linked operators (before connect-token handling).
+      if (serviceOptions?.handleToolsMessage) {
+        const tools = await serviceOptions.handleToolsMessage({
+          chatId,
+          telegramUserId,
+          text,
+        });
+        if (tools.handled) {
+          return { handled: true as const, reason: tools.reason ?? "tools" };
+        }
+      }
+
+      if (!text.startsWith("/start")) {
         await sendTelegramBotMessage({
           botToken: config.botToken,
           chatId,
-          text: "To connect this chat, open your shop dashboard → Settings → Notifications, then choose Connect Telegram.",
+          text: "To connect alerts, open Settings → Notifications → Connect Telegram.\nFor shop tools, link under Settings → Telegram, then send /menu.",
         }).catch(() => undefined);
         return { handled: true as const, reason: "help" as const };
       }
 
       const token = parseTelegramStartPayload(text);
       if (!token) {
+        // Bare /start already handled by tools for linked operators; otherwise guide connect.
         await sendTelegramBotMessage({
           botToken: config.botToken,
           chatId,
-          text: "To connect this chat, open your shop dashboard → Settings → Notifications, then choose Connect Telegram and open the new link.",
+          text: "To connect alerts, open Settings → Notifications → Connect Telegram and open the new link.\nFor shop tools, link under Settings → Telegram, then send /menu.",
         }).catch(() => undefined);
         return { handled: true as const, reason: "missing_token" as const };
       }
