@@ -798,6 +798,84 @@ export type PlatformAppOptions = {
         | { ok: false; error: string; status: number }
       >)
     | undefined;
+  listTelegramOperatorBindings?:
+    | ((input: { tenantId: string }) => Promise<{
+        bindings: Array<{
+          id: string;
+          label: string;
+          username: string | null;
+          enabled: boolean;
+          telegramUserId: string;
+          linkedAt: string;
+        }>;
+      }>)
+    | undefined;
+  createTelegramOperatorLinkSession?:
+    | ((input: { tenantId: string; userId: string }) => Promise<
+        | {
+            ok: true;
+            session: {
+              id: string;
+              status: string;
+              expiresAt: string;
+              deepLink: string;
+            };
+          }
+        | { ok: false; error: string; status: number }
+      >)
+    | undefined;
+  getTelegramOperatorLinkSession?:
+    | ((input: { tenantId: string; sessionId: string }) => Promise<
+        | {
+            ok: true;
+            session: {
+              id: string;
+              status: string;
+              expiresAt: string;
+              deepLink: string | null;
+            };
+          }
+        | { ok: false; error: string; status: number }
+      >)
+    | undefined;
+  cancelTelegramOperatorLinkSession?:
+    | ((input: {
+        tenantId: string;
+        sessionId: string;
+      }) => Promise<{ ok: true } | { ok: false; error: string; status: number }>)
+    | undefined;
+  removeTelegramOperatorBinding?:
+    | ((input: {
+        tenantId: string;
+        bindingId: string;
+      }) => Promise<{ ok: true } | { ok: false; error: string; status: number }>)
+    | undefined;
+  setTelegramOperatorBindingEnabled?:
+    | ((input: {
+        tenantId: string;
+        bindingId: string;
+        enabled: boolean;
+      }) => Promise<
+        | {
+            ok: true;
+            binding: {
+              id: string;
+              label: string;
+              username: string | null;
+              enabled: boolean;
+              telegramUserId: string;
+              linkedAt: string;
+            };
+          }
+        | { ok: false; error: string; status: number }
+      >)
+    | undefined;
+  isTelegramOperatorChatForActions?:
+    | ((input: {
+        tenantId: string;
+        chatId: string;
+      }) => Promise<{ ok: true; allowed: boolean }>)
+    | undefined;
   handleTelegramWebhook?: ((update: unknown) => Promise<unknown>) | undefined;
   telegramWebhookSecret?: string | undefined;
   upsertNotificationPreference?:

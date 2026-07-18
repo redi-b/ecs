@@ -282,6 +282,25 @@
       "disconnectDesc": "This account will stop receiving shop event alerts.",
       "disconnecting": "Disconnecting…",
       "disconnect": "Disconnect"
+    },
+    "shopTools": {
+      "title": "Telegram shop tools",
+      "description": "Link your Telegram to manage the shop from chat.",
+      "intro": "Separate from alert delivery. Owners and managers can link their own Telegram account for management actions. Order action buttons only appear on linked accounts.",
+      "empty": "No Telegram accounts linked for shop tools yet.",
+      "link": "Link my Telegram",
+      "linkFailed": "Could not start the link. Try again.",
+      "waiting": "Waiting for Telegram…",
+      "openBot": "Open bot again",
+      "linked": "Telegram linked for shop tools",
+      "unlinked": "Telegram unlinked from shop tools",
+      "remove": "Remove",
+      "enable": "Enable",
+      "disable": "Disable",
+      "enabled": "Active",
+      "disabled": "Paused",
+      "unavailableTitle": "Shop tools unavailable",
+      "unavailable": "Telegram is not enabled for this environment yet."
     }
   },
   "accountSecurity": {

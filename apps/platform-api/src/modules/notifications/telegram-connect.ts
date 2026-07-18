@@ -88,9 +88,25 @@ function serializeDestination(
   };
 }
 
+export type TelegramConnectServiceOptions = {
+  /**
+   * When /start payload is op_<token>, hand off to operator link flow.
+   * Keeps notification connect and shop-tools identity separate.
+   */
+  consumeOperatorStart?: (input: {
+    startPayload: string;
+    chatId: string;
+    telegramUserId: string;
+    username?: string | null;
+    firstName?: string | null;
+    lastName?: string | null;
+  }) => Promise<{ handled: boolean; reason?: string }>;
+};
+
 export function createTelegramConnectService(
   db: PlatformDb,
   config: TelegramConnectConfig | null,
+  serviceOptions?: TelegramConnectServiceOptions,
 ) {
   return {
     isConfigured: () => Boolean(config?.botToken && config?.botUsername),
@@ -366,6 +382,32 @@ export function createTelegramConnectService(
           text: "Open Notifications in your shop dashboard and tap Connect Telegram to link this chat.",
         }).catch(() => undefined);
         return { handled: true as const, reason: "missing_token" as const };
+      }
+
+      // Operator shop-tools link: /start op_<token> (handled by telegram-operator service).
+      if (token.startsWith("op_") && serviceOptions?.consumeOperatorStart) {
+        const fromUser = typeof from === "object" && from !== null ? from : null;
+        const telegramUserIdRaw =
+          fromUser && typeof (fromUser as { id?: unknown }).id !== "undefined"
+            ? String((fromUser as { id: unknown }).id)
+            : chatId;
+        return serviceOptions.consumeOperatorStart({
+          startPayload: token,
+          chatId,
+          telegramUserId: telegramUserIdRaw,
+          username:
+            fromUser && typeof (fromUser as { username?: unknown }).username === "string"
+              ? String((fromUser as { username: string }).username)
+              : null,
+          firstName:
+            fromUser && typeof (fromUser as { first_name?: unknown }).first_name === "string"
+              ? String((fromUser as { first_name: string }).first_name)
+              : null,
+          lastName:
+            fromUser && typeof (fromUser as { last_name?: unknown }).last_name === "string"
+              ? String((fromUser as { last_name: string }).last_name)
+              : null,
+        });
       }
 
       const [session] = await db
