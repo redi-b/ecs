@@ -29,10 +29,11 @@
     "pauseConfirm": "Pause shop"
   },
   "status": {
-    "publishedLive": "Published live",
+    "live": "Live",
+    "publishedLive": "Matches live",
     "draftSaved": "Draft saved",
     "unpublishedEdits": "Unpublished edits",
-    "paused": "Shop paused"
+    "paused": "Paused"
   },
   "toast": {
     "savingDraft": "Saving draft…",
@@ -58,7 +59,8 @@
   },
   "shell": {
     "title": "Storefront editor",
-    "hint": "Click outlined text in the preview, or refine details in settings."
+    "hint": "Click outlined text in the preview, or refine details in settings.",
+    "hintPaused": "Shop is paused for customers. Edit freely, then publish when you are ready."
   },
   "media": {
     "referenceSet": "Image reference set",

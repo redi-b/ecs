@@ -98,6 +98,29 @@ export function PuckDataOverride({ data }: { data: Data | null }) {
   return null;
 }
 
+export function ShopLiveStatusBadge({ live }: { live: boolean }) {
+  const { t } = useI18n();
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-semibold shadow-sm",
+        live
+          ? "bg-emerald-600/12 text-emerald-800 dark:bg-emerald-400/15 dark:text-emerald-200"
+          : "bg-amber-500/12 text-amber-900 dark:bg-amber-400/15 dark:text-amber-100",
+      )}
+    >
+      <span
+        className={cn(
+          "size-1.5 rounded-full",
+          live ? "bg-emerald-600 dark:bg-emerald-400" : "bg-amber-600 dark:bg-amber-400",
+        )}
+        aria-hidden
+      />
+      {live ? t("editor.status.live") : t("editor.status.paused")}
+    </span>
+  );
+}
+
 export function PublicationStatusBadge({ status }: { status: PublicationStatus }) {
   const { t } = useI18n();
   const copy = {
@@ -392,13 +415,11 @@ export function StorefrontEditorShell({
             <div className="flex flex-wrap items-center gap-2">
               <div className="text-sm font-semibold">{t("editor.shell.title")}</div>
               <Badge variant="secondary">{editorMeta.templateName}</Badge>
+              <ShopLiveStatusBadge live={isLive} />
               <PublicationStatusBadge status={publicationStatus} />
-              {!isLive ? (
-                <Badge variant="outline">{t("editor.status.paused")}</Badge>
-              ) : null}
             </div>
             <div className="mt-0.5 hidden text-xs text-muted-foreground sm:block">
-              {t("editor.shell.hint")}
+              {isLive ? t("editor.shell.hint") : t("editor.shell.hintPaused")}
             </div>
           </div>
         </div>
