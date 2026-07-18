@@ -14,6 +14,17 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
   Dialog,
   DialogClose,
   DialogContent,
@@ -963,10 +974,49 @@ function StorefrontSection({
   summary: MerchantDashboardAccess;
 }) {
   const { t } = useI18n();
+  const router = useRouter();
   const notSelected = t("settings.storefront.notSelected");
   const [selectedKey, setSelectedKey] = useState(summary.storefront.templateKey);
+  const [isPublished, setIsPublished] = useState(summary.storefront.isPublished);
+  const [pausing, setPausing] = useState(false);
   const activeKey = selectedKey ?? summary.storefront.templateKey;
   const singleTemplate = storefrontTemplates.length === 1;
+
+  useEffect(() => {
+    setIsPublished(summary.storefront.isPublished);
+  }, [summary.storefront.isPublished]);
+
+  async function pauseShop() {
+    if (pausing || !isPublished) return;
+    setPausing(true);
+    try {
+      const response = await fetch(dashboardRoutes.storefrontUnpublish, {
+        method: "POST",
+        headers: {
+          accept: "application/json",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({ tenantId: summary.tenant.id }),
+      });
+      const data = (await response.json().catch(() => null)) as {
+        ok?: boolean;
+        message?: string;
+      } | null;
+
+      if (!response.ok || !data?.ok) {
+        toast.error(data?.message?.replaceAll("_", " ") || t("settings.storefront.pauseShopFailed"));
+        return;
+      }
+
+      setIsPublished(false);
+      toast.success(t("settings.storefront.pauseShopSuccess"));
+      router.refresh();
+    } catch {
+      toast.error(t("settings.storefront.pauseShopFailed"));
+    } finally {
+      setPausing(false);
+    }
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -1017,12 +1067,15 @@ function StorefrontSection({
           <CardContent className="flex flex-col gap-3">
             <div className="flex items-center justify-between gap-3 text-sm">
               <span className="text-muted-foreground">{t("settings.storefront.publication")}</span>
-              <Badge variant={summary.storefront.isPublished ? "default" : "outline"}>
-                {summary.storefront.isPublished
+              <Badge variant={isPublished ? "default" : "outline"}>
+                {isPublished
                   ? t("settings.storefront.published")
-                  : t("settings.storefront.draft")}
+                  : t("settings.storefront.paused")}
               </Badge>
             </div>
+            {!isPublished ? (
+              <p className="text-xs text-muted-foreground">{t("settings.storefront.publishHint")}</p>
+            ) : null}
             <SettingsRow
               label={t("settings.storefront.selectedDesign")}
               value={
@@ -1042,11 +1095,51 @@ function StorefrontSection({
               <Button asChild className="rounded-full" size="sm" variant="outline">
                 <a href={dashboardRoutes.editor}>{t("settings.storefront.editStorefront")}</a>
               </Button>
-              <Button asChild className="rounded-full" size="sm">
+              <Button asChild className="rounded-full" size="sm" variant="outline">
                 <a href={`//${summary.domain.hostname}`} rel="noreferrer" target="_blank">
                   {t("settings.storefront.viewShop")}
                 </a>
               </Button>
+              {isPublished ? (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      className="rounded-full"
+                      disabled={pausing}
+                      size="sm"
+                      type="button"
+                      variant="destructive"
+                    >
+                      {pausing
+                        ? t("settings.storefront.pauseShopPending")
+                        : t("settings.storefront.pauseShop")}
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>{t("settings.storefront.pauseShopTitle")}</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        {t("settings.storefront.pauseShopDescription")}
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel className="rounded-full" disabled={pausing}>
+                        {t("common.cancel")}
+                      </AlertDialogCancel>
+                      <AlertDialogAction
+                        className="rounded-full"
+                        disabled={pausing}
+                        onClick={(event) => {
+                          event.preventDefault();
+                          void pauseShop();
+                        }}
+                      >
+                        {t("settings.storefront.pauseShopConfirm")}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              ) : null}
             </div>
           </CardContent>
         </Card>

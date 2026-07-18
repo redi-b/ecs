@@ -586,6 +586,7 @@ const app = createPlatformApp({
   recheckMerchantOrderPayment,
   captureOrderPaymentByTxRef: orderService.capturePaymentByTxRef,
   publishStorefrontDraft: storefrontTemplateService.publishStorefrontDraft,
+  unpublishStorefront: storefrontTemplateService.unpublishStorefront,
   recordAnalyticsEvent: analyticsService.recordAnalyticsEvent,
   recordNotificationEvent: notificationService.recordNotificationEvent,
   resolveTenantIdByMedusaSalesChannelId: createResolveTenantIdByMedusaSalesChannel(

@@ -251,4 +251,39 @@ export function registerPlatformStorefrontRoutes(
       storefront: result.storefront,
     });
   });
+
+  app.post("/platform/tenants/:tenantId/storefront/unpublish", async (context) => {
+    if (!options.unpublishStorefront) {
+      return context.json({ error: "storefront_unpublish_unavailable" }, 503);
+    }
+
+    const session = await options.getSession?.(context.req.raw.headers);
+
+    if (!session) {
+      return context.json({ error: "auth_required" }, 401);
+    }
+
+    const tenantId = context.req.param("tenantId");
+    const authorization = await options.authorizeDashboardForTenant?.({
+      tenantId,
+      userId: session.user.id,
+    });
+
+    if (!authorization?.ok) {
+      return context.json({ error: "dashboard_forbidden" }, 403);
+    }
+
+    const result = await options.unpublishStorefront({
+      tenantId,
+      userId: session.user.id,
+    });
+
+    if (!result.ok) {
+      return context.json({ error: result.error }, 404);
+    }
+
+    return context.json({
+      storefront: result.storefront,
+    });
+  });
 }

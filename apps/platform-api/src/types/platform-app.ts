@@ -70,6 +70,7 @@ import type {
   StorefrontDraftResult,
   StorefrontDraftUpdateResult,
   StorefrontPublishResult,
+  StorefrontUnpublishResult,
   StorefrontTemplateCatalogItem,
   StorefrontTemplateSelectionResult,
 } from "./storefront.js";
@@ -153,6 +154,9 @@ export type PlatformAppOptions = {
     | undefined;
   publishStorefrontDraft?:
     | ((input: { tenantId: string; userId: string }) => Promise<StorefrontPublishResult>)
+    | undefined;
+  unpublishStorefront?:
+    | ((input: { tenantId: string; userId: string }) => Promise<StorefrontUnpublishResult>)
     | undefined;
   getBillingStatus?: ((input: { tenantId: string }) => Promise<BillingStatusResult>) | undefined;
   createPlanUpgradeInvoice?:
