@@ -170,7 +170,11 @@
     "pauseShopSuccess": "Shop paused. The live storefront is offline.",
     "pauseShopFailed": "Could not pause the shop. Try again.",
     "paused": "Paused",
-    "publishHint": "Publish from the editor when you are ready to go live again."
+    "publishHint": "Publish when you are ready for customers to shop again.",
+    "publishShop": "Publish shop",
+    "publishShopPending": "Publishing…",
+    "publishShopSuccess": "Shop is live again.",
+    "publishShopFailed": "Could not publish the shop. Try again."
   },
   "notifications": {
     "intro": "Get notified when orders, payments, and other shop events happen.",

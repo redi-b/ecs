@@ -339,6 +339,29 @@ export function registerStoreFacadeRoutes(
       // Buffer the body so Node's server does not drop streamed undici responses mid-write
       // (seen as content-length mismatches / "Internal Server Error" for store GETs).
       const responseBody = await medusaResponse.arrayBuffer();
+      const path = getStorePath(context.req.raw);
+      const method = context.req.raw.method;
+
+      // Medusa Store API returns global collections/categories. Scope to this tenant via metadata.
+      if (
+        medusaResponse.ok &&
+        method === "GET" &&
+        (path === "/store/collections" ||
+          path.startsWith("/store/collections/") ||
+          path === "/store/product-categories" ||
+          path.startsWith("/store/product-categories/"))
+      ) {
+        const scoped = scopeTaxonomyResponseToTenant({
+          body: responseBody,
+          path,
+          tenantId: result.context.tenantId,
+        });
+        if (!scoped.ok) {
+          return context.json({ error: "not_found" }, 404);
+        }
+        return context.json(scoped.body, medusaResponse.status);
+      }
+
       const responseHeaders = new Headers(medusaResponse.headers);
       responseHeaders.delete("transfer-encoding");
       responseHeaders.set("content-length", String(responseBody.byteLength));
@@ -352,4 +375,78 @@ export function registerStoreFacadeRoutes(
       return context.json({ error: "commerce_backend_unavailable" }, 503);
     }
   });
+}
+
+function scopeTaxonomyResponseToTenant(input: {
+  body: ArrayBuffer;
+  path: string;
+  tenantId: string;
+}): { ok: true; body: Record<string, unknown> } | { ok: false } {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(new TextDecoder().decode(input.body));
+  } catch {
+    return { ok: false };
+  }
+
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+    return { ok: false };
+  }
+
+  const data = parsed as Record<string, unknown>;
+
+  if (input.path === "/store/collections") {
+    const rows = Array.isArray(data.collections) ? data.collections : [];
+    const collections = rows.filter((row) => taxonomyBelongsToTenant(row, input.tenantId));
+    return {
+      ok: true,
+      body: {
+        ...data,
+        collections,
+        count: collections.length,
+      },
+    };
+  }
+
+  if (input.path.startsWith("/store/collections/")) {
+    const collection = data.collection;
+    if (!taxonomyBelongsToTenant(collection, input.tenantId)) {
+      return { ok: false };
+    }
+    return { ok: true, body: data };
+  }
+
+  if (input.path === "/store/product-categories") {
+    const rows = Array.isArray(data.product_categories) ? data.product_categories : [];
+    const product_categories = rows.filter((row) => taxonomyBelongsToTenant(row, input.tenantId));
+    return {
+      ok: true,
+      body: {
+        ...data,
+        product_categories,
+        count: product_categories.length,
+      },
+    };
+  }
+
+  if (input.path.startsWith("/store/product-categories/")) {
+    const category = data.product_category;
+    if (!taxonomyBelongsToTenant(category, input.tenantId)) {
+      return { ok: false };
+    }
+    return { ok: true, body: data };
+  }
+
+  return { ok: true, body: data };
+}
+
+function taxonomyBelongsToTenant(value: unknown, tenantId: string) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return false;
+  }
+  const metadata = (value as { metadata?: unknown }).metadata;
+  if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) {
+    return false;
+  }
+  return (metadata as { platform_tenant_id?: unknown }).platform_tenant_id === tenantId;
 }

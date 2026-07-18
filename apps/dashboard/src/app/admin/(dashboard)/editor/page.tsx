@@ -20,6 +20,7 @@ import { mapPlatformErrorMessage } from "@/lib/platform-api/errors";
 import {
   getStorefrontDraft,
   publishStorefrontDraft,
+  unpublishStorefront,
   updateStorefrontDraft,
 } from "@/lib/storefront-templates";
 
@@ -96,6 +97,7 @@ export default async function StorefrontEditorPage({ searchParams }: StorefrontE
             templateName: getTemplateDisplayName(draft.draft.templateKey),
           }}
           onPublish={publishDraftAction}
+          onUnpublish={unpublishShopAction}
           onSave={saveDraftAction}
         />
       )}
@@ -131,6 +133,19 @@ async function publishDraftAction(tenantId: string) {
 
   const requestHeaders = await headers();
   const result = await publishStorefrontDraft({
+    cookieHeader: requestHeaders.get("cookie"),
+    platformApiBaseUrl: process.env.PLATFORM_API_BASE_URL ?? "http://localhost:3000",
+    tenantId,
+  });
+
+  return result.ok ? ({ ok: true } as const) : ({ ok: false, message: result.message } as const);
+}
+
+async function unpublishShopAction(tenantId: string) {
+  "use server";
+
+  const requestHeaders = await headers();
+  const result = await unpublishStorefront({
     cookieHeader: requestHeaders.get("cookie"),
     platformApiBaseUrl: process.env.PLATFORM_API_BASE_URL ?? "http://localhost:3000",
     tenantId,

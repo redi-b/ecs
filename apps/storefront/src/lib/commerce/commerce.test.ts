@@ -53,7 +53,7 @@ test("listStoreProducts returns an error result when platform response fails", a
     throw new Error("Expected an error result.");
   }
   assert.equal(result.status, 404);
-  assert.equal(result.message, "shop_not_found");
+  assert.equal(result.message, "We could not find this shop.");
 });
 
 test("getStoreDeliveryOptions calls the platform store facade with host context", async () => {

@@ -15,6 +15,7 @@ export type StorefrontVisualEditorProps = {
     templateName: string;
   };
   onPublish: (tenantId: string) => Promise<ActionResult>;
+  onUnpublish?: (tenantId: string) => Promise<ActionResult>;
   onSave: (payload: {
     data: unknown;
     tenantId: string;

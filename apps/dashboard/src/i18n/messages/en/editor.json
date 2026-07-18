@@ -22,12 +22,17 @@
     "resetDescription": "This resets the editor to the draft that was loaded when you opened this page.",
     "resetConfirm": "Reset",
     "saveDraft": "Save draft",
-    "publish": "Publish"
+    "publish": "Publish",
+    "pauseShop": "Pause shop",
+    "pauseTitle": "Pause the live shop?",
+    "pauseDescription": "Customers will see that the store is unavailable. Your draft stays saved so you can publish again anytime.",
+    "pauseConfirm": "Pause shop"
   },
   "status": {
     "publishedLive": "Published live",
     "draftSaved": "Draft saved",
-    "unpublishedEdits": "Unpublished edits"
+    "unpublishedEdits": "Unpublished edits",
+    "paused": "Shop paused"
   },
   "toast": {
     "savingDraft": "Saving draft…",
@@ -42,7 +47,10 @@
     "imageImportFailed": "Could not import this image. Try again.",
     "unsupportedImage": "Choose a supported image file.",
     "imageTooLarge": "Images must be 15 MB or smaller.",
-    "imageUploadFailed": "Could not upload this image. Try again."
+    "imageUploadFailed": "Could not upload this image. Try again.",
+    "pausing": "Pausing shop…",
+    "paused": "Shop paused",
+    "pauseFailed": "Could not pause the shop"
   },
   "panels": {
     "preview": "Preview",

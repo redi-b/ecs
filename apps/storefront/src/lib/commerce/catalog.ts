@@ -15,12 +15,12 @@ export async function listStoreCollections(
     searchParams: {
       limit: options.limit ?? 50,
       offset: options.offset ?? 0,
-      fields: "id,title,handle",
+      fields: "id,title,handle,*metadata",
     },
   });
   const data = await response.json().catch(() => undefined);
   if (!response.ok) {
-    return asError(response.status, data, response.statusText);
+    return asError(response.status, data, "Could not load collections.");
   }
 
   const rows = Array.isArray(isRecord(data) ? data.collections : null)
@@ -54,12 +54,12 @@ export async function listStoreCategories(
       limit: options.limit ?? 100,
       offset: options.offset ?? 0,
       include_descendants_tree: "true",
-      fields: "id,name,handle,parent_category_id",
+      fields: "id,name,handle,parent_category_id,*metadata",
     },
   });
   const data = await response.json().catch(() => undefined);
   if (!response.ok) {
-    return asError(response.status, data, response.statusText);
+    return asError(response.status, data, "Could not load categories.");
   }
 
   const rows = Array.isArray(isRecord(data) ? data.product_categories : null)

@@ -170,7 +170,11 @@
     "pauseShopSuccess": "ሱቁ ቆሟል። የቀጥታ ገጹ አይታይም።",
     "pauseShopFailed": "ሱቁን ማቆም አልተቻለም። እንደገና ይሞክሩ።",
     "paused": "ቆሟል",
-    "publishHint": "እንደገና ለመክፈት ከአርታዒ ያትሙ።"
+    "publishHint": "ደንበኞች እንደገና እንዲገዙ ሲዘጋጁ ያትሙ።",
+    "publishShop": "ሱቁን አትም",
+    "publishShopPending": "በማተም ላይ…",
+    "publishShopSuccess": "ሱቁ እንደገና ክፍት ነው።",
+    "publishShopFailed": "ሱቁን ማተም አልተቻለም። እንደገና ይሞክሩ።"
   },
   "notifications": {
     "intro": "ትዕዛዝ፣ ክፍያ እና ሌሎች የሱቅ ክስተቶች ሲከሰቱ ማሳወቂያ ይቀበሉ።",

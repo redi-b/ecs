@@ -26,7 +26,10 @@ export const POST: APIRoute = async ({ request }) => {
   });
 
   if ("ok" in result && result.ok === false) {
-    return redirect("/cart?error=" + encodeURIComponent(result.message));
+    return redirect(
+      "/cart?error=" +
+        encodeURIComponent("Could not update your cart. Please try again."),
+    );
   }
 
   return redirect("/cart");

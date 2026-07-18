@@ -137,11 +137,13 @@ export function StorefrontEditorActions({
   canUndo,
   editorMeta,
   isFullscreen,
+  isLive,
   isPending,
   onRedo,
   onReset,
   onToggleFullscreen,
   onPublish,
+  onUnpublish,
   onSave,
   onToggleEditHints,
   onUndo,
@@ -151,11 +153,13 @@ export function StorefrontEditorActions({
   canUndo: boolean;
   editorMeta: StorefrontVisualEditorProps["editorMeta"];
   isFullscreen: boolean;
+  isLive: boolean;
   isPending: boolean;
   onRedo: () => void;
   onReset: () => void;
   onToggleFullscreen: () => void;
   onPublish: () => void;
+  onUnpublish?: (() => void) | undefined;
   onSave: () => void;
   onToggleEditHints: () => void;
   onUndo: () => void;
@@ -238,9 +242,9 @@ export function StorefrontEditorActions({
           </AlertDialogContent>
         </AlertDialog>
       </div>
-      <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-row">
+      <div className="flex w-full flex-wrap gap-2 sm:w-auto sm:justify-end">
         <Button
-          className="min-w-0"
+          className="min-w-0 flex-1 sm:flex-none"
           disabled={isPending}
           onClick={onSave}
           size="sm"
@@ -250,8 +254,42 @@ export function StorefrontEditorActions({
           <RiSave3Line data-icon="inline-start" />
           {t("editor.actions.saveDraft")}
         </Button>
+        {isLive && onUnpublish ? (
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                className="min-w-0 flex-1 sm:flex-none"
+                disabled={isPending}
+                size="sm"
+                type="button"
+                variant="destructive"
+              >
+                {t("editor.actions.pauseShop")}
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>{t("editor.actions.pauseTitle")}</AlertDialogTitle>
+                <AlertDialogDescription>{t("editor.actions.pauseDescription")}</AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel disabled={isPending}>{t("common.cancel")}</AlertDialogCancel>
+                <AlertDialogAction
+                  className="bg-destructive text-white hover:bg-destructive/90"
+                  disabled={isPending}
+                  onClick={(event) => {
+                    event.preventDefault();
+                    onUnpublish();
+                  }}
+                >
+                  {t("editor.actions.pauseConfirm")}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        ) : null}
         <Button
-          className="min-w-0"
+          className="min-w-0 flex-1 sm:flex-none"
           disabled={isPending}
           onClick={onPublish}
           size="sm"
@@ -308,11 +346,13 @@ export function StorefrontEditorShell({
   canUndo,
   editorMeta,
   isFullscreen,
+  isLive,
   isPending,
   onRedo,
   onReset,
   onToggleFullscreen,
   onPublish,
+  onUnpublish,
   onSave,
   onToggleEditHints,
   onUndo,
@@ -323,11 +363,13 @@ export function StorefrontEditorShell({
   canUndo: boolean;
   editorMeta: StorefrontVisualEditorProps["editorMeta"];
   isFullscreen: boolean;
+  isLive: boolean;
   isPending: boolean;
   onRedo: () => void;
   onReset: () => void;
   onToggleFullscreen: () => void;
   onPublish: (data: Data) => void;
+  onUnpublish?: (() => void) | undefined;
   onSave: (data: Data) => void;
   onToggleEditHints: () => void;
   onUndo: () => void;
@@ -351,6 +393,9 @@ export function StorefrontEditorShell({
               <div className="text-sm font-semibold">{t("editor.shell.title")}</div>
               <Badge variant="secondary">{editorMeta.templateName}</Badge>
               <PublicationStatusBadge status={publicationStatus} />
+              {!isLive ? (
+                <Badge variant="outline">{t("editor.status.paused")}</Badge>
+              ) : null}
             </div>
             <div className="mt-0.5 hidden text-xs text-muted-foreground sm:block">
               {t("editor.shell.hint")}
@@ -362,11 +407,13 @@ export function StorefrontEditorShell({
           canUndo={canUndo}
           editorMeta={editorMeta}
           isFullscreen={isFullscreen}
+          isLive={isLive}
           isPending={isPending}
           onRedo={onRedo}
           onReset={onReset}
           onToggleFullscreen={onToggleFullscreen}
           onPublish={() => onPublish(data)}
+          onUnpublish={onUnpublish}
           onSave={() => onSave(data)}
           onToggleEditHints={onToggleEditHints}
           onUndo={onUndo}

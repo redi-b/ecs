@@ -1,6 +1,7 @@
 import type { APIRoute } from "astro";
 
 import { addStoreCartLineItem, ensureStoreCart } from "../../../lib/commerce/cart.js";
+import { customerFacingStoreError } from "../../../lib/commerce/errors.js";
 import { isStoreError } from "../../../lib/commerce/result.js";
 import { getPlatformApiBaseUrl, getRequestHost } from "../../../lib/env.js";
 import { loadPageContext } from "../../../lib/page-context.js";
@@ -13,12 +14,12 @@ export const POST: APIRoute = async ({ request }) => {
   const returnTo = String(form.get("returnTo") ?? "/cart").trim() || "/cart";
 
   if (!variantId) {
-    return redirectWithError(returnTo, "Choose a product option.");
+    return redirectWithError(returnTo, "Choose a product option before adding to cart.");
   }
 
   const ctx = await loadPageContext(request);
   if (!ctx.ok) {
-    return redirectWithError(returnTo, ctx.message);
+    return redirectWithError(returnTo, customerFacingStoreError(ctx.message));
   }
 
   const cartResult = await ensureStoreCart({
@@ -29,7 +30,7 @@ export const POST: APIRoute = async ({ request }) => {
   });
 
   if (isStoreError(cartResult)) {
-    return redirectWithError(returnTo, cartResult.message);
+    return redirectWithError(returnTo, customerFacingStoreError(cartResult.message));
   }
 
   const addResult = await addStoreCartLineItem({
@@ -41,7 +42,11 @@ export const POST: APIRoute = async ({ request }) => {
   });
 
   if (isStoreError(addResult)) {
-    return redirectWithError(returnTo, addResult.message);
+    return redirectWithError(
+      returnTo,
+      customerFacingStoreError(addResult.message) ||
+        "Could not add that item to your cart. Please try again.",
+    );
   }
 
   const url = new URL(returnTo, request.url);

@@ -52,6 +52,7 @@ export const dashboardRoutes = {
   settings: "/admin/settings",
   storefrontTemplate: "/admin/storefront/template",
   storefrontUnpublish: "/admin/storefront/unpublish",
+  storefrontPublish: "/admin/storefront/publish",
 } as const;
 
 export type DashboardRouteHref = Extract<

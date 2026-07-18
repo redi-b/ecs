@@ -87,6 +87,7 @@ export function StorefrontVisualEditor({
   draft,
   editorMeta,
   onPublish,
+  onUnpublish,
   onSave,
 }: StorefrontVisualEditorProps) {
   const { t, locale } = useI18n();
@@ -111,6 +112,9 @@ export function StorefrontVisualEditor({
   const [puckDataOverride, setPuckDataOverride] = useState<Data | null>(null);
   const [savedSnapshot, setSavedSnapshot] = useState(initialSnapshot);
   const [publishedSnapshot, setPublishedSnapshot] = useState(initialPublishedSnapshot);
+  const [isLive, setIsLive] = useState(
+    Boolean(draft.published) || editorMeta.initiallyPublished,
+  );
   const [showEditHints, setShowEditHints] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isPending, setIsPending] = useState(false);
@@ -202,6 +206,7 @@ export function StorefrontVisualEditor({
       const snapshot = serializeEditorData(data);
       setSavedSnapshot(snapshot);
       setPublishedSnapshot(snapshot);
+      setIsLive(true);
     })();
 
     setIsPending(true);
@@ -210,6 +215,27 @@ export function StorefrontVisualEditor({
       finally: () => setIsPending(false),
       loading: t("editor.toast.publishing"),
       success: t("editor.toast.published"),
+    });
+  }
+
+  function handleUnpublishShop() {
+    if (!onUnpublish) return;
+
+    const promise = (async () => {
+      const result = await onUnpublish(draft.tenantId);
+      if (!result.ok) {
+        throw new Error(result.message);
+      }
+      setPublishedSnapshot(null);
+      setIsLive(false);
+    })();
+
+    setIsPending(true);
+    toast.promise(promise, {
+      error: (error) => getErrorMessage(error, t("editor.toast.pauseFailed")),
+      finally: () => setIsPending(false),
+      loading: t("editor.toast.pausing"),
+      success: t("editor.toast.paused"),
     });
   }
 
@@ -369,12 +395,14 @@ export function StorefrontVisualEditor({
           canUndo={historyIndex > 0}
           editorMeta={editorMeta}
           isFullscreen={isFullscreen}
+          isLive={isLive}
           isPending={isPending}
           publicationStatus={publicationStatus}
           onRedo={handleRedo}
           onReset={handleReset}
           onToggleFullscreen={() => setIsFullscreen((current) => !current)}
           onPublish={handlePublishDraft}
+          onUnpublish={onUnpublish ? handleUnpublishShop : undefined}
           onSave={handleSaveDraft}
           onToggleEditHints={() => setShowEditHints((current) => !current)}
           onUndo={handleUndo}

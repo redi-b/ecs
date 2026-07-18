@@ -64,6 +64,6 @@ test("getPublishedStorefrontConfig returns an error for invalid config responses
   assert.deepEqual(result, {
     ok: false,
     status: 502,
-    message: "invalid_storefront_config_response",
+    message: "This shop could not be loaded. Please try again later.",
   });
 });

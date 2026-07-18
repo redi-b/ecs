@@ -22,12 +22,17 @@
     "resetDescription": "ገጹን ሲከፍቱ የነበረው ይመለሳል።",
     "resetConfirm": "መልስ",
     "saveDraft": "ለውጦቹን አስቀምጥ",
-    "publish": "ለደንበኞች ክፈት"
+    "publish": "ለደንበኞች ክፈት",
+    "pauseShop": "ሱቁን አቁም",
+    "pauseTitle": "የቀጥታ ሱቁን እናቁም?",
+    "pauseDescription": "ደንበኞች ሱቁ እንደማይገኝ ያያሉ። ረቂቅዎ ይቆያል።",
+    "pauseConfirm": "ሱቁን አቁም"
   },
   "status": {
     "publishedLive": "ለደንበኞች ይታያል",
     "draftSaved": "ለውጦቹ ተቀይረዋል",
-    "unpublishedEdits": "ያልታዩ ለውጦች"
+    "unpublishedEdits": "ያልታዩ ለውጦች",
+    "paused": "ሱቁ ቆሟል"
   },
   "toast": {
     "savingDraft": "እየተቀየረ ነው…",
@@ -42,7 +47,10 @@
     "imageImportFailed": "ምስሉን ማስገባት አልተቻለም። እንደገና ይሞክሩ።",
     "unsupportedImage": "የሚደገፍ የምስል ፋይል ይምረጡ።",
     "imageTooLarge": "ምስሎች ከ 15 MB መብለጥ የለባቸውም።",
-    "imageUploadFailed": "ምስሉን መጫን አልተቻለም። እንደገና ይሞክሩ።"
+    "imageUploadFailed": "ምስሉን መጫን አልተቻለም። እንደገና ይሞክሩ።",
+    "pausing": "ሱቁ በማቆም ላይ…",
+    "paused": "ሱቁ ቆሟል",
+    "pauseFailed": "ሱቁን ማቆም አልተቻለም"
   },
   "panels": {
     "preview": "ቅድመ እይታ",

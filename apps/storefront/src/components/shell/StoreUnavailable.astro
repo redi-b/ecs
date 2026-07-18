@@ -1,10 +1,13 @@
 ---
+import { customerFacingStoreError } from "../../lib/commerce/errors";
+
 interface Props {
   message: string;
   title?: string;
 }
 
-const { message, title = "Store unavailable" } = Astro.props;
+const { message, title = "Shop unavailable" } = Astro.props;
+const friendly = customerFacingStoreError(message);
 ---
 
 <html lang="en">
@@ -18,7 +21,7 @@ const { message, title = "Store unavailable" } = Astro.props;
     <main class="sf-main">
       <div class="sf-notice sf-notice-error">
         <h1 class="sf-title">{title}</h1>
-        <p>{message}</p>
+        <p>{friendly}</p>
       </div>
     </main>
   </body>
