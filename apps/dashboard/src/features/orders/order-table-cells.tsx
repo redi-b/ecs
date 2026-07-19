@@ -10,6 +10,7 @@ import {
   formatOrderReference,
   getDeliveryDisplayLabel,
   getDeliveryLabel,
+  getDisplayOrderEmail,
   getMethodLabel,
   getMethodShortLabel,
   getOrderCustomerName,
@@ -53,7 +54,7 @@ export function OrderCustomerCell({ order }: { order: MerchantOrder }) {
   const { t } = useI18n();
   const name = getOrderCustomerName(order, t);
   const phone = getOrderCustomerPhone(order);
-  const secondary = phone || order.email || null;
+  const secondary = phone || getDisplayOrderEmail(order.email) || null;
 
   return (
     <div className="min-w-0 space-y-0.5">

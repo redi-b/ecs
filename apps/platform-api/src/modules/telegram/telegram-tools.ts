@@ -28,6 +28,7 @@ import {
   MAIN_KEYBOARD_LABELS,
   cancelInline,
   confirmInline,
+  emailPromptMarkup,
   itemLabel,
   mainReplyKeyboard,
   ordersListInline,
@@ -83,6 +84,7 @@ export type TelegramToolsDeps = {
   }) => Promise<MerchantProductStockUpdateResult>;
   createManualOrder: (input: {
     customerEmail: string;
+    customerId?: string | null;
     items: Array<{ quantity: number; variantId: string }>;
     note?: string | null;
     regionId: string;
@@ -98,6 +100,17 @@ export type TelegramToolsDeps = {
     tenantId: string;
     userId: string;
   }) => Promise<ManualOrderResult>;
+  /** Find-or-create customer by email in this shop (Medusa requires email). */
+  ensureMerchantCustomer?: (input: {
+    email: string;
+    firstName?: string | null;
+    lastName?: string | null;
+    phone?: string | null;
+    tenantId: string;
+  }) => Promise<
+    | { ok: true; customer: { id: string; email: string } }
+    | { ok: false; error: string; status: number }
+  >;
 };
 
 type OperatorCtx = {
@@ -130,9 +143,56 @@ function asRecord(value: unknown): Record<string, unknown> | null {
   return null;
 }
 
-function syntheticEmail(phone: string) {
-  const digits = phone.replace(/\D/g, "").slice(-12) || "unknown";
-  return `telegram+${digits}@orders.local`;
+/** One shared offline customer email per shop when the operator chooses Walk-in. */
+function walkInEmail(tenantHandle: string | null): string {
+  const handle =
+    (tenantHandle ?? "shop")
+      .toLowerCase()
+      .replace(/[^a-z0-9-]+/g, "-")
+      .replace(/^-+|-+$/g, "") || "shop";
+  return `walk-in@${handle}.local`;
+}
+
+function isValidCustomerEmail(value: string): boolean {
+  const email = value.trim().toLowerCase();
+  if (email.length < 5 || email.length > 120) return false;
+  // Simple merchant-friendly check (not full RFC).
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+function isWalkInEmail(email: string): boolean {
+  return /^walk-in@/i.test(email.trim()) && email.trim().toLowerCase().endsWith(".local");
+}
+
+/**
+ * Medusa needs an email on the order/customer record.
+ * Telegram sales collect a real email, or Walk-in (shared shop offline profile).
+ */
+async function ensureSaleCustomer(
+  deps: TelegramToolsDeps,
+  input: {
+    tenantId: string;
+    email: string;
+    phone: string;
+    firstName: string;
+    lastName: string;
+  },
+): Promise<{ email: string; customerId?: string }> {
+  const email = input.email.trim().toLowerCase();
+  if (!deps.ensureMerchantCustomer) {
+    return { email };
+  }
+  const ensured = await deps.ensureMerchantCustomer({
+    tenantId: input.tenantId,
+    email,
+    phone: input.phone,
+    firstName: input.firstName && !/^customer$/i.test(input.firstName) ? input.firstName : null,
+    lastName: input.lastName || null,
+  });
+  if (ensured.ok) {
+    return { email: ensured.customer.email || email, customerId: ensured.customer.id };
+  }
+  return { email };
 }
 
 function splitName(full: string): { firstName: string; lastName: string } {
@@ -269,7 +329,7 @@ async function sendHelp(deps: TelegramToolsDeps, chatId: string, ctx: OperatorCt
   const lines = [
     `<b>${ctx.tenantName}</b>`,
     "",
-    "<b>New sale</b> — offline sale (customer phone after qty)",
+    "<b>New sale</b> — offline sale (phone, then email or Walk-in)",
     "<b>Stock</b> — update inventory",
     "<b>Today</b> — today’s orders and paid total",
     "<b>Orders</b> — recent orders and actions",
@@ -757,9 +817,30 @@ async function applySale(
     return;
   }
 
+  const email = (input.dialog.customerEmail ?? "").trim().toLowerCase();
+  if (!email || !input.dialog.customerPhone) {
+    clearDialog(input.telegramUserId, input.chatId);
+    await sendTelegramBotMessage({
+      botToken: deps.botToken,
+      chatId: input.chatId,
+      text: "Sale expired. Start New sale again.",
+      replyMarkup: mainReplyKeyboard(),
+    }).catch(() => undefined);
+    return;
+  }
+
   const { firstName, lastName } = splitName(input.customerName);
+  const resolved = await ensureSaleCustomer(deps, {
+    tenantId: input.dialog.tenantId,
+    email,
+    phone: input.customerPhone,
+    firstName,
+    lastName,
+  });
+
   const created = await deps.createManualOrder({
-    customerEmail: syntheticEmail(input.customerPhone),
+    customerEmail: resolved.email,
+    ...(resolved.customerId ? { customerId: resolved.customerId } : {}),
     items: [{ quantity: input.dialog.quantity, variantId: input.dialog.variantId }],
     note: "Telegram offline sale",
     regionId: input.dialog.regionId,
@@ -793,6 +874,7 @@ async function applySale(
     fullName && !/^customer$/i.test(fullName)
       ? `${fullName} · ${input.customerPhone}`
       : input.customerPhone;
+  const emailLine = isWalkInEmail(resolved.email) ? "Walk-in" : resolved.email;
   await sendTelegramBotMessage({
     botToken: deps.botToken,
     chatId: input.chatId,
@@ -800,12 +882,13 @@ async function applySale(
       `Sale ${formatOrderRef(created.order.id)}`,
       `${itemLabel(input.dialog.productTitle, input.dialog.variantTitle)} × ${input.dialog.quantity}`,
       whoLine,
+      emailLine,
     ].join("\n"),
     replyMarkup: mainReplyKeyboard(),
   }).catch(() => undefined);
 }
 
-async function showSaleConfirm(
+async function promptCustomerEmail(
   deps: TelegramToolsDeps,
   input: {
     chatId: string;
@@ -827,14 +910,54 @@ async function showSaleConfirm(
   }
 
   patchDialog(input.telegramUserId, input.chatId, {
-    step: "confirm_sale",
+    step: "await_email",
     customerPhone: phone,
     customerName: input.name || "Customer",
   });
 
-  const displayName = (input.name || "").trim();
+  await sendTelegramBotMessage({
+    botToken: deps.botToken,
+    chatId: input.chatId,
+    text: [
+      `${itemLabel(input.dialog.productTitle, input.dialog.variantTitle)} × ${input.dialog.quantity}`,
+      phone,
+      "",
+      "Customer email? Type it, or choose Walk-in for counter sales without an email.",
+    ].join("\n"),
+    replyMarkup: emailPromptMarkup(),
+  }).catch(() => undefined);
+}
+
+async function showSaleConfirm(
+  deps: TelegramToolsDeps,
+  input: {
+    chatId: string;
+    telegramUserId: string;
+    dialog: TelegramDialogState;
+    email: string;
+  },
+) {
+  const phone = (input.dialog.customerPhone ?? "").replace(/[^\d+]/g, "");
+  const email = input.email.trim().toLowerCase();
+  if (phone.length < 8 || !input.dialog.quantity || input.dialog.quantity < 1 || !email) {
+    await sendTelegramBotMessage({
+      botToken: deps.botToken,
+      chatId: input.chatId,
+      text: "Sale details incomplete. Start New sale again.",
+      replyMarkup: mainReplyKeyboard(),
+    }).catch(() => undefined);
+    return;
+  }
+
+  patchDialog(input.telegramUserId, input.chatId, {
+    step: "confirm_sale",
+    customerEmail: email,
+  });
+
+  const displayName = (input.dialog.customerName || "").trim();
   const who =
     displayName && !/^customer$/i.test(displayName) ? `${displayName} · ${phone}` : phone;
+  const emailLine = isWalkInEmail(email) ? "Walk-in" : email;
 
   await sendTelegramBotMessage({
     botToken: deps.botToken,
@@ -843,6 +966,7 @@ async function showSaleConfirm(
       `<b>Confirm sale</b>`,
       `${itemLabel(input.dialog.productTitle, input.dialog.variantTitle)} × ${input.dialog.quantity}`,
       who,
+      emailLine,
     ].join("\n"),
     parseMode: "HTML",
     replyMarkup: confirmInline(),
@@ -950,6 +1074,30 @@ export async function handleTelegramToolsCallback(
       replyMarkup: cancelInline(),
     }).catch(() => undefined);
     return { handled: true, reason: "search" };
+  }
+
+  if (action === "walkin") {
+    const dialog = getDialog(telegramUserId, chatId);
+    if (!dialog || dialog.flow !== "sale" || dialog.step !== "await_email") {
+      await answerTelegramCallbackQuery({
+        botToken: deps.botToken,
+        callbackQueryId: callbackId,
+        text: "Expired",
+      }).catch(() => undefined);
+      return { handled: true, reason: "stale_walkin" };
+    }
+    await answerTelegramCallbackQuery({
+      botToken: deps.botToken,
+      callbackQueryId: callbackId,
+      text: "Walk-in",
+    }).catch(() => undefined);
+    await showSaleConfirm(deps, {
+      chatId,
+      telegramUserId,
+      dialog,
+      email: walkInEmail(ctx.tenantHandle),
+    });
+    return { handled: true, reason: "walkin" };
   }
 
   const qtyMatch = /^q(\d+)$/.exec(action);
@@ -1185,14 +1333,14 @@ export async function handleTelegramToolsMessage(
     const name =
       [input.contact.firstName, input.contact.lastName].filter(Boolean).join(" ").trim() ||
       "Customer";
-    await showSaleConfirm(deps, {
+    await promptCustomerEmail(deps, {
       chatId: input.chatId,
       telegramUserId: input.telegramUserId,
       dialog,
       phone: input.contact.phone,
       name,
     });
-    return { handled: true, reason: "confirm_sale" };
+    return { handled: true, reason: "await_email" };
   }
 
   const isMenu =
@@ -1380,12 +1528,31 @@ export async function handleTelegramToolsMessage(
       }).catch(() => undefined);
       return { handled: true, reason: "bad_phone" };
     }
-    await showSaleConfirm(deps, {
+    await promptCustomerEmail(deps, {
       chatId: input.chatId,
       telegramUserId: input.telegramUserId,
       dialog,
       phone,
       name: "Customer",
+    });
+    return { handled: true, reason: "await_email" };
+  }
+
+  if (dialog?.step === "await_email" && dialog.flow === "sale") {
+    if (!isValidCustomerEmail(text)) {
+      await sendTelegramBotMessage({
+        botToken: deps.botToken,
+        chatId: input.chatId,
+        text: "Type a valid email, or tap Walk-in.",
+        replyMarkup: emailPromptMarkup(),
+      }).catch(() => undefined);
+      return { handled: true, reason: "bad_email" };
+    }
+    await showSaleConfirm(deps, {
+      chatId: input.chatId,
+      telegramUserId: input.telegramUserId,
+      dialog,
+      email: text.trim().toLowerCase(),
     });
     return { handled: true, reason: "confirm_sale" };
   }

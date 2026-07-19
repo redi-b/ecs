@@ -3,11 +3,8 @@
  * Low-level Bot API send helpers stay in notifications/providers (shared with delivery).
  */
 
-export {
-  createTelegramCallbackSecret,
-  resolveTelegramCallbackSecret,
-  handleTelegramCallbackQuery,
-} from "./telegram-actions.js";
+export { handleTelegramCallbackQuery, resolveTelegramCallbackSecret } from "./telegram-actions.js";
+export { createTelegramCallbackSecret } from "./telegram-callback-tokens.js";
 export { setDefaultBotCommands, setOperatorChatCommands, deleteChatBotCommands } from "./telegram-bot-commands.js";
 export { createTelegramConnectService, parseTelegramStartPayload } from "./telegram-connect.js";
 export { createTelegramOperatorService } from "./telegram-operator.js";

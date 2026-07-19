@@ -369,7 +369,25 @@ if (telegramBotToken) {
         ...input,
         note: input.note ?? null,
         shippingOptionId: input.shippingOptionId ?? null,
+        customerId: input.customerId ?? null,
       }),
+    ensureMerchantCustomer: async (input) => {
+      const result = await customerService.ensureCustomer({
+        email: input.email,
+        firstName: input.firstName ?? null,
+        lastName: input.lastName ?? null,
+        phone: input.phone ?? null,
+        tenantId: input.tenantId,
+      });
+      if (!result.ok) return result;
+      return {
+        ok: true as const,
+        customer: {
+          id: result.customer.id,
+          email: result.customer.email,
+        },
+      };
+    },
   };
 }
 

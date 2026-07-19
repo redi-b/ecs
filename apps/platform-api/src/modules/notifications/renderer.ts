@@ -169,7 +169,12 @@ function isPlaceholderName(name: string): boolean {
 
 function isSyntheticEmail(email: string): boolean {
   const e = email.trim().toLowerCase();
-  return e.endsWith("@orders.local") || e.startsWith("telegram+");
+  return (
+    e.endsWith("@orders.local") ||
+    e.startsWith("telegram+") ||
+    e.startsWith("walk-in@") ||
+    e.endsWith(".local")
+  );
 }
 
 function escapeHtml(value: string): string {

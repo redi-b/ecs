@@ -20,6 +20,7 @@ import {
   formatOrderReference,
   getDeliveryDisplayLabel,
   getDeliveryLabel,
+  getDisplayOrderEmail,
   getMethodDisplayLabel,
   getMethodLabel,
   getOrderCustomerName,
@@ -345,7 +346,10 @@ export async function OrderDetail({ action, order, tenantId }: OrderDetailProps)
                 ) : null
               }
             />
-            <Field label={t("orders.detail.email")} value={order.email} />
+            <Field
+              label={t("orders.detail.email")}
+              value={getDisplayOrderEmail(order.email)}
+            />
             {order.customerId ? (
               <Field
                 label={t("orders.detail.inCustomers")}
