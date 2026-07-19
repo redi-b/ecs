@@ -602,11 +602,7 @@ export function createTelegramOperatorService(
       await sendTelegramBotMessage({
         botToken: config.botToken,
         chatId: input.chatId,
-        text: [
-          `<b>Linked</b> · ${shopLabel}`,
-          "",
-          "Use the buttons below for New sale, Stock, Today, Orders, and Shop.",
-        ].join("\n"),
+        text: `<b>Linked</b>\n${shopLabel}`,
         parseMode: "HTML",
         replyMarkup: mainReplyKeyboard(),
       }).catch(() => undefined);

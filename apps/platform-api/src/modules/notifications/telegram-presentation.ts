@@ -144,6 +144,17 @@ export function formatItemLine(title?: string | null, variant?: string | null, q
   return base;
 }
 
+function isPlaceholderCustomerName(name: string | null | undefined): boolean {
+  if (!name?.trim()) return true;
+  return /^(customer|unknown|guest|n\/?a|-)$/i.test(name.trim());
+}
+
+function isSyntheticOrderEmail(email: string | null | undefined): boolean {
+  if (!email?.trim()) return false;
+  const e = email.trim().toLowerCase();
+  return e.endsWith("@orders.local") || e.startsWith("telegram+");
+}
+
 export function formatOrderCardHtml(order: MerchantOrder): string {
   const ref = formatOrderRef(order.id);
   const total =
@@ -156,8 +167,11 @@ export function formatOrderCardHtml(order: MerchantOrder): string {
   const items = order.items ?? [];
 
   const lines: string[] = [`<b>Order ${ref}</b>`];
-  if (name) lines.push(name);
+  if (name && !isPlaceholderCustomerName(name)) lines.push(name);
   if (phone) lines.push(phone);
+  if (order.email && !isSyntheticOrderEmail(order.email)) {
+    lines.push(order.email);
+  }
   if (total) lines.push(`Total ${total}`);
   if (order.paymentStatus) {
     lines.push(
@@ -177,10 +191,10 @@ export function formatOrderCardHtml(order: MerchantOrder): string {
   }
   if (items.length > 0) {
     lines.push("");
-    for (const item of items.slice(0, 6)) {
+    for (const item of items.slice(0, 8)) {
       lines.push(`· ${formatOrderLineItemLabel(item)}`);
     }
-    if (items.length > 6) lines.push(`· +${items.length - 6} more`);
+    if (items.length > 8) lines.push(`· +${items.length - 8} more`);
   }
   return lines.join("\n");
 }

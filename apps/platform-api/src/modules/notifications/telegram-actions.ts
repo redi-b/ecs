@@ -2,7 +2,7 @@ import type { createPlatformDb } from "@ecs/db";
 import { tenants } from "@ecs/db";
 import { eq } from "drizzle-orm";
 
-import type { MerchantOrder, MerchantOrderAction, MerchantOrderActionResult } from "../../types/index.js";
+import type { MerchantOrderAction, MerchantOrderActionResult } from "../../types/index.js";
 import {
   buildOrderActionKeyboard,
   createTelegramCallbackSecret,
@@ -10,12 +10,13 @@ import {
   type TelegramOrderAction,
 } from "./telegram-callback-tokens.js";
 import type { TelegramOperatorService } from "./telegram-operator.js";
-import { formatMoneyAmount, formatOrderRef, humanizeToken } from "./renderer.js";
+import { formatOrderRef } from "./renderer.js";
 import {
   answerTelegramCallbackQuery,
   editTelegramMessageReplyMarkup,
   sendTelegramBotMessage,
 } from "./providers/telegram-provider.js";
+import { formatOrderCardHtml } from "./telegram-presentation.js";
 
 type PlatformDb = ReturnType<typeof createPlatformDb>["db"];
 
@@ -40,38 +41,6 @@ function asRecord(value: unknown): Record<string, unknown> | null {
     return value as Record<string, unknown>;
   }
   return null;
-}
-
-function customerLabel(order: MerchantOrder): string | null {
-  const name =
-    order.delivery?.customerName?.trim() ||
-    [order.shippingAddress?.firstName, order.shippingAddress?.lastName]
-      .filter(Boolean)
-      .join(" ")
-      .trim();
-  return name || null;
-}
-
-function customerPhone(order: MerchantOrder): string | null {
-  return order.delivery?.customerPhone?.trim() || order.shippingAddress?.phone?.trim() || null;
-}
-
-function formatOrderDetailsHtml(order: MerchantOrder): string {
-  const ref = formatOrderRef(order.id);
-  const lines = [
-    `<b>Order ${ref}</b>`,
-    order.total != null
-      ? `Total: ${formatMoneyAmount(String(order.total), order.currencyCode ?? undefined) ?? order.total}`
-      : null,
-    order.paymentStatus ? `Payment: ${humanizeToken(order.paymentStatus)}` : null,
-    order.paymentMethod ? `Method: ${humanizeToken(order.paymentMethod)}` : null,
-    order.fulfillmentStatus ? `Status: ${humanizeToken(order.fulfillmentStatus)}` : null,
-    order.delivery?.choice ? `Fulfillment: ${humanizeToken(order.delivery.choice)}` : null,
-    customerLabel(order) ? `Customer: ${customerLabel(order)}` : null,
-    customerPhone(order) ? `Phone: ${customerPhone(order)}` : null,
-    order.shippingAddress?.city ? `City: ${order.shippingAddress.city}` : null,
-  ].filter((line): line is string => Boolean(line));
-  return lines.join("\n");
 }
 
 function mutationForAction(
@@ -206,7 +175,7 @@ export async function handleTelegramCallbackQuery(
         salesChannelId,
       });
       if (detail.ok) {
-        text = formatOrderDetailsHtml(detail.order);
+        text = formatOrderCardHtml(detail.order);
       } else {
         text = "Could not load this order. Open it in the dashboard.";
       }

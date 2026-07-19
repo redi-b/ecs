@@ -110,7 +110,9 @@ export function formatMoneyAmount(
 export function humanizeToken(value: string): string {
   const key = value.trim().toLowerCase().replace(/[_-]+/g, " ");
   const map: Record<string, string> = {
-    cod: "Cash on delivery",
+    // Pay in person covers delivery and pickup; avoid COD jargon for merchants.
+    cod: "Pay in person",
+    "cash on delivery": "Pay in person",
     chapa: "Chapa",
     delivery: "Delivery",
     pickup: "Pickup",
@@ -159,6 +161,15 @@ function formatWhen(iso?: string): string | undefined {
     dateStyle: "medium",
     timeStyle: "short",
   });
+}
+
+function isPlaceholderName(name: string): boolean {
+  return /^(customer|unknown|guest|n\/?a|-)$/i.test(name.trim());
+}
+
+function isSyntheticEmail(email: string): boolean {
+  const e = email.trim().toLowerCase();
+  return e.endsWith("@orders.local") || e.startsWith("telegram+");
 }
 
 function escapeHtml(value: string): string {
@@ -336,13 +347,13 @@ function orderDetails(ctx: Context, options?: { includePaymentStatus?: boolean }
       value: Number.isFinite(n) ? (n === 1 ? "1 item" : `${n} items`) : ctx.itemCount,
     });
   }
-  if (ctx.customerName) {
+  if (ctx.customerName && !isPlaceholderName(ctx.customerName)) {
     details.push({ label: "Customer", value: ctx.customerName });
   }
   if (ctx.customerPhone) {
     details.push({ label: "Phone", value: ctx.customerPhone });
   }
-  if (ctx.customerEmail) {
+  if (ctx.customerEmail && !isSyntheticEmail(ctx.customerEmail)) {
     details.push({ label: "Email", value: ctx.customerEmail });
   }
   if (ctx.customerCity) {
@@ -423,22 +434,10 @@ export function createCodeNotificationRenderer(): NotificationRenderer {
         // Legacy cod_order.created still renders if present in old logs; new emits use order.created only.
         case "cod_order.created":
         case "order.created": {
-          const isCod =
-            input.eventType === "cod_order.created" ||
-            (ctx.paymentMethod?.toLowerCase() === "cod" ||
-              ctx.paymentMethod?.toLowerCase() === "cash on delivery");
-          const title = isCod
-            ? ctx.orderRef === "order"
-              ? "New COD order"
-              : `New COD order ${ctx.orderRef}`
-            : ctx.orderRef === "order"
-              ? "New order"
-              : `New order ${ctx.orderRef}`;
-          const headline = isCod
-            ? ctx.orderRef === "order"
-              ? "You received a new cash-on-delivery order."
-              : `You received a new COD order ${ctx.orderRef}.`
-            : ctx.orderRef === "order"
+          const title =
+            ctx.orderRef === "order" ? "New order" : `New order ${ctx.orderRef}`;
+          const headline =
+            ctx.orderRef === "order"
               ? "You received a new order."
               : `You received a new order ${ctx.orderRef}.`;
           return finish(
@@ -448,13 +447,13 @@ export function createCodeNotificationRenderer(): NotificationRenderer {
               orderDetails(
                 {
                   ...ctx,
-                  paymentMethod: ctx.paymentMethod ?? (isCod ? "cod" : undefined),
+                  paymentMethod:
+                    ctx.paymentMethod ??
+                    (input.eventType === "cod_order.created" ? "cod" : undefined),
                 },
                 { includePaymentStatus: true },
               ),
-              isCod
-                ? "Open the order in your dashboard to confirm and prepare fulfillment."
-                : "Open the order in your dashboard to review and fulfill it.",
+              "Open the order in your dashboard to review and prepare it.",
             ),
           );
         }

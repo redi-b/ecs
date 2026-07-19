@@ -629,7 +629,7 @@ async function advanceAfterProduct(
     chatId: input.chatId,
     text: [
       `<b>${itemLabel(input.hit.productTitle, input.hit.variantTitle)}</b>`,
-      input.flow === "sale" ? "How many?" : "New stock quantity?",
+      input.flow === "sale" ? "How many? Tap a number or type one." : "New quantity? Tap a number or type one.",
     ].join("\n"),
     parseMode: "HTML",
     replyMarkup: qtyInline(input.flow),
@@ -788,14 +788,18 @@ async function applySale(
     return;
   }
 
-  const who = lastName ? `${firstName} ${lastName}` : firstName;
+  const fullName = [firstName, lastName].filter(Boolean).join(" ").trim();
+  const whoLine =
+    fullName && !/^customer$/i.test(fullName)
+      ? `${fullName} · ${input.customerPhone}`
+      : input.customerPhone;
   await sendTelegramBotMessage({
     botToken: deps.botToken,
     chatId: input.chatId,
     text: [
       `Sale ${formatOrderRef(created.order.id)}`,
       `${itemLabel(input.dialog.productTitle, input.dialog.variantTitle)} × ${input.dialog.quantity}`,
-      `${who} · ${input.customerPhone}`,
+      whoLine,
     ].join("\n"),
     replyMarkup: mainReplyKeyboard(),
   }).catch(() => undefined);
@@ -828,13 +832,17 @@ async function showSaleConfirm(
     customerName: input.name || "Customer",
   });
 
+  const displayName = (input.name || "").trim();
+  const who =
+    displayName && !/^customer$/i.test(displayName) ? `${displayName} · ${phone}` : phone;
+
   await sendTelegramBotMessage({
     botToken: deps.botToken,
     chatId: input.chatId,
     text: [
       `<b>Confirm sale</b>`,
       `${itemLabel(input.dialog.productTitle, input.dialog.variantTitle)} × ${input.dialog.quantity}`,
-      `${input.name || "Customer"} · ${phone}`,
+      who,
     ].join("\n"),
     parseMode: "HTML",
     replyMarkup: confirmInline(),
