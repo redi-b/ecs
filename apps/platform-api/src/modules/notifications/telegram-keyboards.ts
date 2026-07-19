@@ -8,7 +8,6 @@ export const MAIN_KEYBOARD_LABELS = {
   orders: "Orders",
   help: "Help",
   cancel: "Cancel",
-  shareContact: "Share contact",
   search: "Search",
 } as const;
 
@@ -27,14 +26,14 @@ export function mainReplyKeyboard() {
   };
 }
 
-export function contactReplyKeyboard() {
+/**
+ * Telegram request_contact only sends the *operator's* own number, not a customer.
+ * For sales we ask for a typed phone (or an attached contact via the paperclip).
+ */
+export function phonePromptMarkup() {
   return {
-    keyboard: [
-      [{ text: MAIN_KEYBOARD_LABELS.shareContact, request_contact: true }],
-      [{ text: MAIN_KEYBOARD_LABELS.cancel }],
-    ],
-    resize_keyboard: true,
-    one_time_keyboard: true,
+    inline_keyboard: [[{ text: "Cancel", callback_data: "t:menu" }]],
+    // Keep shop keyboard visible underneath after the step ends.
   };
 }
 

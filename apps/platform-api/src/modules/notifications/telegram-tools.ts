@@ -28,10 +28,10 @@ import {
   MAIN_KEYBOARD_LABELS,
   cancelInline,
   confirmInline,
-  contactReplyKeyboard,
   itemLabel,
   mainReplyKeyboard,
   ordersListInline,
+  phonePromptMarkup,
   productPickInline,
   qtyInline,
   searchResultsInline,
@@ -221,7 +221,7 @@ async function sendHelp(deps: TelegramToolsDeps, chatId: string, ctx: OperatorCt
     chatId,
     text: [
       `<b>${ctx.tenantName}</b>`,
-      "• New sale — offline sale",
+      "• New sale — offline sale (type the customer phone)",
       "• Stock — set quantity",
       "• Today — today’s orders",
       "• Orders — recent orders",
@@ -526,8 +526,13 @@ async function goToContactOrConfirmStock(
   await sendTelegramBotMessage({
     botToken: deps.botToken,
     chatId: input.chatId,
-    text: `${itemLabel(input.dialog.productTitle, input.dialog.variantTitle)} × ${input.qty}\nShare contact or type phone.`,
-    replyMarkup: contactReplyKeyboard(),
+    text: [
+      `${itemLabel(input.dialog.productTitle, input.dialog.variantTitle)} × ${input.qty}`,
+      "Type the <b>customer’s</b> phone number.",
+      "Or use 📎 → Contact to pick them from your phone.",
+    ].join("\n"),
+    parseMode: "HTML",
+    replyMarkup: phonePromptMarkup(),
   }).catch(() => undefined);
 }
 
@@ -658,8 +663,8 @@ async function showSaleConfirm(
     await sendTelegramBotMessage({
       botToken: deps.botToken,
       chatId: input.chatId,
-      text: "Need a valid phone and quantity ≥ 1.",
-      replyMarkup: contactReplyKeyboard(),
+      text: "Need a valid customer phone (and quantity ≥ 1).",
+      replyMarkup: phonePromptMarkup(),
     }).catch(() => undefined);
     return;
   }
@@ -1135,8 +1140,8 @@ export async function handleTelegramToolsMessage(
       await sendTelegramBotMessage({
         botToken: deps.botToken,
         chatId: input.chatId,
-        text: "Share contact, or type a valid phone.",
-        replyMarkup: contactReplyKeyboard(),
+        text: "Type the customer’s phone number (at least 8 digits).",
+        replyMarkup: phonePromptMarkup(),
       }).catch(() => undefined);
       return { handled: true, reason: "bad_phone" };
     }
