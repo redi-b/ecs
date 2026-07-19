@@ -58,17 +58,41 @@ describe("createCodeNotificationRenderer", () => {
       },
     });
 
-    assert.match(result.body, /new COD order 0H3FR2/i);
+    assert.match(result.body, /new order 0H3FR2/i);
     assert.match(result.body, /ETB 10,880/);
     assert.match(result.body, /Customer: Abebe Kebede/);
     assert.match(result.body, /Phone: \+251911000000/);
     assert.match(result.body, /Linen Midi Dress · M \/ Sage/);
     assert.match(result.body, /Denim Jacket · M/);
-    assert.match(result.body, /Payment: Cash on delivery/);
+    assert.match(result.body, /Payment: Pay in person/);
     assert.match(result.body, /Fulfillment: Delivery/);
+    assert.doesNotMatch(result.body, /COD/i);
     assert.doesNotMatch(result.body, /10880\.000/);
     assert.doesNotMatch(result.body, /CHAPA-ugly/i);
     assert.doesNotMatch(result.body, /Reference:/i);
+  });
+
+  it("hides synthetic emails and placeholder customer names", async () => {
+    const result = await renderer.render({
+      channel: "telegram",
+      eventType: "order.created",
+      tenantId: "tenant-1",
+      recipient: "123",
+      payload: {
+        orderId: "order_01TESTSYNTHETICMAIL1",
+        amount: "100",
+        currencyCode: "ETB",
+        customerName: "Customer",
+        customerEmail: "telegram+0987654321@orders.local",
+        customerPhone: "0911000000",
+        paymentMethod: "cod",
+      },
+    });
+    assert.doesNotMatch(result.body, /Customer: Customer/);
+    assert.doesNotMatch(result.body, /@orders\.local/);
+    assert.doesNotMatch(result.body, /COD/i);
+    assert.match(result.body, /Phone: 0911000000/);
+    assert.match(result.body, /Pay in person/);
   });
 
   it("renders cancelled and payment messages with details", async () => {

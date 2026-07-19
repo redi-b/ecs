@@ -1,4 +1,5 @@
 import { createChapaPaymentService } from "../../../adapters/chapa/payment-service.js";
+import { buildOrderCreatedPayloadFromComplete } from "../../../modules/notifications/order-payload.js";
 
 type ChapaCheckoutInput = {
   cartId: string;
@@ -486,9 +487,13 @@ export async function completeChapaCheckout(options: {
       await options.recordNotificationEvent({
         eventType: "order.created",
         payload: {
+          ...buildOrderCreatedPayloadFromComplete({
+            orderId,
+            completeBody: completeCartBody,
+            paymentMethod: "chapa",
+            paymentStatus: "paid",
+          }),
           cartId,
-          orderId,
-          paymentMethod: "chapa",
           txRef,
         },
         tenantId: options.tenantId,
