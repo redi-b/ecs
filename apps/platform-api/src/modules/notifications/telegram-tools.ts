@@ -1139,6 +1139,25 @@ export async function handleTelegramToolsMessage(
   const lower = text.toLowerCase();
   const ctx = await resolveOperatorContext(deps, input.telegramUserId);
 
+  /**
+   * /start with a payload is deep-link connect (notifications or operator).
+   * Must not be claimed here or linking never runs.
+   * Bare /start: home if linked, otherwise fall through to connect help.
+   */
+  const startMatch = text.match(/^\/start(?:@[A-Za-z0-9_]+)?(?:\s+(.+))?$/i);
+  if (startMatch) {
+    const payload = (startMatch[1] ?? "").trim();
+    if (payload) {
+      return { handled: false, reason: "start_deep_link" };
+    }
+    if (ctx) {
+      clearDialog(input.telegramUserId, input.chatId);
+      await sendHome(deps, input.chatId, ctx);
+      return { handled: true, reason: "home" };
+    }
+    return { handled: false, reason: "start_unlinked" };
+  }
+
   // Contact share mid-sale
   if (input.contact?.phone) {
     if (!ctx) {
@@ -1171,8 +1190,6 @@ export async function handleTelegramToolsMessage(
   const isMenu =
     lower === "/menu" ||
     lower.startsWith("/menu@") ||
-    lower === "/start" ||
-    /^\/start@\w+$/i.test(lower) ||
     lower === "menu" ||
     lower === MAIN_KEYBOARD_LABELS.cancel.toLowerCase() ||
     lower === "/cancel" ||
@@ -1251,8 +1268,26 @@ export async function handleTelegramToolsMessage(
   }
 
   if (!ctx) {
-    // Let connect flow handle non-operator free text when not a tools command
-    if (lower.startsWith("/")) {
+    // Unknown slash from unlinked chat (not /start — handled above).
+    // Tools-specific commands: point to dashboard. Everything else falls through.
+    if (
+      lower === "/sale" ||
+      lower.startsWith("/sale@") ||
+      lower === "/stock" ||
+      lower.startsWith("/stock@") ||
+      lower === "/today" ||
+      lower.startsWith("/today@") ||
+      lower === "/orders" ||
+      lower.startsWith("/orders@") ||
+      lower === "/shop" ||
+      lower.startsWith("/shop@") ||
+      lower === "/menu" ||
+      lower.startsWith("/menu@") ||
+      lower === "/help" ||
+      lower.startsWith("/help@") ||
+      lower === "/cancel" ||
+      lower.startsWith("/cancel@")
+    ) {
       await denyNotOperator(deps, input.chatId);
       return { handled: true, reason: "not_operator" };
     }
