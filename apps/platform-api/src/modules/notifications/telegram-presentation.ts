@@ -2,6 +2,47 @@ import type { MerchantOrder, MerchantProduct, MerchantProductVariant } from "../
 import type { TelegramProductHit } from "./telegram-dialog-state.js";
 import { formatMoneyAmount, formatOrderRef, humanizeToken } from "./renderer.js";
 
+/** Prefer shop hostname; fall back to platform dashboard base. */
+export function resolveDashboardAdminBase(input: {
+  primaryHostname?: string | null;
+  fallbackBaseUrl?: string | null;
+}): string | null {
+  const host = input.primaryHostname?.trim();
+  if (host) {
+    const local =
+      host.includes("localhost") ||
+      host.endsWith(".lvh.me") ||
+      host.startsWith("127.") ||
+      host.endsWith(".local");
+    const scheme = local ? "http" : "https";
+    return `${scheme}://${host}/admin`;
+  }
+  const base = input.fallbackBaseUrl?.trim();
+  if (!base) return null;
+  try {
+    const url = new URL(base);
+    // Ensure path ends at host root then /admin
+    return `${url.origin}/admin`;
+  } catch {
+    return null;
+  }
+}
+
+/** base is `…/admin`. subpath like `/settings?tab=telegram` or `orders`. */
+export function adminUrl(base: string | null, subpath = ""): string | null {
+  if (!base) return null;
+  const root = base.replace(/\/$/, "");
+  if (!subpath) return root;
+  const path = subpath.startsWith("/") ? subpath : `/${subpath}`;
+  return `${root}${path}`;
+}
+
+export function htmlLink(href: string | null, label: string): string {
+  if (!href) return label;
+  const safe = href.replace(/&/g, "&amp;").replace(/"/g, "&quot;");
+  return `<a href="${safe}">${label}</a>`;
+}
+
 /** Compact payment for list buttons. */
 export function shortPaymentLabel(status: string | null | undefined): string {
   if (!status) return "—";

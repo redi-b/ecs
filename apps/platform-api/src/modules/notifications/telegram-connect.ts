@@ -476,7 +476,7 @@ export function createTelegramConnectService(
         await sendTelegramBotMessage({
           botToken: config.botToken,
           chatId,
-          text: "Settings → Notifications to connect alerts.\nSettings → Telegram for shop tools (New sale, Stock, Today, Orders).",
+          text: "Connect alerts under Settings → Notifications.\nLink shop tools under Settings → Telegram, then use the bot keyboard.",
         }).catch(() => undefined);
         return { handled: true as const, reason: "help" as const };
       }

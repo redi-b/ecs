@@ -265,6 +265,40 @@ export function createTelegramOperatorService(
       return { ok: true as const };
     },
 
+    /**
+     * Operator self-service unlink from Telegram (must match telegram user + tenant).
+     */
+    unlinkSelf: async (input: {
+      telegramUserId: string;
+      tenantId: string;
+      bindingId: string;
+    }) => {
+      const deleted = await db
+        .delete(telegramOperatorBindings)
+        .where(
+          and(
+            eq(telegramOperatorBindings.id, input.bindingId),
+            eq(telegramOperatorBindings.tenantId, input.tenantId),
+            eq(telegramOperatorBindings.telegramUserId, input.telegramUserId),
+          ),
+        )
+        .returning({
+          id: telegramOperatorBindings.id,
+          telegramChatId: telegramOperatorBindings.telegramChatId,
+        });
+
+      if (deleted.length === 0) {
+        return { ok: false as const, error: "binding_not_found" as const };
+      }
+
+      const chatId = deleted[0]!.telegramChatId;
+      if (config?.botToken && chatId) {
+        await deleteChatBotCommands({ botToken: config.botToken, chatId }).catch(() => undefined);
+      }
+
+      return { ok: true as const, chatId };
+    },
+
     setBindingEnabled: async (input: {
       tenantId: string;
       bindingId: string;
@@ -569,10 +603,11 @@ export function createTelegramOperatorService(
         botToken: config.botToken,
         chatId: input.chatId,
         text: [
-          `Linked · ${shopLabel}`,
+          `<b>Linked</b> · ${shopLabel}`,
           "",
-          "Use the keyboard for New sale, Stock, Today, Orders.",
+          "Use the buttons below for New sale, Stock, Today, Orders, and Shop.",
         ].join("\n"),
+        parseMode: "HTML",
         replyMarkup: mainReplyKeyboard(),
       }).catch(() => undefined);
 

@@ -1,6 +1,6 @@
 import type { createPlatformDb } from "@ecs/db";
-import { tenants } from "@ecs/db";
-import { eq } from "drizzle-orm";
+import { domains, tenants } from "@ecs/db";
+import { and, eq } from "drizzle-orm";
 
 import type {
   MerchantOrder,
@@ -34,11 +34,20 @@ import {
   phonePromptMarkup,
   productPickInline,
   qtyInline,
+  removeReplyKeyboard,
   searchResultsInline,
+  shopInlineKeyboard,
+  unlinkConfirmInline,
 } from "./telegram-keyboards.js";
 import { buildRecentProductHits, productHitsFromCatalog } from "./telegram-recent-products.js";
 import { buildOrderActionKeyboard } from "./telegram-callback-tokens.js";
-import { formatOrderCardHtml, formatOrderListButtonLabel } from "./telegram-presentation.js";
+import {
+  adminUrl,
+  formatOrderCardHtml,
+  formatOrderListButtonLabel,
+  htmlLink,
+  resolveDashboardAdminBase,
+} from "./telegram-presentation.js";
 
 type PlatformDb = ReturnType<typeof createPlatformDb>["db"];
 
@@ -47,6 +56,8 @@ export type TelegramToolsDeps = {
   botToken: string;
   /** HMAC secret for order action buttons on Orders list */
   callbackSecret?: string;
+  /** e.g. http://dashboard.lvh.me — used when shop has no primary domain */
+  dashboardPublicBaseUrl?: string | null;
   operatorService: TelegramOperatorService;
   listMerchantOrders: (input: {
     limit: number;
@@ -92,15 +103,25 @@ export type TelegramToolsDeps = {
 type OperatorCtx = {
   tenantId: string;
   userId: string;
+  bindingId: string;
+  role: string;
   salesChannelId: string;
   stockLocationId: string | null;
   regionId: string | null;
   shippingOptionId: string | null;
   tenantName: string;
+  tenantHandle: string | null;
+  /** Full admin base URL `…/admin` or null */
+  adminBase: string | null;
 };
 
-const LINK_HINT =
-  "Shop tools need a management link. Open Settings → Telegram in the dashboard.";
+function linkToolsHint(adminBase: string | null): string {
+  const settings = adminUrl(adminBase, "/settings?tab=telegram");
+  if (settings) {
+    return `Shop tools need a management link.\nOpen ${htmlLink(settings, "Telegram settings")} in the dashboard.`;
+  }
+  return "Shop tools need a management link.\nOpen Settings → Telegram in the dashboard.";
+}
 
 function asRecord(value: unknown): Record<string, unknown> | null {
   if (typeof value === "object" && value !== null && !Array.isArray(value)) {
@@ -160,6 +181,8 @@ async function resolveOperatorContext(
       medusaRegionId: tenants.medusaRegionId,
       medusaShippingOptionId: tenants.medusaShippingOptionId,
       name: tenants.name,
+      handle: tenants.handle,
+      primaryDomainId: tenants.primaryDomainId,
     })
     .from(tenants)
     .where(eq(tenants.id, op.tenantId))
@@ -168,14 +191,33 @@ async function resolveOperatorContext(
   const salesChannelId = tenant?.medusaSalesChannelId?.trim();
   if (!salesChannelId) return null;
 
+  let hostname: string | null = null;
+  if (tenant?.primaryDomainId) {
+    const [domain] = await deps.db
+      .select({ hostname: domains.hostname })
+      .from(domains)
+      .where(and(eq(domains.id, tenant.primaryDomainId), eq(domains.tenantId, op.tenantId)))
+      .limit(1);
+    hostname = domain?.hostname?.trim() || null;
+  }
+
+  const adminBase = resolveDashboardAdminBase({
+    primaryHostname: hostname,
+    fallbackBaseUrl: deps.dashboardPublicBaseUrl ?? null,
+  });
+
   return {
     tenantId: op.tenantId,
     userId: op.userId,
+    bindingId: op.bindingId,
+    role: op.role,
     salesChannelId,
     stockLocationId: tenant?.medusaStockLocationId?.trim() || null,
     regionId: tenant?.medusaRegionId?.trim() || null,
     shippingOptionId: tenant?.medusaShippingOptionId?.trim() || null,
     tenantName: tenant?.name?.trim() || op.tenantName || "Your shop",
+    tenantHandle: tenant?.handle?.trim() || op.tenantHandle || null,
+    adminBase,
   };
 }
 
@@ -199,10 +241,15 @@ function isPaidStatus(status: string | null | undefined): boolean {
 }
 
 async function denyNotOperator(deps: TelegramToolsDeps, chatId: string) {
+  const adminBase = resolveDashboardAdminBase({
+    primaryHostname: null,
+    fallbackBaseUrl: deps.dashboardPublicBaseUrl ?? null,
+  });
   await sendTelegramBotMessage({
     botToken: deps.botToken,
     chatId,
-    text: LINK_HINT,
+    text: linkToolsHint(adminBase),
+    parseMode: "HTML",
   }).catch(() => undefined);
 }
 
@@ -210,28 +257,126 @@ async function sendHome(deps: TelegramToolsDeps, chatId: string, ctx: OperatorCt
   await sendTelegramBotMessage({
     botToken: deps.botToken,
     chatId,
-    text: ctx.tenantName,
+    text: [`<b>${ctx.tenantName}</b>`, "Use the buttons below."].join("\n"),
+    parseMode: "HTML",
     replyMarkup: mainReplyKeyboard(),
   }).catch(() => undefined);
 }
 
 async function sendHelp(deps: TelegramToolsDeps, chatId: string, ctx: OperatorCtx) {
+  const telegramSettings = adminUrl(ctx.adminBase, "/settings?tab=telegram");
+  const notifications = adminUrl(ctx.adminBase, "/settings?tab=notifications");
+  const lines = [
+    `<b>${ctx.tenantName}</b>`,
+    "Use the keyboard (not slash commands):",
+    "",
+    "• <b>New sale</b> — offline sale, then type customer phone",
+    "• <b>Stock</b> — set quantity",
+    "• <b>Today</b> — today’s totals",
+    "• <b>Orders</b> — recent orders & actions",
+    "• <b>Shop</b> — details, dashboard links, unlink",
+    "• <b>Cancel</b> — leave the current step",
+    "",
+  ];
+  if (telegramSettings || notifications) {
+    lines.push(
+      telegramSettings
+        ? `Management: ${htmlLink(telegramSettings, "Telegram settings")}`
+        : "Management: Settings → Telegram",
+    );
+    lines.push(
+      notifications
+        ? `Alerts: ${htmlLink(notifications, "Notification settings")}`
+        : "Alerts: Settings → Notifications",
+    );
+  } else {
+    lines.push("Management: Settings → Telegram");
+    lines.push("Alerts: Settings → Notifications");
+  }
+
+  await sendTelegramBotMessage({
+    botToken: deps.botToken,
+    chatId,
+    text: lines.join("\n"),
+    parseMode: "HTML",
+    replyMarkup: mainReplyKeyboard(),
+  }).catch(() => undefined);
+}
+
+async function sendShop(deps: TelegramToolsDeps, chatId: string, ctx: OperatorCtx) {
+  const saleReady = Boolean(ctx.regionId && ctx.shippingOptionId);
+  const stockReady = Boolean(ctx.stockLocationId);
+  const roleLabel = ctx.role ? ctx.role.charAt(0).toUpperCase() + ctx.role.slice(1) : "Manager";
+
+  const lines = [
+    `<b>${ctx.tenantName}</b>`,
+    ctx.tenantHandle ? `@${ctx.tenantHandle} · ${roleLabel}` : roleLabel,
+    "",
+    saleReady ? "Offline sales: ready" : "Offline sales: missing region/shipping setup",
+    stockReady ? "Stock updates: ready" : "Stock updates: missing stock location",
+  ];
+
+  const dashboard = adminUrl(ctx.adminBase, "");
+  const ordersPage = adminUrl(ctx.adminBase, "/orders");
+  const telegramSettings = adminUrl(ctx.adminBase, "/settings?tab=telegram");
+
+  if (dashboard) {
+    lines.push("", htmlLink(dashboard, "Open dashboard"));
+  }
+
+  await sendTelegramBotMessage({
+    botToken: deps.botToken,
+    chatId,
+    text: lines.join("\n"),
+    parseMode: "HTML",
+    replyMarkup: shopInlineKeyboard({
+      dashboard,
+      orders: ordersPage,
+      telegramSettings,
+    }),
+  }).catch(() => undefined);
+}
+
+async function sendUnlinkConfirm(deps: TelegramToolsDeps, chatId: string, ctx: OperatorCtx) {
   await sendTelegramBotMessage({
     botToken: deps.botToken,
     chatId,
     text: [
-      `<b>${ctx.tenantName}</b>`,
-      "• New sale — offline sale (type the customer phone)",
-      "• Stock — set quantity",
-      "• Today — today’s orders",
-      "• Orders — recent orders",
-      "• Cancel — leave current step",
-      "",
-      "Link management: Settings → Telegram",
-      "Alerts: Settings → Notifications",
+      `<b>Unlink Telegram?</b>`,
+      `Removes shop tools for <b>${ctx.tenantName}</b> on this account.`,
+      "You can link again from the dashboard.",
+      "Order alerts stay if this chat is connected under Notifications.",
     ].join("\n"),
     parseMode: "HTML",
-    replyMarkup: mainReplyKeyboard(),
+    replyMarkup: unlinkConfirmInline(),
+  }).catch(() => undefined);
+}
+
+async function performUnlink(
+  deps: TelegramToolsDeps,
+  input: { chatId: string; telegramUserId: string; ctx: OperatorCtx },
+) {
+  const result = await deps.operatorService.unlinkSelf({
+    telegramUserId: input.telegramUserId,
+    tenantId: input.ctx.tenantId,
+    bindingId: input.ctx.bindingId,
+  });
+  clearDialog(input.telegramUserId, input.chatId);
+  if (!result.ok) {
+    await sendTelegramBotMessage({
+      botToken: deps.botToken,
+      chatId: input.chatId,
+      text: "Could not unlink. Try again from the dashboard.",
+      replyMarkup: mainReplyKeyboard(),
+    }).catch(() => undefined);
+    return;
+  }
+  await sendTelegramBotMessage({
+    botToken: deps.botToken,
+    chatId: input.chatId,
+    text: `Unlinked from <b>${input.ctx.tenantName}</b>.\nShop tools are off for this chat.`,
+    parseMode: "HTML",
+    replyMarkup: removeReplyKeyboard(),
   }).catch(() => undefined);
 }
 
@@ -272,12 +417,14 @@ async function sendTodaySummary(deps: TelegramToolsDeps, chatId: string, ctx: Op
   const revenueLabel = formatMoneyAmount(String(revenue), currency) ?? String(revenue);
 
   const lines = [
-    `<b>${ctx.tenantName} · Today</b>`,
+    `<b>${ctx.tenantName}</b>`,
+    `<b>Today</b>`,
     `${today.length} orders · ${paid.length} paid · ${today.length - paid.length} unpaid`,
     `Paid total ${revenueLabel}`,
+    "",
   ];
   for (const order of today.slice(0, 5)) {
-    lines.push(formatOrderListButtonLabel(order));
+    lines.push(`· ${formatOrderListButtonLabel(order)}`);
   }
 
   await sendTelegramBotMessage({
@@ -370,7 +517,8 @@ async function sendOrdersList(
   await sendOrEdit(deps, {
     chatId: input.chatId,
     messageId: loading?.messageId ?? null,
-    text: "Recent orders · tap one",
+    text: `<b>Recent orders</b>\nTap one to open.`,
+    parseMode: "HTML",
     replyMarkup: ordersListInline(rows),
   });
 }
@@ -425,7 +573,10 @@ async function startProductPick(
     flow: "sale" | "stock";
   },
 ) {
-  const title = input.flow === "sale" ? "New sale · pick product" : "Stock · pick product";
+  const title =
+    input.flow === "sale"
+      ? "<b>New sale</b>\nPick a product"
+      : "<b>Stock</b>\nPick a product";
   const loading = await sendTelegramBotMessage({
     botToken: deps.botToken,
     chatId: input.chatId,
@@ -440,10 +591,18 @@ async function startProductPick(
   });
 
   if (hits.length === 0) {
+    const emptyHint = adminUrl(input.ctx.adminBase, "/products");
     await sendOrEdit(deps, {
       chatId: input.chatId,
       messageId: loading?.messageId ?? null,
-      text: `${title}\nNo products yet. Tap Search or add products in the dashboard.`,
+      text: [
+        title,
+        "No products yet. Tap Search, or add products in the dashboard.",
+        emptyHint ? htmlLink(emptyHint, "Open products") : null,
+      ]
+        .filter(Boolean)
+        .join("\n"),
+      parseMode: "HTML",
       replyMarkup: productPickInline([]),
     });
     return;
@@ -453,6 +612,7 @@ async function startProductPick(
     chatId: input.chatId,
     messageId: loading?.messageId ?? null,
     text: title,
+    parseMode: "HTML",
     replyMarkup: productPickInline(hits),
   });
 }
@@ -478,7 +638,11 @@ async function advanceAfterProduct(
   await sendTelegramBotMessage({
     botToken: deps.botToken,
     chatId: input.chatId,
-    text: itemLabel(input.hit.productTitle, input.hit.variantTitle),
+    text: [
+      `<b>${itemLabel(input.hit.productTitle, input.hit.variantTitle)}</b>`,
+      input.flow === "sale" ? "How many?" : "New stock quantity?",
+    ].join("\n"),
+    parseMode: "HTML",
     replyMarkup: qtyInline(input.flow),
   }).catch(() => undefined);
 }
@@ -733,6 +897,37 @@ export async function handleTelegramToolsCallback(
     }).catch(() => undefined);
     await sendHome(deps, chatId, ctx);
     return { handled: true, reason: "menu" };
+  }
+
+  if (action === "shop") {
+    clearDialog(telegramUserId, chatId);
+    await answerTelegramCallbackQuery({
+      botToken: deps.botToken,
+      callbackQueryId: callbackId,
+      text: "Shop",
+    }).catch(() => undefined);
+    await sendShop(deps, chatId, ctx);
+    return { handled: true, reason: "shop" };
+  }
+
+  if (action === "unlink") {
+    await answerTelegramCallbackQuery({
+      botToken: deps.botToken,
+      callbackQueryId: callbackId,
+      text: "Unlink",
+    }).catch(() => undefined);
+    await sendUnlinkConfirm(deps, chatId, ctx);
+    return { handled: true, reason: "unlink_confirm" };
+  }
+
+  if (action === "unlink_ok") {
+    await answerTelegramCallbackQuery({
+      botToken: deps.botToken,
+      callbackQueryId: callbackId,
+      text: "Unlinked",
+    }).catch(() => undefined);
+    await performUnlink(deps, { chatId, telegramUserId, ctx });
+    return { handled: true, reason: "unlinked" };
   }
 
   if (action === "search") {
@@ -1009,12 +1204,16 @@ export async function handleTelegramToolsMessage(
     lower === MAIN_KEYBOARD_LABELS.orders.toLowerCase() ||
     lower === "/orders" ||
     lower.startsWith("/orders@");
+  const isShop =
+    lower === MAIN_KEYBOARD_LABELS.shop.toLowerCase() ||
+    lower === "/shop" ||
+    lower.startsWith("/shop@");
   const isHelp =
     lower === MAIN_KEYBOARD_LABELS.help.toLowerCase() ||
     lower === "/help" ||
     lower.startsWith("/help@");
 
-  if (isMenu || isToday || isStock || isSale || isOrders || isHelp) {
+  if (isMenu || isToday || isStock || isSale || isOrders || isShop || isHelp) {
     if (!ctx) {
       await denyNotOperator(deps, input.chatId);
       return { handled: true, reason: "not_operator" };
@@ -1049,6 +1248,10 @@ export async function handleTelegramToolsMessage(
         ctx,
       });
       return { handled: true, reason: "orders" };
+    }
+    if (isShop) {
+      await sendShop(deps, input.chatId, ctx);
+      return { handled: true, reason: "shop" };
     }
     if (isHelp) {
       await sendHelp(deps, input.chatId, ctx);

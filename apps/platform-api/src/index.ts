@@ -350,6 +350,7 @@ if (telegramBotToken) {
     db: platformDb.db,
     botToken: telegramBotToken,
     callbackSecret: telegramCallbackSecret,
+    dashboardPublicBaseUrl: process.env.DASHBOARD_PUBLIC_BASE_URL ?? null,
     operatorService: telegramOperatorService,
     listMerchantOrders: async (input) => {
       const result = await orderService.listMerchantOrders({

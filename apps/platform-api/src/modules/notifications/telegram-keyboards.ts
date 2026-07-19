@@ -6,6 +6,7 @@ export const MAIN_KEYBOARD_LABELS = {
   stock: "Stock",
   today: "Today",
   orders: "Orders",
+  shop: "Shop",
   help: "Help",
   cancel: "Cancel",
   search: "Search",
@@ -19,10 +20,49 @@ export function mainReplyKeyboard() {
         { text: MAIN_KEYBOARD_LABELS.stock },
         { text: MAIN_KEYBOARD_LABELS.today },
       ],
-      [{ text: MAIN_KEYBOARD_LABELS.orders }, { text: MAIN_KEYBOARD_LABELS.help }],
+      [
+        { text: MAIN_KEYBOARD_LABELS.orders },
+        { text: MAIN_KEYBOARD_LABELS.shop },
+        { text: MAIN_KEYBOARD_LABELS.help },
+      ],
     ],
     resize_keyboard: true,
     is_persistent: true,
+  };
+}
+
+export function removeReplyKeyboard() {
+  return { remove_keyboard: true };
+}
+
+export function shopInlineKeyboard(links: {
+  dashboard?: string | null;
+  orders?: string | null;
+  telegramSettings?: string | null;
+}) {
+  const rows: Array<Array<{ text: string; callback_data?: string; url?: string }>> = [];
+  const openRow: Array<{ text: string; url: string }> = [];
+  if (links.dashboard) openRow.push({ text: "Open dashboard", url: links.dashboard });
+  if (links.orders) openRow.push({ text: "Orders page", url: links.orders });
+  if (openRow.length) rows.push(openRow);
+  if (links.telegramSettings) {
+    rows.push([{ text: "Telegram settings", url: links.telegramSettings }]);
+  }
+  rows.push([
+    { text: "Unlink", callback_data: "t:unlink" },
+    { text: "Close", callback_data: "t:menu" },
+  ]);
+  return { inline_keyboard: rows };
+}
+
+export function unlinkConfirmInline() {
+  return {
+    inline_keyboard: [
+      [
+        { text: "Yes, unlink", callback_data: "t:unlink_ok" },
+        { text: "Keep linked", callback_data: "t:shop" },
+      ],
+    ],
   };
 }
 
