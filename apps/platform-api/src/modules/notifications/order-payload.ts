@@ -5,7 +5,12 @@ import { buildOrderItemLines, formatOrderLineItemLabel } from "../telegram/teleg
 export function isSyntheticOrderEmail(email: string | null | undefined): boolean {
   if (!email?.trim()) return false;
   const e = email.trim().toLowerCase();
-  return e.endsWith("@orders.local") || e.startsWith("telegram+");
+  return (
+    e.endsWith("@orders.local") ||
+    e.startsWith("telegram+") ||
+    e.startsWith("walk-in@") ||
+    e.endsWith(".local")
+  );
 }
 
 /** Placeholder names we never show as "Customer: Customer". */

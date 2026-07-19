@@ -30,6 +30,28 @@ function normalize(value: string | null | undefined) {
 }
 
 /**
+ * Internal emails Medusa still stores when the shop has no real customer email
+ * (walk-in offline sales, legacy telegram+… placeholders). Hide from merchants.
+ */
+export function isSyntheticOrderEmail(email: string | null | undefined): boolean {
+  if (!email?.trim()) return false;
+  const e = email.trim().toLowerCase();
+  return (
+    e.endsWith("@orders.local") ||
+    e.startsWith("telegram+") ||
+    e.startsWith("walk-in@") ||
+    e.endsWith(".local")
+  );
+}
+
+/** Email shown to merchants; hide walk-in / technical placeholders. */
+export function getDisplayOrderEmail(email: string | null | undefined): string | null {
+  const value = email?.trim() || null;
+  if (!value || isSyntheticOrderEmail(value)) return null;
+  return value;
+}
+
+/**
  * Shop-facing order code from Medusa id (last 6 chars after stripping `order_`).
  * Keep in sync with platform-api `formatMerchantOrderCode` / list search.
  */
@@ -164,7 +186,9 @@ export function getOrderCustomerName(order: MerchantOrder, t?: Translate) {
     .trim();
   if (fromAddress) return fromAddress;
 
-  return order.email?.trim() || (t ? t("orders.labels.customerFallback") : "Customer");
+  const email = getDisplayOrderEmail(order.email);
+  if (email) return email;
+  return t ? t("orders.labels.customerFallback") : "Customer";
 }
 
 export function getOrderCustomerPhone(order: MerchantOrder) {

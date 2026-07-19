@@ -10,6 +10,7 @@ export type TelegramDialogStep =
   | "search"
   | "await_qty"
   | "await_contact"
+  | "await_email"
   | "confirm_sale"
   | "confirm_stock"
   | "orders_list";
@@ -42,6 +43,8 @@ export type TelegramDialogState = {
   quantity?: number;
   customerPhone?: string;
   customerName?: string;
+  /** Real email or shop walk-in address used for Medusa customer/order. */
+  customerEmail?: string;
   expiresAt: number;
 };
 

@@ -73,7 +73,16 @@ export function unlinkConfirmInline() {
 export function phonePromptMarkup() {
   return {
     inline_keyboard: [[{ text: "Cancel", callback_data: "t:menu" }]],
-    // Keep shop keyboard visible underneath after the step ends.
+  };
+}
+
+/** After phone: type a real email, or Walk-in for the shop’s shared offline customer. */
+export function emailPromptMarkup() {
+  return {
+    inline_keyboard: [
+      [{ text: "Walk-in", callback_data: "t:walkin" }],
+      [{ text: "Cancel", callback_data: "t:menu" }],
+    ],
   };
 }
 

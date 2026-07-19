@@ -152,7 +152,12 @@ function isPlaceholderCustomerName(name: string | null | undefined): boolean {
 function isSyntheticOrderEmail(email: string | null | undefined): boolean {
   if (!email?.trim()) return false;
   const e = email.trim().toLowerCase();
-  return e.endsWith("@orders.local") || e.startsWith("telegram+");
+  return (
+    e.endsWith("@orders.local") ||
+    e.startsWith("telegram+") ||
+    e.startsWith("walk-in@") ||
+    e.endsWith(".local")
+  );
 }
 
 export function formatOrderCardHtml(order: MerchantOrder): string {
