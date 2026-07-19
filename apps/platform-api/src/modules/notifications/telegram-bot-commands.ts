@@ -12,6 +12,7 @@ export const OPERATOR_BOT_COMMANDS = [
   { command: "stock", description: "Update stock" },
   { command: "today", description: "Today’s summary" },
   { command: "orders", description: "Recent orders" },
+  { command: "shop", description: "Shop details & unlink" },
   { command: "help", description: "How to use" },
   { command: "cancel", description: "Cancel current step" },
 ] as const;
