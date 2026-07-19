@@ -10,6 +10,11 @@ export { createTelegramConnectService, parseTelegramStartPayload } from "./teleg
 export { createTelegramOperatorService } from "./telegram-operator.js";
 export { startTelegramPolling } from "./telegram-polling.js";
 export {
+  ensureTelegramWebhookIfConfigured,
+  resolveTelegramWebhookUrl,
+  setTelegramWebhook,
+} from "./telegram-webhook.js";
+export {
   handleTelegramToolsCallback,
   handleTelegramToolsMessage,
   type TelegramToolsDeps,

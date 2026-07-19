@@ -50,6 +50,7 @@ import {
   handleTelegramToolsMessage,
   type TelegramToolsDeps,
 } from "./modules/telegram/telegram-tools.js";
+import { ensureTelegramWebhookIfConfigured } from "./modules/telegram/telegram-webhook.js";
 import { createTenantOnboardingService } from "./modules/onboarding/service.js";
 import { createPaymentOnboardingService } from "./modules/payments/payment-onboarding-service.js";
 import { createStorefrontTemplateService } from "./modules/storefront/template-service.js";
@@ -210,15 +211,34 @@ if (telegramConnectService.isConfigured()) {
     void setDefaultBotCommands({ botToken: telegramBotToken }).catch((err) => {
       logger.warn({ err }, "Telegram default bot commands could not be registered");
     });
+    // Production (and any non-polling host): keep webhook pointed at this API.
+    void ensureTelegramWebhookIfConfigured({
+      botToken: telegramBotToken,
+      pollingEnabled: telegramPollingEnabled,
+      env: {
+        TELEGRAM_WEBHOOK_URL: process.env.TELEGRAM_WEBHOOK_URL,
+        PLATFORM_PUBLIC_BASE_URL: process.env.PLATFORM_PUBLIC_BASE_URL,
+        TELEGRAM_WEBHOOK_SECRET: process.env.TELEGRAM_WEBHOOK_SECRET,
+      },
+      logger,
+    }).then((result) => {
+      if ("skipped" in result && result.skipped) {
+        if (result.reason === "webhook_url_unconfigured" && !telegramPollingEnabled) {
+          logger.warn(
+            "Telegram webhook URL not set (TELEGRAM_WEBHOOK_URL or PLATFORM_PUBLIC_BASE_URL). " +
+              "Connect will fail until the webhook points at this process.",
+          );
+        }
+        return;
+      }
+      if ("ok" in result && !result.ok) {
+        logger.warn({ error: result.error }, "Telegram webhook registration failed");
+      }
+    });
   }
   if (telegramPollingEnabled) {
     logger.info(
       "TELEGRAM_POLLING on: local long-polling will receive /start connect updates (webhook cleared).",
-    );
-  } else {
-    logger.warn(
-      "TELEGRAM_POLLING off: connect only works if Telegram webhook hits THIS process. " +
-        "If webhook still points at production while you develop locally, connect will always fail.",
     );
   }
 } else {
