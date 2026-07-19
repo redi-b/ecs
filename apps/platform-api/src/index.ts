@@ -44,6 +44,7 @@ import {
 import { createTelegramConnectService } from "./modules/notifications/telegram-connect.js";
 import { createTelegramOperatorService } from "./modules/notifications/telegram-operator.js";
 import { startTelegramPolling } from "./modules/notifications/telegram-polling.js";
+import { setDefaultBotCommands } from "./modules/notifications/telegram-bot-commands.js";
 import {
   handleTelegramToolsCallback,
   handleTelegramToolsMessage,
@@ -205,6 +206,11 @@ if (telegramConnectService.isConfigured()) {
     { bot: telegramBotUsername, polling: telegramPollingEnabled },
     "Telegram bot configured for notifications and shop tools.",
   );
+  if (telegramBotToken) {
+    void setDefaultBotCommands({ botToken: telegramBotToken }).catch((err) => {
+      logger.warn({ err }, "Telegram default bot commands could not be registered");
+    });
+  }
   if (telegramPollingEnabled) {
     logger.info(
       "TELEGRAM_POLLING on: local long-polling will receive /start connect updates (webhook cleared).",
@@ -343,6 +349,7 @@ if (telegramBotToken) {
   telegramToolsBridge.deps = {
     db: platformDb.db,
     botToken: telegramBotToken,
+    callbackSecret: telegramCallbackSecret,
     operatorService: telegramOperatorService,
     listMerchantOrders: async (input) => {
       const result = await orderService.listMerchantOrders({
