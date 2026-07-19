@@ -51,6 +51,7 @@ describe("createCodeNotificationRenderer", () => {
         customerPhone: "+251911000000",
         customerCity: "Addis Ababa",
         itemCount: 3,
+        itemLines: ["Linen Midi Dress · M / Sage × 1", "Denim Jacket · M × 2"],
         paymentMethod: "cod",
         deliveryChoice: "delivery",
         paymentReference: "CHAPA-ugly-tx-ref-should-not-appear",
@@ -61,7 +62,8 @@ describe("createCodeNotificationRenderer", () => {
     assert.match(result.body, /ETB 10,880/);
     assert.match(result.body, /Customer: Abebe Kebede/);
     assert.match(result.body, /Phone: \+251911000000/);
-    assert.match(result.body, /Items: 3 items/);
+    assert.match(result.body, /Linen Midi Dress · M \/ Sage/);
+    assert.match(result.body, /Denim Jacket · M/);
     assert.match(result.body, /Payment: Cash on delivery/);
     assert.match(result.body, /Fulfillment: Delivery/);
     assert.doesNotMatch(result.body, /10880\.000/);

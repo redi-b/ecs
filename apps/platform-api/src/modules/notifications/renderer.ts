@@ -176,8 +176,18 @@ function cleanDetails(details: Detail[]): Detail[] {
 }
 
 function composePlain(headline: string, details: Detail[], footer?: string | null): string {
-  const rows = cleanDetails(details).map((d) => `${d.label}: ${d.value.trim()}`);
-  const parts = [headline.trim(), ...rows];
+  const parts = [headline.trim()];
+  for (const detail of cleanDetails(details)) {
+    const value = detail.value.trim();
+    if (value.includes("\n")) {
+      parts.push(`${detail.label}:`);
+      for (const line of value.split("\n")) {
+        if (line.trim()) parts.push(line);
+      }
+    } else {
+      parts.push(`${detail.label}: ${value}`);
+    }
+  }
   if (footer?.trim()) {
     parts.push("", footer.trim());
   }
@@ -191,9 +201,15 @@ function composePlain(headline: string, details: Detail[], footer?: string | nul
 function composeHtml(headline: string, details: Detail[], footer?: string | null): string {
   const lines = [`<b>${escapeHtml(headline.trim())}</b>`];
   for (const detail of cleanDetails(details)) {
-    lines.push(
-      `<b>${escapeHtml(detail.label)}:</b> ${escapeHtml(detail.value.trim())}`,
-    );
+    const value = detail.value.trim();
+    if (value.includes("\n")) {
+      lines.push(`<b>${escapeHtml(detail.label)}:</b>`);
+      for (const line of value.split("\n")) {
+        if (line.trim()) lines.push(escapeHtml(line));
+      }
+    } else {
+      lines.push(`<b>${escapeHtml(detail.label)}:</b> ${escapeHtml(value)}`);
+    }
   }
   if (footer?.trim()) {
     lines.push("", escapeHtml(footer.trim()));
@@ -224,10 +240,50 @@ type Context = {
   paymentStatus?: string | undefined;
   deliveryChoice?: string | undefined;
   itemCount?: string | undefined;
+  /** Preformatted line labels including variant when known. */
+  itemLines?: string[] | undefined;
   txRef?: string | undefined;
   source?: string | undefined;
   when?: string | undefined;
 };
+
+function pickItemLines(data: Record<string, unknown>): string[] | undefined {
+  const raw = data.itemLines ?? data.item_lines ?? data.items;
+  if (!Array.isArray(raw) || raw.length === 0) return undefined;
+  const lines: string[] = [];
+  for (const entry of raw) {
+    if (typeof entry === "string" && entry.trim()) {
+      lines.push(entry.trim());
+      continue;
+    }
+    if (typeof entry === "object" && entry !== null) {
+      const rec = entry as Record<string, unknown>;
+      const title =
+        (typeof rec.productTitle === "string" && rec.productTitle) ||
+        (typeof rec.product_title === "string" && rec.product_title) ||
+        (typeof rec.title === "string" && rec.title) ||
+        "Item";
+      const variant =
+        (typeof rec.variantTitle === "string" && rec.variantTitle) ||
+        (typeof rec.variant_title === "string" && rec.variant_title) ||
+        "";
+      const qty =
+        typeof rec.quantity === "number"
+          ? rec.quantity
+          : typeof rec.quantity === "string"
+            ? Number(rec.quantity)
+            : null;
+      const showVariant =
+        Boolean(variant.trim()) &&
+        !/^default$/i.test(variant) &&
+        variant.trim().toLowerCase() !== String(title).trim().toLowerCase();
+      const base = showVariant ? `${String(title).trim()} · ${variant.trim()}` : String(title).trim();
+      const q = qty != null && Number.isFinite(qty) && qty > 0 ? ` × ${qty}` : "";
+      lines.push(`${base}${q}`);
+    }
+  }
+  return lines.length ? lines.slice(0, 8) : undefined;
+}
 
 function buildContext(data: Record<string, unknown>): Context {
   // Prefer Medusa order id → shop code. Fall back to orderCode, then legacy display id.
@@ -239,6 +295,7 @@ function buildContext(data: Record<string, unknown>): Context {
     pickScalar(data, "currencyCode", "currency", "currency_code"),
   );
   const itemCountRaw = pickScalar(data, "itemCount", "itemsCount", "lineItemCount");
+  const itemLines = pickItemLines(data);
   return {
     orderRef,
     amount,
@@ -251,6 +308,7 @@ function buildContext(data: Record<string, unknown>): Context {
     paymentStatus: pickScalar(data, "paymentStatus", "payment_status", "status"),
     deliveryChoice: pickScalar(data, "deliveryChoice", "delivery_choice"),
     itemCount: itemCountRaw,
+    ...(itemLines ? { itemLines } : {}),
     // Keep raw payment refs out of merchant-facing copy (ugly provider/tx strings).
     txRef: undefined,
     source: pickScalar(data, "source", "paid_via"),
@@ -266,7 +324,12 @@ function orderDetails(ctx: Context, options?: { includePaymentStatus?: boolean }
   if (ctx.amount) {
     details.push({ label: "Total", value: ctx.amount });
   }
-  if (ctx.itemCount) {
+  if (ctx.itemLines && ctx.itemLines.length > 0) {
+    details.push({
+      label: "Items",
+      value: ctx.itemLines.map((line) => `· ${line}`).join("\n"),
+    });
+  } else if (ctx.itemCount) {
     const n = Number(ctx.itemCount);
     details.push({
       label: "Items",

@@ -4,6 +4,7 @@ import { describe, it } from "node:test";
 import type { MerchantOrder, MerchantProductVariant } from "../../types/index.js";
 import {
   adminUrl,
+  formatOrderLineItemLabel,
   formatOrderListButtonLabel,
   formatVariantLabel,
   htmlLink,
@@ -107,5 +108,16 @@ describe("telegram-presentation", () => {
   it("adminUrl and htmlLink", () => {
     assert.equal(adminUrl("http://x/admin", "/settings?tab=telegram"), "http://x/admin/settings?tab=telegram");
     assert.ok(htmlLink("https://example.com", "Go").includes("href="));
+  });
+
+  it("formatOrderLineItemLabel includes variant", () => {
+    assert.equal(
+      formatOrderLineItemLabel({
+        productTitle: "Linen Midi Dress",
+        variantTitle: "M / Sage",
+        quantity: 2,
+      }),
+      "Linen Midi Dress · M / Sage × 2",
+    );
   });
 });

@@ -17,8 +17,9 @@ const LIST_FIELDS = [
   "sales_channel_id",
   "metadata",
   "*shipping_address",
-  // Light line items for list “items” column (title + qty).
+  // Line items for list column + Telegram order cards (include variant when available).
   "*items",
+  "*items.variant",
   "created_at",
   "updated_at",
 ].join(",");
@@ -43,6 +44,7 @@ const DETAIL_FIELDS = [
   "*fulfillments",
   "*items",
   "*items.detail",
+  "*items.variant",
   "*payment_collections",
   "*payment_collections.payment_sessions",
   "created_at",

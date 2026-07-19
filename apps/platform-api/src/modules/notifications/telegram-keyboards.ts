@@ -42,11 +42,11 @@ export function shopInlineKeyboard(links: {
 }) {
   const rows: Array<Array<{ text: string; callback_data?: string; url?: string }>> = [];
   const openRow: Array<{ text: string; url: string }> = [];
-  if (links.dashboard) openRow.push({ text: "Open dashboard", url: links.dashboard });
-  if (links.orders) openRow.push({ text: "Orders page", url: links.orders });
+  if (links.dashboard) openRow.push({ text: "Dashboard", url: links.dashboard });
+  if (links.orders) openRow.push({ text: "Orders", url: links.orders });
   if (openRow.length) rows.push(openRow);
   if (links.telegramSettings) {
-    rows.push([{ text: "Telegram settings", url: links.telegramSettings }]);
+    rows.push([{ text: "Settings → Telegram", url: links.telegramSettings }]);
   }
   rows.push([
     { text: "Unlink", callback_data: "t:unlink" },

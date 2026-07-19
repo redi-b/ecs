@@ -1,4 +1,5 @@
 import type { MerchantOrder } from "../../types/index.js";
+import { buildOrderItemLines } from "./telegram-presentation.js";
 
 /** Shared merchant-facing fields for order/payment notifications (no secrets). */
 export function buildMerchantOrderNotificationPayload(
@@ -23,6 +24,10 @@ export function buildMerchantOrderNotificationPayload(
   }
   if (order.itemCount != null) {
     payload.itemCount = order.itemCount;
+  }
+  const itemLines = buildOrderItemLines(order.items, 8);
+  if (itemLines.length > 0) {
+    payload.itemLines = itemLines;
   }
   if (order.paymentMethod) {
     payload.paymentMethod = order.paymentMethod;

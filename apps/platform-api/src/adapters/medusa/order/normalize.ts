@@ -280,12 +280,28 @@ export function getLineItems(value: unknown) {
         ? reportedTotal
         : (computedTotal ?? reportedTotal ?? null);
 
+    const variantRecord = isRecord(item.variant) ? item.variant : null;
+    const productRecord = isRecord(item.product) ? item.product : null;
+    const productTitle =
+      getString(item.product_title) ??
+      (productRecord ? getString(productRecord.title) : null) ??
+      null;
+    const variantTitle =
+      getString(item.variant_title) ??
+      getString(item.subtitle) ??
+      (variantRecord ? getString(variantRecord.title) : null) ??
+      null;
+    const title =
+      getString(item.title) ?? productTitle ?? (variantTitle ? variantTitle : null);
+
     return [
       {
         id,
         ...(getString(item.product_id) ? { productId: getString(item.product_id) } : {}),
         ...(getString(item.variant_id) ? { variantId: getString(item.variant_id) } : {}),
-        title: getString(item.title) ?? getString(item.product_title),
+        title,
+        ...(productTitle ? { productTitle } : {}),
+        ...(variantTitle ? { variantTitle } : {}),
         quantity,
         ...(fulfilledQuantity === null ? {} : { fulfilledQuantity }),
         unitPrice,
