@@ -180,8 +180,13 @@ export function createMedusaCustomerService(options: Options) {
     const linked = await attachToGroup(String(group.id), existing.id);
     if (!linked.ok) return linked;
 
-    // Optionally refresh profile fields when linking into a new shop.
-    if (input.firstName || input.lastName || input.phone || input.companyName) {
+    // Optionally refresh profile when linking into a new shop (never for walk-in placeholders).
+    const emailKey = email;
+    const walkIn = emailKey.startsWith("walk-in@") || emailKey.endsWith(".local");
+    if (
+      !walkIn &&
+      (input.firstName || input.lastName || input.phone || input.companyName)
+    ) {
       await fetcher(`${base}/admin/customers/${encodeURIComponent(existing.id)}`, {
         body: JSON.stringify(toPayload(input)),
         headers: headers(),
@@ -211,9 +216,24 @@ export function createMedusaCustomerService(options: Options) {
     const group = await tenantGroup(input.tenantId);
     if (!group) return unavailable();
     const email = input.email.trim().toLowerCase();
+    const isWalkIn = email.startsWith("walk-in@") || email.endsWith(".local");
 
     const existing = await findByEmail(email);
     if (existing?.groups.some((item) => item.id === group.id)) {
+      // Do not overwrite walk-in (or existing) profile with the latest sale's phone/name.
+      // Real-email sales may soft-update name/phone when provided.
+      if (
+        !isWalkIn &&
+        (input.firstName?.trim() || input.lastName?.trim() || input.phone?.trim())
+      ) {
+        await fetcher(`${base}/admin/customers/${encodeURIComponent(existing.id)}`, {
+          body: JSON.stringify(toPayload(input)),
+          headers: headers(),
+          method: "POST",
+        }).catch(() => null);
+        const refreshed = await getCustomer({ customerId: existing.id, tenantId: input.tenantId });
+        if (refreshed.ok) return refreshed;
+      }
       return { customer: existing, ok: true };
     }
 

@@ -31,6 +31,7 @@ import {
   emailPromptMarkup,
   itemLabel,
   mainReplyKeyboard,
+  namePromptMarkup,
   ordersListInline,
   phonePromptMarkup,
   productPickInline,
@@ -166,7 +167,9 @@ function isWalkInEmail(email: string): boolean {
 
 /**
  * Medusa needs an email on the order/customer record.
- * Telegram sales collect a real email, or Walk-in (shared shop offline profile).
+ * - Real email: find-or-create that customer; store name + phone on the profile.
+ * - Walk-in: one stable offline customer per shop. Name/phone stay on the *order*
+ *   only so the Customers list does not thrash with every counter sale.
  */
 async function ensureSaleCustomer(
   deps: TelegramToolsDeps,
@@ -182,12 +185,19 @@ async function ensureSaleCustomer(
   if (!deps.ensureMerchantCustomer) {
     return { email };
   }
+
+  const walkIn = isWalkInEmail(email);
   const ensured = await deps.ensureMerchantCustomer({
     tenantId: input.tenantId,
     email,
-    phone: input.phone,
-    firstName: input.firstName && !/^customer$/i.test(input.firstName) ? input.firstName : null,
-    lastName: input.lastName || null,
+    // Shared walk-in profile stays generic; per-sale phone/name go on the order.
+    phone: walkIn ? null : input.phone,
+    firstName: walkIn
+      ? "Walk-in"
+      : input.firstName && !/^customer$/i.test(input.firstName)
+        ? input.firstName
+        : null,
+    lastName: walkIn ? null : input.lastName || null,
   });
   if (ensured.ok) {
     return { email: ensured.customer.email || email, customerId: ensured.customer.id };
@@ -329,7 +339,7 @@ async function sendHelp(deps: TelegramToolsDeps, chatId: string, ctx: OperatorCt
   const lines = [
     `<b>${ctx.tenantName}</b>`,
     "",
-    "<b>New sale</b> — offline sale (phone, then email or Walk-in)",
+    "<b>New sale</b> — offline sale (phone, name, email or Walk-in)",
     "<b>Stock</b> — update inventory",
     "<b>Today</b> — today’s orders and paid total",
     "<b>Orders</b> — recent orders and actions",
@@ -888,14 +898,15 @@ async function applySale(
   }).catch(() => undefined);
 }
 
-async function promptCustomerEmail(
+async function promptCustomerName(
   deps: TelegramToolsDeps,
   input: {
     chatId: string;
     telegramUserId: string;
     dialog: TelegramDialogState;
     phone: string;
-    name: string;
+    /** Pre-filled when contact share included a name */
+    name?: string | null;
   },
 ) {
   const phone = input.phone.replace(/[^\d+]/g, "");
@@ -909,10 +920,23 @@ async function promptCustomerEmail(
     return;
   }
 
+  const prefilled = (input.name ?? "").trim();
+  if (prefilled && !/^customer$/i.test(prefilled)) {
+    // Contact share already gave a name — skip the name step.
+    await promptCustomerEmail(deps, {
+      chatId: input.chatId,
+      telegramUserId: input.telegramUserId,
+      dialog: input.dialog,
+      phone,
+      name: prefilled,
+    });
+    return;
+  }
+
   patchDialog(input.telegramUserId, input.chatId, {
-    step: "await_email",
+    step: "await_name",
     customerPhone: phone,
-    customerName: input.name || "Customer",
+    customerName: "Customer",
   });
 
   await sendTelegramBotMessage({
@@ -922,7 +946,41 @@ async function promptCustomerEmail(
       `${itemLabel(input.dialog.productTitle, input.dialog.variantTitle)} × ${input.dialog.quantity}`,
       phone,
       "",
-      "Customer email? Type it, or choose Walk-in for counter sales without an email.",
+      "Customer name? Type it, or Skip.",
+    ].join("\n"),
+    replyMarkup: namePromptMarkup(),
+  }).catch(() => undefined);
+}
+
+async function promptCustomerEmail(
+  deps: TelegramToolsDeps,
+  input: {
+    chatId: string;
+    telegramUserId: string;
+    dialog: TelegramDialogState;
+    phone: string;
+    name: string;
+  },
+) {
+  const phone = input.phone.replace(/[^\d+]/g, "");
+  patchDialog(input.telegramUserId, input.chatId, {
+    step: "await_email",
+    customerPhone: phone,
+    customerName: input.name?.trim() || "Customer",
+  });
+
+  const displayName = (input.name || "").trim();
+  const who =
+    displayName && !/^customer$/i.test(displayName) ? `${displayName} · ${phone}` : phone;
+
+  await sendTelegramBotMessage({
+    botToken: deps.botToken,
+    chatId: input.chatId,
+    text: [
+      `${itemLabel(input.dialog.productTitle, input.dialog.variantTitle)} × ${input.dialog.quantity}`,
+      who,
+      "",
+      "Customer email? Type it, or Walk-in if they have no email.",
     ].join("\n"),
     replyMarkup: emailPromptMarkup(),
   }).catch(() => undefined);
@@ -1074,6 +1132,31 @@ export async function handleTelegramToolsCallback(
       replyMarkup: cancelInline(),
     }).catch(() => undefined);
     return { handled: true, reason: "search" };
+  }
+
+  if (action === "skip_name") {
+    const dialog = getDialog(telegramUserId, chatId);
+    if (!dialog || dialog.flow !== "sale" || dialog.step !== "await_name" || !dialog.customerPhone) {
+      await answerTelegramCallbackQuery({
+        botToken: deps.botToken,
+        callbackQueryId: callbackId,
+        text: "Expired",
+      }).catch(() => undefined);
+      return { handled: true, reason: "stale_skip_name" };
+    }
+    await answerTelegramCallbackQuery({
+      botToken: deps.botToken,
+      callbackQueryId: callbackId,
+      text: "Skipped",
+    }).catch(() => undefined);
+    await promptCustomerEmail(deps, {
+      chatId,
+      telegramUserId,
+      dialog,
+      phone: dialog.customerPhone,
+      name: "Customer",
+    });
+    return { handled: true, reason: "await_email" };
   }
 
   if (action === "walkin") {
@@ -1331,16 +1414,15 @@ export async function handleTelegramToolsMessage(
       return { handled: true, reason: "contact_no_sale" };
     }
     const name =
-      [input.contact.firstName, input.contact.lastName].filter(Boolean).join(" ").trim() ||
-      "Customer";
-    await promptCustomerEmail(deps, {
+      [input.contact.firstName, input.contact.lastName].filter(Boolean).join(" ").trim() || null;
+    await promptCustomerName(deps, {
       chatId: input.chatId,
       telegramUserId: input.telegramUserId,
       dialog,
       phone: input.contact.phone,
       name,
     });
-    return { handled: true, reason: "await_email" };
+    return { handled: true, reason: "await_name" };
   }
 
   const isMenu =
@@ -1528,12 +1610,33 @@ export async function handleTelegramToolsMessage(
       }).catch(() => undefined);
       return { handled: true, reason: "bad_phone" };
     }
-    await promptCustomerEmail(deps, {
+    await promptCustomerName(deps, {
       chatId: input.chatId,
       telegramUserId: input.telegramUserId,
       dialog,
       phone,
-      name: "Customer",
+      name: null,
+    });
+    return { handled: true, reason: "await_name" };
+  }
+
+  if (dialog?.step === "await_name" && dialog.flow === "sale") {
+    const name = text.trim();
+    if (name.length < 1 || name.length > 80) {
+      await sendTelegramBotMessage({
+        botToken: deps.botToken,
+        chatId: input.chatId,
+        text: "Type a name, or tap Skip.",
+        replyMarkup: namePromptMarkup(),
+      }).catch(() => undefined);
+      return { handled: true, reason: "bad_name" };
+    }
+    await promptCustomerEmail(deps, {
+      chatId: input.chatId,
+      telegramUserId: input.telegramUserId,
+      dialog,
+      phone: dialog.customerPhone ?? "",
+      name,
     });
     return { handled: true, reason: "await_email" };
   }

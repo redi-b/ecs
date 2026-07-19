@@ -10,6 +10,7 @@ export type TelegramDialogStep =
   | "search"
   | "await_qty"
   | "await_contact"
+  | "await_name"
   | "await_email"
   | "confirm_sale"
   | "confirm_stock"
