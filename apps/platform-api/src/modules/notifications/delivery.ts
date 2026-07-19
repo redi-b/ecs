@@ -2,7 +2,7 @@ import type { createPlatformDb } from "@ecs/db";
 import { notificationLogs } from "@ecs/db";
 import { eq } from "drizzle-orm";
 
-import { buildOrderActionKeyboard } from "./telegram-callback-tokens.js";
+import { buildOrderActionKeyboard } from "../telegram/telegram-callback-tokens.js";
 import type { NotificationProviderRegistry } from "./providers/registry.js";
 import type { NotificationRenderer } from "./renderer.js";
 

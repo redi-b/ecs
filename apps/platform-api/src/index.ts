@@ -40,16 +40,16 @@ import { createNotificationService } from "./modules/notifications/service.js";
 import {
   handleTelegramCallbackQuery,
   resolveTelegramCallbackSecret,
-} from "./modules/notifications/telegram-actions.js";
-import { createTelegramConnectService } from "./modules/notifications/telegram-connect.js";
-import { createTelegramOperatorService } from "./modules/notifications/telegram-operator.js";
-import { startTelegramPolling } from "./modules/notifications/telegram-polling.js";
-import { setDefaultBotCommands } from "./modules/notifications/telegram-bot-commands.js";
+} from "./modules/telegram/telegram-actions.js";
+import { setDefaultBotCommands } from "./modules/telegram/telegram-bot-commands.js";
+import { createTelegramConnectService } from "./modules/telegram/telegram-connect.js";
+import { createTelegramOperatorService } from "./modules/telegram/telegram-operator.js";
+import { startTelegramPolling } from "./modules/telegram/telegram-polling.js";
 import {
   handleTelegramToolsCallback,
   handleTelegramToolsMessage,
   type TelegramToolsDeps,
-} from "./modules/notifications/telegram-tools.js";
+} from "./modules/telegram/telegram-tools.js";
 import { createTenantOnboardingService } from "./modules/onboarding/service.js";
 import { createPaymentOnboardingService } from "./modules/payments/payment-onboarding-service.js";
 import { createStorefrontTemplateService } from "./modules/storefront/template-service.js";

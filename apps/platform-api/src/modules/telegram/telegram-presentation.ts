@@ -1,6 +1,6 @@
 import type { MerchantOrder, MerchantProduct, MerchantProductVariant } from "../../types/index.js";
 import type { TelegramProductHit } from "./telegram-dialog-state.js";
-import { formatMoneyAmount, formatOrderRef, humanizeToken } from "./renderer.js";
+import { formatMoneyAmount, formatOrderRef, humanizeToken } from "../notifications/renderer.js";
 
 /** Prefer shop hostname; fall back to platform dashboard base. */
 export function resolveDashboardAdminBase(input: {
