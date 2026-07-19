@@ -1,4 +1,5 @@
 import type { TelegramProductHit } from "./telegram-dialog-state.js";
+import { formatItemLine } from "./telegram-presentation.js";
 
 export const MAIN_KEYBOARD_LABELS = {
   newSale: "New sale",
@@ -74,14 +75,21 @@ export function qtyInline(flow: "sale" | "stock") {
 }
 
 export function itemLabel(title?: string, variant?: string) {
-  const t = (title ?? "Item").trim();
-  const v = (variant ?? "").trim();
-  if (!v || v === "Default" || v === t) return t;
-  return `${t} · ${v}`;
+  return formatItemLine(title, variant);
 }
 
+/**
+ * Button text: product · variant · stock.
+ * Always try to show variant when non-default so multi-variant products don't look identical.
+ */
 export function hitButtonLabel(hit: TelegramProductHit): string {
-  const base = itemLabel(hit.productTitle, hit.variantTitle);
+  const title = (hit.productTitle ?? "Item").trim() || "Item";
+  const variant = (hit.variantTitle ?? "").trim();
+  const showVariant = Boolean(variant && !/^default$/i.test(variant) && variant !== title);
+  let base = showVariant ? `${title} · ${variant}` : title;
+  if (!showVariant && hit.sku?.trim()) {
+    base = `${title} · ${hit.sku.trim()}`;
+  }
   const qty =
     hit.availableQuantity != null && Number.isFinite(hit.availableQuantity)
       ? ` · ${hit.availableQuantity} left`

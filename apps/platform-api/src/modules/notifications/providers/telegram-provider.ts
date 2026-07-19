@@ -62,7 +62,7 @@ export async function sendTelegramBotMessage(options: {
   parseMode?: "HTML" | undefined;
   replyMarkup?: unknown;
   fetchImpl?: typeof fetch;
-}): Promise<void> {
+}): Promise<{ messageId: number | null }> {
   const fetchImpl = options.fetchImpl ?? fetch;
   const response = await fetchImpl(
     `https://api.telegram.org/bot${options.botToken.trim()}/sendMessage`,
@@ -71,6 +71,42 @@ export async function sendTelegramBotMessage(options: {
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
         chat_id: options.chatId,
+        text: options.text.slice(0, 4000),
+        disable_web_page_preview: true,
+        ...(options.parseMode ? { parse_mode: options.parseMode } : {}),
+        ...(options.replyMarkup != null ? { reply_markup: options.replyMarkup } : {}),
+      }),
+    },
+  );
+  const data = (await response.json().catch(() => null)) as {
+    ok?: boolean;
+    description?: string;
+    result?: { message_id?: number };
+  } | null;
+  if (!response.ok || !data?.ok) {
+    throw new Error(data?.description || `telegram_http_${response.status}`);
+  }
+  return { messageId: data.result?.message_id ?? null };
+}
+
+export async function editTelegramMessageText(options: {
+  botToken: string;
+  chatId: string | number;
+  messageId: number;
+  text: string;
+  parseMode?: "HTML" | undefined;
+  replyMarkup?: unknown;
+  fetchImpl?: typeof fetch;
+}): Promise<void> {
+  const fetchImpl = options.fetchImpl ?? fetch;
+  const response = await fetchImpl(
+    `https://api.telegram.org/bot${options.botToken.trim()}/editMessageText`,
+    {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        chat_id: options.chatId,
+        message_id: options.messageId,
         text: options.text.slice(0, 4000),
         disable_web_page_preview: true,
         ...(options.parseMode ? { parse_mode: options.parseMode } : {}),

@@ -9,9 +9,10 @@ import type {
   MerchantProductStockUpdateResult,
 } from "../../types/index.js";
 import type { ManualOrderResult } from "../../adapters/medusa/manual-order-service.js";
-import { formatMoneyAmount, formatOrderRef, humanizeToken } from "./renderer.js";
+import { formatMoneyAmount, formatOrderRef } from "./renderer.js";
 import {
   answerTelegramCallbackQuery,
+  editTelegramMessageText,
   sendTelegramBotMessage,
 } from "./providers/telegram-provider.js";
 import {
@@ -37,6 +38,7 @@ import {
 } from "./telegram-keyboards.js";
 import { buildRecentProductHits, productHitsFromCatalog } from "./telegram-recent-products.js";
 import { buildOrderActionKeyboard } from "./telegram-callback-tokens.js";
+import { formatOrderCardHtml, formatOrderListButtonLabel } from "./telegram-presentation.js";
 
 type PlatformDb = ReturnType<typeof createPlatformDb>["db"];
 
@@ -275,13 +277,7 @@ async function sendTodaySummary(deps: TelegramToolsDeps, chatId: string, ctx: Op
     `Paid total ${revenueLabel}`,
   ];
   for (const order of today.slice(0, 5)) {
-    const pay = order.paymentStatus ? humanizeToken(order.paymentStatus) : "Unknown";
-    const total =
-      order.total != null
-        ? formatMoneyAmount(String(order.total), order.currencyCode ?? undefined) ??
-          String(order.total)
-        : "-";
-    lines.push(`${formatOrderRef(order.id)} · ${total} · ${pay}`);
+    lines.push(formatOrderListButtonLabel(order));
   }
 
   await sendTelegramBotMessage({
@@ -293,58 +289,90 @@ async function sendTodaySummary(deps: TelegramToolsDeps, chatId: string, ctx: Op
   }).catch(() => undefined);
 }
 
+async function sendOrEdit(
+  deps: TelegramToolsDeps,
+  input: {
+    chatId: string;
+    /** Loading placeholder message to replace, if any */
+    messageId: number | null;
+    text: string;
+    parseMode?: "HTML";
+    replyMarkup?: unknown;
+  },
+) {
+  if (input.messageId != null) {
+    const edited = await editTelegramMessageText({
+      botToken: deps.botToken,
+      chatId: input.chatId,
+      messageId: input.messageId,
+      text: input.text,
+      ...(input.parseMode ? { parseMode: input.parseMode } : {}),
+      ...(input.replyMarkup != null ? { replyMarkup: input.replyMarkup } : {}),
+    })
+      .then(() => true)
+      .catch(() => false);
+    if (edited) return;
+  }
+  await sendTelegramBotMessage({
+    botToken: deps.botToken,
+    chatId: input.chatId,
+    text: input.text,
+    ...(input.parseMode ? { parseMode: input.parseMode } : {}),
+    ...(input.replyMarkup != null ? { replyMarkup: input.replyMarkup } : {}),
+  }).catch(() => undefined);
+}
+
 async function sendOrdersList(
   deps: TelegramToolsDeps,
   input: { chatId: string; telegramUserId: string; ctx: OperatorCtx },
 ) {
+  const loading = await sendTelegramBotMessage({
+    botToken: deps.botToken,
+    chatId: input.chatId,
+    text: "Loading orders…",
+    replyMarkup: cancelInline(),
+  }).catch(() => null);
+
   const list = await deps.listMerchantOrders({
     limit: 8,
     offset: 0,
     salesChannelId: input.ctx.salesChannelId,
   });
   if (!list.ok) {
-    await sendTelegramBotMessage({
-      botToken: deps.botToken,
+    await sendOrEdit(deps, {
       chatId: input.chatId,
+      messageId: loading?.messageId ?? null,
       text: "Could not load orders.",
       replyMarkup: mainReplyKeyboard(),
-    }).catch(() => undefined);
+    });
     return;
   }
   if (list.orders.length === 0) {
-    await sendTelegramBotMessage({
-      botToken: deps.botToken,
+    await sendOrEdit(deps, {
       chatId: input.chatId,
+      messageId: loading?.messageId ?? null,
       text: "No recent orders.",
       replyMarkup: mainReplyKeyboard(),
-    }).catch(() => undefined);
+    });
     return;
   }
 
-  const rows = list.orders.map((order) => {
-    const pay = order.paymentStatus ? humanizeToken(order.paymentStatus) : "—";
-    const total =
-      order.total != null
-        ? formatMoneyAmount(String(order.total), order.currencyCode ?? undefined) ??
-          String(order.total)
-        : "-";
-    return {
-      id: order.id,
-      label: `${formatOrderRef(order.id)} · ${total} · ${pay}`,
-    };
-  });
+  const rows = list.orders.map((order) => ({
+    id: order.id,
+    label: formatOrderListButtonLabel(order),
+  }));
 
   setDialog(input.telegramUserId, input.chatId, {
     ...dialogBase(input.ctx, "orders", "orders_list"),
     orderIds: rows.map((r) => r.id),
   });
 
-  await sendTelegramBotMessage({
-    botToken: deps.botToken,
+  await sendOrEdit(deps, {
     chatId: input.chatId,
-    text: "Recent orders",
+    messageId: loading?.messageId ?? null,
+    text: "Recent orders · tap one",
     replyMarkup: ordersListInline(rows),
-  }).catch(() => undefined);
+  });
 }
 
 async function searchProducts(
@@ -397,29 +425,36 @@ async function startProductPick(
     flow: "sale" | "stock";
   },
 ) {
+  const title = input.flow === "sale" ? "New sale · pick product" : "Stock · pick product";
+  const loading = await sendTelegramBotMessage({
+    botToken: deps.botToken,
+    chatId: input.chatId,
+    text: "Loading products…",
+    replyMarkup: cancelInline(),
+  }).catch(() => null);
+
   const hits = await loadPickHits(deps, input.ctx);
   setDialog(input.telegramUserId, input.chatId, {
     ...dialogBase(input.ctx, input.flow, "pick_product"),
     hits,
   });
 
-  const title = input.flow === "sale" ? "New sale · pick product" : "Stock · pick product";
   if (hits.length === 0) {
-    await sendTelegramBotMessage({
-      botToken: deps.botToken,
+    await sendOrEdit(deps, {
       chatId: input.chatId,
+      messageId: loading?.messageId ?? null,
       text: `${title}\nNo products yet. Tap Search or add products in the dashboard.`,
       replyMarkup: productPickInline([]),
-    }).catch(() => undefined);
+    });
     return;
   }
 
-  await sendTelegramBotMessage({
-    botToken: deps.botToken,
+  await sendOrEdit(deps, {
     chatId: input.chatId,
+    messageId: loading?.messageId ?? null,
     text: title,
     replyMarkup: productPickInline(hits),
-  }).catch(() => undefined);
+  });
 }
 
 async function advanceAfterProduct(
@@ -844,8 +879,15 @@ export async function handleTelegramToolsCallback(
     await answerTelegramCallbackQuery({
       botToken: deps.botToken,
       callbackQueryId: callbackId,
-      text: "Order",
+      text: "Loading…",
     }).catch(() => undefined);
+
+    const loading = await sendTelegramBotMessage({
+      botToken: deps.botToken,
+      chatId,
+      text: "Loading order…",
+      replyMarkup: cancelInline(),
+    }).catch(() => null);
 
     const list = await deps.listMerchantOrders({
       limit: 20,
@@ -854,44 +896,33 @@ export async function handleTelegramToolsCallback(
     });
     const order = list.ok ? list.orders.find((o) => o.id === orderId) : null;
     if (!order) {
-      await sendTelegramBotMessage({
-        botToken: deps.botToken,
+      await sendOrEdit(deps, {
         chatId,
+        messageId: loading?.messageId ?? null,
         text: "Order not found.",
         replyMarkup: mainReplyKeyboard(),
-      }).catch(() => undefined);
+      });
       return { handled: true, reason: "order_missing" };
     }
 
-    const pay = order.paymentStatus ? humanizeToken(order.paymentStatus) : "Unknown";
-    const total =
-      order.total != null
-        ? formatMoneyAmount(String(order.total), order.currencyCode ?? undefined) ??
-          String(order.total)
-        : "-";
-    const lines = [
-      `<b>Order ${formatOrderRef(order.id)}</b>`,
-      `Total ${total}`,
-      `Payment ${pay}`,
-      order.fulfillmentStatus ? `Status ${humanizeToken(order.fulfillmentStatus)}` : null,
-    ].filter(Boolean) as string[];
-
+    // Full card here — no need for a separate Details press from this surface.
     const markup =
       deps.callbackSecret != null
         ? buildOrderActionKeyboard({
             orderId: order.id,
             tenantId: ctx.tenantId,
             secret: deps.callbackSecret,
+            exclude: ["details"],
           })
         : null;
 
-    await sendTelegramBotMessage({
-      botToken: deps.botToken,
+    await sendOrEdit(deps, {
       chatId,
-      text: lines.join("\n"),
+      messageId: loading?.messageId ?? null,
+      text: formatOrderCardHtml(order),
       parseMode: "HTML",
       replyMarkup: markup ?? mainReplyKeyboard(),
-    }).catch(() => undefined);
+    });
     return { handled: true, reason: "order_detail" };
   }
 

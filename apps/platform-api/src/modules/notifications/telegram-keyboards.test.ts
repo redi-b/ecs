@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { productPickInline, qtyInline } from "./telegram-keyboards.js";
+import { hitButtonLabel, productPickInline, qtyInline } from "./telegram-keyboards.js";
 
 describe("telegram-keyboards", () => {
   it("sale qty chips never include 0", () => {
@@ -28,5 +28,26 @@ describe("telegram-keyboards", () => {
     const flat = kb.inline_keyboard.flat().map((b) => b.callback_data);
     assert.ok(flat.includes("t:search"));
     assert.ok(flat.includes("t:i0"));
+    assert.ok(kb.inline_keyboard[0]![0]!.text.includes("Shirt · M"));
+  });
+
+  it("distinguishes same product different variants", () => {
+    const a = hitButtonLabel({
+      productId: "p",
+      productTitle: "Linen Midi Dress",
+      variantId: "v1",
+      variantTitle: "S",
+      availableQuantity: 2,
+    });
+    const b = hitButtonLabel({
+      productId: "p",
+      productTitle: "Linen Midi Dress",
+      variantId: "v2",
+      variantTitle: "M",
+      availableQuantity: 1,
+    });
+    assert.notEqual(a, b);
+    assert.ok(a.includes("S"));
+    assert.ok(b.includes("M"));
   });
 });
