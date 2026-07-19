@@ -118,7 +118,7 @@ type OperatorCtx = {
 function linkToolsHint(adminBase: string | null): string {
   const settings = adminUrl(adminBase, "/settings?tab=telegram");
   if (settings) {
-    return `Shop tools need a management link.\nOpen ${htmlLink(settings, "Telegram settings")} in the dashboard.`;
+    return `Shop tools need a management link.\nOpen ${htmlLink(settings, "Settings → Telegram")}.`;
   }
   return "Shop tools need a management link.\nOpen Settings → Telegram in the dashboard.";
 }
@@ -257,7 +257,7 @@ async function sendHome(deps: TelegramToolsDeps, chatId: string, ctx: OperatorCt
   await sendTelegramBotMessage({
     botToken: deps.botToken,
     chatId,
-    text: [`<b>${ctx.tenantName}</b>`, "Use the buttons below."].join("\n"),
+    text: `<b>${ctx.tenantName}</b>`,
     parseMode: "HTML",
     replyMarkup: mainReplyKeyboard(),
   }).catch(() => undefined);
@@ -268,30 +268,23 @@ async function sendHelp(deps: TelegramToolsDeps, chatId: string, ctx: OperatorCt
   const notifications = adminUrl(ctx.adminBase, "/settings?tab=notifications");
   const lines = [
     `<b>${ctx.tenantName}</b>`,
-    "Use the keyboard (not slash commands):",
     "",
-    "• <b>New sale</b> — offline sale, then type customer phone",
-    "• <b>Stock</b> — set quantity",
-    "• <b>Today</b> — today’s totals",
-    "• <b>Orders</b> — recent orders & actions",
-    "• <b>Shop</b> — details, dashboard links, unlink",
-    "• <b>Cancel</b> — leave the current step",
+    "<b>New sale</b> — offline sale (customer phone after qty)",
+    "<b>Stock</b> — update inventory",
+    "<b>Today</b> — today’s orders and paid total",
+    "<b>Orders</b> — recent orders and actions",
+    "<b>Shop</b> — shop details, dashboard, unlink",
     "",
   ];
-  if (telegramSettings || notifications) {
-    lines.push(
-      telegramSettings
-        ? `Management: ${htmlLink(telegramSettings, "Telegram settings")}`
-        : "Management: Settings → Telegram",
-    );
-    lines.push(
-      notifications
-        ? `Alerts: ${htmlLink(notifications, "Notification settings")}`
-        : "Alerts: Settings → Notifications",
-    );
+  if (telegramSettings) {
+    lines.push(htmlLink(telegramSettings, "Settings → Telegram"));
   } else {
-    lines.push("Management: Settings → Telegram");
-    lines.push("Alerts: Settings → Notifications");
+    lines.push("Settings → Telegram");
+  }
+  if (notifications) {
+    lines.push(htmlLink(notifications, "Settings → Notifications"));
+  } else {
+    lines.push("Settings → Notifications");
   }
 
   await sendTelegramBotMessage({
@@ -319,10 +312,6 @@ async function sendShop(deps: TelegramToolsDeps, chatId: string, ctx: OperatorCt
   const dashboard = adminUrl(ctx.adminBase, "");
   const ordersPage = adminUrl(ctx.adminBase, "/orders");
   const telegramSettings = adminUrl(ctx.adminBase, "/settings?tab=telegram");
-
-  if (dashboard) {
-    lines.push("", htmlLink(dashboard, "Open dashboard"));
-  }
 
   await sendTelegramBotMessage({
     botToken: deps.botToken,

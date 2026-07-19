@@ -178,10 +178,48 @@ export function formatOrderCardHtml(order: MerchantOrder): string {
   if (items.length > 0) {
     lines.push("");
     for (const item of items.slice(0, 6)) {
-      const q = item.quantity != null ? ` × ${item.quantity}` : "";
-      lines.push(`· ${(item.title ?? "Item").trim()}${q}`);
+      lines.push(`· ${formatOrderLineItemLabel(item)}`);
     }
     if (items.length > 6) lines.push(`· +${items.length - 6} more`);
   }
   return lines.join("\n");
+}
+
+/** Product · variant × qty for order cards and notifications. */
+export function formatOrderLineItemLabel(item: {
+  title?: string | null;
+  productTitle?: string | null;
+  variantTitle?: string | null;
+  quantity?: number | null;
+}): string {
+  const product =
+    (item.productTitle ?? item.title ?? "Item").trim() || "Item";
+  const variant = (item.variantTitle ?? "").trim();
+  const showVariant =
+    Boolean(variant) &&
+    !/^default$/i.test(variant) &&
+    variant.toLowerCase() !== product.toLowerCase() &&
+    !product.toLowerCase().includes(variant.toLowerCase());
+  const base = showVariant ? `${product} · ${variant}` : product;
+  const q =
+    item.quantity != null && Number.isFinite(item.quantity) && item.quantity > 0
+      ? ` × ${item.quantity}`
+      : "";
+  return `${base}${q}`;
+}
+
+/** Compact lines for notification payloads (max 8). */
+export function buildOrderItemLines(
+  items: Array<{
+    title?: string | null;
+    productTitle?: string | null;
+    variantTitle?: string | null;
+    quantity?: number | null;
+  }> | null | undefined,
+  limit = 8,
+): string[] {
+  if (!items?.length) return [];
+  const lines = items.slice(0, limit).map((item) => formatOrderLineItemLabel(item));
+  if (items.length > limit) lines.push(`+${items.length - limit} more`);
+  return lines;
 }

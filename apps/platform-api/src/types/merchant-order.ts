@@ -86,7 +86,12 @@ export type MerchantOrderLineItem = {
   id: string;
   productId?: string | null;
   variantId?: string | null;
+  /** Line display title (often product name). */
   title: string | null;
+  /** Product name when Medusa separates product vs variant. */
+  productTitle?: string | null;
+  /** Variant options / title (Size, Color, SKU label). */
+  variantTitle?: string | null;
   quantity: number | null;
   fulfilledQuantity?: number | null;
   unitPrice: number | null;
