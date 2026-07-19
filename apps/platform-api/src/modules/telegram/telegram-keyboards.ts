@@ -76,7 +76,17 @@ export function phonePromptMarkup() {
   };
 }
 
-/** After phone: type a real email, or Walk-in for the shop’s shared offline customer. */
+/** Optional name after phone. */
+export function namePromptMarkup() {
+  return {
+    inline_keyboard: [
+      [{ text: "Skip", callback_data: "t:skip_name" }],
+      [{ text: "Cancel", callback_data: "t:menu" }],
+    ],
+  };
+}
+
+/** Type a real email, or Walk-in (shared offline customer for this shop). */
 export function emailPromptMarkup() {
   return {
     inline_keyboard: [
