@@ -138,6 +138,7 @@ export type TelegramConnectServiceOptions = {
     chatId: string;
     telegramUserId: string;
     text: string;
+    contact?: { phone?: string | null; firstName?: string | null; lastName?: string | null } | null;
   }) => Promise<{ handled: boolean; reason?: string }>;
 };
 
@@ -416,44 +417,76 @@ export function createTelegramConnectService(
         return { handled: true as const, reason: "group_rejected" as const };
       }
 
-      if (typeof text !== "string") {
-        return { handled: false as const, reason: "no_text" as const };
-      }
-
       const fromUser = typeof from === "object" && from !== null ? from : null;
       const telegramUserId =
         fromUser && typeof (fromUser as { id?: unknown }).id !== "undefined"
           ? String((fromUser as { id: unknown }).id)
           : chatId;
 
-      // Tools / menu / wizards for linked operators (before connect-token handling).
+      // Tools / menu / wizards / contact share for linked operators.
       if (serviceOptions?.handleToolsMessage) {
-        const tools = await serviceOptions.handleToolsMessage({
-          chatId,
-          telegramUserId,
-          text,
-        });
-        if (tools.handled) {
-          return { handled: true as const, reason: tools.reason ?? "tools" };
+        const contactRaw =
+          typeof message === "object" &&
+          message !== null &&
+          "contact" in (message as object)
+            ? (message as { contact?: unknown }).contact
+            : null;
+        const contactObj =
+          contactRaw && typeof contactRaw === "object"
+            ? (contactRaw as {
+                phone_number?: unknown;
+                first_name?: unknown;
+                last_name?: unknown;
+              })
+            : null;
+        const contact = contactObj
+          ? {
+              phone: typeof contactObj.phone_number === "string" ? contactObj.phone_number : null,
+              firstName: typeof contactObj.first_name === "string" ? contactObj.first_name : null,
+              lastName: typeof contactObj.last_name === "string" ? contactObj.last_name : null,
+            }
+          : null;
+
+        // Contact-only messages may have empty text.
+        const toolsText =
+          typeof text === "string" && text.trim()
+            ? text
+            : contact
+              ? "contact"
+              : "";
+
+        if (toolsText || contact) {
+          const tools = await serviceOptions.handleToolsMessage({
+            chatId,
+            telegramUserId,
+            text: toolsText,
+            contact,
+          });
+          if (tools.handled) {
+            return { handled: true as const, reason: tools.reason ?? "tools" };
+          }
         }
+      }
+
+      if (typeof text !== "string") {
+        return { handled: false as const, reason: "no_text" as const };
       }
 
       if (!text.startsWith("/start")) {
         await sendTelegramBotMessage({
           botToken: config.botToken,
           chatId,
-          text: "To connect alerts, open Settings → Notifications → Connect Telegram.\nFor shop tools, link under Settings → Telegram, then send /menu.",
+          text: "Settings → Notifications to connect alerts.\nSettings → Telegram for shop tools (New sale, Stock, Today, Orders).",
         }).catch(() => undefined);
         return { handled: true as const, reason: "help" as const };
       }
 
       const token = parseTelegramStartPayload(text);
       if (!token) {
-        // Bare /start already handled by tools for linked operators; otherwise guide connect.
         await sendTelegramBotMessage({
           botToken: config.botToken,
           chatId,
-          text: "To connect alerts, open Settings → Notifications → Connect Telegram and open the new link.\nFor shop tools, link under Settings → Telegram, then send /menu.",
+          text: "Open a fresh link from the dashboard to connect, or send Menu if you already linked tools.",
         }).catch(() => undefined);
         return { handled: true as const, reason: "missing_token" as const };
       }

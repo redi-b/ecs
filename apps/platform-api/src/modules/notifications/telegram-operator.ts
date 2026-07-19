@@ -9,6 +9,11 @@ import {
 import { and, desc, eq, or } from "drizzle-orm";
 
 import { sendTelegramBotMessage } from "./providers/telegram-provider.js";
+import {
+  deleteChatBotCommands,
+  setOperatorChatCommands,
+} from "./telegram-bot-commands.js";
+import { mainReplyKeyboard } from "./telegram-keyboards.js";
 
 type PlatformDb = ReturnType<typeof createPlatformDb>["db"];
 
@@ -243,11 +248,20 @@ export function createTelegramOperatorService(
             eq(telegramOperatorBindings.tenantId, input.tenantId),
           ),
         )
-        .returning({ id: telegramOperatorBindings.id });
+        .returning({
+          id: telegramOperatorBindings.id,
+          telegramChatId: telegramOperatorBindings.telegramChatId,
+        });
 
       if (deleted.length === 0) {
         return { ok: false as const, error: "binding_not_found" as const, status: 404 as const };
       }
+
+      const chatId = deleted[0]?.telegramChatId;
+      if (config?.botToken && chatId) {
+        await deleteChatBotCommands({ botToken: config.botToken, chatId }).catch(() => undefined);
+      }
+
       return { ok: true as const };
     },
 
@@ -270,6 +284,21 @@ export function createTelegramOperatorService(
       if (!row) {
         return { ok: false as const, error: "binding_not_found" as const, status: 404 as const };
       }
+
+      if (config?.botToken && row.telegramChatId) {
+        if (input.enabled) {
+          await setOperatorChatCommands({
+            botToken: config.botToken,
+            chatId: row.telegramChatId,
+          }).catch(() => undefined);
+        } else {
+          await deleteChatBotCommands({
+            botToken: config.botToken,
+            chatId: row.telegramChatId,
+          }).catch(() => undefined);
+        }
+      }
+
       return { ok: true as const, binding: serializeBinding(row) };
     },
 
@@ -531,15 +560,20 @@ export function createTelegramOperatorService(
 
       const shopLabel = tenant?.name?.trim() || tenant?.handle || "your shop";
 
+      await setOperatorChatCommands({
+        botToken: config.botToken,
+        chatId: input.chatId,
+      }).catch(() => undefined);
+
       await sendTelegramBotMessage({
         botToken: config.botToken,
         chatId: input.chatId,
         text: [
-          `You are linked for shop management on ${shopLabel}.`,
+          `Linked · ${shopLabel}`,
           "",
-          "Send Menu (or /menu) for Today, Stock, and Sale.",
-          "For order alerts in this chat, also connect under Settings → Notifications.",
+          "Use the keyboard for New sale, Stock, Today, Orders.",
         ].join("\n"),
+        replyMarkup: mainReplyKeyboard(),
       }).catch(() => undefined);
 
       return { handled: true as const, reason: "linked" as const };

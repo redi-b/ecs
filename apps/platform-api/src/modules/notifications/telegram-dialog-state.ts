@@ -3,25 +3,38 @@
  * Good enough for local/dev and single-node deploys; multi-instance should move to Redis later.
  */
 
-export type TelegramDialogFlow = "stock" | "sale" | "idle";
+export type TelegramDialogFlow = "sale" | "stock" | "orders" | "idle";
+
+export type TelegramDialogStep =
+  | "pick_product"
+  | "search"
+  | "await_qty"
+  | "await_contact"
+  | "confirm_sale"
+  | "confirm_stock"
+  | "orders_list";
+
+export type TelegramProductHit = {
+  productId: string;
+  productTitle: string;
+  variantId: string;
+  variantTitle: string;
+  sku?: string | null;
+  availableQuantity?: number | null;
+};
 
 export type TelegramDialogState = {
   flow: TelegramDialogFlow;
-  step: string;
+  step: TelegramDialogStep;
   tenantId: string;
   userId: string;
   salesChannelId: string;
   stockLocationId: string | null;
   regionId: string | null;
   shippingOptionId: string | null;
-  /** Search hit list for the current step (indexes map to callbacks). */
-  hits?: Array<{
-    productId: string;
-    productTitle: string;
-    variantId: string;
-    variantTitle: string;
-    sku?: string | null;
-  }>;
+  hits?: TelegramProductHit[];
+  /** Parallel to t:o{n} callbacks on orders_list */
+  orderIds?: string[];
   productId?: string;
   variantId?: string;
   productTitle?: string;
