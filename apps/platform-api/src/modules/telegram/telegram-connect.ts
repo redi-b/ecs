@@ -7,7 +7,7 @@ import {
 } from "@ecs/db";
 import { and, count, desc, eq } from "drizzle-orm";
 
-import { sendTelegramBotMessage } from "./providers/telegram-provider.js";
+import { sendTelegramBotMessage } from "../notifications/providers/telegram-provider.js";
 
 type PlatformDb = ReturnType<typeof createPlatformDb>["db"];
 

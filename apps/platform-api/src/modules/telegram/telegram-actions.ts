@@ -10,12 +10,12 @@ import {
   type TelegramOrderAction,
 } from "./telegram-callback-tokens.js";
 import type { TelegramOperatorService } from "./telegram-operator.js";
-import { formatOrderRef } from "./renderer.js";
+import { formatOrderRef } from "../notifications/renderer.js";
 import {
   answerTelegramCallbackQuery,
   editTelegramMessageReplyMarkup,
   sendTelegramBotMessage,
-} from "./providers/telegram-provider.js";
+} from "../notifications/providers/telegram-provider.js";
 import { formatOrderCardHtml } from "./telegram-presentation.js";
 
 type PlatformDb = ReturnType<typeof createPlatformDb>["db"];

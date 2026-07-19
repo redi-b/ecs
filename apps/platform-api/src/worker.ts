@@ -21,8 +21,8 @@ import { createProviderRegistry } from "./modules/notifications/providers/regist
 import { createTelegramNotificationProvider } from "./modules/notifications/providers/telegram-provider.js";
 import { createCodeNotificationRenderer } from "./modules/notifications/renderer.js";
 import { createNotificationService } from "./modules/notifications/service.js";
-import { resolveTelegramCallbackSecret } from "./modules/notifications/telegram-actions.js";
-import { createTelegramOperatorService } from "./modules/notifications/telegram-operator.js";
+import { resolveTelegramCallbackSecret } from "./modules/telegram/telegram-actions.js";
+import { createTelegramOperatorService } from "./modules/telegram/telegram-operator.js";
 
 loadPlatformApiEnvFiles();
 

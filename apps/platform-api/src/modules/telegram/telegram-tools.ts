@@ -9,12 +9,12 @@ import type {
   MerchantProductStockUpdateResult,
 } from "../../types/index.js";
 import type { ManualOrderResult } from "../../adapters/medusa/manual-order-service.js";
-import { formatMoneyAmount, formatOrderRef } from "./renderer.js";
+import { formatMoneyAmount, formatOrderRef } from "../notifications/renderer.js";
 import {
   answerTelegramCallbackQuery,
   editTelegramMessageText,
   sendTelegramBotMessage,
-} from "./providers/telegram-provider.js";
+} from "../notifications/providers/telegram-provider.js";
 import {
   clearDialog,
   getDialog,

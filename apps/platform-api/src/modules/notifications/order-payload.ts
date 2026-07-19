@@ -1,5 +1,5 @@
 import type { MerchantOrder } from "../../types/index.js";
-import { buildOrderItemLines, formatOrderLineItemLabel } from "./telegram-presentation.js";
+import { buildOrderItemLines, formatOrderLineItemLabel } from "../telegram/telegram-presentation.js";
 
 /** Hide Medusa placeholder emails from merchant-facing notifications. */
 export function isSyntheticOrderEmail(email: string | null | undefined): boolean {

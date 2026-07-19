@@ -8,7 +8,7 @@ import {
 } from "@ecs/db";
 import { and, desc, eq, or } from "drizzle-orm";
 
-import { sendTelegramBotMessage } from "./providers/telegram-provider.js";
+import { sendTelegramBotMessage } from "../notifications/providers/telegram-provider.js";
 import {
   deleteChatBotCommands,
   setOperatorChatCommands,
@@ -602,8 +602,7 @@ export function createTelegramOperatorService(
       await sendTelegramBotMessage({
         botToken: config.botToken,
         chatId: input.chatId,
-        text: `<b>Linked</b>\n${shopLabel}`,
-        parseMode: "HTML",
+        text: `Linked to ${shopLabel}. You can manage this shop from chat. You can unlink anytime from the dashboard.`,
         replyMarkup: mainReplyKeyboard(),
       }).catch(() => undefined);
 
