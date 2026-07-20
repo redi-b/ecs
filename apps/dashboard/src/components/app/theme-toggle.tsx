@@ -23,8 +23,10 @@ export function ThemeToggle() {
   const Icon = isDark ? AppIcons.sun : AppIcons.moon;
 
   function toggleTheme(event: MouseEvent<HTMLButtonElement>) {
+    // Prefer resolved appearance so system→explicit dark/light works on first click.
     const nextTheme = isDark ? "light" : "dark";
 
+    // Persist first so any late cookie readers see the new value, then drive next-themes.
     setSharedThemeCookie(nextTheme);
     try {
       localStorage.setItem("ecs-theme-ls", nextTheme);

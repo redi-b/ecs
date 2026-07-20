@@ -8,37 +8,80 @@ export function isSharedTheme(value: unknown): value is SharedTheme {
   return value === "dark" || value === "light" || value === "system";
 }
 
-export function getSharedThemeFromCookie(cookie = typeof document !== "undefined" ? document.cookie : ""): SharedTheme | null {
-  const theme = cookie
+export function getSharedThemeFromCookie(
+  cookie = typeof document !== "undefined" ? document.cookie : "",
+): SharedTheme | null {
+  // Prefer the last matching cookie when host-only + Domain= both exist.
+  const matches = cookie
     .split(";")
     .map((part) => part.trim())
-    .find((part) => part.startsWith(`${SHARED_THEME_COOKIE}=`))
-    ?.split("=")[1];
+    .filter((part) => part.startsWith(`${SHARED_THEME_COOKIE}=`))
+    .map((part) => {
+      const raw = part.slice(`${SHARED_THEME_COOKIE}=`.length);
+      try {
+        return decodeURIComponent(raw);
+      } catch {
+        return raw;
+      }
+    });
 
-  const decoded = theme ? decodeURIComponent(theme) : null;
-  return isSharedTheme(decoded) ? decoded : null;
+  for (let i = matches.length - 1; i >= 0; i -= 1) {
+    const value = matches[i];
+    if (isSharedTheme(value)) return value;
+  }
+  return null;
 }
 
 /** Parse Cookie header / next cookies().get value. */
 export function parseSharedThemeCookieValue(value: string | undefined | null): SharedTheme | null {
   if (!value) return null;
-  const decoded = decodeURIComponent(value.trim());
-  return isSharedTheme(decoded) ? decoded : null;
+  try {
+    const decoded = decodeURIComponent(value.trim());
+    return isSharedTheme(decoded) ? decoded : null;
+  } catch {
+    return isSharedTheme(value.trim()) ? value.trim() : null;
+  }
 }
 
+function expireThemeCookie(options: { domain?: string | null }) {
+  const parts = [`${SHARED_THEME_COOKIE}=`, "Path=/", "Max-Age=0", "SameSite=Lax"];
+  if (options.domain) {
+    parts.push(`Domain=${options.domain}`);
+  }
+  // biome-ignore lint/suspicious/noDocumentCookie: clear stale host/Domain variants
+  document.cookie = parts.join("; ");
+}
+
+/**
+ * Persist theme for this host and (when configured) parent domain so shop.*
+ * subdomains share preference. Clears older host-only copies that can shadow
+ * Domain= cookies in production and freeze the toggle.
+ */
 export function setSharedThemeCookie(theme: SharedTheme) {
+  if (typeof document === "undefined") return;
+
+  const domain = getSharedParentCookieDomain({
+    hostname: typeof window !== "undefined" ? window.location.hostname : null,
+  });
+
+  // Host-only cookie (no Domain) can win over Domain=.parent and never update
+  // correctly when we only rewrite the parent cookie — clear both first.
+  expireThemeCookie({ domain: null });
+  if (domain) {
+    expireThemeCookie({ domain });
+  }
+
   const parts = [
     `${SHARED_THEME_COOKIE}=${encodeURIComponent(theme)}`,
     "Path=/",
     "Max-Age=31536000",
     "SameSite=Lax",
   ];
-  const domain = getSharedParentCookieDomain({
-    hostname: typeof window !== "undefined" ? window.location.hostname : null,
-  });
-
   if (domain) {
     parts.push(`Domain=${domain}`);
+  }
+  if (typeof window !== "undefined" && window.location.protocol === "https:") {
+    parts.push("Secure");
   }
 
   // biome-ignore lint/suspicious/noDocumentCookie: Parent-domain cookie across dashboard and shop hosts.
@@ -50,5 +93,5 @@ export function setSharedThemeCookie(theme: SharedTheme) {
  * on first hit of a new subdomain when localStorage is empty).
  */
 export function getThemeBootstrapScript(): string {
-  return `(function(){try{var m=document.cookie.match(/(?:^|; )${SHARED_THEME_COOKIE}=([^;]*)/);var t=m?decodeURIComponent(m[1]):"system";if(t!=="dark"&&t!=="light"&&t!=="system")t="system";var d=t==="dark"||(t==="system"&&window.matchMedia("(prefers-color-scheme: dark)").matches);var r=document.documentElement;r.classList.toggle("dark",d);r.style.colorScheme=d?"dark":"light";}catch(e){}})();`;
+  return `(function(){try{var m=document.cookie.match(/(?:^|; )${SHARED_THEME_COOKIE}=([^;]*)/g);var t="system";if(m&&m.length){var last=m[m.length-1].split("=")[1];t=decodeURIComponent(last||"system");}if(t!=="dark"&&t!=="light"&&t!=="system")t="system";var d=t==="dark"||(t==="system"&&window.matchMedia("(prefers-color-scheme: dark)").matches);var r=document.documentElement;r.classList.toggle("dark",d);r.style.colorScheme=d?"dark":"light";}catch(e){}})();`;
 }
