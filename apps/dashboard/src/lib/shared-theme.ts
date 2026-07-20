@@ -35,11 +35,12 @@ export function getSharedThemeFromCookie(
 /** Parse Cookie header / next cookies().get value. */
 export function parseSharedThemeCookieValue(value: string | undefined | null): SharedTheme | null {
   if (!value) return null;
+  const raw = value.trim();
   try {
-    const decoded = decodeURIComponent(value.trim());
+    const decoded = decodeURIComponent(raw);
     return isSharedTheme(decoded) ? decoded : null;
   } catch {
-    return isSharedTheme(value.trim()) ? value.trim() : null;
+    return isSharedTheme(raw) ? raw : null;
   }
 }
 
