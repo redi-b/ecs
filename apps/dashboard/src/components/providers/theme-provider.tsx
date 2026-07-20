@@ -1,9 +1,8 @@
 "use client";
 
 import { ThemeProvider as NextThemesProvider, useTheme } from "next-themes";
-import { useLocale } from "next-intl";
 import type { ComponentProps } from "react";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 import {
   getSharedThemeFromCookie,
@@ -47,12 +46,20 @@ function applyThemeClass(theme: SharedTheme) {
   root.style.colorScheme = dark ? "dark" : "light";
 }
 
+/**
+ * Cookie is the cross-subdomain source of truth on first load only.
+ * After that, next-themes (user toggle) owns the value; we write cookie/LS
+ * when theme changes. Re-reading cookie on every theme change caused prod stuck
+ * toggles when a host-only cookie shadowed Domain= and never updated.
+ */
 function SharedThemeBridge() {
   const { setTheme, theme: activeTheme } = useTheme();
-  const locale = useLocale();
+  const didHydrateFromCookie = useRef(false);
 
-  // Cookie is source of truth across subdomains; localStorage is origin-only.
   useEffect(() => {
+    if (didHydrateFromCookie.current) return;
+    didHydrateFromCookie.current = true;
+
     const fromCookie = getSharedThemeFromCookie();
     if (fromCookie) {
       setTheme(fromCookie);
@@ -62,16 +69,23 @@ function SharedThemeBridge() {
       } catch {
         // private mode
       }
+    }
+  }, [setTheme]);
+
+  useEffect(() => {
+    if (!didHydrateFromCookie.current) return;
+    if (activeTheme !== "dark" && activeTheme !== "light" && activeTheme !== "system") {
       return;
     }
-
-    const theme = (activeTheme as SharedTheme | undefined) ?? "system";
-    if (theme === "dark" || theme === "light" || theme === "system") {
-      // Persist resolved choice onto parent domain so the next shop host inherits it.
-      setSharedThemeCookie(theme);
-      applyThemeClass(theme);
+    const theme = activeTheme as SharedTheme;
+    setSharedThemeCookie(theme);
+    applyThemeClass(theme);
+    try {
+      localStorage.setItem("ecs-theme-ls", theme);
+    } catch {
+      // private mode
     }
-  }, [setTheme, activeTheme, locale]);
+  }, [activeTheme]);
 
   return null;
 }

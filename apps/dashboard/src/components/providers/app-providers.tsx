@@ -8,6 +8,7 @@ import { QueryProvider } from "@/components/providers/query-provider";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import type { AppLocale } from "@/i18n/config";
+import { appTimeZone } from "@/i18n/config";
 import type { Messages } from "@/i18n/messages";
 import type { SharedTheme } from "@/lib/shared-theme";
 
@@ -24,8 +25,8 @@ export function AppProviders({
   theme?: SharedTheme;
 }) {
   return (
-    <NextIntlClientProvider locale={locale} messages={messages}>
-      <ThemeProvider attribute="class" defaultTheme={theme} enableSystem storageKey="ecs-theme-ls">
+    <NextIntlClientProvider locale={locale} messages={messages} timeZone={appTimeZone}>
+      <ThemeProvider attribute="class" defaultTheme={theme} enableSystem enableColorScheme storageKey="ecs-theme-ls">
         <QueryProvider>
           {/*
             Shows on <Link> navigations (and history changes).

@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { getRequestConfig } from "next-intl/server";
 
-import { defaultLocale, isAppLocale, localeCookieName } from "./config";
+import { appTimeZone, defaultLocale, isAppLocale, localeCookieName } from "./config";
 import { loadMessages } from "./messages/load";
 
 export default getRequestConfig(async () => {
@@ -11,5 +11,6 @@ export default getRequestConfig(async () => {
   return {
     locale,
     messages: loadMessages(locale),
+    timeZone: appTimeZone,
   };
 });

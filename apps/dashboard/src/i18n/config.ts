@@ -5,6 +5,9 @@ export type AppLocale = (typeof locales)[number];
 export const defaultLocale: AppLocale = "en";
 export const localeCookieName = "ecs-locale";
 
+/** Global default for next-intl date/time formatting (Ethiopia). */
+export const appTimeZone = "Africa/Addis_Ababa";
+
 export function isAppLocale(value: unknown): value is AppLocale {
   return typeof value === "string" && locales.includes(value as AppLocale);
 }
