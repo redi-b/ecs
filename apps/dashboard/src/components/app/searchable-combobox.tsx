@@ -46,8 +46,17 @@ type SearchableComboboxProps = {
   id?: string;
   /** Optional custom row for advanced lists (banks with meta, customers, etc.). */
   renderItem?: (item: SearchableComboboxOption) => React.ReactNode;
+  /** Custom trigger label (selected option or null when empty). */
+  renderValue?: (item: SearchableComboboxOption | null) => React.ReactNode;
+  /**
+   * Replace the default outline Button trigger (e.g. filter chips).
+   * Must accept standard button props via Base UI `render`.
+   */
+  trigger?: React.ReactElement;
   /** Sticky footer inside the panel (e.g. “Create collection”). */
   panelFooter?: React.ReactNode;
+  /** Extra classes for the popup panel (e.g. min width for narrow chip triggers). */
+  contentClassName?: string;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
 };
@@ -124,7 +133,10 @@ export function SearchableCombobox({
   className,
   id,
   renderItem,
+  renderValue,
+  trigger,
   panelFooter,
+  contentClassName,
   open,
   onOpenChange,
 }: SearchableComboboxProps) {
@@ -154,24 +166,32 @@ export function SearchableCombobox({
         disabled={disabled}
         id={id}
         render={
-          <Button
-            className={cn(
-              "h-9 w-full justify-between px-3 font-normal shadow-none",
-              !selected && "text-muted-foreground",
-              className,
-            )}
-            disabled={disabled}
-            type="button"
-            variant="outline"
-          />
+          trigger ?? (
+            <Button
+              className={cn(
+                "h-9 w-full justify-between px-3 font-normal shadow-none",
+                !selected && "text-muted-foreground",
+                className,
+              )}
+              disabled={disabled}
+              type="button"
+              variant="outline"
+            />
+          )
         }
       >
         <span className="min-w-0 flex-1 truncate text-left">
-          <ComboboxValue placeholder={placeholder} />
+          {renderValue ? (
+            renderValue(selected)
+          ) : (
+            <ComboboxValue placeholder={placeholder} />
+          )}
         </span>
       </ComboboxTrigger>
 
-      <ComboboxContent className="w-(--anchor-width) min-w-(--anchor-width)">
+      <ComboboxContent
+        className={cn("w-(--anchor-width) min-w-(--anchor-width)", contentClassName)}
+      >
         <ComboboxInput
           className="w-auto"
           placeholder={searchPlaceholder ?? placeholder}
