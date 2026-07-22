@@ -11,7 +11,7 @@ import {
   RiFullscreenExitLine,
   RiFullscreenLine,
   RiPauseLine,
-  RiRefreshLine,
+  RiResetLeftLine,
   RiRocketLine,
   RiSave3Line,
 } from "@remixicon/react";
@@ -196,7 +196,7 @@ export function StorefrontEditorActions({
             <TooltipTrigger asChild>
               <AlertDialogTrigger asChild>
                 <Button size="icon-sm" type="button" variant="ghost">
-                  <RiRefreshLine />
+                  <RiResetLeftLine />
                   <span className="sr-only">{t("editor.actions.resetEditor")}</span>
                 </Button>
               </AlertDialogTrigger>
