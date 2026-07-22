@@ -269,15 +269,22 @@ export function shiftColorRelativeToPrimary(
     return hslToHex(np.h, s, l);
   }
 
-  // Accent (and other chromatic tokens): full relative offset from seed primary.
-  const dh = sc.h - sp.h;
+  // Accent: keep seed sat/light relationship, but cap hue so brand blue never
+  // becomes neon green (seed clay-vs-sage is ~120° and looks wrong when rotated).
   const ds = sc.s - sp.s;
   const dl = sc.l - sp.l;
+  let dh = sc.h - sp.h;
+  while (dh > 180) dh -= 360;
+  while (dh < -180) dh += 360;
+  // Stay brand-adjacent (analogous). Preserve seed direction (warmer/cooler).
+  const direction = dh === 0 ? 1 : Math.sign(dh);
+  const magnitude = clamp(Math.abs(dh), 18, 38);
+  const accentH = normHue(np.h + direction * magnitude);
 
   return hslToHex(
-    normHue(np.h + dh),
-    clamp(np.s + ds, 8, 85),
-    clamp(np.l + dl, 28, 72),
+    accentH,
+    clamp(np.s + ds * 0.85, 22, 78),
+    clamp(np.l + dl * 0.85, 32, 62),
   );
 }
 
