@@ -64,7 +64,6 @@ function DialogContent({
       <DialogPrimitive.Content
         data-slot="dialog-content"
         className={cn(
-          // overflow-visible: nested combobox/select panels portal into this node and may extend past the card.
           "fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 overflow-visible rounded-xl bg-popover p-4 text-sm text-popover-foreground ring-1 ring-foreground/10 duration-200 ease-out outline-none sm:max-w-sm data-open:animate-in data-open:fade-in-0 data-open:zoom-in-96 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-96",
           className,
         )}
@@ -73,7 +72,6 @@ function DialogContent({
           setPortalContainer(node);
         }}
         onEscapeKeyDown={(event) => {
-          // Close nested combobox/select first; don't dismiss the dialog on the same Escape.
           if (isNestedOverlayActive()) {
             event.preventDefault();
           }

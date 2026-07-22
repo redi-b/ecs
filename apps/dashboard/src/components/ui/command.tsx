@@ -61,22 +61,69 @@ function CommandInput({
   onValueChange,
   size = "default",
   ...props
-}: React.ComponentProps<typeof CommandPrimitive.Input> & {
-  /**
-   * default — dense combobox / filter popovers (h-7)
-   * lg — command center dialog (same look, slightly more air)
-   */
-  size?: "default" | "lg";
+}: Omit<React.ComponentProps<typeof CommandPrimitive.Input>, "size"> & {
+  /** default — dense lists; lg — command palette; panel — combobox-aligned filter popovers */
+  size?: "default" | "lg" | "panel";
 }) {
   const stringValue = typeof value === "string" ? value : "";
   const isLg = size === "lg";
+  const isPanel = size === "panel";
   const inputClassName = cn(
     "min-w-0 w-full flex-1 text-foreground outline-hidden antialiased caret-foreground",
     "placeholder:truncate placeholder:font-normal placeholder:tracking-normal placeholder:text-muted-foreground/65",
     "disabled:cursor-not-allowed disabled:opacity-50",
-    isLg ? "text-sm leading-normal" : "text-[13px] leading-normal",
+    isLg || isPanel ? "text-sm leading-normal" : "text-[13px] leading-normal",
     className,
   );
+
+  if (isPanel) {
+    return (
+      <div data-slot="command-input-wrapper" className="px-1.5 pt-1.5">
+        <InputGroup
+          className={cn(
+            "h-9! border-input/40 bg-muted/40 shadow-none!",
+            "has-[[data-slot=input-group-control]:focus-visible]:border-ring",
+            "has-[[data-slot=input-group-control]:focus-visible]:ring-3",
+            "has-[[data-slot=input-group-control]:focus-visible]:ring-ring/50",
+          )}
+        >
+          {typeof value === "string" && onValueChange ? (
+            <CommandPrimitive.Input
+              data-slot="command-input"
+              className={cn(inputClassName, "px-3")}
+              onValueChange={onValueChange}
+              spellCheck={false}
+              autoCorrect="off"
+              autoCapitalize="off"
+              value={value}
+              {...props}
+            />
+          ) : (
+            <CommandPrimitive.Input
+              data-slot="command-input"
+              className={cn(inputClassName, "px-3")}
+              spellCheck={false}
+              autoCorrect="off"
+              autoCapitalize="off"
+              {...props}
+            />
+          )}
+          {stringValue && onValueChange ? (
+            <InputGroupAddon align="inline-end" className="gap-1 pr-1!">
+              <button
+                aria-label="Clear search"
+                className="grid size-6 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-background/70 hover:text-foreground"
+                onClick={() => onValueChange("")}
+                type="button"
+              >
+                <XIcon className="size-3" />
+              </button>
+            </InputGroupAddon>
+          ) : null}
+        </InputGroup>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -164,7 +211,7 @@ function CommandEmpty({
   return (
     <CommandPrimitive.Empty
       data-slot="command-empty"
-      className={cn("py-6 text-center text-sm", className)}
+      className={cn("px-3 py-6 text-center text-sm text-muted-foreground", className)}
       {...props}
     />
   );
@@ -208,13 +255,16 @@ function CommandItem({
     <CommandPrimitive.Item
       data-slot="command-item"
       className={cn(
-        "group/command-item relative flex cursor-default items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden select-none in-data-[slot=dialog-content]:rounded-lg! data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-50 data-selected:bg-muted data-selected:text-foreground [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 data-selected:*:[svg]:text-foreground",
+        "group/command-item relative flex cursor-pointer items-center gap-2 rounded-lg px-2.5 py-2 text-sm outline-hidden select-none",
+        "data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-50",
+        "data-selected:bg-accent data-selected:text-accent-foreground",
+        "[&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 data-selected:*:[svg]:text-foreground",
         className,
       )}
       {...props}
     >
       {children}
-      <CheckIcon className="ml-auto opacity-0 group-has-data-[slot=command-shortcut]/command-item:hidden group-data-[checked=true]/command-item:opacity-100" />
+      <CheckIcon className="ml-auto size-4 opacity-0 group-has-data-[slot=command-shortcut]/command-item:hidden group-data-[checked=true]/command-item:opacity-100" />
     </CommandPrimitive.Item>
   );
 }

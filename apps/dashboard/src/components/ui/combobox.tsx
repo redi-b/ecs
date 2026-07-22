@@ -26,10 +26,7 @@ function ComboboxTrigger({
   endIcon,
   ...props
 }: ComboboxPrimitive.Trigger.Props & {
-  /**
-   * Trailing icon. Default chevron; pass `edit` for pencil (editor pickers),
-   * `null`/`false` to hide, or a custom node.
-   */
+  /** Trailing icon: chevron (default), edit, none, or custom. */
   endIcon?: "chevron" | "edit" | false | null | React.ReactNode;
 }) {
   const icon =
@@ -116,7 +113,6 @@ function ComboboxContent({
     ComboboxPrimitive.Positioner.Props,
     "side" | "align" | "sideOffset" | "alignOffset" | "anchor"
   >) {
-  // When inside a modal dialog/sheet, portal into that surface so the list stays interactive.
   const modalContainer = useFloatingPortalContainer()
 
   return (

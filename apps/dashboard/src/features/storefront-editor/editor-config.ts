@@ -57,7 +57,7 @@ const GOOGLE_FONT_SPECS: Record<string, string> = {
   "Source Sans 3": "Source+Sans+3:wght@400;500;600;700",
 };
 
-/** Google Fonts CSS URL for picker previews / editor twin. */
+/** Google Fonts stylesheet URL for the given face names. */
 export function storefrontGoogleFontsHref(names: readonly string[]) {
   const seen = new Set<string>();
   const families: string[] = [];
@@ -72,7 +72,7 @@ export function storefrontGoogleFontsHref(names: readonly string[]) {
   return `https://fonts.googleapis.com/css2?${families.map((f) => `family=${f}`).join("&")}&display=swap`;
 }
 
-/** Ensure catalog faces are available so font pickers can preview correctly. */
+/** Inject catalog font faces for UI previews. */
 export function ensureStorefrontFontOptionsLoaded() {
   if (typeof document === "undefined") return;
   const id = "ecs-storefront-font-options";
