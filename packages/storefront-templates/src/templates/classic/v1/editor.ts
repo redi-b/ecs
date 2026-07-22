@@ -134,7 +134,6 @@ export const classicV1EditorSchema = {
           prop: "featuredProductIds",
           label: "Products",
           kind: "products",
-          helpText: "Optional. Leave empty to show newest products.",
         },
       ],
     },
