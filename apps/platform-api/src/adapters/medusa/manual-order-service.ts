@@ -125,7 +125,21 @@ export function createMedusaManualOrderService(options: Options) {
       if (created.status === 401 || created.status === 403) {
         return { error: "commerce_credentials_invalid", ok: false, status: 401 };
       }
-      if (created.status === 400 || created.status === 422 || (created.status >= 400 && created.status < 500 && created.status !== 404)) {
+      if (
+        created.status === 400 ||
+        created.status === 422 ||
+        (created.status >= 400 && created.status < 500 && created.status !== 404)
+      ) {
+        const body = await created.json().catch(() => null);
+        const blob = JSON.stringify(body ?? {}).toLowerCase();
+        if (
+          blob.includes("inventory") ||
+          blob.includes("stock") ||
+          blob.includes("not enough") ||
+          blob.includes("insufficient")
+        ) {
+          return { error: "manual_order_insufficient_inventory", ok: false, status: 400 };
+        }
         return { error: "invalid_manual_order", ok: false, status: 400 };
       }
       // Plugin may be missing — treat as setup outage, not merchant validation.

@@ -140,7 +140,7 @@ export function ListViewToggle<T extends string>({
           ),
         };
       })}
-      size="md"
+      size="sm"
       value={value}
     />
   );

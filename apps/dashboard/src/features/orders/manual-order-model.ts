@@ -8,6 +8,8 @@ export type CatalogVariant = {
   sku: string | null;
   thumbnailUrl: string | null;
   variantTitle: string;
+  /** Available units when inventory is tracked; null = not tracked. */
+  availableQuantity: number | null;
 };
 
 export type CustomerOption = {

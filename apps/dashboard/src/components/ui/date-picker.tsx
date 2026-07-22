@@ -101,15 +101,19 @@ export function DatePicker({
       </PopoverTrigger>
       <PopoverContent
         align="start"
+        avoidCollisions
         className={cn(
-          "w-[min(20rem,calc(100vw-2rem))] gap-0 overflow-hidden rounded-2xl border bg-popover p-0 shadow-lg ring-1 ring-foreground/5",
+          "w-[min(20rem,var(--radix-popover-content-available-width,calc(100vw-1.5rem)))] gap-0 overflow-hidden rounded-2xl border bg-popover p-0 shadow-lg ring-1 ring-foreground/5",
           "duration-200 ease-out",
-          "data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-open:slide-in-from-top-1",
-          "data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95 data-closed:slide-out-to-top-1",
+          "data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95",
+          "data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
         )}
+        collisionPadding={16}
         data-datetime-picker=""
         onOpenAutoFocus={(event) => event.preventDefault()}
-        sideOffset={8}
+        side="bottom"
+        sideOffset={6}
+        sticky="partial"
       >
         <div className="border-b bg-muted/25 px-4 py-3">
           <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">

@@ -17,7 +17,18 @@ export type ProductCatalogPickVariant = {
   priceLabel?: string | null;
   /** Structured options: { Size: "M", Color: "Blue" }. */
   options?: Record<string, string>;
+  /**
+   * Available inventory when stock is tracked.
+   * `null` / omitted = not tracked or unknown (selection allowed).
+   * `0` = out of stock (selection blocked for order flows).
+   */
+  availableQuantity?: number | null;
 };
+
+/** True when the variant has tracked stock and none is available. */
+export function isVariantOutOfStock(variant: ProductCatalogPickVariant) {
+  return typeof variant.availableQuantity === "number" && variant.availableQuantity <= 0;
+}
 
 export type ProductCatalogPickProduct = {
   id: string;

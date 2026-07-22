@@ -3,6 +3,7 @@
 import { Popover as PopoverPrimitive } from "radix-ui";
 import * as React from "react";
 
+import { useFloatingPortalContainer } from "@/lib/floating-portal-container";
 import {
   applyNestedOverlaySession,
   releaseNestedOverlayIfOpen,
@@ -51,16 +52,25 @@ function PopoverContent({
   className,
   align = "center",
   sideOffset = 4,
+  collisionPadding = 12,
   ...props
 }: React.ComponentProps<typeof PopoverPrimitive.Content>) {
+  // Inside sheet/dialog: portal into the modal surface so collision + stacking
+  // stay with the field (same pattern as Combobox).
+  const portalContainer = useFloatingPortalContainer();
+  const nested = Boolean(portalContainer);
+
   return (
-    <PopoverPrimitive.Portal>
+    <PopoverPrimitive.Portal container={portalContainer ?? undefined}>
       <PopoverPrimitive.Content
         data-slot="popover-content"
         align={align}
+        collisionPadding={collisionPadding}
         sideOffset={sideOffset}
         className={cn(
-          "z-[100] flex w-72 origin-(--radix-popover-content-transform-origin) flex-col gap-2.5 rounded-lg bg-popover p-2.5 text-sm text-popover-foreground shadow-md ring-1 ring-foreground/10 outline-hidden duration-150 ease-out data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-96 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-96",
+          "flex w-72 origin-(--radix-popover-content-transform-origin) flex-col gap-2.5 rounded-lg bg-popover p-2.5 text-sm text-popover-foreground shadow-md ring-1 ring-foreground/10 outline-hidden duration-150 ease-out data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-96 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-96",
+          // Nested surfaces need a higher stack than sheet/dialog (z-50).
+          nested ? "z-[200]" : "z-[100]",
           className,
         )}
         {...props}

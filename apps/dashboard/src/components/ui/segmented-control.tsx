@@ -23,8 +23,8 @@ type SegmentedControlProps<T extends string> = {
 };
 
 /**
- * Sliding-thumb segmented control. Segments are always equal width so the
- * thumb can animate with translateX (required for the slide effect).
+ * Sliding-thumb segmented control.
+ * Equal-width segments + translateX so the thumb slides both directions.
  */
 export function SegmentedControl<T extends string>({
   value,
@@ -49,7 +49,7 @@ export function SegmentedControl<T extends string>({
         "relative flex overflow-hidden rounded-full border p-0.5",
         fullWidth ? "w-full" : "w-fit",
         size === "sm" ? "h-8" : "h-9",
-        active === "primary" ? "border-border/80 bg-muted/50" : "border-border/80 bg-background/70",
+        active === "primary" ? "border-border/80 bg-muted/55" : "border-border/80 bg-muted/45",
         className,
       )}
       role="tablist"
@@ -57,14 +57,15 @@ export function SegmentedControl<T extends string>({
       <div
         aria-hidden
         className={cn(
-          "pointer-events-none absolute inset-y-0.5 left-0.5 rounded-full shadow-sm transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform",
+          "pointer-events-none absolute inset-y-0.5 left-0.5 rounded-full transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform",
           active === "primary"
-            ? "bg-primary ring-1 ring-primary/20"
-            : "bg-muted ring-1 ring-foreground/6",
+            ? "bg-primary shadow-sm ring-1 ring-primary/25"
+            : "bg-background shadow-sm ring-1 ring-border",
         )}
         style={{
           width: `calc((100% - 4px) / ${count})`,
-          transform: `translate3d(calc(${activeIndex} * 100%), 0, 0)`,
+          // Literal % values (not CSS vars) so the browser can interpolate both ways.
+          transform: `translate3d(${activeIndex * 100}%, 0, 0)`,
         }}
       />
       {options.map((option) => {
@@ -75,8 +76,7 @@ export function SegmentedControl<T extends string>({
             aria-selected={isActive}
             className={cn(
               "relative z-10 flex h-full min-w-0 flex-1 items-center justify-center gap-1.5 rounded-full px-2.5 font-medium transition-colors duration-200",
-              // Equal flex-1 segments keep thumb animation aligned.
-              fullWidth ? "min-w-0" : "min-w-[4.25rem]",
+              fullWidth ? "min-w-0" : "min-w-[4.75rem]",
               size === "sm" ? "text-xs" : "text-sm",
               isActive
                 ? active === "primary"

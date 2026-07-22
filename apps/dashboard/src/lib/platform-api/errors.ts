@@ -47,7 +47,9 @@ const PLATFORM_ERROR_MESSAGES: Record<string, string> = {
   invalid_receiving_account: "Check the receiving account details and try again.",
   receiving_account_not_found: "That receiving account could not be found.",
   receiving_account_label_taken: "You already have a receiving account with that label.",
-  invalid_manual_order: "Check customer email and line items, then try again.",
+  invalid_manual_order: "Check the order details and try again.",
+  manual_order_insufficient_inventory:
+    "One or more items are out of stock. Remove them or lower the quantity, then try again.",
   draft_order_unavailable: "Manual orders are not available yet. Contact support.",
   manual_order_convert_failed: "The order draft could not be finalized. Try again.",
   manual_order_create_failed: "Could not create this order. Try again.",

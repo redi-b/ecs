@@ -99,4 +99,31 @@ describe("createMedusaManualOrderService", () => {
       status: 400,
     });
   });
+
+  it("maps inventory rejections to manual_order_insufficient_inventory", async () => {
+    const service = createMedusaManualOrderService({
+      adminApiToken: "token",
+      fetcher: async () =>
+        new Response(
+          JSON.stringify({ message: "Some variant does not have the required inventory" }),
+          { status: 400 },
+        ),
+      medusaInternalUrl: "http://medusa.test",
+    });
+
+    const result = await service.createManualOrder({
+      customerEmail: "buyer@example.com",
+      items: [{ quantity: 1, variantId: "variant_1" }],
+      regionId: "reg_1",
+      salesChannelId: "sc_1",
+      tenantId: "tenant_1",
+      userId: "user_1",
+    });
+
+    assert.deepEqual(result, {
+      error: "manual_order_insufficient_inventory",
+      ok: false,
+      status: 400,
+    });
+  });
 });

@@ -4,16 +4,11 @@ import { useEffect, useMemo, useState } from "react";
 
 import { AppIcons } from "@/components/app/icons";
 import { Button } from "@/components/ui/button";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 
 import {
-  formatVariantChipLabel,
+  isVariantOutOfStock,
   optionLabelFromVariantTitle,
   resolveVariantByOptions,
   type ProductCatalogPickVariant,
@@ -37,18 +32,24 @@ export function ProductOptionConfigurator({
   const [picks, setPicks] = useState<Record<string, string>>({});
   const [justAdded, setJustAdded] = useState(false);
 
-  // Prefer first available values as defaults when axes exist.
+  // Prefer first available (in-stock) values as defaults when axes exist.
   useEffect(() => {
     if (!axes.length) return;
     setPicks((current) => {
       if (Object.keys(current).length) return current;
       const next: Record<string, string> = {};
       for (const axis of axes) {
-        if (axis.values[0]) next[axis.title] = axis.values[0];
+        const preferred =
+          axis.values.find((value) => {
+            const trial = { ...next, [axis.title]: value };
+            const match = resolveVariantByOptions(variants, trial);
+            return match ? !isVariantOutOfStock(match) : true;
+          }) ?? axis.values[0];
+        if (preferred) next[axis.title] = preferred;
       }
       return next;
     });
-  }, [axes]);
+  }, [axes, variants]);
 
   const resolved = useMemo(() => {
     if (axes.length === 0) return null;
@@ -57,9 +58,15 @@ export function ProductOptionConfigurator({
     return resolveVariantByOptions(variants, picks);
   }, [axes, picks, variants]);
 
+  const resolvedOutOfStock = Boolean(resolved && isVariantOutOfStock(resolved));
+
   function isValueAvailable(axisTitle: string, value: string) {
     const trial = { ...picks, [axisTitle]: value };
     return variants.some((variant) => {
+      if (isVariantOutOfStock(variant)) {
+        // Keep the value clickable if this is the only match, but prefer
+        // combinations that can resolve to in-stock variants when possible.
+      }
       const opts = variant.options ?? {};
       if (Object.keys(opts).length) {
         return Object.entries(trial).every(([k, v]) => !v || opts[k] === v);
@@ -100,21 +107,38 @@ export function ProductOptionConfigurator({
           {t("products.catalogPicker.pickOptionFor", { product: productTitle })}
         </p>
         <div className="flex flex-wrap gap-2">
-          {variants.map((variant) => (
-            <button
-              className="rounded-full border bg-background px-3.5 py-2 text-sm font-medium shadow-sm transition-colors hover:border-primary/40 hover:bg-primary/5"
-              key={variant.id}
-              onClick={() => onAdd(variant.id)}
-              type="button"
-            >
-              {optionLabelFromVariantTitle(variant.title, productTitle)}
-              {variant.priceLabel ? (
-                <span className="ml-1.5 text-xs font-normal tabular-nums text-muted-foreground">
-                  {variant.priceLabel}
-                </span>
-              ) : null}
-            </button>
-          ))}
+          {variants.map((variant) => {
+            const oos = isVariantOutOfStock(variant);
+            return (
+              <button
+                className={cn(
+                  "rounded-full border bg-background px-3.5 py-2 text-sm font-medium shadow-sm transition-colors",
+                  oos
+                    ? "cursor-not-allowed opacity-45"
+                    : "hover:border-primary/40 hover:bg-primary/5",
+                )}
+                disabled={oos}
+                key={variant.id}
+                onClick={() => {
+                  if (oos) return;
+                  onAdd(variant.id);
+                }}
+                type="button"
+              >
+                {optionLabelFromVariantTitle(variant.title, productTitle)}
+                {variant.priceLabel ? (
+                  <span className="ml-1.5 text-xs font-normal tabular-nums text-muted-foreground">
+                    {variant.priceLabel}
+                  </span>
+                ) : null}
+                {oos ? (
+                  <span className="ml-1.5 text-xs font-normal text-muted-foreground">
+                    · {t("products.catalogPicker.outOfStock")}
+                  </span>
+                ) : null}
+              </button>
+            );
+          })}
         </div>
       </div>
     );
@@ -162,9 +186,15 @@ export function ProductOptionConfigurator({
       <div className="flex items-center gap-3 rounded-xl border bg-background/80 px-3 py-2.5 shadow-sm">
         <div className="min-w-0 flex-1">
           {resolved ? (
-            <p className="text-sm font-semibold tabular-nums tracking-tight">
-              {resolved.priceLabel ?? t("products.catalogPicker.readyToAdd")}
-            </p>
+            resolvedOutOfStock ? (
+              <p className="text-sm font-semibold text-muted-foreground">
+                {t("products.catalogPicker.outOfStock")}
+              </p>
+            ) : (
+              <p className="text-sm font-semibold tabular-nums tracking-tight">
+                {resolved.priceLabel ?? t("products.catalogPicker.readyToAdd")}
+              </p>
+            )
           ) : (
             <p className="text-sm text-muted-foreground">
               {t("products.catalogPicker.completeOptions")}
@@ -178,9 +208,9 @@ export function ProductOptionConfigurator({
         </div>
         <Button
           className="shrink-0 rounded-full px-4"
-          disabled={!resolved}
+          disabled={!resolved || resolvedOutOfStock}
           onClick={() => {
-            if (!resolved) return;
+            if (!resolved || resolvedOutOfStock) return;
             onAdd(resolved.id);
             setJustAdded(true);
           }}

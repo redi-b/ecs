@@ -22,8 +22,10 @@ const MINUTES = Array.from({ length: 60 }, (_, index) => index);
 const HOURS_24 = Array.from({ length: 24 }, (_, index) => index);
 const HOURS_12 = Array.from({ length: 12 }, (_, index) => index + 1);
 
-const TIME_LIST_HEIGHT_PX = 200;
-const TIME_ITEM_HEIGHT_PX = 32;
+/** Visible rows in each time wheel (odd so selection can sit centered). */
+const TIME_VISIBLE_ROWS = 7;
+const TIME_ITEM_HEIGHT_PX = 36;
+const TIME_LIST_HEIGHT_PX = TIME_ITEM_HEIGHT_PX * TIME_VISIBLE_ROWS;
 const TIME_FORMAT_KEY = "ecs.datetime-picker.time-format";
 
 type TimeFormat = "12h" | "24h";
@@ -38,6 +40,10 @@ type DateTimePickerProps = {
   disabled?: boolean;
 };
 
+/**
+ * Reusable date + time picker (forms, sheets, pages).
+ * Horizontal: calendar left, compact time wheels + AM/PM toggle right.
+ */
 export function DateTimePicker({
   className,
   id,
@@ -166,13 +172,14 @@ export function DateTimePicker({
       </PopoverTrigger>
       <PopoverContent
         align="end"
+        avoidCollisions
         className={cn(
-          "w-[min(22.5rem,calc(100vw-1.25rem))] gap-0 overflow-hidden rounded-2xl border bg-popover p-0 shadow-lg ring-1 ring-foreground/10",
+          "w-auto max-w-[min(36rem,calc(100vw-1.25rem))] gap-0 overflow-hidden rounded-2xl border bg-popover p-0 shadow-lg ring-1 ring-foreground/10",
           "duration-200 ease-out",
           "data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95",
           "data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
         )}
-        collisionPadding={16}
+        collisionPadding={12}
         data-datetime-picker=""
         onOpenAutoFocus={(event) => event.preventDefault()}
         onTouchMove={(event) => event.stopPropagation()}
@@ -180,13 +187,17 @@ export function DateTimePicker({
         side="bottom"
         sideOffset={8}
       >
-        <div className="flex items-center justify-between gap-2 border-b px-3 py-2">
-          <p className="min-w-0 truncate text-sm font-semibold tracking-tight">
-            {draftDate ? `${format(draftDate, "PP")} · ${displayTime}` : "Select date & time"}
-          </p>
+        {/* Header */}
+        <div className="flex items-center justify-between gap-3 border-b px-3.5 py-2.5">
+          <div className="min-w-0">
+            <p className="truncate text-sm font-semibold tracking-tight">
+              {draftDate ? format(draftDate, "PPP") : "Select date & time"}
+            </p>
+            <p className="mt-0.5 text-xs tabular-nums text-muted-foreground">{displayTime}</p>
+          </div>
           <SegmentedControl
             ariaLabel="Time format"
-            className="w-[5.75rem] shrink-0"
+            className="w-[5.5rem] shrink-0"
             fullWidth
             onChange={setFormat}
             options={[
@@ -198,56 +209,63 @@ export function DateTimePicker({
           />
         </div>
 
-        <div className="p-3 pb-2">
-          <Calendar
-            month={month}
-            onMonthChange={setMonth}
-            onSelect={pickDate}
-            selected={draftDate}
-          />
-        </div>
-
-        <div className="border-t px-3 py-2.5">
-          <div className="mb-2 flex items-center justify-between gap-2">
-            <p className="text-xs font-medium text-muted-foreground">Time</p>
-            <p className="text-sm font-semibold tabular-nums">{displayTime}</p>
-          </div>
-          <div
-            className={cn(
-              "grid overflow-hidden rounded-xl border bg-muted/20",
-              timeFormat === "12h" ? "grid-cols-3" : "grid-cols-2",
-            )}
-          >
-            {timeFormat === "24h" ? (
-              <TimeColumn
-                label="Hour"
-                onChange={(next) => pickTime(next, minute)}
-                options={HOURS_24}
-                value={hour}
-              />
-            ) : (
-              <TimeColumn
-                label="Hour"
-                onChange={(next) => pickTime(to24Hour(next, period), minute)}
-                options={HOURS_12}
-                value={hour12}
-              />
-            )}
-            <TimeColumn
-              label="Min"
-              onChange={(next) => pickTime(hour, next)}
-              options={MINUTES}
-              value={minute}
+        {/* Body: calendar | time */}
+        <div className="flex">
+          <div className="w-[17.5rem] shrink-0 p-3">
+            <Calendar
+              month={month}
+              onMonthChange={setMonth}
+              onSelect={pickDate}
+              selected={draftDate}
             />
-            {timeFormat === "12h" ? (
-              <PeriodColumn
-                onChange={(nextPeriod) => pickTime(to24Hour(hour12, nextPeriod), minute)}
-                value={period}
+          </div>
+
+          <div className="flex w-[10.5rem] shrink-0 flex-col border-l bg-muted/15">
+            <div className="grid flex-1 grid-cols-2 gap-0 px-2 pt-2">
+              {timeFormat === "24h" ? (
+                <TimeWheel
+                  label="Hour"
+                  onChange={(next) => pickTime(next, minute)}
+                  options={HOURS_24}
+                  value={hour}
+                />
+              ) : (
+                <TimeWheel
+                  label="Hour"
+                  onChange={(next) => pickTime(to24Hour(next, period), minute)}
+                  options={HOURS_12}
+                  value={hour12}
+                />
+              )}
+              <TimeWheel
+                label="Min"
+                onChange={(next) => pickTime(hour, next)}
+                options={MINUTES}
+                value={minute}
               />
-            ) : null}
+            </div>
+
+            {timeFormat === "12h" ? (
+              <div className="px-2.5 pt-2 pb-2.5">
+                <SegmentedControl
+                  ariaLabel="AM or PM"
+                  fullWidth
+                  onChange={(next) => pickTime(to24Hour(hour12, next), minute)}
+                  options={[
+                    { id: "AM", label: "AM" },
+                    { id: "PM", label: "PM" },
+                  ]}
+                  size="sm"
+                  value={period}
+                />
+              </div>
+            ) : (
+              <div className="h-2" />
+            )}
           </div>
         </div>
 
+        {/* Footer */}
         <div className="flex items-center justify-between gap-2 border-t px-3 py-2">
           <div className="flex flex-wrap gap-1">
             <PresetChip
@@ -286,7 +304,7 @@ export function DateTimePicker({
   );
 }
 
-function TimeColumn({
+function TimeWheel({
   label,
   options,
   value,
@@ -316,38 +334,51 @@ function TimeColumn({
   }, [value, options]);
 
   return (
-    <div className="flex min-h-0 min-w-0 flex-col overflow-hidden border-l first:border-l-0">
-      <p className="shrink-0 border-b py-1.5 text-center text-[10px] font-medium tracking-wide text-muted-foreground uppercase">
+    <div className="flex min-w-0 flex-col">
+      <p className="pb-1.5 text-center text-[10px] font-medium tracking-wide text-muted-foreground uppercase">
         {label}
       </p>
-      <div
-        className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-1 [scrollbar-gutter:stable] [-webkit-overflow-scrolling:touch]"
-        onTouchMove={(event) => event.stopPropagation()}
-        onWheel={(event) => {
-          event.stopPropagation();
-        }}
-        ref={listRef}
-        style={{ height: TIME_LIST_HEIGHT_PX, maxHeight: TIME_LIST_HEIGHT_PX }}
-      >
-        <div className="flex flex-col gap-0.5">
-          {options.map((option) => {
-            const active = option === value;
-            return (
-              <button
-                className={cn(
-                  "h-8 shrink-0 rounded-lg text-sm tabular-nums transition-colors outline-none",
-                  "hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 focus-visible:ring-ring/50",
-                  active &&
-                    "bg-primary font-semibold text-primary-foreground shadow-sm hover:bg-primary/90 hover:text-primary-foreground",
-                )}
-                key={option}
-                onClick={() => onChange(option)}
-                type="button"
-              >
-                {String(option).padStart(2, "0")}
-              </button>
-            );
-          })}
+      <div className="relative">
+        {/* Selection rail — sits behind items, doesn't stretch buttons. */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-x-1 top-1/2 z-0 h-9 -translate-y-1/2 rounded-lg bg-primary/10 ring-1 ring-primary/15"
+        />
+        <div
+          className={cn(
+            "relative z-10 overflow-y-auto overscroll-contain px-1",
+            "[scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden",
+            "mask-[linear-gradient(to_bottom,transparent,black_12%,black_88%,transparent)]",
+          )}
+          onTouchMove={(event) => event.stopPropagation()}
+          onWheel={(event) => event.stopPropagation()}
+          ref={listRef}
+          style={{ height: TIME_LIST_HEIGHT_PX }}
+        >
+          {/* Spacers so first/last values can center on the rail */}
+          <div style={{ height: TIME_ITEM_HEIGHT_PX * Math.floor(TIME_VISIBLE_ROWS / 2) }} />
+          <div className="flex flex-col">
+            {options.map((option) => {
+              const active = option === value;
+              return (
+                <button
+                  className={cn(
+                    "flex h-9 shrink-0 items-center justify-center rounded-lg text-sm tabular-nums transition-colors outline-none",
+                    "hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/40",
+                    active
+                      ? "font-semibold text-foreground"
+                      : "font-normal text-muted-foreground/80",
+                  )}
+                  key={option}
+                  onClick={() => onChange(option)}
+                  type="button"
+                >
+                  {String(option).padStart(2, "0")}
+                </button>
+              );
+            })}
+          </div>
+          <div style={{ height: TIME_ITEM_HEIGHT_PX * Math.floor(TIME_VISIBLE_ROWS / 2) }} />
         </div>
       </div>
     </div>
@@ -355,48 +386,8 @@ function TimeColumn({
 }
 
 function expectedScrollTop(index: number) {
-  const itemStride = TIME_ITEM_HEIGHT_PX + 2;
-  const top = index * itemStride + TIME_ITEM_HEIGHT_PX / 2 - TIME_LIST_HEIGHT_PX / 2;
-  return Math.max(0, top);
-}
-
-function PeriodColumn({
-  value,
-  onChange,
-}: {
-  value: Period;
-  onChange: (period: Period) => void;
-}) {
-  return (
-    <div className="flex min-h-0 min-w-0 flex-col overflow-hidden border-l">
-      <p className="shrink-0 border-b py-1.5 text-center text-[10px] font-medium tracking-wide text-muted-foreground uppercase">
-        AM/PM
-      </p>
-      <div
-        className="flex flex-col gap-1 p-1.5"
-        style={{ height: TIME_LIST_HEIGHT_PX, maxHeight: TIME_LIST_HEIGHT_PX }}
-      >
-        {(["AM", "PM"] as const).map((period) => {
-          const active = period === value;
-          return (
-            <button
-              className={cn(
-                "h-10 shrink-0 rounded-lg text-sm font-semibold transition-colors outline-none",
-                "hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 focus-visible:ring-ring/50",
-                active &&
-                  "bg-primary text-primary-foreground shadow-sm hover:bg-primary/90 hover:text-primary-foreground",
-              )}
-              key={period}
-              onClick={() => onChange(period)}
-              type="button"
-            >
-              {period}
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
+  // With equal padding spacers, selected row centers at index * itemHeight.
+  return Math.max(0, index * TIME_ITEM_HEIGHT_PX);
 }
 
 function PresetChip({
