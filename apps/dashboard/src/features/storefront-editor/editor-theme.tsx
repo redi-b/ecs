@@ -1,7 +1,13 @@
 "use client";
 
 import type { Data, PuckAction } from "@puckeditor/core";
-import { RiCheckLine, RiEditLine, RiInformationLine, RiRefreshLine } from "@remixicon/react";
+import {
+  RiCheckLine,
+  RiEditLine,
+  RiInformationLine,
+  RiRefreshLine,
+  RiResetLeftLine,
+} from "@remixicon/react";
 import { useEffect, useState } from "react";
 import { HexColorPicker } from "react-colorful";
 
@@ -18,6 +24,7 @@ import { FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Switch } from "@/components/ui/switch";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 import {
@@ -137,20 +144,52 @@ export function ThemeBrandSection({
     <section className="min-w-0 overflow-hidden rounded-xl border bg-card shadow-sm">
       <div className="flex items-center justify-between gap-2 border-b px-4 py-3">
         <div className="text-sm font-semibold">Appearance</div>
-        <SectionInfoTip
-          body="Select a surface style and brand color to generate a complete palette with readable contrast. Edit any swatch directly, disable automatic generation for full control, or regenerate from the brand color when you want a fresh set."
-          title="Appearance"
-        />
+        <div className="flex items-center gap-0.5">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                aria-label="Regenerate palette from brand color"
+                className="size-7 text-muted-foreground"
+                onClick={() => regenerate()}
+                size="icon"
+                type="button"
+                variant="ghost"
+              >
+                <RiRefreshLine className="size-3.5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">Rebuild colors from brand</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                aria-label="Reset appearance to defaults"
+                className="size-7 text-muted-foreground"
+                onClick={resetToDefaults}
+                size="icon"
+                type="button"
+                variant="ghost"
+              >
+                <RiResetLeftLine className="size-3.5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">Reset to defaults</TooltipContent>
+          </Tooltip>
+          <SectionInfoTip
+            body="Surface and brand color drive a full palette with readable contrast. Accent stays related to your brand. Edit any swatch for full control, or use the header actions to rebuild or restore defaults."
+            title="Appearance"
+          />
+        </div>
       </div>
 
       <div className="flex min-w-0 flex-col gap-5 p-4">
-        <div className="flex items-center justify-between gap-3 rounded-lg border bg-background px-3 py-2.5">
+        <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
             <div className="text-sm font-medium">Automatic palette</div>
-            <p className="text-xs leading-relaxed text-muted-foreground">
+            <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
               {autoPalette
-                ? "Surface and brand color update background, text, muted, and accent together."
-                : "Each color can be set independently. Use Regenerate to rebuild from brand color."}
+                ? "Brand and surface keep the set in sync."
+                : "Manual colors. Rebuild from brand anytime."}
             </p>
           </div>
           <Switch
@@ -160,9 +199,13 @@ export function ThemeBrandSection({
           />
         </div>
 
-        <div className="flex flex-col gap-2.5">
+        <div className="flex flex-col gap-2">
           <FieldLabel className="text-sm font-medium">Surface</FieldLabel>
-          <div className="grid grid-cols-2 gap-2">
+          <div
+            className="grid grid-cols-2 gap-0.5 overflow-hidden rounded-lg border bg-muted/40 p-0.5"
+            role="tablist"
+            aria-label="Surface style"
+          >
             {(
               [
                 { id: "light" as const, label: "Light" },
@@ -171,46 +214,29 @@ export function ThemeBrandSection({
             ).map((option) => {
               const active = mode === option.id;
               return (
-                <Button
-                  className={cn("h-9", active && "ring-2 ring-primary/40")}
+                <button
+                  aria-selected={active}
+                  className={cn(
+                    "h-8 rounded-md text-sm font-medium transition",
+                    active
+                      ? "bg-background text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
                   key={option.id}
                   onClick={() => onSurfaceChange(option.id)}
+                  role="tab"
                   type="button"
-                  variant={active ? "default" : "outline"}
                 >
                   {option.label}
-                </Button>
+                </button>
               );
             })}
           </div>
         </div>
 
-        <div className="flex flex-col gap-2.5">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <FieldLabel className="text-sm font-medium">Colors</FieldLabel>
-            <div className="flex flex-wrap items-center gap-1.5">
-              <Button
-                className="h-8 gap-1.5 px-2.5 text-xs"
-                onClick={() => regenerate()}
-                size="sm"
-                type="button"
-                variant="outline"
-              >
-                <RiRefreshLine className="size-3.5" aria-hidden />
-                Regenerate
-              </Button>
-              <Button
-                className="h-8 px-2.5 text-xs"
-                onClick={resetToDefaults}
-                size="sm"
-                type="button"
-                variant="ghost"
-              >
-                Reset
-              </Button>
-            </div>
-          </div>
-          <div className="grid grid-cols-5 gap-2">
+        <div className="flex flex-col gap-3">
+          <FieldLabel className="text-sm font-medium">Colors</FieldLabel>
+          <div className="grid grid-cols-5 gap-2.5">
             {PALETTE_FIELDS.map((field) => {
               const value = props[field.prop];
               const hex =
@@ -223,29 +249,29 @@ export function ThemeBrandSection({
                     swatchOnly
                     value={hex}
                   />
-                  <span className="truncate text-[10px] text-muted-foreground">{field.label}</span>
+                  <span className="truncate text-[10px] font-medium text-muted-foreground">
+                    {field.label}
+                  </span>
                 </div>
               );
             })}
           </div>
-          <p className="text-xs leading-relaxed text-muted-foreground">
-            Select a swatch to edit. Adjusting a color other than brand turns off automatic
-            palette so your changes are preserved.
-          </p>
         </div>
 
-        <div className="border-t pt-4">
-          <div className="mb-3 text-sm font-semibold">Typography</div>
-          <div className="flex flex-col gap-4">
-            <div className="flex flex-col gap-2.5">
-              <FieldLabel className="text-sm font-medium">Heading font</FieldLabel>
+        <div className="space-y-3 border-t pt-4">
+          <div className="text-sm font-medium">Typography</div>
+          <div className="flex flex-col gap-3.5">
+            <div className="flex flex-col gap-2">
+              <FieldLabel className="text-xs font-medium text-muted-foreground">
+                Heading
+              </FieldLabel>
               <FontSelect
                 onChange={(next) => updateStorefrontProp(data, dispatch, "headingFont", next)}
                 value={props.headingFont || "Syne"}
               />
             </div>
-            <div className="flex flex-col gap-2.5">
-              <FieldLabel className="text-sm font-medium">Body font</FieldLabel>
+            <div className="flex flex-col gap-2">
+              <FieldLabel className="text-xs font-medium text-muted-foreground">Body</FieldLabel>
               <FontSelect
                 onChange={(next) => updateStorefrontProp(data, dispatch, "bodyFont", next)}
                 value={props.bodyFont || "Outfit"}

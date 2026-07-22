@@ -53,29 +53,15 @@ test("inferSurfaceMode from background", () => {
   assert.equal(inferSurfaceMode("#fafafa"), "light");
 });
 
-test("shiftColorRelativeToPrimary preserves accent hue offset from seed primary", () => {
-  const seed = CLASSIC_DARK_SEED;
-  const seedP = hexToHsl(seed.colors.primary)!;
-  const seedA = hexToHsl(seed.colors.accent)!;
-  const seedOffset = ((seedA.h - seedP.h) % 360 + 360) % 360;
-
-  const newPrimary = "#c45c5c";
-  const shiftedAccent = shiftColorRelativeToPrimary(
-    seed.colors.accent,
-    seed.colors.primary,
-    newPrimary,
-    "accent",
-  );
-  const newP = hexToHsl(newPrimary)!;
-  const newA = hexToHsl(shiftedAccent)!;
-  const newOffset = ((newA.h - newP.h) % 360 + 360) % 360;
-
-  // Allow small rounding drift
-  const delta = Math.min(
-    Math.abs(newOffset - seedOffset),
-    360 - Math.abs(newOffset - seedOffset),
-  );
-  assert.ok(delta < 3, `hue offset drift too large: ${delta}`);
+test("accent stays brand-adjacent for blue primary (not neon green)", () => {
+  const colors = generateThemeFromSeed("#2b7fd4", CLASSIC_DARK_SEED);
+  const brand = hexToHsl(colors.primary)!;
+  const accent = hexToHsl(colors.accent)!;
+  let dh = accent.h - brand.h;
+  while (dh > 180) dh -= 360;
+  while (dh < -180) dh += 360;
+  assert.ok(Math.abs(dh) <= 42, `accent too far from brand: ${dh}°`);
+  assert.ok(contrastRatio(colors.accent, colors.onAccent) >= 2.5);
 });
 
 test("body text stays low saturation when brand is red", () => {
