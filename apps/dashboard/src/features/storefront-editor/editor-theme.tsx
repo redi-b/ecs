@@ -5,6 +5,7 @@ import {
   RiCheckLine,
   RiEditLine,
   RiInformationLine,
+  RiMore2Line,
   RiRefreshLine,
   RiResetLeftLine,
 } from "@remixicon/react";
@@ -20,11 +21,16 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Switch } from "@/components/ui/switch";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 import {
@@ -75,6 +81,73 @@ function SectionInfoTip({ title, body }: { title: string; body: string }) {
         <p className="text-xs leading-relaxed text-muted-foreground">{body}</p>
       </PopoverContent>
     </Popover>
+  );
+}
+
+/**
+ * Animated segmented control. Active pill slides with primary fill.
+ * Works for 2+ equal options (surface, color format).
+ */
+function AnimatedSegmentedControl<T extends string>({
+  value,
+  options,
+  onChange,
+  ariaLabel,
+  size = "md",
+}: {
+  value: T;
+  options: Array<{ id: T; label: string }>;
+  onChange: (next: T) => void;
+  ariaLabel: string;
+  size?: "sm" | "md";
+}) {
+  const activeIndex = Math.max(
+    0,
+    options.findIndex((option) => option.id === value),
+  );
+  const count = Math.max(options.length, 1);
+
+  return (
+    <div
+      aria-label={ariaLabel}
+      className={cn(
+        "relative grid w-full gap-0 overflow-hidden rounded-full border bg-muted/50 p-0.5",
+        size === "sm" ? "h-8" : "h-9",
+      )}
+      role="tablist"
+      style={{ gridTemplateColumns: `repeat(${count}, minmax(0, 1fr))` }}
+    >
+      {/* Full-pill thumb (matches track radius); transform slides smoother than left */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-y-0.5 left-0.5 rounded-full bg-primary shadow-sm ring-1 ring-primary/20 transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform"
+        style={{
+          width: `calc((100% - 4px) / ${count})`,
+          transform: `translateX(calc(${activeIndex} * 100%))`,
+        }}
+      />
+      {options.map((option) => {
+        const active = option.id === value;
+        return (
+          <button
+            aria-selected={active}
+            className={cn(
+              "relative z-10 flex h-full min-w-0 items-center justify-center truncate rounded-full font-medium transition-colors duration-200",
+              size === "sm" ? "text-[11px] tracking-wide" : "text-sm",
+              active
+                ? "text-primary-foreground"
+                : "text-muted-foreground hover:text-foreground",
+            )}
+            key={option.id}
+            onClick={() => onChange(option.id)}
+            role="tab"
+            type="button"
+          >
+            {option.label}
+          </button>
+        );
+      })}
+    </div>
   );
 }
 
@@ -145,38 +218,42 @@ export function ThemeBrandSection({
       <div className="flex items-center justify-between gap-2 border-b px-4 py-3">
         <div className="text-sm font-semibold">Appearance</div>
         <div className="flex items-center gap-0.5">
-          <Tooltip>
-            <TooltipTrigger asChild>
+          {/* Labeled menu works on touch; tooltips alone do not. */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
               <Button
-                aria-label="Regenerate palette from brand color"
+                aria-label="Palette actions"
                 className="size-7 text-muted-foreground"
-                onClick={() => regenerate()}
                 size="icon"
                 type="button"
                 variant="ghost"
               >
-                <RiRefreshLine className="size-3.5" />
+                <RiMore2Line className="size-4" />
               </Button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom">Rebuild colors from brand</TooltipContent>
-          </Tooltip>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                aria-label="Reset appearance to defaults"
-                className="size-7 text-muted-foreground"
-                onClick={resetToDefaults}
-                size="icon"
-                type="button"
-                variant="ghost"
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="min-w-48">
+              <DropdownMenuItem
+                className="gap-2"
+                onSelect={() => {
+                  regenerate();
+                }}
               >
-                <RiResetLeftLine className="size-3.5" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom">Reset to defaults</TooltipContent>
-          </Tooltip>
+                <RiRefreshLine className="size-4 opacity-70" aria-hidden />
+                Rebuild from brand
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="gap-2"
+                onSelect={() => {
+                  resetToDefaults();
+                }}
+              >
+                <RiResetLeftLine className="size-4 opacity-70" aria-hidden />
+                Reset to defaults
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <SectionInfoTip
-            body="Surface and brand color drive a full palette with readable contrast. Accent stays related to your brand. Edit any swatch for full control, or use the header actions to rebuild or restore defaults."
+            body="Surface and brand color drive a full palette with readable contrast. Accent stays related to your brand. Edit any swatch for full control. Open the menu for rebuild or reset to defaults."
             title="Appearance"
           />
         </div>
@@ -201,37 +278,15 @@ export function ThemeBrandSection({
 
         <div className="flex flex-col gap-2">
           <FieldLabel className="text-sm font-medium">Surface</FieldLabel>
-          <div
-            className="grid grid-cols-2 gap-0.5 overflow-hidden rounded-lg border bg-muted/40 p-0.5"
-            role="tablist"
-            aria-label="Surface style"
-          >
-            {(
-              [
-                { id: "light" as const, label: "Light" },
-                { id: "dark" as const, label: "Dark" },
-              ] as const
-            ).map((option) => {
-              const active = mode === option.id;
-              return (
-                <button
-                  aria-selected={active}
-                  className={cn(
-                    "h-8 rounded-md text-sm font-medium transition",
-                    active
-                      ? "bg-background text-foreground shadow-sm"
-                      : "text-muted-foreground hover:text-foreground",
-                  )}
-                  key={option.id}
-                  onClick={() => onSurfaceChange(option.id)}
-                  role="tab"
-                  type="button"
-                >
-                  {option.label}
-                </button>
-              );
-            })}
-          </div>
+          <AnimatedSegmentedControl
+            ariaLabel="Surface style"
+            onChange={onSurfaceChange}
+            options={[
+              { id: "light", label: "Light" },
+              { id: "dark", label: "Dark" },
+            ]}
+            value={mode}
+          />
         </div>
 
         <div className="flex flex-col gap-3">
@@ -448,40 +503,24 @@ export function PremiumColorPicker({
           </Button>
         )}
       </PopoverTrigger>
-      <PopoverContent align="start" className="w-[17.5rem] p-3" side="bottom" sideOffset={8}>
+      <PopoverContent align="start" className="w-80 p-3.5" side="bottom" sideOffset={8}>
         <div className="flex flex-col gap-3">
           <div className="flex flex-col gap-2">
             <div className="text-sm font-medium">{label}</div>
-            <div
-              className="grid grid-cols-3 overflow-hidden rounded-lg border bg-muted/40 p-0.5"
-              role="tablist"
-              aria-label="Color format"
-            >
-              {formatModes.map((mode) => {
-                const active = format === mode.id;
-                return (
-                  <button
-                    aria-selected={active}
-                    className={cn(
-                      "h-7 rounded-md text-[11px] font-semibold tracking-wide transition",
-                      active
-                        ? "bg-background text-foreground shadow-sm"
-                        : "text-muted-foreground hover:text-foreground",
-                    )}
-                    key={mode.id}
-                    onClick={() => setFormat(mode.id)}
-                    role="tab"
-                    type="button"
-                  >
-                    {mode.label}
-                  </button>
-                );
-              })}
-            </div>
+            <AnimatedSegmentedControl
+              ariaLabel="Color format"
+              onChange={setFormat}
+              options={formatModes.map((mode) => ({
+                id: mode.id,
+                label: mode.label,
+              }))}
+              size="sm"
+              value={format}
+            />
           </div>
 
           <HexColorPicker
-            className="!h-36 !w-full"
+            className="!h-48 !w-full [&_.react-colorful__saturation]:rounded-lg [&_.react-colorful__hue]:mt-2.5 [&_.react-colorful__hue]:h-3 [&_.react-colorful__hue]:rounded-full"
             color={color}
             onChange={(next) => {
               onChange(next);
