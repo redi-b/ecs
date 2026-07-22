@@ -21,7 +21,6 @@ import {
   RiSave3Line,
 } from "@remixicon/react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { HexColorInput, HexColorPicker } from "react-colorful";
 import { toast } from "sonner";
 
 import {
@@ -37,14 +36,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
 import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -52,16 +43,11 @@ import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import {
-  ProductCatalogPickerDialog,
-  ProductCatalogPickerTrigger,
-} from "@/features/products/product-catalog-picker-dialog";
 import type {
   ActionResult,
   StorefrontVisualEditorProps,
 } from "@/features/storefront-editor/editor-config";
 import {
-  FONT_OPTIONS,
   HISTORY_COMMIT_DELAY_MS,
   HISTORY_LIMIT,
   POPOVER_MOTION_CLASSNAME,
@@ -74,6 +60,22 @@ import { uploadMediaFile } from "@/features/media/upload-media-file";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 import {
+  StorefrontCollectionPicker,
+  StorefrontProductsPicker,
+} from "./editor-merchandising";
+import {
+  FontSelect,
+  PremiumColorPicker,
+  ThemeBrandSection,
+} from "./editor-theme";
+import {
+  getErrorMessage,
+  isHexColor,
+  preventPreviewLink,
+  updateStorefrontProp,
+  updateStorefrontProps,
+} from "./editor-utils";
+import {
   buildDraftPayload,
   buildPuckData,
   getPublicationStatus,
@@ -85,6 +87,16 @@ import {
   type StorefrontPageProps,
   serializeEditorData,
 } from "./editor-state";
+
+export {
+  getErrorMessage,
+  isHexColor,
+  preventPreviewLink,
+  updateStorefrontProp,
+  updateStorefrontProps,
+} from "./editor-utils";
+export { FontSelect, PremiumColorPicker, ThemeBrandSection } from "./editor-theme";
+export { StorefrontCollectionPicker, StorefrontProductsPicker } from "./editor-merchandising";
 
 export function PuckDataOverride({ data }: { data: Data | null }) {
   const dispatch = useStorefrontPuck((api) => api.dispatch);
@@ -537,6 +549,17 @@ export function StorefrontSettingsPanel() {
     <div className="min-h-0 flex-1 overflow-y-auto">
       <div className="flex flex-col gap-3 p-4 pb-10">
         {classicV1EditorManifest.sections.map((section) => {
+          if (section.id === "theme") {
+            return (
+              <ThemeBrandSection
+                data={data}
+                dispatch={dispatch}
+                key={section.id}
+                props={props}
+              />
+            );
+          }
+
           const enabledField = section.fields.find(
             (field) => field.kind === "boolean" && field.path.endsWith(".enabled"),
           );
@@ -729,245 +752,6 @@ export function StorefrontSettingControl({
   );
 }
 
-type CatalogOption = {
-  handle?: string | null;
-  id: string;
-  thumbnailUrl?: string | null;
-  title: string;
-};
-
-function StorefrontCollectionPicker({
-  onChange,
-  value,
-}: {
-  onChange: (value: string) => void;
-  value: string;
-}) {
-  const [open, setOpen] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [options, setOptions] = useState<CatalogOption[]>([]);
-
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    fetch("/admin/products/collections/actions/list?limit=100", { credentials: "same-origin" })
-      .then((r) => r.json())
-      .then((payload) => {
-        if (cancelled) return;
-        const collections = payload?.data?.collections ?? payload?.collections ?? [];
-        if (!Array.isArray(collections)) {
-          setOptions([]);
-          return;
-        }
-        setOptions(
-          collections
-            .map((row: { handle?: string | null; id?: string; title?: string | null }) =>
-              row?.id
-                ? {
-                    id: String(row.id),
-                    title: String(row.title ?? row.id),
-                    handle: row.handle ?? null,
-                  }
-                : null,
-            )
-            .filter(Boolean) as CatalogOption[],
-        );
-      })
-      .catch(() => {
-        if (!cancelled) setOptions([]);
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  const selected = options.find((option) => option.id === value);
-
-  return (
-    <Popover onOpenChange={setOpen} open={open}>
-      <PopoverTrigger asChild>
-        <Button
-          className="h-9 w-full min-w-0 justify-between px-3 font-normal shadow-none"
-          disabled={loading}
-          type="button"
-          variant="outline"
-        >
-          <span className={cn("truncate", !selected && "text-muted-foreground")}>
-            {loading
-              ? "Loading collections…"
-              : selected
-                ? selected.title
-                : "Select a collection"}
-          </span>
-          <RiEditLine className="size-4 shrink-0 opacity-50" aria-hidden />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent
-        align="start"
-        className={cn(POPOVER_MOTION_CLASSNAME, "w-[min(22rem,calc(100vw-2rem))] p-0")}
-        collisionPadding={16}
-        onWheel={(event) => event.stopPropagation()}
-      >
-        <Command>
-          <CommandInput placeholder="Search collections…" />
-          <CommandList
-            className="max-h-60 overflow-y-auto overscroll-contain"
-            onWheel={(event) => event.stopPropagation()}
-          >
-            <CommandEmpty>No collections found.</CommandEmpty>
-            <CommandGroup>
-              <CommandItem
-                onSelect={() => {
-                  onChange("");
-                  setOpen(false);
-                }}
-                value="none clear"
-              >
-                None
-              </CommandItem>
-              {options.map((option) => (
-                <CommandItem
-                  key={option.id}
-                  onSelect={() => {
-                    onChange(option.id);
-                    setOpen(false);
-                  }}
-                  value={`${option.title} ${option.handle ?? ""} ${option.id}`}
-                >
-                  <span className="min-w-0 flex-1 truncate">{option.title}</span>
-                  {option.handle ? (
-                    <span className="ml-2 shrink-0 text-xs text-muted-foreground">
-                      /{option.handle}
-                    </span>
-                  ) : null}
-                  {option.id === value ? (
-                    <RiCheckLine className="ml-2 size-4 shrink-0" aria-hidden />
-                  ) : null}
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          </CommandList>
-        </Command>
-      </PopoverContent>
-    </Popover>
-  );
-}
-
-function StorefrontProductsPicker({
-  onChange,
-  value,
-}: {
-  onChange: (value: string[]) => void;
-  value: string[];
-}) {
-  const [open, setOpen] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [options, setOptions] = useState<CatalogOption[]>([]);
-
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    fetch("/admin/products/actions/list?limit=100", { credentials: "same-origin" })
-      .then((r) => r.json())
-      .then((payload) => {
-        if (cancelled) return;
-        const products = payload?.data?.products ?? payload?.data ?? payload?.products ?? [];
-        if (!Array.isArray(products)) {
-          setOptions([]);
-          return;
-        }
-        setOptions(
-          products
-            .map(
-              (row: {
-                handle?: string | null;
-                id?: string;
-                thumbnail?: string | null;
-                thumbnailUrl?: string | null;
-                title?: string | null;
-              }) =>
-                row?.id
-                  ? {
-                      id: String(row.id),
-                      title: String(row.title ?? row.handle ?? row.id),
-                      handle: row.handle ?? null,
-                      thumbnailUrl: row.thumbnailUrl ?? row.thumbnail ?? null,
-                    }
-                  : null,
-            )
-            .filter(Boolean) as CatalogOption[],
-        );
-      })
-      .catch(() => {
-        if (!cancelled) setOptions([]);
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  const items = useMemo(
-    () =>
-      options.map((product) => ({
-        id: product.id,
-        title: product.title,
-        subtitle: product.handle ? `/${product.handle}` : null,
-        thumbnailUrl: product.thumbnailUrl ?? null,
-        searchText: [product.title, product.handle, product.id].filter(Boolean).join(" "),
-      })),
-    [options],
-  );
-
-  return (
-    <div className="flex flex-col gap-2.5">
-      <div className="flex items-center gap-2">
-        <div className="min-w-0 flex-1">
-          <ProductCatalogPickerTrigger
-            loading={loading}
-            onClick={() => setOpen(true)}
-            selectedCount={value.length}
-          />
-        </div>
-        {value.length > 0 ? (
-          <Button
-            className="h-9 shrink-0 px-3"
-            onClick={() => onChange([])}
-            type="button"
-            variant="outline"
-          >
-            Clear
-          </Button>
-        ) : null}
-      </div>
-      <p className="text-xs leading-relaxed text-muted-foreground">
-        {value.length === 0
-          ? "Empty selection shows newest products on the storefront."
-          : "Only these products appear in this section."}
-      </p>
-      <ProductCatalogPickerDialog
-        allowEmptySelection
-        confirmLabel="Save selection"
-        description="Pick products for this section, or clear selection to show newest products on the storefront."
-        items={items}
-        loading={loading}
-        onConfirm={onChange}
-        onOpenChange={setOpen}
-        open={open}
-        selectedIds={value}
-        selectionMode="multiple"
-        selectionTarget="product"
-        title="Featured products"
-      />
-    </div>
-  );
-}
-
 export function ImageReferenceControl({
   label,
   onChange,
@@ -1092,88 +876,6 @@ function EditorImageSourceActions({ onPicked }: { onPicked: (url: string | undef
         size="sm"
       />
     </div>
-  );
-}
-
-export function PremiumColorPicker({
-  label,
-  onChange,
-  value,
-}: {
-  label: string;
-  onChange: (value: string) => void;
-  value: string;
-}) {
-  const color = isHexColor(value) ? value : "#000000";
-
-  return (
-    <Popover>
-      <PopoverTrigger asChild>
-        <Button className="w-full min-w-0 justify-start gap-2" type="button" variant="outline">
-          <span className="size-4 shrink-0 rounded-full border" style={{ backgroundColor: color }} />
-          <span className="truncate font-mono text-xs uppercase">{color}</span>
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent align="start" className={POPOVER_MOTION_CLASSNAME}>
-        <div className="flex flex-col gap-3">
-          <div>
-            <div className="text-sm font-medium">{label}</div>
-            <div className="text-xs text-muted-foreground">Pick a brand-safe storefront color.</div>
-          </div>
-          <HexColorPicker className="!w-full" color={color} onChange={onChange} />
-          <div className="flex items-center gap-2">
-            <span className="size-8 rounded-md border" style={{ backgroundColor: color }} />
-            <HexColorInput
-              aria-label={`${label} hex color`}
-              className="flex h-9 min-w-0 flex-1 rounded-md border bg-background px-3 py-1 text-sm font-mono uppercase outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              color={color}
-              onChange={(nextColor) => onChange(`#${nextColor}`)}
-              prefixed
-            />
-          </div>
-        </div>
-      </PopoverContent>
-    </Popover>
-  );
-}
-
-export function FontSelect({
-  onChange,
-  value,
-}: {
-  onChange: (value: string) => void;
-  value: string;
-}) {
-  const { t } = useI18n();
-  return (
-    <Popover>
-      <PopoverTrigger asChild>
-        <Button className="w-full min-w-0 justify-between gap-2" type="button" variant="outline">
-          <span className="min-w-0 truncate" style={{ fontFamily: value }}>
-            {value || t("editor.fonts.choose")}
-          </span>
-          <RiEditLine className="shrink-0" data-icon="inline-end" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent align="start" className={cn(POPOVER_MOTION_CLASSNAME, "p-0")}>
-        <Command>
-          <CommandInput placeholder={t("editor.fonts.search")} />
-          <CommandList>
-            <CommandEmpty>No font found.</CommandEmpty>
-            <CommandGroup>
-              {FONT_OPTIONS.map((font) => (
-                <CommandItem key={font} onSelect={() => onChange(font)} value={font}>
-                  <span className="flex-1" style={{ fontFamily: font }}>
-                    {font}
-                  </span>
-                  {font === value ? <RiCheckLine aria-hidden data-icon="inline-end" /> : null}
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          </CommandList>
-        </Command>
-      </PopoverContent>
-    </Popover>
   );
 }
 
@@ -1797,39 +1499,3 @@ export function EditableHint() {
   );
 }
 
-export function updateStorefrontProp(
-  data: Data,
-  dispatch: (action: PuckAction) => void,
-  propName: keyof StorefrontPageProps,
-  value: unknown,
-) {
-  dispatch({
-    type: "setData",
-    data: {
-      ...data,
-      content: data.content.map((entry) =>
-        entry.type === STOREFRONT_PAGE_COMPONENT
-          ? {
-              ...entry,
-              props: {
-                ...entry.props,
-                [propName]: value,
-              },
-            }
-          : entry,
-      ),
-    },
-  });
-}
-
-export function preventPreviewLink(event: React.MouseEvent<HTMLElement>) {
-  event.preventDefault();
-}
-
-export function isHexColor(value: string) {
-  return /^#[0-9a-f]{6}$/i.test(value);
-}
-
-export function getErrorMessage(error: unknown, fallback: string) {
-  return error instanceof Error && error.message ? error.message : fallback;
-}

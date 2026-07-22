@@ -208,34 +208,18 @@ export const classicV1EditorSchema = {
       label: "Theme",
       fields: [
         {
-          path: "themeTokens.colors.background",
-          prop: "backgroundColor",
-          label: "Background color",
-          kind: "color",
-        },
-        {
-          path: "themeTokens.colors.foreground",
-          prop: "foregroundColor",
-          label: "Text color",
-          kind: "color",
+          path: "themeTokens.surfaceMode",
+          prop: "surfaceMode",
+          label: "Surface",
+          kind: "text",
+          helpText: "Light or dark base. Brand color fills the rest of the palette.",
         },
         {
           path: "themeTokens.colors.primary",
           prop: "primaryColor",
-          label: "Primary color",
+          label: "Brand color",
           kind: "color",
-        },
-        {
-          path: "themeTokens.colors.muted",
-          prop: "mutedColor",
-          label: "Muted color",
-          kind: "color",
-        },
-        {
-          path: "themeTokens.colors.accent",
-          prop: "accentColor",
-          label: "Accent color",
-          kind: "color",
+          helpText: "We generate background, text, muted, and accent for contrast.",
         },
         {
           path: "themeTokens.typography.headingFont",

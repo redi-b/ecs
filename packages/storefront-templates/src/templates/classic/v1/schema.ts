@@ -90,6 +90,11 @@ export const classicV1DataSchema = z.object({
 export type ClassicV1Data = z.infer<typeof classicV1DataSchema>;
 
 export const classicThemeTokensSchema = z.object({
+  /**
+   * light | dark surface. When set, editor regenerates palette from primary.
+   * Optional for older published revisions (inferred from background).
+   */
+  surfaceMode: z.enum(["light", "dark"]).optional(),
   colors: z.object({
     background: z.string().min(1),
     foreground: z.string().min(1),
