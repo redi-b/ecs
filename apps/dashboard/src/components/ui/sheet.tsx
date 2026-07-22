@@ -64,8 +64,6 @@ function SheetContent({
         data-slot="sheet-content"
         data-side={side}
         className={cn(
-          // Column chrome: header/footer stay put; put scrollable fields in SheetBody.
-          // overflow-x-hidden only: allow combobox panels portaled into this node to extend past edges.
           "fixed z-50 flex max-h-dvh flex-col gap-0 overflow-x-hidden overflow-y-visible bg-popover bg-clip-padding text-sm text-popover-foreground shadow-lg transition duration-200 ease-in-out",
           "data-[side=bottom]:inset-x-0 data-[side=bottom]:bottom-0 data-[side=bottom]:h-auto data-[side=bottom]:max-h-[85dvh] data-[side=bottom]:border-t",
           "data-[side=left]:inset-y-0 data-[side=left]:left-0 data-[side=left]:h-full data-[side=left]:w-3/4 data-[side=left]:border-r",

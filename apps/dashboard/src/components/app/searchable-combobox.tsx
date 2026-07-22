@@ -44,23 +44,13 @@ type SearchableComboboxProps = {
   value: string;
   className?: string;
   id?: string;
-  /** Optional custom row for advanced lists (banks with meta, customers, etc.). */
   renderItem?: (item: SearchableComboboxOption) => React.ReactNode;
-  /** Custom trigger label (selected option or null when empty). */
   renderValue?: (item: SearchableComboboxOption | null) => React.ReactNode;
-  /**
-   * Replace the default outline Button trigger (e.g. filter chips).
-   * Must accept standard button props via Base UI `render`.
-   */
+  /** Custom trigger element (merged via Combobox `render`). */
   trigger?: React.ReactElement;
-  /**
-   * Trailing icon on the trigger. Default `chevron`.
-   * Use `edit` for editor-style pickers (pencil), or `false` to hide.
-   */
+  /** Trailing icon: chevron (default), edit, none, or custom. */
   triggerIcon?: "chevron" | "edit" | false | React.ReactNode;
-  /** Sticky footer inside the panel (e.g. “Create collection”). */
   panelFooter?: React.ReactNode;
-  /** Extra classes for the popup panel (e.g. min width for narrow chip triggers). */
   contentClassName?: string;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
@@ -122,10 +112,7 @@ function OptionRow({
   return <span className="min-w-0 flex-1 truncate">{item.label}</span>;
 }
 
-/**
- * Popup-variant single-select over the official shadcn Combobox:
- * outline button trigger + searchable list in the panel (docs "Combobox in Popup").
- */
+/** Single-select searchable combobox (button trigger + panel list). */
 export function SearchableCombobox({
   disabled,
   emptyLabel,
@@ -239,26 +226,14 @@ type MultiSearchableComboboxProps = {
   /** Aria-label for chip remove controls. */
   removeLabel?: (label: string) => string;
   renderItem?: (item: SearchableComboboxOption) => React.ReactNode;
-  /**
-   * Max height for the chips row under the trigger. Long selections scroll instead
-   * of blowing up the form layout.
-   */
   chipsMaxHeightClassName?: string;
   panelFooter?: React.ReactNode;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
-  /** When true, hide the chips row under the trigger (caller renders its own). */
   hideChips?: boolean;
 };
 
-/**
- * Popup-variant multi-select:
- * - Fixed-height outline trigger (summary text — never a growing chip input)
- * - Search + checklist inside the panel
- * - Selected values as fully rounded removable pills below the trigger
- *
- * Prefer this over ComboboxChips-as-field for dashboard multi-selects.
- */
+/** Multi-select searchable combobox (summary trigger + panel list + pill chips). */
 export function MultiSearchableCombobox({
   disabled,
   emptyLabel,

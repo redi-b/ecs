@@ -88,7 +88,7 @@ export function DataTableFilters({
               </PopoverTrigger>
               <PopoverContent
                 align="start"
-                className="w-72 overflow-hidden rounded-2xl p-1.5 shadow-lg"
+                className="w-72 overflow-hidden rounded-xl p-0 shadow-lg ring-1 ring-foreground/10"
                 sideOffset={8}
               >
                 <div
@@ -100,19 +100,18 @@ export function DataTableFilters({
                   )}
                   key={pendingFilter ? `values-${pendingFilter.id}` : "filters"}
                 >
-                  <Command shouldFilter>
+                  <Command className="rounded-none bg-transparent p-0" shouldFilter>
                     {pendingFilter ? (
-                      <div className="relative flex h-8 items-center border-b border-border/60 px-1">
+                      <div className="relative flex h-9 items-center border-b border-border/60 px-1">
                         <button
                           aria-label={t("filters.title")}
-                          className="absolute left-0.5 z-10 grid size-7 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                          className="absolute left-1 z-10 grid size-7 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                           onClick={() => setPendingFilter(null)}
                           type="button"
                         >
                           <AppIcons.arrowLeft className="size-3.5" />
                         </button>
-                        {/* Centered title; equal side inset so back control doesn’t skew layout. */}
-                        <p className="w-full truncate px-8 text-center text-xs font-medium">
+                        <p className="w-full truncate px-9 text-center text-xs font-medium">
                           {pendingFilter.label}
                         </p>
                       </div>
@@ -126,13 +125,14 @@ export function DataTableFilters({
                           ? t("filters.searchLabel", { label: pendingFilter.label.toLowerCase() })
                           : t("filters.searchAll")
                       }
+                      size="panel"
                       value={filterSearch}
                     />
-                    <CommandList className="max-h-64">
+                    <CommandList className="max-h-64 p-1.5 pt-1">
                       {pendingFilter ? (
                         <>
                           <CommandEmpty>{t("filters.noValues")}</CommandEmpty>
-                          <CommandGroup>
+                          <CommandGroup className="p-0">
                             {getSelectableFilterOptions(pendingFilter).map((option) => (
                               <CommandItem
                                 data-checked={
@@ -154,7 +154,7 @@ export function DataTableFilters({
                       ) : (
                         <>
                           <CommandEmpty>{t("filters.noFilters")}</CommandEmpty>
-                          <CommandGroup>
+                          <CommandGroup className="p-0">
                             {availableFilters.map((filter) => (
                               <CommandItem
                                 key={filter.id}

@@ -52,7 +52,6 @@ function isSectionEnabled(value: boolean | undefined) {
 export function ClassicV1StorefrontPreview(
   props: StorefrontPageProps & { storefrontName?: string },
 ) {
-  // Match live classic storefront: Syne display + Outfit body (always loaded).
   const headingFont = props.headingFont?.trim() || "Syne";
   const bodyFont = props.bodyFont?.trim() || "Outfit";
   const theme = {
@@ -309,7 +308,6 @@ export function ClassicV1StorefrontPreview(
   );
 }
 
-/** Load Syne/Outfit (and draft theme fonts) for the visual editor twin. */
 function previewGoogleFontsHref(names: string[]) {
   return (
     storefrontGoogleFontsHref([...names, "Syne", "Outfit"]) ??
