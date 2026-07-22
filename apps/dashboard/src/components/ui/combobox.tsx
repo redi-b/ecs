@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { Combobox as ComboboxPrimitive } from "@base-ui/react"
-import { CheckIcon, ChevronDownIcon, XIcon } from "lucide-react"
+import { CheckIcon, ChevronDownIcon, PencilIcon, XIcon } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -23,8 +23,24 @@ function ComboboxValue({ ...props }: ComboboxPrimitive.Value.Props) {
 function ComboboxTrigger({
   className,
   children,
+  endIcon,
   ...props
-}: ComboboxPrimitive.Trigger.Props) {
+}: ComboboxPrimitive.Trigger.Props & {
+  /**
+   * Trailing icon. Default chevron; pass `edit` for pencil (editor pickers),
+   * `null`/`false` to hide, or a custom node.
+   */
+  endIcon?: "chevron" | "edit" | false | null | React.ReactNode;
+}) {
+  const icon =
+    endIcon === undefined || endIcon === "chevron" ? (
+      <ChevronDownIcon className="pointer-events-none size-4 shrink-0 opacity-50" />
+    ) : endIcon === "edit" ? (
+      <PencilIcon className="pointer-events-none size-4 shrink-0 opacity-50" />
+    ) : endIcon === false || endIcon === null ? null : (
+      endIcon
+    );
+
   return (
     <ComboboxPrimitive.Trigger
       data-slot="combobox-trigger"
@@ -32,7 +48,7 @@ function ComboboxTrigger({
       {...props}
     >
       {children}
-      <ChevronDownIcon className="pointer-events-none size-4 text-muted-foreground" />
+      {icon}
     </ComboboxPrimitive.Trigger>
   )
 }

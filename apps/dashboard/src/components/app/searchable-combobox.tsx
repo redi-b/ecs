@@ -53,6 +53,11 @@ type SearchableComboboxProps = {
    * Must accept standard button props via Base UI `render`.
    */
   trigger?: React.ReactElement;
+  /**
+   * Trailing icon on the trigger. Default `chevron`.
+   * Use `edit` for editor-style pickers (pencil), or `false` to hide.
+   */
+  triggerIcon?: "chevron" | "edit" | false | React.ReactNode;
   /** Sticky footer inside the panel (e.g. “Create collection”). */
   panelFooter?: React.ReactNode;
   /** Extra classes for the popup panel (e.g. min width for narrow chip triggers). */
@@ -135,6 +140,7 @@ export function SearchableCombobox({
   renderItem,
   renderValue,
   trigger,
+  triggerIcon = "chevron",
   panelFooter,
   contentClassName,
   open,
@@ -164,6 +170,7 @@ export function SearchableCombobox({
     >
       <ComboboxTrigger
         disabled={disabled}
+        endIcon={triggerIcon}
         id={id}
         render={
           trigger ?? (

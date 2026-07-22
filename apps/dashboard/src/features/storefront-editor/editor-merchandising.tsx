@@ -100,6 +100,7 @@ export function StorefrontCollectionPicker({
         )
       }
       searchPlaceholder="Search collections…"
+      triggerIcon="edit"
       value={value || "__none__"}
     />
   );
