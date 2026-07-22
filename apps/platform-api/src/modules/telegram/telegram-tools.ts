@@ -20,6 +20,7 @@ import {
   getDialog,
   patchDialog,
   setDialog,
+  type TelegramCartLine,
   type TelegramDialogState,
   type TelegramProductHit,
 } from "./telegram-dialog-state.js";
@@ -27,10 +28,13 @@ import type { TelegramOperatorService } from "./telegram-operator.js";
 import {
   MAIN_KEYBOARD_LABELS,
   cancelInline,
+  cartMenuInline,
   confirmInline,
   emailPromptMarkup,
+  formatCartSummary,
   itemLabel,
   mainReplyKeyboard,
+  matchesMainLabel,
   namePromptMarkup,
   ordersListInline,
   phonePromptMarkup,
@@ -45,6 +49,7 @@ import { buildRecentProductHits, productHitsFromCatalog } from "./telegram-recen
 import { buildOrderActionKeyboard } from "./telegram-callback-tokens.js";
 import {
   adminUrl,
+  formatItemLine,
   formatOrderCardHtml,
   formatOrderListButtonLabel,
   htmlLink,
@@ -327,7 +332,7 @@ async function sendHome(deps: TelegramToolsDeps, chatId: string, ctx: OperatorCt
   await sendTelegramBotMessage({
     botToken: deps.botToken,
     chatId,
-    text: `<b>${ctx.tenantName}</b>`,
+    text: [`🏪 <b>${ctx.tenantName}</b>`, "Use the buttons below to manage the shop."].join("\n"),
     parseMode: "HTML",
     replyMarkup: mainReplyKeyboard(),
   }).catch(() => undefined);
@@ -337,13 +342,13 @@ async function sendHelp(deps: TelegramToolsDeps, chatId: string, ctx: OperatorCt
   const telegramSettings = adminUrl(ctx.adminBase, "/settings?tab=telegram");
   const notifications = adminUrl(ctx.adminBase, "/settings?tab=notifications");
   const lines = [
-    `<b>${ctx.tenantName}</b>`,
+    `🏪 <b>${ctx.tenantName}</b>`,
     "",
-    "<b>New sale</b> — offline sale (phone, name, email or Walk-in)",
-    "<b>Stock</b> — update inventory",
-    "<b>Today</b> — today’s orders and paid total",
-    "<b>Orders</b> — recent orders and actions",
-    "<b>Shop</b> — shop details, dashboard, unlink",
+    "🛒 <b>New sale</b> — offline order (one or more products)",
+    "📦 <b>Stock</b> — update inventory",
+    "📊 <b>Today</b> — today’s orders and paid total",
+    "📋 <b>Orders</b> — recent orders and actions",
+    "🏪 <b>Shop</b> — status, dashboard links, unlink",
     "",
   ];
   if (telegramSettings) {
@@ -372,11 +377,11 @@ async function sendShop(deps: TelegramToolsDeps, chatId: string, ctx: OperatorCt
   const roleLabel = ctx.role ? ctx.role.charAt(0).toUpperCase() + ctx.role.slice(1) : "Manager";
 
   const lines = [
-    `<b>${ctx.tenantName}</b>`,
+    `🏪 <b>${ctx.tenantName}</b>`,
     ctx.tenantHandle ? `@${ctx.tenantHandle} · ${roleLabel}` : roleLabel,
     "",
-    saleReady ? "Offline sales: ready" : "Offline sales: missing region/shipping setup",
-    stockReady ? "Stock updates: ready" : "Stock updates: missing stock location",
+    saleReady ? "✅ Offline sales ready" : "⚠️ Offline sales need region/shipping setup",
+    stockReady ? "✅ Stock updates ready" : "⚠️ Stock needs a stock location",
   ];
 
   const dashboard = adminUrl(ctx.adminBase, "");
@@ -476,14 +481,14 @@ async function sendTodaySummary(deps: TelegramToolsDeps, chatId: string, ctx: Op
   const revenueLabel = formatMoneyAmount(String(revenue), currency) ?? String(revenue);
 
   const lines = [
-    `<b>${ctx.tenantName}</b>`,
-    `<b>Today</b>`,
+    `🏪 <b>${ctx.tenantName}</b>`,
+    "📊 <b>Today</b>",
     `${today.length} orders · ${paid.length} paid · ${today.length - paid.length} unpaid`,
-    `Paid total ${revenueLabel}`,
+    `💰 Paid total ${revenueLabel}`,
     "",
   ];
   for (const order of today.slice(0, 5)) {
-    lines.push(`· ${formatOrderListButtonLabel(order)}`);
+    lines.push(`• ${formatOrderListButtonLabel(order)}`);
   }
 
   await sendTelegramBotMessage({
@@ -623,6 +628,33 @@ async function loadPickHits(
   return buildRecentProductHits({ orders, catalogProducts: catalog, limit: 6 });
 }
 
+function cartFromDialog(dialog: TelegramDialogState): TelegramCartLine[] {
+  return Array.isArray(dialog.cart) ? [...dialog.cart] : [];
+}
+
+function mergeCartLine(cart: TelegramCartLine[], line: TelegramCartLine): TelegramCartLine[] {
+  const next = [...cart];
+  const index = next.findIndex((row) => row.variantId === line.variantId);
+  if (index >= 0) {
+    const existing = next[index]!;
+    next[index] = { ...existing, quantity: existing.quantity + line.quantity };
+    return next;
+  }
+  next.push(line);
+  return next;
+}
+
+function saleItemsFromDialog(dialog: TelegramDialogState): Array<{ quantity: number; variantId: string }> {
+  const cart = cartFromDialog(dialog);
+  if (cart.length > 0) {
+    return cart.map((line) => ({ quantity: line.quantity, variantId: line.variantId }));
+  }
+  if (dialog.variantId && dialog.quantity && dialog.quantity >= 1) {
+    return [{ quantity: dialog.quantity, variantId: dialog.variantId }];
+  }
+  return [];
+}
+
 async function startProductPick(
   deps: TelegramToolsDeps,
   input: {
@@ -630,23 +662,29 @@ async function startProductPick(
     telegramUserId: string;
     ctx: OperatorCtx;
     flow: "sale" | "stock";
+    /** Preserve cart when adding another product to a sale. */
+    cart?: TelegramCartLine[];
   },
 ) {
+  const cart = input.cart ?? [];
   const title =
     input.flow === "sale"
-      ? "<b>New sale</b>\nPick a product"
-      : "<b>Stock</b>\nPick a product";
+      ? cart.length > 0
+        ? `🛒 <b>Add product</b>\n${formatCartSummary(cart)}`
+        : "🛒 <b>New sale</b>\nPick a product"
+      : "📦 <b>Stock</b>\nPick a product";
   const loading = await sendTelegramBotMessage({
     botToken: deps.botToken,
     chatId: input.chatId,
     text: "Loading products…",
-    replyMarkup: cancelInline(),
+    replyMarkup: cancelInline(input.flow === "sale" && cart.length > 0 ? "Cancel sale" : "Cancel"),
   }).catch(() => null);
 
   const hits = await loadPickHits(deps, input.ctx);
   setDialog(input.telegramUserId, input.chatId, {
     ...dialogBase(input.ctx, input.flow, "pick_product"),
     hits,
+    ...(input.flow === "sale" && cart.length ? { cart } : {}),
   });
 
   if (hits.length === 0) {
@@ -656,13 +694,14 @@ async function startProductPick(
       messageId: loading?.messageId ?? null,
       text: [
         title,
+        "",
         "No products yet. Tap Search, or add products in the dashboard.",
         emptyHint ? htmlLink(emptyHint, "Open products") : null,
       ]
         .filter(Boolean)
         .join("\n"),
       parseMode: "HTML",
-      replyMarkup: productPickInline([]),
+      replyMarkup: productPickInline([], { cartCount: cart.length }),
     });
     return;
   }
@@ -672,7 +711,7 @@ async function startProductPick(
     messageId: loading?.messageId ?? null,
     text: title,
     parseMode: "HTML",
-    replyMarkup: productPickInline(hits),
+    replyMarkup: productPickInline(hits, { cartCount: cart.length }),
   });
 }
 
@@ -686,20 +725,26 @@ async function advanceAfterProduct(
     hit: TelegramProductHit;
   },
 ) {
+  const previous = getDialog(input.telegramUserId, input.chatId);
+  const existingCart =
+    input.flow === "sale" && previous ? cartFromDialog(previous) : [];
   setDialog(input.telegramUserId, input.chatId, {
     ...dialogBase(input.ctx, input.flow, "await_qty"),
     productId: input.hit.productId,
     variantId: input.hit.variantId,
     productTitle: input.hit.productTitle,
     variantTitle: input.hit.variantTitle,
+    ...(existingCart.length ? { cart: existingCart } : {}),
   });
 
   await sendTelegramBotMessage({
     botToken: deps.botToken,
     chatId: input.chatId,
     text: [
-      `<b>${itemLabel(input.hit.productTitle, input.hit.variantTitle)}</b>`,
-      input.flow === "sale" ? "How many? Tap a number or type one." : "New quantity? Tap a number or type one.",
+      `📦 <b>${itemLabel(input.hit.productTitle, input.hit.variantTitle)}</b>`,
+      input.flow === "sale"
+        ? "How many? Tap a number or type one."
+        : "New stock quantity? Tap a number or type one.",
     ].join("\n"),
     parseMode: "HTML",
     replyMarkup: qtyInline(input.flow),
@@ -736,22 +781,71 @@ async function goToContactOrConfirmStock(
     return;
   }
 
-  // sale
-  const saleNext: Omit<TelegramDialogState, "expiresAt"> = {
-    ...dialogBase(input.ctx, "sale", "await_contact"),
+  // sale: append to cart, then let operator add more or continue
+  if (!input.dialog.variantId || !input.dialog.productId) {
+    clearDialog(input.telegramUserId, input.chatId);
+    await sendHome(deps, input.chatId, input.ctx);
+    return;
+  }
+
+  const line: TelegramCartLine = {
+    productId: input.dialog.productId,
+    productTitle: input.dialog.productTitle ?? "Product",
+    variantId: input.dialog.variantId,
+    variantTitle: input.dialog.variantTitle ?? "",
     quantity: input.qty,
   };
-  if (input.dialog.productId) saleNext.productId = input.dialog.productId;
-  if (input.dialog.variantId) saleNext.variantId = input.dialog.variantId;
-  if (input.dialog.productTitle) saleNext.productTitle = input.dialog.productTitle;
-  if (input.dialog.variantTitle) saleNext.variantTitle = input.dialog.variantTitle;
-  setDialog(input.telegramUserId, input.chatId, saleNext);
+  const cart = mergeCartLine(cartFromDialog(input.dialog), line);
+  setDialog(input.telegramUserId, input.chatId, {
+    ...dialogBase(input.ctx, "sale", "cart_menu"),
+    cart,
+  });
   await sendTelegramBotMessage({
     botToken: deps.botToken,
     chatId: input.chatId,
     text: [
-      `${itemLabel(input.dialog.productTitle, input.dialog.variantTitle)} × ${input.qty}`,
-      "Type the <b>customer’s</b> phone number.",
+      "🛒 <b>Cart</b>",
+      formatCartSummary(cart),
+      "",
+      "Add another product, or continue to the customer.",
+    ].join("\n"),
+    parseMode: "HTML",
+    replyMarkup: cartMenuInline(cart.length),
+  }).catch(() => undefined);
+}
+
+async function beginSaleCheckout(
+  deps: TelegramToolsDeps,
+  input: {
+    chatId: string;
+    telegramUserId: string;
+    ctx: OperatorCtx;
+    dialog: TelegramDialogState;
+  },
+) {
+  const cart = cartFromDialog(input.dialog);
+  if (cart.length === 0) {
+    await sendTelegramBotMessage({
+      botToken: deps.botToken,
+      chatId: input.chatId,
+      text: "Add at least one product first.",
+      replyMarkup: cartMenuInline(0),
+    }).catch(() => undefined);
+    return;
+  }
+
+  setDialog(input.telegramUserId, input.chatId, {
+    ...dialogBase(input.ctx, "sale", "await_contact"),
+    cart,
+  });
+  await sendTelegramBotMessage({
+    botToken: deps.botToken,
+    chatId: input.chatId,
+    text: [
+      "🛒 <b>Cart</b>",
+      formatCartSummary(cart),
+      "",
+      "📱 Type the <b>customer’s</b> phone number.",
       "Or use 📎 → Contact to pick them from your phone.",
     ].join("\n"),
     parseMode: "HTML",
@@ -801,7 +895,8 @@ async function applyStock(
   await sendTelegramBotMessage({
     botToken: deps.botToken,
     chatId: input.chatId,
-    text: `Stock · ${itemLabel(input.dialog.productTitle, input.dialog.variantTitle)} → ${input.qty}`,
+    text: `📦 Stock updated · ${itemLabel(input.dialog.productTitle, input.dialog.variantTitle)} → <b>${input.qty}</b>`,
+    parseMode: "HTML",
     replyMarkup: mainReplyKeyboard(),
   }).catch(() => undefined);
 }
@@ -816,7 +911,8 @@ async function applySale(
     customerPhone: string;
   },
 ) {
-  if (!input.dialog.regionId || !input.dialog.variantId || !input.dialog.quantity) {
+  const items = saleItemsFromDialog(input.dialog);
+  if (!input.dialog.regionId || items.length === 0) {
     clearDialog(input.telegramUserId, input.chatId);
     await sendTelegramBotMessage({
       botToken: deps.botToken,
@@ -851,7 +947,7 @@ async function applySale(
   const created = await deps.createManualOrder({
     customerEmail: resolved.email,
     ...(resolved.customerId ? { customerId: resolved.customerId } : {}),
-    items: [{ quantity: input.dialog.quantity, variantId: input.dialog.variantId }],
+    items,
     note: "Telegram offline sale",
     regionId: input.dialog.regionId,
     salesChannelId: input.dialog.salesChannelId,
@@ -885,15 +981,25 @@ async function applySale(
       ? `${fullName} · ${input.customerPhone}`
       : input.customerPhone;
   const emailLine = isWalkInEmail(resolved.email) ? "Walk-in" : resolved.email;
+  const cart = cartFromDialog(input.dialog);
+  const itemsBlock =
+    cart.length > 0
+      ? formatCartSummary(cart)
+      : formatItemLine(
+          input.dialog.productTitle,
+          input.dialog.variantTitle,
+          input.dialog.quantity,
+        );
   await sendTelegramBotMessage({
     botToken: deps.botToken,
     chatId: input.chatId,
     text: [
-      `Sale ${formatOrderRef(created.order.id)}`,
-      `${itemLabel(input.dialog.productTitle, input.dialog.variantTitle)} × ${input.dialog.quantity}`,
+      `✅ <b>Sale ${formatOrderRef(created.order.id)}</b>`,
+      itemsBlock,
       whoLine,
       emailLine,
     ].join("\n"),
+    parseMode: "HTML",
     replyMarkup: mainReplyKeyboard(),
   }).catch(() => undefined);
 }
@@ -910,11 +1016,11 @@ async function promptCustomerName(
   },
 ) {
   const phone = input.phone.replace(/[^\d+]/g, "");
-  if (phone.length < 8 || !input.dialog.quantity || input.dialog.quantity < 1) {
+  if (phone.length < 8 || saleItemsFromDialog(input.dialog).length === 0) {
     await sendTelegramBotMessage({
       botToken: deps.botToken,
       chatId: input.chatId,
-      text: "Need a valid customer phone (and quantity ≥ 1).",
+      text: "Need a valid customer phone and at least one product.",
       replyMarkup: phonePromptMarkup(),
     }).catch(() => undefined);
     return;
@@ -939,15 +1045,24 @@ async function promptCustomerName(
     customerName: "Customer",
   });
 
+  const cart = cartFromDialog(input.dialog);
   await sendTelegramBotMessage({
     botToken: deps.botToken,
     chatId: input.chatId,
     text: [
-      `${itemLabel(input.dialog.productTitle, input.dialog.variantTitle)} × ${input.dialog.quantity}`,
+      "🛒 <b>Cart</b>",
+      cart.length
+        ? formatCartSummary(cart)
+        : formatItemLine(
+            input.dialog.productTitle,
+            input.dialog.variantTitle,
+            input.dialog.quantity,
+          ),
       phone,
       "",
       "Customer name? Type it, or Skip.",
     ].join("\n"),
+    parseMode: "HTML",
     replyMarkup: namePromptMarkup(),
   }).catch(() => undefined);
 }
@@ -973,15 +1088,24 @@ async function promptCustomerEmail(
   const who =
     displayName && !/^customer$/i.test(displayName) ? `${displayName} · ${phone}` : phone;
 
+  const cart = cartFromDialog(input.dialog);
   await sendTelegramBotMessage({
     botToken: deps.botToken,
     chatId: input.chatId,
     text: [
-      `${itemLabel(input.dialog.productTitle, input.dialog.variantTitle)} × ${input.dialog.quantity}`,
+      "🛒 <b>Cart</b>",
+      cart.length
+        ? formatCartSummary(cart)
+        : formatItemLine(
+            input.dialog.productTitle,
+            input.dialog.variantTitle,
+            input.dialog.quantity,
+          ),
       who,
       "",
       "Customer email? Type it, or Walk-in if they have no email.",
     ].join("\n"),
+    parseMode: "HTML",
     replyMarkup: emailPromptMarkup(),
   }).catch(() => undefined);
 }
@@ -997,7 +1121,8 @@ async function showSaleConfirm(
 ) {
   const phone = (input.dialog.customerPhone ?? "").replace(/[^\d+]/g, "");
   const email = input.email.trim().toLowerCase();
-  if (phone.length < 8 || !input.dialog.quantity || input.dialog.quantity < 1 || !email) {
+  const items = saleItemsFromDialog(input.dialog);
+  if (phone.length < 8 || items.length === 0 || !email) {
     await sendTelegramBotMessage({
       botToken: deps.botToken,
       chatId: input.chatId,
@@ -1016,13 +1141,20 @@ async function showSaleConfirm(
   const who =
     displayName && !/^customer$/i.test(displayName) ? `${displayName} · ${phone}` : phone;
   const emailLine = isWalkInEmail(email) ? "Walk-in" : email;
+  const cart = cartFromDialog(input.dialog);
 
   await sendTelegramBotMessage({
     botToken: deps.botToken,
     chatId: input.chatId,
     text: [
-      `<b>Confirm sale</b>`,
-      `${itemLabel(input.dialog.productTitle, input.dialog.variantTitle)} × ${input.dialog.quantity}`,
+      "✅ <b>Confirm sale</b>",
+      cart.length
+        ? formatCartSummary(cart)
+        : formatItemLine(
+            input.dialog.productTitle,
+            input.dialog.variantTitle,
+            input.dialog.quantity,
+          ),
       who,
       emailLine,
     ].join("\n"),
@@ -1128,10 +1260,69 @@ export async function handleTelegramToolsCallback(
     await sendTelegramBotMessage({
       botToken: deps.botToken,
       chatId,
-      text: "Type product name or SKU",
-      replyMarkup: cancelInline(),
+      text: "🔎 Type a product name or SKU",
+      replyMarkup: cancelInline(dialog.flow === "sale" ? "Cancel sale" : "Cancel"),
     }).catch(() => undefined);
     return { handled: true, reason: "search" };
+  }
+
+  if (action === "add") {
+    const dialog = getDialog(telegramUserId, chatId);
+    if (!dialog || dialog.flow !== "sale") {
+      await answerTelegramCallbackQuery({
+        botToken: deps.botToken,
+        callbackQueryId: callbackId,
+        text: "Expired",
+      }).catch(() => undefined);
+      return { handled: true, reason: "stale_add" };
+    }
+    await answerTelegramCallbackQuery({
+      botToken: deps.botToken,
+      callbackQueryId: callbackId,
+      text: "Add product",
+    }).catch(() => undefined);
+    await startProductPick(deps, {
+      chatId,
+      telegramUserId,
+      ctx,
+      flow: "sale",
+      cart: cartFromDialog(dialog),
+    });
+    return { handled: true, reason: "add_product" };
+  }
+
+  if (action === "checkout") {
+    const dialog = getDialog(telegramUserId, chatId);
+    if (
+      !dialog ||
+      dialog.flow !== "sale" ||
+      (dialog.step !== "cart_menu" &&
+        dialog.step !== "pick_product" &&
+        dialog.step !== "search")
+    ) {
+      await answerTelegramCallbackQuery({
+        botToken: deps.botToken,
+        callbackQueryId: callbackId,
+        text: "Expired",
+      }).catch(() => undefined);
+      return { handled: true, reason: "stale_checkout" };
+    }
+    if (cartFromDialog(dialog).length === 0) {
+      await answerTelegramCallbackQuery({
+        botToken: deps.botToken,
+        callbackQueryId: callbackId,
+        text: "Add a product first",
+        showAlert: true,
+      }).catch(() => undefined);
+      return { handled: true, reason: "empty_cart" };
+    }
+    await answerTelegramCallbackQuery({
+      botToken: deps.botToken,
+      callbackQueryId: callbackId,
+      text: "Continue",
+    }).catch(() => undefined);
+    await beginSaleCheckout(deps, { chatId, telegramUserId, ctx, dialog });
+    return { handled: true, reason: "checkout" };
   }
 
   if (action === "skip_name") {
@@ -1243,8 +1434,7 @@ export async function handleTelegramToolsCallback(
       dialog.step === "confirm_sale" &&
       dialog.customerPhone &&
       dialog.customerName &&
-      dialog.quantity &&
-      dialog.quantity >= 1
+      saleItemsFromDialog(dialog).length > 0
     ) {
       await applySale(deps, {
         chatId,
@@ -1404,7 +1594,12 @@ export async function handleTelegramToolsMessage(
       return { handled: true, reason: "not_operator" };
     }
     const dialog = getDialog(input.telegramUserId, input.chatId);
-    if (!dialog || dialog.flow !== "sale" || dialog.step !== "await_contact" || !dialog.quantity) {
+    if (
+      !dialog ||
+      dialog.flow !== "sale" ||
+      dialog.step !== "await_contact" ||
+      saleItemsFromDialog(dialog).length === 0
+    ) {
       await sendTelegramBotMessage({
         botToken: deps.botToken,
         chatId: input.chatId,
@@ -1429,31 +1624,32 @@ export async function handleTelegramToolsMessage(
     lower === "/menu" ||
     lower.startsWith("/menu@") ||
     lower === "menu" ||
-    lower === MAIN_KEYBOARD_LABELS.cancel.toLowerCase() ||
+    matchesMainLabel(text, MAIN_KEYBOARD_LABELS.cancel) ||
+    lower === "cancel" ||
     lower === "/cancel" ||
     lower.startsWith("/cancel@");
   const isToday =
-    lower === MAIN_KEYBOARD_LABELS.today.toLowerCase() ||
+    matchesMainLabel(text, MAIN_KEYBOARD_LABELS.today) ||
     lower === "/today" ||
     lower.startsWith("/today@");
   const isStock =
-    lower === MAIN_KEYBOARD_LABELS.stock.toLowerCase() ||
+    matchesMainLabel(text, MAIN_KEYBOARD_LABELS.stock) ||
     lower === "/stock" ||
     lower.startsWith("/stock@");
   const isSale =
-    lower === MAIN_KEYBOARD_LABELS.newSale.toLowerCase() ||
+    matchesMainLabel(text, MAIN_KEYBOARD_LABELS.newSale) ||
     lower === "/sale" ||
     lower.startsWith("/sale@");
   const isOrders =
-    lower === MAIN_KEYBOARD_LABELS.orders.toLowerCase() ||
+    matchesMainLabel(text, MAIN_KEYBOARD_LABELS.orders) ||
     lower === "/orders" ||
     lower.startsWith("/orders@");
   const isShop =
-    lower === MAIN_KEYBOARD_LABELS.shop.toLowerCase() ||
+    matchesMainLabel(text, MAIN_KEYBOARD_LABELS.shop) ||
     lower === "/shop" ||
     lower.startsWith("/shop@");
   const isHelp =
-    lower === MAIN_KEYBOARD_LABELS.help.toLowerCase() ||
+    matchesMainLabel(text, MAIN_KEYBOARD_LABELS.help) ||
     lower === "/help" ||
     lower.startsWith("/help@");
 
@@ -1597,6 +1793,22 @@ export async function handleTelegramToolsMessage(
       qty,
     });
     return { handled: true, reason: "qty_typed" };
+  }
+
+  if (dialog?.step === "cart_menu" && dialog.flow === "sale") {
+    await sendTelegramBotMessage({
+      botToken: deps.botToken,
+      chatId: input.chatId,
+      text: [
+        "🛒 <b>Cart</b>",
+        formatCartSummary(cartFromDialog(dialog)),
+        "",
+        "Use the buttons to add a product or continue.",
+      ].join("\n"),
+      parseMode: "HTML",
+      replyMarkup: cartMenuInline(cartFromDialog(dialog).length),
+    }).catch(() => undefined);
+    return { handled: true, reason: "cart_menu_prompt" };
   }
 
   if (dialog?.step === "await_contact" && dialog.flow === "sale") {

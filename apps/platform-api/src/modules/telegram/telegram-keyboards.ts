@@ -1,16 +1,30 @@
-import type { TelegramProductHit } from "./telegram-dialog-state.js";
+import type { TelegramCartLine, TelegramProductHit } from "./telegram-dialog-state.js";
 import { formatItemLine } from "./telegram-presentation.js";
 
 export const MAIN_KEYBOARD_LABELS = {
-  newSale: "New sale",
-  stock: "Stock",
-  today: "Today",
-  orders: "Orders",
-  shop: "Shop",
-  help: "Help",
+  newSale: "🛒 New sale",
+  stock: "📦 Stock",
+  today: "📊 Today",
+  orders: "📋 Orders",
+  shop: "🏪 Shop",
+  help: "❓ Help",
   cancel: "Cancel",
   search: "Search",
 } as const;
+
+/** Match main keyboard taps even if emoji is stripped or labels change slightly. */
+export function matchesMainLabel(
+  text: string,
+  label: (typeof MAIN_KEYBOARD_LABELS)[keyof typeof MAIN_KEYBOARD_LABELS],
+): boolean {
+  const normalize = (value: string) =>
+    value
+      .trim()
+      .toLowerCase()
+      .replace(/^[^\p{L}\p{N}]+/gu, "")
+      .trim();
+  return normalize(text) === normalize(label);
+}
 
 export function mainReplyKeyboard() {
   return {
@@ -42,14 +56,14 @@ export function shopInlineKeyboard(links: {
 }) {
   const rows: Array<Array<{ text: string; callback_data?: string; url?: string }>> = [];
   const openRow: Array<{ text: string; url: string }> = [];
-  if (links.dashboard) openRow.push({ text: "Dashboard", url: links.dashboard });
-  if (links.orders) openRow.push({ text: "Orders", url: links.orders });
+  if (links.dashboard) openRow.push({ text: "Open dashboard", url: links.dashboard });
+  if (links.orders) openRow.push({ text: "Open orders", url: links.orders });
   if (openRow.length) rows.push(openRow);
   if (links.telegramSettings) {
-    rows.push([{ text: "Settings → Telegram", url: links.telegramSettings }]);
+    rows.push([{ text: "Telegram settings", url: links.telegramSettings }]);
   }
   rows.push([
-    { text: "Unlink", callback_data: "t:unlink" },
+    { text: "Unlink this chat", callback_data: "t:unlink" },
     { text: "Close", callback_data: "t:menu" },
   ]);
   return { inline_keyboard: rows };
@@ -72,7 +86,7 @@ export function unlinkConfirmInline() {
  */
 export function phonePromptMarkup() {
   return {
-    inline_keyboard: [[{ text: "Cancel", callback_data: "t:menu" }]],
+    inline_keyboard: [[{ text: "Cancel sale", callback_data: "t:menu" }]],
   };
 }
 
@@ -80,8 +94,8 @@ export function phonePromptMarkup() {
 export function namePromptMarkup() {
   return {
     inline_keyboard: [
-      [{ text: "Skip", callback_data: "t:skip_name" }],
-      [{ text: "Cancel", callback_data: "t:menu" }],
+      [{ text: "Skip name", callback_data: "t:skip_name" }],
+      [{ text: "Cancel sale", callback_data: "t:menu" }],
     ],
   };
 }
@@ -90,23 +104,39 @@ export function namePromptMarkup() {
 export function emailPromptMarkup() {
   return {
     inline_keyboard: [
-      [{ text: "Walk-in", callback_data: "t:walkin" }],
-      [{ text: "Cancel", callback_data: "t:menu" }],
+      [{ text: "Walk-in (no email)", callback_data: "t:walkin" }],
+      [{ text: "Cancel sale", callback_data: "t:menu" }],
     ],
   };
 }
 
-export function cancelInline() {
-  return { inline_keyboard: [[{ text: "Cancel", callback_data: "t:menu" }]] };
+export function cancelInline(label = "Cancel") {
+  return { inline_keyboard: [[{ text: label, callback_data: "t:menu" }]] };
 }
 
 export function confirmInline() {
   return {
     inline_keyboard: [
       [
-        { text: "Confirm", callback_data: "t:ok" },
+        { text: "✅ Confirm", callback_data: "t:ok" },
         { text: "Cancel", callback_data: "t:menu" },
       ],
+    ],
+  };
+}
+
+/** After adding a line: grow the cart or continue to customer. */
+export function cartMenuInline(cartCount: number) {
+  return {
+    inline_keyboard: [
+      [{ text: "➕ Add product", callback_data: "t:add" }],
+      [
+        {
+          text: cartCount > 0 ? `Continue · ${cartCount} item${cartCount === 1 ? "" : "s"}` : "Continue",
+          callback_data: "t:checkout",
+        },
+      ],
+      [{ text: "Cancel sale", callback_data: "t:menu" }],
     ],
   };
 }
@@ -128,7 +158,10 @@ export function qtyInline(flow: "sale" | "stock") {
           { text: "20", callback_data: "t:q20" },
         ];
   return {
-    inline_keyboard: [chips, [{ text: "Cancel", callback_data: "t:menu" }]],
+    inline_keyboard: [
+      chips,
+      [{ text: flow === "sale" ? "Cancel sale" : "Cancel", callback_data: "t:menu" }],
+    ],
   };
 }
 
@@ -155,18 +188,26 @@ export function hitButtonLabel(hit: TelegramProductHit): string {
   return `${base}${qty}`.slice(0, 56);
 }
 
-export function productPickInline(hits: TelegramProductHit[]) {
-  return {
-    inline_keyboard: [
-      ...hits.map((hit, index) => [
-        { text: hitButtonLabel(hit), callback_data: `t:i${index}` },
-      ]),
-      [
-        { text: "Search", callback_data: "t:search" },
-        { text: "Cancel", callback_data: "t:menu" },
-      ],
-    ],
-  };
+export function productPickInline(hits: TelegramProductHit[], options?: { cartCount?: number }) {
+  const cartCount = options?.cartCount ?? 0;
+  const rows: Array<Array<{ text: string; callback_data: string }>> = [
+    ...hits.map((hit, index) => [
+      { text: hitButtonLabel(hit), callback_data: `t:i${index}` },
+    ]),
+  ];
+  if (cartCount > 0) {
+    rows.push([
+      {
+        text: `Continue · ${cartCount} in cart`,
+        callback_data: "t:checkout",
+      },
+    ]);
+  }
+  rows.push([
+    { text: "🔎 Search", callback_data: "t:search" },
+    { text: cartCount > 0 ? "Cancel sale" : "Cancel", callback_data: "t:menu" },
+  ]);
+  return { inline_keyboard: rows };
 }
 
 export function searchResultsInline(hits: TelegramProductHit[]) {
@@ -189,4 +230,14 @@ export function ordersListInline(rows: Array<{ id: string; label: string }>) {
       [{ text: "Close", callback_data: "t:menu" }],
     ],
   };
+}
+
+export function formatCartSummary(cart: TelegramCartLine[]): string {
+  if (!cart.length) return "No items yet";
+  return cart
+    .map((line, index) => {
+      const label = formatItemLine(line.productTitle, line.variantTitle, line.quantity);
+      return `${index + 1}. ${label}`;
+    })
+    .join("\n");
 }
