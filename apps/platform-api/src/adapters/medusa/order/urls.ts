@@ -20,6 +20,8 @@ const LIST_FIELDS = [
   // Line items for list column + Telegram order cards (include variant when available).
   "*items",
   "*items.variant",
+  "*items.variant.options",
+  "*items.product",
   "created_at",
   "updated_at",
 ].join(",");
@@ -45,6 +47,9 @@ const DETAIL_FIELDS = [
   "*items",
   "*items.detail",
   "*items.variant",
+  "*items.variant.options",
+  "*items.variant.options.option",
+  "*items.product",
   "*payment_collections",
   "*payment_collections.payment_sessions",
   "created_at",

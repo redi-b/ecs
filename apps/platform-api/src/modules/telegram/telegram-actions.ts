@@ -6,6 +6,7 @@ import type { MerchantOrderAction, MerchantOrderActionResult } from "../../types
 import {
   buildOrderActionKeyboard,
   buildSettlementMethodKeyboard,
+  createTelegramCallbackSecret,
   parseOrderActionCallbackData,
   type TelegramOrderAction,
 } from "./telegram-callback-tokens.js";

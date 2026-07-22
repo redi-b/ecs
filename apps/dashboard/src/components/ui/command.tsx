@@ -59,33 +59,49 @@ function CommandInput({
   className,
   value,
   onValueChange,
+  size = "default",
   ...props
-}: React.ComponentProps<typeof CommandPrimitive.Input>) {
+}: React.ComponentProps<typeof CommandPrimitive.Input> & {
+  /**
+   * default — dense combobox / filter popovers (h-7)
+   * lg — command center dialog (same look, slightly more air)
+   */
+  size?: "default" | "lg";
+}) {
   const stringValue = typeof value === "string" ? value : "";
+  const isLg = size === "lg";
   const inputClassName = cn(
-    // Crisp type + caret: avoid frosted translucent text paints that look soft.
-    // Mobile: smaller type so long placeholders fit; desktop keeps 15px.
-    "min-w-0 flex-1 w-full text-sm leading-snug font-medium tracking-[-0.01em] text-foreground sm:text-[15px]",
-    "caret-foreground outline-hidden antialiased",
+    "min-w-0 w-full flex-1 text-foreground outline-hidden antialiased caret-foreground",
     "placeholder:truncate placeholder:font-normal placeholder:tracking-normal placeholder:text-muted-foreground/65",
     "disabled:cursor-not-allowed disabled:opacity-50",
+    isLg ? "text-sm leading-normal" : "text-[13px] leading-normal",
     className,
   );
 
   return (
-    <div data-slot="command-input-wrapper" className="p-1 pb-0">
+    <div
+      data-slot="command-input-wrapper"
+      className={cn(
+        "border-b border-border/60",
+        isLg ? "px-3 py-2" : "px-1.5 py-1",
+      )}
+    >
       <InputGroup
         className={cn(
-          "h-10! rounded-xl! border-border/70 bg-background shadow-none!",
-          "dark:bg-background",
-          "*:data-[slot=input-group-addon]:pl-2.5!",
-          "has-[[data-slot=input-group-control]:focus-visible]:border-ring/60",
-          "has-[[data-slot=input-group-control]:focus-visible]:ring-2",
-          "has-[[data-slot=input-group-control]:focus-visible]:ring-ring/30",
+          "rounded-md! border-0 bg-transparent! shadow-none! dark:bg-transparent!",
+          "*:data-[slot=input-group-addon]:pl-0.5!",
+          isLg ? "h-9!" : "h-7!",
+          "has-[[data-slot=input-group-control]:focus-visible]:border-0",
+          "has-[[data-slot=input-group-control]:focus-visible]:ring-0",
         )}
       >
-        <InputGroupAddon align="inline-start" className="gap-1 pl-2.5!">
-          <SearchIcon className="size-4 shrink-0 text-muted-foreground" />
+        <InputGroupAddon align="inline-start" className="gap-1 pl-0.5!">
+          <SearchIcon
+            className={cn(
+              "shrink-0 text-muted-foreground",
+              isLg ? "size-4" : "size-3.5",
+            )}
+          />
         </InputGroupAddon>
         {typeof value === "string" && onValueChange ? (
           <CommandPrimitive.Input
@@ -109,14 +125,17 @@ function CommandInput({
           />
         )}
         {stringValue && onValueChange ? (
-          <InputGroupAddon align="inline-end" className="gap-1 pr-1.5!">
+          <InputGroupAddon align="inline-end" className="gap-1 pr-0.5!">
             <button
               aria-label="Clear search"
-              className="grid size-7 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              className={cn(
+                "grid place-items-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
+                isLg ? "size-7" : "size-6",
+              )}
               onClick={() => onValueChange("")}
               type="button"
             >
-              <XIcon className="size-3.5" />
+              <XIcon className={isLg ? "size-3.5" : "size-3"} />
             </button>
           </InputGroupAddon>
         ) : null}

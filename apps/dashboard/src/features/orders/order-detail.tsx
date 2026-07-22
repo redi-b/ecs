@@ -216,7 +216,14 @@ export async function OrderDetail({ action, order, tenantId }: OrderDetailProps)
                           tenantId,
                         )
                       : null;
-                    const itemTitle = item.title ?? t("orders.detail.fallbackItem");
+                    const productName =
+                      item.productTitle?.trim() ||
+                      item.title?.trim() ||
+                      t("orders.detail.fallbackItem");
+                    const variantLabel = item.variantTitle?.trim() || null;
+                    const showVariant =
+                      Boolean(variantLabel) &&
+                      variantLabel.toLowerCase() !== productName.toLowerCase();
                     return (
                       <TableRow key={item.id}>
                         <TableCell>
@@ -231,17 +238,30 @@ export async function OrderDetail({ action, order, tenantId }: OrderDetailProps)
                             ) : (
                               <div className="size-10 rounded-md bg-muted" />
                             )}
-                            <div className="min-w-0">
+                            <div className="min-w-0 space-y-1">
                               {href ? (
                                 <Link
                                   className={cn(listEntityLinkClassName, "truncate")}
                                   href={href}
                                 >
-                                  {itemTitle}
+                                  {productName}
                                 </Link>
                               ) : (
-                                <p className="font-medium">{itemTitle}</p>
+                                <p className="font-medium">{productName}</p>
                               )}
+                              {showVariant ? (
+                                <div className="flex flex-wrap gap-1">
+                                  {variantLabel.split(" · ").map((part) => (
+                                    <Badge
+                                      key={part}
+                                      className="h-5 max-w-full truncate rounded-md px-1.5 font-normal"
+                                      variant="secondary"
+                                    >
+                                      {part}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              ) : null}
                               <p className="text-xs text-muted-foreground">
                                 {t("orders.detail.each", {
                                   price: formatOrderMoney(item.unitPrice, order.currencyCode),
@@ -366,7 +386,7 @@ export async function OrderDetail({ action, order, tenantId }: OrderDetailProps)
                 ) : null}
                 {order.settlement.reference ? (
                   <Field
-                    label={t("orders.settlement.referenceOptional")}
+                    label={t("orders.settlement.reference")}
                     value={order.settlement.reference}
                   />
                 ) : null}

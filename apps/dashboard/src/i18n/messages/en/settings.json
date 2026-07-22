@@ -484,8 +484,8 @@
     },
     "receiving": {
       "title": "Receiving accounts",
-      "description": "Your shop bank or mobile-money destinations for offline payments (COD, manual orders). Used only for records and exports — not shown on the storefront. Online checkout uses Chapa.",
-      "empty": "No accounts yet. Add one if customers sometimes pay your bank or Telebirr outside Chapa.",
+      "description": "Bank and mobile-money accounts where you receive payments outside online checkout. Used when you mark orders as paid and for your records.",
+      "empty": "No accounts yet. Add one if customers sometimes pay you by bank transfer or mobile money.",
       "add": "Add account",
       "label": "Label",
       "labelPlaceholder": "e.g. Shop CBE",

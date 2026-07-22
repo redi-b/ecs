@@ -289,13 +289,20 @@ export function getLineItems(value: unknown) {
       getString(item.product_title) ??
       (productRecord ? getString(productRecord.title) : null) ??
       null;
-    const variantTitle =
+    const variantFromOptions = formatVariantOptions(variantRecord);
+    const rawVariantTitle =
       getString(item.variant_title) ??
       getString(item.subtitle) ??
       (variantRecord ? getString(variantRecord.title) : null) ??
       null;
-    const title =
-      getString(item.title) ?? productTitle ?? (variantTitle ? variantTitle : null);
+    // Prefer explicit option values ("Large / Red") over generic "Default variant".
+    const variantTitle =
+      variantFromOptions ||
+      (rawVariantTitle && !isGenericVariantTitle(rawVariantTitle) ? rawVariantTitle : null) ||
+      rawVariantTitle;
+    const lineTitle = getString(item.title);
+    // Prefer product name for the main line; keep variant separate for the UI.
+    const title = productTitle ?? lineTitle ?? (variantTitle ? variantTitle : null);
 
     return [
       {
@@ -313,6 +320,43 @@ export function getLineItems(value: unknown) {
       },
     ];
   });
+}
+
+function isGenericVariantTitle(value: string) {
+  const key = value.trim().toLowerCase();
+  return (
+    key === "default" ||
+    key === "default variant" ||
+    key === "standard" ||
+    key === "one size" ||
+    key === "title"
+  );
+}
+
+/** Build "Size: Large · Color: Red" / "Large / Red" from Medusa variant options. */
+function formatVariantOptions(variant: Record<string, unknown> | null): string | null {
+  if (!variant) return null;
+  const options = Array.isArray(variant.options) ? variant.options : [];
+  if (!options.length) return null;
+
+  const parts: string[] = [];
+  for (const raw of options) {
+    if (!isRecord(raw)) continue;
+    const value = getString(raw.value) ?? getString(raw.option_value);
+    if (!value) continue;
+    const option = isRecord(raw.option) ? raw.option : null;
+    const optionTitle = option
+      ? getString(option.title) ?? getString(option.name)
+      : getString(raw.option_title) ?? getString(raw.title);
+    if (optionTitle && !isGenericVariantTitle(optionTitle)) {
+      parts.push(`${optionTitle}: ${value}`);
+    } else {
+      parts.push(value);
+    }
+  }
+
+  if (!parts.length) return null;
+  return parts.join(" · ");
 }
 
 export function getFulfillmentItems(order: MerchantOrder) {

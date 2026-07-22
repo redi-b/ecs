@@ -95,8 +95,10 @@ function IconTile({
   return (
     <span
       className={cn(
-        "flex size-8 shrink-0 items-center justify-center rounded-lg border border-border/60 bg-muted/50 text-muted-foreground shadow-sm transition-colors",
-        "group-data-selected/command-item:border-primary/20 group-data-selected/command-item:bg-primary/10 group-data-selected/command-item:text-primary",
+        // size-7 tile + size-3.5 glyph keeps icons lighter than the previous size-8/size-4 pair
+        "flex size-7 shrink-0 items-center justify-center rounded-md border border-border/50 bg-muted/40 text-muted-foreground transition-colors",
+        "group-data-selected/command-item:border-primary/25 group-data-selected/command-item:bg-primary/10 group-data-selected/command-item:text-primary",
+        "[&_svg]:size-3.5!",
         className,
       )}
     >
@@ -378,20 +380,16 @@ export function CommandCenter() {
 
         <Command
           shouldFilter={false}
-          className={cn(
-            "flex min-h-0 flex-1 flex-col rounded-none bg-transparent sm:rounded-2xl",
-            "**:data-[slot=command-input-wrapper]:border-b **:data-[slot=command-input-wrapper]:border-border/50",
-            "**:data-[slot=command-input-wrapper]:bg-muted/20 **:data-[slot=command-input-wrapper]:p-3",
-          )}
+          className="flex min-h-0 flex-1 flex-col rounded-none bg-transparent sm:rounded-2xl"
         >
           <CommandInput
             placeholder={inputPlaceholder}
             value={query}
             onValueChange={setQuery}
-            className="h-11 sm:h-10"
+            size="lg"
           />
 
-          <CommandList className="min-h-0 flex-1 scroll-py-2 px-2 pb-2 max-h-none sm:max-h-[min(28rem,55dvh)]">
+          <CommandList className="min-h-0 flex-1 scroll-py-1 px-2 pb-2 max-h-none sm:max-h-[min(28rem,55dvh)]">
             {showEmpty ? (
               <CommandEmpty className="py-10 text-muted-foreground">
                 {remoteError ? remoteError : t("commandCenter.noMatches")}
@@ -413,12 +411,14 @@ export function CommandCenter() {
                       key={item.id}
                       value={`recent ${item.label} ${item.id}`}
                       onSelect={() => selectRecent(item)}
-                      className="group/command-item gap-3 rounded-xl px-2 py-2.5 data-selected:bg-accent/90"
+                      className="group/command-item gap-2.5 rounded-lg px-2 py-2 data-selected:bg-accent/90"
                     >
                       <IconTile>
-                        <Icon className="size-4" />
+                        <Icon />
                       </IconTile>
-                      <span className="min-w-0 flex-1 truncate font-medium">{item.label}</span>
+                      <span className="min-w-0 flex-1 truncate text-sm font-medium">
+                        {item.label}
+                      </span>
                       <span className="text-[11px] text-muted-foreground/70">
                         {t("commandCenter.recent")}
                       </span>
@@ -442,12 +442,12 @@ export function CommandCenter() {
                     key={command.id}
                     value={commandSearchValue(command)}
                     onSelect={() => selectCommand(command)}
-                    className="group/command-item gap-3 rounded-xl px-2 py-2.5 data-selected:bg-accent/90"
+                    className="group/command-item gap-2.5 rounded-lg px-2 py-2 data-selected:bg-accent/90"
                   >
                     <IconTile>
-                      <command.icon className="size-4" />
+                      <command.icon />
                     </IconTile>
-                    <span className="font-medium">{command.label}</span>
+                    <span className="text-sm font-medium">{command.label}</span>
                   </CommandItem>
                 ))}
               </CommandGroup>
@@ -474,13 +474,15 @@ export function CommandCenter() {
                           key={`${hit.type}:${hit.id}`}
                           value={`${hit.type} ${hit.label} ${hit.description ?? ""} ${hit.id}`}
                           onSelect={() => selectHit(hit)}
-                          className="group/command-item gap-3 rounded-xl px-2 py-2.5 data-selected:bg-accent/90"
+                          className="group/command-item gap-2.5 rounded-lg px-2 py-2 data-selected:bg-accent/90"
                         >
                           <IconTile>
-                            <Icon className="size-4" />
+                            <Icon />
                           </IconTile>
                           <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-                            <span className="truncate font-medium leading-tight">{hit.label}</span>
+                            <span className="truncate text-sm font-medium leading-tight">
+                              {hit.label}
+                            </span>
                             {hit.description ? (
                               <span className="truncate text-xs text-muted-foreground">
                                 {hit.description}
@@ -529,12 +531,12 @@ export function CommandCenter() {
                       key={command.id}
                       value={commandSearchValue(command)}
                       onSelect={() => selectCommand(command)}
-                      className="group/command-item gap-3 rounded-xl px-2 py-2.5 data-selected:bg-accent/90"
+                      className="group/command-item gap-2.5 rounded-lg px-2 py-2 data-selected:bg-accent/90"
                     >
                       <IconTile>
-                        <command.icon className="size-4" />
+                        <command.icon />
                       </IconTile>
-                      <span className="font-medium">{command.label}</span>
+                      <span className="text-sm font-medium">{command.label}</span>
                     </CommandItem>
                   ))}
                 </CommandGroup>

@@ -99,22 +99,26 @@ export function DataTableFilters({
                   )}
                   key={pendingFilter ? `values-${pendingFilter.id}` : "filters"}
                 >
-                  {pendingFilter ? (
-                    <div className="px-1 pb-1">
-                      <Button
-                        className="h-8 rounded-full px-2 text-muted-foreground"
-                        onClick={() => setPendingFilter(null)}
-                        size="sm"
-                        type="button"
-                        variant="ghost"
-                      >
-                        <AppIcons.arrowLeft data-icon="inline-start" />
-                        {t("filters.title")}
-                      </Button>
-                    </div>
-                  ) : null}
                   <Command shouldFilter>
+                    {pendingFilter ? (
+                      <div className="relative flex h-8 items-center border-b border-border/60 px-1">
+                        <button
+                          aria-label={t("filters.title")}
+                          className="absolute left-0.5 z-10 grid size-7 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                          onClick={() => setPendingFilter(null)}
+                          type="button"
+                        >
+                          <AppIcons.arrowLeft className="size-3.5" />
+                        </button>
+                        {/* Centered title; equal side inset so back control doesn’t skew layout. */}
+                        <p className="w-full truncate px-8 text-center text-xs font-medium">
+                          {pendingFilter.label}
+                        </p>
+                      </div>
+                    ) : null}
                     <CommandInput
+                      autoFocus
+                      key={pendingFilter ? `search-${pendingFilter.id}` : "search-filters"}
                       onValueChange={setFilterSearch}
                       placeholder={
                         pendingFilter
@@ -127,7 +131,7 @@ export function DataTableFilters({
                       {pendingFilter ? (
                         <>
                           <CommandEmpty>{t("filters.noValues")}</CommandEmpty>
-                          <CommandGroup heading={pendingFilter.label}>
+                          <CommandGroup>
                             {getSelectableFilterOptions(pendingFilter).map((option) => (
                               <CommandItem
                                 data-checked={
@@ -236,13 +240,14 @@ function DataTableAppliedFilterChip({ filter }: { filter: DataTableFilterDefinit
       >
         <Command>
           <CommandInput
+            autoFocus
             onValueChange={setOptionSearch}
             placeholder={t("filters.searchLabel", { label: filter.label.toLowerCase() })}
             value={optionSearch}
           />
           <CommandList className="max-h-64">
             <CommandEmpty>{t("filters.noValues")}</CommandEmpty>
-            <CommandGroup heading={filter.label}>
+            <CommandGroup>
               {getSelectableFilterOptions(filter).map((option) => (
                 <CommandItem
                   data-checked={filter.value === option.value ? true : undefined}
