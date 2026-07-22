@@ -277,9 +277,9 @@ export function ClassicV1StorefrontPreview(
       {showTrust ? (
         <section className="mx-auto grid max-w-5xl gap-4 px-8 pb-12 sm:grid-cols-3">
           {[
-            { title: "Local delivery", body: "Delivery and pickup at checkout." },
-            { title: "Cash on delivery", body: "Pay when your order arrives." },
+            { title: "Easy checkout", body: "Order online in a few steps on this shop." },
             { title: "Clear options", body: "Pick size and color before you buy." },
+            { title: "Shop details", body: "Fulfillment and payment choices appear at checkout." },
           ].map((item) => (
             <div className="rounded-lg border p-4" key={item.title}>
               <div className="text-sm font-semibold">{item.title}</div>
