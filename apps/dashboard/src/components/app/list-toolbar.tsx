@@ -124,7 +124,7 @@ export function ListViewToggle<T extends string>({
     <SegmentedControl
       active="muted"
       ariaLabel="View"
-      className={cn("min-w-0 shrink-0", listToolbarHeightClass)}
+      className="h-8 shrink-0"
       fullWidth={false}
       onChange={onChange}
       options={options.map((option) => {
@@ -134,13 +134,13 @@ export function ListViewToggle<T extends string>({
           ariaLabel: option.label,
           label: (
             <>
-              <Icon className="size-3.5 shrink-0" />
-              <span>{option.label}</span>
+              <Icon className="size-3.5 shrink-0 opacity-80" />
+              <span className="text-sm font-medium">{option.label}</span>
             </>
           ),
         };
       })}
-      size="sm"
+      size="md"
       value={value}
     />
   );
