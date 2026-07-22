@@ -32,12 +32,40 @@ export function createMedusaPromotionService(options: Options) {
   const fetcher = options.fetcher ?? fetch;
   const base = options.medusaInternalUrl.replace(/\/$/, "");
   const headers = () => getAdminHeaders(options.adminApiToken ?? "");
-  const fail = (response?: Response | null) => ({
-    error:
-      response?.status === 401 ? "commerce_credentials_invalid" : "commerce_backend_unavailable",
-    ok: false as const,
-    status: response?.status === 401 ? 401 : 503,
-  });
+  /**
+   * Map Medusa failures to merchant-safe codes.
+   * Validation (400/422) must stay 4xx — never collapse to 503.
+   */
+  async function mapMedusaFailure(response?: Response | null): Promise<{
+    error: string;
+    ok: false;
+    status: number;
+  }> {
+    if (!response) {
+      return { error: "commerce_backend_unavailable", ok: false, status: 503 };
+    }
+    if (response.status === 401) {
+      return { error: "commerce_credentials_invalid", ok: false, status: 401 };
+    }
+    if (response.status === 404) {
+      return { error: "promotion_not_found", ok: false, status: 404 };
+    }
+    if (response.status === 400 || response.status === 422) {
+      const body = toRecord(await response.json().catch(() => ({})));
+      const blob = JSON.stringify(body).toLowerCase();
+      if (blob.includes("max_quantity")) {
+        return { error: "promotion_max_quantity_required", ok: false, status: 400 };
+      }
+      if (blob.includes("currency")) {
+        return { error: "promotion_currency_required", ok: false, status: 400 };
+      }
+      if (blob.includes("code") && (blob.includes("unique") || blob.includes("exist"))) {
+        return { error: "promotion_code_taken", ok: false, status: 400 };
+      }
+      return { error: "invalid_promotion", ok: false, status: 400 };
+    }
+    return { error: "commerce_backend_unavailable", ok: false, status: 503 };
+  }
 
   function isOwnedByTenant(raw: unknown, tenantId: string) {
     const promotion = toRecord(raw);
@@ -65,7 +93,7 @@ export function createMedusaPromotionService(options: Options) {
     const response = await fetcher(`${base}/admin/promotions?${search}`, {
       headers: headers(),
     }).catch(() => null);
-    if (!response?.ok) return fail(response);
+    if (!response?.ok) return mapMedusaFailure(response);
     const data = toRecord(await response.json().catch(() => ({})));
     const all = (Array.isArray(data.promotions) ? data.promotions : [])
       .filter((item) => isOwnedByTenant(item, input.tenantId))
@@ -85,10 +113,7 @@ export function createMedusaPromotionService(options: Options) {
       `${base}/admin/promotions/${encodeURIComponent(id)}?fields=+application_method,+application_method.target_rules,+application_method.buy_rules,+campaign,+rules`,
       { headers: headers() },
     ).catch(() => null);
-    if (!response?.ok)
-      return response?.status === 404
-        ? { error: "promotion_not_found", ok: false, status: 404 }
-        : fail(response);
+    if (!response?.ok) return mapMedusaFailure(response);
     const raw = (await response.json().catch(() => ({}))).promotion;
     return isOwnedByTenant(raw, tenantId)
       ? { ok: true, promotion: normalizePromotion(raw) }
@@ -101,7 +126,7 @@ export function createMedusaPromotionService(options: Options) {
       headers: headers(),
       method: "POST",
     }).catch(() => null);
-    if (!response?.ok) return fail(response);
+    if (!response?.ok) return mapMedusaFailure(response);
     return {
       ok: true,
       promotion: normalizePromotion((await response.json().catch(() => ({}))).promotion),
@@ -118,7 +143,7 @@ export function createMedusaPromotionService(options: Options) {
       `${base}/admin/promotions/${encodeURIComponent(input.promotionId)}`,
       { body: JSON.stringify(toUpdatePayload(input)), headers: headers(), method: "POST" },
     ).catch(() => null);
-    if (!response?.ok) return fail(response);
+    if (!response?.ok) return mapMedusaFailure(response);
 
     const detailResponse = await fetcher(
       `${base}/admin/promotions/${encodeURIComponent(input.promotionId)}?fields=+campaign`,
@@ -157,7 +182,9 @@ export function createMedusaPromotionService(options: Options) {
       `${base}/admin/promotions/${encodeURIComponent(input.promotionId)}`,
       { headers: headers(), method: "DELETE" },
     ).catch(() => null);
-    return response?.ok ? { deleted: true, id: input.promotionId, ok: true } : fail(response);
+    return response?.ok
+      ? { deleted: true, id: input.promotionId, ok: true }
+      : mapMedusaFailure(response);
   }
 
   return { createPromotion, deletePromotion, listPromotions, updatePromotion };
@@ -194,9 +221,15 @@ function toCreatePayload(input: MerchantPromotionInput) {
   }
 
   if (targetType === "items" || promotionType === "buyget") {
-    application_method.allocation = input.allocation ?? "each";
-  }
-  if (input.maxQuantity != null) {
+    const allocation = input.allocation ?? "each";
+    application_method.allocation = allocation;
+    // Medusa requires max_quantity when allocation is each/once.
+    if (allocation === "each") {
+      application_method.max_quantity = input.maxQuantity ?? 1;
+    } else if (input.maxQuantity != null) {
+      application_method.max_quantity = input.maxQuantity;
+    }
+  } else if (input.maxQuantity != null) {
     application_method.max_quantity = input.maxQuantity;
   }
 
@@ -216,7 +249,13 @@ function toCreatePayload(input: MerchantPromotionInput) {
     application_method.type = "percentage";
     application_method.value = 100;
     application_method.target_type = "items";
-    application_method.allocation = input.allocation ?? "each";
+    const allocation = input.allocation ?? "each";
+    application_method.allocation = allocation;
+    if (allocation === "each") {
+      application_method.max_quantity = input.maxQuantity ?? 1;
+    } else if (input.maxQuantity != null) {
+      application_method.max_quantity = input.maxQuantity;
+    }
   }
 
   const campaignName = input.campaignName?.trim() || code;
@@ -261,9 +300,17 @@ function toUpdatePayload(input: MerchantPromotionInput) {
     application_method.currency_code = (input.currencyCode ?? "etb").toLowerCase();
   }
   if (targetType === "items") {
-    application_method.allocation = input.allocation ?? "each";
-  }
-  if (input.maxQuantity !== undefined) {
+    const allocation = input.allocation ?? "each";
+    application_method.allocation = allocation;
+    if (allocation === "each") {
+      application_method.max_quantity =
+        input.maxQuantity !== undefined && input.maxQuantity != null
+          ? input.maxQuantity
+          : 1;
+    } else if (input.maxQuantity !== undefined && input.maxQuantity != null) {
+      application_method.max_quantity = input.maxQuantity;
+    }
+  } else if (input.maxQuantity !== undefined && input.maxQuantity != null) {
     application_method.max_quantity = input.maxQuantity;
   }
 

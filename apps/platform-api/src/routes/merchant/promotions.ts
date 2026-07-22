@@ -51,7 +51,7 @@ export function registerMerchantPromotionRoutes(
     });
     return result.ok
       ? context.json(result)
-      : context.json({ error: result.error }, result.status as 401 | 503);
+      : context.json({ error: result.error }, statusFromResult(result.status));
   });
   app.post("/platform/merchant/promotions", async (context) => {
     const merchant = await helpers.getAuthorizedMerchantContext(context);
@@ -66,7 +66,7 @@ export function registerMerchantPromotionRoutes(
     });
     return result.ok
       ? context.json(result, 201)
-      : context.json({ error: result.error }, result.status as 401 | 503);
+      : context.json({ error: result.error }, statusFromResult(result.status));
   });
   app.post("/platform/merchant/promotions/:promotionId", async (context) => {
     const merchant = await helpers.getAuthorizedMerchantContext(context);
@@ -82,7 +82,7 @@ export function registerMerchantPromotionRoutes(
     });
     return result.ok
       ? context.json(result)
-      : context.json({ error: result.error }, result.status as 401 | 404 | 503);
+      : context.json({ error: result.error }, statusFromResult(result.status));
   });
   app.delete("/platform/merchant/promotions/:promotionId", async (context) => {
     const merchant = await helpers.getAuthorizedMerchantContext(context);
@@ -95,8 +95,14 @@ export function registerMerchantPromotionRoutes(
     });
     return result.ok
       ? context.json(result)
-      : context.json({ error: result.error }, result.status as 401 | 404 | 503);
+      : context.json({ error: result.error }, statusFromResult(result.status));
   });
+}
+
+function statusFromResult(status: number): 400 | 401 | 404 | 503 {
+  if (status === 400 || status === 401 || status === 404 || status === 503) return status;
+  if (status >= 400 && status < 500) return 400;
+  return 503;
 }
 
 function toPromotionInput(data: z.infer<typeof promotionSchema>) {
