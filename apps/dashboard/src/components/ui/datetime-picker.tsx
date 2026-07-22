@@ -165,29 +165,29 @@ export function DateTimePicker({
         </Button>
       </PopoverTrigger>
       <PopoverContent
-        align="start"
+        align="end"
         className={cn(
-          "w-[min(24rem,calc(100vw-1.5rem))] gap-0 overflow-hidden rounded-2xl border bg-popover p-0 shadow-lg ring-1 ring-foreground/10",
+          "w-[min(22.5rem,calc(100vw-1.25rem))] gap-0 overflow-hidden rounded-2xl border bg-popover p-0 shadow-lg ring-1 ring-foreground/10",
           "duration-200 ease-out",
           "data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95",
           "data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
         )}
+        collisionPadding={16}
         data-datetime-picker=""
         onOpenAutoFocus={(event) => event.preventDefault()}
         onTouchMove={(event) => event.stopPropagation()}
         onWheel={(event) => event.stopPropagation()}
+        side="bottom"
         sideOffset={8}
       >
-        <div className="flex items-center justify-between gap-3 border-b px-3.5 py-2.5">
-          <div className="min-w-0">
-            <p className="truncate text-sm font-semibold tracking-tight">
-              {draftDate ? `${format(draftDate, "PP")} · ${displayTime}` : "Select date & time"}
-            </p>
-          </div>
+        <div className="flex items-center justify-between gap-2 border-b px-3 py-2">
+          <p className="min-w-0 truncate text-sm font-semibold tracking-tight">
+            {draftDate ? `${format(draftDate, "PP")} · ${displayTime}` : "Select date & time"}
+          </p>
           <SegmentedControl
             ariaLabel="Time format"
-            className="w-[7.25rem] shrink-0"
-            fullWidth={false}
+            className="w-[5.75rem] shrink-0"
+            fullWidth
             onChange={setFormat}
             options={[
               { id: "12h", label: "12h" },
@@ -198,75 +198,67 @@ export function DateTimePicker({
           />
         </div>
 
-        <div className="grid sm:grid-cols-[1fr_9.5rem]">
-          <div className="min-w-0 p-3 sm:border-r">
-            <Calendar
-              month={month}
-              onMonthChange={setMonth}
-              onSelect={pickDate}
-              selected={draftDate}
-            />
-            <div className="mt-2 flex flex-wrap gap-1">
-              <PresetChip
-                active={Boolean(draftDate && isToday(draftDate))}
-                label="Today"
-                onClick={() => pickDate(new Date())}
-              />
-              <PresetChip label="Tomorrow" onClick={() => pickDate(addDays(new Date(), 1))} />
-            </div>
-          </div>
+        <div className="p-3 pb-2">
+          <Calendar
+            month={month}
+            onMonthChange={setMonth}
+            onSelect={pickDate}
+            selected={draftDate}
+          />
+        </div>
 
-          <div className="flex min-h-0 flex-col border-t sm:border-t-0">
-            <div
-              className={cn(
-                "grid min-h-0 flex-1",
-                timeFormat === "12h" ? "grid-cols-3" : "grid-cols-2",
-              )}
-            >
-              {timeFormat === "24h" ? (
-                <TimeColumn
-                  label="H"
-                  onChange={(next) => pickTime(next, minute)}
-                  options={HOURS_24}
-                  value={hour}
-                />
-              ) : (
-                <TimeColumn
-                  label="H"
-                  onChange={(next) => pickTime(to24Hour(next, period), minute)}
-                  options={HOURS_12}
-                  value={hour12}
-                />
-              )}
+        <div className="border-t px-3 py-2.5">
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <p className="text-xs font-medium text-muted-foreground">Time</p>
+            <p className="text-sm font-semibold tabular-nums">{displayTime}</p>
+          </div>
+          <div
+            className={cn(
+              "grid overflow-hidden rounded-xl border bg-muted/20",
+              timeFormat === "12h" ? "grid-cols-3" : "grid-cols-2",
+            )}
+          >
+            {timeFormat === "24h" ? (
               <TimeColumn
-                label="M"
-                onChange={(next) => pickTime(hour, next)}
-                options={MINUTES}
-                value={minute}
+                label="Hour"
+                onChange={(next) => pickTime(next, minute)}
+                options={HOURS_24}
+                value={hour}
               />
-              {timeFormat === "12h" ? (
-                <PeriodColumn
-                  onChange={(nextPeriod) => pickTime(to24Hour(hour12, nextPeriod), minute)}
-                  value={period}
-                />
-              ) : null}
-            </div>
+            ) : (
+              <TimeColumn
+                label="Hour"
+                onChange={(next) => pickTime(to24Hour(next, period), minute)}
+                options={HOURS_12}
+                value={hour12}
+              />
+            )}
+            <TimeColumn
+              label="Min"
+              onChange={(next) => pickTime(hour, next)}
+              options={MINUTES}
+              value={minute}
+            />
+            {timeFormat === "12h" ? (
+              <PeriodColumn
+                onChange={(nextPeriod) => pickTime(to24Hour(hour12, nextPeriod), minute)}
+                value={period}
+              />
+            ) : null}
           </div>
         </div>
 
-        <div className="flex items-center justify-between gap-2 border-t bg-muted/20 px-3 py-2">
+        <div className="flex items-center justify-between gap-2 border-t px-3 py-2">
           <div className="flex flex-wrap gap-1">
+            <PresetChip
+              active={Boolean(draftDate && isToday(draftDate))}
+              label="Today"
+              onClick={() => pickDate(new Date())}
+            />
+            <PresetChip label="Tomorrow" onClick={() => pickDate(addDays(new Date(), 1))} />
             <PresetChip
               label={timeFormat === "12h" ? "9 AM" : "09:00"}
               onClick={() => pickTime(9, 0)}
-            />
-            <PresetChip
-              label={timeFormat === "12h" ? "12 PM" : "12:00"}
-              onClick={() => pickTime(12, 0)}
-            />
-            <PresetChip
-              label={timeFormat === "12h" ? "6 PM" : "18:00"}
-              onClick={() => pickTime(18, 0)}
             />
           </div>
           <div className="flex shrink-0 gap-1">
@@ -378,10 +370,10 @@ function PeriodColumn({
   return (
     <div className="flex min-h-0 min-w-0 flex-col overflow-hidden border-l">
       <p className="shrink-0 border-b py-1.5 text-center text-[10px] font-medium tracking-wide text-muted-foreground uppercase">
-        —
+        AM/PM
       </p>
       <div
-        className="flex flex-col justify-center gap-1.5 p-1.5"
+        className="flex flex-col gap-1 p-1.5"
         style={{ height: TIME_LIST_HEIGHT_PX, maxHeight: TIME_LIST_HEIGHT_PX }}
       >
         {(["AM", "PM"] as const).map((period) => {
@@ -389,7 +381,7 @@ function PeriodColumn({
           return (
             <button
               className={cn(
-                "flex-1 rounded-xl text-sm font-semibold transition-colors outline-none",
+                "h-10 shrink-0 rounded-lg text-sm font-semibold transition-colors outline-none",
                 "hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 focus-visible:ring-ring/50",
                 active &&
                   "bg-primary text-primary-foreground shadow-sm hover:bg-primary/90 hover:text-primary-foreground",
