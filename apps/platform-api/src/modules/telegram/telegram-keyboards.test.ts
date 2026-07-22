@@ -1,7 +1,15 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { hitButtonLabel, productPickInline, qtyInline } from "./telegram-keyboards.js";
+import {
+  cartMenuInline,
+  formatCartSummary,
+  hitButtonLabel,
+  matchesMainLabel,
+  MAIN_KEYBOARD_LABELS,
+  productPickInline,
+  qtyInline,
+} from "./telegram-keyboards.js";
 
 describe("telegram-keyboards", () => {
   it("sale qty chips never include 0", () => {
@@ -29,6 +37,37 @@ describe("telegram-keyboards", () => {
     assert.ok(flat.includes("t:search"));
     assert.ok(flat.includes("t:i0"));
     assert.ok(kb.inline_keyboard[0]![0]!.text.includes("Shirt · M"));
+  });
+
+  it("product pick with cart offers continue", () => {
+    const kb = productPickInline([], { cartCount: 2 });
+    const flat = kb.inline_keyboard.flat().map((b) => b.callback_data);
+    assert.ok(flat.includes("t:checkout"));
+  });
+
+  it("cart menu has add and checkout", () => {
+    const data = JSON.stringify(cartMenuInline(2));
+    assert.ok(data.includes("t:add"));
+    assert.ok(data.includes("t:checkout"));
+  });
+
+  it("formatCartSummary lists lines", () => {
+    const text = formatCartSummary([
+      {
+        productId: "p",
+        productTitle: "Shirt",
+        variantId: "v",
+        variantTitle: "M",
+        quantity: 2,
+      },
+    ]);
+    assert.ok(text.includes("Shirt"));
+    assert.ok(text.includes("2"));
+  });
+
+  it("matches main keyboard labels with emoji", () => {
+    assert.equal(matchesMainLabel("🛒 New sale", MAIN_KEYBOARD_LABELS.newSale), true);
+    assert.equal(matchesMainLabel("New sale", MAIN_KEYBOARD_LABELS.newSale), true);
   });
 
   it("distinguishes same product different variants", () => {

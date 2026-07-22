@@ -171,35 +171,36 @@ export function formatOrderCardHtml(order: MerchantOrder): string {
   const phone = orderCustomerPhone(order);
   const items = order.items ?? [];
 
-  const lines: string[] = [`<b>Order ${ref}</b>`];
-  if (name && !isPlaceholderCustomerName(name)) lines.push(name);
-  if (phone) lines.push(phone);
+  const lines: string[] = [`🧾 <b>Order ${ref}</b>`];
+  if (name && !isPlaceholderCustomerName(name)) lines.push(`👤 ${name}`);
+  if (phone) lines.push(`📱 ${phone}`);
   if (order.email && !isSyntheticOrderEmail(order.email)) {
-    lines.push(order.email);
+    lines.push(`✉️ ${order.email}`);
   }
-  if (total) lines.push(`Total ${total}`);
+  if (total) lines.push(`💰 <b>${total}</b>`);
   if (order.paymentStatus) {
     lines.push(
-      `Payment ${humanizeToken(order.paymentStatus)}${
+      `💳 ${humanizeToken(order.paymentStatus)}${
         order.paymentMethod ? ` · ${humanizeToken(order.paymentMethod)}` : ""
       }`,
     );
   }
   if (order.fulfillmentStatus) {
-    lines.push(`Status ${humanizeToken(order.fulfillmentStatus)}`);
+    lines.push(`📦 ${humanizeToken(order.fulfillmentStatus)}`);
   }
   if (order.delivery?.choice) {
-    lines.push(humanizeToken(order.delivery.choice));
+    lines.push(`🚚 ${humanizeToken(order.delivery.choice)}`);
   }
   if (order.shippingAddress?.city) {
-    lines.push(order.shippingAddress.city);
+    lines.push(`📍 ${order.shippingAddress.city}`);
   }
   if (items.length > 0) {
     lines.push("");
+    lines.push("<b>Items</b>");
     for (const item of items.slice(0, 8)) {
-      lines.push(`· ${formatOrderLineItemLabel(item)}`);
+      lines.push(`• ${formatOrderLineItemLabel(item)}`);
     }
-    if (items.length > 8) lines.push(`· +${items.length - 8} more`);
+    if (items.length > 8) lines.push(`• +${items.length - 8} more`);
   }
   return lines.join("\n");
 }

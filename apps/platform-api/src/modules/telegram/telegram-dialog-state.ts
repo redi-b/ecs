@@ -9,6 +9,7 @@ export type TelegramDialogStep =
   | "pick_product"
   | "search"
   | "await_qty"
+  | "cart_menu"
   | "await_contact"
   | "await_name"
   | "await_email"
@@ -25,6 +26,15 @@ export type TelegramProductHit = {
   availableQuantity?: number | null;
 };
 
+/** Line on a multi-product offline sale. */
+export type TelegramCartLine = {
+  productId: string;
+  productTitle: string;
+  variantId: string;
+  variantTitle: string;
+  quantity: number;
+};
+
 export type TelegramDialogState = {
   flow: TelegramDialogFlow;
   step: TelegramDialogStep;
@@ -37,11 +47,14 @@ export type TelegramDialogState = {
   hits?: TelegramProductHit[];
   /** Parallel to t:o{n} callbacks on orders_list */
   orderIds?: string[];
+  /** Current product being qty-edited (sale cart line or stock). */
   productId?: string;
   variantId?: string;
   productTitle?: string;
   variantTitle?: string;
   quantity?: number;
+  /** Multi-item cart for sales (stock ignores). */
+  cart?: TelegramCartLine[];
   customerPhone?: string;
   customerName?: string;
   /** Real email or shop walk-in address used for Medusa customer/order. */

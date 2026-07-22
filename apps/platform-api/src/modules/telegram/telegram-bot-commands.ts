@@ -8,7 +8,7 @@ export const DEFAULT_BOT_COMMANDS = [
 export const OPERATOR_BOT_COMMANDS = [
   { command: "start", description: "Open shop tools" },
   { command: "menu", description: "Shop menu" },
-  { command: "sale", description: "New offline sale" },
+  { command: "sale", description: "New offline sale (multi-item)" },
   { command: "stock", description: "Update stock" },
   { command: "today", description: "Today’s summary" },
   { command: "orders", description: "Recent orders" },

@@ -59,9 +59,9 @@ describe("telegram callback tokens", () => {
     const keyboard = buildOrderActionKeyboard({ orderId, tenantId, secret });
     assert.ok(keyboard);
     assert.equal(keyboard.inline_keyboard.length, 2);
-    assert.equal(keyboard.inline_keyboard[0]?.[0]?.text, "Mark paid");
-    assert.equal(keyboard.inline_keyboard[0]?.[1]?.text, "Mark ready");
-    assert.equal(keyboard.inline_keyboard[1]?.[0]?.text, "Details");
+    assert.equal(keyboard.inline_keyboard[0]?.[0]?.text, "💰 Mark paid");
+    assert.equal(keyboard.inline_keyboard[0]?.[1]?.text, "📦 Mark ready");
+    assert.equal(keyboard.inline_keyboard[1]?.[0]?.text, "📄 Details");
     assert.equal(keyboard.inline_keyboard[1]?.[1]?.text, "Cancel order");
   });
 
@@ -74,7 +74,7 @@ describe("telegram callback tokens", () => {
     });
     assert.ok(keyboard);
     const labels = keyboard.inline_keyboard.flat().map((b) => b.text);
-    assert.deepEqual(labels, ["Mark ready", "Details", "Cancel order"]);
+    assert.deepEqual(labels, ["📦 Mark ready", "📄 Details", "Cancel order"]);
   });
 });
 

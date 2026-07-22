@@ -145,10 +145,10 @@ export function buildSettlementMethodKeyboard(input: {
   secret: string;
 }): { inline_keyboard: Array<Array<{ text: string; callback_data: string }>> } | null {
   const specs: Array<{ code: TelegramSettlementCode; text: string }> = [
-    { code: "0", text: "Cash" },
-    { code: "1", text: "Telebirr" },
-    { code: "2", text: "CBE Birr" },
-    { code: "3", text: "Bank transfer" },
+    { code: "0", text: "💵 Cash" },
+    { code: "1", text: "📱 Telebirr" },
+    { code: "2", text: "🏦 CBE Birr" },
+    { code: "3", text: "🏦 Bank transfer" },
     { code: "4", text: "Other" },
   ];
   const orderId = input.orderId.trim();
@@ -185,9 +185,9 @@ export function buildOrderActionKeyboard(input: {
 }): { inline_keyboard: Array<Array<{ text: string; callback_data: string }>> } | null {
   const exclude = new Set(input.exclude ?? []);
   const specs: Array<{ action: TelegramOrderAction; text: string }> = [
-    { action: "paid", text: "Mark paid" },
-    { action: "ready", text: "Mark ready" },
-    { action: "details", text: "Details" },
+    { action: "paid", text: "💰 Mark paid" },
+    { action: "ready", text: "📦 Mark ready" },
+    { action: "details", text: "📄 Details" },
     { action: "cancel", text: "Cancel order" },
   ];
 
