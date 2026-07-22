@@ -220,9 +220,9 @@ export async function OrderDetail({ action, order, tenantId }: OrderDetailProps)
                       item.productTitle?.trim() ||
                       item.title?.trim() ||
                       t("orders.detail.fallbackItem");
-                    const variantLabel = item.variantTitle?.trim() || null;
+                    const variantLabel = item.variantTitle?.trim() ?? "";
                     const showVariant =
-                      Boolean(variantLabel) &&
+                      variantLabel.length > 0 &&
                       variantLabel.toLowerCase() !== productName.toLowerCase();
                     return (
                       <TableRow key={item.id}>
