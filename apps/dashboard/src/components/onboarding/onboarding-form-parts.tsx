@@ -1,20 +1,23 @@
 "use client";
 
 import type { StorefrontTemplateCatalogItem } from "@ecs/contracts";
-import { useMemo, useState } from "react";
+import * as React from "react";
+import { useMemo } from "react";
 
 import { AppIcons } from "@/components/app/icons";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+  Combobox,
+  ComboboxChip,
+  ComboboxChips,
+  ComboboxChipsInput,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxItem,
+  ComboboxList,
+  ComboboxValue,
+  useComboboxAnchor,
+} from "@/components/ui/combobox";
 import { Switch } from "@/components/ui/switch";
 import {
   BUSINESS_CATEGORY_OPTIONS,
@@ -38,129 +41,47 @@ export function CategoryCombobox({
   values: string[];
 }) {
   const { t } = useI18n();
-  const [open, setOpen] = useState(false);
-  const [query, setQuery] = useState("");
-
-  const selected = useMemo(
-    () => new Set(values.map((value) => value.trim()).filter(Boolean)),
-    [values],
-  );
+  const anchor = useComboboxAnchor();
 
   // Preset list only — free-text custom categories are disabled for now.
-  const options = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return BUSINESS_CATEGORY_OPTIONS.filter(
-      (option) => !q || option.toLowerCase().includes(q),
-    );
-  }, [query]);
-
-  function toggle(option: string) {
-    const next = new Set(selected);
-    if (next.has(option)) next.delete(option);
-    else next.add(option);
-    onChange([...next]);
-  }
-
-  function remove(option: string) {
-    onChange(values.filter((value) => value !== option));
-  }
-
-  const triggerLabel =
-    values.length === 0
-      ? placeholder
-      : values.length === 1
-        ? values[0]
-        : t("onboarding.categorySelectedCount", { count: values.length });
+  const items = useMemo(() => [...BUSINESS_CATEGORY_OPTIONS], []);
 
   return (
-    <div className="space-y-2">
-      <Popover
-        onOpenChange={(next) => {
-          setOpen(next);
-          if (!next) setQuery("");
-        }}
-        open={open}
-      >
-        <PopoverTrigger asChild>
-          <Button
-            aria-expanded={open}
-            className={cn(
-              "h-11 w-full justify-between rounded-xl px-3 font-normal shadow-none",
-              values.length === 0 && "text-muted-foreground",
-            )}
-            id={id}
-            role="combobox"
-            type="button"
-            variant="outline"
-          >
-            <span className="min-w-0 flex-1 truncate text-left">{triggerLabel}</span>
-            <AppIcons.arrowDown className="size-4 shrink-0 opacity-60" data-icon="inline-end" />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent
-          align="start"
-          className="w-[var(--radix-popover-trigger-width)] overflow-hidden p-0"
-          collisionPadding={16}
-          onWheel={(event) => event.stopPropagation()}
-        >
-          <Command className="h-auto max-h-72 w-full min-h-0" shouldFilter={false}>
-            <CommandInput
-              autoFocus
-              onValueChange={setQuery}
-              placeholder={searchPlaceholder}
-              value={query}
-            />
-            <CommandList
-              className="max-h-60 min-h-0 overflow-y-auto overscroll-contain"
-              onWheel={(event) => event.stopPropagation()}
-            >
-              <CommandEmpty>
-                <span className="block py-6 text-center text-sm text-muted-foreground">
-                  {t("onboarding.categoryEmpty")}
-                </span>
-              </CommandEmpty>
-              <CommandGroup className="overflow-visible">
-                {options.map((option) => {
-                  const isSelected = selected.has(option);
-                  return (
-                    <CommandItem
-                      data-checked={isSelected ? true : undefined}
-                      key={option}
-                      onSelect={() => toggle(option)}
-                      value={option}
-                    >
-                      <span className="truncate">{option}</span>
-                    </CommandItem>
-                  );
-                })}
-              </CommandGroup>
-            </CommandList>
-          </Command>
-        </PopoverContent>
-      </Popover>
-
-      {values.length > 0 ? (
-        <div className="flex flex-wrap gap-1.5">
-          {values.map((value) => (
-            <Badge
-              className="max-w-full gap-1 rounded-md px-1.5 py-0.5 font-normal"
-              key={value}
-              variant="secondary"
-            >
-              <span className="truncate">{value}</span>
-              <button
-                aria-label={t("onboarding.categoryRemove", { value })}
-                className="rounded-sm opacity-60 hover:opacity-100"
-                onClick={() => remove(value)}
-                type="button"
-              >
-                <AppIcons.close className="size-3" />
-              </button>
-            </Badge>
-          ))}
-        </div>
-      ) : null}
-    </div>
+    <Combobox
+      autoHighlight
+      items={items}
+      multiple
+      onValueChange={(next) => {
+        onChange(Array.isArray(next) ? next : []);
+      }}
+      value={values}
+    >
+      <ComboboxChips className="min-h-11 w-full rounded-xl" ref={anchor}>
+        <ComboboxValue>
+          {(selected: string[]) => (
+            <React.Fragment>
+              {selected.map((value) => (
+                <ComboboxChip key={value}>{value}</ComboboxChip>
+              ))}
+              <ComboboxChipsInput
+                id={id}
+                placeholder={selected.length === 0 ? placeholder : searchPlaceholder}
+              />
+            </React.Fragment>
+          )}
+        </ComboboxValue>
+      </ComboboxChips>
+      <ComboboxContent anchor={anchor} className="w-(--anchor-width) min-w-(--anchor-width)">
+        <ComboboxEmpty>{t("onboarding.categoryEmpty")}</ComboboxEmpty>
+        <ComboboxList>
+          {(item) => (
+            <ComboboxItem key={item} value={item}>
+              {item}
+            </ComboboxItem>
+          )}
+        </ComboboxList>
+      </ComboboxContent>
+    </Combobox>
   );
 }
 
