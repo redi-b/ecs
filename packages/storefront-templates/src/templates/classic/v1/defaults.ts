@@ -3,7 +3,7 @@ import type { ClassicThemeTokens, ClassicV1Data } from "./schema";
 export const classicV1Defaults: ClassicV1Data = {
   announcement: {
     enabled: true,
-    text: "Local delivery and pickup across Addis",
+    text: "Order online from our shop in Addis",
   },
   header: {
     navigation: [
@@ -16,7 +16,7 @@ export const classicV1Defaults: ClassicV1Data = {
     hero: {
       enabled: true,
       title: "Find something you love",
-      subtitle: "Browse new arrivals, pick your options, and check out with delivery or pickup.",
+      subtitle: "Browse new arrivals, pick your options, and check out in a few steps.",
       primaryCtaLabel: "Shop now",
       primaryCtaHref: "/products",
       secondaryCtaLabel: "View cart",
@@ -41,16 +41,16 @@ export const classicV1Defaults: ClassicV1Data = {
       enabled: true,
       items: [
         {
-          title: "Local delivery",
-          body: "Delivery and pickup available at checkout.",
-        },
-        {
-          title: "Cash on delivery",
-          body: "Pay when your order arrives.",
+          title: "Easy checkout",
+          body: "Order online in a few steps on this shop.",
         },
         {
           title: "Clear options",
           body: "Choose size, color, and more before you buy.",
+        },
+        {
+          title: "Shop details",
+          body: "Fulfillment and payment choices appear at checkout.",
         },
       ],
     },
@@ -61,7 +61,7 @@ export const classicV1Defaults: ClassicV1Data = {
     },
   },
   footer: {
-    blurb: "Delivery, pickup, and cash on delivery when available.",
+    blurb: "Fulfillment and payment options are shown at checkout.",
     socialLinks: [],
   },
 };

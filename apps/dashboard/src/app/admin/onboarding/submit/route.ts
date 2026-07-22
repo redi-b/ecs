@@ -44,8 +44,9 @@ export async function POST(request: Request) {
     return failOnboarding(request, createResult.message, payload, wantsJson);
   }
 
-  // Apply checkout preferences chosen during onboarding (best-effort after provision).
+  // Apply checkout preferences chosen during onboarding (after provision).
   const tenantId = createResult.mutation.tenant.id;
+  let deliveryPrefsApplied = true;
   if (tenantId) {
     const deliveryResult = await updateMerchantDeliverySettings({
       cookieHeader,
@@ -64,12 +65,15 @@ export async function POST(request: Request) {
     });
 
     if (!deliveryResult.ok) {
+      deliveryPrefsApplied = false;
       console.warn("[onboarding/submit] delivery prefs not applied", {
         handle,
         message: deliveryResult.message,
         tenantId,
       });
     }
+  } else {
+    deliveryPrefsApplied = false;
   }
 
   const redirectTo =
@@ -77,10 +81,21 @@ export async function POST(request: Request) {
     `http://${createResult.mutation.tenant.primaryDomain.hostname}/admin`;
 
   if (wantsJson) {
-    return NextResponse.json({ ok: true as const, redirectTo });
+    return NextResponse.json({
+      ok: true as const,
+      redirectTo,
+      deliveryPrefsApplied,
+      ...(deliveryPrefsApplied
+        ? {}
+        : { warning: "delivery_prefs_not_applied" as const }),
+    });
   }
 
-  return NextResponse.redirect(redirectTo, { status: 303 });
+  const redirectUrl = new URL(redirectTo);
+  if (!deliveryPrefsApplied) {
+    redirectUrl.searchParams.set("onboardingWarning", "delivery_prefs_not_applied");
+  }
+  return NextResponse.redirect(redirectUrl.toString(), { status: 303 });
 }
 
 async function readOnboardingPayload(request: Request) {

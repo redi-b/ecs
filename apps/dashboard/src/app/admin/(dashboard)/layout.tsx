@@ -7,6 +7,7 @@ import { AppHeader } from "@/components/app/app-header";
 import { AppSidebar } from "@/components/app/app-sidebar";
 import { BreadcrumbLabelsProvider } from "@/components/app/breadcrumb-labels";
 import { DashboardAccessState } from "@/components/app/dashboard-access-state";
+import { OnboardingWarningToast } from "@/components/app/onboarding-warning-toast";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { getTranslations } from "@/i18n/server";
@@ -112,6 +113,7 @@ export default async function AdminDashboardLayout({ children }: { children: Rea
           <SidebarInset>
             <BreadcrumbLabelsProvider>
               <AppHeader />
+              <OnboardingWarningToast />
               {children}
             </BreadcrumbLabelsProvider>
           </SidebarInset>

@@ -248,12 +248,26 @@ export function ShopOnboardingForm({
       error?: string;
       ok?: boolean;
       redirectTo?: string;
+      deliveryPrefsApplied?: boolean;
+      warning?: string;
     } | null;
 
     if (!response?.ok || !data?.ok || !data.redirectTo) {
       setSubmitError(mapOnboardingError(data?.error, t));
       setIsSubmitting(false);
       return;
+    }
+
+    if (data.deliveryPrefsApplied === false || data.warning === "delivery_prefs_not_applied") {
+      // Shop exists; surface that fulfillment prefs still need Settings → Fulfillment.
+      try {
+        window.sessionStorage.setItem(
+          "ecs:onboarding-warning",
+          "delivery_prefs_not_applied",
+        );
+      } catch {
+        // ignore storage failures
+      }
     }
 
     window.location.assign(data.redirectTo);
@@ -504,28 +518,36 @@ export function ShopOnboardingForm({
                 </div>
 
                 <div className="rounded-xl border border-border/90 p-4 sm:p-5">
-                  <p className="text-sm font-semibold tracking-tight">Checkout preferences</p>
+                  <p className="text-sm font-semibold tracking-tight">
+                    {t("onboarding.checkoutPrefsTitle")}
+                  </p>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    Starting defaults for how customers place orders. You can change these later in
-                    Settings → Fulfillment.
+                    {t("onboarding.checkoutPrefsHelp")}
                   </p>
                   <div className="mt-4 grid gap-3">
                     <PreferenceToggle
                       checked={deliveryEnabled}
-                      description="Customers can request local delivery."
-                      label="Offer delivery"
-                      onCheckedChange={setDeliveryEnabled}
+                      description={t("onboarding.offerDeliveryHelp")}
+                      label={t("onboarding.offerDelivery")}
+                      onCheckedChange={(checked) => {
+                        // Keep at least one fulfillment method for checkout.
+                        if (!checked && !pickupEnabled) return;
+                        setDeliveryEnabled(checked);
+                      }}
                     />
                     <PreferenceToggle
                       checked={pickupEnabled}
-                      description="Customers can collect orders themselves."
-                      label="Offer pickup"
-                      onCheckedChange={setPickupEnabled}
+                      description={t("onboarding.offerPickupHelp")}
+                      label={t("onboarding.offerPickup")}
+                      onCheckedChange={(checked) => {
+                        if (!checked && !deliveryEnabled) return;
+                        setPickupEnabled(checked);
+                      }}
                     />
                     <PreferenceToggle
                       checked={phoneConfirmationRequired}
-                      description="Require a phone number before checkout."
-                      label="Require phone number"
+                      description={t("onboarding.requirePhoneHelp")}
+                      label={t("onboarding.requirePhone")}
                       onCheckedChange={setPhoneConfirmationRequired}
                     />
                   </div>
@@ -588,6 +610,17 @@ export function ShopOnboardingForm({
                       className="sm:col-span-2"
                       label={t("onboarding.selectedStorefront")}
                       value={selectedTemplate?.name ?? templateKey}
+                    />
+                    <ReviewItem
+                      className="sm:col-span-2"
+                      label={t("onboarding.reviewFulfillment")}
+                      value={[
+                        deliveryEnabled ? t("onboarding.deliveryOn") : t("onboarding.deliveryOff"),
+                        pickupEnabled ? t("onboarding.pickupOn") : t("onboarding.pickupOff"),
+                        phoneConfirmationRequired
+                          ? t("onboarding.phoneRequired")
+                          : t("onboarding.phoneOptional"),
+                      ].join(" · ")}
                     />
                   </dl>
                 </section>
