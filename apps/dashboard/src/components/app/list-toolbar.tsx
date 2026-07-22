@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { type AppIcon, AppIcons } from "@/components/app/icons";
 import { Button } from "@/components/ui/button";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
+import { SegmentedControl } from "@/components/ui/segmented-control";
 import { cn } from "@/lib/utils";
 
 /**
@@ -109,11 +110,7 @@ export function ListToolbarSearch({
   );
 }
 
-/**
- * Segmented view switcher for media, taxonomy, and other lists.
- * Icon + visible label (no hover-only tooltips) for mobile clarity.
- * Outer track matches listToolbarHeightClass so it lines up with actions.
- */
+/** Segmented list view switcher (table / tree / grid). */
 export function ListViewToggle<T extends string>({
   options,
   onChange,
@@ -124,36 +121,27 @@ export function ListViewToggle<T extends string>({
   value: T;
 }) {
   return (
-    <div
-      className={cn(
-        "inline-flex shrink-0 items-stretch border bg-background/70 p-px",
-        listToolbarHeightClass,
-        listToolbarRadiusClass,
-      )}
-      role="group"
-    >
-      {options.map((option) => {
+    <SegmentedControl
+      active="muted"
+      ariaLabel="View"
+      className={cn("min-w-0 shrink-0", listToolbarHeightClass)}
+      fullWidth={false}
+      onChange={onChange}
+      options={options.map((option) => {
         const Icon = option.icon;
-        const active = value === option.value;
-        return (
-          <Button
-            aria-label={option.label}
-            aria-pressed={active}
-            className={cn(
-              "h-auto min-h-0 gap-1.5 rounded-full px-2.5 text-sm font-medium shadow-none",
-              active ? "bg-muted text-foreground" : "text-muted-foreground hover:text-foreground",
-            )}
-            key={option.value}
-            onClick={() => onChange(option.value)}
-            size="sm"
-            type="button"
-            variant="ghost"
-          >
-            <Icon className="size-3.5 shrink-0" />
-            <span>{option.label}</span>
-          </Button>
-        );
+        return {
+          id: option.value,
+          ariaLabel: option.label,
+          label: (
+            <>
+              <Icon className="size-3.5 shrink-0" />
+              <span>{option.label}</span>
+            </>
+          ),
+        };
       })}
-    </div>
+      size="sm"
+      value={value}
+    />
   );
 }

@@ -55,7 +55,11 @@ export function useI18n() {
 
   return {
     formatDate: (value: Date | number) =>
-      new Intl.DateTimeFormat(locale).format(value instanceof Date ? value : new Date(value)),
+      new Intl.DateTimeFormat(locale === "am" ? "am-ET" : "en-GB", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      }).format(value instanceof Date ? value : new Date(value)),
     formatNumber: (value: number, options?: Intl.NumberFormatOptions) =>
       new Intl.NumberFormat(locale, options).format(value),
     isLocalePending: isFetchPending || isTransitionPending,
