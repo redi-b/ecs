@@ -1,5 +1,5 @@
 import type { MedusaRequest, MedusaResponse } from "@medusajs/framework/http";
-import { updateShippingOptionsWorkflow } from "@medusajs/core-flows";
+import { updateShippingOptionsWorkflow } from "@medusajs/medusa/core-flows";
 
 function getInternalToken(request: MedusaRequest) {
   return request.headers["x-platform-internal-token"];
