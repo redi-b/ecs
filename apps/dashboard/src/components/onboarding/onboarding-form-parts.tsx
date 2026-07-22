@@ -1,23 +1,11 @@
 "use client";
 
 import type { StorefrontTemplateCatalogItem } from "@ecs/contracts";
-import * as React from "react";
 import { useMemo } from "react";
 
 import { AppIcons } from "@/components/app/icons";
+import { MultiSearchableCombobox } from "@/components/app/searchable-combobox";
 import { Badge } from "@/components/ui/badge";
-import {
-  Combobox,
-  ComboboxChip,
-  ComboboxChips,
-  ComboboxChipsInput,
-  ComboboxContent,
-  ComboboxEmpty,
-  ComboboxItem,
-  ComboboxList,
-  ComboboxValue,
-  useComboboxAnchor,
-} from "@/components/ui/combobox";
 import { Switch } from "@/components/ui/switch";
 import {
   BUSINESS_CATEGORY_OPTIONS,
@@ -41,47 +29,31 @@ export function CategoryCombobox({
   values: string[];
 }) {
   const { t } = useI18n();
-  const anchor = useComboboxAnchor();
 
   // Preset list only — free-text custom categories are disabled for now.
-  const items = useMemo(() => [...BUSINESS_CATEGORY_OPTIONS], []);
+  const options = useMemo(
+    () =>
+      BUSINESS_CATEGORY_OPTIONS.map((label) => ({
+        value: label,
+        label,
+        keywords: label,
+      })),
+    [],
+  );
 
   return (
-    <Combobox
-      autoHighlight
-      items={items}
-      multiple
-      onValueChange={(next) => {
-        onChange(Array.isArray(next) ? next : []);
-      }}
-      value={values}
-    >
-      <ComboboxChips className="min-h-11 w-full rounded-xl" ref={anchor}>
-        <ComboboxValue>
-          {(selected: string[]) => (
-            <React.Fragment>
-              {selected.map((value) => (
-                <ComboboxChip key={value}>{value}</ComboboxChip>
-              ))}
-              <ComboboxChipsInput
-                id={id}
-                placeholder={selected.length === 0 ? placeholder : searchPlaceholder}
-              />
-            </React.Fragment>
-          )}
-        </ComboboxValue>
-      </ComboboxChips>
-      <ComboboxContent anchor={anchor} className="w-(--anchor-width) min-w-(--anchor-width)">
-        <ComboboxEmpty>{t("onboarding.categoryEmpty")}</ComboboxEmpty>
-        <ComboboxList>
-          {(item) => (
-            <ComboboxItem key={item} value={item}>
-              {item}
-            </ComboboxItem>
-          )}
-        </ComboboxList>
-      </ComboboxContent>
-    </Combobox>
+    <MultiSearchableCombobox
+      className="h-11"
+      emptyLabel={t("onboarding.categoryEmpty")}
+      id={id}
+      onChange={onChange}
+      options={options}
+      placeholder={placeholder}
+      removeLabel={(label) => t("onboarding.categoryRemove", { value: label })}
+      searchPlaceholder={searchPlaceholder}
+      selectedCountLabel={(count) => t("onboarding.categorySelectedCount", { count })}
+      values={values}
+    />
   );
 }
 

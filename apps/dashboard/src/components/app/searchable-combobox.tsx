@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import type * as React from "react";
+import { useEffect, useMemo, useRef } from "react";
 
 import {
   Combobox,
@@ -9,55 +10,45 @@ import {
   ComboboxInput,
   ComboboxItem,
   ComboboxList,
+  ComboboxTrigger,
+  ComboboxValue,
 } from "@/components/ui/combobox";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   notifyNestedOverlayChange,
   releaseNestedOverlayIfOpen,
 } from "@/lib/nested-overlay";
 import { cn } from "@/lib/utils";
+import { XIcon } from "lucide-react";
 
 export type SearchableComboboxOption = {
   value: string;
   label: string;
   keywords?: string;
+  description?: string;
 };
 
 type SearchableComboboxProps = {
   disabled?: boolean;
   emptyLabel: string;
   /**
-   * When set, shows a clear control so the selection can be emptied.
+   * When set, selection can be cleared (clear control in the search field).
    * Cleared value calls `onChange("")`.
    */
   noneLabel?: string;
   onChange: (value: string) => void;
   options: SearchableComboboxOption[];
   placeholder: string;
-  /** Kept for call-site compatibility; the same input is display + filter. */
   searchPlaceholder?: string;
   value: string;
   className?: string;
   id?: string;
+  /** Optional custom row for advanced lists (banks with meta, customers, etc.). */
+  renderItem?: (item: SearchableComboboxOption) => React.ReactNode;
 };
 
-/**
- * Thin single-select over the official shadcn Combobox.
- * Maps string ids ↔ `{ value, label }` options used across the dashboard.
- */
-export function SearchableCombobox({
-  disabled,
-  emptyLabel,
-  noneLabel,
-  onChange,
-  options,
-  placeholder,
-  value,
-  className,
-  id,
-}: SearchableComboboxProps) {
-  const selected = options.find((option) => option.value === value) ?? null;
-  // Clear only when the call site allows empty selection *and* something is selected.
-  const canClear = Boolean(noneLabel) && Boolean(selected);
+function useNestedOverlaySync() {
   const layerIdRef = useRef<symbol | null>(null);
   const openRef = useRef(false);
 
@@ -69,54 +60,281 @@ export function SearchableCombobox({
     };
   }, []);
 
+  return {
+    onOpenChange(open: boolean) {
+      if (open) {
+        layerIdRef.current = notifyNestedOverlayChange(true);
+        openRef.current = true;
+      } else {
+        notifyNestedOverlayChange(false, layerIdRef.current ?? undefined);
+        layerIdRef.current = null;
+        openRef.current = false;
+      }
+    },
+  };
+}
+
+function matchesOption(item: SearchableComboboxOption, query: string) {
+  const q = query.trim().toLowerCase();
+  if (!q) return true;
+  return (
+    item.label.toLowerCase().includes(q) ||
+    item.value.toLowerCase().includes(q) ||
+    (item.keywords?.toLowerCase().includes(q) ?? false) ||
+    (item.description?.toLowerCase().includes(q) ?? false)
+  );
+}
+
+function OptionRow({
+  item,
+  renderItem,
+}: {
+  item: SearchableComboboxOption;
+  renderItem?: (item: SearchableComboboxOption) => React.ReactNode;
+}) {
+  if (renderItem) return <>{renderItem(item)}</>;
+  if (item.description) {
+    return (
+      <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <span className="truncate font-medium">{item.label}</span>
+        <span className="truncate text-xs text-muted-foreground">{item.description}</span>
+      </span>
+    );
+  }
+  return <span className="min-w-0 flex-1 truncate">{item.label}</span>;
+}
+
+/**
+ * Popup-variant single-select over the official shadcn Combobox:
+ * outline button trigger + searchable list in the panel (docs "Combobox in Popup").
+ */
+export function SearchableCombobox({
+  disabled,
+  emptyLabel,
+  noneLabel,
+  onChange,
+  options,
+  placeholder,
+  searchPlaceholder,
+  value,
+  className,
+  id,
+  renderItem,
+}: SearchableComboboxProps) {
+  const selected = options.find((option) => option.value === value) ?? null;
+  const canClear = Boolean(noneLabel) && Boolean(selected);
+  const nested = useNestedOverlaySync();
+
   return (
     <Combobox
       disabled={disabled}
-      filter={(item, query) => {
-        const q = query.trim().toLowerCase();
-        if (!q) return true;
-        return (
-          item.label.toLowerCase().includes(q) ||
-          item.value.toLowerCase().includes(q) ||
-          (item.keywords?.toLowerCase().includes(q) ?? false)
-        );
-      }}
+      filter={matchesOption}
       isItemEqualToValue={(a, b) => a.value === b.value}
       itemToStringLabel={(item) => item.label}
       itemToStringValue={(item) => item.value}
       items={options}
-      onOpenChange={(open) => {
-        if (open) {
-          layerIdRef.current = notifyNestedOverlayChange(true);
-          openRef.current = true;
-        } else {
-          notifyNestedOverlayChange(false, layerIdRef.current ?? undefined);
-          layerIdRef.current = null;
-          openRef.current = false;
-        }
-      }}
+      onOpenChange={nested.onOpenChange}
       onValueChange={(item) => {
         onChange(item?.value ?? "");
       }}
       value={selected}
     >
-      <ComboboxInput
-        className={cn("w-full", className)}
+      <ComboboxTrigger
         disabled={disabled}
         id={id}
-        placeholder={placeholder}
-        showClear={canClear}
-      />
+        render={
+          <Button
+            className={cn(
+              "h-9 w-full justify-between px-3 font-normal shadow-none",
+              !selected && "text-muted-foreground",
+              className,
+            )}
+            disabled={disabled}
+            type="button"
+            variant="outline"
+          />
+        }
+      >
+        <span className="min-w-0 flex-1 truncate text-left">
+          <ComboboxValue placeholder={placeholder} />
+        </span>
+      </ComboboxTrigger>
+
       <ComboboxContent className="w-(--anchor-width) min-w-(--anchor-width)">
+        <ComboboxInput
+          className="w-auto"
+          placeholder={searchPlaceholder ?? placeholder}
+          showClear={canClear}
+          showTrigger={false}
+        />
         <ComboboxEmpty>{emptyLabel}</ComboboxEmpty>
         <ComboboxList>
           {(item) => (
             <ComboboxItem key={item.value} value={item}>
-              <span className="min-w-0 flex-1 truncate">{item.label}</span>
+              <OptionRow
+                item={item}
+                {...(renderItem ? { renderItem } : {})}
+              />
             </ComboboxItem>
           )}
         </ComboboxList>
       </ComboboxContent>
     </Combobox>
+  );
+}
+
+type MultiSearchableComboboxProps = {
+  disabled?: boolean;
+  emptyLabel: string;
+  onChange: (values: string[]) => void;
+  options: SearchableComboboxOption[];
+  placeholder: string;
+  searchPlaceholder?: string;
+  values: string[];
+  className?: string;
+  id?: string;
+  /** Trigger text when 2+ items are selected. Defaults to "{n} selected". */
+  selectedCountLabel?: (count: number) => string;
+  /** Aria-label for chip remove controls. */
+  removeLabel?: (label: string) => string;
+  renderItem?: (item: SearchableComboboxOption) => React.ReactNode;
+  /**
+   * Max height for the chips row under the trigger. Long selections scroll instead
+   * of blowing up the form layout.
+   */
+  chipsMaxHeightClassName?: string;
+};
+
+/**
+ * Popup-variant multi-select:
+ * - Fixed-height outline trigger (summary text — never a growing chip input)
+ * - Search + checklist inside the panel
+ * - Selected values as fully rounded removable pills below the trigger
+ *
+ * Prefer this over ComboboxChips-as-field for dashboard multi-selects.
+ */
+export function MultiSearchableCombobox({
+  disabled,
+  emptyLabel,
+  onChange,
+  options,
+  placeholder,
+  searchPlaceholder,
+  values,
+  className,
+  id,
+  selectedCountLabel,
+  removeLabel,
+  renderItem,
+  chipsMaxHeightClassName = "max-h-24",
+}: MultiSearchableComboboxProps) {
+  const nested = useNestedOverlaySync();
+
+  const selectedOptions = useMemo(() => {
+    const byValue = new Map(options.map((option) => [option.value, option]));
+    return values
+      .map((value) => byValue.get(value) ?? { value, label: value })
+      .filter(Boolean);
+  }, [options, values]);
+
+  const triggerLabel =
+    selectedOptions.length === 0
+      ? null
+      : selectedOptions.length === 1
+        ? selectedOptions[0]!.label
+        : (selectedCountLabel?.(selectedOptions.length) ??
+          `${selectedOptions.length} selected`);
+
+  function removeValue(value: string) {
+    onChange(values.filter((current) => current !== value));
+  }
+
+  return (
+    <div className="flex flex-col gap-2">
+      <Combobox
+        autoHighlight
+        disabled={disabled}
+        filter={matchesOption}
+        isItemEqualToValue={(a, b) => a.value === b.value}
+        itemToStringLabel={(item) => item.label}
+        itemToStringValue={(item) => item.value}
+        items={options}
+        multiple
+        onOpenChange={nested.onOpenChange}
+        onValueChange={(next) => {
+          const list = Array.isArray(next) ? next : [];
+          onChange(list.map((item) => item.value));
+        }}
+        value={selectedOptions}
+      >
+        <ComboboxTrigger
+          disabled={disabled}
+          id={id}
+          render={
+            <Button
+              className={cn(
+                "h-9 w-full justify-between px-3 font-normal shadow-none",
+                selectedOptions.length === 0 && "text-muted-foreground",
+                className,
+              )}
+              disabled={disabled}
+              type="button"
+              variant="outline"
+            />
+          }
+        >
+          <span className="min-w-0 flex-1 truncate text-left">
+            {triggerLabel ?? placeholder}
+          </span>
+        </ComboboxTrigger>
+
+        <ComboboxContent className="w-(--anchor-width) min-w-(--anchor-width)">
+          <ComboboxInput
+            className="w-auto"
+            placeholder={searchPlaceholder ?? placeholder}
+            showTrigger={false}
+          />
+          <ComboboxEmpty>{emptyLabel}</ComboboxEmpty>
+          <ComboboxList>
+            {(item) => (
+              <ComboboxItem key={item.value} value={item}>
+                <OptionRow
+                  item={item}
+                  {...(renderItem ? { renderItem } : {})}
+                />
+              </ComboboxItem>
+            )}
+          </ComboboxList>
+        </ComboboxContent>
+      </Combobox>
+
+      {selectedOptions.length > 0 ? (
+        <div
+          className={cn(
+            "flex flex-wrap content-start gap-1.5 overflow-y-auto overscroll-contain pr-0.5",
+            chipsMaxHeightClassName,
+          )}
+        >
+          {selectedOptions.map((option) => (
+            <Badge
+              className="max-w-full gap-1 rounded-full py-0.5 pr-0.5 pl-2.5 font-normal"
+              key={option.value}
+              variant="secondary"
+            >
+              <span className="min-w-0 truncate">{option.label}</span>
+              <button
+                aria-label={removeLabel?.(option.label) ?? `Remove ${option.label}`}
+                className="inline-flex size-5 shrink-0 items-center justify-center rounded-full text-secondary-foreground/70 transition-colors hover:bg-background/70 hover:text-foreground"
+                disabled={disabled}
+                onClick={() => removeValue(option.value)}
+                type="button"
+              >
+                <XIcon className="size-3" />
+              </button>
+            </Badge>
+          ))}
+        </div>
+      ) : null}
+    </div>
   );
 }
