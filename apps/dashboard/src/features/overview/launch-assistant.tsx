@@ -24,6 +24,13 @@ function formatCount(value: number | null | undefined) {
   return typeof value === "number" ? value.toLocaleString() : "—";
 }
 
+/** Deep-link that opens a create dialog on the list page (`?create=`). */
+function withCreate(href: string, create: string) {
+  const url = new URL(href, "http://local.invalid");
+  url.searchParams.set("create", create);
+  return `${url.pathname}${url.search}`;
+}
+
 export type LaunchChecklistItem = {
   id: string;
   label: string;
@@ -94,7 +101,9 @@ export function getLaunchChecklistItems(
         ? t("overview.launch.catalogDesc", { count: formatCount(productCount) })
         : t("overview.launch.catalogEmpty"),
       ready: hasCatalog,
-      href: dashboardRoutes.products,
+      href: hasCatalog
+        ? dashboardRoutes.products
+        : withCreate(dashboardRoutes.products, "product"),
       required: true,
     },
     {
@@ -160,7 +169,6 @@ export function LaunchAssistant({ summary }: { summary: MerchantDashboardSummary
   const optionalItems = items.filter((item) => !item.required);
   const completedRequired = requiredItems.filter((item) => item.ready).length;
   const launchReady = completedRequired === requiredItems.length;
-  const nextItem = items.find((item) => item.current) ?? null;
   const liveShopHref = `//${summary.domain.hostname}`;
 
   const [hydrated, setHydrated] = useState(false);
@@ -278,17 +286,6 @@ export function LaunchAssistant({ summary }: { summary: MerchantDashboardSummary
               </Button>
             </div>
           </div>
-        ) : nextItem ? (
-          <div className="border-b p-3">
-            <Button asChild className="w-full justify-between gap-2" size="sm">
-              <Link href={nextItem.href} prefetch={false}>
-                <span className="truncate">
-                  {t("overview.launch.continueNext", { label: nextItem.label })}
-                </span>
-                <AppIcons.arrowRight className="size-4 shrink-0 opacity-80" />
-              </Link>
-            </Button>
-          </div>
         ) : null}
 
         <div className="flex max-h-[min(360px,50dvh)] flex-col gap-2 overflow-y-auto p-3">
@@ -339,7 +336,12 @@ function ChecklistRow({ item }: { item: LaunchChecklistItem }) {
   const { t } = useI18n();
   return (
     <Link
-      className="grid grid-cols-[auto_1fr_auto] items-center gap-3 rounded-lg border bg-background px-3 py-2 text-sm transition-colors hover:bg-muted/50"
+      className={cn(
+        "grid grid-cols-[auto_1fr_auto] items-center gap-3 rounded-lg border px-3 py-2.5 text-sm transition-colors",
+        item.current && !item.ready
+          ? "border-primary/40 bg-primary/5 shadow-sm ring-1 ring-primary/15 hover:bg-primary/10"
+          : "bg-background hover:bg-muted/50",
+      )}
       href={item.href}
       prefetch={false}
     >
@@ -359,19 +361,24 @@ function ChecklistRow({ item }: { item: LaunchChecklistItem }) {
         <span className="block truncate font-medium">{item.label}</span>
         <span className="block truncate text-xs text-muted-foreground">{item.description}</span>
       </span>
-      <Badge
-        variant={
-          item.ready ? "secondary" : item.current ? "default" : "outline"
-        }
-      >
-        {item.ready
-          ? t("overview.launch.done")
-          : item.current
-            ? t("overview.launch.next")
+      {item.current && !item.ready ? (
+        <span className="inline-flex shrink-0 items-center gap-0.5 text-xs font-semibold text-primary">
+          {t("overview.launch.go")}
+          <AppIcons.arrowRight className="size-3.5 opacity-80" aria-hidden />
+        </span>
+      ) : (
+        <Badge
+          variant={
+            item.ready ? "secondary" : item.required ? "outline" : "outline"
+          }
+        >
+          {item.ready
+            ? t("overview.launch.done")
             : item.required
               ? t("overview.launch.open")
               : t("overview.launch.optional")}
-      </Badge>
+        </Badge>
+      )}
     </Link>
   );
 }

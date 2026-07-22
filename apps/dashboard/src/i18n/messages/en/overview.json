@@ -122,6 +122,7 @@
     "launchButton": "Launch {done}/{total}",
     "launchButtonReady": "Launch ready",
     "continueNext": "Continue: {label}",
+    "go": "Go",
     "readyBody": "Required setup is done. View the live shop or keep editing.",
     "viewShop": "View live shop",
     "openEditor": "Open editor",

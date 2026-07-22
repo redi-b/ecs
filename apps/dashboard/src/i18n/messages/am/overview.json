@@ -122,6 +122,7 @@
     "launchButton": "ጀምር {done}/{total}",
     "launchButtonReady": "ለመጀመር ዝግጁ",
     "continueNext": "ቀጥል፡ {label}",
+    "go": "ሂድ",
     "readyBody": "አስፈላጊ ማዋቀር ተጠናቋል። ሕያው ሱቁን ይመልከቱ ወይም ማስተካከል ይቀጥሉ።",
     "viewShop": "ሕያው ሱቅ ይመልከቱ",
     "openEditor": "ማስተካከያ ክፈት",
