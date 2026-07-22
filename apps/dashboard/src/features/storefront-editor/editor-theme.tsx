@@ -428,7 +428,15 @@ export function PremiumColorPicker({
           </Button>
         )}
       </PopoverTrigger>
-      <PopoverContent align="start" className="w-80 p-3.5" side="bottom" sideOffset={8}>
+      <PopoverContent
+        align="start"
+        avoidCollisions
+        className="w-80 p-3.5"
+        collisionPadding={20}
+        side="bottom"
+        sideOffset={8}
+        sticky="partial"
+      >
         <div className="flex flex-col gap-3">
           <div className="flex flex-col gap-2">
             <div className="text-sm font-medium">{label}</div>

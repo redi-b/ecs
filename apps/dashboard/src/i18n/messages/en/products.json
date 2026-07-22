@@ -432,6 +432,7 @@
     "fromPrice": "from {price}",
     "selectedCountShort": "{count} selected",
     "addedHint": "Added — pick another combo if you need more",
-    "addSelectedCount": "Add {count} selected"
+    "addSelectedCount": "Add {count} selected",
+    "outOfStock": "Out of stock"
   }
 }

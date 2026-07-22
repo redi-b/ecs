@@ -112,6 +112,10 @@ function ManualOrderCreateDialogInner() {
               optionTitle?: string | null;
               value?: string | null;
             }>;
+            stock?: {
+              availableQuantity?: number | null;
+              stockedQuantity?: number | null;
+            } | null;
           }>;
         }>;
         count?: number;
@@ -139,8 +143,18 @@ function ManualOrderCreateDialogInner() {
             if (!title || !value || title === "Default") continue;
             options[title] = value;
           }
+          const stock = variant.stock;
+          const availableQuantity =
+            stock == null
+              ? null
+              : typeof stock.availableQuantity === "number"
+                ? stock.availableQuantity
+                : typeof stock.stockedQuantity === "number"
+                  ? stock.stockedQuantity
+                  : null;
           return {
             id: variant.id,
+            availableQuantity,
             label: [productTitle, variantTitle].filter(Boolean).join(" · "),
             options,
             priceLabel,
@@ -237,6 +251,7 @@ function ManualOrderCreateDialogInner() {
         sku: variant.sku,
         priceLabel: variant.priceLabel,
         options: variant.options,
+        availableQuantity: variant.availableQuantity,
       });
       product.searchText = [
         product.searchText,
@@ -307,20 +322,33 @@ function ManualOrderCreateDialogInner() {
   function setSelectedVariantIds(ids: string[]) {
     setLines((current) => {
       const quantityById = new Map(current.map((line) => [line.variantId, line.quantity]));
-      return ids.map((variantId) => ({
-        quantity: quantityById.get(variantId) ?? 1,
-        variantId,
-      }));
+      return ids
+        .filter((variantId) => {
+          const available = variantById.get(variantId)?.availableQuantity;
+          // Block zero-stock tracked variants from entering the order.
+          return !(typeof available === "number" && available <= 0);
+        })
+        .map((variantId) => {
+          const available = variantById.get(variantId)?.availableQuantity;
+          let quantity = quantityById.get(variantId) ?? 1;
+          if (typeof available === "number" && available >= 0) {
+            quantity = Math.min(Math.max(quantity, 1), Math.max(available, 1));
+          }
+          return { quantity, variantId };
+        });
     });
   }
 
   function setLineQuantity(variantId: string, quantity: string) {
     const next = Number.parseInt(quantity, 10);
+    const available = variantById.get(variantId)?.availableQuantity;
+    let resolved = Number.isFinite(next) && next > 0 ? next : 1;
+    if (typeof available === "number" && available >= 0) {
+      resolved = Math.min(resolved, Math.max(available, 1));
+    }
     setLines((current) =>
       current.map((line) =>
-        line.variantId === variantId
-          ? { ...line, quantity: Number.isFinite(next) && next > 0 ? next : 1 }
-          : line,
+        line.variantId === variantId ? { ...line, quantity: resolved } : line,
       ),
     );
   }
@@ -602,6 +630,11 @@ function ManualOrderCreateDialogInner() {
                           </div>
                           <Input
                             aria-label={t("orders.create.quantityFor", { name: variant?.label ?? t("orders.create.optionFallback") })}
+                            max={
+                              typeof variant?.availableQuantity === "number"
+                                ? Math.max(variant.availableQuantity, 1)
+                                : undefined
+                            }
                             min={1}
                             onChange={(event) =>
                               setLineQuantity(line.variantId, event.target.value)

@@ -53,6 +53,11 @@ type DataTableProps<TData> = {
   pageSize?: number;
   selectedSummaryLabel?: string | ((selectedCount: number) => string);
   toolbar?: React.ReactNode;
+  /**
+   * Parent owns the card chrome + toolbar (e.g. shared Grid/List shell).
+   * Skips outer border/margin so the switcher is not remounted on view change.
+   */
+  embedded?: boolean;
 };
 
 export function DataTable<TData>({
@@ -71,6 +76,7 @@ export function DataTable<TData>({
   pageSize,
   selectedSummaryLabel,
   toolbar,
+  embedded = false,
 }: DataTableProps<TData>) {
   const { t } = useI18n();
   const resolvedEmptyTitle = emptyTitle ?? t("table.empty.noRowsTitle");
@@ -160,8 +166,14 @@ export function DataTable<TData>({
   const isEmpty = rows.length === 0;
 
   return (
-    <div className="mb-4 flex w-full min-w-0 flex-col overflow-hidden rounded-[1.35rem] border bg-card/95 lg:mb-6">
-      {toolbar ? (
+    <div
+      className={
+        embedded
+          ? "flex min-w-0 flex-col"
+          : "mb-4 flex w-full min-w-0 flex-col overflow-hidden rounded-[1.35rem] border bg-card/95 lg:mb-6"
+      }
+    >
+      {!embedded && toolbar ? (
         <div className="shrink-0 border-b bg-muted/20 p-3">{toolbar}</div>
       ) : null}
 

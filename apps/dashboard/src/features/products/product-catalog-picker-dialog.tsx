@@ -34,6 +34,7 @@ import { cn } from "@/lib/utils";
 import {
   buildProductOptionAxes,
   formatVariantChipLabel,
+  isVariantOutOfStock,
   lowestPriceLabel,
   PRODUCT_CATALOG_PAGE_SIZE,
   type ProductCatalogPickItem,
@@ -171,7 +172,17 @@ export function ProductCatalogPickerDialog({
     setSelectedIds(next);
   }
 
+  function findVariant(id: string) {
+    for (const product of catalogProducts) {
+      const match = (product.variants ?? []).find((variant) => variant.id === id);
+      if (match) return match;
+    }
+    return null;
+  }
+
   function toggleId(id: string) {
+    const variant = findVariant(id);
+    if (variant && isVariantOutOfStock(variant) && !selectedIds.includes(id)) return;
     if (!isMultiple) {
       setIds(selectedIds[0] === id ? [] : [id]);
       return;
@@ -181,6 +192,8 @@ export function ProductCatalogPickerDialog({
   }
 
   function addVariantId(id: string) {
+    const variant = findVariant(id);
+    if (variant && isVariantOutOfStock(variant)) return;
     if (!isMultiple) {
       setIds([id]);
       return;
@@ -330,6 +343,7 @@ export function ProductCatalogPickerDialog({
                   if (variants.length === 1) {
                     const variant = variants[0]!;
                     const isSelected = selectedIds.includes(variant.id);
+                    const oos = isVariantOutOfStock(variant);
                     return (
                       <li key={product.id}>
                         <button
@@ -338,8 +352,13 @@ export function ProductCatalogPickerDialog({
                             isSelected
                               ? "border-primary/45 bg-primary/[0.06] shadow-sm ring-2 ring-primary/12"
                               : "hover:border-foreground/15 hover:bg-muted/20",
+                            oos && "cursor-not-allowed opacity-55 hover:border-border hover:bg-card",
                           )}
-                          onClick={() => toggleId(variant.id)}
+                          disabled={oos}
+                          onClick={() => {
+                            if (oos) return;
+                            toggleId(variant.id);
+                          }}
                           type="button"
                         >
                           <SelectionMark selected={isSelected} />
@@ -348,6 +367,11 @@ export function ProductCatalogPickerDialog({
                             <span className="block truncate text-[15px] font-semibold tracking-tight">
                               {product.title}
                             </span>
+                            {oos ? (
+                              <span className="mt-0.5 block text-xs text-muted-foreground">
+                                {t("products.catalogPicker.outOfStock")}
+                              </span>
+                            ) : null}
                           </span>
                           {variant.priceLabel ? (
                             <span className="shrink-0 text-sm font-semibold tabular-nums tracking-tight">

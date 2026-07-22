@@ -519,115 +519,129 @@ export function MediaLibrary({
 
   return (
     <>
-      {view === "list" ? (
-        <DataTable
-          bulkActions={bulkActions}
-          columns={columns}
-          data={filtered}
-          emptyMessage={
-            isFiltered ? t("media.filteredEmptyDescription") : t("media.libraryEmptyDescription")
-          }
-          emptyTitle={isFiltered ? t("media.filteredEmpty") : t("media.libraryEmpty")}
-          filteredEmptyMessage={t("media.filteredEmptyDescription")}
-          filteredEmptyTitle={t("media.filteredEmpty")}
-          footer={footer}
-          getRowId={(asset) => asset.id}
-          isFiltered={isFiltered}
-          selectedSummaryLabel={t("media.selectedSummary")}
-          toolbar={toolbar}
-        />
-      ) : (
-        <div className="mb-4 flex w-full min-w-0 flex-col overflow-hidden rounded-[1.35rem] border bg-card/95 lg:mb-6">
-          <div className="border-b bg-muted/20 p-3">{toolbar}</div>
+      {/*
+        Shared card + toolbar so ListViewToggle is NOT remounted when switching
+        Grid/List (remount made the thumb always animate left→right from 0).
+      */}
+      <div className="mb-4 flex w-full min-w-0 flex-col overflow-hidden rounded-[1.35rem] border bg-card/95 lg:mb-6">
+        <div className="shrink-0 border-b bg-muted/20 p-3">{toolbar}</div>
 
-          {filtered.length ? (
-            <>
-              <div className="flex items-center gap-3 border-b px-4 py-2.5">
-                <Checkbox
-                  aria-label={t("media.selectAll")}
-                  checked={
-                    allPageSelected
-                      ? true
-                      : selectedAssets.length > 0
-                        ? "indeterminate"
-                        : false
-                  }
-                  onCheckedChange={(checked) => toggleSelectPage(checked === true)}
-                />
-                <span className="min-w-0 flex-1 text-xs text-muted-foreground">
-                  {selectedAssets.length > 0
-                    ? t("media.selectionStatus", { count: selectedAssets.length })
-                    : t("media.selectAll")}
-                </span>
-                {selectedAssets.length > 0 ? (
-                  <Button
-                    className="shrink-0"
-                    onClick={() => setSelectedIds(new Set())}
-                    size="sm"
-                    type="button"
-                    variant="ghost"
+        {view === "list" ? (
+          <DataTable
+            bulkActions={bulkActions}
+            columns={columns}
+            data={filtered}
+            embedded
+            emptyMessage={
+              isFiltered ? t("media.filteredEmptyDescription") : t("media.libraryEmptyDescription")
+            }
+            emptyTitle={isFiltered ? t("media.filteredEmpty") : t("media.libraryEmpty")}
+            filteredEmptyMessage={t("media.filteredEmptyDescription")}
+            filteredEmptyTitle={t("media.filteredEmpty")}
+            footer={footer}
+            getRowId={(asset) => asset.id}
+            isFiltered={isFiltered}
+            selectedSummaryLabel={t("media.selectedSummary")}
+          />
+        ) : filtered.length ? (
+          <>
+            <div className="flex items-center gap-3 border-b px-4 py-2.5">
+              <Checkbox
+                aria-label={t("media.selectAll")}
+                checked={
+                  allPageSelected
+                    ? true
+                    : selectedAssets.length > 0
+                      ? "indeterminate"
+                      : false
+                }
+                onCheckedChange={(checked) => toggleSelectPage(checked === true)}
+              />
+              <span className="min-w-0 flex-1 text-xs text-muted-foreground">
+                {selectedAssets.length > 0
+                  ? t("media.selectionStatus", { count: selectedAssets.length })
+                  : t("media.selectAll")}
+              </span>
+              {selectedAssets.length > 0 ? (
+                <Button
+                  className="shrink-0"
+                  onClick={() => setSelectedIds(new Set())}
+                  size="sm"
+                  type="button"
+                  variant="ghost"
+                >
+                  {t("common.clearSelection")}
+                </Button>
+              ) : null}
+            </div>
+
+            <div className="grid gap-4 p-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {filtered.map((asset) => {
+                const selected = selectedIds.has(asset.id);
+                return (
+                  <article
+                    className={cn(
+                      "group relative overflow-hidden rounded-xl border bg-card transition-colors duration-200 ease-out",
+                      selected
+                        ? "border-primary/50 ring-2 ring-primary/20"
+                        : "hover:border-foreground/20",
+                    )}
+                    key={asset.id}
                   >
-                    {t("common.clearSelection")}
-                  </Button>
-                ) : null}
-              </div>
-
-              <div className="grid gap-4 p-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                {filtered.map((asset) => {
-                  const selected = selectedIds.has(asset.id);
-                  return (
-                    <article
-                      className={cn(
-                        "group relative overflow-hidden rounded-xl border bg-card transition-colors duration-200 ease-out",
-                        selected
-                          ? "border-primary/50 ring-2 ring-primary/20"
-                          : "hover:border-foreground/20",
-                      )}
-                      key={asset.id}
+                    <div className="absolute top-2 left-2 z-10">
+                      <Checkbox
+                        aria-label={t("media.selectAsset", { name: asset.displayName })}
+                        checked={selected}
+                        className="border-background bg-background/90 shadow-sm"
+                        onCheckedChange={(checked) =>
+                          toggleSelected(asset.id, checked === true)
+                        }
+                        onClick={(event) => event.stopPropagation()}
+                      />
+                    </div>
+                    <button
+                      className="relative block w-full bg-muted text-left"
+                      onClick={() => openLightbox(asset)}
+                      type="button"
                     >
-                      <div className="absolute top-2 left-2 z-10">
-                        <Checkbox
-                          aria-label={t("media.selectAsset", { name: asset.displayName })}
-                          checked={selected}
-                          className="border-background bg-background/90 shadow-sm"
-                          onCheckedChange={(checked) =>
-                            toggleSelected(asset.id, checked === true)
-                          }
-                          onClick={(event) => event.stopPropagation()}
-                        />
-                      </div>
-                      <button
-                        className="relative block w-full bg-muted text-left"
-                        onClick={() => openLightbox(asset)}
-                        type="button"
-                      >
-                        {/* biome-ignore lint/performance/noImgElement: Runtime object-storage media. */}
-                        <img
-                          alt={asset.altText ?? ""}
-                          className="aspect-[4/3] w-full object-cover transition-transform duration-200 ease-out group-hover:scale-[1.01]"
-                          src={asset.publicUrl ?? ""}
-                        />
-                        <span className="pointer-events-none absolute inset-0 flex items-end justify-end bg-linear-to-t from-black/35 via-transparent to-transparent p-2 opacity-0 transition-opacity duration-200 ease-out group-hover:opacity-100">
-                          <span className="rounded-full border border-white/20 bg-black/45 p-1.5 text-white">
-                            <AppIcons.expand className="size-3.5" />
-                          </span>
+                      {/* biome-ignore lint/performance/noImgElement: Runtime object-storage media. */}
+                      <img
+                        alt={asset.altText ?? ""}
+                        className="aspect-[4/3] w-full object-cover transition-transform duration-200 ease-out group-hover:scale-[1.01]"
+                        src={asset.publicUrl ?? ""}
+                      />
+                      <span className="pointer-events-none absolute inset-0 flex items-end justify-end bg-linear-to-t from-black/35 via-transparent to-transparent p-2 opacity-0 transition-opacity duration-200 ease-out group-hover:opacity-100">
+                        <span className="rounded-full border border-white/20 bg-black/45 p-1.5 text-white">
+                          <AppIcons.expand className="size-3.5" />
                         </span>
-                      </button>
-                      <div className="flex min-w-0 items-center gap-2 border-t p-3">
-                        <AssetName asset={asset} onOpen={() => setEditing(asset)} />
-                        <div className="shrink-0">
-                          <RowActionsMenu
-                            actions={assetActions(asset)}
-                            label={t("media.rowActions")}
-                          />
-                        </div>
+                      </span>
+                    </button>
+                    <div className="flex min-w-0 items-center gap-2 border-t p-3">
+                      <AssetName asset={asset} onOpen={() => setEditing(asset)} />
+                      <div className="shrink-0">
+                        <RowActionsMenu
+                          actions={assetActions(asset)}
+                          label={t("media.rowActions")}
+                        />
                       </div>
-                    </article>
-                  );
-                })}
-              </div>
-            </>
-          ) : (
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+
+            <DataTableBulkBar
+              actions={bulkActions(selectedAssets)}
+              onClearSelection={() => setSelectedIds(new Set())}
+              selectedCount={selectedAssets.length}
+              summaryLabel={t("media.selectedSummary")}
+            />
+            {footer ? (
+              <div className="shrink-0 border-t bg-muted/10 px-3 py-2">{footer}</div>
+            ) : null}
+          </>
+        ) : (
+          <>
             <div className="p-4">
               <Empty className="min-h-72 border-0">
                 <EmptyHeader>
@@ -650,20 +664,15 @@ export function MediaLibrary({
                 ) : null}
               </Empty>
             </div>
-          )}
-
-          <DataTableBulkBar
-            actions={bulkActions(selectedAssets)}
-            onClearSelection={() => setSelectedIds(new Set())}
-            selectedCount={selectedAssets.length}
-            summaryLabel={t("media.selectedSummary")}
-          />
-          {/* Same rule as DataTable: no empty pagination strip under an empty library. */}
-          {footer && filtered.length > 0 ? (
-            <div className="shrink-0 border-t bg-muted/10 px-3 py-2">{footer}</div>
-          ) : null}
-        </div>
-      )}
+            <DataTableBulkBar
+              actions={bulkActions(selectedAssets)}
+              onClearSelection={() => setSelectedIds(new Set())}
+              selectedCount={selectedAssets.length}
+              summaryLabel={t("media.selectedSummary")}
+            />
+          </>
+        )}
+      </div>
 
       <MediaEditSheet
         asset={editing}
