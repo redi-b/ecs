@@ -49,6 +49,13 @@ const PLATFORM_ERROR_MESSAGES: Record<string, string> = {
   settings_unavailable: "Shop settings are temporarily unavailable.",
   fulfillment_method_required: "Keep at least delivery or pickup enabled for checkout.",
   invalid_delivery_settings: "Check fulfillment settings and try again.",
+  invalid_promotion: "Check the promotion details and try again.",
+  promotion_max_quantity_required:
+    "Set a max quantity per item when the discount applies to each item.",
+  promotion_currency_required: "A currency is required for fixed-amount promotions.",
+  promotion_code_taken: "That promotion code is already in use.",
+  promotion_not_found: "This promotion could not be found.",
+  promotion_create_failed: "Could not create this promotion. Try again.",
   payments_unavailable: "Payment settings are temporarily unavailable.",
   missing_secret_key: "Enter your Chapa secret key.",
   missing_online_enabled: "Choose whether online payments should be on or off.",

@@ -268,7 +268,13 @@ function PromotionCreateDialogInner() {
         endsAt: form.endsAt ? new Date(form.endsAt).toISOString() : null,
         isAutomatic: form.isAutomatic,
         isTaxInclusive: form.isTaxInclusive,
-        maxQuantity: form.maxQuantity ? Number(form.maxQuantity) : null,
+        maxQuantity: form.maxQuantity
+          ? Number(form.maxQuantity)
+          : derived.targetType === "items" || form.offerKind === "buyget"
+            ? form.allocation === "each"
+              ? 1
+              : null
+            : null,
         method: derived.method,
         productIds: needsProducts ? form.productIds : [],
         promotionType: derived.promotionType,
