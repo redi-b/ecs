@@ -21,6 +21,7 @@ import {
   capturePaymentByTxRef,
   finishMerchantOrder,
   markMerchantOrderPaid,
+  updateMerchantOrderSettlement,
 } from "./payment-actions.js";
 import { getOrderActionUrl, getOrdersUrl, getOrderUrl } from "./urls.js";
 import { getNumber } from "./values.js";
@@ -144,12 +145,24 @@ export function createMedusaOrderService(options: {
       orderId: string;
       paymentReference?: string | null | undefined;
       salesChannelId: string;
-      source?: "dashboard" | "chapa_webhook" | "chapa_recheck" | undefined;
+      source?: "dashboard" | "chapa_webhook" | "chapa_recheck" | "telegram" | undefined;
+      settlement?: import("../../../lib/settlement.js").OrderSettlementInput | null | undefined;
     }): Promise<MerchantOrderActionResult> => {
       if (!options.adminApiToken?.trim()) {
         return missingCredentials();
       }
       return markMerchantOrderPaid(fetcher, options, input);
+    },
+
+    updateMerchantOrderSettlement: async (input: {
+      orderId: string;
+      salesChannelId: string;
+      settlement: import("../../../lib/settlement.js").OrderSettlementInput;
+    }): Promise<MerchantOrderActionResult> => {
+      if (!options.adminApiToken?.trim()) {
+        return missingCredentials();
+      }
+      return updateMerchantOrderSettlement(fetcher, options, input);
     },
 
     capturePaymentByTxRef: async (input: {
@@ -183,6 +196,9 @@ export function createMedusaOrderService(options: {
       salesChannelId: string;
       shippingOptionId?: string | undefined;
       stockLocationId?: string | undefined;
+      paymentReference?: string | null | undefined;
+      source?: "dashboard" | "chapa_webhook" | "chapa_recheck" | "telegram" | undefined;
+      settlement?: import("../../../lib/settlement.js").OrderSettlementInput | null | undefined;
     }): Promise<MerchantOrderActionResult> => {
       if (!options.adminApiToken?.trim()) {
         return missingCredentials();
@@ -192,7 +208,9 @@ export function createMedusaOrderService(options: {
         return markMerchantOrderPaid(fetcher, options, {
           orderId: input.orderId,
           salesChannelId: input.salesChannelId,
-          source: "dashboard",
+          source: input.source ?? "dashboard",
+          paymentReference: input.paymentReference,
+          settlement: input.settlement,
         });
       }
 
@@ -203,6 +221,7 @@ export function createMedusaOrderService(options: {
           salesChannelId: input.salesChannelId,
           shippingOptionId: input.shippingOptionId,
           stockLocationId: input.stockLocationId,
+          settlement: input.settlement,
         });
       }
 

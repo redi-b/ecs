@@ -27,7 +27,7 @@ describe("telegram callback tokens", () => {
         tenantIds: [tenantId],
       });
       assert.equal(parsed.ok, true);
-      if (parsed.ok) {
+      if (parsed.ok && parsed.kind === "action") {
         assert.equal(parsed.action, action);
         assert.equal(parsed.orderId, orderId);
         assert.equal(parsed.tenantId, tenantId);

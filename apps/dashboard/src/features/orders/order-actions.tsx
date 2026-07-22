@@ -3,7 +3,7 @@
 import type { MerchantOrder } from "@ecs/contracts";
 import { useMutation } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { HelpTip } from "@/components/app/help-tip";
@@ -27,6 +27,12 @@ import {
   getRemainingFinishSteps,
   type OrderNextActionType,
 } from "@/features/orders/order-domain";
+import {
+  MarkPaidDialog,
+  type MarkPaidSettlementPayload,
+  type ReceivingAccountOption,
+  type BankOption,
+} from "@/features/orders/mark-paid-dialog";
 import type { MessageKey } from "@/i18n/messages";
 import { useI18n } from "@/i18n/provider";
 
@@ -121,6 +127,40 @@ export function OrderActions({ action, order, variant = "card" }: OrderActionsPr
   const [pending, setPending] = useState<PendingKind | null>(null);
   const [finishIncludePaid, setFinishIncludePaid] = useState(true);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [markPaidOpen, setMarkPaidOpen] = useState(false);
+  const [accounts, setAccounts] = useState<ReceivingAccountOption[]>([]);
+  const [banks, setBanks] = useState<BankOption[]>([]);
+
+  useEffect(() => {
+    void (async () => {
+      try {
+        const [accRes, bankRes] = await Promise.all([
+          fetch("/admin/settings/payments/receiving-accounts", {
+            cache: "no-store",
+            headers: { accept: "application/json" },
+          }),
+          fetch("/admin/settings/payments/banks", {
+            cache: "no-store",
+            headers: { accept: "application/json" },
+          }),
+        ]);
+        if (accRes.ok) {
+          const data = await accRes.json().catch(() => null);
+          if (Array.isArray(data?.accounts)) {
+            setAccounts(data.accounts as ReceivingAccountOption[]);
+          }
+        }
+        if (bankRes.ok) {
+          const data = await bankRes.json().catch(() => null);
+          if (Array.isArray(data?.banks)) {
+            setBanks(data.banks as BankOption[]);
+          }
+        }
+      } catch {
+        // optional enrichment
+      }
+    })();
+  }, []);
 
   const finishSteps = useMemo(
     () => getRemainingFinishSteps(order, { includeMarkPaid: finishIncludePaid }),
@@ -152,8 +192,8 @@ export function OrderActions({ action, order, variant = "card" }: OrderActionsPr
           return t("orders.actions.toastCompleted");
         }
         if (kind.type === "mark_paid") {
-          await postOrderAction(action, { action: "mark-paid" });
-          return t("orders.actions.toastPaid");
+          setMarkPaidOpen(true);
+          return "";
         }
         return t("orders.actions.toastDone");
       }
@@ -162,13 +202,14 @@ export function OrderActions({ action, order, variant = "card" }: OrderActionsPr
         await postOrderAction(action, {
           action: "finish",
           markPaid: finishIncludePaid && canMarkPaid(order),
+          settlementMethod: "cash",
         });
         return t("orders.actions.toastFinished");
       }
 
       if (kind.kind === "mark_paid") {
-        await postOrderAction(action, { action: "mark-paid" });
-        return t("orders.actions.toastPaid");
+        setMarkPaidOpen(true);
+        return "";
       }
 
       if (kind.kind === "recheck") {
@@ -187,6 +228,26 @@ export function OrderActions({ action, order, variant = "card" }: OrderActionsPr
     onSuccess: (message) => {
       setActionError(null);
       setPending(null);
+      if (message) {
+        toast.success(message);
+        router.refresh();
+      }
+    },
+  });
+
+  const markPaidMutation = useMutation({
+    mutationFn: async (payload: MarkPaidSettlementPayload) => {
+      await postOrderAction(action, { action: "mark-paid", ...payload });
+      return t("orders.actions.toastPaid");
+    },
+    onError: (error) => {
+      setActionError(
+        mapActionError(error instanceof Error ? error.message : "order_action_failed", t),
+      );
+    },
+    onSuccess: (message) => {
+      setActionError(null);
+      setMarkPaidOpen(false);
       toast.success(message);
       router.refresh();
     },
@@ -229,8 +290,14 @@ export function OrderActions({ action, order, variant = "card" }: OrderActionsPr
             </div>
           ) : null}
           <Button
-            disabled={mutation.isPending}
-            onClick={() => setPending({ kind: "next", type: next.type })}
+            disabled={mutation.isPending || markPaidMutation.isPending}
+            onClick={() => {
+              if (next.type === "mark_paid") {
+                setMarkPaidOpen(true);
+                return;
+              }
+              setPending({ kind: "next", type: next.type });
+            }}
             type="button"
           >
             {nextCopy.label}
@@ -251,8 +318,8 @@ export function OrderActions({ action, order, variant = "card" }: OrderActionsPr
         ) : null}
         {showMarkPaid && next.type !== "mark_paid" ? (
           <Button
-            disabled={mutation.isPending}
-            onClick={() => setPending({ kind: "mark_paid" })}
+            disabled={mutation.isPending || markPaidMutation.isPending}
+            onClick={() => setMarkPaidOpen(true)}
             type="button"
             variant="outline"
           >
@@ -295,8 +362,17 @@ export function OrderActions({ action, order, variant = "card" }: OrderActionsPr
 
       {primary}
 
+      <MarkPaidDialog
+        open={markPaidOpen}
+        onOpenChange={setMarkPaidOpen}
+        pending={markPaidMutation.isPending}
+        accounts={accounts}
+        banks={banks}
+        onConfirm={(payload) => markPaidMutation.mutate(payload)}
+      />
+
       <AlertDialog
-        open={pending !== null}
+        open={pending !== null && pending.kind !== "mark_paid"}
         onOpenChange={(open) => {
           if (!open && !mutation.isPending) setPending(null);
         }}

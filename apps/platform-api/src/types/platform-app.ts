@@ -647,7 +647,119 @@ export type PlatformAppOptions = {
         salesChannelId: string;
         shippingOptionId?: string | undefined;
         stockLocationId?: string | undefined;
+        paymentReference?: string | null | undefined;
+        source?: "dashboard" | "chapa_webhook" | "chapa_recheck" | "telegram" | undefined;
+        settlement?: {
+          method: "cash" | "telebirr" | "cbe_birr" | "bank_transfer" | "chapa" | "other";
+          bankCode?: string | null | undefined;
+          bankName?: string | null | undefined;
+          accountLast4?: string | null | undefined;
+          accountLabel?: string | null | undefined;
+          receivingAccountId?: string | null | undefined;
+          reference?: string | null | undefined;
+          note?: string | null | undefined;
+        } | null | undefined;
       }) => Promise<MerchantOrderActionResult>)
+    | undefined;
+  updateMerchantOrderSettlement?:
+    | ((input: {
+        orderId: string;
+        salesChannelId: string;
+        settlement: {
+          method: "cash" | "telebirr" | "cbe_birr" | "bank_transfer" | "chapa" | "other";
+          bankCode?: string | null | undefined;
+          bankName?: string | null | undefined;
+          accountLast4?: string | null | undefined;
+          accountLabel?: string | null | undefined;
+          receivingAccountId?: string | null | undefined;
+          reference?: string | null | undefined;
+          note?: string | null | undefined;
+        };
+      }) => Promise<MerchantOrderActionResult>)
+    | undefined;
+  listMerchantReceivingAccounts?:
+    | ((input: { tenantId: string; includeInactive?: boolean }) => Promise<{
+        ok: true;
+        accounts: Array<{
+          id: string;
+          bankCode: string | null;
+          bankName: string;
+          accountName: string | null;
+          accountLast4: string | null;
+          label: string;
+          isDefault: boolean;
+          isActive: boolean;
+          createdAt: string;
+          updatedAt: string;
+        }>;
+      }>)
+    | undefined;
+  createMerchantReceivingAccount?:
+    | ((input: {
+        tenantId: string;
+        bankCode?: string | null;
+        bankName: string;
+        accountName?: string | null;
+        accountNumber?: string | null;
+        label: string;
+        isDefault?: boolean;
+      }) => Promise<
+        | {
+            ok: true;
+            account: {
+              id: string;
+              bankCode: string | null;
+              bankName: string;
+              accountName: string | null;
+              accountLast4: string | null;
+              label: string;
+              isDefault: boolean;
+              isActive: boolean;
+              createdAt: string;
+              updatedAt: string;
+            };
+          }
+        | { ok: false; error: string; status: 400 | 409 | 503 }
+      >)
+    | undefined;
+  updateMerchantReceivingAccount?:
+    | ((input: {
+        tenantId: string;
+        accountId: string;
+        bankCode?: string | null;
+        bankName?: string;
+        accountName?: string | null;
+        accountNumber?: string | null;
+        label?: string;
+        isDefault?: boolean;
+        isActive?: boolean;
+      }) => Promise<
+        | {
+            ok: true;
+            account: {
+              id: string;
+              bankCode: string | null;
+              bankName: string;
+              accountName: string | null;
+              accountLast4: string | null;
+              label: string;
+              isDefault: boolean;
+              isActive: boolean;
+              createdAt: string;
+              updatedAt: string;
+            };
+          }
+        | { ok: false; error: string; status: 400 | 404 | 409 | 503 }
+      >)
+    | undefined;
+  deleteMerchantReceivingAccount?:
+    | ((input: { tenantId: string; accountId: string }) => Promise<
+        | { ok: true; id: string; deleted: boolean }
+        | { ok: false; error: string; status: 404 | 503 }
+      >)
+    | undefined;
+  listMerchantPaymentBanks?:
+    | (() => Promise<{ ok: true; banks: Array<{ code: string; name: string }> }>)
     | undefined;
   recheckMerchantOrderPayment?:
     | ((input: {

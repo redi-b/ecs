@@ -1,12 +1,43 @@
 import type { Context, Hono } from "hono";
 import type { MerchantOrderAction, PlatformAppOptions, PlatformAppVariables } from "../../app.js";
 import { parseMerchantOrderListQuery } from "../../adapters/medusa/order/list-query.js";
+import { parseSettlementMethod, type OrderSettlementInput } from "../../lib/settlement.js";
 import {
   buildOrderCancelledPayload,
   buildPaymentPaidPayload,
 } from "../../modules/notifications/order-payload.js";
 import { getPaginationValue, getRequestHost, storeErrorStatus } from "../shared.js";
 import type { MerchantRouteHelpers } from "./context.js";
+
+function parseSettlementBody(body: Record<string, unknown>): OrderSettlementInput | null {
+  const method = parseSettlementMethod(
+    body.settlementMethod ?? body.method ?? (body.settlement as { method?: unknown } | undefined)?.method,
+  );
+  if (!method) return null;
+
+  const settlementObj =
+    typeof body.settlement === "object" && body.settlement !== null
+      ? (body.settlement as Record<string, unknown>)
+      : {};
+
+  const str = (key: string) => {
+    const fromRoot = body[key];
+    const fromNested = settlementObj[key];
+    const value = fromRoot ?? fromNested;
+    return typeof value === "string" && value.trim() ? value.trim() : undefined;
+  };
+
+  return {
+    method,
+    bankCode: str("bankCode") ?? str("settlementBankCode"),
+    bankName: str("bankName") ?? str("settlementBankName"),
+    accountLast4: str("accountLast4") ?? str("settlementAccountLast4"),
+    accountLabel: str("accountLabel") ?? str("settlementAccountLabel"),
+    receivingAccountId: str("receivingAccountId") ?? str("settlementReceivingAccountId"),
+    reference: str("reference") ?? str("settlementReference") ?? str("paymentReference"),
+    note: str("note") ?? str("settlementNote"),
+  };
+}
 
 export function registerMerchantOrderRoutes(
   app: Hono<{ Variables: PlatformAppVariables }>,
@@ -166,6 +197,16 @@ export function registerMerchantOrderRoutes(
       return context.json({ error: "order_fulfillment_not_found" }, 404);
     }
 
+    const body = (await context.req.json().catch(() => ({}))) as Record<string, unknown>;
+    let settlement: OrderSettlementInput | undefined;
+    if (action === "mark-paid") {
+      const parsed = parseSettlementBody(body);
+      if (!parsed) {
+        return context.json({ error: "settlement_method_required" }, 400);
+      }
+      settlement = parsed;
+    }
+
     const order = await options.mutateMerchantOrder({
       action,
       ...(action === "deliver" ? { fulfillmentId } : {}),
@@ -176,6 +217,10 @@ export function registerMerchantOrderRoutes(
             stockLocationId: commerce.context.medusaStockLocationId ?? undefined,
             shippingOptionId: merchant.result.context.medusaShippingOptionId ?? undefined,
           }
+        : {}),
+      ...(settlement ? { settlement, source: "dashboard" as const } : {}),
+      ...(typeof body.paymentReference === "string"
+        ? { paymentReference: body.paymentReference }
         : {}),
     });
 
@@ -232,6 +277,33 @@ export function registerMerchantOrderRoutes(
     mutateResolvedMerchantOrder(context, "mark-paid"),
   );
 
+  app.post("/platform/merchant/orders/:orderId/settlement", async (context) => {
+    if (!options.updateMerchantOrderSettlement) {
+      return context.json({ error: "commerce_backend_unavailable" }, 503);
+    }
+    const merchant = await getAuthorizedMerchantContext(context);
+    if (!merchant.ok) return merchant.response;
+    const commerce = getResolvedCommerce(merchant.result.context);
+    if (!commerce.ok) return context.json({ error: commerce.error }, commerce.status);
+
+    const orderId = context.req.param("orderId");
+    if (!orderId) return context.json({ error: "order_not_found" }, 404);
+
+    const body = (await context.req.json().catch(() => ({}))) as Record<string, unknown>;
+    const settlement = parseSettlementBody(body);
+    if (!settlement) {
+      return context.json({ error: "settlement_method_required" }, 400);
+    }
+
+    const order = await options.updateMerchantOrderSettlement({
+      orderId,
+      salesChannelId: commerce.context.medusaSalesChannelId,
+      settlement,
+    });
+    if (!order.ok) return context.json({ error: order.error }, order.status);
+    return context.json({ order: order.order });
+  });
+
   app.post("/platform/merchant/orders/:orderId/finish", async (context) => {
     if (!options.mutateMerchantOrder) {
       return context.json({ error: "commerce_backend_unavailable" }, 503);
@@ -242,8 +314,14 @@ export function registerMerchantOrderRoutes(
       return merchant.response;
     }
 
-    const body = (await context.req.json().catch(() => ({}))) as { markPaid?: unknown };
+    const body = (await context.req.json().catch(() => ({}))) as {
+      markPaid?: unknown;
+      settlementMethod?: unknown;
+    };
     const markPaid = body.markPaid === true;
+    const finishSettlement = markPaid
+      ? parseSettlementBody(body as Record<string, unknown>) ?? { method: "cash" as const }
+      : undefined;
 
     const commerce = getResolvedCommerce(merchant.result.context, {
       requireStockLocation: true,
@@ -267,6 +345,7 @@ export function registerMerchantOrderRoutes(
         salesChannelId: loose.context.medusaSalesChannelId,
         stockLocationId: loose.context.medusaStockLocationId ?? undefined,
         shippingOptionId: merchant.result.context.medusaShippingOptionId ?? undefined,
+        ...(finishSettlement ? { settlement: finishSettlement } : {}),
       });
 
       if (!order.ok) {
@@ -296,6 +375,7 @@ export function registerMerchantOrderRoutes(
       salesChannelId: commerce.context.medusaSalesChannelId,
       stockLocationId: commerce.context.medusaStockLocationId ?? undefined,
       shippingOptionId: merchant.result.context.medusaShippingOptionId ?? undefined,
+      ...(finishSettlement ? { settlement: finishSettlement } : {}),
     });
 
     if (!order.ok) {

@@ -127,6 +127,13 @@
       "when": 1784405088327,
       "tag": "0017_mute_nekra",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1784712000000,
+      "tag": "0018_merchant_receiving_accounts",
+      "breakpoints": true
     }
   ]
 }

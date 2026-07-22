@@ -1,3 +1,4 @@
+import { settlementFromMetadata } from "../../../lib/settlement.js";
 import type { MerchantOrder, MerchantOrderPaymentMethod } from "../../../types/index.js";
 import { getNumber, getString, isRecord } from "./values.js";
 
@@ -30,6 +31,7 @@ export function normalizeOrder(value: unknown, salesChannelId: string): Merchant
 
   const paymentMethod = resolvePaymentMethod(value, metadata);
   const paymentReference = resolvePaymentReference(metadata, value);
+  const settlement = settlementFromMetadata(metadata);
   const note =
     getString(metadata.note) ??
     getString(metadata.internal_note) ??
@@ -58,6 +60,7 @@ export function normalizeOrder(value: unknown, salesChannelId: string): Merchant
       fulfillmentStatus: getString(value.fulfillment_status),
       paymentMethod,
       paymentReference,
+      ...(settlement ? { settlement } : {}),
       note,
       currencyCode: getString(value.currency_code),
       total,

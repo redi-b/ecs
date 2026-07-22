@@ -5,7 +5,7 @@ import { eq } from "drizzle-orm";
 import type { MerchantOrderAction, MerchantOrderActionResult } from "../../types/index.js";
 import {
   buildOrderActionKeyboard,
-  createTelegramCallbackSecret,
+  buildSettlementMethodKeyboard,
   parseOrderActionCallbackData,
   type TelegramOrderAction,
 } from "./telegram-callback-tokens.js";
@@ -17,6 +17,7 @@ import {
   sendTelegramBotMessage,
 } from "../notifications/providers/telegram-provider.js";
 import { formatOrderCardHtml } from "./telegram-presentation.js";
+import type { OrderSettlementInput } from "../../lib/settlement.js";
 
 type PlatformDb = ReturnType<typeof createPlatformDb>["db"];
 
@@ -28,6 +29,8 @@ export type TelegramActionsDeps = {
     action: MerchantOrderAction;
     orderId: string;
     salesChannelId: string;
+    settlement?: OrderSettlementInput | null | undefined;
+    source?: "telegram" | undefined;
   }) => Promise<MerchantOrderActionResult>;
   getMerchantOrder?: (input: {
     orderId: string;
@@ -167,6 +170,56 @@ export async function handleTelegramCallbackQuery(
     return { handled: true, reason: "no_sales_channel" };
   }
 
+  // Multi-step settlement after Mark paid
+  if (parsed.kind === "settlement") {
+    const result = await deps.mutateMerchantOrder({
+      action: "mark-paid",
+      orderId: parsed.orderId,
+      salesChannelId,
+      source: "telegram",
+      settlement: { method: parsed.method },
+    });
+    if (!result.ok) {
+      await answerTelegramCallbackQuery({
+        botToken: deps.botToken,
+        callbackQueryId: callbackId,
+        text: failureCopy("paid", result.error),
+        showAlert: true,
+      }).catch(() => undefined);
+      return { handled: true, reason: result.error };
+    }
+    const methodLabel =
+      parsed.method === "cbe_birr"
+        ? "CBE Birr"
+        : parsed.method === "bank_transfer"
+          ? "Bank transfer"
+          : parsed.method.charAt(0).toUpperCase() + parsed.method.slice(1);
+    await answerTelegramCallbackQuery({
+      botToken: deps.botToken,
+      callbackQueryId: callbackId,
+      text: `Marked paid · ${methodLabel}`,
+    }).catch(() => undefined);
+    if (messageId != null) {
+      await editTelegramMessageReplyMarkup({
+        botToken: deps.botToken,
+        chatId,
+        messageId,
+        replyMarkup: buildOrderActionKeyboard({
+          orderId: parsed.orderId,
+          tenantId: parsed.tenantId,
+          secret: deps.secret,
+          exclude: ["paid"],
+        }) ?? { inline_keyboard: [] },
+      }).catch(() => undefined);
+    }
+    await sendTelegramBotMessage({
+      botToken: deps.botToken,
+      chatId,
+      text: `Payment recorded for order ${formatOrderRef(parsed.orderId)} · ${methodLabel}.`,
+    }).catch(() => undefined);
+    return { handled: true, reason: "settlement_paid" };
+  }
+
   if (parsed.action === "details") {
     let text = `Order ${formatOrderRef(parsed.orderId)}`;
     if (deps.getMerchantOrder) {
@@ -192,6 +245,38 @@ export async function handleTelegramCallbackQuery(
       text: "Order details",
     }).catch(() => undefined);
     return { handled: true, reason: "details" };
+  }
+
+  // Mark paid → show settlement method picker (do not mark yet)
+  if (parsed.action === "paid") {
+    const keyboard = buildSettlementMethodKeyboard({
+      orderId: parsed.orderId,
+      tenantId: parsed.tenantId,
+      secret: deps.secret,
+    });
+    if (!keyboard) {
+      await answerTelegramCallbackQuery({
+        botToken: deps.botToken,
+        callbackQueryId: callbackId,
+        text: "Could not open payment options. Use the dashboard.",
+        showAlert: true,
+      }).catch(() => undefined);
+      return { handled: true, reason: "settlement_keyboard_failed" };
+    }
+    if (messageId != null) {
+      await editTelegramMessageReplyMarkup({
+        botToken: deps.botToken,
+        chatId,
+        messageId,
+        replyMarkup: keyboard,
+      }).catch(() => undefined);
+    }
+    await answerTelegramCallbackQuery({
+      botToken: deps.botToken,
+      callbackQueryId: callbackId,
+      text: "How was it paid?",
+    }).catch(() => undefined);
+    return { handled: true, reason: "settlement_prompt" };
   }
 
   const mutation = mutationForAction(parsed.action);

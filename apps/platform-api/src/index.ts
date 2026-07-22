@@ -57,6 +57,7 @@ import {
 import { ensureTelegramWebhookIfConfigured } from "./modules/telegram/telegram-webhook.js";
 import { createTenantOnboardingService } from "./modules/onboarding/service.js";
 import { createPaymentOnboardingService } from "./modules/payments/payment-onboarding-service.js";
+import { createReceivingAccountsService } from "./modules/payments/receiving-accounts-service.js";
 import { wrapProductServiceWithStorefrontPurge } from "./modules/storefront/catalog-cache-invalidation.js";
 import { createStorefrontTemplateService } from "./modules/storefront/template-service.js";
 import { createSupportService } from "./modules/support/service.js";
@@ -150,6 +151,13 @@ const telegramOrderBridge: {
     action: "mark-paid" | "fulfill" | "cancel";
     orderId: string;
     salesChannelId: string;
+    settlement?: {
+      method: "cash" | "telebirr" | "cbe_birr" | "bank_transfer" | "chapa" | "other";
+      bankCode?: string | null;
+      bankName?: string | null;
+      reference?: string | null;
+    } | null;
+    source?: "telegram" | undefined;
   }) => ReturnType<ReturnType<typeof createMedusaOrderService>["mutateMerchantOrder"]>);
   getMerchantOrder: null | ((input: {
     orderId: string;
@@ -184,6 +192,8 @@ const telegramConnectService = createTelegramConnectService(platformDb.db, teleg
             action: input.action as "mark-paid" | "fulfill" | "cancel",
             orderId: input.orderId,
             salesChannelId: input.salesChannelId,
+            settlement: input.settlement,
+            source: input.source,
           }),
         ...(telegramOrderBridge.getMerchantOrder
           ? { getMerchantOrder: telegramOrderBridge.getMerchantOrder }
@@ -279,6 +289,10 @@ const paymentOnboardingService = createPaymentOnboardingService(platformDb.db, {
   paymentsCredentialsEncryptionKey:
     process.env.PAYMENTS_CREDENTIALS_ENCRYPTION_KEY ?? process.env.CHAPA_SECRET_KEY,
 });
+const receivingAccountsService = createReceivingAccountsService(platformDb.db, {
+  encryptionKey:
+    process.env.PAYMENTS_CREDENTIALS_ENCRYPTION_KEY ?? process.env.CHAPA_SECRET_KEY,
+});
 const medusaInternalUrl = process.env.MEDUSA_INTERNAL_URL ?? "http://localhost:9000";
 const platformInternalApiToken =
   process.env.PLATFORM_INTERNAL_API_TOKEN ??
@@ -364,6 +378,8 @@ telegramOrderBridge.mutateMerchantOrder = (input) =>
     action: input.action as "mark-paid" | "fulfill" | "cancel",
     orderId: input.orderId,
     salesChannelId: input.salesChannelId,
+    settlement: input.settlement,
+    source: input.source ?? (input.action === "mark-paid" ? "telegram" : undefined),
   });
 telegramOrderBridge.getMerchantOrder = (input) =>
   orderService.getMerchantOrder({
@@ -774,6 +790,12 @@ const app = createPlatformApp({
   listTenantDomains: domainManagementService.listTenantDomains,
   listStorefrontTemplates: storefrontTemplateService.listStorefrontTemplates,
   mutateMerchantOrder: orderService.mutateMerchantOrder,
+  updateMerchantOrderSettlement: orderService.updateMerchantOrderSettlement,
+  listMerchantReceivingAccounts: receivingAccountsService.listAccounts,
+  createMerchantReceivingAccount: receivingAccountsService.createAccount,
+  updateMerchantReceivingAccount: receivingAccountsService.updateAccount,
+  deleteMerchantReceivingAccount: receivingAccountsService.deleteAccount,
+  listMerchantPaymentBanks: receivingAccountsService.listBanks,
   recheckMerchantOrderPayment,
   captureOrderPaymentByTxRef: orderService.capturePaymentByTxRef,
   publishStorefrontDraft: storefrontTemplateService.publishStorefrontDraft,
