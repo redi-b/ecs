@@ -2,13 +2,18 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  CLASSIC_DARK_SEED,
+  CLASSIC_LIGHT_SEED,
   contrastRatio,
   contrastingInk,
   generateThemeFromPrimary,
+  generateThemeFromSeed,
+  hexToHsl,
   inferSurfaceMode,
   isHexColor,
   normalizeHex,
   relativeLuminance,
+  shiftColorRelativeToPrimary,
 } from "./palette";
 
 test("normalizeHex expands short form", () => {
@@ -46,4 +51,41 @@ test("generateThemeFromPrimary dark mode yields dark background", () => {
 test("inferSurfaceMode from background", () => {
   assert.equal(inferSurfaceMode("#0b0f0d"), "dark");
   assert.equal(inferSurfaceMode("#fafafa"), "light");
+});
+
+test("shiftColorRelativeToPrimary preserves accent hue offset from seed primary", () => {
+  const seed = CLASSIC_DARK_SEED;
+  const seedP = hexToHsl(seed.colors.primary)!;
+  const seedA = hexToHsl(seed.colors.accent)!;
+  const seedOffset = ((seedA.h - seedP.h) % 360 + 360) % 360;
+
+  const newPrimary = "#c45c5c";
+  const shiftedAccent = shiftColorRelativeToPrimary(
+    seed.colors.accent,
+    seed.colors.primary,
+    newPrimary,
+  );
+  const newP = hexToHsl(newPrimary)!;
+  const newA = hexToHsl(shiftedAccent)!;
+  const newOffset = ((newA.h - newP.h) % 360 + 360) % 360;
+
+  // Allow small rounding drift
+  const delta = Math.min(
+    Math.abs(newOffset - seedOffset),
+    360 - Math.abs(newOffset - seedOffset),
+  );
+  assert.ok(delta < 3, `hue offset drift too large: ${delta}`);
+});
+
+test("generateThemeFromSeed with red primary keeps dark surface and readable contrast", () => {
+  const colors = generateThemeFromSeed("#c45c5c", CLASSIC_DARK_SEED);
+  assert.ok(relativeLuminance(colors.background) < 0.25);
+  assert.ok(contrastRatio(colors.background, colors.foreground) >= 4.5);
+  assert.ok(contrastRatio(colors.primary, colors.onPrimary) >= 3);
+});
+
+test("light seed is available for light surface mode", () => {
+  assert.equal(CLASSIC_LIGHT_SEED.surfaceMode, "light");
+  const colors = generateThemeFromPrimary(CLASSIC_LIGHT_SEED.colors.primary, "light");
+  assert.ok(relativeLuminance(colors.background) > 0.7);
 });

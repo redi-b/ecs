@@ -54,6 +54,11 @@ const surface = theme.muted ?? null;
 const onPrimary = contrastOn(primary);
 const onAccent = contrastOn(theme.accent ?? "#d4785a");
 
+/**
+ * Design tokens as CSS variables (integration point for all templates).
+ * Palette generation writes themeTokens.colors; Layout maps them here.
+ * Future templates: add vars as needed; keep names stable for classic CSS.
+ */
 const style = [
   theme.background ? `--at-bg: ${theme.background}` : null,
   theme.foreground ? `--at-fg: ${theme.foreground}` : null,

@@ -1,7 +1,14 @@
 /**
  * Classic storefront design system.
- * Tokens override via body inline style (published themeTokens).
- * Default palette: cold forest; light merchant themes recolor via --at-*.
+ *
+ * Color tokens come from published themeTokens (editor auto-palette or manual).
+ * Layout injects CSS variables on the shell; components must use var(--at-*) only.
+ *
+ *   --at-bg --at-fg --at-primary --at-on-primary
+ *   --at-muted --at-surface --at-accent --at-on-accent --at-radius
+ *
+ * Palette generation (seed offset + contrast) lives in @ecs/storefront-templates.
+ * Default palette: cold forest dark seed; light seed when surface is light.
  * Fonts loaded from Layout based on themeTokens (Syne/Outfit always available).
  */
 
