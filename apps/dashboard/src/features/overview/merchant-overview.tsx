@@ -41,6 +41,7 @@ import type { ChartMetric, MerchantOverviewProps } from "@/features/overview/ove
 import { chartColorConfig } from "@/features/overview/overview-config";
 import { useI18n } from "@/i18n/provider";
 import type { MessageKey } from "@/i18n/messages";
+import { LaunchAssistant } from "@/features/overview/launch-assistant";
 import {
   ChartEmptyState,
   compactMoney,
@@ -49,7 +50,6 @@ import {
   formatReadableDate,
   formatShortDate,
   getDemandRhythmRows,
-  LaunchAssistant,
   MetricCard,
   ReadinessBlock,
   StatusDonutChart,
