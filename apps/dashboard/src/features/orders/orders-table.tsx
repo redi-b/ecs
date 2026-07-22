@@ -194,7 +194,7 @@ export function OrdersTable({
   tenantId,
   totalCount,
 }: OrdersTableProps) {
-  // Server pagination owns paging — do not pass pageSize into DataTable
+
   // (that enables a second client pagination footer).
   void _pageSize;
 

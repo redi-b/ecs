@@ -20,7 +20,6 @@ type HelpTipProps = {
 
 /**
  * Compact “?” help control for dense merchant UIs.
- * Single interaction: click/tap opens a popover (works the same on desktop and mobile).
  */
 export function HelpTip({
   summary,

@@ -444,7 +444,7 @@ export function StorefrontEditorShell({
         <aside
           className={cn(
             "flex flex-col overflow-hidden border-t bg-background",
-            // Critical: min-h-0 so settings content does not expand the grid row.
+
             // h-0 + min-h-full = fill the row height set by the preview column.
             "max-lg:max-h-[min(70dvh,40rem)]",
             "lg:h-0 lg:min-h-full lg:border-l lg:border-t-0",

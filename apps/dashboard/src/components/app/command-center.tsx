@@ -108,7 +108,7 @@ function IconTile({
 }
 
 function useModKeyLabel() {
-  // Avoid hydration mismatch: default to Ctrl, swap to ⌘ on Apple platforms after mount.
+
   const [modKey, setModKey] = useState("Ctrl");
   useEffect(() => {
     const apple = /Mac|iPhone|iPad|iPod/i.test(navigator.userAgent);
@@ -305,7 +305,7 @@ export function CommandCenter() {
   const showEmpty =
     !showEmptyQuery && !hasLocal && !hasRemote && !remoteLoading;
 
-  // Short placeholder on narrow viewports so the field does not overflow.
+
   const [inputPlaceholder, setInputPlaceholder] = useState(t("commandCenter.searchOrJump"));
   useEffect(() => {
     const mq = window.matchMedia("(min-width: 640px)");
@@ -350,7 +350,7 @@ export function CommandCenter() {
           // Mobile: near full-screen sheet from top for thumb reach + more list room.
           "fixed top-0 left-1/2 z-50 flex max-h-[100dvh] w-full max-w-full -translate-x-1/2 translate-y-0 flex-col gap-0 overflow-hidden rounded-none border-0 p-0 shadow-2xl",
           "data-open:zoom-in-100 data-closed:zoom-out-100",
-          // Desktop: solid elevated panel (avoid heavy backdrop-blur over the field — reads soft).
+
           "sm:top-[min(12vh,6rem)] sm:max-h-[min(36rem,80dvh)] sm:max-w-xl sm:rounded-2xl sm:border sm:border-border/70",
           "bg-popover",
           "ring-1 ring-black/5 dark:ring-white/10",

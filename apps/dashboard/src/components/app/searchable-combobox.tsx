@@ -33,10 +33,7 @@ export type SearchableComboboxOption = {
 type SearchableComboboxProps = {
   disabled?: boolean;
   emptyLabel: string;
-  /**
-   * When set, selection can be cleared (clear control in the search field).
-   * Cleared value calls `onChange("")`.
-   */
+  /** Enables clear; empty selection calls `onChange("")`. */
   noneLabel?: string;
   onChange: (value: string) => void;
   options: SearchableComboboxOption[];
@@ -47,9 +44,7 @@ type SearchableComboboxProps = {
   id?: string;
   renderItem?: (item: SearchableComboboxOption) => React.ReactNode;
   renderValue?: (item: SearchableComboboxOption | null) => React.ReactNode;
-  /** Custom trigger element (merged via Combobox `render`). */
   trigger?: React.ReactElement;
-  /** Trailing icon: chevron (default), edit, none, or custom. */
   triggerIcon?: "chevron" | "edit" | false | React.ReactNode;
   panelFooter?: React.ReactNode;
   contentClassName?: string;
@@ -68,7 +63,6 @@ function useNestedOverlaySync(controlledOpen?: boolean) {
     };
   }, []);
 
-  // Controlled hosts may set open=false without a host onOpenChange(false) event.
   useEffect(() => {
     if (controlledOpen === undefined) return;
     sessionRef.current = applyNestedOverlaySession(controlledOpen, sessionRef.current);
@@ -111,7 +105,6 @@ function OptionRow({
   return <span className="min-w-0 flex-1 truncate">{item.label}</span>;
 }
 
-/** Single-select searchable combobox (button trigger + panel list). */
 export function SearchableCombobox({
   disabled,
   emptyLabel,
@@ -220,9 +213,7 @@ type MultiSearchableComboboxProps = {
   values: string[];
   className?: string;
   id?: string;
-  /** Trigger text when 2+ items are selected. Defaults to "{n} selected". */
   selectedCountLabel?: (count: number) => string;
-  /** Aria-label for chip remove controls. */
   removeLabel?: (label: string) => string;
   renderItem?: (item: SearchableComboboxOption) => React.ReactNode;
   chipsMaxHeightClassName?: string;
@@ -232,7 +223,6 @@ type MultiSearchableComboboxProps = {
   hideChips?: boolean;
 };
 
-/** Multi-select searchable combobox (summary trigger + panel list + pill chips). */
 export function MultiSearchableCombobox({
   disabled,
   emptyLabel,

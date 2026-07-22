@@ -83,7 +83,7 @@ export function ListResultsStatus({
       });
     }
   } else if (totalCount === 0) {
-    // True empty catalog — the table empty panel already says this; avoid a third label.
+
     return null;
   } else if (pageCount >= totalCount) {
     message =

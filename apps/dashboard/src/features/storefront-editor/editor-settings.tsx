@@ -120,7 +120,7 @@ export function StorefrontSettingsPanel() {
                   {bodyFields.map((field) => {
                     const value = (props as Record<string, unknown>)[field.prop];
                     const helpText = "helpText" in field ? field.helpText : undefined;
-                    // Products picker owns its own helper copy — avoid stacked muted text.
+
                     const showHelp = Boolean(helpText) && field.kind !== "products";
 
                     return (

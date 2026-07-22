@@ -25,7 +25,6 @@ function Popover({
     };
   }, []);
 
-  // Controlled close (e.g. setOpen(false) after filter select) may skip onOpenChange.
   React.useEffect(() => {
     if (open === undefined) return;
     sessionRef.current = applyNestedOverlaySession(open, sessionRef.current);

@@ -110,7 +110,7 @@ export function SettingsSectionNav({
         <ul
           className={cn(
             "flex min-w-0 gap-1.5 overflow-x-auto overflow-y-hidden overscroll-x-contain scroll-smooth px-0.5 pb-1",
-            // Prefer horizontal pan on the strip so the page does not steal the gesture.
+
             "touch-pan-x [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
             "lg:flex-col lg:gap-1 lg:overflow-visible lg:px-0 lg:pb-0 lg:touch-auto",
           )}

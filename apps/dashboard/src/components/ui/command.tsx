@@ -62,7 +62,6 @@ function CommandInput({
   size = "default",
   ...props
 }: Omit<React.ComponentProps<typeof CommandPrimitive.Input>, "size"> & {
-  /** default — dense lists; lg — command palette; panel — combobox-aligned filter popovers */
   size?: "default" | "lg" | "panel";
 }) {
   const stringValue = typeof value === "string" ? value : "";

@@ -1,23 +1,13 @@
 /**
- * Tracks nested floating UI (select / popover / menu) so parent dialogs/sheets
- * do not dismiss when the user click-aways to close only the nested layer.
- *
- * Why a suppress window: Radix often unmounts the select content (and fires
- * onOpenChange(false)) before or during the parent modal's outside handler for
- * the same pointer event. A live DOM query for open content is already empty,
- * so we keep a short suppress window after close.
- *
- * Applies to ALL outside dismissals for the parent — including scrim/overlay
- * clicks — while a nested layer is open or within the suppress window.
- *
- * Does NOT gate ESC or the close (X) button (those use onOpenChange / Close).
+ * Tracks open floating layers (popover/select/menu/combobox) so parent
+ * dialogs/sheets do not dismiss while a nested layer is open or just closed.
  */
 
-/** Stable tokens for each open nested layer (avoids double-count drift). */
+/** Tokens for currently open nested layers. */
 const openLayers = new Set<symbol>();
 let suppressDialogCloseUntil = 0;
 
-/** Long enough to cover the same pointerdown→click race across nested layers. */
+/** Covers the pointerdown→click race when a nested layer closes on outside click. */
 const SUPPRESS_MS = 320;
 
 export function notifyNestedOverlayChange(open: true): symbol;
@@ -39,15 +29,11 @@ export function notifyNestedOverlayChange(
     if (first) openLayers.delete(first);
   }
 
-  // Parent modal outside-handlers for this same gesture must still see "active".
   suppressDialogCloseUntil = performance.now() + SUPPRESS_MS;
   return undefined;
 }
 
-/**
- * Idempotent open/close for a single host (Popover, Select, Combobox, …).
- * Avoids leaking symbols when the host fires `open=true` more than once.
- */
+/** Per-host open session; open=true is a no-op if already open. */
 export type NestedOverlaySession = {
   isOpen: boolean;
   layerId: symbol | null;
@@ -69,11 +55,7 @@ export function applyNestedOverlaySession(
   return { isOpen: false, layerId: null };
 }
 
-/**
- * Call from floating-layer roots on unmount when still open, so openLayers
- * cannot stick after a parent dialog unmounts without firing onOpenChange(false).
- * Does not start a suppress window (parent is going away).
- */
+/** Drop a layer on unmount if still open (no suppress window). */
 export function releaseNestedOverlayIfOpen(wasOpen: boolean, layerId?: symbol | null) {
   if (!wasOpen) return;
   if (layerId) {
@@ -84,17 +66,16 @@ export function releaseNestedOverlayIfOpen(wasOpen: boolean, layerId?: symbol | 
   if (first) openLayers.delete(first);
 }
 
-/** True when a select/popover/menu is open, or was just closed (race window). */
+/** Nested layer open, or within the brief post-close suppress window. */
 export function isNestedOverlayActive() {
   return openLayers.size > 0 || performance.now() < suppressDialogCloseUntil;
 }
 
-/** Open layers only — excludes the brief post-close suppress window. */
+/** Nested layer currently open (excludes suppress window). */
 export function isNestedOverlayOpen() {
   return openLayers.size > 0;
 }
 
-/** Test helper / diagnostics */
 export function getNestedOverlayDebugState() {
   return {
     openCount: openLayers.size,

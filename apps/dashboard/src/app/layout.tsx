@@ -27,14 +27,7 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-/**
- * Amharic / Ethiopic UI face.
- *
- * Google Sans is proprietary and not available via next/font.
- * Noto Sans Ethiopic is Google’s open Ethiopic family (same designer lineage as
- * the Google Fonts preview). We apply its className when locale is `am` so the
- * browser cannot fall back to a thin system Ethiopic face.
- */
+/** Noto Sans Ethiopic for `am` locale (next/font; avoids thin system Ethiopic). */
 const notoEthiopic = Noto_Sans_Ethiopic({
   variable: "--font-ethiopic",
   subsets: ["ethiopic"],

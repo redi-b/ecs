@@ -30,7 +30,6 @@ export function CategoryCombobox({
 }) {
   const { t } = useI18n();
 
-  // Preset list only — free-text custom categories are disabled for now.
   const options = useMemo(
     () =>
       BUSINESS_CATEGORY_OPTIONS.map((label) => ({

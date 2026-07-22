@@ -17,10 +17,6 @@ type AuthShellProps = {
   toolbar?: ReactNode;
 };
 
-/**
- * Shared chrome for sign-in, sign-up, and shop setup.
- * Restrained product aesthetic: no glow, glass, or decorative gradients.
- */
 export async function AuthShell({
   brandDescription,
   brandFooter,
