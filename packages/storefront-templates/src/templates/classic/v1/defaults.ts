@@ -24,7 +24,7 @@ export const classicV1Defaults: ClassicV1Data = {
     },
     featuredCollection: {
       enabled: false,
-      title: "Our Top Picks",
+      title: "",
       limit: 8,
     },
     featuredProducts: {

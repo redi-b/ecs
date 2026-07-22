@@ -54,7 +54,7 @@ const heroImageUrl = isImageUrl(templateData.home.hero.imageAssetId)
 const collectionsResult = await listStoreCollections({
   platformApiBaseUrl,
   requestHost,
-  limit: 12,
+  limit: 50,
 });
 const collections =
   !isStoreError(collectionsResult) ? collectionsResult.collections : [];
@@ -63,9 +63,18 @@ const showCollectionsStrip =
 
 const showHero = templateData.home.hero.enabled !== false;
 const showFeaturedProducts = templateData.home.featuredProducts.enabled !== false;
+const featuredCollectionConfig = templateData.home.featuredCollection;
+const featuredCollectionMeta = featuredCollectionConfig?.collectionId
+  ? collections.find((c) => c.id === featuredCollectionConfig.collectionId)
+  : undefined;
+const featuredCollectionTitle =
+  featuredCollectionConfig?.title?.trim() ||
+  featuredCollectionMeta?.title?.trim() ||
+  collectionProducts[0]?.collectionTitle?.trim() ||
+  "Collection";
 const showFeaturedCollection =
-  templateData.home.featuredCollection?.enabled === true &&
-  Boolean(templateData.home.featuredCollection.collectionId) &&
+  featuredCollectionConfig?.enabled === true &&
+  Boolean(featuredCollectionConfig.collectionId) &&
   collectionProducts.length > 0;
 const showTrust = templateData.home.trust?.enabled !== false;
 const trustItems =
@@ -181,12 +190,12 @@ function productCard(product: StoreProduct) {
       <section class="at-block at-reveal" aria-labelledby="featured-collection-title">
         <div class="at-section-head">
           <h2 class="at-h2" id="featured-collection-title">
-            {templateData.home.featuredCollection?.title ?? "Our Top Picks"}
+            {featuredCollectionTitle}
           </h2>
-          {templateData.home.featuredCollection?.collectionId ? (
+          {featuredCollectionConfig?.collectionId ? (
             <a
               class="at-text-link"
-              href={`/products?collection=${encodeURIComponent(templateData.home.featuredCollection.collectionId)}`}
+              href={`/products?collection=${encodeURIComponent(featuredCollectionConfig.collectionId)}`}
             >
               View collection
             </a>

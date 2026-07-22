@@ -37,11 +37,12 @@ export const classicV1DataSchema = z.object({
       secondaryCtaLabel: z.string().optional(),
       secondaryCtaHref: z.string().optional(),
     }),
-    /** Merchant-selected collection rail (e.g. "Our Top Picks"). */
+    /** Merchant-selected collection rail. Empty title → use collection name on storefront. */
     featuredCollection: z
       .object({
         enabled: z.boolean().default(false),
-        title: z.string().min(1),
+        /** Optional override; blank uses the selected collection’s title. */
+        title: z.string().default(""),
         collectionId: z.string().min(1).optional(),
         limit: z.number().int().min(1).max(48).default(8),
       })

@@ -46,6 +46,7 @@ test("classic v1 defaults satisfy schema including section toggles", () => {
   const parsed = classicV1DataSchema.parse(classicV1Defaults);
   assert.equal(parsed.home.featuredProducts.enabled, true);
   assert.equal(parsed.home.featuredCollection?.enabled, false);
+  assert.equal(parsed.home.featuredCollection?.title, "");
   assert.equal(parsed.home.testimonials?.enabled, false);
   assert.equal(parsed.home.trust?.enabled, true);
 });
