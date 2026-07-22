@@ -1,4 +1,9 @@
-import { classicV1EditorSchema as classicV1EditorManifest } from "@ecs/storefront-templates";
+import {
+  classicV1EditorSchema as classicV1EditorManifest,
+  generateThemeFromPrimary,
+  inferSurfaceMode,
+  type ThemeSurfaceMode,
+} from "@ecs/storefront-templates";
 import type { Data } from "@puckeditor/core";
 
 export type StorefrontDraft = {
@@ -47,6 +52,8 @@ export type StorefrontPageProps = {
   primaryCtaHref?: string;
   primaryCtaLabel?: string;
   productSectionTitle?: string;
+  /** light | dark — drives generated palette from brand color */
+  surfaceMode?: "light" | "dark";
   testimonialsEnabled?: boolean;
   testimonialsTitle?: string;
   trustEnabled?: boolean;
@@ -94,6 +101,18 @@ export function buildDraftPayload(input: {
       }
     }
   }
+
+  // Palette fields may be generated (not all listed as editor fields). Persist from props.
+  const mode =
+    props.surfaceMode === "light" || props.surfaceMode === "dark"
+      ? props.surfaceMode
+      : inferSurfaceMode(props.backgroundColor);
+  setPathValue(themeTokens, "surfaceMode", mode);
+  if (props.primaryColor) setPathValue(themeTokens, "colors.primary", props.primaryColor);
+  if (props.backgroundColor) setPathValue(themeTokens, "colors.background", props.backgroundColor);
+  if (props.foregroundColor) setPathValue(themeTokens, "colors.foreground", props.foregroundColor);
+  if (props.mutedColor) setPathValue(themeTokens, "colors.muted", props.mutedColor);
+  if (props.accentColor) setPathValue(themeTokens, "colors.accent", props.accentColor);
 
   return {
     data,
@@ -174,6 +193,19 @@ function coerceFieldValue(kind: string, value: unknown): unknown {
   return value == null ? "" : String(value);
 }
 
+function normalizePropForEditor(kind: string, value: unknown): unknown {
+  if (kind === "boolean") {
+    return typeof value === "boolean" ? value : value == null ? true : Boolean(value);
+  }
+  if (kind === "products") {
+    return Array.isArray(value) ? value.map(String) : [];
+  }
+  if (kind === "collection") {
+    return typeof value === "string" ? value : value == null ? "" : String(value);
+  }
+  return typeof value === "string" ? value : value == null ? undefined : String(value);
+}
+
 function flattenDraft(data: unknown, themeTokens: unknown): StorefrontPageProps {
   const props: Record<string, unknown> = {};
 
@@ -187,20 +219,45 @@ function flattenDraft(data: unknown, themeTokens: unknown): StorefrontPageProps 
     }
   }
 
+  // Always expose generated palette fields for preview (even if not in editor manifest).
+  const tokens =
+    themeTokens && typeof themeTokens === "object"
+      ? (themeTokens as {
+          surfaceMode?: string;
+          colors?: Record<string, string | undefined>;
+        })
+      : {};
+  const colors = tokens.colors ?? {};
+  props.backgroundColor =
+    typeof colors.background === "string" ? colors.background : props.backgroundColor;
+  props.foregroundColor =
+    typeof colors.foreground === "string" ? colors.foreground : props.foregroundColor;
+  props.primaryColor =
+    typeof colors.primary === "string" ? colors.primary : props.primaryColor;
+  props.mutedColor = typeof colors.muted === "string" ? colors.muted : props.mutedColor;
+  props.accentColor = typeof colors.accent === "string" ? colors.accent : props.accentColor;
+  props.surfaceMode =
+    tokens.surfaceMode === "light" || tokens.surfaceMode === "dark"
+      ? tokens.surfaceMode
+      : inferSurfaceMode(typeof colors.background === "string" ? colors.background : undefined);
+
   return props as StorefrontPageProps;
 }
 
-function normalizePropForEditor(kind: string, value: unknown): unknown {
-  if (kind === "boolean") {
-    return typeof value === "boolean" ? value : value == null ? true : Boolean(value);
-  }
-  if (kind === "products") {
-    return Array.isArray(value) ? value.map(String) : [];
-  }
-  if (kind === "collection") {
-    return typeof value === "string" ? value : value == null ? "" : String(value);
-  }
-  return typeof value === "string" ? value : value == null ? undefined : String(value);
+/** Build page props patch for a full palette from brand color + surface mode. */
+export function themePalettePageProps(
+  primary: string,
+  mode: ThemeSurfaceMode,
+): Partial<StorefrontPageProps> {
+  const generated = generateThemeFromPrimary(primary, mode);
+  return {
+    surfaceMode: mode,
+    primaryColor: generated.primary,
+    backgroundColor: generated.background,
+    foregroundColor: generated.foreground,
+    mutedColor: generated.muted,
+    accentColor: generated.accent,
+  };
 }
 
 function getPathValue(source: unknown, path: string) {
