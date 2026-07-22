@@ -46,6 +46,10 @@ type SearchableComboboxProps = {
   id?: string;
   /** Optional custom row for advanced lists (banks with meta, customers, etc.). */
   renderItem?: (item: SearchableComboboxOption) => React.ReactNode;
+  /** Sticky footer inside the panel (e.g. “Create collection”). */
+  panelFooter?: React.ReactNode;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 };
 
 function useNestedOverlaySync() {
@@ -120,6 +124,9 @@ export function SearchableCombobox({
   className,
   id,
   renderItem,
+  panelFooter,
+  open,
+  onOpenChange,
 }: SearchableComboboxProps) {
   const selected = options.find((option) => option.value === value) ?? null;
   const canClear = Boolean(noneLabel) && Boolean(selected);
@@ -133,11 +140,15 @@ export function SearchableCombobox({
       itemToStringLabel={(item) => item.label}
       itemToStringValue={(item) => item.value}
       items={options}
-      onOpenChange={nested.onOpenChange}
+      onOpenChange={(next) => {
+        nested.onOpenChange(next);
+        onOpenChange?.(next);
+      }}
       onValueChange={(item) => {
         onChange(item?.value ?? "");
       }}
       value={selected}
+      {...(open !== undefined ? { open } : {})}
     >
       <ComboboxTrigger
         disabled={disabled}
@@ -178,6 +189,9 @@ export function SearchableCombobox({
             </ComboboxItem>
           )}
         </ComboboxList>
+        {panelFooter ? (
+          <div className="border-t px-3 py-2">{panelFooter}</div>
+        ) : null}
       </ComboboxContent>
     </Combobox>
   );
@@ -203,6 +217,11 @@ type MultiSearchableComboboxProps = {
    * of blowing up the form layout.
    */
   chipsMaxHeightClassName?: string;
+  panelFooter?: React.ReactNode;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  /** When true, hide the chips row under the trigger (caller renders its own). */
+  hideChips?: boolean;
 };
 
 /**
@@ -227,6 +246,10 @@ export function MultiSearchableCombobox({
   removeLabel,
   renderItem,
   chipsMaxHeightClassName = "max-h-24",
+  panelFooter,
+  open,
+  onOpenChange,
+  hideChips = false,
 }: MultiSearchableComboboxProps) {
   const nested = useNestedOverlaySync();
 
@@ -260,12 +283,16 @@ export function MultiSearchableCombobox({
         itemToStringValue={(item) => item.value}
         items={options}
         multiple
-        onOpenChange={nested.onOpenChange}
+        onOpenChange={(next) => {
+          nested.onOpenChange(next);
+          onOpenChange?.(next);
+        }}
         onValueChange={(next) => {
           const list = Array.isArray(next) ? next : [];
           onChange(list.map((item) => item.value));
         }}
         value={selectedOptions}
+        {...(open !== undefined ? { open } : {})}
       >
         <ComboboxTrigger
           disabled={disabled}
@@ -305,10 +332,13 @@ export function MultiSearchableCombobox({
               </ComboboxItem>
             )}
           </ComboboxList>
+          {panelFooter ? (
+            <div className="border-t px-3 py-2">{panelFooter}</div>
+          ) : null}
         </ComboboxContent>
       </Combobox>
 
-      {selectedOptions.length > 0 ? (
+      {!hideChips && selectedOptions.length > 0 ? (
         <div
           className={cn(
             "flex flex-wrap content-start gap-1.5 overflow-y-auto overscroll-contain pr-0.5",
