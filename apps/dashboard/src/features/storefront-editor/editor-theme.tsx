@@ -2,7 +2,7 @@
 
 import type { Data, PuckAction } from "@puckeditor/core";
 import { RiCheckLine, RiEditLine, RiInformationLine, RiRefreshLine } from "@remixicon/react";
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { HexColorPicker } from "react-colorful";
 
 import { Button } from "@/components/ui/button";
@@ -134,23 +134,23 @@ export function ThemeBrandSection({
       <div className="flex items-center justify-between gap-2 border-b px-4 py-3">
         <div className="text-sm font-semibold">Appearance</div>
         <SectionInfoTip
-          body="Choose a light or dark surface and a brand color. We generate background, text, muted, and accent with readable contrast. You can edit any color, turn auto palette off, or regenerate anytime."
-          title="How appearance works"
+          body="Select a surface style and brand color to generate a complete palette with readable contrast. Edit any swatch directly, disable automatic generation for full control, or regenerate from the brand color when you want a fresh set."
+          title="Appearance"
         />
       </div>
 
       <div className="flex min-w-0 flex-col gap-5 p-4">
         <div className="flex items-center justify-between gap-3 rounded-lg border bg-background px-3 py-2.5">
           <div className="min-w-0">
-            <div className="text-sm font-medium">Auto palette</div>
+            <div className="text-sm font-medium">Automatic palette</div>
             <p className="text-xs leading-relaxed text-muted-foreground">
               {autoPalette
-                ? "Brand and surface update the full color set."
-                : "Colors are freeform. Regenerate to rebuild from brand."}
+                ? "Surface and brand color update background, text, muted, and accent together."
+                : "Each color can be set independently. Use Regenerate to rebuild from brand color."}
             </p>
           </div>
           <Switch
-            aria-label="Auto palette"
+            aria-label="Automatic palette"
             checked={autoPalette}
             onCheckedChange={setAutoPalette}
           />
@@ -214,8 +214,8 @@ export function ThemeBrandSection({
             })}
           </div>
           <p className="text-xs leading-relaxed text-muted-foreground">
-            Tap a swatch to edit. Changing a non-brand color turns auto palette off so your
-            tweaks stick.
+            Select a swatch to edit. Adjusting a color other than brand turns off automatic
+            palette so your changes are preserved.
           </p>
         </div>
 
@@ -247,39 +247,80 @@ function clampByte(n: number) {
   return Math.max(0, Math.min(255, Math.round(n)));
 }
 
-function formatRgb(hex: string) {
-  const rgb = hexToRgb(hex);
-  if (!rgb) return "0, 0, 0";
-  return `${rgb.r}, ${rgb.g}, ${rgb.b}`;
+function clampHue(n: number) {
+  const v = Math.round(n) % 360;
+  return v < 0 ? v + 360 : v;
 }
 
-function formatHsl(hex: string) {
-  const hsl = hexToHsl(hex);
-  if (!hsl) return "0, 0%, 0%";
-  return `${Math.round(hsl.h)}, ${Math.round(hsl.s)}%, ${Math.round(hsl.l)}%`;
+function clampPercent(n: number) {
+  return Math.max(0, Math.min(100, Math.round(n)));
 }
 
-function parseRgbInput(value: string): string | null {
-  const parts = value
-    .replace(/rgba?\(/i, "")
-    .replace(/\)/g, "")
-    .split(/[\s,]+/)
-    .filter(Boolean)
-    .map(Number);
-  if (parts.length < 3 || parts.slice(0, 3).some((n) => !Number.isFinite(n))) return null;
-  return rgbToHex(clampByte(parts[0]!), clampByte(parts[1]!), clampByte(parts[2]!));
+function parseChannelNumber(raw: string): number | null {
+  const n = Number(String(raw).replace(/%/g, "").trim());
+  return Number.isFinite(n) ? n : null;
 }
 
-function parseHslInput(value: string): string | null {
-  const parts = value
-    .replace(/hsla?\(/i, "")
-    .replace(/\)/g, "")
-    .replace(/%/g, "")
-    .split(/[\s,]+/)
-    .filter(Boolean)
-    .map(Number);
-  if (parts.length < 3 || parts.slice(0, 3).some((n) => !Number.isFinite(n))) return null;
-  return hslToHex(parts[0]!, parts[1]!, parts[2]!);
+function ChannelField({
+  label,
+  suffix,
+  value,
+  min,
+  max,
+  onCommit,
+}: {
+  label: string;
+  suffix?: string;
+  value: number;
+  min: number;
+  max: number;
+  onCommit: (next: number) => void;
+}) {
+  const [text, setText] = useState(String(value));
+
+  useEffect(() => {
+    setText(String(value));
+  }, [value]);
+
+  function commit(raw: string) {
+    const n = parseChannelNumber(raw);
+    if (n == null) {
+      setText(String(value));
+      return;
+    }
+    const clamped = Math.max(min, Math.min(max, Math.round(n)));
+    setText(String(clamped));
+    onCommit(clamped);
+  }
+
+  return (
+    <div className="flex min-w-0 flex-col gap-1">
+      <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+        {label}
+      </span>
+      <div className="flex h-9 min-w-0 items-center overflow-hidden rounded-md border bg-background shadow-xs focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/40">
+        <Input
+          aria-label={label}
+          className="h-full min-w-0 flex-1 border-0 bg-transparent px-2 font-mono text-xs shadow-none focus-visible:ring-0"
+          inputMode="numeric"
+          onBlur={() => commit(text)}
+          onChange={(event) => setText(event.currentTarget.value)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              commit(event.currentTarget.value);
+              event.currentTarget.blur();
+            }
+          }}
+          value={text}
+        />
+        {suffix ? (
+          <span className="shrink-0 border-l px-2 font-mono text-[11px] text-muted-foreground">
+            {suffix}
+          </span>
+        ) : null}
+      </div>
+    </div>
+  );
 }
 
 export function PremiumColorPicker({
@@ -296,35 +337,56 @@ export function PremiumColorPicker({
 }) {
   const color = isHexColor(value) ? normalizeHex(value) : "#000000";
   const [format, setFormat] = useState<ColorFormat>("hex");
-  const [draft, setDraft] = useState("");
+  const [hexDraft, setHexDraft] = useState(color.toUpperCase());
 
-  const display = useMemo(() => {
-    if (format === "hex") return color.toUpperCase();
-    if (format === "rgb") return formatRgb(color);
-    return formatHsl(color);
-  }, [color, format]);
+  const rgb = hexToRgb(color) ?? { r: 0, g: 0, b: 0 };
+  const hsl = hexToHsl(color) ?? { h: 0, s: 0, l: 0 };
 
-  function commitDraft(raw: string) {
-    const trimmed = raw.trim();
-    if (!trimmed) return;
-    if (format === "hex") {
-      const next = normalizeHex(trimmed.startsWith("#") ? trimmed : `#${trimmed}`, color);
-      if (isHexColor(next)) onChange(next);
-      return;
-    }
-    if (format === "rgb") {
-      const next = parseRgbInput(trimmed);
-      if (next) onChange(next);
-      return;
-    }
-    const next = parseHslInput(trimmed);
-    if (next) onChange(next);
+  function applyRgb(next: Partial<{ r: number; g: number; b: number }>) {
+    onChange(
+      rgbToHex(
+        clampByte(next.r ?? rgb.r),
+        clampByte(next.g ?? rgb.g),
+        clampByte(next.b ?? rgb.b),
+      ),
+    );
   }
+
+  function applyHsl(next: Partial<{ h: number; s: number; l: number }>) {
+    onChange(
+      hslToHex(
+        clampHue(next.h ?? hsl.h),
+        clampPercent(next.s ?? hsl.s),
+        clampPercent(next.l ?? hsl.l),
+      ),
+    );
+  }
+
+  function commitHex(raw: string) {
+    const trimmed = raw.trim();
+    if (!trimmed) {
+      setHexDraft(color.toUpperCase());
+      return;
+    }
+    const next = normalizeHex(trimmed.startsWith("#") ? trimmed : `#${trimmed}`, color);
+    if (isHexColor(next)) {
+      onChange(next);
+      setHexDraft(next.toUpperCase());
+    } else {
+      setHexDraft(color.toUpperCase());
+    }
+  }
+
+  const formatModes: Array<{ id: ColorFormat; label: string }> = [
+    { id: "hex", label: "HEX" },
+    { id: "rgb", label: "RGB" },
+    { id: "hsl", label: "HSL" },
+  ];
 
   return (
     <Popover
       onOpenChange={(open) => {
-        if (open) setDraft(display);
+        if (open) setHexDraft(color.toUpperCase());
       }}
     >
       <PopoverTrigger asChild>
@@ -345,61 +407,126 @@ export function PremiumColorPicker({
           </Button>
         )}
       </PopoverTrigger>
-      <PopoverContent align="start" className={cn(POPOVER_MOTION_CLASSNAME, "w-72")}>
+      <PopoverContent align="start" className="w-[17.5rem] p-3" side="bottom" sideOffset={8}>
         <div className="flex flex-col gap-3">
-          <div className="flex items-center justify-between gap-2">
+          <div className="flex flex-col gap-2">
             <div className="text-sm font-medium">{label}</div>
-            <div className="flex rounded-md border p-0.5">
-              {(["hex", "rgb", "hsl"] as const).map((mode) => (
-                <button
-                  className={cn(
-                    "rounded px-1.5 py-0.5 font-mono text-[10px] uppercase transition",
-                    format === mode
-                      ? "bg-primary text-primary-foreground"
-                      : "text-muted-foreground hover:text-foreground",
-                  )}
-                  key={mode}
-                  onClick={() => {
-                    setFormat(mode);
-                    setDraft(
-                      mode === "hex"
-                        ? color.toUpperCase()
-                        : mode === "rgb"
-                          ? formatRgb(color)
-                          : formatHsl(color),
-                    );
-                  }}
-                  type="button"
-                >
-                  {mode}
-                </button>
-              ))}
+            <div
+              className="grid grid-cols-3 overflow-hidden rounded-lg border bg-muted/40 p-0.5"
+              role="tablist"
+              aria-label="Color format"
+            >
+              {formatModes.map((mode) => {
+                const active = format === mode.id;
+                return (
+                  <button
+                    aria-selected={active}
+                    className={cn(
+                      "h-7 rounded-md text-[11px] font-semibold tracking-wide transition",
+                      active
+                        ? "bg-background text-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground",
+                    )}
+                    key={mode.id}
+                    onClick={() => setFormat(mode.id)}
+                    role="tab"
+                    type="button"
+                  >
+                    {mode.label}
+                  </button>
+                );
+              })}
             </div>
           </div>
-          <HexColorPicker className="!w-full" color={color} onChange={onChange} />
-          <div className="flex items-center gap-2">
-            <span className="size-8 shrink-0 rounded-md border" style={{ backgroundColor: color }} />
-            <Input
-              aria-label={`${label} ${format} value`}
-              className="h-9 min-w-0 flex-1 font-mono text-xs uppercase"
-              onBlur={() => commitDraft(draft || display)}
-              onChange={(event) => setDraft(event.currentTarget.value)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") {
-                  commitDraft(event.currentTarget.value);
-                  event.currentTarget.blur();
-                }
-              }}
-              value={draft || display}
-            />
-          </div>
-          <p className="text-[11px] leading-relaxed text-muted-foreground">
-            {format === "hex"
-              ? "Hex like #0F766E"
-              : format === "rgb"
-                ? "RGB like 15, 118, 110"
-                : "HSL like 174, 78%, 25%"}
-          </p>
+
+          <HexColorPicker
+            className="!h-36 !w-full"
+            color={color}
+            onChange={(next) => {
+              onChange(next);
+              setHexDraft(normalizeHex(next).toUpperCase());
+            }}
+          />
+
+          {format === "hex" ? (
+            <div className="flex flex-col gap-1">
+              <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                Hex
+              </span>
+              <div className="flex h-9 items-center overflow-hidden rounded-md border bg-background shadow-xs focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/40">
+                <span className="shrink-0 border-r px-2.5 font-mono text-xs text-muted-foreground">
+                  #
+                </span>
+                <Input
+                  aria-label={`${label} hex`}
+                  className="h-full min-w-0 flex-1 border-0 bg-transparent px-2 font-mono text-xs uppercase shadow-none focus-visible:ring-0"
+                  onBlur={() => commitHex(hexDraft)}
+                  onChange={(event) => setHexDraft(event.currentTarget.value.replace(/^#/, ""))}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      commitHex(event.currentTarget.value);
+                      event.currentTarget.blur();
+                    }
+                  }}
+                  value={hexDraft.replace(/^#/, "")}
+                />
+              </div>
+            </div>
+          ) : null}
+
+          {format === "rgb" ? (
+            <div className="grid grid-cols-3 gap-2">
+              <ChannelField
+                label="R"
+                max={255}
+                min={0}
+                onCommit={(r) => applyRgb({ r })}
+                value={rgb.r}
+              />
+              <ChannelField
+                label="G"
+                max={255}
+                min={0}
+                onCommit={(g) => applyRgb({ g })}
+                value={rgb.g}
+              />
+              <ChannelField
+                label="B"
+                max={255}
+                min={0}
+                onCommit={(b) => applyRgb({ b })}
+                value={rgb.b}
+              />
+            </div>
+          ) : null}
+
+          {format === "hsl" ? (
+            <div className="grid grid-cols-3 gap-2">
+              <ChannelField
+                label="H"
+                max={359}
+                min={0}
+                onCommit={(h) => applyHsl({ h })}
+                value={Math.round(hsl.h)}
+              />
+              <ChannelField
+                label="S"
+                max={100}
+                min={0}
+                onCommit={(s) => applyHsl({ s })}
+                suffix="%"
+                value={Math.round(hsl.s)}
+              />
+              <ChannelField
+                label="L"
+                max={100}
+                min={0}
+                onCommit={(l) => applyHsl({ l })}
+                suffix="%"
+                value={Math.round(hsl.l)}
+              />
+            </div>
+          ) : null}
         </div>
       </PopoverContent>
     </Popover>
