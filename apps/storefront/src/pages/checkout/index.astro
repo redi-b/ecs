@@ -5,6 +5,7 @@ import { getStoreDeliveryOptions } from "../../lib/commerce/delivery";
 import { isStoreError } from "../../lib/commerce/result";
 import { listStoreShippingOptions } from "../../lib/commerce/shipping";
 import type { StoreShippingOption } from "../../lib/commerce/types";
+import { applyPrivateNoStore } from "../../lib/http-cache";
 import { loadPageContext } from "../../lib/page-context";
 import { getPrimaryColor, themeFromTokens } from "../../lib/theme";
 import { resolveRendererSlot } from "../../templates/registry";
@@ -13,6 +14,8 @@ const ctx = await loadPageContext(Astro.request);
 if (!ctx.ok) {
   Astro.response.status = ctx.status;
 }
+
+applyPrivateNoStore(Astro.cache, Astro.response);
 
 const deliveryResult = ctx.ok
   ? await getStoreDeliveryOptions({

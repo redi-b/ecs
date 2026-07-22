@@ -20,13 +20,22 @@ export type StorefrontDraft = {
 };
 
 export type StorefrontPageProps = {
+  announcementEnabled?: boolean;
   announcementText?: string;
   backgroundColor?: string;
   bodyFont?: string;
+  collectionsStripEnabled?: boolean;
+  collectionsStripTitle?: string;
+  featuredCollectionEnabled?: boolean;
+  featuredCollectionId?: string;
+  featuredCollectionTitle?: string;
+  featuredProductIds?: string[];
+  featuredProductsEnabled?: boolean;
   footerAddress?: string;
   footerPhone?: string;
   foregroundColor?: string;
   headingFont?: string;
+  heroEnabled?: boolean;
   heroImageAssetId?: string;
   heroSubtitle?: string;
   heroTitle?: string;
@@ -38,6 +47,10 @@ export type StorefrontPageProps = {
   primaryCtaHref?: string;
   primaryCtaLabel?: string;
   productSectionTitle?: string;
+  testimonialsEnabled?: boolean;
+  testimonialsTitle?: string;
+  trustEnabled?: boolean;
+  accentColor?: string;
 };
 
 export type PublicationStatus = "published" | "saved-draft" | "unsaved";
@@ -65,15 +78,14 @@ export function buildDraftPayload(input: {
   tenantId: string;
   themeTokens: unknown;
 }) {
-  const data = cloneJson(input.data) as Record<string, any>;
-  const themeTokens = cloneJson(input.themeTokens) as Record<string, any>;
+  const data = cloneJson(input.data) as Record<string, unknown>;
+  const themeTokens = cloneJson(input.themeTokens) as Record<string, unknown>;
   const props = getStorefrontPageProps(input.editorData);
 
   for (const section of classicV1EditorManifest.sections) {
     for (const field of section.fields) {
       const value = (props as Record<string, unknown>)[field.prop];
-      const draftValue =
-        field.kind === "image" && !String(value ?? "").trim() ? undefined : String(value ?? "");
+      const draftValue = coerceFieldValue(field.kind, value);
 
       if (field.path.startsWith("themeTokens.")) {
         setPathValue(themeTokens, field.path.replace(/^themeTokens\./, ""), draftValue);
@@ -128,34 +140,80 @@ export function isPreviewImageUrl(value: string | undefined) {
   return /^https?:\/\//i.test(value) || /^data:image\//i.test(value);
 }
 
+function coerceFieldValue(kind: string, value: unknown): unknown {
+  if (kind === "boolean") {
+    if (typeof value === "boolean") return value;
+    if (value === "true" || value === "1") return true;
+    if (value === "false" || value === "0") return false;
+    return Boolean(value);
+  }
+
+  if (kind === "products") {
+    if (Array.isArray(value)) {
+      return value.map(String).filter((id) => id.trim().length > 0);
+    }
+    if (typeof value === "string") {
+      return value
+        .split(/[\n,]+/)
+        .map((part) => part.trim())
+        .filter(Boolean);
+    }
+    return [];
+  }
+
+  if (kind === "collection") {
+    const id = typeof value === "string" ? value.trim() : value == null ? "" : String(value);
+    return id || undefined;
+  }
+
+  if (kind === "image") {
+    const text = value == null ? "" : String(value);
+    return text.trim() ? text : undefined;
+  }
+
+  return value == null ? "" : String(value);
+}
+
 function flattenDraft(data: unknown, themeTokens: unknown): StorefrontPageProps {
-  const props: Record<string, string | undefined> = {};
+  const props: Record<string, unknown> = {};
 
   for (const section of classicV1EditorManifest.sections) {
     for (const field of section.fields) {
-      props[field.prop] = getPathValue(
+      const raw = getPathValue(
         field.path.startsWith("themeTokens.") ? themeTokens : data,
         field.path.replace(/^themeTokens\./, ""),
       );
+      props[field.prop] = normalizePropForEditor(field.kind, raw);
     }
   }
 
-  return props;
+  return props as StorefrontPageProps;
+}
+
+function normalizePropForEditor(kind: string, value: unknown): unknown {
+  if (kind === "boolean") {
+    return typeof value === "boolean" ? value : value == null ? true : Boolean(value);
+  }
+  if (kind === "products") {
+    return Array.isArray(value) ? value.map(String) : [];
+  }
+  if (kind === "collection") {
+    return typeof value === "string" ? value : value == null ? "" : String(value);
+  }
+  return typeof value === "string" ? value : value == null ? undefined : String(value);
 }
 
 function getPathValue(source: unknown, path: string) {
-  const value = path.split(".").reduce<unknown>((current, key) => {
+  return path.split(".").reduce<unknown>((current, key) => {
     if (current === null || typeof current !== "object") {
       return undefined;
     }
 
     return (current as Record<string, unknown>)[key];
   }, source);
-
-  return typeof value === "string" ? value : undefined;
 }
 
-function setPathValue(target: unknown, path: string, value: string | undefined) {
+function setPathValue(target: unknown, path: string, value: unknown) {
   if (target === null || typeof target !== "object") {
     return;
   }

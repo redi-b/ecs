@@ -22,7 +22,13 @@ export type PageContext =
       message: string;
     };
 
-export async function loadPageContext(request: Request): Promise<PageContext> {
+export async function loadPageContext(
+  request: Request,
+  options?: {
+    /** Skip cart cookie fetch (public catalog pages that defer cart badge). */
+    skipCart?: boolean;
+  },
+): Promise<PageContext> {
   const platformApiBaseUrl = getPlatformApiBaseUrl();
   const requestHost = getRequestHost(request);
   const configResult = await getPublishedStorefrontConfig({
@@ -35,6 +41,18 @@ export async function loadPageContext(request: Request): Promise<PageContext> {
       ok: false,
       status: configResult.status,
       message: configResult.message,
+    };
+  }
+
+  if (options?.skipCart) {
+    return {
+      ok: true,
+      config: configResult.config,
+      platformApiBaseUrl,
+      requestHost,
+      cartId: null,
+      cart: null,
+      cartCount: 0,
     };
   }
 

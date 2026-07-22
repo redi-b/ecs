@@ -4,6 +4,19 @@ Hono service that owns platform routes, tenant resolution, auth/session boundari
 
 This app may call Medusa through the internal network. Browsers must not call Medusa Admin API directly.
 
+## Storefront HTML cache purge
+
+After **storefront publish/unpublish** and successful **catalog writes** (products, stock, categories, collections), platform-api best-effort purges public storefront HTML for that tenant so shops do not serve intentionally stale browse pages.
+
+| Variable | Purpose |
+|----------|---------|
+| `STOREFRONT_CACHE_PURGE_SECRET` | Shared with storefront; if unset, purge is skipped |
+| `STOREFRONT_INTERNAL_BASE_URL` | Storefront origin (local `http://localhost:4321`, compose `http://storefront:4321`) |
+
+Calls `POST {STOREFRONT_INTERNAL_BASE_URL}/internal/cache-purge` with header `x-ecs-cache-purge-secret` and body `{ tenantId, tags: ["tenant:…"] }`.
+
+See `apps/storefront/README.md` and `dev-docs/07-storefront-routing.md`.
+
 ## Worker (`pnpm --filter @ecs/platform-api dev:worker`)
 
 Requires `REDIS_URL` and platform DB. Registers BullMQ handlers including:

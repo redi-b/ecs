@@ -9,6 +9,8 @@ interface NavItem {
 interface Props {
   tenantName: string;
   cartCount?: number;
+  /** When true, cart badge is filled client-side from /cart-count (public cache safe). */
+  deferCartCount?: boolean;
   title?: string;
   theme?: ShellTheme & { accent?: string };
   primaryColor?: string;
@@ -27,6 +29,7 @@ interface Props {
 const {
   tenantName,
   cartCount = 0,
+  deferCartCount = false,
   title,
   theme = {},
   primaryColor,
@@ -200,13 +203,14 @@ const mainLinks = links.filter((item) => !item.href.startsWith("/cart"));
             }
             <a class="at-cart" href="/cart">
               Cart
-              {
-                cartCount > 0 ? (
-                  <span class="at-badge" aria-live="polite">
-                    {cartCount}
-                  </span>
-                ) : null
-              }
+              <span
+                class="at-badge"
+                aria-live="polite"
+                data-cart-count
+                hidden={deferCartCount ? true : cartCount <= 0}
+              >
+                {deferCartCount ? "" : cartCount > 0 ? String(cartCount) : ""}
+              </span>
             </a>
             <button
               type="button"
@@ -228,7 +232,12 @@ const mainLinks = links.filter((item) => !item.href.startsWith("/cart"));
                 <a href={item.href}>{item.label}</a>
               ))
             }
-            <a href="/cart">Cart{cartCount > 0 ? ` (${cartCount})` : ""}</a>
+            <a href="/cart">
+              Cart
+              <span data-cart-count-label>
+                {!deferCartCount && cartCount > 0 ? ` (${cartCount})` : ""}
+              </span>
+            </a>
             <a href="/products">All products</a>
           </nav>
         </div>
@@ -255,23 +264,45 @@ const mainLinks = links.filter((item) => !item.href.startsWith("/cart"));
         </nav>
       </footer>
     </div>
-    <script is:inline>
+    <script is:inline define:vars={{ deferCartCount }}>
       (() => {
         const btn = document.querySelector("[data-menu-toggle]");
         const panel = document.querySelector("[data-mobile-nav]");
-        if (!btn || !panel) return;
-        btn.addEventListener("click", () => {
-          const open = panel.hasAttribute("hidden");
-          if (open) {
-            panel.removeAttribute("hidden");
-            btn.setAttribute("aria-expanded", "true");
-            btn.setAttribute("aria-label", "Close menu");
-          } else {
-            panel.setAttribute("hidden", "");
-            btn.setAttribute("aria-expanded", "false");
-            btn.setAttribute("aria-label", "Open menu");
-          }
-        });
+        if (btn && panel) {
+          btn.addEventListener("click", () => {
+            const open = panel.hasAttribute("hidden");
+            if (open) {
+              panel.removeAttribute("hidden");
+              btn.setAttribute("aria-expanded", "true");
+              btn.setAttribute("aria-label", "Close menu");
+            } else {
+              panel.setAttribute("hidden", "");
+              btn.setAttribute("aria-expanded", "false");
+              btn.setAttribute("aria-label", "Open menu");
+            }
+          });
+        }
+
+        if (deferCartCount) {
+          fetch("/cart-count", { credentials: "same-origin", cache: "no-store" })
+            .then((r) => (r.ok ? r.json() : null))
+            .then((data) => {
+              const count = data && typeof data.count === "number" ? data.count : 0;
+              document.querySelectorAll("[data-cart-count]").forEach((el) => {
+                if (count > 0) {
+                  el.textContent = String(count);
+                  el.removeAttribute("hidden");
+                } else {
+                  el.textContent = "";
+                  el.setAttribute("hidden", "");
+                }
+              });
+              document.querySelectorAll("[data-cart-count-label]").forEach((el) => {
+                el.textContent = count > 0 ? ` (${count})` : "";
+              });
+            })
+            .catch(() => {});
+        }
       })();
     </script>
   </body>

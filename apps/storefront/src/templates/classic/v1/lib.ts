@@ -14,11 +14,12 @@ export function parseClassicData(data: unknown, tenantName: string): ClassicV1Da
     header: { navigation: [{ label: "Shop", href: "/products" }] },
     home: {
       hero: {
+        enabled: true,
         title: tenantName,
         primaryCtaLabel: "Shop",
         primaryCtaHref: "/products",
       },
-      featuredProducts: { title: "Featured", productIds: [] },
+      featuredProducts: { enabled: true, title: "Featured", productIds: [], limit: 8 },
     },
     footer: { socialLinks: [] },
   });

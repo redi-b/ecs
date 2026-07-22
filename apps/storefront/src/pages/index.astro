@@ -1,18 +1,77 @@
 ---
-import { listStoreProducts } from "../lib/platform-store";
+import { classicV1DataSchema } from "@ecs/storefront-templates";
+
+import {
+  getStoreProductsByIds,
+  listStoreProducts,
+} from "../lib/commerce/products";
+import { isStoreError } from "../lib/commerce/result";
+import type { StoreProduct } from "../lib/commerce/types";
+import { applyCatalogCache, CATALOG_CACHE_TTL } from "../lib/http-cache";
 import { loadPageContext } from "../lib/page-context";
 import { getStorefrontRenderer } from "../templates/registry";
 
-const ctx = await loadPageContext(Astro.request);
+const ctx = await loadPageContext(Astro.request, { skipCart: true });
 
-const productsResult = ctx.ok
-  ? await listStoreProducts({
+const parsedData = ctx.ok
+  ? classicV1DataSchema.safeParse(ctx.config.storefront.data)
+  : null;
+const homeData = parsedData?.success ? parsedData.data : null;
+
+let featuredProducts: StoreProduct[] = [];
+let collectionProducts: StoreProduct[] = [];
+let productsError: string | null = null;
+
+if (ctx.ok && homeData) {
+  const featured = homeData.home.featuredProducts;
+  if (featured.enabled !== false) {
+    const limit = featured.limit ?? 8;
+    if (featured.productIds.length > 0) {
+      const result = await getStoreProductsByIds({
+        platformApiBaseUrl: ctx.platformApiBaseUrl,
+        requestHost: ctx.requestHost,
+        regionId: ctx.config.commerce.regionId,
+        productIds: featured.productIds.slice(0, limit),
+      });
+      if (isStoreError(result)) {
+        productsError = result.message;
+      } else {
+        featuredProducts = result.products;
+      }
+    } else {
+      const result = await listStoreProducts({
+        platformApiBaseUrl: ctx.platformApiBaseUrl,
+        requestHost: ctx.requestHost,
+        regionId: ctx.config.commerce.regionId,
+        limit,
+      });
+      if (isStoreError(result)) {
+        productsError = result.message;
+      } else {
+        featuredProducts = result.products;
+      }
+    }
+  }
+
+  const featuredCollection = homeData.home.featuredCollection;
+  if (featuredCollection?.enabled && featuredCollection.collectionId?.trim()) {
+    const result = await listStoreProducts({
       platformApiBaseUrl: ctx.platformApiBaseUrl,
       requestHost: ctx.requestHost,
       regionId: ctx.config.commerce.regionId,
-      limit: 8,
-    })
-  : { ok: false as const, status: ctx.status, message: ctx.message };
+      collectionId: featuredCollection.collectionId.trim(),
+      limit: featuredCollection.limit ?? 8,
+    });
+    if (!isStoreError(result)) {
+      collectionProducts = result.products;
+    }
+  }
+}
+
+const productsResult =
+  productsError != null
+    ? { ok: false as const, status: 502, message: productsError }
+    : { products: featuredProducts };
 
 const renderer = ctx.ok ? getStorefrontRenderer(ctx.config.storefront.templateKey) : undefined;
 const Home = renderer?.Home as
@@ -23,6 +82,15 @@ if (!ctx.ok) {
   Astro.response.status = ctx.status;
 } else if (!Home) {
   Astro.response.status = 500;
+} else {
+  // Public catalog HTML — cart badge deferred (Layout deferCartCount).
+  applyCatalogCache(Astro.cache, {
+    tenantId: ctx.config.tenant.id,
+    publishedRevisionId: ctx.config.storefront.publishedRevisionId,
+    templateKey: ctx.config.storefront.templateKey,
+    maxAge: CATALOG_CACHE_TTL.home.maxAge,
+    swr: CATALOG_CACHE_TTL.home.swr,
+  });
 }
 ---
 
@@ -42,11 +110,12 @@ if (!ctx.ok) {
         <Home
           data={ctx.config.storefront.data}
           productsResult={productsResult}
+          collectionProducts={collectionProducts}
           tenantName={ctx.config.tenant.name}
           themeTokens={ctx.config.storefront.themeTokens}
           platformApiBaseUrl={ctx.platformApiBaseUrl}
           requestHost={ctx.requestHost}
-          cartCount={ctx.cartCount}
+          deferCartCount={true}
         />
       ) : (
         <main class="unavailable">

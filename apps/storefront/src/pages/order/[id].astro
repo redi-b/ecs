@@ -1,5 +1,6 @@
 ---
 import StoreUnavailable from "../../components/shell/StoreUnavailable.astro";
+import { applyPrivateNoStore } from "../../lib/http-cache";
 import { loadPageContext } from "../../lib/page-context";
 import { getLastOrderFromRequest } from "../../lib/session/cart-cookie";
 import { getPrimaryColor, themeFromTokens } from "../../lib/theme";
@@ -12,6 +13,8 @@ const lastOrder = getLastOrderFromRequest(Astro.request);
 if (!ctx.ok) {
   Astro.response.status = ctx.status;
 }
+
+applyPrivateNoStore(Astro.cache, Astro.response);
 
 const OrderConfirm = ctx.ok
   ? resolveRendererSlot(ctx.config.storefront.templateKey, "OrderConfirm")

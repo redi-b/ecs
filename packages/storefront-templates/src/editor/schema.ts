@@ -6,6 +6,9 @@ export const storefrontEditorFieldKindSchema = z.enum([
   "image",
   "link",
   "color",
+  "boolean",
+  "collection",
+  "products",
 ]);
 
 export const storefrontEditorFieldSchema = z.object({

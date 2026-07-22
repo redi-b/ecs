@@ -9,6 +9,12 @@ export const classicV1EditorSchema = {
       label: "Announcement",
       fields: [
         {
+          path: "announcement.enabled",
+          prop: "announcementEnabled",
+          label: "Show announcement bar",
+          kind: "boolean",
+        },
+        {
           path: "announcement.text",
           prop: "announcementText",
           label: "Announcement text",
@@ -45,6 +51,12 @@ export const classicV1EditorSchema = {
       label: "Hero",
       fields: [
         {
+          path: "home.hero.enabled",
+          prop: "heroEnabled",
+          label: "Show hero",
+          kind: "boolean",
+        },
+        {
           path: "home.hero.title",
           prop: "heroTitle",
           label: "Headline",
@@ -77,15 +89,102 @@ export const classicV1EditorSchema = {
       ],
     },
     {
+      id: "featured-collection",
+      label: "Featured collection",
+      fields: [
+        {
+          path: "home.featuredCollection.enabled",
+          prop: "featuredCollectionEnabled",
+          label: "Show featured collection",
+          kind: "boolean",
+          helpText: "Highlight one collection on the home page (e.g. Our Top Picks).",
+        },
+        {
+          path: "home.featuredCollection.title",
+          prop: "featuredCollectionTitle",
+          label: "Section title",
+          kind: "text",
+        },
+        {
+          path: "home.featuredCollection.collectionId",
+          prop: "featuredCollectionId",
+          label: "Collection",
+          kind: "collection",
+          helpText: "Pick which collection powers this section.",
+        },
+      ],
+    },
+    {
       id: "featured-products",
       label: "Featured products",
       fields: [
+        {
+          path: "home.featuredProducts.enabled",
+          prop: "featuredProductsEnabled",
+          label: "Show featured products",
+          kind: "boolean",
+        },
         {
           path: "home.featuredProducts.title",
           prop: "productSectionTitle",
           label: "Section title",
           kind: "text",
-          helpText: "Product selection remains managed outside the editor.",
+        },
+        {
+          path: "home.featuredProducts.productIds",
+          prop: "featuredProductIds",
+          label: "Products",
+          kind: "products",
+          helpText: "Leave empty to show the newest products automatically.",
+        },
+      ],
+    },
+    {
+      id: "collections-strip",
+      label: "Collections strip",
+      fields: [
+        {
+          path: "home.collectionsStrip.enabled",
+          prop: "collectionsStripEnabled",
+          label: "Show collections strip",
+          kind: "boolean",
+        },
+        {
+          path: "home.collectionsStrip.title",
+          prop: "collectionsStripTitle",
+          label: "Section title",
+          kind: "text",
+        },
+      ],
+    },
+    {
+      id: "trust",
+      label: "Trust row",
+      fields: [
+        {
+          path: "home.trust.enabled",
+          prop: "trustEnabled",
+          label: "Show trust row",
+          kind: "boolean",
+        },
+      ],
+    },
+    {
+      id: "testimonials",
+      label: "Testimonials",
+      fields: [
+        {
+          path: "home.testimonials.enabled",
+          prop: "testimonialsEnabled",
+          label: "Show testimonials",
+          kind: "boolean",
+          helpText: "Hidden by default until you add quotes in data or a future editor.",
+        },
+        {
+          path: "home.testimonials.title",
+          prop: "testimonialsTitle",
+          label: "Section title",
+          kind: "text",
         },
       ],
     },

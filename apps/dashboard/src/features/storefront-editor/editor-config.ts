@@ -51,7 +51,11 @@ export const SETTINGS_SECTION_LABELS: Record<string, string> = {
   announcement: "Top Bar",
   header: "Brand",
   hero: "Hero",
+  "featured-collection": "Featured collection",
   "featured-products": "Products",
+  "collections-strip": "Collections strip",
+  trust: "Trust row",
+  testimonials: "Testimonials",
   footer: "Footer",
   theme: "Theme",
 };

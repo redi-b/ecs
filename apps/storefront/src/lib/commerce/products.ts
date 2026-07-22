@@ -126,3 +126,50 @@ export async function getStoreProductById(
 
   return { product };
 }
+
+/** Resolve products by id list, preserving input order. Missing ids are skipped. */
+export async function getStoreProductsByIds(
+  options: HostedStoreRequest & {
+    productIds: string[];
+    regionId?: string | null;
+  },
+): Promise<StoreProductsResponse | StorefrontError> {
+  const ids = [...new Set(options.productIds.map((id) => id.trim()).filter(Boolean))];
+  if (!ids.length) {
+    return { products: [], count: 0, limit: 0, offset: 0 };
+  }
+
+  // Medusa Store API accepts repeated id filters; fall back to sequential retrieve.
+  const response = await storeFetch({
+    ...options,
+    path: "/store/products",
+    searchParams: {
+      limit: ids.length,
+      offset: 0,
+      region_id: options.regionId,
+      fields: PRODUCT_FIELDS,
+      id: ids,
+    },
+  });
+  const data = await response.json().catch(() => undefined);
+
+  if (response.ok) {
+    const listed = Array.isArray(isRecord(data) ? data.products : null)
+      ? (data as { products: unknown[] }).products.map(normalizeProduct)
+      : [];
+    const byId = new Map(listed.filter((p) => p.id).map((p) => [p.id, p]));
+    const ordered = ids.map((id) => byId.get(id)).filter((p): p is StoreProduct => Boolean(p));
+    if (ordered.length > 0 || listed.length === 0) {
+      return { products: ordered, count: ordered.length, limit: ids.length, offset: 0 };
+    }
+  }
+
+  const products: StoreProduct[] = [];
+  for (const productId of ids) {
+    const result = await getStoreProductById({ ...options, productId });
+    if (!("ok" in result && result.ok === false) && "product" in result) {
+      products.push(result.product);
+    }
+  }
+  return { products, count: products.length, limit: ids.length, offset: 0 };
+}

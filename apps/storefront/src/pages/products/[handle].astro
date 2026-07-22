@@ -3,11 +3,12 @@ import StoreUnavailable from "../../components/shell/StoreUnavailable.astro";
 import { listStoreProducts, getStoreProductByHandle } from "../../lib/commerce/products";
 import { isStoreError } from "../../lib/commerce/result";
 import type { StoreProduct } from "../../lib/commerce/types";
+import { applyCatalogCache, CATALOG_CACHE_TTL } from "../../lib/http-cache";
 import { loadPageContext } from "../../lib/page-context";
 import { getPrimaryColor, themeFromTokens } from "../../lib/theme";
 import { resolveRendererSlot } from "../../templates/registry";
 
-const ctx = await loadPageContext(Astro.request);
+const ctx = await loadPageContext(Astro.request, { skipCart: true });
 const handle = Astro.params.handle ?? "";
 
 if (!ctx.ok) {
@@ -60,6 +61,16 @@ if (ctx.ok && product?.collectionId) {
 }
 
 const Product = ctx.ok ? resolveRendererSlot(ctx.config.storefront.templateKey, "Product") : null;
+
+if (ctx.ok && Product && product) {
+  applyCatalogCache(Astro.cache, {
+    tenantId: ctx.config.tenant.id,
+    publishedRevisionId: ctx.config.storefront.publishedRevisionId,
+    templateKey: ctx.config.storefront.templateKey,
+    maxAge: CATALOG_CACHE_TTL.productDetail.maxAge,
+    swr: CATALOG_CACHE_TTL.productDetail.swr,
+  });
+}
 ---
 
 {
@@ -68,7 +79,7 @@ const Product = ctx.ok ? resolveRendererSlot(ctx.config.storefront.templateKey, 
   ) : (
     <Product
       tenantName={ctx.config.tenant.name}
-      cartCount={ctx.cartCount}
+      deferCartCount={true}
       primaryColor={getPrimaryColor(ctx.config.storefront.themeTokens)}
       theme={themeFromTokens(ctx.config.storefront.themeTokens)}
       currentPath="/products"

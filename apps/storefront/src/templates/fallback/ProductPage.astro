@@ -6,7 +6,8 @@ import type { ShellTheme } from "../../lib/theme";
 
 interface Props {
   tenantName: string;
-  cartCount: number;
+  cartCount?: number;
+  deferCartCount?: boolean;
   primaryColor?: string;
   theme?: ShellTheme;
   currentPath?: string;
@@ -17,8 +18,17 @@ interface Props {
   relatedProducts?: StoreProduct[];
 }
 
-const { tenantName, cartCount, primaryColor, theme, currentPath, product, handle, notice, error } =
-  Astro.props;
+const {
+  tenantName,
+  cartCount = 0,
+  primaryColor,
+  theme,
+  currentPath,
+  product,
+  handle,
+  notice,
+  error,
+} = Astro.props;
 
 const defaultVariant: StoreProductVariant | null =
   product?.variants.find((variant: StoreProductVariant) => variant.inStock) ??

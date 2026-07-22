@@ -4,11 +4,12 @@ import { listStoreCategories, listStoreCollections } from "../../lib/commerce/ca
 import { listStoreProducts } from "../../lib/commerce/products";
 import { isStoreError } from "../../lib/commerce/result";
 import type { StoreCategory, StoreCollection, StoreProduct } from "../../lib/commerce/types";
+import { applyCatalogCache, CATALOG_CACHE_TTL } from "../../lib/http-cache";
 import { loadPageContext } from "../../lib/page-context";
 import { getPrimaryColor, themeFromTokens } from "../../lib/theme";
 import { resolveRendererSlot } from "../../templates/registry";
 
-const ctx = await loadPageContext(Astro.request);
+const ctx = await loadPageContext(Astro.request, { skipCart: true });
 if (!ctx.ok) {
   Astro.response.status = ctx.status;
 }
@@ -79,6 +80,16 @@ function productsHref(nextOffset: number) {
 const ProductList = ctx.ok
   ? resolveRendererSlot(ctx.config.storefront.templateKey, "ProductList")
   : null;
+
+if (ctx.ok && ProductList && !errorMessage) {
+  applyCatalogCache(Astro.cache, {
+    tenantId: ctx.config.tenant.id,
+    publishedRevisionId: ctx.config.storefront.publishedRevisionId,
+    templateKey: ctx.config.storefront.templateKey,
+    maxAge: CATALOG_CACHE_TTL.productList.maxAge,
+    swr: CATALOG_CACHE_TTL.productList.swr,
+  });
+}
 ---
 
 {
@@ -87,7 +98,7 @@ const ProductList = ctx.ok
   ) : (
     <ProductList
       tenantName={ctx.config.tenant.name}
-      cartCount={ctx.cartCount}
+      deferCartCount={true}
       primaryColor={getPrimaryColor(ctx.config.storefront.themeTokens)}
       theme={themeFromTokens(ctx.config.storefront.themeTokens)}
       currentPath="/products"
