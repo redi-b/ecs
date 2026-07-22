@@ -77,11 +77,16 @@ function CommandInput({
   );
 
   if (isPanel) {
+    const panelInputClassName = cn(
+      inputClassName,
+      "px-3 border-0 bg-transparent shadow-none ring-0 focus-visible:ring-0",
+    );
     return (
       <div data-slot="command-input-wrapper" className="px-1.5 pt-1.5">
         <InputGroup
           className={cn(
             "h-9! border-input/40 bg-muted/40 shadow-none!",
+            "focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50",
             "has-[[data-slot=input-group-control]:focus-visible]:border-ring",
             "has-[[data-slot=input-group-control]:focus-visible]:ring-3",
             "has-[[data-slot=input-group-control]:focus-visible]:ring-ring/50",
@@ -89,8 +94,8 @@ function CommandInput({
         >
           {typeof value === "string" && onValueChange ? (
             <CommandPrimitive.Input
-              data-slot="command-input"
-              className={cn(inputClassName, "px-3")}
+              data-slot="input-group-control"
+              className={panelInputClassName}
               onValueChange={onValueChange}
               spellCheck={false}
               autoCorrect="off"
@@ -100,8 +105,8 @@ function CommandInput({
             />
           ) : (
             <CommandPrimitive.Input
-              data-slot="command-input"
-              className={cn(inputClassName, "px-3")}
+              data-slot="input-group-control"
+              className={panelInputClassName}
               spellCheck={false}
               autoCorrect="off"
               autoCapitalize="off"
