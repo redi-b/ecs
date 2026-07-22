@@ -12,6 +12,7 @@ import { HexColorPicker } from "react-colorful";
 
 import { SearchableCombobox } from "@/components/app/searchable-combobox";
 import { Button } from "@/components/ui/button";
+import { SegmentedControl } from "@/components/ui/segmented-control";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -72,73 +73,6 @@ function SectionInfoTip({ title, body }: { title: string; body: string }) {
         <p className="text-xs leading-relaxed text-muted-foreground">{body}</p>
       </PopoverContent>
     </Popover>
-  );
-}
-
-/**
- * Animated segmented control. Active pill slides with primary fill.
- * Works for 2+ equal options (surface, color format).
- */
-function AnimatedSegmentedControl<T extends string>({
-  value,
-  options,
-  onChange,
-  ariaLabel,
-  size = "md",
-}: {
-  value: T;
-  options: Array<{ id: T; label: string }>;
-  onChange: (next: T) => void;
-  ariaLabel: string;
-  size?: "sm" | "md";
-}) {
-  const activeIndex = Math.max(
-    0,
-    options.findIndex((option) => option.id === value),
-  );
-  const count = Math.max(options.length, 1);
-
-  return (
-    <div
-      aria-label={ariaLabel}
-      className={cn(
-        "relative grid w-full gap-0 overflow-hidden rounded-full border bg-muted/50 p-0.5",
-        size === "sm" ? "h-8" : "h-9",
-      )}
-      role="tablist"
-      style={{ gridTemplateColumns: `repeat(${count}, minmax(0, 1fr))` }}
-    >
-      {/* Full-pill thumb (matches track radius); transform slides smoother than left */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-y-0.5 left-0.5 rounded-full bg-primary shadow-sm ring-1 ring-primary/20 transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform"
-        style={{
-          width: `calc((100% - 4px) / ${count})`,
-          transform: `translateX(calc(${activeIndex} * 100%))`,
-        }}
-      />
-      {options.map((option) => {
-        const active = option.id === value;
-        return (
-          <button
-            aria-selected={active}
-            className={cn(
-              "relative z-10 flex h-full min-w-0 items-center justify-center truncate rounded-full font-medium transition-colors duration-200",
-              size === "sm" ? "text-[11px] tracking-wide" : "text-sm",
-              active
-                ? "text-primary-foreground"
-                : "text-muted-foreground hover:text-foreground",
-            )}
-            key={option.id}
-            onClick={() => onChange(option.id)}
-            role="tab"
-            type="button"
-          >
-            {option.label}
-          </button>
-        );
-      })}
-    </div>
   );
 }
 
@@ -269,7 +203,7 @@ export function ThemeBrandSection({
 
         <div className="flex flex-col gap-2">
           <FieldLabel className="text-sm font-medium">Surface</FieldLabel>
-          <AnimatedSegmentedControl
+          <SegmentedControl
             ariaLabel="Surface style"
             onChange={onSurfaceChange}
             options={[
@@ -498,7 +432,7 @@ export function PremiumColorPicker({
         <div className="flex flex-col gap-3">
           <div className="flex flex-col gap-2">
             <div className="text-sm font-medium">{label}</div>
-            <AnimatedSegmentedControl
+            <SegmentedControl
               ariaLabel="Color format"
               onChange={setFormat}
               options={formatModes.map((mode) => ({
