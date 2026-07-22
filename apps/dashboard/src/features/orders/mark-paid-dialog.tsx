@@ -2,16 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 
-import { AppIcons } from "@/components/app/icons";
+import { SearchableCombobox } from "@/components/app/searchable-combobox";
 import { Button } from "@/components/ui/button";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
 import {
   Dialog,
   DialogContent,
@@ -22,7 +14,6 @@ import {
 } from "@/components/ui/dialog";
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import type { MessageKey } from "@/i18n/messages";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
@@ -98,94 +89,6 @@ const METHODS: Array<{
   },
 ];
 
-function SearchableOptionCombobox({
-  disabled,
-  emptyLabel,
-  onChange,
-  options,
-  placeholder,
-  searchPlaceholder,
-  value,
-}: {
-  disabled?: boolean;
-  emptyLabel: string;
-  onChange: (value: string) => void;
-  options: Array<{ value: string; label: string; keywords?: string }>;
-  placeholder: string;
-  searchPlaceholder: string;
-  value: string;
-}) {
-  const [open, setOpen] = useState(false);
-  const selected = options.find((option) => option.value === value) ?? null;
-
-  return (
-    <Popover onOpenChange={setOpen} open={open}>
-      <PopoverTrigger asChild>
-        <Button
-          aria-expanded={open}
-          className={cn(
-            "h-9 w-full justify-between px-3 font-normal shadow-none",
-            !selected && "text-muted-foreground",
-          )}
-          disabled={disabled}
-          role="combobox"
-          type="button"
-          variant="outline"
-        >
-          <span className="truncate">{selected ? selected.label : placeholder}</span>
-          <AppIcons.arrowDown className="size-4 shrink-0 opacity-60" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent
-        align="start"
-        className="w-[var(--radix-popover-trigger-width)] overflow-hidden p-0"
-        collisionPadding={16}
-        onWheel={(event) => event.stopPropagation()}
-      >
-        <Command className="h-auto max-h-72 w-full min-h-0">
-          <CommandInput autoFocus placeholder={searchPlaceholder} />
-          <CommandList
-            className="max-h-60 min-h-0 overflow-y-auto overscroll-contain"
-            onWheel={(event) => event.stopPropagation()}
-          >
-            <CommandEmpty>
-              <span className="px-2 text-sm text-muted-foreground">{emptyLabel}</span>
-            </CommandEmpty>
-            <CommandGroup className="overflow-visible">
-              <CommandItem
-                data-checked={!value ? true : undefined}
-                onSelect={() => {
-                  onChange("");
-                  setOpen(false);
-                }}
-                value="none clear"
-              >
-                <span className="truncate text-muted-foreground">{placeholder}</span>
-              </CommandItem>
-              {options.map((option) => {
-                const isSelected = option.value === value;
-                return (
-                  <CommandItem
-                    data-checked={isSelected ? true : undefined}
-                    key={option.value}
-                    onSelect={() => {
-                      onChange(option.value);
-                      setOpen(false);
-                    }}
-                    value={`${option.label} ${option.keywords ?? ""} ${option.value}`}
-                  >
-                    <span className="min-w-0 flex-1 truncate">{option.label}</span>
-                  </CommandItem>
-                );
-              })}
-            </CommandGroup>
-          </CommandList>
-        </Command>
-      </PopoverContent>
-    </Popover>
-  );
-}
-
 export function MarkPaidDialog({
   open,
   onOpenChange,
@@ -245,18 +148,20 @@ export function MarkPaidDialog({
   function submit() {
     const payload: MarkPaidSettlementPayload = {
       settlementMethod: method,
-      reference: reference.trim() || undefined,
-      note: note.trim() || undefined,
     };
+    const trimmedReference = reference.trim();
+    if (trimmedReference) payload.reference = trimmedReference;
+    const trimmedNote = note.trim();
+    if (trimmedNote) payload.note = trimmedNote;
     if (selectedAccount) {
       payload.receivingAccountId = selectedAccount.id;
       payload.accountLabel = selectedAccount.label;
-      payload.accountLast4 = selectedAccount.accountLast4 ?? undefined;
+      if (selectedAccount.accountLast4) payload.accountLast4 = selectedAccount.accountLast4;
       payload.bankName = selectedAccount.bankName;
     } else if (bankCode) {
       const bank = banks.find((item) => item.code === bankCode);
       payload.bankCode = bankCode;
-      payload.bankName = bank?.name;
+      if (bank?.name) payload.bankName = bank.name;
     }
     onConfirm(payload);
   }
@@ -308,9 +213,10 @@ export function MarkPaidDialog({
               {accounts.length > 0 ? (
                 <Field>
                   <FieldLabel>{t("orders.settlement.receivingAccount")}</FieldLabel>
-                  <SearchableOptionCombobox
+                  <SearchableCombobox
                     disabled={pending}
                     emptyLabel={t("orders.settlement.noMatchingAccounts")}
+                    noneLabel={t("orders.settlement.receivingAccountNone")}
                     onChange={setReceivingAccountId}
                     options={accountOptions}
                     placeholder={t("orders.settlement.receivingAccountNone")}
@@ -326,9 +232,10 @@ export function MarkPaidDialog({
               {!selectedAccount && banks.length > 0 && method === "bank_transfer" ? (
                 <Field>
                   <FieldLabel>{t("orders.settlement.bank")}</FieldLabel>
-                  <SearchableOptionCombobox
+                  <SearchableCombobox
                     disabled={pending}
                     emptyLabel={t("orders.settlement.noMatchingBanks")}
+                    noneLabel={t("orders.settlement.bankNone")}
                     onChange={setBankCode}
                     options={bankOptions}
                     placeholder={t("orders.settlement.bankNone")}
@@ -338,18 +245,16 @@ export function MarkPaidDialog({
                 </Field>
               ) : null}
 
-              {method !== "cash" ? (
-                <Field>
-                  <FieldLabel>{t("orders.settlement.reference")}</FieldLabel>
-                  <Input
-                    value={reference}
-                    onChange={(event) => setReference(event.target.value)}
-                    placeholder={t("orders.settlement.referencePlaceholder")}
-                    disabled={pending}
-                  />
-                  <FieldDescription>{t("orders.settlement.referenceHint")}</FieldDescription>
-                </Field>
-              ) : null}
+              <Field>
+                <FieldLabel>{t("orders.settlement.reference")}</FieldLabel>
+                <Input
+                  value={reference}
+                  onChange={(event) => setReference(event.target.value)}
+                  placeholder={t("orders.settlement.referencePlaceholder")}
+                  disabled={pending}
+                />
+                <FieldDescription>{t("orders.settlement.referenceHint")}</FieldDescription>
+              </Field>
 
               {method === "other" ? (
                 <Field>
