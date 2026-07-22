@@ -165,6 +165,18 @@ The workflow uses the repository `GITHUB_TOKEN` to publish these packages:
 
 No storefront or dashboard build-time variables are currently required. Both applications read `PLATFORM_API_BASE_URL` at runtime on the server. The existing `NEXT_PUBLIC_*` entries are not referenced by the dashboard build.
 
+### Storefront HTML cache purge
+
+Platform-api invalidates public storefront HTML after **publish/unpublish** and successful **catalog writes** (products, stock, taxonomy). Compose injects:
+
+| Variable | Where | Notes |
+|----------|--------|--------|
+| `STOREFRONT_CACHE_PURGE_SECRET` | platform-api + storefront | Required in `.env` (long random value) |
+| `STOREFRONT_INTERNAL_BASE_URL` | platform-api | Set to `http://storefront:4321` in compose |
+| `REDIS_URL` | storefront (+ platform already) | HTML cache store |
+
+See `apps/storefront/README.md` and `dev-docs/07-storefront-routing.md`.
+
 To enable the optional deployment trigger, add all three repository secrets:
 
 - `DOKPLOY_API_URL`, such as `https://dokploy.example.com`

@@ -53,6 +53,7 @@ import {
 import { ensureTelegramWebhookIfConfigured } from "./modules/telegram/telegram-webhook.js";
 import { createTenantOnboardingService } from "./modules/onboarding/service.js";
 import { createPaymentOnboardingService } from "./modules/payments/payment-onboarding-service.js";
+import { wrapProductServiceWithStorefrontPurge } from "./modules/storefront/catalog-cache-invalidation.js";
 import { createStorefrontTemplateService } from "./modules/storefront/template-service.js";
 import { createSupportService } from "./modules/support/service.js";
 import {
@@ -361,10 +362,19 @@ const manualOrderService = createMedusaManualOrderService({
   adminApiToken: medusaAdminApiToken,
   medusaInternalUrl,
 });
-const productService = createMedusaProductService({
-  adminApiToken: medusaAdminApiToken,
-  medusaInternalUrl,
-});
+const resolveTenantIdByMedusaSalesChannelId = createResolveTenantIdByMedusaSalesChannel(
+  platformDb.db,
+);
+const productService = wrapProductServiceWithStorefrontPurge(
+  createMedusaProductService({
+    adminApiToken: medusaAdminApiToken,
+    medusaInternalUrl,
+  }),
+  {
+    resolveTenantIdBySalesChannelId: resolveTenantIdByMedusaSalesChannelId,
+    logger,
+  },
+);
 if (telegramBotToken) {
   telegramToolsBridge.deps = {
     db: platformDb.db,
@@ -758,9 +768,7 @@ const app = createPlatformApp({
   unpublishStorefront: storefrontTemplateService.unpublishStorefront,
   recordAnalyticsEvent: analyticsService.recordAnalyticsEvent,
   recordNotificationEvent: notificationService.recordNotificationEvent,
-  resolveTenantIdByMedusaSalesChannelId: createResolveTenantIdByMedusaSalesChannel(
-    platformDb.db,
-  ),
+  resolveTenantIdByMedusaSalesChannelId,
   sendTestNotification: notificationService.sendTestNotification,
   listTelegramDestinations: telegramConnectService.listDestinations,
   createTelegramConnectSession: telegramConnectService.createConnectSession,

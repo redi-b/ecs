@@ -6,7 +6,8 @@ import Layout from "./Layout.astro";
 
 interface Props {
   tenantName: string;
-  cartCount: number;
+  cartCount?: number;
+  deferCartCount?: boolean;
   primaryColor?: string;
   theme?: ShellTheme & { accent?: string };
   currentPath?: string;
@@ -19,7 +20,8 @@ interface Props {
 
 const {
   tenantName,
-  cartCount,
+  cartCount = 0,
+  deferCartCount = false,
   primaryColor,
   theme,
   currentPath,
@@ -96,6 +98,7 @@ const jsonLd = product
     <Layout
       tenantName={tenantName}
       cartCount={cartCount}
+      deferCartCount={deferCartCount}
       primaryColor={primaryColor}
       theme={theme}
       currentPath={currentPath}
@@ -113,6 +116,7 @@ const jsonLd = product
     <Layout
       tenantName={tenantName}
       cartCount={cartCount}
+      deferCartCount={deferCartCount}
       primaryColor={primaryColor}
       theme={theme}
       currentPath={currentPath}

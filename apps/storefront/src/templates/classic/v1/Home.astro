@@ -18,21 +18,25 @@ import {
 interface Props {
   data: unknown;
   productsResult: StoreProductsResponse | StorefrontError;
+  collectionProducts?: StoreProduct[];
   tenantName: string;
   themeTokens: unknown;
   platformApiBaseUrl?: string;
   requestHost?: string | null;
   cartCount?: number;
+  deferCartCount?: boolean;
 }
 
 const {
   data,
   productsResult,
+  collectionProducts = [],
   tenantName,
   themeTokens,
   platformApiBaseUrl = "http://localhost:3000",
   requestHost = null,
   cartCount = 0,
+  deferCartCount = false,
 } = Astro.props;
 
 const templateData = parseClassicData(data, tenantName);
@@ -54,15 +58,53 @@ const collectionsResult = await listStoreCollections({
 });
 const collections =
   !isStoreError(collectionsResult) ? collectionsResult.collections : [];
-const showCollections =
+const showCollectionsStrip =
   templateData.home.collectionsStrip?.enabled !== false && collections.length > 0;
+
+const showHero = templateData.home.hero.enabled !== false;
+const showFeaturedProducts = templateData.home.featuredProducts.enabled !== false;
+const showFeaturedCollection =
+  templateData.home.featuredCollection?.enabled === true &&
+  Boolean(templateData.home.featuredCollection.collectionId) &&
+  collectionProducts.length > 0;
+const showTrust = templateData.home.trust?.enabled !== false;
+const trustItems =
+  templateData.home.trust?.items?.length
+    ? templateData.home.trust.items
+    : [
+        {
+          title: "Local delivery",
+          body: "Delivery and pickup available at checkout.",
+        },
+        {
+          title: "Cash on delivery",
+          body: "Pay when your order arrives.",
+        },
+        {
+          title: "Clear options",
+          body: "Choose size, color, and more before you buy.",
+        },
+      ];
+const showTestimonials =
+  templateData.home.testimonials?.enabled === true &&
+  (templateData.home.testimonials.items?.length ?? 0) > 0;
+
+function productCard(product: StoreProduct) {
+  const inStock = product.variants.some((v) => v.inStock) || product.variants.length === 0;
+  return { product, inStock };
+}
 ---
 
 <Layout
   tenantName={tenantName}
   cartCount={cartCount}
+  deferCartCount={deferCartCount}
   theme={shellTheme}
-  announcement={templateData.announcement?.enabled ? templateData.announcement.text : null}
+  announcement={
+    templateData.announcement?.enabled !== false && templateData.announcement?.text
+      ? templateData.announcement.text
+      : null
+  }
   nav={templateData.header.navigation}
   logoUrl={logoUrl}
   footerPhone={templateData.footer.phone}
@@ -71,50 +113,49 @@ const showCollections =
   footerLinks={templateData.footer.socialLinks}
   currentPath="/"
 >
-  <section class="at-hero at-reveal">
-    <div class="at-hero-copy">
-      <h1 class="at-h1">{templateData.home.hero.title}</h1>
-      {
-        templateData.home.hero.subtitle ? (
-          <p class="at-lede">{templateData.home.hero.subtitle}</p>
-        ) : null
-      }
-      <div class="at-actions">
-        <a class="at-btn" href={templateData.home.hero.primaryCtaHref}>
-          {templateData.home.hero.primaryCtaLabel}
-        </a>
-        {
-          templateData.home.hero.secondaryCtaLabel && templateData.home.hero.secondaryCtaHref ? (
-            <a class="at-btn at-btn-ghost" href={templateData.home.hero.secondaryCtaHref}>
-              {templateData.home.hero.secondaryCtaLabel}
+  {
+    showHero ? (
+      <section class="at-hero at-reveal">
+        <div class="at-hero-copy">
+          <h1 class="at-h1">{templateData.home.hero.title}</h1>
+          {templateData.home.hero.subtitle ? (
+            <p class="at-lede">{templateData.home.hero.subtitle}</p>
+          ) : null}
+          <div class="at-actions">
+            <a class="at-btn" href={templateData.home.hero.primaryCtaHref}>
+              {templateData.home.hero.primaryCtaLabel}
             </a>
-          ) : (
-            <a class="at-btn at-btn-ghost" href="/products">
-              Browse all
-            </a>
-          )
-        }
-      </div>
-    </div>
-    {
-      heroImageUrl ? (
-        <figure class="at-hero-media at-bezel">
-          <div class="at-bezel-inner">
-            <img src={heroImageUrl} alt="" loading="eager" />
-          </div>
-        </figure>
-      ) : (
-        <div class="at-hero-media at-bezel" aria-hidden="true">
-          <div class="at-bezel-inner at-hero-placeholder">
-            <span>{tenantName}</span>
+            {templateData.home.hero.secondaryCtaLabel &&
+            templateData.home.hero.secondaryCtaHref ? (
+              <a class="at-btn at-btn-ghost" href={templateData.home.hero.secondaryCtaHref}>
+                {templateData.home.hero.secondaryCtaLabel}
+              </a>
+            ) : (
+              <a class="at-btn at-btn-ghost" href="/products">
+                Browse all
+              </a>
+            )}
           </div>
         </div>
-      )
-    }
-  </section>
+        {heroImageUrl ? (
+          <figure class="at-hero-media at-bezel">
+            <div class="at-bezel-inner">
+              <img src={heroImageUrl} alt="" loading="eager" />
+            </div>
+          </figure>
+        ) : (
+          <div class="at-hero-media at-bezel" aria-hidden="true">
+            <div class="at-bezel-inner at-hero-placeholder">
+              <span>{tenantName}</span>
+            </div>
+          </div>
+        )}
+      </section>
+    ) : null
+  }
 
   {
-    showCollections ? (
+    showCollectionsStrip ? (
       <section class="at-block at-reveal" aria-labelledby="collections-title">
         <div class="at-section-head">
           <h2 class="at-h2" id="collections-title">
@@ -135,84 +176,159 @@ const showCollections =
     ) : null
   }
 
-  <section class="at-block at-reveal" id="products" aria-labelledby="featured-title">
-    <div class="at-section-head">
-      <h2 class="at-h2" id="featured-title">{templateData.home.featuredProducts.title}</h2>
-      {!storeError && products.length > 0 ? (
-        <p class="at-muted" style="margin:0">{products.length} available</p>
-      ) : null}
-    </div>
-
-    {
-      storeError ? (
-        <div class="at-notice">
-          <p>
-            <strong>Products could not be loaded</strong>
-          </p>
-          <p class="at-muted">Please try again in a moment.</p>
-        </div>
-      ) : products.length > 0 ? (
-        <>
-          <ul class="at-grid">
-            {products.map((product) => {
-              const inStock = product.variants.some((v) => v.inStock) || product.variants.length === 0;
-              return (
-                <li>
-                  <a
-                    class="at-card"
-                    href={
-                      product.handle
-                        ? `/products/${encodeURIComponent(product.handle)}`
-                        : "/products"
-                    }
-                  >
-                    <div class="at-card-media">
-                      {product.thumbnail ? (
-                        <img src={product.thumbnail} alt="" loading="lazy" />
-                      ) : null}
-                      {!inStock ? <span class="at-badge-corner">Sold out</span> : null}
-                    </div>
-                    <h3 class="at-card-title">{product.title ?? "Product"}</h3>
-                    {product.collectionTitle ? (
-                      <p class="at-card-meta">{product.collectionTitle}</p>
-                    ) : null}
-                    <p class="at-card-price">
-                      {formatMoney(product.priceAmount, product.currencyCode)}
-                    </p>
-                  </a>
-                </li>
-              );
-            })}
-          </ul>
-          <div class="at-actions">
-            <a class="at-btn at-btn-ghost" href="/products">
-              View all products
+  {
+    showFeaturedCollection ? (
+      <section class="at-block at-reveal" aria-labelledby="featured-collection-title">
+        <div class="at-section-head">
+          <h2 class="at-h2" id="featured-collection-title">
+            {templateData.home.featuredCollection?.title ?? "Our Top Picks"}
+          </h2>
+          {templateData.home.featuredCollection?.collectionId ? (
+            <a
+              class="at-text-link"
+              href={`/products?collection=${encodeURIComponent(templateData.home.featuredCollection.collectionId)}`}
+            >
+              View collection
             </a>
-          </div>
-        </>
-      ) : (
-        <div class="at-notice">
-          <p>
-            <strong>No products yet</strong>
-          </p>
-          <p class="at-muted">Check back soon for new arrivals.</p>
+          ) : null}
         </div>
-      )
-    }
-  </section>
+        <ul class="at-grid">
+          {collectionProducts.map((product) => {
+            const { inStock } = productCard(product);
+            return (
+              <li>
+                <a
+                  class="at-card"
+                  href={
+                    product.handle
+                      ? `/products/${encodeURIComponent(product.handle)}`
+                      : "/products"
+                  }
+                >
+                  <div class="at-card-media">
+                    {product.thumbnail ? (
+                      <img src={product.thumbnail} alt="" loading="lazy" />
+                    ) : null}
+                    {!inStock ? <span class="at-badge-corner">Sold out</span> : null}
+                  </div>
+                  <h3 class="at-card-title">{product.title ?? "Product"}</h3>
+                  {product.collectionTitle ? (
+                    <p class="at-card-meta">{product.collectionTitle}</p>
+                  ) : null}
+                  <p class="at-card-price">
+                    {formatMoney(product.priceAmount, product.currencyCode)}
+                  </p>
+                </a>
+              </li>
+            );
+          })}
+        </ul>
+      </section>
+    ) : null
+  }
 
-  <section class="at-trust at-reveal" aria-label="Why shop here">
-    <div class="at-trust-item">
-      <strong>Local delivery</strong>
-      <p>Delivery and pickup available at checkout.</p>
-    </div>
-    <div class="at-trust-item">
-      <strong>Cash on delivery</strong>
-      <p>Pay when your order arrives.</p>
-    </div>
-    <div class="at-trust-item">
-      <strong>Clear options</strong>
-      <p>Choose size, color, and more before you buy.</p>
-    </div>
-  </section>
+  {
+    showFeaturedProducts ? (
+      <section class="at-block at-reveal" id="products" aria-labelledby="featured-title">
+        <div class="at-section-head">
+          <h2 class="at-h2" id="featured-title">{templateData.home.featuredProducts.title}</h2>
+          {!storeError && products.length > 0 ? (
+            <p class="at-muted" style="margin:0">
+              {products.length} available
+            </p>
+          ) : null}
+        </div>
+
+        {storeError ? (
+          <div class="at-notice">
+            <p>
+              <strong>Products could not be loaded</strong>
+            </p>
+            <p class="at-muted">Please try again in a moment.</p>
+          </div>
+        ) : products.length > 0 ? (
+          <>
+            <ul class="at-grid">
+              {products.map((product) => {
+                const { inStock } = productCard(product);
+                return (
+                  <li>
+                    <a
+                      class="at-card"
+                      href={
+                        product.handle
+                          ? `/products/${encodeURIComponent(product.handle)}`
+                          : "/products"
+                      }
+                    >
+                      <div class="at-card-media">
+                        {product.thumbnail ? (
+                          <img src={product.thumbnail} alt="" loading="lazy" />
+                        ) : null}
+                        {!inStock ? <span class="at-badge-corner">Sold out</span> : null}
+                      </div>
+                      <h3 class="at-card-title">{product.title ?? "Product"}</h3>
+                      {product.collectionTitle ? (
+                        <p class="at-card-meta">{product.collectionTitle}</p>
+                      ) : null}
+                      <p class="at-card-price">
+                        {formatMoney(product.priceAmount, product.currencyCode)}
+                      </p>
+                    </a>
+                  </li>
+                );
+              })}
+            </ul>
+            <div class="at-actions">
+              <a class="at-btn at-btn-ghost" href="/products">
+                View all products
+              </a>
+            </div>
+          </>
+        ) : (
+          <div class="at-notice">
+            <p>
+              <strong>No products yet</strong>
+            </p>
+            <p class="at-muted">Check back soon for new arrivals.</p>
+          </div>
+        )}
+      </section>
+    ) : null
+  }
+
+  {
+    showTestimonials ? (
+      <section class="at-block at-reveal" aria-labelledby="testimonials-title">
+        <div class="at-section-head">
+          <h2 class="at-h2" id="testimonials-title">
+            {templateData.home.testimonials?.title ?? "What customers say"}
+          </h2>
+        </div>
+        <ul class="at-grid">
+          {templateData.home.testimonials?.items.map((item) => (
+            <li class="at-notice">
+              <p style="margin:0">“{item.quote}”</p>
+              <p class="at-muted" style="margin:0.5rem 0 0">
+                — {item.author}
+              </p>
+            </li>
+          ))}
+        </ul>
+      </section>
+    ) : null
+  }
+
+  {
+    showTrust ? (
+      <section class="at-trust at-reveal" aria-label="Why shop here">
+        {trustItems.map((item) => (
+          <div class="at-trust-item">
+            <strong>{item.title}</strong>
+            <p>{item.body}</p>
+          </div>
+        ))}
+      </section>
+    ) : null
+  }
 </Layout>

@@ -49,6 +49,14 @@ cp apps/storefront/.env.example apps/storefront/.env
 cp apps/medusa/.env.example apps/medusa/.env
 ```
 
+**Storefront HTML cache purge** (recommended for local so publish/catalog edits clear cached pages):
+
+- Set the **same** `STOREFRONT_CACHE_PURGE_SECRET` on platform-api and storefront.
+- Set `STOREFRONT_INTERNAL_BASE_URL=http://localhost:4321` on platform-api.
+- Set `REDIS_URL` on storefront (and platform already uses Redis for jobs).
+
+Defaults are in the app `.env.example` files. Without the secret, purge is skipped and catalog HTML only expires by TTL.
+
 Development defaults use `lvh.me`, which resolves to localhost:
 
 - `http://api.lvh.me`
@@ -205,4 +213,5 @@ Public storefront buyer path (PDP → cart → COD checkout, optional Chapa when
 - Keep platform data in the platform database.
 - Keep commerce data in Medusa.
 - Keep storefront cache keys scoped by tenant or hostname.
+- Purge storefront HTML on publish and catalog writes (`STOREFRONT_CACHE_PURGE_SECRET` + `STOREFRONT_INTERNAL_BASE_URL`).
 - Do not fork or patch Medusa core.

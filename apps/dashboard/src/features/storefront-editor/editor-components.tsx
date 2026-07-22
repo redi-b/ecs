@@ -48,7 +48,15 @@ import {
 import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type {
@@ -544,18 +552,19 @@ export function StorefrontSettingsPanel() {
             <div className="flex min-w-0 flex-col gap-4 p-4">
               {section.fields.map((field) => {
                 const value = (props as Record<string, unknown>)[field.prop];
-                const stringValue = typeof value === "string" ? value : "";
                 const helpText = "helpText" in field ? field.helpText : undefined;
 
                 return (
                   <Field className="min-w-0 gap-2" key={field.path}>
-                    <FieldLabel className="text-sm font-medium">{field.label}</FieldLabel>
+                    {field.kind === "boolean" ? null : (
+                      <FieldLabel className="text-sm font-medium">{field.label}</FieldLabel>
+                    )}
                     <div className="min-w-0">
                       <StorefrontSettingControl
                         data={data}
                         dispatch={dispatch}
                         field={field}
-                        value={stringValue}
+                        value={value}
                       />
                     </div>
                     {helpText ? (
@@ -581,21 +590,66 @@ export function StorefrontSettingControl({
   data: Data;
   dispatch: (action: PuckAction) => void;
   field: (typeof classicV1EditorManifest.sections)[number]["fields"][number];
-  value: string;
+  value: unknown;
 }) {
-  const update = (nextValue: string | undefined) =>
+  const update = (nextValue: unknown) =>
     updateStorefrontProp(data, dispatch, field.prop as keyof StorefrontPageProps, nextValue);
 
+  const stringValue = typeof value === "string" ? value : "";
+
+  if (field.kind === "boolean") {
+    const checked = typeof value === "boolean" ? value : value !== false && value !== "false";
+    return (
+      <div className="flex items-center justify-between gap-3 rounded-lg border bg-background px-3 py-2.5">
+        <FieldLabel className="text-sm font-medium" htmlFor={field.prop}>
+          {field.label}
+        </FieldLabel>
+        <Switch
+          checked={checked}
+          id={field.prop}
+          onCheckedChange={(next) => update(next)}
+        />
+      </div>
+    );
+  }
+
+  if (field.kind === "collection") {
+    return (
+      <CollectionPicker
+        label={field.label}
+        onChange={(id) => update(id || undefined)}
+        value={stringValue}
+      />
+    );
+  }
+
+  if (field.kind === "products") {
+    const ids = Array.isArray(value) ? value.map(String) : [];
+    return <ProductsPicker onChange={(next) => update(next)} value={ids} />;
+  }
+
   if (field.kind === "color") {
-    return <PremiumColorPicker label={field.label} onChange={update} value={value || "#000000"} />;
+    return (
+      <PremiumColorPicker
+        label={field.label}
+        onChange={(next) => update(next)}
+        value={stringValue || "#000000"}
+      />
+    );
   }
 
   if (field.path.includes("typography.")) {
-    return <FontSelect onChange={(nextValue) => update(nextValue)} value={value || "Inter"} />;
+    return <FontSelect onChange={(nextValue) => update(nextValue)} value={stringValue || "Inter"} />;
   }
 
   if (field.kind === "image") {
-    return <ImageReferenceControl label={field.label} onChange={update} value={value} />;
+    return (
+      <ImageReferenceControl
+        label={field.label}
+        onChange={(next) => update(next)}
+        value={stringValue}
+      />
+    );
   }
 
   if (field.kind === "textarea") {
@@ -605,7 +659,7 @@ export function StorefrontSettingControl({
         className="min-h-24 w-full min-w-0"
         name={field.prop}
         onChange={(event) => update(event.currentTarget.value)}
-        value={value}
+        value={stringValue}
       />
     );
   }
@@ -617,8 +671,168 @@ export function StorefrontSettingControl({
       name={field.prop}
       onChange={(event) => update(event.currentTarget.value)}
       placeholder={field.kind === "link" ? "/" : undefined}
-      value={value}
+      value={stringValue}
     />
+  );
+}
+
+function CollectionPicker({
+  label,
+  onChange,
+  value,
+}: {
+  label: string;
+  onChange: (value: string) => void;
+  value: string;
+}) {
+  const [options, setOptions] = useState<Array<{ id: string; title: string }>>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    fetch("/admin/products/collections/actions/list?limit=100", { credentials: "same-origin" })
+      .then((r) => r.json())
+      .then((payload) => {
+        if (cancelled) return;
+        const collections = payload?.data?.collections ?? payload?.collections ?? [];
+        if (Array.isArray(collections)) {
+          setOptions(
+            collections
+              .map((row: { id?: string; title?: string | null }) =>
+                row?.id
+                  ? { id: String(row.id), title: String(row.title ?? row.id) }
+                  : null,
+              )
+              .filter(Boolean) as Array<{ id: string; title: string }>,
+          );
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setOptions([]);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  return (
+    <Select
+      disabled={loading}
+      onValueChange={(next) => onChange(next === "__none__" ? "" : next)}
+      value={value || "__none__"}
+    >
+      <SelectTrigger aria-label={label} className="w-full min-w-0">
+        <SelectValue placeholder={loading ? "Loading collections…" : "Select a collection"} />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="__none__">None</SelectItem>
+        {options.map((option) => (
+          <SelectItem key={option.id} value={option.id}>
+            {option.title}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+}
+
+function ProductsPicker({
+  onChange,
+  value,
+}: {
+  onChange: (value: string[]) => void;
+  value: string[];
+}) {
+  const [options, setOptions] = useState<Array<{ id: string; title: string }>>([]);
+  const [loading, setLoading] = useState(true);
+  const selected = new Set(value);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    fetch("/admin/products/actions/list?limit=100", { credentials: "same-origin" })
+      .then((r) => r.json())
+      .then((payload) => {
+        if (cancelled) return;
+        const products =
+          payload?.data?.products ?? payload?.data ?? payload?.products ?? [];
+        if (Array.isArray(products)) {
+          setOptions(
+            products
+              .map((row: { id?: string; title?: string | null }) =>
+                row?.id
+                  ? { id: String(row.id), title: String(row.title ?? row.id) }
+                  : null,
+              )
+              .filter(Boolean) as Array<{ id: string; title: string }>,
+          );
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setOptions([]);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const toggle = (id: string) => {
+    const next = new Set(selected);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    onChange([...next]);
+  };
+
+  if (loading) {
+    return <p className="text-xs text-muted-foreground">Loading products…</p>;
+  }
+
+  if (!options.length) {
+    return (
+      <p className="text-xs text-muted-foreground">
+        No products yet. Empty selection shows newest products on the storefront.
+      </p>
+    );
+  }
+
+  return (
+    <div className="max-h-48 space-y-1 overflow-y-auto rounded-lg border p-2">
+      {options.map((option) => {
+        const checked = selected.has(option.id);
+        return (
+          <label
+            className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-muted/60"
+            key={option.id}
+          >
+            <input
+              checked={checked}
+              className="size-4 accent-primary"
+              onChange={() => toggle(option.id)}
+              type="checkbox"
+            />
+            <span className="min-w-0 truncate">{option.title}</span>
+          </label>
+        );
+      })}
+      {value.length > 0 ? (
+        <Button
+          className="mt-1 w-full"
+          onClick={() => onChange([])}
+          size="sm"
+          type="button"
+          variant="ghost"
+        >
+          Clear selection ({value.length})
+        </Button>
+      ) : null}
+    </div>
   );
 }
 
@@ -880,7 +1094,7 @@ export function buildPuckFields() {
 
 export type PuckCustomFieldProps = {
   name: string;
-  onChange: (value: string | undefined) => void;
+  onChange: (value: unknown) => void;
   value: unknown;
 };
 
@@ -893,13 +1107,63 @@ export function VisualEditorField({
   value,
 }: {
   helpText?: string;
-  kind: "color" | "image" | "link" | "text" | "textarea";
+  kind:
+    | "color"
+    | "image"
+    | "link"
+    | "text"
+    | "textarea"
+    | "boolean"
+    | "collection"
+    | "products";
   label: string;
   name: string;
-  onChange: (value: string | undefined) => void;
+  onChange: (value: unknown) => void;
   value: unknown;
 }) {
   const stringValue = typeof value === "string" ? value : "";
+
+  if (kind === "boolean") {
+    const checked = typeof value === "boolean" ? value : value !== false;
+    return (
+      <FieldGroup>
+        <Field>
+          <div className="flex items-center justify-between gap-3">
+            <PuckFieldLabel label={label} />
+            <Switch checked={checked} onCheckedChange={(next) => onChange(next)} />
+          </div>
+          {helpText ? <FieldDescription>{helpText}</FieldDescription> : null}
+        </Field>
+      </FieldGroup>
+    );
+  }
+
+  if (kind === "collection") {
+    return (
+      <FieldGroup>
+        <Field>
+          <PuckFieldLabel label={label}>
+            <CollectionPicker label={label} onChange={(id) => onChange(id || undefined)} value={stringValue} />
+          </PuckFieldLabel>
+          {helpText ? <FieldDescription>{helpText}</FieldDescription> : null}
+        </Field>
+      </FieldGroup>
+    );
+  }
+
+  if (kind === "products") {
+    const ids = Array.isArray(value) ? value.map(String) : [];
+    return (
+      <FieldGroup>
+        <Field>
+          <PuckFieldLabel label={label}>
+            <ProductsPicker onChange={onChange} value={ids} />
+          </PuckFieldLabel>
+          {helpText ? <FieldDescription>{helpText}</FieldDescription> : null}
+        </Field>
+      </FieldGroup>
+    );
+  }
 
   return (
     <FieldGroup>
@@ -1282,7 +1546,7 @@ export function updateStorefrontProp(
   data: Data,
   dispatch: (action: PuckAction) => void,
   propName: keyof StorefrontPageProps,
-  value: string | undefined,
+  value: unknown,
 ) {
   dispatch({
     type: "setData",

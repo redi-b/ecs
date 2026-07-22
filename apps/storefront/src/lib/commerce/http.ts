@@ -44,7 +44,10 @@ export async function storeFetch(
     path: string;
     method?: string;
     body?: unknown;
-    searchParams?: Record<string, string | number | undefined | null>;
+    searchParams?: Record<
+      string,
+      string | number | string[] | undefined | null
+    >;
   },
 ) {
   const fetcher = options.fetcher ?? fetch;
@@ -52,6 +55,14 @@ export async function storeFetch(
 
   for (const [key, value] of Object.entries(options.searchParams ?? {})) {
     if (value == null || value === "") {
+      continue;
+    }
+    if (Array.isArray(value)) {
+      for (const entry of value) {
+        if (entry != null && entry !== "") {
+          url.searchParams.append(key, String(entry));
+        }
+      }
       continue;
     }
     url.searchParams.set(key, String(value));

@@ -6,7 +6,9 @@ import type { ShellTheme } from "../../lib/theme";
 
 interface Props {
   tenantName: string;
-  cartCount: number;
+  cartCount?: number;
+  /** Accepted for template contract parity; classic shell shows server cart count. */
+  deferCartCount?: boolean;
   primaryColor?: string;
   theme?: ShellTheme;
   currentPath?: string;
@@ -30,7 +32,7 @@ interface Props {
 
 const {
   tenantName,
-  cartCount,
+  cartCount = 0,
   primaryColor,
   theme,
   currentPath = "/products",

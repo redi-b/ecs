@@ -77,9 +77,13 @@ describe("storefront editor state", () => {
     });
 
     assert.equal(payload.tenantId, "tenant_1");
-    assert.equal(payload.data.home.hero.title, "Updated title");
-    assert.equal(payload.data.home.hero.imageAssetId, undefined);
-    assert.equal(payload.themeTokens.colors.primary, "#f97316");
+    const data = payload.data as {
+      home: { hero: { title?: string; imageAssetId?: string } };
+    };
+    const themeTokens = payload.themeTokens as { colors: { primary?: string } };
+    assert.equal(data.home.hero.title, "Updated title");
+    assert.equal(data.home.hero.imageAssetId, undefined);
+    assert.equal(themeTokens.colors.primary, "#f97316");
   });
 
   it("classifies published, saved draft, and unsaved editor states", () => {

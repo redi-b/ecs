@@ -1,9 +1,19 @@
 import { z } from "zod";
 
+const trustItemSchema = z.object({
+  title: z.string().min(1),
+  body: z.string().min(1),
+});
+
+const testimonialItemSchema = z.object({
+  quote: z.string().min(1),
+  author: z.string().min(1),
+});
+
 export const classicV1DataSchema = z.object({
   announcement: z
     .object({
-      enabled: z.boolean(),
+      enabled: z.boolean().default(true),
       text: z.string().min(1),
     })
     .optional(),
@@ -18,6 +28,7 @@ export const classicV1DataSchema = z.object({
   }),
   home: z.object({
     hero: z.object({
+      enabled: z.boolean().default(true),
       title: z.string().min(1),
       subtitle: z.string().optional(),
       imageAssetId: z.string().min(1).optional(),
@@ -26,14 +37,39 @@ export const classicV1DataSchema = z.object({
       secondaryCtaLabel: z.string().optional(),
       secondaryCtaHref: z.string().optional(),
     }),
+    /** Merchant-selected collection rail (e.g. "Our Top Picks"). */
+    featuredCollection: z
+      .object({
+        enabled: z.boolean().default(false),
+        title: z.string().min(1),
+        collectionId: z.string().min(1).optional(),
+        limit: z.number().int().min(1).max(48).default(8),
+      })
+      .optional(),
     featuredProducts: z.object({
+      enabled: z.boolean().default(true),
       title: z.string().min(1),
+      /** Manual product IDs; empty = newest catalog slice when enabled. */
       productIds: z.array(z.string()),
+      limit: z.number().int().min(1).max(48).default(8),
     }),
     collectionsStrip: z
       .object({
         title: z.string().min(1),
         enabled: z.boolean().default(true),
+      })
+      .optional(),
+    trust: z
+      .object({
+        enabled: z.boolean().default(true),
+        items: z.array(trustItemSchema).default([]),
+      })
+      .optional(),
+    testimonials: z
+      .object({
+        enabled: z.boolean().default(false),
+        title: z.string().min(1).default("What customers say"),
+        items: z.array(testimonialItemSchema).default([]),
       })
       .optional(),
   }),

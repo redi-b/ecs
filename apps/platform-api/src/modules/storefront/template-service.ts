@@ -21,6 +21,7 @@ import type {
   StorefrontTemplateSelectionResult,
   StorefrontUnpublishResult,
 } from "../../types/index.js";
+import { purgeStorefrontTenantCache } from "./cache-purge.js";
 
 type PlatformDb = ReturnType<typeof createPlatformDb>["db"];
 
@@ -405,6 +406,9 @@ export function createStorefrontTemplateService(db: PlatformDb) {
         };
       }
 
+      // Drop cached public HTML for this tenant so the new revision is visible promptly.
+      await purgeStorefrontTenantCache({ tenantId: published.tenantId });
+
       return {
         ok: true,
         storefront: {
@@ -473,6 +477,8 @@ export function createStorefrontTemplateService(db: PlatformDb) {
           },
         });
       });
+
+      await purgeStorefrontTenantCache({ tenantId: existing.tenantId });
 
       return {
         ok: true,

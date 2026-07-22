@@ -1,5 +1,6 @@
 ---
 import StoreUnavailable from "../components/shell/StoreUnavailable.astro";
+import { applyPrivateNoStore } from "../lib/http-cache";
 import { loadPageContext } from "../lib/page-context";
 import { getPrimaryColor, themeFromTokens } from "../lib/theme";
 import { resolveRendererSlot } from "../templates/registry";
@@ -8,6 +9,8 @@ const ctx = await loadPageContext(Astro.request);
 if (!ctx.ok) {
   Astro.response.status = ctx.status;
 }
+
+applyPrivateNoStore(Astro.cache, Astro.response);
 
 const Cart = ctx.ok ? resolveRendererSlot(ctx.config.storefront.templateKey, "Cart") : null;
 ---

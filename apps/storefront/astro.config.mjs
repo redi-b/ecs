@@ -1,6 +1,8 @@
 import node from "@astrojs/node";
 import { defineConfig } from "astro/config";
 
+import { ecsRedisCache } from "./src/cache/ecs-redis-cache.ts";
+
 /**
  * Multi-tenant shops sit behind Caddy/Traefik (TLS terminates at the edge).
  * Astro CSRF compares Origin to request.url.origin. Without trusting
@@ -9,6 +11,9 @@ import { defineConfig } from "astro/config";
  *
  * allowedDomains: [{}] trusts reverse-proxy host/proto for any shop host
  * (required for dynamic *.BASE_DOMAIN). Storefront is not public without Caddy.
+ *
+ * Cache: Redis-backed HTML cache (multi-tenant keys include Host). Catalog
+ * pages opt in via Astro.cache.set; cart/checkout stay private.
  */
 const baseDomain =
   process.env.STOREFRONT_PUBLIC_BASE_DOMAIN?.trim() || process.env.BASE_DOMAIN?.trim() || "";
@@ -18,6 +23,12 @@ export default defineConfig({
     mode: "standalone",
   }),
   output: "server",
+  cache: {
+    provider: ecsRedisCache({
+      redisUrl: process.env.REDIS_URL,
+      prefix: process.env.STOREFRONT_CACHE_PREFIX || "ecs:sf:cache",
+    }),
+  },
   security: {
     checkOrigin: true,
     allowedDomains: [

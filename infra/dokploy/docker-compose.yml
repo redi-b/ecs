@@ -26,6 +26,9 @@ x-platform-environment: &platform-environment
   PLATFORM_INTERNAL_API_TOKEN: ${PLATFORM_INTERNAL_API_TOKEN:?set PLATFORM_INTERNAL_API_TOKEN}
   PLATFORM_PUBLIC_BASE_URL: https://api.${BASE_DOMAIN:?set BASE_DOMAIN}
   STOREFRONT_PUBLIC_BASE_DOMAIN: ${BASE_DOMAIN}
+  # Purge multi-tenant storefront HTML after publish + catalog mutations.
+  STOREFRONT_CACHE_PURGE_SECRET: ${STOREFRONT_CACHE_PURGE_SECRET:?set STOREFRONT_CACHE_PURGE_SECRET}
+  STOREFRONT_INTERNAL_BASE_URL: http://storefront:4321
   DASHBOARD_PUBLIC_BASE_URL: https://dashboard.${BASE_DOMAIN}
   BETTER_AUTH_URL: https://api.${BASE_DOMAIN}
   BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?set BETTER_AUTH_SECRET}
@@ -271,6 +274,10 @@ services:
       HOST: 0.0.0.0
       PORT: "4321"
       PLATFORM_API_BASE_URL: http://platform-api:3000
+      REDIS_URL: redis://redis:6379
+      STOREFRONT_CACHE_PREFIX: ${STOREFRONT_CACHE_PREFIX:-ecs:sf:cache}
+      STOREFRONT_CACHE_PURGE_SECRET: ${STOREFRONT_CACHE_PURGE_SECRET:?set STOREFRONT_CACHE_PURGE_SECRET}
+      STOREFRONT_PUBLIC_BASE_DOMAIN: ${BASE_DOMAIN}
     tmpfs:
       - /tmp:size=64m,mode=1777
       - /app/.astro:size=16m,mode=1777
@@ -284,6 +291,8 @@ services:
       start_period: 15s
     depends_on:
       platform-api:
+        condition: service_healthy
+      redis:
         condition: service_healthy
 
   caddy:
