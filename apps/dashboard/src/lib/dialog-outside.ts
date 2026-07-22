@@ -14,6 +14,9 @@ const FLOATING_UI_SELECTOR = [
   "[data-slot='dropdown-menu-content']",
   "[data-slot='select-item']",
   "[data-slot='command']",
+  "[data-slot='combobox-content']",
+  "[data-slot='combobox-list']",
+  "[data-slot='combobox-item']",
   "[data-datetime-picker]",
   // Portaled bulk selection dock — clicks must not dismiss the mobile sidebar sheet.
   "[data-slot='data-table-bulk-bar']",

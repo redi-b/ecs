@@ -1,18 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef } from "react";
 
-import { AppIcons } from "@/components/app/icons";
-import { Button } from "@/components/ui/button";
 import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+  Combobox,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+} from "@/components/ui/combobox";
+import {
+  notifyNestedOverlayChange,
+  releaseNestedOverlayIfOpen,
+} from "@/lib/nested-overlay";
 import { cn } from "@/lib/utils";
 
 export type SearchableComboboxOption = {
@@ -24,20 +25,24 @@ export type SearchableComboboxOption = {
 type SearchableComboboxProps = {
   disabled?: boolean;
   emptyLabel: string;
-  /** Optional “clear / none” row. When set, selecting it calls onChange(""). */
+  /**
+   * When set, shows a clear control so the selection can be emptied.
+   * Cleared value calls `onChange("")`.
+   */
   noneLabel?: string;
   onChange: (value: string) => void;
   options: SearchableComboboxOption[];
   placeholder: string;
-  searchPlaceholder: string;
+  /** Kept for call-site compatibility; the same input is display + filter. */
+  searchPlaceholder?: string;
   value: string;
   className?: string;
   id?: string;
 };
 
 /**
- * Searchable single-select used in filters, mark-paid, and settings.
- * Same Command + Popover pattern as parent-category / customer pickers.
+ * Thin single-select over the official shadcn Combobox.
+ * Maps string ids ↔ `{ value, label }` options used across the dashboard.
  */
 export function SearchableCombobox({
   disabled,
@@ -46,82 +51,72 @@ export function SearchableCombobox({
   onChange,
   options,
   placeholder,
-  searchPlaceholder,
   value,
   className,
   id,
 }: SearchableComboboxProps) {
-  const [open, setOpen] = useState(false);
   const selected = options.find((option) => option.value === value) ?? null;
+  // Clear only when the call site allows empty selection *and* something is selected.
+  const canClear = Boolean(noneLabel) && Boolean(selected);
+  const layerIdRef = useRef<symbol | null>(null);
+  const openRef = useRef(false);
+
+  useEffect(() => {
+    return () => {
+      releaseNestedOverlayIfOpen(openRef.current, layerIdRef.current);
+      layerIdRef.current = null;
+      openRef.current = false;
+    };
+  }, []);
 
   return (
-    <Popover onOpenChange={setOpen} open={open}>
-      <PopoverTrigger asChild>
-        <Button
-          aria-expanded={open}
-          className={cn(
-            "h-9 w-full justify-between px-3 font-normal shadow-none",
-            !selected && "text-muted-foreground",
-            className,
+    <Combobox
+      disabled={disabled}
+      filter={(item, query) => {
+        const q = query.trim().toLowerCase();
+        if (!q) return true;
+        return (
+          item.label.toLowerCase().includes(q) ||
+          item.value.toLowerCase().includes(q) ||
+          (item.keywords?.toLowerCase().includes(q) ?? false)
+        );
+      }}
+      isItemEqualToValue={(a, b) => a.value === b.value}
+      itemToStringLabel={(item) => item.label}
+      itemToStringValue={(item) => item.value}
+      items={options}
+      onOpenChange={(open) => {
+        if (open) {
+          layerIdRef.current = notifyNestedOverlayChange(true);
+          openRef.current = true;
+        } else {
+          notifyNestedOverlayChange(false, layerIdRef.current ?? undefined);
+          layerIdRef.current = null;
+          openRef.current = false;
+        }
+      }}
+      onValueChange={(item) => {
+        onChange(item?.value ?? "");
+      }}
+      value={selected}
+    >
+      <ComboboxInput
+        className={cn("w-full", className)}
+        disabled={disabled}
+        id={id}
+        placeholder={placeholder}
+        showClear={canClear}
+      />
+      <ComboboxContent className="w-(--anchor-width) min-w-(--anchor-width)">
+        <ComboboxEmpty>{emptyLabel}</ComboboxEmpty>
+        <ComboboxList>
+          {(item) => (
+            <ComboboxItem key={item.value} value={item}>
+              <span className="min-w-0 flex-1 truncate">{item.label}</span>
+            </ComboboxItem>
           )}
-          disabled={disabled}
-          id={id}
-          role="combobox"
-          type="button"
-          variant="outline"
-        >
-          <span className="truncate">{selected ? selected.label : placeholder}</span>
-          <AppIcons.arrowDown className="size-4 shrink-0 opacity-60" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent
-        align="start"
-        className="w-[var(--radix-popover-trigger-width)] overflow-hidden p-0"
-        collisionPadding={16}
-        onWheel={(event) => event.stopPropagation()}
-      >
-        <Command className="h-auto max-h-72 w-full min-h-0">
-          <CommandInput autoFocus placeholder={searchPlaceholder} />
-          <CommandList
-            className="max-h-60 min-h-0 overflow-y-auto overscroll-contain"
-            onWheel={(event) => event.stopPropagation()}
-          >
-            <CommandEmpty>
-              <span className="px-2 text-sm text-muted-foreground">{emptyLabel}</span>
-            </CommandEmpty>
-            <CommandGroup className="overflow-visible">
-              {noneLabel ? (
-                <CommandItem
-                  data-checked={!value ? true : undefined}
-                  onSelect={() => {
-                    onChange("");
-                    setOpen(false);
-                  }}
-                  value="none clear"
-                >
-                  <span className="truncate text-muted-foreground">{noneLabel}</span>
-                </CommandItem>
-              ) : null}
-              {options.map((option) => {
-                const isSelected = option.value === value;
-                return (
-                  <CommandItem
-                    data-checked={isSelected ? true : undefined}
-                    key={option.value}
-                    onSelect={() => {
-                      onChange(option.value);
-                      setOpen(false);
-                    }}
-                    value={`${option.label} ${option.keywords ?? ""} ${option.value}`}
-                  >
-                    <span className="min-w-0 flex-1 truncate">{option.label}</span>
-                  </CommandItem>
-                );
-              })}
-            </CommandGroup>
-          </CommandList>
-        </Command>
-      </PopoverContent>
-    </Popover>
+        </ComboboxList>
+      </ComboboxContent>
+    </Combobox>
   );
 }
