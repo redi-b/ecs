@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "@/components/app/link";
-import { useCallback, useEffect, useId, useState, useTransition } from "react";
+import { useCallback, useEffect, useId, useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import { AppIcons } from "@/components/app/icons";
+import { SearchableCombobox } from "@/components/app/searchable-combobox";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,11 +21,20 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   Field,
   FieldContent,
   FieldDescription,
   FieldLabel,
 } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
 import {
   InputGroup,
   InputGroupAddon,
@@ -475,22 +485,56 @@ export function PaymentsSection({ initialPayment, supportHref = null }: Payments
 type ReceivingAccountRow = {
   id: string;
   label: string;
+  bankCode: string | null;
   bankName: string;
+  accountName: string | null;
   accountLast4: string | null;
   isDefault: boolean;
 };
 
+type ReceivingAccountFormState = {
+  label: string;
+  bankCode: string;
+  accountName: string;
+  accountNumber: string;
+  isDefault: boolean;
+};
+
+const emptyReceivingForm = (): ReceivingAccountFormState => ({
+  label: "",
+  bankCode: "",
+  accountName: "",
+  accountNumber: "",
+  isDefault: false,
+});
+
 function ReceivingAccountsCard() {
   const { t } = useI18n();
+  const formIds = useId();
   const [accounts, setAccounts] = useState<ReceivingAccountRow[]>([]);
   const [banks, setBanks] = useState<Array<{ code: string; name: string }>>([]);
-  const [label, setLabel] = useState("");
-  const [bankCode, setBankCode] = useState("");
-  const [accountName, setAccountName] = useState("");
-  const [accountNumber, setAccountNumber] = useState("");
-  const [isDefault, setIsDefault] = useState(false);
+  const [form, setForm] = useState<ReceivingAccountFormState>(emptyReceivingForm);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
-  const [showForm, setShowForm] = useState(false);
+
+  const bankOptions = useMemo(
+    () =>
+      banks.map((bank) => ({
+        value: bank.code,
+        label: bank.name,
+        keywords: `${bank.code} ${bank.name}`,
+      })),
+    [banks],
+  );
+
+  const editingAccount = editingId
+    ? (accounts.find((account) => account.id === editingId) ?? null)
+    : null;
+  const deleteAccount = deleteId
+    ? (accounts.find((account) => account.id === deleteId) ?? null)
+    : null;
 
   const load = useCallback(async () => {
     try {
@@ -513,7 +557,7 @@ function ReceivingAccountsCard() {
         if (Array.isArray(data?.banks)) setBanks(data.banks);
       }
     } catch {
-      // ignore
+      // ignore load failures; list stays empty
     }
   }, []);
 
@@ -521,28 +565,75 @@ function ReceivingAccountsCard() {
     void load();
   }, [load]);
 
+  function openCreate() {
+    setEditingId(null);
+    setForm({
+      ...emptyReceivingForm(),
+      isDefault: accounts.length === 0,
+    });
+    setDialogOpen(true);
+  }
+
+  function openEdit(account: ReceivingAccountRow) {
+    setEditingId(account.id);
+    setForm({
+      label: account.label,
+      bankCode: account.bankCode ?? "",
+      accountName: account.accountName ?? "",
+      accountNumber: "",
+      isDefault: account.isDefault,
+    });
+    setDialogOpen(true);
+  }
+
+  function closeDialog() {
+    setDialogOpen(false);
+    setEditingId(null);
+    setForm(emptyReceivingForm());
+  }
+
   function saveAccount() {
+    const label = form.label.trim();
+    const bank = banks.find((item) => item.code === form.bankCode);
+    if (!label || !form.bankCode || !bank) return;
+
     startTransition(async () => {
       toast.loading(t("settings.payments.toast.working"), { id: "recv-acc" });
       try {
-        const bank = banks.find((b) => b.code === bankCode);
-        const response = await fetch("/admin/settings/payments/receiving-accounts", {
-          method: "POST",
-          headers: { accept: "application/json", "content-type": "application/json" },
-          body: JSON.stringify({
-            label,
-            bankCode: bankCode || null,
-            bankName: bank?.name || bankCode || "Bank",
-            accountName: accountName || null,
-            accountNumber: accountNumber || null,
-            isDefault,
-          }),
-        });
+        const isEdit = Boolean(editingId);
+        const body: Record<string, unknown> = {
+          label,
+          bankCode: form.bankCode,
+          bankName: bank.name,
+          accountName: form.accountName.trim() || null,
+          isDefault: form.isDefault,
+        };
+        // Only send account number when the merchant entered a new value (edit keeps existing if blank).
+        if (form.accountNumber.trim()) {
+          body.accountNumber = form.accountNumber.trim();
+        } else if (!isEdit) {
+          body.accountNumber = null;
+        }
+
+        const response = await fetch(
+          isEdit
+            ? `/admin/settings/payments/receiving-accounts/${editingId}`
+            : "/admin/settings/payments/receiving-accounts",
+          {
+            method: "POST",
+            headers: { accept: "application/json", "content-type": "application/json" },
+            body: JSON.stringify(body),
+          },
+        );
         const data = await response.json().catch(() => ({}));
         if (!response.ok) {
           toast.error(
             mapPlatformErrorMessage(
-              typeof data?.error === "string" ? data.error : "receiving_account_create_failed",
+              typeof data?.error === "string"
+                ? data.error
+                : typeof data?.message === "string"
+                  ? data.message
+                  : "receiving_account_create_failed",
               { fallback: t("settings.payments.receiving.failed") },
             ),
             { id: "recv-acc" },
@@ -550,12 +641,7 @@ function ReceivingAccountsCard() {
           return;
         }
         toast.success(t("settings.payments.receiving.saved"), { id: "recv-acc" });
-        setLabel("");
-        setBankCode("");
-        setAccountName("");
-        setAccountNumber("");
-        setIsDefault(false);
-        setShowForm(false);
+        closeDialog();
         await load();
       } catch {
         toast.error(t("settings.payments.receiving.failed"), { id: "recv-acc" });
@@ -576,12 +662,15 @@ function ReceivingAccountsCard() {
           return;
         }
         toast.success(t("settings.payments.receiving.deleted"), { id: "recv-del" });
+        setDeleteId(null);
         await load();
       } catch {
         toast.error(t("settings.payments.receiving.failed"), { id: "recv-del" });
       }
     });
   }
+
+  const canSave = form.label.trim().length > 0 && form.bankCode.length > 0 && !isPending;
 
   return (
     <Card>
@@ -591,139 +680,248 @@ function ReceivingAccountsCard() {
             <CardTitle className="text-base">{t("settings.payments.receiving.title")}</CardTitle>
             <CardDescription>{t("settings.payments.receiving.description")}</CardDescription>
           </div>
-          <Button
-            className="shrink-0 rounded-full"
-            size="sm"
-            type="button"
-            variant="outline"
-            onClick={() => setShowForm((v) => !v)}
-          >
-            {t("settings.payments.receiving.add")}
-          </Button>
+          {accounts.length > 0 ? (
+            <Button
+              className="shrink-0 rounded-full"
+              onClick={openCreate}
+              size="sm"
+              type="button"
+              variant="outline"
+            >
+              {t("settings.payments.receiving.add")}
+            </Button>
+          ) : null}
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        {accounts.length === 0 && !showForm ? (
-          <p className="text-sm text-muted-foreground">{t("settings.payments.receiving.empty")}</p>
-        ) : null}
-
-        {accounts.length > 0 ? (
-          <ul className="divide-y rounded-xl border">
+        {accounts.length === 0 ? (
+          <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed bg-muted/20 px-6 py-10 text-center">
+            <div className="flex size-11 items-center justify-center rounded-xl border bg-background shadow-sm">
+              <AppIcons.billing className="size-5 text-muted-foreground" />
+            </div>
+            <div className="space-y-1">
+              <p className="text-sm font-medium">{t("settings.payments.receiving.emptyTitle")}</p>
+              <p className="max-w-sm text-sm text-muted-foreground">
+                {t("settings.payments.receiving.empty")}
+              </p>
+            </div>
+            <Button className="rounded-full" onClick={openCreate} size="sm" type="button">
+              {t("settings.payments.receiving.add")}
+            </Button>
+          </div>
+        ) : (
+          <ul className="divide-y overflow-hidden rounded-xl border">
             {accounts.map((account) => (
               <li
+                className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-muted/30"
                 key={account.id}
-                className="flex items-center justify-between gap-3 px-4 py-3 text-sm"
               >
-                <div className="min-w-0">
-                  <p className="font-medium">
-                    {account.label}
+                <div className="flex size-9 shrink-0 items-center justify-center rounded-lg border bg-muted/40">
+                  <AppIcons.billing className="size-4 text-muted-foreground" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="truncate text-sm font-medium">{account.label}</p>
                     {account.isDefault ? (
-                      <Badge className="ml-2" variant="secondary">
-                        {t("settings.payments.receiving.default")}
-                      </Badge>
+                      <Badge variant="secondary">{t("settings.payments.receiving.defaultBadge")}</Badge>
                     ) : null}
-                  </p>
-                  <p className="text-muted-foreground">
+                  </div>
+                  <p className="truncate text-sm text-muted-foreground">
                     {account.bankName}
                     {account.accountLast4
                       ? ` · ${t("settings.payments.receiving.endsIn", { digits: account.accountLast4 })}`
                       : ""}
+                    {account.accountName ? ` · ${account.accountName}` : ""}
                   </p>
                 </div>
-                <Button
-                  className="rounded-full text-destructive"
-                  disabled={isPending}
-                  size="sm"
-                  type="button"
-                  variant="ghost"
-                  onClick={() => {
-                    if (window.confirm(t("settings.payments.receiving.deleteConfirm"))) {
-                      removeAccount(account.id);
-                    }
-                  }}
-                >
-                  {t("settings.payments.receiving.delete")}
-                </Button>
+                <div className="flex shrink-0 items-center gap-1">
+                  <Button
+                    aria-label={t("settings.payments.receiving.edit")}
+                    className="rounded-full"
+                    disabled={isPending}
+                    onClick={() => openEdit(account)}
+                    size="icon-sm"
+                    type="button"
+                    variant="ghost"
+                  >
+                    <AppIcons.edit className="size-4" />
+                  </Button>
+                  <Button
+                    aria-label={t("settings.payments.receiving.delete")}
+                    className="rounded-full text-destructive hover:bg-destructive/10 hover:text-destructive"
+                    disabled={isPending}
+                    onClick={() => setDeleteId(account.id)}
+                    size="icon-sm"
+                    type="button"
+                    variant="ghost"
+                  >
+                    <AppIcons.trash className="size-4" />
+                  </Button>
+                </div>
               </li>
             ))}
           </ul>
-        ) : null}
-
-        {showForm ? (
-          <div className="space-y-3 rounded-xl border bg-muted/20 p-4">
-            <Field>
-              <FieldLabel>{t("settings.payments.receiving.label")}</FieldLabel>
-              <InputGroup>
-                <InputGroupInput
-                  value={label}
-                  onChange={(e) => setLabel(e.target.value)}
-                  placeholder={t("settings.payments.receiving.labelPlaceholder")}
-                />
-              </InputGroup>
-            </Field>
-            <Field>
-              <FieldLabel>{t("settings.payments.receiving.bank")}</FieldLabel>
-              <select
-                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs"
-                value={bankCode}
-                onChange={(e) => setBankCode(e.target.value)}
-              >
-                <option value="">{t("settings.payments.receiving.bank")}</option>
-                {banks.map((bank) => (
-                  <option key={bank.code} value={bank.code}>
-                    {bank.name}
-                  </option>
-                ))}
-              </select>
-            </Field>
-            <Field>
-              <FieldLabel>{t("settings.payments.receiving.accountName")}</FieldLabel>
-              <InputGroup>
-                <InputGroupInput
-                  value={accountName}
-                  onChange={(e) => setAccountName(e.target.value)}
-                />
-              </InputGroup>
-            </Field>
-            <Field>
-              <FieldLabel>{t("settings.payments.receiving.accountNumber")}</FieldLabel>
-              <InputGroup>
-                <InputGroupInput
-                  value={accountNumber}
-                  onChange={(e) => setAccountNumber(e.target.value)}
-                />
-              </InputGroup>
-              <FieldDescription>{t("settings.payments.receiving.accountNumberHint")}</FieldDescription>
-            </Field>
-            <label className="flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                checked={isDefault}
-                onChange={(e) => setIsDefault(e.target.checked)}
-              />
-              {t("settings.payments.receiving.default")}
-            </label>
-            <div className="flex justify-end gap-2">
-              <Button
-                className="rounded-full"
-                type="button"
-                variant="ghost"
-                onClick={() => setShowForm(false)}
-              >
-                {t("common.cancel")}
-              </Button>
-              <Button
-                className="rounded-full"
-                disabled={isPending || !label.trim() || !bankCode}
-                type="button"
-                onClick={saveAccount}
-              >
-                {t("settings.payments.receiving.save")}
-              </Button>
-            </div>
-          </div>
-        ) : null}
+        )}
       </CardContent>
+
+      <Dialog
+        onOpenChange={(open) => {
+          if (!open) closeDialog();
+          else setDialogOpen(true);
+        }}
+        open={dialogOpen}
+      >
+        <DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-md">
+          <DialogHeader className="gap-1.5 border-b px-4 py-4 text-left sm:px-5">
+            <DialogTitle>
+              {editingId
+                ? t("settings.payments.receiving.dialogEditTitle")
+                : t("settings.payments.receiving.dialogAddTitle")}
+            </DialogTitle>
+            <DialogDescription>{t("settings.payments.receiving.dialogDescription")}</DialogDescription>
+          </DialogHeader>
+
+          <div className="flex max-h-[min(70dvh,32rem)] flex-col gap-4 overflow-y-auto p-4 sm:p-5">
+            <Field>
+              <FieldLabel htmlFor={`${formIds}-label`}>
+                {t("settings.payments.receiving.label")}
+              </FieldLabel>
+              <Input
+                autoFocus
+                disabled={isPending}
+                id={`${formIds}-label`}
+                onChange={(event) => setForm((current) => ({ ...current, label: event.target.value }))}
+                placeholder={t("settings.payments.receiving.labelPlaceholder")}
+                value={form.label}
+              />
+              <FieldDescription>{t("settings.payments.receiving.labelHint")}</FieldDescription>
+            </Field>
+
+            <Field>
+              <FieldLabel htmlFor={`${formIds}-bank`}>
+                {t("settings.payments.receiving.bank")}
+              </FieldLabel>
+              <SearchableCombobox
+                disabled={isPending}
+                emptyLabel={t("settings.payments.receiving.noMatchingBanks")}
+                id={`${formIds}-bank`}
+                onChange={(value) => setForm((current) => ({ ...current, bankCode: value }))}
+                options={bankOptions}
+                placeholder={t("settings.payments.receiving.bankPlaceholder")}
+                searchPlaceholder={t("settings.payments.receiving.searchBanks")}
+                value={form.bankCode}
+              />
+            </Field>
+
+            <Field>
+              <FieldLabel htmlFor={`${formIds}-holder`}>
+                {t("settings.payments.receiving.accountName")}
+              </FieldLabel>
+              <Input
+                disabled={isPending}
+                id={`${formIds}-holder`}
+                onChange={(event) =>
+                  setForm((current) => ({ ...current, accountName: event.target.value }))
+                }
+                placeholder={t("settings.payments.receiving.accountNamePlaceholder")}
+                value={form.accountName}
+              />
+            </Field>
+
+            <Field>
+              <FieldLabel htmlFor={`${formIds}-number`}>
+                {t("settings.payments.receiving.accountNumber")}
+              </FieldLabel>
+              <Input
+                autoComplete="off"
+                disabled={isPending}
+                id={`${formIds}-number`}
+                inputMode="numeric"
+                onChange={(event) =>
+                  setForm((current) => ({ ...current, accountNumber: event.target.value }))
+                }
+                placeholder={
+                  editingAccount?.accountLast4
+                    ? t("settings.payments.receiving.endsIn", {
+                        digits: editingAccount.accountLast4,
+                      })
+                    : t("settings.payments.receiving.accountNumberPlaceholder")
+                }
+                value={form.accountNumber}
+              />
+              <FieldDescription>
+                {editingId
+                  ? t("settings.payments.receiving.accountNumberKeep")
+                  : t("settings.payments.receiving.accountNumberHint")}
+              </FieldDescription>
+            </Field>
+
+            <Field className="flex flex-row items-center justify-between gap-4 rounded-xl border px-3.5 py-3">
+              <div className="min-w-0 space-y-1">
+                <FieldLabel className="text-sm" htmlFor={`${formIds}-default`}>
+                  {t("settings.payments.receiving.default")}
+                </FieldLabel>
+                <FieldDescription className="text-xs">
+                  {t("settings.payments.receiving.defaultHint")}
+                </FieldDescription>
+              </div>
+              <Switch
+                checked={form.isDefault}
+                disabled={isPending}
+                id={`${formIds}-default`}
+                onCheckedChange={(checked) =>
+                  setForm((current) => ({ ...current, isDefault: checked }))
+                }
+              />
+            </Field>
+          </div>
+
+          {/* p-0 content: cancel DialogFooter negative margins (same as mark-paid / create dialogs). */}
+          <DialogFooter className="mx-0 mb-0 rounded-none border-t bg-muted/50 p-4">
+            <Button disabled={isPending} onClick={closeDialog} type="button" variant="outline">
+              {t("common.cancel")}
+            </Button>
+            <Button disabled={!canSave} onClick={saveAccount} type="button">
+              {isPending
+                ? t("settings.payments.receiving.saving")
+                : t("settings.payments.receiving.save")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog
+        onOpenChange={(open) => {
+          if (!open) setDeleteId(null);
+        }}
+        open={Boolean(deleteId)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("settings.payments.receiving.deleteTitle")}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {deleteAccount
+                ? `${deleteAccount.label} — ${t("settings.payments.receiving.deleteConfirm")}`
+                : t("settings.payments.receiving.deleteConfirm")}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="rounded-full" disabled={isPending}>
+              {t("common.cancel")}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className="rounded-full bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={isPending || !deleteId}
+              onClick={(event) => {
+                event.preventDefault();
+                if (deleteId) removeAccount(deleteId);
+              }}
+            >
+              {t("settings.payments.receiving.deleteAction")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 }
