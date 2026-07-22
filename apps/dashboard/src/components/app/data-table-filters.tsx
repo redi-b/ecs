@@ -128,7 +128,7 @@ export function DataTableFilters({
                       size="panel"
                       value={filterSearch}
                     />
-                    <CommandList className="max-h-64 p-1.5 pt-1">
+                    <CommandList className="max-h-64 px-1.5 pb-1.5 pt-0">
                       {pendingFilter ? (
                         <>
                           <CommandEmpty>{t("filters.noValues")}</CommandEmpty>

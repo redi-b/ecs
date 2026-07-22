@@ -82,7 +82,7 @@ function CommandInput({
       "px-3 border-0 bg-transparent shadow-none ring-0 focus-visible:ring-0",
     );
     return (
-      <div data-slot="command-input-wrapper" className="px-1.5 pt-1.5">
+      <div data-slot="command-input-wrapper" className="px-1.5 pt-1.5 pb-1.5">
         <InputGroup
           className={cn(
             "h-9! border-input/40 bg-muted/40 shadow-none!",
