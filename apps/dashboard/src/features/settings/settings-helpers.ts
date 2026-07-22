@@ -51,3 +51,22 @@ export function statusCopy(
 
   return value.replaceAll("_", " ");
 }
+
+export const HANDLE_PATTERN = /^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$/;
+
+export type HandleAvailability =
+  | { status: "idle" }
+  | { status: "current" }
+  | { status: "checking" }
+  | { status: "available"; hostname?: string }
+  | { status: "unavailable"; message: string }
+  | { status: "invalid"; message: string };
+
+type Translate = (key: MessageKey, values?: Record<string, string | number | Date>) => string;
+
+export function formatHandleReason(reason: string | undefined, t: Translate) {
+  if (reason === "taken" || reason === "handle_unavailable") return t("settings.handle.taken");
+  if (reason === "invalid" || reason === "invalid_handle") return t("settings.handle.invalid");
+  if (reason === "reserved") return t("settings.handle.reserved");
+  return t("settings.handle.notAvailable");
+}
