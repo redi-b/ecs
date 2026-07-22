@@ -309,7 +309,8 @@
     "createCategory": "Create category",
     "untitledCollection": "Untitled collection",
     "untitledCategory": "Untitled category",
-    "noCategoriesSelected": "No categories selected."
+    "noCategoriesSelected": "No categories selected.",
+    "removeCategory": "Remove {value}"
   },
   "composer": {
     "createTitle": "Create product",

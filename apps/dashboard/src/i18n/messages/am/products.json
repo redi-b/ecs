@@ -309,7 +309,8 @@
     "createCategory": "አዲስ ምድብ",
     "untitledCollection": "ርዕስ የሌለው ስብስብ",
     "untitledCategory": "ርዕስ የሌለው ምድብ",
-    "noCategoriesSelected": "ምድብ አልተመረጠም።"
+    "noCategoriesSelected": "ምድብ አልተመረጠም።",
+    "removeCategory": "{value}ን አስወግድ"
   },
   "composer": {
     "createTitle": "አዲስ ምርት",

@@ -4,19 +4,12 @@ import type { MerchantProductCategory, MerchantProductCollection } from "@ecs/co
 import { useMemo, useState } from "react";
 
 import { AppIcons } from "@/components/app/icons";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
+  MultiSearchableCombobox,
+  SearchableCombobox,
+  type SearchableComboboxOption,
+} from "@/components/app/searchable-combobox";
 import { FieldDescription } from "@/components/ui/field";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { TaxonomyCreateDialog } from "@/features/catalog-taxonomy/taxonomy-create-dialog";
 import {
   buildCategoryTree,
@@ -58,7 +51,7 @@ export function StepDot({ status }: { status: "active" | "complete" | "idle" }) 
 export function CollectionPicker({
   collections,
   onChange,
-  selectedCollection,
+  selectedCollection: _selectedCollection,
   tenantId,
   value,
 }: {
@@ -80,10 +73,25 @@ export function CollectionPicker({
     return [...byId.values()];
   }, [collections, createdCollections]);
 
-  const resolvedSelected =
-    selectedCollection ??
-    allCollections.find((collection) => collection.id === value) ??
-    undefined;
+  const options = useMemo<SearchableComboboxOption[]>(() => {
+    const untitled = t("products.formPicker.untitledCollection");
+    return [
+      {
+        value: NO_COLLECTION_VALUE,
+        label: t("products.formPicker.noCollection"),
+        keywords: "none clear empty",
+      },
+      ...allCollections.map((collection) => {
+        const label = getCollectionLabel(collection, untitled);
+        return {
+          value: collection.id,
+          label,
+          keywords: `${collection.handle ?? ""} ${collection.id}`,
+          ...(collection.handle ? { description: `/${collection.handle}` } : {}),
+        };
+      }),
+    ];
+  }, [allCollections, t]);
 
   const createAction = getTenantScopedPath(
     dashboardRoutes.productCollectionCreateAction,
@@ -97,88 +105,35 @@ export function CollectionPicker({
 
   return (
     <>
-      <Popover onOpenChange={setOpen} open={open}>
-        <PopoverTrigger asChild>
-          <Button className="w-full justify-between" type="button" variant="outline">
-            <span className="truncate">
-              {resolvedSelected
-                ? getCollectionLabel(resolvedSelected, t("products.formPicker.untitledCollection"))
-                : t("products.formPicker.noCollection")}
+      <SearchableCombobox
+        emptyLabel={t("products.formPicker.noCollectionsFound")}
+        onChange={onChange}
+        onOpenChange={setOpen}
+        open={open}
+        options={options}
+        panelFooter={
+          <button
+            className="text-sm font-medium text-primary hover:underline"
+            onClick={openCreate}
+            type="button"
+          >
+            {t("products.formPicker.createCollection")}
+          </button>
+        }
+        placeholder={t("products.formPicker.noCollection")}
+        renderItem={(item) =>
+          item.description ? (
+            <span className="flex min-w-0 flex-1 items-center gap-2">
+              <span className="min-w-0 flex-1 truncate">{item.label}</span>
+              <span className="shrink-0 text-xs text-muted-foreground">{item.description}</span>
             </span>
-            <AppIcons.arrowDown data-icon="inline-end" />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent
-          align="start"
-          className="w-[min(28rem,calc(100vw-2rem))] overflow-hidden p-0"
-          collisionPadding={16}
-          onWheel={(event) => event.stopPropagation()}
-        >
-          <Command className="h-auto max-h-72 w-full min-h-0">
-            <CommandInput placeholder={t("products.formPicker.searchCollections")} />
-            <CommandList
-              className="max-h-60 min-h-0 overflow-y-auto overscroll-contain"
-              onWheel={(event) => event.stopPropagation()}
-            >
-              <CommandEmpty>
-                <div className="flex flex-col items-center gap-2 px-3 py-4 text-center">
-                  <span className="text-sm text-muted-foreground">
-                    {t("products.formPicker.noCollectionsFound")}
-                  </span>
-                  <button
-                    className="text-sm font-medium text-primary hover:underline"
-                    onClick={openCreate}
-                    type="button"
-                  >
-                    {t("products.formPicker.createCollection")}
-                  </button>
-                </div>
-              </CommandEmpty>
-              <CommandGroup className="overflow-visible">
-                <CommandItem
-                  data-checked={value === NO_COLLECTION_VALUE}
-                  onSelect={() => {
-                    onChange(NO_COLLECTION_VALUE);
-                    setOpen(false);
-                  }}
-                  value={t("products.formPicker.noCollection")}
-                >
-                  {t("products.formPicker.noCollection")}
-                </CommandItem>
-                {allCollections.map((collection) => (
-                  <CommandItem
-                    data-checked={value === collection.id}
-                    key={collection.id}
-                    onSelect={() => {
-                      onChange(collection.id);
-                      setOpen(false);
-                    }}
-                    value={`${collection.title ?? ""} ${collection.handle ?? ""}`}
-                  >
-                    <span className="truncate">
-                      {getCollectionLabel(collection, t("products.formPicker.untitledCollection"))}
-                    </span>
-                    {collection.handle ? (
-                      <span className="ml-auto text-xs text-muted-foreground">
-                        {collection.handle}
-                      </span>
-                    ) : null}
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-            </CommandList>
-          </Command>
-          <div className="border-t px-3 py-2">
-            <button
-              className="text-sm font-medium text-primary hover:underline"
-              onClick={openCreate}
-              type="button"
-            >
-              {t("products.formPicker.createCollection")}
-            </button>
-          </div>
-        </PopoverContent>
-      </Popover>
+          ) : (
+            <span className="min-w-0 flex-1 truncate">{item.label}</span>
+          )
+        }
+        searchPlaceholder={t("products.formPicker.searchCollections")}
+        value={value || NO_COLLECTION_VALUE}
+      />
 
       <TaxonomyCreateDialog
         action={createAction}
@@ -203,7 +158,7 @@ export function CollectionPicker({
 export function CategoryPicker({
   categories,
   onChange,
-  selectedCategories,
+  selectedCategories: _selectedCategories,
   tenantId,
   value,
 }: {
@@ -230,25 +185,30 @@ export function CategoryPicker({
     [allCategories],
   );
 
-  const resolvedSelected = useMemo(() => {
-    if (selectedCategories.length) return selectedCategories;
-    return value
-      .map((id) => allCategories.find((category) => category.id === id))
-      .filter((category): category is MerchantProductCategory => Boolean(category));
-  }, [allCategories, selectedCategories, value]);
+  const options = useMemo<SearchableComboboxOption[]>(() => {
+    const untitled = t("products.formPicker.untitledCategory");
+    return treeRows.map((node) => {
+      const category = node.category;
+      const label = getCategoryLabel(category, untitled);
+      return {
+        value: category.id,
+        label,
+        keywords: `${category.name ?? ""} ${category.handle ?? ""} ${category.id}`,
+        ...(category.handle ? { description: `/${category.handle}` } : {}),
+      };
+    });
+  }, [t, treeRows]);
+
+  const depthById = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const node of treeRows) map.set(node.category.id, node.depth);
+    return map;
+  }, [treeRows]);
 
   const createAction = getTenantScopedPath(
     dashboardRoutes.productCategoryCreateAction,
     tenantId ?? getClientTenantId(),
   );
-
-  function toggleCategory(categoryId: string) {
-    onChange(
-      value.includes(categoryId)
-        ? value.filter((selectedId) => selectedId !== categoryId)
-        : [...value, categoryId],
-    );
-  }
 
   function openCreate() {
     setOpen(false);
@@ -256,102 +216,53 @@ export function CategoryPicker({
   }
 
   return (
-    <div className="flex flex-col gap-3">
-      <Popover onOpenChange={setOpen} open={open}>
-        <PopoverTrigger asChild>
-          <Button className="w-full justify-between" type="button" variant="outline">
-            <span className="truncate">
-              {resolvedSelected.length
-                ? t("products.formPicker.selectedCount", { count: resolvedSelected.length })
-                : t("products.formPicker.selectCategories")}
+    <div className="flex flex-col gap-2">
+      <MultiSearchableCombobox
+        emptyLabel={t("products.formPicker.noCategoriesFound")}
+        onChange={onChange}
+        onOpenChange={setOpen}
+        open={open}
+        options={options}
+        panelFooter={
+          <button
+            className="text-sm font-medium text-primary hover:underline"
+            onClick={openCreate}
+            type="button"
+          >
+            {t("products.formPicker.createCategory")}
+          </button>
+        }
+        placeholder={t("products.formPicker.selectCategories")}
+        removeLabel={(label) => t("products.formPicker.removeCategory", { value: label })}
+        renderItem={(item) => {
+          const depth = depthById.get(item.value) ?? 0;
+          return (
+            <span className="flex min-w-0 flex-1 items-center gap-2">
+              <span
+                className="min-w-0 flex-1 truncate"
+                style={{ paddingLeft: `${depth * 0.85}rem` }}
+              >
+                {depth > 0 ? (
+                  <span className="mr-1.5 text-muted-foreground/50">└</span>
+                ) : null}
+                {item.label}
+              </span>
+              {item.description ? (
+                <span className="max-w-[35%] shrink-0 truncate text-xs text-muted-foreground">
+                  {item.description}
+                </span>
+              ) : null}
             </span>
-            <AppIcons.arrowDown data-icon="inline-end" />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent
-          align="start"
-          className="w-[min(30rem,calc(100vw-2rem))] overflow-hidden p-0"
-          collisionPadding={16}
-          onWheel={(event) => event.stopPropagation()}
-        >
-          <Command className="h-auto max-h-72 w-full min-h-0">
-            <CommandInput placeholder={t("products.formPicker.searchCategories")} />
-            <CommandList
-              className="max-h-60 min-h-0 overflow-y-auto overscroll-contain"
-              onWheel={(event) => event.stopPropagation()}
-            >
-              <CommandEmpty>
-                <div className="flex flex-col items-center gap-2 px-3 py-4 text-center">
-                  <span className="text-sm text-muted-foreground">
-                    {t("products.formPicker.noCategoriesFound")}
-                  </span>
-                  <button
-                    className="text-sm font-medium text-primary hover:underline"
-                    onClick={openCreate}
-                    type="button"
-                  >
-                    {t("products.formPicker.createCategory")}
-                  </button>
-                </div>
-              </CommandEmpty>
-              <CommandGroup className="overflow-visible">
-                {treeRows.map((node) => {
-                  const category = node.category;
-                  const label = getCategoryLabel(
-                    category,
-                    t("products.formPicker.untitledCategory"),
-                  );
-                  return (
-                    <CommandItem
-                      data-checked={value.includes(category.id) ? true : undefined}
-                      key={category.id}
-                      onSelect={() => toggleCategory(category.id)}
-                      value={`${category.name ?? ""} ${category.handle ?? ""} ${label}`}
-                    >
-                      <Checkbox checked={value.includes(category.id)} tabIndex={-1} />
-                      <span
-                        className="min-w-0 flex-1 truncate"
-                        style={{ paddingLeft: `${node.depth * 0.85}rem` }}
-                      >
-                        {node.depth > 0 ? (
-                          <span className="mr-1.5 text-muted-foreground/50">└</span>
-                        ) : null}
-                        {label}
-                      </span>
-                      {category.handle ? (
-                        <span className="ml-auto max-w-[35%] truncate text-xs text-muted-foreground">
-                          {category.handle}
-                        </span>
-                      ) : null}
-                    </CommandItem>
-                  );
-                })}
-              </CommandGroup>
-            </CommandList>
-          </Command>
-          <div className="border-t px-3 py-2">
-            <button
-              className="text-sm font-medium text-primary hover:underline"
-              onClick={openCreate}
-              type="button"
-            >
-              {t("products.formPicker.createCategory")}
-            </button>
-          </div>
-        </PopoverContent>
-      </Popover>
+          );
+        }}
+        searchPlaceholder={t("products.formPicker.searchCategories")}
+        selectedCountLabel={(count) => t("products.formPicker.selectedCount", { count })}
+        values={value}
+      />
 
-      {resolvedSelected.length ? (
-        <div className="flex flex-wrap gap-2">
-          {resolvedSelected.map((category) => (
-            <Badge key={category.id} variant="secondary">
-              {getCategoryLabel(category, t("products.formPicker.untitledCategory"))}
-            </Badge>
-          ))}
-        </div>
-      ) : (
+      {value.length === 0 ? (
         <FieldDescription>{t("products.formPicker.noCategoriesSelected")}</FieldDescription>
-      )}
+      ) : null}
 
       <TaxonomyCreateDialog
         action={createAction}

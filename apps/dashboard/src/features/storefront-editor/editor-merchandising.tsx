@@ -1,25 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { RiCheckLine, RiEditLine } from "@remixicon/react";
 
+import { SearchableCombobox } from "@/components/app/searchable-combobox";
 import { Button } from "@/components/ui/button";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   ProductCatalogPickerDialog,
   ProductCatalogPickerTrigger,
 } from "@/features/products/product-catalog-picker-dialog";
-import { cn } from "@/lib/utils";
-
-import { POPOVER_MOTION_CLASSNAME } from "./editor-config";
 
 type CatalogOption = {
   handle?: string | null;
@@ -35,7 +23,6 @@ export function StorefrontCollectionPicker({
   onChange: (value: string) => void;
   value: string;
 }) {
-  const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [options, setOptions] = useState<CatalogOption[]>([]);
 
@@ -76,75 +63,45 @@ export function StorefrontCollectionPicker({
     };
   }, []);
 
-  const selected = options.find((option) => option.id === value);
+  const comboboxOptions = useMemo(
+    () => [
+      {
+        value: "__none__",
+        label: "None",
+        keywords: "none clear empty",
+      },
+      ...options.map((option) => ({
+        value: option.id,
+        label: option.title,
+        keywords: `${option.handle ?? ""} ${option.id}`,
+        ...(option.handle ? { description: `/${option.handle}` } : {}),
+      })),
+    ],
+    [options],
+  );
 
   return (
-    <Popover onOpenChange={setOpen} open={open}>
-      <PopoverTrigger asChild>
-        <Button
-          className="h-9 w-full min-w-0 justify-between px-3 font-normal shadow-none"
-          disabled={loading}
-          type="button"
-          variant="outline"
-        >
-          <span className={cn("truncate", !selected && "text-muted-foreground")}>
-            {loading
-              ? "Loading collections…"
-              : selected
-                ? selected.title
-                : "Select a collection"}
+    <SearchableCombobox
+      className="h-9"
+      disabled={loading}
+      emptyLabel="No collections found."
+      noneLabel="None"
+      onChange={(next) => onChange(next === "__none__" ? "" : next)}
+      options={comboboxOptions}
+      placeholder={loading ? "Loading collections…" : "Select a collection"}
+      renderItem={(item) =>
+        item.description ? (
+          <span className="flex min-w-0 flex-1 items-center gap-2">
+            <span className="min-w-0 flex-1 truncate">{item.label}</span>
+            <span className="shrink-0 text-xs text-muted-foreground">{item.description}</span>
           </span>
-          <RiEditLine className="size-4 shrink-0 opacity-50" aria-hidden />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent
-        align="start"
-        className={cn(POPOVER_MOTION_CLASSNAME, "w-[min(22rem,calc(100vw-2rem))] p-0")}
-        collisionPadding={16}
-        onWheel={(event) => event.stopPropagation()}
-      >
-        <Command>
-          <CommandInput placeholder="Search collections…" />
-          <CommandList
-            className="max-h-60 overflow-y-auto overscroll-contain"
-            onWheel={(event) => event.stopPropagation()}
-          >
-            <CommandEmpty>No collections found.</CommandEmpty>
-            <CommandGroup>
-              <CommandItem
-                onSelect={() => {
-                  onChange("");
-                  setOpen(false);
-                }}
-                value="none clear"
-              >
-                None
-              </CommandItem>
-              {options.map((option) => (
-                <CommandItem
-                  key={option.id}
-                  onSelect={() => {
-                    onChange(option.id);
-                    setOpen(false);
-                  }}
-                  value={`${option.title} ${option.handle ?? ""} ${option.id}`}
-                >
-                  <span className="min-w-0 flex-1 truncate">{option.title}</span>
-                  {option.handle ? (
-                    <span className="ml-2 shrink-0 text-xs text-muted-foreground">
-                      /{option.handle}
-                    </span>
-                  ) : null}
-                  {option.id === value ? (
-                    <RiCheckLine className="ml-2 size-4 shrink-0" aria-hidden />
-                  ) : null}
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          </CommandList>
-        </Command>
-      </PopoverContent>
-    </Popover>
+        ) : (
+          <span className="min-w-0 flex-1 truncate">{item.label}</span>
+        )
+      }
+      searchPlaceholder="Search collections…"
+      value={value || "__none__"}
+    />
   );
 }
 
