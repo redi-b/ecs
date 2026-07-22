@@ -35,6 +35,14 @@ FROM workspace AS storefront-build
 ENV ASTRO_TELEMETRY_DISABLED=1
 RUN --mount=type=cache,id=astro-cache,target=/workspace/apps/storefront/node_modules/.astro \
     pnpm --filter @ecs/storefront build
+# Astro SSR leaves runtime deps like ioredis external (cache provider chunk).
+# Ship a prod deploy tree + compiled dist so node can resolve them.
+RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
+    pnpm --filter @ecs/storefront deploy --prod /out/storefront && \
+    rm -rf /out/storefront/dist /out/storefront/src && \
+    cp -R apps/storefront/dist /out/storefront/dist && \
+    test -d /out/storefront/node_modules/ioredis && \
+    test -f /out/storefront/dist/server/entry.mjs
 
 FROM workspace AS platform-api-build
 RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
@@ -78,7 +86,7 @@ FROM runtime AS storefront
 ENV ASTRO_TELEMETRY_DISABLED=1
 ENV HOST=0.0.0.0
 ENV PORT=4321
-COPY --chown=node:node --from=storefront-build /workspace/apps/storefront/dist ./dist
+COPY --chown=node:node --from=storefront-build /out/storefront ./
 USER node
 EXPOSE 4321
 ENTRYPOINT ["dumb-init", "--"]
