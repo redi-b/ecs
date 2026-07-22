@@ -6,7 +6,7 @@ import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { preventDialogDismissForPortals } from "@/lib/dialog-outside";
 import { FloatingPortalContainerProvider } from "@/lib/floating-portal-container";
-import { isNestedOverlayActive } from "@/lib/nested-overlay";
+import { isNestedOverlayActive, isNestedOverlayOpen } from "@/lib/nested-overlay";
 import { cn } from "@/lib/utils";
 
 function Dialog({ ...props }: React.ComponentProps<typeof DialogPrimitive.Root>) {
@@ -72,7 +72,8 @@ function DialogContent({
           setPortalContainer(node);
         }}
         onEscapeKeyDown={(event) => {
-          if (isNestedOverlayActive()) {
+          // Only while a nested layer is actually open (not the post-close suppress window).
+          if (isNestedOverlayOpen()) {
             event.preventDefault();
           }
           onEscapeKeyDown?.(event);

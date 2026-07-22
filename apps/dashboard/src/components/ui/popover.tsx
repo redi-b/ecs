@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 
 function Popover({
   onOpenChange,
+  open,
   ...props
 }: React.ComponentProps<typeof PopoverPrimitive.Root>) {
   const sessionRef = React.useRef<NestedOverlaySession>({ isOpen: false, layerId: null });
@@ -24,13 +25,20 @@ function Popover({
     };
   }, []);
 
+  // Controlled close (e.g. setOpen(false) after filter select) may skip onOpenChange.
+  React.useEffect(() => {
+    if (open === undefined) return;
+    sessionRef.current = applyNestedOverlaySession(open, sessionRef.current);
+  }, [open]);
+
   return (
     <PopoverPrimitive.Root
       data-slot="popover"
-      onOpenChange={(open) => {
-        sessionRef.current = applyNestedOverlaySession(open, sessionRef.current);
-        onOpenChange?.(open);
+      onOpenChange={(next) => {
+        sessionRef.current = applyNestedOverlaySession(next, sessionRef.current);
+        onOpenChange?.(next);
       }}
+      {...(open !== undefined ? { open } : {})}
       {...props}
     />
   );
