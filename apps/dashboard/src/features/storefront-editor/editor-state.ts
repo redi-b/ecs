@@ -52,8 +52,10 @@ export type StorefrontPageProps = {
   primaryCtaHref?: string;
   primaryCtaLabel?: string;
   productSectionTitle?: string;
-  /** light | dark — drives generated palette from brand color */
+  /** light | dark: base for auto palette generation */
   surfaceMode?: "light" | "dark";
+  /** When true, brand + surface regenerate the full palette */
+  autoPalette?: boolean;
   testimonialsEnabled?: boolean;
   testimonialsTitle?: string;
   trustEnabled?: boolean;
@@ -108,6 +110,11 @@ export function buildDraftPayload(input: {
       ? props.surfaceMode
       : inferSurfaceMode(props.backgroundColor);
   setPathValue(themeTokens, "surfaceMode", mode);
+  setPathValue(
+    themeTokens,
+    "autoPalette",
+    typeof props.autoPalette === "boolean" ? props.autoPalette : true,
+  );
   if (props.primaryColor) setPathValue(themeTokens, "colors.primary", props.primaryColor);
   if (props.backgroundColor) setPathValue(themeTokens, "colors.background", props.backgroundColor);
   if (props.foregroundColor) setPathValue(themeTokens, "colors.foreground", props.foregroundColor);
@@ -240,6 +247,10 @@ function flattenDraft(data: unknown, themeTokens: unknown): StorefrontPageProps 
     tokens.surfaceMode === "light" || tokens.surfaceMode === "dark"
       ? tokens.surfaceMode
       : inferSurfaceMode(typeof colors.background === "string" ? colors.background : undefined);
+  props.autoPalette =
+    typeof (tokens as { autoPalette?: unknown }).autoPalette === "boolean"
+      ? (tokens as { autoPalette: boolean }).autoPalette
+      : true;
 
   return props as StorefrontPageProps;
 }
@@ -252,6 +263,7 @@ export function themePalettePageProps(
   const generated = generateThemeFromPrimary(primary, mode);
   return {
     surfaceMode: mode,
+    autoPalette: true,
     primaryColor: generated.primary,
     backgroundColor: generated.background,
     foregroundColor: generated.foreground,

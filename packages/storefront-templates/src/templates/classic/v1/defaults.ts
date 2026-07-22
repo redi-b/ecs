@@ -69,6 +69,7 @@ export const classicV1Defaults: ClassicV1Data = {
 /** Cold forest luxury: bone on deep green-black, sage primary, clay accent. */
 export const classicV1ThemeTokens: ClassicThemeTokens = {
   surfaceMode: "dark",
+  autoPalette: true,
   colors: {
     background: "#0b0f0d",
     foreground: "#e6ebe4",

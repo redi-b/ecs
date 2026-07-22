@@ -91,10 +91,15 @@ export type ClassicV1Data = z.infer<typeof classicV1DataSchema>;
 
 export const classicThemeTokensSchema = z.object({
   /**
-   * light | dark surface. When set, editor regenerates palette from primary.
+   * light | dark surface. Used with autoPalette to derive the full set from primary.
    * Optional for older published revisions (inferred from background).
    */
   surfaceMode: z.enum(["light", "dark"]).optional(),
+  /**
+   * When true (default), brand color + surface regenerate background/text/muted/accent.
+   * When false, each color is freeform (merchant edited a swatch or turned auto off).
+   */
+  autoPalette: z.boolean().optional(),
   colors: z.object({
     background: z.string().min(1),
     foreground: z.string().min(1),

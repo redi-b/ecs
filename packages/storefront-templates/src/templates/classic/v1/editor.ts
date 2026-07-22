@@ -205,21 +205,19 @@ export const classicV1EditorSchema = {
     },
     {
       id: "theme",
-      label: "Theme",
+      label: "Appearance",
       fields: [
         {
           path: "themeTokens.surfaceMode",
           prop: "surfaceMode",
           label: "Surface",
           kind: "text",
-          helpText: "Light or dark base. Brand color fills the rest of the palette.",
         },
         {
           path: "themeTokens.colors.primary",
           prop: "primaryColor",
           label: "Brand color",
           kind: "color",
-          helpText: "We generate background, text, muted, and accent for contrast.",
         },
         {
           path: "themeTokens.typography.headingFont",
