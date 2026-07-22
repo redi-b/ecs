@@ -1,10 +1,11 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import { AppIcons } from "@/components/app/icons";
 import { listToolbarControlClassName } from "@/components/app/list-toolbar";
+import { SearchableCombobox } from "@/components/app/searchable-combobox";
 import { Button } from "@/components/ui/button";
 import {
   Command,
@@ -196,76 +197,63 @@ export function DataTableFilters({
 function DataTableAppliedFilterChip({ filter }: { filter: DataTableFilterDefinition }) {
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
-  const [optionSearch, setOptionSearch] = useState("");
+
+  const options = useMemo(
+    () =>
+      getSelectableFilterOptions(filter).map((option) => ({
+        value: option.value,
+        label: option.label,
+      })),
+    [filter],
+  );
 
   return (
-    <Popover
-      onOpenChange={(nextOpen) => {
-        setOpen(nextOpen);
-        if (!nextOpen) setOptionSearch("");
-      }}
-      open={open}
+    <div
+      className={cn(
+        "flex h-8 items-center overflow-hidden rounded-full border bg-background/90 text-sm",
+        "animate-in fade-in-0 zoom-in-95 duration-150",
+      )}
     >
-      <div
-        className={cn(
-          "flex h-8 items-center overflow-hidden rounded-full border bg-background/90 text-sm",
-          "animate-in fade-in-0 zoom-in-95 duration-150",
+      <SearchableCombobox
+        contentClassName="min-w-72"
+        emptyLabel={t("filters.noValues")}
+        onChange={(next) => {
+          filter.onChange(next);
+          setOpen(false);
+        }}
+        onOpenChange={setOpen}
+        open={open}
+        options={options}
+        placeholder={getFilterValueLabel(filter)}
+        renderValue={() => (
+          <span className="flex min-w-0 items-center gap-1.5">
+            <span className="text-xs text-muted-foreground">{filter.label}</span>
+            <span className="text-[11px] text-muted-foreground opacity-60">{t("filters.is")}</span>
+            <span className="truncate font-medium text-foreground">
+              {getFilterValueLabel(filter)}
+            </span>
+          </span>
         )}
-      >
-        <PopoverTrigger asChild>
+        searchPlaceholder={t("filters.searchLabel", { label: filter.label.toLowerCase() })}
+        trigger={
           <button
-            className="flex h-full items-center gap-1.5 px-2.5 text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground"
+            className="flex h-8 max-w-[16rem] items-center gap-1.5 px-2.5 text-left text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground"
             type="button"
-          >
-            <span className="text-xs">{filter.label}</span>
-            <span className="text-[11px] opacity-60">{t("filters.is")}</span>
-            <span className="font-medium text-foreground">{getFilterValueLabel(filter)}</span>
-          </button>
-        </PopoverTrigger>
-        <Button
-          aria-label={t("filters.clearFilterAria", { label: filter.label })}
-          className="h-full rounded-none border-l px-1.5"
-          onClick={() => filter.onChange(filter.defaultValue)}
-          size="icon-sm"
-          type="button"
-          variant="ghost"
-        >
-          <AppIcons.close data-icon="inline-start" />
-        </Button>
-      </div>
-      <PopoverContent
-        align="start"
-        className="w-72 overflow-hidden rounded-2xl p-1.5 shadow-lg"
-        sideOffset={8}
-      >
-        <Command>
-          <CommandInput
-            autoFocus
-            onValueChange={setOptionSearch}
-            placeholder={t("filters.searchLabel", { label: filter.label.toLowerCase() })}
-            value={optionSearch}
           />
-          <CommandList className="max-h-64">
-            <CommandEmpty>{t("filters.noValues")}</CommandEmpty>
-            <CommandGroup>
-              {getSelectableFilterOptions(filter).map((option) => (
-                <CommandItem
-                  data-checked={filter.value === option.value ? true : undefined}
-                  key={option.value}
-                  onSelect={() => {
-                    filter.onChange(option.value);
-                    setOpen(false);
-                  }}
-                  value={option.label}
-                >
-                  {option.label}
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          </CommandList>
-        </Command>
-      </PopoverContent>
-    </Popover>
+        }
+        value={filter.value}
+      />
+      <Button
+        aria-label={t("filters.clearFilterAria", { label: filter.label })}
+        className="h-full rounded-none border-l px-1.5"
+        onClick={() => filter.onChange(filter.defaultValue)}
+        size="icon-sm"
+        type="button"
+        variant="ghost"
+      >
+        <AppIcons.close data-icon="inline-start" />
+      </Button>
+    </div>
   );
 }
 

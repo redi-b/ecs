@@ -2,25 +2,16 @@
 
 import type { Data, PuckAction } from "@puckeditor/core";
 import {
-  RiCheckLine,
-  RiEditLine,
   RiInformationLine,
   RiMore2Line,
   RiRefreshLine,
   RiResetLeftLine,
 } from "@remixicon/react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { HexColorPicker } from "react-colorful";
 
+import { SearchableCombobox } from "@/components/app/searchable-combobox";
 import { Button } from "@/components/ui/button";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -41,7 +32,7 @@ import {
   rgbToHex,
 } from "@ecs/storefront-templates";
 
-import { FONT_OPTIONS, POPOVER_MOTION_CLASSNAME } from "./editor-config";
+import { FONT_OPTIONS } from "./editor-config";
 import type { StorefrontPageProps } from "./editor-state";
 import { themePalettePageProps, themeResetPageProps } from "./editor-state";
 import { isHexColor, updateStorefrontProp, updateStorefrontProps } from "./editor-utils";
@@ -621,34 +612,39 @@ export function FontSelect({
   value: string;
 }) {
   const { t } = useI18n();
+  const options = useMemo(
+    () =>
+      FONT_OPTIONS.map((font) => ({
+        value: font,
+        label: font,
+        keywords: font,
+      })),
+    [],
+  );
+
   return (
-    <Popover>
-      <PopoverTrigger asChild>
-        <Button className="w-full min-w-0 justify-between gap-2" type="button" variant="outline">
-          <span className="min-w-0 truncate" style={{ fontFamily: value }}>
-            {value || t("editor.fonts.choose")}
+    <SearchableCombobox
+      className="w-full min-w-0"
+      emptyLabel={t("editor.fonts.empty")}
+      onChange={onChange}
+      options={options}
+      placeholder={t("editor.fonts.choose")}
+      renderItem={(item) => (
+        <span className="min-w-0 flex-1 truncate" style={{ fontFamily: item.value }}>
+          {item.label}
+        </span>
+      )}
+      renderValue={(item) =>
+        item ? (
+          <span className="truncate" style={{ fontFamily: item.value }}>
+            {item.label}
           </span>
-          <RiEditLine className="shrink-0" data-icon="inline-end" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent align="start" className={cn(POPOVER_MOTION_CLASSNAME, "p-0")}>
-        <Command>
-          <CommandInput placeholder={t("editor.fonts.search")} />
-          <CommandList>
-            <CommandEmpty>No font found.</CommandEmpty>
-            <CommandGroup>
-              {FONT_OPTIONS.map((font) => (
-                <CommandItem key={font} onSelect={() => onChange(font)} value={font}>
-                  <span className="flex-1" style={{ fontFamily: font }}>
-                    {font}
-                  </span>
-                  {font === value ? <RiCheckLine aria-hidden data-icon="inline-end" /> : null}
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          </CommandList>
-        </Command>
-      </PopoverContent>
-    </Popover>
+        ) : (
+          t("editor.fonts.choose")
+        )
+      }
+      searchPlaceholder={t("editor.fonts.search")}
+      value={value}
+    />
   );
 }

@@ -76,6 +76,7 @@
   },
   "fonts": {
     "choose": "Choose font",
-    "search": "Search fonts…"
+    "search": "Search fonts…",
+    "empty": "No font found."
   }
 }
