@@ -213,34 +213,71 @@ function normHue(h: number) {
   return ((h % 360) + 360) % 360;
 }
 
+export type PaletteShiftRole = "primary" | "accent" | "surface" | "text";
+
+/**
+ * Classify seed tokens so neutrals (body text, page bg) do not pick up brand chroma.
+ * Full offset is for accent (and similar) only.
+ */
+export function classifyPaletteRole(seedColor: string, seedPrimary: string): PaletteShiftRole {
+  const seed = normalizeHex(seedColor);
+  if (seed === normalizeHex(seedPrimary)) return "primary";
+  const sc = hexToHsl(seed);
+  if (!sc) return "surface";
+  // Body text: light on dark or dark on light, low chroma
+  if (sc.s < 22 && (sc.l > 68 || sc.l < 28)) return "text";
+  // Surfaces / muted panels: low chroma mid-darks or mid-lights
+  if (sc.s < 28 && sc.l < 45) return "surface";
+  if (sc.s < 22 && sc.l > 85) return "surface";
+  // Saturated tokens (clay accent, etc.) keep designed offset from primary
+  return "accent";
+}
+
 /**
  * Shift one seed color so its relationship to seed primary is preserved
  * relative to the new primary (hue offset + sat/light deltas).
+ * Text and surfaces stay nearly neutral so brand red never becomes pink body copy.
  */
 export function shiftColorRelativeToPrimary(
   seedColor: string,
   seedPrimary: string,
   newPrimary: string,
+  role?: PaletteShiftRole,
 ): string {
   const sc = hexToHsl(seedColor);
   const sp = hexToHsl(seedPrimary);
   const np = hexToHsl(newPrimary);
   if (!sc || !sp || !np) return normalizeHex(seedColor);
 
-  // Near-neutrals: keep lightness, gently pull hue toward brand, low sat.
-  if (sc.s < 12) {
-    const pulledS = clamp(sc.s + np.s * 0.08, 0, 18);
-    return hslToHex(np.h, pulledS, clamp(sc.l + (np.l - sp.l) * 0.15, 2, 98));
+  const resolvedRole = role ?? classifyPaletteRole(seedColor, seedPrimary);
+
+  if (resolvedRole === "primary") {
+    return normalizeHex(newPrimary);
   }
 
+  // Body text: keep lightness, minimal brand tint (never high sat).
+  if (resolvedRole === "text") {
+    const l = clamp(sc.l + (np.l - sp.l) * 0.08, sc.l > 50 ? 86 : 8, sc.l > 50 ? 96 : 18);
+    const s = clamp(sc.s * 0.35 + Math.min(np.s, 40) * 0.04, 0, 8);
+    return hslToHex(np.h, s, l);
+  }
+
+  // Page / muted surfaces: subtle brand wash only.
+  if (resolvedRole === "surface") {
+    const l = clamp(sc.l + (np.l - sp.l) * 0.12, 3, 97);
+    const s = clamp(sc.s * 0.5 + Math.min(np.s, 50) * 0.06, 0, 16);
+    return hslToHex(np.h, s, l);
+  }
+
+  // Accent (and other chromatic tokens): full relative offset from seed primary.
   const dh = sc.h - sp.h;
   const ds = sc.s - sp.s;
   const dl = sc.l - sp.l;
 
   return hslToHex(
     normHue(np.h + dh),
-    clamp(np.s + ds, 0, 100),
-    clamp(np.l + dl, 2, 98),
+    clamp(np.s + ds, 8, 85),
+    clamp(np.l + dl, 28, 72),
   );
 }
 
@@ -262,6 +299,7 @@ export function clampPrimaryForSurface(primaryHex: string, mode: ThemeSurfaceMod
 
 /**
  * After offset shift: ensure text/surface contrast and ink on fills.
+ * Desaturates body text so brand red never becomes pink copy.
  */
 export function ensurePaletteContrast(colors: Omit<GeneratedThemeColors, "onPrimary" | "onAccent">): GeneratedThemeColors {
   let { background, foreground, primary, muted, accent } = colors;
@@ -271,29 +309,43 @@ export function ensurePaletteContrast(colors: Omit<GeneratedThemeColors, "onPrim
   muted = normalizeHex(muted);
   accent = normalizeHex(accent);
 
-  // Body text vs page background
-  if (contrastRatio(background, foreground) < 4.5) {
-    foreground = contrastingInk(background);
+  const bgL = relativeLuminance(background);
+  const darkSurface = bgL <= 0.45;
+
+  // Body text: force near-neutral so brand never tints copy into pink/green.
+  {
+    const f = hexToHsl(foreground);
+    if (f) {
+      const targetL = darkSurface ? clamp(Math.max(f.l, 88), 88, 95) : clamp(Math.min(f.l, 14), 8, 16);
+      foreground = hslToHex(f.h, clamp(f.s, 0, 6), targetL);
+    }
+    if (contrastRatio(background, foreground) < 4.5) {
+      foreground = darkSurface ? "#e8ebe9" : "#121816";
+    }
   }
 
-  // Muted should stay on the same side of the surface as background
-  const bgL = relativeLuminance(background);
-  const mutedL = relativeLuminance(muted);
-  if (bgL > 0.45 && mutedL > bgL) {
-    // muted brighter than light bg: darken slightly
+  // Surfaces: keep muted near-neutral, correct side of background.
+  {
     const m = hexToHsl(muted);
-    if (m) muted = hslToHex(m.h, m.s, clamp(m.l - 6, 80, 96));
-  }
-  if (bgL <= 0.45 && mutedL < bgL) {
-    const m = hexToHsl(muted);
-    if (m) muted = hslToHex(m.h, m.s, clamp(m.l + 4, 6, 22));
+    if (m) {
+      muted = hslToHex(m.h, clamp(m.s, 0, 14), m.l);
+    }
+    const mutedL = relativeLuminance(muted);
+    if (!darkSurface && mutedL > bgL) {
+      const mm = hexToHsl(muted);
+      if (mm) muted = hslToHex(mm.h, clamp(mm.s, 0, 12), clamp(mm.l - 6, 80, 96));
+    }
+    if (darkSurface && mutedL < bgL) {
+      const mm = hexToHsl(muted);
+      if (mm) muted = hslToHex(mm.h, clamp(mm.s, 0, 14), clamp(mm.l + 4, 6, 22));
+    }
   }
 
   // Primary should not vanish into background
   if (contrastRatio(background, primary) < 1.6) {
     const p = hexToHsl(primary);
     if (p) {
-      const toward = bgL > 0.45 ? -18 : 14;
+      const toward = darkSurface ? 14 : -18;
       primary = hslToHex(p.h, p.s, clamp(p.l + toward, 20, 75));
     }
   }
@@ -311,7 +363,7 @@ export function ensurePaletteContrast(colors: Omit<GeneratedThemeColors, "onPrim
 
 /**
  * Recolor a designed seed palette onto a new brand primary.
- * Preserves relative HSL offsets from the seed primary, then cleans contrast.
+ * Neutrals (text/surfaces) stay quiet; accent keeps designed offset; then contrast cleanup.
  */
 export function generateThemeFromSeed(
   primaryInput: string,
@@ -323,13 +375,45 @@ export function generateThemeFromSeed(
 
   const shifted = {
     primary,
-    background: shiftColorRelativeToPrimary(seed.colors.background, seedPrimary, primary),
-    foreground: shiftColorRelativeToPrimary(seed.colors.foreground, seedPrimary, primary),
-    muted: shiftColorRelativeToPrimary(seed.colors.muted, seedPrimary, primary),
-    accent: shiftColorRelativeToPrimary(seed.colors.accent, seedPrimary, primary),
+    background: shiftColorRelativeToPrimary(
+      seed.colors.background,
+      seedPrimary,
+      primary,
+      "surface",
+    ),
+    foreground: shiftColorRelativeToPrimary(
+      seed.colors.foreground,
+      seedPrimary,
+      primary,
+      "text",
+    ),
+    muted: shiftColorRelativeToPrimary(seed.colors.muted, seedPrimary, primary, "surface"),
+    accent: shiftColorRelativeToPrimary(seed.colors.accent, seedPrimary, primary, "accent"),
   };
 
   return ensurePaletteContrast(shifted);
+}
+
+/** Full default appearance for a surface (seed colors + auto on). For editor Reset. */
+export function defaultThemePageProps(mode: ThemeSurfaceMode): {
+  surfaceMode: ThemeSurfaceMode;
+  autoPalette: true;
+  primaryColor: string;
+  backgroundColor: string;
+  foregroundColor: string;
+  mutedColor: string;
+  accentColor: string;
+} {
+  const seed = getDefaultThemeSeed(mode);
+  return {
+    surfaceMode: mode,
+    autoPalette: true,
+    primaryColor: seed.colors.primary,
+    backgroundColor: seed.colors.background,
+    foregroundColor: seed.colors.foreground,
+    mutedColor: seed.colors.muted,
+    accentColor: seed.colors.accent,
+  };
 }
 
 /**

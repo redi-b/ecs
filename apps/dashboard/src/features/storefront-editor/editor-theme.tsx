@@ -30,7 +30,7 @@ import {
 
 import { FONT_OPTIONS, POPOVER_MOTION_CLASSNAME } from "./editor-config";
 import type { StorefrontPageProps } from "./editor-state";
-import { themePalettePageProps } from "./editor-state";
+import { themePalettePageProps, themeResetPageProps } from "./editor-state";
 import { isHexColor, updateStorefrontProp, updateStorefrontProps } from "./editor-utils";
 
 type ColorFormat = "hex" | "rgb" | "hsl";
@@ -91,6 +91,10 @@ export function ThemeBrandSection({
 
   function regenerate(nextPrimary = primary, nextMode = mode) {
     updateStorefrontProps(data, dispatch, themePalettePageProps(nextPrimary, nextMode));
+  }
+
+  function resetToDefaults() {
+    updateStorefrontProps(data, dispatch, themeResetPageProps(mode));
   }
 
   function setAutoPalette(enabled: boolean) {
@@ -182,18 +186,29 @@ export function ThemeBrandSection({
         </div>
 
         <div className="flex flex-col gap-2.5">
-          <div className="flex items-center justify-between gap-2">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <FieldLabel className="text-sm font-medium">Colors</FieldLabel>
-            <Button
-              className="h-8 gap-1.5 px-2.5 text-xs"
-              onClick={() => regenerate()}
-              size="sm"
-              type="button"
-              variant="outline"
-            >
-              <RiRefreshLine className="size-3.5" aria-hidden />
-              Regenerate
-            </Button>
+            <div className="flex flex-wrap items-center gap-1.5">
+              <Button
+                className="h-8 gap-1.5 px-2.5 text-xs"
+                onClick={() => regenerate()}
+                size="sm"
+                type="button"
+                variant="outline"
+              >
+                <RiRefreshLine className="size-3.5" aria-hidden />
+                Regenerate
+              </Button>
+              <Button
+                className="h-8 px-2.5 text-xs"
+                onClick={resetToDefaults}
+                size="sm"
+                type="button"
+                variant="ghost"
+              >
+                Reset
+              </Button>
+            </div>
           </div>
           <div className="grid grid-cols-5 gap-2">
             {PALETTE_FIELDS.map((field) => {
