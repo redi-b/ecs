@@ -223,7 +223,9 @@ export function PromotionEditSheet({
         endsAt: endsAt ? new Date(endsAt).toISOString() : null,
         isAutomatic,
         isTaxInclusive,
-        maxQuantity: nextMaxQuantity,
+        maxQuantity:
+          nextMaxQuantity ??
+          (showAllocation && allocation === "each" ? 1 : null),
         method: promotion.method,
         productIds: needsProducts ? productIds : promotion.productIds,
         promotionType: promotion.promotionType,
