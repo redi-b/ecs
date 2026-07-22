@@ -48,17 +48,14 @@ import {
 import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  ProductCatalogPickerDialog,
+  ProductCatalogPickerTrigger,
+} from "@/features/products/product-catalog-picker-dialog";
 import type {
   ActionResult,
   StorefrontVisualEditorProps,
@@ -539,43 +536,100 @@ export function StorefrontSettingsPanel() {
   return (
     <div className="min-h-0 flex-1 overflow-y-auto">
       <div className="flex flex-col gap-3 p-4 pb-10">
-        {classicV1EditorManifest.sections.map((section) => (
-          <section
-            className="min-w-0 overflow-hidden rounded-xl border bg-card shadow-sm"
-            key={section.id}
-          >
-            <div className="border-b px-4 py-3">
-              <div className="text-sm font-semibold">
-                {SETTINGS_SECTION_LABELS[section.id] ?? section.label}
-              </div>
-            </div>
-            <div className="flex min-w-0 flex-col gap-4 p-4">
-              {section.fields.map((field) => {
-                const value = (props as Record<string, unknown>)[field.prop];
-                const helpText = "helpText" in field ? field.helpText : undefined;
+        {classicV1EditorManifest.sections.map((section) => {
+          const enabledField = section.fields.find(
+            (field) => field.kind === "boolean" && field.path.endsWith(".enabled"),
+          );
+          const bodyFields = section.fields.filter((field) => field !== enabledField);
+          const enabledValue = enabledField
+            ? (props as Record<string, unknown>)[enabledField.prop]
+            : undefined;
+          const sectionVisible =
+            enabledField == null
+              ? true
+              : typeof enabledValue === "boolean"
+                ? enabledValue
+                : enabledValue !== false && enabledValue !== "false";
 
-                return (
-                  <Field className="min-w-0 gap-2" key={field.path}>
-                    {field.kind === "boolean" ? null : (
-                      <FieldLabel className="text-sm font-medium">{field.label}</FieldLabel>
-                    )}
-                    <div className="min-w-0">
-                      <StorefrontSettingControl
-                        data={data}
-                        dispatch={dispatch}
-                        field={field}
-                        value={value}
-                      />
-                    </div>
-                    {helpText ? (
-                      <FieldDescription className="text-pretty">{helpText}</FieldDescription>
-                    ) : null}
-                  </Field>
-                );
-              })}
-            </div>
-          </section>
-        ))}
+          return (
+            <section
+              className={cn(
+                "min-w-0 overflow-hidden rounded-xl border bg-card shadow-sm transition-opacity",
+                !sectionVisible && "opacity-70",
+              )}
+              key={section.id}
+            >
+              <div className="flex items-center justify-between gap-3 border-b px-4 py-3">
+                <div className="flex min-w-0 items-center gap-2">
+                  <div className="truncate text-sm font-semibold">
+                    {SETTINGS_SECTION_LABELS[section.id] ?? section.label}
+                  </div>
+                  {enabledField && !sectionVisible ? (
+                    <Badge className="shrink-0 font-normal" variant="secondary">
+                      Hidden
+                    </Badge>
+                  ) : null}
+                </div>
+                {enabledField ? (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="flex shrink-0 items-center">
+                        <Switch
+                          aria-label={enabledField.label}
+                          checked={sectionVisible}
+                          id={enabledField.prop}
+                          onCheckedChange={(next) =>
+                            updateStorefrontProp(
+                              data,
+                              dispatch,
+                              enabledField.prop as keyof StorefrontPageProps,
+                              next,
+                            )
+                          }
+                        />
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent side="left">
+                      {sectionVisible ? "Visible on storefront" : "Hidden on storefront"}
+                    </TooltipContent>
+                  </Tooltip>
+                ) : null}
+              </div>
+              {bodyFields.length > 0 ? (
+                <div
+                  className={cn(
+                    "flex min-w-0 flex-col gap-4 p-4",
+                    enabledField && !sectionVisible && "pointer-events-none opacity-50",
+                  )}
+                >
+                  {bodyFields.map((field) => {
+                    const value = (props as Record<string, unknown>)[field.prop];
+                    const helpText = "helpText" in field ? field.helpText : undefined;
+
+                    return (
+                      <Field className="min-w-0 gap-2" key={field.path}>
+                        {field.kind === "boolean" ? null : (
+                          <FieldLabel className="text-sm font-medium">{field.label}</FieldLabel>
+                        )}
+                        <div className="min-w-0">
+                          <StorefrontSettingControl
+                            data={data}
+                            dispatch={dispatch}
+                            field={field}
+                            value={value}
+                          />
+                        </div>
+                        {helpText ? (
+                          <FieldDescription className="text-pretty">{helpText}</FieldDescription>
+                        ) : null}
+                      </Field>
+                    );
+                  })}
+                </div>
+              ) : null}
+            </section>
+          );
+        })}
       </div>
     </div>
   );
@@ -604,19 +658,14 @@ export function StorefrontSettingControl({
         <FieldLabel className="text-sm font-medium" htmlFor={field.prop}>
           {field.label}
         </FieldLabel>
-        <Switch
-          checked={checked}
-          id={field.prop}
-          onCheckedChange={(next) => update(next)}
-        />
+        <Switch checked={checked} id={field.prop} onCheckedChange={(next) => update(next)} />
       </div>
     );
   }
 
   if (field.kind === "collection") {
     return (
-      <CollectionPicker
-        label={field.label}
+      <StorefrontCollectionPicker
         onChange={(id) => update(id || undefined)}
         value={stringValue}
       />
@@ -625,7 +674,7 @@ export function StorefrontSettingControl({
 
   if (field.kind === "products") {
     const ids = Array.isArray(value) ? value.map(String) : [];
-    return <ProductsPicker onChange={(next) => update(next)} value={ids} />;
+    return <StorefrontProductsPicker onChange={(next) => update(next)} value={ids} />;
   }
 
   if (field.kind === "color") {
@@ -676,17 +725,23 @@ export function StorefrontSettingControl({
   );
 }
 
-function CollectionPicker({
-  label,
+type CatalogOption = {
+  handle?: string | null;
+  id: string;
+  thumbnailUrl?: string | null;
+  title: string;
+};
+
+function StorefrontCollectionPicker({
   onChange,
   value,
 }: {
-  label: string;
   onChange: (value: string) => void;
   value: string;
 }) {
-  const [options, setOptions] = useState<Array<{ id: string; title: string }>>([]);
+  const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [options, setOptions] = useState<CatalogOption[]>([]);
 
   useEffect(() => {
     let cancelled = false;
@@ -696,17 +751,23 @@ function CollectionPicker({
       .then((payload) => {
         if (cancelled) return;
         const collections = payload?.data?.collections ?? payload?.collections ?? [];
-        if (Array.isArray(collections)) {
-          setOptions(
-            collections
-              .map((row: { id?: string; title?: string | null }) =>
-                row?.id
-                  ? { id: String(row.id), title: String(row.title ?? row.id) }
-                  : null,
-              )
-              .filter(Boolean) as Array<{ id: string; title: string }>,
-          );
+        if (!Array.isArray(collections)) {
+          setOptions([]);
+          return;
         }
+        setOptions(
+          collections
+            .map((row: { handle?: string | null; id?: string; title?: string | null }) =>
+              row?.id
+                ? {
+                    id: String(row.id),
+                    title: String(row.title ?? row.id),
+                    handle: row.handle ?? null,
+                  }
+                : null,
+            )
+            .filter(Boolean) as CatalogOption[],
+        );
       })
       .catch(() => {
         if (!cancelled) setOptions([]);
@@ -719,37 +780,88 @@ function CollectionPicker({
     };
   }, []);
 
+  const selected = options.find((option) => option.id === value);
+
   return (
-    <Select
-      disabled={loading}
-      onValueChange={(next) => onChange(next === "__none__" ? "" : next)}
-      value={value || "__none__"}
-    >
-      <SelectTrigger aria-label={label} className="w-full min-w-0">
-        <SelectValue placeholder={loading ? "Loading collections…" : "Select a collection"} />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem value="__none__">None</SelectItem>
-        {options.map((option) => (
-          <SelectItem key={option.id} value={option.id}>
-            {option.title}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+    <Popover onOpenChange={setOpen} open={open}>
+      <PopoverTrigger asChild>
+        <Button
+          className="h-9 w-full min-w-0 justify-between px-3 font-normal shadow-none"
+          disabled={loading}
+          type="button"
+          variant="outline"
+        >
+          <span className={cn("truncate", !selected && "text-muted-foreground")}>
+            {loading
+              ? "Loading collections…"
+              : selected
+                ? selected.title
+                : "Select a collection"}
+          </span>
+          <RiEditLine className="size-4 shrink-0 opacity-50" aria-hidden />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent
+        align="start"
+        className={cn(POPOVER_MOTION_CLASSNAME, "w-[min(22rem,calc(100vw-2rem))] p-0")}
+        collisionPadding={16}
+        onWheel={(event) => event.stopPropagation()}
+      >
+        <Command>
+          <CommandInput placeholder="Search collections…" />
+          <CommandList
+            className="max-h-60 overflow-y-auto overscroll-contain"
+            onWheel={(event) => event.stopPropagation()}
+          >
+            <CommandEmpty>No collections found.</CommandEmpty>
+            <CommandGroup>
+              <CommandItem
+                onSelect={() => {
+                  onChange("");
+                  setOpen(false);
+                }}
+                value="none clear"
+              >
+                None
+              </CommandItem>
+              {options.map((option) => (
+                <CommandItem
+                  key={option.id}
+                  onSelect={() => {
+                    onChange(option.id);
+                    setOpen(false);
+                  }}
+                  value={`${option.title} ${option.handle ?? ""} ${option.id}`}
+                >
+                  <span className="min-w-0 flex-1 truncate">{option.title}</span>
+                  {option.handle ? (
+                    <span className="ml-2 shrink-0 text-xs text-muted-foreground">
+                      /{option.handle}
+                    </span>
+                  ) : null}
+                  {option.id === value ? (
+                    <RiCheckLine className="ml-2 size-4 shrink-0" aria-hidden />
+                  ) : null}
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
   );
 }
 
-function ProductsPicker({
+function StorefrontProductsPicker({
   onChange,
   value,
 }: {
   onChange: (value: string[]) => void;
   value: string[];
 }) {
-  const [options, setOptions] = useState<Array<{ id: string; title: string }>>([]);
+  const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(true);
-  const selected = new Set(value);
+  const [options, setOptions] = useState<CatalogOption[]>([]);
 
   useEffect(() => {
     let cancelled = false;
@@ -758,19 +870,32 @@ function ProductsPicker({
       .then((r) => r.json())
       .then((payload) => {
         if (cancelled) return;
-        const products =
-          payload?.data?.products ?? payload?.data ?? payload?.products ?? [];
-        if (Array.isArray(products)) {
-          setOptions(
-            products
-              .map((row: { id?: string; title?: string | null }) =>
-                row?.id
-                  ? { id: String(row.id), title: String(row.title ?? row.id) }
-                  : null,
-              )
-              .filter(Boolean) as Array<{ id: string; title: string }>,
-          );
+        const products = payload?.data?.products ?? payload?.data ?? payload?.products ?? [];
+        if (!Array.isArray(products)) {
+          setOptions([]);
+          return;
         }
+        setOptions(
+          products
+            .map(
+              (row: {
+                handle?: string | null;
+                id?: string;
+                thumbnail?: string | null;
+                thumbnailUrl?: string | null;
+                title?: string | null;
+              }) =>
+                row?.id
+                  ? {
+                      id: String(row.id),
+                      title: String(row.title ?? row.handle ?? row.id),
+                      handle: row.handle ?? null,
+                      thumbnailUrl: row.thumbnailUrl ?? row.thumbnail ?? null,
+                    }
+                  : null,
+            )
+            .filter(Boolean) as CatalogOption[],
+        );
       })
       .catch(() => {
         if (!cancelled) setOptions([]);
@@ -783,56 +908,49 @@ function ProductsPicker({
     };
   }, []);
 
-  const toggle = (id: string) => {
-    const next = new Set(selected);
-    if (next.has(id)) next.delete(id);
-    else next.add(id);
-    onChange([...next]);
-  };
-
-  if (loading) {
-    return <p className="text-xs text-muted-foreground">Loading products…</p>;
-  }
-
-  if (!options.length) {
-    return (
-      <p className="text-xs text-muted-foreground">
-        No products yet. Empty selection shows newest products on the storefront.
-      </p>
-    );
-  }
+  const items = useMemo(
+    () =>
+      options.map((product) => ({
+        id: product.id,
+        title: product.title,
+        subtitle: product.handle ? `/${product.handle}` : null,
+        thumbnailUrl: product.thumbnailUrl ?? null,
+        searchText: [product.title, product.handle, product.id].filter(Boolean).join(" "),
+      })),
+    [options],
+  );
 
   return (
-    <div className="max-h-48 space-y-1 overflow-y-auto rounded-lg border p-2">
-      {options.map((option) => {
-        const checked = selected.has(option.id);
-        return (
-          <label
-            className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-muted/60"
-            key={option.id}
-          >
-            <input
-              checked={checked}
-              className="size-4 accent-primary"
-              onChange={() => toggle(option.id)}
-              type="checkbox"
-            />
-            <span className="min-w-0 truncate">{option.title}</span>
-          </label>
-        );
-      })}
+    <>
+      <ProductCatalogPickerTrigger
+        loading={loading}
+        onClick={() => setOpen(true)}
+        selectedCount={value.length}
+      />
       {value.length > 0 ? (
-        <Button
-          className="mt-1 w-full"
-          onClick={() => onChange([])}
-          size="sm"
-          type="button"
-          variant="ghost"
-        >
-          Clear selection ({value.length})
-        </Button>
-      ) : null}
-    </div>
+        <p className="text-xs text-muted-foreground">
+          {value.length === 1
+            ? "1 product selected for this section."
+            : `${value.length} products selected for this section.`}{" "}
+          Clear in the picker to show newest products automatically.
+        </p>
+      ) : (
+        <p className="text-xs text-muted-foreground">
+          No products selected — storefront shows newest products.
+        </p>
+      )}
+      <ProductCatalogPickerDialog
+        items={items}
+        loading={loading}
+        onConfirm={onChange}
+        onOpenChange={setOpen}
+        open={open}
+        selectedIds={value}
+        selectionMode="multiple"
+        selectionTarget="product"
+        title="Featured products"
+      />
+    </>
   );
 }
 
@@ -1143,7 +1261,10 @@ export function VisualEditorField({
       <FieldGroup>
         <Field>
           <PuckFieldLabel label={label}>
-            <CollectionPicker label={label} onChange={(id) => onChange(id || undefined)} value={stringValue} />
+            <StorefrontCollectionPicker
+              onChange={(id) => onChange(id || undefined)}
+              value={stringValue}
+            />
           </PuckFieldLabel>
           {helpText ? <FieldDescription>{helpText}</FieldDescription> : null}
         </Field>
@@ -1157,7 +1278,7 @@ export function VisualEditorField({
       <FieldGroup>
         <Field>
           <PuckFieldLabel label={label}>
-            <ProductsPicker onChange={onChange} value={ids} />
+            <StorefrontProductsPicker onChange={onChange} value={ids} />
           </PuckFieldLabel>
           {helpText ? <FieldDescription>{helpText}</FieldDescription> : null}
         </Field>
@@ -1534,9 +1655,19 @@ export function EditableImage({
 }
 
 export function EditableHint() {
+  // Isolate type size from parent (hero titles inherit huge clamp sizes).
   return (
-    <span className="pointer-events-none absolute -right-2 -top-2 inline-flex items-center gap-1 rounded-full border bg-background px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground opacity-0 shadow-sm transition-opacity group-hover/editable:opacity-100 group-focus-within/editable:opacity-100">
-      <RiEditLine className="size-3" aria-hidden />
+    <span
+      className="pointer-events-none absolute right-0 top-0 z-20 inline-flex -translate-y-1/2 translate-x-1/4 items-center gap-1 rounded-full border border-border/80 bg-background px-1.5 py-0.5 font-medium text-muted-foreground opacity-0 shadow-sm transition-opacity group-hover/editable:opacity-100 group-focus-within/editable:opacity-100 [[data-edit-hints=off]_&]:hidden"
+      style={{
+        fontSize: 10,
+        lineHeight: 1.2,
+        fontFamily: "ui-sans-serif, system-ui, sans-serif",
+        fontWeight: 500,
+        letterSpacing: "0.01em",
+      }}
+    >
+      <RiEditLine aria-hidden className="size-3 shrink-0" style={{ width: 12, height: 12 }} />
       Edit
     </span>
   );

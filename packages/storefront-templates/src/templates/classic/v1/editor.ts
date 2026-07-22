@@ -11,7 +11,7 @@ export const classicV1EditorSchema = {
         {
           path: "announcement.enabled",
           prop: "announcementEnabled",
-          label: "Show announcement bar",
+          label: "Show on storefront",
           kind: "boolean",
         },
         {
@@ -53,7 +53,7 @@ export const classicV1EditorSchema = {
         {
           path: "home.hero.enabled",
           prop: "heroEnabled",
-          label: "Show hero",
+          label: "Show on storefront",
           kind: "boolean",
         },
         {
@@ -95,22 +95,21 @@ export const classicV1EditorSchema = {
         {
           path: "home.featuredCollection.enabled",
           prop: "featuredCollectionEnabled",
-          label: "Show featured collection",
+          label: "Show on storefront",
           kind: "boolean",
-          helpText: "Highlight one collection on the home page (e.g. Our Top Picks).",
         },
         {
           path: "home.featuredCollection.title",
           prop: "featuredCollectionTitle",
           label: "Section title",
           kind: "text",
+          helpText: "Optional. Leave blank to use the collection name.",
         },
         {
           path: "home.featuredCollection.collectionId",
           prop: "featuredCollectionId",
           label: "Collection",
           kind: "collection",
-          helpText: "Pick which collection powers this section.",
         },
       ],
     },
@@ -121,7 +120,7 @@ export const classicV1EditorSchema = {
         {
           path: "home.featuredProducts.enabled",
           prop: "featuredProductsEnabled",
-          label: "Show featured products",
+          label: "Show on storefront",
           kind: "boolean",
         },
         {
@@ -135,7 +134,7 @@ export const classicV1EditorSchema = {
           prop: "featuredProductIds",
           label: "Products",
           kind: "products",
-          helpText: "Leave empty to show the newest products automatically.",
+          helpText: "Optional. Leave empty to show newest products.",
         },
       ],
     },
@@ -146,7 +145,7 @@ export const classicV1EditorSchema = {
         {
           path: "home.collectionsStrip.enabled",
           prop: "collectionsStripEnabled",
-          label: "Show collections strip",
+          label: "Show on storefront",
           kind: "boolean",
         },
         {
@@ -164,7 +163,7 @@ export const classicV1EditorSchema = {
         {
           path: "home.trust.enabled",
           prop: "trustEnabled",
-          label: "Show trust row",
+          label: "Show on storefront",
           kind: "boolean",
         },
       ],
@@ -176,9 +175,8 @@ export const classicV1EditorSchema = {
         {
           path: "home.testimonials.enabled",
           prop: "testimonialsEnabled",
-          label: "Show testimonials",
+          label: "Show on storefront",
           kind: "boolean",
-          helpText: "Hidden by default until you add quotes in data or a future editor.",
         },
         {
           path: "home.testimonials.title",
