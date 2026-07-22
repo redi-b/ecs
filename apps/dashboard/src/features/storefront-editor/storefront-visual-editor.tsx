@@ -2,71 +2,21 @@
 
 import "@puckeditor/core/puck.css";
 
-import { classicV1EditorSchema as classicV1EditorManifest } from "@ecs/storefront-templates";
-import type { Config, Data, PuckAction } from "@puckeditor/core";
-import { createUsePuck, FieldLabel, Puck } from "@puckeditor/core";
-import {
-  RiArrowGoBackLine,
-  RiArrowGoForwardLine,
-  RiCheckLine,
-  RiEditLine,
-  RiExternalLinkLine,
-  RiEyeLine,
-  RiEyeOffLine,
-  RiFullscreenExitLine,
-  RiFullscreenLine,
-  RiImageLine,
-  RiRefreshLine,
-  RiRocketLine,
-  RiSave3Line,
-} from "@remixicon/react";
+import type { Data } from "@puckeditor/core";
+import { Puck } from "@puckeditor/core";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { HexColorInput, HexColorPicker } from "react-colorful";
 import { toast } from "sonner";
 
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
-import { Field, FieldDescription, FieldGroup } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
-import { Textarea } from "@/components/ui/textarea";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   buildPuckConfig,
   getErrorMessage,
   PuckDataOverride,
   StorefrontEditorShell,
 } from "@/features/storefront-editor/editor-components";
-import type {
-  ActionResult,
-  StorefrontVisualEditorProps,
-} from "@/features/storefront-editor/editor-config";
+import type { StorefrontVisualEditorProps } from "@/features/storefront-editor/editor-config";
 import {
-  FONT_OPTIONS,
   HISTORY_COMMIT_DELAY_MS,
   HISTORY_LIMIT,
-  useStorefrontPuck,
 } from "@/features/storefront-editor/editor-config";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
@@ -74,12 +24,6 @@ import {
   buildDraftPayload,
   buildPuckData,
   getPublicationStatus,
-  getStorefrontPageProps,
-  isPreviewImageUrl,
-  type PublicationStatus,
-  STOREFRONT_PAGE_COMPONENT,
-  type StorefrontDraft,
-  type StorefrontPageProps,
   serializeEditorData,
 } from "./editor-state";
 
