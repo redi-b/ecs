@@ -8,15 +8,6 @@ import Link from "@/components/app/link";
 import { AppIcons } from "@/components/app/icons";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
 import {
   Dialog,
   DialogContent,
@@ -28,72 +19,28 @@ import {
 } from "@/components/ui/dialog";
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Separator } from "@/components/ui/separator";
+import { Textarea } from "@/components/ui/textarea";
 import {
   ProductCatalogPickerDialog,
   ProductCatalogPickerTrigger,
   type ProductCatalogPickProduct,
 } from "@/features/products/product-catalog-picker-dialog";
-import { useCreateQueryOpen } from "@/lib/use-create-query-open";
-import { Textarea } from "@/components/ui/textarea";
+import { useI18n } from "@/i18n/provider";
 import { mapPlatformErrorMessage } from "@/lib/platform-api/errors";
 import { dashboardRoutes } from "@/lib/routes";
-import { useI18n } from "@/i18n/provider";
+import { useCreateQueryOpen } from "@/lib/use-create-query-open";
 import { cn } from "@/lib/utils";
 
-type CatalogVariant = {
-  id: string;
-  label: string;
-  options: Record<string, string>;
-  priceLabel: string | null;
-  productId: string;
-  productTitle: string;
-  sku: string | null;
-  thumbnailUrl: string | null;
-  variantTitle: string;
-};
-
-type CustomerOption = {
-  email: string;
-  firstName: string | null;
-  id: string;
-  label: string;
-  lastName: string | null;
-  phone: string | null;
-};
-
-type LineItem = {
-  quantity: number;
-  variantId: string;
-};
-
-type AddressForm = {
-  address1: string;
-  city: string;
-  firstName: string;
-  lastName: string;
-  phone: string;
-  province: string;
-};
-
-const emptyAddress: AddressForm = {
-  address1: "",
-  city: "",
-  firstName: "",
-  lastName: "",
-  phone: "",
-  province: "",
-};
-
-function CreateOrderTriggerButton({ disabled }: { disabled?: boolean }) {
-  const { t } = useI18n();
-  return (
-    <Button type="button" disabled={disabled}>
-      <AppIcons.orders data-icon="inline-start" />
-      {t("orders.create.trigger")}
-    </Button>
-  );
-}
+import {
+  emptyAddress,
+  formatPrice,
+  type AddressForm,
+  type CatalogVariant,
+  type CustomerOption,
+  type LineItem,
+} from "./manual-order-model";
+import { CreateOrderTriggerButton, CustomerPicker } from "./manual-order-parts";
 
 export function ManualOrderCreateDialog() {
   return (
@@ -855,88 +802,3 @@ function ManualOrderCreateDialogInner() {
   );
 }
 
-function CustomerPicker({
-  catalog,
-  loading,
-  onChange,
-  selectedId,
-  selectedLabel,
-}: {
-  catalog: CustomerOption[];
-  loading: boolean;
-  onChange: (id: string) => void;
-  selectedId: string | null;
-  selectedLabel: string | null;
-}) {
-  const { t } = useI18n();
-  const [open, setOpen] = useState(false);
-
-  return (
-    <Popover onOpenChange={setOpen} open={open}>
-      <PopoverTrigger asChild>
-        <Button
-          className={cn(
-            "h-8 w-full justify-between px-2.5 font-normal shadow-none",
-            !selectedId && "text-muted-foreground",
-          )}
-          role="combobox"
-          type="button"
-          variant="outline"
-        >
-          <span className="truncate">
-            {loading ? t("orders.create.loadingCustomers") : selectedLabel ? selectedLabel : t("orders.create.selectCustomer")}
-          </span>
-          <AppIcons.arrowDown className="size-4 shrink-0 opacity-60" data-icon="inline-end" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent
-        align="start"
-        className="w-[var(--radix-popover-trigger-width)] overflow-hidden p-0"
-        collisionPadding={16}
-        onOpenAutoFocus={(event) => event.preventDefault()}
-        onWheel={(event) => event.stopPropagation()}
-      >
-        <Command className="h-auto max-h-72 w-full min-h-0">
-          <CommandInput placeholder={t("orders.create.searchCustomer")} />
-          <CommandList
-            className="max-h-60 min-h-0 overflow-y-auto overscroll-contain"
-            onWheel={(event) => event.stopPropagation()}
-          >
-            <CommandEmpty>{t("orders.create.noCustomers")}</CommandEmpty>
-            <CommandGroup className="overflow-visible">
-              {catalog.map((customer) => {
-                const isSelected = customer.id === selectedId;
-                return (
-                  <CommandItem
-                    data-checked={isSelected ? true : undefined}
-                    key={customer.id}
-                    onSelect={() => {
-                      onChange(customer.id);
-                      setOpen(false);
-                    }}
-                    value={`${customer.label} ${customer.email} ${customer.phone ?? ""}`}
-                  >
-                    <Checkbox checked={isSelected} tabIndex={-1} />
-                    <span className="min-w-0 flex-1 truncate">{customer.label}</span>
-                  </CommandItem>
-                );
-              })}
-            </CommandGroup>
-          </CommandList>
-        </Command>
-      </PopoverContent>
-    </Popover>
-  );
-}
-
-function formatPrice(amount: number, currencyCode: string) {
-  try {
-    return new Intl.NumberFormat("en-ET", {
-      currency: currencyCode.toUpperCase(),
-      maximumFractionDigits: 2,
-      style: "currency",
-    }).format(amount);
-  } catch {
-    return `${amount} ${currencyCode.toUpperCase()}`;
-  }
-}
