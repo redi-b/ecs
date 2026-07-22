@@ -45,6 +45,31 @@ export function notifyNestedOverlayChange(
 }
 
 /**
+ * Idempotent open/close for a single host (Popover, Select, Combobox, …).
+ * Avoids leaking symbols when the host fires `open=true` more than once.
+ */
+export type NestedOverlaySession = {
+  isOpen: boolean;
+  layerId: symbol | null;
+};
+
+export function applyNestedOverlaySession(
+  open: boolean,
+  session: NestedOverlaySession,
+): NestedOverlaySession {
+  if (open) {
+    if (session.isOpen) return session;
+    return {
+      isOpen: true,
+      layerId: notifyNestedOverlayChange(true),
+    };
+  }
+  if (!session.isOpen) return session;
+  notifyNestedOverlayChange(false, session.layerId ?? undefined);
+  return { isOpen: false, layerId: null };
+}
+
+/**
  * Call from floating-layer roots on unmount when still open, so openLayers
  * cannot stick after a parent dialog unmounts without firing onOpenChange(false).
  * Does not start a suppress window (parent is going away).

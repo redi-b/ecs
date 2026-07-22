@@ -16,8 +16,9 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
-  notifyNestedOverlayChange,
+  applyNestedOverlaySession,
   releaseNestedOverlayIfOpen,
+  type NestedOverlaySession,
 } from "@/lib/nested-overlay";
 import { cn } from "@/lib/utils";
 import { XIcon } from "lucide-react";
@@ -56,28 +57,26 @@ type SearchableComboboxProps = {
   onOpenChange?: (open: boolean) => void;
 };
 
-function useNestedOverlaySync() {
-  const layerIdRef = useRef<symbol | null>(null);
-  const openRef = useRef(false);
+function useNestedOverlaySync(controlledOpen?: boolean) {
+  const sessionRef = useRef<NestedOverlaySession>({ isOpen: false, layerId: null });
 
   useEffect(() => {
     return () => {
-      releaseNestedOverlayIfOpen(openRef.current, layerIdRef.current);
-      layerIdRef.current = null;
-      openRef.current = false;
+      const session = sessionRef.current;
+      releaseNestedOverlayIfOpen(session.isOpen, session.layerId);
+      sessionRef.current = { isOpen: false, layerId: null };
     };
   }, []);
 
+  // Controlled hosts may set open=false without a host onOpenChange(false) event.
+  useEffect(() => {
+    if (controlledOpen === undefined) return;
+    sessionRef.current = applyNestedOverlaySession(controlledOpen, sessionRef.current);
+  }, [controlledOpen]);
+
   return {
     onOpenChange(open: boolean) {
-      if (open) {
-        layerIdRef.current = notifyNestedOverlayChange(true);
-        openRef.current = true;
-      } else {
-        notifyNestedOverlayChange(false, layerIdRef.current ?? undefined);
-        layerIdRef.current = null;
-        openRef.current = false;
-      }
+      sessionRef.current = applyNestedOverlaySession(open, sessionRef.current);
     },
   };
 }
@@ -135,7 +134,7 @@ export function SearchableCombobox({
 }: SearchableComboboxProps) {
   const selected = options.find((option) => option.value === value) ?? null;
   const canClear = Boolean(noneLabel) && Boolean(selected);
-  const nested = useNestedOverlaySync();
+  const nested = useNestedOverlaySync(open);
 
   return (
     <Combobox
@@ -253,7 +252,7 @@ export function MultiSearchableCombobox({
   onOpenChange,
   hideChips = false,
 }: MultiSearchableComboboxProps) {
-  const nested = useNestedOverlaySync();
+  const nested = useNestedOverlaySync(open);
 
   const selectedOptions = useMemo(() => {
     const byValue = new Map(options.map((option) => [option.value, option]));

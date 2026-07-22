@@ -4,8 +4,9 @@ import { CheckIcon, ChevronRightIcon } from "lucide-react";
 import { DropdownMenu as DropdownMenuPrimitive } from "radix-ui";
 import * as React from "react";
 import {
-  notifyNestedOverlayChange,
+  applyNestedOverlaySession,
   releaseNestedOverlayIfOpen,
+  type NestedOverlaySession,
 } from "@/lib/nested-overlay";
 import { cn } from "@/lib/utils";
 
@@ -13,24 +14,21 @@ function DropdownMenu({
   onOpenChange,
   ...props
 }: React.ComponentProps<typeof DropdownMenuPrimitive.Root>) {
-  const openRef = React.useRef(false);
-  const layerIdRef = React.useRef<symbol | undefined>(undefined);
+  const sessionRef = React.useRef<NestedOverlaySession>({ isOpen: false, layerId: null });
 
   React.useEffect(() => {
-    return () => releaseNestedOverlayIfOpen(openRef.current, layerIdRef.current);
+    return () => {
+      const session = sessionRef.current;
+      releaseNestedOverlayIfOpen(session.isOpen, session.layerId);
+      sessionRef.current = { isOpen: false, layerId: null };
+    };
   }, []);
 
   return (
     <DropdownMenuPrimitive.Root
       data-slot="dropdown-menu"
       onOpenChange={(open) => {
-        openRef.current = open;
-        if (open) {
-          layerIdRef.current = notifyNestedOverlayChange(true);
-        } else {
-          notifyNestedOverlayChange(false, layerIdRef.current);
-          layerIdRef.current = undefined;
-        }
+        sessionRef.current = applyNestedOverlaySession(open, sessionRef.current);
         onOpenChange?.(open);
       }}
       {...props}
