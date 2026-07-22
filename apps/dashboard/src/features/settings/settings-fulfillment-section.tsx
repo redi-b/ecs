@@ -59,27 +59,52 @@ export function FulfillmentSection({
           {deliveryState ? (
             <>
               <div className="grid gap-3 sm:grid-cols-2">
-                {deliveryFieldKeys.map((item) => (
-                  <Field className="rounded-lg border p-3" key={item.key} orientation="horizontal">
-                    <FieldContent>
-                      <FieldTitle>{t(item.labelKey)}</FieldTitle>
-                      <FieldDescription>{t(item.descriptionKey)}</FieldDescription>
-                    </FieldContent>
-                    <Switch
-                      checked={deliveryState[item.key]}
-                      disabled={isPending}
-                      onCheckedChange={(checked) =>
-                        onSaveDelivery(
-                          {
-                            ...deliveryState,
-                            [item.key]: checked,
-                          },
-                          t(item.labelKey),
-                        )
-                      }
-                    />
-                  </Field>
-                ))}
+                {deliveryFieldKeys.map((item) => {
+                  const isMethodToggle =
+                    item.key === "deliveryEnabled" || item.key === "pickupEnabled";
+                  // Keep at least one of delivery / pickup available for checkout.
+                  const wouldDisableLastMethod =
+                    isMethodToggle &&
+                    deliveryState[item.key] &&
+                    !(item.key === "deliveryEnabled"
+                      ? deliveryState.pickupEnabled
+                      : deliveryState.deliveryEnabled);
+
+                  return (
+                    <Field className="rounded-lg border p-3" key={item.key} orientation="horizontal">
+                      <FieldContent>
+                        <FieldTitle>{t(item.labelKey)}</FieldTitle>
+                        <FieldDescription>
+                          {wouldDisableLastMethod
+                            ? t("settings.fulfillment.keepOneMethod")
+                            : t(item.descriptionKey)}
+                        </FieldDescription>
+                      </FieldContent>
+                      <Switch
+                        checked={deliveryState[item.key]}
+                        disabled={isPending || wouldDisableLastMethod}
+                        onCheckedChange={(checked) => {
+                          if (
+                            isMethodToggle &&
+                            !checked &&
+                            !(item.key === "deliveryEnabled"
+                              ? deliveryState.pickupEnabled
+                              : deliveryState.deliveryEnabled)
+                          ) {
+                            return;
+                          }
+                          onSaveDelivery(
+                            {
+                              ...deliveryState,
+                              [item.key]: checked,
+                            },
+                            t(item.labelKey),
+                          );
+                        }}
+                      />
+                    </Field>
+                  );
+                })}
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <Field>

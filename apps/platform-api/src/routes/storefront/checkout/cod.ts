@@ -54,21 +54,22 @@ function getObjectValue(value: unknown) {
 
 function getCodCheckoutInput(body: Record<string, unknown>): CodCheckoutInput | undefined {
   const customer = getObjectValue(body.customer);
-  const address = getObjectValue(body.address);
+  const address = getObjectValue(body.address) ?? {};
   const deliveryChoice = getStringValue(body.deliveryChoice);
 
-  if (!customer || !address || (deliveryChoice !== "delivery" && deliveryChoice !== "pickup")) {
+  if (!customer || (deliveryChoice !== "delivery" && deliveryChoice !== "pickup")) {
     return undefined;
   }
 
   const cartId = getStringValue(body.cartId);
   const shippingOptionId = getStringValue(body.shippingOptionId);
   const name = getStringValue(customer.name);
-  const phone = getStringValue(customer.phone);
-  const address1 = getStringValue(address.address1);
-  const city = getStringValue(address.city);
+  // Phone may be optional depending on merchant delivery settings (validated later).
+  const phone = getStringValue(customer.phone) ?? "";
+  const address1 = getStringValue(address.address1) ?? "";
+  const city = getStringValue(address.city) ?? "";
 
-  if (!cartId || !shippingOptionId || !name || !phone || !address1 || !city) {
+  if (!cartId || !shippingOptionId || !name) {
     return undefined;
   }
 
@@ -168,6 +169,10 @@ export async function completeCodCheckout(options: {
   const delivery = await options.delivery({ tenantId: options.tenantId });
   const deliverySettings = delivery.delivery;
 
+  if (!deliverySettings.deliveryEnabled && !deliverySettings.pickupEnabled) {
+    return Response.json({ error: "fulfillment_unavailable" }, { status: 409 });
+  }
+
   if (input.deliveryChoice === "delivery" && !deliverySettings.deliveryEnabled) {
     return Response.json({ error: "delivery_unavailable" }, { status: 409 });
   }
@@ -176,31 +181,47 @@ export async function completeCodCheckout(options: {
     return Response.json({ error: "pickup_unavailable" }, { status: 409 });
   }
 
-  if (
-    input.deliveryChoice === "delivery" &&
-    deliverySettings.landmarkRequired &&
-    !input.address.landmark
-  ) {
-    return Response.json({ error: "landmark_required" }, { status: 400 });
+  if (deliverySettings.phoneConfirmationRequired && !input.customer.phone.trim()) {
+    return Response.json({ error: "phone_required" }, { status: 400 });
   }
+
+  if (input.deliveryChoice === "delivery") {
+    if (!input.address.address1.trim() || !input.address.city.trim()) {
+      return Response.json({ error: "address_required" }, { status: 400 });
+    }
+    if (deliverySettings.landmarkRequired && !input.address.landmark) {
+      return Response.json({ error: "landmark_required" }, { status: 400 });
+    }
+  }
+
+  const shippingAddress =
+    input.deliveryChoice === "pickup"
+      ? {
+          first_name: input.customer.name,
+          phone: input.customer.phone || undefined,
+          address_1: input.address.address1.trim() || "Pickup",
+          city: input.address.city.trim() || "Pickup",
+          country_code: "et",
+        }
+      : {
+          first_name: input.customer.name,
+          phone: input.customer.phone || undefined,
+          address_1: input.address.address1,
+          city: input.address.city,
+          country_code: "et",
+        };
 
   const updateCartResponse = await options.medusaStoreFetch(
     getMedusaStoreJsonRequest({
       body: {
         ...(input.customer.email ? { email: input.customer.email } : {}),
-        shipping_address: {
-          first_name: input.customer.name,
-          phone: input.customer.phone,
-          address_1: input.address.address1,
-          city: input.address.city,
-          country_code: "et",
-        },
+        shipping_address: shippingAddress,
         metadata: {
           checkout_type: "cod",
           payment_method: "cod",
           delivery_choice: input.deliveryChoice,
           customer_name: input.customer.name,
-          customer_phone: input.customer.phone,
+          customer_phone: input.customer.phone || null,
           landmark: input.address.landmark,
           customer_notes: input.notes,
         },

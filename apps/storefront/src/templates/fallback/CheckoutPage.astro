@@ -38,9 +38,13 @@ const {
 } = Astro.props;
 
 const items = cart?.items ?? [];
-const deliveryChoiceDefault =
-  delivery?.deliveryEnabled ? "delivery" : delivery?.pickupEnabled ? "pickup" : "delivery";
-const canPlaceOrder = items.length > 0 && shippingOptions.length > 0;
+const deliveryEnabled = delivery?.deliveryEnabled === true;
+const pickupEnabled = delivery?.pickupEnabled === true;
+const fulfillmentAvailable = deliveryEnabled || pickupEnabled;
+const phoneRequired = delivery?.phoneConfirmationRequired !== false;
+const deliveryChoiceDefault = deliveryEnabled ? "delivery" : pickupEnabled ? "pickup" : "delivery";
+const canPlaceOrder =
+  items.length > 0 && shippingOptions.length > 0 && fulfillmentAvailable;
 ---
 
 <StoreShell
@@ -101,23 +105,44 @@ const canPlaceOrder = items.length > 0 && shippingOptions.length > 0;
               <input id="name" name="name" required autocomplete="name" />
             </div>
             <div class="sf-field">
-              <label for="phone">Phone</label>
-              <input id="phone" name="phone" required autocomplete="tel" />
+              <label for="phone">Phone{phoneRequired ? "" : " (optional)"}</label>
+              <input
+                id="phone"
+                name="phone"
+                required={phoneRequired}
+                autocomplete="tel"
+              />
             </div>
             <div class="sf-field">
               <label for="email">Email (optional)</label>
               <input id="email" name="email" type="email" autocomplete="email" />
             </div>
 
+            {
+              !fulfillmentAvailable ? (
+                <div class="sf-notice" role="status">
+                  <p>
+                    <strong>Delivery and pickup are unavailable.</strong>
+                  </p>
+                  <p class="sf-muted">This shop is not accepting orders for delivery or pickup right now.</p>
+                </div>
+              ) : null
+            }
+
             <div class="sf-field">
               <label for="deliveryChoice">Delivery</label>
-              <select id="deliveryChoice" name="deliveryChoice" required>
-                {delivery?.deliveryEnabled !== false && (
+              <select
+                id="deliveryChoice"
+                name="deliveryChoice"
+                required
+                disabled={!fulfillmentAvailable}
+              >
+                {deliveryEnabled && (
                   <option value="delivery" selected={deliveryChoiceDefault === "delivery"}>
                     Delivery
                   </option>
                 )}
-                {delivery?.pickupEnabled && (
+                {pickupEnabled && (
                   <option value="pickup" selected={deliveryChoiceDefault === "pickup"}>
                     Pickup
                   </option>
@@ -125,25 +150,35 @@ const canPlaceOrder = items.length > 0 && shippingOptions.length > 0;
               </select>
             </div>
 
-            <div class="sf-field">
+            <div class="sf-field" data-delivery-only>
               <label for="address1">Address</label>
-              <input id="address1" name="address1" required autocomplete="street-address" />
+              <input
+                id="address1"
+                name="address1"
+                required={deliveryChoiceDefault === "delivery"}
+                autocomplete="street-address"
+              />
             </div>
-            <div class="sf-field">
+            <div class="sf-field" data-delivery-only>
               <label for="city">City</label>
               <input
                 id="city"
                 name="city"
-                required
+                required={deliveryChoiceDefault === "delivery"}
                 autocomplete="address-level2"
                 value="Addis Ababa"
               />
             </div>
-            <div class="sf-field">
+            <div class="sf-field" data-delivery-only>
               <label for="landmark">
                 Landmark{delivery?.landmarkRequired ? " (required)" : " (optional)"}
               </label>
-              <input id="landmark" name="landmark" required={Boolean(delivery?.landmarkRequired)} />
+              <input
+                id="landmark"
+                name="landmark"
+                required={Boolean(delivery?.landmarkRequired) && deliveryChoiceDefault === "delivery"}
+                data-landmark-required={delivery?.landmarkRequired ? "true" : "false"}
+              />
             </div>
 
             {delivery?.notesEnabled !== false && (
@@ -217,4 +252,30 @@ const canPlaceOrder = items.length > 0 && shippingOptions.length > 0;
       </div>
     )
   }
+
+  <script is:inline>
+    (function () {
+      var select = document.getElementById("deliveryChoice");
+      if (!select) return;
+      function sync() {
+        var isDelivery = select.value === "delivery";
+        document.querySelectorAll("[data-delivery-only]").forEach(function (el) {
+          el.hidden = !isDelivery;
+          el.querySelectorAll("input, textarea, select").forEach(function (field) {
+            if (field.id === "landmark") {
+              var need = field.getAttribute("data-landmark-required") === "true";
+              field.required = isDelivery && need;
+            } else {
+              field.required = isDelivery;
+            }
+            if (!isDelivery) {
+              field.removeAttribute("required");
+            }
+          });
+        });
+      }
+      select.addEventListener("change", sync);
+      sync();
+    })();
+  </script>
 </StoreShell>

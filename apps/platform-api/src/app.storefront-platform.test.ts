@@ -877,6 +877,20 @@ describe("platform app storefront, delivery, billing, and operator", () => {
         updatedAt: "2026-06-02T10:00:00.000Z",
       },
     });
+
+    const bothOff = await app.request("/platform/tenants/tenant_1/delivery", {
+      body: JSON.stringify({
+        ...body,
+        deliveryEnabled: false,
+        pickupEnabled: false,
+      }),
+      headers: {
+        "content-type": "application/json",
+      },
+      method: "PUT",
+    });
+    assert.equal(bothOff.status, 400);
+    assert.deepEqual(await bothOff.json(), { error: "fulfillment_method_required" });
   });
 
   it("rejects template selection for a tenant without active membership", async () => {

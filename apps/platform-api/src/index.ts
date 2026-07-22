@@ -10,6 +10,7 @@ import {
 } from "./adapters/chapa/payment-service.js";
 import { resolveMedusaAdminToken } from "./adapters/medusa/admin-token.js";
 import { createMedusaCommerceProvisioningClient } from "./adapters/medusa/commerce-provisioning.js";
+import { createMedusaShippingPriceClient } from "./adapters/medusa/update-shipping-price.js";
 import { createMedusaCustomerService } from "./adapters/medusa/customer-service.js";
 import { createMedusaManualOrderService } from "./adapters/medusa/manual-order-service.js";
 import { createMedusaPromotionService } from "./adapters/medusa/promotion-service.js";
@@ -329,6 +330,10 @@ const getOnboardingState = createPlatformOnboardingStateService({
   listTenantsForUser,
 });
 const provisionCommerceResources = createMedusaCommerceProvisioningClient({
+  internalApiToken: platformInternalApiToken,
+  medusaInternalUrl,
+});
+const updateTenantShippingPrice = createMedusaShippingPriceClient({
   internalApiToken: platformInternalApiToken,
   medusaInternalUrl,
 });
@@ -793,6 +798,32 @@ const app = createPlatformApp({
   submitPaymentOnboarding: paymentOnboardingService.submitPaymentOnboarding,
   updateBillingInvoiceStatus: billingService.updateBillingInvoiceStatus,
   updateDeliverySettings: deliverySettingsService.updateDeliverySettings,
+  syncDeliveryShippingPrice: async (input) => {
+    const commerce = await getTenantCommerceContext({
+      tenantId: input.tenantId,
+      userId: input.userId,
+    });
+    if (!commerce.ok || !commerce.context.medusaShippingOptionId) {
+      logger.warn(
+        { tenantId: input.tenantId },
+        "delivery_fee_sync_skipped_missing_shipping_option",
+      );
+      return;
+    }
+
+    const result = await updateTenantShippingPrice({
+      amount: input.amount,
+      currencyCode: input.currencyCode,
+      shippingOptionId: commerce.context.medusaShippingOptionId,
+    });
+
+    if (!result.ok) {
+      logger.warn(
+        { tenantId: input.tenantId, error: result.error },
+        "delivery_fee_sync_failed",
+      );
+    }
+  },
   updateTenantShopSettings,
   updateMerchantProduct: productService.updateMerchantProduct,
   listMerchantCollectionProducts: productService.listMerchantCollectionProducts,

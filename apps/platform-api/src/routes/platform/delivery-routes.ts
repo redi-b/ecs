@@ -134,6 +134,11 @@ export function registerDeliveryRoutes(
       return context.json({ error: "invalid_delivery_settings" }, 400);
     }
 
+    // At least one fulfillment method must stay available for checkout.
+    if (!deliveryEnabled && !pickupEnabled) {
+      return context.json({ error: "fulfillment_method_required" }, 400);
+    }
+
     const result = await options.updateDeliverySettings({
       currency: currency,
       defaultDeliveryFee,
@@ -146,6 +151,19 @@ export function registerDeliveryRoutes(
       userId: session.user.id,
       zones,
     });
+
+    // Best-effort: push fee onto Medusa flat-rate shipping option so cart totals match.
+    if (options.syncDeliveryShippingPrice) {
+      const feeAmount = Number.parseFloat(defaultDeliveryFee);
+      if (Number.isFinite(feeAmount) && feeAmount >= 0) {
+        await options.syncDeliveryShippingPrice({
+          amount: feeAmount,
+          currencyCode: currency,
+          tenantId,
+          userId: session.user.id,
+        });
+      }
+    }
 
     return context.json({
       delivery: result.delivery,
