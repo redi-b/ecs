@@ -422,8 +422,12 @@ function normalizeCustomer(value: any): MerchantCustomer {
 
 async function mapError(response: Response | null): Promise<CustomerServiceError> {
   if (!response) return { error: "commerce_backend_unavailable", ok: false, status: 503 };
-  if (response.status === 401)
+  if (response.status === 401 || response.status === 403) {
     return { error: "commerce_credentials_invalid", ok: false, status: 401 };
+  }
+  if (response.status === 404) {
+    return { error: "customer_not_found", ok: false, status: 404 };
+  }
 
   const body = await response
     .clone()
@@ -432,7 +436,8 @@ async function mapError(response: Response | null): Promise<CustomerServiceError
   if (isEmailConflict(response.status, body)) {
     return { error: "customer_email_conflict", ok: false, status: 409 };
   }
-  if (response.status === 400) {
+  // Validation / client errors stay 4xx — never collapse to 503.
+  if (response.status >= 400 && response.status < 500) {
     return { error: "invalid_customer", ok: false, status: 400 };
   }
   return { error: "commerce_backend_unavailable", ok: false, status: 503 };
@@ -440,12 +445,18 @@ async function mapError(response: Response | null): Promise<CustomerServiceError
 
 async function mapAddressError(response: Response | null): Promise<CustomerServiceError> {
   if (!response) return { error: "commerce_backend_unavailable", ok: false, status: 503 };
-  if (response.status === 401)
+  if (response.status === 401 || response.status === 403) {
     return { error: "commerce_credentials_invalid", ok: false, status: 401 };
+  }
   if (response.status === 404)
     return { error: "customer_address_not_found", ok: false, status: 404 };
-  if (response.status === 400)
+  if (
+    response.status === 400 ||
+    response.status === 422 ||
+    (response.status >= 400 && response.status < 500)
+  ) {
     return { error: "invalid_customer_address", ok: false, status: 400 };
+  }
   return { error: "commerce_backend_unavailable", ok: false, status: 503 };
 }
 

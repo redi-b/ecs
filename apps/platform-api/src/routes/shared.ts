@@ -6,6 +6,9 @@ export const storeErrorStatus = {
   domain_misconfigured: 409,
 } as const;
 
+/** Re-export commerce status clamp for merchant route handlers. */
+export { commerceErrorStatus } from "../adapters/medusa/map-medusa-failure.js";
+
 export const templateSelectionErrorStatus = {
   template_not_found: 404,
   tenant_not_found: 404,
