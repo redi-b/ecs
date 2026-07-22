@@ -155,6 +155,17 @@ export async function getMerchantOrder(options: {
   };
 }
 
+export type OrderSettlementPayload = {
+  settlementMethod: string;
+  bankCode?: string | undefined;
+  bankName?: string | undefined;
+  accountLast4?: string | undefined;
+  accountLabel?: string | undefined;
+  receivingAccountId?: string | undefined;
+  reference?: string | undefined;
+  note?: string | undefined;
+};
+
 export async function mutateMerchantOrder(options: {
   action: MerchantOrderAction;
   cookieHeader?: string | null | undefined;
@@ -165,14 +176,19 @@ export async function mutateMerchantOrder(options: {
   platformApiBaseUrl: string;
   requestHost?: string | null | undefined;
   tenantId?: string | null | undefined;
+  settlement?: OrderSettlementPayload | undefined;
 }): Promise<MerchantOrderActionResult> {
   const fetcher = options.fetcher ?? fetch;
   const body: Record<string, unknown> = {};
   if (options.action === "finish" && options.markPaid) {
     body.markPaid = true;
+    body.settlementMethod = options.settlement?.settlementMethod ?? "cash";
   }
   if (options.action === "deliver" && options.fulfillmentId) {
     body.fulfillmentId = options.fulfillmentId;
+  }
+  if (options.action === "mark-paid" && options.settlement) {
+    Object.assign(body, options.settlement);
   }
 
   const response = await fetcher(getOrderActionUrl(options), {

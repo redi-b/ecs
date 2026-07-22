@@ -466,6 +466,264 @@ export function PaymentsSection({ initialPayment, supportHref = null }: Payments
           ) : null}
         </CardContent>
       </Card>
+
+      <ReceivingAccountsCard />
     </div>
+  );
+}
+
+type ReceivingAccountRow = {
+  id: string;
+  label: string;
+  bankName: string;
+  accountLast4: string | null;
+  isDefault: boolean;
+};
+
+function ReceivingAccountsCard() {
+  const { t } = useI18n();
+  const [accounts, setAccounts] = useState<ReceivingAccountRow[]>([]);
+  const [banks, setBanks] = useState<Array<{ code: string; name: string }>>([]);
+  const [label, setLabel] = useState("");
+  const [bankCode, setBankCode] = useState("");
+  const [accountName, setAccountName] = useState("");
+  const [accountNumber, setAccountNumber] = useState("");
+  const [isDefault, setIsDefault] = useState(false);
+  const [isPending, startTransition] = useTransition();
+  const [showForm, setShowForm] = useState(false);
+
+  const load = useCallback(async () => {
+    try {
+      const [accRes, bankRes] = await Promise.all([
+        fetch("/admin/settings/payments/receiving-accounts", {
+          cache: "no-store",
+          headers: { accept: "application/json" },
+        }),
+        fetch("/admin/settings/payments/banks", {
+          cache: "no-store",
+          headers: { accept: "application/json" },
+        }),
+      ]);
+      if (accRes.ok) {
+        const data = await accRes.json().catch(() => null);
+        if (Array.isArray(data?.accounts)) setAccounts(data.accounts);
+      }
+      if (bankRes.ok) {
+        const data = await bankRes.json().catch(() => null);
+        if (Array.isArray(data?.banks)) setBanks(data.banks);
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  function saveAccount() {
+    startTransition(async () => {
+      toast.loading(t("settings.payments.toast.working"), { id: "recv-acc" });
+      try {
+        const bank = banks.find((b) => b.code === bankCode);
+        const response = await fetch("/admin/settings/payments/receiving-accounts", {
+          method: "POST",
+          headers: { accept: "application/json", "content-type": "application/json" },
+          body: JSON.stringify({
+            label,
+            bankCode: bankCode || null,
+            bankName: bank?.name || bankCode || "Bank",
+            accountName: accountName || null,
+            accountNumber: accountNumber || null,
+            isDefault,
+          }),
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          toast.error(
+            mapPlatformErrorMessage(
+              typeof data?.error === "string" ? data.error : "receiving_account_create_failed",
+              { fallback: t("settings.payments.receiving.failed") },
+            ),
+            { id: "recv-acc" },
+          );
+          return;
+        }
+        toast.success(t("settings.payments.receiving.saved"), { id: "recv-acc" });
+        setLabel("");
+        setBankCode("");
+        setAccountName("");
+        setAccountNumber("");
+        setIsDefault(false);
+        setShowForm(false);
+        await load();
+      } catch {
+        toast.error(t("settings.payments.receiving.failed"), { id: "recv-acc" });
+      }
+    });
+  }
+
+  function removeAccount(id: string) {
+    startTransition(async () => {
+      toast.loading(t("settings.payments.toast.working"), { id: "recv-del" });
+      try {
+        const response = await fetch(`/admin/settings/payments/receiving-accounts/${id}`, {
+          method: "DELETE",
+          headers: { accept: "application/json" },
+        });
+        if (!response.ok) {
+          toast.error(t("settings.payments.receiving.failed"), { id: "recv-del" });
+          return;
+        }
+        toast.success(t("settings.payments.receiving.deleted"), { id: "recv-del" });
+        await load();
+      } catch {
+        toast.error(t("settings.payments.receiving.failed"), { id: "recv-del" });
+      }
+    });
+  }
+
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <div className="flex items-start justify-between gap-3">
+          <div className="space-y-1">
+            <CardTitle className="text-base">{t("settings.payments.receiving.title")}</CardTitle>
+            <CardDescription>{t("settings.payments.receiving.description")}</CardDescription>
+          </div>
+          <Button
+            className="shrink-0 rounded-full"
+            size="sm"
+            type="button"
+            variant="outline"
+            onClick={() => setShowForm((v) => !v)}
+          >
+            {t("settings.payments.receiving.add")}
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {accounts.length === 0 && !showForm ? (
+          <p className="text-sm text-muted-foreground">{t("settings.payments.receiving.empty")}</p>
+        ) : null}
+
+        {accounts.length > 0 ? (
+          <ul className="divide-y rounded-xl border">
+            {accounts.map((account) => (
+              <li
+                key={account.id}
+                className="flex items-center justify-between gap-3 px-4 py-3 text-sm"
+              >
+                <div className="min-w-0">
+                  <p className="font-medium">
+                    {account.label}
+                    {account.isDefault ? (
+                      <Badge className="ml-2" variant="secondary">
+                        {t("settings.payments.receiving.default")}
+                      </Badge>
+                    ) : null}
+                  </p>
+                  <p className="text-muted-foreground">
+                    {account.bankName}
+                    {account.accountLast4
+                      ? ` · ${t("settings.payments.receiving.endsIn", { digits: account.accountLast4 })}`
+                      : ""}
+                  </p>
+                </div>
+                <Button
+                  className="rounded-full text-destructive"
+                  disabled={isPending}
+                  size="sm"
+                  type="button"
+                  variant="ghost"
+                  onClick={() => {
+                    if (window.confirm(t("settings.payments.receiving.deleteConfirm"))) {
+                      removeAccount(account.id);
+                    }
+                  }}
+                >
+                  {t("settings.payments.receiving.delete")}
+                </Button>
+              </li>
+            ))}
+          </ul>
+        ) : null}
+
+        {showForm ? (
+          <div className="space-y-3 rounded-xl border bg-muted/20 p-4">
+            <Field>
+              <FieldLabel>{t("settings.payments.receiving.label")}</FieldLabel>
+              <InputGroup>
+                <InputGroupInput
+                  value={label}
+                  onChange={(e) => setLabel(e.target.value)}
+                  placeholder={t("settings.payments.receiving.labelPlaceholder")}
+                />
+              </InputGroup>
+            </Field>
+            <Field>
+              <FieldLabel>{t("settings.payments.receiving.bank")}</FieldLabel>
+              <select
+                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs"
+                value={bankCode}
+                onChange={(e) => setBankCode(e.target.value)}
+              >
+                <option value="">{t("settings.payments.receiving.bank")}</option>
+                {banks.map((bank) => (
+                  <option key={bank.code} value={bank.code}>
+                    {bank.name}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <Field>
+              <FieldLabel>{t("settings.payments.receiving.accountName")}</FieldLabel>
+              <InputGroup>
+                <InputGroupInput
+                  value={accountName}
+                  onChange={(e) => setAccountName(e.target.value)}
+                />
+              </InputGroup>
+            </Field>
+            <Field>
+              <FieldLabel>{t("settings.payments.receiving.accountNumber")}</FieldLabel>
+              <InputGroup>
+                <InputGroupInput
+                  value={accountNumber}
+                  onChange={(e) => setAccountNumber(e.target.value)}
+                />
+              </InputGroup>
+              <FieldDescription>{t("settings.payments.receiving.accountNumberHint")}</FieldDescription>
+            </Field>
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={isDefault}
+                onChange={(e) => setIsDefault(e.target.checked)}
+              />
+              {t("settings.payments.receiving.default")}
+            </label>
+            <div className="flex justify-end gap-2">
+              <Button
+                className="rounded-full"
+                type="button"
+                variant="ghost"
+                onClick={() => setShowForm(false)}
+              >
+                {t("common.cancel")}
+              </Button>
+              <Button
+                className="rounded-full"
+                disabled={isPending || !label.trim() || !bankCode}
+                type="button"
+                onClick={saveAccount}
+              >
+                {t("settings.payments.receiving.save")}
+              </Button>
+            </div>
+          </div>
+        ) : null}
+      </CardContent>
+    </Card>
   );
 }

@@ -332,6 +332,46 @@ export async function OrderDetail({ action, order, tenantId }: OrderDetailProps)
               }
             />
             <Field label={t("orders.detail.reference")} value={order.paymentReference} />
+            {order.settlement ? (
+              <>
+                <Field
+                  label={t("orders.settlement.sectionTitle")}
+                  value={
+                    order.settlement.method === "cash"
+                      ? t("orders.settlement.cash")
+                      : order.settlement.method === "telebirr"
+                        ? t("orders.settlement.telebirr")
+                        : order.settlement.method === "cbe_birr"
+                          ? t("orders.settlement.cbeBirr")
+                          : order.settlement.method === "bank_transfer"
+                            ? t("orders.settlement.bankTransfer")
+                            : order.settlement.method === "chapa"
+                              ? t("orders.settlement.chapa")
+                              : t("orders.settlement.other")
+                  }
+                />
+                {order.settlement.accountLabel || order.settlement.bankName ? (
+                  <Field
+                    label={t("orders.settlement.receivingAccount")}
+                    value={[
+                      order.settlement.accountLabel,
+                      order.settlement.bankName,
+                      order.settlement.accountLast4
+                        ? `···${order.settlement.accountLast4}`
+                        : null,
+                    ]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  />
+                ) : null}
+                {order.settlement.reference ? (
+                  <Field
+                    label={t("orders.settlement.referenceOptional")}
+                    value={order.settlement.reference}
+                  />
+                ) : null}
+              </>
+            ) : null}
           </Section>
 
           <Section title={t("orders.detail.customer")}>

@@ -1,3 +1,7 @@
+import {
+  settlementToMetadata,
+  type OrderSettlementInput,
+} from "../../../lib/settlement.js";
 import type { MerchantOrder, MerchantOrderActionResult } from "../../../types/index.js";
 import {
   deliverMerchantOrderFulfillment,
@@ -204,9 +208,46 @@ async function patchOrderMetadata(
   return response.ok;
 }
 
+/** Update settlement labels on an already-paid (or unpaid) order without changing payment state. */
+export async function updateMerchantOrderSettlement(
+  fetcher: Fetcher,
+  options: MedusaOptions,
+  input: {
+    orderId: string;
+    salesChannelId: string;
+    settlement: OrderSettlementInput;
+  },
+): Promise<MerchantOrderActionResult> {
+  const existing = await getMerchantOrderForAction(fetcher, options, input);
+  if (!existing.ok) return existing;
+
+  const rawResult = await fetchRawOrder(fetcher, options, input);
+  if (!rawResult.ok) {
+    return {
+      ok: false,
+      error: rawResult.status === 401 ? "commerce_credentials_invalid" : "order_not_found",
+      status: rawResult.status === 401 ? 401 : 404,
+    };
+  }
+
+  const existingMeta = isRecord(rawResult.raw.metadata) ? rawResult.raw.metadata : {};
+  const nextMeta = {
+    ...existingMeta,
+    ...settlementToMetadata(input.settlement),
+  };
+
+  await patchOrderMetadata(fetcher, options, {
+    orderId: input.orderId,
+    metadata: nextMeta,
+  });
+
+  return getMerchantOrderForAction(fetcher, options, input);
+}
+
 /**
  * Mark an order as paid (COD operator action or Chapa override).
  * Prefers Medusa payment-collection mark-as-paid; falls back to metadata override.
+ * Settlement (how money arrived) is required for dashboard/telegram; Chapa auto-sets method.
  */
 export async function markMerchantOrderPaid(
   fetcher: Fetcher,
@@ -214,8 +255,9 @@ export async function markMerchantOrderPaid(
   input: {
     orderId: string;
     salesChannelId: string;
-    source?: "dashboard" | "chapa_webhook" | "chapa_recheck" | undefined;
+    source?: "dashboard" | "chapa_webhook" | "chapa_recheck" | "telegram" | undefined;
     paymentReference?: string | null | undefined;
+    settlement?: OrderSettlementInput | null | undefined;
   },
 ): Promise<MerchantOrderActionResult> {
   const existing = await getMerchantOrderForAction(fetcher, options, input);
@@ -256,19 +298,38 @@ export async function markMerchantOrderPaid(
   }
 
   const existingMeta = isRecord(rawResult.raw.metadata) ? rawResult.raw.metadata : {};
+  const paidAt = new Date().toISOString();
+  const isChapaSource =
+    input.source === "chapa_webhook" || input.source === "chapa_recheck";
+
   const nextMeta: Record<string, unknown> = {
     ...existingMeta,
     payment_status_override: "paid",
     paid_via: input.source ?? "dashboard",
-    paid_at: new Date().toISOString(),
+    paid_at: paidAt,
   };
   if (input.paymentReference) {
     nextMeta.payment_reference = input.paymentReference;
     nextMeta.tx_ref = input.paymentReference;
   }
   if (!getString(existingMeta.payment_method) && !getString(existingMeta.checkout_type)) {
-    nextMeta.payment_method =
-      input.source === "chapa_webhook" || input.source === "chapa_recheck" ? "chapa" : "cod";
+    nextMeta.payment_method = isChapaSource ? "chapa" : "cod";
+  }
+
+  // Settlement: Chapa auto; dashboard/telegram require explicit method (caller validates).
+  if (input.settlement?.method) {
+    Object.assign(nextMeta, settlementToMetadata(input.settlement, paidAt));
+  } else if (isChapaSource) {
+    Object.assign(
+      nextMeta,
+      settlementToMetadata(
+        {
+          method: "chapa",
+          reference: input.paymentReference ?? getString(existingMeta.tx_ref) ?? undefined,
+        },
+        paidAt,
+      ),
+    );
   }
 
   await patchOrderMetadata(fetcher, options, {
@@ -385,6 +446,7 @@ export async function finishMerchantOrder(
     salesChannelId: string;
     shippingOptionId?: string | undefined;
     stockLocationId?: string | undefined;
+    settlement?: OrderSettlementInput | null | undefined;
   },
 ): Promise<MerchantOrderActionResult> {
   let current = await getMerchantOrderForAction(fetcher, options, input);
@@ -437,12 +499,13 @@ export async function finishMerchantOrder(
     }
   }
 
-  // 3) Optional mark paid (COD)
+  // 3) Optional mark paid (COD) — default settlement cash when finish bundles paid
   if (input.markPaid && !isPaidStatus(current.order.paymentStatus)) {
     const paid = await markMerchantOrderPaid(fetcher, options, {
       orderId: input.orderId,
       salesChannelId: input.salesChannelId,
       source: "dashboard",
+      settlement: input.settlement ?? { method: "cash" },
     });
     if (!paid.ok) {
       return paid;

@@ -393,6 +393,47 @@ export const merchantOrderPaymentMethodSchema = z.enum(["cod", "chapa", "unknown
 
 export type MerchantOrderPaymentMethod = z.infer<typeof merchantOrderPaymentMethodSchema>;
 
+/** How money was received (mark-paid / Chapa auto). Distinct from checkout rail. */
+export const merchantOrderSettlementMethodSchema = z.enum([
+  "cash",
+  "telebirr",
+  "cbe_birr",
+  "bank_transfer",
+  "chapa",
+  "other",
+]);
+
+export type MerchantOrderSettlementMethod = z.infer<typeof merchantOrderSettlementMethodSchema>;
+
+export const merchantOrderSettlementSchema = z.object({
+  method: merchantOrderSettlementMethodSchema,
+  bankCode: z.string().min(1).nullable().optional(),
+  bankName: z.string().min(1).nullable().optional(),
+  accountLast4: z.string().min(1).nullable().optional(),
+  accountLabel: z.string().min(1).nullable().optional(),
+  receivingAccountId: z.string().min(1).nullable().optional(),
+  reference: z.string().min(1).nullable().optional(),
+  note: z.string().min(1).nullable().optional(),
+  recordedAt: z.string().min(1).nullable().optional(),
+});
+
+export type MerchantOrderSettlement = z.infer<typeof merchantOrderSettlementSchema>;
+
+export const merchantReceivingAccountSchema = z.object({
+  id: z.string().min(1),
+  bankCode: z.string().min(1).nullable(),
+  bankName: z.string().min(1),
+  accountName: z.string().min(1).nullable(),
+  accountLast4: z.string().min(1).nullable(),
+  label: z.string().min(1),
+  isDefault: z.boolean(),
+  isActive: z.boolean(),
+  createdAt: z.string().min(1),
+  updatedAt: z.string().min(1),
+});
+
+export type MerchantReceivingAccount = z.infer<typeof merchantReceivingAccountSchema>;
+
 export const merchantOrderSchema = z.object({
   id: z.string().min(1),
   displayId: z.number().int().nullable(),
@@ -403,6 +444,7 @@ export const merchantOrderSchema = z.object({
   fulfillmentStatus: z.string().min(1).nullable(),
   paymentMethod: merchantOrderPaymentMethodSchema.nullable().optional(),
   paymentReference: z.string().min(1).nullable().optional(),
+  settlement: merchantOrderSettlementSchema.nullable().optional(),
   note: z.string().min(1).nullable().optional(),
   currencyCode: z.string().min(1).nullable(),
   total: z.number().nullable(),

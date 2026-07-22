@@ -19,6 +19,14 @@ export async function POST(request: Request, { params }: { params: Promise<{ ord
       action?: unknown;
       fulfillmentId?: unknown;
       markPaid?: unknown;
+      settlementMethod?: unknown;
+      bankCode?: unknown;
+      bankName?: unknown;
+      accountLast4?: unknown;
+      accountLabel?: unknown;
+      receivingAccountId?: unknown;
+      reference?: unknown;
+      note?: unknown;
     };
     const action = typeof body.action === "string" ? body.action : "";
 
@@ -38,6 +46,30 @@ export async function POST(request: Request, { params }: { params: Promise<{ ord
       };
     }
 
+    const settlement =
+      typeof body.settlementMethod === "string"
+        ? {
+            settlementMethod: body.settlementMethod,
+            ...(typeof body.bankCode === "string" ? { bankCode: body.bankCode } : {}),
+            ...(typeof body.bankName === "string" ? { bankName: body.bankName } : {}),
+            ...(typeof body.accountLast4 === "string" ? { accountLast4: body.accountLast4 } : {}),
+            ...(typeof body.accountLabel === "string" ? { accountLabel: body.accountLabel } : {}),
+            ...(typeof body.receivingAccountId === "string"
+              ? { receivingAccountId: body.receivingAccountId }
+              : {}),
+            ...(typeof body.reference === "string" ? { reference: body.reference } : {}),
+            ...(typeof body.note === "string" ? { note: body.note } : {}),
+          }
+        : undefined;
+
+    if (action === "mark-paid" && !settlement) {
+      return {
+        ok: false,
+        message: "settlement_method_required",
+        status: 400,
+      };
+    }
+
     const result = await mutateMerchantOrder({
       action: action as MerchantOrderAction,
       cookieHeader: context.cookieHeader,
@@ -47,6 +79,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ ord
       platformApiBaseUrl: context.platformApiBaseUrl,
       requestHost: context.requestHost,
       tenantId: context.tenantId,
+      settlement,
     });
 
     if (!result.ok) {

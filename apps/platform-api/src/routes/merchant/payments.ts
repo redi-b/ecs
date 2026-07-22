@@ -174,6 +174,99 @@ export function registerMerchantPaymentRoutes(
 
     return context.json({ ok: true });
   });
+
+  // --- Bank catalog + receiving accounts (offline settlement labels) ---
+
+  app.get("/platform/merchant/payments/banks", async (context) => {
+    const merchant = await getAuthorizedMerchantContext(context);
+    if (!merchant.ok) return merchant.response;
+    if (!options.listMerchantPaymentBanks) {
+      return context.json({ error: "payments_unavailable" }, 503);
+    }
+    const result = await options.listMerchantPaymentBanks();
+    return context.json(result);
+  });
+
+  app.get("/platform/merchant/payments/receiving-accounts", async (context) => {
+    const merchant = await getAuthorizedMerchantContext(context);
+    if (!merchant.ok) return merchant.response;
+    if (!options.listMerchantReceivingAccounts) {
+      return context.json({ error: "payments_unavailable" }, 503);
+    }
+    const includeInactive = context.req.query("includeInactive") === "1";
+    const result = await options.listMerchantReceivingAccounts({
+      tenantId: merchant.result.context.tenantId,
+      includeInactive,
+    });
+    return context.json(result);
+  });
+
+  app.post("/platform/merchant/payments/receiving-accounts", async (context) => {
+    const merchant = await getAuthorizedMerchantContext(context);
+    if (!merchant.ok) return merchant.response;
+    if (!options.createMerchantReceivingAccount) {
+      return context.json({ error: "payments_unavailable" }, 503);
+    }
+    const body = (await context.req.json().catch(() => ({}))) as Record<string, unknown>;
+    const label = typeof body.label === "string" ? body.label : "";
+    const bankName = typeof body.bankName === "string" ? body.bankName : "";
+    if (!label.trim() || !bankName.trim()) {
+      return context.json({ error: "invalid_receiving_account" }, 400);
+    }
+    const result = await options.createMerchantReceivingAccount({
+      tenantId: merchant.result.context.tenantId,
+      label,
+      bankName,
+      bankCode: typeof body.bankCode === "string" ? body.bankCode : null,
+      accountName: typeof body.accountName === "string" ? body.accountName : null,
+      accountNumber: typeof body.accountNumber === "string" ? body.accountNumber : null,
+      isDefault: body.isDefault === true,
+    });
+    if (!result.ok) return context.json({ error: result.error }, result.status);
+    return context.json(result, 201);
+  });
+
+  app.post("/platform/merchant/payments/receiving-accounts/:accountId", async (context) => {
+    const merchant = await getAuthorizedMerchantContext(context);
+    if (!merchant.ok) return merchant.response;
+    if (!options.updateMerchantReceivingAccount) {
+      return context.json({ error: "payments_unavailable" }, 503);
+    }
+    const body = (await context.req.json().catch(() => ({}))) as Record<string, unknown>;
+    const result = await options.updateMerchantReceivingAccount({
+      tenantId: merchant.result.context.tenantId,
+      accountId: context.req.param("accountId"),
+      ...(typeof body.label === "string" ? { label: body.label } : {}),
+      ...(typeof body.bankName === "string" ? { bankName: body.bankName } : {}),
+      ...(body.bankCode !== undefined
+        ? { bankCode: typeof body.bankCode === "string" ? body.bankCode : null }
+        : {}),
+      ...(body.accountName !== undefined
+        ? { accountName: typeof body.accountName === "string" ? body.accountName : null }
+        : {}),
+      ...(body.accountNumber !== undefined
+        ? { accountNumber: typeof body.accountNumber === "string" ? body.accountNumber : null }
+        : {}),
+      ...(typeof body.isDefault === "boolean" ? { isDefault: body.isDefault } : {}),
+      ...(typeof body.isActive === "boolean" ? { isActive: body.isActive } : {}),
+    });
+    if (!result.ok) return context.json({ error: result.error }, result.status);
+    return context.json(result);
+  });
+
+  app.delete("/platform/merchant/payments/receiving-accounts/:accountId", async (context) => {
+    const merchant = await getAuthorizedMerchantContext(context);
+    if (!merchant.ok) return merchant.response;
+    if (!options.deleteMerchantReceivingAccount) {
+      return context.json({ error: "payments_unavailable" }, 503);
+    }
+    const result = await options.deleteMerchantReceivingAccount({
+      tenantId: merchant.result.context.tenantId,
+      accountId: context.req.param("accountId"),
+    });
+    if (!result.ok) return context.json({ error: result.error }, result.status);
+    return context.json(result);
+  });
 }
 
 async function validateChapaSecretKey(

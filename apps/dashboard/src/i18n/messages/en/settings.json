@@ -481,6 +481,26 @@
       "toggled": "Storefront payment option updated",
       "disconnected": "Online payments disconnected",
       "failed": "Could not update payments"
+    },
+    "receiving": {
+      "title": "Receiving accounts",
+      "description": "Your shop bank or mobile-money destinations for offline payments (COD, manual orders). Used only for records and exports — not shown on the storefront. Online checkout uses Chapa.",
+      "empty": "No accounts yet. Add one if customers sometimes pay your bank or Telebirr outside Chapa.",
+      "add": "Add account",
+      "label": "Label",
+      "labelPlaceholder": "e.g. Shop CBE",
+      "bank": "Bank or wallet",
+      "accountName": "Account name (optional)",
+      "accountNumber": "Account number (optional)",
+      "accountNumberHint": "Stored securely. Only the last digits appear when marking paid.",
+      "default": "Default account",
+      "save": "Save account",
+      "saved": "Receiving account saved",
+      "deleted": "Receiving account removed",
+      "delete": "Remove",
+      "deleteConfirm": "Remove this receiving account?",
+      "endsIn": "Ends in {digits}",
+      "failed": "Could not update receiving accounts"
     }
   }
 }

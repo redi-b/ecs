@@ -8,6 +8,26 @@ export type MerchantOrderDelivery = {
 
 export type MerchantOrderPaymentMethod = "cod" | "chapa" | "unknown";
 
+export type MerchantOrderSettlementMethod =
+  | "cash"
+  | "telebirr"
+  | "cbe_birr"
+  | "bank_transfer"
+  | "chapa"
+  | "other";
+
+export type MerchantOrderSettlement = {
+  method: MerchantOrderSettlementMethod;
+  bankCode?: string | null;
+  bankName?: string | null;
+  accountLast4?: string | null;
+  accountLabel?: string | null;
+  receivingAccountId?: string | null;
+  reference?: string | null;
+  note?: string | null;
+  recordedAt?: string | null;
+};
+
 /** Merchant-facing progress (not Medusa jargon). */
 export type MerchantOrderProgressFilter =
   | "new"
@@ -48,6 +68,7 @@ export type MerchantOrder = {
   fulfillmentStatus: string | null;
   paymentMethod?: MerchantOrderPaymentMethod | null;
   paymentReference?: string | null;
+  settlement?: MerchantOrderSettlement | null;
   note?: string | null;
   currencyCode: string | null;
   total: number | null;
