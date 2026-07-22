@@ -130,7 +130,7 @@ const canPlaceOrder =
             }
 
             <div class="sf-field">
-              <label for="deliveryChoice">Delivery</label>
+              <label for="deliveryChoice">Method</label>
               <select
                 id="deliveryChoice"
                 name="deliveryChoice"
@@ -150,26 +150,43 @@ const canPlaceOrder =
               </select>
             </div>
 
-            <div class="sf-field" data-delivery-only>
+            <div
+              class="sf-field"
+              data-delivery-only
+              hidden={deliveryChoiceDefault !== "delivery"}
+              style={deliveryChoiceDefault !== "delivery" ? "display:none" : undefined}
+            >
               <label for="address1">Address</label>
               <input
                 id="address1"
                 name="address1"
                 required={deliveryChoiceDefault === "delivery"}
+                disabled={deliveryChoiceDefault !== "delivery"}
                 autocomplete="street-address"
               />
             </div>
-            <div class="sf-field" data-delivery-only>
+            <div
+              class="sf-field"
+              data-delivery-only
+              hidden={deliveryChoiceDefault !== "delivery"}
+              style={deliveryChoiceDefault !== "delivery" ? "display:none" : undefined}
+            >
               <label for="city">City</label>
               <input
                 id="city"
                 name="city"
                 required={deliveryChoiceDefault === "delivery"}
+                disabled={deliveryChoiceDefault !== "delivery"}
                 autocomplete="address-level2"
                 value="Addis Ababa"
               />
             </div>
-            <div class="sf-field" data-delivery-only>
+            <div
+              class="sf-field"
+              data-delivery-only
+              hidden={deliveryChoiceDefault !== "delivery"}
+              style={deliveryChoiceDefault !== "delivery" ? "display:none" : undefined}
+            >
               <label for="landmark">
                 Landmark{delivery?.landmarkRequired ? " (required)" : " (optional)"}
               </label>
@@ -177,6 +194,7 @@ const canPlaceOrder =
                 id="landmark"
                 name="landmark"
                 required={Boolean(delivery?.landmarkRequired) && deliveryChoiceDefault === "delivery"}
+                disabled={deliveryChoiceDefault !== "delivery"}
                 data-landmark-required={delivery?.landmarkRequired ? "true" : "false"}
               />
             </div>
@@ -190,16 +208,20 @@ const canPlaceOrder =
 
             {shippingOptions.length > 0 && (
               <div class="sf-field">
-                <label for="shippingOptionId">Shipping option</label>
+                <label for="shippingOptionId">Delivery fee</label>
                 <select id="shippingOptionId" name="shippingOptionId" required>
-                  {shippingOptions.map((option) => (
-                    <option value={option.id}>
-                      {(option.name ?? "Shipping") +
-                        (option.amount != null
-                          ? ` · ${formatMoney(option.amount, option.currencyCode ?? cart?.currencyCode)}`
-                          : "")}
-                    </option>
-                  ))}
+                  {shippingOptions.map((option) => {
+                    const rawName = option.name?.trim() || "Standard";
+                    const name = /shipping/i.test(rawName) ? "Standard" : rawName;
+                    return (
+                      <option value={option.id}>
+                        {name +
+                          (option.amount != null
+                            ? ` · ${formatMoney(option.amount, option.currencyCode ?? cart?.currencyCode)}`
+                            : "")}
+                      </option>
+                    );
+                  })}
                 </select>
               </div>
             )}
@@ -221,8 +243,8 @@ const canPlaceOrder =
               )}
               {!payment.chapa && (
                 <p class="sf-muted">
-                  Online payment is not available for this order. You can still pay with cash on
-                  delivery when shipping is available.
+                  Online payment is not available for this order. You can still pay on delivery when
+                  that option is offered.
                 </p>
               )}
               <a class="sf-btn sf-btn-secondary" href="/cart">
@@ -261,7 +283,9 @@ const canPlaceOrder =
         var isDelivery = select.value === "delivery";
         document.querySelectorAll("[data-delivery-only]").forEach(function (el) {
           el.hidden = !isDelivery;
+          el.style.display = isDelivery ? "" : "none";
           el.querySelectorAll("input, textarea, select").forEach(function (field) {
+            field.disabled = !isDelivery;
             if (field.id === "landmark") {
               var need = field.getAttribute("data-landmark-required") === "true";
               field.required = isDelivery && need;
@@ -273,6 +297,10 @@ const canPlaceOrder =
             }
           });
         });
+        var feeLabel = document.querySelector('label[for="shippingOptionId"]');
+        if (feeLabel) {
+          feeLabel.textContent = isDelivery ? "Delivery fee" : "Order fee";
+        }
       }
       select.addEventListener("change", sync);
       sync();
