@@ -29,113 +29,16 @@ import {
   NotificationEventPicker,
   sameNotificationEvents,
 } from "@/features/settings/notification-channel-ui";
+import {
+  apiError,
+  connectSteps,
+  type ConnectSession,
+} from "@/features/settings/telegram-connect-helpers";
+import { DestinationIdentity } from "@/features/settings/telegram-connect-parts";
 import type { TelegramDestination } from "@/lib/platform-api/notifications/telegram-client";
 import { useI18n } from "@/i18n/provider";
 import { mapPlatformErrorMessage } from "@/lib/platform-api/errors";
 import { cn } from "@/lib/utils";
-
-function connectSteps(
-  t: (
-    key:
-      | "settings.notifications.telegramPanel.step1"
-      | "settings.notifications.telegramPanel.step2"
-      | "settings.notifications.telegramPanel.step3",
-  ) => string,
-) {
-  return [
-    t("settings.notifications.telegramPanel.step1"),
-    t("settings.notifications.telegramPanel.step2"),
-    t("settings.notifications.telegramPanel.step3"),
-  ] as const;
-}
-
-type ConnectSession = {
-  id: string;
-  status: string;
-  expiresAt: string;
-  deepLink: string | null;
-};
-
-function apiError(data: unknown, fallback: string) {
-  if (typeof data === "object" && data !== null) {
-    const rec = data as { error?: unknown; message?: unknown };
-    if (typeof rec.error === "string") {
-      return mapPlatformErrorMessage(rec.error);
-    }
-    if (typeof rec.message === "string") {
-      return mapPlatformErrorMessage(rec.message);
-    }
-  }
-  return mapPlatformErrorMessage(fallback);
-}
-
-function telegramProfileUrl(username: string) {
-  const clean = username.replace(/^@/, "").trim();
-  if (!clean) return null;
-  return `https://t.me/${encodeURIComponent(clean)}`;
-}
-
-function formatConnectedAt(iso: string, locale: string, recentLabel: string, connectedPrefix: string) {
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return recentLabel;
-  return `${connectedPrefix} ${date.toLocaleString(locale, {
-    dateStyle: "medium",
-    timeStyle: "short",
-  })}`;
-}
-
-function DestinationIdentity({ destination }: { destination: TelegramDestination }) {
-  const { t, locale } = useI18n();
-  const username = destination.username?.replace(/^@/, "").trim() || null;
-  const profileUrl = username ? telegramProfileUrl(username) : null;
-  const showUsernameBesideLabel =
-    username !== null &&
-    destination.label.replace(/^@/, "").toLowerCase() !== username.toLowerCase();
-
-  return (
-    <div className="min-w-0">
-      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-        {profileUrl && !showUsernameBesideLabel ? (
-          <a
-            className="inline-flex max-w-full items-center gap-1 truncate text-sm font-semibold text-foreground underline-offset-4 hover:underline"
-            href={profileUrl}
-            rel="noreferrer"
-            target="_blank"
-          >
-            <span className="truncate">{destination.label}</span>
-            <AppIcons.externalLink className="size-3 shrink-0 opacity-60" />
-          </a>
-        ) : (
-          <p className="truncate text-sm font-semibold">{destination.label}</p>
-        )}
-        {profileUrl && showUsernameBesideLabel ? (
-          <a
-            className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
-            href={profileUrl}
-            rel="noreferrer"
-            target="_blank"
-          >
-            @{username}
-            <AppIcons.externalLink className="size-3 shrink-0 opacity-60" />
-          </a>
-        ) : null}
-        <Badge variant={destination.enabled ? "secondary" : "outline"}>
-          {destination.enabled
-            ? t("settings.notifications.telegramPanel.active")
-            : t("settings.notifications.telegramPanel.paused")}
-        </Badge>
-      </div>
-      <p className="mt-0.5 text-xs text-muted-foreground">
-        {formatConnectedAt(
-          destination.connectedAt,
-          locale,
-          t("settings.notifications.telegramPanel.connectedRecently"),
-          t("settings.notifications.telegramPanel.connectedAt"),
-        )}
-      </p>
-    </div>
-  );
-}
 
 export function TelegramConnectPanel({
   available = true,

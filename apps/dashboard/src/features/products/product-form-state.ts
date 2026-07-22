@@ -402,3 +402,9 @@ export function isInitialHandleLocked(product: MerchantProduct | undefined) {
 
   return product.handle === slugifyProductHandle(product.title ?? "");
 }
+
+export function getMediaUrls(thumbnail: string, imageUrls: string) {
+  return Array.from(
+    new Set([thumbnail, ...imageUrls.split(/\r?\n/)].map((url) => url.trim()).filter(Boolean)),
+  );
+}
