@@ -64,6 +64,7 @@ test("shiftColorRelativeToPrimary preserves accent hue offset from seed primary"
     seed.colors.accent,
     seed.colors.primary,
     newPrimary,
+    "accent",
   );
   const newP = hexToHsl(newPrimary)!;
   const newA = hexToHsl(shiftedAccent)!;
@@ -77,8 +78,11 @@ test("shiftColorRelativeToPrimary preserves accent hue offset from seed primary"
   assert.ok(delta < 3, `hue offset drift too large: ${delta}`);
 });
 
-test("generateThemeFromSeed with red primary keeps dark surface and readable contrast", () => {
+test("body text stays low saturation when brand is red", () => {
   const colors = generateThemeFromSeed("#c45c5c", CLASSIC_DARK_SEED);
+  const fg = hexToHsl(colors.foreground)!;
+  assert.ok(fg.s <= 10, `foreground too saturated: ${fg.s}`);
+  assert.ok(fg.l >= 85, `foreground too dark: ${fg.l}`);
   assert.ok(relativeLuminance(colors.background) < 0.25);
   assert.ok(contrastRatio(colors.background, colors.foreground) >= 4.5);
   assert.ok(contrastRatio(colors.primary, colors.onPrimary) >= 3);

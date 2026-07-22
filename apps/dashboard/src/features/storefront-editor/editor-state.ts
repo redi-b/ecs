@@ -1,5 +1,6 @@
 import {
   classicV1EditorSchema as classicV1EditorManifest,
+  defaultThemePageProps,
   generateThemeFromPrimary,
   inferSurfaceMode,
   type ThemeSurfaceMode,
@@ -270,6 +271,11 @@ export function themePalettePageProps(
     mutedColor: generated.muted,
     accentColor: generated.accent,
   };
+}
+
+/** Restore designed defaults for the current surface (seed colors, auto on). */
+export function themeResetPageProps(mode: ThemeSurfaceMode): Partial<StorefrontPageProps> {
+  return defaultThemePageProps(mode);
 }
 
 function getPathValue(source: unknown, path: string) {
