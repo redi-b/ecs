@@ -128,10 +128,11 @@ export type MerchantOrderDetailResult =
         | "commerce_credentials_invalid"
         | "commerce_credentials_missing"
         | "inventory_location_unavailable"
+        | "order_action_invalid"
         | "order_fulfillment_not_found"
         | "order_not_found"
         | "order_not_fulfillable";
-      status: 401 | 404 | 409 | 503;
+      status: 400 | 401 | 404 | 409 | 503;
     };
 
 export type MerchantOrderAction =

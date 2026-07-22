@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { commerceErrorStatus } from "../../adapters/medusa/map-medusa-failure.js";
 import type { PlatformAppOptions } from "../../app.js";
 import { getPaginationValue } from "../shared.js";
 import type { MerchantRouteApp, MerchantRouteHelpers } from "./context.js";
@@ -51,7 +52,7 @@ export function registerMerchantPromotionRoutes(
     });
     return result.ok
       ? context.json(result)
-      : context.json({ error: result.error }, statusFromResult(result.status));
+      : context.json({ error: result.error }, commerceErrorStatus(result.status));
   });
   app.post("/platform/merchant/promotions", async (context) => {
     const merchant = await helpers.getAuthorizedMerchantContext(context);
@@ -66,7 +67,7 @@ export function registerMerchantPromotionRoutes(
     });
     return result.ok
       ? context.json(result, 201)
-      : context.json({ error: result.error }, statusFromResult(result.status));
+      : context.json({ error: result.error }, commerceErrorStatus(result.status));
   });
   app.post("/platform/merchant/promotions/:promotionId", async (context) => {
     const merchant = await helpers.getAuthorizedMerchantContext(context);
@@ -82,7 +83,7 @@ export function registerMerchantPromotionRoutes(
     });
     return result.ok
       ? context.json(result)
-      : context.json({ error: result.error }, statusFromResult(result.status));
+      : context.json({ error: result.error }, commerceErrorStatus(result.status));
   });
   app.delete("/platform/merchant/promotions/:promotionId", async (context) => {
     const merchant = await helpers.getAuthorizedMerchantContext(context);
@@ -95,14 +96,8 @@ export function registerMerchantPromotionRoutes(
     });
     return result.ok
       ? context.json(result)
-      : context.json({ error: result.error }, statusFromResult(result.status));
+      : context.json({ error: result.error }, commerceErrorStatus(result.status));
   });
-}
-
-function statusFromResult(status: number): 400 | 401 | 404 | 503 {
-  if (status === 400 || status === 401 || status === 404 || status === 503) return status;
-  if (status >= 400 && status < 500) return 400;
-  return 503;
 }
 
 function toPromotionInput(data: z.infer<typeof promotionSchema>) {

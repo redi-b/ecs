@@ -5,6 +5,7 @@ import type {
   MerchantPromotionResult,
   MerchantPromotionsResult,
 } from "../../types/index.js";
+import { mapMedusaFailure } from "./map-medusa-failure.js";
 import { getAdminHeaders } from "./product/medusa-http.js";
 
 type Options = {
@@ -32,39 +33,24 @@ export function createMedusaPromotionService(options: Options) {
   const fetcher = options.fetcher ?? fetch;
   const base = options.medusaInternalUrl.replace(/\/$/, "");
   const headers = () => getAdminHeaders(options.adminApiToken ?? "");
-  /**
-   * Map Medusa failures to merchant-safe codes.
-   * Validation (400/422) must stay 4xx — never collapse to 503.
-   */
-  async function mapMedusaFailure(response?: Response | null): Promise<{
-    error: string;
-    ok: false;
-    status: number;
-  }> {
-    if (!response) {
-      return { error: "commerce_backend_unavailable", ok: false, status: 503 };
-    }
-    if (response.status === 401) {
-      return { error: "commerce_credentials_invalid", ok: false, status: 401 };
-    }
-    if (response.status === 404) {
-      return { error: "promotion_not_found", ok: false, status: 404 };
-    }
-    if (response.status === 400 || response.status === 422) {
-      const body = toRecord(await response.json().catch(() => ({})));
-      const blob = JSON.stringify(body).toLowerCase();
-      if (blob.includes("max_quantity")) {
-        return { error: "promotion_max_quantity_required", ok: false, status: 400 };
-      }
-      if (blob.includes("currency")) {
-        return { error: "promotion_currency_required", ok: false, status: 400 };
-      }
-      if (blob.includes("code") && (blob.includes("unique") || blob.includes("exist"))) {
-        return { error: "promotion_code_taken", ok: false, status: 400 };
-      }
-      return { error: "invalid_promotion", ok: false, status: 400 };
-    }
-    return { error: "commerce_backend_unavailable", ok: false, status: 503 };
+  /** Map Medusa failures; validation stays 4xx (never collapse to 503). */
+  function promotionFailure(response?: Response | null) {
+    return mapMedusaFailure(response, {
+      invalidError: "invalid_promotion",
+      notFoundError: "promotion_not_found",
+      refine: ({ blob }) => {
+        if (blob.includes("max_quantity")) {
+          return { error: "promotion_max_quantity_required", status: 400 };
+        }
+        if (blob.includes("currency")) {
+          return { error: "promotion_currency_required", status: 400 };
+        }
+        if (blob.includes("code") && (blob.includes("unique") || blob.includes("exist"))) {
+          return { error: "promotion_code_taken", status: 400 };
+        }
+        return null;
+      },
+    });
   }
 
   function isOwnedByTenant(raw: unknown, tenantId: string) {
@@ -93,7 +79,7 @@ export function createMedusaPromotionService(options: Options) {
     const response = await fetcher(`${base}/admin/promotions?${search}`, {
       headers: headers(),
     }).catch(() => null);
-    if (!response?.ok) return mapMedusaFailure(response);
+    if (!response?.ok) return promotionFailure(response);
     const data = toRecord(await response.json().catch(() => ({})));
     const all = (Array.isArray(data.promotions) ? data.promotions : [])
       .filter((item) => isOwnedByTenant(item, input.tenantId))
@@ -113,7 +99,7 @@ export function createMedusaPromotionService(options: Options) {
       `${base}/admin/promotions/${encodeURIComponent(id)}?fields=+application_method,+application_method.target_rules,+application_method.buy_rules,+campaign,+rules`,
       { headers: headers() },
     ).catch(() => null);
-    if (!response?.ok) return mapMedusaFailure(response);
+    if (!response?.ok) return promotionFailure(response);
     const raw = (await response.json().catch(() => ({}))).promotion;
     return isOwnedByTenant(raw, tenantId)
       ? { ok: true, promotion: normalizePromotion(raw) }
@@ -126,7 +112,7 @@ export function createMedusaPromotionService(options: Options) {
       headers: headers(),
       method: "POST",
     }).catch(() => null);
-    if (!response?.ok) return mapMedusaFailure(response);
+    if (!response?.ok) return promotionFailure(response);
     return {
       ok: true,
       promotion: normalizePromotion((await response.json().catch(() => ({}))).promotion),
@@ -143,7 +129,7 @@ export function createMedusaPromotionService(options: Options) {
       `${base}/admin/promotions/${encodeURIComponent(input.promotionId)}`,
       { body: JSON.stringify(toUpdatePayload(input)), headers: headers(), method: "POST" },
     ).catch(() => null);
-    if (!response?.ok) return mapMedusaFailure(response);
+    if (!response?.ok) return promotionFailure(response);
 
     const detailResponse = await fetcher(
       `${base}/admin/promotions/${encodeURIComponent(input.promotionId)}?fields=+campaign`,
@@ -184,7 +170,7 @@ export function createMedusaPromotionService(options: Options) {
     ).catch(() => null);
     return response?.ok
       ? { deleted: true, id: input.promotionId, ok: true }
-      : mapMedusaFailure(response);
+      : promotionFailure(response);
   }
 
   return { createPromotion, deletePromotion, listPromotions, updatePromotion };

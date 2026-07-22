@@ -419,8 +419,10 @@ export type PlatformAppOptions = {
               | "commerce_backend_unavailable"
               | "commerce_credentials_invalid"
               | "commerce_credentials_missing"
-              | "collection_not_found";
-            status: 401 | 404 | 503;
+              | "collection_not_found"
+              | "collection_write_invalid"
+              | "product_not_found";
+            status: 400 | 401 | 404 | 503;
           }
       >)
     | undefined;
@@ -436,8 +438,9 @@ export type PlatformAppOptions = {
               | "commerce_backend_unavailable"
               | "commerce_credentials_invalid"
               | "commerce_credentials_missing"
-              | "category_not_found";
-            status: 401 | 404 | 503;
+              | "category_not_found"
+              | "category_write_invalid";
+            status: 400 | 401 | 404 | 503;
           }
       >)
     | undefined;

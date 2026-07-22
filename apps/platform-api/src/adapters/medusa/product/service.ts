@@ -11,6 +11,7 @@ import type {
   MerchantProductsResult,
   MerchantProductWriteResult,
 } from "../../../types/index.js";
+import { mapMedusaHttpFailure } from "../map-medusa-failure.js";
 import { getAdminHeaders, missingCredentials, requestMedusa } from "./medusa-http.js";
 import {
   belongsToTenant,
@@ -183,8 +184,9 @@ export function createMedusaProductService(options: {
             | "commerce_backend_unavailable"
             | "commerce_credentials_invalid"
             | "commerce_credentials_missing"
-            | "category_not_found";
-          status: 401 | 404 | 503;
+            | "category_not_found"
+            | "category_write_invalid";
+          status: 400 | 401 | 404 | 503;
         }
     > => {
       if (!options.adminApiToken?.trim()) return missingCredentials();
@@ -210,12 +212,18 @@ export function createMedusaProductService(options: {
           method: "POST",
         });
         if (!response?.ok) {
-          if (response?.status === 404) {
-            return { error: "category_not_found", ok: false, status: 404 };
-          }
-          return response?.status === 401
-            ? { error: "commerce_credentials_invalid", ok: false, status: 401 }
-            : { error: "commerce_backend_unavailable", ok: false, status: 503 };
+          return mapMedusaHttpFailure(response, {
+            invalidError: "category_write_invalid",
+            notFoundError: "category_not_found",
+          }) as {
+            ok: false;
+            error:
+              | "commerce_backend_unavailable"
+              | "commerce_credentials_invalid"
+              | "category_not_found"
+              | "category_write_invalid";
+            status: 400 | 401 | 404 | 503;
+          };
         }
       }
       return { ok: true };
@@ -346,8 +354,10 @@ export function createMedusaProductService(options: {
             | "commerce_backend_unavailable"
             | "commerce_credentials_invalid"
             | "commerce_credentials_missing"
-            | "collection_not_found";
-          status: 401 | 404 | 503;
+            | "collection_not_found"
+            | "collection_write_invalid"
+            | "product_not_found";
+          status: 400 | 401 | 404 | 503;
         }
     > => {
       if (!options.adminApiToken?.trim()) return missingCredentials();
@@ -373,7 +383,7 @@ export function createMedusaProductService(options: {
           salesChannelId: input.salesChannelId,
         });
         if (!inChannel) {
-          return { error: "commerce_backend_unavailable", ok: false, status: 503 };
+          return { error: "product_not_found", ok: false, status: 404 };
         }
       }
 
@@ -389,14 +399,19 @@ export function createMedusaProductService(options: {
         headers: getAdminHeaders(options.adminApiToken),
         method: "POST",
       });
-      if (response.status === 401) {
-        return { ok: false, error: "commerce_credentials_invalid", status: 401 };
-      }
-      if (response.status === 404) {
-        return { ok: false, error: "collection_not_found", status: 404 };
-      }
       if (!response.ok) {
-        return { ok: false, error: "commerce_backend_unavailable", status: 503 };
+        return mapMedusaHttpFailure(response, {
+          invalidError: "collection_write_invalid",
+          notFoundError: "collection_not_found",
+        }) as {
+          ok: false;
+          error:
+            | "commerce_backend_unavailable"
+            | "commerce_credentials_invalid"
+            | "collection_not_found"
+            | "collection_write_invalid";
+          status: 400 | 401 | 404 | 503;
+        };
       }
       return { ok: true };
     },

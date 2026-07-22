@@ -4,6 +4,7 @@ import type {
   MerchantProductStockResult,
   MerchantProductStockUpdateResult,
 } from "../../../types/index.js";
+import { mapMedusaHttpFailure } from "../map-medusa-failure.js";
 import { getAdminHeaders, requestMedusa } from "./medusa-http.js";
 import {
   getSingleVariantInventoryItem,
@@ -433,14 +434,7 @@ export async function initializeProductStockLevels(
 }
 
 export function getStockWriteError(response: Response): MerchantProductStockUpdateResult {
-  if (response.status === 401) {
-    return {
-      ok: false,
-      error: "commerce_credentials_invalid",
-      status: 401,
-    };
-  }
-
+  // Inventory 404 is setup incompleteness (level missing), not a merchant validation mistake.
   if (response.status === 404) {
     return {
       ok: false,
@@ -449,9 +443,8 @@ export function getStockWriteError(response: Response): MerchantProductStockUpda
     };
   }
 
-  return {
-    ok: false,
-    error: "commerce_backend_unavailable",
-    status: 503,
-  };
+  return mapMedusaHttpFailure(response, {
+    invalidError: "invalid_stocked_quantity",
+    notFoundError: "product_inventory_unavailable",
+  }) as Extract<MerchantProductStockUpdateResult, { ok: false }>;
 }

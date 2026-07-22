@@ -276,6 +276,21 @@ export function createMedusaOrderService(options: {
       }
 
       if (!response.ok) {
+        // Validation / state conflicts are merchant-recoverable, not outages.
+        if (response.status === 400 || response.status === 422 || response.status === 409) {
+          return {
+            ok: false,
+            error: "order_not_fulfillable",
+            status: 409,
+          };
+        }
+        if (response.status >= 400 && response.status < 500) {
+          return {
+            ok: false,
+            error: "order_action_invalid",
+            status: 400,
+          };
+        }
         return {
           ok: false,
           error: "commerce_backend_unavailable",

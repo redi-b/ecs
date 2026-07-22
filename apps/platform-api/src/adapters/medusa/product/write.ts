@@ -5,6 +5,7 @@ import type {
   MerchantProductCollectionWriteResult,
   MerchantProductWriteResult,
 } from "../../../types/index.js";
+import { mapMedusaHttpFailure } from "../map-medusa-failure.js";
 import {
   normalizeProduct,
   normalizeProductCategory,
@@ -199,130 +200,45 @@ export async function parseProductCollectionWriteResponse(
 }
 
 export function getWriteError(response: Response): MerchantProductWriteResult {
-  if (response.status === 401) {
-    return {
-      ok: false,
-      error: "commerce_credentials_invalid",
-      status: 401,
-    };
-  }
-
-  if (response.status === 404) {
-    return {
-      ok: false,
-      error: "product_not_found",
-      status: 404,
-    };
-  }
-
-  if (response.status === 409) {
-    return {
-      ok: false,
-      error: "product_conflict",
-      status: 409,
-    };
-  }
-
-  if (response.status === 400 || response.status === 422) {
-    return {
-      ok: false,
-      error: "product_write_invalid",
-      status: response.status,
-    };
-  }
-
-  return {
-    ok: false,
-    error: "commerce_backend_unavailable",
-    status: 503,
-  };
+  return mapMedusaHttpFailure(response, {
+    conflictError: "product_conflict",
+    invalidError: "product_write_invalid",
+    notFoundError: "product_not_found",
+  }) as Extract<MerchantProductWriteResult, { ok: false }>;
 }
 
 export function getCategoryWriteError(response: Response): MerchantProductCategoryWriteResult {
-  if (response.status === 401) {
-    return {
-      ok: false,
-      error: "commerce_credentials_invalid",
-      status: 401,
-    };
-  }
-
-  return {
-    ok: false,
-    error: "commerce_backend_unavailable",
-    status: 503,
-  };
+  return mapMedusaHttpFailure(response, {
+    conflictError: "category_conflict",
+    invalidError: "category_write_invalid",
+    notFoundError: "category_not_found",
+  }) as Extract<MerchantProductCategoryWriteResult, { ok: false }>;
 }
 
 export function getCollectionWriteError(response: Response): MerchantProductCollectionWriteResult {
-  if (response.status === 401) {
-    return {
-      ok: false,
-      error: "commerce_credentials_invalid",
-      status: 401,
-    };
-  }
-
-  return {
-    ok: false,
-    error: "commerce_backend_unavailable",
-    status: 503,
-  };
+  return mapMedusaHttpFailure(response, {
+    conflictError: "collection_conflict",
+    invalidError: "collection_write_invalid",
+    notFoundError: "collection_not_found",
+  }) as Extract<MerchantProductCollectionWriteResult, { ok: false }>;
 }
 
 export function getDeleteError(
   response: Response,
   resourceName: "product" | "category" | "collection",
 ): Extract<MerchantDeleteResult, { ok: false }> {
-  if (response.status === 401) {
-    return {
-      ok: false,
-      error: "commerce_credentials_invalid",
-      status: 401,
-    };
-  }
-
-  if (response.status === 404) {
-    return {
-      ok: false,
-      error: `${resourceName}_not_found` as const,
-      status: 404,
-    };
-  }
-
-  return {
-    ok: false,
-    error: "commerce_backend_unavailable",
-    status: 503,
-  };
+  return mapMedusaHttpFailure(response, {
+    invalidError: `${resourceName}_write_invalid`,
+    notFoundError: `${resourceName}_not_found`,
+  }) as Extract<MerchantDeleteResult, { ok: false }>;
 }
 
 export async function parseDeleteResponse(
   response: Response,
   resourceName: "product" | "category" | "collection",
 ): Promise<MerchantDeleteResult> {
-  if (response.status === 401) {
-    return {
-      ok: false,
-      error: "commerce_credentials_invalid",
-      status: 401,
-    };
-  }
-
-  if (response.status === 404) {
-    return {
-      ok: false,
-      error: `${resourceName}_not_found` as const,
-      status: 404,
-    };
-  }
-
   if (!response.ok) {
-    return {
-      ok: false,
-      error: "commerce_backend_unavailable",
-      status: 503,
-    };
+    return getDeleteError(response, resourceName);
   }
 
   const data = await response.json().catch(() => undefined);
@@ -348,20 +264,11 @@ export async function parseBatchDeleteResponse(
   response: Response,
   requestedIds: string[],
 ): Promise<MerchantBatchDeleteResult> {
-  if (response.status === 401) {
-    return {
-      ok: false,
-      error: "commerce_credentials_invalid",
-      status: 401,
-    };
-  }
-
   if (!response.ok) {
-    return {
-      ok: false,
-      error: "commerce_backend_unavailable",
-      status: 503,
-    };
+    return mapMedusaHttpFailure(response, {
+      invalidError: "product_write_invalid",
+      notFoundError: "product_not_found",
+    }) as Extract<MerchantBatchDeleteResult, { ok: false }>;
   }
 
   const data = await response.json().catch(() => undefined);

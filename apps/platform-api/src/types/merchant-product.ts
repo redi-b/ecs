@@ -122,8 +122,11 @@ export type MerchantProductCategoryWriteResult =
       error:
         | "commerce_backend_unavailable"
         | "commerce_credentials_invalid"
-        | "commerce_credentials_missing";
-      status: 401 | 503;
+        | "commerce_credentials_missing"
+        | "category_conflict"
+        | "category_not_found"
+        | "category_write_invalid";
+      status: 400 | 401 | 404 | 409 | 422 | 503;
     };
 
 export type MerchantProductCollection = {
@@ -165,8 +168,11 @@ export type MerchantProductCollectionWriteResult =
       error:
         | "commerce_backend_unavailable"
         | "commerce_credentials_invalid"
-        | "commerce_credentials_missing";
-      status: 401 | 503;
+        | "commerce_credentials_missing"
+        | "collection_conflict"
+        | "collection_not_found"
+        | "collection_write_invalid";
+      status: 400 | 401 | 404 | 409 | 422 | 503;
     };
 
 export type MerchantProductStock = {
@@ -192,10 +198,11 @@ export type MerchantProductStockResult =
         | "commerce_credentials_invalid"
         | "commerce_credentials_missing"
         | "inventory_location_unavailable"
+        | "invalid_stocked_quantity"
         | "product_inventory_unavailable"
         | "product_not_found"
         | "product_variant_unsupported";
-      status: 401 | 404 | 409 | 503;
+      status: 400 | 401 | 404 | 409 | 503;
     };
 
 export type MerchantProductStockUpdateResult = MerchantProductStockResult;
@@ -213,9 +220,12 @@ export type MerchantDeleteResult =
         | "commerce_credentials_invalid"
         | "commerce_credentials_missing"
         | "product_not_found"
+        | "product_write_invalid"
         | "category_not_found"
-        | "collection_not_found";
-      status: 401 | 404 | 503;
+        | "category_write_invalid"
+        | "collection_not_found"
+        | "collection_write_invalid";
+      status: 400 | 401 | 404 | 503;
     };
 
 export type MerchantBatchDeleteResult =
@@ -229,6 +239,8 @@ export type MerchantBatchDeleteResult =
       error:
         | "commerce_backend_unavailable"
         | "commerce_credentials_invalid"
-        | "commerce_credentials_missing";
-      status: 401 | 503;
+        | "commerce_credentials_missing"
+        | "product_not_found"
+        | "product_write_invalid";
+      status: 400 | 401 | 404 | 503;
     };

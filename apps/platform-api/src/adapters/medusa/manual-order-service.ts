@@ -122,11 +122,13 @@ export function createMedusaManualOrderService(options: Options) {
 
     if (!created?.ok) {
       if (!created) return unavailable();
-      if (created.status === 401) return unavailable("commerce_credentials_invalid");
-      if (created.status === 400 || created.status === 422) {
+      if (created.status === 401 || created.status === 403) {
+        return { error: "commerce_credentials_invalid", ok: false, status: 401 };
+      }
+      if (created.status === 400 || created.status === 422 || (created.status >= 400 && created.status < 500 && created.status !== 404)) {
         return { error: "invalid_manual_order", ok: false, status: 400 };
       }
-      // Plugin may be missing
+      // Plugin may be missing — treat as setup outage, not merchant validation.
       if (created.status === 404) {
         return { error: "draft_order_unavailable", ok: false, status: 503 };
       }
@@ -163,7 +165,11 @@ export function createMedusaManualOrderService(options: Options) {
 
     if (!converted?.ok) {
       // Leave draft if convert fails — surface a clear error.
-      if (converted?.status === 400 || converted?.status === 422) {
+      if (
+        converted?.status === 400 ||
+        converted?.status === 422 ||
+        (converted != null && converted.status >= 400 && converted.status < 500)
+      ) {
         return { error: "manual_order_convert_failed", ok: false, status: 400 };
       }
       return unavailable("manual_order_convert_failed");

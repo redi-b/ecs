@@ -243,6 +243,20 @@ export async function deliverMerchantOrderFulfillment(
   }
 
   if (!response.ok) {
+    if (response.status === 400 || response.status === 422) {
+      return {
+        ok: false,
+        error: "order_not_fulfillable",
+        status: 409,
+      };
+    }
+    if (response.status >= 400 && response.status < 500) {
+      return {
+        ok: false,
+        error: "order_action_invalid",
+        status: 400,
+      };
+    }
     return {
       ok: false,
       error: "commerce_backend_unavailable",
