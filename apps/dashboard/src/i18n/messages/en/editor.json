@@ -26,7 +26,11 @@
     "pauseShop": "Pause shop",
     "pauseTitle": "Pause the live shop?",
     "pauseDescription": "Customers will see that the store is unavailable. Your draft stays saved so you can publish again anytime.",
-    "pauseConfirm": "Pause shop"
+    "pauseConfirm": "Pause shop",
+    "leaveTitle": "Leave without saving?",
+    "leaveDescription": "You have unsaved editor changes. If you leave now, those changes will be lost.",
+    "stay": "Stay",
+    "leave": "Leave"
   },
   "status": {
     "live": "Live",
