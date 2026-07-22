@@ -6,7 +6,7 @@ import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { preventDialogDismissForPortals } from "@/lib/dialog-outside";
 import { FloatingPortalContainerProvider } from "@/lib/floating-portal-container";
-import { isNestedOverlayActive } from "@/lib/nested-overlay";
+import { isNestedOverlayActive, isNestedOverlayOpen } from "@/lib/nested-overlay";
 import { cn } from "@/lib/utils";
 
 function Sheet({ ...props }: React.ComponentProps<typeof SheetPrimitive.Root>) {
@@ -78,7 +78,7 @@ function SheetContent({
           setPortalContainer(node);
         }}
         onEscapeKeyDown={(event) => {
-          if (isNestedOverlayActive()) {
+          if (isNestedOverlayOpen()) {
             event.preventDefault();
           }
           onEscapeKeyDown?.(event);

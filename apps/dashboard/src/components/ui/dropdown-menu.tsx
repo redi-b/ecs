@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 
 function DropdownMenu({
   onOpenChange,
+  open,
   ...props
 }: React.ComponentProps<typeof DropdownMenuPrimitive.Root>) {
   const sessionRef = React.useRef<NestedOverlaySession>({ isOpen: false, layerId: null });
@@ -24,13 +25,19 @@ function DropdownMenu({
     };
   }, []);
 
+  React.useEffect(() => {
+    if (open === undefined) return;
+    sessionRef.current = applyNestedOverlaySession(open, sessionRef.current);
+  }, [open]);
+
   return (
     <DropdownMenuPrimitive.Root
       data-slot="dropdown-menu"
-      onOpenChange={(open) => {
-        sessionRef.current = applyNestedOverlaySession(open, sessionRef.current);
-        onOpenChange?.(open);
+      onOpenChange={(next) => {
+        sessionRef.current = applyNestedOverlaySession(next, sessionRef.current);
+        onOpenChange?.(next);
       }}
+      {...(open !== undefined ? { open } : {})}
       {...props}
     />
   );
