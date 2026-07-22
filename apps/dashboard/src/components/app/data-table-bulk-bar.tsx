@@ -46,8 +46,7 @@ export function DataTableBulkBar({
   const [displayCount, setDisplayCount] = useState(selectedCount);
   const [mounted, setMounted] = useState(false);
   const isVisible = selectedCount > 0;
-  // Bulk bar is z-100; mobile sidebar sheet is z-50. Hide while the nav is open
-  // so the dock is not layered over the scrim / does not dismiss the sheet.
+  // Hide above mobile nav sheet (bulk bar stacks higher than the sheet scrim).
   const hiddenForMobileSidebar = isMobile && openMobile;
   const showBar = isVisible && !hiddenForMobileSidebar;
 
@@ -112,9 +111,9 @@ export function DataTableBulkBar({
             <div
               className={cn(
                 "grid grid-cols-2 gap-1.5 sm:flex sm:flex-nowrap sm:items-center sm:gap-1.5",
-                // Unwrap the common single-div action wrapper so buttons participate in the grid/flex.
+
                 "[&>div]:contents",
-                // Solid faces so outline chips stay readable over the table.
+
                 "[&_button]:w-full sm:[&_button]:w-auto",
                 "[&_button[data-variant=outline]]:bg-card",
                 "[&_button[data-variant=destructive-outline]]:bg-card",

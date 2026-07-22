@@ -33,7 +33,7 @@ type InboxDetail = {
 
 const POLL_MS = 45_000;
 
-/** Labels we suppress in the compact popover (noise / footer prose). */
+/** Compact popover: omit these detail labels. */
 const SKIP_BODY_PREFIXES = [
   "open the order",
   "you can",
@@ -44,7 +44,7 @@ const SKIP_BODY_PREFIXES = [
   "open settings",
 ];
 
-/** Prefer these labels first when many detail rows exist. */
+/** Priority order when many detail rows exist. */
 const DETAIL_PRIORITY = [
   "order",
   "amount",
@@ -566,7 +566,7 @@ export function NotificationCenter() {
                           <span
                             className={cn(
                               "shrink-0 text-[11px] tabular-nums whitespace-nowrap text-muted-foreground transition-opacity",
-                              // Room for absolute check on touch; swap with check on desktop hover.
+
                               unread &&
                                 "pr-8 sm:pr-0 sm:group-hover/item:opacity-0 sm:group-focus-within/item:opacity-0",
                             )}

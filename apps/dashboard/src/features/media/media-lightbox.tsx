@@ -85,7 +85,7 @@ export function MediaPreviewLightbox({
       setSnapshot({ index, items });
       return;
     }
-    // Drop snapshot after exit animation so we do not leave a closed Dialog root mounted.
+
     const timer = window.setTimeout(() => setSnapshot(null), 220);
     return () => window.clearTimeout(timer);
   }, [index, isOpen, items]);

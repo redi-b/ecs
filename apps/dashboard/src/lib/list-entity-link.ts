@@ -1,9 +1,4 @@
-/**
- * Shared identity-link styling for merchant list tables.
- *
- * Default text, primary on hover — matches products and avoids always-on
- * primary/underline which is noisier in dense tables.
- */
+/** List-table identity links: muted by default, primary on hover. */
 export const listEntityLinkClassName =
   "font-medium text-foreground transition-colors hover:text-primary";
 

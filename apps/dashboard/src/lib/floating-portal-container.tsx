@@ -2,7 +2,6 @@
 
 import * as React from "react";
 
-/** Host node for floating pickers portaled inside modal dialogs/sheets. */
 const FloatingPortalContainerContext = React.createContext<HTMLElement | null>(null);
 
 export function FloatingPortalContainerProvider({

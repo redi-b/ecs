@@ -177,7 +177,7 @@ export function DateTimePicker({
         )}
         data-datetime-picker=""
         onOpenAutoFocus={(event) => event.preventDefault()}
-        // Isolate wheel/touch from parent dialog scroll / dismiss handlers.
+
         onTouchMove={(event) => event.stopPropagation()}
         onWheel={(event) => event.stopPropagation()}
         sideOffset={8}
@@ -315,7 +315,7 @@ function TimeColumn({
   const listRef = useRef<HTMLDivElement>(null);
   const lastCentered = useRef<number | null>(null);
 
-  // Center the active value when it changes — via scrollTop so we don't scroll parent dialogs.
+
   useEffect(() => {
     const root = listRef.current;
     if (!root) return;
@@ -341,7 +341,7 @@ function TimeColumn({
         className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-1.5 [scrollbar-gutter:stable] [-webkit-overflow-scrolling:touch]"
         onTouchMove={(event) => event.stopPropagation()}
         onWheel={(event) => {
-          // Keep the wheel on this list; don't let the dialog/page steal it.
+
           event.stopPropagation();
         }}
         ref={listRef}

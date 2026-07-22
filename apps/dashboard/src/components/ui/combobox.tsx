@@ -26,7 +26,6 @@ function ComboboxTrigger({
   endIcon,
   ...props
 }: ComboboxPrimitive.Trigger.Props & {
-  /** Trailing icon: chevron (default), edit, none, or custom. */
   endIcon?: "chevron" | "edit" | false | null | React.ReactNode;
 }) {
   const icon =
@@ -250,7 +249,6 @@ function ComboboxChips({
     <ComboboxPrimitive.Chips
       data-slot="combobox-chips"
       className={cn(
-        // Match dashboard inputs: full pill shell, not squared chip boxes.
         "flex min-h-9 flex-wrap items-center gap-1.5 rounded-full border border-input bg-transparent bg-clip-padding px-2.5 py-1.5 text-sm transition-colors focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50 has-aria-invalid:border-destructive has-aria-invalid:ring-3 has-aria-invalid:ring-destructive/20 has-data-[slot=combobox-chip]:px-2 dark:bg-input/30 dark:has-aria-invalid:border-destructive/50 dark:has-aria-invalid:ring-destructive/40",
         className,
       )}

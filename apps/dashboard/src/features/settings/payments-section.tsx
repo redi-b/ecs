@@ -117,7 +117,7 @@ export function PaymentsSection({ initialPayment, supportHref = null }: Payments
         (typeof data?.message === "string" && data.message) ||
         response.statusText ||
         "payments_status_unavailable";
-      // Avoid infinite "Loading…" when the BFF/platform route is missing or failing.
+
       setPayment(emptyPaymentsStatus());
       setLoadError(code);
     } catch {
