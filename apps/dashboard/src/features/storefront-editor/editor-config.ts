@@ -57,5 +57,5 @@ export const SETTINGS_SECTION_LABELS: Record<string, string> = {
   trust: "Trust row",
   testimonials: "Testimonials",
   footer: "Footer",
-  theme: "Theme",
+  theme: "Appearance",
 };
