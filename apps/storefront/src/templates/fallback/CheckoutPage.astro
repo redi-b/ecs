@@ -43,8 +43,21 @@ const pickupEnabled = delivery?.pickupEnabled === true;
 const fulfillmentAvailable = deliveryEnabled || pickupEnabled;
 const phoneRequired = delivery?.phoneConfirmationRequired !== false;
 const deliveryChoiceDefault = deliveryEnabled ? "delivery" : pickupEnabled ? "pickup" : "delivery";
+const paidOptions = shippingOptions.filter(
+  (option) => (option.amount == null || option.amount > 0) && !/pickup|collect/i.test(option.name ?? ""),
+);
+const freePickupOptions = shippingOptions.filter(
+  (option) =>
+    (option.amount != null && option.amount === 0) || /pickup|collect/i.test(option.name ?? ""),
+);
+const freePickupOption = freePickupOptions[0] ?? null;
+const deliveryFeeOptions = paidOptions.length > 0 ? paidOptions : shippingOptions;
 const canPlaceOrder =
-  items.length > 0 && shippingOptions.length > 0 && fulfillmentAvailable;
+  items.length > 0 &&
+  fulfillmentAvailable &&
+  (deliveryChoiceDefault === "pickup"
+    ? Boolean(freePickupOption) || shippingOptions.length > 0
+    : deliveryFeeOptions.length > 0);
 ---
 
 <StoreShell
@@ -206,11 +219,21 @@ const canPlaceOrder =
               </div>
             )}
 
-            {shippingOptions.length > 0 && (
-              <div class="sf-field">
-                <label for="shippingOptionId">Delivery fee</label>
-                <select id="shippingOptionId" name="shippingOptionId" required>
-                  {shippingOptions.map((option) => {
+            <div
+              class="sf-field"
+              data-fee-delivery
+              hidden={deliveryChoiceDefault === "pickup"}
+              style={deliveryChoiceDefault === "pickup" ? "display:none" : undefined}
+            >
+              <label for="shippingOptionId">Delivery fee</label>
+              {deliveryFeeOptions.length > 0 ? (
+                <select
+                  id="shippingOptionId"
+                  name="shippingOptionId"
+                  required={deliveryChoiceDefault === "delivery"}
+                  disabled={deliveryChoiceDefault === "pickup"}
+                >
+                  {deliveryFeeOptions.map((option) => {
                     const rawName = option.name?.trim() || "Standard";
                     const name = /shipping/i.test(rawName) ? "Standard" : rawName;
                     return (
@@ -223,8 +246,24 @@ const canPlaceOrder =
                     );
                   })}
                 </select>
-              </div>
-            )}
+              ) : (
+                <p class="sf-muted">No delivery fee option is available yet.</p>
+              )}
+            </div>
+            <div
+              class="sf-field"
+              data-fee-pickup
+              hidden={deliveryChoiceDefault !== "pickup"}
+              style={deliveryChoiceDefault !== "pickup" ? "display:none" : undefined}
+            >
+              <label>Pickup fee</label>
+              <p class="sf-muted">Free · collect at the shop</p>
+              {freePickupOption ? (
+                <input type="hidden" name="shippingOptionId" value={freePickupOption.id} data-pickup-option />
+              ) : deliveryFeeOptions[0] ? (
+                <input type="hidden" name="shippingOptionId" value={deliveryFeeOptions[0].id} data-pickup-option />
+              ) : null}
+            </div>
 
             <div class="sf-actions">
               {payment.cod && canPlaceOrder && (
@@ -279,11 +318,15 @@ const canPlaceOrder =
     (function () {
       var select = document.getElementById("deliveryChoice");
       if (!select) return;
+      function setVisible(el, on) {
+        if (!el) return;
+        el.hidden = !on;
+        el.style.display = on ? "" : "none";
+      }
       function sync() {
         var isDelivery = select.value === "delivery";
         document.querySelectorAll("[data-delivery-only]").forEach(function (el) {
-          el.hidden = !isDelivery;
-          el.style.display = isDelivery ? "" : "none";
+          setVisible(el, isDelivery);
           el.querySelectorAll("input, textarea, select").forEach(function (field) {
             field.disabled = !isDelivery;
             if (field.id === "landmark") {
@@ -297,10 +340,17 @@ const canPlaceOrder =
             }
           });
         });
-        var feeLabel = document.querySelector('label[for="shippingOptionId"]');
-        if (feeLabel) {
-          feeLabel.textContent = isDelivery ? "Delivery fee" : "Order fee";
+        setVisible(document.querySelector("[data-fee-delivery]"), isDelivery);
+        setVisible(document.querySelector("[data-fee-pickup]"), !isDelivery);
+        var feeSelect = document.getElementById("shippingOptionId");
+        if (feeSelect) {
+          feeSelect.disabled = !isDelivery;
+          feeSelect.required = isDelivery;
+          if (!isDelivery) feeSelect.removeAttribute("required");
         }
+        document.querySelectorAll("[data-pickup-option]").forEach(function (input) {
+          input.disabled = isDelivery;
+        });
       }
       select.addEventListener("change", sync);
       sync();

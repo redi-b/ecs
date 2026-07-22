@@ -144,8 +144,77 @@ function getMedusaPassthroughResponse(response: Response) {
   });
 }
 
+async function resolveFreePickupOptionId(options: {
+  cartId: string;
+  currencyCode: string;
+  deliveryShippingOptionId?: string | null | undefined;
+  ensurePickupOption?:
+    | ((input: {
+        currencyCode: string;
+        deliveryShippingOptionId: string;
+      }) => Promise<{ ok: true; pickupOptionId: string } | { ok: false }>)
+    | undefined;
+  medusaInternalUrl: string;
+  medusaPublishableKeyId: string;
+  medusaStoreFetch: typeof fetch;
+}): Promise<string | null> {
+  try {
+    const listUrl = new URL(options.medusaInternalUrl);
+    listUrl.pathname = "/store/shipping-options";
+    listUrl.searchParams.set("cart_id", options.cartId);
+
+    const listResponse = await options.medusaStoreFetch(
+      new Request(listUrl, {
+        headers: {
+          "x-publishable-api-key": options.medusaPublishableKeyId,
+        },
+        method: "GET",
+      }),
+    );
+
+    if (listResponse.ok) {
+      const data = await listResponse.json().catch(() => null);
+      const raw =
+        data && typeof data === "object"
+          ? ((data as { shipping_options?: unknown; shippingOptions?: unknown }).shipping_options ??
+            (data as { shippingOptions?: unknown }).shippingOptions)
+          : null;
+      const list = Array.isArray(raw) ? raw : [];
+      for (const item of list) {
+        if (!item || typeof item !== "object") continue;
+        const row = item as { id?: unknown; name?: unknown; amount?: unknown };
+        const id = typeof row.id === "string" ? row.id : null;
+        const name = typeof row.name === "string" ? row.name : "";
+        const amount = typeof row.amount === "number" ? row.amount : null;
+        if (id && (amount === 0 || /pickup|collect/i.test(name))) {
+          return id;
+        }
+      }
+    }
+
+    if (options.ensurePickupOption && options.deliveryShippingOptionId) {
+      const ensured = await options.ensurePickupOption({
+        currencyCode: options.currencyCode,
+        deliveryShippingOptionId: options.deliveryShippingOptionId,
+      });
+      if (ensured.ok) return ensured.pickupOptionId;
+    }
+  } catch {
+    // Fall through to client-provided option id.
+  }
+
+  return null;
+}
+
 export async function completeCodCheckout(options: {
   delivery: NonNullable<PlatformAppOptions["getDeliverySettings"]>;
+  deliveryShippingOptionId?: string | null | undefined;
+  ensurePickupOption?:
+    | ((input: {
+        currencyCode: string;
+        deliveryShippingOptionId: string;
+      }) => Promise<{ ok: true; pickupOptionId: string } | { ok: false }>)
+    | undefined;
   medusaInternalUrl: string;
   medusaPublishableKeyId: string;
   medusaStoreFetch: typeof fetch;
@@ -179,6 +248,22 @@ export async function completeCodCheckout(options: {
 
   if (input.deliveryChoice === "pickup" && !deliverySettings.pickupEnabled) {
     return Response.json({ error: "pickup_unavailable" }, { status: 409 });
+  }
+
+  // Pickup is always free: force a zero-fee / pickup-named option when available.
+  if (input.deliveryChoice === "pickup") {
+    const freeId = await resolveFreePickupOptionId({
+      cartId: input.cartId,
+      deliveryShippingOptionId: options.deliveryShippingOptionId,
+      ensurePickupOption: options.ensurePickupOption,
+      medusaInternalUrl: options.medusaInternalUrl,
+      medusaPublishableKeyId: options.medusaPublishableKeyId,
+      medusaStoreFetch: options.medusaStoreFetch,
+      currencyCode: deliverySettings.currency || "etb",
+    });
+    if (freeId) {
+      input.shippingOptionId = freeId;
+    }
   }
 
   if (deliverySettings.phoneConfirmationRequired && !input.customer.phone.trim()) {

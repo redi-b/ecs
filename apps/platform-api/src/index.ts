@@ -10,7 +10,10 @@ import {
 } from "./adapters/chapa/payment-service.js";
 import { resolveMedusaAdminToken } from "./adapters/medusa/admin-token.js";
 import { createMedusaCommerceProvisioningClient } from "./adapters/medusa/commerce-provisioning.js";
-import { createMedusaShippingPriceClient } from "./adapters/medusa/update-shipping-price.js";
+import {
+  createMedusaEnsurePickupOptionClient,
+  createMedusaShippingPriceClient,
+} from "./adapters/medusa/update-shipping-price.js";
 import { createMedusaCustomerService } from "./adapters/medusa/customer-service.js";
 import { createMedusaManualOrderService } from "./adapters/medusa/manual-order-service.js";
 import { createMedusaPromotionService } from "./adapters/medusa/promotion-service.js";
@@ -334,6 +337,10 @@ const provisionCommerceResources = createMedusaCommerceProvisioningClient({
   medusaInternalUrl,
 });
 const updateTenantShippingPrice = createMedusaShippingPriceClient({
+  internalApiToken: platformInternalApiToken,
+  medusaInternalUrl,
+});
+const ensureTenantPickupOption = createMedusaEnsurePickupOptionClient({
   internalApiToken: platformInternalApiToken,
   medusaInternalUrl,
 });
@@ -798,6 +805,15 @@ const app = createPlatformApp({
   submitPaymentOnboarding: paymentOnboardingService.submitPaymentOnboarding,
   updateBillingInvoiceStatus: billingService.updateBillingInvoiceStatus,
   updateDeliverySettings: deliverySettingsService.updateDeliverySettings,
+  ensurePickupOption: async (input) => {
+    const result = await ensureTenantPickupOption(input);
+    if (!result.ok) return { ok: false as const };
+    return {
+      ok: true as const,
+      pickupOptionId: result.pickupOptionId,
+      created: result.created,
+    };
+  },
   syncDeliveryShippingPrice: async (input) => {
     const commerce = await getTenantCommerceContext({
       tenantId: input.tenantId,
@@ -821,6 +837,18 @@ const app = createPlatformApp({
       logger.warn(
         { tenantId: input.tenantId, error: result.error },
         "delivery_fee_sync_failed",
+      );
+    }
+
+    // Pickup is free: ensure a zero-amount Store Pickup option exists for older shops.
+    const pickup = await ensureTenantPickupOption({
+      currencyCode: input.currencyCode,
+      deliveryShippingOptionId: commerce.context.medusaShippingOptionId,
+    });
+    if (!pickup.ok) {
+      logger.warn(
+        { tenantId: input.tenantId, error: pickup.error },
+        "pickup_option_ensure_failed",
       );
     }
   },
