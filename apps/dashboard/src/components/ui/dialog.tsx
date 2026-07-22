@@ -2,9 +2,11 @@
 
 import { XIcon } from "lucide-react";
 import { Dialog as DialogPrimitive } from "radix-ui";
-import type * as React from "react";
+import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { preventDialogDismissForPortals } from "@/lib/dialog-outside";
+import { FloatingPortalContainerProvider } from "@/lib/floating-portal-container";
+import { isNestedOverlayActive } from "@/lib/nested-overlay";
 import { cn } from "@/lib/utils";
 
 function Dialog({ ...props }: React.ComponentProps<typeof DialogPrimitive.Root>) {
@@ -47,22 +49,36 @@ function DialogContent({
   onInteractOutside,
   onPointerDownOutside,
   onFocusOutside,
+  onEscapeKeyDown,
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Content> & {
   showCloseButton?: boolean;
   /** Raise stacking for nested full-screen layers (e.g. media lightbox). */
   overlayClassName?: string;
 }) {
+  const [portalContainer, setPortalContainer] = React.useState<HTMLElement | null>(null);
+
   return (
     <DialogPortal>
       <DialogOverlay className={overlayClassName} />
       <DialogPrimitive.Content
         data-slot="dialog-content"
         className={cn(
-          "fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-xl bg-popover p-4 text-sm text-popover-foreground ring-1 ring-foreground/10 duration-200 ease-out outline-none sm:max-w-sm data-open:animate-in data-open:fade-in-0 data-open:zoom-in-96 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-96",
+          // overflow-visible: nested combobox/select panels portal into this node and may extend past the card.
+          "fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 overflow-visible rounded-xl bg-popover p-4 text-sm text-popover-foreground ring-1 ring-foreground/10 duration-200 ease-out outline-none sm:max-w-sm data-open:animate-in data-open:fade-in-0 data-open:zoom-in-96 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-96",
           className,
         )}
         {...props}
+        ref={(node) => {
+          setPortalContainer(node);
+        }}
+        onEscapeKeyDown={(event) => {
+          // Close nested combobox/select first; don't dismiss the dialog on the same Escape.
+          if (isNestedOverlayActive()) {
+            event.preventDefault();
+          }
+          onEscapeKeyDown?.(event);
+        }}
         onFocusOutside={(event) => {
           preventDialogDismissForPortals(event);
           onFocusOutside?.(event);
@@ -76,15 +92,17 @@ function DialogContent({
           onPointerDownOutside?.(event);
         }}
       >
-        {children}
-        {showCloseButton && (
-          <DialogPrimitive.Close data-slot="dialog-close" asChild>
-            <Button variant="ghost" className="absolute top-2 right-2" size="icon-sm">
-              <XIcon />
-              <span className="sr-only">Close</span>
-            </Button>
-          </DialogPrimitive.Close>
-        )}
+        <FloatingPortalContainerProvider container={portalContainer}>
+          {children}
+          {showCloseButton && (
+            <DialogPrimitive.Close data-slot="dialog-close" asChild>
+              <Button variant="ghost" className="absolute top-2 right-2" size="icon-sm">
+                <XIcon />
+                <span className="sr-only">Close</span>
+              </Button>
+            </DialogPrimitive.Close>
+          )}
+        </FloatingPortalContainerProvider>
       </DialogPrimitive.Content>
     </DialogPortal>
   );

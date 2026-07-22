@@ -415,7 +415,7 @@ function ManualOrderCreateDialogInner() {
           {t("orders.create.trigger")}
         </Button>
       </DialogTrigger>
-      <DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-2xl">
+      <DialogContent className="gap-0 overflow-visible p-0 sm:max-w-2xl">
         <DialogHeader className="gap-1.5 border-b px-4 py-4 text-left sm:px-5">
           <DialogTitle>{t("orders.create.title")}</DialogTitle>
           <DialogDescription>{t("orders.create.description")}</DialogDescription>

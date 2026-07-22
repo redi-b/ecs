@@ -2,9 +2,11 @@
 
 import { XIcon } from "lucide-react";
 import { Dialog as SheetPrimitive } from "radix-ui";
-import type * as React from "react";
+import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { preventDialogDismissForPortals } from "@/lib/dialog-outside";
+import { FloatingPortalContainerProvider } from "@/lib/floating-portal-container";
+import { isNestedOverlayActive } from "@/lib/nested-overlay";
 import { cn } from "@/lib/utils";
 
 function Sheet({ ...props }: React.ComponentProps<typeof SheetPrimitive.Root>) {
@@ -47,11 +49,14 @@ function SheetContent({
   onInteractOutside,
   onPointerDownOutside,
   onFocusOutside,
+  onEscapeKeyDown,
   ...props
 }: React.ComponentProps<typeof SheetPrimitive.Content> & {
   side?: "top" | "right" | "bottom" | "left";
   showCloseButton?: boolean;
 }) {
+  const [portalContainer, setPortalContainer] = React.useState<HTMLElement | null>(null);
+
   return (
     <SheetPortal>
       <SheetOverlay />
@@ -60,7 +65,8 @@ function SheetContent({
         data-side={side}
         className={cn(
           // Column chrome: header/footer stay put; put scrollable fields in SheetBody.
-          "fixed z-50 flex max-h-dvh flex-col gap-0 overflow-hidden bg-popover bg-clip-padding text-sm text-popover-foreground shadow-lg transition duration-200 ease-in-out",
+          // overflow-x-hidden only: allow combobox panels portaled into this node to extend past edges.
+          "fixed z-50 flex max-h-dvh flex-col gap-0 overflow-x-hidden overflow-y-visible bg-popover bg-clip-padding text-sm text-popover-foreground shadow-lg transition duration-200 ease-in-out",
           "data-[side=bottom]:inset-x-0 data-[side=bottom]:bottom-0 data-[side=bottom]:h-auto data-[side=bottom]:max-h-[85dvh] data-[side=bottom]:border-t",
           "data-[side=left]:inset-y-0 data-[side=left]:left-0 data-[side=left]:h-full data-[side=left]:w-3/4 data-[side=left]:border-r",
           "data-[side=right]:inset-y-0 data-[side=right]:right-0 data-[side=right]:h-full data-[side=right]:w-3/4 data-[side=right]:border-l",
@@ -70,6 +76,15 @@ function SheetContent({
           className,
         )}
         {...props}
+        ref={(node) => {
+          setPortalContainer(node);
+        }}
+        onEscapeKeyDown={(event) => {
+          if (isNestedOverlayActive()) {
+            event.preventDefault();
+          }
+          onEscapeKeyDown?.(event);
+        }}
         onFocusOutside={(event) => {
           preventDialogDismissForPortals(event);
           onFocusOutside?.(event);
@@ -83,15 +98,17 @@ function SheetContent({
           onPointerDownOutside?.(event);
         }}
       >
-        {children}
-        {showCloseButton && (
-          <SheetPrimitive.Close data-slot="sheet-close" asChild>
-            <Button variant="ghost" className="absolute top-3 right-3 z-10" size="icon-sm">
-              <XIcon />
-              <span className="sr-only">Close</span>
-            </Button>
-          </SheetPrimitive.Close>
-        )}
+        <FloatingPortalContainerProvider container={portalContainer}>
+          {children}
+          {showCloseButton && (
+            <SheetPrimitive.Close data-slot="sheet-close" asChild>
+              <Button variant="ghost" className="absolute top-3 right-3 z-10" size="icon-sm">
+                <XIcon />
+                <span className="sr-only">Close</span>
+              </Button>
+            </SheetPrimitive.Close>
+          )}
+        </FloatingPortalContainerProvider>
       </SheetPrimitive.Content>
     </SheetPortal>
   );

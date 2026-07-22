@@ -237,7 +237,7 @@ function TaxonomyCreateDialogInner({
         </DialogTrigger>
       ) : null}
       <DialogContent
-        className="z-[60] gap-0 overflow-hidden p-0 sm:max-w-lg"
+        className="z-[60] gap-0 overflow-visible p-0 sm:max-w-lg"
         overlayClassName="z-[60]"
       >
         <DialogHeader className="gap-1.5 border-b px-4 py-4 text-left sm:px-5">
