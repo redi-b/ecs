@@ -251,6 +251,14 @@ export function registerStoreFacadeRoutes(
       try {
         return await completeCodCheckout({
           delivery: options.getDeliverySettings,
+          deliveryShippingOptionId: result.context.medusaShippingOptionId,
+          ensurePickupOption: options.ensurePickupOption
+            ? async (input) => {
+                const ensured = await options.ensurePickupOption?.(input);
+                if (!ensured || !ensured.ok) return { ok: false as const };
+                return { ok: true as const, pickupOptionId: ensured.pickupOptionId };
+              }
+            : undefined,
           medusaInternalUrl: options.medusaInternalUrl,
           medusaPublishableKeyId: result.context.medusaPublishableKeyId,
           medusaStoreFetch,

@@ -264,6 +264,13 @@ export type PlatformAppOptions = {
         userId: string;
       }) => Promise<void>)
     | undefined;
+  /** Ensure free Store Pickup option exists for the tenant delivery zone. */
+  ensurePickupOption?:
+    | ((input: {
+        currencyCode: string;
+        deliveryShippingOptionId: string;
+      }) => Promise<{ ok: true; pickupOptionId: string; created: boolean } | { ok: false }>)
+    | undefined;
   getOperatorSupportHistory?:
     | ((input: { limit: number; tenantId: string }) => Promise<SupportHistoryResult>)
     | undefined;

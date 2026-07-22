@@ -176,26 +176,49 @@ export const provisionTenantCommerceResourcesWorkflow = createWorkflow(
       input: serviceZoneInput,
     });
 
-    const shippingOptionInput = transform({ serviceZones, shippingProfiles }, (data) => [
-      {
-        name: "Local Delivery",
-        service_zone_id: requireFirst(data.serviceZones, "Service zone").id,
-        shipping_profile_id: requireFirst(data.shippingProfiles, "Shipping profile").id,
-        provider_id: "manual_manual",
-        type: {
-          label: "Local Delivery",
-          description: "Manual local delivery",
-          code: "local_delivery",
-        },
-        price_type: "flat" as const,
-        prices: [
-          {
-            amount: 50,
-            currency_code: "etb",
+    const shippingOptionInput = transform({ serviceZones, shippingProfiles }, (data) => {
+      const serviceZoneId = requireFirst(data.serviceZones, "Service zone").id;
+      const shippingProfileId = requireFirst(data.shippingProfiles, "Shipping profile").id;
+      return [
+        {
+          name: "Local Delivery",
+          service_zone_id: serviceZoneId,
+          shipping_profile_id: shippingProfileId,
+          provider_id: "manual_manual",
+          type: {
+            label: "Local Delivery",
+            description: "Manual local delivery",
+            code: "local_delivery",
           },
-        ],
-      },
-    ]);
+          price_type: "flat" as const,
+          prices: [
+            {
+              amount: 50,
+              currency_code: "etb",
+            },
+          ],
+        },
+        // Free pickup — same zone/profile so store API lists both for the cart.
+        {
+          name: "Store Pickup",
+          service_zone_id: serviceZoneId,
+          shipping_profile_id: shippingProfileId,
+          provider_id: "manual_manual",
+          type: {
+            label: "Store Pickup",
+            description: "Customer collects the order",
+            code: "store_pickup",
+          },
+          price_type: "flat" as const,
+          prices: [
+            {
+              amount: 0,
+              currency_code: "etb",
+            },
+          ],
+        },
+      ];
+    });
 
     const shippingOptions = createShippingOptionsWorkflow.runAsStep({
       input: shippingOptionInput,
@@ -273,7 +296,18 @@ export const provisionTenantCommerceResourcesWorkflow = createWorkflow(
         shippingProfileId: requireFirst(data.shippingProfiles, "Shipping profile").id,
         fulfillmentSetId: requireFirst(data.fulfillmentSets, "Fulfillment set").id,
         serviceZoneId: requireFirst(data.serviceZones, "Service zone").id,
-        shippingOptionId: requireFirst(data.shippingOptions, "Shipping option").id,
+        // Prefer paid delivery option as the primary id used for fee sync.
+        shippingOptionId: (() => {
+          const options = Array.isArray(data.shippingOptions)
+            ? (data.shippingOptions as Array<{ id?: string; name?: string }>)
+            : [];
+          const delivery =
+            options.find((option) => /delivery/i.test(option.name ?? "")) ?? options[0];
+          if (!delivery?.id) {
+            throw new Error("Shipping option missing after create.");
+          }
+          return delivery.id;
+        })(),
       }),
     );
 

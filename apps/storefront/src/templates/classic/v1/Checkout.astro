@@ -43,8 +43,22 @@ const pickupEnabled = delivery?.pickupEnabled === true;
 const fulfillmentAvailable = deliveryEnabled || pickupEnabled;
 const phoneRequired = delivery?.phoneConfirmationRequired !== false;
 const deliveryChoiceDefault = deliveryEnabled ? "delivery" : pickupEnabled ? "pickup" : "delivery";
+// Paid rates for delivery; free options (amount 0 / pickup-named) for free store pickup.
+const paidOptions = shippingOptions.filter(
+  (option) => (option.amount == null || option.amount > 0) && !/pickup|collect/i.test(option.name ?? ""),
+);
+const freePickupOptions = shippingOptions.filter(
+  (option) =>
+    (option.amount != null && option.amount === 0) || /pickup|collect/i.test(option.name ?? ""),
+);
+const freePickupOption = freePickupOptions[0] ?? null;
+const deliveryFeeOptions = paidOptions.length > 0 ? paidOptions : shippingOptions;
 const canPlaceOrder =
-  items.length > 0 && shippingOptions.length > 0 && fulfillmentAvailable;
+  items.length > 0 &&
+  fulfillmentAvailable &&
+  (deliveryChoiceDefault === "pickup"
+    ? Boolean(freePickupOption) || shippingOptions.length > 0
+    : deliveryFeeOptions.length > 0);
 ---
 
 <Layout
@@ -224,15 +238,24 @@ const canPlaceOrder =
                     <textarea id="notes" name="notes" rows="3" />
                   </div>
                 ) : null}
-                {shippingOptions.length > 0 ? (
-                  <div class="at-field at-field-full">
-                    <label for="shippingOptionId">Delivery fee</label>
-                    <select id="shippingOptionId" name="shippingOptionId" required>
-                      {shippingOptions.map((option) => {
+                {/* Delivery: paid fee options. Pickup: free option (hidden), no charge. */}
+                <div
+                  class="at-field at-field-full"
+                  data-fee-delivery
+                  hidden={deliveryChoiceDefault === "pickup"}
+                  style={deliveryChoiceDefault === "pickup" ? "display:none" : undefined}
+                >
+                  <label for="shippingOptionId">Delivery fee</label>
+                  {deliveryFeeOptions.length > 0 ? (
+                    <select
+                      id="shippingOptionId"
+                      name="shippingOptionId"
+                      required={deliveryChoiceDefault === "delivery"}
+                      disabled={deliveryChoiceDefault === "pickup"}
+                    >
+                      {deliveryFeeOptions.map((option) => {
                         const rawName = option.name?.trim() || "Standard";
-                        const name = /shipping/i.test(rawName)
-                          ? "Standard"
-                          : rawName;
+                        const name = /shipping/i.test(rawName) ? "Standard" : rawName;
                         return (
                           <option value={option.id}>
                             {name +
@@ -243,8 +266,25 @@ const canPlaceOrder =
                         );
                       })}
                     </select>
-                  </div>
-                ) : null}
+                  ) : (
+                    <p class="at-muted" style="margin:0">No delivery fee option is available yet.</p>
+                  )}
+                </div>
+                <div
+                  class="at-field at-field-full"
+                  data-fee-pickup
+                  hidden={deliveryChoiceDefault !== "pickup"}
+                  style={deliveryChoiceDefault !== "pickup" ? "display:none" : undefined}
+                >
+                  <label>Pickup fee</label>
+                  <p class="at-muted" style="margin:0">Free · collect at the shop</p>
+                  {freePickupOption ? (
+                    <input type="hidden" name="shippingOptionId" value={freePickupOption.id} data-pickup-option />
+                  ) : deliveryFeeOptions[0] ? (
+                    // Fallback only if free option not provisioned yet — still prefer free path.
+                    <input type="hidden" name="shippingOptionId" value={deliveryFeeOptions[0].id} data-pickup-option />
+                  ) : null}
+                </div>
               </div>
             </section>
 
@@ -318,12 +358,16 @@ const canPlaceOrder =
     (function () {
       var select = document.getElementById("deliveryChoice");
       if (!select) return;
+      function setVisible(el, on) {
+        if (!el) return;
+        el.hidden = !on;
+        el.style.display = on ? "" : "none";
+      }
       function sync() {
         var isDelivery = select.value === "delivery";
         document.querySelectorAll("[data-delivery-only]").forEach(function (el) {
           // Class-based display:none would lose to .at-field { display: grid }; set inline.
-          el.hidden = !isDelivery;
-          el.style.display = isDelivery ? "" : "none";
+          setVisible(el, isDelivery);
           el.querySelectorAll("input, textarea, select").forEach(function (field) {
             field.disabled = !isDelivery;
             if (field.id === "landmark") {
@@ -337,10 +381,19 @@ const canPlaceOrder =
             }
           });
         });
-        var feeLabel = document.querySelector('label[for="shippingOptionId"]');
-        if (feeLabel) {
-          feeLabel.textContent = isDelivery ? "Delivery fee" : "Order fee";
+        var feeDelivery = document.querySelector("[data-fee-delivery]");
+        var feePickup = document.querySelector("[data-fee-pickup]");
+        setVisible(feeDelivery, isDelivery);
+        setVisible(feePickup, !isDelivery);
+        var feeSelect = document.getElementById("shippingOptionId");
+        if (feeSelect) {
+          feeSelect.disabled = !isDelivery;
+          feeSelect.required = isDelivery;
+          if (!isDelivery) feeSelect.removeAttribute("required");
         }
+        document.querySelectorAll("[data-pickup-option]").forEach(function (input) {
+          input.disabled = isDelivery;
+        });
       }
       select.addEventListener("change", sync);
       sync();
