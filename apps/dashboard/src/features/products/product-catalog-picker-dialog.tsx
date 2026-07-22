@@ -31,41 +31,32 @@ import { useI18n } from "@/i18n/provider";
 import { dashboardRoutes } from "@/lib/routes";
 import { cn } from "@/lib/utils";
 
-/** Flat pick item (product-level selection: collections, promotions). */
-export type ProductCatalogPickItem = {
-  id: string;
-  title: string;
-  subtitle?: string | null;
-  thumbnailUrl?: string | null;
-  searchText: string;
-  meta?: string | null;
-};
+import {
+  buildProductOptionAxes,
+  formatVariantChipLabel,
+  lowestPriceLabel,
+  PRODUCT_CATALOG_PAGE_SIZE,
+  type ProductCatalogPickItem,
+  type ProductCatalogPickProduct,
+} from "./product-catalog-picker-model";
+import {
+  ProductOptionConfigurator,
+  ProductPickThumb,
+  SelectionMark,
+} from "./product-catalog-picker-parts";
 
-/** Variant under a product (order lines). */
-export type ProductCatalogPickVariant = {
-  id: string;
-  title: string;
-  sku?: string | null;
-  priceLabel?: string | null;
-  /** Structured options: { Size: "M", Color: "Blue" }. */
-  options?: Record<string, string>;
-};
-
-export type ProductCatalogPickProduct = {
-  id: string;
-  title: string;
-  handle?: string | null;
-  thumbnailUrl?: string | null;
-  searchText: string;
-  variants?: ProductCatalogPickVariant[];
-};
-
-export type ProductOptionAxis = {
-  title: string;
-  values: string[];
-};
-
-const PAGE_SIZE = 24;
+// Re-export public API so existing imports keep working.
+export type {
+  ProductCatalogPickItem,
+  ProductCatalogPickProduct,
+  ProductCatalogPickVariant,
+  ProductOptionAxis,
+} from "./product-catalog-picker-model";
+export {
+  buildProductOptionAxes,
+  optionLabelFromVariantTitle,
+  resolveVariantByOptions,
+} from "./product-catalog-picker-model";
 
 type ProductCatalogPickerDialogProps = {
   open: boolean;
@@ -95,131 +86,6 @@ type ProductCatalogPickerDialogProps = {
   loadingMore?: boolean;
 };
 
-/**
- * Strip product title from Medusa variant titles like "Denim Jacket / XL" → "XL".
- */
-export function optionLabelFromVariantTitle(
-  variantTitle: string,
-  productTitle?: string | null,
-): string {
-  let rest = variantTitle.trim();
-  const product = productTitle?.trim();
-  if (product && rest.toLowerCase().startsWith(product.toLowerCase())) {
-    rest = rest.slice(product.length).replace(/^\s*[·/\-–—|:]\s*/, "").trim();
-  }
-  return rest || variantTitle.trim();
-}
-
-/**
- * Build option axes (Size, Color, …) from variants.
- * Prefers structured `options` from Medusa (option name + values from product create).
- * Title fallback only when options are missing — never treats product name as a value.
- */
-export function buildProductOptionAxes(
-  variants: ProductCatalogPickVariant[],
-  productTitle?: string | null,
-): ProductOptionAxis[] {
-  const map = new Map<string, Set<string>>();
-  let structured = false;
-
-  for (const variant of variants) {
-    const opts = variant.options ?? {};
-    const entries = Object.entries(opts).filter(
-      ([title, value]) => title && value && title !== "Default",
-    );
-    if (entries.length > 0) {
-      structured = true;
-      for (const [title, value] of entries) {
-        const set = map.get(title) ?? new Set<string>();
-        set.add(value);
-        map.set(title, set);
-      }
-    }
-  }
-
-  if (structured) {
-    return [...map.entries()].map(([title, values]) => ({
-      title,
-      values: [...values].sort((a, b) => a.localeCompare(b)),
-    }));
-  }
-
-  // Fallback only: option values from titles, product name stripped first.
-  const partsList = variants
-    .map((v) =>
-      optionLabelFromVariantTitle(v.title, productTitle)
-        .split(/\s*\/\s*/)
-        .map((p) => p.trim())
-        .filter(Boolean),
-    )
-    .filter((parts) => parts.length > 0);
-
-  if (partsList.length === 0) {
-    return [];
-  }
-
-  const maxParts = Math.max(...partsList.map((p) => p.length));
-  if (maxParts === 1) {
-    const values = [...new Set(partsList.map((p) => p[0]!).filter(Boolean))];
-    if (values.length <= 1) return [];
-    // Unknown option name without Medusa options payload — generic label.
-    return [{ title: "Option", values: values.sort((a, b) => a.localeCompare(b)) }];
-  }
-
-  const axes: ProductOptionAxis[] = [];
-  for (let i = 0; i < maxParts; i++) {
-    const values = new Set<string>();
-    for (const parts of partsList) {
-      if (parts[i]) values.add(parts[i]!);
-    }
-    if (values.size > 0) {
-      axes.push({
-        title: `Option ${i + 1}`,
-        values: [...values].sort((a, b) => a.localeCompare(b)),
-      });
-    }
-  }
-  return axes;
-}
-
-export function resolveVariantByOptions(
-  variants: ProductCatalogPickVariant[],
-  selection: Record<string, string>,
-): ProductCatalogPickVariant | null {
-  const keys = Object.keys(selection);
-  if (!keys.length) return null;
-
-  const structured = variants.find((variant) => {
-    const opts = variant.options ?? {};
-    if (!Object.keys(opts).length) return false;
-    return keys.every((key) => opts[key] === selection[key]);
-  });
-  if (structured) return structured;
-
-  // Title fallback: match option values only (product name already stripped by caller axes).
-  const orderedValues = Object.values(selection);
-  return (
-    variants.find((variant) => {
-      const opts = variant.options ?? {};
-      if (Object.keys(opts).length) return false;
-      const label = optionLabelFromVariantTitle(variant.title);
-      const parts = label
-        .split(/\s*\/\s*/)
-        .map((p) => p.trim())
-        .filter(Boolean);
-      if (orderedValues.length === 1) {
-        return label === orderedValues[0] || parts[0] === orderedValues[0];
-      }
-      if (parts.length !== orderedValues.length) return false;
-      return orderedValues.every((value, index) => parts[index] === value);
-    }) ?? null
-  );
-}
-
-/**
- * Premium catalog picker.
- * Multi-option products (Size × Color) use per-axis pickers, not a flat list of combos.
- */
 export function ProductCatalogPickerDialog({
   open,
   onOpenChange,
@@ -247,7 +113,7 @@ export function ProductCatalogPickerDialog({
   const isMultiple = selectionMode === "multiple";
   const [query, setQuery] = useState("");
   const [selectedIds, setSelectedIds] = useState<string[]>(selectedIdsProp);
-  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const [visibleCount, setVisibleCount] = useState(PRODUCT_CATALOG_PAGE_SIZE);
   /** Which product's option configurator is open. */
   const [activeProductId, setActiveProductId] = useState<string | null>(null);
 
@@ -271,7 +137,7 @@ export function ProductCatalogPickerDialog({
   useEffect(() => {
     if (!open) {
       setQuery("");
-      setVisibleCount(PAGE_SIZE);
+      setVisibleCount(PRODUCT_CATALOG_PAGE_SIZE);
       setActiveProductId(null);
       return;
     }
@@ -340,7 +206,7 @@ export function ProductCatalogPickerDialog({
 
   function handleLoadMore() {
     if (canShowMoreClient) {
-      setVisibleCount((count) => count + PAGE_SIZE);
+      setVisibleCount((count) => count + PRODUCT_CATALOG_PAGE_SIZE);
       return;
     }
     onLoadMore?.();
@@ -372,7 +238,7 @@ export function ProductCatalogPickerDialog({
             label={t("common.search")}
             onChange={(value) => {
               setQuery(value);
-              setVisibleCount(PAGE_SIZE);
+              setVisibleCount(PRODUCT_CATALOG_PAGE_SIZE);
             }}
             placeholder={searchPlaceholder ?? t("common.searchProducts")}
             value={query}
@@ -673,248 +539,6 @@ export function ProductCatalogPickerDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  );
-}
-
-function ProductOptionConfigurator({
-  axes,
-  variants,
-  onAdd,
-  productTitle,
-  selectionMode,
-}: {
-  axes: ProductOptionAxis[];
-  variants: ProductCatalogPickVariant[];
-  onAdd: (variantId: string) => void;
-  productTitle: string;
-  selectionMode: "single" | "multiple";
-}) {
-  const { t } = useI18n();
-  const [picks, setPicks] = useState<Record<string, string>>({});
-  const [justAdded, setJustAdded] = useState(false);
-
-  // Prefer first available values as defaults when axes exist.
-  useEffect(() => {
-    if (!axes.length) return;
-    setPicks((current) => {
-      if (Object.keys(current).length) return current;
-      const next: Record<string, string> = {};
-      for (const axis of axes) {
-        if (axis.values[0]) next[axis.title] = axis.values[0];
-      }
-      return next;
-    });
-  }, [axes]);
-
-  const resolved = useMemo(() => {
-    if (axes.length === 0) return null;
-    const complete = axes.every((axis) => Boolean(picks[axis.title]));
-    if (!complete) return null;
-    return resolveVariantByOptions(variants, picks);
-  }, [axes, picks, variants]);
-
-  function isValueAvailable(axisTitle: string, value: string) {
-    const trial = { ...picks, [axisTitle]: value };
-    return variants.some((variant) => {
-      const opts = variant.options ?? {};
-      if (Object.keys(opts).length) {
-        return Object.entries(trial).every(([k, v]) => !v || opts[k] === v);
-      }
-      const label = optionLabelFromVariantTitle(variant.title, productTitle);
-      const parts = label.split(/\s*\/\s*/).map((p) => p.trim()).filter(Boolean);
-      const axisIndex = axes.findIndex((a) => a.title === axisTitle);
-      if (axisIndex < 0) return true;
-      if (parts[axisIndex] !== value && label !== value) return false;
-      return axes.every((axis, index) => {
-        if (axis.title === axisTitle) return true;
-        const picked = trial[axis.title];
-        if (!picked) return true;
-        return parts[index] === picked || (axes.length === 1 && label === picked);
-      });
-    });
-  }
-
-  function displayAxisTitle(title: string) {
-    const normalized = title.trim().toLowerCase();
-    if (
-      !title ||
-      normalized === "option" ||
-      normalized === "variant" ||
-      normalized === "default" ||
-      /^option\s*\d+$/i.test(title)
-    ) {
-      return t("products.catalogPicker.optionsHeading");
-    }
-    return title;
-  }
-
-  // No structured axes → simple chips of option labels (not full combo SKUs).
-  if (axes.length === 0) {
-    return (
-      <div className="space-y-2.5 border-t bg-muted/10 px-3.5 py-3.5">
-        <p className="text-xs font-medium text-muted-foreground">
-          {t("products.catalogPicker.pickOptionFor", { product: productTitle })}
-        </p>
-        <div className="flex flex-wrap gap-2">
-          {variants.map((variant) => (
-            <button
-              className="rounded-full border bg-background px-3.5 py-2 text-sm font-medium shadow-sm transition-colors hover:border-primary/40 hover:bg-primary/5"
-              key={variant.id}
-              onClick={() => onAdd(variant.id)}
-              type="button"
-            >
-              {optionLabelFromVariantTitle(variant.title, productTitle)}
-              {variant.priceLabel ? (
-                <span className="ml-1.5 text-xs font-normal tabular-nums text-muted-foreground">
-                  {variant.priceLabel}
-                </span>
-              ) : null}
-            </button>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-3.5 border-t bg-muted/10 px-3.5 py-3.5">
-      {axes.map((axis) => (
-        <div className="space-y-2" key={axis.title}>
-          <p className="text-xs font-semibold text-foreground/80">
-            {displayAxisTitle(axis.title)}
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {axis.values.map((value) => {
-              const active = picks[axis.title] === value;
-              const available = isValueAvailable(axis.title, value);
-              return (
-                <button
-                  className={cn(
-                    "min-w-10 rounded-full border px-3.5 py-2 text-sm font-medium transition-all",
-                    active
-                      ? "border-primary bg-primary text-primary-foreground shadow-sm"
-                      : "border-border/80 bg-background shadow-sm hover:border-primary/35 hover:bg-primary/[0.04]",
-                    !available && !active && "pointer-events-none opacity-30",
-                  )}
-                  disabled={!available && !active}
-                  key={value}
-                  onClick={() => {
-                    setJustAdded(false);
-                    setPicks((current) => ({
-                      ...current,
-                      [axis.title]: value,
-                    }));
-                  }}
-                  type="button"
-                >
-                  {value}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      ))}
-
-      <div className="flex items-center gap-3 rounded-xl border bg-background/80 px-3 py-2.5 shadow-sm">
-        <div className="min-w-0 flex-1">
-          {resolved ? (
-            <p className="text-sm font-semibold tabular-nums tracking-tight">
-              {resolved.priceLabel ?? t("products.catalogPicker.readyToAdd")}
-            </p>
-          ) : (
-            <p className="text-sm text-muted-foreground">
-              {t("products.catalogPicker.completeOptions")}
-            </p>
-          )}
-          {justAdded ? (
-            <p className="mt-0.5 text-xs font-medium text-primary">
-              {t("products.catalogPicker.addedHint")}
-            </p>
-          ) : null}
-        </div>
-        <Button
-          className="shrink-0 rounded-full px-4"
-          disabled={!resolved}
-          onClick={() => {
-            if (!resolved) return;
-            onAdd(resolved.id);
-            setJustAdded(true);
-          }}
-          size="sm"
-          type="button"
-        >
-          {selectionMode === "multiple"
-            ? t("products.catalogPicker.addCombination")
-            : t("products.catalogPicker.selectCombination")}
-        </Button>
-      </div>
-    </div>
-  );
-}
-
-function lowestPriceLabel(variants: ProductCatalogPickVariant[]): string | null {
-  let best: number | null = null;
-  let label: string | null = null;
-  for (const variant of variants) {
-    if (!variant.priceLabel) continue;
-    const n = Number(variant.priceLabel.replace(/[^\d.]/g, ""));
-    if (!Number.isFinite(n)) {
-      if (!label) label = variant.priceLabel;
-      continue;
-    }
-    if (best == null || n < best) {
-      best = n;
-      label = variant.priceLabel;
-    }
-  }
-  return label;
-}
-
-function formatVariantChipLabel(variant: ProductCatalogPickVariant) {
-  const opts = variant.options ?? {};
-  const parts = Object.values(opts).filter(Boolean);
-  if (parts.length) return parts.join(" · ");
-  // Prefer "XL" over "Denim Jacket / XL" when options payload was missing.
-  return optionLabelFromVariantTitle(variant.title);
-}
-
-function SelectionMark({ selected }: { selected: boolean }) {
-  return (
-    <span
-      className={cn(
-        "grid size-5 shrink-0 place-items-center rounded-full border",
-        selected
-          ? "border-primary bg-primary text-primary-foreground"
-          : "border-border bg-background",
-      )}
-    >
-      {selected ? <AppIcons.check className="size-3" /> : null}
-    </span>
-  );
-}
-
-function ProductPickThumb({
-  title,
-  url,
-}: {
-  title: string;
-  url?: string | null | undefined;
-}) {
-  if (url) {
-    return (
-      // biome-ignore lint/performance/noImgElement: product thumbnail from commerce CDN
-      <img
-        alt=""
-        className="size-12 shrink-0 rounded-full border object-cover shadow-sm"
-        src={url}
-      />
-    );
-  }
-  const initial = title.trim().charAt(0).toUpperCase() || "?";
-  return (
-    <span className="grid size-12 shrink-0 place-items-center rounded-full border bg-muted text-sm font-semibold text-muted-foreground shadow-sm">
-      {initial}
-    </span>
   );
 }
 
