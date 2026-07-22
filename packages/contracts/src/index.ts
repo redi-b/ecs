@@ -478,6 +478,10 @@ export const merchantOrderSchema = z.object({
         productId: z.string().min(1).nullable().optional(),
         variantId: z.string().min(1).nullable().optional(),
         title: z.string().min(1).nullable(),
+        /** Product name when Medusa separates product vs variant line title. */
+        productTitle: z.string().min(1).nullable().optional(),
+        /** Variant label / options summary (e.g. "Large / Red"). */
+        variantTitle: z.string().min(1).nullable().optional(),
         quantity: z.number().nullable(),
         fulfilledQuantity: z.number().nullable().optional(),
         unitPrice: z.number().nullable(),
