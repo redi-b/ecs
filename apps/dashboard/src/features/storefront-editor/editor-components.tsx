@@ -16,6 +16,7 @@ import {
   RiFullscreenExitLine,
   RiFullscreenLine,
   RiImageLine,
+  RiPauseLine,
   RiRefreshLine,
   RiRocketLine,
   RiSave3Line,
@@ -220,14 +221,14 @@ export function StorefrontEditorActions({
           label={t("editor.actions.undo")}
           onClick={onUndo}
         >
-          <RiArrowGoBackLine data-icon="inline-start" />
+          <RiArrowGoBackLine />
         </ToolbarIconButton>
         <ToolbarIconButton
           disabled={hasMounted ? !canRedo : undefined}
           label={t("editor.actions.redo")}
           onClick={onRedo}
         >
-          <RiArrowGoForwardLine data-icon="inline-start" />
+          <RiArrowGoForwardLine />
         </ToolbarIconButton>
         <Separator className="mx-0.5 hidden h-5 sm:mx-1 sm:block" orientation="vertical" />
         <ToolbarIconButton
@@ -235,25 +236,17 @@ export function StorefrontEditorActions({
           onClick={onToggleEditHints}
           pressed={showEditHints}
         >
-          {showEditHints ? (
-            <RiEyeLine data-icon="inline-start" />
-          ) : (
-            <RiEyeOffLine data-icon="inline-start" />
-          )}
+          {showEditHints ? <RiEyeLine /> : <RiEyeOffLine />}
         </ToolbarIconButton>
         <ToolbarIconButton
           label={isFullscreen ? t("editor.actions.exitFullscreen") : t("editor.actions.fullscreen")}
           onClick={onToggleFullscreen}
         >
-          {isFullscreen ? (
-            <RiFullscreenExitLine data-icon="inline-start" />
-          ) : (
-            <RiFullscreenLine data-icon="inline-start" />
-          )}
+          {isFullscreen ? <RiFullscreenExitLine /> : <RiFullscreenLine />}
         </ToolbarIconButton>
         <ToolbarIconButton asChild label={t("editor.actions.openLive")}>
           <a href={editorMeta.liveStorefrontUrl} rel="noreferrer" target="_blank">
-            <RiExternalLinkLine data-icon="inline-start" />
+            <RiExternalLinkLine />
           </a>
         </ToolbarIconButton>
         <AlertDialog>
@@ -304,6 +297,7 @@ export function StorefrontEditorActions({
                 type="button"
                 variant="destructive"
               >
+                <RiPauseLine data-icon="inline-start" />
                 {t("editor.actions.pauseShop")}
               </Button>
             </AlertDialogTrigger>
@@ -365,9 +359,13 @@ export function ToolbarIconButton({
           aria-label={label}
           aria-pressed={pressed}
           asChild={asChild}
+          className={cn(
+            "size-8 shrink-0 p-0",
+            pressed && "bg-muted text-foreground",
+          )}
           disabled={disabled}
           onClick={onClick}
-          size="sm"
+          size="icon"
           type="button"
           variant="ghost"
         >
