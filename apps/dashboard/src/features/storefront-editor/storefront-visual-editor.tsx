@@ -8,6 +8,16 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   buildPuckConfig,
   getErrorMessage,
   PuckDataOverride,
@@ -26,6 +36,7 @@ import {
   getPublicationStatus,
   serializeEditorData,
 } from "./editor-state";
+import { useUnsavedChangesGuard } from "./use-unsaved-changes-guard";
 
 export function StorefrontVisualEditor({
   draft,
@@ -303,6 +314,10 @@ export function StorefrontVisualEditor({
     publishedSnapshot,
     savedSnapshot,
   });
+  // Block leave only for edits not yet saved as a draft (badge: Unpublished edits).
+  const hasUnsavedChanges = currentSnapshot !== savedSnapshot;
+  const { leaveDialogOpen, confirmLeave, cancelLeave } =
+    useUnsavedChangesGuard(hasUnsavedChanges);
 
   return (
     <div
@@ -353,6 +368,30 @@ export function StorefrontVisualEditor({
           showEditHints={showEditHints}
         />
       </Puck>
+
+      <AlertDialog
+        onOpenChange={(open) => {
+          if (!open) cancelLeave();
+        }}
+        open={leaveDialogOpen}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("editor.actions.leaveTitle")}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t("editor.actions.leaveDescription")}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={cancelLeave}>
+              {t("editor.actions.stay")}
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={confirmLeave} variant="destructive">
+              {t("editor.actions.leave")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

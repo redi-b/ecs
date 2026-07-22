@@ -26,7 +26,11 @@
     "pauseShop": "ሱቁን አቁም",
     "pauseTitle": "የቀጥታ ሱቁን እናቁም?",
     "pauseDescription": "ደንበኞች ሱቁ እንደማይገኝ ያያሉ። ረቂቅዎ ይቆያል።",
-    "pauseConfirm": "ሱቁን አቁም"
+    "pauseConfirm": "ሱቁን አቁም",
+    "leaveTitle": "ሳያስቀምጡ ይወጣሉ?",
+    "leaveDescription": "ያልተቀመጡ የማስተካከያ ለውጦች አሉዎት። አሁን ከወጡ እነዚያ ለውጦች ይጠፋሉ።",
+    "stay": "ቆይ",
+    "leave": "ውጣ"
   },
   "status": {
     "live": "ለደንበኞች ይታያል",
