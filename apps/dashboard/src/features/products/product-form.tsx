@@ -59,6 +59,7 @@ import {
 } from "@/features/products/product-form-sections";
 import {
   getDefaultSkuPrefix,
+  getMediaUrls,
   getErrorMessage,
   getFirstInvalidFieldForStep,
   getProductDefaultValues,
@@ -906,11 +907,5 @@ export function ProductForm({
         </AlertDialogContent>
       </AlertDialog>
     </>
-  );
-}
-
-function getMediaUrls(thumbnail: string, imageUrls: string) {
-  return Array.from(
-    new Set([thumbnail, ...imageUrls.split(/\r?\n/)].map((url) => url.trim()).filter(Boolean)),
   );
 }
