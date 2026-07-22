@@ -2658,7 +2658,11 @@ describe("platform app merchant and tenant catalog", () => {
         eventType: "order.created",
         payload: {
           cartId: "cart_1",
+          customerCity: "Addis Ababa",
+          customerName: "Abebe Kebede",
+          customerPhone: "+251911111111",
           deliveryChoice: "delivery",
+          orderCode: "1",
           orderId: "order_1",
           paymentMethod: "cod",
           paymentStatus: "pending",

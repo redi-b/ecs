@@ -255,6 +255,15 @@ export type PlatformAppOptions = {
         zones: unknown[];
       }) => Promise<DeliverySettingsUpdateResult>)
     | undefined;
+  /** Push default delivery fee onto Medusa shipping option (checkout amount). */
+  syncDeliveryShippingPrice?:
+    | ((input: {
+        amount: number;
+        currencyCode: string;
+        tenantId: string;
+        userId: string;
+      }) => Promise<void>)
+    | undefined;
   getOperatorSupportHistory?:
     | ((input: { limit: number; tenantId: string }) => Promise<SupportHistoryResult>)
     | undefined;

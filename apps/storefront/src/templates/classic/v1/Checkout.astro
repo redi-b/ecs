@@ -38,9 +38,13 @@ const {
 } = Astro.props;
 
 const items = cart?.items ?? [];
-const deliveryChoiceDefault =
-  delivery?.deliveryEnabled ? "delivery" : delivery?.pickupEnabled ? "pickup" : "delivery";
-const canPlaceOrder = items.length > 0 && shippingOptions.length > 0;
+const deliveryEnabled = delivery?.deliveryEnabled === true;
+const pickupEnabled = delivery?.pickupEnabled === true;
+const fulfillmentAvailable = deliveryEnabled || pickupEnabled;
+const phoneRequired = delivery?.phoneConfirmationRequired !== false;
+const deliveryChoiceDefault = deliveryEnabled ? "delivery" : pickupEnabled ? "pickup" : "delivery";
+const canPlaceOrder =
+  items.length > 0 && shippingOptions.length > 0 && fulfillmentAvailable;
 ---
 
 <Layout
@@ -108,6 +112,20 @@ const canPlaceOrder = items.length > 0 && shippingOptions.length > 0;
           ) : null}
 
           <form method="post" action="/actions/checkout/cod" class="at-checkout-form">
+            {
+              !fulfillmentAvailable ? (
+                <div class="at-notice" role="status">
+                  <p>
+                    <strong>Delivery and pickup are unavailable</strong>
+                  </p>
+                  <p class="at-muted">
+                    This shop is not accepting delivery or pickup orders right now. Please contact
+                    the shop or try again later.
+                  </p>
+                </div>
+              ) : null
+            }
+
             <section class="at-panel at-form-section">
               <h2>Contact</h2>
               <div class="at-form-grid">
@@ -116,8 +134,16 @@ const canPlaceOrder = items.length > 0 && shippingOptions.length > 0;
                   <input id="name" name="name" required autocomplete="name" />
                 </div>
                 <div class="at-field">
-                  <label for="phone">Phone</label>
-                  <input id="phone" name="phone" required autocomplete="tel" inputmode="tel" />
+                  <label for="phone">
+                    Phone{phoneRequired ? "" : " (optional)"}
+                  </label>
+                  <input
+                    id="phone"
+                    name="phone"
+                    required={phoneRequired}
+                    autocomplete="tel"
+                    inputmode="tel"
+                  />
                 </div>
                 <div class="at-field at-field-full">
                   <label for="email">Email (optional)</label>
@@ -126,46 +152,52 @@ const canPlaceOrder = items.length > 0 && shippingOptions.length > 0;
               </div>
             </section>
 
-            <section class="at-panel at-form-section">
+            <section class="at-panel at-form-section" data-checkout-fulfillment>
               <h2>Delivery</h2>
               <div class="at-form-grid">
                 <div class="at-field">
                   <label for="deliveryChoice">Method</label>
-                  <select id="deliveryChoice" name="deliveryChoice" required>
-                    {delivery?.deliveryEnabled !== false ? (
+                  <select id="deliveryChoice" name="deliveryChoice" required disabled={!fulfillmentAvailable}>
+                    {deliveryEnabled ? (
                       <option value="delivery" selected={deliveryChoiceDefault === "delivery"}>
                         Delivery
                       </option>
                     ) : null}
-                    {delivery?.pickupEnabled ? (
+                    {pickupEnabled ? (
                       <option value="pickup" selected={deliveryChoiceDefault === "pickup"}>
                         Pickup
                       </option>
                     ) : null}
                   </select>
                 </div>
-                <div class="at-field">
+                <div class="at-field" data-delivery-only>
                   <label for="city">City</label>
                   <input
                     id="city"
                     name="city"
-                    required
+                    required={deliveryChoiceDefault === "delivery"}
                     autocomplete="address-level2"
                     value="Addis Ababa"
                   />
                 </div>
-                <div class="at-field at-field-full">
+                <div class="at-field at-field-full" data-delivery-only>
                   <label for="address1">Address</label>
-                  <input id="address1" name="address1" required autocomplete="street-address" />
+                  <input
+                    id="address1"
+                    name="address1"
+                    required={deliveryChoiceDefault === "delivery"}
+                    autocomplete="street-address"
+                  />
                 </div>
-                <div class="at-field at-field-full">
+                <div class="at-field at-field-full" data-delivery-only>
                   <label for="landmark">
                     Landmark{delivery?.landmarkRequired ? " (required)" : " (optional)"}
                   </label>
                   <input
                     id="landmark"
                     name="landmark"
-                    required={Boolean(delivery?.landmarkRequired)}
+                    required={Boolean(delivery?.landmarkRequired) && deliveryChoiceDefault === "delivery"}
+                    data-landmark-required={delivery?.landmarkRequired ? "true" : "false"}
                   />
                 </div>
                 {delivery?.notesEnabled !== false ? (
@@ -176,11 +208,11 @@ const canPlaceOrder = items.length > 0 && shippingOptions.length > 0;
                 ) : null}
                 {shippingOptions.length > 0 ? (
                   <div class="at-field at-field-full">
-                    <label for="shippingOptionId">Shipping option</label>
+                    <label for="shippingOptionId">Shipping / delivery fee</label>
                     <select id="shippingOptionId" name="shippingOptionId" required>
                       {shippingOptions.map((option) => (
                         <option value={option.id}>
-                          {(option.name ?? "Shipping") +
+                          {(option.name ?? "Local delivery") +
                             (option.amount != null
                               ? ` - ${formatMoney(option.amount, option.currencyCode ?? cart?.currencyCode)}`
                               : "")}
@@ -249,11 +281,38 @@ const canPlaceOrder = items.length > 0 && shippingOptions.length > 0;
             <span>{formatMoney(cart?.total ?? cart?.itemTotal, cart?.currencyCode)}</span>
           </div>
           <p class="at-trust-note">
-            Your phone number is used to confirm delivery. We do not store card details on this
-            storefront.
+            {phoneRequired
+              ? "Your phone number is used to confirm the order. We do not store card details on this storefront."
+              : "We do not store card details on this storefront."}
           </p>
         </aside>
       </div>
     )
   }
+
+  <script is:inline>
+    (function () {
+      var select = document.getElementById("deliveryChoice");
+      if (!select) return;
+      function sync() {
+        var isDelivery = select.value === "delivery";
+        document.querySelectorAll("[data-delivery-only]").forEach(function (el) {
+          el.hidden = !isDelivery;
+          el.querySelectorAll("input, textarea, select").forEach(function (field) {
+            if (field.id === "landmark") {
+              var need = field.getAttribute("data-landmark-required") === "true";
+              field.required = isDelivery && need;
+            } else {
+              field.required = isDelivery;
+            }
+            if (!isDelivery) {
+              field.removeAttribute("required");
+            }
+          });
+        });
+      }
+      select.addEventListener("change", sync);
+      sync();
+    })();
+  </script>
 </Layout>
