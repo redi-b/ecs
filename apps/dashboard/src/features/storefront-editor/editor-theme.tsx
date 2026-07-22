@@ -32,7 +32,7 @@ import {
   rgbToHex,
 } from "@ecs/storefront-templates";
 
-import { FONT_OPTIONS } from "./editor-config";
+import { ensureStorefrontFontOptionsLoaded, FONT_OPTIONS } from "./editor-config";
 import type { StorefrontPageProps } from "./editor-state";
 import { themePalettePageProps, themeResetPageProps } from "./editor-state";
 import { isHexColor, updateStorefrontProp, updateStorefrontProps } from "./editor-utils";
@@ -622,21 +622,31 @@ export function FontSelect({
     [],
   );
 
+  useEffect(() => {
+    ensureStorefrontFontOptionsLoaded();
+  }, []);
+
   return (
     <SearchableCombobox
-      className="w-full min-w-0"
+      className="w-full min-w-0 font-normal"
       emptyLabel={t("editor.fonts.empty")}
       onChange={onChange}
       options={options}
       placeholder={t("editor.fonts.choose")}
       renderItem={(item) => (
-        <span className="min-w-0 flex-1 truncate" style={{ fontFamily: item.value }}>
+        <span
+          className="min-w-0 flex-1 truncate font-normal"
+          style={{ fontFamily: `"${item.value}", ui-sans-serif, system-ui, sans-serif` }}
+        >
           {item.label}
         </span>
       )}
       renderValue={(item) =>
         item ? (
-          <span className="truncate" style={{ fontFamily: item.value }}>
+          <span
+            className="truncate font-normal"
+            style={{ fontFamily: `"${item.value}", ui-sans-serif, system-ui, sans-serif` }}
+          >
             {item.label}
           </span>
         ) : (
@@ -644,6 +654,7 @@ export function FontSelect({
         )
       }
       searchPlaceholder={t("editor.fonts.search")}
+      triggerIcon="edit"
       value={value}
     />
   );

@@ -4,7 +4,11 @@ import { RiEditLine } from "@remixicon/react";
 
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { POPOVER_MOTION_CLASSNAME, useStorefrontPuck } from "@/features/storefront-editor/editor-config";
+import {
+  POPOVER_MOTION_CLASSNAME,
+  storefrontGoogleFontsHref,
+  useStorefrontPuck,
+} from "@/features/storefront-editor/editor-config";
 import { cn } from "@/lib/utils";
 
 import { EditorImageSourceActions } from "./editor-settings";
@@ -307,28 +311,10 @@ export function ClassicV1StorefrontPreview(
 
 /** Load Syne/Outfit (and draft theme fonts) for the visual editor twin. */
 function previewGoogleFontsHref(names: string[]) {
-  const catalog: Record<string, string> = {
-    Syne: "Syne:wght@500;600;700;800",
-    Outfit: "Outfit:wght@400;500;600;700",
-    Inter: "Inter:wght@400;500;600;700",
-    Geist: "Geist:wght@400;500;600;700",
-    Manrope: "Manrope:wght@400;500;600;700",
-    "DM Sans": "DM+Sans:wght@400;500;600;700",
-    "Plus Jakarta Sans": "Plus+Jakarta+Sans:wght@400;500;600;700",
-    "Nunito Sans": "Nunito+Sans:wght@400;500;600;700",
-    "Source Sans 3": "Source+Sans+3:wght@400;500;600;700",
-    Figtree: "Figtree:wght@400;500;600;700",
-  };
-  const seen = new Set<string>();
-  const families: string[] = [];
-  for (const name of [...names, "Syne", "Outfit"]) {
-    const spec = catalog[name];
-    if (spec && !seen.has(spec)) {
-      seen.add(spec);
-      families.push(spec);
-    }
-  }
-  return `https://fonts.googleapis.com/css2?${families.map((f) => `family=${f}`).join("&")}&display=swap`;
+  return (
+    storefrontGoogleFontsHref([...names, "Syne", "Outfit"]) ??
+    storefrontGoogleFontsHref(["Syne", "Outfit"])!
+  );
 }
 
 export function EditableText({
