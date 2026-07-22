@@ -83,6 +83,11 @@ type ProductCatalogPickerDialogProps = {
   emptyTitle?: string;
   emptyDescription?: string;
   confirmLabel?: string;
+  /**
+   * When true, Confirm works with zero selection (e.g. clear featured products).
+   * Default false preserves order-line “must pick something” behavior.
+   */
+  allowEmptySelection?: boolean;
   onConfirm: (ids: string[]) => void;
   showCreateProductLink?: boolean;
   onLoadMore?: () => void;
@@ -231,6 +236,7 @@ export function ProductCatalogPickerDialog({
   emptyTitle,
   emptyDescription,
   confirmLabel,
+  allowEmptySelection = false,
   onConfirm,
   showCreateProductLink = true,
   onLoadMore,
@@ -323,9 +329,13 @@ export function ProductCatalogPickerDialog({
   }
 
   function confirm() {
-    if (!selectedIds.length) return;
+    if (!selectedIds.length && !allowEmptySelection) return;
     onConfirm(selectedIds);
     onOpenChange(false);
+  }
+
+  function clearAll() {
+    setIds([]);
   }
 
   function handleLoadMore() {
@@ -628,18 +638,38 @@ export function ProductCatalogPickerDialog({
           </div>
         </div>
 
-        <DialogFooter className="mx-0 mb-0 shrink-0 rounded-none border-t bg-muted/50 p-4">
-          <Button onClick={() => onOpenChange(false)} type="button" variant="outline">
-            {t("common.cancel")}
-          </Button>
-          <Button disabled={selectedIds.length === 0} onClick={confirm} type="button">
-            {selectedIds.length === 0
-              ? (confirmLabel ?? t("products.catalogPicker.addSelected"))
-              : selectedIds.length === 1
-                ? (confirmLabel ?? t("products.catalogPicker.addSelected"))
-                : (confirmLabel ??
-                  t("products.catalogPicker.addSelectedCount", { count: selectedIds.length }))}
-          </Button>
+        <DialogFooter className="mx-0 mb-0 shrink-0 flex-col gap-2 rounded-none border-t bg-muted/50 p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+            {isMultiple && selectedIds.length > 0 ? (
+              <Button onClick={clearAll} type="button" variant="ghost">
+                {t("common.clearSelection")}
+              </Button>
+            ) : (
+              <span className="hidden sm:block" />
+            )}
+          </div>
+          <div className="flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto">
+            <Button onClick={() => onOpenChange(false)} type="button" variant="outline">
+              {t("common.cancel")}
+            </Button>
+            <Button
+              disabled={selectedIds.length === 0 && !allowEmptySelection}
+              onClick={confirm}
+              type="button"
+            >
+              {confirmLabel
+                ? confirmLabel
+                : selectedIds.length === 0
+                  ? allowEmptySelection
+                    ? t("common.save")
+                    : t("products.catalogPicker.addSelected")
+                  : selectedIds.length === 1
+                    ? t("products.catalogPicker.addSelected")
+                    : t("products.catalogPicker.addSelectedCount", {
+                        count: selectedIds.length,
+                      })}
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>

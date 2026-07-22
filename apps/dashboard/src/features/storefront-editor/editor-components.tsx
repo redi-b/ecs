@@ -598,16 +598,18 @@ export function StorefrontSettingsPanel() {
               {bodyFields.length > 0 ? (
                 <div
                   className={cn(
-                    "flex min-w-0 flex-col gap-4 p-4",
+                    "flex min-w-0 flex-col gap-5 p-4",
                     enabledField && !sectionVisible && "pointer-events-none opacity-50",
                   )}
                 >
                   {bodyFields.map((field) => {
                     const value = (props as Record<string, unknown>)[field.prop];
                     const helpText = "helpText" in field ? field.helpText : undefined;
+                    // Products picker owns its own helper copy — avoid stacked muted text.
+                    const showHelp = Boolean(helpText) && field.kind !== "products";
 
                     return (
-                      <Field className="min-w-0 gap-2" key={field.path}>
+                      <Field className="min-w-0 gap-2.5" key={field.path}>
                         {field.kind === "boolean" ? null : (
                           <FieldLabel className="text-sm font-medium">{field.label}</FieldLabel>
                         )}
@@ -619,8 +621,10 @@ export function StorefrontSettingsPanel() {
                             value={value}
                           />
                         </div>
-                        {helpText ? (
-                          <FieldDescription className="text-pretty">{helpText}</FieldDescription>
+                        {showHelp ? (
+                          <FieldDescription className="text-pretty leading-relaxed">
+                            {helpText}
+                          </FieldDescription>
                         ) : null}
                       </Field>
                     );
@@ -921,25 +925,35 @@ function StorefrontProductsPicker({
   );
 
   return (
-    <>
-      <ProductCatalogPickerTrigger
-        loading={loading}
-        onClick={() => setOpen(true)}
-        selectedCount={value.length}
-      />
-      {value.length > 0 ? (
-        <p className="text-xs text-muted-foreground">
-          {value.length === 1
-            ? "1 product selected for this section."
-            : `${value.length} products selected for this section.`}{" "}
-          Clear in the picker to show newest products automatically.
-        </p>
-      ) : (
-        <p className="text-xs text-muted-foreground">
-          No products selected — storefront shows newest products.
-        </p>
-      )}
+    <div className="flex flex-col gap-2.5">
+      <div className="flex items-center gap-2">
+        <div className="min-w-0 flex-1">
+          <ProductCatalogPickerTrigger
+            loading={loading}
+            onClick={() => setOpen(true)}
+            selectedCount={value.length}
+          />
+        </div>
+        {value.length > 0 ? (
+          <Button
+            className="h-9 shrink-0 px-3"
+            onClick={() => onChange([])}
+            type="button"
+            variant="outline"
+          >
+            Clear
+          </Button>
+        ) : null}
+      </div>
+      <p className="text-xs leading-relaxed text-muted-foreground">
+        {value.length === 0
+          ? "Empty selection shows newest products on the storefront."
+          : "Only these products appear in this section."}
+      </p>
       <ProductCatalogPickerDialog
+        allowEmptySelection
+        confirmLabel="Save selection"
+        description="Pick products for this section, or clear selection to show newest products on the storefront."
         items={items}
         loading={loading}
         onConfirm={onChange}
@@ -950,7 +964,7 @@ function StorefrontProductsPicker({
         selectionTarget="product"
         title="Featured products"
       />
-    </>
+    </div>
   );
 }
 
@@ -1274,16 +1288,7 @@ export function VisualEditorField({
 
   if (kind === "products") {
     const ids = Array.isArray(value) ? value.map(String) : [];
-    return (
-      <FieldGroup>
-        <Field>
-          <PuckFieldLabel label={label}>
-            <StorefrontProductsPicker onChange={onChange} value={ids} />
-          </PuckFieldLabel>
-          {helpText ? <FieldDescription>{helpText}</FieldDescription> : null}
-        </Field>
-      </FieldGroup>
-    );
+    return <StorefrontProductsPicker onChange={onChange} value={ids} />;
   }
 
   return (
@@ -1347,6 +1352,10 @@ export function UnsupportedTemplatePreview({ templateKey }: { templateKey: strin
   );
 }
 
+function isSectionEnabled(value: boolean | undefined) {
+  return value !== false;
+}
+
 export function ClassicV1StorefrontPreview(
   props: StorefrontPageProps & { storefrontName?: string },
 ) {
@@ -1363,21 +1372,40 @@ export function ClassicV1StorefrontPreview(
   const storefrontName = props.storefrontName || "Storefront";
   const displayFace = `"${headingFont}", Syne, ui-sans-serif, system-ui, sans-serif`;
 
+  const showAnnouncement = isSectionEnabled(props.announcementEnabled);
+  const showHero = isSectionEnabled(props.heroEnabled);
+  const showFeaturedCollection = isSectionEnabled(props.featuredCollectionEnabled);
+  const showFeaturedProducts = isSectionEnabled(props.featuredProductsEnabled);
+  const showCollectionsStrip = isSectionEnabled(props.collectionsStripEnabled);
+  const showTrust = isSectionEnabled(props.trustEnabled);
+  const showTestimonials = isSectionEnabled(props.testimonialsEnabled);
+
+  const featuredIds = Array.isArray(props.featuredProductIds) ? props.featuredProductIds : [];
+  const featuredCardCount =
+    featuredIds.length > 0 ? Math.min(Math.max(featuredIds.length, 1), 4) : 3;
+  const featuredCollectionHeading =
+    props.featuredCollectionTitle?.trim() ||
+    (props.featuredCollectionId ? "Selected collection" : "Featured collection");
+  const collectionsStripHeading = props.collectionsStripTitle?.trim() || "Collections";
+  const testimonialsHeading = props.testimonialsTitle?.trim() || "What customers say";
+
   return (
     <main className="min-h-full bg-background" style={theme}>
       <link href={previewGoogleFontsHref([headingFont, bodyFont])} rel="stylesheet" />
-      <div
-        className="px-5 py-2.5 text-center text-sm font-semibold text-white"
-        style={{ backgroundColor: primaryColor }}
-      >
-        <span className="mx-auto inline-block max-w-[70ch]">
-          <EditableText
-            fallback="Now accepting orders online."
-            propName="announcementText"
-            value={props.announcementText}
-          />
-        </span>
-      </div>
+      {showAnnouncement ? (
+        <div
+          className="px-5 py-2.5 text-center text-sm font-semibold text-white"
+          style={{ backgroundColor: primaryColor }}
+        >
+          <span className="mx-auto inline-block max-w-[70ch]">
+            <EditableText
+              fallback="Now accepting orders online."
+              propName="announcementText"
+              value={props.announcementText}
+            />
+          </span>
+        </div>
+      ) : null}
       <header className="mx-auto flex max-w-5xl items-center justify-between gap-6 px-8 py-5">
         <div className="flex items-center gap-3">
           <EditableImage
@@ -1409,74 +1437,170 @@ export function ClassicV1StorefrontPreview(
           </button>
         </nav>
       </header>
-      <section className="mx-auto grid min-h-[420px] max-w-5xl items-center gap-12 px-8 py-16 lg:grid-cols-[1.05fr_0.95fr]">
-        <div className="flex flex-col gap-5">
-          <p
-            className="text-sm font-extrabold uppercase tracking-normal"
-            style={{ color: primaryColor }}
-          >
-            {storefrontName}
-          </p>
-          <h1
-            className="max-w-3xl whitespace-pre-line text-[clamp(2.75rem,6vw,4.5rem)] font-bold leading-none tracking-tight"
-            style={{ fontFamily: displayFace }}
-          >
-            <EditableText
-              fallback="Your shop, online"
-              multiline
-              propName="heroTitle"
-              value={props.heroTitle}
-            />
-          </h1>
-          <p className="max-w-xl text-lg leading-7 opacity-75">
-            <EditableText
-              fallback="Browse products and place an order in minutes."
-              multiline
-              propName="heroSubtitle"
-              value={props.heroSubtitle}
-            />
-          </p>
-          <a
-            className="inline-flex h-11 min-w-[9.5rem] items-center justify-center rounded-full px-6 text-sm font-semibold text-white"
-            href={props.primaryCtaHref || "/"}
-            onClick={preventPreviewLink}
-            style={{ backgroundColor: primaryColor, color: "#ffffff" }}
-          >
-            <EditableText
-              fallback="Shop products"
-              propName="primaryCtaLabel"
-              value={props.primaryCtaLabel}
-            />
-          </a>
-        </div>
-        <EditableImage
-          placeholder="Hero image"
-          propName="heroImageAssetId"
-          toneColor={mutedColor}
-          value={props.heroImageAssetId}
-          variant="hero"
-        />
-      </section>
-      <section className="mx-auto max-w-5xl px-8 pb-12 pt-8">
-        <h2
-          className="text-2xl font-bold tracking-tight"
-          style={{ fontFamily: displayFace }}
-        >
-          <EditableText
-            fallback="Featured products"
-            propName="productSectionTitle"
-            value={props.productSectionTitle}
+      {showHero ? (
+        <section className="mx-auto grid min-h-[420px] max-w-5xl items-center gap-12 px-8 py-16 lg:grid-cols-[1.05fr_0.95fr]">
+          <div className="flex flex-col gap-5">
+            <p
+              className="text-sm font-extrabold uppercase tracking-normal"
+              style={{ color: primaryColor }}
+            >
+              {storefrontName}
+            </p>
+            <h1
+              className="max-w-3xl whitespace-pre-line text-[clamp(2.75rem,6vw,4.5rem)] font-bold leading-none tracking-tight"
+              style={{ fontFamily: displayFace }}
+            >
+              <EditableText
+                fallback="Your shop, online"
+                multiline
+                propName="heroTitle"
+                value={props.heroTitle}
+              />
+            </h1>
+            <p className="max-w-xl text-lg leading-7 opacity-75">
+              <EditableText
+                fallback="Browse products and place an order in minutes."
+                multiline
+                propName="heroSubtitle"
+                value={props.heroSubtitle}
+              />
+            </p>
+            <a
+              className="inline-flex h-11 min-w-[9.5rem] items-center justify-center rounded-full px-6 text-sm font-semibold text-white"
+              href={props.primaryCtaHref || "/"}
+              onClick={preventPreviewLink}
+              style={{ backgroundColor: primaryColor, color: "#ffffff" }}
+            >
+              <EditableText
+                fallback="Shop products"
+                propName="primaryCtaLabel"
+                value={props.primaryCtaLabel}
+              />
+            </a>
+          </div>
+          <EditableImage
+            placeholder="Hero image"
+            propName="heroImageAssetId"
+            toneColor={mutedColor}
+            value={props.heroImageAssetId}
+            variant="hero"
           />
-        </h2>
-        <div className="mt-5 grid gap-4 sm:grid-cols-3">
-          {[1, 2, 3].map((item) => (
-            <div className="rounded-lg border p-4" key={item}>
-              <div className="aspect-square rounded-md" style={{ backgroundColor: mutedColor }} />
-              <p className="mt-3 text-sm font-medium">Dynamic product</p>
+        </section>
+      ) : null}
+
+      {showCollectionsStrip ? (
+        <section className="mx-auto max-w-5xl px-8 pb-6 pt-4">
+          <h2 className="text-xl font-bold tracking-tight" style={{ fontFamily: displayFace }}>
+            <EditableText
+              fallback="Collections"
+              propName="collectionsStripTitle"
+              value={props.collectionsStripTitle}
+            />
+          </h2>
+          <div className="mt-4 flex flex-wrap gap-2">
+            {["One", "Two", "Three"].map((label) => (
+              <span
+                className="rounded-full border px-3 py-1.5 text-sm font-medium opacity-80"
+                key={label}
+              >
+                Collection {label}
+              </span>
+            ))}
+          </div>
+          <p className="mt-2 text-xs text-muted-foreground">
+            Live shop lists real collections. Preview shows placeholders.
+          </p>
+        </section>
+      ) : null}
+
+      {showFeaturedCollection ? (
+        <section className="mx-auto max-w-5xl px-8 pb-8 pt-4">
+          <h2 className="text-2xl font-bold tracking-tight" style={{ fontFamily: displayFace }}>
+            <EditableText
+              fallback={featuredCollectionHeading}
+              propName="featuredCollectionTitle"
+              value={props.featuredCollectionTitle}
+            />
+          </h2>
+          <div className="mt-5 grid gap-4 sm:grid-cols-3">
+            {[1, 2, 3].map((item) => (
+              <div className="rounded-lg border p-4" key={item}>
+                <div className="aspect-square rounded-md" style={{ backgroundColor: mutedColor }} />
+                <p className="mt-3 text-sm font-medium">
+                  {props.featuredCollectionId ? "Collection product" : "Pick a collection"}
+                </p>
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      {showFeaturedProducts ? (
+        <section className="mx-auto max-w-5xl px-8 pb-12 pt-4">
+          <h2 className="text-2xl font-bold tracking-tight" style={{ fontFamily: displayFace }}>
+            <EditableText
+              fallback="Featured products"
+              propName="productSectionTitle"
+              value={props.productSectionTitle}
+            />
+          </h2>
+          <div className="mt-5 grid gap-4 sm:grid-cols-3">
+            {Array.from({ length: featuredCardCount }, (_, index) => (
+              <div className="rounded-lg border p-4" key={index}>
+                <div className="aspect-square rounded-md" style={{ backgroundColor: mutedColor }} />
+                <p className="mt-3 text-sm font-medium">
+                  {featuredIds.length > 0
+                    ? `Selected product ${index + 1}`
+                    : "Newest product"}
+                </p>
+              </div>
+            ))}
+          </div>
+          <p className="mt-3 text-xs text-muted-foreground">
+            {featuredIds.length > 0
+              ? `${featuredIds.length} product${featuredIds.length === 1 ? "" : "s"} selected in settings.`
+              : "No manual pick — live shop shows newest products."}
+          </p>
+        </section>
+      ) : null}
+
+      {showTestimonials ? (
+        <section className="mx-auto max-w-5xl px-8 pb-10 pt-2">
+          <h2 className="text-xl font-bold tracking-tight" style={{ fontFamily: displayFace }}>
+            <EditableText
+              fallback={testimonialsHeading}
+              propName="testimonialsTitle"
+              value={props.testimonialsTitle}
+            />
+          </h2>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            <div className="rounded-lg border bg-muted/20 p-4 text-sm opacity-80">
+              “Great quality and fast delivery.”
+              <div className="mt-2 text-xs text-muted-foreground">— Preview quote</div>
+            </div>
+            <div className="rounded-lg border bg-muted/20 p-4 text-sm opacity-80">
+              “Will order again.”
+              <div className="mt-2 text-xs text-muted-foreground">— Preview quote</div>
+            </div>
+          </div>
+        </section>
+      ) : null}
+
+      {showTrust ? (
+        <section className="mx-auto grid max-w-5xl gap-4 px-8 pb-12 sm:grid-cols-3">
+          {[
+            { title: "Local delivery", body: "Delivery and pickup at checkout." },
+            { title: "Cash on delivery", body: "Pay when your order arrives." },
+            { title: "Clear options", body: "Pick size and color before you buy." },
+          ].map((item) => (
+            <div className="rounded-lg border p-4" key={item.title}>
+              <div className="text-sm font-semibold">{item.title}</div>
+              <p className="mt-1 text-sm opacity-75">{item.body}</p>
             </div>
           ))}
-        </div>
-      </section>
+        </section>
+      ) : null}
+
       <footer className="mx-auto flex max-w-5xl justify-between gap-5 border-t px-8 py-8 text-sm">
         <div className="flex flex-col gap-1">
           <strong style={{ fontFamily: displayFace }}>{storefrontName}</strong>
