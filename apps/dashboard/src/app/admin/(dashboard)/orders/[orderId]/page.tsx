@@ -10,7 +10,6 @@ import {
   Empty,
   EmptyDescription,
   EmptyHeader,
-  EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
 import { OrderDetail } from "@/features/orders/order-detail";
@@ -82,12 +81,12 @@ export default async function MerchantOrderDetailPage({
 async function OrderNotFoundState() {
   const t = await getTranslations();
   return (
-    <Empty className="min-h-[22rem] border bg-card/60">
-      <EmptyHeader>
-        <EmptyMedia variant="icon">
-          <AppIcons.orders />
-        </EmptyMedia>
-        <EmptyTitle>{t("orders.detail.notFoundTitle")}</EmptyTitle>
+    <Empty className="min-h-[22rem] gap-3 border border-dashed border-border/80 bg-muted/15">
+      <EmptyHeader className="gap-2.5">
+        <span className="text-muted-foreground/80">
+          <AppIcons.orders className="size-5" aria-hidden />
+        </span>
+        <EmptyTitle className="font-medium">{t("orders.detail.notFoundTitle")}</EmptyTitle>
         <EmptyDescription>{t("orders.detail.notFoundDesc")}</EmptyDescription>
       </EmptyHeader>
     </Empty>

@@ -65,7 +65,11 @@ type ProductMediaValues = {
 
 const PRODUCT_STATUS_OPTIONS = ["draft", "published"] as const;
 
-export function ProductDetailsEditButton({ action, product }: ProductEditSheetBaseProps) {
+export function ProductDetailsEditButton({
+  action,
+  product,
+  triggerVariant = "button",
+}: ProductEditSheetBaseProps & { triggerVariant?: "icon" | "button" }) {
   const { t } = useI18n();
   const detailsId = useId();
   const [values, setValues] = useState<ProductDetailsValues>(() => ({
@@ -103,6 +107,7 @@ export function ProductDetailsEditButton({ action, product }: ProductEditSheetBa
       }
       title={t("products.edit.detailsTitle")}
       triggerLabel={t("products.edit.detailsTrigger")}
+      triggerVariant={triggerVariant}
     >
       <Field>
         <FieldLabel htmlFor={`${detailsId}-title`}>{t("products.edit.title")}</FieldLabel>
@@ -198,6 +203,7 @@ export function ProductOrganizationEditButton({
       }
       title={t("products.edit.organizationTitle")}
       triggerLabel={t("products.edit.organizationTrigger")}
+      triggerVariant="icon"
     >
       <Field>
         <FieldLabel>{t("products.filter.collection.label")}</FieldLabel>
@@ -238,6 +244,7 @@ export function ProductMediaEditButton({ action, product }: ProductEditSheetBase
       onOpen={() => setValues(getProductMediaValues(product))}
       title={t("products.edit.mediaTitle")}
       triggerLabel={t("products.edit.mediaTrigger")}
+      triggerVariant="icon"
     >
       <MediaUploadField
         imageUrls={imageUrlList}
@@ -267,6 +274,7 @@ function ProductEditSheet({
   onOpen,
   title,
   triggerLabel,
+  triggerVariant = "icon",
 }: {
   action: string;
   buildPayload: () => Record<string, unknown>;
@@ -276,6 +284,8 @@ function ProductEditSheet({
   onOpen: () => void;
   title: string;
   triggerLabel: string;
+  /** icon = ghost pencil; button = labeled outline control */
+  triggerVariant?: "icon" | "button";
 }) {
   const { t } = useI18n();
   const router = useRouter();
@@ -330,15 +340,23 @@ function ProductEditSheet({
       }}
       open={open}
     >
-      <Button
-        aria-label={triggerLabel}
-        onClick={() => setOpen(true)}
-        size="icon-sm"
-        type="button"
-        variant="ghost"
-      >
-        <AppIcons.edit data-icon="inline-start" />
-      </Button>
+      {triggerVariant === "button" ? (
+        <Button onClick={() => setOpen(true)} size="sm" type="button" variant="outline">
+          <AppIcons.edit data-icon="inline-start" />
+          {triggerLabel}
+        </Button>
+      ) : (
+        <Button
+          aria-label={triggerLabel}
+          onClick={() => setOpen(true)}
+          size="sm"
+          type="button"
+          variant="ghost"
+        >
+          <AppIcons.edit data-icon="inline-start" />
+          <span className="text-xs font-medium">{t("common.edit")}</span>
+        </Button>
+      )}
       <SheetContent className={cn("w-full sm:max-w-md", contentClassName)}>
         <SheetHeader>
           <SheetTitle>{title}</SheetTitle>

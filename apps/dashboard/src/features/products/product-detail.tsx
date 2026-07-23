@@ -11,6 +11,13 @@ import { useRouter } from "next/navigation";
 import { type ReactNode, useMemo, useState } from "react";
 import { toast } from "sonner";
 
+import {
+  DetailField,
+  DetailFieldGrid,
+  DetailHero,
+  DetailMetric,
+  DetailSection,
+} from "@/components/app/detail-surface";
 import { AppIcons } from "@/components/app/icons";
 import {
   AlertDialog,
@@ -24,7 +31,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { MediaPreviewLightbox } from "@/features/media/media-lightbox";
 import {
   ProductDetailsEditButton,
@@ -83,45 +89,104 @@ export function ProductDetail({ action, product, tenantId }: ProductDetailProps)
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-          <div className="flex min-w-0 gap-4">
+    <div className="flex flex-col gap-4 sm:gap-5">
+      <DetailHero>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
+          <div className="flex min-w-0 items-center gap-3.5">
             <ProductThumbnail
               onOpen={() => openLightboxForUrl(product.thumbnail ?? images[0]?.url)}
               src={product.thumbnail}
               title={product.title}
             />
-            <div className="min-w-0 space-y-2">
+            <div className="min-w-0 space-y-1.5">
               <div className="flex flex-wrap items-center gap-2">
-                <CardTitle>{product.title ?? t("products.detail.untitled")}</CardTitle>
                 <ProductStatusBadge status={product.status} />
-                <ProductDetailsEditButton action={action} product={product} />
+                <ProductDetailsEditButton action={action} product={product} triggerVariant="button" />
               </div>
-              <CardDescription className="break-all">
+              <p className="type-meta break-all">
                 {product.handle ? `/${product.handle}` : product.id}
-              </CardDescription>
+              </p>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3 text-sm md:min-w-72">
-            <DetailMetric label={t("products.detail.variants")} value={`${product.variants?.length ?? 0}`} />
-            <DetailMetric label={t("products.detail.firstPrice")} value={formatFirstPrice(product, t)} />
+          <div className="grid grid-cols-2 gap-2 sm:w-auto sm:min-w-[13.5rem] sm:shrink-0">
+            <DetailMetric
+              label={t("products.detail.variants")}
+              value={`${product.variants?.length ?? 0}`}
+            />
+            <DetailMetric
+              label={t("products.detail.firstPrice")}
+              value={formatFirstPrice(product, t)}
+            />
           </div>
         </div>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        <section className="space-y-2">
-          <SectionHeader
-            action={<ProductDetailsEditButton action={action} product={product} />}
-            title={t("products.detail.description")}
-          />
-          <p className="text-sm whitespace-pre-wrap text-muted-foreground">
-            {product.description ?? t("products.detail.noDescription")}
-          </p>
-        </section>
+      </DetailHero>
 
-        <section className="space-y-3">
-          <SectionHeader
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(15.5rem,18rem)] lg:items-start">
+        <div className="flex min-w-0 flex-col gap-4">
+          {/* Description is edited via "Edit product" — no extra pencil here. */}
+          <DetailSection title={t("products.detail.description")}>
+            <p className="whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">
+              {product.description ?? t("products.detail.noDescription")}
+            </p>
+          </DetailSection>
+
+          <DetailSection
+            action={<ProductMediaEditButton action={action} product={product} />}
+            meta={t("products.detail.imagesCount", { count: images.length })}
+            title={t("products.detail.images")}
+          >
+            {images.length ? (
+              <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
+                {images.map((image, index) => {
+                  const isCover = Boolean(product.thumbnail && product.thumbnail === image.url);
+                  return (
+                    <figure
+                      className="group overflow-hidden rounded-xl bg-muted/20 ring-1 ring-border/60"
+                      key={image.id || image.url}
+                    >
+                      <button
+                        aria-label={t("products.detail.openImagePreview", { n: index + 1 })}
+                        className="relative block w-full cursor-zoom-in bg-muted text-left outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring"
+                        onClick={() => setLightboxIndex(index)}
+                        type="button"
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          alt={product.title ?? t("products.detail.productImage")}
+                          className="aspect-square w-full object-cover transition-transform duration-200 ease-out group-hover:scale-[1.02]"
+                          src={image.url}
+                        />
+                        <span className="pointer-events-none absolute inset-0 bg-linear-to-t from-black/35 via-transparent to-transparent opacity-0 transition-opacity duration-200 group-hover:opacity-100" />
+                        {isCover ? (
+                          <span className="absolute top-2 left-2 rounded-full bg-primary px-2 py-0.5 text-[10px] font-medium text-primary-foreground shadow-sm">
+                            {t("products.detail.cover")}
+                          </span>
+                        ) : null}
+                        <span className="absolute right-2 bottom-2 rounded-full border border-white/20 bg-black/45 p-1.5 text-white opacity-0 shadow-sm transition-opacity duration-200 group-hover:opacity-100">
+                          <AppIcons.expand className="size-3.5" />
+                        </span>
+                      </button>
+                    </figure>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="rounded-lg border border-dashed border-border/80 bg-muted/15 px-4 py-8 text-center text-sm text-muted-foreground">
+                {t("products.detail.noImagesYet")}
+              </p>
+            )}
+          </DetailSection>
+
+          <DetailSection
+            meta={t("products.detail.variantsCount", { count: product.variants?.length ?? 0 })}
+            title={t("products.detail.optionsTitle")}
+          >
+            <ProductOptionsSummary product={product} />
+          </DetailSection>
+        </div>
+
+        <aside className="flex flex-col gap-4 lg:sticky lg:top-20">
+          <DetailSection
             action={
               <ProductOrganizationEditButton
                 action={action}
@@ -131,84 +196,30 @@ export function ProductDetail({ action, product, tenantId }: ProductDetailProps)
               />
             }
             title={t("products.detail.organization")}
-          />
-          <div className="grid gap-4 md:grid-cols-2">
-            <DetailField
-              label={t("products.detail.collection")}
-              value={
-                <CollectionValue collection={collection} product={product} tenantId={tenantId} />
-              }
-            />
-            <DetailField
-              label={t("products.detail.categories")}
-              value={<CategoryValue categories={productCategories} tenantId={tenantId} />}
-            />
-            <DetailField label={t("products.detail.created")} value={formatDateTime(product.createdAt, t)} />
-            <DetailField label={t("products.detail.updated")} value={formatDateTime(product.updatedAt, t)} />
-          </div>
-        </section>
-
-        <section className="space-y-3">
-          <SectionHeader
-            action={<ProductMediaEditButton action={action} product={product} />}
-            meta={t("products.detail.imagesCount", { count: images.length })}
-            title={t("products.detail.images")}
-          />
-          {images.length ? (
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              {images.map((image, index) => {
-                const isCover = Boolean(product.thumbnail && product.thumbnail === image.url);
-                return (
-                  <figure
-                    className="group overflow-hidden rounded-lg border bg-muted/30"
-                    key={image.id || image.url}
-                  >
-                    <button
-                      aria-label={t("products.detail.openImagePreview", { n: index + 1 })}
-                      className="relative block w-full cursor-zoom-in bg-muted text-left outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring"
-                      onClick={() => setLightboxIndex(index)}
-                      type="button"
-                    >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        alt={product.title ?? t("products.detail.productImage")}
-                        className="aspect-square w-full object-cover transition-transform duration-200 ease-out group-hover:scale-[1.02]"
-                        src={image.url}
-                      />
-                      <span className="pointer-events-none absolute inset-0 bg-linear-to-t from-black/40 via-transparent to-transparent opacity-0 transition-opacity duration-200 group-hover:opacity-100" />
-                      {isCover ? (
-                        <span className="absolute top-2 left-2 rounded-full bg-primary px-2 py-0.5 text-[10px] font-medium text-primary-foreground shadow-sm">
-                          {t("products.detail.cover")}
-                        </span>
-                      ) : null}
-                      <span className="absolute right-2 bottom-2 rounded-full border border-white/20 bg-black/45 p-1.5 text-white opacity-0 shadow-sm transition-opacity duration-200 group-hover:opacity-100">
-                        <AppIcons.expand className="size-3.5" />
-                      </span>
-                    </button>
-                    <figcaption className="truncate px-3 py-2 text-xs text-muted-foreground">
-                      {image.url}
-                    </figcaption>
-                  </figure>
-                );
-              })}
-            </div>
-          ) : (
-            <p className="rounded-lg border border-dashed px-4 py-6 text-sm text-muted-foreground">
-              {t("products.detail.noImagesYet")}
-            </p>
-          )}
-        </section>
-
-        <section className="space-y-3">
-          <div className="flex items-center justify-between gap-3">
-            <h2 className="text-sm font-medium">{t("products.detail.optionsTitle")}</h2>
-            <span className="text-sm text-muted-foreground">
-              {t("products.detail.variantsCount", { count: product.variants?.length ?? 0 })}
-            </span>
-          </div>
-          <ProductOptionsSummary product={product} />
-        </section>
-      </CardContent>
+          >
+            <DetailFieldGrid className="sm:grid-cols-1">
+              <DetailField
+                label={t("products.detail.collection")}
+                value={
+                  <CollectionValue collection={collection} product={product} tenantId={tenantId} />
+                }
+              />
+              <DetailField
+                label={t("products.detail.categories")}
+                value={<CategoryValue categories={productCategories} tenantId={tenantId} />}
+              />
+              <DetailField
+                label={t("products.detail.created")}
+                value={formatDateTime(product.createdAt, t)}
+              />
+              <DetailField
+                label={t("products.detail.updated")}
+                value={formatDateTime(product.updatedAt, t)}
+              />
+            </DetailFieldGrid>
+          </DetailSection>
+        </aside>
+      </div>
 
       <MediaPreviewLightbox
         index={lightboxIndex}
@@ -216,7 +227,7 @@ export function ProductDetail({ action, product, tenantId }: ProductDetailProps)
         onClose={() => setLightboxIndex(null)}
         onIndexChange={setLightboxIndex}
       />
-    </Card>
+    </div>
   );
 }
 
@@ -227,7 +238,7 @@ function ProductOptionsSummary({ product }: { product: MerchantProduct }) {
 
   if (!variants.length) {
     return (
-      <p className="rounded-lg border border-dashed px-4 py-6 text-sm text-muted-foreground">
+      <p className="rounded-lg border border-dashed border-border/80 bg-muted/15 px-4 py-8 text-center text-sm text-muted-foreground">
         {t("products.detail.noVariantsYet")}
       </p>
     );
@@ -235,7 +246,7 @@ function ProductOptionsSummary({ product }: { product: MerchantProduct }) {
 
   if (!options.length) {
     return (
-      <div className="rounded-lg border bg-muted/20 px-4 py-3 text-sm">
+      <div className="rounded-lg bg-muted/25 px-4 py-3 text-sm ring-1 ring-foreground/[0.06]">
         <div className="font-medium">{t("products.detail.simpleProduct")}</div>
         <div className="mt-1 text-muted-foreground">
           {t("products.detail.simpleProductHelp")}
@@ -245,39 +256,22 @@ function ProductOptionsSummary({ product }: { product: MerchantProduct }) {
   }
 
   return (
-    <div className="grid gap-3 md:grid-cols-2">
+    <div className="grid gap-2.5 sm:grid-cols-2">
       {options.map((option) => (
-        <div className="rounded-lg border bg-muted/20 px-4 py-3" key={option.title}>
+        <div
+          className="rounded-lg bg-muted/25 px-3.5 py-3 ring-1 ring-foreground/[0.06]"
+          key={option.title}
+        >
           <div className="text-sm font-medium">{option.title}</div>
           <div className="mt-2 flex flex-wrap gap-1.5">
             {option.values.map((value) => (
-              <Badge className="rounded-md" key={value} variant="secondary">
+              <Badge className="rounded-md font-normal" key={value} variant="secondary">
                 {value}
               </Badge>
             ))}
           </div>
         </div>
       ))}
-    </div>
-  );
-}
-
-function SectionHeader({
-  action,
-  meta,
-  title,
-}: {
-  action?: ReactNode;
-  meta?: string;
-  title: string;
-}) {
-  return (
-    <div className="flex items-center justify-between gap-3">
-      <div className="flex min-w-0 items-center gap-2">
-        <h2 className="text-sm font-medium">{title}</h2>
-        {action}
-      </div>
-      {meta ? <span className="text-sm text-muted-foreground">{meta}</span> : null}
     </div>
   );
 }
@@ -315,7 +309,7 @@ function ProductThumbnail({
   const { t } = useI18n();
   if (!src) {
     return (
-      <div className="flex size-20 shrink-0 items-center justify-center rounded-lg border border-dashed bg-muted text-xs font-medium text-muted-foreground">
+      <div className="flex size-16 shrink-0 items-center justify-center rounded-xl border border-dashed bg-muted text-[10px] font-medium text-muted-foreground sm:size-[4.5rem]">
         {t("products.detail.noImage")}
       </div>
     );
@@ -323,7 +317,7 @@ function ProductThumbnail({
 
   if (!onOpen) {
     return (
-      <div className="size-20 shrink-0 overflow-hidden rounded-lg border bg-muted">
+      <div className="size-16 shrink-0 overflow-hidden rounded-xl ring-1 ring-border/60 bg-muted sm:size-[4.5rem]">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img alt={title ?? t("products.detail.productImage")} className="size-full object-cover" src={src} />
       </div>
@@ -334,7 +328,7 @@ function ProductThumbnail({
     <button
       aria-label={t("products.detail.openCoverPreview")}
       className={cn(
-        "group relative size-20 shrink-0 overflow-hidden rounded-lg border bg-muted",
+        "group relative size-16 shrink-0 overflow-hidden rounded-xl bg-muted ring-1 ring-border/60 sm:size-[4.5rem]",
         "cursor-zoom-in outline-none transition-shadow focus-visible:ring-2 focus-visible:ring-ring",
       )}
       onClick={onOpen}
@@ -369,24 +363,6 @@ function ProductStatusBadge({ status }: { status: string | null }) {
     <Badge variant={variant}>
       {label}
     </Badge>
-  );
-}
-
-function DetailMetric({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-lg border bg-muted/30 px-3 py-2">
-      <div className="text-xs text-muted-foreground">{label}</div>
-      <div className="truncate text-sm font-medium">{value}</div>
-    </div>
-  );
-}
-
-function DetailField({ label, value }: { label: string; value: ReactNode }) {
-  return (
-    <div className="space-y-1 rounded-lg border px-4 py-3">
-      <div className="text-xs font-medium text-muted-foreground">{label}</div>
-      <div className="break-words text-sm">{value}</div>
-    </div>
   );
 }
 

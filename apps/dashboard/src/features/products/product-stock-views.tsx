@@ -460,13 +460,14 @@ export function VariantStockPanel({
 export function getVariantInventoryColumns(t: Translate): ColumnDef<VariantInventoryRow>[] {
   return [
     {
+      id: "variant",
       accessorFn: (row) => row.variant.title ?? row.variant.id,
       header: t("products.stock.colVariant"),
       cell: ({ row }) => {
         const { error, variant } = row.original;
 
         return (
-          <div className="w-64 max-w-64 whitespace-normal">
+          <div className="min-w-[12rem] max-w-[18rem] whitespace-normal">
             <div className="font-medium">
               {variant.title ?? t("products.stock.untitledVariant")}
             </div>
@@ -478,28 +479,34 @@ export function getVariantInventoryColumns(t: Translate): ColumnDef<VariantInven
       },
     },
     {
+      id: "sku",
       accessorFn: (row) => row.variant.sku ?? "",
       header: t("products.stock.colSku"),
       cell: ({ row }) => (
-        <span className="text-muted-foreground">
+        <span className="font-mono text-xs text-muted-foreground">
           {row.original.variant.sku ?? t("products.stock.noSku")}
         </span>
       ),
     },
     {
+      id: "price",
       accessorFn: (row) => formatVariantPrice(row.variant, t),
       header: t("products.stock.colPrice"),
-      cell: ({ row }) => formatVariantPrice(row.original.variant, t),
+      cell: ({ row }) => (
+        <span className="tabular-nums">{formatVariantPrice(row.original.variant, t)}</span>
+      ),
     },
     {
+      id: "available",
       accessorFn: (row) => row.stock?.availableQuantity ?? row.stock?.stockedQuantity ?? 0,
+      // Keep header/cell alignment: both start-aligned (sticky "actions" id was the bug).
       header: t("products.stock.colAvailable"),
       cell: ({ row }) => {
         const { isLoading, stock } = row.original;
 
         return (
-          <div className="text-right">
-            <div className="font-medium">
+          <div className="min-w-[5.5rem]">
+            <div className="font-medium tabular-nums">
               {isLoading
                 ? t("products.stock.loading")
                 : formatQuantity(stock?.availableQuantity ?? null, t)}
@@ -514,25 +521,27 @@ export function getVariantInventoryColumns(t: Translate): ColumnDef<VariantInven
       },
     },
     {
+      id: "reserved",
       accessorFn: (row) => row.stock?.reservedQuantity ?? 0,
       header: t("products.stock.colReserved"),
       cell: ({ row }) => (
-        <div className="text-right">
+        <span className="tabular-nums">
           {row.original.isLoading
             ? t("products.stock.loading")
             : formatQuantity(row.original.stock?.reservedQuantity ?? null, t)}
-        </div>
+        </span>
       ),
     },
     {
-      id: "actions",
+      // Must not use id "actions" — DataTable treats that as sticky-right chrome.
+      id: "stocked",
       header: t("products.stock.colStocked"),
       cell: ({ row }) => {
         const item = row.original;
 
         return (
           <form
-            className="flex items-center justify-end gap-2"
+            className="flex items-center gap-2"
             onSubmit={(event) => {
               event.preventDefault();
               item.onSubmit();
@@ -542,7 +551,7 @@ export function getVariantInventoryColumns(t: Translate): ColumnDef<VariantInven
               aria-label={t("products.stock.stockedAria", {
                 name: item.variant.title ?? item.variant.id,
               })}
-              className="h-9 w-24"
+              className="h-9 w-20 tabular-nums"
               min="0"
               onChange={(event) => item.onStockedQuantityChange(event.target.value)}
               step="1"
