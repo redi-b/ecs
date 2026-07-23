@@ -57,6 +57,17 @@ export default async function MerchantProductsPage({ searchParams }: MerchantPro
     ...(categoryFilter !== "all" ? { categoryId: categoryFilter } : {}),
   });
   const errorState = result.ok ? null : getListErrorState("products", result.message);
+  const mediaFilter = parseProductMediaFilter(resolvedSearchParams.media);
+  const stockFilter = parseProductStockFilter(resolvedSearchParams.stock);
+  const variantCountFilter = parseProductVariantCountFilter(resolvedSearchParams.variantCount);
+  const listFiltered =
+    Boolean(listParams.q) ||
+    statusFilter !== "all" ||
+    collectionFilter !== "all" ||
+    categoryFilter !== "all" ||
+    mediaFilter !== "all" ||
+    stockFilter !== "all" ||
+    variantCountFilter !== "all";
 
   return (
     <PageShell
@@ -80,7 +91,12 @@ export default async function MerchantProductsPage({ searchParams }: MerchantPro
       ) : null}
       {result.ok ? (
         <>
-          <ListSummary count={result.products.count} label={t("nav.products").toLowerCase()} />
+          <ListSummary
+            count={result.products.count}
+            filtered={listFiltered}
+            page={listParams.page}
+            pageSize={result.products.limit}
+          />
           <ProductsTable
             footer={
               <PaginationControls
@@ -93,11 +109,11 @@ export default async function MerchantProductsPage({ searchParams }: MerchantPro
             }
             initialCategoryId={categoryFilter}
             initialCollectionId={collectionFilter}
-            initialMedia={parseProductMediaFilter(resolvedSearchParams.media)}
+            initialMedia={mediaFilter}
             initialQuery={listParams.q}
             initialStatus={statusFilter}
-            initialStock={parseProductStockFilter(resolvedSearchParams.stock)}
-            initialVariantCount={parseProductVariantCountFilter(resolvedSearchParams.variantCount)}
+            initialStock={stockFilter}
+            initialVariantCount={variantCountFilter}
             pageSize={result.products.limit}
             products={result.products.products}
             tenantId={tenantId}

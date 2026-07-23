@@ -74,7 +74,12 @@ export default async function MerchantProductCollectionsPage({
       ) : null}
       {result.ok ? (
         <>
-          <ListSummary count={result.count} label={t("nav.productCollections").toLowerCase()} />
+          <ListSummary
+            count={result.count}
+            filtered={Boolean(listParams.q)}
+            page={listParams.page}
+            pageSize={result.limit}
+          />
           <ProductCollectionsTable
             collections={result.collections}
             footer={

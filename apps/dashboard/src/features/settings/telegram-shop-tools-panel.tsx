@@ -447,7 +447,7 @@ export function TelegramShopToolsPanel({
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="truncate text-sm font-semibold">{binding.label}</span>
-                        <Badge variant={binding.enabled ? "secondary" : "outline"}>
+                        <Badge variant={binding.enabled ? "success" : "outline"}>
                           {binding.enabled
                             ? t("settings.telegram.enabled")
                             : t("settings.telegram.disabled")}

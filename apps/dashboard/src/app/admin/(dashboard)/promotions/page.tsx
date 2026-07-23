@@ -55,7 +55,12 @@ export default async function PromotionsPage({ searchParams }: PromotionsPagePro
     >
       {result.ok ? (
         <>
-          <ListSummary count={result.promotions.count} label={t("nav.promotions").toLowerCase()} />
+          <ListSummary
+            count={result.promotions.count}
+            filtered={Boolean(listParams.q) || Boolean(status)}
+            page={listParams.page}
+            pageSize={listParams.pageSize}
+          />
           <PromotionsManager
             footer={
               <PaginationControls

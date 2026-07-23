@@ -72,10 +72,10 @@ function OnlineStatusBadge({ status }: { status: OnlineStatus }) {
     return <Badge variant="outline">{t("settings.payments.status.loading")}</Badge>;
   }
   if (status === "on") {
-    return <Badge variant="secondary">{t("settings.payments.status.on")}</Badge>;
+    return <Badge variant="success">{t("settings.payments.status.on")}</Badge>;
   }
   if (status === "off") {
-    return <Badge variant="outline">{t("settings.payments.status.off")}</Badge>;
+    return <Badge variant="warning">{t("settings.payments.status.off")}</Badge>;
   }
   return <Badge variant="outline">{t("settings.payments.status.notConnected")}</Badge>;
 }

@@ -344,7 +344,7 @@ export function ProductStockSummary({
   );
 
   return (
-    <Badge variant={available > 0 ? "default" : "secondary"}>
+    <Badge variant={available > 0 ? "success" : "warning"}>
       {available > 0
         ? t
           ? t("products.table.availableCount", { count: available })

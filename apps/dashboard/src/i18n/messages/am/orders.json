@@ -292,7 +292,7 @@
     "itemsCount": "{count} ንጥሎች",
     "itemFallback": "ንጥል",
     "itemsMore": "{first} +{count} ተጨማሪ",
-    "customerFallback": "ደንበኛ",
+    "customerFallback": "እንግዳ",
     "noCustomer": "ደንበኛ የለም",
     "notAvailable": "አይገኝም",
     "statusPaid": "ተከፍሏል",

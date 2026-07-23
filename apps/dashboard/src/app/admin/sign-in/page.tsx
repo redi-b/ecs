@@ -93,15 +93,15 @@ export default async function AdminSignInPage({
             : t("auth.shopBrandTitle")
       }
     >
-      <div className="rounded-2xl border border-border bg-card p-7 shadow-sm sm:p-9">
+      <div className="rounded-2xl border border-border/80 bg-card p-7 shadow-[0_1px_2px_color-mix(in_oklch,var(--foreground)_6%,transparent),0_12px_40px_-24px_color-mix(in_oklch,var(--foreground)_18%,transparent)] ring-1 ring-foreground/[0.03] sm:p-9">
         <div className="mb-7">
-          <p className="text-xs font-semibold tracking-[0.06em] text-muted-foreground uppercase">
+          <p className="type-eyebrow">
             {shopName ?? t("auth.merchantConsole")}
           </p>
-          <h2 className="mt-2.5 text-xl font-semibold tracking-tight sm:text-[1.35rem]">
+          <h2 className="type-page-title mt-2.5 sm:text-[1.35rem]">
             {t("auth.signIn")}
           </h2>
-          <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+          <p className="type-meta mt-2">
             {isCentralAccess
               ? t("auth.centralDescription")
               : shopName
@@ -111,7 +111,7 @@ export default async function AdminSignInPage({
         </div>
         <SignInForm errorMessage={errorMessage} nextPath={nextPath} />
         {isCentralAccess ? (
-          <p className="mt-7 border-t pt-6 text-center text-sm text-muted-foreground">
+          <p className="mt-7 border-t border-border/80 pt-6 text-center text-sm text-muted-foreground">
             {t("auth.newMerchant")}{" "}
             <Link
               className="font-medium text-primary underline-offset-4 hover:underline"
@@ -121,7 +121,7 @@ export default async function AdminSignInPage({
             </Link>
           </p>
         ) : (
-          <p className="mt-7 border-t pt-6 text-center text-sm text-muted-foreground">
+          <p className="mt-7 border-t border-border/80 pt-6 text-center text-sm text-muted-foreground">
             <a
               className="font-medium text-primary underline-offset-4 hover:underline"
               href={centralSignIn}

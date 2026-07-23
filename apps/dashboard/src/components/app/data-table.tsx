@@ -170,11 +170,11 @@ export function DataTable<TData>({
       className={
         embedded
           ? "flex min-w-0 flex-col"
-          : "mb-4 flex w-full min-w-0 flex-col overflow-hidden rounded-[1.35rem] border bg-card/95 lg:mb-6"
+          : "mb-4 flex w-full min-w-0 flex-col overflow-hidden rounded-2xl border border-border/80 bg-card/95 shadow-[0_1px_2px_color-mix(in_oklch,var(--foreground)_4%,transparent)] lg:mb-6"
       }
     >
       {!embedded && toolbar ? (
-        <div className="shrink-0 border-b bg-muted/20 p-3">{toolbar}</div>
+        <div className="shrink-0 border-b border-border/80 bg-muted/15 p-3">{toolbar}</div>
       ) : null}
 
       {isEmpty ? (
@@ -208,9 +208,9 @@ export function DataTable<TData>({
                     {headerGroup.headers.map((header) => (
                       <TableHead
                         className={cn(
-                          // Solid surface. Use 1px box-shadow (not border-b): sticky table cells
-                          // paint body rows over CSS borders while scrolling.
-                          "h-11 bg-card px-4 text-xs uppercase text-muted-foreground sticky top-0",
+                          // Opaque but soft: mix muted into card so sticky headers block bleed
+                          // without a heavy gray bar against white rows.
+                          "h-11 sticky top-0 bg-[color-mix(in_oklch,var(--muted)_42%,var(--card))] px-4 text-xs font-medium tracking-normal text-muted-foreground",
                           "shadow-[0_1px_0_0_var(--border)]",
                           getStickyColumnClass(header.column.id, true),
                         )}
@@ -303,12 +303,15 @@ export function DataTable<TData>({
   );
 }
 
+const stickyHeaderBg =
+  "bg-[color-mix(in_oklch,var(--muted)_42%,var(--card))]";
+
 function getStickyColumnClass(columnId: string, isHeader: boolean, isSelected = false) {
   if (columnId === "select") {
     return cn(
       "sticky left-0 w-12 min-w-12",
       isHeader
-        ? "z-40 bg-card"
+        ? cn("z-40", stickyHeaderBg)
         : cn(
             "z-20",
             isSelected
@@ -322,7 +325,7 @@ function getStickyColumnClass(columnId: string, isHeader: boolean, isSelected = 
     return cn(
       "sticky right-0 w-14 min-w-14",
       isHeader
-        ? "z-40 bg-card"
+        ? cn("z-40", stickyHeaderBg)
         : cn(
             "z-20",
             isSelected

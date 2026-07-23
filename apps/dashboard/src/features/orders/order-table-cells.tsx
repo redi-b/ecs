@@ -13,8 +13,8 @@ import {
   getDisplayOrderEmail,
   getMethodLabel,
   getMethodShortLabel,
-  getOrderCustomerName,
   getOrderCustomerPhone,
+  getOrderCustomerRealName,
   getOrderItemsSummary,
   getOrderProgress,
   getOrderProgressLabel,
@@ -52,16 +52,30 @@ export function OrderPlacedCell({ order }: { order: MerchantOrder }) {
 
 export function OrderCustomerCell({ order }: { order: MerchantOrder }) {
   const { t } = useI18n();
-  const name = getOrderCustomerName(order, t);
+  const realName = getOrderCustomerRealName(order);
   const phone = getOrderCustomerPhone(order);
-  const secondary = phone || getDisplayOrderEmail(order.email) || null;
+  const email = getDisplayOrderEmail(order.email);
+
+  // Prefer real name; otherwise lead with phone/email so we never show
+  // "Customer" under a column also labeled Customer.
+  const primary = realName || phone || email || t("orders.labels.customerFallback");
+  const secondary = realName ? phone || email : phone && email ? email : null;
+  const primaryIsPhone = !realName && Boolean(phone) && primary === phone;
 
   return (
     <div className="min-w-0 space-y-0.5">
-      <p className="truncate font-medium">{name}</p>
+      <p className="truncate font-medium">
+        {primaryIsPhone ? (
+          <a className="hover:underline" href={`tel:${phone}`}>
+            {primary}
+          </a>
+        ) : (
+          primary
+        )}
+      </p>
       {secondary ? (
         <p className="truncate text-xs text-muted-foreground">
-          {phone ? (
+          {realName && phone ? (
             <a className="hover:underline" href={`tel:${phone}`}>
               {phone}
             </a>
@@ -100,13 +114,16 @@ export function OrderPaymentCell({ order }: { order: MerchantOrder }) {
         {getMethodShortLabel(method, t)}
       </Badge>
       <Badge
-        variant="secondary"
-        className={cn(
-          "font-normal",
-          payment === "paid" && "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
-          payment === "unpaid" && "bg-amber-500/10 text-amber-800 dark:text-amber-400",
-          payment === "failed" && "bg-red-500/10 text-red-700 dark:text-red-400",
-        )}
+        variant={
+          payment === "paid"
+            ? "success"
+            : payment === "unpaid"
+              ? "warning"
+              : payment === "failed"
+                ? "destructive"
+                : "secondary"
+        }
+        className="font-normal"
       >
         {getPaymentStatusLabel(payment, t)}
       </Badge>
@@ -117,17 +134,18 @@ export function OrderPaymentCell({ order }: { order: MerchantOrder }) {
 export function OrderProgressBadge({ order }: { order: MerchantOrder }) {
   const { t } = useI18n();
   const progress = getOrderProgress(order);
+  const variant =
+    progress === "completed"
+      ? "success"
+      : progress === "new"
+        ? "info"
+        : progress === "ready"
+          ? "secondary"
+          : progress === "canceled"
+            ? "outline"
+            : "secondary";
   return (
-    <Badge
-      variant="secondary"
-      className={cn(
-        "font-normal",
-        progress === "new" && "bg-sky-500/10 text-sky-800 dark:text-sky-400",
-        progress === "ready" && "bg-violet-500/10 text-violet-800 dark:text-violet-400",
-        progress === "completed" && "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
-        progress === "canceled" && "text-muted-foreground",
-      )}
-    >
+    <Badge variant={variant} className="font-normal">
       {getOrderProgressLabel(progress, t)}
     </Badge>
   );

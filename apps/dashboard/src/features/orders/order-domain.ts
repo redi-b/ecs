@@ -176,7 +176,8 @@ export function getDeliveryDisplayLabel(label: OrderDeliveryLabel, t?: Translate
   }
 }
 
-export function getOrderCustomerName(order: MerchantOrder, t?: Translate) {
+/** Real name only (delivery / shipping). No phone/email/fallback. */
+export function getOrderCustomerRealName(order: MerchantOrder) {
   const fromDelivery = order.delivery?.customerName?.trim();
   if (fromDelivery) return fromDelivery;
 
@@ -186,9 +187,24 @@ export function getOrderCustomerName(order: MerchantOrder, t?: Translate) {
     .trim();
   if (fromAddress) return fromAddress;
 
+  return null;
+}
+
+/**
+ * Best single-line label for lists and toasts.
+ * Prefer real name → phone → email → localized guest fallback (not the word "Customer").
+ */
+export function getOrderCustomerName(order: MerchantOrder, t?: Translate) {
+  const realName = getOrderCustomerRealName(order);
+  if (realName) return realName;
+
+  const phone = getOrderCustomerPhone(order);
+  if (phone) return phone;
+
   const email = getDisplayOrderEmail(order.email);
   if (email) return email;
-  return t ? t("orders.labels.customerFallback") : "Customer";
+
+  return t ? t("orders.labels.customerFallback") : "Guest";
 }
 
 export function getOrderCustomerPhone(order: MerchantOrder) {

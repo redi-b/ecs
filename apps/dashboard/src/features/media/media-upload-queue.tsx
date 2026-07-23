@@ -130,7 +130,7 @@ export function MediaUploadQueue({
               </div>
             </div>
           </div>
-          <Badge variant={failed ? "destructive" : busy ? "secondary" : "outline"}>
+          <Badge variant={failed ? "destructive" : busy ? "info" : "success"}>
             {overall}%
           </Badge>
           <Button

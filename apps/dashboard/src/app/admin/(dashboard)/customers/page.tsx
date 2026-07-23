@@ -51,7 +51,12 @@ export default async function CustomersPage({ searchParams }: CustomersPageProps
     >
       {result.ok ? (
         <>
-          <ListSummary count={result.customers.count} label={t("nav.customers").toLowerCase()} />
+          <ListSummary
+            count={result.customers.count}
+            filtered={Boolean(listParams.q)}
+            page={listParams.page}
+            pageSize={result.customers.limit}
+          />
           <CustomersTable
             customers={result.customers.customers}
             footer={

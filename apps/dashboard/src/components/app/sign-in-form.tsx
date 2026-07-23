@@ -71,7 +71,7 @@ export function SignInForm({
       <FieldGroup className="gap-4">
         <Field>
           <FieldLabel htmlFor={`${fieldId}-email`}>{t("auth.email")}</FieldLabel>
-          <InputGroup className="h-11 rounded-xl bg-background px-1 transition-colors hover:border-ring/50 focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/25">
+          <InputGroup className="h-11 rounded-full border-border/80 bg-background px-1 transition-[border-color,box-shadow] duration-150 ease-[var(--ease-dashboard)] hover:border-ring/45 focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/25">
             <InputGroupInput
               autoComplete="email"
               autoFocus
@@ -87,7 +87,7 @@ export function SignInForm({
         </Field>
         <Field>
           <FieldLabel htmlFor={`${fieldId}-password`}>{t("auth.password")}</FieldLabel>
-          <InputGroup className="h-11 rounded-xl bg-background px-1 transition-colors hover:border-ring/50 focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/25">
+          <InputGroup className="h-11 rounded-full border-border/80 bg-background px-1 transition-[border-color,box-shadow] duration-150 ease-[var(--ease-dashboard)] hover:border-ring/45 focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/25">
             <InputGroupInput
               autoComplete="current-password"
               className="px-3 text-sm"
@@ -118,7 +118,7 @@ export function SignInForm({
       </FieldGroup>
       <Button
         aria-busy={isSubmitting}
-        className="h-11 w-full rounded-xl text-sm font-semibold"
+        className="mt-1 h-11 w-full rounded-full text-sm font-semibold shadow-[0_1px_0_color-mix(in_oklch,white_18%,transparent)_inset]"
         disabled={isSubmitting}
         type="submit"
       >

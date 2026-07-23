@@ -42,6 +42,13 @@ export default async function MerchantOrdersPage({ searchParams }: MerchantOrder
     created: filters.created !== "all" ? filters.created : undefined,
   });
   const errorState = result.ok ? null : getListErrorState("orders", result.message);
+  const listFiltered =
+    Boolean(filters.q) ||
+    filters.progress !== "all" ||
+    filters.payment !== "all" ||
+    filters.method !== "all" ||
+    filters.delivery !== "all" ||
+    filters.created !== "all";
 
   return (
     <PageShell
@@ -56,7 +63,12 @@ export default async function MerchantOrdersPage({ searchParams }: MerchantOrder
     >
       {result.ok ? (
         <>
-          <ListSummary count={result.orders.count} label={t("nav.orders").toLowerCase()} />
+          <ListSummary
+            count={result.orders.count}
+            filtered={listFiltered}
+            page={listParams.page}
+            pageSize={result.orders.limit}
+          />
           <OrdersTable
             filters={filters}
             footer={
