@@ -32,7 +32,7 @@ function sectionDescriptionKey(id: SettingsSectionId): MessageKey {
 
 /**
  * Settings section switcher.
- * Mobile: sticky full-bleed chip strip (horizontal scroll inside the bar).
+ * Mobile: sticky full-viewport chip strip (horizontal scroll inside the bar).
  * Desktop: vertical sidebar list with short blurbs.
  */
 export function SettingsSectionNav({
@@ -83,35 +83,37 @@ export function SettingsSectionNav({
     <nav
       aria-label={t("settings.navAria")}
       className={cn(
-        // Sticky under AppHeader. min-w-0 is required so chips scroll inside the bar
-        // instead of expanding the page (which breaks sticky).
-        "sticky z-30 min-w-0 max-w-full self-start",
-        "top-14 sm:top-16 lg:top-20",
-        // Full-bleed vs PageShell padding (p-4 / sm:p-5 / md:p-8).
-        "-mx-4 px-4 py-2.5 sm:-mx-5 sm:px-5 md:-mx-8 md:px-8",
-        // Solid fill — translucent bg let page content show through while scrolling.
-        "border-b border-border/70 bg-background",
-        // Desktop sidebar
-        "lg:mx-0 lg:w-56 lg:max-w-none lg:shrink-0 lg:border-b-0 lg:bg-transparent lg:px-0 lg:py-0",
+        // Sticky under AppHeader.
+        "sticky z-30 self-start top-14 sm:top-16 lg:top-20",
+        // Mobile: break out of PageShell padding to true viewport width so scrolling
+        // content never peeks in the side gutters under a half-width bar.
+        "w-screen max-w-[100vw] ml-[calc(50%-50vw)]",
+        "border-b border-border/70 bg-background px-4 py-2.5 sm:px-5",
+        // Desktop: normal sidebar column (no viewport breakout).
+        "lg:ml-0 lg:w-56 lg:max-w-none lg:border-b-0 lg:bg-transparent lg:px-0 lg:py-0",
         "lg:max-h-[calc(100dvh-6rem)] lg:overflow-y-auto",
       )}
     >
+      {/* min-w-0: chips scroll inside the bar; do not expand the page. */}
       <div className="relative min-w-0">
-        {/* Gradient fades only (no chevron icons — those read as truncated labels). */}
         <div
           aria-hidden
           className={cn(
-            "pointer-events-none absolute inset-y-0 left-0 z-10 w-6 bg-linear-to-r from-background to-transparent transition-opacity lg:hidden",
+            "pointer-events-none absolute inset-y-0 left-0 z-10 flex w-8 items-center justify-start bg-linear-to-r from-background via-background/90 to-transparent pl-0.5 transition-opacity lg:hidden",
             canScrollLeft ? "opacity-100" : "opacity-0",
           )}
-        />
+        >
+          <AppIcons.arrowLeft className="size-3.5 text-muted-foreground" />
+        </div>
         <div
           aria-hidden
           className={cn(
-            "pointer-events-none absolute inset-y-0 right-0 z-10 w-6 bg-linear-to-l from-background to-transparent transition-opacity lg:hidden",
+            "pointer-events-none absolute inset-y-0 right-0 z-10 flex w-8 items-center justify-end bg-linear-to-l from-background via-background/90 to-transparent pr-0.5 transition-opacity lg:hidden",
             canScrollRight ? "opacity-100" : "opacity-0",
           )}
-        />
+        >
+          <AppIcons.arrowRight className="size-3.5 text-muted-foreground" />
+        </div>
         <ul
           className={cn(
             "flex min-w-0 gap-1.5 overflow-x-auto overflow-y-hidden overscroll-x-contain scroll-smooth",
