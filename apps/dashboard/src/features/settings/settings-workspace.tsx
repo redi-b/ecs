@@ -268,10 +268,10 @@ export function SettingsWorkspace({
     <div className="flex min-w-0 flex-col gap-4">
       {/* min-w-0: allow the chip strip to shrink so overflow-x scrolls inside the nav,
           not the page (flex default min-width:auto expands to fit all chips). */}
-      <div className="flex min-w-0 flex-col gap-6 lg:flex-row lg:items-start lg:gap-8">
+      <div className="flex min-w-0 flex-col gap-4 sm:gap-5 lg:flex-row lg:items-start lg:gap-8">
         <SettingsSectionNav active={section} onSelect={selectSection} />
 
-        <div className="min-w-0 flex-1">
+        <div className="min-w-0 flex-1" key={section}>
           {section === "shop" ? (
             <ShopSection
               canSaveShop={canSaveShop}

@@ -22,10 +22,12 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { getSelectedTemplateName } from "@/features/settings/settings-helpers";
 import {
   SectionIntro,
+  SettingsPanel,
+  SettingsSectionBody,
   ShopLiveStatusBadge,
   StorefrontTemplateOption,
 } from "@/features/settings/settings-sections";
@@ -129,7 +131,7 @@ export function StorefrontSection({
     : notSelected;
 
   return (
-    <div className="flex flex-col gap-6">
+    <SettingsSectionBody>
       <SectionIntro
         description={t("settings.storefront.intro")}
         title={t("settings.sections.storefront.label")}
@@ -137,13 +139,14 @@ export function StorefrontSection({
 
       <Card
         className={cn(
-          "overflow-hidden border",
+          "overflow-hidden ring-1",
           isPublished
-            ? "border-emerald-500/25 bg-emerald-500/[0.04]"
-            : "border-amber-500/25 bg-amber-500/[0.04]",
+            ? "bg-emerald-500/[0.04] ring-emerald-500/25"
+            : "bg-amber-500/[0.04] ring-amber-500/25",
         )}
+        size="sm"
       >
-        <CardContent className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between sm:gap-6 sm:p-5">
+        <CardContent className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
           <div className="min-w-0 space-y-2">
             <div className="flex flex-wrap items-center gap-2">
               <ShopLiveStatusBadge live={isPublished} />
@@ -184,7 +187,7 @@ export function StorefrontSection({
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <Button
-                    className="rounded-full"
+                    className="w-full rounded-full"
                     disabled={busy}
                     size="sm"
                     type="button"
@@ -222,7 +225,7 @@ export function StorefrontSection({
               </AlertDialog>
             ) : (
               <Button
-                className="rounded-full"
+                className="w-full rounded-full"
                 disabled={busy}
                 onClick={() => void publishShop()}
                 size="sm"
@@ -233,10 +236,10 @@ export function StorefrontSection({
                   : t("settings.storefront.publishShop")}
               </Button>
             )}
-            <Button asChild className="rounded-full" size="sm" variant="outline">
+            <Button asChild className="w-full rounded-full" size="sm" variant="outline">
               <a href={dashboardRoutes.editor}>{t("settings.storefront.editStorefront")}</a>
             </Button>
-            <Button asChild className="rounded-full" size="sm" variant="ghost">
+            <Button asChild className="w-full rounded-full" size="sm" variant="ghost">
               <a href={`//${summary.domain.hostname}`} rel="noreferrer" target="_blank">
                 {t("settings.storefront.viewShop")}
               </a>
@@ -245,36 +248,34 @@ export function StorefrontSection({
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base">{t("settings.storefront.designTitle")}</CardTitle>
-          <CardDescription>
-            {singleTemplate
-              ? t("settings.storefront.designDescriptionSingle")
-              : t("settings.storefront.designDescription")}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-3">
-          {storefrontTemplates.length ? (
-            <div className={cn("grid gap-3", singleTemplate ? "max-w-lg" : "sm:grid-cols-2")}>
-              {storefrontTemplates.map((template) => (
-                <StorefrontTemplateOption
-                  currentTemplateKey={activeKey}
-                  key={template.version.templateKey}
-                  onSelected={setSelectedKey}
-                  template={template}
-                  tenantId={summary.tenant.id}
-                />
-              ))}
-            </div>
-          ) : (
-            <Alert>
-              <AlertTitle>{t("settings.storefront.noneTitle")}</AlertTitle>
-              <AlertDescription>{t("settings.storefront.noneDescription")}</AlertDescription>
-            </Alert>
-          )}
-        </CardContent>
-      </Card>
-    </div>
+      <SettingsPanel
+        description={
+          singleTemplate
+            ? t("settings.storefront.designDescriptionSingle")
+            : t("settings.storefront.designDescription")
+        }
+        title={t("settings.storefront.designTitle")}
+        contentClassName="flex flex-col gap-3"
+      >
+        {storefrontTemplates.length ? (
+          <div className={cn("grid gap-3", singleTemplate ? "max-w-lg" : "sm:grid-cols-2")}>
+            {storefrontTemplates.map((template) => (
+              <StorefrontTemplateOption
+                currentTemplateKey={activeKey}
+                key={template.version.templateKey}
+                onSelected={setSelectedKey}
+                template={template}
+                tenantId={summary.tenant.id}
+              />
+            ))}
+          </div>
+        ) : (
+          <Alert>
+            <AlertTitle>{t("settings.storefront.noneTitle")}</AlertTitle>
+            <AlertDescription>{t("settings.storefront.noneDescription")}</AlertDescription>
+          </Alert>
+        )}
+      </SettingsPanel>
+    </SettingsSectionBody>
   );
 }

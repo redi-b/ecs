@@ -5,7 +5,6 @@ import type { MerchantDashboardAccess } from "@ecs/contracts";
 import { AppIcons } from "@/components/app/icons";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Field,
   FieldDescription,
@@ -24,7 +23,9 @@ import type { HandleAvailability } from "@/features/settings/settings-helpers";
 import {
   SectionIntro,
   SettingsLinkRow,
+  SettingsPanel,
   SettingsRow,
+  SettingsSectionBody,
 } from "@/features/settings/settings-sections";
 import { useI18n } from "@/i18n/provider";
 import { dashboardRoutes } from "@/lib/routes";
@@ -70,128 +71,116 @@ export function ShopSection({
   const dirty = nameChanged || handleChanged;
 
   return (
-    <div className="flex flex-col gap-6">
+    <SettingsSectionBody>
       <SectionIntro
         description={t("settings.shop.intro")}
         title={t("settings.sections.shop.label")}
       />
       <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_17.5rem]">
-        <Card>
-          <CardHeader className="pb-4">
-            <CardTitle className="text-base">{t("settings.shop.detailsTitle")}</CardTitle>
-            <CardDescription>{t("settings.shop.detailsDescription")}</CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-5">
-            <FieldGroup>
-              <Field>
-                <FieldLabel htmlFor={nameId}>{t("settings.shop.name")}</FieldLabel>
-                <Input id={nameId} onChange={(e) => onNameChange(e.target.value)} value={name} />
-              </Field>
-              <Field>
-                <div className="flex items-center justify-between gap-2">
-                  <FieldLabel htmlFor={handleId}>{t("settings.shop.handle")}</FieldLabel>
-                  {!handleUnlocked ? (
-                    <span className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
-                      {t("settings.handle.locked")}
-                    </span>
-                  ) : null}
-                </div>
-                <InputGroup>
-                  <InputGroupInput
-                    aria-invalid={
-                      handleAvailability.status === "unavailable" ||
-                      handleAvailability.status === "invalid"
-                        ? true
-                        : undefined
-                    }
-                    disabled={!handleUnlocked}
-                    id={handleId}
-                    onChange={(e) => onHandleChange(e.target.value)}
-                    spellCheck={false}
-                    value={handle}
-                  />
-                  <InputGroupAddon align="inline-end">
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <InputGroupButton
-                          aria-label={
-                            handleUnlocked
-                              ? t("settings.handle.lockAria")
-                              : t("settings.handle.unlockAria")
-                          }
-                          onClick={onToggleHandleLock}
-                          size="icon-xs"
-                          type="button"
-                        >
-                          {handleUnlocked ? <AppIcons.lockUnlock /> : <AppIcons.lock />}
-                        </InputGroupButton>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        {handleUnlocked
-                          ? t("settings.handle.lockTooltip")
-                          : t("settings.handle.unlockTooltip")}
-                      </TooltipContent>
-                    </Tooltip>
-                  </InputGroupAddon>
-                </InputGroup>
-                <FieldDescription className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                  <span className="font-mono text-xs">{nextHost}</span>
-                  <HandleStatus availability={handleAvailability} />
-                </FieldDescription>
-              </Field>
-            </FieldGroup>
-            {handleChanged ? (
-              <Alert>
-                <AlertTitle>{t("settings.shop.addressChangeTitle")}</AlertTitle>
-                <AlertDescription>{t("settings.shop.addressChangeDescription")}</AlertDescription>
-              </Alert>
-            ) : null}
-            <div className="flex justify-end">
-              <Button
-                className="rounded-full"
-                disabled={!canSaveShop || !dirty || isPending}
-                onClick={onSave}
-                size="sm"
-                type="button"
-              >
-                {isPending ? t("common.saving") : t("settings.shop.saveShop")}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+        <SettingsPanel
+          description={t("settings.shop.detailsDescription")}
+          title={t("settings.shop.detailsTitle")}
+          contentClassName="flex flex-col gap-4"
+        >
+          <FieldGroup>
+            <Field>
+              <FieldLabel htmlFor={nameId}>{t("settings.shop.name")}</FieldLabel>
+              <Input id={nameId} onChange={(e) => onNameChange(e.target.value)} value={name} />
+            </Field>
+            <Field>
+              <div className="flex items-center justify-between gap-2">
+                <FieldLabel htmlFor={handleId}>{t("settings.shop.handle")}</FieldLabel>
+                {!handleUnlocked ? (
+                  <span className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
+                    {t("settings.handle.locked")}
+                  </span>
+                ) : null}
+              </div>
+              <InputGroup>
+                <InputGroupInput
+                  aria-invalid={
+                    handleAvailability.status === "unavailable" ||
+                    handleAvailability.status === "invalid"
+                      ? true
+                      : undefined
+                  }
+                  disabled={!handleUnlocked}
+                  id={handleId}
+                  onChange={(e) => onHandleChange(e.target.value)}
+                  spellCheck={false}
+                  value={handle}
+                />
+                <InputGroupAddon align="inline-end">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <InputGroupButton
+                        aria-label={
+                          handleUnlocked
+                            ? t("settings.handle.lockAria")
+                            : t("settings.handle.unlockAria")
+                        }
+                        onClick={onToggleHandleLock}
+                        size="icon-xs"
+                        type="button"
+                      >
+                        {handleUnlocked ? <AppIcons.lockUnlock /> : <AppIcons.lock />}
+                      </InputGroupButton>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      {handleUnlocked
+                        ? t("settings.handle.lockTooltip")
+                        : t("settings.handle.unlockTooltip")}
+                    </TooltipContent>
+                  </Tooltip>
+                </InputGroupAddon>
+              </InputGroup>
+              <FieldDescription className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                <span className="font-mono text-xs">{nextHost}</span>
+                <HandleStatus availability={handleAvailability} />
+              </FieldDescription>
+            </Field>
+          </FieldGroup>
+          {handleChanged ? (
+            <Alert>
+              <AlertTitle>{t("settings.shop.addressChangeTitle")}</AlertTitle>
+              <AlertDescription>{t("settings.shop.addressChangeDescription")}</AlertDescription>
+            </Alert>
+          ) : null}
+          <div className="flex justify-end">
+            <Button
+              className="w-full rounded-full sm:w-auto"
+              disabled={!canSaveShop || !dirty || isPending}
+              onClick={onSave}
+              size="sm"
+              type="button"
+            >
+              {isPending ? t("common.saving") : t("settings.shop.saveShop")}
+            </Button>
+          </div>
+        </SettingsPanel>
 
-        <div className="flex flex-col gap-4">
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base">{t("settings.shop.hostname")}</CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-3">
-              <SettingsLinkRow
-                label={handleChanged ? t("settings.shop.current") : t("settings.shop.primary")}
-                value={currentHost}
-              />
-              {handleChanged ? (
-                <SettingsLinkRow label={t("settings.shop.afterSave")} value={nextHost} />
-              ) : null}
-              <SettingsRow label={t("settings.shop.status")} value={summary.tenant.status} />
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base">{t("settings.shop.related")}</CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-2">
-              <Button asChild className="justify-start rounded-full" size="sm" variant="outline">
-                <a href={dashboardRoutes.billing}>{t("settings.shop.billingPlan")}</a>
-              </Button>
-              <Button asChild className="justify-start rounded-full" size="sm" variant="outline">
-                <a href={dashboardRoutes.editor}>{t("settings.shop.storefrontEditor")}</a>
-              </Button>
-            </CardContent>
-          </Card>
+        <div className="flex flex-col gap-4 lg:sticky lg:top-20">
+          <SettingsPanel title={t("settings.shop.hostname")} contentClassName="flex flex-col gap-3">
+            <SettingsLinkRow
+              label={handleChanged ? t("settings.shop.current") : t("settings.shop.primary")}
+              value={currentHost}
+            />
+            {handleChanged ? (
+              <SettingsLinkRow label={t("settings.shop.afterSave")} value={nextHost} />
+            ) : null}
+            <SettingsRow label={t("settings.shop.status")} value={summary.tenant.status} />
+          </SettingsPanel>
+          <SettingsPanel title={t("settings.shop.related")} contentClassName="flex flex-col gap-2">
+            <Button asChild className="justify-start rounded-full" size="sm" variant="outline">
+              <a href={dashboardRoutes.billing}>{t("settings.shop.billingPlan")}</a>
+            </Button>
+            <Button asChild className="justify-start rounded-full" size="sm" variant="outline">
+              <a href={dashboardRoutes.editor}>{t("settings.shop.storefrontEditor")}</a>
+            </Button>
+          </SettingsPanel>
         </div>
       </div>
-    </div>
+    </SettingsSectionBody>
   );
 }
 

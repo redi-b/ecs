@@ -126,8 +126,8 @@ export function SettingsSectionNav({
                     "flex w-full items-center gap-2 rounded-full border px-3 py-2 text-left transition-colors lg:rounded-lg lg:border-transparent",
                     "outline-none focus-visible:ring-2 focus-visible:ring-ring/40",
                     isActive
-                      ? "border-border bg-muted text-foreground shadow-sm lg:border-transparent lg:shadow-none"
-                      : "border-transparent bg-muted/40 text-muted-foreground hover:bg-muted/70 hover:text-foreground lg:bg-transparent",
+                      ? "border-primary/25 bg-primary/10 text-foreground shadow-sm lg:border-transparent lg:bg-primary/10 lg:shadow-none"
+                      : "border-transparent bg-muted/40 text-muted-foreground hover:bg-muted/70 hover:text-foreground lg:bg-transparent lg:hover:bg-muted/40",
                   )}
                   data-section={id}
                   onClick={() => onSelect(id)}

@@ -124,13 +124,13 @@ export function NotificationChannelHeader({
   const refreshingLabel = t("settings.notifications.refreshing");
 
   return (
-    <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0 pb-4">
-      <div className="space-y-1">
+    <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0 border-b border-border/60 pb-2.5">
+      <div className="min-w-0 space-y-0.5">
         <div className="flex flex-wrap items-center gap-2">
-          <CardTitle className="text-base">{title}</CardTitle>
+          <CardTitle className="text-sm font-medium tracking-tight">{title}</CardTitle>
           {badge}
         </div>
-        <CardDescription>{description}</CardDescription>
+        <CardDescription className="text-xs leading-relaxed">{description}</CardDescription>
       </div>
       <Tooltip>
         <TooltipTrigger asChild>

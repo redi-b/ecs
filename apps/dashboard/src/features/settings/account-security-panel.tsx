@@ -30,6 +30,10 @@ import {
   parseUserAgent,
   PasswordField,
 } from "@/features/settings/account-security-parts";
+import {
+  SectionIntro,
+  SettingsSectionBody,
+} from "@/features/settings/settings-sections";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 
@@ -273,17 +277,15 @@ export function AccountSecurityPanel({
     currentPassword.length > 0 && newPassword.length >= 8 && newPassword === confirmPassword;
 
   return (
-    <div className="flex flex-col gap-8">
-      <div>
-        <h2 className="text-base font-semibold tracking-tight">{t("settings.accountSecurity.title")}</h2>
-        <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-          {t("settings.accountSecurity.intro")}
-        </p>
-      </div>
+    <SettingsSectionBody>
+      <SectionIntro
+        description={t("settings.accountSecurity.intro")}
+        title={t("settings.accountSecurity.title")}
+      />
 
-      <section className="overflow-hidden rounded-lg border">
-        <div className="flex items-center gap-3.5 border-b bg-muted/25 px-4 py-4 sm:px-5">
-          <div className="grid size-12 shrink-0 place-items-center rounded-full bg-primary text-sm font-semibold tracking-wide text-primary-foreground">
+      <section className="overflow-hidden rounded-xl bg-card ring-1 ring-foreground/[0.08] shadow-[0_1px_2px_color-mix(in_oklch,var(--foreground)_4%,transparent)]">
+        <div className="flex items-center gap-3.5 border-b border-border/60 bg-muted/20 px-4 py-3.5 sm:px-4">
+          <div className="grid size-11 shrink-0 place-items-center rounded-full bg-primary text-sm font-semibold tracking-wide text-primary-foreground">
             {initials}
           </div>
           <div className="min-w-0">
@@ -291,7 +293,7 @@ export function AccountSecurityPanel({
             <p className="truncate text-xs text-muted-foreground">{email}</p>
           </div>
         </div>
-        <div className="flex flex-col gap-4 px-4 py-4 sm:px-5">
+        <div className="flex flex-col gap-4 px-4 py-3.5 sm:px-4">
           <Field>
             <FieldLabel htmlFor={nameId}>{t("settings.accountSecurity.displayName")}</FieldLabel>
             <Input
@@ -304,7 +306,7 @@ export function AccountSecurityPanel({
           </Field>
           <div className="flex justify-end">
             <Button
-              className="rounded-full"
+              className="w-full rounded-full sm:w-auto"
               disabled={savingProfile || !nameDirty}
               onClick={() => void saveProfile()}
               size="sm"
@@ -316,14 +318,14 @@ export function AccountSecurityPanel({
         </div>
       </section>
 
-      <section className="overflow-hidden rounded-lg border">
-        <div className="border-b px-4 py-3.5 sm:px-5">
-          <h3 className="text-sm font-semibold">{t("settings.accountSecurity.password")}</h3>
+      <section className="overflow-hidden rounded-xl bg-card ring-1 ring-foreground/[0.08] shadow-[0_1px_2px_color-mix(in_oklch,var(--foreground)_4%,transparent)]">
+        <div className="border-b border-border/60 px-4 py-2.5 sm:px-4">
+          <h3 className="text-sm font-medium tracking-tight">{t("settings.accountSecurity.password")}</h3>
           <p className="mt-0.5 text-xs text-muted-foreground">
             {t("settings.accountSecurity.passwordHint", { email })}
           </p>
         </div>
-        <div className="flex flex-col gap-4 px-4 py-4 sm:px-5">
+        <div className="flex flex-col gap-4 px-4 py-3.5 sm:px-4">
           <FieldGroup>
             <PasswordField
               autoComplete="current-password"
@@ -367,7 +369,7 @@ export function AccountSecurityPanel({
           </div>
           <div className="flex justify-end">
             <Button
-              className="rounded-full"
+              className="w-full rounded-full sm:w-auto"
               disabled={savingPassword || !passwordReady}
               onClick={() => void savePassword()}
               size="sm"
@@ -379,10 +381,10 @@ export function AccountSecurityPanel({
         </div>
       </section>
 
-      <section className="overflow-hidden rounded-lg border">
-        <div className="flex flex-col gap-3 border-b px-4 py-3.5 sm:flex-row sm:items-start sm:justify-between sm:px-5">
+      <section className="overflow-hidden rounded-xl bg-card ring-1 ring-foreground/[0.08] shadow-[0_1px_2px_color-mix(in_oklch,var(--foreground)_4%,transparent)]">
+        <div className="flex flex-col gap-3 border-b border-border/60 px-4 py-2.5 sm:flex-row sm:items-start sm:justify-between sm:px-4">
           <div className="min-w-0">
-            <h3 className="text-sm font-semibold">{t("settings.accountSecurity.devicesTitle")}</h3>
+            <h3 className="text-sm font-medium tracking-tight">{t("settings.accountSecurity.devicesTitle")}</h3>
             <p className="mt-0.5 text-xs text-muted-foreground">
               {t("settings.accountSecurity.devicesHint")}
             </p>
@@ -623,6 +625,6 @@ export function AccountSecurityPanel({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </SettingsSectionBody>
   );
 }

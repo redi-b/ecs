@@ -298,7 +298,7 @@ export function TelegramConnectPanel({
 
   if (!available) {
     return (
-      <Card>
+      <Card size="sm">
         <NotificationChannelHeader
           description={t("settings.notifications.telegramPanel.description")}
           disabled
@@ -306,7 +306,7 @@ export function TelegramConnectPanel({
           refreshing={false}
           title={t("settings.notifications.telegram")}
         />
-        <CardContent>
+        <CardContent className="pt-3">
           <NotificationChannelUnavailable
             description={t("settings.notifications.telegramPanel.unavailableDescription")}
             title={t("settings.notifications.telegramPanel.unavailableTitle")}
@@ -318,14 +318,14 @@ export function TelegramConnectPanel({
 
   if (loading) {
     return (
-      <Card>
+      <Card size="sm">
         <NotificationChannelHeader
           description={t("settings.notifications.loadingTelegram")}
           onRefresh={() => undefined}
           refreshing
           title={t("settings.notifications.telegram")}
         />
-        <CardContent>
+        <CardContent className="pt-3">
           <div className="h-24 animate-pulse rounded-lg bg-muted/50" />
         </CardContent>
       </Card>
@@ -338,7 +338,7 @@ export function TelegramConnectPanel({
       loadError.toLowerCase().includes("not configured");
     if (isNotConfigured) {
       return (
-        <Card>
+        <Card size="sm">
           <NotificationChannelHeader
             description={t("settings.notifications.telegramPanel.description")}
             disabled
@@ -346,7 +346,7 @@ export function TelegramConnectPanel({
             refreshing={false}
             title={t("settings.notifications.telegram")}
           />
-          <CardContent>
+          <CardContent className="pt-3">
             <NotificationChannelUnavailable
               description={t("settings.notifications.telegramPanel.unavailableDescription")}
               title={t("settings.notifications.telegramPanel.unavailableTitle")}
@@ -356,14 +356,14 @@ export function TelegramConnectPanel({
       );
     }
     return (
-      <Card>
+      <Card size="sm">
         <NotificationChannelHeader
           description={t("settings.notifications.telegramPanel.description")}
           onRefresh={refreshList}
           refreshing={refreshing}
           title={t("settings.notifications.telegram")}
         />
-        <CardContent>
+        <CardContent className="pt-3">
           <Alert variant="destructive">
             <AlertTitle>Couldn’t load Telegram</AlertTitle>
             <AlertDescription className="flex flex-col gap-3">
@@ -389,7 +389,7 @@ export function TelegramConnectPanel({
 
   return (
     <>
-      <Card>
+      <Card size="sm">
         <NotificationChannelHeader
           badge={<NotificationAccountCountBadge count={destinations.length} />}
           description={t("settings.notifications.telegramPanel.headerDescription")}
@@ -400,7 +400,7 @@ export function TelegramConnectPanel({
           title={t("settings.notifications.telegram")}
         />
 
-        <CardContent className="flex flex-col gap-5">
+        <CardContent className="flex flex-col gap-4 pt-3">
           {waiting ? (
             <div className="rounded-xl border border-primary/20 bg-primary/5 px-4 py-4">
               <div className="flex items-start gap-3">
