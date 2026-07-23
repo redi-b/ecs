@@ -215,7 +215,7 @@ export function ProductOptionsBuilder({
 
                 <Field>
                   <FieldLabel>{t("products.formReview.values")}</FieldLabel>
-                  <div className="flex min-h-10 flex-wrap items-center gap-2 rounded-lg border bg-muted/20 px-2 py-2">
+                  <div className="flex max-h-36 min-h-10 flex-wrap items-center gap-2 overflow-y-auto overscroll-contain rounded-lg border bg-muted/20 px-2 py-2">
                     {option.values.map((value) => (
                       <Badge className="gap-1 rounded-md px-2 py-1" key={value} variant="secondary">
                         {value}

@@ -36,6 +36,8 @@
     "updated": "Updated",
     "images": "Images",
     "imagesCount": "{count} images",
+    "descriptionShowMore": "Show more",
+    "descriptionShowLess": "Show less",
     "cover": "Cover",
     "coverImage": "Cover image",
     "productImage": "Product image",

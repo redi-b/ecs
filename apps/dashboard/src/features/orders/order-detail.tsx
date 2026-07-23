@@ -210,7 +210,13 @@ export async function OrderDetail({ action, order, tenantId }: OrderDetailProps)
             {items.length === 0 ? (
               <p className="text-muted-foreground">{t("orders.detail.noItems")}</p>
             ) : (
-              <div className="-mx-1 overflow-x-auto">
+              <div
+                className={cn(
+                  "-mx-1 overflow-x-auto",
+                  // Tall carts keep the page scannable; totals stay pinned below.
+                  items.length > 6 && "max-h-[min(26rem,50vh)] overflow-y-auto overscroll-contain",
+                )}
+              >
                 <Table>
                   <TableHeader>
                     <TableRow className="hover:bg-transparent">
