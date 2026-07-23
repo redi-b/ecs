@@ -79,12 +79,11 @@ export function SettingsSectionNav({
       aria-label={t("settings.navAria")}
       className={cn(
         // Stay pinned while settings content scrolls (under sticky AppHeader).
-        // min-w-0 + max-w-full: contain chip strip so swipes scroll the strip, not the page.
-        "sticky z-20 min-w-0 max-w-full self-start bg-background/95 backdrop-blur-sm supports-backdrop-filter:bg-background/85",
-        // Mobile: horizontal chips under the 3.5rem / 4rem app header.
-        "top-14 -mx-1 px-1 py-1.5 sm:top-16",
-        // Desktop: slightly wider so short blurbs stay one line.
-        "lg:top-20 lg:w-56 lg:max-w-none lg:shrink-0 lg:bg-transparent lg:px-0 lg:py-0 lg:backdrop-blur-none",
+        "sticky z-20 self-start bg-background/95 backdrop-blur-sm supports-backdrop-filter:bg-background/85",
+        // Mobile: full-bleed under page padding (PageShell p-4 / sm:p-5 / md:p-8).
+        "top-14 -mx-4 border-b border-border/60 px-4 py-2.5 sm:top-16 sm:-mx-5 sm:px-5 md:-mx-8 md:px-8",
+        // Desktop: sidebar column; drop bleed and bottom rule.
+        "lg:top-20 lg:mx-0 lg:w-56 lg:max-w-none lg:shrink-0 lg:border-b-0 lg:bg-transparent lg:px-0 lg:py-0 lg:backdrop-blur-none",
         "lg:max-h-[calc(100dvh-6rem)] lg:overflow-y-auto",
       )}
     >
@@ -92,7 +91,7 @@ export function SettingsSectionNav({
         <div
           aria-hidden
           className={cn(
-            "pointer-events-none absolute inset-y-0 left-0 z-10 flex w-8 items-center justify-start bg-linear-to-r from-background via-background/90 to-transparent pl-0.5 transition-opacity lg:hidden",
+            "pointer-events-none absolute inset-y-0 left-0 z-10 flex w-8 items-center justify-start bg-linear-to-r from-background via-background/95 to-transparent pl-0.5 transition-opacity lg:hidden",
             canScrollLeft ? "opacity-100" : "opacity-0",
           )}
         >
@@ -101,7 +100,7 @@ export function SettingsSectionNav({
         <div
           aria-hidden
           className={cn(
-            "pointer-events-none absolute inset-y-0 right-0 z-10 flex w-8 items-center justify-end bg-linear-to-l from-background via-background/90 to-transparent pr-0.5 transition-opacity lg:hidden",
+            "pointer-events-none absolute inset-y-0 right-0 z-10 flex w-8 items-center justify-end bg-linear-to-l from-background via-background/95 to-transparent pr-0.5 transition-opacity lg:hidden",
             canScrollRight ? "opacity-100" : "opacity-0",
           )}
         >
@@ -109,9 +108,9 @@ export function SettingsSectionNav({
         </div>
         <ul
           className={cn(
-            "flex min-w-0 gap-1.5 overflow-x-auto overflow-y-hidden overscroll-x-contain scroll-smooth px-0.5 pb-1",
+            "flex min-w-0 gap-1.5 overflow-x-auto overflow-y-hidden overscroll-x-contain scroll-smooth pb-0.5",
             "touch-pan-x [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
-            "lg:flex-col lg:gap-0.5 lg:overflow-visible lg:px-0 lg:pb-0 lg:touch-auto",
+            "lg:flex-col lg:gap-0.5 lg:overflow-visible lg:pb-0 lg:touch-auto",
           )}
           ref={scrollerRef}
         >

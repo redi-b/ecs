@@ -5,6 +5,7 @@ import { useCallback, useEffect, useId, useMemo, useState, useTransition } from 
 import { toast } from "sonner";
 
 import { AppIcons } from "@/components/app/icons";
+import { HelpTip } from "@/components/app/help-tip";
 import { SearchableCombobox } from "@/components/app/searchable-combobox";
 import {
   AlertDialog,
@@ -194,62 +195,79 @@ export function PaymentsSection({ initialPayment, supportHref = null }: Payments
 
       {/* Cash on delivery */}
       <Card size="sm">
-        <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0 border-b border-border/60 pb-2.5">
-          <div className="flex min-w-0 items-start gap-3">
-            <div className="flex size-9 shrink-0 items-center justify-center rounded-lg border bg-muted/40">
-              <AppIcons.orders className="size-4 text-muted-foreground" />
-            </div>
-            <div className="min-w-0 space-y-0.5">
-              <div className="flex flex-wrap items-center gap-2">
-                <CardTitle className="text-sm font-medium tracking-tight">
-                  {t("settings.payments.cod.title")}
-                </CardTitle>
-                <Badge variant="secondary">{t("settings.payments.cod.badge")}</Badge>
-              </div>
-              <CardDescription className="text-xs leading-relaxed">
-                {t("settings.payments.cod.description")}
-              </CardDescription>
-            </div>
+        <CardHeader className="flex flex-row items-center justify-between gap-3 space-y-0 border-b border-border/60 pb-2.5">
+          <div className="flex min-w-0 items-center gap-2">
+            <CardTitle className="text-sm font-medium tracking-tight">
+              {t("settings.payments.cod.title")}
+            </CardTitle>
+            <Badge variant="secondary">{t("settings.payments.cod.badge")}</Badge>
+            <HelpTip
+              summary={t("settings.payments.cod.description")}
+              title={t("settings.payments.cod.title")}
+            >
+              <p>{t("settings.payments.cod.description")}</p>
+              <p className="mt-2 text-muted-foreground">{t("settings.payments.cod.hint")}</p>
+            </HelpTip>
           </div>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-3 pt-3 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm text-muted-foreground">{t("settings.payments.cod.hint")}</p>
-          <Button asChild className="w-full shrink-0 rounded-full sm:w-auto" size="sm" variant="outline">
+          <Button asChild className="shrink-0 rounded-full" size="sm" variant="outline">
             <Link href={`${dashboardRoutes.settings}?tab=fulfillment`}>
               {t("settings.payments.cod.openFulfillment")}
             </Link>
           </Button>
+        </CardHeader>
+        <CardContent className="pt-3 text-sm text-muted-foreground">
+          {t("settings.payments.cod.hint")}
         </CardContent>
       </Card>
 
-      {/* Online payments */}
+      {/* Online payments (Chapa) — keep surface short; details live in HelpTips. */}
       <Card size="sm">
-        <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0 border-b border-border/60 pb-2.5">
-          <div className="flex min-w-0 items-start gap-3">
-            <div className="flex size-9 shrink-0 items-center justify-center rounded-lg border bg-muted/40">
-              <AppIcons.billing className="size-4 text-muted-foreground" />
-            </div>
-            <div className="min-w-0 space-y-0.5">
-              <div className="flex flex-wrap items-center gap-2">
-                <CardTitle className="text-sm font-medium tracking-tight">
-                  {t("settings.payments.online.title")}
-                </CardTitle>
-                <OnlineStatusBadge status={status} />
-              </div>
-              <CardDescription className="text-xs leading-relaxed">
-                {t("settings.payments.online.description")}
-              </CardDescription>
-            </div>
+        <CardHeader className="flex flex-row items-center justify-between gap-3 space-y-0 border-b border-border/60 pb-2.5">
+          <div className="flex min-w-0 flex-wrap items-center gap-2">
+            <CardTitle className="text-sm font-medium tracking-tight">
+              {t("settings.payments.online.title")}
+            </CardTitle>
+            <OnlineStatusBadge status={status} />
+            <HelpTip
+              summary={t("settings.payments.online.description")}
+              title={t("settings.payments.online.title")}
+            >
+              <p>{t("settings.payments.online.description")}</p>
+              {!connected ? (
+                <ol className="mt-2 list-decimal space-y-1 ps-4 text-muted-foreground">
+                  <li>{t("settings.payments.online.step1")}</li>
+                  <li>{t("settings.payments.online.step2")}</li>
+                  <li>{t("settings.payments.online.step3")}</li>
+                </ol>
+              ) : null}
+              <p className="mt-2 text-muted-foreground">
+                {connected
+                  ? t("settings.payments.online.helpBodyConnected")
+                  : t("settings.payments.online.helpBody")}
+              </p>
+            </HelpTip>
           </div>
+          {supportHref ? (
+            <Button asChild className="shrink-0 rounded-full" size="sm" variant="ghost">
+              <a
+                href={supportHref}
+                rel="noopener noreferrer"
+                target={supportHref.startsWith("http") ? "_blank" : undefined}
+              >
+                <AppIcons.mail className="size-3.5" />
+                {t("settings.payments.online.helpCta")}
+              </a>
+            </Button>
+          ) : null}
         </CardHeader>
 
         <CardContent className="flex flex-col gap-4 pt-3">
           {status === "loading" ? (
-            <div className="h-24 animate-pulse rounded-xl bg-muted/50" />
+            <div className="h-20 animate-pulse rounded-lg bg-muted/50" />
           ) : null}
 
           {loadError && status !== "loading" ? (
-            <div className="rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+            <div className="rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-3 text-sm text-destructive">
               <p>
                 {mapPlatformErrorMessage(loadError, {
                   fallback: t("settings.payments.loadError"),
@@ -268,30 +286,29 @@ export function PaymentsSection({ initialPayment, supportHref = null }: Payments
             </div>
           ) : null}
 
-          {/* Connected: offer on storefront */}
           {connected ? (
-            <div
-              className={cn(
-                "flex flex-col gap-4 rounded-xl border p-4 sm:flex-row sm:items-center sm:justify-between",
-                chapa?.onlineEnabled ? "border-border bg-muted/20" : "bg-background",
-              )}
-            >
-              <div className="min-w-0 space-y-1">
-                <p className="text-sm font-medium">{t("settings.payments.online.offerLabel")}</p>
-                <p className="text-sm text-muted-foreground">
-                  {chapa?.onlineEnabled
-                    ? t("settings.payments.online.offerOnHint")
-                    : t("settings.payments.online.offerOffHint")}
-                </p>
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <p className="text-sm font-medium">{t("settings.payments.online.offerLabel")}</p>
+                  <HelpTip
+                    summary={
+                      chapa?.onlineEnabled
+                        ? t("settings.payments.online.offerOnHint")
+                        : t("settings.payments.online.offerOffHint")
+                    }
+                    title={t("settings.payments.online.offerLabel")}
+                  />
+                </div>
                 {chapa?.secretFingerprint ? (
-                  <p className="pt-1 text-xs text-muted-foreground">
+                  <p className="text-xs text-muted-foreground">
                     {t("settings.payments.online.connectedAs", {
                       fingerprint: chapa.secretFingerprint,
                     })}
                   </p>
                 ) : null}
               </div>
-              <div className="flex shrink-0 items-center gap-2 self-start rounded-full border bg-background px-2.5 py-1 sm:self-center">
+              <div className="flex shrink-0 items-center gap-2 self-start rounded-full border bg-muted/20 px-2.5 py-1 sm:self-center">
                 <span className="text-xs text-muted-foreground">
                   {t("settings.payments.online.offerSwitch")}
                 </span>
@@ -306,28 +323,26 @@ export function PaymentsSection({ initialPayment, supportHref = null }: Payments
             </div>
           ) : null}
 
-          {/* Connect / replace secret */}
           <div className="space-y-3">
-            <div className="space-y-1">
+            <div className="flex items-center gap-1.5">
               <p className="text-sm font-medium">
                 {connected
                   ? t("settings.payments.online.updateTitle")
                   : t("settings.payments.online.connectTitle")}
               </p>
-              <p className="text-sm text-muted-foreground">
-                {connected
-                  ? t("settings.payments.online.updateHint")
-                  : t("settings.payments.online.connectHint")}
-              </p>
+              <HelpTip
+                summary={
+                  connected
+                    ? t("settings.payments.online.updateHint")
+                    : t("settings.payments.online.connectHint")
+                }
+                title={
+                  connected
+                    ? t("settings.payments.online.updateTitle")
+                    : t("settings.payments.online.connectTitle")
+                }
+              />
             </div>
-
-            {!connected ? (
-              <ol className="list-decimal space-y-1.5 ps-5 text-sm text-muted-foreground">
-                <li>{t("settings.payments.online.step1")}</li>
-                <li>{t("settings.payments.online.step2")}</li>
-                <li>{t("settings.payments.online.step3")}</li>
-              </ol>
-            ) : null}
 
             <Field>
               <FieldLabel htmlFor={secretId}>{t("settings.payments.online.secretLabel")}</FieldLabel>
@@ -414,39 +429,9 @@ export function PaymentsSection({ initialPayment, supportHref = null }: Payments
             </div>
           </div>
 
-          {/* Support / guided setup */}
-          <div
-            className={cn(
-              "flex flex-col gap-3 rounded-xl border p-4 sm:flex-row sm:items-start sm:justify-between",
-              connected ? "border-border bg-background" : "border-border bg-muted/25",
-            )}
-          >
-            <div className="flex min-w-0 items-start gap-3">
-              <div className="flex size-10 shrink-0 items-center justify-center rounded-xl border bg-background">
-                <AppIcons.question className="size-5 text-muted-foreground" />
-              </div>
-              <div className="min-w-0 space-y-1">
-                <p className="text-sm font-medium">{t("settings.payments.online.helpTitle")}</p>
-                <p className="text-sm text-muted-foreground">
-                  {connected
-                    ? t("settings.payments.online.helpBodyConnected")
-                    : t("settings.payments.online.helpBody")}
-                </p>
-              </div>
-            </div>
-            {supportHref ? (
-              <Button asChild className="w-full shrink-0 rounded-full sm:w-auto" size="sm" variant="outline">
-                <a href={supportHref} rel="noopener noreferrer" target={supportHref.startsWith("http") ? "_blank" : undefined}>
-                  <AppIcons.mail className="size-3.5" />
-                  {t("settings.payments.online.helpCta")}
-                </a>
-              </Button>
-            ) : null}
-          </div>
-
           {connected ? (
-            <div className="flex flex-wrap items-center justify-between gap-3 border-t pt-4">
-              <p className="text-sm text-muted-foreground">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border/60 pt-3">
+              <p className="text-xs text-muted-foreground">
                 {t("settings.payments.online.disconnectHint")}
               </p>
               <AlertDialog>
@@ -456,6 +441,7 @@ export function PaymentsSection({ initialPayment, supportHref = null }: Payments
                     disabled={isPending}
                     type="button"
                     variant="outline"
+                    size="sm"
                   >
                     {t("settings.payments.online.disconnect")}
                   </Button>
