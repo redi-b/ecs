@@ -20,6 +20,7 @@ type HelpTipProps = {
 
 /**
  * Compact “?” help control for dense merchant UIs.
+ * Optional `rich` layout mirrors the old in-page help cards (icon + title + body).
  */
 export function HelpTip({
   summary,
@@ -27,7 +28,13 @@ export function HelpTip({
   className,
   label,
   title,
-}: HelpTipProps) {
+  rich = false,
+  contentClassName,
+}: HelpTipProps & {
+  /** Larger popover with leading icon — for setup/help content that used to be a card. */
+  rich?: boolean;
+  contentClassName?: string;
+}) {
   const { t } = useI18n();
   const resolvedLabel = label ?? t("common.moreInfo");
   const Icon = AppIcons.question;
@@ -49,9 +56,34 @@ export function HelpTip({
           <Icon className="size-3.5" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-72 space-y-1.5 p-3 text-sm" side="bottom">
-        {title ? <p className="font-medium leading-snug">{title}</p> : null}
-        <div className="text-muted-foreground leading-relaxed">{body}</div>
+      <PopoverContent
+        align="end"
+        className={cn(
+          rich
+            ? "w-[min(22rem,calc(100vw-2rem))] space-y-0 p-0 text-sm"
+            : "w-72 space-y-1.5 p-3 text-sm",
+          contentClassName,
+        )}
+        side="bottom"
+      >
+        {rich ? (
+          <div className="flex items-start gap-3 p-3.5">
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-border/70 bg-muted/30">
+              <Icon className="size-4 text-muted-foreground" />
+            </div>
+            <div className="min-w-0 space-y-1.5">
+              {title ? (
+                <p className="text-sm font-semibold tracking-tight text-foreground">{title}</p>
+              ) : null}
+              <div className="text-sm leading-relaxed text-muted-foreground">{body}</div>
+            </div>
+          </div>
+        ) : (
+          <>
+            {title ? <p className="font-medium leading-snug">{title}</p> : null}
+            <div className="leading-relaxed text-muted-foreground">{body}</div>
+          </>
+        )}
       </PopoverContent>
     </Popover>
   );

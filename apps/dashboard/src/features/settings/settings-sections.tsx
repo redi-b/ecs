@@ -65,9 +65,9 @@ export function SettingsPanel({
         )}
       >
         <div className="min-w-0 space-y-1">
-          <CardTitle className="text-sm font-medium tracking-tight">{title}</CardTitle>
+          <CardTitle className="text-base font-semibold tracking-tight">{title}</CardTitle>
           {description ? (
-            <CardDescription className="text-xs leading-relaxed">{description}</CardDescription>
+            <CardDescription className="text-sm leading-relaxed">{description}</CardDescription>
           ) : null}
         </div>
         {action ? <div className="flex shrink-0 items-center gap-1.5">{action}</div> : null}
