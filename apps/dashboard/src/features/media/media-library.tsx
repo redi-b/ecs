@@ -532,6 +532,7 @@ export function MediaLibrary({
             columns={columns}
             data={filtered}
             embedded
+            emptyIcon={<AppIcons.image className="size-5" aria-hidden />}
             emptyMessage={
               isFiltered ? t("media.filteredEmptyDescription") : t("media.libraryEmptyDescription")
             }
@@ -541,7 +542,9 @@ export function MediaLibrary({
             footer={footer}
             getRowId={(asset) => asset.id}
             isFiltered={isFiltered}
+            isLoading={pending}
             selectedSummaryLabel={t("media.selectedSummary")}
+            skeletonShowMedia
           />
         ) : filtered.length ? (
           <>

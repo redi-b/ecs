@@ -1,6 +1,6 @@
 {
   "title": "Products",
-  "description": "Create, review, and manage merchant-scoped catalog products.",
+  "description": "Create and manage products for your shop.",
   "notice": {
     "created": {
       "title": "Product created",
@@ -19,7 +19,7 @@
   },
   "detail": {
     "shellTitle": "Product details",
-    "shellDescription": "Review merchant-scoped product details and update storefront product data.",
+    "shellDescription": "Media, organization, options, and stock for this product.",
     "optionsLoadErrorTitle": "Product options could not be loaded",
     "optionsLoadErrorDesc": "Could not load {labels}. Editing is disabled until reference data loads to avoid clearing existing relationships.",
     "loadErrorTitle": "Product could not be loaded",
@@ -110,6 +110,10 @@
     }
   },
   "table": {
+    "emptyTitle": "No products yet",
+    "emptyMessage": "Add your first product to start selling in the shop.",
+    "filteredEmptyTitle": "No matching products",
+    "filteredEmptyMessage": "Try another name, status, or filter.",
     "searchLabel": "Search products",
     "searchPlaceholder": "Search products",
     "clearSearch": "Clear product search",
@@ -220,14 +224,14 @@
     "errorTemporary": "Stock data is temporarily unavailable. Try again."
   },
   "edit": {
-    "detailsTitle": "Edit product details",
-    "detailsTrigger": "Edit product details",
-    "detailsDesc": "Update the core product information shown to shoppers.",
+    "detailsTitle": "Edit product",
+    "detailsTrigger": "Edit product",
+    "detailsDesc": "Name, handle, status, and description.",
     "organizationTitle": "Edit organization",
-    "organizationTrigger": "Edit product organization",
+    "organizationTrigger": "Edit",
     "organizationDesc": "Update how this product is grouped in the catalog.",
     "mediaTitle": "Edit product media",
-    "mediaTrigger": "Edit product media",
+    "mediaTrigger": "Edit",
     "mediaDesc": "Upload images, pick from your library, set a cover, and reorder the gallery.",
     "title": "Title",
     "handle": "Handle",
@@ -316,6 +320,7 @@
     "createTitle": "Create product",
     "editTitle": "Edit product",
     "closeAria": "Close product composer",
+    "stepsAria": "Product form steps",
     "dialogDesc": "Complete product details, organization, variants, and review before saving.",
     "mediaSyncWarn": "Product saved, but media usage could not be synchronized.",
     "toastCreated": "Product created.",

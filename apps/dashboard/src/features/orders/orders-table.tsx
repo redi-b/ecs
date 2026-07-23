@@ -389,6 +389,7 @@ export function OrdersTable({
       )}
       columns={columns}
       data={orders}
+      emptyIcon={<AppIcons.orders className="size-5" aria-hidden />}
       emptyMessage={
         hasActiveFilters ? t("orders.table.filteredEmptyMessage") : t("orders.table.emptyMessage")
       }
@@ -400,6 +401,7 @@ export function OrdersTable({
       footer={footer}
       getRowId={(row) => row.id}
       isFiltered={hasActiveFilters}
+      isLoading={pending}
       selectedSummaryLabel={t("orders.table.selectedSummary")}
       toolbar={toolbar}
     />

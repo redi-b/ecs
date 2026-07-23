@@ -27,12 +27,12 @@
     "copyPhone": "የስልክ ቁጥር ቅዳ"
   },
   "empty": {
-    "noItems": "እስካሁን ምንም ንጥል ነገር አልተመሳሰለም።",
-    "noItemsTitle": "ምንም ንጥሎች የሉም",
-    "filteredNoItems": "አሁን ባለው ፍለጋ ወይም ማጣሪያ መሰረት ምንም የተዛመደ ነገር አልተገኘም።",
-    "filteredNoItemsTitle": "ምንም የሚዛመድ ነገር የለም",
-    "noRowsTitle": "ገና ረድፍ የለም",
-    "noMatchingRowsTitle": "ምንም የሚዛመድ የለም"
+    "noItems": "እስካሁን ምንም የለም። አንድ ይፍጠሩ ወይም ማጣሪያዎችን ይቀይሩ።",
+    "noItemsTitle": "እስካሁን ምንም የለም",
+    "filteredNoItems": "ከአሁኑ ፍለጋ ወይም ማጣሪያ ጋር የሚዛመድ የለም።",
+    "filteredNoItemsTitle": "ምንም አልተገኘም",
+    "noRowsTitle": "እስካሁን ምንም የለም",
+    "noMatchingRowsTitle": "ምንም አልተገኘም"
   },
   "counts": {
     "filtered": "ከዚህ ገጽ ላይ {filteredCount} ከ {pageCount} እያሳየ ነው",

@@ -417,12 +417,14 @@ export function ProductCollectionsTable({
         )}
         columns={columns}
         data={filteredCollections}
-        emptyMessage={t("table.empty.noItems")}
-        emptyTitle={t("table.empty.noItemsTitle")}
-        filteredEmptyMessage={t("table.empty.filteredNoItems")}
-        filteredEmptyTitle={t("table.empty.filteredNoItemsTitle")}
+        emptyIcon={<AppIcons.folder className="size-5" aria-hidden />}
+        emptyMessage={t("taxonomy.table.collectionsEmptyMessage")}
+        emptyTitle={t("taxonomy.table.collectionsEmptyTitle")}
+        filteredEmptyMessage={t("taxonomy.table.collectionsFilteredEmptyMessage")}
+        filteredEmptyTitle={t("taxonomy.table.collectionsFilteredEmptyTitle")}
         getRowId={(collection) => collection.id}
         isFiltered={counts.hasActiveFilter}
+        isLoading={pending}
         selectedSummaryLabel={t("taxonomy.table.selectedSummary")}
         toolbar={toolbar}
         footer={footer}

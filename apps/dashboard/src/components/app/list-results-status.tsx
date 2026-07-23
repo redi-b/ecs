@@ -1,6 +1,5 @@
 "use client";
 
-import { AppIcons } from "@/components/app/icons";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 
@@ -39,19 +38,12 @@ export function ListResultsStatus({
 }: ListResultsStatusProps) {
   const { t, formatNumber } = useI18n();
 
+  // Visible loading lives in DataTable skeleton rows. Keep a polite status for AT only.
   if (pending) {
     return (
-      <p
-        aria-live="polite"
-        className={cn(
-          "flex items-center gap-1.5 text-sm text-muted-foreground transition-opacity duration-150",
-          className,
-        )}
-        role="status"
-      >
-        <AppIcons.loader className="size-3.5 shrink-0 animate-spin opacity-70" aria-hidden />
-        <span>{t("common.updating")}</span>
-      </p>
+      <span className="sr-only" role="status" aria-live="polite">
+        {t("common.updating")}
+      </span>
     );
   }
 
