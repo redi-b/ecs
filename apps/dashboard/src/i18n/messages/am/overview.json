@@ -89,7 +89,8 @@
   "recent": {
     "title": "የቅርብ ጊዜ ትዕዛዞች",
     "description": "ለዚህ ሱቅ የቅርብ ጊዜ ትዕዛዞች።",
-    "empty": "እስካሁን ትዕዛዝ የለም።",
+    "empty": "ትዕዛዞች ሲመጡ እዚህ ይታያሉ።",
+    "emptyTitle": "የቅርብ ጊዜ ትዕዛዝ የለም",
     "viewAll": "ሁሉንም ይመልከቱ",
     "noEmail": "ኢሜይል የለም"
   },
@@ -99,6 +100,8 @@
     "unpaid": "Unpaid"
   },
   "readiness": {
+    "shopTitle": "የሱቅ ዝግጁነት",
+    "shopDescription": "ደንበኞች ከመግዛታቸው በፊት መኖር ያለባቸው።",
     "salesSetup": "የሽያጭ ማዋቀር",
     "salesChannel": "የሽያጭ መንገድ",
     "publishedStorefront": "ለደንበኞች የሚታይ መደብር",

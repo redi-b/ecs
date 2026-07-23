@@ -41,7 +41,15 @@ No glass, mesh gradients, purple AI glows, or side-stripe card accents.
 
 - Sign-in / auth shell (expressive, still calm)
 - Ops lists stay consistent and dense
+- Overview: attention + readiness first, quiet KPI strip, charts secondary
+- Detail pages: shared `detail-surface` (hero, section, field grid, activity)
+
+## Empty & loading
+
+- Chart voids: shared `Empty` primitive
+- List empty: flat inside table card (entity icon, no nested dashed blob)
+- List loading: `DataTable isLoading` → `ListTableSkeleton` (not “Updating…”)
 
 ## Out of scope for craft passes
 
-Storefront marketing templates, chart redesign until Insights, reinventing tables.
+Storefront marketing templates, full Insights product, reinventing tables.

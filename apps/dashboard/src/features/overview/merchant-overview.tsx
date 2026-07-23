@@ -346,45 +346,6 @@ export function MerchantOverview({ summary }: MerchantOverviewProps) {
 
   return (
     <section className="flex flex-col gap-4" aria-label={t("overview.aria.section")}>
-      {/* Uneven KPI strip (kept intentionally) */}
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
-        <MetricCard
-          className="xl:col-span-2"
-          href={dashboardRoutes.orders}
-          label={t("overview.metrics.revenue")}
-          note={operations?.range.label ?? t("overview.metrics.noSalesYet")}
-          value={formatMoney(operations?.totals.revenue, currencyCode, locale)}
-        />
-        <MetricCard
-          className="xl:col-span-1"
-          href={dashboardRoutes.orders}
-          label={t("overview.metrics.orders")}
-          note={sampleNote(operations?.range.sampledOrderCount, t, locale)}
-          value={formatNumber(operations?.totals.orders, locale)}
-        />
-        <MetricCard
-          className="xl:col-span-1"
-          href={dashboardRoutes.products}
-          label={t("overview.metrics.products")}
-          note={t("overview.metrics.catalogCount")}
-          value={formatNumber(operations?.totals.products, locale)}
-        />
-        <MetricCard
-          className="xl:col-span-1"
-          href={dashboardRoutes.orders}
-          label={t("overview.metrics.customers")}
-          note={t("overview.metrics.repeatCount", { count: formatNumber(operations?.customers.repeat, locale) })}
-          value={formatNumber(operations?.customers.unique, locale)}
-        />
-        <MetricCard
-          className="xl:col-span-1"
-          href={dashboardRoutes.insights}
-          label={t("overview.metrics.storefrontEvents")}
-          note={summary.analytics?.unavailable ? t("overview.metrics.analyticsUnavailable") : t("overview.metrics.last30Days")}
-          value={formatNumber(summary.analytics?.totals.storefrontEvents, locale)}
-        />
-      </div>
-
       {billingNotice ? (
         <Alert
           className={cn(
@@ -404,155 +365,15 @@ export function MerchantOverview({ summary }: MerchantOverviewProps) {
         </Alert>
       ) : null}
 
-      {/* Match heights: compact attention sets the row; chart fills via absolute inset */}
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.65fr)_minmax(300px,0.9fr)] xl:items-stretch">
-        <Card className="flex min-h-0 flex-col overflow-hidden">
-          <CardHeader className="shrink-0 border-b">
-            <div>
-              <CardTitle>{t("overview.trading.title")}</CardTitle>
-              <CardDescription>{t("overview.trading.description")}</CardDescription>
-            </div>
-            {hasSeries ? (
-              <div className="col-start-2 row-span-2 row-start-1 self-start justify-self-end">
-                <Select value={metric} onValueChange={(value) => setMetric(value as ChartMetric)}>
-                  <SelectTrigger size="sm" aria-label={t("overview.aria.chartMetric")}>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectGroup>
-                      <SelectItem value="revenue">{t("overview.metrics.revenue")}</SelectItem>
-                      <SelectItem value="orders">{t("overview.metrics.orders")}</SelectItem>
-                      <SelectItem value="customers">{t("overview.metrics.customers")}</SelectItem>
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
-              </div>
-            ) : null}
-          </CardHeader>
-          <CardContent className="flex min-h-0 flex-1 flex-col pt-4">
-            {hasSeries ? (
-              <div className="relative min-h-72 w-full flex-1">
-                <div className="absolute inset-0 px-2">
-                  <ChartContainer
-                    className="aspect-auto! h-full w-full justify-stretch"
-                    config={tradingChartConfig}
-                    initialDimension={{ width: 720, height: 320 }}
-                  >
-                    <ComposedChart
-                      data={tradingRows}
-                      // left margin + YAxis width must fit compact "ETB 60K" ticks
-                      margin={{ bottom: 8, left: 4, right: 20, top: 8 }}
-                    >
-                      <CartesianGrid vertical={false} />
-                      <XAxis
-                        dataKey="date"
-                        tickLine={false}
-                        axisLine={false}
-                        tickMargin={8}
-                        minTickGap={28}
-                        tickFormatter={(v) => formatShortDate(String(v), locale)}
-                      />
-                      <YAxis
-                        yAxisId="value"
-                        tickLine={false}
-                        axisLine={false}
-                        tickMargin={6}
-                        width={58}
-                        tickFormatter={(value) =>
-                          metric === "revenue"
-                            ? compactMoney(Number(value), currencyCode, locale)
-                            : String(value)
-                        }
-                      />
-                      <ChartTooltip
-                        content={
-                          <ChartTooltipContent
-                            labelFormatter={(value) => formatReadableDate(String(value), locale)}
-                            formatter={(value, name) => (
-                              <>
-                                <span className="text-muted-foreground">
-                                  {tradingChartConfig[
-                                    name as keyof typeof tradingChartConfig
-                                  ]?.label ?? name}
-                                </span>
-                                <span className="font-mono font-medium tabular-nums">
-                                  {name === "revenue"
-                                    ? formatMoney(Number(value), currencyCode, locale)
-                                    : Number(value).toLocaleString()}
-                                </span>
-                              </>
-                            )}
-                          />
-                        }
-                      />
-                      <ChartLegend content={<ChartLegendContent />} />
-                      <Area
-                        yAxisId="value"
-                        type="monotone"
-                        dataKey="revenue"
-                        fill="var(--color-revenue)"
-                        fillOpacity={metric === "revenue" ? 0.22 : 0.08}
-                        stroke="var(--color-revenue)"
-                        strokeWidth={metric === "revenue" ? 2.5 : 1.5}
-                        hide={metric !== "revenue"}
-                      />
-                      <Bar
-                        yAxisId="value"
-                        dataKey="orderBars"
-                        fill="var(--color-orderBars)"
-                        radius={[4, 4, 0, 0]}
-                        barSize={18}
-                        hide={metric === "revenue"}
-                      />
-                      <Line
-                        yAxisId="value"
-                        type="monotone"
-                        dataKey={metric === "customers" ? "customers" : "orderTrend"}
-                        stroke={
-                          metric === "customers"
-                            ? "var(--color-customers)"
-                            : "var(--color-orderTrend)"
-                        }
-                        strokeWidth={2.25}
-                        dot={false}
-                        hide={metric === "revenue"}
-                      />
-                      <Brush
-                        dataKey="date"
-                        height={22}
-                        stroke="var(--muted-foreground)"
-                        travellerWidth={10}
-                        tickFormatter={(v) => formatShortDate(String(v), locale)}
-                      />
-                    </ComposedChart>
-                  </ChartContainer>
-                </div>
-              </div>
-            ) : (
-              <ChartEmptyState
-                className="min-h-72"
-                ctaHref={`${dashboardRoutes.orders}?create=order`}
-                ctaLabel={t("overview.trading.emptyCta")}
-                description={t("overview.trading.empty")}
-                title={t("overview.trading.emptyTitle")}
-              />
-            )}
-            {hasSeries ? (
-              <div className="mt-3 flex shrink-0 flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
-                <span>{t("overview.metrics.metricView", { label: String(metricLabel) })}</span>
-                <span>{operations?.range.label ?? t("overview.metrics.noSalesYet")}</span>
-              </div>
-            ) : null}
-          </CardContent>
-        </Card>
-
-        <Card className="flex h-full flex-col">
+      {/* Operator first: queues + readiness, then quieter KPIs */}
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.35fr)_minmax(280px,0.75fr)] xl:items-stretch">
+        <Card className="flex h-full flex-col" size="sm">
           <CardHeader className="shrink-0 border-b pb-3">
             <CardTitle>{t("overview.attention.title")}</CardTitle>
             <CardDescription>{t("overview.attention.description")}</CardDescription>
           </CardHeader>
-          <CardContent className="flex flex-1 flex-col gap-3 pt-4">
-            <div className="flex flex-col gap-2">
+          <CardContent className="flex flex-1 flex-col gap-3 pt-3">
+            <div className="grid gap-2 sm:grid-cols-3">
               {attentionItems.map((item) => {
                 const count = typeof item.value === "number" ? item.value : null;
                 const hot = typeof count === "number" && count > 0;
@@ -560,25 +381,25 @@ export function MerchantOverview({ summary }: MerchantOverviewProps) {
                 return (
                   <Link
                     className={cn(
-                      "flex items-center justify-between gap-3 rounded-lg border px-3 py-2.5 text-sm transition-colors hover:bg-muted/50",
+                      "flex flex-col gap-1 rounded-lg border px-3 py-2.5 text-sm transition-colors hover:bg-muted/50",
                       hot ? "border-primary/25 bg-primary/5" : "bg-background",
                     )}
                     href={item.href}
                     key={item.label}
                     prefetch={false}
                   >
-                    <span className="min-w-0">
-                      <span className="block font-medium">{item.label}</span>
-                      <span className="block text-xs text-muted-foreground">{item.hint}</span>
+                    <span className="flex items-start justify-between gap-2">
+                      <span className="min-w-0 font-medium leading-snug">{item.label}</span>
+                      <span
+                        className={cn(
+                          "shrink-0 font-mono text-lg font-semibold tabular-nums leading-none",
+                          hot ? "text-primary" : "text-muted-foreground",
+                        )}
+                      >
+                        {formatNumber(item.value, locale)}
+                      </span>
                     </span>
-                    <span
-                      className={cn(
-                        "shrink-0 font-mono text-lg font-semibold tabular-nums",
-                        hot ? "text-primary" : "text-muted-foreground",
-                      )}
-                    >
-                      {formatNumber(item.value, locale)}
-                    </span>
+                    <span className="text-xs text-muted-foreground">{item.hint}</span>
                   </Link>
                 );
               })}
@@ -587,9 +408,7 @@ export function MerchantOverview({ summary }: MerchantOverviewProps) {
             {waitingOrders.length > 0 ? (
               <div className="flex flex-col gap-2">
                 <div className="flex items-center justify-between gap-2">
-                  <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-                    {t("overview.attention.waitingOnYou")}
-                  </p>
+                  <p className="type-eyebrow">{t("overview.attention.waitingOnYou")}</p>
                   <Link
                     className="text-xs text-muted-foreground hover:text-foreground"
                     href={dashboardRoutes.orders}
@@ -630,13 +449,188 @@ export function MerchantOverview({ summary }: MerchantOverviewProps) {
                 </div>
               </div>
             ) : null}
+          </CardContent>
+        </Card>
 
-            <div className="mt-auto">
-              <ReadinessBlock summary={summary} />
-            </div>
+        <Card className="flex h-full flex-col" size="sm">
+          <CardHeader className="shrink-0 border-b pb-3">
+            <CardTitle>{t("overview.readiness.shopTitle")}</CardTitle>
+            <CardDescription>{t("overview.readiness.shopDescription")}</CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-1 flex-col justify-center pt-3">
+            <ReadinessBlock summary={summary} />
           </CardContent>
         </Card>
       </div>
+
+      {/* Commerce KPIs only — storefront analytics stay out of the ops strip */}
+      <div className="grid gap-2.5 sm:grid-cols-2 xl:grid-cols-4">
+        <MetricCard
+          href={dashboardRoutes.orders}
+          label={t("overview.metrics.revenue")}
+          note={operations?.range.label ?? t("overview.metrics.noSalesYet")}
+          value={formatMoney(operations?.totals.revenue, currencyCode, locale)}
+        />
+        <MetricCard
+          href={dashboardRoutes.orders}
+          label={t("overview.metrics.orders")}
+          note={sampleNote(operations?.range.sampledOrderCount, t, locale)}
+          value={formatNumber(operations?.totals.orders, locale)}
+        />
+        <MetricCard
+          href={dashboardRoutes.products}
+          label={t("overview.metrics.products")}
+          note={t("overview.metrics.catalogCount")}
+          value={formatNumber(operations?.totals.products, locale)}
+        />
+        <MetricCard
+          href={dashboardRoutes.customers}
+          label={t("overview.metrics.customers")}
+          note={t("overview.metrics.repeatCount", {
+            count: formatNumber(operations?.customers.repeat, locale),
+          })}
+          value={formatNumber(operations?.customers.unique, locale)}
+        />
+      </div>
+
+      <Card className="flex min-h-0 flex-col overflow-hidden">
+        <CardHeader className="shrink-0 border-b">
+          <div>
+            <CardTitle>{t("overview.trading.title")}</CardTitle>
+            <CardDescription>{t("overview.trading.description")}</CardDescription>
+          </div>
+          {hasSeries ? (
+            <div className="col-start-2 row-span-2 row-start-1 self-start justify-self-end">
+              <Select value={metric} onValueChange={(value) => setMetric(value as ChartMetric)}>
+                <SelectTrigger size="sm" aria-label={t("overview.aria.chartMetric")}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectItem value="revenue">{t("overview.metrics.revenue")}</SelectItem>
+                    <SelectItem value="orders">{t("overview.metrics.orders")}</SelectItem>
+                    <SelectItem value="customers">{t("overview.metrics.customers")}</SelectItem>
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </div>
+          ) : null}
+        </CardHeader>
+        <CardContent className="flex min-h-0 flex-1 flex-col pt-4">
+          {hasSeries ? (
+            <div className="relative min-h-72 w-full flex-1">
+              <div className="absolute inset-0 px-2">
+                <ChartContainer
+                  className="aspect-auto! h-full w-full justify-stretch"
+                  config={tradingChartConfig}
+                  initialDimension={{ width: 720, height: 320 }}
+                >
+                  <ComposedChart
+                    data={tradingRows}
+                    // left margin + YAxis width must fit compact "ETB 60K" ticks
+                    margin={{ bottom: 8, left: 4, right: 20, top: 8 }}
+                  >
+                    <CartesianGrid vertical={false} />
+                    <XAxis
+                      dataKey="date"
+                      tickLine={false}
+                      axisLine={false}
+                      tickMargin={8}
+                      minTickGap={28}
+                      tickFormatter={(v) => formatShortDate(String(v), locale)}
+                    />
+                    <YAxis
+                      yAxisId="value"
+                      tickLine={false}
+                      axisLine={false}
+                      tickMargin={6}
+                      width={58}
+                      tickFormatter={(value) =>
+                        metric === "revenue"
+                          ? compactMoney(Number(value), currencyCode, locale)
+                          : String(value)
+                      }
+                    />
+                    <ChartTooltip
+                      content={
+                        <ChartTooltipContent
+                          labelFormatter={(value) => formatReadableDate(String(value), locale)}
+                          formatter={(value, name) => (
+                            <>
+                              <span className="text-muted-foreground">
+                                {tradingChartConfig[name as keyof typeof tradingChartConfig]
+                                  ?.label ?? name}
+                              </span>
+                              <span className="font-mono font-medium tabular-nums">
+                                {name === "revenue"
+                                  ? formatMoney(Number(value), currencyCode, locale)
+                                  : Number(value).toLocaleString()}
+                              </span>
+                            </>
+                          )}
+                        />
+                      }
+                    />
+                    <ChartLegend content={<ChartLegendContent />} />
+                    <Area
+                      yAxisId="value"
+                      type="monotone"
+                      dataKey="revenue"
+                      fill="var(--color-revenue)"
+                      fillOpacity={metric === "revenue" ? 0.22 : 0.08}
+                      stroke="var(--color-revenue)"
+                      strokeWidth={metric === "revenue" ? 2.5 : 1.5}
+                      hide={metric !== "revenue"}
+                    />
+                    <Bar
+                      yAxisId="value"
+                      dataKey="orderBars"
+                      fill="var(--color-orderBars)"
+                      radius={[4, 4, 0, 0]}
+                      barSize={18}
+                      hide={metric === "revenue"}
+                    />
+                    <Line
+                      yAxisId="value"
+                      type="monotone"
+                      dataKey={metric === "customers" ? "customers" : "orderTrend"}
+                      stroke={
+                        metric === "customers"
+                          ? "var(--color-customers)"
+                          : "var(--color-orderTrend)"
+                      }
+                      strokeWidth={2.25}
+                      dot={false}
+                      hide={metric === "revenue"}
+                    />
+                    <Brush
+                      dataKey="date"
+                      height={22}
+                      stroke="var(--muted-foreground)"
+                      travellerWidth={10}
+                      tickFormatter={(v) => formatShortDate(String(v), locale)}
+                    />
+                  </ComposedChart>
+                </ChartContainer>
+              </div>
+            </div>
+          ) : (
+            <ChartEmptyState
+              className="min-h-72"
+              ctaHref={`${dashboardRoutes.orders}?create=order`}
+              ctaLabel={t("overview.trading.emptyCta")}
+              description={t("overview.trading.empty")}
+              title={t("overview.trading.emptyTitle")}
+            />
+          )}
+          {hasSeries ? (
+            <div className="mt-3 flex shrink-0 flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
+              <span>{t("overview.metrics.metricView", { label: String(metricLabel) })}</span>
+              <span>{operations?.range.label ?? t("overview.metrics.noSalesYet")}</span>
+            </div>
+          ) : null}
+        </CardContent>
+      </Card>
 
       {/* Equal-height chart pair — card surfaces fill the row */}
       <div className="grid gap-4 md:grid-cols-2 md:items-stretch">
@@ -813,15 +807,21 @@ export function MerchantOverview({ summary }: MerchantOverviewProps) {
                 ))}
               </div>
             ) : (
-              <div className="flex flex-1 items-center justify-center py-8 text-sm text-muted-foreground">
-                {t("overview.recent.empty")}
-              </div>
+              <ChartEmptyState
+                className="min-h-40 border-0 bg-transparent py-6"
+                ctaHref={`${dashboardRoutes.orders}?create=order`}
+                ctaLabel={t("overview.trading.emptyCta")}
+                description={t("overview.recent.empty")}
+                title={t("overview.recent.emptyTitle")}
+              />
             )}
-            <Button asChild className="mt-auto w-full rounded-full" size="sm" variant="outline">
-              <Link href={dashboardRoutes.orders} prefetch={false}>
-                {t("overview.recent.viewAll")}
-              </Link>
-            </Button>
+            {(operations?.recentOrders.length ?? 0) > 0 ? (
+              <Button asChild className="mt-auto w-full" size="sm" variant="outline">
+                <Link href={dashboardRoutes.orders} prefetch={false}>
+                  {t("overview.recent.viewAll")}
+                </Link>
+              </Button>
+            ) : null}
           </CardContent>
         </Card>
       </div>
