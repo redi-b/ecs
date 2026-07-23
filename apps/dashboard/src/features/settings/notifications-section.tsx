@@ -458,8 +458,8 @@ export function NotificationsSection({ tenantId }: { tenantId: string }) {
               {hasEmail ? (
                 <div
                   className={cn(
-                    "flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between",
-                    !saved.enabled && "opacity-90",
+                    "flex flex-col gap-3 rounded-xl border p-3 sm:flex-row sm:items-center sm:justify-between",
+                    !saved.enabled && "bg-muted/20 opacity-90",
                   )}
                 >
                   <div className="min-w-0">

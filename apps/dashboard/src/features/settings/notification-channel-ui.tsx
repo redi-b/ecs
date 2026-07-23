@@ -244,7 +244,7 @@ export function NotificationEventPicker({
   const eventById = new Map(NOTIFICATION_EVENT_OPTIONS.map((event) => [event.id, event]));
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 rounded-xl border bg-muted/15 p-4">
       <div>
         <p className="text-sm font-medium">{t("settings.notifications.notifyAbout")}</p>
         <p className="text-xs text-muted-foreground">{description}</p>
@@ -253,7 +253,7 @@ export function NotificationEventPicker({
         {NOTIFICATION_EVENT_GROUPS.map((group) => (
           <div key={group.id} className="space-y-2">
             <div>
-              <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 {t(group.labelKey)}
               </p>
               <p className="text-xs text-muted-foreground">{t(group.descriptionKey)}</p>
@@ -267,10 +267,10 @@ export function NotificationEventPicker({
                   <label
                     key={event.id}
                     className={cn(
-                      "flex cursor-pointer items-center gap-2 rounded-lg border border-border/70 bg-muted/10 px-3 py-2 text-sm transition-colors",
+                      "flex cursor-pointer items-center gap-2 rounded-lg border bg-background px-3 py-2 text-sm transition-colors",
                       checked
-                        ? "border-primary/35 bg-primary/5"
-                        : "hover:bg-muted/35",
+                        ? "border-primary/40 bg-primary/5"
+                        : "border-border hover:bg-muted/40",
                       disabled && "cursor-not-allowed opacity-60",
                     )}
                   >
@@ -293,18 +293,15 @@ export function NotificationEventPicker({
           </div>
         ))}
       </div>
-      {/* Only show the save control when the draft differs from saved prefs. */}
-      {dirty ? (
-        <Button
-          className="rounded-full"
-          disabled={disabled || saving || events.length === 0}
-          size="sm"
-          type="button"
-          onClick={onSave}
-        >
-          {saving ? t("common.saving") : t("settings.notifications.saveEvents")}
-        </Button>
-      ) : null}
+      <Button
+        className="rounded-full"
+        disabled={disabled || saving || !dirty || events.length === 0}
+        size="sm"
+        type="button"
+        onClick={onSave}
+      >
+        {saving ? t("common.saving") : t("settings.notifications.saveEvents")}
+      </Button>
     </div>
   );
 }
