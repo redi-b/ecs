@@ -27,12 +27,12 @@
     "copyPhone": "Copy phone number"
   },
   "empty": {
-    "noItems": "No items have been synced yet.",
-    "noItemsTitle": "No items yet",
-    "filteredNoItems": "No items match the current search or filters.",
-    "filteredNoItemsTitle": "No matching items",
-    "noRowsTitle": "No rows yet",
-    "noMatchingRowsTitle": "No matching rows"
+    "noItems": "Nothing here yet. Create one or adjust your filters.",
+    "noItemsTitle": "Nothing here yet",
+    "filteredNoItems": "Nothing matches the current search or filters.",
+    "filteredNoItemsTitle": "No matches",
+    "noRowsTitle": "Nothing here yet",
+    "noMatchingRowsTitle": "No matches"
   },
   "counts": {
     "filtered": "{filteredCount} of {pageCount} on this page",

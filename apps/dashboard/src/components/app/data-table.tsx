@@ -17,12 +17,12 @@ import { useEffect, useRef, useState } from "react";
 
 import { DataTableBulkBar } from "@/components/app/data-table-bulk-bar";
 import { AppIcons } from "@/components/app/icons";
+import { ListTableSkeleton } from "@/components/app/list-table-skeleton";
 import { PaginationBar } from "@/components/app/pagination-bar";
 import {
   Empty,
   EmptyDescription,
   EmptyHeader,
-  EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
 import {
@@ -42,6 +42,8 @@ type DataTableProps<TData> = {
   data: TData[];
   emptyMessage: string;
   emptyTitle?: string;
+  /** Quiet icon for the true-empty state (not used for filtered “no matches”). */
+  emptyIcon?: React.ReactNode;
   filteredEmptyMessage?: string;
   filteredEmptyTitle?: string;
   /** Rendered under the scroll region (e.g. server PaginationControls). Always visible. */
@@ -49,9 +51,13 @@ type DataTableProps<TData> = {
   getRowId?: (row: TData) => string;
   globalFilter?: string;
   isFiltered?: boolean;
+  /** Server/filter navigation pending — show table skeleton instead of “Updating…”. */
+  isLoading?: boolean;
   onGlobalFilterChange?: (value: string) => void;
   pageSize?: number;
   selectedSummaryLabel?: string | ((selectedCount: number) => string);
+  /** Thumbnail/avatar placeholder in loading skeleton (products, media). */
+  skeletonShowMedia?: boolean;
   toolbar?: React.ReactNode;
   /**
    * Parent owns the card chrome + toolbar (e.g. shared Grid/List shell).
@@ -66,15 +72,18 @@ export function DataTable<TData>({
   data,
   emptyMessage,
   emptyTitle,
+  emptyIcon,
   filteredEmptyMessage,
   filteredEmptyTitle,
   footer,
   getRowId,
   globalFilter,
   isFiltered = false,
+  isLoading = false,
   onGlobalFilterChange,
   pageSize,
   selectedSummaryLabel,
+  skeletonShowMedia = false,
   toolbar,
   embedded = false,
 }: DataTableProps<TData>) {
@@ -164,29 +173,44 @@ export function DataTable<TData>({
   }, [rows.length, data.length, columns.length]);
 
   const isEmpty = rows.length === 0;
+  const shellClass = embedded
+    ? "flex min-w-0 flex-col"
+    : "mb-4 flex w-full min-w-0 flex-col overflow-hidden rounded-2xl border border-border/80 bg-card/95 shadow-[0_1px_2px_color-mix(in_oklch,var(--foreground)_4%,transparent)] lg:mb-6";
+
+  // Filtered empty uses search; true empty uses the entity icon when provided.
+  const resolvedEmptyIcon = isFiltered ? (
+    <AppIcons.search className="size-5" aria-hidden />
+  ) : (
+    (emptyIcon ?? <AppIcons.list className="size-5" aria-hidden />)
+  );
 
   return (
-    <div
-      className={
-        embedded
-          ? "flex min-w-0 flex-col"
-          : "mb-4 flex w-full min-w-0 flex-col overflow-hidden rounded-2xl border border-border/80 bg-card/95 shadow-[0_1px_2px_color-mix(in_oklch,var(--foreground)_4%,transparent)] lg:mb-6"
-      }
-    >
+    <div className={shellClass}>
       {!embedded && toolbar ? (
         <div className="shrink-0 border-b border-border/80 bg-muted/15 p-3">{toolbar}</div>
       ) : null}
 
-      {isEmpty ? (
-        // Empty: no wide table chrome, headers, or scroll arrows — a single clear panel.
-        <div className="flex min-h-56 items-center justify-center px-5 py-12 sm:min-h-64 sm:px-8">
-          <Empty className="max-w-sm border-0 p-0">
-            <EmptyHeader>
-              <EmptyMedia variant="icon">
-                <AppIcons.search data-icon="inline-start" />
-              </EmptyMedia>
-              <EmptyTitle>{emptyStateTitle}</EmptyTitle>
-              <EmptyDescription>{emptyStateMessage}</EmptyDescription>
+      {isLoading ? (
+        <ListTableSkeleton
+          className={cn(
+            "mb-0 rounded-none border-0 shadow-none",
+            embedded && "rounded-none",
+          )}
+          columns={Math.min(6, Math.max(3, columns.length))}
+          embedded
+          rows={pageSize && pageSize > 0 ? Math.min(pageSize, 8) : 7}
+          showMedia={skeletonShowMedia}
+        />
+      ) : isEmpty ? (
+        // Flat empty: no nested dashed blob — title + short help inside the table card.
+        <div className="flex min-h-52 items-center justify-center px-6 py-12 sm:min-h-60">
+          <Empty className="max-w-sm gap-3 border-0 bg-transparent p-0">
+            <EmptyHeader className="gap-2.5">
+              <span className="text-muted-foreground/80">{resolvedEmptyIcon}</span>
+              <EmptyTitle className="font-medium">{emptyStateTitle}</EmptyTitle>
+              <EmptyDescription className="text-sm leading-relaxed">
+                {emptyStateMessage}
+              </EmptyDescription>
             </EmptyHeader>
           </Empty>
         </div>
@@ -208,9 +232,8 @@ export function DataTable<TData>({
                     {headerGroup.headers.map((header) => (
                       <TableHead
                         className={cn(
-                          // Opaque but soft: mix muted into card so sticky headers block bleed
-                          // without a heavy gray bar against white rows.
-                          "h-11 sticky top-0 bg-[color-mix(in_oklch,var(--muted)_42%,var(--card))] px-4 text-xs font-medium tracking-normal text-muted-foreground",
+                          // Solid sticky token — color-mix(oklch) can pink-cast in Chrome sticky layers.
+                          "h-11 sticky top-0 bg-[var(--table-sticky-header)] px-4 text-xs font-medium tracking-normal text-muted-foreground",
                           "shadow-[0_1px_0_0_var(--border)]",
                           getStickyColumnClass(header.column.id, true),
                         )}
@@ -295,16 +318,15 @@ export function DataTable<TData>({
         </div>
       ) : null}
 
-      {/* Skip empty-list footers (e.g. "No results" + page 1) — the empty panel is enough. */}
-      {footer && !isEmpty ? (
+      {/* Skip empty/loading footers — empty panel or skeleton is enough. */}
+      {footer && !isEmpty && !isLoading ? (
         <div className="shrink-0 border-t bg-muted/10 px-3 py-2">{footer}</div>
       ) : null}
     </div>
   );
 }
 
-const stickyHeaderBg =
-  "bg-[color-mix(in_oklch,var(--muted)_42%,var(--card))]";
+const stickyHeaderBg = "bg-[var(--table-sticky-header)]";
 
 function getStickyColumnClass(columnId: string, isHeader: boolean, isSelected = false) {
   if (columnId === "select") {
@@ -315,8 +337,8 @@ function getStickyColumnClass(columnId: string, isHeader: boolean, isSelected = 
         : cn(
             "z-20",
             isSelected
-              ? "bg-[color-mix(in_oklch,var(--card),var(--primary)_5%)] group-hover/row:bg-[color-mix(in_oklch,var(--card),var(--primary)_10%)]"
-              : "bg-card group-hover/row:bg-[color-mix(in_oklch,var(--card),var(--muted)_40%)]",
+              ? "bg-[var(--table-sticky-cell-selected)] group-hover/row:bg-[var(--table-sticky-cell-selected-hover)]"
+              : "bg-[var(--table-sticky-cell)] group-hover/row:bg-[var(--table-sticky-cell-hover)]",
           ),
     );
   }
@@ -329,8 +351,8 @@ function getStickyColumnClass(columnId: string, isHeader: boolean, isSelected = 
         : cn(
             "z-20",
             isSelected
-              ? "bg-[color-mix(in_oklch,var(--card),var(--primary)_5%)] group-hover/row:bg-[color-mix(in_oklch,var(--card),var(--primary)_10%)]"
-              : "bg-card group-hover/row:bg-[color-mix(in_oklch,var(--card),var(--muted)_40%)]",
+              ? "bg-[var(--table-sticky-cell-selected)] group-hover/row:bg-[var(--table-sticky-cell-selected-hover)]"
+              : "bg-[var(--table-sticky-cell)] group-hover/row:bg-[var(--table-sticky-cell-hover)]",
           ),
     );
   }

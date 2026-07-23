@@ -311,12 +311,14 @@ export function CustomersTable({
         )}
         columns={columns}
         data={customers}
+        emptyIcon={<AppIcons.user className="size-5" aria-hidden />}
         emptyMessage={t("customers.table.emptyMessage")}
         emptyTitle={t("customers.table.emptyTitle")}
         filteredEmptyMessage={t("customers.table.filteredEmptyMessage")}
         filteredEmptyTitle={t("customers.table.filteredEmptyTitle")}
         getRowId={(row) => row.id}
         isFiltered={hasActiveFilter}
+        isLoading={pending}
         selectedSummaryLabel={t("customers.table.selectedSummary")}
         footer={footer}
         toolbar={

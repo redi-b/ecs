@@ -445,12 +445,14 @@ export function PromotionsManager({
         )}
         columns={columns}
         data={filtered}
+        emptyIcon={<AppIcons.tag className="size-5" aria-hidden />}
         emptyMessage={t("promotions.table.emptyMessage")}
         emptyTitle={t("promotions.table.emptyTitle")}
         filteredEmptyMessage={t("promotions.table.filteredEmptyMessage")}
         filteredEmptyTitle={t("promotions.table.filteredEmptyTitle")}
         getRowId={(item) => item.id}
         isFiltered={isFiltered}
+        isLoading={pending}
         selectedSummaryLabel={t("promotions.table.selectedSummary")}
         footer={footer}
         toolbar={

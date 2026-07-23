@@ -46,6 +46,15 @@
   --warning-foreground: oklch(0.28 0.05 75);
   --info: oklch(0.58 0.12 240);
   --info-foreground: oklch(0.985 0.01 240);
+  /*
+   * Explicit sticky table surfaces — avoid color-mix(oklch) for sticky layers.
+   * Chrome can resolve those mixes with a warm/pink cast on sticky thead/actions.
+   */
+  --table-sticky-header: oklch(0.972 0.01 248);
+  --table-sticky-cell: var(--card);
+  --table-sticky-cell-hover: oklch(0.958 0.012 248);
+  --table-sticky-cell-selected: oklch(0.975 0.02 257);
+  --table-sticky-cell-selected-hover: oklch(0.955 0.035 257);
   --motion-fast: 120ms;
   --motion-base: 180ms;
   --motion-slow: 280ms;
@@ -108,6 +117,7 @@
   --animate-dashboard-fast: dashboard-enter var(--motion-fast) var(--ease-dashboard);
   --animate-dashboard-base: dashboard-enter var(--motion-base) var(--ease-dashboard);
   --animate-dashboard-slow: dashboard-enter var(--motion-slow) var(--ease-dashboard);
+  --animate-dialog-step-in: dialog-step-in var(--motion-base) var(--ease-dashboard) both;
 }
 
 .dark {
@@ -150,6 +160,11 @@
   --warning-foreground: oklch(0.22 0.04 80);
   --info: oklch(0.72 0.11 240);
   --info-foreground: oklch(0.18 0.03 240);
+  --table-sticky-header: oklch(0.235 0.03 255);
+  --table-sticky-cell: var(--card);
+  --table-sticky-cell-hover: oklch(0.26 0.032 255);
+  --table-sticky-cell-selected: oklch(0.255 0.04 253);
+  --table-sticky-cell-selected-hover: oklch(0.28 0.05 253);
 }
 
 @keyframes dashboard-enter {
@@ -162,6 +177,34 @@
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+@keyframes dialog-step-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-dialog-step-in {
+    animation: none !important;
+  }
+}
+
+/* Toasts above dialogs (Radix dialog uses z-50). */
+[data-sonner-toaster] {
+  z-index: 200 !important;
+  pointer-events: none !important;
+}
+
+[data-sonner-toast] {
+  pointer-events: auto !important;
 }
 
 @keyframes theme-ink-fill {

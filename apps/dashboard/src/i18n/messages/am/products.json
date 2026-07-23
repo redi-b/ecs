@@ -19,7 +19,7 @@
   },
   "detail": {
     "shellTitle": "የምርት ዝርዝሮች",
-    "shellDescription": "የነጋዴውን የምርት ዝርዝሮች ይገምግሙ እና በመደብሩ ላይ የምርት መረጃዎችን ያሻሽሉ።",
+    "shellDescription": "ምስሎች፣ አደረጃጀት፣ አማራጮች እና ክምችት ለዚህ ምርት።",
     "optionsLoadErrorTitle": "የምርት አማራጮችን መጫን አልተቻለም",
     "optionsLoadErrorDesc": "{labels} መጫን አልተቻለም። ያሉትን ግንኙነቶች እንዳይደመሰሱ ማጣቀሻ መረጃው እስኪጫን ድረስ ማሻሻል ተዘግቷል።",
     "loadErrorTitle": "ምርቱን መጫን አልተቻለም",
@@ -110,6 +110,10 @@
     }
   },
   "table": {
+    "emptyTitle": "ገና ምርት የለም",
+    "emptyMessage": "መሸጥ ለመጀመር የመጀመሪያ ምርትዎን ያክሉ።",
+    "filteredEmptyTitle": "ምንም የሚዛመድ ምርት የለም",
+    "filteredEmptyMessage": "ሌላ ስም፣ ሁኔታ ወይም ማጣሪያ ይሞክሩ።",
     "searchLabel": "ምርቶችን ፈልግ",
     "searchPlaceholder": "ምርቶችን ፈልግ",
     "clearSearch": "የምርት ፍለጋን አጽዳ",
@@ -220,14 +224,14 @@
     "errorTemporary": "የክምችት መረጃ ለጊዜው አይገኝም። እንደገና ይሞክሩ።"
   },
   "edit": {
-    "detailsTitle": "የምርት ዝርዝሮችን አስተካክል",
-    "detailsTrigger": "የምርት ዝርዝሮችን አስተካክል",
+    "detailsTitle": "ምርት አስተካክል",
+    "detailsTrigger": "ምርት አስተካክል",
     "detailsDesc": "ለገዢዎች የሚታየውን ዋና የምርት መረጃ ያዘምኑ።",
     "organizationTitle": "ድርጅትን አስተካክል",
-    "organizationTrigger": "የምርት ድርጅትን አስተካክል",
+    "organizationTrigger": "አስተካክል",
     "organizationDesc": "ይህ ምርት በካታሎጉ ውስጥ እንዴት እንደሚከፋፈል ያዘምኑ።",
     "mediaTitle": "የምርት ሚዲያን አስተካክል",
-    "mediaTrigger": "የምርት ሚዲያን አስተካክል",
+    "mediaTrigger": "አስተካክል",
     "mediaDesc": "ምስሎችን ይጫኑ፣ ከማከማቻ ይምረጡ፣ ሽፋን ያዘጋጁ እና ማዕከለ-ሥዕላትን እንደገና ያስተካክሉ።",
     "title": "ርዕስ",
     "handle": "መለያ",
@@ -316,6 +320,7 @@
     "createTitle": "አዲስ ምርት",
     "editTitle": "ምርት አስተካክል",
     "closeAria": "የምርት ቅጽ ዝጋ",
+    "stepsAria": "የምርት ቅጽ ደረጃዎች",
     "dialogDesc": "ከማስቀመጥ በፊት ዝርዝር፣ ድርጅት፣ አማራጮች እና ማረጋገጫን ያጠናቁ።",
     "mediaSyncWarn": "ምርቱ ተቀይሯል፣ ነገር ግን ሚዲያን ማስተካከል አልተቻለም።",
     "toastCreated": "ምርቱ ተጨምሯል።",

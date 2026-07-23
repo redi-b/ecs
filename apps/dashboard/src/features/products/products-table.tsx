@@ -519,12 +519,15 @@ export function ProductsTable({
         )}
         columns={columns}
         data={filteredProducts}
-        emptyMessage={t("table.empty.noItems")}
-        emptyTitle={t("table.empty.noItemsTitle")}
-        filteredEmptyMessage={t("table.empty.filteredNoItems")}
-        filteredEmptyTitle={t("table.empty.filteredNoItemsTitle")}
+        emptyIcon={<AppIcons.products className="size-5" aria-hidden />}
+        emptyMessage={t("products.table.emptyMessage")}
+        emptyTitle={t("products.table.emptyTitle")}
+        filteredEmptyMessage={t("products.table.filteredEmptyMessage")}
+        filteredEmptyTitle={t("products.table.filteredEmptyTitle")}
         getRowId={(product) => product.id}
         isFiltered={counts.hasActiveFilter}
+        isLoading={pending}
+        skeletonShowMedia
         selectedSummaryLabel={t("products.table.selectedSummary")}
         toolbar={toolbar}
         footer={footer}

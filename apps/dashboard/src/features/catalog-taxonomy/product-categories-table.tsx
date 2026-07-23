@@ -495,6 +495,7 @@ export function ProductCategoriesTable({
             columns={columns}
             data={filteredCategories}
             embedded
+            emptyIcon={<AppIcons.tree className="size-5" aria-hidden />}
             emptyMessage={t("taxonomy.table.emptyMessage")}
             emptyTitle={t("taxonomy.table.emptyTitle")}
             filteredEmptyMessage={t("taxonomy.table.filteredEmptyMessage")}
@@ -502,6 +503,7 @@ export function ProductCategoriesTable({
             footer={footer}
             getRowId={(category) => category.id}
             isFiltered={counts.hasActiveFilter}
+            isLoading={pending}
             selectedSummaryLabel={t("taxonomy.table.selectedSummary")}
           />
         )}
