@@ -42,7 +42,7 @@ export function DestinationIdentity({ destination }: { destination: TelegramDest
             <AppIcons.externalLink className="size-3 shrink-0 opacity-60" />
           </a>
         ) : null}
-        <Badge variant={destination.enabled ? "secondary" : "outline"}>
+        <Badge variant={destination.enabled ? "success" : "warning"}>
           {destination.enabled
             ? t("settings.notifications.telegramPanel.active")
             : t("settings.notifications.telegramPanel.paused")}

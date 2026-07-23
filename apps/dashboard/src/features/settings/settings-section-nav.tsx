@@ -83,8 +83,8 @@ export function SettingsSectionNav({
         "sticky z-20 min-w-0 max-w-full self-start bg-background/95 backdrop-blur-sm supports-backdrop-filter:bg-background/85",
         // Mobile: horizontal chips under the 3.5rem / 4rem app header.
         "top-14 -mx-1 px-1 py-1.5 sm:top-16",
-        // Desktop: sidebar column beside the form.
-        "lg:top-20 lg:w-52 lg:max-w-none lg:shrink-0 lg:bg-transparent lg:px-0 lg:py-0 lg:backdrop-blur-none",
+        // Desktop: slightly wider so short blurbs stay one line.
+        "lg:top-20 lg:w-56 lg:max-w-none lg:shrink-0 lg:bg-transparent lg:px-0 lg:py-0 lg:backdrop-blur-none",
         "lg:max-h-[calc(100dvh-6rem)] lg:overflow-y-auto",
       )}
     >
@@ -110,9 +110,8 @@ export function SettingsSectionNav({
         <ul
           className={cn(
             "flex min-w-0 gap-1.5 overflow-x-auto overflow-y-hidden overscroll-x-contain scroll-smooth px-0.5 pb-1",
-
             "touch-pan-x [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
-            "lg:flex-col lg:gap-1 lg:overflow-visible lg:px-0 lg:pb-0 lg:touch-auto",
+            "lg:flex-col lg:gap-0.5 lg:overflow-visible lg:px-0 lg:pb-0 lg:touch-auto",
           )}
           ref={scrollerRef}
         >
@@ -123,22 +122,34 @@ export function SettingsSectionNav({
               <li className="shrink-0 lg:w-full" key={id}>
                 <button
                   className={cn(
-                    "flex w-full items-center gap-2 rounded-full border px-3 py-2 text-left transition-colors lg:rounded-lg lg:border-transparent",
+                    "flex w-full items-center gap-2 rounded-full border px-3 py-2 text-left transition-colors",
+                    // Desktop: top-align icon with label when description wraps.
+                    "lg:items-start lg:gap-2.5 lg:rounded-lg lg:border-transparent lg:px-2.5 lg:py-2",
                     "outline-none focus-visible:ring-2 focus-visible:ring-ring/40",
                     isActive
                       ? "border-primary/25 bg-primary/10 text-foreground shadow-sm lg:border-transparent lg:bg-primary/10 lg:shadow-none"
-                      : "border-transparent bg-muted/40 text-muted-foreground hover:bg-muted/70 hover:text-foreground lg:bg-transparent lg:hover:bg-muted/40",
+                      : "border-transparent bg-muted/40 text-muted-foreground hover:bg-muted/70 hover:text-foreground lg:bg-transparent lg:hover:bg-muted/45",
                   )}
                   data-section={id}
                   onClick={() => onSelect(id)}
                   type="button"
                 >
-                  <Icon className="size-3.5 shrink-0 opacity-80 lg:mt-0.5" />
+                  <Icon
+                    className={cn(
+                      "size-3.5 shrink-0 lg:mt-0.5 lg:size-4",
+                      isActive ? "text-primary opacity-100" : "opacity-75",
+                    )}
+                  />
                   <span className="min-w-0">
-                    <span className="block text-sm font-medium whitespace-nowrap">
+                    <span
+                      className={cn(
+                        "block text-sm whitespace-nowrap",
+                        isActive ? "font-semibold tracking-tight" : "font-medium",
+                      )}
+                    >
                       {t(sectionLabelKey(id))}
                     </span>
-                    <span className="mt-0.5 hidden text-xs text-muted-foreground lg:block">
+                    <span className="mt-0.5 hidden text-xs leading-snug text-muted-foreground lg:line-clamp-2 lg:block">
                       {t(sectionDescriptionKey(id))}
                     </span>
                   </span>
