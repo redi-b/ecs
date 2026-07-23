@@ -192,11 +192,11 @@ export function PaymentsSection({ initialPayment, supportHref = null }: Payments
         title={t("settings.sections.payments.label")}
       />
 
-      {/* Cash on delivery */}
+      {/* Cash on delivery — keep icon + nested body, quieter chrome */}
       <Card size="sm">
-        <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0 border-b border-border/60 pb-2.5">
+        <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0 border-b border-border/60 pb-3">
           <div className="flex min-w-0 items-start gap-3">
-            <div className="flex size-9 shrink-0 items-center justify-center rounded-lg border bg-muted/40">
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-border/70 bg-muted/30">
               <AppIcons.orders className="size-4 text-muted-foreground" />
             </div>
             <div className="min-w-0 space-y-0.5">
@@ -224,9 +224,9 @@ export function PaymentsSection({ initialPayment, supportHref = null }: Payments
 
       {/* Online payments */}
       <Card size="sm">
-        <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0 border-b border-border/60 pb-2.5">
+        <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0 border-b border-border/60 pb-3">
           <div className="flex min-w-0 items-start gap-3">
-            <div className="flex size-9 shrink-0 items-center justify-center rounded-lg border bg-muted/40">
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-border/70 bg-muted/30">
               <AppIcons.billing className="size-4 text-muted-foreground" />
             </div>
             <div className="min-w-0 space-y-0.5">
@@ -245,7 +245,7 @@ export function PaymentsSection({ initialPayment, supportHref = null }: Payments
 
         <CardContent className="flex flex-col gap-4 pt-3">
           {status === "loading" ? (
-            <div className="h-24 animate-pulse rounded-xl bg-muted/50" />
+            <div className="h-24 animate-pulse rounded-xl bg-muted/40" />
           ) : null}
 
           {loadError && status !== "loading" ? (
@@ -268,30 +268,32 @@ export function PaymentsSection({ initialPayment, supportHref = null }: Payments
             </div>
           ) : null}
 
-          {/* Connected: offer on storefront */}
+          {/* Connected: nested offer row (structure kept) */}
           {connected ? (
             <div
               className={cn(
-                "flex flex-col gap-4 rounded-xl border p-4 sm:flex-row sm:items-center sm:justify-between",
-                chapa?.onlineEnabled ? "border-border bg-muted/20" : "bg-background",
+                "flex flex-col gap-3 rounded-xl border border-border/70 bg-background p-3.5 sm:flex-row sm:items-center sm:justify-between",
+                !chapa?.onlineEnabled && "bg-muted/15",
               )}
             >
-              <div className="min-w-0 space-y-1">
-                <p className="text-sm font-medium">{t("settings.payments.online.offerLabel")}</p>
-                <p className="text-sm text-muted-foreground">
+              <div className="min-w-0 space-y-0.5">
+                <p className="text-sm font-medium tracking-tight">
+                  {t("settings.payments.online.offerLabel")}
+                </p>
+                <p className="text-xs leading-relaxed text-muted-foreground">
                   {chapa?.onlineEnabled
                     ? t("settings.payments.online.offerOnHint")
                     : t("settings.payments.online.offerOffHint")}
                 </p>
                 {chapa?.secretFingerprint ? (
-                  <p className="pt-1 text-xs text-muted-foreground">
+                  <p className="pt-0.5 text-xs text-muted-foreground">
                     {t("settings.payments.online.connectedAs", {
                       fingerprint: chapa.secretFingerprint,
                     })}
                   </p>
                 ) : null}
               </div>
-              <div className="flex shrink-0 items-center gap-2 self-start rounded-full border bg-background px-2.5 py-1 sm:self-center">
+              <div className="flex shrink-0 items-center gap-2 self-start rounded-full border border-border/70 bg-background px-2.5 py-1 shadow-xs sm:self-center">
                 <span className="text-xs text-muted-foreground">
                   {t("settings.payments.online.offerSwitch")}
                 </span>
@@ -684,7 +686,7 @@ function ReceivingAccountsCard() {
 
   return (
     <Card size="sm">
-      <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0 border-b border-border/60 pb-2.5">
+      <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0 border-b border-border/60 pb-3">
         <div className="min-w-0 space-y-0.5">
           <CardTitle className="text-sm font-medium tracking-tight">
             {t("settings.payments.receiving.title")}
@@ -707,8 +709,8 @@ function ReceivingAccountsCard() {
       </CardHeader>
       <CardContent className="space-y-4 pt-3">
         {accounts.length === 0 ? (
-          <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed bg-muted/20 px-6 py-10 text-center">
-            <div className="flex size-11 items-center justify-center rounded-xl border bg-background shadow-sm">
+          <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-border/70 bg-muted/15 px-6 py-10 text-center">
+            <div className="flex size-11 items-center justify-center rounded-xl border border-border/70 bg-background shadow-sm">
               <AppIcons.billing className="size-5 text-muted-foreground" />
             </div>
             <div className="space-y-1">
@@ -724,7 +726,7 @@ function ReceivingAccountsCard() {
         ) : (
           <ul
             className={cn(
-              "divide-y overflow-hidden rounded-xl border",
+              "divide-y divide-border/60 overflow-hidden rounded-xl border border-border/70 bg-background",
               accounts.length > 6 && "max-h-[min(22rem,45vh)] overflow-y-auto overscroll-contain",
             )}
           >

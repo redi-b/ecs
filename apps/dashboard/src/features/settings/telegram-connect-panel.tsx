@@ -495,8 +495,8 @@ export function TelegramConnectPanel({
                 <li
                   key={destination.id}
                   className={cn(
-                    "flex flex-col gap-3 rounded-xl border p-3 transition-colors sm:flex-row sm:items-center sm:justify-between",
-                    !destination.enabled && "bg-muted/20 opacity-90",
+                    "flex flex-col gap-3 rounded-xl border border-border/70 bg-background p-3 transition-colors sm:flex-row sm:items-center sm:justify-between sm:p-3.5",
+                    !destination.enabled && "bg-muted/15",
                   )}
                 >
                   <DestinationIdentity destination={destination} />
@@ -530,10 +530,10 @@ export function TelegramConnectPanel({
                           disabled={isPending}
                           size="icon-sm"
                           type="button"
-                          variant="destructive"
+                          variant="outline"
                           onClick={() => setRemoveTarget(destination)}
                         >
-                          <AppIcons.trash />
+                          <AppIcons.trash className="text-destructive" />
                         </Button>
                       </TooltipTrigger>
                       <TooltipContent>Disconnect</TooltipContent>

@@ -60,17 +60,17 @@ export function SettingsPanel({
     <Card className={cn(className)} size="sm">
       <CardHeader
         className={cn(
-          "flex flex-row items-start justify-between gap-3 space-y-0 border-b border-border/60 pb-2.5",
+          "flex flex-row items-start justify-between gap-3 space-y-0 border-b border-border/60 pb-3",
           !description && "items-center",
         )}
       >
-        <div className="min-w-0 space-y-0.5">
+        <div className="min-w-0 space-y-1">
           <CardTitle className="text-sm font-medium tracking-tight">{title}</CardTitle>
           {description ? (
             <CardDescription className="text-xs leading-relaxed">{description}</CardDescription>
           ) : null}
         </div>
-        {action ? <div className="shrink-0">{action}</div> : null}
+        {action ? <div className="flex shrink-0 items-center gap-1.5">{action}</div> : null}
       </CardHeader>
       <CardContent className={cn("space-y-3 pt-3 text-sm", contentClassName)}>{children}</CardContent>
     </Card>

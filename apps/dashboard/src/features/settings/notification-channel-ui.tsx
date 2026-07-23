@@ -124,8 +124,8 @@ export function NotificationChannelHeader({
   const refreshingLabel = t("settings.notifications.refreshing");
 
   return (
-    <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0 border-b border-border/60 pb-2.5">
-      <div className="min-w-0 space-y-0.5">
+    <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0 border-b border-border/60 pb-3">
+      <div className="min-w-0 space-y-1">
         <div className="flex flex-wrap items-center gap-2">
           <CardTitle className="text-sm font-medium tracking-tight">{title}</CardTitle>
           {badge}
@@ -137,7 +137,7 @@ export function NotificationChannelHeader({
           <Button
             aria-busy={refreshing}
             aria-label={refreshing ? refreshingLabel : resolvedRefresh}
-            className="shrink-0"
+            className="shrink-0 rounded-full"
             disabled={disabled || refreshing}
             size="icon-sm"
             type="button"
@@ -192,7 +192,7 @@ export function NotificationAlertsSwitch({
 }) {
   const { t } = useI18n();
   return (
-    <div className="flex items-center gap-2 rounded-full border bg-background px-2.5 py-1">
+    <div className="flex items-center gap-2 rounded-full border border-border/70 bg-background px-2.5 py-1 shadow-xs">
       <span className="text-xs text-muted-foreground">{t("settings.notifications.alerts")}</span>
       <Switch checked={checked} disabled={disabled} onCheckedChange={onCheckedChange} />
     </div>
@@ -244,21 +244,23 @@ export function NotificationEventPicker({
   const eventById = new Map(NOTIFICATION_EVENT_OPTIONS.map((event) => [event.id, event]));
 
   return (
-    <div className="space-y-3 rounded-xl border bg-muted/15 p-4">
-      <div>
-        <p className="text-sm font-medium">{t("settings.notifications.notifyAbout")}</p>
-        <p className="text-xs text-muted-foreground">{description}</p>
+    <div className="space-y-3.5 rounded-xl border border-border/70 bg-muted/20 p-3.5 sm:p-4">
+      <div className="space-y-0.5">
+        <p className="text-sm font-medium tracking-tight">
+          {t("settings.notifications.notifyAbout")}
+        </p>
+        <p className="text-xs leading-relaxed text-muted-foreground">{description}</p>
       </div>
-      <div className="space-y-4">
+      <div className="space-y-3.5">
         {NOTIFICATION_EVENT_GROUPS.map((group) => (
           <div key={group.id} className="space-y-2">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            <div className="space-y-0.5">
+              <p className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
                 {t(group.labelKey)}
               </p>
               <p className="text-xs text-muted-foreground">{t(group.descriptionKey)}</p>
             </div>
-            <div className="grid gap-2 sm:grid-cols-2">
+            <div className="grid gap-1.5 sm:grid-cols-2">
               {group.eventIds.map((eventId) => {
                 const event = eventById.get(eventId);
                 if (!event) return null;
@@ -267,10 +269,10 @@ export function NotificationEventPicker({
                   <label
                     key={event.id}
                     className={cn(
-                      "flex cursor-pointer items-center gap-2 rounded-lg border bg-background px-3 py-2 text-sm transition-colors",
+                      "flex cursor-pointer items-center gap-2.5 rounded-lg border bg-background px-3 py-2 text-sm transition-colors",
                       checked
-                        ? "border-primary/40 bg-primary/5"
-                        : "border-border hover:bg-muted/40",
+                        ? "border-primary/40 bg-primary/[0.06] text-foreground shadow-xs"
+                        : "border-border/70 text-foreground hover:border-border hover:bg-muted/30",
                       disabled && "cursor-not-allowed opacity-60",
                     )}
                   >
@@ -285,7 +287,7 @@ export function NotificationEventPicker({
                         );
                       }}
                     />
-                    <span>{t(event.labelKey)}</span>
+                    <span className="leading-snug">{t(event.labelKey)}</span>
                   </label>
                 );
               })}
@@ -293,15 +295,18 @@ export function NotificationEventPicker({
           </div>
         ))}
       </div>
-      <Button
-        className="rounded-full"
-        disabled={disabled || saving || !dirty || events.length === 0}
-        size="sm"
-        type="button"
-        onClick={onSave}
-      >
-        {saving ? t("common.saving") : t("settings.notifications.saveEvents")}
-      </Button>
+      {/* Nested panel stays; save only when the draft differs. */}
+      {dirty ? (
+        <Button
+          className="rounded-full"
+          disabled={disabled || saving || events.length === 0}
+          size="sm"
+          type="button"
+          onClick={onSave}
+        >
+          {saving ? t("common.saving") : t("settings.notifications.saveEvents")}
+        </Button>
+      ) : null}
     </div>
   );
 }
