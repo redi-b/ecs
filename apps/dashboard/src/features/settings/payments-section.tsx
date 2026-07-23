@@ -5,6 +5,7 @@ import { useCallback, useEffect, useId, useMemo, useState, useTransition } from 
 import { toast } from "sonner";
 
 import { AppIcons } from "@/components/app/icons";
+import { HelpTip } from "@/components/app/help-tip";
 import { SearchableCombobox } from "@/components/app/searchable-combobox";
 import {
   AlertDialog,
@@ -192,7 +193,7 @@ export function PaymentsSection({ initialPayment, supportHref = null }: Payments
         title={t("settings.sections.payments.label")}
       />
 
-      {/* Cash on delivery — keep icon + nested body, quieter chrome */}
+      {/* Cash on delivery — compact: action lives in the header */}
       <Card size="sm">
         <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0 border-b border-border/60 pb-3">
           <div className="flex min-w-0 items-start gap-3">
@@ -211,18 +212,21 @@ export function PaymentsSection({ initialPayment, supportHref = null }: Payments
               </CardDescription>
             </div>
           </div>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-3 pt-3 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm text-muted-foreground">{t("settings.payments.cod.hint")}</p>
-          <Button asChild className="w-full shrink-0 rounded-full sm:w-auto" size="sm" variant="outline">
+          <Button asChild className="shrink-0 rounded-full" size="sm" variant="outline">
             <Link href={`${dashboardRoutes.settings}?tab=fulfillment`}>
               {t("settings.payments.cod.openFulfillment")}
             </Link>
           </Button>
+        </CardHeader>
+        <CardContent className="pt-3">
+          <p className="text-sm text-muted-foreground">{t("settings.payments.cod.hint")}</p>
         </CardContent>
       </Card>
 
-      {/* Online payments */}
+      {/*
+        Online payments — nested cards kept for offer + connect form.
+        Long setup/help copy moves into a single HelpTip (not a second essay card).
+      */}
       <Card size="sm">
         <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0 border-b border-border/60 pb-3">
           <div className="flex min-w-0 items-start gap-3">
@@ -235,12 +239,42 @@ export function PaymentsSection({ initialPayment, supportHref = null }: Payments
                   {t("settings.payments.online.title")}
                 </CardTitle>
                 <OnlineStatusBadge status={status} />
+                <HelpTip
+                  summary={t("settings.payments.online.description")}
+                  title={t("settings.payments.online.title")}
+                >
+                  <p>{t("settings.payments.online.description")}</p>
+                  {!connected ? (
+                    <ol className="mt-2 list-decimal space-y-1 ps-4 text-muted-foreground">
+                      <li>{t("settings.payments.online.step1")}</li>
+                      <li>{t("settings.payments.online.step2")}</li>
+                      <li>{t("settings.payments.online.step3")}</li>
+                    </ol>
+                  ) : null}
+                  <p className="mt-2 text-muted-foreground">
+                    {connected
+                      ? t("settings.payments.online.helpBodyConnected")
+                      : t("settings.payments.online.helpBody")}
+                  </p>
+                </HelpTip>
               </div>
               <CardDescription className="text-xs leading-relaxed">
                 {t("settings.payments.online.description")}
               </CardDescription>
             </div>
           </div>
+          {supportHref ? (
+            <Button asChild className="shrink-0 rounded-full" size="sm" variant="outline">
+              <a
+                href={supportHref}
+                rel="noopener noreferrer"
+                target={supportHref.startsWith("http") ? "_blank" : undefined}
+              >
+                <AppIcons.mail className="size-3.5" />
+                {t("settings.payments.online.helpCta")}
+              </a>
+            </Button>
+          ) : null}
         </CardHeader>
 
         <CardContent className="flex flex-col gap-4 pt-3">
@@ -268,7 +302,6 @@ export function PaymentsSection({ initialPayment, supportHref = null }: Payments
             </div>
           ) : null}
 
-          {/* Connected: nested offer row (structure kept) */}
           {connected ? (
             <div
               className={cn(
@@ -308,28 +341,20 @@ export function PaymentsSection({ initialPayment, supportHref = null }: Payments
             </div>
           ) : null}
 
-          {/* Connect / replace secret */}
-          <div className="space-y-3">
-            <div className="space-y-1">
-              <p className="text-sm font-medium">
+          {/* Connect / update key — nested surface, no step list (that lives in HelpTip) */}
+          <div className="space-y-3 rounded-xl border border-border/70 bg-background p-3.5">
+            <div className="space-y-0.5">
+              <p className="text-sm font-medium tracking-tight">
                 {connected
                   ? t("settings.payments.online.updateTitle")
                   : t("settings.payments.online.connectTitle")}
               </p>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-xs leading-relaxed text-muted-foreground">
                 {connected
                   ? t("settings.payments.online.updateHint")
                   : t("settings.payments.online.connectHint")}
               </p>
             </div>
-
-            {!connected ? (
-              <ol className="list-decimal space-y-1.5 ps-5 text-sm text-muted-foreground">
-                <li>{t("settings.payments.online.step1")}</li>
-                <li>{t("settings.payments.online.step2")}</li>
-                <li>{t("settings.payments.online.step3")}</li>
-              </ol>
-            ) : null}
 
             <Field>
               <FieldLabel htmlFor={secretId}>{t("settings.payments.online.secretLabel")}</FieldLabel>
@@ -416,39 +441,9 @@ export function PaymentsSection({ initialPayment, supportHref = null }: Payments
             </div>
           </div>
 
-          {/* Support / guided setup */}
-          <div
-            className={cn(
-              "flex flex-col gap-3 rounded-xl border p-4 sm:flex-row sm:items-start sm:justify-between",
-              connected ? "border-border bg-background" : "border-border bg-muted/25",
-            )}
-          >
-            <div className="flex min-w-0 items-start gap-3">
-              <div className="flex size-10 shrink-0 items-center justify-center rounded-xl border bg-background">
-                <AppIcons.question className="size-5 text-muted-foreground" />
-              </div>
-              <div className="min-w-0 space-y-1">
-                <p className="text-sm font-medium">{t("settings.payments.online.helpTitle")}</p>
-                <p className="text-sm text-muted-foreground">
-                  {connected
-                    ? t("settings.payments.online.helpBodyConnected")
-                    : t("settings.payments.online.helpBody")}
-                </p>
-              </div>
-            </div>
-            {supportHref ? (
-              <Button asChild className="w-full shrink-0 rounded-full sm:w-auto" size="sm" variant="outline">
-                <a href={supportHref} rel="noopener noreferrer" target={supportHref.startsWith("http") ? "_blank" : undefined}>
-                  <AppIcons.mail className="size-3.5" />
-                  {t("settings.payments.online.helpCta")}
-                </a>
-              </Button>
-            ) : null}
-          </div>
-
           {connected ? (
-            <div className="flex flex-wrap items-center justify-between gap-3 border-t pt-4">
-              <p className="text-sm text-muted-foreground">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border/60 pt-3">
+              <p className="text-xs text-muted-foreground">
                 {t("settings.payments.online.disconnectHint")}
               </p>
               <AlertDialog>
@@ -456,6 +451,7 @@ export function PaymentsSection({ initialPayment, supportHref = null }: Payments
                   <Button
                     className="rounded-full"
                     disabled={isPending}
+                    size="sm"
                     type="button"
                     variant="outline"
                   >
