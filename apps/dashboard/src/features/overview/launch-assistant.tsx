@@ -54,19 +54,16 @@ export function getLaunchChecklistItems(
   const hasShopProfile = Boolean(
     summary.tenant.name.trim() && summary.tenant.handle.trim() && summary.domain.hostname.trim(),
   );
-  const hasSalesBackend = summary.commerce.hasStore && summary.commerce.hasSalesChannel;
   const productCount = summary.operations?.totals.products ?? 0;
   const hasCatalog = productCount > 0;
   const hasStorefrontDraft = Boolean(
     summary.storefront.templateKey ?? summary.storefront.templateId,
   );
   const hasPublishedStorefront = summary.storefront.isPublished;
-  // COD works without Chapa; do not block launch on billing/plan.
-  const hasCommercePath = hasSalesBackend;
 
+  // Merchant path only — no internal “sales channel / store provisioning” steps.
   const requiredStates = [
     hasShopProfile,
-    hasCommercePath,
     hasCatalog,
     hasStorefrontDraft,
     hasPublishedStorefront,
@@ -81,16 +78,6 @@ export function getLaunchChecklistItems(
         ? summary.domain.hostname
         : t("overview.launch.shopProfileMissing"),
       ready: hasShopProfile,
-      href: dashboardRoutes.settings,
-      required: true,
-    },
-    {
-      id: "commerce",
-      label: t("overview.launch.salesSetup"),
-      description: hasCommercePath
-        ? t("overview.launch.salesSetupReady")
-        : t("overview.launch.salesSetupDesc"),
-      ready: hasCommercePath,
       href: dashboardRoutes.settings,
       required: true,
     },
@@ -133,8 +120,7 @@ export function getLaunchChecklistItems(
       id: "fulfillment",
       label: t("overview.launch.fulfillment"),
       description: t("overview.launch.fulfillmentDesc"),
-      // Soft: commerce path means checkout can load; merchant should still confirm methods/fee.
-      ready: hasCommercePath && hasPublishedStorefront,
+      ready: hasShopProfile && hasPublishedStorefront,
       href: `${dashboardRoutes.settings}?tab=fulfillment`,
       required: false,
     },

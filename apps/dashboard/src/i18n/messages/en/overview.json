@@ -102,8 +102,9 @@
   "readiness": {
     "shopTitle": "Shop readiness",
     "shopDescription": "What must be live before customers can buy.",
-    "salesSetup": "Sales setup",
-    "salesChannel": "Sales channel",
+    "shopProfile": "Shop profile",
+    "catalog": "Products in catalog",
+    "storefrontDesign": "Storefront design",
     "publishedStorefront": "Published storefront",
     "ready": "Ready",
     "missing": "Missing"
