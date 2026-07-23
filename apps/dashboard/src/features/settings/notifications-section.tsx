@@ -458,13 +458,15 @@ export function NotificationsSection({ tenantId }: { tenantId: string }) {
               {hasEmail ? (
                 <div
                   className={cn(
-                    "flex flex-col gap-3 rounded-xl border p-3 sm:flex-row sm:items-center sm:justify-between",
-                    !saved.enabled && "bg-muted/20 opacity-90",
+                    "flex flex-col gap-3 rounded-xl border border-border/70 bg-background p-3 sm:flex-row sm:items-center sm:justify-between sm:p-3.5",
+                    !saved.enabled && "bg-muted/15",
                   )}
                 >
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium">{t("settings.notifications.delivery")}</p>
-                    <p className="text-xs text-muted-foreground">
+                  <div className="min-w-0 space-y-0.5">
+                    <p className="text-sm font-medium tracking-tight">
+                      {t("settings.notifications.delivery")}
+                    </p>
+                    <p className="text-xs leading-relaxed text-muted-foreground">
                       {t("settings.notifications.pauseWithoutRemoving")}
                     </p>
                   </div>

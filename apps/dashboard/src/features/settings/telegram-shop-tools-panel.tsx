@@ -439,15 +439,17 @@ export function TelegramShopToolsPanel({
                 return (
                   <li
                     className={cn(
-                      "flex flex-col gap-3 rounded-xl border p-3 transition-colors sm:flex-row sm:items-center sm:justify-between",
-                      !binding.enabled && "bg-muted/20 opacity-90",
+                      "flex flex-col gap-3 rounded-xl border border-border/70 bg-background p-3 transition-colors sm:flex-row sm:items-center sm:justify-between sm:p-3.5",
+                      !binding.enabled && "bg-muted/15",
                     )}
                     key={binding.id}
                   >
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="truncate text-sm font-semibold">{binding.label}</span>
-                        <Badge variant={binding.enabled ? "success" : "outline"}>
+                        <span className="truncate text-sm font-semibold tracking-tight">
+                          {binding.label}
+                        </span>
+                        <Badge variant={binding.enabled ? "success" : "warning"}>
                           {binding.enabled
                             ? t("settings.telegram.enabled")
                             : t("settings.telegram.disabled")}
@@ -482,9 +484,9 @@ export function TelegramShopToolsPanel({
                         onClick={() => setRemoveTarget(binding)}
                         size="icon-sm"
                         type="button"
-                        variant="destructive"
+                        variant="outline"
                       >
-                        <AppIcons.trash />
+                        <AppIcons.trash className="text-destructive" />
                       </Button>
                     </div>
                   </li>
