@@ -24,6 +24,10 @@ const FLOATING_UI_SELECTOR = [
   "[data-radix-select-content-wrapper]",
   "[role='listbox']",
   "[role='option']",
+  // Sonner toasts sit above dialogs — don't treat toast clicks as "outside".
+  "[data-sonner-toaster]",
+  "[data-sonner-toast]",
+  "[data-sonner-close-button]",
 ].join(", ");
 
 const MODAL_CONTENT_SELECTOR = [

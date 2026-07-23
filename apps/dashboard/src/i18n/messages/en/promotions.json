@@ -123,6 +123,8 @@
     "startsLabel": "Starts",
     "endsLabel": "Ends",
     "dialogDescription": "Set the offer type, configure how it applies, then choose a schedule and budget.",
+    "stepsAria": "Create promotion steps",
+    "guardDetails": "Add a code and discount value before continuing.",
     "stepShortType": "Type",
     "stepShortDetails": "Details",
     "stepShortSchedule": "Schedule",

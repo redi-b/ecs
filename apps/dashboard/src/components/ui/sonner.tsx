@@ -20,7 +20,8 @@ const Toaster = ({ className, ...props }: ToasterProps) => {
 
   return (
     <Sonner
-      className={cn("toaster group", className)}
+      // Above dialog overlay/content (z-50) so toasts stay clickable/dismissible.
+      className={cn("toaster group z-[200]", className)}
       expand={false}
       gap={12}
       icons={{
@@ -35,6 +36,8 @@ const Toaster = ({ className, ...props }: ToasterProps) => {
       richColors={false}
       style={
         {
+          zIndex: 200,
+          pointerEvents: "auto",
           "--normal-bg": "var(--popover)",
           "--normal-text": "var(--popover-foreground)",
           "--normal-border": "var(--border)",
