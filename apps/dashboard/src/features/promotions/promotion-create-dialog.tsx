@@ -4,6 +4,11 @@ import { useRouter } from "next/navigation";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
+import {
+  DialogStepPanel,
+  DialogStepRail,
+  getDialogStepStatus,
+} from "@/components/app/dialog-step-rail";
 import { AppIcons } from "@/components/app/icons";
 import { Button } from "@/components/ui/button";
 import { DateTimePicker } from "@/components/ui/datetime-picker";
@@ -242,6 +247,54 @@ function PromotionCreateDialogInner() {
     return true;
   }
 
+  const promoSteps = useMemo(
+    () => [
+      {
+        id: "type",
+        label: t("promotions.create.stepShortType"),
+        shortLabel: t("promotions.create.stepShortType"),
+      },
+      {
+        id: "details",
+        label: t("promotions.create.stepShortDetails"),
+        shortLabel: t("promotions.create.stepShortDetails"),
+      },
+      {
+        id: "schedule",
+        label: t("promotions.create.stepShortSchedule"),
+        shortLabel: t("promotions.create.stepShortSchedule"),
+      },
+    ],
+    [t],
+  );
+
+  const completedStepIndexes = useMemo(() => {
+    const done: number[] = [];
+    if (step > 0) done.push(0);
+    if (step > 1) done.push(1);
+    return done;
+  }, [step]);
+
+  function goToStep(target: number) {
+    if (target === step || target < 0 || target > 2) return;
+
+    if (target < step) {
+      setStep(target);
+      return;
+    }
+
+    for (let i = step; i < target; i++) {
+      // Step 0 (offer type) always has a default selection.
+      if (i === 1 && !canContinueFromDetails()) {
+        setStep(1);
+        toast.error(t("promotions.create.guardDetails"));
+        return;
+      }
+    }
+
+    setStep(target);
+  }
+
   async function create() {
     setSaving(true);
     const response = await fetch("/admin/promotions/actions", {
@@ -318,31 +371,32 @@ function PromotionCreateDialogInner() {
         </Button>
       </DialogTrigger>
       <DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-2xl">
-        <DialogHeader className="gap-1.5 border-b px-4 py-4 text-left sm:px-5">
+        <DialogHeader className="gap-1.5 border-b border-border/70 px-4 py-4 text-left sm:px-5">
           <DialogTitle>{t("promotions.create.trigger")}</DialogTitle>
           <DialogDescription>
             {t("promotions.create.dialogDescription")}
           </DialogDescription>
-          <ol className="mt-3 flex flex-wrap gap-2 text-xs">
-            {[t("promotions.create.stepShortType"), t("promotions.create.stepShortDetails"), t("promotions.create.stepShortSchedule")].map((label, index) => (
-              <li
-                className={cn(
-                  "rounded-full px-2.5 py-1 font-medium",
-                  step === index
-                    ? "bg-primary text-primary-foreground"
-                    : step > index
-                      ? "bg-primary/15 text-primary"
-                      : "bg-muted text-muted-foreground",
-                )}
-                key={label}
-              >
-                {index + 1}. {label}
-              </li>
-            ))}
-          </ol>
         </DialogHeader>
+        <DialogStepRail
+          ariaLabel={t("promotions.create.stepsAria")}
+          currentId={promoSteps[step]?.id ?? "type"}
+          getStatus={(_s, index) =>
+            getDialogStepStatus({
+              index,
+              currentIndex: step,
+              completedIndexes: completedStepIndexes,
+            })
+          }
+          onSelect={(id) => {
+            const index = promoSteps.findIndex((s) => s.id === id);
+            if (index >= 0) goToStep(index);
+          }}
+          steps={promoSteps}
+          variant="compact"
+        />
 
         <div className="max-h-[min(70dvh,36rem)] overflow-y-auto p-4 sm:p-5">
+          <DialogStepPanel stepKey={step}>
           {step === 0 ? (
             <div className="grid gap-2">
               {offerOptionIds.map((optionId) => {
@@ -678,11 +732,12 @@ function PromotionCreateDialogInner() {
               </section>
             </div>
           ) : null}
+          </DialogStepPanel>
         </div>
 
-        <DialogFooter className="mx-0 mb-0 rounded-none border-t bg-muted/50 p-4">
+        <DialogFooter className="m-0 rounded-b-xl border-t border-border/70 bg-muted/40 p-4">
           {step > 0 ? (
-            <Button onClick={() => setStep((value) => value - 1)} type="button" variant="outline">
+            <Button onClick={() => goToStep(step - 1)} type="button" variant="outline">
               {t("common.back")}
             </Button>
           ) : (
@@ -693,7 +748,7 @@ function PromotionCreateDialogInner() {
           {step < 2 ? (
             <Button
               disabled={step === 1 && !canContinueFromDetails()}
-              onClick={() => setStep((value) => value + 1)}
+              onClick={() => goToStep(step + 1)}
               type="button"
             >
               {t("common.continue")}

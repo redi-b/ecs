@@ -30,6 +30,11 @@ import { useI18n } from "@/i18n/provider";
 import { mapPlatformErrorMessage } from "@/lib/platform-api/errors";
 import { dashboardRoutes } from "@/lib/routes";
 import { useCreateQueryOpen } from "@/lib/use-create-query-open";
+import {
+  DialogStepPanel,
+  DialogStepRail,
+  getDialogStepStatus,
+} from "@/components/app/dialog-step-rail";
 import { cn } from "@/lib/utils";
 
 import {
@@ -283,22 +288,82 @@ function ManualOrderCreateDialogInner() {
   }
 
   function canContinueFromCustomer() {
+    // Existing: ID is enough (profile already has contact info).
+    if (customerMode === "existing") {
+      return Boolean(customerId);
+    }
     const email = customerEmail.trim().toLowerCase();
-    if (!email.includes("@") || email.length < 5) return false;
-    if (customerMode === "existing" && !customerId) return false;
-    return true;
+    return email.includes("@") && email.length >= 5;
   }
 
   function canContinueFromItems() {
     return lines.length > 0 && lines.every((line) => line.quantity > 0);
   }
 
+  const orderSteps = useMemo(
+    () => [
+      {
+        id: "customer",
+        label: t("orders.create.stepCustomer"),
+        shortLabel: t("orders.create.stepCustomer"),
+      },
+      {
+        id: "items",
+        label: t("orders.create.stepItems"),
+        shortLabel: t("orders.create.stepItems"),
+      },
+      {
+        id: "delivery",
+        label: t("orders.create.stepDelivery"),
+        shortLabel: t("orders.create.stepDelivery"),
+      },
+    ],
+    [t],
+  );
+
+  /** Steps already passed through (forward navigation only lands after guards). */
+  const completedStepIndexes = useMemo(() => {
+    const done: number[] = [];
+    if (step > 0) done.push(0);
+    if (step > 1) done.push(1);
+    return done;
+  }, [step]);
+
+  /**
+   * Jump rules: free back; forward only if every intermediate step is valid.
+   */
+  function goToStep(target: number) {
+    if (target === step || target < 0 || target > 2) return;
+    setError(null);
+
+    if (target < step) {
+      setStep(target);
+      return;
+    }
+
+    for (let i = step; i < target; i++) {
+      if (i === 0 && !canContinueFromCustomer()) {
+        setStep(0);
+        toast.error(t("orders.create.guardCustomer"));
+        return;
+      }
+      if (i === 1 && !canContinueFromItems()) {
+        setStep(1);
+        toast.error(t("orders.create.guardItems"));
+        return;
+      }
+    }
+
+    setStep(target);
+  }
+
   function selectExistingCustomer(id: string) {
     const customer = customers.find((item) => item.id === id);
-    if (!customer) return;
+    // Always keep the id so Continue can enable even if catalog metadata is thin.
     setCustomerMode("existing");
-    setCustomerId(customer.id);
-    setCustomerEmail(customer.email);
+    setCustomerId(id);
+    if (!customer) return;
+    setCustomerEmail(customer.email ?? "");
     setCustomerFirstName(customer.firstName ?? "");
     setCustomerLastName(customer.lastName ?? "");
     setCustomerPhone(customer.phone ?? "");
@@ -443,28 +508,28 @@ function ManualOrderCreateDialogInner() {
           {t("orders.create.trigger")}
         </Button>
       </DialogTrigger>
-      <DialogContent className="gap-0 overflow-visible p-0 sm:max-w-2xl">
-        <DialogHeader className="gap-1.5 border-b px-4 py-4 text-left sm:px-5">
+      <DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-2xl">
+        <DialogHeader className="gap-1.5 border-b border-border/70 px-4 py-4 text-left sm:px-5">
           <DialogTitle>{t("orders.create.title")}</DialogTitle>
           <DialogDescription>{t("orders.create.description")}</DialogDescription>
-          <ol className="mt-3 flex flex-wrap gap-2 text-xs">
-            {[t("orders.create.stepCustomer"), t("orders.create.stepItems"), t("orders.create.stepDelivery")].map((label, index) => (
-              <li
-                className={cn(
-                  "rounded-full px-2.5 py-1 font-medium",
-                  step === index
-                    ? "bg-primary text-primary-foreground"
-                    : step > index
-                      ? "bg-primary/15 text-primary"
-                      : "bg-muted text-muted-foreground",
-                )}
-                key={label}
-              >
-                {index + 1}. {label}
-              </li>
-            ))}
-          </ol>
         </DialogHeader>
+        <DialogStepRail
+          ariaLabel={t("orders.create.stepsAria")}
+          currentId={orderSteps[step]?.id ?? "customer"}
+          getStatus={(_s, index) =>
+            getDialogStepStatus({
+              index,
+              currentIndex: step,
+              completedIndexes: completedStepIndexes,
+            })
+          }
+          onSelect={(id) => {
+            const index = orderSteps.findIndex((s) => s.id === id);
+            if (index >= 0) goToStep(index);
+          }}
+          steps={orderSteps}
+          variant="compact"
+        />
 
         <div className="max-h-[min(70dvh,36rem)] overflow-y-auto p-4 sm:p-5">
           {error ? (
@@ -474,6 +539,7 @@ function ManualOrderCreateDialogInner() {
             </Alert>
           ) : null}
 
+          <DialogStepPanel stepKey={step}>
           {step === 0 ? (
             <div className="space-y-5">
               <section className="grid gap-2 sm:grid-cols-2">
@@ -793,12 +859,13 @@ function ManualOrderCreateDialogInner() {
               </section>
             </div>
           ) : null}
+          </DialogStepPanel>
         </div>
 
-        {/* Same footer pattern as promotions/taxonomy: cancel/back first, primary last. */}
-        <DialogFooter className="mx-0 mb-0 rounded-none border-t bg-muted/50 p-4">
+        {/* p-0 dialogs: no negative footer margins (avoids weird bottom corner clip). */}
+        <DialogFooter className="m-0 rounded-b-xl border-t border-border/70 bg-muted/40 p-4">
           {step > 0 ? (
-            <Button onClick={() => setStep((value) => value - 1)} type="button" variant="outline">
+            <Button onClick={() => goToStep(step - 1)} type="button" variant="outline">
               {t("common.back")}
             </Button>
           ) : (
@@ -812,10 +879,7 @@ function ManualOrderCreateDialogInner() {
                 (step === 0 && !canContinueFromCustomer()) ||
                 (step === 1 && !canContinueFromItems())
               }
-              onClick={() => {
-                setError(null);
-                setStep((value) => value + 1);
-              }}
+              onClick={() => goToStep(step + 1)}
               type="button"
             >
               {t("common.continue")}

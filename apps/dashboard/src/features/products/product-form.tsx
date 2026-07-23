@@ -44,12 +44,16 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { MediaUploadField } from "@/features/media/media-upload-field";
 import {
+  DialogStepPanel,
+  DialogStepRail,
+  getDialogStepStatus,
+} from "@/components/app/dialog-step-rail";
+import {
   CategoryPicker,
   CollectionPicker,
   ComposerSection,
   FieldError,
   hasFieldError,
-  StepDot,
 } from "@/features/products/product-form-fields";
 import {
   ProductOptionsBuilder,
@@ -222,6 +226,12 @@ export function ProductForm({
     });
   }
 
+  /**
+   * Step jump rules:
+   * - Backward / revisit: always allowed
+   * - Forward: validate every step from current through target-1; stop on first failure
+   * - Locked-looking future steps still try the path (clearer than dead clicks)
+   */
   function moveToStep(stepId: ComposerStep["id"]) {
     if (stepId === activeStep) {
       return;
@@ -229,22 +239,31 @@ export function ProductForm({
 
     const currentIndex = PRODUCT_STEPS.findIndex((step) => step.id === activeStep);
     const targetIndex = PRODUCT_STEPS.findIndex((step) => step.id === stepId);
+    if (currentIndex < 0 || targetIndex < 0) return;
 
     if (targetIndex < currentIndex) {
       setActiveStep(stepId);
       return;
     }
 
-    const invalidField = getFirstInvalidFieldForStep(activeStep, form.state.values, t);
+    const nextCompleted = [...completedSteps];
 
-    if (invalidField) {
-      form.validateField(invalidField, "submit");
-      return;
+    for (let i = currentIndex; i < targetIndex; i++) {
+      const step = PRODUCT_STEPS[i]!;
+      const invalidField = getFirstInvalidFieldForStep(step.id, form.state.values, t);
+
+      if (invalidField) {
+        setActiveStep(step.id);
+        form.validateField(invalidField, "submit");
+        return;
+      }
+
+      if (!nextCompleted.includes(step.id)) {
+        nextCompleted.push(step.id);
+      }
     }
 
-    setCompletedSteps((current) =>
-      current.includes(activeStep) ? current : [...current, activeStep],
-    );
+    setCompletedSteps(nextCompleted);
     setActiveStep(stepId);
   }
 
@@ -268,6 +287,12 @@ export function ProductForm({
     }
 
     moveToStep(next.id);
+  }
+
+  function previousStep() {
+    const currentIndex = PRODUCT_STEPS.findIndex((step) => step.id === activeStep);
+    const prev = PRODUCT_STEPS[currentIndex - 1];
+    if (prev) setActiveStep(prev.id);
   }
 
   function updateTitle(nextTitle: string) {
@@ -351,31 +376,24 @@ export function ProductForm({
                 </div>
               </div>
 
-              <div className="grid grid-cols-4 border-b lg:border-b-0">
-                {steps.map((step) => (
-                  <button
-                    className={cn(
-                      "flex min-h-11 min-w-0 flex-col items-center justify-center gap-1 border-r px-1.5 py-2 text-xs text-muted-foreground transition-colors last:border-r-0 hover:bg-muted/60 hover:text-foreground sm:min-h-12 sm:flex-row sm:gap-2 sm:px-3 sm:text-sm",
-                      activeStep === step.id && "bg-muted text-foreground",
-                    )}
-                    key={step.id}
-                    onClick={() => moveToStep(step.id)}
-                    type="button"
-                  >
-                    <StepDot
-                      status={
-                        activeStep === step.id
-                          ? "active"
-                          : completedSteps.includes(step.id)
-                            ? "complete"
-                            : "idle"
-                      }
-                    />
-                    <span className="max-w-full truncate sm:hidden">{step.shortLabel}</span>
-                    <span className="hidden max-w-full truncate sm:inline">{step.label}</span>
-                  </button>
-                ))}
-              </div>
+              <DialogStepRail
+                ariaLabel={t("products.composer.stepsAria")}
+                className="min-w-0 border-b lg:border-b-0"
+                currentId={activeStep}
+                getStatus={(step, index) => {
+                  const currentIndex = PRODUCT_STEPS.findIndex((s) => s.id === activeStep);
+                  const completedIndexes = completedSteps
+                    .map((id) => PRODUCT_STEPS.findIndex((s) => s.id === id))
+                    .filter((i) => i >= 0);
+                  return getDialogStepStatus({
+                    index,
+                    currentIndex,
+                    completedIndexes,
+                  });
+                }}
+                onSelect={(id) => moveToStep(id as ComposerStep["id"])}
+                steps={steps}
+              />
 
               <div className="hidden items-center justify-end border-l p-3 lg:flex">
                 <form.Subscribe selector={(state) => state.values.status}>
@@ -399,6 +417,7 @@ export function ProductForm({
               <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
                 <div className="mx-auto flex min-h-full w-full max-w-4xl flex-col gap-6 px-4 py-6 sm:gap-8 sm:px-5 sm:py-10 md:px-8">
                   {notice}
+                  <DialogStepPanel stepKey={activeStep}>
                   {activeStep === "details" ? (
                     <section className="flex flex-col gap-5">
                       <ComposerSection
@@ -845,6 +864,7 @@ export function ProductForm({
                       </form.Subscribe>
                     </section>
                   ) : null}
+                  </DialogStepPanel>
                 </div>
               </div>
 
@@ -864,9 +884,15 @@ export function ProductForm({
                   }
                 </form.Subscribe>
                 <div className={dialogFooterActionsClassName}>
-                  <Button onClick={closeComposer} type="button" variant="outline">
-                    {t("common.cancel")}
-                  </Button>
+                  {activeStep === "details" ? (
+                    <Button onClick={closeComposer} type="button" variant="outline">
+                      {t("common.cancel")}
+                    </Button>
+                  ) : (
+                    <Button onClick={previousStep} type="button" variant="outline">
+                      {t("common.back")}
+                    </Button>
+                  )}
                   <Button
                     disabled={submitMutation.isPending}
                     onClick={nextStep}

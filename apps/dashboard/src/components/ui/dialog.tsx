@@ -126,7 +126,8 @@ function DialogFooter({
     <div
       data-slot="dialog-footer"
       className={cn(
-        "-mx-4 -mb-4 flex flex-col-reverse gap-2 rounded-b-xl border-t bg-muted/50 p-4 sm:flex-row sm:justify-end",
+        // Default assumes dialog content has padding; p-0 dialogs should pass m-0 rounded-b-xl.
+        "-mx-4 -mb-4 flex flex-col-reverse gap-2 rounded-b-xl border-t border-border/70 bg-muted/40 p-4 sm:flex-row sm:justify-end",
         "[&>button]:w-full sm:[&>button]:w-auto",
         className,
       )}

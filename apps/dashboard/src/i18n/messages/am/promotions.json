@@ -123,6 +123,8 @@
     "startsLabel": "ይጀምራል",
     "endsLabel": "ያበቃል",
     "dialogDescription": "የቅናሽ አይነት ይምረጡ፣ እንዴት እንደሚተገበር ያዋቅሩ፣ ከዚያ መርሐግብር እና በጀት ይምረጡ።",
+    "stepsAria": "የቅናሽ ፍጠር ደረጃዎች",
+    "guardDetails": "ከመቀጠል በፊት ኮድ እና የቅናሽ እሴት ያስገቡ።",
     "stepShortType": "አይነት",
     "stepShortDetails": "ዝርዝር",
     "stepShortSchedule": "መርሐግብር",
