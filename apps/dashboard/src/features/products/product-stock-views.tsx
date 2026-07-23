@@ -8,11 +8,11 @@ import { useEffect, useId, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { DataTable } from "@/components/app/data-table";
+import { DetailMetric, DetailSection } from "@/components/app/detail-surface";
 import { AppIcons } from "@/components/app/icons";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import type { MessageKey } from "@/i18n/messages";
@@ -110,86 +110,73 @@ export function SingleVariantStockPanel({
 
   if (!stock) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>{t("products.stock.title")}</CardTitle>
-          <CardDescription>{t("products.stock.trackDescription")}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <StockAlert error={stockError} />
-        </CardContent>
-      </Card>
+      <DetailSection title={t("products.stock.title")}>
+        <p className="text-sm text-muted-foreground">{t("products.stock.trackDescription")}</p>
+        <StockAlert error={stockError} />
+      </DetailSection>
     );
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <CardTitle>{t("products.stock.title")}</CardTitle>
-            <CardDescription>{t("products.stock.locationDescription")}</CardDescription>
-          </div>
-          <StockStateBadge availableQuantity={getAvailableQuantity(stock)} />
-        </div>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-5">
-        <div className="grid gap-3 md:grid-cols-4">
-          <StockMetric
-            emphasis
-            label={t("products.stock.available")}
-            value={formatQuantity(stock.availableQuantity, t)}
-          />
-          <StockMetric
-            label={t("products.stock.stocked")}
-            value={formatQuantity(stock.stockedQuantity, t)}
-          />
-          <StockMetric
-            label={t("products.stock.reserved")}
-            value={formatQuantity(stock.reservedQuantity, t)}
-          />
-          <StockMetric
-            label={t("products.stock.incoming")}
-            value={formatQuantity(stock.incomingQuantity, t)}
-          />
-        </div>
+    <DetailSection
+      meta={<StockStateBadge availableQuantity={getAvailableQuantity(stock)} />}
+      title={t("products.stock.title")}
+    >
+      <p className="-mt-1 text-sm text-muted-foreground">{t("products.stock.locationDescription")}</p>
+      <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
+        <DetailMetric
+          label={t("products.stock.available")}
+          value={formatQuantity(stock.availableQuantity, t)}
+        />
+        <DetailMetric
+          label={t("products.stock.stocked")}
+          value={formatQuantity(stock.stockedQuantity, t)}
+        />
+        <DetailMetric
+          label={t("products.stock.reserved")}
+          value={formatQuantity(stock.reservedQuantity, t)}
+        />
+        <DetailMetric
+          label={t("products.stock.incoming")}
+          value={formatQuantity(stock.incomingQuantity, t)}
+        />
+      </div>
 
-        <form
-          className="rounded-2xl border bg-muted/20 p-4"
-          onSubmit={(event) => {
-            event.preventDefault();
-            mutation.mutate();
-          }}
-        >
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-            <Field className="max-w-xs flex-1">
-              <FieldLabel htmlFor={stockedQuantityInputId}>
-                {t("products.stock.setStockedQuantity")}
-              </FieldLabel>
-              <Input
-                id={stockedQuantityInputId}
-                min="0"
-                onChange={(event) => setStockedQuantity(event.target.value)}
-                step="1"
-                type="number"
-                value={stockedQuantity}
-              />
-              <FieldDescription>{t("products.stock.reservedHelp")}</FieldDescription>
-            </Field>
-            <Button disabled={mutation.isPending} type="submit">
-              {mutation.isPending ? t("products.stock.saving") : t("products.stock.saveStock")}
-            </Button>
-          </div>
-        </form>
+      <form
+        className="rounded-xl bg-muted/25 p-4 ring-1 ring-foreground/[0.06]"
+        onSubmit={(event) => {
+          event.preventDefault();
+          mutation.mutate();
+        }}
+      >
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <Field className="max-w-xs flex-1">
+            <FieldLabel htmlFor={stockedQuantityInputId}>
+              {t("products.stock.setStockedQuantity")}
+            </FieldLabel>
+            <Input
+              id={stockedQuantityInputId}
+              min="0"
+              onChange={(event) => setStockedQuantity(event.target.value)}
+              step="1"
+              type="number"
+              value={stockedQuantity}
+            />
+            <FieldDescription>{t("products.stock.reservedHelp")}</FieldDescription>
+          </Field>
+          <Button disabled={mutation.isPending} type="submit">
+            {mutation.isPending ? t("products.stock.saving") : t("products.stock.saveStock")}
+          </Button>
+        </div>
+      </form>
 
-        {actionError ? (
-          <Alert variant="destructive">
-            <AlertTitle>{t("products.stock.updateFailedTitle")}</AlertTitle>
-            <AlertDescription>{actionError}</AlertDescription>
-          </Alert>
-        ) : null}
-      </CardContent>
-    </Card>
+      {actionError ? (
+        <Alert variant="destructive">
+          <AlertTitle>{t("products.stock.updateFailedTitle")}</AlertTitle>
+          <AlertDescription>{actionError}</AlertDescription>
+        </Alert>
+      ) : null}
+    </DetailSection>
   );
 }
 
@@ -388,72 +375,64 @@ export function VariantStockPanel({
   );
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <CardTitle>{t("products.stock.variantTitle")}</CardTitle>
-            <CardDescription>{t("products.stock.variantDescription")}</CardDescription>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <Badge variant="secondary">
-              {t("products.stock.variantsCount", { count: variants.length })}
-            </Badge>
-            <StockStateBadge availableQuantity={totalAvailable} />
-          </div>
+    <DetailSection
+      meta={
+        <div className="flex flex-wrap items-center gap-1.5">
+          <Badge variant="secondary">
+            {t("products.stock.variantsCount", { count: variants.length })}
+          </Badge>
+          <StockStateBadge availableQuantity={totalAvailable} />
         </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="grid gap-3 md:grid-cols-3">
-          <StockMetric
-            emphasis
-            label={t("products.stock.available")}
-            value={isLoading ? t("products.stock.loading") : String(totalAvailable)}
-          />
-          <StockMetric
-            label={t("products.stock.stocked")}
-            value={isLoading ? t("products.stock.loading") : String(totalStocked)}
-          />
-          <StockMetric
-            label={t("products.stock.reserved")}
-            value={isLoading ? t("products.stock.loading") : String(totalReserved)}
-          />
-        </div>
-
-        <DataTable
-          columns={columns}
-          data={rows}
-          emptyMessage={t("products.stock.emptyMatchMessage")}
-          emptyTitle={t("products.stock.emptyMatchTitle")}
-          getRowId={(row) => row.variant.id}
-          isFiltered={Boolean(query.trim())}
-          pageSize={8}
-          toolbar={
-            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-              <div>
-                <h3 className="text-sm font-medium">{t("products.stock.inventoryHeading")}</h3>
-                <p className="text-sm text-muted-foreground">
-                  {t("products.stock.inventoryHelp")}
-                </p>
-              </div>
-              <div className="relative md:w-72">
-                <AppIcons.search
-                  className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
-                  data-icon="inline-start"
-                />
-                <Input
-                  aria-label={t("products.stock.searchAria")}
-                  className="h-9 pl-9"
-                  onChange={(event) => setQuery(event.target.value)}
-                  placeholder={t("products.stock.searchPlaceholder")}
-                  value={query}
-                />
-              </div>
-            </div>
-          }
+      }
+      title={t("products.stock.variantTitle")}
+    >
+      <p className="-mt-1 text-sm text-muted-foreground">{t("products.stock.variantDescription")}</p>
+      <div className="grid gap-2.5 sm:grid-cols-3">
+        <DetailMetric
+          label={t("products.stock.available")}
+          value={isLoading ? t("products.stock.loading") : String(totalAvailable)}
         />
-      </CardContent>
-    </Card>
+        <DetailMetric
+          label={t("products.stock.stocked")}
+          value={isLoading ? t("products.stock.loading") : String(totalStocked)}
+        />
+        <DetailMetric
+          label={t("products.stock.reserved")}
+          value={isLoading ? t("products.stock.loading") : String(totalReserved)}
+        />
+      </div>
+
+      <DataTable
+        columns={columns}
+        data={rows}
+        emptyMessage={t("products.stock.emptyMatchMessage")}
+        emptyTitle={t("products.stock.emptyMatchTitle")}
+        getRowId={(row) => row.variant.id}
+        isFiltered={Boolean(query.trim())}
+        pageSize={8}
+        toolbar={
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div>
+              <h3 className="text-sm font-medium">{t("products.stock.inventoryHeading")}</h3>
+              <p className="text-sm text-muted-foreground">{t("products.stock.inventoryHelp")}</p>
+            </div>
+            <div className="relative md:w-72">
+              <AppIcons.search
+                className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
+                data-icon="inline-start"
+              />
+              <Input
+                aria-label={t("products.stock.searchAria")}
+                className="h-9 pl-9"
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder={t("products.stock.searchPlaceholder")}
+                value={query}
+              />
+            </div>
+          </div>
+        }
+      />
+    </DetailSection>
   );
 }
 
@@ -471,7 +450,6 @@ export function getVariantInventoryColumns(t: Translate): ColumnDef<VariantInven
             <div className="font-medium">
               {variant.title ?? t("products.stock.untitledVariant")}
             </div>
-            <div className="break-all text-xs text-muted-foreground">{variant.id}</div>
             <VariantOptionSummary variant={variant} />
             {error ? <div className="mt-2 text-xs text-destructive">{error}</div> : null}
           </div>

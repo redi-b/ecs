@@ -89,7 +89,9 @@ export function DetailSection({
           ) : null}
         </div>
         {meta ? (
-          <div className="shrink-0 text-xs text-muted-foreground">{meta}</div>
+          <div className="flex shrink-0 flex-wrap items-center justify-end gap-1.5 text-xs text-muted-foreground">
+            {meta}
+          </div>
         ) : null}
       </CardHeader>
       <CardContent className={cn("space-y-3 pt-3 text-sm", contentClassName)}>

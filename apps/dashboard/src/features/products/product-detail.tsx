@@ -88,48 +88,59 @@ export function ProductDetail({ action, product, tenantId }: ProductDetailProps)
     setLightboxIndex(index >= 0 ? index : 0);
   }
 
+  const description = product.description?.trim() ?? "";
+
   return (
     <div className="flex flex-col gap-4 sm:gap-5">
       <DetailHero>
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
-          <div className="flex min-w-0 items-center gap-3.5">
-            <ProductThumbnail
-              onOpen={() => openLightboxForUrl(product.thumbnail ?? images[0]?.url)}
-              src={product.thumbnail}
-              title={product.title}
-            />
-            <div className="min-w-0 space-y-1.5">
-              <div className="flex flex-wrap items-center gap-2">
-                <ProductStatusBadge status={product.status} />
-                <ProductDetailsEditButton action={action} product={product} triggerVariant="button" />
+        <div className="space-y-5">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
+            <div className="flex min-w-0 items-center gap-3.5">
+              <ProductThumbnail
+                onOpen={() => openLightboxForUrl(product.thumbnail ?? images[0]?.url)}
+                src={product.thumbnail}
+                title={product.title}
+              />
+              <div className="min-w-0 space-y-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <ProductStatusBadge status={product.status} />
+                  <ProductDetailsEditButton
+                    action={action}
+                    product={product}
+                    triggerVariant="button"
+                  />
+                </div>
+                <p className="type-meta break-all">
+                  {product.handle ? `/${product.handle}` : product.id}
+                </p>
               </div>
-              <p className="type-meta break-all">
-                {product.handle ? `/${product.handle}` : product.id}
-              </p>
+            </div>
+            <div className="grid grid-cols-2 gap-2 sm:min-w-[14rem] sm:shrink-0">
+              <DetailMetric
+                label={t("products.detail.variants")}
+                value={`${product.variants?.length ?? 0}`}
+              />
+              <DetailMetric
+                label={t("products.detail.firstPrice")}
+                value={formatFirstPrice(product, t)}
+              />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-2 sm:w-auto sm:min-w-[13.5rem] sm:shrink-0">
-            <DetailMetric
-              label={t("products.detail.variants")}
-              value={`${product.variants?.length ?? 0}`}
-            />
-            <DetailMetric
-              label={t("products.detail.firstPrice")}
-              value={formatFirstPrice(product, t)}
-            />
+
+          {/* Description lives in the hero so the page isn’t card-after-card of prose. */}
+          <div className="border-t border-border/60 pt-4">
+            <p className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
+              {t("products.detail.description")}
+            </p>
+            <p className="mt-1.5 max-w-3xl whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">
+              {description || t("products.detail.noDescription")}
+            </p>
           </div>
         </div>
       </DetailHero>
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(15.5rem,18rem)] lg:items-start">
         <div className="flex min-w-0 flex-col gap-4">
-          {/* Description is edited via "Edit product" — no extra pencil here. */}
-          <DetailSection title={t("products.detail.description")}>
-            <p className="whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">
-              {product.description ?? t("products.detail.noDescription")}
-            </p>
-          </DetailSection>
-
           <DetailSection
             action={<ProductMediaEditButton action={action} product={product} />}
             meta={t("products.detail.imagesCount", { count: images.length })}
