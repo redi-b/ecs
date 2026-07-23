@@ -168,15 +168,15 @@ export function MarkPaidDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="gap-0 overflow-visible p-0 sm:max-w-md">
-        <DialogHeader className="gap-1.5 border-b px-4 py-4 text-left sm:px-5">
+      <DialogContent className="flex max-h-[min(92dvh,40rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-md">
+        <DialogHeader className="shrink-0 gap-1.5 border-b px-4 py-4 text-left sm:px-5">
           <DialogTitle>{title ?? t("orders.settlement.dialogTitle")}</DialogTitle>
           <DialogDescription>
             {description ?? t("orders.settlement.dialogDescription")}
           </DialogDescription>
         </DialogHeader>
 
-        <div className="max-h-[min(70dvh,28rem)] space-y-4 overflow-y-auto p-4 sm:p-5">
+        <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain p-4 sm:p-5">
           <div className="space-y-2">
             <p className="text-sm font-medium">{t("orders.settlement.paymentMethod")}</p>
             <div className="grid grid-cols-2 gap-1.5">
@@ -272,7 +272,7 @@ export function MarkPaidDialog({
         </div>
 
         {/* p-0 content: cancel DialogFooter negative margins (same as create dialogs). */}
-        <DialogFooter className="mx-0 mb-0 rounded-none border-t bg-muted/50 p-4">
+        <DialogFooter className="mx-0 mb-0 shrink-0 rounded-none border-t bg-muted/50 p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
           <Button
             type="button"
             variant="outline"

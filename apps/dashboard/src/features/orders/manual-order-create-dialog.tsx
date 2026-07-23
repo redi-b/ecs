@@ -508,13 +508,14 @@ function ManualOrderCreateDialogInner() {
           {t("orders.create.trigger")}
         </Button>
       </DialogTrigger>
-      <DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-2xl">
-        <DialogHeader className="gap-1.5 border-b border-border/70 px-4 py-4 text-left sm:px-5">
+      <DialogContent className="flex max-h-[min(92dvh,44rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl">
+        <DialogHeader className="shrink-0 gap-1.5 border-b border-border/70 px-4 py-4 text-left sm:px-5">
           <DialogTitle>{t("orders.create.title")}</DialogTitle>
           <DialogDescription>{t("orders.create.description")}</DialogDescription>
         </DialogHeader>
         <DialogStepRail
           ariaLabel={t("orders.create.stepsAria")}
+          className="shrink-0"
           currentId={orderSteps[step]?.id ?? "customer"}
           getStatus={(_s, index) =>
             getDialogStepStatus({
@@ -531,7 +532,7 @@ function ManualOrderCreateDialogInner() {
           variant="compact"
         />
 
-        <div className="max-h-[min(70dvh,36rem)] overflow-y-auto p-4 sm:p-5">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4 sm:p-5">
           {error ? (
             <Alert className="mb-4" variant="destructive">
               <AlertTitle>{t("orders.create.notCreatedTitle")}</AlertTitle>
@@ -863,7 +864,7 @@ function ManualOrderCreateDialogInner() {
         </div>
 
         {/* p-0 dialogs: no negative footer margins (avoids weird bottom corner clip). */}
-        <DialogFooter className="m-0 rounded-b-xl border-t border-border/70 bg-muted/40 p-4">
+        <DialogFooter className="m-0 shrink-0 rounded-b-xl border-t border-border/70 bg-muted/40 p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
           {step > 0 ? (
             <Button onClick={() => goToStep(step - 1)} type="button" variant="outline">
               {t("common.back")}
