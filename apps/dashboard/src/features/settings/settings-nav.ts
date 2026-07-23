@@ -48,7 +48,7 @@ export const SETTINGS_SECTIONS: Array<{
   {
     id: "payments",
     label: "Payments",
-    description: "COD and online checkout",
+    description: "How customers pay",
   },
   {
     id: "fulfillment",

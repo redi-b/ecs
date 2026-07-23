@@ -36,7 +36,7 @@
     },
     "payments": {
       "label": "Payments",
-      "description": "COD and online checkout"
+      "description": "How customers pay"
     }
   },
   "status": {

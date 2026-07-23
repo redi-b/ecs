@@ -78,16 +78,24 @@ export function SettingsSectionNav({
     <nav
       aria-label={t("settings.navAria")}
       className={cn(
-        // Stay pinned while settings content scrolls (under sticky AppHeader).
-        "sticky z-20 self-start bg-background/95 backdrop-blur-sm supports-backdrop-filter:bg-background/85",
-        // Mobile: full-bleed under page padding (PageShell p-4 / sm:p-5 / md:p-8).
-        "top-14 -mx-4 border-b border-border/60 px-4 py-2.5 sm:top-16 sm:-mx-5 sm:px-5 md:-mx-8 md:px-8",
-        // Desktop: sidebar column; drop bleed and bottom rule.
-        "lg:top-20 lg:mx-0 lg:w-56 lg:max-w-none lg:shrink-0 lg:border-b-0 lg:bg-transparent lg:px-0 lg:py-0 lg:backdrop-blur-none",
+        // Sticky under AppHeader. min-w-0 keeps the chip strip from expanding the page
+        // (otherwise horizontal overflow kills sticky and the whole body scrolls).
+        "sticky z-20 min-w-0 max-w-full self-start",
+        "top-14 sm:top-16 lg:top-20",
+        // Mobile full-bleed bar: cancel PageShell padding so the sticky surface edge-to-edge.
+        // Width stays constrained via min-w-0; negative margin only extends the paint box.
+        "-mx-4 w-auto sm:-mx-5 md:-mx-8 lg:mx-0",
+        "lg:w-56 lg:max-w-none lg:shrink-0",
         "lg:max-h-[calc(100dvh-6rem)] lg:overflow-y-auto",
       )}
     >
-      <div className="relative min-w-0 lg:static">
+      <div
+        className={cn(
+          "relative min-w-0 border-b border-border/60 bg-background/95 px-4 py-2.5 backdrop-blur-sm supports-backdrop-filter:bg-background/85",
+          "sm:px-5 md:px-8",
+          "lg:border-b-0 lg:bg-transparent lg:px-0 lg:py-0 lg:backdrop-blur-none",
+        )}
+      >
         <div
           aria-hidden
           className={cn(
@@ -122,7 +130,6 @@ export function SettingsSectionNav({
                 <button
                   className={cn(
                     "flex w-full items-center gap-2 rounded-full border px-3 py-2 text-left transition-colors",
-                    // Desktop: top-align icon with label when description wraps.
                     "lg:items-start lg:gap-2.5 lg:rounded-lg lg:border-transparent lg:px-2.5 lg:py-2",
                     "outline-none focus-visible:ring-2 focus-visible:ring-ring/40",
                     isActive
