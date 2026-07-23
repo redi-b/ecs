@@ -710,7 +710,12 @@ function ReceivingAccountsCard() {
             </Button>
           </div>
         ) : (
-          <ul className="divide-y overflow-hidden rounded-xl border">
+          <ul
+            className={cn(
+              "divide-y overflow-hidden rounded-xl border",
+              accounts.length > 6 && "max-h-[min(22rem,45vh)] overflow-y-auto overscroll-contain",
+            )}
+          >
             {accounts.map((account) => (
               <li
                 className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-muted/30"

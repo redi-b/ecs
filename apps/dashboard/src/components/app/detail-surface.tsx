@@ -1,4 +1,6 @@
-import type { ReactNode } from "react";
+"use client";
+
+import { useEffect, useState, type ReactNode } from "react";
 
 import { HelpTip } from "@/components/app/help-tip";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -172,8 +174,16 @@ export function DetailActivityList({
     ) : null;
   }
 
+  // Long timelines stay scannable without blowing the sidebar column height.
+  const scrollable = items.length > 8;
+
   return (
-    <ol className="space-y-0">
+    <ol
+      className={cn(
+        "space-y-0",
+        scrollable && "max-h-[min(22rem,45vh)] overflow-y-auto overscroll-contain pr-1",
+      )}
+    >
       {items.map((item, index) => {
         const isLast = index === items.length - 1;
         return (
@@ -206,34 +216,78 @@ export function DetailActivityList({
   );
 }
 
+function resolveFillThrough(
+  steps: Array<{ done: boolean; current?: boolean; muted?: boolean }>,
+) {
+  const currentIndex = steps.findIndex((step) => step.current);
+  if (currentIndex >= 0) return currentIndex;
+  return Math.max(
+    0,
+    steps.reduce((last, step, index) => (step.done && !step.muted ? index : last), -1),
+  );
+}
+
 /**
- * Fulfillment pipeline: numbered nodes, checkmarks when done, pulse on current.
- * Not badge pills — those compete with payment status chips.
+ * Fulfillment pipeline: numbered nodes, checkmarks when done, emphasis on current.
+ * Segment connectors animate fill like the create-order step rail (not a line through circles).
+ * Client-side so progress updates after actions animate width instead of jumping.
  */
 export function DetailStepTrack({
   steps,
 }: {
   steps: Array<{ id: string; label: string; done: boolean; current?: boolean; muted?: boolean }>;
 }) {
+  const targetFill = resolveFillThrough(steps);
+  const currentStepId = steps.find((step) => step.current)?.id ?? steps[steps.length - 1]?.id;
+  /** Fill head used for connector width — ramps on mount / when progress advances. */
+  const [fillThrough, setFillThrough] = useState(0);
+  /** Soft re-trigger on the active node when the step id changes. */
+  const [pulseKey, setPulseKey] = useState(0);
+
+  useEffect(() => {
+    const reduce =
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    if (reduce) {
+      setFillThrough(targetFill);
+      return;
+    }
+
+    // First paint at previous/zero, then fill — CSS width transition matches dialog rail.
+    const frame = requestAnimationFrame(() => {
+      setFillThrough(targetFill);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [targetFill]);
+
+  useEffect(() => {
+    if (!currentStepId) return;
+    setPulseKey((key) => key + 1);
+  }, [currentStepId]);
+
   return (
     <ol className="flex w-full max-w-lg items-start">
       {steps.map((step, index) => {
         const isLast = index === steps.length - 1;
         const complete = step.done && !step.current && !step.muted;
         const current = Boolean(step.current) && !step.muted;
+        // Segment after this node fills once progress has moved past it.
+        const segmentFilled = index < fillThrough;
 
         return (
           <li className="flex min-w-0 flex-1 flex-col" key={step.id}>
             <div className="flex items-center">
               <span
                 aria-hidden
+                key={current && pulseKey > 0 ? `${step.id}-${pulseKey}` : step.id}
                 className={cn(
-                  "relative z-[1] flex size-7 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold tabular-nums transition-colors",
-                  step.muted &&
-                    "bg-muted text-muted-foreground ring-1 ring-border",
+                  "relative z-[1] flex size-7 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold tabular-nums",
+                  "transition-[transform,background-color,box-shadow,color] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none",
+                  step.muted && "bg-muted text-muted-foreground ring-1 ring-border",
                   complete && "bg-primary text-primary-foreground shadow-sm",
                   current &&
-                    "bg-primary text-primary-foreground shadow-[0_0_0_4px_color-mix(in_oklch,var(--primary)_18%,transparent)]",
+                    "scale-105 bg-primary text-primary-foreground shadow-[0_0_0_4px_color-mix(in_oklch,var(--primary)_18%,transparent)] motion-safe:animate-dialog-step-in",
                   !complete &&
                     !current &&
                     !step.muted &&
@@ -259,18 +313,20 @@ export function DetailStepTrack({
               {!isLast ? (
                 <span
                   aria-hidden
-                  className={cn(
-                    "mx-2 h-0.5 min-w-0 flex-1 rounded-full",
-                    complete || (step.done && !step.muted)
-                      ? "bg-primary/45"
-                      : "bg-border",
-                  )}
-                />
+                  className="relative mx-2 h-0.5 min-w-0 flex-1 overflow-hidden rounded-full bg-border"
+                >
+                  <span
+                    className={cn(
+                      "absolute inset-y-0 left-0 rounded-full bg-primary transition-[width] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none",
+                      segmentFilled ? "w-full" : "w-0",
+                    )}
+                  />
+                </span>
               ) : null}
             </div>
             <span
               className={cn(
-                "mt-2 max-w-[5.5rem] text-xs font-medium leading-snug sm:max-w-none",
+                "mt-2 max-w-[5.5rem] text-xs font-medium leading-snug transition-colors duration-300 motion-reduce:transition-none sm:max-w-none",
                 step.muted && "text-muted-foreground",
                 current && "text-foreground",
                 complete && "text-primary",

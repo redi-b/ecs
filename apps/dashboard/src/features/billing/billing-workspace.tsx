@@ -606,7 +606,13 @@ export function BillingWorkspace({
               {t("billing.payment.historyDescription")}
             </p>
           </div>
-          <ul className="flex flex-col gap-2">
+          <ul
+            className={cn(
+              "flex flex-col gap-2",
+              history.length > 6 &&
+                "max-h-[min(22rem,45vh)] overflow-y-auto overscroll-contain pr-0.5",
+            )}
+          >
             {history.map((invoice) => (
               <li
                 className="flex flex-wrap items-center justify-between gap-2 rounded-xl border px-3 py-3 text-sm"

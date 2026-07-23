@@ -55,11 +55,16 @@ export function ProductDetail({ action, product, tenantId }: ProductDetailProps)
   const categories = taxonomy.categories;
   const collections = taxonomy.collections;
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const [descriptionExpanded, setDescriptionExpanded] = useState(false);
 
   const images = useMemo(
     () => (product.images ?? []).filter((image): image is typeof image & { url: string } => Boolean(image.url)),
     [product.images],
   );
+
+  /** ~two rows on the sm:3-col grid; more images scroll inside the card. */
+  const IMAGE_SCROLL_THRESHOLD = 6;
+  const DESCRIPTION_PREVIEW_CHARS = 220;
 
   const lightboxItems = useMemo(
     () =>
@@ -89,6 +94,11 @@ export function ProductDetail({ action, product, tenantId }: ProductDetailProps)
   }
 
   const description = product.description?.trim() ?? "";
+  const descriptionLong = description.length > DESCRIPTION_PREVIEW_CHARS;
+  const descriptionText =
+    !descriptionLong || descriptionExpanded
+      ? description
+      : `${description.slice(0, DESCRIPTION_PREVIEW_CHARS).trimEnd()}…`;
 
   return (
     <div className="flex flex-col gap-4 sm:gap-5">
@@ -133,8 +143,21 @@ export function ProductDetail({ action, product, tenantId }: ProductDetailProps)
               {t("products.detail.description")}
             </p>
             <p className="mt-1.5 max-w-3xl whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">
-              {description || t("products.detail.noDescription")}
+              {descriptionText || t("products.detail.noDescription")}
             </p>
+            {descriptionLong ? (
+              <Button
+                className="mt-1.5 h-auto px-0 text-xs"
+                onClick={() => setDescriptionExpanded((open) => !open)}
+                size="sm"
+                type="button"
+                variant="link"
+              >
+                {descriptionExpanded
+                  ? t("products.detail.descriptionShowLess")
+                  : t("products.detail.descriptionShowMore")}
+              </Button>
+            ) : null}
           </div>
         </div>
       </DetailHero>
@@ -147,7 +170,13 @@ export function ProductDetail({ action, product, tenantId }: ProductDetailProps)
             title={t("products.detail.images")}
           >
             {images.length ? (
-              <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
+              <div
+                className={cn(
+                  "grid grid-cols-2 gap-2.5 sm:grid-cols-3",
+                  images.length > IMAGE_SCROLL_THRESHOLD &&
+                    "max-h-[min(26rem,48vh)] overflow-y-auto overscroll-contain pr-0.5",
+                )}
+              >
                 {images.map((image, index) => {
                   const isCover = Boolean(product.thumbnail && product.thumbnail === image.url);
                   return (
@@ -266,23 +295,34 @@ function ProductOptionsSummary({ product }: { product: MerchantProduct }) {
     );
   }
 
+  const VALUE_PREVIEW = 12;
+
   return (
     <div className="grid gap-2.5 sm:grid-cols-2">
-      {options.map((option) => (
-        <div
-          className="rounded-lg bg-muted/25 px-3.5 py-3 ring-1 ring-foreground/[0.06]"
-          key={option.title}
-        >
-          <div className="text-sm font-medium">{option.title}</div>
-          <div className="mt-2 flex flex-wrap gap-1.5">
-            {option.values.map((value) => (
-              <Badge className="rounded-md font-normal" key={value} variant="secondary">
-                {value}
-              </Badge>
-            ))}
+      {options.map((option) => {
+        const extra = Math.max(0, option.values.length - VALUE_PREVIEW);
+        const values = option.values.slice(0, VALUE_PREVIEW);
+        return (
+          <div
+            className="rounded-lg bg-muted/25 px-3.5 py-3 ring-1 ring-foreground/[0.06]"
+            key={option.title}
+          >
+            <div className="text-sm font-medium">{option.title}</div>
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {values.map((value) => (
+                <Badge className="rounded-md font-normal" key={value} variant="secondary">
+                  {value}
+                </Badge>
+              ))}
+              {extra > 0 ? (
+                <Badge className="rounded-md font-normal" variant="outline">
+                  +{extra}
+                </Badge>
+              ) : null}
+            </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }

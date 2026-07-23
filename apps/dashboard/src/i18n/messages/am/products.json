@@ -36,6 +36,8 @@
     "updated": "የመጨረሻ ለውጥ",
     "images": "ምስሎች",
     "imagesCount": "{count} ምስሎች",
+    "descriptionShowMore": "ተጨማሪ አሳይ",
+    "descriptionShowLess": "ያነሰ አሳይ",
     "cover": "ሽፋን",
     "coverImage": "የሽፋን ምስል",
     "productImage": "የምርት ምስል",
