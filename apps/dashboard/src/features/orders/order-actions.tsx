@@ -261,35 +261,94 @@ export function OrderActions({ action, order, variant = "card" }: OrderActionsPr
   if (next.type === "none" && !showMarkPaid && !showRecheck) {
     const canceled = (order.status ?? "").toLowerCase().includes("cancel");
     return (
-      <div className="rounded-xl border border-dashed px-4 py-4 text-sm text-muted-foreground">
+      <div className="rounded-xl bg-muted/30 px-3.5 py-3 text-sm text-muted-foreground ring-1 ring-foreground/[0.06]">
         {canceled ? t("orders.actions.canceled") : t("orders.actions.noFurther")}
       </div>
     );
   }
 
+  const secondaryActions = (
+    <>
+      {showFinish && next.type !== "none" ? (
+        <Button
+          disabled={mutation.isPending}
+          onClick={() => setPending({ kind: "finish" })}
+          size={variant === "card" ? "sm" : "default"}
+          type="button"
+          variant="outline"
+        >
+          {t("orders.actions.completeAll")}
+        </Button>
+      ) : null}
+      {showMarkPaid && next.type !== "mark_paid" ? (
+        <Button
+          disabled={mutation.isPending || markPaidMutation.isPending}
+          onClick={() => setMarkPaidOpen(true)}
+          size={variant === "card" ? "sm" : "default"}
+          type="button"
+          variant="outline"
+        >
+          {t("orders.actions.markPaid")}
+        </Button>
+      ) : null}
+      {showRecheck ? (
+        <Button
+          disabled={mutation.isPending}
+          onClick={() => setPending({ kind: "recheck" })}
+          size={variant === "card" ? "sm" : "default"}
+          type="button"
+          variant="outline"
+        >
+          {t("orders.actions.recheckPayment")}
+        </Button>
+      ) : null}
+      {showCancel && !(order.status ?? "").toLowerCase().includes("cancel") ? (
+        <Button
+          className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+          disabled={mutation.isPending}
+          onClick={() => setPending({ kind: "cancel" })}
+          size={variant === "card" ? "sm" : "default"}
+          type="button"
+          variant="ghost"
+        >
+          {t("orders.actions.cancelOrder")}
+        </Button>
+      ) : null}
+    </>
+  );
+
   const primary = (
-    <div className={variant === "header" ? "flex flex-wrap items-center gap-2" : "space-y-3"}>
+    <div
+      className={
+        variant === "header"
+          ? "flex flex-wrap items-center gap-2"
+          : "flex h-full min-h-[11rem] flex-col gap-3"
+      }
+    >
       {next.type !== "none" ? (
         <div
           className={
             variant === "card"
-              ? "space-y-3 rounded-xl border border-primary/20 bg-primary/5 px-4 py-4"
+              ? "flex flex-1 flex-col gap-4 rounded-xl bg-primary/[0.07] p-4 ring-1 ring-primary/20"
               : "contents"
           }
         >
           {variant === "card" ? (
             <div className="flex items-start justify-between gap-2">
-              <div>
-                <p className="text-xs font-medium tracking-wide text-primary uppercase">
-                  {t("orders.actions.next")}
+              <div className="min-w-0 space-y-1.5">
+                <p className="type-eyebrow text-primary">{t("orders.actions.next")}</p>
+                <p className="text-base font-semibold leading-snug tracking-tight">
+                  {nextCopy.label}
                 </p>
-                <p className="mt-1 text-sm font-medium">{nextCopy.label}</p>
-                <p className="mt-1 text-sm text-muted-foreground">{nextCopy.description}</p>
+                <p className="text-sm leading-relaxed text-muted-foreground">
+                  {nextCopy.description}
+                </p>
               </div>
               <HelpTip summary={nextCopy.description} title={nextCopy.label} />
             </div>
           ) : null}
           <Button
+            className={variant === "card" ? "mt-auto w-full" : undefined}
             disabled={mutation.isPending || markPaidMutation.isPending}
             onClick={() => {
               if (next.type === "mark_paid") {
@@ -298,6 +357,7 @@ export function OrderActions({ action, order, variant = "card" }: OrderActionsPr
               }
               setPending({ kind: "next", type: next.type });
             }}
+            size={variant === "card" ? "default" : "default"}
             type="button"
           >
             {nextCopy.label}
@@ -305,54 +365,20 @@ export function OrderActions({ action, order, variant = "card" }: OrderActionsPr
         </div>
       ) : null}
 
-      <div className="flex flex-wrap gap-2">
-        {showFinish && next.type !== "none" ? (
-          <Button
-            disabled={mutation.isPending}
-            onClick={() => setPending({ kind: "finish" })}
-            type="button"
-            variant="outline"
-          >
-            {t("orders.actions.completeAll")}
-          </Button>
-        ) : null}
-        {showMarkPaid && next.type !== "mark_paid" ? (
-          <Button
-            disabled={mutation.isPending || markPaidMutation.isPending}
-            onClick={() => setMarkPaidOpen(true)}
-            type="button"
-            variant="outline"
-          >
-            {t("orders.actions.markPaid")}
-          </Button>
-        ) : null}
-        {showRecheck ? (
-          <Button
-            disabled={mutation.isPending}
-            onClick={() => setPending({ kind: "recheck" })}
-            type="button"
-            variant="outline"
-          >
-            {t("orders.actions.recheckPayment")}
-          </Button>
-        ) : null}
-        {showCancel && !(order.status ?? "").toLowerCase().includes("cancel") ? (
-          <Button
-            className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-            disabled={mutation.isPending}
-            onClick={() => setPending({ kind: "cancel" })}
-            type="button"
-            variant="ghost"
-          >
-            {t("orders.actions.cancelOrder")}
-          </Button>
-        ) : null}
+      <div
+        className={
+          variant === "card"
+            ? "mt-auto flex flex-wrap gap-2 pt-0.5"
+            : "flex flex-wrap gap-2"
+        }
+      >
+        {secondaryActions}
       </div>
     </div>
   );
 
   return (
-    <div className="space-y-3">
+    <div className={variant === "card" ? "flex h-full flex-col gap-3" : "space-y-3"}>
       {actionError ? (
         <Alert variant="destructive">
           <AlertTitle>{t("orders.actions.updateFailedTitle")}</AlertTitle>
