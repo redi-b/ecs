@@ -42,6 +42,10 @@ import {
   InputGroupInput,
 } from "@/components/ui/input-group";
 import { Switch } from "@/components/ui/switch";
+import {
+  SectionIntro,
+  SettingsSectionBody,
+} from "@/features/settings/settings-sections";
 import { useI18n } from "@/i18n/provider";
 import type { MessageKey } from "@/i18n/messages";
 import { mapPlatformErrorMessage } from "@/lib/platform-api/errors";
@@ -182,31 +186,33 @@ export function PaymentsSection({ initialPayment, supportHref = null }: Payments
   }
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="space-y-1">
-        <h2 className="text-lg font-semibold tracking-tight">
-          {t("settings.sections.payments.label")}
-        </h2>
-        <p className="text-sm text-muted-foreground">{t("settings.payments.intro")}</p>
-      </div>
+    <SettingsSectionBody>
+      <SectionIntro
+        description={t("settings.payments.intro")}
+        title={t("settings.sections.payments.label")}
+      />
 
       {/* Cash on delivery */}
-      <Card>
-        <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0 pb-4">
+      <Card size="sm">
+        <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0 border-b border-border/60 pb-2.5">
           <div className="flex min-w-0 items-start gap-3">
-            <div className="flex size-10 shrink-0 items-center justify-center rounded-xl border bg-muted/40">
-              <AppIcons.orders className="size-5 text-muted-foreground" />
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-lg border bg-muted/40">
+              <AppIcons.orders className="size-4 text-muted-foreground" />
             </div>
-            <div className="min-w-0 space-y-1">
+            <div className="min-w-0 space-y-0.5">
               <div className="flex flex-wrap items-center gap-2">
-                <CardTitle className="text-base">{t("settings.payments.cod.title")}</CardTitle>
+                <CardTitle className="text-sm font-medium tracking-tight">
+                  {t("settings.payments.cod.title")}
+                </CardTitle>
                 <Badge variant="secondary">{t("settings.payments.cod.badge")}</Badge>
               </div>
-              <CardDescription>{t("settings.payments.cod.description")}</CardDescription>
+              <CardDescription className="text-xs leading-relaxed">
+                {t("settings.payments.cod.description")}
+              </CardDescription>
             </div>
           </div>
         </CardHeader>
-        <CardContent className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <CardContent className="flex flex-col gap-3 pt-3 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm text-muted-foreground">{t("settings.payments.cod.hint")}</p>
           <Button asChild className="w-full shrink-0 rounded-full sm:w-auto" size="sm" variant="outline">
             <Link href={`${dashboardRoutes.settings}?tab=fulfillment`}>
@@ -217,23 +223,27 @@ export function PaymentsSection({ initialPayment, supportHref = null }: Payments
       </Card>
 
       {/* Online payments */}
-      <Card>
-        <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0 pb-4">
+      <Card size="sm">
+        <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0 border-b border-border/60 pb-2.5">
           <div className="flex min-w-0 items-start gap-3">
-            <div className="flex size-10 shrink-0 items-center justify-center rounded-xl border bg-muted/40">
-              <AppIcons.billing className="size-5 text-muted-foreground" />
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-lg border bg-muted/40">
+              <AppIcons.billing className="size-4 text-muted-foreground" />
             </div>
-            <div className="min-w-0 space-y-1">
+            <div className="min-w-0 space-y-0.5">
               <div className="flex flex-wrap items-center gap-2">
-                <CardTitle className="text-base">{t("settings.payments.online.title")}</CardTitle>
+                <CardTitle className="text-sm font-medium tracking-tight">
+                  {t("settings.payments.online.title")}
+                </CardTitle>
                 <OnlineStatusBadge status={status} />
               </div>
-              <CardDescription>{t("settings.payments.online.description")}</CardDescription>
+              <CardDescription className="text-xs leading-relaxed">
+                {t("settings.payments.online.description")}
+              </CardDescription>
             </div>
           </div>
         </CardHeader>
 
-        <CardContent className="flex flex-col gap-5">
+        <CardContent className="flex flex-col gap-4 pt-3">
           {status === "loading" ? (
             <div className="h-24 animate-pulse rounded-xl bg-muted/50" />
           ) : null}
@@ -478,7 +488,7 @@ export function PaymentsSection({ initialPayment, supportHref = null }: Payments
       </Card>
 
       <ReceivingAccountsCard />
-    </div>
+    </SettingsSectionBody>
   );
 }
 
@@ -673,27 +683,29 @@ function ReceivingAccountsCard() {
   const canSave = form.label.trim().length > 0 && form.bankCode.length > 0 && !isPending;
 
   return (
-    <Card>
-      <CardHeader className="pb-3">
-        <div className="flex items-start justify-between gap-3">
-          <div className="space-y-1">
-            <CardTitle className="text-base">{t("settings.payments.receiving.title")}</CardTitle>
-            <CardDescription>{t("settings.payments.receiving.description")}</CardDescription>
-          </div>
-          {accounts.length > 0 ? (
-            <Button
-              className="shrink-0 rounded-full"
-              onClick={openCreate}
-              size="sm"
-              type="button"
-              variant="outline"
-            >
-              {t("settings.payments.receiving.add")}
-            </Button>
-          ) : null}
+    <Card size="sm">
+      <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0 border-b border-border/60 pb-2.5">
+        <div className="min-w-0 space-y-0.5">
+          <CardTitle className="text-sm font-medium tracking-tight">
+            {t("settings.payments.receiving.title")}
+          </CardTitle>
+          <CardDescription className="text-xs leading-relaxed">
+            {t("settings.payments.receiving.description")}
+          </CardDescription>
         </div>
+        {accounts.length > 0 ? (
+          <Button
+            className="shrink-0 rounded-full"
+            onClick={openCreate}
+            size="sm"
+            type="button"
+            variant="outline"
+          >
+            {t("settings.payments.receiving.add")}
+          </Button>
+        ) : null}
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-4 pt-3">
         {accounts.length === 0 ? (
           <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed bg-muted/20 px-6 py-10 text-center">
             <div className="flex size-11 items-center justify-center rounded-xl border bg-background shadow-sm">

@@ -2,17 +2,12 @@
 
 import { useEffect, useState } from "react";
 
+import {
+  SectionIntro,
+  SettingsSectionBody,
+} from "@/features/settings/settings-sections";
 import { TelegramShopToolsPanel } from "@/features/settings/telegram-shop-tools-panel";
 import { useI18n } from "@/i18n/provider";
-
-function SectionIntro({ description, title }: { description: string; title: string }) {
-  return (
-    <div>
-      <h2 className="text-base font-semibold tracking-tight">{title}</h2>
-      <p className="mt-1 max-w-2xl text-sm text-muted-foreground">{description}</p>
-    </div>
-  );
-}
 
 export function TelegramSection({ tenantId }: { tenantId: string }) {
   const { t } = useI18n();
@@ -42,12 +37,12 @@ export function TelegramSection({ tenantId }: { tenantId: string }) {
   }, [tenantId]);
 
   return (
-    <div className="flex flex-col gap-6">
+    <SettingsSectionBody>
       <SectionIntro
         description={t("settings.telegram.intro")}
         title={t("settings.sections.telegram.label")}
       />
       <TelegramShopToolsPanel available={available} tenantId={tenantId} />
-    </div>
+    </SettingsSectionBody>
   );
 }

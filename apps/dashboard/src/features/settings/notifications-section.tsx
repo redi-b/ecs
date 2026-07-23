@@ -27,6 +27,10 @@ import {
   NotificationStatusBadge,
   sameNotificationEvents,
 } from "@/features/settings/notification-channel-ui";
+import {
+  SectionIntro,
+  SettingsSectionBody,
+} from "@/features/settings/settings-sections";
 import { TelegramConnectPanel } from "@/features/settings/telegram-connect-panel";
 import type { NotificationPreference } from "@/lib/merchant-notifications";
 import { useI18n } from "@/i18n/provider";
@@ -305,40 +309,40 @@ export function NotificationsSection({ tenantId }: { tenantId: string }) {
 
   if (loading) {
     return (
-      <div className="flex flex-col gap-6">
+      <SettingsSectionBody>
         <SectionIntro
           description={t("settings.notifications.intro")}
           title={t("settings.sections.notifications.label")}
         />
-        <Card>
+        <Card size="sm">
           <NotificationChannelHeader
             description={t("settings.notifications.loadingTelegram")}
             onRefresh={() => undefined}
             refreshing
             title={t("settings.notifications.telegram")}
           />
-          <CardContent>
+          <CardContent className="pt-3">
             <div className="h-24 animate-pulse rounded-lg bg-muted/50" />
           </CardContent>
         </Card>
-        <Card>
+        <Card size="sm">
           <NotificationChannelHeader
             description={t("settings.notifications.loadingEmail")}
             onRefresh={() => undefined}
             refreshing
             title={t("settings.notifications.email")}
           />
-          <CardContent>
+          <CardContent className="pt-3">
             <div className="h-28 animate-pulse rounded-lg bg-muted/50" />
           </CardContent>
         </Card>
-      </div>
+      </SettingsSectionBody>
     );
   }
 
   if (loadError) {
     return (
-      <div className="flex flex-col gap-6">
+      <SettingsSectionBody>
         <SectionIntro
           description={t("settings.notifications.intro")}
           title={t("settings.sections.notifications.label")}
@@ -361,12 +365,12 @@ export function NotificationsSection({ tenantId }: { tenantId: string }) {
             </Button>
           </AlertDescription>
         </Alert>
-      </div>
+      </SettingsSectionBody>
     );
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <SettingsSectionBody>
       <SectionIntro
         description={t("settings.notifications.intro")}
         title={t("settings.sections.notifications.label")}
@@ -374,7 +378,7 @@ export function NotificationsSection({ tenantId }: { tenantId: string }) {
 
       <TelegramConnectPanel available={telegramAvailable} tenantId={tenantId} />
 
-      <Card>
+      <Card size="sm">
         <NotificationChannelHeader
           badge={<NotificationStatusBadge status={status} />}
           description={t("settings.notifications.emailDescription")}
@@ -385,7 +389,7 @@ export function NotificationsSection({ tenantId }: { tenantId: string }) {
           title={t("settings.notifications.email")}
         />
 
-        <CardContent className="flex flex-col gap-5">
+        <CardContent className="flex flex-col gap-4 pt-3">
           {!emailAvailable ? (
             <NotificationChannelUnavailable
               description={t("settings.notifications.emailUnavailableDescription")}
@@ -509,15 +513,6 @@ export function NotificationsSection({ tenantId }: { tenantId: string }) {
           )}
         </CardContent>
       </Card>
-    </div>
-  );
-}
-
-function SectionIntro({ description, title }: { description: string; title: string }) {
-  return (
-    <div>
-      <h2 className="text-base font-semibold tracking-tight">{title}</h2>
-      <p className="mt-1 max-w-2xl text-sm text-muted-foreground">{description}</p>
-    </div>
+    </SettingsSectionBody>
   );
 }

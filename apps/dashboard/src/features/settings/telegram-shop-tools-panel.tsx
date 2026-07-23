@@ -238,7 +238,7 @@ export function TelegramShopToolsPanel({
 
   if (!available) {
     return (
-      <Card>
+      <Card size="sm">
         <NotificationChannelHeader
           description={t("settings.telegram.description")}
           disabled
@@ -246,7 +246,7 @@ export function TelegramShopToolsPanel({
           refreshing={false}
           title={t("settings.telegram.title")}
         />
-        <CardContent>
+        <CardContent className="pt-3">
           <NotificationChannelUnavailable
             description={t("settings.telegram.unavailable")}
             title={t("settings.telegram.unavailableTitle")}
@@ -258,14 +258,14 @@ export function TelegramShopToolsPanel({
 
   if (loading) {
     return (
-      <Card>
+      <Card size="sm">
         <NotificationChannelHeader
           description={t("settings.telegram.description")}
           onRefresh={() => undefined}
           refreshing
           title={t("settings.telegram.title")}
         />
-        <CardContent>
+        <CardContent className="pt-3">
           <div className="h-28 animate-pulse rounded-lg bg-muted/50" />
         </CardContent>
       </Card>
@@ -278,7 +278,7 @@ export function TelegramShopToolsPanel({
       loadError.toLowerCase().includes("not configured");
     if (isNotConfigured) {
       return (
-        <Card>
+        <Card size="sm">
           <NotificationChannelHeader
             description={t("settings.telegram.description")}
             disabled
@@ -286,7 +286,7 @@ export function TelegramShopToolsPanel({
             refreshing={false}
             title={t("settings.telegram.title")}
           />
-          <CardContent>
+          <CardContent className="pt-3">
             <NotificationChannelUnavailable
               description={t("settings.telegram.unavailable")}
               title={t("settings.telegram.unavailableTitle")}
@@ -296,14 +296,14 @@ export function TelegramShopToolsPanel({
       );
     }
     return (
-      <Card>
+      <Card size="sm">
         <NotificationChannelHeader
           description={t("settings.telegram.description")}
           onRefresh={refreshList}
           refreshing={refreshing}
           title={t("settings.telegram.title")}
         />
-        <CardContent>
+        <CardContent className="pt-3">
           <Alert variant="destructive">
             <AlertTitle>{t("settings.telegram.loadErrorTitle")}</AlertTitle>
             <AlertDescription className="flex flex-col gap-3">
@@ -335,7 +335,7 @@ export function TelegramShopToolsPanel({
 
   return (
     <>
-      <Card>
+      <Card size="sm">
         <NotificationChannelHeader
           badge={
             hasAccounts ? (
@@ -354,7 +354,7 @@ export function TelegramShopToolsPanel({
           title={t("settings.telegram.title")}
         />
 
-        <CardContent className="flex flex-col gap-5">
+        <CardContent className="flex flex-col gap-4 pt-3">
           {waiting ? (
             <div className="rounded-xl border border-primary/20 bg-primary/5 px-4 py-4">
               <div className="flex items-start gap-3">

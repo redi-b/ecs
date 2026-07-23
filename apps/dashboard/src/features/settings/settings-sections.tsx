@@ -3,14 +3,79 @@
 import type { StorefrontTemplateCatalogItem } from "@ecs/contracts";
 import { CheckIcon, ExternalLinkIcon, Loader2Icon } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useState, useTransition, type ReactNode } from "react";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useI18n } from "@/i18n/provider";
 import { dashboardRoutes } from "@/lib/routes";
 import { cn } from "@/lib/utils";
+
+/** Section page title + quiet intro — matches order/product detail hierarchy. */
+export function SectionIntro({ description, title }: { description: string; title: string }) {
+  return (
+    <div className="space-y-1">
+      <h2 className="type-section-title text-balance">{title}</h2>
+      <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">{description}</p>
+    </div>
+  );
+}
+
+/** Vertical stack for one settings tab (spacing + enter motion). */
+export function SettingsSectionBody({
+  children,
+  className,
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <div className={cn("flex flex-col gap-4 sm:gap-5 motion-safe:animate-dialog-step-in", className)}>
+      {children}
+    </div>
+  );
+}
+
+/**
+ * Settings card aligned with DetailSection: compact size, hairline header, quiet title.
+ */
+export function SettingsPanel({
+  title,
+  description,
+  action,
+  children,
+  className,
+  contentClassName,
+}: {
+  title: ReactNode;
+  description?: ReactNode;
+  action?: ReactNode;
+  children: ReactNode;
+  className?: string;
+  contentClassName?: string;
+}) {
+  return (
+    <Card className={cn(className)} size="sm">
+      <CardHeader
+        className={cn(
+          "flex flex-row items-start justify-between gap-3 space-y-0 border-b border-border/60 pb-2.5",
+          !description && "items-center",
+        )}
+      >
+        <div className="min-w-0 space-y-0.5">
+          <CardTitle className="text-sm font-medium tracking-tight">{title}</CardTitle>
+          {description ? (
+            <CardDescription className="text-xs leading-relaxed">{description}</CardDescription>
+          ) : null}
+        </div>
+        {action ? <div className="shrink-0">{action}</div> : null}
+      </CardHeader>
+      <CardContent className={cn("space-y-3 pt-3 text-sm", contentClassName)}>{children}</CardContent>
+    </Card>
+  );
+}
 
 export function SettingsRow({ label, value }: { label: string; value: string }) {
   return (
@@ -199,11 +264,3 @@ function templatePreviewPalette(templateKey: string) {
   };
 }
 
-export function SectionIntro({ description, title }: { description: string; title: string }) {
-  return (
-    <div>
-      <h2 className="text-base font-semibold tracking-tight">{title}</h2>
-      <p className="mt-1 max-w-2xl text-sm text-muted-foreground">{description}</p>
-    </div>
-  );
-}
