@@ -5,7 +5,14 @@ import Link from "@/components/app/link";
 import { Cell, Pie, PieChart } from "recharts";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
 import {
   type ChartConfig,
   ChartContainer,
@@ -17,6 +24,7 @@ import { useI18n } from "@/i18n/provider";
 import type { MessageKey } from "@/i18n/messages";
 import { cn } from "@/lib/utils";
 
+/** Dense ops KPI tile: whole surface is the link, no nested card chrome. */
 export function MetricCard({
   className,
   href,
@@ -31,21 +39,22 @@ export function MetricCard({
   value: string;
 }) {
   return (
-    <Card className={cn("transition-colors hover:bg-muted/30", className)}>
-      <CardHeader>
-        <CardDescription>{label}</CardDescription>
-        <CardTitle className="font-mono text-2xl tabular-nums">{value}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <Link
-          className="text-xs text-muted-foreground hover:text-foreground"
-          href={href}
-          prefetch={false}
-        >
-          {note}
-        </Link>
-      </CardContent>
-    </Card>
+    <Link
+      className={cn(
+        "flex min-w-0 flex-col gap-1 rounded-xl bg-card px-3.5 py-3 ring-1 ring-foreground/[0.08]",
+        "shadow-[0_1px_2px_color-mix(in_oklch,var(--foreground)_4%,transparent)]",
+        "transition-colors hover:bg-muted/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+        className,
+      )}
+      href={href}
+      prefetch={false}
+    >
+      <span className="truncate text-xs text-muted-foreground">{label}</span>
+      <span className="font-mono text-xl font-semibold tracking-tight tabular-nums sm:text-2xl">
+        {value}
+      </span>
+      <span className="truncate text-xs text-muted-foreground">{note}</span>
+    </Link>
   );
 }
 
@@ -63,39 +72,41 @@ export function ChartEmptyState({
   title: string;
 }) {
   return (
-    <div
+    <Empty
       className={cn(
-        "flex min-h-56 flex-1 flex-col items-center justify-center gap-3 rounded-xl border border-dashed bg-muted/20 px-6 py-10 text-center",
+        "min-h-56 flex-1 justify-center border-dashed bg-muted/15 px-6 py-10",
         className,
       )}
     >
-      <span className="flex size-10 items-center justify-center rounded-full border bg-background text-muted-foreground shadow-sm">
-        <svg
-          aria-hidden
-          className="size-4"
-          fill="none"
-          stroke="currentColor"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth="1.75"
-          viewBox="0 0 24 24"
-        >
-          <path d="M3 3v18h18" />
-          <path d="M7 14l4-4 3 3 5-6" />
-        </svg>
-      </span>
-      <div className="max-w-xs space-y-1">
-        <p className="text-sm font-medium text-foreground">{title}</p>
-        <p className="text-xs leading-relaxed text-muted-foreground">{description}</p>
-      </div>
+      <EmptyHeader>
+        <EmptyMedia variant="icon">
+          <svg
+            aria-hidden
+            className="size-4"
+            fill="none"
+            stroke="currentColor"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="1.75"
+            viewBox="0 0 24 24"
+          >
+            <path d="M3 3v18h18" />
+            <path d="M7 14l4-4 3 3 5-6" />
+          </svg>
+        </EmptyMedia>
+        <EmptyTitle>{title}</EmptyTitle>
+        <EmptyDescription>{description}</EmptyDescription>
+      </EmptyHeader>
       {ctaHref && ctaLabel ? (
-        <Button asChild className="mt-1" size="sm" variant="outline">
-          <Link href={ctaHref} prefetch={false}>
-            {ctaLabel}
-          </Link>
-        </Button>
+        <EmptyContent>
+          <Button asChild size="sm" variant="outline">
+            <Link href={ctaHref} prefetch={false}>
+              {ctaLabel}
+            </Link>
+          </Button>
+        </EmptyContent>
       ) : null}
-    </div>
+    </Empty>
   );
 }
 
@@ -191,7 +202,7 @@ export function ReadinessBlock({ summary }: { summary: MerchantDashboardSummary 
     hasSalesChannel: "overview.readiness.salesChannel",
   };
   return (
-    <div className="flex flex-col gap-2.5 rounded-lg border bg-muted/25 p-3">
+    <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
           <p className="truncate text-sm font-medium">{summary.tenant.name}</p>

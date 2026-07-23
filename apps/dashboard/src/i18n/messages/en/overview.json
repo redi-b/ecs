@@ -89,7 +89,8 @@
   "recent": {
     "title": "Recent orders",
     "description": "Latest orders for this shop.",
-    "empty": "No recent orders are available.",
+    "empty": "New orders will show up here as they arrive.",
+    "emptyTitle": "No recent orders",
     "viewAll": "View all orders",
     "noEmail": "No email"
   },
@@ -99,6 +100,8 @@
     "unpaid": "Unpaid"
   },
   "readiness": {
+    "shopTitle": "Shop readiness",
+    "shopDescription": "What must be live before customers can buy.",
     "salesSetup": "Sales setup",
     "salesChannel": "Sales channel",
     "publishedStorefront": "Published storefront",

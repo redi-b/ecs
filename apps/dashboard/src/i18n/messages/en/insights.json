@@ -3,6 +3,7 @@
   "description": "Deeper reports for traffic, products, and customers.",
   "empty": {
     "title": "Audience insights are coming soon",
-    "description": "Use Overview for current sales and storefront signals."
+    "description": "Use Overview for current sales and storefront signals.",
+    "cta": "Back to overview"
   }
 }
