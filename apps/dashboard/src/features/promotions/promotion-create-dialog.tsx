@@ -370,8 +370,8 @@ function PromotionCreateDialogInner() {
           {t("promotions.create.trigger")}
         </Button>
       </DialogTrigger>
-      <DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-2xl">
-        <DialogHeader className="gap-1.5 border-b border-border/70 px-4 py-4 text-left sm:px-5">
+      <DialogContent className="flex max-h-[min(92dvh,44rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl">
+        <DialogHeader className="shrink-0 gap-1.5 border-b border-border/70 px-4 py-4 text-left sm:px-5">
           <DialogTitle>{t("promotions.create.trigger")}</DialogTitle>
           <DialogDescription>
             {t("promotions.create.dialogDescription")}
@@ -379,6 +379,7 @@ function PromotionCreateDialogInner() {
         </DialogHeader>
         <DialogStepRail
           ariaLabel={t("promotions.create.stepsAria")}
+          className="shrink-0"
           currentId={promoSteps[step]?.id ?? "type"}
           getStatus={(_s, index) =>
             getDialogStepStatus({
@@ -395,7 +396,7 @@ function PromotionCreateDialogInner() {
           variant="compact"
         />
 
-        <div className="max-h-[min(70dvh,36rem)] overflow-y-auto p-4 sm:p-5">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4 sm:p-5">
           <DialogStepPanel stepKey={step}>
           {step === 0 ? (
             <div className="grid gap-2">
@@ -735,7 +736,7 @@ function PromotionCreateDialogInner() {
           </DialogStepPanel>
         </div>
 
-        <DialogFooter className="m-0 rounded-b-xl border-t border-border/70 bg-muted/40 p-4">
+        <DialogFooter className="m-0 shrink-0 rounded-b-xl border-t border-border/70 bg-muted/40 p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
           {step > 0 ? (
             <Button onClick={() => goToStep(step - 1)} type="button" variant="outline">
               {t("common.back")}

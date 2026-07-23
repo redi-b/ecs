@@ -322,14 +322,14 @@ export function OrderActions({ action, order, variant = "card" }: OrderActionsPr
       className={
         variant === "header"
           ? "flex flex-wrap items-center gap-2"
-          : "flex h-full min-h-[11rem] flex-col gap-3"
+          : "flex h-full min-h-0 flex-col gap-3 sm:min-h-[11rem]"
       }
     >
       {next.type !== "none" ? (
         <div
           className={
             variant === "card"
-              ? "flex flex-1 flex-col gap-4 rounded-xl bg-primary/[0.07] p-4 ring-1 ring-primary/20"
+              ? "flex flex-1 flex-col gap-3 rounded-xl bg-primary/[0.07] p-3.5 ring-1 ring-primary/20 sm:gap-4 sm:p-4"
               : "contents"
           }
         >
@@ -368,7 +368,7 @@ export function OrderActions({ action, order, variant = "card" }: OrderActionsPr
       <div
         className={
           variant === "card"
-            ? "mt-auto flex flex-wrap gap-2 pt-0.5"
+            ? "mt-auto flex flex-col gap-2 pt-0.5 sm:flex-row sm:flex-wrap [&>button]:w-full sm:[&>button]:w-auto"
             : "flex flex-wrap gap-2"
         }
       >

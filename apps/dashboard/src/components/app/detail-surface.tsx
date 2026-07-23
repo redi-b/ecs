@@ -23,9 +23,10 @@ export function DetailHero({ children, actions, className }: DetailHeroProps) {
     <Card className={cn(className)} size="default">
       <div className="px-(--card-spacing) py-0.5">
         {actions ? (
-          <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,21rem)] lg:items-stretch lg:gap-8">
-            <div className="flex min-w-0 flex-col justify-center gap-5 py-1">{children}</div>
-            <div className="flex min-w-0 flex-col border-border/60 lg:border-l lg:pl-7">
+          <div className="grid gap-4 sm:gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,21rem)] lg:items-stretch lg:gap-8">
+            <div className="flex min-w-0 flex-col justify-center gap-4 py-1 sm:gap-5">{children}</div>
+            {/* Stacked on mobile with a top rule; side rail on large screens. */}
+            <div className="flex min-w-0 flex-col border-t border-border/60 pt-4 lg:border-t-0 lg:border-l lg:pt-0 lg:pl-7">
               {actions}
             </div>
           </div>
@@ -282,7 +283,7 @@ export function DetailStepTrack({
                 aria-hidden
                 key={current && pulseKey > 0 ? `${step.id}-${pulseKey}` : step.id}
                 className={cn(
-                  "relative z-[1] flex size-7 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold tabular-nums",
+                  "relative z-[1] flex size-6 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold tabular-nums sm:size-7 sm:text-[11px]",
                   "transition-[transform,background-color,box-shadow,color] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none",
                   step.muted && "bg-muted text-muted-foreground ring-1 ring-border",
                   complete && "bg-primary text-primary-foreground shadow-sm",
@@ -296,7 +297,7 @@ export function DetailStepTrack({
               >
                 {complete ? (
                   <svg
-                    className="size-3.5"
+                    className="size-3 sm:size-3.5"
                     fill="none"
                     stroke="currentColor"
                     strokeLinecap="round"
@@ -313,7 +314,7 @@ export function DetailStepTrack({
               {!isLast ? (
                 <span
                   aria-hidden
-                  className="relative mx-2 h-0.5 min-w-0 flex-1 overflow-hidden rounded-full bg-border"
+                  className="relative mx-1.5 h-0.5 min-w-0 flex-1 overflow-hidden rounded-full bg-border sm:mx-2"
                 >
                   <span
                     className={cn(
@@ -326,7 +327,7 @@ export function DetailStepTrack({
             </div>
             <span
               className={cn(
-                "mt-2 max-w-[5.5rem] text-xs font-medium leading-snug transition-colors duration-300 motion-reduce:transition-none sm:max-w-none",
+                "mt-1.5 max-w-[4.75rem] text-[11px] font-medium leading-snug transition-colors duration-300 motion-reduce:transition-none sm:mt-2 sm:max-w-none sm:text-xs",
                 step.muted && "text-muted-foreground",
                 current && "text-foreground",
                 complete && "text-primary",
