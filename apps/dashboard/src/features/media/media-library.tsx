@@ -32,7 +32,6 @@ import {
   Empty,
   EmptyDescription,
   EmptyHeader,
-  EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
 import { useI18n } from "@/i18n/provider";
@@ -523,8 +522,8 @@ export function MediaLibrary({
         Shared card + toolbar so ListViewToggle is NOT remounted when switching
         Grid/List (remount made the thumb always animate left→right from 0).
       */}
-      <div className="mb-4 flex w-full min-w-0 flex-col overflow-hidden rounded-[1.35rem] border bg-card/95 lg:mb-6">
-        <div className="shrink-0 border-b bg-muted/20 p-3">{toolbar}</div>
+      <div className="mb-4 flex w-full min-w-0 flex-col overflow-hidden rounded-2xl bg-card/95 ring-1 ring-foreground/[0.08] shadow-[0_1px_2px_color-mix(in_oklch,var(--foreground)_4%,transparent)] lg:mb-6">
+        <div className="shrink-0 border-b border-border/70 bg-muted/15 p-3">{toolbar}</div>
 
         {view === "list" ? (
           <DataTable
@@ -548,7 +547,7 @@ export function MediaLibrary({
           />
         ) : filtered.length ? (
           <>
-            <div className="flex items-center gap-3 border-b px-4 py-2.5">
+            <div className="flex items-center gap-3 border-b border-border/70 px-4 py-2.5">
               <Checkbox
                 aria-label={t("media.selectAll")}
                 checked={
@@ -578,16 +577,16 @@ export function MediaLibrary({
               ) : null}
             </div>
 
-            <div className="grid gap-4 p-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            <div className="grid gap-3 p-3 sm:grid-cols-2 sm:gap-3.5 sm:p-4 lg:grid-cols-3 xl:grid-cols-4">
               {filtered.map((asset) => {
                 const selected = selectedIds.has(asset.id);
                 return (
                   <article
                     className={cn(
-                      "group relative overflow-hidden rounded-xl border bg-card transition-colors duration-200 ease-out",
+                      "group relative overflow-hidden rounded-xl bg-card ring-1 transition-[box-shadow,ring-color] duration-200 ease-out",
                       selected
-                        ? "border-primary/50 ring-2 ring-primary/20"
-                        : "hover:border-foreground/20",
+                        ? "ring-2 ring-primary/35 shadow-sm"
+                        : "ring-foreground/[0.08] hover:ring-foreground/20",
                     )}
                     key={asset.id}
                   >
@@ -645,16 +644,16 @@ export function MediaLibrary({
           </>
         ) : (
           <>
-            <div className="p-4">
-              <Empty className="min-h-72 border-0">
-                <EmptyHeader>
-                  <EmptyMedia variant="icon">
-                    <AppIcons.image />
-                  </EmptyMedia>
-                  <EmptyTitle>
+            <div className="flex min-h-60 items-center justify-center px-6 py-12 sm:min-h-72">
+              <Empty className="max-w-sm gap-3 border-0 bg-transparent p-0">
+                <EmptyHeader className="gap-2.5">
+                  <span className="text-muted-foreground/80">
+                    <AppIcons.image className="size-5" aria-hidden />
+                  </span>
+                  <EmptyTitle className="font-medium">
                     {isFiltered ? t("media.filteredEmpty") : t("media.libraryEmpty")}
                   </EmptyTitle>
-                  <EmptyDescription>
+                  <EmptyDescription className="text-sm leading-relaxed">
                     {isFiltered
                       ? t("media.filteredEmptyDescription")
                       : t("media.libraryEmptyDescription")}
