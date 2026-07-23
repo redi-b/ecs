@@ -292,7 +292,7 @@
     "itemsCount": "{count} items",
     "itemFallback": "Item",
     "itemsMore": "{first} +{count} more",
-    "customerFallback": "Customer",
+    "customerFallback": "Guest",
     "noCustomer": "No customer",
     "notAvailable": "Not available",
     "statusPaid": "Paid",

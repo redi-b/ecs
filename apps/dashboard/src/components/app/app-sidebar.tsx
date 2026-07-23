@@ -32,6 +32,7 @@ import {
   SidebarMenuSubButton,
   SidebarMenuSubItem,
   SidebarRail,
+  SidebarSeparator,
   useSidebar,
 } from "@/components/ui/sidebar";
 import { type AppRoute, appRouteSections, getAppRoutesBySection } from "@/lib/navigation";
@@ -105,7 +106,7 @@ function NavRouteItem({ pathname, route }: { pathname: string; route: AppRoute }
         <SidebarMenuItem>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <SidebarMenuButton className="rounded-xl" isActive={active} tooltip={localizedTitle}>
+              <SidebarMenuButton className="rounded-lg" isActive={active} tooltip={localizedTitle}>
                 <Icon />
                 <span>{localizedTitle}</span>
               </SidebarMenuButton>
@@ -139,7 +140,7 @@ function NavRouteItem({ pathname, route }: { pathname: string; route: AppRoute }
       <Collapsible asChild className="group/collapsible" defaultOpen={active}>
         <SidebarMenuItem>
           <CollapsibleTrigger asChild>
-            <SidebarMenuButton className="rounded-xl" isActive={active} tooltip={localizedTitle}>
+            <SidebarMenuButton className="rounded-lg" isActive={active} tooltip={localizedTitle}>
               <Icon />
               <span>{localizedTitle}</span>
               <ChevronIcon className="ml-auto size-4 transition-transform group-data-[collapsible=icon]:hidden group-data-[state=open]/collapsible:rotate-180" />
@@ -166,12 +167,12 @@ function NavRouteItem({ pathname, route }: { pathname: string; route: AppRoute }
   return (
     <SidebarMenuItem>
       {route.disabled ? (
-        <SidebarMenuButton className="rounded-xl" disabled isActive={false} tooltip={localizedTitle}>
+        <SidebarMenuButton className="rounded-lg" disabled isActive={false} tooltip={localizedTitle}>
           <Icon />
           <span>{localizedTitle}</span>
         </SidebarMenuButton>
       ) : (
-        <SidebarMenuButton asChild className="rounded-xl" isActive={active} tooltip={localizedTitle}>
+        <SidebarMenuButton asChild className="rounded-lg" isActive={active} tooltip={localizedTitle}>
           <Link href={route.href} onClick={closeMobileSidebar} prefetch={false}>
             <Icon />
             <span>{localizedTitle}</span>
@@ -182,57 +183,85 @@ function NavRouteItem({ pathname, route }: { pathname: string; route: AppRoute }
   );
 }
 
-export function AppSidebar({ actor }: { actor: MerchantDashboardSummary["actor"] }) {
+export function AppSidebar({
+  access,
+}: {
+  access: Pick<MerchantDashboardSummary, "actor" | "tenant">;
+}) {
   const pathname = usePathname();
   const closeMobileSidebar = useCloseMobileSidebar();
   const { t } = useI18n();
+  const shopName = access.tenant.name?.trim() || access.tenant.handle;
+  const shopInitial = (shopName.charAt(0) || "E").toUpperCase();
+
+  const visibleSections = appRouteSections.filter(
+    (section) => getAppRoutesBySection(section.id).length > 0,
+  );
 
   return (
-    <Sidebar className="border-r" collapsible="icon">
-      <SidebarHeader className="p-3 group-data-[collapsible=icon]:p-2">
-        <SidebarMenu>
+    <Sidebar className="border-r border-sidebar-border/90" collapsible="icon">
+      {/*
+        Match AppHeader height (h-14) so the header bottom border is one continuous line.
+      */}
+      {/*
+        Match AppHeader height (h-14) so the header bottom border is one continuous line.
+        Brand uses menu button chrome (previous look); sizing stays compact inside h-14.
+      */}
+      <SidebarHeader className="flex h-14 shrink-0 flex-row items-center border-b border-sidebar-border p-0 px-3 group-data-[collapsible=icon]:px-2">
+        <SidebarMenu className="w-full">
           <SidebarMenuItem>
-            <SidebarMenuButton asChild className="rounded-xl" size="lg" tooltip="ECS">
+            <SidebarMenuButton
+              asChild
+              className="h-10 rounded-xl"
+              size="lg"
+              tooltip={shopName}
+            >
               <Link href={dashboardRoutes.overview} onClick={closeMobileSidebar} prefetch={false}>
-                <span className="grid size-8 shrink-0 place-items-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
-                  E
+                <span className="grid size-8 shrink-0 place-items-center rounded-full bg-primary text-sm font-semibold text-primary-foreground shadow-[inset_0_1px_0_color-mix(in_oklch,white_22%,transparent)]">
+                  {shopInitial}
                 </span>
-                <span className="truncate font-semibold">ECS</span>
+                <span className="flex min-w-0 flex-col items-start gap-0.5">
+                  <span className="truncate font-semibold leading-none tracking-tight">
+                    {shopName}
+                  </span>
+                  <span className="truncate text-[0.7rem] font-medium text-muted-foreground">
+                    ECS
+                  </span>
+                </span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
 
-      <SidebarContent>
-        {appRouteSections.map((section) => {
+      <SidebarContent className="gap-0 py-2">
+        {visibleSections.map((section, index) => {
           const routes = getAppRoutesBySection(section.id);
-          if (!routes.length) return null;
 
           return (
-            <SidebarGroup
-              className="px-3 group-data-[collapsible=icon]:px-2"
-              key={section.id}
-            >
-              {section.label ? (
-                <SidebarGroupLabel>
-                  {t(`nav.section.${section.id}` as MessageKey) || section.label}
-                </SidebarGroupLabel>
-              ) : null}
-              <SidebarGroupContent>
-                <SidebarMenu className="gap-1">
-                  {routes.map((route) => (
-                    <NavRouteItem key={route.id} pathname={pathname} route={route} />
-                  ))}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
+            <div className="flex flex-col" key={section.id}>
+              {index > 0 ? <SidebarSeparator className="my-2" /> : null}
+              <SidebarGroup className="px-3 py-0 group-data-[collapsible=icon]:px-2">
+                {section.label ? (
+                  <SidebarGroupLabel className="text-[0.65rem] font-semibold tracking-[0.08em] text-muted-foreground/90 uppercase">
+                    {t(`nav.section.${section.id}` as MessageKey) || section.label}
+                  </SidebarGroupLabel>
+                ) : null}
+                <SidebarGroupContent>
+                  <SidebarMenu className="gap-0.5">
+                    {routes.map((route) => (
+                      <NavRouteItem key={route.id} pathname={pathname} route={route} />
+                    ))}
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </SidebarGroup>
+            </div>
           );
         })}
       </SidebarContent>
 
-      <SidebarFooter className="p-3 group-data-[collapsible=icon]:p-2">
-        <AccountMenu actor={actor} />
+      <SidebarFooter className="border-t border-sidebar-border p-3 group-data-[collapsible=icon]:p-2">
+        <AccountMenu actor={access.actor} />
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>

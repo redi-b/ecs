@@ -109,7 +109,7 @@ export default async function AdminDashboardLayout({ children }: { children: Rea
     <TooltipProvider>
       <SidebarProvider defaultOpen={sidebarDefaultOpen}>
         <ActorProvider actor={access.access.actor}>
-          <AppSidebar actor={access.access.actor} />
+          <AppSidebar access={access.access} />
           <SidebarInset>
             <BreadcrumbLabelsProvider>
               <AppHeader />

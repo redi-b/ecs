@@ -79,7 +79,8 @@ export function ListToolbarSearch({
       className={cn(
         listToolbarHeightClass,
         listToolbarRadiusClass,
-        "w-full min-w-0 bg-background/70 px-0.5 sm:max-w-sm",
+        // Match outline button surface so search + “Add filter” read as one control family.
+        "w-full min-w-0 border-border bg-background px-0.5 shadow-none sm:max-w-sm",
       )}
     >
       <InputGroupAddon>

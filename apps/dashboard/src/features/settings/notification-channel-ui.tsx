@@ -160,10 +160,10 @@ export function NotificationStatusBadge({
 }) {
   const { t } = useI18n();
   if (status === "active") {
-    return <Badge variant="secondary">{t("settings.notifications.status.active")}</Badge>;
+    return <Badge variant="success">{t("settings.notifications.status.active")}</Badge>;
   }
   if (status === "paused") {
-    return <Badge variant="outline">{t("settings.notifications.status.paused")}</Badge>;
+    return <Badge variant="warning">{t("settings.notifications.status.paused")}</Badge>;
   }
   return <Badge variant="outline">{t("settings.notifications.status.notSetUp")}</Badge>;
 }

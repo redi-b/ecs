@@ -61,23 +61,13 @@ export function PuckDataOverride({ data }: { data: Data | null }) {
 export function ShopLiveStatusBadge({ live }: { live: boolean }) {
   const { t } = useI18n();
   return (
-    <span
-      className={cn(
-        "inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-semibold shadow-sm",
-        live
-          ? "bg-emerald-600/12 text-emerald-800 dark:bg-emerald-400/15 dark:text-emerald-200"
-          : "bg-amber-500/12 text-amber-900 dark:bg-amber-400/15 dark:text-amber-100",
-      )}
+    <Badge
+      variant={live ? "success" : "warning"}
+      className="gap-1.5 px-2 py-0.5 text-[11px] font-semibold shadow-sm"
     >
-      <span
-        className={cn(
-          "size-1.5 rounded-full",
-          live ? "bg-emerald-600 dark:bg-emerald-400" : "bg-amber-600 dark:bg-amber-400",
-        )}
-        aria-hidden
-      />
+      <span className="size-1.5 rounded-full bg-current opacity-80" aria-hidden />
       {live ? t("editor.status.live") : t("editor.status.paused")}
-    </span>
+    </Badge>
   );
 }
 

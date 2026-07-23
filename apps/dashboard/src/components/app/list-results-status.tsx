@@ -23,7 +23,10 @@ type ListResultsStatusProps = {
 };
 
 /**
- * Shared list toolbar status under search/filters.
+ * Toolbar status under search/filters.
+ *
+ * ListSummary owns the global total. Pagination owns multi-page ranges.
+ * This line only speaks for loading, no matches, or client-side refine.
  */
 export function ListResultsStatus({
   className,
@@ -54,7 +57,7 @@ export function ListResultsStatus({
 
   const fmt = (value: number) => formatNumber(value);
 
-  let message: string;
+  let message: string | null = null;
 
   if (hasClientPageFilter && filteredPageCount != null) {
     if (filteredPageCount === pageCount) {
@@ -68,34 +71,11 @@ export function ListResultsStatus({
         page: fmt(pageCount),
       });
     }
-  } else if (hasServerFilter) {
-    if (totalCount === 0) {
-      message = t("common.listStatus.noMatches");
-    } else if (pageCount >= totalCount) {
-      message =
-        totalCount === 1
-          ? t("common.listStatus.matchOne")
-          : t("common.listStatus.matches", { count: fmt(totalCount) });
-    } else {
-      message = t("common.listStatus.showingMatches", {
-        page: fmt(pageCount),
-        total: fmt(totalCount),
-      });
-    }
-  } else if (totalCount === 0) {
-
-    return null;
-  } else if (pageCount >= totalCount) {
-    message =
-      totalCount === 1
-        ? t("common.listStatus.totalOne")
-        : t("common.listStatus.totalCount", { count: fmt(totalCount) });
-  } else {
-    message = t("common.listStatus.onPageTotal", {
-      page: fmt(pageCount),
-      total: fmt(totalCount),
-    });
+  } else if (hasServerFilter && totalCount === 0) {
+    message = t("common.listStatus.noMatches");
   }
+
+  if (!message) return null;
 
   return (
     <p className={cn("text-sm text-muted-foreground", className)} role="status">

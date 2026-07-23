@@ -46,14 +46,14 @@ export function ProductMediaCell({ product }: { product: MerchantProduct }) {
 
   if (thumbnail.kind === "image") {
     return (
-      <div className="grid size-11 shrink-0 place-items-center overflow-hidden rounded-2xl border bg-muted/40">
+      <div className="grid size-10 shrink-0 place-items-center overflow-hidden rounded-full border bg-muted/40 ring-1 ring-border/50">
         <img alt="" className="size-full object-cover" src={thumbnail.url} />
       </div>
     );
   }
 
   return (
-    <div className="grid size-11 shrink-0 place-items-center rounded-2xl border bg-muted/70 text-xs font-semibold text-muted-foreground ring-1 ring-border/60 dark:bg-muted/40">
+    <div className="grid size-10 shrink-0 place-items-center rounded-full border bg-muted/70 text-xs font-semibold text-muted-foreground ring-1 ring-border/60 dark:bg-muted/40">
       {thumbnail.initials || <AppIcons.image data-icon="inline-start" />}
     </div>
   );
@@ -63,7 +63,7 @@ export function ProductStatusBadge({ status }: { status: string | null }) {
   const { t } = useI18n();
   const normalized = normalizeProductStatus(status);
   const variant =
-    normalized === "published" ? "default" : normalized === "draft" ? "secondary" : "outline";
+    normalized === "published" ? "success" : normalized === "draft" ? "secondary" : "outline";
   const label =
     normalized === "published"
       ? t("products.table.statusPublished")

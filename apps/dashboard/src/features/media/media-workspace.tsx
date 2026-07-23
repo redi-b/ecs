@@ -100,7 +100,12 @@ export function MediaWorkspace({
       description={t("media.shellDescription")}
       title={t("media.shellTitle")}
     >
-      <ListSummary count={totalCount} label={t("nav.media").toLowerCase()} />
+      <ListSummary
+        count={totalCount}
+        filtered={Boolean(initialQuery.trim()) || (initialMimeType !== "all" && Boolean(initialMimeType))}
+        page={page}
+        pageSize={pageSize}
+      />
       {loadError || initialError ? (
         <Alert variant="destructive">
           <AlertTitle>{t("media.libraryLoadError")}</AlertTitle>

@@ -19,7 +19,9 @@ export function DataTableHeader<TData, TValue>({
 }: DataTableHeaderProps<TData, TValue>) {
   if (!column.getCanSort()) {
     return (
-      <span className={cn("text-xs font-medium text-muted-foreground", className)}>{title}</span>
+      <span className={cn("text-xs font-medium normal-case text-muted-foreground", className)}>
+        {title}
+      </span>
     );
   }
 
@@ -35,7 +37,7 @@ export function DataTableHeader<TData, TValue>({
     <Button
       aria-label={`Sort by ${title}`}
       className={cn(
-        "-ml-2 h-8 rounded-full px-2 text-xs font-medium text-muted-foreground",
+        "-ml-2 h-8 rounded-full px-2 text-xs font-medium normal-case text-muted-foreground hover:text-foreground",
         className,
       )}
       onClick={column.getToggleSortingHandler()}

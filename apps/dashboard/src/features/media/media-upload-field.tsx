@@ -397,12 +397,12 @@ export function MediaUploadField({
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
               {imageUrls.length ? (
-                <Badge variant="secondary">
+                <Badge variant="success">
                   {t("media.imageCountReady", { count: imageUrls.length })}
                 </Badge>
               ) : null}
               {pending.length ? (
-                <Badge variant="outline">
+                <Badge variant="info">
                   {t("media.uploadingCount", { count: pending.length })}
                 </Badge>
               ) : null}
@@ -599,7 +599,13 @@ function PendingImage({
         ) : null}
         <Badge
           className="absolute top-1.5 left-1.5 max-w-[calc(100%-0.75rem)] truncate"
-          variant={upload.status === "failed" ? "destructive" : "secondary"}
+          variant={
+            upload.status === "failed"
+              ? "destructive"
+              : upload.status === "processing"
+                ? "info"
+                : "secondary"
+          }
         >
           {label}
         </Badge>
