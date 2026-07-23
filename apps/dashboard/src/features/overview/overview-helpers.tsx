@@ -19,7 +19,7 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
-import { commerceItemKeys, statusRingColors } from "@/features/overview/overview-config";
+import { statusRingColors } from "@/features/overview/overview-config";
 import { useI18n } from "@/i18n/provider";
 import type { MessageKey } from "@/i18n/messages";
 import { cn } from "@/lib/utils";
@@ -197,10 +197,13 @@ export function StatusDonutChart({
 }
 export function ReadinessBlock({ summary }: { summary: MerchantDashboardSummary }) {
   const { t } = useI18n();
-  const commerceLabels: Record<(typeof commerceItemKeys)[number], MessageKey> = {
-    hasStore: "overview.readiness.salesSetup",
-    hasSalesChannel: "overview.readiness.salesChannel",
-  };
+  const hasProfile = Boolean(
+    summary.tenant.name.trim() && summary.tenant.handle.trim() && summary.domain.hostname.trim(),
+  );
+  const productCount = summary.operations?.totals.products ?? 0;
+  const hasCatalog = productCount > 0;
+  const hasDesign = Boolean(summary.storefront.templateKey ?? summary.storefront.templateId);
+
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between gap-3">
@@ -215,9 +218,9 @@ export function ReadinessBlock({ summary }: { summary: MerchantDashboardSummary 
         </Badge>
       </div>
       <div className="grid gap-1.5">
-        {commerceItemKeys.map((key) => (
-          <ReadinessRow key={key} label={t(commerceLabels[key])} ready={summary.commerce[key]} />
-        ))}
+        <ReadinessRow label={t("overview.readiness.shopProfile")} ready={hasProfile} />
+        <ReadinessRow label={t("overview.readiness.catalog")} ready={hasCatalog} />
+        <ReadinessRow label={t("overview.readiness.storefrontDesign")} ready={hasDesign} />
         <ReadinessRow
           label={t("overview.readiness.publishedStorefront")}
           ready={summary.storefront.isPublished}

@@ -102,8 +102,9 @@
   "readiness": {
     "shopTitle": "የሱቅ ዝግጁነት",
     "shopDescription": "ደንበኞች ከመግዛታቸው በፊት መኖር ያለባቸው።",
-    "salesSetup": "የሽያጭ ማዋቀር",
-    "salesChannel": "የሽያጭ መንገድ",
+    "shopProfile": "የሱቅ መገለጫ",
+    "catalog": "በካታሎግ ውስጥ ያሉ ምርቶች",
+    "storefrontDesign": "የመደብር ንድፍ",
     "publishedStorefront": "ለደንበኞች የሚታይ መደብር",
     "ready": "ዝግጁ",
     "missing": "ጎድሏል"
