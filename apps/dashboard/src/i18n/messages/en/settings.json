@@ -8,19 +8,19 @@
   "sections": {
     "shop": {
       "label": "Shop",
-      "description": "Name, handle, and hostnames"
+      "description": "Name, handle, and store URL"
     },
     "preferences": {
       "label": "Preferences",
-      "description": "Dashboard and checkout defaults"
+      "description": "Workspace and shop defaults"
     },
     "notifications": {
       "label": "Notifications",
-      "description": "Orders, payments, and shop events"
+      "description": "Alerts for shop events"
     },
     "telegram": {
       "label": "Telegram",
-      "description": "Manage your shop from chat"
+      "description": "Run the shop from chat"
     },
     "fulfillment": {
       "label": "Fulfillment",
@@ -28,7 +28,7 @@
     },
     "storefront": {
       "label": "Storefront",
-      "description": "Template and publication"
+      "description": "Template and live status"
     },
     "account": {
       "label": "Account",
@@ -36,7 +36,7 @@
     },
     "payments": {
       "label": "Payments",
-      "description": "How customers pay"
+      "description": "COD and online checkout"
     }
   },
   "status": {

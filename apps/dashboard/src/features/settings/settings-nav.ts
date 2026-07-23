@@ -28,27 +28,27 @@ export const SETTINGS_SECTIONS: Array<{
   {
     id: "shop",
     label: "Shop",
-    description: "Name, handle, and hostnames",
+    description: "Name, handle, and store URL",
   },
   {
     id: "preferences",
     label: "Preferences",
-    description: "Dashboard and checkout defaults",
+    description: "Workspace and shop defaults",
   },
   {
     id: "notifications",
     label: "Notifications",
-    description: "Orders, payments, and shop events",
+    description: "Alerts for shop events",
   },
   {
     id: "telegram",
     label: "Telegram",
-    description: "Manage your shop from chat",
+    description: "Run the shop from chat",
   },
   {
     id: "payments",
     label: "Payments",
-    description: "COD and online payments",
+    description: "COD and online checkout",
   },
   {
     id: "fulfillment",
@@ -58,7 +58,7 @@ export const SETTINGS_SECTIONS: Array<{
   {
     id: "storefront",
     label: "Storefront",
-    description: "Template and publication",
+    description: "Template and live status",
   },
   {
     id: "account",

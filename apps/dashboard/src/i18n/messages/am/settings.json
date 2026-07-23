@@ -8,15 +8,15 @@
   "sections": {
     "shop": {
       "label": "ሱቅ",
-      "description": "ስም፣ መለያ እና የአድራሻ ስሞች"
+      "description": "ስም፣ መለያ እና የሱቅ አድራሻ"
     },
     "preferences": {
       "label": "ምርጫዎች",
-      "description": "የዳሽቦርድ እና የትዕዛዝ ነባሪዎች"
+      "description": "የስራ ቦታ እና የሱቅ ነባሪዎች"
     },
     "notifications": {
       "label": "ማሳወቂያዎች",
-      "description": "ትዕዛዞች፣ ክፍያዎች እና የሱቅ ክስተቶች"
+      "description": "ለሱቅ ክስተቶች ማሳወቂያዎች"
     },
     "telegram": {
       "label": "Telegram",
@@ -28,7 +28,7 @@
     },
     "storefront": {
       "label": "የመደብር ገጽ",
-      "description": "ንድፍ እና ታይነት"
+      "description": "ንድፍ እና የመስመር ላይ ሁኔታ"
     },
     "account": {
       "label": "መለያ",
@@ -36,7 +36,7 @@
     },
     "payments": {
       "label": "ክፍያዎች",
-      "description": "ደንበኞች እንዴት እንደሚከፍሉ"
+      "description": "በእጅ እና የመስመር ላይ ክፍያ"
     }
   },
   "status": {
