@@ -326,7 +326,11 @@ export function SettingsWorkspace({
           ) : null}
 
           {section === "payments" ? (
-            <PaymentsSection initialPayment={payments} supportHref={paymentsSupportHref} />
+            <PaymentsSection
+              initialPayment={payments}
+              supportHref={paymentsSupportHref}
+              onOpenFulfillment={() => selectSection("fulfillment")}
+            />
           ) : null}
 
           {section === "fulfillment" ? (

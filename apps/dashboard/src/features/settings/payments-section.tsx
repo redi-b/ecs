@@ -61,6 +61,8 @@ type PaymentsSectionProps = {
   initialPayment: MerchantPaymentsStatus | null;
   /** mailto: or https URL for merchant support (Chapa setup help). */
   supportHref?: string | null;
+  /** In-app tab switch — URL-only links do not update workspace section state. */
+  onOpenFulfillment?: (() => void) | undefined;
 };
 
 type OnlineStatus = "loading" | "not_connected" | "off" | "on";
@@ -96,7 +98,11 @@ const emptyPaymentsStatus = (): MerchantPaymentsStatus => ({
   },
 });
 
-export function PaymentsSection({ initialPayment, supportHref = null }: PaymentsSectionProps) {
+export function PaymentsSection({
+  initialPayment,
+  supportHref = null,
+  onOpenFulfillment,
+}: PaymentsSectionProps) {
   const { t } = useI18n();
   const secretId = useId();
   const [payment, setPayment] = useState<MerchantPaymentsStatus | null>(initialPayment);
@@ -202,21 +208,33 @@ export function PaymentsSection({ initialPayment, supportHref = null }: Payments
             </div>
             <div className="min-w-0 space-y-0.5">
               <div className="flex flex-wrap items-center gap-2">
-                <CardTitle className="text-sm font-medium tracking-tight">
+                <CardTitle className="text-base font-semibold tracking-tight">
                   {t("settings.payments.cod.title")}
                 </CardTitle>
                 <Badge variant="secondary">{t("settings.payments.cod.badge")}</Badge>
               </div>
-              <CardDescription className="text-xs leading-relaxed">
+              <CardDescription className="text-sm leading-relaxed">
                 {t("settings.payments.cod.description")}
               </CardDescription>
             </div>
           </div>
-          <Button asChild className="shrink-0 rounded-full" size="sm" variant="outline">
-            <Link href={`${dashboardRoutes.settings}?tab=fulfillment`}>
+          {onOpenFulfillment ? (
+            <Button
+              className="shrink-0 rounded-full"
+              size="sm"
+              type="button"
+              variant="outline"
+              onClick={onOpenFulfillment}
+            >
               {t("settings.payments.cod.openFulfillment")}
-            </Link>
-          </Button>
+            </Button>
+          ) : (
+            <Button asChild className="shrink-0 rounded-full" size="sm" variant="outline">
+              <Link href={`${dashboardRoutes.settings}?tab=fulfillment`}>
+                {t("settings.payments.cod.openFulfillment")}
+              </Link>
+            </Button>
+          )}
         </CardHeader>
         <CardContent className="pt-3">
           <p className="text-sm text-muted-foreground">{t("settings.payments.cod.hint")}</p>
@@ -224,8 +242,8 @@ export function PaymentsSection({ initialPayment, supportHref = null }: Payments
       </Card>
 
       {/*
-        Online payments — nested cards kept for offer + connect form.
-        Long setup/help copy moves into a single HelpTip (not a second essay card).
+        Online payments — nested cards for offer + connect form.
+        Setup steps + support copy live in a rich HelpTip (not repeated under the title).
       */}
       <Card size="sm">
         <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0 border-b border-border/60 pb-3">
@@ -235,46 +253,47 @@ export function PaymentsSection({ initialPayment, supportHref = null }: Payments
             </div>
             <div className="min-w-0 space-y-0.5">
               <div className="flex flex-wrap items-center gap-2">
-                <CardTitle className="text-sm font-medium tracking-tight">
+                <CardTitle className="text-base font-semibold tracking-tight">
                   {t("settings.payments.online.title")}
                 </CardTitle>
                 <OnlineStatusBadge status={status} />
                 <HelpTip
-                  summary={t("settings.payments.online.description")}
-                  title={t("settings.payments.online.title")}
+                  rich
+                  summary={t("settings.payments.online.helpTitle")}
+                  title={t("settings.payments.online.helpTitle")}
                 >
-                  <p>{t("settings.payments.online.description")}</p>
                   {!connected ? (
-                    <ol className="mt-2 list-decimal space-y-1 ps-4 text-muted-foreground">
+                    <ol className="list-decimal space-y-1.5 ps-4">
                       <li>{t("settings.payments.online.step1")}</li>
                       <li>{t("settings.payments.online.step2")}</li>
                       <li>{t("settings.payments.online.step3")}</li>
                     </ol>
                   ) : null}
-                  <p className="mt-2 text-muted-foreground">
+                  <p className={cn(!connected && "mt-2.5")}>
                     {connected
                       ? t("settings.payments.online.helpBodyConnected")
                       : t("settings.payments.online.helpBody")}
                   </p>
+                  {supportHref ? (
+                    <p className="mt-3">
+                      <a
+                        className="inline-flex items-center gap-1.5 font-medium text-foreground underline-offset-4 hover:underline"
+                        href={supportHref}
+                        rel="noopener noreferrer"
+                        target={supportHref.startsWith("http") ? "_blank" : undefined}
+                      >
+                        <AppIcons.mail className="size-3.5 opacity-70" />
+                        {t("settings.payments.online.helpCta")}
+                      </a>
+                    </p>
+                  ) : null}
                 </HelpTip>
               </div>
-              <CardDescription className="text-xs leading-relaxed">
+              <CardDescription className="text-sm leading-relaxed">
                 {t("settings.payments.online.description")}
               </CardDescription>
             </div>
           </div>
-          {supportHref ? (
-            <Button asChild className="shrink-0 rounded-full" size="sm" variant="outline">
-              <a
-                href={supportHref}
-                rel="noopener noreferrer"
-                target={supportHref.startsWith("http") ? "_blank" : undefined}
-              >
-                <AppIcons.mail className="size-3.5" />
-                {t("settings.payments.online.helpCta")}
-              </a>
-            </Button>
-          ) : null}
         </CardHeader>
 
         <CardContent className="flex flex-col gap-4 pt-3">
@@ -684,10 +703,10 @@ function ReceivingAccountsCard() {
     <Card size="sm">
       <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0 border-b border-border/60 pb-3">
         <div className="min-w-0 space-y-0.5">
-          <CardTitle className="text-sm font-medium tracking-tight">
+          <CardTitle className="text-base font-semibold tracking-tight">
             {t("settings.payments.receiving.title")}
           </CardTitle>
-          <CardDescription className="text-xs leading-relaxed">
+          <CardDescription className="text-sm leading-relaxed">
             {t("settings.payments.receiving.description")}
           </CardDescription>
         </div>
