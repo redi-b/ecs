@@ -30,6 +30,11 @@ function sectionDescriptionKey(id: SettingsSectionId): MessageKey {
   return `settings.sections.${id}.description` as MessageKey;
 }
 
+/**
+ * Settings section switcher.
+ * Mobile: sticky full-bleed chip strip (horizontal scroll inside the bar).
+ * Desktop: vertical sidebar list with short blurbs.
+ */
 export function SettingsSectionNav({
   active,
   onSelect,
@@ -78,47 +83,40 @@ export function SettingsSectionNav({
     <nav
       aria-label={t("settings.navAria")}
       className={cn(
-        // Sticky under AppHeader. min-w-0 keeps the chip strip from expanding the page
-        // (otherwise horizontal overflow kills sticky and the whole body scrolls).
-        "sticky z-20 min-w-0 max-w-full self-start",
+        // Sticky under AppHeader. min-w-0 is required so chips scroll inside the bar
+        // instead of expanding the page (which breaks sticky).
+        "sticky z-30 min-w-0 max-w-full self-start",
         "top-14 sm:top-16 lg:top-20",
-        // Mobile full-bleed bar: cancel PageShell padding so the sticky surface edge-to-edge.
-        // Width stays constrained via min-w-0; negative margin only extends the paint box.
-        "-mx-4 w-auto sm:-mx-5 md:-mx-8 lg:mx-0",
-        "lg:w-56 lg:max-w-none lg:shrink-0",
+        // Full-bleed vs PageShell padding (p-4 / sm:p-5 / md:p-8).
+        "-mx-4 px-4 py-2.5 sm:-mx-5 sm:px-5 md:-mx-8 md:px-8",
+        // Solid fill — translucent bg let page content show through while scrolling.
+        "border-b border-border/70 bg-background",
+        // Desktop sidebar
+        "lg:mx-0 lg:w-56 lg:max-w-none lg:shrink-0 lg:border-b-0 lg:bg-transparent lg:px-0 lg:py-0",
         "lg:max-h-[calc(100dvh-6rem)] lg:overflow-y-auto",
       )}
     >
-      <div
-        className={cn(
-          "relative min-w-0 border-b border-border/60 bg-background/95 px-4 py-2.5 backdrop-blur-sm supports-backdrop-filter:bg-background/85",
-          "sm:px-5 md:px-8",
-          "lg:border-b-0 lg:bg-transparent lg:px-0 lg:py-0 lg:backdrop-blur-none",
-        )}
-      >
+      <div className="relative min-w-0">
+        {/* Gradient fades only (no chevron icons — those read as truncated labels). */}
         <div
           aria-hidden
           className={cn(
-            "pointer-events-none absolute inset-y-0 left-0 z-10 flex w-8 items-center justify-start bg-linear-to-r from-background via-background/95 to-transparent pl-0.5 transition-opacity lg:hidden",
+            "pointer-events-none absolute inset-y-0 left-0 z-10 w-6 bg-linear-to-r from-background to-transparent transition-opacity lg:hidden",
             canScrollLeft ? "opacity-100" : "opacity-0",
           )}
-        >
-          <AppIcons.arrowLeft className="size-3.5 text-muted-foreground" />
-        </div>
+        />
         <div
           aria-hidden
           className={cn(
-            "pointer-events-none absolute inset-y-0 right-0 z-10 flex w-8 items-center justify-end bg-linear-to-l from-background via-background/95 to-transparent pr-0.5 transition-opacity lg:hidden",
+            "pointer-events-none absolute inset-y-0 right-0 z-10 w-6 bg-linear-to-l from-background to-transparent transition-opacity lg:hidden",
             canScrollRight ? "opacity-100" : "opacity-0",
           )}
-        >
-          <AppIcons.arrowRight className="size-3.5 text-muted-foreground" />
-        </div>
+        />
         <ul
           className={cn(
-            "flex min-w-0 gap-1.5 overflow-x-auto overflow-y-hidden overscroll-x-contain scroll-smooth pb-0.5",
+            "flex min-w-0 gap-1.5 overflow-x-auto overflow-y-hidden overscroll-x-contain scroll-smooth",
             "touch-pan-x [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
-            "lg:flex-col lg:gap-0.5 lg:overflow-visible lg:pb-0 lg:touch-auto",
+            "lg:flex-col lg:gap-0.5 lg:overflow-visible lg:touch-auto",
           )}
           ref={scrollerRef}
         >
