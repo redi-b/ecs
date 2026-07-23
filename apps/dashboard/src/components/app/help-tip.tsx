@@ -16,11 +16,18 @@ type HelpTipProps = {
   className?: string;
   label?: string;
   title?: string;
+  /**
+   * Card-style popover (icon header + body). Use for setup/help that used to
+   * live as an in-page help panel — not for one-line field hints.
+   */
+  rich?: boolean;
+  contentClassName?: string;
+  /** Optional footer under rich body (e.g. contact support button). */
+  footer?: ReactNode;
 };
 
 /**
  * Compact “?” help control for dense merchant UIs.
- * Optional `rich` layout mirrors the old in-page help cards (icon + title + body).
  */
 export function HelpTip({
   summary,
@@ -30,11 +37,8 @@ export function HelpTip({
   title,
   rich = false,
   contentClassName,
-}: HelpTipProps & {
-  /** Larger popover with leading icon — for setup/help content that used to be a card. */
-  rich?: boolean;
-  contentClassName?: string;
-}) {
+  footer,
+}: HelpTipProps) {
   const { t } = useI18n();
   const resolvedLabel = label ?? t("common.moreInfo");
   const Icon = AppIcons.question;
@@ -60,23 +64,31 @@ export function HelpTip({
         align="end"
         className={cn(
           rich
-            ? "w-[min(22rem,calc(100vw-2rem))] space-y-0 p-0 text-sm"
+            ? "w-[min(20rem,calc(100vw-2rem))] overflow-hidden p-0 text-sm shadow-lg"
             : "w-72 space-y-1.5 p-3 text-sm",
           contentClassName,
         )}
         side="bottom"
+        sideOffset={6}
       >
         {rich ? (
-          <div className="flex items-start gap-3 p-3.5">
-            <div className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-border/70 bg-muted/30">
-              <Icon className="size-4 text-muted-foreground" />
-            </div>
-            <div className="min-w-0 space-y-1.5">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2.5 border-b border-border/60 bg-muted/25 px-3.5 py-3">
+              <div className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-border/70 bg-background text-muted-foreground shadow-xs">
+                <Icon className="size-3.5" />
+              </div>
               {title ? (
-                <p className="text-sm font-semibold tracking-tight text-foreground">{title}</p>
+                <p className="min-w-0 text-sm font-medium tracking-tight text-foreground">
+                  {title}
+                </p>
               ) : null}
-              <div className="text-sm leading-relaxed text-muted-foreground">{body}</div>
             </div>
+            <div className="space-y-2.5 px-3.5 py-3 text-sm leading-relaxed text-muted-foreground">
+              {body}
+            </div>
+            {footer ? (
+              <div className="border-t border-border/60 bg-muted/15 px-3.5 py-2.5">{footer}</div>
+            ) : null}
           </div>
         ) : (
           <>

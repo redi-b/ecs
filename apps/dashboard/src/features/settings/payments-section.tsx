@@ -208,12 +208,12 @@ export function PaymentsSection({
             </div>
             <div className="min-w-0 space-y-0.5">
               <div className="flex flex-wrap items-center gap-2">
-                <CardTitle className="text-base font-semibold tracking-tight">
+                <CardTitle className="text-[0.9375rem] font-medium tracking-tight">
                   {t("settings.payments.cod.title")}
                 </CardTitle>
                 <Badge variant="secondary">{t("settings.payments.cod.badge")}</Badge>
               </div>
-              <CardDescription className="text-sm leading-relaxed">
+              <CardDescription className="text-xs leading-relaxed">
                 {t("settings.payments.cod.description")}
               </CardDescription>
             </div>
@@ -253,7 +253,7 @@ export function PaymentsSection({
             </div>
             <div className="min-w-0 space-y-0.5">
               <div className="flex flex-wrap items-center gap-2">
-                <CardTitle className="text-base font-semibold tracking-tight">
+                <CardTitle className="text-[0.9375rem] font-medium tracking-tight">
                   {t("settings.payments.online.title")}
                 </CardTitle>
                 <OnlineStatusBadge status={status} />
@@ -261,35 +261,36 @@ export function PaymentsSection({
                   rich
                   summary={t("settings.payments.online.helpTitle")}
                   title={t("settings.payments.online.helpTitle")}
+                  footer={
+                    supportHref ? (
+                      <Button asChild className="w-full rounded-full" size="sm" variant="outline">
+                        <a
+                          href={supportHref}
+                          rel="noopener noreferrer"
+                          target={supportHref.startsWith("http") ? "_blank" : undefined}
+                        >
+                          <AppIcons.mail className="size-3.5" />
+                          {t("settings.payments.online.helpCta")}
+                        </a>
+                      </Button>
+                    ) : null
+                  }
                 >
                   {!connected ? (
-                    <ol className="list-decimal space-y-1.5 ps-4">
+                    <ol className="list-decimal space-y-1.5 ps-4 text-foreground/80">
                       <li>{t("settings.payments.online.step1")}</li>
                       <li>{t("settings.payments.online.step2")}</li>
                       <li>{t("settings.payments.online.step3")}</li>
                     </ol>
                   ) : null}
-                  <p className={cn(!connected && "mt-2.5")}>
+                  <p className={cn("text-muted-foreground", !connected && "mt-2.5")}>
                     {connected
                       ? t("settings.payments.online.helpBodyConnected")
                       : t("settings.payments.online.helpBody")}
                   </p>
-                  {supportHref ? (
-                    <p className="mt-3">
-                      <a
-                        className="inline-flex items-center gap-1.5 font-medium text-foreground underline-offset-4 hover:underline"
-                        href={supportHref}
-                        rel="noopener noreferrer"
-                        target={supportHref.startsWith("http") ? "_blank" : undefined}
-                      >
-                        <AppIcons.mail className="size-3.5 opacity-70" />
-                        {t("settings.payments.online.helpCta")}
-                      </a>
-                    </p>
-                  ) : null}
                 </HelpTip>
               </div>
-              <CardDescription className="text-sm leading-relaxed">
+              <CardDescription className="text-xs leading-relaxed">
                 {t("settings.payments.online.description")}
               </CardDescription>
             </div>
@@ -703,10 +704,10 @@ function ReceivingAccountsCard() {
     <Card size="sm">
       <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0 border-b border-border/60 pb-3">
         <div className="min-w-0 space-y-0.5">
-          <CardTitle className="text-base font-semibold tracking-tight">
+          <CardTitle className="text-[0.9375rem] font-medium tracking-tight">
             {t("settings.payments.receiving.title")}
           </CardTitle>
-          <CardDescription className="text-sm leading-relaxed">
+          <CardDescription className="text-xs leading-relaxed">
             {t("settings.payments.receiving.description")}
           </CardDescription>
         </div>
