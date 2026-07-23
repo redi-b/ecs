@@ -127,10 +127,10 @@ export function NotificationChannelHeader({
     <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0 border-b border-border/60 pb-3">
       <div className="min-w-0 space-y-1">
         <div className="flex flex-wrap items-center gap-2">
-          <CardTitle className="text-base font-semibold tracking-tight">{title}</CardTitle>
+          <CardTitle className="text-[0.9375rem] font-medium tracking-tight">{title}</CardTitle>
           {badge}
         </div>
-        <CardDescription className="text-sm leading-relaxed">{description}</CardDescription>
+        <CardDescription className="text-xs leading-relaxed">{description}</CardDescription>
       </div>
       <Tooltip>
         <TooltipTrigger asChild>
