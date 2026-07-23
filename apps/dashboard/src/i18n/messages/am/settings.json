@@ -36,7 +36,7 @@
     },
     "payments": {
       "label": "ክፍያዎች",
-      "description": "በእጅ እና የመስመር ላይ ክፍያ"
+      "description": "ደንበኞች እንዴት እንደሚከፍሉ"
     }
   },
   "status": {
