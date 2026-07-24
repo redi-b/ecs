@@ -279,25 +279,24 @@ export function DataTable<TData>({
             </Table>
           </div>
 
-          {/* Horizontal scroll affordance — only when the table has rows and overflows. */}
+          {/*
+            Horizontal scroll fade only — inset past sticky select (left-12)
+            and actions (right-14) so checkboxes / ⋮ stay clear.
+          */}
           <div
             aria-hidden
             className={cn(
-              "pointer-events-none absolute inset-y-0 left-0 z-40 flex w-9 items-center justify-start bg-linear-to-r from-card via-card/90 to-transparent pl-1 transition-opacity",
+              "pointer-events-none absolute inset-y-0 left-12 z-10 w-6 bg-linear-to-r from-card to-transparent transition-opacity",
               canScrollLeft ? "opacity-100" : "opacity-0",
             )}
-          >
-            <AppIcons.arrowLeft className="size-3.5 text-muted-foreground" />
-          </div>
+          />
           <div
             aria-hidden
             className={cn(
-              "pointer-events-none absolute inset-y-0 right-0 z-40 flex w-9 items-center justify-end bg-linear-to-l from-card via-card/90 to-transparent pr-1 transition-opacity",
+              "pointer-events-none absolute inset-y-0 right-14 z-10 w-6 bg-linear-to-l from-card to-transparent transition-opacity",
               canScrollRight ? "opacity-100" : "opacity-0",
             )}
-          >
-            <AppIcons.arrowRight className="size-3.5 text-muted-foreground" />
-          </div>
+          />
         </div>
       )}
 
