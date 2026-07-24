@@ -10,7 +10,6 @@ import {
   Empty,
   EmptyDescription,
   EmptyHeader,
-  EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
 import { StorefrontVisualEditor } from "@/features/storefront-editor/storefront-visual-editor";
@@ -71,19 +70,19 @@ export default async function StorefrontEditorPage({ searchParams }: StorefrontE
           </AlertDescription>
         </Alert>
       ) : !draft?.ok ? (
-        <Empty className="min-h-96 border">
-          <EmptyHeader>
-            <EmptyMedia variant="icon">
-              <RiLayoutMasonryLine />
-            </EmptyMedia>
-            <EmptyTitle>{t("editor.empty.title")}</EmptyTitle>
-            <EmptyDescription>
+        <Empty className="min-h-60 gap-3 rounded-2xl border border-border/80 bg-card/95 p-8 shadow-[0_1px_2px_color-mix(in_oklch,var(--foreground)_4%,transparent)] sm:min-h-72">
+          <EmptyHeader className="gap-2.5">
+            <span className="text-muted-foreground/80">
+              <RiLayoutMasonryLine className="size-5" aria-hidden />
+            </span>
+            <EmptyTitle className="font-medium">{t("editor.empty.title")}</EmptyTitle>
+            <EmptyDescription className="text-sm leading-relaxed">
               {t("editor.empty.description")}
             </EmptyDescription>
-            <Button asChild>
-              <Link href="/admin/settings?tab=storefront">{t("editor.actions.openSettings")}</Link>
-            </Button>
           </EmptyHeader>
+          <Button asChild size="sm">
+            <Link href="/admin/settings?tab=storefront">{t("editor.actions.openSettings")}</Link>
+          </Button>
         </Empty>
       ) : (
         <StorefrontVisualEditor

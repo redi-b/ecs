@@ -32,14 +32,14 @@ import { ThemeBrandSection, FontSelect, PremiumColorPicker } from "./editor-them
 import { updateStorefrontProp } from "./editor-utils";
 
 export function StorefrontSettingsPanel() {
+  const { t } = useI18n();
   const data = useStorefrontPuck((api) => api.appState.data);
   const dispatch = useStorefrontPuck((api) => api.dispatch);
   const props = getStorefrontPageProps(data);
 
-  // No overscroll-contain: at top/bottom, wheel continues to page scroll (natural chaining).
   return (
     <div className="min-h-0 flex-1 overflow-y-auto">
-      <div className="flex flex-col gap-3 p-4 pb-10">
+      <div className="flex flex-col gap-3 p-3 pb-10 sm:p-4">
         {classicV1EditorManifest.sections.map((section) => {
           if (section.id === "theme") {
             return (
@@ -69,19 +69,19 @@ export function StorefrontSettingsPanel() {
           return (
             <section
               className={cn(
-                "min-w-0 overflow-hidden rounded-xl border bg-card shadow-sm transition-opacity",
+                "min-w-0 overflow-hidden rounded-2xl border border-border/80 bg-card shadow-[0_1px_2px_color-mix(in_oklch,var(--foreground)_4%,transparent)] transition-opacity",
                 !sectionVisible && "opacity-70",
               )}
               key={section.id}
             >
-              <div className="flex items-center justify-between gap-3 border-b px-4 py-3">
+              <div className="flex items-center justify-between gap-3 border-b border-border/80 bg-muted/10 px-4 py-3">
                 <div className="flex min-w-0 items-center gap-2">
-                  <div className="truncate text-sm font-semibold">
+                  <div className="truncate text-sm font-medium tracking-tight">
                     {SETTINGS_SECTION_LABELS[section.id] ?? section.label}
                   </div>
                   {enabledField && !sectionVisible ? (
                     <Badge className="shrink-0 font-normal" variant="secondary">
-                      Hidden
+                      {t("editor.settings.sectionHidden")}
                     </Badge>
                   ) : null}
                 </div>
@@ -105,7 +105,9 @@ export function StorefrontSettingsPanel() {
                       </div>
                     </TooltipTrigger>
                     <TooltipContent side="left">
-                      {sectionVisible ? "Visible on storefront" : "Hidden on storefront"}
+                      {sectionVisible
+                        ? t("editor.settings.sectionVisibleTooltip")
+                        : t("editor.settings.sectionHiddenTooltip")}
                     </TooltipContent>
                   </Tooltip>
                 ) : null}

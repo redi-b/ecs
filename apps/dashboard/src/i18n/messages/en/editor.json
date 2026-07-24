@@ -66,6 +66,35 @@
     "hint": "Click outlined text in the preview, or refine details in settings.",
     "hintPaused": "Shop is paused for customers. Edit freely, then publish when you are ready."
   },
+  "settings": {
+    "description": "Links, images, colors, and fallback content.",
+    "changeTemplate": "Change template",
+    "sectionHidden": "Hidden",
+    "sectionVisibleTooltip": "Visible on storefront",
+    "sectionHiddenTooltip": "Hidden on storefront"
+  },
+  "theme": {
+    "appearance": "Appearance",
+    "appearanceHelp": "Surface and brand color drive a full palette with readable contrast. Accent stays related to your brand. Edit any swatch for full control. Open the menu for rebuild or reset to defaults.",
+    "autoPalette": "Automatic palette",
+    "autoPaletteOn": "Brand and surface keep the set in sync.",
+    "autoPaletteOff": "Manual colors. Rebuild from brand anytime.",
+    "surface": "Surface",
+    "surfaceLight": "Light",
+    "surfaceDark": "Dark",
+    "colors": "Colors",
+    "typography": "Typography",
+    "heading": "Heading",
+    "body": "Body",
+    "rebuildFromBrand": "Rebuild from brand",
+    "resetDefaults": "Reset to defaults",
+    "paletteActions": "Palette actions",
+    "colorBrand": "Brand",
+    "colorBackground": "Background",
+    "colorText": "Text",
+    "colorMuted": "Muted",
+    "colorAccent": "Accent"
+  },
   "media": {
     "referenceSet": "Image reference set",
     "uploadOrChoose": "Upload a file or choose from your library",
