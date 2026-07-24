@@ -83,6 +83,7 @@ export function DataTableFilters({
           <PopoverContent
             align="start"
             className="w-72 overflow-hidden rounded-xl p-0 shadow-md ring-1 ring-foreground/10"
+            onOpenAutoFocus={(event) => event.preventDefault()}
             sideOffset={8}
           >
             <div
@@ -111,7 +112,6 @@ export function DataTableFilters({
                   </div>
                 ) : null}
                 <CommandInput
-                  autoFocus
                   key={pendingFilter ? `search-${pendingFilter.id}` : "search-filters"}
                   onValueChange={setFilterSearch}
                   placeholder={
