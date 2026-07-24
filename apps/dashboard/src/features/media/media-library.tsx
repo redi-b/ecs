@@ -513,8 +513,10 @@ export function MediaLibrary({
 
   return (
     <>
-      <div className="mb-4 flex w-full min-w-0 flex-col overflow-hidden rounded-2xl border border-border/80 bg-card/95 shadow-[0_1px_2px_color-mix(in_oklch,var(--foreground)_4%,transparent)] lg:mb-6">
-        <div className="shrink-0 border-b border-border/80 bg-muted/15 p-3">{toolbar}</div>
+      <div className="mb-4 flex w-full min-w-0 flex-col overflow-hidden rounded-2xl border border-border/70 bg-card shadow-[0_16px_40px_-20px_color-mix(in_oklch,var(--foreground)_22%,transparent)] ring-1 ring-foreground/[0.04] lg:mb-6">
+        <div className="shrink-0 border-b border-border/60 bg-muted/20 px-3 py-3 sm:px-4 sm:py-3.5">
+          {toolbar}
+        </div>
 
         {view === "list" ? (
           <DataTable
