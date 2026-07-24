@@ -16,7 +16,7 @@ import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 
 type ConfirmTone = "destructive" | "default";
-type ConfirmIcon = "warning" | "trash" | "question";
+type ConfirmIcon = "warning" | "trash" | "question" | "logout";
 
 type ConfirmDialogProps = {
   title: ReactNode;
@@ -26,7 +26,6 @@ type ConfirmDialogProps = {
   confirmLabel: ReactNode;
   onConfirm: (event: React.MouseEvent<HTMLButtonElement>) => void;
   tone?: ConfirmTone;
-  /** Defaults: trash for destructive, question for default. */
   icon?: ConfirmIcon;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
@@ -40,6 +39,7 @@ const ICONS = {
   warning: AppIcons.error,
   trash: AppIcons.trash,
   question: AppIcons.question,
+  logout: AppIcons.logout,
 } as const;
 
 export function ConfirmDialog({
@@ -71,18 +71,19 @@ export function ConfirmDialog({
       <AlertDialogContent
         className={cn(
           "w-[min(22rem,calc(100vw-1.5rem))] gap-0 overflow-hidden p-0 sm:max-w-[22rem]",
-          "rounded-2xl border-border/70 bg-popover shadow-[0_16px_40px_-12px_color-mix(in_oklch,var(--foreground)_28%,transparent)] ring-1 ring-foreground/[0.07]",
+          "rounded-2xl border border-border/80 bg-popover",
+          "shadow-[0_1px_2px_rgb(0_0_0/0.06),0_16px_40px_-12px_rgb(0_0_0/0.28)]",
+          "dark:border-border/60 dark:shadow-[0_1px_2px_rgb(0_0_0/0.45),0_20px_48px_-10px_rgb(0_0_0/0.72)]",
           className,
         )}
       >
-        <div className="flex flex-col gap-4 px-5 pt-5 pb-4">
+        <div className="flex flex-col gap-3.5 px-5 pt-5 pb-4">
           <div className="flex items-start gap-3.5">
             <div
               className={cn(
-                "grid size-11 shrink-0 place-items-center rounded-2xl ring-1 ring-inset",
-                "shadow-[inset_0_1px_0_color-mix(in_oklch,var(--background)_55%,transparent)]",
+                "grid size-10 shrink-0 place-items-center rounded-2xl ring-1 ring-inset",
                 isDestructive
-                  ? "bg-destructive/10 text-destructive ring-destructive/20"
+                  ? "bg-destructive/12 text-destructive ring-destructive/20 dark:bg-destructive/18 dark:text-[color-mix(in_oklch,var(--destructive)_90%,white)]"
                   : "bg-primary/10 text-primary ring-primary/20",
               )}
             >
@@ -105,25 +106,23 @@ export function ConfirmDialog({
           </AlertDialogDescription>
         </div>
 
-        <div className="grid grid-cols-2 gap-2 border-t border-border/60 bg-muted/30 px-4 py-3">
+        <div className="grid grid-cols-2 gap-2 border-t border-border/60 bg-muted/25 px-3.5 py-3 dark:bg-muted/20">
           <AlertDialogCancel
-            className="h-9 w-full rounded-full font-medium shadow-none"
+            className="h-8 w-full rounded-full font-medium shadow-none"
             disabled={cancelDisabled}
+            size="default"
           >
             {cancelLabel ?? t("common.cancel")}
           </AlertDialogCancel>
           <AlertDialogAction
-            className={cn(
-              "h-9 w-full rounded-full font-medium shadow-none",
-              isDestructive &&
-                "bg-destructive text-destructive-foreground hover:bg-destructive/90 focus-visible:border-destructive focus-visible:ring-destructive/30",
-            )}
+            className="h-8 w-full rounded-full font-medium shadow-none"
             disabled={confirmDisabled}
             onClick={(event) => {
               event.preventDefault();
               onConfirm(event);
             }}
-            variant={isDestructive ? "destructive" : "default"}
+            size="default"
+            variant={isDestructive ? "destructive-solid" : "default"}
           >
             {confirmLabel}
           </AlertDialogAction>

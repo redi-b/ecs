@@ -5,17 +5,8 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 import { useActorOrFallback } from "@/components/app/actor-context";
+import { ConfirmDialog } from "@/components/app/confirm-dialog";
 import { AppIcons } from "@/components/app/icons";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -550,81 +541,61 @@ export function AccountSecurityPanel({
         </div>
       </section>
 
-      <AlertDialog
-        open={Boolean(pendingRevoke)}
+      <ConfirmDialog
+        cancelDisabled={Boolean(revokingToken)}
+        confirmDisabled={Boolean(revokingToken)}
+        confirmLabel={
+          revokingToken
+            ? t("settings.accountSecurity.signingOut")
+            : t("settings.accountSecurity.signOutDevice")
+        }
+        description={
+          pendingRevoke
+            ? t("settings.accountSecurity.signOutDesc", {
+                device: `${parseUserAgent(
+                  pendingRevoke.userAgent ||
+                    (pendingRevoke.isCurrent ? browserUserAgent : null),
+                  t,
+                ).deviceLabel}${
+                  pendingRevoke.ipAddress ? ` (${pendingRevoke.ipAddress})` : ""
+                }`,
+              })
+            : t("settings.accountSecurity.signOutDescGeneric")
+        }
+        icon="logout"
+        onConfirm={() => {
+          void confirmRevokeSession();
+        }}
         onOpenChange={(open) => {
           if (!open && !revokingToken) setPendingRevoke(null);
         }}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t("settings.accountSecurity.signOutTitle")}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {pendingRevoke
-                ? t("settings.accountSecurity.signOutDesc", {
-                    device: `${parseUserAgent(
-                      pendingRevoke.userAgent ||
-                        (pendingRevoke.isCurrent ? browserUserAgent : null),
-                      t,
-                    ).deviceLabel}${
-                      pendingRevoke.ipAddress ? ` (${pendingRevoke.ipAddress})` : ""
-                    }`,
-                  })
-                : t("settings.accountSecurity.signOutDescGeneric")}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel className="rounded-full" disabled={Boolean(revokingToken)}>{t("common.cancel")}</AlertDialogCancel>
-            <AlertDialogAction
-              className="rounded-full"
-              variant="destructive"
-              disabled={Boolean(revokingToken)}
-              onClick={(event) => {
-                event.preventDefault();
-                void confirmRevokeSession();
-              }}
-            >
-              {revokingToken ? t("settings.accountSecurity.signingOut") : t("settings.accountSecurity.signOutDevice")}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        open={Boolean(pendingRevoke)}
+        title={t("settings.accountSecurity.signOutTitle")}
+        tone="destructive"
+      />
 
-      <AlertDialog
-        open={pendingRevokeOthers}
+      <ConfirmDialog
+        cancelDisabled={revokingOthers}
+        confirmDisabled={revokingOthers}
+        confirmLabel={
+          revokingOthers
+            ? t("settings.accountSecurity.signingOut")
+            : t("settings.accountSecurity.signOutOthersConfirm")
+        }
+        description={t("settings.accountSecurity.signOutOthersDesc", {
+          count: otherSessionCount,
+        })}
+        icon="logout"
+        onConfirm={() => {
+          void confirmRevokeOtherSessions();
+        }}
         onOpenChange={(open) => {
           if (!open && !revokingOthers) setPendingRevokeOthers(false);
         }}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t("settings.accountSecurity.signOutOthersTitle")}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {t("settings.accountSecurity.signOutOthersDesc", {
-                count: otherSessionCount,
-              })}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel className="rounded-full" disabled={revokingOthers}>
-              {t("common.cancel")}
-            </AlertDialogCancel>
-            <AlertDialogAction
-              className="rounded-full"
-              disabled={revokingOthers}
-              onClick={(event) => {
-                event.preventDefault();
-                void confirmRevokeOtherSessions();
-              }}
-              variant="destructive"
-            >
-              {revokingOthers
-                ? t("settings.accountSecurity.signingOut")
-                : t("settings.accountSecurity.signOutOthersConfirm")}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        open={pendingRevokeOthers}
+        title={t("settings.accountSecurity.signOutOthersTitle")}
+        tone="destructive"
+      />
     </SettingsSectionBody>
   );
 }

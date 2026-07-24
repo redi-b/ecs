@@ -18,7 +18,9 @@ const buttonVariants = cva(
         ghost:
           "hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:hover:bg-muted/50",
         destructive:
-          "bg-destructive/10 text-destructive hover:bg-destructive/20 focus-visible:border-destructive/40 focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:hover:bg-destructive/30 dark:focus-visible:ring-destructive/40",
+          "bg-destructive/10 text-destructive hover:bg-destructive/20 focus-visible:border-destructive/40 focus-visible:ring-destructive/20 dark:bg-destructive/15 dark:text-[color-mix(in_oklch,var(--destructive)_92%,white)] dark:hover:bg-destructive/25 dark:focus-visible:ring-destructive/40",
+        "destructive-solid":
+          "bg-destructive text-destructive-foreground hover:bg-destructive/90 focus-visible:border-destructive focus-visible:ring-destructive/35",
         "destructive-outline":
           "border-destructive/40 bg-background text-destructive hover:bg-destructive/10 hover:text-destructive focus-visible:border-destructive/50 focus-visible:ring-destructive/20 dark:border-destructive/50 dark:bg-background dark:hover:bg-destructive/15",
         link: "text-primary underline-offset-4 hover:underline",
