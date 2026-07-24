@@ -194,7 +194,7 @@ export function MediaLibraryDialog({
               }}
             >
               <ListToolbarSearch
-                clearLabel={t("media.clearFilters")}
+                clearLabel={t("common.clearSearch")}
                 label={t("media.search")}
                 onChange={setQuery}
                 placeholder={t("media.searchPlaceholder")}

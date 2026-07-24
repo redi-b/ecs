@@ -328,7 +328,7 @@ export function OrdersTable({
     <div className="flex flex-col gap-3">
       <DataTableFilters filters={filterDefs} onClearAll={clearFilters}>
         <ListToolbarSearch
-          clearLabel={t("orders.table.clearSearch")}
+          clearLabel={t("common.clearSearch")}
           label={t("orders.table.searchLabel")}
           onChange={(value) => {
             setSearchValue(value);
