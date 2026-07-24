@@ -36,6 +36,7 @@ export function AccountMenu({ actor }: { actor: MerchantDashboardSummary["actor"
   const [isSigningOut, setIsSigningOut] = useState(false);
   const accountName = liveActor.name?.trim() || liveActor.email;
   const accountInitials = getAccountInitials(accountName);
+  const matchTriggerWidth = isMobile || !collapsed;
 
   function closeMobileSidebar() {
     if (isMobile) {
@@ -92,29 +93,34 @@ export function AccountMenu({ actor }: { actor: MerchantDashboardSummary["actor"
             </SidebarMenuButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent
-            // Mobile: match the account row width so the menu is not a wider floating card.
-            // Desktop collapsed rail: open to the right; expanded: open above, start-aligned.
-            side={isMobile || !collapsed ? "top" : "right"}
-            align={isMobile || !collapsed ? "start" : "end"}
-            sideOffset={isMobile ? 8 : collapsed ? 10 : 8}
+            side={matchTriggerWidth ? "top" : "right"}
+            align={matchTriggerWidth ? "start" : "end"}
+            sideOffset={collapsed ? 10 : 8}
             collisionPadding={12}
             className={cn(
               "rounded-xl p-1.5",
-              isMobile
+              matchTriggerWidth
                 ? "w-[var(--radix-dropdown-menu-trigger-width)] min-w-0 max-w-[calc(100vw-1.5rem)]"
-                : "w-56",
+                : "min-w-56",
             )}
           >
-            <DropdownMenuLabel className="px-2 py-1.5">
-              <span className="block truncate text-sm font-medium text-popover-foreground">
-                {accountName}
-              </span>
-              <span className="block truncate text-xs font-normal text-muted-foreground">
-                {liveActor.email}
-              </span>
-              <span className="block truncate text-xs font-normal capitalize text-muted-foreground">
-                {liveActor.role}
-              </span>
+            <DropdownMenuLabel className="px-2.5 py-2 font-normal text-popover-foreground">
+              <div className="flex min-w-0 items-center gap-2">
+                <Avatar size="sm" className="shrink-0">
+                  <AvatarFallback>{accountInitials}</AvatarFallback>
+                </Avatar>
+                <div className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-medium text-popover-foreground">
+                    {accountName}
+                  </span>
+                  <span className="block truncate text-xs text-muted-foreground">
+                    {liveActor.email}
+                  </span>
+                  <span className="block truncate text-xs capitalize text-muted-foreground">
+                    {liveActor.role}
+                  </span>
+                </div>
+              </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
