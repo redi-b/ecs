@@ -699,6 +699,7 @@ export function MediaLibrary({
             : t("media.deleteConfirmDescription")
         }
         eyebrow={t("common.confirm.deleteEyebrow")}
+        icon="trash"
         onConfirm={() => confirmDelete(deleteTargets)}
         onOpenChange={(open) => {
           if (!open) {

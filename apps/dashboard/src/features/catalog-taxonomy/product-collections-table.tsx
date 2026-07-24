@@ -433,6 +433,7 @@ export function ProductCollectionsTable({
             : t("taxonomy.entity.collection.label"),
         })}
         eyebrow={t("common.confirm.deleteEyebrow")}
+        icon="trash"
         onConfirm={() => {
           if (deleteCollectionId) deleteCollectionMutation.mutate(deleteCollectionId);
         }}
@@ -454,6 +455,7 @@ export function ProductCollectionsTable({
           entityPlural: t("taxonomy.entity.collection.plural"),
         })}
         eyebrow={t("common.confirm.deleteEyebrow")}
+        icon="trash"
         onConfirm={() => batchDeleteCollectionsMutation.mutate(selectedCollectionIdsForDelete)}
         onOpenChange={setShowBatchDeleteDialog}
         open={showBatchDeleteDialog}

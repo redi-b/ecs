@@ -534,6 +534,7 @@ export function ProductsTable({
           title: productToDelete?.title || t("products.detail.thisProduct"),
         })}
         eyebrow={t("common.confirm.deleteEyebrow")}
+        icon="trash"
         onConfirm={() => {
           if (deleteProductId) deleteProductMutation.mutate(deleteProductId);
         }}
@@ -554,6 +555,7 @@ export function ProductsTable({
           count: selectedProductIdsForDelete.length,
         })}
         eyebrow={t("common.confirm.deleteEyebrow")}
+        icon="trash"
         onConfirm={() => batchDeleteProductsMutation.mutate(selectedProductIdsForDelete)}
         onOpenChange={setShowBatchDeleteDialog}
         open={showBatchDeleteDialog}

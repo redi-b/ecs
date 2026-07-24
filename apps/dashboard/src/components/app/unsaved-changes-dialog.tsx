@@ -13,7 +13,6 @@ type UnsavedChangesDialogProps = {
   leaveLabel?: string;
 };
 
-/** Leave confirmation for dirty forms — premium ConfirmDialog shell. */
 export function UnsavedChangesDialog({
   open,
   onStay,
@@ -31,6 +30,7 @@ export function UnsavedChangesDialog({
       confirmLabel={leaveLabel ?? t("common.unsaved.leave")}
       description={description ?? t("common.unsaved.description")}
       eyebrow={t("common.unsaved.eyebrow")}
+      icon="warning"
       onConfirm={() => onLeave()}
       onOpenChange={(next) => {
         if (!next) onStay();

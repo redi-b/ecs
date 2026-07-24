@@ -16,30 +16,32 @@ import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 
 type ConfirmTone = "destructive" | "default";
+type ConfirmIcon = "warning" | "trash" | "question";
 
 type ConfirmDialogProps = {
   title: ReactNode;
   description: ReactNode;
-  /** Small uppercase label above the title (e.g. Unsaved, Delete). */
   eyebrow?: string;
   cancelLabel?: string;
   confirmLabel: ReactNode;
   onConfirm: (event: React.MouseEvent<HTMLButtonElement>) => void;
-  /** Soft primary vs solid danger confirm. Default destructive for safety. */
   tone?: ConfirmTone;
+  /** Defaults: trash for destructive, question for default. */
+  icon?: ConfirmIcon;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   confirmDisabled?: boolean;
   cancelDisabled?: boolean;
-  /** Optional trigger (for uncontrolled / trigger-based confirms). */
   trigger?: ReactNode;
   className?: string;
 };
 
-/**
- * Premium confirmation shell shared by leave-unsaved, delete, pause, reset, etc.
- * AlertDialog for a11y; custom chrome (not stock media+footer).
- */
+const ICONS = {
+  warning: AppIcons.error,
+  trash: AppIcons.trash,
+  question: AppIcons.question,
+} as const;
+
 export function ConfirmDialog({
   title,
   description,
@@ -48,6 +50,7 @@ export function ConfirmDialog({
   confirmLabel,
   onConfirm,
   tone = "destructive",
+  icon,
   open,
   onOpenChange,
   confirmDisabled,
@@ -57,6 +60,7 @@ export function ConfirmDialog({
 }: ConfirmDialogProps) {
   const { t } = useI18n();
   const isDestructive = tone === "destructive";
+  const Icon = ICONS[icon ?? (isDestructive ? "warning" : "question")];
 
   return (
     <AlertDialog
@@ -82,11 +86,7 @@ export function ConfirmDialog({
                   : "bg-primary/10 text-primary ring-primary/20",
               )}
             >
-              {isDestructive ? (
-                <AppIcons.error className="size-5" aria-hidden />
-              ) : (
-                <AppIcons.question className="size-5" aria-hidden />
-              )}
+              <Icon className="size-5" aria-hidden />
             </div>
             <div className="flex min-w-0 flex-1 flex-col gap-1 pt-0.5">
               {eyebrow ? (

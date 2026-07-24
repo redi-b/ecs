@@ -575,6 +575,7 @@ export function ProductDeleteButton({
         }
         description={t("products.detail.deleteDesc", { title: productTitle })}
         eyebrow={t("common.confirm.deleteEyebrow")}
+        icon="trash"
         onConfirm={() => deleteMutation.mutate()}
         onOpenChange={setShowConfirm}
         open={showConfirm}
