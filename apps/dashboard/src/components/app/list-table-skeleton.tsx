@@ -48,8 +48,8 @@ export function ListTableSkeleton({
       )}
       role="status"
     >
-      {/* Header: short, quiet bars like real column labels */}
-      <div className="flex items-center gap-3 border-b border-border/80 bg-[color-mix(in_oklch,var(--muted)_42%,var(--card))] px-4 py-3">
+      {/* Header: same solid sticky token as real table (color-mix pink-casts in Chrome) */}
+      <div className="flex items-center gap-3 border-b border-border/80 bg-[var(--table-sticky-header)] px-4 py-3">
         <Skeleton className="size-4 shrink-0 rounded-[4px]" />
         <Skeleton className="h-2.5 w-16 shrink-0" />
         <div className="flex min-w-0 flex-1 items-center gap-6">
