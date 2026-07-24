@@ -15,16 +15,7 @@ import { AppIcons } from "@/components/app/icons";
 import { ListResultsStatus } from "@/components/app/list-results-status";
 import { ListToolbarSearch } from "@/components/app/list-toolbar";
 import { RowActionsMenu } from "@/components/app/row-actions-menu";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { ConfirmDialog } from "@/components/app/confirm-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -497,7 +488,17 @@ export function PromotionsManager({
         promotion={editing}
       />
 
-      <AlertDialog
+      <ConfirmDialog
+        cancelDisabled={deleting}
+        confirmDisabled={deleting || !deleteTargets.length}
+        confirmLabel={deleting ? t("common.deleting") : t("common.delete")}
+        description={
+          deleteTargets.length > 1
+            ? t("table.actions.deletePromotionsDescription")
+            : t("table.actions.deletePromotionDescription", { code: deleteTarget?.code ?? "" })
+        }
+        eyebrow={t("common.confirm.deleteEyebrow")}
+        onConfirm={() => void deletePromotions(deleteTargets)}
         onOpenChange={(next) => {
           if (!next && !deleting) {
             setDeleteTarget(null);
@@ -505,35 +506,12 @@ export function PromotionsManager({
           }
         }}
         open={Boolean(deleteTarget) || bulkDeleteTargets.length > 0}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              {deleteTargets.length > 1
-                ? t("table.actions.deletePromotionsQuestion", { count: deleteTargets.length })
-                : t("table.actions.deletePromotionQuestion")}
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              {deleteTargets.length > 1
-                ? t("table.actions.deletePromotionsDescription")
-                : t("table.actions.deletePromotionDescription", { code: deleteTarget?.code ?? "" })}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleting}>{t("common.cancel")}</AlertDialogCancel>
-            <AlertDialogAction
-              disabled={deleting || !deleteTargets.length}
-              onClick={(event) => {
-                event.preventDefault();
-                void deletePromotions(deleteTargets);
-              }}
-              variant="destructive"
-            >
-              {deleting ? t("common.deleting") : t("common.delete")}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        title={
+          deleteTargets.length > 1
+            ? t("table.actions.deletePromotionsQuestion", { count: deleteTargets.length })
+            : t("table.actions.deletePromotionQuestion")
+        }
+      />
     </>
   );
 }

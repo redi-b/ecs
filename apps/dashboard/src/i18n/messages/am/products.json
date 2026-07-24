@@ -139,6 +139,8 @@
     "handle": "መለያ",
     "productPath": "የምርት መንገድ",
     "deleteProduct": "ምርት አጥፋ",
+    "deleteProducts": "ምርቶችን አጥፋ",
+    "deleteBatchDesc": "የተመረጡ {count} ምርቶች ይጠፉ? ይህን መመለስ አይቻልም።",
     "actionsFor": "ለ{name} ድርጊቶች ክፈት",
     "unnamed": "ስም የሌለው ምርት",
     "statusUpdateFailed": "የምርት ሁኔታ ማዘመን አልተቻለም። እንደገና ይሞክሩ።",

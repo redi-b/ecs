@@ -1,17 +1,6 @@
 "use client";
 
-import { AppIcons } from "@/components/app/icons";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogMedia,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { ConfirmDialog } from "@/components/app/confirm-dialog";
 import { useI18n } from "@/i18n/provider";
 
 type UnsavedChangesDialogProps = {
@@ -24,7 +13,7 @@ type UnsavedChangesDialogProps = {
   leaveLabel?: string;
 };
 
-/** Standard leave confirmation using shared AlertDialog primitives. */
+/** Leave confirmation for dirty forms — premium ConfirmDialog shell. */
 export function UnsavedChangesDialog({
   open,
   onStay,
@@ -37,31 +26,18 @@ export function UnsavedChangesDialog({
   const { t } = useI18n();
 
   return (
-    <AlertDialog
+    <ConfirmDialog
+      cancelLabel={stayLabel ?? t("common.unsaved.stay")}
+      confirmLabel={leaveLabel ?? t("common.unsaved.leave")}
+      description={description ?? t("common.unsaved.description")}
+      eyebrow={t("common.unsaved.eyebrow")}
+      onConfirm={() => onLeave()}
       onOpenChange={(next) => {
         if (!next) onStay();
       }}
       open={open}
-    >
-      <AlertDialogContent className="sm:max-w-sm">
-        <AlertDialogHeader>
-          <AlertDialogMedia className="bg-destructive/10 text-destructive">
-            <AppIcons.error className="size-5" aria-hidden />
-          </AlertDialogMedia>
-          <AlertDialogTitle>{title ?? t("common.unsaved.title")}</AlertDialogTitle>
-          <AlertDialogDescription>
-            {description ?? t("common.unsaved.description")}
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel onClick={onStay}>
-            {stayLabel ?? t("common.unsaved.stay")}
-          </AlertDialogCancel>
-          <AlertDialogAction onClick={onLeave} variant="destructive">
-            {leaveLabel ?? t("common.unsaved.leave")}
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+      title={title ?? t("common.unsaved.title")}
+      tone="destructive"
+    />
   );
 }

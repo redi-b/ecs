@@ -17,17 +17,7 @@ import {
 } from "@remixicon/react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+import { ConfirmDialog } from "@/components/app/confirm-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { SegmentedControl } from "@/components/ui/segmented-control";
@@ -184,31 +174,26 @@ export function StorefrontEditorActions({
             <RiExternalLinkLine />
           </a>
         </ToolbarIconButton>
-        <AlertDialog>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <AlertDialogTrigger asChild>
-                <Button size="icon-sm" type="button" variant="ghost">
-                  <RiResetLeftLine />
-                  <span className="sr-only">{t("editor.actions.resetEditor")}</span>
-                </Button>
-              </AlertDialogTrigger>
-            </TooltipTrigger>
-            <TooltipContent>{t("editor.actions.resetEditor")}</TooltipContent>
-          </Tooltip>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>{t("editor.actions.resetTitle")}</AlertDialogTitle>
-              <AlertDialogDescription>
-                {t("editor.actions.resetDescription")}
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
-              <AlertDialogAction onClick={onReset}>{t("editor.actions.resetConfirm")}</AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+        <ConfirmDialog
+          confirmLabel={t("editor.actions.resetConfirm")}
+          description={t("editor.actions.resetDescription")}
+          eyebrow={t("common.confirm.dangerEyebrow")}
+          onConfirm={onReset}
+          title={t("editor.actions.resetTitle")}
+          tone="default"
+          trigger={
+            <Button
+              aria-label={t("editor.actions.resetEditor")}
+              size="icon-sm"
+              title={t("editor.actions.resetEditor")}
+              type="button"
+              variant="ghost"
+            >
+              <RiResetLeftLine />
+              <span className="sr-only">{t("editor.actions.resetEditor")}</span>
+            </Button>
+          }
+        />
       </div>
       <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:justify-end">
         <Button
@@ -223,8 +208,15 @@ export function StorefrontEditorActions({
           {t("editor.actions.saveDraft")}
         </Button>
         {isLive && onUnpublish ? (
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
+          <ConfirmDialog
+            cancelDisabled={isPending}
+            confirmDisabled={isPending}
+            confirmLabel={t("editor.actions.pauseConfirm")}
+            description={t("editor.actions.pauseDescription")}
+            eyebrow={t("common.confirm.dangerEyebrow")}
+            onConfirm={() => onUnpublish()}
+            title={t("editor.actions.pauseTitle")}
+            trigger={
               <Button
                 className="min-w-0"
                 disabled={isPending}
@@ -235,27 +227,8 @@ export function StorefrontEditorActions({
                 <RiPauseLine data-icon="inline-start" />
                 {t("editor.actions.pauseShop")}
               </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>{t("editor.actions.pauseTitle")}</AlertDialogTitle>
-                <AlertDialogDescription>{t("editor.actions.pauseDescription")}</AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel disabled={isPending}>{t("common.cancel")}</AlertDialogCancel>
-                <AlertDialogAction
-                  disabled={isPending}
-                  onClick={(event) => {
-                    event.preventDefault();
-                    onUnpublish();
-                  }}
-                  variant="destructive"
-                >
-                  {t("editor.actions.pauseConfirm")}
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+            }
+          />
         ) : (
           <span className="hidden sm:block" />
         )}

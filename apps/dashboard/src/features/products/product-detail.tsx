@@ -19,16 +19,7 @@ import {
   DetailSection,
 } from "@/components/app/detail-surface";
 import { AppIcons } from "@/components/app/icons";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { ConfirmDialog } from "@/components/app/confirm-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { MediaPreviewLightbox } from "@/features/media/media-lightbox";
@@ -576,29 +567,19 @@ export function ProductDeleteButton({
         {t("products.table.deleteProduct")}
       </Button>
 
-      <AlertDialog open={showConfirm} onOpenChange={setShowConfirm}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t("products.table.deleteProduct")}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {t("products.detail.deleteDesc", { title: productTitle })}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleteMutation.isPending}>{t("common.cancel")}</AlertDialogCancel>
-            <AlertDialogAction
-              variant="destructive"
-              disabled={deleteMutation.isPending}
-              onClick={(e) => {
-                e.preventDefault();
-                deleteMutation.mutate();
-              }}
-            >
-              {deleteMutation.isPending ? t("common.deleting") : t("products.detail.deleteConfirm")}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ConfirmDialog
+        cancelDisabled={deleteMutation.isPending}
+        confirmDisabled={deleteMutation.isPending}
+        confirmLabel={
+          deleteMutation.isPending ? t("common.deleting") : t("products.detail.deleteConfirm")
+        }
+        description={t("products.detail.deleteDesc", { title: productTitle })}
+        eyebrow={t("common.confirm.deleteEyebrow")}
+        onConfirm={() => deleteMutation.mutate()}
+        onOpenChange={setShowConfirm}
+        open={showConfirm}
+        title={t("products.table.deleteProduct")}
+      />
     </>
   );
 }

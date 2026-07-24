@@ -139,6 +139,8 @@
     "handle": "Handle",
     "productPath": "Product path",
     "deleteProduct": "Delete product",
+    "deleteProducts": "Delete products",
+    "deleteBatchDesc": "Delete {count} selected products? This cannot be undone.",
     "actionsFor": "Open actions for {name}",
     "unnamed": "unnamed product",
     "statusUpdateFailed": "Product status could not be updated. Try again.",

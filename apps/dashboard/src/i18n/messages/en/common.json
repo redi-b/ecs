@@ -73,10 +73,15 @@
   },
   "moreInfo": "More info",
   "unsaved": {
+    "eyebrow": "Unsaved",
     "title": "Leave without saving?",
     "description": "You have unsaved changes. If you leave now, those changes will be lost.",
     "stay": "Stay",
     "leave": "Leave anyway"
+  },
+  "confirm": {
+    "deleteEyebrow": "Delete",
+    "dangerEyebrow": "Confirm"
   },
   "access": {
     "loadFailedTitle": "Dashboard could not be loaded",

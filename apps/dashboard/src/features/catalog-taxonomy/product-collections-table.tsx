@@ -16,16 +16,7 @@ import { AppIcons } from "@/components/app/icons";
 import { ListResultsStatus } from "@/components/app/list-results-status";
 import { ListToolbarSearch } from "@/components/app/list-toolbar";
 import { RowActionsMenu } from "@/components/app/row-actions-menu";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { ConfirmDialog } from "@/components/app/confirm-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -430,65 +421,46 @@ export function ProductCollectionsTable({
         footer={footer}
       />
 
-      <AlertDialog
+      <ConfirmDialog
+        cancelDisabled={deleteCollectionMutation.isPending}
+        confirmDisabled={deleteCollectionMutation.isPending}
+        confirmLabel={
+          deleteCollectionMutation.isPending ? t("common.deleting") : t("common.delete")
+        }
+        description={t("taxonomy.delete.desc", {
+          name: collectionToDelete
+            ? getCollectionDisplayName(collectionToDelete)
+            : t("taxonomy.entity.collection.label"),
+        })}
+        eyebrow={t("common.confirm.deleteEyebrow")}
+        onConfirm={() => {
+          if (deleteCollectionId) deleteCollectionMutation.mutate(deleteCollectionId);
+        }}
+        onOpenChange={(open) => {
+          if (!open) setDeleteCollectionId(null);
+        }}
         open={deleteCollectionId !== null}
-        onOpenChange={(open) => !open && setDeleteCollectionId(null)}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete product collection</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete &ldquo;
-              {collectionToDelete
-                ? getCollectionDisplayName(collectionToDelete)
-                : "this collection"}
-              &rdquo;? This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleteCollectionMutation.isPending}>
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction
-              disabled={deleteCollectionMutation.isPending}
-              onClick={(e) => {
-                e.preventDefault();
-                if (deleteCollectionId) deleteCollectionMutation.mutate(deleteCollectionId);
-              }}
-              variant="destructive"
-            >
-              {deleteCollectionMutation.isPending ? t("common.deleting") : t("common.delete")}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        title={t("taxonomy.delete.title", { entity: t("taxonomy.entity.collection.label") })}
+      />
 
-      <AlertDialog open={showBatchDeleteDialog} onOpenChange={setShowBatchDeleteDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete product collections</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete {selectedCollectionIdsForDelete.length} selected
-              collections? This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={batchDeleteCollectionsMutation.isPending}>
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction
-              disabled={batchDeleteCollectionsMutation.isPending}
-              onClick={(e) => {
-                e.preventDefault();
-                batchDeleteCollectionsMutation.mutate(selectedCollectionIdsForDelete);
-              }}
-              variant="destructive"
-            >
-              {batchDeleteCollectionsMutation.isPending ? t("common.deleting") : t("common.delete")}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ConfirmDialog
+        cancelDisabled={batchDeleteCollectionsMutation.isPending}
+        confirmDisabled={batchDeleteCollectionsMutation.isPending}
+        confirmLabel={
+          batchDeleteCollectionsMutation.isPending ? t("common.deleting") : t("common.delete")
+        }
+        description={t("taxonomy.delete.batchDesc", {
+          count: selectedCollectionIdsForDelete.length,
+          entityPlural: t("taxonomy.entity.collection.plural"),
+        })}
+        eyebrow={t("common.confirm.deleteEyebrow")}
+        onConfirm={() => batchDeleteCollectionsMutation.mutate(selectedCollectionIdsForDelete)}
+        onOpenChange={setShowBatchDeleteDialog}
+        open={showBatchDeleteDialog}
+        title={t("taxonomy.delete.batchTitle", {
+          entityPlural: t("taxonomy.entity.collection.plural"),
+        })}
+      />
     </>
   );
 }
