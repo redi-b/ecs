@@ -404,8 +404,8 @@ export function NotificationCenter() {
               ? t("common.inbox.unreadAria", { count })
               : t("common.inbox.unreadNoneAria")
           }
-          className="relative size-9"
-          size="icon"
+          className="relative"
+          size="icon-lg"
           type="button"
           variant="ghost"
         >

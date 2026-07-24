@@ -39,6 +39,8 @@
   "searchProducts": "ምርቶችን ይፈልጉ…",
   "noMatchingProducts": "ምንም የሚዛመድ ምርት አልተገኘም።",
   "toggleTheme": "ገጽታ ቀይር",
+  "themeToLight": "ወደ ብሩህ ገጽታ ቀይር",
+  "themeToDark": "ወደ ጨለማ ገጽታ ቀይር",
   "clearSelection": "ምርጫን አጽዳ",
   "selected": "ተመርጧል",
   "updating": "እያደሰ ነው…",

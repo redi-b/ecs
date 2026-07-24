@@ -21,6 +21,18 @@ if (typeof window !== "undefined") {
   );
 }
 
+function setThemeTransitionOrigin(x: number, y: number) {
+  const root = document.documentElement;
+  root.style.setProperty("--x", `${x}px`);
+  root.style.setProperty("--y", `${y}px`);
+}
+
+function clearThemeTransitionOrigin() {
+  const root = document.documentElement;
+  root.style.removeProperty("--x");
+  root.style.removeProperty("--y");
+}
+
 export function changeThemeWithTransition(
   setTheme: (theme: string) => void,
   nextTheme: string,
@@ -28,7 +40,7 @@ export function changeThemeWithTransition(
 ) {
   if (
     typeof document === "undefined" ||
-    !document.startViewTransition ||
+    typeof document.startViewTransition !== "function" ||
     window.matchMedia("(prefers-reduced-motion: reduce)").matches
   ) {
     setTheme(nextTheme);
@@ -39,13 +51,18 @@ export function changeThemeWithTransition(
   const y = event?.clientY ?? lastPointerPosition.y;
 
   window.setTimeout(() => {
-    document.documentElement.style.setProperty("--x", `${x}px`);
-    document.documentElement.style.setProperty("--y", `${y}px`);
+    setThemeTransitionOrigin(x, y);
 
-    document.startViewTransition(() => {
-      flushSync(() => {
-        setTheme(nextTheme);
+    try {
+      const transition = document.startViewTransition(() => {
+        flushSync(() => {
+          setTheme(nextTheme);
+        });
       });
-    });
+      void transition.finished.finally(clearThemeTransitionOrigin);
+    } catch {
+      clearThemeTransitionOrigin();
+      setTheme(nextTheme);
+    }
   }, 0);
 }
