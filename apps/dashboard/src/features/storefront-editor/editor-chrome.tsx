@@ -64,7 +64,7 @@ export function ShopLiveStatusBadge({ live }: { live: boolean }) {
   return (
     <Badge
       variant={live ? "success" : "warning"}
-      className="gap-1.5 px-2 py-0.5 text-[11px] font-semibold shadow-sm"
+      className="gap-1.5 px-2 py-0.5 text-[11px] font-medium shadow-sm"
     >
       <span className="size-1.5 rounded-full bg-current opacity-80" aria-hidden />
       {live ? t("editor.status.live") : t("editor.status.paused")}
@@ -171,7 +171,6 @@ export function StorefrontEditorActions({
         >
           {showEditHints ? <RiEyeLine /> : <RiEyeOffLine />}
         </ToolbarIconButton>
-        {/* Fullscreen is awkward in phone-width; keep from sm up. */}
         <span className="hidden sm:inline-flex">
           <ToolbarIconButton
             label={isFullscreen ? t("editor.actions.exitFullscreen") : t("editor.actions.fullscreen")}
@@ -357,15 +356,14 @@ export function StorefrontEditorShell({
   return (
     <div
       className={cn(
-        "storefront-editor-chrome flex min-w-0 flex-col rounded-xl border bg-background shadow-sm",
-        // Mobile: give the shell a real height so settings/preview can scroll inside.
+        "storefront-editor-chrome flex min-w-0 flex-col overflow-hidden rounded-2xl border border-border/80 bg-background shadow-[0_1px_2px_color-mix(in_oklch,var(--foreground)_4%,transparent)]",
         "max-lg:min-h-[min(100dvh-5.5rem,52rem)]",
         isFullscreen && "max-lg:min-h-dvh",
       )}
     >
-      <div className="flex shrink-0 flex-col gap-2.5 border-b bg-muted/30 px-3 py-3 sm:gap-3 sm:px-4">
+      <div className="flex shrink-0 flex-col gap-2.5 border-b border-border/80 bg-muted/20 px-3 py-3 sm:gap-3 sm:px-4">
         <div className="flex min-w-0 items-start gap-2.5 sm:gap-3">
-          <div className="grid size-9 shrink-0 place-items-center rounded-lg border bg-background shadow-sm sm:size-10">
+          <div className="grid size-9 shrink-0 place-items-center rounded-xl border border-border/80 bg-background shadow-sm sm:size-10">
             <RiEditLine className="text-muted-foreground" aria-hidden />
           </div>
           <div className="min-w-0 flex-1">
@@ -375,7 +373,7 @@ export function StorefrontEditorShell({
               <ShopLiveStatusBadge live={isLive} />
               <PublicationStatusBadge status={publicationStatus} />
             </div>
-            <div className="mt-0.5 hidden text-xs text-muted-foreground sm:block">
+            <div className="mt-0.5 text-xs text-muted-foreground">
               {isLive ? t("editor.shell.hint") : t("editor.shell.hintPaused")}
             </div>
           </div>
@@ -399,8 +397,7 @@ export function StorefrontEditorShell({
         />
       </div>
 
-      {/* Mobile: animated segmented switch (same control as datetime / list toggles). */}
-      <div className="shrink-0 border-b bg-background px-3 py-2 lg:hidden">
+      <div className="shrink-0 border-b border-border/80 bg-background px-3 py-2 lg:hidden">
         <SegmentedControl
           active="muted"
           ariaLabel={`${t("editor.panels.preview")} / ${t("editor.panels.settings")}`}
@@ -414,13 +411,9 @@ export function StorefrontEditorShell({
         />
       </div>
 
-      {/*
-        Desktop: row height from preview; settings fills and scrolls.
-        Mobile: flex-1 so the active panel uses remaining shell height.
-      */}
       <div
         className={cn(
-          "grid min-h-0 flex-1 bg-muted/30 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,24rem)]",
+          "grid min-h-0 flex-1 bg-muted/20 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,24rem)]",
           isFullscreen && "lg:min-h-[calc(100dvh-7.5rem)]",
         )}
         data-edit-hints={showEditHints ? "on" : "off"}
@@ -429,11 +422,10 @@ export function StorefrontEditorShell({
           className={cn(
             "min-w-0 p-3 sm:p-5",
             mobilePanel !== "preview" && "max-lg:hidden",
-            // Narrow screens: pan the wide storefront preview instead of clipping it.
             "max-lg:overflow-x-auto max-lg:overscroll-x-contain",
           )}
         >
-          <div className="mx-auto max-w-6xl overflow-hidden rounded-xl border bg-background shadow-sm max-lg:min-w-[22rem]">
+          <div className="mx-auto max-w-6xl overflow-hidden rounded-2xl border border-border/80 bg-background shadow-sm max-lg:min-w-[22rem]">
             <TemplatePreview
               props={props}
               storefrontName={editorMeta.storefrontName}
@@ -443,25 +435,24 @@ export function StorefrontEditorShell({
         </div>
         <aside
           className={cn(
-            "flex min-h-0 flex-col overflow-hidden border-t bg-background",
+            "flex min-h-0 flex-col overflow-hidden border-t border-border/80 bg-background",
             "lg:h-0 lg:min-h-full lg:border-l lg:border-t-0",
             mobilePanel !== "settings" && "max-lg:hidden",
-            // Mobile: fill leftover shell height and scroll settings inside.
             "max-lg:min-h-0 max-lg:flex-1",
           )}
         >
-          <div className="shrink-0 border-b bg-background px-4 py-3 sm:py-4">
+          <div className="shrink-0 border-b border-border/80 bg-muted/15 px-4 py-3 sm:py-3.5">
             <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
               <div className="min-w-0">
                 <div className="text-sm font-medium tracking-tight">
                   {t("editor.panels.settings")}
                 </div>
                 <div className="mt-0.5 text-xs text-muted-foreground">
-                  Links, images, colors, and fallback content.
+                  {t("editor.settings.description")}
                 </div>
               </div>
               <Button asChild className="w-full shrink-0 sm:w-auto" size="sm" variant="outline">
-                <a href={editorMeta.settingsUrl}>Change template</a>
+                <a href={editorMeta.settingsUrl}>{t("editor.settings.changeTemplate")}</a>
               </Button>
             </div>
           </div>

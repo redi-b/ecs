@@ -45,13 +45,18 @@ type PaletteKey = "primary" | "background" | "foreground" | "muted" | "accent";
 const PALETTE_FIELDS: Array<{
   key: PaletteKey;
   prop: keyof StorefrontPageProps;
-  label: string;
+  labelKey:
+    | "editor.theme.colorBrand"
+    | "editor.theme.colorBackground"
+    | "editor.theme.colorText"
+    | "editor.theme.colorMuted"
+    | "editor.theme.colorAccent";
 }> = [
-  { key: "primary", prop: "primaryColor", label: "Brand" },
-  { key: "background", prop: "backgroundColor", label: "Background" },
-  { key: "foreground", prop: "foregroundColor", label: "Text" },
-  { key: "muted", prop: "mutedColor", label: "Muted" },
-  { key: "accent", prop: "accentColor", label: "Accent" },
+  { key: "primary", prop: "primaryColor", labelKey: "editor.theme.colorBrand" },
+  { key: "background", prop: "backgroundColor", labelKey: "editor.theme.colorBackground" },
+  { key: "foreground", prop: "foregroundColor", labelKey: "editor.theme.colorText" },
+  { key: "muted", prop: "mutedColor", labelKey: "editor.theme.colorMuted" },
+  { key: "accent", prop: "accentColor", labelKey: "editor.theme.colorAccent" },
 ];
 
 function SectionInfoTip({ title, body }: { title: string; body: string }) {
@@ -85,6 +90,7 @@ export function ThemeBrandSection({
   dispatch: (action: PuckAction) => void;
   props: StorefrontPageProps;
 }) {
+  const { t } = useI18n();
   const mode: "light" | "dark" =
     props.surfaceMode === "light" || props.surfaceMode === "dark"
       ? props.surfaceMode
@@ -131,7 +137,6 @@ export function ThemeBrandSection({
       regenerate(next, mode);
       return;
     }
-    // Manual tweak of a derived swatch exits auto mode so we do not overwrite on next brand change.
     updateStorefrontProps(data, dispatch, {
       autoPalette: prop === "primaryColor" ? autoPalette : false,
       [prop]: next,
@@ -139,15 +144,14 @@ export function ThemeBrandSection({
   }
 
   return (
-    <section className="min-w-0 overflow-hidden rounded-xl border bg-card shadow-sm">
-      <div className="flex items-center justify-between gap-2 border-b px-4 py-3">
-        <div className="text-sm font-semibold">Appearance</div>
+    <section className="min-w-0 overflow-hidden rounded-2xl border border-border/80 bg-card shadow-[0_1px_2px_color-mix(in_oklch,var(--foreground)_4%,transparent)]">
+      <div className="flex items-center justify-between gap-2 border-b border-border/80 bg-muted/10 px-4 py-3">
+        <div className="text-sm font-medium tracking-tight">{t("editor.theme.appearance")}</div>
         <div className="flex items-center gap-0.5">
-          {/* Labeled menu works on touch; tooltips alone do not. */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
-                aria-label="Palette actions"
+                aria-label={t("editor.theme.paletteActions")}
                 className="size-7 text-muted-foreground"
                 size="icon"
                 type="button"
@@ -164,7 +168,7 @@ export function ThemeBrandSection({
                 }}
               >
                 <RiRefreshLine className="size-4 opacity-70" aria-hidden />
-                Rebuild from brand
+                {t("editor.theme.rebuildFromBrand")}
               </DropdownMenuItem>
               <DropdownMenuItem
                 className="gap-2"
@@ -173,13 +177,13 @@ export function ThemeBrandSection({
                 }}
               >
                 <RiResetLeftLine className="size-4 opacity-70" aria-hidden />
-                Reset to defaults
+                {t("editor.theme.resetDefaults")}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
           <SectionInfoTip
-            body="Surface and brand color drive a full palette with readable contrast. Accent stays related to your brand. Edit any swatch for full control. Open the menu for rebuild or reset to defaults."
-            title="Appearance"
+            body={t("editor.theme.appearanceHelp")}
+            title={t("editor.theme.appearance")}
           />
         </div>
       </div>
@@ -187,50 +191,51 @@ export function ThemeBrandSection({
       <div className="flex min-w-0 flex-col gap-5 p-4">
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
-            <div className="text-sm font-medium">Automatic palette</div>
+            <div className="text-sm font-medium">{t("editor.theme.autoPalette")}</div>
             <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
               {autoPalette
-                ? "Brand and surface keep the set in sync."
-                : "Manual colors. Rebuild from brand anytime."}
+                ? t("editor.theme.autoPaletteOn")
+                : t("editor.theme.autoPaletteOff")}
             </p>
           </div>
           <Switch
-            aria-label="Automatic palette"
+            aria-label={t("editor.theme.autoPalette")}
             checked={autoPalette}
             onCheckedChange={setAutoPalette}
           />
         </div>
 
         <div className="flex flex-col gap-2">
-          <FieldLabel className="text-sm font-medium">Surface</FieldLabel>
+          <FieldLabel className="text-sm font-medium">{t("editor.theme.surface")}</FieldLabel>
           <SegmentedControl
-            ariaLabel="Surface style"
+            ariaLabel={t("editor.theme.surface")}
             onChange={onSurfaceChange}
             options={[
-              { id: "light", label: "Light" },
-              { id: "dark", label: "Dark" },
+              { id: "light", label: t("editor.theme.surfaceLight") },
+              { id: "dark", label: t("editor.theme.surfaceDark") },
             ]}
             value={mode}
           />
         </div>
 
         <div className="flex flex-col gap-3">
-          <FieldLabel className="text-sm font-medium">Colors</FieldLabel>
+          <FieldLabel className="text-sm font-medium">{t("editor.theme.colors")}</FieldLabel>
           <div className="grid grid-cols-5 gap-2.5">
             {PALETTE_FIELDS.map((field) => {
               const value = props[field.prop];
               const hex =
                 typeof value === "string" && isHexColor(value) ? value : "#888888";
+              const label = t(field.labelKey);
               return (
                 <div className="flex min-w-0 flex-col items-center gap-1.5" key={field.key}>
                   <PremiumColorPicker
-                    label={field.label}
+                    label={label}
                     onChange={(next) => onPaletteColorChange(field.prop, next)}
                     swatchOnly
                     value={hex}
                   />
                   <span className="truncate text-[10px] font-medium text-muted-foreground">
-                    {field.label}
+                    {label}
                   </span>
                 </div>
               );
@@ -238,12 +243,12 @@ export function ThemeBrandSection({
           </div>
         </div>
 
-        <div className="space-y-3 border-t pt-4">
-          <div className="text-sm font-medium">Typography</div>
+        <div className="space-y-3 border-t border-border/80 pt-4">
+          <div className="text-sm font-medium">{t("editor.theme.typography")}</div>
           <div className="flex flex-col gap-3.5">
             <div className="flex flex-col gap-2">
               <FieldLabel className="text-xs font-medium text-muted-foreground">
-                Heading
+                {t("editor.theme.heading")}
               </FieldLabel>
               <FontSelect
                 onChange={(next) => updateStorefrontProp(data, dispatch, "headingFont", next)}
@@ -251,7 +256,9 @@ export function ThemeBrandSection({
               />
             </div>
             <div className="flex flex-col gap-2">
-              <FieldLabel className="text-xs font-medium text-muted-foreground">Body</FieldLabel>
+              <FieldLabel className="text-xs font-medium text-muted-foreground">
+                {t("editor.theme.body")}
+              </FieldLabel>
               <FontSelect
                 onChange={(next) => updateStorefrontProp(data, dispatch, "bodyFont", next)}
                 value={props.bodyFont || "Outfit"}

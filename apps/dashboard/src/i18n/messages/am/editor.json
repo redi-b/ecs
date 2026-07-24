@@ -66,6 +66,35 @@
     "hint": "በቅድመ እይታ ላይ የተከበቡ ጽሑፎችን ይጫኑ፣ ወይም ዝርዝሮችን በማስተካከያዎች ያሻሽሉ።",
     "hintPaused": "ሱቁ ቆሟል። ማስተካከል ይችላሉ፤ ለደንበኞች ሲዘጋጁ ያትሙ።"
   },
+  "settings": {
+    "description": "አገናኞች፣ ምስሎች፣ ቀለሞች እና ተለዋጭ ይዘት።",
+    "changeTemplate": "ንድፍ ቀይር",
+    "sectionHidden": "ተደብቋል",
+    "sectionVisibleTooltip": "በመደብር ላይ ይታያል",
+    "sectionHiddenTooltip": "በመደብር ላይ ተደብቋል"
+  },
+  "theme": {
+    "appearance": "ገጽታ",
+    "appearanceHelp": "ገጽ እና የብራንድ ቀለም ሙሉ የቀለም ስብስብ ያስገኛሉ። አክሰንት ከብራንድዎ ጋር ይዛመዳል። ማንኛውንም ቀለም መቀየር ይችላሉ። ዳግም ግንባታ ወይም ነባሪ መልስ ከምናዩ።",
+    "autoPalette": "ራስ-ሰር ቀለም",
+    "autoPaletteOn": "ብራንድ እና ገጽ ስብስቡን ያስተካክላሉ።",
+    "autoPaletteOff": "በእጅ ቀለሞች። ከብራንድ ዳግም ይገንቡ።",
+    "surface": "ገጽ",
+    "surfaceLight": "ብርሃን",
+    "surfaceDark": "ጨለማ",
+    "colors": "ቀለሞች",
+    "typography": "ፊደላት",
+    "heading": "አርዕስት",
+    "body": "ጽሑፍ",
+    "rebuildFromBrand": "ከብራንድ ዳግም ግንባ",
+    "resetDefaults": "ወደ ነባሪ መልስ",
+    "paletteActions": "የቀለም እርምጃዎች",
+    "colorBrand": "ብራንድ",
+    "colorBackground": "ጀርባ",
+    "colorText": "ጽሑፍ",
+    "colorMuted": "ደብዛዛ",
+    "colorAccent": "አክሰንት"
+  },
   "media": {
     "referenceSet": "ምስል ተመርጧል",
     "uploadOrChoose": "ፋይል ይጫኑ ወይም ከማከማቻ ይምረጡ",
