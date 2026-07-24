@@ -39,10 +39,6 @@ type DateTimePickerProps = {
   disabled?: boolean;
 };
 
-/**
- * Date + time picker — single stacked column (sheet / mobile / desktop safe).
- * Time: editable steppers + optional AM/PM segmented control.
- */
 export function DateTimePicker({
   className,
   id,
@@ -216,7 +212,6 @@ export function DateTimePicker({
         sideOffset={8}
         sticky="partial"
       >
-        {/* Header */}
         <div className="flex shrink-0 items-center justify-between gap-2 border-b px-3.5 py-2.5">
           <div className="min-w-0">
             <p className="truncate text-sm font-medium tracking-tight">
@@ -248,13 +243,11 @@ export function DateTimePicker({
             />
           </div>
 
-          {/* Time */}
           <div className="border-t bg-muted/15 px-3.5 py-3">
             <p className="mb-2.5 text-center text-[10px] font-medium tracking-wide text-muted-foreground uppercase">
               Time
             </p>
 
-            {/* Labels share the same column widths as steppers so “:” can sit true-center */}
             <div className="mx-auto flex w-fit flex-col gap-1.5">
               <div className="flex items-center justify-center gap-2">
                 <span className="w-12 text-center text-[10px] font-medium tracking-wide text-muted-foreground uppercase">
@@ -330,7 +323,6 @@ export function DateTimePicker({
           </div>
         </div>
 
-        {/* Footer */}
         <div className="flex shrink-0 items-center justify-between gap-2 border-t px-3 py-2">
           <div className="flex flex-wrap gap-1">
             <PresetChip
@@ -365,10 +357,6 @@ export function DateTimePicker({
   );
 }
 
-/**
- * Vertical stepper with a directly editable center value.
- * Type digits, ↑/↓ keys, blur/Enter commit + clamp, focus selects all.
- */
 function TimeStep({
   value,
   min,
@@ -461,7 +449,6 @@ function TimeStep({
             event.currentTarget.blur();
           }
         }}
-        // Keep type=text so leading zeros and partial drafts work on mobile.
         pattern="[0-9]*"
         role="spinbutton"
         type="text"

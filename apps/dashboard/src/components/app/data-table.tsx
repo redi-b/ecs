@@ -279,10 +279,6 @@ export function DataTable<TData>({
             </Table>
           </div>
 
-          {/*
-            Horizontal scroll fade only — inset past sticky select (left-12)
-            and actions (right-14) so checkboxes / ⋮ stay clear.
-          */}
           <div
             aria-hidden
             className={cn(

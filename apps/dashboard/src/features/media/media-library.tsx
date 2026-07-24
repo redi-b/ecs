@@ -522,10 +522,6 @@ export function MediaLibrary({
 
   return (
     <>
-      {/*
-        Shared card + toolbar so ListViewToggle is NOT remounted when switching
-        Grid/List (remount made the thumb always animate left→right from 0).
-      */}
       <div className="mb-4 flex w-full min-w-0 flex-col overflow-hidden rounded-2xl border border-border/80 bg-card/95 shadow-[0_1px_2px_color-mix(in_oklch,var(--foreground)_4%,transparent)] lg:mb-6">
         <div className="shrink-0 border-b border-border/80 bg-muted/15 p-3">{toolbar}</div>
 
@@ -653,12 +649,15 @@ export function MediaLibrary({
           </>
         ) : (
           <>
-            {/* Match DataTable empty: flat icon + title + description, no extra CTA */}
             <div className="flex min-h-52 items-center justify-center px-6 py-12 sm:min-h-60">
               <Empty className="max-w-sm gap-3 border-0 bg-transparent p-0">
                 <EmptyHeader className="gap-2.5">
                   <span className="text-muted-foreground/80">
-                    <AppIcons.image className="size-5" aria-hidden />
+                    {isFiltered ? (
+                      <AppIcons.search className="size-5" aria-hidden />
+                    ) : (
+                      <AppIcons.image className="size-5" aria-hidden />
+                    )}
                   </span>
                   <EmptyTitle className="font-medium">
                     {isFiltered ? t("media.filteredEmpty") : t("media.libraryEmpty")}
@@ -767,7 +766,6 @@ function AssetName({ asset, onOpen }: { asset: MediaAsset; onOpen?: () => void }
   );
 }
 
-/** Layout-faithful grid loading stand-in (mirrors cards, not list rows). */
 function MediaGridSkeleton({ count = 8 }: { count?: number }) {
   return (
     <div
