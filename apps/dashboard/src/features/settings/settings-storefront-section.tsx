@@ -10,17 +10,7 @@ import { toast } from "sonner";
 
 import { AppIcons } from "@/components/app/icons";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+import { ConfirmDialog } from "@/components/app/confirm-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { getSelectedTemplateName } from "@/features/settings/settings-helpers";
@@ -184,8 +174,15 @@ export function StorefrontSection({
 
           <div className="flex shrink-0 flex-col gap-2 sm:min-w-[11.5rem]">
             {isPublished ? (
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
+              <ConfirmDialog
+                cancelDisabled={pausing}
+                confirmDisabled={pausing || busy}
+                confirmLabel={t("settings.storefront.pauseShopConfirm")}
+                description={t("settings.storefront.pauseShopDescription")}
+                eyebrow={t("common.confirm.dangerEyebrow")}
+                onConfirm={() => void pauseShop()}
+                title={t("settings.storefront.pauseShopTitle")}
+                trigger={
                   <Button
                     className="w-full rounded-full"
                     disabled={busy}
@@ -197,32 +194,8 @@ export function StorefrontSection({
                       ? t("settings.storefront.pauseShopPending")
                       : t("settings.storefront.pauseShop")}
                   </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>{t("settings.storefront.pauseShopTitle")}</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      {t("settings.storefront.pauseShopDescription")}
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel className="rounded-full" disabled={pausing}>
-                      {t("common.cancel")}
-                    </AlertDialogCancel>
-                    <AlertDialogAction
-                      className="rounded-full"
-                      disabled={pausing}
-                      onClick={(event) => {
-                        event.preventDefault();
-                        void pauseShop();
-                      }}
-                      variant="destructive"
-                    >
-                      {t("settings.storefront.pauseShopConfirm")}
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
+                }
+              />
             ) : (
               <Button
                 className="w-full rounded-full"

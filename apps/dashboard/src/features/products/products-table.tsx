@@ -20,16 +20,7 @@ import {
 import { AppIcons } from "@/components/app/icons";
 import { ListResultsStatus } from "@/components/app/list-results-status";
 import { ListToolbarSearch } from "@/components/app/list-toolbar";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { ConfirmDialog } from "@/components/app/confirm-dialog";
 import { Button } from "@/components/ui/button";
 import {
   filterProductsForTable,
@@ -533,60 +524,41 @@ export function ProductsTable({
         footer={footer}
       />
 
-      <AlertDialog
+      <ConfirmDialog
+        cancelDisabled={deleteProductMutation.isPending}
+        confirmDisabled={deleteProductMutation.isPending}
+        confirmLabel={
+          deleteProductMutation.isPending ? t("common.deleting") : t("common.delete")
+        }
+        description={t("products.detail.deleteDesc", {
+          title: productToDelete?.title || t("products.detail.thisProduct"),
+        })}
+        eyebrow={t("common.confirm.deleteEyebrow")}
+        onConfirm={() => {
+          if (deleteProductId) deleteProductMutation.mutate(deleteProductId);
+        }}
+        onOpenChange={(open) => {
+          if (!open) setDeleteProductId(null);
+        }}
         open={deleteProductId !== null}
-        onOpenChange={(open) => !open && setDeleteProductId(null)}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete product</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete &ldquo;{productToDelete?.title || "this product"}
-              &rdquo;? This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleteProductMutation.isPending}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              variant="destructive"
-              disabled={deleteProductMutation.isPending}
-              onClick={(e) => {
-                e.preventDefault();
-                if (deleteProductId) deleteProductMutation.mutate(deleteProductId);
-              }}
-            >
-              {deleteProductMutation.isPending ? t("common.deleting") : t("common.delete")}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        title={t("products.detail.deleteTitle")}
+      />
 
-      <AlertDialog open={showBatchDeleteDialog} onOpenChange={setShowBatchDeleteDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete products</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete {selectedProductIdsForDelete.length} selected
-              products? This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={batchDeleteProductsMutation.isPending}>
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction
-              variant="destructive"
-              disabled={batchDeleteProductsMutation.isPending}
-              onClick={(e) => {
-                e.preventDefault();
-                batchDeleteProductsMutation.mutate(selectedProductIdsForDelete);
-              }}
-            >
-              {batchDeleteProductsMutation.isPending ? t("common.deleting") : t("common.delete")}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ConfirmDialog
+        cancelDisabled={batchDeleteProductsMutation.isPending}
+        confirmDisabled={batchDeleteProductsMutation.isPending}
+        confirmLabel={
+          batchDeleteProductsMutation.isPending ? t("common.deleting") : t("common.delete")
+        }
+        description={t("products.table.deleteBatchDesc", {
+          count: selectedProductIdsForDelete.length,
+        })}
+        eyebrow={t("common.confirm.deleteEyebrow")}
+        onConfirm={() => batchDeleteProductsMutation.mutate(selectedProductIdsForDelete)}
+        onOpenChange={setShowBatchDeleteDialog}
+        open={showBatchDeleteDialog}
+        title={t("products.table.deleteProducts")}
+      />
     </>
   );
 }

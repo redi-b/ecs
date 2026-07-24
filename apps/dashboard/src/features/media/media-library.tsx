@@ -16,16 +16,7 @@ import { AppIcons } from "@/components/app/icons";
 import { ListResultsStatus } from "@/components/app/list-results-status";
 import { ListToolbarSearch, ListViewToggle } from "@/components/app/list-toolbar";
 import { RowActionsMenu } from "@/components/app/row-actions-menu";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { ConfirmDialog } from "@/components/app/confirm-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -699,7 +690,16 @@ export function MediaLibrary({
         onIndexChange={setLightboxIndex}
       />
 
-      <AlertDialog
+      <ConfirmDialog
+        confirmDisabled={!deleteTargets.length}
+        confirmLabel={t("media.delete")}
+        description={
+          isBulkDelete
+            ? t("media.deleteSelectedDescription")
+            : t("media.deleteConfirmDescription")
+        }
+        eyebrow={t("common.confirm.deleteEyebrow")}
+        onConfirm={() => confirmDelete(deleteTargets)}
         onOpenChange={(open) => {
           if (!open) {
             setDeleteTarget(null);
@@ -707,35 +707,12 @@ export function MediaLibrary({
           }
         }}
         open={Boolean(deleteTarget) || isBulkDelete}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              {isBulkDelete
-                ? t("media.deleteSelectedConfirm", { count: deleteTargets.length })
-                : t("media.deleteConfirm")}
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              {isBulkDelete
-                ? t("media.deleteSelectedDescription")
-                : t("media.deleteConfirmDescription")}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
-            <AlertDialogAction
-              disabled={!deleteTargets.length}
-              onClick={(event) => {
-                event.preventDefault();
-                confirmDelete(deleteTargets);
-              }}
-              variant="destructive"
-            >
-              {t("media.delete")}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        title={
+          isBulkDelete
+            ? t("media.deleteSelectedConfirm", { count: deleteTargets.length })
+            : t("media.deleteConfirm")
+        }
+      />
     </>
   );
 }

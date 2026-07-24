@@ -20,16 +20,7 @@ import {
   ListViewToggle,
 } from "@/components/app/list-toolbar";
 import { RowActionsMenu } from "@/components/app/row-actions-menu";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { ConfirmDialog } from "@/components/app/confirm-dialog";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
@@ -509,63 +500,46 @@ export function ProductCategoriesTable({
         )}
       </div>
 
-      <AlertDialog
+      <ConfirmDialog
+        cancelDisabled={deleteCategoryMutation.isPending}
+        confirmDisabled={deleteCategoryMutation.isPending}
+        confirmLabel={
+          deleteCategoryMutation.isPending ? t("common.deleting") : t("common.delete")
+        }
+        description={t("taxonomy.delete.desc", {
+          name: categoryToDelete
+            ? getCategoryDisplayName(categoryToDelete)
+            : t("taxonomy.entity.category.label"),
+        })}
+        eyebrow={t("common.confirm.deleteEyebrow")}
+        onConfirm={() => {
+          if (deleteCategoryId) deleteCategoryMutation.mutate(deleteCategoryId);
+        }}
+        onOpenChange={(open) => {
+          if (!open) setDeleteCategoryId(null);
+        }}
         open={deleteCategoryId !== null}
-        onOpenChange={(open) => !open && setDeleteCategoryId(null)}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete product category</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete &ldquo;
-              {categoryToDelete ? getCategoryDisplayName(categoryToDelete) : "this category"}
-              &rdquo;? This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleteCategoryMutation.isPending}>
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction
-              disabled={deleteCategoryMutation.isPending}
-              onClick={(e) => {
-                e.preventDefault();
-                if (deleteCategoryId) deleteCategoryMutation.mutate(deleteCategoryId);
-              }}
-              variant="destructive"
-            >
-              {deleteCategoryMutation.isPending ? t("common.deleting") : t("common.delete")}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        title={t("taxonomy.delete.title", { entity: t("taxonomy.entity.category.label") })}
+      />
 
-      <AlertDialog open={showBatchDeleteDialog} onOpenChange={setShowBatchDeleteDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete product categories</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete {selectedCategoryIdsForDelete.length} selected
-              categories? This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={batchDeleteCategoriesMutation.isPending}>
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction
-              disabled={batchDeleteCategoriesMutation.isPending}
-              onClick={(e) => {
-                e.preventDefault();
-                batchDeleteCategoriesMutation.mutate(selectedCategoryIdsForDelete);
-              }}
-              variant="destructive"
-            >
-              {batchDeleteCategoriesMutation.isPending ? t("common.deleting") : t("common.delete")}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ConfirmDialog
+        cancelDisabled={batchDeleteCategoriesMutation.isPending}
+        confirmDisabled={batchDeleteCategoriesMutation.isPending}
+        confirmLabel={
+          batchDeleteCategoriesMutation.isPending ? t("common.deleting") : t("common.delete")
+        }
+        description={t("taxonomy.delete.batchDesc", {
+          count: selectedCategoryIdsForDelete.length,
+          entityPlural: t("taxonomy.entity.category.plural"),
+        })}
+        eyebrow={t("common.confirm.deleteEyebrow")}
+        onConfirm={() => batchDeleteCategoriesMutation.mutate(selectedCategoryIdsForDelete)}
+        onOpenChange={setShowBatchDeleteDialog}
+        open={showBatchDeleteDialog}
+        title={t("taxonomy.delete.batchTitle", {
+          entityPlural: t("taxonomy.entity.category.plural"),
+        })}
+      />
     </>
   );
 }
