@@ -40,6 +40,11 @@ type DataTableFiltersProps = {
   onClearAll: () => void;
 };
 
+/**
+ * List filter chrome: search on its own row, filters + actions underneath.
+ * Mobile: full-width search, then filter controls; desktop: same hierarchy with
+ * actions aligned end.
+ */
 export function DataTableFilters({
   actions,
   children,
@@ -61,12 +66,11 @@ export function DataTableFilters({
 
   return (
     <div className="flex flex-col gap-2.5">
-      <div className="flex flex-col gap-2 sm:gap-2.5 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5 sm:gap-2">
-          {children}
-          {activeFilters.map((filter) => (
-            <DataTableAppliedFilterChip filter={filter} key={filter.id} />
-          ))}
+      {/* Search leads — full width so it reads as the primary control */}
+      {children ? <div className="min-w-0 w-full">{children}</div> : null}
+
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
           {availableFilters.length > 0 ? (
             <Popover
               onOpenChange={(open) => {
@@ -173,6 +177,11 @@ export function DataTableFilters({
               </PopoverContent>
             </Popover>
           ) : null}
+
+          {activeFilters.map((filter) => (
+            <DataTableAppliedFilterChip filter={filter} key={filter.id} />
+          ))}
+
           {activeFilters.length ? (
             <Button
               className={cn(listToolbarControlClassName, "text-muted-foreground")}
@@ -186,8 +195,11 @@ export function DataTableFilters({
             </Button>
           ) : null}
         </div>
+
         {actions ? (
-          <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div>
+          <div className="flex shrink-0 flex-wrap items-center gap-2 sm:justify-end">
+            {actions}
+          </div>
         ) : null}
       </div>
     </div>
@@ -210,7 +222,7 @@ function DataTableAppliedFilterChip({ filter }: { filter: DataTableFilterDefinit
   return (
     <div
       className={cn(
-        "flex h-8 items-center overflow-hidden rounded-full border bg-background/90 text-sm",
+        "flex h-9 items-center overflow-hidden rounded-full border border-border/80 bg-background text-sm shadow-[0_1px_2px_color-mix(in_oklch,var(--foreground)_4%,transparent)]",
         "animate-in fade-in-0 zoom-in-95 duration-150",
       )}
     >
@@ -237,7 +249,7 @@ function DataTableAppliedFilterChip({ filter }: { filter: DataTableFilterDefinit
         searchPlaceholder={t("filters.searchLabel", { label: filter.label.toLowerCase() })}
         trigger={
           <button
-            className="flex h-8 max-w-[16rem] items-center gap-1.5 px-2.5 text-left text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground"
+            className="flex h-9 max-w-[16rem] items-center gap-1.5 px-3 text-left text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground"
             type="button"
           />
         }
@@ -245,7 +257,7 @@ function DataTableAppliedFilterChip({ filter }: { filter: DataTableFilterDefinit
       />
       <Button
         aria-label={t("filters.clearFilterAria", { label: filter.label })}
-        className="h-full rounded-none border-l px-1.5"
+        className="h-full rounded-none border-l border-border/70 px-2"
         onClick={() => filter.onChange(filter.defaultValue)}
         size="icon-sm"
         type="button"
@@ -257,10 +269,10 @@ function DataTableAppliedFilterChip({ filter }: { filter: DataTableFilterDefinit
   );
 }
 
-function getFilterValueLabel(filter: DataTableFilterDefinition) {
-  return filter.options.find((option) => option.value === filter.value)?.label ?? filter.value;
-}
-
 function getSelectableFilterOptions(filter: DataTableFilterDefinition) {
   return filter.options.filter((option) => option.value !== filter.defaultValue);
+}
+
+function getFilterValueLabel(filter: DataTableFilterDefinition) {
+  return filter.options.find((option) => option.value === filter.value)?.label ?? filter.value;
 }

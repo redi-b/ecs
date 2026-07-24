@@ -8,19 +8,13 @@ import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/in
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { cn } from "@/lib/utils";
 
-/**
- * Shared list-toolbar density for catalog/media/order tables.
- *
- * Uses h-8 (32px) to match default Button + InputGroup height so toolbars
- * sit at the same optical weight as table chrome, not auth/form fields.
- * Pill radius keeps the premium feel without oversized padding.
- */
-export const listToolbarHeightClass = "h-8";
+/** Shared density for list toolbars — matches default Button / InputGroup height. */
+export const listToolbarHeightClass = "h-9";
 export const listToolbarRadiusClass = "rounded-full";
 export const listToolbarControlClassName = cn(
   listToolbarHeightClass,
   listToolbarRadiusClass,
-  "gap-1.5 px-2.5 text-sm font-medium",
+  "gap-1.5 px-3 text-sm font-medium",
 );
 
 const DEFAULT_SEARCH_DEBOUNCE_MS = 300;
@@ -32,14 +26,15 @@ export function ListToolbarSearch({
   onChange,
   placeholder,
   value,
+  className,
 }: {
   clearLabel: string;
-  /** Delay before calling onChange while typing. Clear always commits immediately. */
   debounceMs?: number;
   label: string;
   onChange: (value: string) => void;
   placeholder: string;
   value: string;
+  className?: string;
 }) {
   const [draft, setDraft] = useState(value);
   const onChangeRef = useRef(onChange);
@@ -49,7 +44,6 @@ export function ListToolbarSearch({
     onChangeRef.current = onChange;
   }, [onChange]);
 
-  // Sync when the committed value changes from outside (URL nav, clear, filters reset).
   useEffect(() => {
     setDraft(value);
   }, [value]);
@@ -79,12 +73,13 @@ export function ListToolbarSearch({
       className={cn(
         listToolbarHeightClass,
         listToolbarRadiusClass,
-        // Match outline button surface so search + “Add filter” read as one control family.
-        "w-full min-w-0 border-border bg-background px-0.5 shadow-none sm:max-w-sm",
+        "w-full min-w-0 border-border/80 bg-background/90 px-1 shadow-[0_1px_2px_color-mix(in_oklch,var(--foreground)_4%,transparent)]",
+        "focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/25",
+        className,
       )}
     >
       <InputGroupAddon>
-        <AppIcons.search className="size-3.5" />
+        <AppIcons.search className="size-4 text-muted-foreground" />
       </InputGroupAddon>
       <InputGroupInput
         aria-label={label}
@@ -111,7 +106,6 @@ export function ListToolbarSearch({
   );
 }
 
-/** Segmented list view switcher (table / tree / grid). */
 export function ListViewToggle<T extends string>({
   options,
   onChange,
@@ -125,7 +119,7 @@ export function ListViewToggle<T extends string>({
     <SegmentedControl
       active="muted"
       ariaLabel="View"
-      className="h-8 shrink-0"
+      className="h-9 shrink-0"
       fullWidth={false}
       onChange={onChange}
       options={options.map((option) => {

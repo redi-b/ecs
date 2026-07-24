@@ -175,9 +175,12 @@ export function DataTable<TData>({
   const isEmpty = rows.length === 0;
   const shellClass = embedded
     ? "flex min-w-0 flex-col"
-    : "mb-4 flex w-full min-w-0 flex-col overflow-hidden rounded-2xl border border-border/80 bg-card/95 shadow-[0_1px_2px_color-mix(in_oklch,var(--foreground)_4%,transparent)] lg:mb-6";
+    : cn(
+        "mb-4 flex w-full min-w-0 flex-col overflow-hidden rounded-2xl border border-border/70 bg-card",
+        "shadow-[0_16px_40px_-20px_color-mix(in_oklch,var(--foreground)_22%,transparent)] ring-1 ring-foreground/[0.04]",
+        "lg:mb-6",
+      );
 
-  // Filtered empty uses search; true empty uses the entity icon when provided.
   const resolvedEmptyIcon = isFiltered ? (
     <AppIcons.search className="size-5" aria-hidden />
   ) : (
@@ -187,7 +190,9 @@ export function DataTable<TData>({
   return (
     <div className={shellClass}>
       {!embedded && toolbar ? (
-        <div className="shrink-0 border-b border-border/80 bg-muted/15 p-3">{toolbar}</div>
+        <div className="shrink-0 border-b border-border/60 bg-muted/20 px-3 py-3 sm:px-4 sm:py-3.5">
+          {toolbar}
+        </div>
       ) : null}
 
       {isLoading ? (
@@ -202,7 +207,6 @@ export function DataTable<TData>({
           showMedia={skeletonShowMedia}
         />
       ) : isEmpty ? (
-        // Flat empty: no nested dashed blob — title + short help inside the table card.
         <div className="flex min-h-52 items-center justify-center px-6 py-12 sm:min-h-60">
           <Empty className="max-w-sm gap-3 border-0 bg-transparent p-0">
             <EmptyHeader className="gap-2.5">
@@ -215,11 +219,6 @@ export function DataTable<TData>({
           </Empty>
         </div>
       ) : (
-        /*
-          Scroll region owns vertical overflow so:
-          - thead can stick at top of the table body
-          - footer pagination stays visible without scrolling past every row
-        */
         <div className="relative min-h-0">
           <div
             className="max-h-[min(36rem,calc(100dvh-14rem))] min-h-0 overflow-auto"
@@ -232,8 +231,7 @@ export function DataTable<TData>({
                     {headerGroup.headers.map((header) => (
                       <TableHead
                         className={cn(
-                          // Solid sticky token — color-mix(oklch) can pink-cast in Chrome sticky layers.
-                          "h-11 sticky top-0 bg-[var(--table-sticky-header)] px-4 text-xs font-medium tracking-normal text-muted-foreground",
+                          "h-12 sticky top-0 bg-[var(--table-sticky-header)] px-4 text-[11px] font-medium tracking-[0.04em] text-muted-foreground uppercase",
                           "shadow-[0_1px_0_0_var(--border)]",
                           getStickyColumnClass(header.column.id, true),
                         )}
@@ -250,7 +248,7 @@ export function DataTable<TData>({
               <TableBody>
                 {rows.map((row) => (
                   <TableRow
-                    className="group/row transition-colors hover:bg-muted/40 data-[state=selected]:bg-primary/5 data-[state=selected]:hover:bg-primary/10"
+                    className="group/row border-border/50 transition-colors hover:bg-muted/35 data-[state=selected]:bg-primary/[0.06] data-[state=selected]:hover:bg-primary/10"
                     data-state={row.getIsSelected() ? "selected" : undefined}
                     key={row.id}
                   >
@@ -259,12 +257,13 @@ export function DataTable<TData>({
                       return (
                         <TableCell
                           className={cn(
-                            "px-4 py-3",
+                            "px-4 py-3.5",
                             isSticky
                               ? getStickyColumnClass(cell.column.id, false, row.getIsSelected())
                               : cn(
-                                  "bg-card group-hover/row:bg-muted/40",
-                                  row.getIsSelected() && "bg-primary/5 group-hover/row:bg-primary/10",
+                                  "bg-card group-hover/row:bg-muted/35",
+                                  row.getIsSelected() &&
+                                    "bg-primary/[0.06] group-hover/row:bg-primary/10",
                                 ),
                           )}
                           key={cell.id}
@@ -304,7 +303,7 @@ export function DataTable<TData>({
       />
 
       {showClientPagination ? (
-        <div className="shrink-0 border-t bg-muted/10 px-3 py-2">
+        <div className="shrink-0 border-t border-border/60 bg-muted/25 px-3 py-2.5 sm:px-4">
           <PaginationBar
             onPageChange={(page) => table.setPageIndex(page - 1)}
             page={pageIndex + 1}
@@ -313,9 +312,10 @@ export function DataTable<TData>({
         </div>
       ) : null}
 
-      {/* Skip empty/loading footers — empty panel or skeleton is enough. */}
       {footer && !isEmpty && !isLoading ? (
-        <div className="shrink-0 border-t bg-muted/10 px-3 py-2">{footer}</div>
+        <div className="shrink-0 border-t border-border/60 bg-muted/25 px-3 py-2.5 sm:px-4">
+          {footer}
+        </div>
       ) : null}
     </div>
   );
