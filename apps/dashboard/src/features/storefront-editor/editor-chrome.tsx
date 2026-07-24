@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { SegmentedControl } from "@/components/ui/segmented-control";
 import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { StorefrontVisualEditorProps } from "@/features/storefront-editor/editor-config";
@@ -146,8 +147,8 @@ export function StorefrontEditorActions({
   }, []);
 
   return (
-    <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center sm:justify-end sm:gap-2">
-      <div className="flex flex-wrap items-center gap-1 sm:gap-2">
+    <div className="flex w-full min-w-0 flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center sm:justify-end sm:gap-2">
+      <div className="flex flex-wrap items-center gap-0.5 sm:gap-2">
         <ToolbarIconButton
           disabled={hasMounted ? !canUndo : undefined}
           label={t("editor.actions.undo")}
@@ -170,12 +171,15 @@ export function StorefrontEditorActions({
         >
           {showEditHints ? <RiEyeLine /> : <RiEyeOffLine />}
         </ToolbarIconButton>
-        <ToolbarIconButton
-          label={isFullscreen ? t("editor.actions.exitFullscreen") : t("editor.actions.fullscreen")}
-          onClick={onToggleFullscreen}
-        >
-          {isFullscreen ? <RiFullscreenExitLine /> : <RiFullscreenLine />}
-        </ToolbarIconButton>
+        {/* Fullscreen is awkward in phone-width; keep from sm up. */}
+        <span className="hidden sm:inline-flex">
+          <ToolbarIconButton
+            label={isFullscreen ? t("editor.actions.exitFullscreen") : t("editor.actions.fullscreen")}
+            onClick={onToggleFullscreen}
+          >
+            {isFullscreen ? <RiFullscreenExitLine /> : <RiFullscreenLine />}
+          </ToolbarIconButton>
+        </span>
         <ToolbarIconButton asChild label={t("editor.actions.openLive")}>
           <a href={editorMeta.liveStorefrontUrl} rel="noreferrer" target="_blank">
             <RiExternalLinkLine />
@@ -207,9 +211,9 @@ export function StorefrontEditorActions({
           </AlertDialogContent>
         </AlertDialog>
       </div>
-      <div className="flex w-full flex-wrap gap-2 sm:w-auto sm:justify-end">
+      <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:justify-end">
         <Button
-          className="min-w-0 flex-1 sm:flex-none"
+          className="min-w-0"
           disabled={isPending}
           onClick={onSave}
           size="sm"
@@ -223,7 +227,7 @@ export function StorefrontEditorActions({
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button
-                className="min-w-0 flex-1 sm:flex-none"
+                className="min-w-0"
                 disabled={isPending}
                 size="sm"
                 type="button"
@@ -253,9 +257,11 @@ export function StorefrontEditorActions({
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
-        ) : null}
+        ) : (
+          <span className="hidden sm:block" />
+        )}
         <Button
-          className="min-w-0 flex-1 sm:flex-none"
+          className={cn("min-w-0", isLive && onUnpublish ? "col-span-2 sm:col-span-1" : "col-span-2 sm:col-span-1")}
           disabled={isPending}
           onClick={onPublish}
           size="sm"
@@ -349,15 +355,22 @@ export function StorefrontEditorShell({
   const [mobilePanel, setMobilePanel] = useState<EditorMobilePanel>("preview");
 
   return (
-    <div className="storefront-editor-chrome flex flex-col rounded-xl border bg-background shadow-sm">
-      <div className="flex shrink-0 flex-col gap-3 border-b bg-muted/30 px-3 py-3 sm:px-4">
-        <div className="flex min-w-0 items-start gap-3">
+    <div
+      className={cn(
+        "storefront-editor-chrome flex min-w-0 flex-col rounded-xl border bg-background shadow-sm",
+        // Mobile: give the shell a real height so settings/preview can scroll inside.
+        "max-lg:min-h-[min(100dvh-5.5rem,52rem)]",
+        isFullscreen && "max-lg:min-h-dvh",
+      )}
+    >
+      <div className="flex shrink-0 flex-col gap-2.5 border-b bg-muted/30 px-3 py-3 sm:gap-3 sm:px-4">
+        <div className="flex min-w-0 items-start gap-2.5 sm:gap-3">
           <div className="grid size-9 shrink-0 place-items-center rounded-lg border bg-background shadow-sm sm:size-10">
             <RiEditLine className="text-muted-foreground" aria-hidden />
           </div>
           <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <div className="text-sm font-semibold">{t("editor.shell.title")}</div>
+            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+              <div className="text-sm font-medium tracking-tight">{t("editor.shell.title")}</div>
               <Badge variant="secondary">{editorMeta.templateName}</Badge>
               <ShopLiveStatusBadge live={isLive} />
               <PublicationStatusBadge status={publicationStatus} />
@@ -386,44 +399,41 @@ export function StorefrontEditorShell({
         />
       </div>
 
-      {/* Mobile: switch between preview and settings so neither is buried. */}
-      <div className="grid shrink-0 grid-cols-2 border-b bg-background p-1 lg:hidden">
-        {(
-          [
+      {/* Mobile: animated segmented switch (same control as datetime / list toggles). */}
+      <div className="shrink-0 border-b bg-background px-3 py-2 lg:hidden">
+        <SegmentedControl
+          active="muted"
+          ariaLabel={`${t("editor.panels.preview")} / ${t("editor.panels.settings")}`}
+          onChange={setMobilePanel}
+          options={[
             { id: "preview", label: t("editor.panels.preview") },
             { id: "settings", label: t("editor.panels.settings") },
-          ] as const
-        ).map((tab) => (
-          <button
-            className={cn(
-              "rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-              mobilePanel === tab.id
-                ? "bg-muted text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground",
-            )}
-            key={tab.id}
-            onClick={() => setMobilePanel(tab.id)}
-            type="button"
-          >
-            {tab.label}
-          </button>
-        ))}
+          ]}
+          size="sm"
+          value={mobilePanel}
+        />
       </div>
 
       {/*
-        Row height comes from the preview only.
-        Settings uses min-h-0 so its content cannot grow the grid row; it scrolls inside.
-        Page still scrolls when the pointer is over the preview.
+        Desktop: row height from preview; settings fills and scrolls.
+        Mobile: flex-1 so the active panel uses remaining shell height.
       */}
       <div
         className={cn(
-          "grid bg-muted/30 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,24rem)]",
-          isFullscreen && "min-h-[calc(100dvh-7.5rem)]",
+          "grid min-h-0 flex-1 bg-muted/30 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,24rem)]",
+          isFullscreen && "lg:min-h-[calc(100dvh-7.5rem)]",
         )}
         data-edit-hints={showEditHints ? "on" : "off"}
       >
-        <div className={cn("p-3 sm:p-5", mobilePanel !== "preview" && "max-lg:hidden")}>
-          <div className="mx-auto max-w-6xl overflow-hidden rounded-xl border bg-background shadow-sm">
+        <div
+          className={cn(
+            "min-w-0 p-3 sm:p-5",
+            mobilePanel !== "preview" && "max-lg:hidden",
+            // Narrow screens: pan the wide storefront preview instead of clipping it.
+            "max-lg:overflow-x-auto max-lg:overscroll-x-contain",
+          )}
+        >
+          <div className="mx-auto max-w-6xl overflow-hidden rounded-xl border bg-background shadow-sm max-lg:min-w-[22rem]">
             <TemplatePreview
               props={props}
               storefrontName={editorMeta.storefrontName}
@@ -433,18 +443,19 @@ export function StorefrontEditorShell({
         </div>
         <aside
           className={cn(
-            "flex flex-col overflow-hidden border-t bg-background",
-
-            // h-0 + min-h-full = fill the row height set by the preview column.
-            "max-lg:max-h-[min(70dvh,40rem)]",
+            "flex min-h-0 flex-col overflow-hidden border-t bg-background",
             "lg:h-0 lg:min-h-full lg:border-l lg:border-t-0",
             mobilePanel !== "settings" && "max-lg:hidden",
+            // Mobile: fill leftover shell height and scroll settings inside.
+            "max-lg:min-h-0 max-lg:flex-1",
           )}
         >
           <div className="shrink-0 border-b bg-background px-4 py-3 sm:py-4">
             <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
               <div className="min-w-0">
-                <div className="text-sm font-semibold">Settings</div>
+                <div className="text-sm font-medium tracking-tight">
+                  {t("editor.panels.settings")}
+                </div>
                 <div className="mt-0.5 text-xs text-muted-foreground">
                   Links, images, colors, and fallback content.
                 </div>

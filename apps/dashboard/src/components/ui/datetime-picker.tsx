@@ -171,15 +171,16 @@ export function DateTimePicker({
         </Button>
       </PopoverTrigger>
       <PopoverContent
-        align="end"
+        align="center"
         avoidCollisions
         className={cn(
-          "w-auto max-w-[min(36rem,calc(100vw-1.25rem))] gap-0 overflow-hidden rounded-2xl border bg-popover p-0 shadow-lg ring-1 ring-foreground/10",
+          // Fit narrow phones: cap width + height; body stacks below sm.
+          "flex w-[min(22rem,calc(100vw-1rem))] max-h-[min(85dvh,36rem)] flex-col gap-0 overflow-hidden rounded-2xl border bg-popover p-0 shadow-lg ring-1 ring-foreground/10 sm:w-auto sm:max-w-[min(36rem,calc(100vw-1.25rem))]",
           "duration-200 ease-out",
           "data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95",
           "data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
         )}
-        collisionPadding={12}
+        collisionPadding={10}
         data-datetime-picker=""
         onOpenAutoFocus={(event) => event.preventDefault()}
         onTouchMove={(event) => event.stopPropagation()}
@@ -188,16 +189,16 @@ export function DateTimePicker({
         sideOffset={8}
       >
         {/* Header */}
-        <div className="flex items-center justify-between gap-3 border-b px-3.5 py-2.5">
+        <div className="flex shrink-0 items-center justify-between gap-2 border-b px-3 py-2.5 sm:gap-3 sm:px-3.5">
           <div className="min-w-0">
-            <p className="truncate text-sm font-semibold tracking-tight">
+            <p className="truncate text-sm font-medium tracking-tight">
               {draftDate ? format(draftDate, "PPP") : "Select date & time"}
             </p>
             <p className="mt-0.5 text-xs tabular-nums text-muted-foreground">{displayTime}</p>
           </div>
           <SegmentedControl
             ariaLabel="Time format"
-            className="w-[5.5rem] shrink-0"
+            className="w-[5.25rem] shrink-0"
             fullWidth
             onChange={setFormat}
             options={[
@@ -209,64 +210,66 @@ export function DateTimePicker({
           />
         </div>
 
-        {/* Body: calendar | time */}
-        <div className="flex">
-          <div className="w-[17.5rem] shrink-0 p-3">
-            <Calendar
-              month={month}
-              onMonthChange={setMonth}
-              onSelect={pickDate}
-              selected={draftDate}
-            />
-          </div>
-
-          <div className="flex w-[10.5rem] shrink-0 flex-col border-l bg-muted/15">
-            <div className="grid flex-1 grid-cols-2 gap-0 px-2 pt-2">
-              {timeFormat === "24h" ? (
-                <TimeWheel
-                  label="Hour"
-                  onChange={(next) => pickTime(next, minute)}
-                  options={HOURS_24}
-                  value={hour}
-                />
-              ) : (
-                <TimeWheel
-                  label="Hour"
-                  onChange={(next) => pickTime(to24Hour(next, period), minute)}
-                  options={HOURS_12}
-                  value={hour12}
-                />
-              )}
-              <TimeWheel
-                label="Min"
-                onChange={(next) => pickTime(hour, next)}
-                options={MINUTES}
-                value={minute}
+        {/* Body: calendar above time on mobile; side-by-side from sm up */}
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+          <div className="flex flex-col sm:flex-row">
+            <div className="mx-auto w-full max-w-[17.5rem] shrink-0 p-2.5 sm:mx-0 sm:p-3">
+              <Calendar
+                month={month}
+                onMonthChange={setMonth}
+                onSelect={pickDate}
+                selected={draftDate}
               />
             </div>
 
-            {timeFormat === "12h" ? (
-              <div className="px-2.5 pt-2 pb-2.5">
-                <SegmentedControl
-                  ariaLabel="AM or PM"
-                  fullWidth
-                  onChange={(next) => pickTime(to24Hour(hour12, next), minute)}
-                  options={[
-                    { id: "AM", label: "AM" },
-                    { id: "PM", label: "PM" },
-                  ]}
-                  size="sm"
-                  value={period}
+            <div className="flex w-full shrink-0 flex-col border-t bg-muted/15 sm:w-[10.5rem] sm:border-t-0 sm:border-l">
+              <div className="grid flex-1 grid-cols-2 gap-0 px-2 pt-2">
+                {timeFormat === "24h" ? (
+                  <TimeWheel
+                    label="Hour"
+                    onChange={(next) => pickTime(next, minute)}
+                    options={HOURS_24}
+                    value={hour}
+                  />
+                ) : (
+                  <TimeWheel
+                    label="Hour"
+                    onChange={(next) => pickTime(to24Hour(next, period), minute)}
+                    options={HOURS_12}
+                    value={hour12}
+                  />
+                )}
+                <TimeWheel
+                  label="Min"
+                  onChange={(next) => pickTime(hour, next)}
+                  options={MINUTES}
+                  value={minute}
                 />
               </div>
-            ) : (
-              <div className="h-2" />
-            )}
+
+              {timeFormat === "12h" ? (
+                <div className="px-2.5 pt-2 pb-2.5">
+                  <SegmentedControl
+                    ariaLabel="AM or PM"
+                    fullWidth
+                    onChange={(next) => pickTime(to24Hour(hour12, next), minute)}
+                    options={[
+                      { id: "AM", label: "AM" },
+                      { id: "PM", label: "PM" },
+                    ]}
+                    size="sm"
+                    value={period}
+                  />
+                </div>
+              ) : (
+                <div className="h-2" />
+              )}
+            </div>
           </div>
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between gap-2 border-t px-3 py-2">
+        <div className="flex shrink-0 flex-col gap-2 border-t px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-wrap gap-1">
             <PresetChip
               active={Boolean(draftDate && isToday(draftDate))}
@@ -279,7 +282,7 @@ export function DateTimePicker({
               onClick={() => pickTime(9, 0)}
             />
           </div>
-          <div className="flex shrink-0 gap-1">
+          <div className="flex shrink-0 justify-end gap-1">
             {value ? (
               <Button
                 onClick={() => {
