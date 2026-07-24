@@ -76,7 +76,7 @@ export function SegmentedControl<T extends string>({
             aria-selected={isActive}
             className={cn(
               "relative z-10 flex h-full min-w-0 flex-1 items-center justify-center gap-1.5 rounded-full px-2.5 font-medium transition-colors duration-200",
-              fullWidth ? "min-w-0" : "min-w-[4.75rem]",
+              fullWidth ? "min-w-0" : "min-w-8",
               size === "sm" ? "text-xs" : "text-sm",
               isActive
                 ? active === "primary"

@@ -331,7 +331,7 @@ export function CustomersTable({
               }}
             >
               <ListToolbarSearch
-                clearLabel={t("customers.table.clearSearch")}
+                clearLabel={t("common.clearSearch")}
                 label={t("customers.table.searchLabel")}
                 onChange={(value) => {
                   setSearchValue(value);

@@ -32,7 +32,7 @@
   "uploadNew": "Upload media",
   "libraryUploadDescription": "Add reusable images to your merchant media library.",
   "search": "Search media",
-  "searchPlaceholder": "Search by name, file name, or alt text",
+  "searchPlaceholder": "Search by name, file name, or alt text…",
   "assetCount": "{count} assets",
   "filteredCount": "{filtered} of {total} assets",
   "pageCountSummary": "{pageCount} on this page, {total} total",

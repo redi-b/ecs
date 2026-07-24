@@ -8,13 +8,13 @@ import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/in
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { cn } from "@/lib/utils";
 
-/** Shared density for list toolbars — matches default Button / InputGroup height. */
-export const listToolbarHeightClass = "h-9";
+/** Shared list-toolbar density — aligns with default Button height. */
+export const listToolbarHeightClass = "h-8";
 export const listToolbarRadiusClass = "rounded-full";
 export const listToolbarControlClassName = cn(
   listToolbarHeightClass,
   listToolbarRadiusClass,
-  "gap-1.5 px-3 text-sm font-medium",
+  "gap-1.5 px-2.5 text-sm font-medium",
 );
 
 const DEFAULT_SEARCH_DEBOUNCE_MS = 300;
@@ -73,13 +73,14 @@ export function ListToolbarSearch({
       className={cn(
         listToolbarHeightClass,
         listToolbarRadiusClass,
-        "w-full min-w-0 border-border/80 bg-background/90 px-1 shadow-[0_1px_2px_color-mix(in_oklch,var(--foreground)_4%,transparent)]",
-        "focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/25",
+        "w-full min-w-0 max-w-full border-border/80 bg-background px-0.5 shadow-none",
+        "sm:w-[14.5rem] sm:max-w-[14.5rem] lg:w-[16rem] lg:max-w-[16rem]",
+        "focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/20",
         className,
       )}
     >
       <InputGroupAddon>
-        <AppIcons.search className="size-4 text-muted-foreground" />
+        <AppIcons.search className="size-3.5 text-muted-foreground" />
       </InputGroupAddon>
       <InputGroupInput
         aria-label={label}
@@ -119,7 +120,7 @@ export function ListViewToggle<T extends string>({
     <SegmentedControl
       active="muted"
       ariaLabel="View"
-      className="h-9 shrink-0"
+      className="h-8 shrink-0 [&_button]:min-w-8 [&_button]:px-2 md:[&_button]:min-w-[4.75rem] md:[&_button]:px-2.5"
       fullWidth={false}
       onChange={onChange}
       options={options.map((option) => {
@@ -130,7 +131,7 @@ export function ListViewToggle<T extends string>({
           label: (
             <>
               <Icon className="size-3.5 shrink-0 opacity-80" />
-              <span className="text-sm font-medium">{option.label}</span>
+              <span className="hidden text-sm font-medium md:inline">{option.label}</span>
             </>
           ),
         };

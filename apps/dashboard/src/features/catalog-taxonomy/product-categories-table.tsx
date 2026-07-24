@@ -376,6 +376,7 @@ export function ProductCategoriesTable({
               value={viewMode}
             />
             <Button
+              aria-label={t("taxonomy.actions.reorder")}
               className={listToolbarControlClassName}
               onClick={() => setReorderOpen(true)}
               size="sm"
@@ -383,7 +384,7 @@ export function ProductCategoriesTable({
               variant="outline"
             >
               <AppIcons.arrowUpDown data-icon="inline-start" />
-              {t("taxonomy.actions.reorder")}
+              <span className="hidden sm:inline">{t("taxonomy.actions.reorder")}</span>
             </Button>
           </>
         }
@@ -395,7 +396,7 @@ export function ProductCategoriesTable({
         }}
       >
         <ListToolbarSearch
-          clearLabel={t("taxonomy.table.clearCategorySearch")}
+          clearLabel={t("common.clearSearch")}
           label={t("taxonomy.table.searchCategories")}
           onChange={(value) => {
             setSearchValue(value);

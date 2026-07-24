@@ -341,7 +341,7 @@ export function ProductCollectionsTable({
         }}
       >
         <ListToolbarSearch
-          clearLabel={t("taxonomy.table.clearCollectionSearch")}
+          clearLabel={t("common.clearSearch")}
           label={t("taxonomy.table.searchCollections")}
           onChange={(value) => {
             setSearchValue(value);

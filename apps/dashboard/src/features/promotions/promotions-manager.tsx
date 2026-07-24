@@ -458,7 +458,7 @@ export function PromotionsManager({
               }}
             >
               <ListToolbarSearch
-                clearLabel={t("promotions.table.clearSearch")}
+                clearLabel={t("common.clearSearch")}
                 label={t("promotions.table.searchLabel")}
                 onChange={(value) => {
                   setSearchValue(value);

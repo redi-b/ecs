@@ -32,7 +32,7 @@
   "uploadNew": "ሚዲያ ጫን",
   "libraryUploadDescription": "እንደገና ጥቅም ላይ የሚውሉ ምስሎችን ወደ ሚዲያ ማከማቻዎ ያክሉ።",
   "search": "ሚዲያ ፈልግ",
-  "searchPlaceholder": "በስም፣ በፋይል ስም ወይም በአማራጭ ጽሑፍ ፈልግ",
+  "searchPlaceholder": "በስም፣ በፋይል ስም ወይም በአማራጭ ጽሑፍ ፈልግ…",
   "assetCount": "{count} ፋይሎች",
   "filteredCount": "ከ{total} ውስጥ {filtered}",
   "pageCountSummary": "በዚህ ገጽ {pageCount}፣ በጠቅላላ {total}",

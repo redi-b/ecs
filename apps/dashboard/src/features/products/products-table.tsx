@@ -423,7 +423,7 @@ export function ProductsTable({
     <div className="flex flex-col gap-3">
       <DataTableFilters filters={filters} onClearAll={clearFilters}>
         <ListToolbarSearch
-          clearLabel={t("products.table.clearSearch")}
+          clearLabel={t("common.clearSearch")}
           label={t("products.table.searchLabel")}
           onChange={(value) => {
             setSearchValue(value);
