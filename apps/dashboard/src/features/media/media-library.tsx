@@ -668,11 +668,6 @@ export function MediaLibrary({
                       : t("media.libraryEmptyDescription")}
                   </EmptyDescription>
                 </EmptyHeader>
-                {isFiltered ? (
-                  <Button onClick={clearFilters} size="sm" type="button" variant="outline">
-                    {t("media.clearFilters")}
-                  </Button>
-                ) : null}
               </Empty>
             </div>
             <DataTableBulkBar
