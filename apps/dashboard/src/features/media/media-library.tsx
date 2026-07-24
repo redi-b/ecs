@@ -653,10 +653,11 @@ export function MediaLibrary({
           </>
         ) : (
           <>
-            <div className="flex min-h-60 items-center justify-center px-6 py-12 sm:min-h-72">
+            {/* Match DataTable empty: flat icon + title + description, no extra CTA */}
+            <div className="flex min-h-52 items-center justify-center px-6 py-12 sm:min-h-60">
               <Empty className="max-w-sm gap-3 border-0 bg-transparent p-0">
                 <EmptyHeader className="gap-2.5">
-                  <span className="grid size-10 place-items-center rounded-2xl border border-border/80 bg-muted/30 text-muted-foreground/80">
+                  <span className="text-muted-foreground/80">
                     <AppIcons.image className="size-5" aria-hidden />
                   </span>
                   <EmptyTitle className="font-medium">
