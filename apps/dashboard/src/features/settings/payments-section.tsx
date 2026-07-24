@@ -4,20 +4,10 @@ import Link from "@/components/app/link";
 import { useCallback, useEffect, useId, useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
 
+import { ConfirmDialog } from "@/components/app/confirm-dialog";
 import { AppIcons } from "@/components/app/icons";
 import { HelpTip } from "@/components/app/help-tip";
 import { SearchableCombobox } from "@/components/app/searchable-combobox";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -466,8 +456,14 @@ export function PaymentsSection({
               <p className="text-xs text-muted-foreground">
                 {t("settings.payments.online.disconnectHint")}
               </p>
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
+              <ConfirmDialog
+                confirmLabel={t("settings.payments.online.disconnectConfirm")}
+                description={t("settings.payments.online.disconnectDescription")}
+                icon="warning"
+                onConfirm={() => run("clear", {}, "settings.payments.toast.disconnected")}
+                title={t("settings.payments.online.disconnectTitle")}
+                tone="destructive"
+                trigger={
                   <Button
                     className="rounded-full"
                     disabled={isPending}
@@ -477,29 +473,8 @@ export function PaymentsSection({
                   >
                     {t("settings.payments.online.disconnect")}
                   </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>
-                      {t("settings.payments.online.disconnectTitle")}
-                    </AlertDialogTitle>
-                    <AlertDialogDescription>
-                      {t("settings.payments.online.disconnectDescription")}
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel className="rounded-full">
-                      {t("common.cancel")}
-                    </AlertDialogCancel>
-                    <AlertDialogAction
-                      className="rounded-full"
-                      onClick={() => run("clear", {}, "settings.payments.toast.disconnected")}
-                    >
-                      {t("settings.payments.online.disconnectConfirm")}
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
+                }
+              />
             </div>
           ) : null}
         </CardContent>
@@ -925,38 +900,26 @@ function ReceivingAccountsCard() {
         </DialogContent>
       </Dialog>
 
-      <AlertDialog
+      <ConfirmDialog
+        cancelDisabled={isPending}
+        confirmDisabled={isPending || !deleteId}
+        confirmLabel={t("settings.payments.receiving.deleteAction")}
+        description={
+          deleteAccount
+            ? `${deleteAccount.label}. ${t("settings.payments.receiving.deleteConfirm")}`
+            : t("settings.payments.receiving.deleteConfirm")
+        }
+        icon="trash"
+        onConfirm={() => {
+          if (deleteId) removeAccount(deleteId);
+        }}
         onOpenChange={(open) => {
           if (!open) setDeleteId(null);
         }}
         open={Boolean(deleteId)}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t("settings.payments.receiving.deleteTitle")}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {deleteAccount
-                ? `${deleteAccount.label} — ${t("settings.payments.receiving.deleteConfirm")}`
-                : t("settings.payments.receiving.deleteConfirm")}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel className="rounded-full" disabled={isPending}>
-              {t("common.cancel")}
-            </AlertDialogCancel>
-            <AlertDialogAction
-              className="rounded-full bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              disabled={isPending || !deleteId}
-              onClick={(event) => {
-                event.preventDefault();
-                if (deleteId) removeAccount(deleteId);
-              }}
-            >
-              {t("settings.payments.receiving.deleteAction")}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        title={t("settings.payments.receiving.deleteTitle")}
+        tone="destructive"
+      />
     </Card>
   );
 }
