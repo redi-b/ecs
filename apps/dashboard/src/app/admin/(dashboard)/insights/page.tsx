@@ -5,10 +5,8 @@ import { PageShell } from "@/components/app/page-shell";
 import { Button } from "@/components/ui/button";
 import {
   Empty,
-  EmptyContent,
   EmptyDescription,
   EmptyHeader,
-  EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
 import { getTranslations } from "@/i18n/server";
@@ -19,21 +17,21 @@ export default async function InsightsPage() {
 
   return (
     <PageShell description={t("insights.description")} title={t("insights.title")}>
-      <Empty className="min-h-96 border border-dashed bg-muted/15">
-        <EmptyHeader>
-          <EmptyMedia variant="icon">
-            <RiBarChartGroupedLine />
-          </EmptyMedia>
-          <EmptyTitle>{t("insights.empty.title")}</EmptyTitle>
-          <EmptyDescription>{t("insights.empty.description")}</EmptyDescription>
+      <Empty className="min-h-60 gap-3 rounded-2xl border border-border/80 bg-card/95 p-8 shadow-[0_1px_2px_color-mix(in_oklch,var(--foreground)_4%,transparent)] sm:min-h-72">
+        <EmptyHeader className="gap-2.5">
+          <span className="text-muted-foreground/80">
+            <RiBarChartGroupedLine className="size-5" aria-hidden />
+          </span>
+          <EmptyTitle className="font-medium">{t("insights.empty.title")}</EmptyTitle>
+          <EmptyDescription className="text-sm leading-relaxed">
+            {t("insights.empty.description")}
+          </EmptyDescription>
         </EmptyHeader>
-        <EmptyContent>
-          <Button asChild size="sm" variant="outline">
-            <Link href={dashboardRoutes.overview} prefetch={false}>
-              {t("insights.empty.cta")}
-            </Link>
-          </Button>
-        </EmptyContent>
+        <Button asChild size="sm" variant="outline">
+          <Link href={dashboardRoutes.overview} prefetch={false}>
+            {t("insights.empty.cta")}
+          </Link>
+        </Button>
       </Empty>
     </PageShell>
   );
