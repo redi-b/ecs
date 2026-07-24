@@ -26,6 +26,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -34,6 +35,7 @@ import {
   EmptyHeader,
   EmptyTitle,
 } from "@/components/ui/empty";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useI18n } from "@/i18n/provider";
 import { copyTextToClipboard } from "@/lib/clipboard";
 import type { MediaAsset } from "@/lib/merchant-media";
@@ -422,7 +424,9 @@ export function MediaLibrary({
       accessorKey: "mimeType",
       header: ({ column }) => <DataTableHeader column={column} title={t("media.type")} />,
       cell: ({ row }) => (
-        <span className="text-muted-foreground">{formatMimeLabel(row.original.mimeType)}</span>
+        <Badge className="font-normal tabular-nums" variant="secondary">
+          {formatMimeLabel(row.original.mimeType)}
+        </Badge>
       ),
     },
     {
@@ -522,8 +526,8 @@ export function MediaLibrary({
         Shared card + toolbar so ListViewToggle is NOT remounted when switching
         Grid/List (remount made the thumb always animate left→right from 0).
       */}
-      <div className="mb-4 flex w-full min-w-0 flex-col overflow-hidden rounded-2xl bg-card/95 ring-1 ring-foreground/[0.08] shadow-[0_1px_2px_color-mix(in_oklch,var(--foreground)_4%,transparent)] lg:mb-6">
-        <div className="shrink-0 border-b border-border/70 bg-muted/15 p-3">{toolbar}</div>
+      <div className="mb-4 flex w-full min-w-0 flex-col overflow-hidden rounded-2xl border border-border/80 bg-card/95 shadow-[0_1px_2px_color-mix(in_oklch,var(--foreground)_4%,transparent)] lg:mb-6">
+        <div className="shrink-0 border-b border-border/80 bg-muted/15 p-3">{toolbar}</div>
 
         {view === "list" ? (
           <DataTable
@@ -545,9 +549,11 @@ export function MediaLibrary({
             selectedSummaryLabel={t("media.selectedSummary")}
             skeletonShowMedia
           />
+        ) : pending ? (
+          <MediaGridSkeleton />
         ) : filtered.length ? (
           <>
-            <div className="flex items-center gap-3 border-b border-border/70 px-4 py-2.5">
+            <div className="flex items-center gap-3 border-b border-border/80 bg-[var(--table-sticky-header)] px-4 py-2.5">
               <Checkbox
                 aria-label={t("media.selectAll")}
                 checked={
@@ -559,7 +565,7 @@ export function MediaLibrary({
                 }
                 onCheckedChange={(checked) => toggleSelectPage(checked === true)}
               />
-              <span className="min-w-0 flex-1 text-xs text-muted-foreground">
+              <span className="min-w-0 flex-1 text-xs font-medium text-muted-foreground">
                 {selectedAssets.length > 0
                   ? t("media.selectionStatus", { count: selectedAssets.length })
                   : t("media.selectAll")}
@@ -583,10 +589,10 @@ export function MediaLibrary({
                 return (
                   <article
                     className={cn(
-                      "group relative overflow-hidden rounded-xl bg-card ring-1 transition-[box-shadow,ring-color] duration-200 ease-out",
+                      "group relative overflow-hidden rounded-xl border border-border/80 bg-card transition-[box-shadow,border-color] duration-200 ease-out",
                       selected
-                        ? "ring-2 ring-primary/35 shadow-sm"
-                        : "ring-foreground/[0.08] hover:ring-foreground/20",
+                        ? "border-primary/40 shadow-sm ring-2 ring-primary/20"
+                        : "hover:border-border hover:shadow-sm",
                     )}
                     key={asset.id}
                   >
@@ -601,6 +607,9 @@ export function MediaLibrary({
                         onClick={(event) => event.stopPropagation()}
                       />
                     </div>
+                    <span className="pointer-events-none absolute top-2 right-2 z-10 rounded-full border border-white/15 bg-black/50 px-2 py-0.5 text-[10px] font-medium tracking-wide text-white uppercase backdrop-blur-sm">
+                      {formatMimeLabel(asset.mimeType)}
+                    </span>
                     <button
                       className="relative block w-full bg-muted text-left"
                       onClick={() => openLightbox(asset)}
@@ -609,16 +618,16 @@ export function MediaLibrary({
                       {/* biome-ignore lint/performance/noImgElement: Runtime object-storage media. */}
                       <img
                         alt={asset.altText ?? ""}
-                        className="aspect-[4/3] w-full object-cover transition-transform duration-200 ease-out group-hover:scale-[1.01]"
+                        className="aspect-[4/3] w-full object-cover transition-transform duration-200 ease-out group-hover:scale-[1.015]"
                         src={asset.publicUrl ?? ""}
                       />
-                      <span className="pointer-events-none absolute inset-0 flex items-end justify-end bg-linear-to-t from-black/35 via-transparent to-transparent p-2 opacity-0 transition-opacity duration-200 ease-out group-hover:opacity-100">
+                      <span className="pointer-events-none absolute inset-0 flex items-end justify-end bg-linear-to-t from-black/40 via-transparent to-transparent p-2 opacity-0 transition-opacity duration-200 ease-out group-hover:opacity-100">
                         <span className="rounded-full border border-white/20 bg-black/45 p-1.5 text-white">
                           <AppIcons.expand className="size-3.5" />
                         </span>
                       </span>
                     </button>
-                    <div className="flex min-w-0 items-center gap-2 border-t p-3">
+                    <div className="flex min-w-0 items-center gap-2 border-t border-border/70 bg-muted/10 p-3">
                       <AssetName asset={asset} onOpen={() => setEditing(asset)} />
                       <div className="shrink-0">
                         <RowActionsMenu
@@ -639,7 +648,7 @@ export function MediaLibrary({
               summaryLabel={t("media.selectedSummary")}
             />
             {footer ? (
-              <div className="shrink-0 border-t bg-muted/10 px-3 py-2">{footer}</div>
+              <div className="shrink-0 border-t border-border/80 bg-muted/10 px-3 py-2">{footer}</div>
             ) : null}
           </>
         ) : (
@@ -647,7 +656,7 @@ export function MediaLibrary({
             <div className="flex min-h-60 items-center justify-center px-6 py-12 sm:min-h-72">
               <Empty className="max-w-sm gap-3 border-0 bg-transparent p-0">
                 <EmptyHeader className="gap-2.5">
-                  <span className="text-muted-foreground/80">
+                  <span className="grid size-10 place-items-center rounded-2xl border border-border/80 bg-muted/30 text-muted-foreground/80">
                     <AppIcons.image className="size-5" aria-hidden />
                   </span>
                   <EmptyTitle className="font-medium">
@@ -754,10 +763,49 @@ function AssetName({ asset, onOpen }: { asset: MediaAsset; onOpen?: () => void }
           {asset.displayName}
         </p>
       )}
-      <p className="truncate text-xs text-muted-foreground">
+      <p className="truncate text-xs text-muted-foreground tabular-nums">
         {dimensions ? `${dimensions} · ` : ""}
         {formatBytes(asset.byteSize)}
       </p>
+    </div>
+  );
+}
+
+/** Layout-faithful grid loading stand-in (mirrors cards, not list rows). */
+function MediaGridSkeleton({ count = 8 }: { count?: number }) {
+  return (
+    <div
+      aria-busy="true"
+      aria-live="polite"
+      className="flex min-w-0 flex-col"
+      role="status"
+    >
+      <div className="flex items-center gap-3 border-b border-border/80 bg-[var(--table-sticky-header)] px-4 py-2.5">
+        <Skeleton className="size-4 shrink-0 rounded-[4px]" />
+        <Skeleton className="h-2.5 w-20 shrink-0" />
+      </div>
+      <div className="grid gap-3 p-3 sm:grid-cols-2 sm:gap-3.5 sm:p-4 lg:grid-cols-3 xl:grid-cols-4">
+        {Array.from({ length: count }, (_, i) => (
+          <div
+            className="overflow-hidden rounded-xl border border-border/80 bg-card"
+            key={`media-skel-${i}`}
+          >
+            <Skeleton className="aspect-[4/3] w-full rounded-none" />
+            <div className="flex items-center gap-2 border-t border-border/70 bg-muted/10 p-3">
+              <div className="min-w-0 flex-1 space-y-1.5">
+                <Skeleton
+                  className={cn(
+                    "h-3.5 max-w-full",
+                    i % 3 === 0 ? "w-[70%]" : i % 3 === 1 ? "w-[85%]" : "w-[60%]",
+                  )}
+                />
+                <Skeleton className="h-2.5 w-16" />
+              </div>
+              <Skeleton className="size-7 shrink-0 rounded-md" />
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

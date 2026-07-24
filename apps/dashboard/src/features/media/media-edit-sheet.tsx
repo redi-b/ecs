@@ -90,9 +90,9 @@ export function MediaEditSheet({
             }}
           >
             <SheetBody className="flex flex-col gap-5">
-              <div className="overflow-hidden rounded-xl border bg-muted/30">
+              <div className="overflow-hidden rounded-2xl border border-border/80 bg-card shadow-[0_1px_2px_color-mix(in_oklch,var(--foreground)_4%,transparent)]">
                 <button
-                  className="block w-full bg-muted text-left"
+                  className="group relative block w-full bg-muted text-left disabled:cursor-default"
                   disabled={!asset.publicUrl || !onOpenLightbox}
                   onClick={() => onOpenLightbox?.()}
                   type="button"
@@ -100,24 +100,37 @@ export function MediaEditSheet({
                   {/* biome-ignore lint/performance/noImgElement: Runtime object-storage media. */}
                   <img
                     alt={asset.altText ?? asset.displayName}
-                    className="aspect-[4/3] w-full object-cover"
+                    className="aspect-[4/3] w-full object-cover transition-transform duration-200 group-hover:scale-[1.01] group-disabled:scale-100"
                     src={asset.publicUrl ?? ""}
                   />
+                  {asset.publicUrl && onOpenLightbox ? (
+                    <span className="pointer-events-none absolute inset-0 flex items-end justify-end bg-linear-to-t from-black/35 via-transparent to-transparent p-2.5 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+                      <span className="rounded-full border border-white/20 bg-black/45 p-1.5 text-white">
+                        <AppIcons.expand className="size-3.5" />
+                      </span>
+                    </span>
+                  ) : null}
                 </button>
-                <div className="flex flex-wrap items-center gap-2 border-t px-3 py-2 text-xs text-muted-foreground">
-                  <span>{formatMimeLabel(asset.mimeType)}</span>
-                  <span aria-hidden>·</span>
-                  <span>{formatBytes(asset.byteSize)}</span>
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1 border-t border-border/80 bg-muted/15 px-3.5 py-2.5 text-xs text-muted-foreground">
+                  <span className="font-medium tracking-wide text-foreground/80 uppercase">
+                    {formatMimeLabel(asset.mimeType)}
+                  </span>
+                  <span aria-hidden className="text-border">
+                    ·
+                  </span>
+                  <span className="tabular-nums">{formatBytes(asset.byteSize)}</span>
                   {dimensions ? (
                     <>
-                      <span aria-hidden>·</span>
-                      <span>{dimensions}</span>
+                      <span aria-hidden className="text-border">
+                        ·
+                      </span>
+                      <span className="tabular-nums">{dimensions}</span>
                     </>
                   ) : null}
                 </div>
               </div>
 
-              <div className="grid gap-4">
+              <div className="grid gap-4 rounded-2xl border border-border/80 bg-card p-3.5 shadow-[0_1px_2px_color-mix(in_oklch,var(--foreground)_4%,transparent)] sm:p-4">
                 <Field>
                   <FieldLabel htmlFor={nameId}>{t("media.displayName")}</FieldLabel>
                   <Input
@@ -136,12 +149,18 @@ export function MediaEditSheet({
                   />
                   <FieldDescription>{t("media.altTextHint")}</FieldDescription>
                 </Field>
-                <div className="rounded-xl border bg-muted/20 px-3 py-2.5 text-xs text-muted-foreground">
-                  <p>
-                    {t("media.added")}: {formatDate(new Date(asset.createdAt))}
-                  </p>
-                  <p className="mt-1 truncate">{asset.filename}</p>
-                </div>
+              </div>
+
+              <div className="rounded-2xl border border-border/80 bg-muted/20 px-3.5 py-3 text-xs text-muted-foreground">
+                <p className="font-medium text-foreground/80">
+                  {t("media.added")}:{" "}
+                  <span className="font-normal text-muted-foreground">
+                    {formatDate(new Date(asset.createdAt))}
+                  </span>
+                </p>
+                <p className="mt-1.5 truncate font-mono text-[11px] opacity-90" title={asset.filename}>
+                  {asset.filename}
+                </p>
               </div>
             </SheetBody>
 
