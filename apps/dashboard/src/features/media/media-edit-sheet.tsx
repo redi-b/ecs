@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { AppIcons } from "@/components/app/icons";
+import { UnsavedChangesDialog } from "@/components/app/unsaved-changes-dialog";
 import { Button } from "@/components/ui/button";
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
@@ -17,6 +18,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
+import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes-guard";
 import { useI18n } from "@/i18n/provider";
 import type { MediaAsset } from "@/lib/merchant-media";
 import {
@@ -49,6 +51,18 @@ export function MediaEditSheet({
     setSaving(false);
   }, [asset]);
 
+  const isDirty = useMemo(() => {
+    if (!asset) return false;
+    return name.trim() !== (asset.displayName ?? "") || alt !== (asset.altText ?? "");
+  }, [asset, name, alt]);
+
+  const { leaveDialogOpen, requestLeave, confirmLeave, cancelLeave } =
+    useUnsavedChangesGuard(isDirty);
+
+  function requestClose() {
+    requestLeave(onClose);
+  }
+
   async function save() {
     if (!asset) return;
     setSaving(true);
@@ -69,9 +83,10 @@ export function MediaEditSheet({
   const dimensions = asset ? mediaAssetDimensionsLabel(asset) : null;
 
   return (
+    <>
     <Sheet
       onOpenChange={(open) => {
-        if (!open) onClose();
+        if (!open) requestClose();
       }}
       open={Boolean(asset)}
     >
@@ -176,7 +191,7 @@ export function MediaEditSheet({
                 ) : null}
               </div>
               <div className="flex gap-2">
-                <Button onClick={onClose} size="sm" type="button" variant="outline">
+                <Button onClick={requestClose} size="sm" type="button" variant="outline">
                   {t("common.cancel")}
                 </Button>
                 <Button disabled={saving || !name.trim()} size="sm" type="submit">
@@ -188,5 +203,11 @@ export function MediaEditSheet({
         ) : null}
       </SheetContent>
     </Sheet>
+    <UnsavedChangesDialog
+      onLeave={confirmLeave}
+      onStay={cancelLeave}
+      open={leaveDialogOpen}
+    />
+    </>
   );
 }

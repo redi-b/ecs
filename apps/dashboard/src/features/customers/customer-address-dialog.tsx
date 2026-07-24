@@ -1,10 +1,11 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useId, useState, type ReactNode } from "react";
+import { useEffect, useId, useMemo, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 
 import { AppIcons } from "@/components/app/icons";
+import { UnsavedChangesDialog } from "@/components/app/unsaved-changes-dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -19,6 +20,7 @@ import {
 } from "@/components/ui/dialog";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes-guard";
 import type { MessageKey } from "@/i18n/messages";
 import { useI18n } from "@/i18n/provider";
 import type { MerchantCustomerAddress } from "@/lib/merchant-customers";
@@ -99,6 +101,22 @@ export function CustomerAddressDialog({
     setError(null);
   }, [address, open]);
 
+  const baseline = useMemo(
+    () => (address ? fromAddress(address) : emptyValues),
+    [address, open],
+  );
+  const isDirty =
+    open &&
+    (Object.keys(values) as Array<keyof CustomerAddressFormValues>).some(
+      (key) => values[key] !== baseline[key],
+    );
+  const { leaveDialogOpen, requestLeave, confirmLeave, cancelLeave } =
+    useUnsavedChangesGuard(isDirty);
+
+  function requestClose() {
+    requestLeave(() => setOpen(false));
+  }
+
   function setField<K extends keyof CustomerAddressFormValues>(
     key: K,
     value: CustomerAddressFormValues[K],
@@ -159,7 +177,14 @@ export function CustomerAddressDialog({
   }
 
   return (
-    <Dialog onOpenChange={setOpen} open={open}>
+    <>
+    <Dialog
+      onOpenChange={(next) => {
+        if (next) setOpen(true);
+        else requestClose();
+      }}
+      open={open}
+    >
       {trigger !== undefined ? (
         trigger ? (
           <DialogTrigger asChild>{trigger}</DialogTrigger>
@@ -307,7 +332,7 @@ export function CustomerAddressDialog({
           </div>
         </div>
         <DialogFooter className="border-t bg-muted/30 px-4 py-3 sm:px-5">
-          <Button onClick={() => setOpen(false)} type="button" variant="outline">
+          <Button onClick={requestClose} type="button" variant="outline">
             {t("common.cancel")}
           </Button>
           <Button
@@ -330,6 +355,12 @@ export function CustomerAddressDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+    <UnsavedChangesDialog
+      onLeave={confirmLeave}
+      onStay={cancelLeave}
+      open={leaveDialogOpen}
+    />
+    </>
   );
 }
 

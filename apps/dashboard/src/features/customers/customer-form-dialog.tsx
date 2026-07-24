@@ -5,6 +5,7 @@ import { useEffect, useId, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 
 import { AppIcons } from "@/components/app/icons";
+import { UnsavedChangesDialog } from "@/components/app/unsaved-changes-dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,6 +19,7 @@ import {
 } from "@/components/ui/dialog";
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes-guard";
 import type { MessageKey } from "@/i18n/messages";
 import { useI18n } from "@/i18n/provider";
 import type { MerchantCustomer } from "@/lib/merchant-customers";
@@ -42,17 +44,26 @@ export function CustomerFormDialog({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [formKey, setFormKey] = useState(0);
+  const [dirty, setDirty] = useState(false);
 
   useEffect(() => {
     if (open) {
       setFormKey((value) => value + 1);
       setError(null);
+      setDirty(false);
     }
   }, [open, customer?.id]);
+
+  const { leaveDialogOpen, requestLeave, confirmLeave, cancelLeave } =
+    useUnsavedChangesGuard(dirty && open);
 
   function setOpen(next: boolean) {
     if (!isControlled) setUncontrolledOpen(next);
     onOpenChange?.(next);
+  }
+
+  function requestClose() {
+    requestLeave(() => setOpen(false));
   }
 
   async function submit(formData: FormData) {
@@ -103,7 +114,14 @@ export function CustomerFormDialog({
   const title = customer ? t("customers.detail.editCustomer") : t("customers.detail.addCustomer");
 
   return (
-    <Dialog onOpenChange={setOpen} open={open}>
+    <>
+    <Dialog
+      onOpenChange={(next) => {
+        if (!next) requestClose();
+        else setOpen(true);
+      }}
+      open={open}
+    >
       {trigger !== undefined ? (
         trigger ? (
           <DialogTrigger asChild>{trigger}</DialogTrigger>
@@ -125,7 +143,12 @@ export function CustomerFormDialog({
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>{t("customers.detail.formDesc")}</DialogDescription>
         </DialogHeader>
-        <form action={(data) => void submit(data)} className="flex flex-col" key={formKey}>
+        <form
+          action={(data) => void submit(data)}
+          className="flex flex-col"
+          key={formKey}
+          onChange={() => setDirty(true)}
+        >
           <div className="grid gap-4 p-4 sm:grid-cols-2 sm:p-5">
             {error ? (
               <Alert className="sm:col-span-2" variant="destructive">
@@ -195,7 +218,7 @@ export function CustomerFormDialog({
           <DialogFooter className="mx-0 mb-0 rounded-none border-t bg-muted/50 p-4">
             <Button
               disabled={saving}
-              onClick={() => setOpen(false)}
+              onClick={requestClose}
               type="button"
               variant="outline"
             >
@@ -212,6 +235,12 @@ export function CustomerFormDialog({
         </form>
       </DialogContent>
     </Dialog>
+    <UnsavedChangesDialog
+      onLeave={confirmLeave}
+      onStay={cancelLeave}
+      open={leaveDialogOpen}
+    />
+    </>
   );
 }
 

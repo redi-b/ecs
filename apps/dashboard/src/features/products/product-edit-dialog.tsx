@@ -10,6 +10,7 @@ import { type ReactNode, useId, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { AppIcons } from "@/components/app/icons";
+import { UnsavedChangesDialog } from "@/components/app/unsaved-changes-dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
@@ -38,6 +39,7 @@ import {
   CollectionPicker,
   NO_COLLECTION_VALUE,
 } from "@/features/products/product-form-fields";
+import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes-guard";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 
@@ -292,6 +294,13 @@ function ProductEditSheet({
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [dirty, setDirty] = useState(false);
+  const { leaveDialogOpen, requestLeave, confirmLeave, cancelLeave } =
+    useUnsavedChangesGuard(dirty && open);
+
+  function requestClose() {
+    requestLeave(() => setOpen(false));
+  }
 
   async function submitEdit() {
     let payload: Record<string, unknown>;
@@ -324,19 +333,23 @@ function ProductEditSheet({
     }
 
     toast.success(t("products.edit.toastSaved"));
+    setDirty(false);
     setOpen(false);
     router.refresh();
   }
 
   return (
+    <>
     <Sheet
       onOpenChange={(nextOpen) => {
         if (nextOpen) {
           onOpen();
           setError(null);
+          setDirty(false);
+          setOpen(true);
+          return;
         }
-
-        setOpen(nextOpen);
+        requestClose();
       }}
       open={open}
     >
@@ -364,6 +377,7 @@ function ProductEditSheet({
         </SheetHeader>
         <form
           className="flex min-h-0 flex-1 flex-col"
+          onChange={() => setDirty(true)}
           onSubmit={(event) => {
             event.preventDefault();
             void submitEdit();
@@ -379,6 +393,9 @@ function ProductEditSheet({
             <div className="grid gap-4">{children}</div>
           </SheetBody>
           <SheetFooter>
+            <Button disabled={isSaving} type="button" variant="outline" onClick={requestClose}>
+              {t("common.cancel")}
+            </Button>
             <Button disabled={isSaving} type="submit">
               {isSaving ? t("products.edit.saving") : t("products.edit.saveChanges")}
             </Button>
@@ -386,6 +403,12 @@ function ProductEditSheet({
         </form>
       </SheetContent>
     </Sheet>
+    <UnsavedChangesDialog
+      onLeave={confirmLeave}
+      onStay={cancelLeave}
+      open={leaveDialogOpen}
+    />
+    </>
   );
 }
 

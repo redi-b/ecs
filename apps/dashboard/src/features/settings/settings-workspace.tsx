@@ -4,6 +4,7 @@ import { useEffect, useId, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
+import { UnsavedChangesDialog } from "@/components/app/unsaved-changes-dialog";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -34,6 +35,7 @@ import {
 } from "@/features/settings/settings-nav";
 import { TelegramSection } from "@/features/settings/telegram-section";
 import type { Delivery, SettingsWorkspaceProps } from "@/features/settings/settings-types";
+import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes-guard";
 import { useI18n } from "@/i18n/provider";
 import {
   isLaunchAssistantHidden,
@@ -77,10 +79,13 @@ export function SettingsWorkspace({
   const nextHost = `${normalizedHandle || summary.tenant.handle}.${baseDomain}`;
   const handleChanged = normalizedHandle !== summary.tenant.handle;
   const nameChanged = name.trim() !== summary.tenant.name;
+  const shopDirty = nameChanged || handleChanged;
   const canSaveShop =
     name.trim().length >= 2 &&
     normalizedHandle.length >= 3 &&
     (!handleChanged || handleAvailability.status === "available");
+  const { leaveDialogOpen, requestLeave, confirmLeave, cancelLeave } =
+    useUnsavedChangesGuard(shopDirty);
 
   useEffect(() => {
     setShowLaunchAssistant(!isLaunchAssistantHidden(summary.tenant.id));
@@ -159,12 +164,23 @@ export function SettingsWorkspace({
     };
   }, [handleChanged, handleUnlocked, normalizedHandle, t]);
 
+  function resetShopDraft() {
+    setName(summary.tenant.name);
+    setHandle(summary.tenant.handle);
+    setHandleUnlocked(false);
+    setHandleAvailability({ status: "current" });
+  }
+
   function selectSection(next: SettingsSectionId) {
-    setSection(next);
-    const url = new URL(window.location.href);
-    if (next === "shop") url.searchParams.delete("tab");
-    else url.searchParams.set("tab", next);
-    router.replace(`${url.pathname}?${url.searchParams.toString()}`, { scroll: false });
+    if (next === section) return;
+    requestLeave(() => {
+      if (shopDirty) resetShopDraft();
+      setSection(next);
+      const url = new URL(window.location.href);
+      if (next === "shop") url.searchParams.delete("tab");
+      else url.searchParams.set("tab", next);
+      router.replace(`${url.pathname}?${url.searchParams.toString()}`, { scroll: false });
+    });
   }
 
   function saveDelivery(
@@ -402,6 +418,12 @@ export function SettingsWorkspace({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <UnsavedChangesDialog
+        onLeave={confirmLeave}
+        onStay={cancelLeave}
+        open={leaveDialogOpen}
+      />
     </div>
   );
 }

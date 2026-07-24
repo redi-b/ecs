@@ -7,6 +7,7 @@ import { Suspense, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { AppIcons } from "@/components/app/icons";
+import { UnsavedChangesDialog } from "@/components/app/unsaved-changes-dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
@@ -28,6 +29,7 @@ import {
   getCategoryDisplayName,
   slugifyTaxonomyHandle,
 } from "@/features/catalog-taxonomy/taxonomy-table-state";
+import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes-guard";
 import type { MessageKey } from "@/i18n/messages";
 import { useI18n } from "@/i18n/provider";
 import { useCreateQueryOpen } from "@/lib/use-create-query-open";
@@ -136,6 +138,22 @@ function TaxonomyCreateDialogInner({
     setError(null);
   }
 
+  const isDirty =
+    open &&
+    (displayName.trim().length > 0 ||
+      handle.trim().length > 0 ||
+      parentCategoryId !== "__root__" ||
+      !isVisible);
+  const { leaveDialogOpen, requestLeave, confirmLeave, cancelLeave } =
+    useUnsavedChangesGuard(isDirty);
+
+  function requestClose() {
+    requestLeave(() => {
+      setOpen(false);
+      resetForm();
+    });
+  }
+
   function updateDisplayName(nextName: string) {
     setDisplayName(nextName);
 
@@ -217,10 +235,14 @@ function TaxonomyCreateDialogInner({
   }
 
   return (
+    <>
     <Dialog
       onOpenChange={(nextOpen) => {
-        setOpen(nextOpen);
-        if (!nextOpen) resetForm();
+        if (nextOpen) {
+          setOpen(true);
+          return;
+        }
+        requestClose();
       }}
       open={open}
     >
@@ -387,7 +409,7 @@ function TaxonomyCreateDialogInner({
           <DialogFooter className="mx-0 mb-0 rounded-none border-t bg-muted/50 p-4 sm:justify-end">
             <Button
               disabled={isSaving}
-              onClick={() => setOpen(false)}
+              onClick={requestClose}
               type="button"
               variant="outline"
             >
@@ -402,6 +424,12 @@ function TaxonomyCreateDialogInner({
         </form>
       </DialogContent>
     </Dialog>
+    <UnsavedChangesDialog
+      onLeave={confirmLeave}
+      onStay={cancelLeave}
+      open={leaveDialogOpen}
+    />
+    </>
   );
 }
 
