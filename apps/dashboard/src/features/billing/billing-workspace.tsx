@@ -14,7 +14,6 @@ import {
   Empty,
   EmptyDescription,
   EmptyHeader,
-  EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
 import { useI18n } from "@/i18n/provider";
@@ -129,16 +128,18 @@ export function BillingWorkspace({
 
   if (!billing.plan || !billing.subscription || !currentPlan || !selectedPlan) {
     return (
-      <Empty className="min-h-96 border">
-        <EmptyHeader>
-          <EmptyMedia variant="icon">
-            <AppIcons.billing />
-          </EmptyMedia>
-          <EmptyTitle>{t("billing.unavailable.title")}</EmptyTitle>
-          <EmptyDescription>{t("billing.unavailable.description")}</EmptyDescription>
+      <Empty className="min-h-60 gap-3 rounded-2xl border border-border/80 bg-card/95 p-8 shadow-[0_1px_2px_color-mix(in_oklch,var(--foreground)_4%,transparent)] sm:min-h-72">
+        <EmptyHeader className="gap-2.5">
+          <span className="text-muted-foreground/80">
+            <AppIcons.billing className="size-5" aria-hidden />
+          </span>
+          <EmptyTitle className="font-medium">{t("billing.unavailable.title")}</EmptyTitle>
+          <EmptyDescription className="text-sm leading-relaxed">
+            {t("billing.unavailable.description")}
+          </EmptyDescription>
         </EmptyHeader>
         {billingPath ? (
-          <Button asChild className="mt-2" variant="outline">
+          <Button asChild size="sm" variant="outline">
             <Link href={billingPath} prefetch={false}>
               <AppIcons.refresh data-icon="inline-start" />
               {t("billing.unavailable.reload")}
@@ -384,7 +385,7 @@ export function BillingWorkspace({
           {t("billing.plan.current")}
         </p>
         <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-          <h2 className="text-2xl font-semibold tracking-tight">{activePlan.name}</h2>
+          <h2 className="text-2xl font-medium tracking-tight">{activePlan.name}</h2>
           <Badge variant="secondary">
             {isCurrentFree ? t("billing.plan.free") : formatStatus(subscription.status, t)}
           </Badge>

@@ -311,7 +311,7 @@ export function PromotionEditSheet({
               />
             </Field>
           ) : (
-            <div className="rounded-xl border px-3.5 py-3">
+            <div className="rounded-2xl border border-border/80 bg-muted/15 px-3.5 py-3">
               <p className="text-sm font-medium">{t("promotions.edit.discount")}</p>
               <p className="mt-0.5 text-sm text-muted-foreground">
                 {promotion ? offerSummary(promotion, t) : "—"}
@@ -338,9 +338,9 @@ export function PromotionEditSheet({
           </Field>
 
           {needsProducts ? (
-            <div className="space-y-3 rounded-xl border p-4">
+            <div className="space-y-3 rounded-2xl border border-border/80 bg-card p-4 shadow-[0_1px_2px_color-mix(in_oklch,var(--foreground)_4%,transparent)]">
               <div>
-                <p className="text-sm font-medium">
+                <p className="text-sm font-medium tracking-tight">
                   {isBuyGet ? t("promotions.edit.productsCountToward") : t("promotions.edit.eligibleProducts")}
                 </p>
                 <p className="mt-0.5 text-xs text-muted-foreground">
@@ -424,7 +424,7 @@ export function PromotionEditSheet({
             </div>
           ) : null}
 
-          <Field className="flex flex-row items-center justify-between gap-4 rounded-xl border px-3.5 py-3">
+          <Field className="flex flex-row items-center justify-between gap-4 rounded-2xl border border-border/80 bg-card px-3.5 py-3 shadow-[0_1px_2px_color-mix(in_oklch,var(--foreground)_4%,transparent)]">
             <div className="min-w-0 space-y-1">
               <FieldLabel className="text-sm" htmlFor="promo-edit-automatic">
                 {t("promotions.edit.autoLabel")}
@@ -441,7 +441,7 @@ export function PromotionEditSheet({
           </Field>
 
           {!isBuyGet && !isFreeShipping ? (
-            <Field className="flex flex-row items-center justify-between gap-4 rounded-xl border px-3.5 py-3">
+            <Field className="flex flex-row items-center justify-between gap-4 rounded-2xl border border-border/80 bg-card px-3.5 py-3 shadow-[0_1px_2px_color-mix(in_oklch,var(--foreground)_4%,transparent)]">
               <div className="min-w-0 space-y-1">
                 <FieldLabel className="text-sm" htmlFor="promo-edit-tax">
                   {t("promotions.edit.taxLabel")}
@@ -458,9 +458,9 @@ export function PromotionEditSheet({
             </Field>
           ) : null}
 
-          <div className="space-y-4 rounded-xl border p-4">
+          <div className="space-y-4 rounded-2xl border border-border/80 bg-card p-4 shadow-[0_1px_2px_color-mix(in_oklch,var(--foreground)_4%,transparent)]">
             <div>
-              <p className="text-sm font-medium">{t("promotions.edit.schedule")}</p>
+              <p className="text-sm font-medium tracking-tight">{t("promotions.edit.schedule")}</p>
               <p className="mt-0.5 text-xs text-muted-foreground">
                 {t("promotions.edit.scheduleHelp")}
               </p>

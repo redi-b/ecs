@@ -371,8 +371,10 @@ function PromotionCreateDialogInner() {
         </Button>
       </DialogTrigger>
       <DialogContent className="flex max-h-[min(92dvh,44rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl">
-        <DialogHeader className="shrink-0 gap-1.5 border-b border-border/70 px-4 py-4 text-left sm:px-5">
-          <DialogTitle>{t("promotions.create.trigger")}</DialogTitle>
+        <DialogHeader className="shrink-0 gap-1.5 border-b border-border/80 px-4 py-4 text-left sm:px-5">
+          <DialogTitle className="font-medium tracking-tight">
+            {t("promotions.create.trigger")}
+          </DialogTitle>
           <DialogDescription>
             {t("promotions.create.dialogDescription")}
           </DialogDescription>
@@ -410,17 +412,19 @@ function PromotionCreateDialogInner() {
                 return (
                   <button
                     className={cn(
-                      "rounded-xl border px-3.5 py-3 text-left transition-colors",
+                      "rounded-2xl border border-border/80 px-3.5 py-3 text-left transition-colors",
                       selected
-                        ? "border-primary bg-primary/5"
-                        : "hover:border-border hover:bg-muted/40",
+                        ? "border-primary/50 bg-primary/5 shadow-sm ring-1 ring-primary/15"
+                        : "bg-card hover:border-border hover:bg-muted/30",
                     )}
                     key={option.id}
                     onClick={() => setForm({ ...form, offerKind: option.id })}
                     type="button"
                   >
-                    <p className="text-sm font-medium">{option.title}</p>
-                    <p className="mt-0.5 text-xs text-muted-foreground">{option.description}</p>
+                    <p className="text-sm font-medium tracking-tight">{option.title}</p>
+                    <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
+                      {option.description}
+                    </p>
                   </button>
                 );
               })}
