@@ -8,6 +8,7 @@ import { toast } from "sonner";
 
 import Link from "@/components/app/link";
 import { AppIcons } from "@/components/app/icons";
+import { UnsavedChangesDialog } from "@/components/app/unsaved-changes-dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
@@ -31,6 +32,7 @@ import {
   ProductCatalogPickerTrigger,
   type ProductCatalogPickItem,
 } from "@/features/products/product-catalog-picker-dialog";
+import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes-guard";
 import type { MessageKey } from "@/i18n/messages";
 import { useI18n } from "@/i18n/provider";
 import { getTenantScopedPath } from "@/lib/dashboard-tenant-context";
@@ -93,6 +95,24 @@ export function CollectionEditSheet({
     setPendingAddIds([]);
     void loadMembership(collection.id);
   }, [collection, open, tenantId]);
+
+  const isDirty = useMemo(() => {
+    if (!collection || !open) return false;
+    return (
+      title !== (collection.title ?? "") ||
+      handle !== (collection.handle ?? "") ||
+      isVisible !== (collection.visibility !== "hidden") ||
+      seoTitle !== (collection.seoTitle ?? "") ||
+      seoDescription !== (collection.seoDescription ?? "")
+    );
+  }, [collection, open, title, handle, isVisible, seoTitle, seoDescription]);
+
+  const { leaveDialogOpen, requestLeave, confirmLeave, cancelLeave } =
+    useUnsavedChangesGuard(isDirty);
+
+  function requestClose() {
+    requestLeave(() => onOpenChange(false));
+  }
 
   async function loadMembership(collectionId: string) {
     setMembersLoading(true);
@@ -228,7 +248,14 @@ export function CollectionEditSheet({
   }
 
   return (
-    <Sheet onOpenChange={onOpenChange} open={open}>
+    <>
+    <Sheet
+      onOpenChange={(next) => {
+        if (!next) requestClose();
+        else onOpenChange(true);
+      }}
+      open={open}
+    >
       <SheetContent className="w-full sm:max-w-md" side="right">
         <SheetHeader className="px-5 py-4 text-left">
           <SheetTitle>{t("taxonomy.edit.collectionTitle")}</SheetTitle>
@@ -426,7 +453,7 @@ export function CollectionEditSheet({
           <SheetFooter className="flex-row justify-end gap-2 px-5 py-4">
             <Button
               disabled={isSaving}
-              onClick={() => onOpenChange(false)}
+              onClick={requestClose}
               type="button"
               variant="outline"
             >
@@ -439,6 +466,12 @@ export function CollectionEditSheet({
         </form>
       </SheetContent>
     </Sheet>
+    <UnsavedChangesDialog
+      onLeave={confirmLeave}
+      onStay={cancelLeave}
+      open={leaveDialogOpen}
+    />
+    </>
   );
 }
 

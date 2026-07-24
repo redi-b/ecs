@@ -24,6 +24,7 @@ import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { AppIcons } from "@/components/app/icons";
+import { UnsavedChangesDialog } from "@/components/app/unsaved-changes-dialog";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -35,6 +36,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { getCategoryDisplayName } from "@/features/catalog-taxonomy/taxonomy-table-state";
+import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes-guard";
 import type { MessageKey } from "@/i18n/messages";
 import { useI18n } from "@/i18n/provider";
 import { getTenantScopedPath } from "@/lib/dashboard-tenant-context";
@@ -66,6 +68,7 @@ export function CategoryReorderSheet({
   const router = useRouter();
   const queryClient = useQueryClient();
   const [groups, setGroups] = useState<SiblingGroup[]>([]);
+  const [baselineKey, setBaselineKey] = useState("");
   const [isSaving, setIsSaving] = useState(false);
 
   const sensors = useSensors(
@@ -75,8 +78,18 @@ export function CategoryReorderSheet({
 
   useEffect(() => {
     if (!open) return;
-    setGroups(buildSiblingGroups(categories, t));
+    const next = buildSiblingGroups(categories, t);
+    setGroups(next);
+    setBaselineKey(orderKey(next));
   }, [categories, open, t]);
+
+  const isDirty = open && orderKey(groups) !== baselineKey;
+  const { leaveDialogOpen, requestLeave, confirmLeave, cancelLeave } =
+    useUnsavedChangesGuard(isDirty);
+
+  function requestClose() {
+    requestLeave(() => onOpenChange(false));
+  }
 
   async function saveOrder() {
     const items = groups.flatMap((group) =>
@@ -128,7 +141,14 @@ export function CategoryReorderSheet({
   }
 
   return (
-    <Sheet onOpenChange={onOpenChange} open={open}>
+    <>
+    <Sheet
+      onOpenChange={(next) => {
+        if (!next) requestClose();
+        else onOpenChange(true);
+      }}
+      open={open}
+    >
       <SheetContent className="w-full sm:max-w-lg" side="right">
         <SheetHeader className="px-5 py-4 text-left">
           <SheetTitle>{t("taxonomy.reorder.title")}</SheetTitle>
@@ -172,7 +192,7 @@ export function CategoryReorderSheet({
         </SheetBody>
 
         <SheetFooter className="flex-row justify-end gap-2 px-5 py-4">
-          <Button disabled={isSaving} onClick={() => onOpenChange(false)} type="button" variant="outline">
+          <Button disabled={isSaving} onClick={requestClose} type="button" variant="outline">
             {t("common.cancel")}
           </Button>
           <Button disabled={isSaving || groups.length === 0} onClick={() => void saveOrder()} type="button">
@@ -181,7 +201,17 @@ export function CategoryReorderSheet({
         </SheetFooter>
       </SheetContent>
     </Sheet>
+    <UnsavedChangesDialog
+      onLeave={confirmLeave}
+      onStay={cancelLeave}
+      open={leaveDialogOpen}
+    />
+    </>
   );
+}
+
+function orderKey(groups: SiblingGroup[]) {
+  return groups.map((group) => group.items.map((item) => item.id).join(",")).join("|");
 }
 
 function SortableCategoryRow({

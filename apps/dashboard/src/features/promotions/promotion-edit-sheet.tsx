@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { AppIcons } from "@/components/app/icons";
+import { UnsavedChangesDialog } from "@/components/app/unsaved-changes-dialog";
 import { Button } from "@/components/ui/button";
 import { DateTimePicker } from "@/components/ui/datetime-picker";
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
@@ -32,6 +33,7 @@ import {
   ProductCatalogPickerTrigger,
   type ProductCatalogPickItem,
 } from "@/features/products/product-catalog-picker-dialog";
+import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes-guard";
 import type { MessageKey } from "@/i18n/messages";
 import { useI18n } from "@/i18n/provider";
 import type { MerchantPromotion } from "@/lib/merchant-promotions";
@@ -143,6 +145,63 @@ export function PromotionEditSheet({
       promotion.campaignBudgetLimit != null ? String(promotion.campaignBudgetLimit) : "",
     );
   }, [promotion, open]);
+
+  const isDirty = useMemo(() => {
+    if (!promotion || !open) return false;
+    const sameIds = (a: string[], b: string[]) =>
+      a.length === b.length && a.every((id, i) => id === b[i]);
+    return (
+      code !== promotion.code ||
+      status !== promotion.status ||
+      isAutomatic !== promotion.isAutomatic ||
+      isTaxInclusive !== promotion.isTaxInclusive ||
+      (canEditValue && value !== String(promotion.value)) ||
+      startsAt !== (promotion.startsAt ? toLocalInput(promotion.startsAt) : "") ||
+      endsAt !== (promotion.endsAt ? toLocalInput(promotion.endsAt) : "") ||
+      campaignName !== (promotion.campaignName ?? "") ||
+      usageLimit !== (promotion.usageLimit != null ? String(promotion.usageLimit) : "") ||
+      maxQuantity !== (promotion.maxQuantity != null ? String(promotion.maxQuantity) : "") ||
+      campaignBudgetType !== (promotion.campaignBudgetType ?? "none") ||
+      campaignBudgetLimit !==
+        (promotion.campaignBudgetLimit != null ? String(promotion.campaignBudgetLimit) : "") ||
+      (needsProducts && !sameIds(productIds, promotion.productIds ?? [])) ||
+      (isBuyGet &&
+        (buyMinQuantity !==
+          (promotion.buyMinQuantity != null ? String(promotion.buyMinQuantity) : "2") ||
+          applyToQuantity !==
+            (promotion.applyToQuantity != null ? String(promotion.applyToQuantity) : "1") ||
+          !sameIds(buyProductIds, promotion.buyProductIds ?? [])))
+    );
+  }, [
+    promotion,
+    open,
+    code,
+    status,
+    isAutomatic,
+    isTaxInclusive,
+    canEditValue,
+    value,
+    startsAt,
+    endsAt,
+    campaignName,
+    usageLimit,
+    maxQuantity,
+    campaignBudgetType,
+    campaignBudgetLimit,
+    needsProducts,
+    productIds,
+    isBuyGet,
+    buyMinQuantity,
+    applyToQuantity,
+    buyProductIds,
+  ]);
+
+  const { leaveDialogOpen, requestLeave, confirmLeave, cancelLeave } =
+    useUnsavedChangesGuard(isDirty);
+
+  function requestClose() {
+    requestLeave(() => onOpenChange(false));
+  }
 
   useEffect(() => {
     if (!open || !needsProducts) return;
@@ -258,7 +317,14 @@ export function PromotionEditSheet({
   }
 
   return (
-    <Sheet onOpenChange={onOpenChange} open={open}>
+    <>
+    <Sheet
+      onOpenChange={(next) => {
+        if (!next) requestClose();
+        else onOpenChange(true);
+      }}
+      open={open}
+    >
       <SheetContent className="w-full sm:max-w-lg" side="right">
         <SheetHeader className="px-5 py-4 text-left">
           <SheetTitle>{t("promotions.edit.title")}</SheetTitle>
@@ -533,7 +599,7 @@ export function PromotionEditSheet({
         </SheetBody>
 
         <SheetFooter className="flex-row justify-end gap-2 px-5 py-4">
-          <Button onClick={() => onOpenChange(false)} type="button" variant="outline">
+          <Button onClick={requestClose} type="button" variant="outline">
             {t("common.cancel")}
           </Button>
           <Button disabled={saving || !promotion} onClick={() => void save()} type="button">
@@ -542,6 +608,12 @@ export function PromotionEditSheet({
         </SheetFooter>
       </SheetContent>
     </Sheet>
+    <UnsavedChangesDialog
+      onLeave={confirmLeave}
+      onStay={cancelLeave}
+      open={leaveDialogOpen}
+    />
+    </>
   );
 }
 

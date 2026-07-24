@@ -1,23 +1,14 @@
 "use client";
 
 import type { MerchantProduct } from "@ecs/contracts";
-import { useForm } from "@tanstack/react-form";
+import { useForm, useStore } from "@tanstack/react-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import type { z } from "zod";
 import { AppIcons } from "@/components/app/icons";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { UnsavedChangesDialog } from "@/components/app/unsaved-changes-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -80,6 +71,7 @@ import {
 } from "@/features/products/product-form-state";
 import type { ComposerStep, ProductFormProps } from "@/features/products/product-form-types";
 import { PRODUCT_STEPS, type productPayloadSchema } from "@/features/products/product-form-types";
+import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes-guard";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 
@@ -101,7 +93,6 @@ export function ProductForm({
   const [completedSteps, setCompletedSteps] = useState<ComposerStep["id"][]>([]);
   const [isHandleLocked, setIsHandleLocked] = useState(isInitialHandleLocked(product));
   const [actionError, setActionError] = useState<string | null>(null);
-  const [exitIntent, setExitIntent] = useState<(() => void) | null>(null);
   const defaultValues = useMemo(() => getProductDefaultValues(product), [product]);
   const steps = useMemo<ComposerStep[]>(
     () => [
@@ -195,28 +186,13 @@ export function ProductForm({
     },
   });
   const HandleLockIcon = isHandleLocked ? AppIcons.lock : AppIcons.lockUnlock;
-  function requestExit(next: () => void) {
-    if (form.state.isDirty && !submitMutation.isSuccess) {
-      setExitIntent(() => next);
-      return;
-    }
-
-    next();
-  }
-
-  function confirmExit() {
-    const next = exitIntent;
-
-    setExitIntent(null);
-    next?.();
-  }
-
-  function cancelExit() {
-    setExitIntent(null);
-  }
+  const formIsDirty = useStore(form.store, (state) => state.isDirty);
+  const isDirty = formIsDirty && !submitMutation.isSuccess;
+  const { leaveDialogOpen, requestLeave, confirmLeave, cancelLeave } =
+    useUnsavedChangesGuard(isDirty && open);
 
   function closeComposer() {
-    requestExit(() => {
+    requestLeave(() => {
       if (onClose) {
         onClose();
         return;
@@ -911,27 +887,11 @@ export function ProductForm({
         </DialogContent>
       </Dialog>
 
-      <AlertDialog
-        onOpenChange={(open) => (!open ? cancelExit() : undefined)}
-        open={Boolean(exitIntent)}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t("products.composer.leaveTitle")}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {t("products.composer.leaveDesc")}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={cancelExit}>
-              {t("products.composer.stay")}
-            </AlertDialogCancel>
-            <AlertDialogAction onClick={confirmExit} variant="destructive">
-              {t("products.composer.leave")}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <UnsavedChangesDialog
+        onLeave={confirmLeave}
+        onStay={cancelLeave}
+        open={leaveDialogOpen}
+      />
     </>
   );
 }

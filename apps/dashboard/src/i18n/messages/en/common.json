@@ -72,6 +72,12 @@
     "emptyDesc": "Order and payment updates for this shop will show up here."
   },
   "moreInfo": "More info",
+  "unsaved": {
+    "title": "Leave without saving?",
+    "description": "You have unsaved changes. If you leave now, those changes will be lost.",
+    "stay": "Stay",
+    "leave": "Leave anyway"
+  },
   "access": {
     "loadFailedTitle": "Dashboard could not be loaded",
     "loadFailedDesc": "We could not load your account workspace. Try again in a moment.",

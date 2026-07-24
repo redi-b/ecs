@@ -10,9 +10,11 @@ import {
   getDialogStepStatus,
 } from "@/components/app/dialog-step-rail";
 import { AppIcons } from "@/components/app/icons";
+import { UnsavedChangesDialog } from "@/components/app/unsaved-changes-dialog";
 import { Button } from "@/components/ui/button";
 import { DateTimePicker } from "@/components/ui/datetime-picker";
 import { useCreateQueryOpen } from "@/lib/use-create-query-open";
+import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes-guard";
 import {
   Dialog,
   DialogContent,
@@ -138,6 +140,25 @@ function PromotionCreateDialogInner() {
   const [form, setForm] = useState(emptyForm);
   const [catalog, setCatalog] = useState<CatalogProduct[]>([]);
   const [catalogLoading, setCatalogLoading] = useState(false);
+
+  const isDirty =
+    open &&
+    (step > 0 ||
+      form.code.trim().length > 0 ||
+      form.value.trim().length > 0 ||
+      form.campaignName.trim().length > 0 ||
+      form.productIds.length > 0 ||
+      form.startsAt.length > 0 ||
+      form.endsAt.length > 0);
+  const { leaveDialogOpen, requestLeave, confirmLeave, cancelLeave } =
+    useUnsavedChangesGuard(isDirty);
+
+  function requestClose() {
+    requestLeave(() => {
+      setOpen(false);
+      reset();
+    });
+  }
 
   useCreateQueryOpen({
     values: ["1", "true", "promotion"],
@@ -357,10 +378,14 @@ function PromotionCreateDialogInner() {
   }
 
   return (
+    <>
     <Dialog
       onOpenChange={(next) => {
-        setOpen(next);
-        if (!next) reset();
+        if (next) {
+          setOpen(true);
+          return;
+        }
+        requestClose();
       }}
       open={open}
     >
@@ -770,6 +795,12 @@ function PromotionCreateDialogInner() {
         </DialogFooter>
       </DialogContent>
     </Dialog>
+    <UnsavedChangesDialog
+      onLeave={confirmLeave}
+      onStay={cancelLeave}
+      open={leaveDialogOpen}
+    />
+    </>
   );
 }
 

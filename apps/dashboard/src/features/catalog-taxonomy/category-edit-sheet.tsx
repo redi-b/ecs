@@ -7,6 +7,7 @@ import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { AppIcons } from "@/components/app/icons";
+import { UnsavedChangesDialog } from "@/components/app/unsaved-changes-dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
@@ -29,6 +30,7 @@ import {
   getCategoryDisplayName,
   slugifyTaxonomyHandle,
 } from "@/features/catalog-taxonomy/taxonomy-table-state";
+import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes-guard";
 import type { MessageKey } from "@/i18n/messages";
 import { useI18n } from "@/i18n/provider";
 import { getTenantScopedPath } from "@/lib/dashboard-tenant-context";
@@ -88,6 +90,36 @@ export function CategoryEditSheet({
     setError(null);
   }, [category, open]);
 
+  const isDirty = useMemo(() => {
+    if (!category || !open) return false;
+    return (
+      displayName !== (category.name ?? "") ||
+      handle !== (category.handle ?? "") ||
+      parentCategoryId !== (category.parentCategoryId ?? "__root__") ||
+      rank !== String(category.rank ?? 0) ||
+      isVisible !== (category.visibility !== "hidden") ||
+      seoTitle !== (category.seoTitle ?? "") ||
+      seoDescription !== (category.seoDescription ?? "")
+    );
+  }, [
+    category,
+    open,
+    displayName,
+    handle,
+    parentCategoryId,
+    rank,
+    isVisible,
+    seoTitle,
+    seoDescription,
+  ]);
+
+  const { leaveDialogOpen, requestLeave, confirmLeave, cancelLeave } =
+    useUnsavedChangesGuard(isDirty);
+
+  function requestClose() {
+    requestLeave(() => onOpenChange(false));
+  }
+
   async function submit() {
     if (!category) return;
     const name = displayName.trim();
@@ -135,7 +167,14 @@ export function CategoryEditSheet({
   }
 
   return (
-    <Sheet onOpenChange={onOpenChange} open={open}>
+    <>
+    <Sheet
+      onOpenChange={(next) => {
+        if (!next) requestClose();
+        else onOpenChange(true);
+      }}
+      open={open}
+    >
       <SheetContent className="w-full sm:max-w-md" side="right">
         <SheetHeader className="px-5 py-4 text-left">
           <SheetTitle>{t("taxonomy.edit.categoryTitle")}</SheetTitle>
@@ -289,7 +328,7 @@ export function CategoryEditSheet({
           <SheetFooter className="flex-row justify-end gap-2 px-5 py-4">
             <Button
               disabled={isSaving}
-              onClick={() => onOpenChange(false)}
+              onClick={requestClose}
               type="button"
               variant="outline"
             >
@@ -302,6 +341,12 @@ export function CategoryEditSheet({
         </form>
       </SheetContent>
     </Sheet>
+    <UnsavedChangesDialog
+      onLeave={confirmLeave}
+      onStay={cancelLeave}
+      open={leaveDialogOpen}
+    />
+    </>
   );
 }
 
