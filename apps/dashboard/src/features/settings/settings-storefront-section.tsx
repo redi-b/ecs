@@ -180,6 +180,7 @@ export function StorefrontSection({
                 confirmLabel={t("settings.storefront.pauseShopConfirm")}
                 description={t("settings.storefront.pauseShopDescription")}
                 eyebrow={t("common.confirm.dangerEyebrow")}
+                icon="warning"
                 onConfirm={() => void pauseShop()}
                 title={t("settings.storefront.pauseShopTitle")}
                 trigger={

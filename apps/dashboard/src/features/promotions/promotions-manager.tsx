@@ -498,6 +498,7 @@ export function PromotionsManager({
             : t("table.actions.deletePromotionDescription", { code: deleteTarget?.code ?? "" })
         }
         eyebrow={t("common.confirm.deleteEyebrow")}
+        icon="trash"
         onConfirm={() => void deletePromotions(deleteTargets)}
         onOpenChange={(next) => {
           if (!next && !deleting) {

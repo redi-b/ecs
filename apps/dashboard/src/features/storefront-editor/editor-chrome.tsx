@@ -178,6 +178,7 @@ export function StorefrontEditorActions({
           confirmLabel={t("editor.actions.resetConfirm")}
           description={t("editor.actions.resetDescription")}
           eyebrow={t("common.confirm.dangerEyebrow")}
+          icon="question"
           onConfirm={onReset}
           title={t("editor.actions.resetTitle")}
           tone="default"
@@ -214,6 +215,7 @@ export function StorefrontEditorActions({
             confirmLabel={t("editor.actions.pauseConfirm")}
             description={t("editor.actions.pauseDescription")}
             eyebrow={t("common.confirm.dangerEyebrow")}
+            icon="warning"
             onConfirm={() => onUnpublish()}
             title={t("editor.actions.pauseTitle")}
             trigger={
