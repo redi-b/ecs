@@ -36,7 +36,7 @@ export function AccountMenu({ actor }: { actor: MerchantDashboardSummary["actor"
   const [isSigningOut, setIsSigningOut] = useState(false);
   const accountName = liveActor.name?.trim() || liveActor.email;
   const accountInitials = getAccountInitials(accountName);
-  const matchTriggerWidth = isMobile || !collapsed;
+  const openBeside = !isMobile && collapsed;
 
   function closeMobileSidebar() {
     if (isMobile) {
@@ -76,69 +76,61 @@ export function AccountMenu({ actor }: { actor: MerchantDashboardSummary["actor"
         <DropdownMenu open={menuOpen} onOpenChange={handleMenuOpenChange}>
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton
-              size="lg"
+              size="default"
               aria-label={t("account.openMenu")}
               onPointerLeave={() => setSuppressTooltip(false)}
               onBlur={() => setSuppressTooltip(false)}
               {...(suppressTooltip ? {} : { tooltip: t("account.tooltip") })}
               className={cn(
-                "rounded-full",
-                "group-data-[collapsible=icon]:size-8! group-data-[collapsible=icon]:p-0!",
+                "h-9 rounded-lg",
+                "group-data-[collapsible=icon]:size-8! group-data-[collapsible=icon]:rounded-full! group-data-[collapsible=icon]:p-0!",
               )}
             >
-              <Avatar size={collapsed ? "default" : "sm"}>
+              <Avatar
+                className={cn(collapsed && "size-full after:border-0")}
+                size={collapsed ? "default" : "sm"}
+              >
                 <AvatarFallback>{accountInitials}</AvatarFallback>
               </Avatar>
-              <span className="truncate">{accountName}</span>
+              <span className="truncate group-data-[collapsible=icon]:hidden">{accountName}</span>
             </SidebarMenuButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent
-            side={matchTriggerWidth ? "top" : "right"}
-            align={matchTriggerWidth ? "start" : "end"}
-            sideOffset={collapsed ? 10 : 8}
+            side={openBeside ? "right" : "top"}
+            align={openBeside ? "end" : "center"}
+            sideOffset={openBeside ? 10 : 12}
             collisionPadding={12}
-            className={cn(
-              "rounded-xl p-1.5",
-              matchTriggerWidth
-                ? "w-[var(--radix-dropdown-menu-trigger-width)] min-w-0 max-w-[calc(100vw-1.5rem)]"
-                : "min-w-56",
-            )}
+            className="w-56 max-w-[calc(100vw-1.5rem)] rounded-xl p-1 shadow-md"
           >
-            <DropdownMenuLabel className="px-2.5 py-2 font-normal text-popover-foreground">
-              <div className="flex min-w-0 items-center gap-2">
-                <Avatar size="sm" className="shrink-0">
-                  <AvatarFallback>{accountInitials}</AvatarFallback>
-                </Avatar>
-                <div className="min-w-0 flex-1">
-                  <span className="block truncate text-sm font-medium text-popover-foreground">
-                    {accountName}
-                  </span>
-                  <span className="block truncate text-xs text-muted-foreground">
-                    {liveActor.email}
-                  </span>
-                  <span className="block truncate text-xs capitalize text-muted-foreground">
-                    {liveActor.role}
-                  </span>
-                </div>
-              </div>
+            <DropdownMenuLabel className="px-2.5 py-1.5 font-normal">
+              <span className="block truncate text-sm font-medium text-popover-foreground">
+                {accountName}
+              </span>
+              <span className="mt-0.5 block truncate text-xs text-muted-foreground">
+                {liveActor.email}
+              </span>
+              <span className="block truncate text-xs capitalize text-muted-foreground">
+                {liveActor.role}
+              </span>
             </DropdownMenuLabel>
-            <DropdownMenuSeparator />
+            <DropdownMenuSeparator className="my-1" />
             <DropdownMenuGroup>
-              <DropdownMenuItem asChild>
+              <DropdownMenuItem asChild className="py-1.5">
                 <Link href={dashboardRoutes.settings} onClick={closeMobileSidebar} prefetch={false}>
                   <AppIcons.settings />
                   {t("account.settings")}
                 </Link>
               </DropdownMenuItem>
-              <DropdownMenuItem asChild>
+              <DropdownMenuItem asChild className="py-1.5">
                 <Link href={dashboardRoutes.billing} onClick={closeMobileSidebar} prefetch={false}>
                   <AppIcons.billing />
                   {t("account.billing")}
                 </Link>
               </DropdownMenuItem>
             </DropdownMenuGroup>
-            <DropdownMenuSeparator />
+            <DropdownMenuSeparator className="my-1" />
             <DropdownMenuItem
+              className="py-1.5"
               disabled={isSigningOut}
               onSelect={(event) => {
                 event.preventDefault();

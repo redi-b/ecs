@@ -260,7 +260,7 @@ export function AppSidebar({
         })}
       </SidebarContent>
 
-      <SidebarFooter className="border-t border-sidebar-border p-3 group-data-[collapsible=icon]:p-2">
+      <SidebarFooter className="border-t border-sidebar-border px-2 py-2 group-data-[collapsible=icon]:p-2">
         <AccountMenu actor={access.actor} />
       </SidebarFooter>
       <SidebarRail />

@@ -8,7 +8,6 @@ import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/in
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { cn } from "@/lib/utils";
 
-/** Shared list-toolbar density — aligns with default Button height. */
 export const listToolbarHeightClass = "h-8";
 export const listToolbarRadiusClass = "rounded-full";
 export const listToolbarControlClassName = cn(
