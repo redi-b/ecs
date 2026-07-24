@@ -40,7 +40,6 @@ type DataTableFiltersProps = {
   onClearAll: () => void;
 };
 
-/** Search + Filters + chips left; view/trailing actions right. */
 export function DataTableFilters({
   actions,
   children,
