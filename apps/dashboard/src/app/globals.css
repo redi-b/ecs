@@ -207,16 +207,6 @@
   pointer-events: auto !important;
 }
 
-@keyframes theme-ink-fill {
-  from {
-    clip-path: circle(0 at var(--theme-x, 50%) var(--theme-y, 50%));
-  }
-
-  to {
-    clip-path: circle(140vmax at var(--theme-x, 50%) var(--theme-y, 50%));
-  }
-}
-
 ::view-transition-old(root),
 ::view-transition-new(root) {
   animation: none;
@@ -240,6 +230,14 @@
 
   to {
     clip-path: circle(150% at var(--x, 50%) var(--y, 50%));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none !important;
+    clip-path: none !important;
   }
 }
 

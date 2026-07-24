@@ -6,15 +6,10 @@ import { useEffect, useRef } from "react";
 
 import {
   getSharedThemeFromCookie,
-  setSharedThemeCookie,
+  persistSharedTheme,
   type SharedTheme,
 } from "@/lib/shared-theme";
 
-/**
- * next-themes injects an inline <script> for localStorage FOUC prevention.
- * We also set ecs-theme (parent-domain cookie) and a blocking cookie script in layout
- * so theme survives dashboard.* ↔ shop.* navigation where localStorage is origin-scoped.
- */
 if (typeof window !== "undefined" && process.env.NODE_ENV === "development") {
   const originalError = console.error;
   console.error = (...args: unknown[]) => {
@@ -46,12 +41,6 @@ function applyThemeClass(theme: SharedTheme) {
   root.style.colorScheme = dark ? "dark" : "light";
 }
 
-/**
- * Cookie is the cross-subdomain source of truth on first load only.
- * After that, next-themes (user toggle) owns the value; we write cookie/LS
- * when theme changes. Re-reading cookie on every theme change caused prod stuck
- * toggles when a host-only cookie shadowed Domain= and never updated.
- */
 function SharedThemeBridge() {
   const { setTheme, theme: activeTheme } = useTheme();
   const didHydrateFromCookie = useRef(false);
@@ -64,11 +53,7 @@ function SharedThemeBridge() {
     if (fromCookie) {
       setTheme(fromCookie);
       applyThemeClass(fromCookie);
-      try {
-        localStorage.setItem("ecs-theme-ls", fromCookie);
-      } catch {
-        // private mode
-      }
+      persistSharedTheme(fromCookie);
     }
   }, [setTheme]);
 
@@ -78,13 +63,16 @@ function SharedThemeBridge() {
       return;
     }
     const theme = activeTheme as SharedTheme;
-    setSharedThemeCookie(theme);
+    persistSharedTheme(theme);
     applyThemeClass(theme);
-    try {
-      localStorage.setItem("ecs-theme-ls", theme);
-    } catch {
-      // private mode
-    }
+  }, [activeTheme]);
+
+  useEffect(() => {
+    if (activeTheme !== "system") return;
+    const media = window.matchMedia("(prefers-color-scheme: dark)");
+    const onChange = () => applyThemeClass("system");
+    media.addEventListener("change", onChange);
+    return () => media.removeEventListener("change", onChange);
   }, [activeTheme]);
 
   return null;

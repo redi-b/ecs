@@ -7,8 +7,9 @@ import { useEffect, useState } from "react";
 import { AppIcons } from "@/components/app/icons";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/i18n/provider";
-import { setSharedThemeCookie } from "@/lib/shared-theme";
+import { persistSharedTheme } from "@/lib/shared-theme";
 import { changeThemeWithTransition } from "@/lib/theme-transition";
+import { cn } from "@/lib/utils";
 
 export function ThemeToggle() {
   const { t } = useI18n();
@@ -20,19 +21,13 @@ export function ThemeToggle() {
   }, []);
 
   const isDark = mounted && resolvedTheme === "dark";
+  const nextTheme = isDark ? "light" : "dark";
   const Icon = isDark ? AppIcons.sun : AppIcons.moon;
+  const label = isDark ? t("common.themeToLight") : t("common.themeToDark");
 
   function toggleTheme(event: MouseEvent<HTMLButtonElement>) {
-    // Prefer resolved appearance so system→explicit dark/light works on first click.
-    const nextTheme = isDark ? "light" : "dark";
-
-    // Persist first so any late cookie readers see the new value, then drive next-themes.
-    setSharedThemeCookie(nextTheme);
-    try {
-      localStorage.setItem("ecs-theme-ls", nextTheme);
-    } catch {
-      // private mode
-    }
+    if (!mounted) return;
+    persistSharedTheme(nextTheme);
     changeThemeWithTransition(setTheme, nextTheme, event);
   }
 
@@ -40,12 +35,18 @@ export function ThemeToggle() {
     <Button
       type="button"
       variant="ghost"
-      size="icon"
-      aria-label={t("common.toggleTheme")}
+      size="icon-lg"
+      aria-label={mounted ? label : t("common.toggleTheme")}
+      title={mounted ? label : t("common.toggleTheme")}
+      disabled={!mounted}
       onClick={toggleTheme}
-      suppressHydrationWarning
     >
-      <Icon />
+      <Icon
+        className={cn(
+          "size-4 transition-[transform,opacity] duration-200 ease-[var(--ease-dashboard)]",
+          mounted ? "scale-100 opacity-100" : "scale-95 opacity-70",
+        )}
+      />
     </Button>
   );
 }

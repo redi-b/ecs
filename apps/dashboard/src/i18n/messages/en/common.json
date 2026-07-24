@@ -39,6 +39,8 @@
   "searchProducts": "Search products…",
   "noMatchingProducts": "No matching products.",
   "toggleTheme": "Toggle theme",
+  "themeToLight": "Switch to light mode",
+  "themeToDark": "Switch to dark mode",
   "clearSelection": "Clear selection",
   "selected": "selected",
   "updating": "Updating…",

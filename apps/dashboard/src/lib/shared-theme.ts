@@ -65,8 +65,6 @@ export function setSharedThemeCookie(theme: SharedTheme) {
     hostname: typeof window !== "undefined" ? window.location.hostname : null,
   });
 
-  // Host-only cookie (no Domain) can win over Domain=.parent and never update
-  // correctly when we only rewrite the parent cookie — clear both first.
   expireThemeCookie({ domain: null });
   if (domain) {
     expireThemeCookie({ domain });
@@ -87,6 +85,16 @@ export function setSharedThemeCookie(theme: SharedTheme) {
 
   // biome-ignore lint/suspicious/noDocumentCookie: Parent-domain cookie across dashboard and shop hosts.
   document.cookie = parts.join("; ");
+}
+
+/** Cookie + localStorage used by next-themes (`ecs-theme-ls`). */
+export function persistSharedTheme(theme: SharedTheme) {
+  setSharedThemeCookie(theme);
+  try {
+    localStorage.setItem("ecs-theme-ls", theme);
+  } catch {
+    // private mode / blocked storage
+  }
 }
 
 /**
