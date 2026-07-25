@@ -47,6 +47,7 @@ export type ReceivingAccountOption = {
 export type BankOption = {
   code: string;
   name: string;
+  logoUrl?: string | null;
 };
 
 type MarkPaidDialogProps = {
@@ -129,7 +130,13 @@ export function MarkPaidDialog({
     method === "other";
 
   const bankOptions = useMemo(
-    () => banks.map((bank) => ({ value: bank.code, label: bank.name, keywords: bank.code })),
+    () =>
+      banks.map((bank) => ({
+        value: bank.code,
+        label: bank.name,
+        keywords: bank.code,
+        imageUrl: bank.logoUrl ?? null,
+      })),
     [banks],
   );
 
