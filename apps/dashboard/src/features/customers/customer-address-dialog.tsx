@@ -29,19 +29,17 @@ import type { MerchantCustomerAddress } from "@/lib/merchant-customers";
 
 type Translate = (key: MessageKey, values?: Record<string, string | number | Date>) => string;
 
+/** Ethiopia-first merchant form — country/postal/billing stay out of the UI. */
 export type CustomerAddressFormValues = {
   address1: string;
   address2: string;
   addressName: string;
   city: string;
   company: string;
-  countryCode: string;
   firstName: string;
-  isDefaultBilling: boolean;
-  isDefaultShipping: boolean;
+  isDefault: boolean;
   lastName: string;
   phone: string;
-  postalCode: string;
   province: string;
 };
 
@@ -51,13 +49,10 @@ const emptyValues: CustomerAddressFormValues = {
   addressName: "",
   city: "",
   company: "",
-  countryCode: "et",
   firstName: "",
-  isDefaultBilling: false,
-  isDefaultShipping: false,
+  isDefault: false,
   lastName: "",
   phone: "",
-  postalCode: "",
   province: "",
 };
 
@@ -68,13 +63,11 @@ function fromAddress(address: MerchantCustomerAddress): CustomerAddressFormValue
     addressName: address.addressName ?? "",
     city: address.city ?? "",
     company: address.company ?? "",
-    countryCode: address.countryCode ?? "et",
     firstName: address.firstName ?? "",
-    isDefaultBilling: address.isDefaultBilling,
-    isDefaultShipping: address.isDefaultShipping,
+    // Either Medusa default flag means “default delivery address” for merchants.
+    isDefault: address.isDefaultShipping || address.isDefaultBilling,
     lastName: address.lastName ?? "",
     phone: address.phone ?? "",
-    postalCode: address.postalCode ?? "",
     province: address.province ?? "",
   };
 }
@@ -136,19 +129,20 @@ export function CustomerAddressDialog({
     setSaving(true);
     setError(null);
 
+    // Always ET; no postal. Default maps to Medusa shipping flag (billing kept false).
     const payload = {
       address1: values.address1.trim() || null,
       address2: values.address2.trim() || null,
       addressName: values.addressName.trim() || null,
       city: values.city.trim() || null,
       company: values.company.trim() || null,
-      countryCode: values.countryCode.trim().toLowerCase() || "et",
+      countryCode: "et",
       firstName: values.firstName.trim() || null,
-      isDefaultBilling: values.isDefaultBilling,
-      isDefaultShipping: values.isDefaultShipping,
+      isDefaultBilling: false,
+      isDefaultShipping: values.isDefault,
       lastName: values.lastName.trim() || null,
       phone: values.phone.trim() || null,
-      postalCode: values.postalCode.trim() || null,
+      postalCode: null,
       province: values.province.trim() || null,
     };
 
@@ -266,14 +260,6 @@ export function CustomerAddressDialog({
                 />
               </Field>
               <Field className="sm:col-span-2">
-                <FieldLabel htmlFor={`${id}-company`}>{t("customers.addresses.company")}</FieldLabel>
-                <Input
-                  id={`${id}-company`}
-                  onChange={(event) => setField("company", event.target.value)}
-                  value={values.company}
-                />
-              </Field>
-              <Field className="sm:col-span-2">
                 <FieldLabel htmlFor={`${id}-a1`}>{t("customers.addresses.street")}</FieldLabel>
                 <Input
                   id={`${id}-a1`}
@@ -287,6 +273,7 @@ export function CustomerAddressDialog({
                 <Input
                   id={`${id}-a2`}
                   onChange={(event) => setField("address2", event.target.value)}
+                  placeholder={t("customers.addresses.apartmentPlaceholder")}
                   value={values.address2}
                 />
               </Field>
@@ -306,48 +293,33 @@ export function CustomerAddressDialog({
                 <Input
                   id={`${id}-province`}
                   onChange={(event) => setField("province", event.target.value)}
+                  placeholder={t("customers.addresses.provincePlaceholder")}
                   value={values.province}
                 />
               </Field>
-              <Field>
-                <FieldLabel htmlFor={`${id}-postal`}>{t("customers.addresses.postalCode")}</FieldLabel>
+              <Field className="sm:col-span-2">
+                <FieldLabel htmlFor={`${id}-company`}>{t("customers.addresses.company")}</FieldLabel>
                 <Input
-                  id={`${id}-postal`}
-                  onChange={(event) => setField("postalCode", event.target.value)}
-                  value={values.postalCode}
-                />
-              </Field>
-              <Field>
-                <FieldLabel htmlFor={`${id}-country`}>
-                  {t("customers.addresses.countryCode")}
-                </FieldLabel>
-                <Input
-                  id={`${id}-country`}
-                  maxLength={2}
-                  onChange={(event) => setField("countryCode", event.target.value.toLowerCase())}
-                  placeholder="et"
-                  value={values.countryCode}
+                  id={`${id}-company`}
+                  onChange={(event) => setField("company", event.target.value)}
+                  placeholder={t("customers.addresses.companyPlaceholder")}
+                  value={values.company}
                 />
               </Field>
 
-              <div className="flex flex-col gap-3 rounded-xl border border-border/70 bg-muted/20 p-3 sm:col-span-2">
-                <label className="flex items-start gap-2.5 text-sm leading-snug">
-                  <Checkbox
-                    checked={values.isDefaultShipping}
-                    className="mt-0.5"
-                    onCheckedChange={(checked) => setField("isDefaultShipping", Boolean(checked))}
-                  />
-                  <span>{t("customers.addresses.defaultShippingLabel")}</span>
-                </label>
-                <label className="flex items-start gap-2.5 text-sm leading-snug">
-                  <Checkbox
-                    checked={values.isDefaultBilling}
-                    className="mt-0.5"
-                    onCheckedChange={(checked) => setField("isDefaultBilling", Boolean(checked))}
-                  />
-                  <span>{t("customers.addresses.defaultBillingLabel")}</span>
-                </label>
-              </div>
+              <label className="flex items-start gap-2.5 rounded-xl border border-border/70 bg-muted/20 p-3 text-sm leading-snug sm:col-span-2">
+                <Checkbox
+                  checked={values.isDefault}
+                  className="mt-0.5"
+                  onCheckedChange={(checked) => setField("isDefault", Boolean(checked))}
+                />
+                <span>
+                  <span className="font-medium">{t("customers.addresses.defaultLabel")}</span>
+                  <span className="mt-0.5 block text-xs text-muted-foreground">
+                    {t("customers.addresses.defaultHint")}
+                  </span>
+                </span>
+              </label>
             </SheetBody>
 
             <SheetFooter className="gap-2 border-t bg-muted/40 px-5 py-4 sm:flex-row sm:justify-end">

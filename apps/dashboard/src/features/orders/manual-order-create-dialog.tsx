@@ -759,9 +759,9 @@ function ManualOrderCreateDialogInner() {
               <section className="grid gap-4 border-t pt-5 sm:grid-cols-2">
                 <div className="flex items-start justify-between gap-3 sm:col-span-2">
                   <div>
-                    <p className="text-sm font-medium">{t("orders.create.shippingAddress")}</p>
+                    <p className="text-sm font-medium">{t("orders.create.deliveryAddress")}</p>
                     <p className="mt-0.5 text-xs text-muted-foreground">
-                      {t("orders.create.shippingAddressDesc")}
+                      {t("orders.create.deliveryAddressDesc")}
                     </p>
                   </div>
                   <Button
@@ -814,6 +814,7 @@ function ManualOrderCreateDialogInner() {
                         onChange={(event) =>
                           setAddress((current) => ({ ...current, city: event.target.value }))
                         }
+                        placeholder={t("orders.create.cityPlaceholder")}
                         value={address.city}
                       />
                     </Field>
@@ -824,23 +825,20 @@ function ManualOrderCreateDialogInner() {
                         onChange={(event) =>
                           setAddress((current) => ({ ...current, province: event.target.value }))
                         }
+                        placeholder={t("orders.create.regionPlaceholder")}
                         value={address.province}
                       />
                     </Field>
-                    <Field>
+                    <Field className="sm:col-span-2">
                       <FieldLabel htmlFor="mo-ph">{t("orders.create.phone")}</FieldLabel>
                       <Input
                         id="mo-ph"
                         onChange={(event) =>
                           setAddress((current) => ({ ...current, phone: event.target.value }))
                         }
+                        placeholder={t("orders.create.phonePlaceholder")}
                         value={address.phone}
                       />
-                    </Field>
-                    <Field>
-                      <FieldLabel>{t("orders.create.country")}</FieldLabel>
-                      <Input disabled readOnly value={t("orders.create.ethiopia")} />
-                      <FieldDescription>{t("orders.create.countryFixed")}</FieldDescription>
                     </Field>
                   </>
                 ) : null}
