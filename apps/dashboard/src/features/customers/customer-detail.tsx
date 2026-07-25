@@ -251,17 +251,11 @@ export function CustomerDetail({
         ) : (
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
             {customer.addresses.map((address) => {
-              const line = [
-                address.address1,
-                address.address2,
-                address.city,
-                address.province,
-                address.postalCode,
-                address.countryCode?.toUpperCase(),
-              ]
+              const line = [address.address1, address.address2, address.city, address.province]
                 .filter(Boolean)
                 .join(", ");
               const contact = [address.firstName, address.lastName].filter(Boolean).join(" ");
+              const isDefault = address.isDefaultShipping || address.isDefaultBilling;
               return (
                 <div
                   className="flex flex-col gap-2.5 rounded-xl border border-border/70 bg-muted/15 p-3.5"
@@ -278,18 +272,11 @@ export function CustomerDetail({
                         <p className="text-xs text-muted-foreground">{contact}</p>
                       ) : null}
                     </div>
-                    <div className="flex flex-wrap gap-1">
-                      {address.isDefaultShipping ? (
-                        <Badge className="font-normal" variant="secondary">
-                          {t("customers.addresses.defaultShipping")}
-                        </Badge>
-                      ) : null}
-                      {address.isDefaultBilling ? (
-                        <Badge className="font-normal" variant="outline">
-                          {t("customers.addresses.defaultBilling")}
-                        </Badge>
-                      ) : null}
-                    </div>
+                    {isDefault ? (
+                      <Badge className="font-normal" variant="secondary">
+                        {t("customers.addresses.defaultBadge")}
+                      </Badge>
+                    ) : null}
                   </div>
                   <p className="text-sm leading-relaxed text-muted-foreground">
                     {line || t("customers.addresses.noDetails")}

@@ -445,6 +445,7 @@ function toPayload(input: CustomerInput) {
   };
 }
 function toAddressPayload(input: MerchantCustomerAddressInput) {
+  // Ethiopia-first merchant platform: always persist ET; postal is optional/unused in UI.
   return {
     ...(input.address1 !== undefined ? { address_1: input.address1?.trim() || null } : {}),
     ...(input.address2 !== undefined ? { address_2: input.address2?.trim() || null } : {}),
@@ -453,9 +454,7 @@ function toAddressPayload(input: MerchantCustomerAddressInput) {
       : {}),
     ...(input.city !== undefined ? { city: input.city?.trim() || null } : {}),
     ...(input.company !== undefined ? { company: input.company?.trim() || null } : {}),
-    ...(input.countryCode !== undefined
-      ? { country_code: input.countryCode?.trim().toLowerCase() || null }
-      : {}),
+    country_code: input.countryCode?.trim().toLowerCase() || "et",
     ...(input.firstName !== undefined ? { first_name: input.firstName?.trim() || null } : {}),
     ...(input.isDefaultBilling !== undefined
       ? { is_default_billing: Boolean(input.isDefaultBilling) }
