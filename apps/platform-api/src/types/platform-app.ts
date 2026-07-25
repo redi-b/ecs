@@ -759,7 +759,16 @@ export type PlatformAppOptions = {
       >)
     | undefined;
   listMerchantPaymentBanks?:
-    | (() => Promise<{ ok: true; banks: Array<{ code: string; name: string }> }>)
+    | (() => Promise<{
+        ok: true;
+        banks: Array<{
+          code: string;
+          name: string;
+          kind?: string;
+          logoUrl?: string | null;
+          sortOrder?: number;
+        }>;
+      }>)
     | undefined;
   recheckMerchantOrderPayment?:
     | ((input: {

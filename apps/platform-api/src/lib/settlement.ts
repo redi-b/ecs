@@ -96,24 +96,104 @@ export function settlementFromMetadata(
   };
 }
 
-/** Static Ethiopian bank / wallet catalog (fallback when Chapa banks unavailable). */
-export const ETHIOPIAN_BANK_CATALOG: Array<{ code: string; name: string }> = [
-  { code: "telebirr", name: "Telebirr" },
-  { code: "cbe_birr", name: "CBE Birr" },
-  { code: "cbe", name: "Commercial Bank of Ethiopia" },
-  { code: "awash", name: "Awash Bank" },
-  { code: "dashen", name: "Dashen Bank" },
-  { code: "abyssinia", name: "Bank of Abyssinia" },
-  { code: "coop", name: "Cooperative Bank of Oromia" },
-  { code: "wegagen", name: "Wegagen Bank" },
-  { code: "united", name: "United Bank" },
-  { code: "nib", name: "Nib International Bank" },
-  { code: "zemen", name: "Zemen Bank" },
-  { code: "hibret", name: "Hibret Bank" },
-  { code: "bunna", name: "Bunna International Bank" },
-  { code: "enat", name: "Enat Bank" },
-  { code: "oromia", name: "Oromia Bank" },
-  { code: "siinqee", name: "Siinqee Bank" },
-  { code: "amhara", name: "Amhara Bank" },
-  { code: "other", name: "Other bank" },
+/** Pinned ethiopianlogos commit for import only (runtime serves from media). */
+export const ETHIOPIAN_LOGOS_COMMIT = "3308b42e045ac942e37b4be8705fe01d4e002ac0";
+
+export const BANK_LOGO_OBJECT_PREFIX = "platform/bank-logos";
+
+export function bankLogoObjectKey(code: string) {
+  return `${BANK_LOGO_OBJECT_PREFIX}/${code}.svg`;
+}
+
+export function bankLogoPublicUrl(publicBaseUrl: string, code: string) {
+  return `${publicBaseUrl.replace(/\/$/, "")}/${bankLogoObjectKey(code)}`;
+}
+
+/** Upstream SVG for `seed:bank-logos -- --fetch` only. */
+export function ethiopianLogosSourceSvgUrl(logoSource: string) {
+  return `https://cdn.jsdelivr.net/gh/Chapa-Et/ethiopianlogos@${ETHIOPIAN_LOGOS_COMMIT}/logos/${logoSource}/${logoSource}.svg`;
+}
+
+export type PaymentBankCatalogEntry = {
+  code: string;
+  name: string;
+  kind: "bank" | "wallet" | "other";
+  /** ethiopianlogos `logos/` folder name, or null when no asset yet. */
+  logoSource: string | null;
+  sortOrder: number;
+};
+
+/** Default catalog; `payment_banks` is the runtime source of truth. */
+export const ETHIOPIAN_BANK_CATALOG: PaymentBankCatalogEntry[] = [
+  { code: "telebirr", name: "Telebirr", kind: "wallet", logoSource: "tele_birr", sortOrder: 10 },
+  {
+    code: "cbe_birr",
+    name: "CBE Birr",
+    kind: "wallet",
+    logoSource: "cbe_birr_normal",
+    sortOrder: 20,
+  },
+  {
+    code: "cbe",
+    name: "Commercial Bank of Ethiopia",
+    kind: "bank",
+    logoSource: "commercial_bank_of_ethiopia",
+    sortOrder: 30,
+  },
+  {
+    code: "awash",
+    name: "Awash Bank",
+    kind: "bank",
+    logoSource: "awash_international_bank",
+    sortOrder: 40,
+  },
+  {
+    code: "dashen",
+    name: "Dashen Bank",
+    kind: "bank",
+    logoSource: "dashen_bank",
+    sortOrder: 50,
+  },
+  {
+    code: "abyssinia",
+    name: "Bank of Abyssinia",
+    kind: "bank",
+    logoSource: "bank_of_abyssinia",
+    sortOrder: 60,
+  },
+  {
+    code: "coop",
+    name: "Cooperative Bank of Oromia",
+    kind: "bank",
+    logoSource: "cooperative_bank_of_oromia",
+    sortOrder: 70,
+  },
+  { code: "wegagen", name: "Wegagen Bank", kind: "bank", logoSource: null, sortOrder: 80 },
+  { code: "united", name: "United Bank", kind: "bank", logoSource: null, sortOrder: 90 },
+  { code: "nib", name: "Nib International Bank", kind: "bank", logoSource: null, sortOrder: 100 },
+  { code: "zemen", name: "Zemen Bank", kind: "bank", logoSource: "zemen_bank", sortOrder: 110 },
+  { code: "hibret", name: "Hibret Bank", kind: "bank", logoSource: "hibret_bank", sortOrder: 120 },
+  { code: "bunna", name: "Bunna International Bank", kind: "bank", logoSource: null, sortOrder: 130 },
+  { code: "enat", name: "Enat Bank", kind: "bank", logoSource: null, sortOrder: 140 },
+  {
+    code: "oromia",
+    name: "Oromia Bank",
+    kind: "bank",
+    logoSource: "oromia_international_bank",
+    sortOrder: 150,
+  },
+  { code: "siinqee", name: "Siinqee Bank", kind: "bank", logoSource: null, sortOrder: 160 },
+  { code: "amhara", name: "Amhara Bank", kind: "bank", logoSource: "amhara_bank", sortOrder: 170 },
+  { code: "amole", name: "Amole", kind: "wallet", logoSource: "amole", sortOrder: 180 },
+  { code: "other", name: "Other bank", kind: "other", logoSource: null, sortOrder: 900 },
 ];
+
+export function catalogBanksWithLogoUrls(
+  publicBaseUrl?: string | null,
+): Array<PaymentBankCatalogEntry & { logoUrl: string | null }> {
+  const base = publicBaseUrl?.trim() || null;
+  return ETHIOPIAN_BANK_CATALOG.map((entry) => ({
+    ...entry,
+    logoUrl: base && entry.logoSource ? bankLogoPublicUrl(base, entry.code) : null,
+  }));
+}

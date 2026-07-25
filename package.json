@@ -26,6 +26,7 @@
     "seed:demo": "node scripts/seed-demo.mjs",
     "seed:demo:clean": "node scripts/seed-demo.mjs --clean",
     "seed:unseed": "node scripts/seed-demo.mjs --clean",
+    "seed:bank-logos": "pnpm --filter @ecs/platform-api seed:bank-logos",
 
     "build": "turbo build",
     "typecheck": "turbo typecheck",
