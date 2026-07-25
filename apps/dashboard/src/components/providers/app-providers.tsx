@@ -46,7 +46,7 @@ export function AppProviders({
             zIndex={9999}
           />
           {children}
-          <Toaster richColors />
+          <Toaster />
         </QueryProvider>
       </ThemeProvider>
     </NextIntlClientProvider>
