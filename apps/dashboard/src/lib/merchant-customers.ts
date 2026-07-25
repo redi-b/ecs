@@ -3,16 +3,16 @@ import { type PlatformRequestContext, platformFetch } from "@/lib/platform-api/c
 
 const groupSchema = z.object({ id: z.string(), name: z.string() });
 export const customerAddressSchema = z.object({
-  address1: z.string().nullable(),
+  address1: z.string().nullable().optional().default(null),
   address2: z.string().nullable().optional().default(null),
   addressName: z.string().nullable().optional().default(null),
-  city: z.string().nullable(),
+  city: z.string().nullable().optional().default(null),
   company: z.string().nullable().optional().default(null),
-  countryCode: z.string().nullable(),
+  countryCode: z.string().nullable().optional().default(null),
   firstName: z.string().nullable().optional().default(null),
-  id: z.string(),
-  isDefaultBilling: z.boolean(),
-  isDefaultShipping: z.boolean(),
+  id: z.string().min(1),
+  isDefaultBilling: z.boolean().optional().default(false),
+  isDefaultShipping: z.boolean().optional().default(false),
   lastName: z.string().nullable().optional().default(null),
   phone: z.string().nullable().optional().default(null),
   postalCode: z.string().nullable().optional().default(null),
