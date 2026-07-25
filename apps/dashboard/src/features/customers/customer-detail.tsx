@@ -28,6 +28,7 @@ import {
   getPaymentStatusLabel,
 } from "@/features/orders/order-domain";
 import { useI18n } from "@/i18n/provider";
+import { isWalkInCustomerEmail } from "@/lib/customer-identity";
 import type { MerchantCustomer } from "@/lib/merchant-customers";
 import { dashboardRoutes } from "@/lib/routes";
 import { cn } from "@/lib/utils";
@@ -93,7 +94,13 @@ export function CustomerDetail({
   const ordersHref = customer.email
     ? `${dashboardRoutes.orders}?q=${encodeURIComponent(customer.email)}`
     : dashboardRoutes.orders;
+  const isWalkIn = isWalkInCustomerEmail(customer.email);
   const addressCount = customer.addresses.length;
+  const contactDefaults = {
+    firstName: customer.firstName,
+    lastName: customer.lastName,
+    phone: customer.phone,
+  };
   const ordersMeta = loadOrdersFailed
     ? null
     : ordersTotalCount === 0
@@ -236,7 +243,14 @@ export function CustomerDetail({
       </DetailSection>
 
       <DetailSection
-        action={<CustomerAddressDialog customerId={customer.id} />}
+        action={
+          isWalkIn ? null : (
+            <CustomerAddressDialog
+              customerDefaults={contactDefaults}
+              customerId={customer.id}
+            />
+          )
+        }
         meta={
           addressCount === 0
             ? null
@@ -246,7 +260,9 @@ export function CustomerDetail({
         }
         title={t("customers.detail.addresses")}
       >
-        {addressCount === 0 ? (
+        {isWalkIn ? (
+          <p className="text-muted-foreground">{t("customers.addresses.walkInBlocked")}</p>
+        ) : addressCount === 0 ? (
           <p className="text-muted-foreground">{t("customers.addresses.empty")}</p>
         ) : (
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
@@ -288,8 +304,12 @@ export function CustomerDetail({
                       </a>
                     </p>
                   ) : null}
-                  <div className="flex flex-wrap gap-1.5 border-t border-border/50 pt-2.5">
-                    <CustomerAddressDialog address={address} customerId={customer.id} />
+                  <div className="mt-auto flex flex-wrap items-center gap-1.5 border-t border-border/50 pt-2.5">
+                    <CustomerAddressDialog
+                      address={address}
+                      customerDefaults={contactDefaults}
+                      customerId={customer.id}
+                    />
                     <CustomerAddressDeleteButton
                       addressId={address.id}
                       customerId={customer.id}

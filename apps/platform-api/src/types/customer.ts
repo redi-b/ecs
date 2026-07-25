@@ -55,7 +55,8 @@ export type CustomerServiceError = {
     | "customer_email_conflict"
     | "customer_address_not_found"
     | "invalid_customer"
-    | "invalid_customer_address";
+    | "invalid_customer_address"
+    | "walk_in_address_forbidden";
   status: 400 | 401 | 404 | 409 | 503;
 };
 
