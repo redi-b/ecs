@@ -10,7 +10,7 @@ import { UnsavedChangesDialog } from "@/components/app/unsaved-changes-dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Field, FieldLabel } from "@/components/ui/field";
+import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import {
   Sheet,
@@ -26,8 +26,15 @@ import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes-guard";
 import type { MessageKey } from "@/i18n/messages";
 import { useI18n } from "@/i18n/provider";
 import type { MerchantCustomerAddress } from "@/lib/merchant-customers";
+import { cn } from "@/lib/utils";
 
 type Translate = (key: MessageKey, values?: Record<string, string | number | Date>) => string;
+
+export type CustomerContactDefaults = {
+  firstName?: string | null;
+  lastName?: string | null;
+  phone?: string | null;
+};
 
 /** Ethiopia-first merchant form — country/postal/billing stay out of the UI. */
 export type CustomerAddressFormValues = {
@@ -64,7 +71,6 @@ function fromAddress(address: MerchantCustomerAddress): CustomerAddressFormValue
     city: address.city ?? "",
     company: address.company ?? "",
     firstName: address.firstName ?? "",
-    // Either Medusa default flag means “default delivery address” for merchants.
     isDefault: address.isDefaultShipping || address.isDefaultBilling,
     lastName: address.lastName ?? "",
     phone: address.phone ?? "",
@@ -72,12 +78,34 @@ function fromAddress(address: MerchantCustomerAddress): CustomerAddressFormValue
   };
 }
 
+function contactDiffersFromProfile(
+  values: CustomerAddressFormValues,
+  profile: CustomerContactDefaults | undefined,
+): boolean {
+  if (!profile) {
+    return Boolean(values.firstName.trim() || values.lastName.trim() || values.phone.trim());
+  }
+  const norm = (value: string | null | undefined) => (value ?? "").trim().toLowerCase();
+  return (
+    norm(values.firstName) !== norm(profile.firstName) ||
+    norm(values.lastName) !== norm(profile.lastName) ||
+    norm(values.phone) !== norm(profile.phone)
+  );
+}
+
+/** Shared action-row button classes so Edit / Remove sit on one optical baseline. */
+const addressActionButtonClass =
+  "h-7 gap-1.5 px-2.5 text-[0.8rem] leading-none [&_svg]:size-3.5";
+
 export function CustomerAddressDialog({
   address,
+  customerDefaults,
   customerId,
   trigger,
 }: {
   address?: MerchantCustomerAddress | undefined;
+  /** Prefill / fall back when recipient is the customer themselves. */
+  customerDefaults?: CustomerContactDefaults | undefined;
   customerId: string;
   trigger?: ReactNode;
 }) {
@@ -88,23 +116,44 @@ export function CustomerAddressDialog({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [values, setValues] = useState(emptyValues);
+  const [recipientOther, setRecipientOther] = useState(false);
   const isEdit = Boolean(address);
 
   useEffect(() => {
     if (!open) return;
-    setValues(address ? fromAddress(address) : emptyValues);
+    if (address) {
+      const next = fromAddress(address);
+      setValues(next);
+      setRecipientOther(contactDiffersFromProfile(next, customerDefaults));
+    } else {
+      setValues({
+        ...emptyValues,
+        // Seed from profile so submit can omit recipient fields when collapsed.
+        firstName: customerDefaults?.firstName?.trim() ?? "",
+        lastName: customerDefaults?.lastName?.trim() ?? "",
+        phone: customerDefaults?.phone?.trim() ?? "",
+      });
+      setRecipientOther(false);
+    }
     setError(null);
-  }, [address, open]);
+  }, [address, customerDefaults, open]);
 
-  const baseline = useMemo(
-    () => (address ? fromAddress(address) : emptyValues),
-    [address, open],
-  );
+  const baseline = useMemo(() => {
+    if (address) return fromAddress(address);
+    return {
+      ...emptyValues,
+      firstName: customerDefaults?.firstName?.trim() ?? "",
+      lastName: customerDefaults?.lastName?.trim() ?? "",
+      phone: customerDefaults?.phone?.trim() ?? "",
+    };
+  }, [address, customerDefaults, open]);
+
   const isDirty =
     open &&
-    (Object.keys(values) as Array<keyof CustomerAddressFormValues>).some(
-      (key) => values[key] !== baseline[key],
-    );
+    (recipientOther !== contactDiffersFromProfile(baseline, customerDefaults) ||
+      (Object.keys(values) as Array<keyof CustomerAddressFormValues>).some(
+        (key) => values[key] !== baseline[key],
+      ));
   const { leaveDialogOpen, requestLeave, confirmLeave, cancelLeave } =
     useUnsavedChangesGuard(isDirty);
 
@@ -129,7 +178,10 @@ export function CustomerAddressDialog({
     setSaving(true);
     setError(null);
 
-    // Always ET; no postal. Default maps to Medusa shipping flag (billing kept false).
+    const profileFirst = customerDefaults?.firstName?.trim() || null;
+    const profileLast = customerDefaults?.lastName?.trim() || null;
+    const profilePhone = customerDefaults?.phone?.trim() || null;
+
     const payload = {
       address1: values.address1.trim() || null,
       address2: values.address2.trim() || null,
@@ -137,11 +189,11 @@ export function CustomerAddressDialog({
       city: values.city.trim() || null,
       company: values.company.trim() || null,
       countryCode: "et",
-      firstName: values.firstName.trim() || null,
+      firstName: recipientOther ? values.firstName.trim() || null : profileFirst,
       isDefaultBilling: false,
       isDefaultShipping: values.isDefault,
-      lastName: values.lastName.trim() || null,
-      phone: values.phone.trim() || null,
+      lastName: recipientOther ? values.lastName.trim() || null : profileLast,
+      phone: recipientOther ? values.phone.trim() || null : profilePhone,
       postalCode: null,
       province: values.province.trim() || null,
     };
@@ -175,6 +227,12 @@ export function CustomerAddressDialog({
   }
 
   const title = isEdit ? t("customers.addresses.editTitle") : t("customers.addresses.addTitle");
+  const profileSummary = [
+    [customerDefaults?.firstName, customerDefaults?.lastName].filter(Boolean).join(" "),
+    customerDefaults?.phone,
+  ]
+    .filter(Boolean)
+    .join(" · ");
 
   return (
     <>
@@ -189,7 +247,12 @@ export function CustomerAddressDialog({
           trigger ? <SheetTrigger asChild>{trigger}</SheetTrigger> : null
         ) : (
           <SheetTrigger asChild>
-            <Button size="sm" type="button" variant={isEdit ? "outline" : "default"}>
+            <Button
+              className={addressActionButtonClass}
+              size="sm"
+              type="button"
+              variant={isEdit ? "outline" : "default"}
+            >
               {isEdit ? (
                 <>
                   <AppIcons.edit data-icon="inline-start" />
@@ -232,31 +295,6 @@ export function CustomerAddressDialog({
                   onChange={(event) => setField("addressName", event.target.value)}
                   placeholder={t("customers.addresses.labelPlaceholder")}
                   value={values.addressName}
-                />
-              </Field>
-              <Field>
-                <FieldLabel htmlFor={`${id}-first`}>{t("customers.addresses.firstName")}</FieldLabel>
-                <Input
-                  id={`${id}-first`}
-                  onChange={(event) => setField("firstName", event.target.value)}
-                  value={values.firstName}
-                />
-              </Field>
-              <Field>
-                <FieldLabel htmlFor={`${id}-last`}>{t("customers.addresses.lastName")}</FieldLabel>
-                <Input
-                  id={`${id}-last`}
-                  onChange={(event) => setField("lastName", event.target.value)}
-                  value={values.lastName}
-                />
-              </Field>
-              <Field className="sm:col-span-2">
-                <FieldLabel htmlFor={`${id}-phone`}>{t("customers.addresses.phone")}</FieldLabel>
-                <Input
-                  id={`${id}-phone`}
-                  onChange={(event) => setField("phone", event.target.value)}
-                  placeholder={t("customers.detail.phonePlaceholder")}
-                  value={values.phone}
                 />
               </Field>
               <Field className="sm:col-span-2">
@@ -306,6 +344,77 @@ export function CustomerAddressDialog({
                   value={values.company}
                 />
               </Field>
+
+              <div className="space-y-3 rounded-xl border border-border/70 bg-muted/15 p-3 sm:col-span-2">
+                <label className="flex items-start gap-2.5 text-sm leading-snug">
+                  <Checkbox
+                    checked={recipientOther}
+                    className="mt-0.5"
+                    onCheckedChange={(checked) => {
+                      const next = Boolean(checked);
+                      setRecipientOther(next);
+                      if (!next && customerDefaults) {
+                        setValues((current) => ({
+                          ...current,
+                          firstName: customerDefaults.firstName?.trim() ?? "",
+                          lastName: customerDefaults.lastName?.trim() ?? "",
+                          phone: customerDefaults.phone?.trim() ?? "",
+                        }));
+                      }
+                    }}
+                  />
+                  <span>
+                    <span className="font-medium">{t("customers.addresses.recipientOther")}</span>
+                    <span className="mt-0.5 block text-xs text-muted-foreground">
+                      {t("customers.addresses.recipientOtherHint")}
+                    </span>
+                    {!recipientOther && profileSummary ? (
+                      <span className="mt-1 block text-xs text-muted-foreground">
+                        {t("customers.addresses.recipientUsesProfile", { name: profileSummary })}
+                      </span>
+                    ) : null}
+                  </span>
+                </label>
+
+                {recipientOther ? (
+                  <div className="grid gap-3 border-t border-border/50 pt-3 sm:grid-cols-2">
+                    <Field>
+                      <FieldLabel htmlFor={`${id}-first`}>
+                        {t("customers.addresses.firstName")}
+                      </FieldLabel>
+                      <Input
+                        id={`${id}-first`}
+                        onChange={(event) => setField("firstName", event.target.value)}
+                        value={values.firstName}
+                      />
+                    </Field>
+                    <Field>
+                      <FieldLabel htmlFor={`${id}-last`}>
+                        {t("customers.addresses.lastName")}
+                      </FieldLabel>
+                      <Input
+                        id={`${id}-last`}
+                        onChange={(event) => setField("lastName", event.target.value)}
+                        value={values.lastName}
+                      />
+                    </Field>
+                    <Field className="sm:col-span-2">
+                      <FieldLabel htmlFor={`${id}-phone`}>
+                        {t("customers.addresses.phone")}
+                      </FieldLabel>
+                      <Input
+                        id={`${id}-phone`}
+                        onChange={(event) => setField("phone", event.target.value)}
+                        placeholder={t("customers.detail.phonePlaceholder")}
+                        value={values.phone}
+                      />
+                      <FieldDescription>
+                        {t("customers.addresses.recipientPhoneHint")}
+                      </FieldDescription>
+                    </Field>
+                  </div>
+                ) : null}
+              </div>
 
               <label className="flex items-start gap-2.5 rounded-xl border border-border/70 bg-muted/20 p-3 text-sm leading-snug sm:col-span-2">
                 <Checkbox
@@ -410,7 +519,12 @@ export function CustomerAddressDeleteButton({
       title={t("customers.addresses.removeTitle")}
       tone="destructive"
       trigger={
-        <Button size="sm" type="button" variant="destructive-outline">
+        <Button
+          className={cn(addressActionButtonClass)}
+          size="sm"
+          type="button"
+          variant="destructive-outline"
+        >
           <AppIcons.trash data-icon="inline-start" />
           {t("customers.addresses.remove")}
         </Button>
@@ -427,6 +541,8 @@ function getAddressErrorMessage(code: string | undefined, t: Translate) {
       return t("customers.addresses.errorAddressNotFound");
     case "invalid_customer_address":
       return t("customers.addresses.errorInvalid");
+    case "walk_in_address_forbidden":
+      return t("customers.addresses.errorWalkIn");
     case "commerce_credentials_invalid":
     case "commerce_backend_unavailable":
       return t("customers.addresses.errorUnavailable");

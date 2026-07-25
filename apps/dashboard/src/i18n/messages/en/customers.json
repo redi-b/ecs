@@ -88,7 +88,7 @@
     "add": "Add address",
     "editTitle": "Edit address",
     "addTitle": "Add address",
-    "formDesc": "Local delivery details for this customer. Ethiopia is assumed.",
+    "formDesc": "Local delivery place for this customer. Ethiopia is assumed.",
     "saveFailedTitle": "Address could not be saved",
     "enterStreetOrCity": "Enter a street address or city.",
     "toastUpdated": "Address updated.",
@@ -108,6 +108,11 @@
     "cityPlaceholder": "Addis Ababa",
     "province": "Subcity / area",
     "provincePlaceholder": "Bole, Kirkos…",
+    "recipientOther": "Deliver to someone else",
+    "recipientOtherHint": "Use when the parcel goes to a different person than the customer on file.",
+    "recipientUsesProfile": "Uses customer profile: {name}",
+    "recipientPhoneHint": "Contact phone at the delivery location.",
+    "walkInBlocked": "Walk-in / offline sales profiles cannot store addresses. Use a real customer for delivery locations.",
     "saving": "Saving…",
     "saveAddress": "Save address",
     "remove": "Remove",
@@ -119,6 +124,7 @@
     "errorCustomerNotFound": "Customer was not found.",
     "errorAddressNotFound": "Address was not found.",
     "errorInvalid": "Check the address details and try again.",
+    "errorWalkIn": "Walk-in sales profiles cannot have saved addresses.",
     "errorUnavailable": "Customer addresses are temporarily unavailable. Try again.",
     "errorSaveFailed": "Address could not be saved. Try again."
   }

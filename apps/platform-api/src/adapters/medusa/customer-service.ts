@@ -376,6 +376,9 @@ export function createMedusaCustomerService(options: Options) {
   }): Promise<MerchantCustomerAddressResult> {
     const current = await getCustomer(input);
     if (!current.ok) return current;
+    if (isWalkInCustomerEmail(current.customer.email)) {
+      return { error: "walk_in_address_forbidden", ok: false, status: 400 };
+    }
     const response = await fetcher(
       `${base}/admin/customers/${encodeURIComponent(input.customerId)}/addresses`,
       {
@@ -396,6 +399,9 @@ export function createMedusaCustomerService(options: Options) {
   }): Promise<MerchantCustomerAddressResult> {
     const current = await getCustomer(input);
     if (!current.ok) return current;
+    if (isWalkInCustomerEmail(current.customer.email)) {
+      return { error: "walk_in_address_forbidden", ok: false, status: 400 };
+    }
     if (!current.customer.addresses.some((item) => item.id === input.addressId)) {
       return { error: "customer_address_not_found", ok: false, status: 404 };
     }
@@ -418,6 +424,9 @@ export function createMedusaCustomerService(options: Options) {
   }): Promise<MerchantCustomerAddressResult> {
     const current = await getCustomer(input);
     if (!current.ok) return current;
+    if (isWalkInCustomerEmail(current.customer.email)) {
+      return { error: "walk_in_address_forbidden", ok: false, status: 400 };
+    }
     if (!current.customer.addresses.some((item) => item.id === input.addressId)) {
       return { error: "customer_address_not_found", ok: false, status: 404 };
     }
@@ -520,6 +529,17 @@ function normalizeCustomer(value: any): MerchantCustomer {
     updatedAt:
       value?.updated_at ?? value?.updatedAt ?? value?.created_at ?? new Date(0).toISOString(),
   };
+}
+
+function isWalkInCustomerEmail(email: string | null | undefined): boolean {
+  if (!email?.trim()) return false;
+  const e = email.trim().toLowerCase();
+  return (
+    e.startsWith("walk-in@") ||
+    e.endsWith("@orders.local") ||
+    e.startsWith("telegram+") ||
+    e.endsWith(".local")
+  );
 }
 
 function ensureShopGroup(

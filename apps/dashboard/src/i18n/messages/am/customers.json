@@ -88,7 +88,7 @@
     "add": "አድራሻ ጨምር",
     "editTitle": "አድራሻ አስተካክል",
     "addTitle": "አድራሻ ጨምር",
-    "formDesc": "ለአካባቢ ደሊቨሪ የአድራሻ ዝርዝር። ኢትዮጵያ እንደተገመተ ነው።",
+    "formDesc": "ለአካባቢ ደሊቨሪ ቦታ። ኢትዮጵያ እንደተገመተ ነው።",
     "saveFailedTitle": "አድራሻውን መቀየር አልተቻለም",
     "enterStreetOrCity": "የመንገድ አድራሻ ወይም ከተማ ያስገቡ።",
     "toastUpdated": "አድራሻው ተቀይሯል።",
@@ -108,6 +108,11 @@
     "cityPlaceholder": "አዲስ አበባ",
     "province": "ክፍለ ከተማ / አካባቢ",
     "provincePlaceholder": "ቦሌ፣ ቂርቆስ…",
+    "recipientOther": "ለሌላ ሰው ይደርስ",
+    "recipientOtherHint": "ጥቅሉ ከደንበኛው የተለየ ሰው ሲደርስ ይጠቀሙ።",
+    "recipientUsesProfile": "የደንበኛ መገለጫ፡ {name}",
+    "recipientPhoneHint": "በደሊቨሪ ቦታ የሚገኝ ስልክ።",
+    "walkInBlocked": "የ walk-in / ከመስመር ውጭ ሽያጭ መገለጫዎች አድራሻ ማከማቸት አይችሉም። ለደሊቨሪ እውነተኛ ደንበኛ ይጠቀሙ።",
     "saving": "እየተቀየረ ነው…",
     "saveAddress": "አድራሻ ቀይር",
     "remove": "አስወግድ",
@@ -119,6 +124,7 @@
     "errorCustomerNotFound": "ደንበኛው አልተገኘም።",
     "errorAddressNotFound": "አድራሻው አልተገኘም።",
     "errorInvalid": "የአድራሻ ዝርዝሮችን ይመልከቱ እና እንደገና ይሞክሩ።",
+    "errorWalkIn": "የ walk-in ሽያጭ መገለጫዎች የተቀመጠ አድራሻ ሊኖራቸው አይችልም።",
     "errorUnavailable": "የደንበኛ አድራሻዎች ለጊዜው አይገኙም። እንደገና ይሞክሩ።",
     "errorSaveFailed": "አድራሻውን መቀየር አልተቻለም። እንደገና ይሞክሩ።"
   }
