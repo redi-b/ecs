@@ -1,12 +1,14 @@
 "use client";
 
-import { useCallback, useEffect, useId, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 import { useActorOrFallback } from "@/components/app/actor-context";
 import { ConfirmDialog } from "@/components/app/confirm-dialog";
 import { AppIcons } from "@/components/app/icons";
+import { UnsavedChangesDialog } from "@/components/app/unsaved-changes-dialog";
+import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes-guard";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -73,6 +75,15 @@ export function AccountSecurityPanel({
   const [showConfirm, setShowConfirm] = useState(false);
   const [revokeOtherSessions, setRevokeOtherSessions] = useState(true);
   const [savingPassword, setSavingPassword] = useState(false);
+
+  const accountDirty = useMemo(() => {
+    const nameDirty = name.trim() !== (initialName ?? "").trim();
+    const passwordDirty =
+      currentPassword.length > 0 || newPassword.length > 0 || confirmPassword.length > 0;
+    return nameDirty || passwordDirty;
+  }, [confirmPassword, currentPassword, initialName, name, newPassword]);
+
+  const { leaveDialogOpen, confirmLeave, cancelLeave } = useUnsavedChangesGuard(accountDirty);
 
   const [sessions, setSessions] = useState<AccountSession[]>([]);
   const [sessionsVisible, setSessionsVisible] = useState(SESSIONS_PAGE_SIZE);
@@ -595,6 +606,12 @@ export function AccountSecurityPanel({
         open={pendingRevokeOthers}
         title={t("settings.accountSecurity.signOutOthersTitle")}
         tone="destructive"
+      />
+
+      <UnsavedChangesDialog
+        onLeave={confirmLeave}
+        onStay={cancelLeave}
+        open={leaveDialogOpen}
       />
     </SettingsSectionBody>
   );

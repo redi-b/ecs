@@ -6,6 +6,7 @@ import { toast } from "sonner";
 
 import Link from "@/components/app/link";
 import { AppIcons } from "@/components/app/icons";
+import { UnsavedChangesDialog } from "@/components/app/unsaved-changes-dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,6 +18,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes-guard";
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
@@ -333,6 +335,57 @@ function ManualOrderCreateDialogInner() {
     setSavedAddressId(MANUAL_ADDRESS_NEW);
   }
 
+  const isDirty = useMemo(() => {
+    if (customerMode === "existing" && customerId) return true;
+    if (
+      customerMode === "new" &&
+      (customerEmail.trim() ||
+        customerFirstName.trim() ||
+        customerLastName.trim() ||
+        customerPhone.trim())
+    ) {
+      return true;
+    }
+    if (lines.length > 0) return true;
+    if (note.trim()) return true;
+    if (!includeAddress) return true;
+    if (savedAddressId !== MANUAL_ADDRESS_NEW) return true;
+    const empty = emptyAddress;
+    if (
+      address.address1 !== empty.address1 ||
+      address.city !== empty.city ||
+      address.firstName !== empty.firstName ||
+      address.lastName !== empty.lastName ||
+      address.phone !== empty.phone ||
+      address.province !== empty.province
+    ) {
+      return true;
+    }
+    return false;
+  }, [
+    address,
+    customerEmail,
+    customerFirstName,
+    customerId,
+    customerLastName,
+    customerMode,
+    customerPhone,
+    includeAddress,
+    lines.length,
+    note,
+    savedAddressId,
+  ]);
+
+  const { leaveDialogOpen, requestLeave, confirmLeave, cancelLeave } =
+    useUnsavedChangesGuard(isDirty && open);
+
+  function requestClose() {
+    requestLeave(() => {
+      setOpen(false);
+      reset();
+    });
+  }
+
   function canContinueFromCustomer() {
     // Existing: ID is enough (profile already has contact info).
     if (customerMode === "existing") {
@@ -592,10 +645,11 @@ function ManualOrderCreateDialogInner() {
   }
 
   return (
+    <>
     <Dialog
       onOpenChange={(next) => {
-        setOpen(next);
-        if (!next) reset();
+        if (!next) requestClose();
+        else setOpen(true);
       }}
       open={open}
     >
@@ -983,7 +1037,7 @@ function ManualOrderCreateDialogInner() {
               {t("common.back")}
             </Button>
           ) : (
-            <Button onClick={() => setOpen(false)} type="button" variant="outline">
+            <Button onClick={() => requestClose()} type="button" variant="outline">
               {t("common.cancel")}
             </Button>
           )}
@@ -1010,6 +1064,12 @@ function ManualOrderCreateDialogInner() {
         </DialogFooter>
       </DialogContent>
     </Dialog>
+    <UnsavedChangesDialog
+      onLeave={confirmLeave}
+      onStay={cancelLeave}
+      open={leaveDialogOpen}
+    />
+    </>
   );
 }
 

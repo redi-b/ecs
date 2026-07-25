@@ -4,6 +4,7 @@ import { useCallback, useEffect, useId, useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import { AppIcons } from "@/components/app/icons";
+import { UnsavedChangesDialog } from "@/components/app/unsaved-changes-dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -32,6 +33,7 @@ import {
   SettingsSectionBody,
 } from "@/features/settings/settings-sections";
 import { TelegramConnectPanel } from "@/features/settings/telegram-connect-panel";
+import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes-guard";
 import type { NotificationPreference } from "@/lib/merchant-notifications";
 import { useI18n } from "@/i18n/provider";
 import { mapPlatformErrorMessage } from "@/lib/platform-api/errors";
@@ -81,6 +83,9 @@ export function NotificationsSection({ tenantId }: { tenantId: string }) {
   const hasEmail = saved.target.trim().length > 0;
   const targetDirty = emailInput.trim() !== saved.target.trim();
   const eventsDirty = !sameNotificationEvents(eventsDraft, saved.events);
+  const notificationsDirty = targetDirty || eventsDirty;
+  const { leaveDialogOpen, confirmLeave, cancelLeave } =
+    useUnsavedChangesGuard(notificationsDirty);
   const status = !emailAvailable
     ? "not_set_up"
     : !hasEmail
@@ -515,6 +520,12 @@ export function NotificationsSection({ tenantId }: { tenantId: string }) {
           )}
         </CardContent>
       </Card>
+
+      <UnsavedChangesDialog
+        onLeave={confirmLeave}
+        onStay={cancelLeave}
+        open={leaveDialogOpen}
+      />
     </SettingsSectionBody>
   );
 }
