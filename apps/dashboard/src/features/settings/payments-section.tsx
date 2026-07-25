@@ -4,6 +4,7 @@ import Link from "@/components/app/link";
 import { useCallback, useEffect, useId, useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
 
+import { BankLogo } from "@/components/app/bank-logo";
 import { ConfirmDialog } from "@/components/app/confirm-dialog";
 import { AppIcons } from "@/components/app/icons";
 import { HelpTip } from "@/components/app/help-tip";
@@ -515,7 +516,9 @@ function ReceivingAccountsCard() {
   const { t } = useI18n();
   const formIds = useId();
   const [accounts, setAccounts] = useState<ReceivingAccountRow[]>([]);
-  const [banks, setBanks] = useState<Array<{ code: string; name: string }>>([]);
+  const [banks, setBanks] = useState<
+    Array<{ code: string; name: string; logoUrl?: string | null }>
+  >([]);
   const [form, setForm] = useState<ReceivingAccountFormState>(emptyReceivingForm);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -528,7 +531,13 @@ function ReceivingAccountsCard() {
         value: bank.code,
         label: bank.name,
         keywords: `${bank.code} ${bank.name}`,
+        imageUrl: bank.logoUrl ?? null,
       })),
+    [banks],
+  );
+
+  const bankByCode = useMemo(
+    () => new Map(banks.map((bank) => [bank.code, bank])),
     [banks],
   );
 
@@ -721,55 +730,65 @@ function ReceivingAccountsCard() {
               accounts.length > 6 && "max-h-[min(22rem,45vh)] overflow-y-auto overscroll-contain",
             )}
           >
-            {accounts.map((account) => (
-              <li
-                className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-muted/30"
-                key={account.id}
-              >
-                <div className="flex size-9 shrink-0 items-center justify-center rounded-lg border bg-muted/40">
-                  <AppIcons.billing className="size-4 text-muted-foreground" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <p className="truncate text-sm font-medium">{account.label}</p>
-                    {account.isDefault ? (
-                      <Badge variant="secondary">{t("settings.payments.receiving.defaultBadge")}</Badge>
-                    ) : null}
+            {accounts.map((account) => {
+              const logoUrl = account.bankCode
+                ? (bankByCode.get(account.bankCode)?.logoUrl ?? null)
+                : null;
+              return (
+                <li
+                  className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-muted/30"
+                  key={account.id}
+                >
+                  <BankLogo
+                    className="size-9 rounded-lg p-1"
+                    name={account.bankName}
+                    size="lg"
+                    src={logoUrl}
+                  />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="truncate text-sm font-medium">{account.label}</p>
+                      {account.isDefault ? (
+                        <Badge variant="secondary">
+                          {t("settings.payments.receiving.defaultBadge")}
+                        </Badge>
+                      ) : null}
+                    </div>
+                    <p className="truncate text-sm text-muted-foreground">
+                      {account.bankName}
+                      {account.accountLast4
+                        ? ` · ${t("settings.payments.receiving.endsIn", { digits: account.accountLast4 })}`
+                        : ""}
+                      {account.accountName ? ` · ${account.accountName}` : ""}
+                    </p>
                   </div>
-                  <p className="truncate text-sm text-muted-foreground">
-                    {account.bankName}
-                    {account.accountLast4
-                      ? ` · ${t("settings.payments.receiving.endsIn", { digits: account.accountLast4 })}`
-                      : ""}
-                    {account.accountName ? ` · ${account.accountName}` : ""}
-                  </p>
-                </div>
-                <div className="flex shrink-0 items-center gap-1">
-                  <Button
-                    aria-label={t("settings.payments.receiving.edit")}
-                    className="rounded-full"
-                    disabled={isPending}
-                    onClick={() => openEdit(account)}
-                    size="icon-sm"
-                    type="button"
-                    variant="ghost"
-                  >
-                    <AppIcons.edit className="size-4" />
-                  </Button>
-                  <Button
-                    aria-label={t("settings.payments.receiving.delete")}
-                    className="rounded-full text-destructive hover:bg-destructive/10 hover:text-destructive"
-                    disabled={isPending}
-                    onClick={() => setDeleteId(account.id)}
-                    size="icon-sm"
-                    type="button"
-                    variant="ghost"
-                  >
-                    <AppIcons.trash className="size-4" />
-                  </Button>
-                </div>
-              </li>
-            ))}
+                  <div className="flex shrink-0 items-center gap-1">
+                    <Button
+                      aria-label={t("settings.payments.receiving.edit")}
+                      className="rounded-full"
+                      disabled={isPending}
+                      onClick={() => openEdit(account)}
+                      size="icon-sm"
+                      type="button"
+                      variant="ghost"
+                    >
+                      <AppIcons.edit className="size-4" />
+                    </Button>
+                    <Button
+                      aria-label={t("settings.payments.receiving.delete")}
+                      className="rounded-full text-destructive hover:bg-destructive/10 hover:text-destructive"
+                      disabled={isPending}
+                      onClick={() => setDeleteId(account.id)}
+                      size="icon-sm"
+                      type="button"
+                      variant="ghost"
+                    >
+                      <AppIcons.trash className="size-4" />
+                    </Button>
+                  </div>
+                </li>
+              );
+            })}
           </ul>
         )}
       </CardContent>

@@ -3,6 +3,7 @@
 import type * as React from "react";
 import { useEffect, useMemo, useRef } from "react";
 
+import { BankLogo } from "@/components/app/bank-logo";
 import {
   Combobox,
   ComboboxContent,
@@ -28,6 +29,8 @@ export type SearchableComboboxOption = {
   label: string;
   keywords?: string;
   description?: string;
+  /** Present (even if null) → show leading image/placeholder slot. */
+  imageUrl?: string | null;
 };
 
 type SearchableComboboxProps = {
@@ -86,14 +89,7 @@ function matchesOption(item: SearchableComboboxOption, query: string) {
   );
 }
 
-function OptionRow({
-  item,
-  renderItem,
-}: {
-  item: SearchableComboboxOption;
-  renderItem?: (item: SearchableComboboxOption) => React.ReactNode;
-}) {
-  if (renderItem) return <>{renderItem(item)}</>;
+function OptionLabel({ item }: { item: SearchableComboboxOption }) {
   if (item.description) {
     return (
       <span className="flex min-w-0 flex-1 flex-col gap-0.5">
@@ -103,6 +99,46 @@ function OptionRow({
     );
   }
   return <span className="min-w-0 flex-1 truncate">{item.label}</span>;
+}
+
+function OptionRow({
+  item,
+  renderItem,
+}: {
+  item: SearchableComboboxOption;
+  renderItem?: (item: SearchableComboboxOption) => React.ReactNode;
+}) {
+  if (renderItem) return <>{renderItem(item)}</>;
+  if (item.imageUrl !== undefined) {
+    return (
+      <span className="flex min-w-0 flex-1 items-center gap-2.5">
+        <BankLogo name={item.label} size="md" src={item.imageUrl} />
+        <OptionLabel item={item} />
+      </span>
+    );
+  }
+  return <OptionLabel item={item} />;
+}
+
+function DefaultValueLabel({
+  item,
+  placeholder,
+}: {
+  item: SearchableComboboxOption | null;
+  placeholder: string;
+}) {
+  if (!item) {
+    return <span className="truncate text-muted-foreground">{placeholder}</span>;
+  }
+  if (item.imageUrl !== undefined) {
+    return (
+      <span className="flex min-w-0 items-center gap-2">
+        <BankLogo name={item.label} size="sm" src={item.imageUrl} />
+        <span className="min-w-0 truncate">{item.label}</span>
+      </span>
+    );
+  }
+  return <span className="truncate">{item.label}</span>;
 }
 
 export function SearchableCombobox({
@@ -169,6 +205,8 @@ export function SearchableCombobox({
         <span className="min-w-0 flex-1 truncate text-left">
           {renderValue ? (
             renderValue(selected)
+          ) : selected?.imageUrl !== undefined ? (
+            <DefaultValueLabel item={selected} placeholder={placeholder} />
           ) : (
             <ComboboxValue placeholder={placeholder} />
           )}
