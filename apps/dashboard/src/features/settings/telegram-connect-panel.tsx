@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import { AppIcons } from "@/components/app/icons";
+import { UnsavedChangesDialog } from "@/components/app/unsaved-changes-dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -18,6 +19,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes-guard";
 import {
   buildNotificationEventsPayload,
   defaultNotificationEvents,
@@ -64,6 +66,7 @@ export function TelegramConnectPanel({
   const waiting = session?.status === "pending";
   const hasAccounts = destinations.length > 0;
   const eventsDirty = !sameNotificationEvents(eventsDraft, savedEvents);
+  const { leaveDialogOpen, confirmLeave, cancelLeave } = useUnsavedChangesGuard(eventsDirty);
 
   const loadDestinations = useCallback(async () => {
     const response = await fetch(`/admin/settings/notifications/telegram?${qs}`, {
@@ -647,6 +650,12 @@ export function TelegramConnectPanel({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <UnsavedChangesDialog
+        onLeave={confirmLeave}
+        onStay={cancelLeave}
+        open={leaveDialogOpen}
+      />
     </>
   );
 }

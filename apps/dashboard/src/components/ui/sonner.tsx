@@ -72,7 +72,6 @@ const Toaster = ({ className, toastOptions, ...props }: ToasterProps) => {
       mobileOffset={{ bottom: 16, right: 12, left: 12 }}
       offset={{ top: 16, right: 16 }}
       position="top-right"
-      richColors={false}
       style={
         {
           zIndex: 200,

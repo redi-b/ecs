@@ -9,6 +9,8 @@ import { ConfirmDialog } from "@/components/app/confirm-dialog";
 import { AppIcons } from "@/components/app/icons";
 import { HelpTip } from "@/components/app/help-tip";
 import { SearchableCombobox } from "@/components/app/searchable-combobox";
+import { UnsavedChangesDialog } from "@/components/app/unsaved-changes-dialog";
+import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes-guard";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -138,6 +140,8 @@ export function PaymentsSection({
   const status = onlineStatus(chapa);
   const connected = Boolean(chapa?.configured);
   const canSave = secretKey.trim().length > 0;
+  const secretDirty = secretKey.trim().length > 0;
+  const { leaveDialogOpen, confirmLeave, cancelLeave } = useUnsavedChangesGuard(secretDirty);
 
   function run(action: string, body: Record<string, unknown>, successKey: MessageKey) {
     startTransition(async () => {
@@ -482,6 +486,12 @@ export function PaymentsSection({
       </Card>
 
       <ReceivingAccountsCard />
+
+      <UnsavedChangesDialog
+        onLeave={confirmLeave}
+        onStay={cancelLeave}
+        open={leaveDialogOpen}
+      />
     </SettingsSectionBody>
   );
 }
@@ -520,10 +530,24 @@ function ReceivingAccountsCard() {
     Array<{ code: string; name: string; logoUrl?: string | null }>
   >([]);
   const [form, setForm] = useState<ReceivingAccountFormState>(emptyReceivingForm);
+  const [formBaseline, setFormBaseline] = useState<ReceivingAccountFormState>(emptyReceivingForm);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+
+  const formDirty = useMemo(
+    () =>
+      dialogOpen &&
+      (form.label !== formBaseline.label ||
+        form.bankCode !== formBaseline.bankCode ||
+        form.accountName !== formBaseline.accountName ||
+        form.accountNumber !== formBaseline.accountNumber ||
+        form.isDefault !== formBaseline.isDefault),
+    [dialogOpen, form, formBaseline],
+  );
+  const { leaveDialogOpen, requestLeave, confirmLeave, cancelLeave } =
+    useUnsavedChangesGuard(formDirty);
 
   const bankOptions = useMemo(
     () =>
@@ -579,22 +603,26 @@ function ReceivingAccountsCard() {
 
   function openCreate() {
     setEditingId(null);
-    setForm({
+    const next = {
       ...emptyReceivingForm(),
       isDefault: accounts.length === 0,
-    });
+    };
+    setForm(next);
+    setFormBaseline(next);
     setDialogOpen(true);
   }
 
   function openEdit(account: ReceivingAccountRow) {
     setEditingId(account.id);
-    setForm({
+    const next = {
       label: account.label,
       bankCode: account.bankCode ?? "",
       accountName: account.accountName ?? "",
       accountNumber: "",
       isDefault: account.isDefault,
-    });
+    };
+    setForm(next);
+    setFormBaseline(next);
     setDialogOpen(true);
   }
 
@@ -602,6 +630,11 @@ function ReceivingAccountsCard() {
     setDialogOpen(false);
     setEditingId(null);
     setForm(emptyReceivingForm());
+    setFormBaseline(emptyReceivingForm());
+  }
+
+  function requestCloseDialog() {
+    requestLeave(() => closeDialog());
   }
 
   function saveAccount() {
@@ -795,7 +828,7 @@ function ReceivingAccountsCard() {
 
       <Dialog
         onOpenChange={(open) => {
-          if (!open) closeDialog();
+          if (!open) requestCloseDialog();
           else setDialogOpen(true);
         }}
         open={dialogOpen}
@@ -907,7 +940,12 @@ function ReceivingAccountsCard() {
 
           {/* p-0 content: cancel DialogFooter negative margins (same as mark-paid / create dialogs). */}
           <DialogFooter className="mx-0 mb-0 rounded-none border-t bg-muted/50 p-4">
-            <Button disabled={isPending} onClick={closeDialog} type="button" variant="outline">
+            <Button
+              disabled={isPending}
+              onClick={() => requestCloseDialog()}
+              type="button"
+              variant="outline"
+            >
               {t("common.cancel")}
             </Button>
             <Button disabled={!canSave} onClick={saveAccount} type="button">
@@ -918,6 +956,12 @@ function ReceivingAccountsCard() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <UnsavedChangesDialog
+        onLeave={confirmLeave}
+        onStay={cancelLeave}
+        open={leaveDialogOpen}
+      />
 
       <ConfirmDialog
         cancelDisabled={isPending}

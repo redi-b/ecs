@@ -10,11 +10,13 @@ import { toast } from "sonner";
 import { DataTable } from "@/components/app/data-table";
 import { DetailMetric, DetailSection } from "@/components/app/detail-surface";
 import { AppIcons } from "@/components/app/icons";
+import { UnsavedChangesDialog } from "@/components/app/unsaved-changes-dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes-guard";
 import type { MessageKey } from "@/i18n/messages";
 import { useI18n } from "@/i18n/provider";
 import { getTenantScopedPath } from "@/lib/dashboard-tenant-context";
@@ -64,6 +66,14 @@ export function SingleVariantStockPanel({
       : String(initialStock.stockedQuantity),
   );
   const [actionError, setActionError] = useState<string | null>(null);
+
+  const baselineQuantity =
+    stock?.stockedQuantity === null || stock?.stockedQuantity === undefined
+      ? ""
+      : String(stock.stockedQuantity);
+  const stockDirty = stockedQuantity !== baselineQuantity;
+  const { leaveDialogOpen, confirmLeave, cancelLeave } = useUnsavedChangesGuard(stockDirty);
+
   const mutation = useMutation({
     mutationFn: async () => {
       const parsedQuantity = Number.parseInt(stockedQuantity, 10);
@@ -95,6 +105,11 @@ export function SingleVariantStockPanel({
     },
     onSuccess: async (nextStock) => {
       setStock(nextStock);
+      setStockedQuantity(
+        nextStock.stockedQuantity === null || nextStock.stockedQuantity === undefined
+          ? ""
+          : String(nextStock.stockedQuantity),
+      );
       setActionError(null);
       await queryClient.invalidateQueries({ queryKey: ["product", productId] });
       toast.success(t("products.stock.toastUpdated"));
@@ -118,6 +133,7 @@ export function SingleVariantStockPanel({
   }
 
   return (
+    <>
     <DetailSection
       meta={<StockStateBadge availableQuantity={getAvailableQuantity(stock)} />}
       title={t("products.stock.title")}
@@ -177,6 +193,12 @@ export function SingleVariantStockPanel({
         </Alert>
       ) : null}
     </DetailSection>
+    <UnsavedChangesDialog
+      onLeave={confirmLeave}
+      onStay={cancelLeave}
+      open={leaveDialogOpen}
+    />
+    </>
   );
 }
 
@@ -228,6 +250,20 @@ export function VariantStockPanel({
     );
   }, [query, t, variants]);
   const columns = useMemo(() => getVariantInventoryColumns(t), [t]);
+
+  const multiStockDirty = useMemo(() => {
+    return variants.some((variant) => {
+      const stock = stockByVariantId[variant.id];
+      const baseline =
+        stock?.stockedQuantity === null || stock?.stockedQuantity === undefined
+          ? ""
+          : String(stock.stockedQuantity);
+      const current = stockedQuantityByVariantId[variant.id] ?? baseline;
+      return current !== baseline;
+    });
+  }, [stockByVariantId, stockedQuantityByVariantId, variants]);
+  const { leaveDialogOpen, confirmLeave, cancelLeave } =
+    useUnsavedChangesGuard(multiStockDirty);
 
   useEffect(() => {
     let cancelled = false;
@@ -375,6 +411,7 @@ export function VariantStockPanel({
   );
 
   return (
+    <>
     <DetailSection
       meta={
         <div className="flex flex-wrap items-center gap-1.5">
@@ -433,6 +470,12 @@ export function VariantStockPanel({
         }
       />
     </DetailSection>
+    <UnsavedChangesDialog
+      onLeave={confirmLeave}
+      onStay={cancelLeave}
+      open={leaveDialogOpen}
+    />
+    </>
   );
 }
 

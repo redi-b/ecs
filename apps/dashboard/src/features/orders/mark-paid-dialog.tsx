@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { SearchableCombobox } from "@/components/app/searchable-combobox";
+import { UnsavedChangesDialog } from "@/components/app/unsaved-changes-dialog";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -12,6 +13,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes-guard";
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import type { MessageKey } from "@/i18n/messages";
@@ -117,6 +119,22 @@ export function MarkPaidDialog({
     setNote("");
   }, [open, accounts]);
 
+  const defaultAccountId = accounts.find((account) => account.isDefault)?.id ?? "";
+  const isDirty = useMemo(() => {
+    if (method !== "cash") return true;
+    if (reference.trim() || note.trim() || bankCode) return true;
+    if (receivingAccountId && receivingAccountId !== defaultAccountId) return true;
+    if (!receivingAccountId && defaultAccountId) return true;
+    return false;
+  }, [bankCode, defaultAccountId, method, note, receivingAccountId, reference]);
+
+  const { leaveDialogOpen, requestLeave, confirmLeave, cancelLeave } =
+    useUnsavedChangesGuard(isDirty && open);
+
+  function requestClose() {
+    requestLeave(() => onOpenChange(false));
+  }
+
   const selectedAccount = useMemo(
     () => accounts.find((account) => account.id === receivingAccountId) ?? null,
     [accounts, receivingAccountId],
@@ -174,7 +192,14 @@ export function MarkPaidDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <>
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        if (!next) requestClose();
+        else onOpenChange(true);
+      }}
+    >
       <DialogContent className="flex max-h-[min(92dvh,40rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-md">
         <DialogHeader className="shrink-0 gap-1.5 border-b px-4 py-4 text-left sm:px-5">
           <DialogTitle>{title ?? t("orders.settlement.dialogTitle")}</DialogTitle>
@@ -284,7 +309,7 @@ export function MarkPaidDialog({
             type="button"
             variant="outline"
             disabled={pending}
-            onClick={() => onOpenChange(false)}
+            onClick={() => requestClose()}
           >
             {t("common.cancel")}
           </Button>
@@ -296,5 +321,11 @@ export function MarkPaidDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+    <UnsavedChangesDialog
+      onLeave={confirmLeave}
+      onStay={cancelLeave}
+      open={leaveDialogOpen}
+    />
+    </>
   );
 }
