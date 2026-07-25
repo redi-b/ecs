@@ -26,7 +26,6 @@ import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes-guard";
 import type { MessageKey } from "@/i18n/messages";
 import { useI18n } from "@/i18n/provider";
 import type { MerchantCustomerAddress } from "@/lib/merchant-customers";
-import { cn } from "@/lib/utils";
 
 type Translate = (key: MessageKey, values?: Record<string, string | number | Date>) => string;
 
@@ -92,10 +91,6 @@ function contactDiffersFromProfile(
     norm(values.phone) !== norm(profile.phone)
   );
 }
-
-/** Shared action-row button classes so Edit / Remove sit on one optical baseline. */
-const addressActionButtonClass =
-  "h-7 gap-1.5 px-2.5 text-[0.8rem] leading-none [&_svg]:size-3.5";
 
 export function CustomerAddressDialog({
   address,
@@ -247,21 +242,16 @@ export function CustomerAddressDialog({
           trigger ? <SheetTrigger asChild>{trigger}</SheetTrigger> : null
         ) : (
           <SheetTrigger asChild>
-            <Button
-              className={addressActionButtonClass}
-              size="sm"
-              type="button"
-              variant={isEdit ? "outline" : "default"}
-            >
+            <Button size="sm" type="button" variant={isEdit ? "outline" : "default"}>
               {isEdit ? (
                 <>
-                  <AppIcons.edit data-icon="inline-start" />
-                  {t("customers.addresses.edit")}
+                  <AppIcons.edit aria-hidden className="size-3 shrink-0" />
+                  <span>{t("customers.addresses.edit")}</span>
                 </>
               ) : (
                 <>
-                  <AppIcons.mapPin data-icon="inline-start" />
-                  {t("customers.addresses.add")}
+                  <AppIcons.mapPin aria-hidden className="size-3 shrink-0" />
+                  <span>{t("customers.addresses.add")}</span>
                 </>
               )}
             </Button>
@@ -519,14 +509,9 @@ export function CustomerAddressDeleteButton({
       title={t("customers.addresses.removeTitle")}
       tone="destructive"
       trigger={
-        <Button
-          className={cn(addressActionButtonClass)}
-          size="sm"
-          type="button"
-          variant="destructive-outline"
-        >
-          <AppIcons.trash data-icon="inline-start" />
-          {t("customers.addresses.remove")}
+        <Button size="sm" type="button" variant="destructive-outline">
+          <AppIcons.trash aria-hidden className="size-3 shrink-0" />
+          <span>{t("customers.addresses.remove")}</span>
         </Button>
       }
     />
