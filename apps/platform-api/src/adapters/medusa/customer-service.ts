@@ -66,7 +66,7 @@ export function createMedusaCustomerService(options: Options) {
   async function findByEmail(email: string): Promise<MerchantCustomer | null> {
     const search = new URLSearchParams({
       email,
-      fields: "+groups,+addresses",
+      fields: "*addresses,*groups",
       limit: "1",
     });
     const response = await fetcher(`${base}/admin/customers?${search}`, {
@@ -100,7 +100,8 @@ export function createMedusaCustomerService(options: Options) {
     const group = await tenantGroup(input.tenantId);
     if (!group) return unavailable();
     const search = new URLSearchParams({
-      fields: "+groups,+addresses",
+      // Medusa v2: expand relations with *prefix (bare +addresses often returns []).
+      fields: "*addresses,*groups",
       groups: group.id,
       limit: String(input.limit),
       offset: String(input.offset),
@@ -130,9 +131,10 @@ export function createMedusaCustomerService(options: Options) {
     return (Array.isArray(data.customers) ? data.customers : []).map(normalizeCustomer);
   }
 
+  /** List-only fields for membership probes (no need for full address trees). */
   function groupListParams(groupId: string, limit = 5) {
     return new URLSearchParams({
-      fields: "+groups,+addresses",
+      fields: "id,email,*groups",
       groups: groupId,
       limit: String(limit),
       offset: "0",
@@ -143,7 +145,7 @@ export function createMedusaCustomerService(options: Options) {
     customerId: string;
     email?: string | undefined;
     groupId: string;
-  }): Promise<MerchantCustomer | null> {
+  }): Promise<boolean> {
     // Medusa admin list filters differ slightly by version; try common shapes.
     const attempts: URLSearchParams[] = [];
 
@@ -167,10 +169,30 @@ export function createMedusaCustomerService(options: Options) {
 
     for (const search of attempts) {
       const rows = await listCustomersInGroup(search);
-      const match = rows.find((row) => row.id === options.customerId);
-      if (match) return match;
+      if (rows.some((row) => row.id === options.customerId)) return true;
     }
-    return null;
+    return false;
+  }
+
+  async function retrieveCustomer(customerId: string): Promise<MerchantCustomerResult> {
+    const response = await fetcher(
+      `${base}/admin/customers/${encodeURIComponent(customerId)}?fields=*addresses,*groups`,
+      { headers: headers() },
+    ).catch(() => null);
+    if (!response) {
+      return { ok: false, error: "commerce_backend_unavailable", status: 503 };
+    }
+    if (response.status === 404) {
+      return { ok: false, error: "customer_not_found", status: 404 };
+    }
+    if (!response.ok) {
+      return await mapError(response);
+    }
+    const customer = normalizeCustomer((await response.json().catch(() => ({}))).customer);
+    if (!customer.id) {
+      return { ok: false, error: "customer_not_found", status: 404 };
+    }
+    return { ok: true, customer };
   }
 
   async function getCustomer(input: {
@@ -182,47 +204,33 @@ export function createMedusaCustomerService(options: Options) {
     const groupId = String(group.id);
     const groupName = String(group.name ?? "Customers");
 
-    // Prefer tenant-scoped list match first. Retrieve often omits `groups`, which
-    // previously caused false 404s for customers that appear on the list.
-    const scoped = await findCustomerInShopGroup({
-      customerId: input.customerId,
-      groupId,
-    });
-    if (scoped) {
-      return {
-        customer: ensureShopGroup(scoped, groupId, groupName),
-        ok: true,
-      };
+    // Always load the full customer (with addresses). Membership may be checked via
+    // list filters because retrieve sometimes omits shop groups.
+    const retrieved = await retrieveCustomer(input.customerId);
+    if (!retrieved.ok) {
+      return retrieved;
     }
-
-    const response = await fetcher(
-      `${base}/admin/customers/${encodeURIComponent(input.customerId)}?fields=+groups,+addresses,*groups,*addresses`,
-      { headers: headers() },
-    ).catch(() => null);
-    if (!response?.ok)
-      return response?.status === 404
-        ? { error: "customer_not_found", ok: false, status: 404 }
-        : await mapError(response);
-    const customer = normalizeCustomer((await response.json().catch(() => ({}))).customer);
-    if (!customer.id) {
-      return { error: "customer_not_found", ok: false, status: 404 };
-    }
+    const customer = retrieved.customer;
 
     if (customer.groups.some((item) => item.id === groupId)) {
-      return { customer, ok: true };
+      return { customer: ensureShopGroup(customer, groupId, groupName), ok: true };
     }
 
-    // Last check with email once we know it from retrieve.
-    const scopedByEmail = await findCustomerInShopGroup({
-      customerId: customer.id,
-      email: customer.email,
-      groupId,
-    });
-    if (scopedByEmail) {
-      return {
-        customer: ensureShopGroup(customer, groupId, groupName),
-        ok: true,
-      };
+    const inShop =
+      (await findCustomerInShopGroup({
+        customerId: customer.id,
+        groupId,
+      })) ||
+      (customer.email
+        ? await findCustomerInShopGroup({
+            customerId: customer.id,
+            email: customer.email,
+            groupId,
+          })
+        : false);
+
+    if (inShop) {
+      return { customer: ensureShopGroup(customer, groupId, groupName), ok: true };
     }
 
     return { error: "customer_not_found", ok: false, status: 404 };
@@ -471,38 +479,46 @@ function toAddressPayload(input: MerchantCustomerAddressInput) {
 
 function normalizeAddress(value: any): MerchantCustomerAddress {
   return {
-    address1: value?.address_1 ?? null,
-    address2: value?.address_2 ?? null,
-    addressName: value?.address_name ?? null,
+    address1: value?.address_1 ?? value?.address1 ?? null,
+    address2: value?.address_2 ?? value?.address2 ?? null,
+    addressName: value?.address_name ?? value?.addressName ?? null,
     city: value?.city ?? null,
     company: value?.company ?? null,
-    countryCode: value?.country_code ?? null,
-    firstName: value?.first_name ?? null,
+    countryCode: value?.country_code ?? value?.countryCode ?? null,
+    firstName: value?.first_name ?? value?.firstName ?? null,
     id: String(value?.id ?? ""),
-    isDefaultBilling: Boolean(value?.is_default_billing),
-    isDefaultShipping: Boolean(value?.is_default_shipping),
-    lastName: value?.last_name ?? null,
+    isDefaultBilling: Boolean(value?.is_default_billing ?? value?.isDefaultBilling),
+    isDefaultShipping: Boolean(value?.is_default_shipping ?? value?.isDefaultShipping),
+    lastName: value?.last_name ?? value?.lastName ?? null,
     phone: value?.phone ?? null,
-    postalCode: value?.postal_code ?? null,
+    postalCode: value?.postal_code ?? value?.postalCode ?? null,
     province: value?.province ?? null,
   };
 }
 
 function normalizeCustomer(value: any): MerchantCustomer {
+  const rawAddresses = Array.isArray(value?.addresses)
+    ? value.addresses
+    : Array.isArray(value?.customer_addresses)
+      ? value.customer_addresses
+      : [];
   return {
-    addresses: (Array.isArray(value?.addresses) ? value.addresses : []).map(normalizeAddress),
-    companyName: value?.company_name ?? null,
-    createdAt: value?.created_at ?? new Date(0).toISOString(),
+    addresses: rawAddresses
+      .map(normalizeAddress)
+      .filter((address: MerchantCustomerAddress) => Boolean(address.id)),
+    companyName: value?.company_name ?? value?.companyName ?? null,
+    createdAt: value?.created_at ?? value?.createdAt ?? new Date(0).toISOString(),
     email: String(value?.email ?? ""),
-    firstName: value?.first_name ?? null,
+    firstName: value?.first_name ?? value?.firstName ?? null,
     groups: (Array.isArray(value?.groups) ? value.groups : []).map((g: any) => ({
       id: String(g.id),
       name: String(g.name ?? "Group"),
     })),
     id: String(value?.id ?? ""),
-    lastName: value?.last_name ?? null,
+    lastName: value?.last_name ?? value?.lastName ?? null,
     phone: value?.phone ?? null,
-    updatedAt: value?.updated_at ?? value?.created_at ?? new Date(0).toISOString(),
+    updatedAt:
+      value?.updated_at ?? value?.updatedAt ?? value?.created_at ?? new Date(0).toISOString(),
   };
 }
 
