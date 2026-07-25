@@ -410,7 +410,7 @@ export function CustomerAddressDeleteButton({
       title={t("customers.addresses.removeTitle")}
       tone="destructive"
       trigger={
-        <Button size="sm" type="button" variant="ghost">
+        <Button size="sm" type="button" variant="destructive-outline">
           <AppIcons.trash data-icon="inline-start" />
           {t("customers.addresses.remove")}
         </Button>

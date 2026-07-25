@@ -38,14 +38,19 @@ import {
 import { cn } from "@/lib/utils";
 
 import {
+  addressFormFromSaved,
   emptyAddress,
+  formatCustomerAddressLabel,
   formatPrice,
+  MANUAL_ADDRESS_NEW,
   type AddressForm,
   type CatalogVariant,
+  type CustomerAddressOption,
   type CustomerOption,
   type LineItem,
 } from "./manual-order-model";
 import { CreateOrderTriggerButton, CustomerPicker } from "./manual-order-parts";
+import { SearchableCombobox } from "@/components/app/searchable-combobox";
 
 export function ManualOrderCreateDialog() {
   return (
@@ -82,6 +87,8 @@ function ManualOrderCreateDialogInner() {
   const [note, setNote] = useState("");
   const [includeAddress, setIncludeAddress] = useState(true);
   const [address, setAddress] = useState<AddressForm>(emptyAddress);
+  /** Saved book entry id, or MANUAL_ADDRESS_NEW for a one-off typed address. */
+  const [savedAddressId, setSavedAddressId] = useState<string>(MANUAL_ADDRESS_NEW);
 
   const [variants, setVariants] = useState<CatalogVariant[]>([]);
   const [customers, setCustomers] = useState<CustomerOption[]>([]);
@@ -198,6 +205,18 @@ function ManualOrderCreateDialogInner() {
       .then(async (response) => {
         const data = (await response.json().catch(() => ({}))) as {
           customers?: Array<{
+            addresses?: Array<{
+              address1?: string | null;
+              addressName?: string | null;
+              city?: string | null;
+              firstName?: string | null;
+              id: string;
+              isDefaultBilling?: boolean;
+              isDefaultShipping?: boolean;
+              lastName?: string | null;
+              phone?: string | null;
+              province?: string | null;
+            }>;
             email: string;
             firstName?: string | null;
             id: string;
@@ -208,7 +227,31 @@ function ManualOrderCreateDialogInner() {
         if (!response.ok || !Array.isArray(data.customers)) return [] as CustomerOption[];
         return data.customers.map((customer) => {
           const name = [customer.firstName, customer.lastName].filter(Boolean).join(" ").trim();
+          const addresses: CustomerAddressOption[] = (customer.addresses ?? []).map((row) => {
+            const isDefault = Boolean(row.isDefaultShipping || row.isDefaultBilling);
+            const label = formatCustomerAddressLabel({
+              address1: row.address1 ?? null,
+              addressName: row.addressName ?? null,
+              city: row.city ?? null,
+              province: row.province ?? null,
+              fallback: row.id,
+            });
+            return {
+              address1: row.address1 ?? null,
+              city: row.city ?? null,
+              firstName: row.firstName ?? null,
+              id: row.id,
+              isDefault,
+              label,
+              lastName: row.lastName ?? null,
+              phone: row.phone ?? null,
+              province: row.province ?? null,
+            };
+          });
+          // Prefer default first for combobox order.
+          addresses.sort((a, b) => Number(b.isDefault) - Number(a.isDefault));
           return {
+            addresses,
             email: customer.email,
             firstName: customer.firstName ?? null,
             id: customer.id,
@@ -227,6 +270,8 @@ function ManualOrderCreateDialogInner() {
     () => customers.find((customer) => customer.id === customerId) ?? null,
     [customerId, customers],
   );
+
+  const savedAddresses = selectedCustomer?.addresses ?? [];
 
   const variantById = useMemo(
     () => new Map(variants.map((variant) => [variant.id, variant])),
@@ -285,6 +330,7 @@ function ManualOrderCreateDialogInner() {
     setNote("");
     setIncludeAddress(true);
     setAddress(emptyAddress);
+    setSavedAddressId(MANUAL_ADDRESS_NEW);
   }
 
   function canContinueFromCustomer() {
@@ -362,17 +408,66 @@ function ManualOrderCreateDialogInner() {
     // Always keep the id so Continue can enable even if catalog metadata is thin.
     setCustomerMode("existing");
     setCustomerId(id);
-    if (!customer) return;
+    if (!customer) {
+      setSavedAddressId(MANUAL_ADDRESS_NEW);
+      return;
+    }
     setCustomerEmail(customer.email ?? "");
     setCustomerFirstName(customer.firstName ?? "");
     setCustomerLastName(customer.lastName ?? "");
     setCustomerPhone(customer.phone ?? "");
-    setAddress((current) => ({
-      ...current,
-      firstName: customer.firstName ?? current.firstName,
-      lastName: customer.lastName ?? current.lastName,
-      phone: customer.phone ?? current.phone,
-    }));
+
+    const preferred =
+      customer.addresses.find((row) => row.isDefault) ?? customer.addresses[0] ?? null;
+    if (preferred) {
+      setSavedAddressId(preferred.id);
+      setAddress(
+        addressFormFromSaved(preferred, {
+          firstName: customer.firstName,
+          lastName: customer.lastName,
+          phone: customer.phone,
+        }),
+      );
+      setIncludeAddress(true);
+    } else {
+      setSavedAddressId(MANUAL_ADDRESS_NEW);
+      setAddress({
+        ...emptyAddress,
+        firstName: customer.firstName ?? "",
+        lastName: customer.lastName ?? "",
+        phone: customer.phone ?? "",
+      });
+    }
+  }
+
+  function selectSavedAddress(id: string) {
+    setSavedAddressId(id);
+    if (id === MANUAL_ADDRESS_NEW) {
+      setAddress({
+        ...emptyAddress,
+        firstName: customerFirstName,
+        lastName: customerLastName,
+        phone: customerPhone,
+      });
+      return;
+    }
+    const saved = savedAddresses.find((row) => row.id === id);
+    if (!saved) return;
+    setAddress(
+      addressFormFromSaved(saved, {
+        firstName: customerFirstName,
+        lastName: customerLastName,
+        phone: customerPhone,
+      }),
+    );
+  }
+
+  function patchAddress<K extends keyof AddressForm>(key: K, value: AddressForm[K]) {
+    // Typing after a saved pick keeps the fields but marks the entry as a one-off edit.
+    if (savedAddressId !== MANUAL_ADDRESS_NEW) {
+      setSavedAddressId(MANUAL_ADDRESS_NEW);
+    }
+    setAddress((current) => ({ ...current, [key]: value }));
   }
 
   function switchToNewCustomer() {
@@ -382,6 +477,8 @@ function ManualOrderCreateDialogInner() {
     setCustomerFirstName("");
     setCustomerLastName("");
     setCustomerPhone("");
+    setSavedAddressId(MANUAL_ADDRESS_NEW);
+    setAddress(emptyAddress);
   }
 
   function setSelectedVariantIds(ids: string[]) {
@@ -776,13 +873,41 @@ function ManualOrderCreateDialogInner() {
 
                 {includeAddress ? (
                   <>
+                    {customerMode === "existing" && savedAddresses.length > 0 ? (
+                      <Field className="sm:col-span-2">
+                        <FieldLabel>{t("orders.create.savedAddress")}</FieldLabel>
+                        <SearchableCombobox
+                          emptyLabel={t("orders.create.noSavedAddresses")}
+                          onChange={selectSavedAddress}
+                          options={[
+                            ...savedAddresses.map((row) => ({
+                              value: row.id,
+                              label: row.isDefault
+                                ? t("orders.create.savedAddressDefault", { label: row.label })
+                                : row.label,
+                              keywords: [row.address1, row.city, row.province, row.phone]
+                                .filter(Boolean)
+                                .join(" "),
+                            })),
+                            {
+                              value: MANUAL_ADDRESS_NEW,
+                              label: t("orders.create.enterNewAddress"),
+                              keywords: "new custom other",
+                            },
+                          ]}
+                          placeholder={t("orders.create.selectSavedAddress")}
+                          searchPlaceholder={t("orders.create.searchSavedAddress")}
+                          value={savedAddressId}
+                        />
+                        <FieldDescription>{t("orders.create.savedAddressHint")}</FieldDescription>
+                      </Field>
+                    ) : null}
+
                     <Field>
                       <FieldLabel htmlFor="mo-af">{t("orders.create.firstName")}</FieldLabel>
                       <Input
                         id="mo-af"
-                        onChange={(event) =>
-                          setAddress((current) => ({ ...current, firstName: event.target.value }))
-                        }
+                        onChange={(event) => patchAddress("firstName", event.target.value)}
                         value={address.firstName}
                       />
                     </Field>
@@ -790,9 +915,7 @@ function ManualOrderCreateDialogInner() {
                       <FieldLabel htmlFor="mo-al">{t("orders.create.lastName")}</FieldLabel>
                       <Input
                         id="mo-al"
-                        onChange={(event) =>
-                          setAddress((current) => ({ ...current, lastName: event.target.value }))
-                        }
+                        onChange={(event) => patchAddress("lastName", event.target.value)}
                         value={address.lastName}
                       />
                     </Field>
@@ -800,9 +923,7 @@ function ManualOrderCreateDialogInner() {
                       <FieldLabel htmlFor="mo-a1">{t("orders.create.address")}</FieldLabel>
                       <Input
                         id="mo-a1"
-                        onChange={(event) =>
-                          setAddress((current) => ({ ...current, address1: event.target.value }))
-                        }
+                        onChange={(event) => patchAddress("address1", event.target.value)}
                         placeholder={t("orders.create.addressPlaceholder")}
                         value={address.address1}
                       />
@@ -811,9 +932,7 @@ function ManualOrderCreateDialogInner() {
                       <FieldLabel htmlFor="mo-city">{t("orders.create.city")}</FieldLabel>
                       <Input
                         id="mo-city"
-                        onChange={(event) =>
-                          setAddress((current) => ({ ...current, city: event.target.value }))
-                        }
+                        onChange={(event) => patchAddress("city", event.target.value)}
                         placeholder={t("orders.create.cityPlaceholder")}
                         value={address.city}
                       />
@@ -822,9 +941,7 @@ function ManualOrderCreateDialogInner() {
                       <FieldLabel htmlFor="mo-zone">{t("orders.create.region")}</FieldLabel>
                       <Input
                         id="mo-zone"
-                        onChange={(event) =>
-                          setAddress((current) => ({ ...current, province: event.target.value }))
-                        }
+                        onChange={(event) => patchAddress("province", event.target.value)}
                         placeholder={t("orders.create.regionPlaceholder")}
                         value={address.province}
                       />
@@ -833,9 +950,7 @@ function ManualOrderCreateDialogInner() {
                       <FieldLabel htmlFor="mo-ph">{t("orders.create.phone")}</FieldLabel>
                       <Input
                         id="mo-ph"
-                        onChange={(event) =>
-                          setAddress((current) => ({ ...current, phone: event.target.value }))
-                        }
+                        onChange={(event) => patchAddress("phone", event.target.value)}
                         placeholder={t("orders.create.phonePlaceholder")}
                         value={address.phone}
                       />
