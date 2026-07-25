@@ -1,11 +1,11 @@
 "use client";
 
 import type { ColumnDef } from "@tanstack/react-table";
-import Link from "@/components/app/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState, useTransition, type ReactNode } from "react";
 import { toast } from "sonner";
 
+import Link from "@/components/app/link";
 import { DataTable } from "@/components/app/data-table";
 import { DataTableFilters } from "@/components/app/data-table-filters";
 import { DataTableHeader } from "@/components/app/data-table-header";
@@ -19,7 +19,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { CustomerFormDialog } from "@/features/customers/customer-form-dialog";
 import { copyTextToClipboard } from "@/lib/clipboard";
 import type { MerchantCustomer } from "@/lib/merchant-customers";
-import { listEntityActionClassName } from "@/lib/list-entity-link";
+import { listEntityLinkClassName } from "@/lib/list-entity-link";
 import { dashboardRoutes } from "@/lib/routes";
 import type { MessageKey } from "@/i18n/messages";
 import { useI18n } from "@/i18n/provider";
@@ -140,13 +140,13 @@ export function CustomersTable({
               data-highlighted={isHighlighted ? "true" : undefined}
               id={isHighlighted ? `customer-row-${row.original.id}` : undefined}
             >
-              <button
-                className={cn(listEntityActionClassName, "truncate")}
-                onClick={() => setEditing(row.original)}
-                type="button"
+              <Link
+                className={cn(listEntityLinkClassName, "truncate")}
+                href={dashboardRoutes.customerDetail(row.original.id)}
+                prefetch={false}
               >
                 {customerDisplayName(row.original)}
-              </button>
+              </Link>
               <p className="truncate text-xs text-muted-foreground">{row.original.email}</p>
             </div>
           );

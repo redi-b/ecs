@@ -172,7 +172,9 @@ export function getProductColumns(
         <DataTableHeader column={column} title={t("products.table.price")} />
       ),
       cell: ({ row }) => (
-        <span className="text-muted-foreground">{formatProductPriceRange(row.original)}</span>
+        <span className="text-muted-foreground">
+          {formatProductPriceRange(row.original, t("products.detail.noPrice"))}
+        </span>
       ),
     },
     {

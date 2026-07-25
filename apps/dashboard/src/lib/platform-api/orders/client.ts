@@ -15,6 +15,7 @@ export type MerchantOrderListParams = {
   created?: string | undefined;
   createdFrom?: string | undefined;
   createdTo?: string | undefined;
+  customerId?: string | undefined;
   delivery?: string | undefined;
   limit?: number | undefined;
   method?: string | undefined;
@@ -256,6 +257,7 @@ function getOrdersUrl(
 
   setIf("limit", options.limit);
   setIf("offset", options.offset);
+  setIf("customerId", options.customerId);
   setIf("q", options.q);
   setIf("progress", options.progress);
   setIf("payment", options.payment ?? options.paymentStatus);

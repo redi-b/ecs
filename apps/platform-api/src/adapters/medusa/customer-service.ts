@@ -121,14 +121,82 @@ export function createMedusaCustomerService(options: Options) {
     };
   }
 
+  async function listCustomersInGroup(search: URLSearchParams): Promise<MerchantCustomer[]> {
+    const response = await fetcher(`${base}/admin/customers?${search}`, {
+      headers: headers(),
+    }).catch(() => null);
+    if (!response?.ok) return [];
+    const data = await response.json().catch(() => ({}));
+    return (Array.isArray(data.customers) ? data.customers : []).map(normalizeCustomer);
+  }
+
+  function groupListParams(groupId: string, limit = 5) {
+    return new URLSearchParams({
+      fields: "+groups,+addresses",
+      groups: groupId,
+      limit: String(limit),
+      offset: "0",
+    });
+  }
+
+  async function findCustomerInShopGroup(options: {
+    customerId: string;
+    email?: string | undefined;
+    groupId: string;
+  }): Promise<MerchantCustomer | null> {
+    // Medusa admin list filters differ slightly by version; try common shapes.
+    const attempts: URLSearchParams[] = [];
+
+    const byId = groupListParams(options.groupId, 5);
+    byId.set("id", options.customerId);
+    attempts.push(byId);
+
+    const byIdArray = groupListParams(options.groupId, 5);
+    byIdArray.append("id[]", options.customerId);
+    attempts.push(byIdArray);
+
+    if (options.email?.trim()) {
+      const byEmail = groupListParams(options.groupId, 10);
+      byEmail.set("email", options.email.trim());
+      attempts.push(byEmail);
+
+      const byQuery = groupListParams(options.groupId, 10);
+      byQuery.set("q", options.email.trim());
+      attempts.push(byQuery);
+    }
+
+    for (const search of attempts) {
+      const rows = await listCustomersInGroup(search);
+      const match = rows.find((row) => row.id === options.customerId);
+      if (match) return match;
+    }
+    return null;
+  }
+
   async function getCustomer(input: {
     customerId: string;
     tenantId: string;
   }): Promise<MerchantCustomerResult> {
     const group = await tenantGroup(input.tenantId);
     if (!group) return unavailable();
+    const groupId = String(group.id);
+    const groupName = String(group.name ?? "Customers");
+
+    // Prefer tenant-scoped list match first. Retrieve often omits `groups`, which
+    // previously caused false 404s for customers that appear on the list.
+    const scoped = await findCustomerInShopGroup({
+      customerId: input.customerId,
+      groupId,
+    });
+    if (scoped) {
+      return {
+        customer: ensureShopGroup(scoped, groupId, groupName),
+        ok: true,
+      };
+    }
+
     const response = await fetcher(
-      `${base}/admin/customers/${encodeURIComponent(input.customerId)}?fields=+groups,+addresses`,
+      `${base}/admin/customers/${encodeURIComponent(input.customerId)}?fields=+groups,+addresses,*groups,*addresses`,
       { headers: headers() },
     ).catch(() => null);
     if (!response?.ok)
@@ -136,9 +204,28 @@ export function createMedusaCustomerService(options: Options) {
         ? { error: "customer_not_found", ok: false, status: 404 }
         : await mapError(response);
     const customer = normalizeCustomer((await response.json().catch(() => ({}))).customer);
-    return customer.groups.some((item) => item.id === group.id)
-      ? { customer, ok: true }
-      : { error: "customer_not_found", ok: false, status: 404 };
+    if (!customer.id) {
+      return { error: "customer_not_found", ok: false, status: 404 };
+    }
+
+    if (customer.groups.some((item) => item.id === groupId)) {
+      return { customer, ok: true };
+    }
+
+    // Last check with email once we know it from retrieve.
+    const scopedByEmail = await findCustomerInShopGroup({
+      customerId: customer.id,
+      email: customer.email,
+      groupId,
+    });
+    if (scopedByEmail) {
+      return {
+        customer: ensureShopGroup(customer, groupId, groupName),
+        ok: true,
+      };
+    }
+
+    return { error: "customer_not_found", ok: false, status: 404 };
   }
 
   async function createCustomer(input: CustomerInput): Promise<MerchantCustomerResult> {
@@ -417,6 +504,20 @@ function normalizeCustomer(value: any): MerchantCustomer {
     lastName: value?.last_name ?? null,
     phone: value?.phone ?? null,
     updatedAt: value?.updated_at ?? value?.created_at ?? new Date(0).toISOString(),
+  };
+}
+
+function ensureShopGroup(
+  customer: MerchantCustomer,
+  groupId: string,
+  groupName: string,
+): MerchantCustomer {
+  if (customer.groups.some((group) => group.id === groupId)) {
+    return customer;
+  }
+  return {
+    ...customer,
+    groups: [...customer.groups, { id: groupId, name: groupName }],
   };
 }
 

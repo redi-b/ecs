@@ -294,6 +294,7 @@
     "title": "Shop management",
     "description": "Link Telegram for management access.",
     "headerDescription": "Owners and managers can link Telegram for shop tools: New sale, Stock, Today, and Orders.",
+    "howTitle": "How linking works",
     "step1": "We’ll open Telegram with a one-time link for this shop.",
     "step2": "Tap Start in the chat to confirm access.",
     "step3": "Come back here. The account appears when linking succeeds.",

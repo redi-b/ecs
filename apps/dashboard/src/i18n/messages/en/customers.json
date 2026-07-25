@@ -6,12 +6,13 @@
     "loadDescription": "The customers list is temporarily unavailable. Refresh and try again."
   },
   "detail": {
-    "shellDescription": "Customer identity, contact information, groups, and saved addresses.",
+    "shellDescription": "Orders and delivery addresses for this customer.",
     "contact": "Contact",
     "email": "Email",
     "phone": "Phone",
     "company": "Company",
     "customerSince": "Customer since",
+    "memberSince": "Customer since {date}",
     "groups": "Groups",
     "addresses": "Addresses",
     "noAddresses": "No saved addresses.",
@@ -64,6 +65,17 @@
     "groupCustomer": "Customer",
     "noGroups": "No groups assigned."
   },
+  "orders": {
+    "title": "Order history",
+    "empty": "No orders linked to this customer yet.",
+    "emptyHint": "Orders appear here when this customer places or is assigned a shop order.",
+    "count": "{count} orders",
+    "countOne": "1 order",
+    "viewAll": "View in orders",
+    "loadFailed": "Order history is temporarily unavailable. Refresh and try again.",
+    "loadFailedHint": "Could not load recent orders.",
+    "showingRecent": "Showing {shown} of {total} recent orders."
+  },
   "addresses": {
     "defaultShipping": "Default shipping",
     "defaultBilling": "Default billing",
@@ -99,6 +111,9 @@
     "saving": "Saving…",
     "saveAddress": "Save address",
     "remove": "Remove",
+    "removeTitle": "Remove this address?",
+    "removeDescription": "This address will be removed from the customer. Existing orders keep their delivery details.",
+    "removing": "Removing…",
     "toastRemoved": "Address removed.",
     "toastRemoveFailed": "Address could not be removed.",
     "errorCustomerNotFound": "Customer was not found.",

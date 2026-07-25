@@ -8,6 +8,7 @@ import {
   ProductCatalogPickerDialog,
   ProductCatalogPickerTrigger,
 } from "@/features/products/product-catalog-picker-dialog";
+import { useI18n } from "@/i18n/provider";
 
 type CatalogOption = {
   handle?: string | null;
@@ -23,6 +24,7 @@ export function StorefrontCollectionPicker({
   onChange: (value: string) => void;
   value: string;
 }) {
+  const { t } = useI18n();
   const [loading, setLoading] = useState(true);
   const [options, setOptions] = useState<CatalogOption[]>([]);
 
@@ -67,8 +69,8 @@ export function StorefrontCollectionPicker({
     () => [
       {
         value: "__none__",
-        label: "None",
-        keywords: "none clear empty",
+        label: t("editor.merchandising.none"),
+        keywords: t("editor.merchandising.noneKeywords"),
       },
       ...options.map((option) => ({
         value: option.id,
@@ -77,18 +79,22 @@ export function StorefrontCollectionPicker({
         ...(option.handle ? { description: `/${option.handle}` } : {}),
       })),
     ],
-    [options],
+    [options, t],
   );
 
   return (
     <SearchableCombobox
       className="h-9"
       disabled={loading}
-      emptyLabel="No collections found."
-      noneLabel="None"
+      emptyLabel={t("editor.merchandising.noCollections")}
+      noneLabel={t("editor.merchandising.none")}
       onChange={(next) => onChange(next === "__none__" ? "" : next)}
       options={comboboxOptions}
-      placeholder={loading ? "Loading collections…" : "Select a collection"}
+      placeholder={
+        loading
+          ? t("editor.merchandising.loadingCollections")
+          : t("editor.merchandising.selectCollection")
+      }
       renderItem={(item) =>
         item.description ? (
           <span className="flex min-w-0 flex-1 items-center gap-2">
@@ -99,7 +105,7 @@ export function StorefrontCollectionPicker({
           <span className="min-w-0 flex-1 truncate">{item.label}</span>
         )
       }
-      searchPlaceholder="Search collections…"
+      searchPlaceholder={t("editor.merchandising.searchCollections")}
       triggerIcon="edit"
       value={value || "__none__"}
     />
@@ -113,6 +119,7 @@ export function StorefrontProductsPicker({
   onChange: (value: string[]) => void;
   value: string[];
 }) {
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [options, setOptions] = useState<CatalogOption[]>([]);
@@ -191,19 +198,19 @@ export function StorefrontProductsPicker({
             type="button"
             variant="outline"
           >
-            Clear
+            {t("editor.merchandising.clear")}
           </Button>
         ) : null}
       </div>
       <p className="text-xs leading-relaxed text-muted-foreground">
         {value.length === 0
-          ? "Empty selection shows newest products on the storefront."
-          : "Only these products appear in this section."}
+          ? t("editor.merchandising.emptySelectionHint")
+          : t("editor.merchandising.manualSelectionHint")}
       </p>
       <ProductCatalogPickerDialog
         allowEmptySelection
-        confirmLabel="Save selection"
-        description="Pick products for this section, or clear selection to show newest products on the storefront."
+        confirmLabel={t("editor.merchandising.saveSelection")}
+        description={t("editor.merchandising.featuredProductsDescription")}
         items={items}
         loading={loading}
         onConfirm={onChange}
@@ -212,7 +219,7 @@ export function StorefrontProductsPicker({
         selectedIds={value}
         selectionMode="multiple"
         selectionTarget="product"
-        title="Featured products"
+        title={t("editor.merchandising.featuredProductsTitle")}
       />
     </div>
   );

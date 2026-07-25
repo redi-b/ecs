@@ -48,6 +48,8 @@ export type MerchantOrderListQuery = {
   created?: MerchantOrderCreatedPreset | undefined;
   createdFrom?: string | undefined;
   createdTo?: string | undefined;
+  /** Exact Medusa customer id — preferred for customer detail history. */
+  customerId?: string | undefined;
   delivery?: MerchantOrderDeliveryFilter | undefined;
   limit: number;
   offset: number;

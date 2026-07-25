@@ -46,3 +46,22 @@ describe("orderMatchesQuery", () => {
     assert.equal(orderMatchesQuery(sample, "nope-not-here"), false);
   });
 });
+
+describe("applyOrderListPostFilters customerId", () => {
+  it("keeps only orders for the given customer", async () => {
+    const { applyOrderListPostFilters } = await import("./list-query.js");
+    const orders: MerchantOrder[] = [
+      { ...sample, id: "order_a", customerId: "cus_1" },
+      { ...sample, id: "order_b", customerId: "cus_2" },
+      { ...sample, id: "order_c", customerId: null },
+    ];
+    const filtered = applyOrderListPostFilters(orders, {
+      customerId: "cus_1",
+      limit: 20,
+      offset: 0,
+      salesChannelId: "sc_1",
+    });
+    assert.equal(filtered.length, 1);
+    assert.equal(filtered[0]?.id, "order_a");
+  });
+});

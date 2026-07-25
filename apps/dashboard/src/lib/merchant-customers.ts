@@ -61,10 +61,23 @@ export async function getMerchantCustomer(context: PlatformRequestContext, custo
     context,
   );
   const data = await response.json().catch(() => null);
+  if (!response.ok) {
+    return {
+      message: getError(data),
+      ok: false as const,
+      status: response.status,
+    };
+  }
   const parsed = z.object({ customer: customerSchema }).safeParse(data);
-  return response.ok && parsed.success
-    ? { customer: parsed.data.customer, ok: true as const }
-    : { message: getError(data), ok: false as const, status: response.status };
+  if (!parsed.success) {
+    // Do not map schema mismatches to 404 — merchants would see a dead detail page.
+    return {
+      message: "invalid_customer_response",
+      ok: false as const,
+      status: 502,
+    };
+  }
+  return { customer: parsed.data.customer, ok: true as const };
 }
 function getError(data: unknown) {
   return z.object({ error: z.string() }).safeParse(data).data?.error ?? "customer_request_failed";

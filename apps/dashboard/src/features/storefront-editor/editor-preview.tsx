@@ -9,6 +9,7 @@ import {
   storefrontGoogleFontsHref,
   useStorefrontPuck,
 } from "@/features/storefront-editor/editor-config";
+import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 
 import { EditorImageSourceActions } from "./editor-settings";
@@ -52,6 +53,7 @@ function isSectionEnabled(value: boolean | undefined) {
 export function ClassicV1StorefrontPreview(
   props: StorefrontPageProps & { storefrontName?: string },
 ) {
+  const { t } = useI18n();
   const headingFont = props.headingFont?.trim() || "Syne";
   const bodyFont = props.bodyFont?.trim() || "Outfit";
   const theme = {
@@ -241,16 +243,18 @@ export function ClassicV1StorefrontPreview(
                 <div className="aspect-square rounded-md" style={{ backgroundColor: mutedColor }} />
                 <p className="mt-3 text-sm font-medium">
                   {featuredIds.length > 0
-                    ? `Selected product ${index + 1}`
-                    : "Newest product"}
+                    ? t("editor.merchandising.selectedProduct", { n: index + 1 })
+                    : t("editor.merchandising.newestProduct")}
                 </p>
               </div>
             ))}
           </div>
           <p className="mt-3 text-xs text-muted-foreground">
             {featuredIds.length > 0
-              ? `${featuredIds.length} product${featuredIds.length === 1 ? "" : "s"} selected in settings.`
-              : "No manual pick — live shop shows newest products."}
+              ? featuredIds.length === 1
+                ? t("editor.merchandising.selectedCountOne")
+                : t("editor.merchandising.selectedCount", { count: featuredIds.length })
+              : t("editor.merchandising.noManualPick")}
           </p>
         </section>
       ) : null}

@@ -67,6 +67,10 @@ export function getOrdersUrl(medusaInternalUrl: string, input: MerchantOrderList
   // Tenant isolation at query time (post-filter remains as belt-and-suspenders).
   url.searchParams.append("sales_channel_id[]", input.salesChannelId);
 
+  if (input.customerId?.trim()) {
+    url.searchParams.set("customer_id", input.customerId.trim());
+  }
+
   if (input.q?.trim()) {
     url.searchParams.set("q", input.q.trim());
   }

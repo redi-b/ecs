@@ -81,19 +81,25 @@ export function DetailSection({
 }: DetailSectionProps) {
   return (
     <Card className={cn(className)} size="sm">
-      <CardHeader className="flex flex-row items-center justify-between gap-3 space-y-0 border-b border-border/60 pb-2.5">
+      <CardHeader className="flex flex-row items-center justify-between gap-3 space-y-0 border-b border-border/60 py-2.5">
         <div className="flex min-w-0 items-center gap-2">
           <CardTitle className="text-sm font-medium tracking-tight">{title}</CardTitle>
-          {action}
           {help ? (
             <HelpTip summary={help.summary} {...(help.title ? { title: help.title } : {})}>
               {help.body}
             </HelpTip>
           ) : null}
         </div>
-        {meta ? (
-          <div className="flex shrink-0 flex-wrap items-center justify-end gap-1.5 text-xs text-muted-foreground">
-            {meta}
+        {meta || action ? (
+          <div className="flex h-8 shrink-0 flex-wrap items-center justify-end gap-2">
+            {meta ? (
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">{meta}</div>
+            ) : null}
+            {action ? (
+              <div className="flex items-center gap-1.5 [&_button]:h-8 [&_a]:inline-flex [&_a]:h-8 [&_a]:items-center">
+                {action}
+              </div>
+            ) : null}
           </div>
         ) : null}
       </CardHeader>
