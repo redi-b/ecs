@@ -134,6 +134,13 @@
       "when": 1784712000000,
       "tag": "0018_merchant_receiving_accounts",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1784966400000,
+      "tag": "0019_payment_banks",
+      "breakpoints": true
     }
   ]
 }
