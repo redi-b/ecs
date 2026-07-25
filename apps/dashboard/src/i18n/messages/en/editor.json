@@ -107,5 +107,24 @@
     "choose": "Choose font",
     "search": "Search fonts…",
     "empty": "No font found."
+  },
+  "merchandising": {
+    "none": "None",
+    "noneKeywords": "none clear empty",
+    "noCollections": "No collections found.",
+    "loadingCollections": "Loading collections…",
+    "selectCollection": "Select a collection",
+    "searchCollections": "Search collections…",
+    "clear": "Clear",
+    "emptySelectionHint": "Empty selection shows newest products on the storefront.",
+    "manualSelectionHint": "Only these products appear in this section.",
+    "saveSelection": "Save selection",
+    "featuredProductsTitle": "Featured products",
+    "featuredProductsDescription": "Pick products for this section, or clear selection to show newest products on the storefront.",
+    "selectedProduct": "Selected product {n}",
+    "newestProduct": "Newest product",
+    "selectedCount": "{count} products selected in settings.",
+    "selectedCountOne": "1 product selected in settings.",
+    "noManualPick": "No manual pick — live shop shows newest products."
   }
 }

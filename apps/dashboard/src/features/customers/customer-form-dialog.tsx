@@ -19,11 +19,24 @@ import {
 } from "@/components/ui/dialog";
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import {
+  Sheet,
+  SheetBody,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes-guard";
 import type { MessageKey } from "@/i18n/messages";
 import { useI18n } from "@/i18n/provider";
 import type { MerchantCustomer } from "@/lib/merchant-customers";
 
+/**
+ * Create = dialog (composer-style entry). Edit = sheet (matches taxonomy / promotions).
+ */
 export function CustomerFormDialog({
   customer,
   onOpenChange,
@@ -38,6 +51,7 @@ export function CustomerFormDialog({
   const { t } = useI18n();
   const router = useRouter();
   const id = useId();
+  const isEdit = Boolean(customer);
   const isControlled = openProp !== undefined;
   const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
   const open = isControlled ? Boolean(openProp) : uncontrolledOpen;
@@ -102,144 +116,198 @@ export function CustomerFormDialog({
 
     if (!response?.ok) {
       const data = (await response?.json().catch(() => ({}))) as { error?: string };
-      setError(getCustomerErrorMessage(data.error, Boolean(customer), t));
+      setError(getCustomerErrorMessage(data.error, isEdit, t));
       return;
     }
 
-    toast.success(customer ? t("customers.detail.toastUpdated") : t("customers.detail.toastCreated"));
+    toast.success(
+      customer ? t("customers.detail.toastUpdated") : t("customers.detail.toastCreated"),
+    );
     setOpen(false);
     router.refresh();
   }
 
   const title = customer ? t("customers.detail.editCustomer") : t("customers.detail.addCustomer");
+  const fields = (
+    <div className="grid gap-4 sm:grid-cols-2">
+      {error ? (
+        <Alert className="sm:col-span-2" variant="destructive">
+          <AlertTitle>
+            {customer
+              ? t("customers.detail.updateErrorTitle")
+              : t("customers.detail.createErrorTitle")}
+          </AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      ) : null}
 
-  return (
+      <Field>
+        <FieldLabel htmlFor={`${id}-first`}>{t("customers.detail.firstName")}</FieldLabel>
+        <Input
+          autoComplete="given-name"
+          defaultValue={customer?.firstName ?? ""}
+          id={`${id}-first`}
+          name="firstName"
+          placeholder={t("customers.detail.firstNamePlaceholder")}
+        />
+      </Field>
+      <Field>
+        <FieldLabel htmlFor={`${id}-last`}>{t("customers.detail.lastName")}</FieldLabel>
+        <Input
+          autoComplete="family-name"
+          defaultValue={customer?.lastName ?? ""}
+          id={`${id}-last`}
+          name="lastName"
+          placeholder={t("customers.detail.lastNamePlaceholder")}
+        />
+      </Field>
+      <Field className="sm:col-span-2">
+        <FieldLabel htmlFor={`${id}-email`}>{t("customers.detail.email")}</FieldLabel>
+        <Input
+          autoComplete="email"
+          defaultValue={customer?.email ?? ""}
+          id={`${id}-email`}
+          name="email"
+          placeholder={t("customers.detail.emailPlaceholder")}
+          required
+          type="email"
+        />
+        <FieldDescription>{t("customers.detail.emailDesc")}</FieldDescription>
+      </Field>
+      <Field>
+        <FieldLabel htmlFor={`${id}-phone`}>{t("customers.detail.phone")}</FieldLabel>
+        <Input
+          autoComplete="tel"
+          defaultValue={customer?.phone ?? ""}
+          id={`${id}-phone`}
+          name="phone"
+          placeholder={t("customers.detail.phonePlaceholder")}
+        />
+      </Field>
+      <Field>
+        <FieldLabel htmlFor={`${id}-company`}>{t("customers.detail.company")}</FieldLabel>
+        <Input
+          autoComplete="organization"
+          defaultValue={customer?.companyName ?? ""}
+          id={`${id}-company`}
+          name="companyName"
+          placeholder={t("customers.detail.companyPlaceholder")}
+        />
+      </Field>
+    </div>
+  );
+
+  const actions = (
     <>
-    <Dialog
-      onOpenChange={(next) => {
-        if (!next) requestClose();
-        else setOpen(true);
-      }}
-      open={open}
-    >
-      {trigger !== undefined ? (
-        trigger ? (
-          <DialogTrigger asChild>{trigger}</DialogTrigger>
-        ) : null
-      ) : (
-        <DialogTrigger asChild>
-          <Button variant={customer ? "outline" : "default"}>
-            {customer ? (
-              <AppIcons.edit data-icon="inline-start" />
-            ) : (
-              <AppIcons.user data-icon="inline-start" />
-            )}
-            {title}
-          </Button>
-        </DialogTrigger>
-      )}
-      <DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-lg">
-        <DialogHeader className="gap-1.5 border-b px-4 py-4 text-left sm:px-5">
-          <DialogTitle>{title}</DialogTitle>
-          <DialogDescription>{t("customers.detail.formDesc")}</DialogDescription>
-        </DialogHeader>
-        <form
-          action={(data) => void submit(data)}
-          className="flex flex-col"
-          key={formKey}
-          onChange={() => setDirty(true)}
-        >
-          <div className="grid gap-4 p-4 sm:grid-cols-2 sm:p-5">
-            {error ? (
-              <Alert className="sm:col-span-2" variant="destructive">
-                <AlertTitle>
-                  {customer
-                    ? t("customers.detail.updateErrorTitle")
-                    : t("customers.detail.createErrorTitle")}
-                </AlertTitle>
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            ) : null}
+      <Button disabled={saving} onClick={requestClose} type="button" variant="outline">
+        {t("common.cancel")}
+      </Button>
+      <Button disabled={saving} type="submit">
+        {saving
+          ? t("common.saving")
+          : customer
+            ? t("customers.detail.saveChanges")
+            : t("customers.detail.addCustomer")}
+      </Button>
+    </>
+  );
 
-            <Field>
-              <FieldLabel htmlFor={`${id}-first`}>{t("customers.detail.firstName")}</FieldLabel>
-              <Input
-                autoComplete="given-name"
-                defaultValue={customer?.firstName ?? ""}
-                id={`${id}-first`}
-                name="firstName"
-                placeholder={t("customers.detail.firstNamePlaceholder")}
-              />
-            </Field>
-            <Field>
-              <FieldLabel htmlFor={`${id}-last`}>{t("customers.detail.lastName")}</FieldLabel>
-              <Input
-                autoComplete="family-name"
-                defaultValue={customer?.lastName ?? ""}
-                id={`${id}-last`}
-                name="lastName"
-                placeholder={t("customers.detail.lastNamePlaceholder")}
-              />
-            </Field>
-            <Field className="sm:col-span-2">
-              <FieldLabel htmlFor={`${id}-email`}>{t("customers.detail.email")}</FieldLabel>
-              <Input
-                autoComplete="email"
-                defaultValue={customer?.email ?? ""}
-                id={`${id}-email`}
-                name="email"
-                placeholder={t("customers.detail.emailPlaceholder")}
-                required
-                type="email"
-              />
-              <FieldDescription>{t("customers.detail.emailDesc")}</FieldDescription>
-            </Field>
-            <Field>
-              <FieldLabel htmlFor={`${id}-phone`}>{t("customers.detail.phone")}</FieldLabel>
-              <Input
-                autoComplete="tel"
-                defaultValue={customer?.phone ?? ""}
-                id={`${id}-phone`}
-                name="phone"
-                placeholder={t("customers.detail.phonePlaceholder")}
-              />
-            </Field>
-            <Field>
-              <FieldLabel htmlFor={`${id}-company`}>{t("customers.detail.company")}</FieldLabel>
-              <Input
-                autoComplete="organization"
-                defaultValue={customer?.companyName ?? ""}
-                id={`${id}-company`}
-                name="companyName"
-                placeholder={t("customers.detail.companyPlaceholder")}
-              />
-            </Field>
-          </div>
+  const form = (
+    <form
+      action={(data) => void submit(data)}
+      className="flex min-h-0 flex-1 flex-col"
+      key={formKey}
+      onChange={() => setDirty(true)}
+    >
+      {isEdit ? (
+        <>
+          <SheetBody className="px-5 py-5">{fields}</SheetBody>
+          <SheetFooter className="gap-2 border-t bg-muted/40 px-5 py-4 sm:flex-row sm:justify-end">
+            {actions}
+          </SheetFooter>
+        </>
+      ) : (
+        <>
+          <div className="p-4 sm:p-5">{fields}</div>
           <DialogFooter className="mx-0 mb-0 rounded-none border-t bg-muted/50 p-4">
-            <Button
-              disabled={saving}
-              onClick={requestClose}
-              type="button"
-              variant="outline"
-            >
-              {t("common.cancel")}
-            </Button>
-            <Button disabled={saving} type="submit">
-              {saving
-                ? t("common.saving")
-                : customer
-                  ? t("customers.detail.saveChanges")
-                  : t("customers.detail.addCustomer")}
-            </Button>
+            {actions}
           </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+        </>
+      )}
+    </form>
+  );
+
+  const leave = (
     <UnsavedChangesDialog
       onLeave={confirmLeave}
       onStay={cancelLeave}
       open={leaveDialogOpen}
     />
+  );
+
+  if (isEdit) {
+    return (
+      <>
+        <Sheet
+          onOpenChange={(next) => {
+            if (!next) requestClose();
+            else setOpen(true);
+          }}
+          open={open}
+        >
+          {trigger !== undefined ? (
+            trigger ? <SheetTrigger asChild>{trigger}</SheetTrigger> : null
+          ) : (
+            <SheetTrigger asChild>
+              <Button type="button" variant="outline">
+                <AppIcons.edit data-icon="inline-start" />
+                {title}
+              </Button>
+            </SheetTrigger>
+          )}
+          <SheetContent className="w-full sm:max-w-md" side="right">
+            <SheetHeader className="px-5 py-4 text-left">
+              <SheetTitle>{title}</SheetTitle>
+              <SheetDescription>{t("customers.detail.formDesc")}</SheetDescription>
+            </SheetHeader>
+            {form}
+          </SheetContent>
+        </Sheet>
+        {leave}
+      </>
+    );
+  }
+
+  return (
+    <>
+      <Dialog
+        onOpenChange={(next) => {
+          if (!next) requestClose();
+          else setOpen(true);
+        }}
+        open={open}
+      >
+        {trigger !== undefined ? (
+          trigger ? (
+            <DialogTrigger asChild>{trigger}</DialogTrigger>
+          ) : null
+        ) : (
+          <DialogTrigger asChild>
+            <Button>
+              <AppIcons.user data-icon="inline-start" />
+              {title}
+            </Button>
+          </DialogTrigger>
+        )}
+        <DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-lg">
+          <DialogHeader className="gap-1.5 border-b px-4 py-4 text-left sm:px-5">
+            <DialogTitle>{title}</DialogTitle>
+            <DialogDescription>{t("customers.detail.formDesc")}</DialogDescription>
+          </DialogHeader>
+          {form}
+        </DialogContent>
+      </Dialog>
+      {leave}
     </>
   );
 }

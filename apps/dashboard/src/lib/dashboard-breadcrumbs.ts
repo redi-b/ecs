@@ -106,6 +106,22 @@ export function getDashboardBreadcrumbTrail(
     ];
   }
 
+  const customersRoute = appRoutes.find((route) => route.href === dashboardRoutes.customers);
+  if (
+    customersRoute &&
+    pathname.startsWith(`${dashboardRoutes.customers}/`) &&
+    !pathname.startsWith(`${dashboardRoutes.customers}/actions/`)
+  ) {
+    return [
+      toBreadcrumb(customersRoute),
+      {
+        href: pathname,
+        id: "customer-details",
+        title: labels["customer-details"] ?? "Customer details",
+      },
+    ];
+  }
+
   return (
     appRoutes
       .flatMap((item) => {

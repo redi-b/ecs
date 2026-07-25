@@ -146,6 +146,33 @@ describe("getDashboardBreadcrumbTrail", () => {
     ]);
   });
 
+  it("labels customer detail pages as a child of customers", () => {
+    assert.deepEqual(getDashboardBreadcrumbTrail("/admin/customers/cus_1"), [
+      { href: "/admin/customers", id: "customers", title: "Customers" },
+      {
+        href: "/admin/customers/cus_1",
+        id: "customer-details",
+        title: "Customer details",
+      },
+    ]);
+  });
+
+  it("uses customer detail label overrides when available", () => {
+    assert.deepEqual(
+      getDashboardBreadcrumbTrail("/admin/customers/cus_1", {
+        "customer-details": "Abebe Kebede",
+      }),
+      [
+        { href: "/admin/customers", id: "customers", title: "Customers" },
+        {
+          href: "/admin/customers/cus_1",
+          id: "customer-details",
+          title: "Abebe Kebede",
+        },
+      ],
+    );
+  });
+
   it("uses order detail label overrides when available", () => {
     assert.deepEqual(
       getDashboardBreadcrumbTrail("/admin/orders/order_1", {

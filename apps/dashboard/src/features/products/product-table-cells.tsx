@@ -104,13 +104,16 @@ export function formatProductDate(value: string | null) {
   }).format(new Date(value));
 }
 
-export function formatProductPriceRange(product: MerchantProduct) {
+export function formatProductPriceRange(
+  product: MerchantProduct,
+  noPriceLabel = "No price",
+) {
   const prices = product.variants
     ?.flatMap((variant) => variant.prices)
     .filter((variantPrice) => typeof variantPrice.amount === "number" && variantPrice.currencyCode);
 
   if (!prices?.length) {
-    return "No price";
+    return noPriceLabel;
   }
 
   const currencyCode = prices[0]?.currencyCode?.toUpperCase() ?? "";
@@ -122,7 +125,7 @@ export function formatProductPriceRange(product: MerchantProduct) {
   const max = Math.max(...amounts);
 
   if (!Number.isFinite(min) || !Number.isFinite(max)) {
-    return "No price";
+    return noPriceLabel;
   }
 
   return min === max ? `${currencyCode} ${min}` : `${currencyCode} ${min}-${max}`;

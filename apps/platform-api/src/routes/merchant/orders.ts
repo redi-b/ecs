@@ -87,6 +87,7 @@ export function registerMerchantOrderRoutes(
           created: context.req.query("created"),
           createdFrom: context.req.query("createdFrom"),
           createdTo: context.req.query("createdTo"),
+          customerId: context.req.query("customerId"),
           delivery: context.req.query("delivery"),
           method: context.req.query("method"),
           payment: context.req.query("payment"),

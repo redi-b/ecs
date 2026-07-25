@@ -35,6 +35,7 @@ export function parseMerchantOrderListQuery(
   const delivery = parseEnum(query.delivery, DELIVERY_VALUES);
   const created = parseEnum(query.created, CREATED_VALUES);
   const q = query.q?.trim() || undefined;
+  const customerId = query.customerId?.trim() || undefined;
   const createdFrom = query.createdFrom?.trim() || undefined;
   const createdTo = query.createdTo?.trim() || undefined;
 
@@ -47,6 +48,7 @@ export function parseMerchantOrderListQuery(
     ...(created ? { created } : {}),
     ...(createdFrom ? { createdFrom } : {}),
     ...(createdTo ? { createdTo } : {}),
+    ...(customerId ? { customerId } : {}),
     ...(q ? { q } : {}),
   };
 }
@@ -237,6 +239,7 @@ export function needsPostFilter(input: MerchantOrderListQuery) {
 
 export function applyOrderListPostFilters(orders: MerchantOrder[], input: MerchantOrderListQuery) {
   return orders.filter((order) => {
+    if (input.customerId && order.customerId !== input.customerId) return false;
     if (input.progress && !orderMatchesProgress(order, input.progress)) return false;
     if (input.paymentStatus && !orderMatchesPaymentStatus(order, input.paymentStatus)) return false;
     if (input.paymentMethod && !orderMatchesPaymentMethod(order, input.paymentMethod)) return false;

@@ -40,6 +40,7 @@ const BREADCRUMB_TITLE_KEYS: Record<string, MessageKey> = {
   "product-details": "nav.breadcrumbs.productDetails",
   "product-edit": "nav.breadcrumbs.editProduct",
   "order-details": "nav.breadcrumbs.orderDetails",
+  "customer-details": "nav.breadcrumbs.customerDetails",
 };
 
 function localizeBreadcrumbTitle(

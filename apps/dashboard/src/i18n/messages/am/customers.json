@@ -6,12 +6,13 @@
     "loadDescription": "የደንበኞች ዝርዝር ለጊዜው አይገኝም። ያድሱ እና እንደገና ይሞክሩ።"
   },
   "detail": {
-    "shellDescription": "የደንበኛ ማንነት፣ የእውቂያ መረጃ፣ ቡድኖች እና የተቀመጡ አድራሻዎች።",
+    "shellDescription": "የዚህ ደንበኛ ትዕዛዞች እና የደሊቨሪ አድራሻዎች።",
     "contact": "እውቂያ",
     "email": "ኢሜይል",
     "phone": "ስልክ",
     "company": "ድርጅት",
     "customerSince": "ደንበኛ የሆነበት ጊዜ",
+    "memberSince": "ደንበኛ ከ{date}",
     "groups": "ቡድኖች",
     "addresses": "አድራሻዎች",
     "noAddresses": "ምንም የተቀመጠ አድራሻ የለም።",
@@ -64,6 +65,17 @@
     "groupCustomer": "ደንበኛ",
     "noGroups": "ምንም ቡድን አልተመደበም።"
   },
+  "orders": {
+    "title": "የትዕዛዝ ታሪክ",
+    "empty": "ከዚህ ደንበኛ ጋር የተገናኘ ትዕዛዝ ገና የለም።",
+    "emptyHint": "ይህ ደንበኛ ትዕዛዝ ሲያስገባ ወይም ሲመደብለት ትዕዛዞች እዚህ ይታያሉ።",
+    "count": "{count} ትዕዛዞች",
+    "countOne": "1 ትዕዛዝ",
+    "viewAll": "በትዕዛዞች ውስጥ ይመልከቱ",
+    "loadFailed": "የትዕዛዝ ታሪክ ለጊዜው አይገኝም። ያድሱ እና እንደገና ይሞክሩ።",
+    "loadFailedHint": "የቅርብ ጊዜ ትዕዛዞችን መጫን አልተቻለም።",
+    "showingRecent": "ከ{total} የቅርብ ጊዜ ትዕዛዞች {shown} በማሳየት ላይ።"
+  },
   "addresses": {
     "defaultShipping": "ነባሪ የደሊቨሪ አድራሻ",
     "defaultBilling": "ነባሪ ክፍያ",
@@ -99,6 +111,9 @@
     "saving": "እየተቀየረ ነው…",
     "saveAddress": "አድራሻ ቀይር",
     "remove": "አስወግድ",
+    "removeTitle": "ይህን አድራሻ ማስወገድ ይፈልጋሉ?",
+    "removeDescription": "አድራሻው ከደንበኛው ይወገዳል። ነባር ትዕዛዞች የደሊቨሪ ዝርዝራቸውን ይይዛሉ።",
+    "removing": "እየተወገደ…",
     "toastRemoved": "አድራሻው ተወግዷል።",
     "toastRemoveFailed": "አድራሻውን ማስወገድ አልተቻለም።",
     "errorCustomerNotFound": "ደንበኛው አልተገኘም።",

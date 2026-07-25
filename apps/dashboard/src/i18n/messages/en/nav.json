@@ -23,6 +23,7 @@
     "newCollection": "New collection",
     "productDetails": "Product details",
     "editProduct": "Edit product",
-    "orderDetails": "Order details"
+    "orderDetails": "Order details",
+    "customerDetails": "Customer details"
   }
 }

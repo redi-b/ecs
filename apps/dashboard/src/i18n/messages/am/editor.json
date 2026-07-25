@@ -107,5 +107,24 @@
     "choose": "ፊደል ይምረጡ",
     "search": "ፊደላትን ፈልግ…",
     "empty": "ፊደል አልተገኘም።"
+  },
+  "merchandising": {
+    "none": "ምንም",
+    "noneKeywords": "ምንም አጽዳ ባዶ",
+    "noCollections": "ምንም ስብስብ አልተገኘም።",
+    "loadingCollections": "ስብስቦች እየተጫኑ…",
+    "selectCollection": "ስብስብ ይምረጡ",
+    "searchCollections": "ስብስቦችን ፈልግ…",
+    "clear": "አጽዳ",
+    "emptySelectionHint": "ባዶ ምርጫ በመደብሩ ላይ አዲስ ምርቶችን ያሳያል።",
+    "manualSelectionHint": "በዚህ ክፍል ውስጥ እነዚህ ምርቶች ብቻ ይታያሉ።",
+    "saveSelection": "ምርጫን አስቀምጥ",
+    "featuredProductsTitle": "ተመራጭ ምርቶች",
+    "featuredProductsDescription": "ለዚህ ክፍል ምርቶችን ይምረጡ፣ ወይም አዲስ ምርቶችን ለማሳየት ምርጫውን ያጽዱ።",
+    "selectedProduct": "የተመረጠ ምርት {n}",
+    "newestProduct": "አዲስ ምርት",
+    "selectedCount": "በቅንብሮች {count} ምርቶች ተመርጠዋል።",
+    "selectedCountOne": "በቅንብሮች 1 ምርት ተመርጧል።",
+    "noManualPick": "በእጅ ምርጫ የለም — ቀጥታ መደብሩ አዲስ ምርቶችን ያሳያል።"
   }
 }
