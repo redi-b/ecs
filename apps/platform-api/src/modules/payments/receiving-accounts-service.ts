@@ -1,12 +1,15 @@
 import type { createPlatformDb } from "@ecs/db";
-import { merchantReceivingAccounts } from "@ecs/db";
+import { merchantReceivingAccounts, paymentBanks } from "@ecs/db";
 import { and, asc, desc, eq } from "drizzle-orm";
 
 import {
   encryptSecret,
   secretFingerprint,
 } from "../../lib/secret-box.js";
-import { ETHIOPIAN_BANK_CATALOG } from "../../lib/settlement.js";
+import {
+  ETHIOPIAN_BANK_CATALOG,
+  catalogBanksWithLogoUrls,
+} from "../../lib/settlement.js";
 
 type PlatformDb = ReturnType<typeof createPlatformDb>["db"];
 
@@ -21,6 +24,14 @@ export type ReceivingAccountPublic = {
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
+};
+
+export type PaymentBankPublic = {
+  code: string;
+  name: string;
+  kind: string;
+  logoUrl: string | null;
+  sortOrder: number;
 };
 
 function mapRow(row: typeof merchantReceivingAccounts.$inferSelect): ReceivingAccountPublic {
@@ -38,11 +49,22 @@ function mapRow(row: typeof merchantReceivingAccounts.$inferSelect): ReceivingAc
   };
 }
 
+function mapBankRow(row: typeof paymentBanks.$inferSelect): PaymentBankPublic {
+  return {
+    code: row.code,
+    name: row.name,
+    kind: row.kind,
+    logoUrl: row.logoUrl,
+    sortOrder: row.sortOrder,
+  };
+}
+
 export function createReceivingAccountsService(
   db: PlatformDb,
   options: { encryptionKey?: string | undefined } = {},
 ) {
   const encryptionKey = options.encryptionKey;
+  const mediaPublicBaseUrl = process.env.MEDIA_S3_PUBLIC_BASE_URL?.trim() || null;
 
   function sealAccountNumber(plaintext: string | null | undefined) {
     const value = plaintext?.trim();
@@ -54,9 +76,55 @@ export function createReceivingAccountsService(
     return { encrypted: value, last4 };
   }
 
+  async function loadActiveBanks() {
+    return db
+      .select()
+      .from(paymentBanks)
+      .where(eq(paymentBanks.isActive, true))
+      .orderBy(asc(paymentBanks.sortOrder), asc(paymentBanks.name));
+  }
+
+  async function seedBanksFromCatalog() {
+    const withLogos = catalogBanksWithLogoUrls(mediaPublicBaseUrl);
+    await db
+      .insert(paymentBanks)
+      .values(
+        withLogos.map((entry) => ({
+          code: entry.code,
+          name: entry.name,
+          kind: entry.kind,
+          logoUrl: entry.logoUrl,
+          sortOrder: entry.sortOrder,
+          isActive: true,
+        })),
+      )
+      .onConflictDoNothing();
+  }
+
   return {
-    listBanks() {
-      return { ok: true as const, banks: ETHIOPIAN_BANK_CATALOG };
+    async listBanks() {
+      try {
+        let rows = await loadActiveBanks();
+        if (rows.length === 0) {
+          await seedBanksFromCatalog();
+          rows = await loadActiveBanks();
+        }
+        if (rows.length > 0) {
+          return { ok: true as const, banks: rows.map(mapBankRow) };
+        }
+      } catch {
+        // Table missing or DB unavailable — fall back to catalog.
+      }
+      return {
+        ok: true as const,
+        banks: catalogBanksWithLogoUrls(mediaPublicBaseUrl).map((entry) => ({
+          code: entry.code,
+          name: entry.name,
+          kind: entry.kind,
+          logoUrl: entry.logoUrl,
+          sortOrder: entry.sortOrder,
+        })),
+      };
     },
 
     async listAccounts(input: {

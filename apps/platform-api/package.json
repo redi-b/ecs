@@ -12,6 +12,7 @@
     "sync:storefront-templates": "tsx src/sync-storefront-templates.ts",
     "seed:demo": "tsx src/seeds/demo-seed.ts",
     "seed:demo:clean": "tsx src/seeds/demo-seed.ts --clean",
+    "seed:bank-logos": "tsx src/seeds/bank-logos-seed.ts",
     "start": "tsx src/index.ts"
   },
   "dependencies": {
