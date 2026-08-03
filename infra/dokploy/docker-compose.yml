@@ -140,6 +140,10 @@ services:
       - "8888"
     security_opt:
       - no-new-privileges:true
+    networks:
+      default:
+        aliases:
+          - ecs-seaweedfs
 
   migrate-platform:
     image: ${IMAGE_PREFIX:?set IMAGE_PREFIX}/platform-api:${IMAGE_TAG:-main}
@@ -202,6 +206,10 @@ services:
         condition: service_healthy
       seaweedfs:
         condition: service_started
+    networks:
+      default:
+        aliases:
+          - ecs-platform-api
 
   platform-worker:
     <<: *app-defaults
@@ -264,6 +272,10 @@ services:
     depends_on:
       platform-api:
         condition: service_healthy
+    networks:
+      default:
+        aliases:
+          - ecs-dashboard
 
   storefront:
     <<: *app-defaults
@@ -294,6 +306,10 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    networks:
+      default:
+        aliases:
+          - ecs-storefront
 
   caddy:
     image: caddy:2.10-alpine
