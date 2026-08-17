@@ -31,6 +31,7 @@ export const NOTIFICATION_EVENT_OPTIONS = [
   { id: "payment.paid", labelKey: "settings.notifications.events.paymentPaid" as MessageKey },
   { id: "payment.failed", labelKey: "settings.notifications.events.paymentFailed" as MessageKey },
   { id: "inventory.low", labelKey: "settings.notifications.events.inventoryLow" as MessageKey },
+  { id: "storefront.inquiry_created", labelKey: "settings.notifications.events.storefrontInquiry" as MessageKey },
   { id: "billing.past_due", labelKey: "settings.notifications.events.billingPastDue" as MessageKey },
   {
     id: "billing.invoice_ready",
@@ -50,6 +51,7 @@ export const NOTIFICATION_EVENT_GROUPS = [
       "payment.paid",
       "payment.failed",
       "inventory.low",
+      "storefront.inquiry_created",
     ] as const,
   },
   {

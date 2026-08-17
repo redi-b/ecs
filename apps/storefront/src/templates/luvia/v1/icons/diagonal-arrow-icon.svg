@@ -1,0 +1,10 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="diagonal-arrow-icon" clip-path="url(#clip0_321_8678)">
+<path id="diagonal-arrow-icon_2" fill-rule="evenodd" clip-rule="evenodd" d="M2.13658 1.51268C2.13658 0.677253 2.813 0 3.6474 0H16.4667H16.4672H16.4892C17.3236 0 18 0.677253 18 1.51268V14.3703C18 15.2058 17.3236 15.883 16.4892 15.883C15.6548 15.883 14.9784 15.2058 14.9784 14.3703V5.14233L2.57909 17.557C1.98908 18.1477 1.03249 18.1477 0.442481 17.557C-0.147494 16.9662 -0.147494 16.0085 0.442481 15.4177L12.8196 3.02533H3.6474C2.813 3.02533 2.13658 2.34811 2.13658 1.51268Z" fill="currentColor"/>
+</g>
+<defs>
+<clipPath id="clip0_321_8678">
+<rect width="18" height="18" fill="currentColor"/>
+</clipPath>
+</defs>
+</svg>

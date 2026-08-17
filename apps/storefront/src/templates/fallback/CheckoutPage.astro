@@ -10,6 +10,8 @@ import { formatMoney } from "../../lib/money";
 import type { ShellTheme } from "../../lib/theme";
 
 interface Props {
+  /** Template-owned storefront data; unused by the fallback shell. */
+  data?: unknown;
   tenantName: string;
   cartCount: number;
   primaryColor?: string;

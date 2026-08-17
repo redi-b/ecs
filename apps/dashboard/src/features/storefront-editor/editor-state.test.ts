@@ -1,15 +1,15 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import type { Data } from "@puckeditor/core";
-
 import {
   buildDraftPayload,
-  buildPuckData,
+  buildEditorData,
   getPublicationStatus,
   isPreviewImageUrl,
   serializeEditorData,
+  updateEditorLinkValue,
 } from "./editor-state.js";
+import type { EditorData } from "./editor-state.js";
 
 describe("storefront editor state", () => {
   it("builds editable page data from the draft and writes edits back to the draft payload", () => {
@@ -47,14 +47,14 @@ describe("storefront editor state", () => {
       updatedAt: "2026-07-07T00:00:00.000Z",
     };
 
-    const puckData = buildPuckData(draft);
+    const editorData = buildEditorData(draft);
 
-    assert.equal(puckData.content[0]?.props?.heroTitle, "Original title");
-    assert.equal(puckData.content[0]?.props?.primaryColor, "#0f766e");
+    assert.equal(editorData.content[0]?.props?.heroTitle, "Original title");
+    assert.equal(editorData.content[0]?.props?.primaryColor, "#0f766e");
 
-    const editedData: Data = {
-      ...puckData,
-      content: puckData.content.map((item) =>
+    const editedData: EditorData = {
+      ...editorData,
+      content: editorData.content.map((item) =>
         item.type === "StorefrontPage"
           ? {
               ...item,
@@ -72,6 +72,7 @@ describe("storefront editor state", () => {
     const payload = buildDraftPayload({
       data: draft.data,
       editorData: editedData,
+      templateKey: draft.templateKey,
       tenantId: draft.tenantId,
       themeTokens: draft.themeTokens,
     });
@@ -86,6 +87,73 @@ describe("storefront editor state", () => {
     assert.equal(themeTokens.colors.primary, "#f97316");
   });
 
+  it("uses the selected template manifest for Luvia fields", () => {
+    const draft = {
+      data: {
+        header: { navigation: [] },
+        home: {
+          hero: {
+            enabled: true,
+            title: "Luvia hero",
+            subtitle: "Description",
+            primaryCtaLabel: "Shop",
+            primaryCtaHref: "/products",
+            trustLabels: ["One", "Two", "Three"],
+          },
+          featuredProducts: { enabled: true, title: "Top picks", productIds: [], limit: 8 },
+          featuredCollection: { enabled: false, title: "", limit: 12 },
+          products: { enabled: true, title: "Products", productIds: [], limit: 12 },
+        },
+        footer: { blurb: "Original footer", socialLinks: [] },
+      },
+      templateKey: "luvia@1",
+      templateVersion: 1,
+      tenantId: "tenant_luvia",
+      themeTokens: { colors: { primary: "#3ee272" } },
+      updatedAt: "2026-08-16T00:00:00.000Z",
+    };
+    const editorData = buildEditorData(draft);
+    assert.equal(editorData.content[0]?.props?.heroTitle, "Luvia hero");
+    assert.equal(editorData.content[0]?.props?.footerBlurb, "Original footer");
+    assert.deepEqual(editorData.content[0]?.props?.headerNavigation, []);
+    assert.deepEqual(editorData.content[0]?.props?.footerSocialLinks, []);
+
+    const editedData: EditorData = {
+      ...editorData,
+      content: editorData.content.map((item) => ({
+        ...item,
+        props: {
+          ...item.props,
+          heroTitle: "Edited Luvia hero",
+          footerBlurb: "Edited footer",
+          headerNavigation: [{ label: "Shop", href: "/products" }],
+          footerSocialLinks: [
+            { label: "Instagram", href: "https://instagram.com/example" },
+            { label: "", href: "/incomplete" },
+          ],
+        },
+      })),
+    };
+    const payload = buildDraftPayload({
+      data: draft.data,
+      editorData: editedData,
+      templateKey: draft.templateKey,
+      tenantId: draft.tenantId,
+      themeTokens: draft.themeTokens,
+    });
+    const data = payload.data as {
+      header: { navigation: Array<{ label: string; href: string }> };
+      home: { hero: { title: string } };
+      footer: { blurb: string; socialLinks: Array<{ label: string; href: string }> };
+    };
+    assert.equal(data.home.hero.title, "Edited Luvia hero");
+    assert.equal(data.footer.blurb, "Edited footer");
+    assert.deepEqual(data.header.navigation, [{ label: "Shop", href: "/products" }]);
+    assert.deepEqual(data.footer.socialLinks, [
+      { label: "Instagram", href: "https://instagram.com/example" },
+    ]);
+  });
+
   it("classifies published, saved draft, and unsaved editor states", () => {
     const savedData = {
       content: [
@@ -95,7 +163,7 @@ describe("storefront editor state", () => {
         },
       ],
       root: {},
-    } satisfies Data;
+    } satisfies EditorData;
     const editedData = {
       content: [
         {
@@ -104,7 +172,7 @@ describe("storefront editor state", () => {
         },
       ],
       root: {},
-    } satisfies Data;
+    } satisfies EditorData;
 
     const savedSnapshot = serializeEditorData(savedData);
     const editedSnapshot = serializeEditorData(editedData);
@@ -142,5 +210,14 @@ describe("storefront editor state", () => {
     assert.equal(isPreviewImageUrl("asset_hero"), false);
     assert.equal(isPreviewImageUrl("/relative-image.jpg"), false);
     assert.equal(isPreviewImageUrl(""), false);
+  });
+
+  it("updates an exact navigation row edited from the iframe", () => {
+    const links = [{ label: "Home", href: "/" }, { label: "Shop", href: "/products" }];
+    assert.deepEqual(
+      updateEditorLinkValue(links, "header.navigation", "header.navigation.1.label", "Catalog"),
+      [{ label: "Home", href: "/" }, { label: "Catalog", href: "/products" }],
+    );
+    assert.equal(updateEditorLinkValue(links, "header.navigation", "footer.socialLinks.0.label", "No"), null);
   });
 });

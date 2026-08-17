@@ -1,0 +1,158 @@
+---
+import type { StoreProduct, StoreProductVariant } from "../../../lib/commerce/types";
+import { formatMoney } from "../../../lib/money";
+import Layout from "./Layout.astro";
+import ProductCard from "./ProductCard.astro";
+import caretIcon from "./icons/chevron-icon.svg";
+import sparkleIcon from "./icons/sparkle-icon.svg";
+import wishlistIcon from "./icons/wishlist-icon.svg";
+import { parseLuviaData } from "./lib";
+
+interface Props {
+  data: unknown;
+  tenantName: string;
+  cartCount?: number;
+  deferCartCount?: boolean;
+  product: StoreProduct | null;
+  handle: string;
+  notice?: string | null;
+  error?: string | null;
+  relatedProducts?: StoreProduct[];
+}
+
+const { data, tenantName, cartCount = 0, deferCartCount = false, product, handle, notice, error, relatedProducts = [] } = Astro.props;
+const template = parseLuviaData(data);
+const defaultVariant: StoreProductVariant | null = product?.variants.find((variant) => variant.inStock) ?? product?.variants[0] ?? null;
+const optionAxes = product?.options?.length ? product.options : (() => {
+  const axes = new Map<string, Set<string>>();
+  for (const variant of product?.variants ?? []) for (const option of variant.optionValues) {
+    if (!axes.has(option.optionTitle)) axes.set(option.optionTitle, new Set());
+    axes.get(option.optionTitle)?.add(option.value);
+  }
+  return [...axes.entries()].map(([title, values], index) => ({ id: `axis-${index}`, title, values: [...values] }));
+})();
+const gallery = product ? [...new Set([...(product.images ?? []), ...(product.thumbnail ? [product.thumbnail] : [])])] : [];
+const variantsPayload = (product?.variants ?? []).map((variant) => ({
+  id: variant.id,
+  inStock: variant.inStock,
+  priceAmount: variant.priceAmount,
+  currencyCode: variant.currencyCode,
+  sku: variant.sku,
+  optionValues: Object.fromEntries(variant.optionValues.map((option) => [option.optionTitle, option.value])),
+}));
+const brand = product?.collectionTitle?.toUpperCase() || tenantName.toUpperCase();
+const currentPrice = formatMoney(defaultVariant?.priceAmount ?? product?.priceAmount, defaultVariant?.currencyCode ?? product?.currencyCode);
+const wishlistItem = product ? JSON.stringify({ path: `/products/${encodeURIComponent(handle)}`, title: product.title ?? "Product", thumbnail: product.thumbnail ?? gallery[0] ?? null, priceAmount: defaultVariant?.priceAmount ?? product.priceAmount, currencyCode: defaultVariant?.currencyCode ?? product.currencyCode }) : "";
+const jsonLd = product ? {
+  "@context": "https://schema.org", "@type": "Product", name: product.title, description: product.description,
+  image: gallery, sku: defaultVariant?.sku,
+  offers: { "@type": "Offer", priceCurrency: (defaultVariant?.currencyCode ?? product.currencyCode ?? "ETB").toUpperCase(), price: defaultVariant?.priceAmount ?? product.priceAmount, availability: defaultVariant?.inStock ? "https://schema.org/InStock" : "https://schema.org/OutOfStock", url: `/products/${encodeURIComponent(handle)}` },
+} : null;
+---
+
+<Layout tenantName={tenantName} header={template.header} footer={template.footer} cartCount={cartCount} deferCartCount={deferCartCount} title={product?.title ?? "Product not found"}>
+  {jsonLd && <script is:inline type="application/ld+json" set:html={JSON.stringify(jsonLd)} />}
+  {!product ? <main class="lv-product-missing"><h1>Product not found</h1><p>This product is unavailable or no longer exists.</p><a href="/products">Back to shop</a></main> : <main class="lv-product-page" data-product-detail>
+    <nav class="lv-product-breadcrumb" aria-label="Breadcrumb"><a href="/">Home</a><img src={caretIcon.src} alt="" /><a href="/products">Shop</a><img src={caretIcon.src} alt="" /><span>Product Detail</span></nav>
+    {(notice === "added" || error) && <p class:list={["lv-product-server-notice", { "is-error": error }]} role={error ? "alert" : "status"}>{error ?? "Added to cart."}</p>}
+
+    <section class="lv-product-detail">
+      <div class="lv-product-gallery">
+        {gallery.length > 1 && <div class="lv-product-gallery__thumbs" aria-label="Product images">{gallery.map((src, index) => <button type="button" data-gallery-thumb={src} aria-current={index === 0 ? "true" : undefined} aria-label={`View image ${index + 1}`}><img src={src} alt="" /></button>)}</div>}
+        <div class="lv-product-gallery__main" data-gallery-main>{gallery[0] ? <img src={gallery[0]} alt={product.title ?? "Product"} /> : <span>Product image coming soon</span>}<span class="lv-product-gallery__badge"><img src={sparkleIcon.src} alt="" />Best Seller</span></div>
+      </div>
+
+      <div class="lv-product-buy">
+        <div class="lv-product-title"><span>{brand}</span><h1>{product.title}</h1><p data-product-price>{currentPrice}</p><small data-product-stock class:list={{ "is-out": !defaultVariant?.inStock }}>{defaultVariant?.inStock ? "In stock" : "Out of stock"}{defaultVariant?.sku ? ` · SKU ${defaultVariant.sku}` : ""}</small></div>
+        <form method="post" action="/actions/cart/add" data-add-form>
+          <input type="hidden" name="variantId" value={defaultVariant?.id ?? ""} data-variant-id />
+          <input type="hidden" name="returnTo" value={`/products/${encodeURIComponent(handle)}`} />
+          <input type="hidden" name="quantity" value="1" />
+          {optionAxes.map((axis) => <fieldset data-option-axis={axis.title}><legend>Select {axis.title}</legend><div>{axis.values.map((value) => { const selected = defaultVariant?.optionValues.some((option) => option.optionTitle === axis.title && option.value === value); return <button type="button" data-option-title={axis.title} data-option-value={value} aria-pressed={selected ? "true" : "false"}>{value}</button>; })}</div></fieldset>)}
+          <div class="lv-product-cart-row"><button class="lv-product-add" type="submit" data-add-button disabled={!defaultVariant?.inStock}><span data-add-label>{defaultVariant?.inStock ? "Add to Cart" : "Out of stock"}</span><span class="lv-product-spinner" aria-hidden="true"></span></button><button class="lv-product-wishlist" type="button" data-wishlist-toggle data-wishlist-item={wishlistItem} aria-pressed="false" aria-label="Add to wishlist"><img src={wishlistIcon.src} alt="" /></button></div>
+          <p class="lv-product-feedback" data-add-feedback aria-live="polite"></p>
+        </form>
+
+        <div class="lv-product-accordions">
+          <details open><summary>Product Description <img src={caretIcon.src} alt="" /></summary><div>{product.description ? <p>{product.description}</p> : <p>Thoughtfully selected for your daily beauty and self-care routine.</p>}</div></details>
+          <details><summary>Delivery Details <img src={caretIcon.src} alt="" /></summary><div><p>Delivery and pickup options, timing, and any applicable fees are shown during checkout for your address.</p></div></details>
+        </div>
+      </div>
+    </section>
+
+    {relatedProducts.length > 0 && <section class="lv-related" aria-labelledby="related-products-title"><header><h2 id="related-products-title">Related Products</h2><div><button type="button" data-related-prev aria-label="Previous related products">←</button><button type="button" data-related-next aria-label="Next related products">→</button></div></header><div class="lv-related__rail" data-related-rail>{relatedProducts.map((item) => <ProductCard product={item} />)}</div></section>}
+
+    <div class="lv-sticky-product" data-sticky-product><div><strong>{product.title}</strong><span data-sticky-price>{currentPrice}</span></div><button type="button" data-sticky-add disabled={!defaultVariant?.inStock}>Add to Cart</button></div>
+    <script is:inline type="application/json" id="luvia-product-variants" set:html={JSON.stringify(variantsPayload)} />
+  </main>}
+</Layout>
+
+<script is:inline>
+  (() => {
+    const root = document.querySelector("[data-product-detail]");
+    if (!root) return;
+    const variants = JSON.parse(document.getElementById("luvia-product-variants")?.textContent || "[]");
+    const selected = {};
+    root.querySelectorAll("[data-option-axis]").forEach((axis) => {
+      const title = axis.getAttribute("data-option-axis");
+      const pressed = axis.querySelector('[aria-pressed="true"]');
+      if (title && pressed) selected[title] = pressed.getAttribute("data-option-value") || "";
+    });
+    const money = (amount, currency) => { try { return new Intl.NumberFormat(undefined, { style: "currency", currency: (currency || "ETB").toUpperCase() }).format(amount); } catch { return String(amount ?? ""); } };
+    const selectedVariant = () => variants.find((variant) => { const entries = Object.entries(variant.optionValues || {}); return entries.length ? entries.every(([title, value]) => selected[title] === value) : variants.length === 1; });
+    const refresh = () => {
+      const variant = selectedVariant();
+      const id = root.querySelector("[data-variant-id]");
+      const price = root.querySelector("[data-product-price]");
+      const stickyPrice = root.querySelector("[data-sticky-price]");
+      const stock = root.querySelector("[data-product-stock]");
+      const add = root.querySelector("[data-add-button]");
+      const stickyAdd = root.querySelector("[data-sticky-add]");
+      if (id) id.value = variant?.id || "";
+      if (variant?.priceAmount != null) { const value = money(variant.priceAmount, variant.currencyCode); if (price) price.textContent = value; if (stickyPrice) stickyPrice.textContent = value; }
+      if (stock) { stock.textContent = variant?.inStock ? `In stock${variant.sku ? ` · SKU ${variant.sku}` : ""}` : "Out of stock"; stock.classList.toggle("is-out", !variant?.inStock); }
+      [add, stickyAdd].forEach((button) => { if (button instanceof HTMLButtonElement) button.disabled = !variant?.inStock; });
+      root.querySelectorAll("[data-option-title]").forEach((node) => { if (!(node instanceof HTMLButtonElement)) return; const title = node.dataset.optionTitle; const value = node.dataset.optionValue; const probe = { ...selected, [title]: value }; const possible = variants.some((variant) => variant.inStock && Object.entries(probe).every(([key, expected]) => !variant.optionValues[key] || variant.optionValues[key] === expected)); node.disabled = !possible; node.setAttribute("aria-pressed", selected[title] === value ? "true" : "false"); });
+    };
+    root.addEventListener("click", (event) => {
+      const target = event.target instanceof Element ? event.target : null;
+      const option = target?.closest("[data-option-title]");
+      if (option instanceof HTMLButtonElement && !option.disabled) { selected[option.dataset.optionTitle] = option.dataset.optionValue; refresh(); }
+      const thumb = target?.closest("[data-gallery-thumb]");
+      if (thumb instanceof HTMLButtonElement) { const main = root.querySelector("[data-gallery-main] > img"); if (main && thumb.dataset.galleryThumb) main.setAttribute("src", thumb.dataset.galleryThumb); root.querySelectorAll("[data-gallery-thumb]").forEach((item) => item.removeAttribute("aria-current")); thumb.setAttribute("aria-current", "true"); }
+    });
+    const form = root.querySelector("[data-add-form]");
+    const addButton = root.querySelector("[data-add-button]");
+    const feedback = root.querySelector("[data-add-feedback]");
+    form?.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      if (!(form instanceof HTMLFormElement) || !(addButton instanceof HTMLButtonElement) || addButton.disabled) return;
+      const label = addButton.querySelector("[data-add-label]");
+      const badge = document.querySelector("[data-cart-count]");
+      const previousCount = Number(badge?.textContent || 0);
+      addButton.disabled = true; addButton.dataset.loading = "true"; if (label) label.textContent = "Adding…"; if (feedback) { feedback.textContent = ""; feedback.classList.remove("is-error"); }
+      if (badge) { badge.textContent = String(previousCount + 1); badge.hidden = false; }
+      try {
+        const response = await fetch(form.action, { method: "POST", body: new FormData(form), headers: { Accept: "application/json" }, credentials: "same-origin" });
+        const result = await response.json();
+        if (!response.ok || !result.ok) throw new Error(result.message || "Could not add this item to your cart.");
+        if (badge) { badge.textContent = String(result.count); badge.hidden = result.count <= 0; }
+        if (label) label.textContent = "Added to Cart";
+        if (feedback) feedback.textContent = "Added to your cart. You can keep shopping or open your cart.";
+        window.dispatchEvent(new CustomEvent("ecs:cart-updated", { detail: { ...result, openDrawer: true } }));
+        setTimeout(() => { if (label) label.textContent = "Add to Cart"; }, 1400);
+      } catch (cause) {
+        if (badge) { badge.textContent = previousCount ? String(previousCount) : ""; badge.hidden = previousCount <= 0; }
+        if (label) label.textContent = "Add to Cart";
+        if (feedback) { feedback.textContent = cause instanceof Error ? cause.message : "Could not add this item to your cart."; feedback.classList.add("is-error"); }
+      } finally { addButton.disabled = !selectedVariant()?.inStock; delete addButton.dataset.loading; }
+    });
+    root.querySelector("[data-sticky-add]")?.addEventListener("click", () => { if (form instanceof HTMLFormElement) form.requestSubmit(); });
+    const rail = root.querySelector("[data-related-rail]");
+    root.querySelector("[data-related-prev]")?.addEventListener("click", () => rail?.scrollBy({ left: -Math.max(280, rail.clientWidth * .75), behavior: "smooth" }));
+    root.querySelector("[data-related-next]")?.addEventListener("click", () => rail?.scrollBy({ left: Math.max(280, rail.clientWidth * .75), behavior: "smooth" }));
+    refresh();
+  })();
+</script>
+
+<style is:global lang="scss">@use "./styles/product-detail.scss";</style>

@@ -224,3 +224,100 @@ export function StorefrontProductsPicker({
     </div>
   );
 }
+
+export function StorefrontCollectionsPicker({
+  onChange,
+  value,
+}: {
+  onChange: (value: string[]) => void;
+  value: string[];
+}) {
+  const { t } = useI18n();
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [options, setOptions] = useState<CatalogOption[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    fetch("/admin/products/collections/actions/list?limit=100", { credentials: "same-origin" })
+      .then((response) => response.json())
+      .then((payload) => {
+        if (cancelled) return;
+        const collections = payload?.data?.collections ?? payload?.collections ?? [];
+        setOptions(
+          Array.isArray(collections)
+            ? collections
+                .map((row: { handle?: string | null; id?: string; title?: string | null }) =>
+                  row?.id
+                    ? { id: String(row.id), title: String(row.title ?? row.id), handle: row.handle ?? null }
+                    : null,
+                )
+                .filter(Boolean) as CatalogOption[]
+            : [],
+        );
+      })
+      .catch(() => {
+        if (!cancelled) setOptions([]);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const items = useMemo(
+    () =>
+      options.map((collection) => ({
+        id: collection.id,
+        title: collection.title,
+        subtitle: collection.handle ? `/${collection.handle}` : null,
+        thumbnailUrl: null,
+        searchText: [collection.title, collection.handle, collection.id].filter(Boolean).join(" "),
+      })),
+    [options],
+  );
+
+  return (
+    <div className="flex flex-col gap-2.5">
+      <div className="flex items-center gap-2">
+        <div className="min-w-0 flex-1">
+          <ProductCatalogPickerTrigger
+            loading={loading}
+            onClick={() => setOpen(true)}
+            selectedCount={value.length}
+          />
+        </div>
+        {value.length > 0 ? (
+          <Button className="h-9 shrink-0 px-3" onClick={() => onChange([])} type="button" variant="outline">
+            {t("editor.merchandising.clear")}
+          </Button>
+        ) : null}
+      </div>
+      <p className="text-xs leading-relaxed text-muted-foreground">
+        {value.length === 0
+          ? "The first four catalog collections are shown until you choose specific ones."
+          : `${value.length} collection${value.length === 1 ? "" : "s"} selected.`}
+      </p>
+      <ProductCatalogPickerDialog
+        allowEmptySelection
+        confirmLabel="Save collections"
+        description="Choose the collections customers can open from this section."
+        emptyDescription="Create a collection first, then return here to feature it."
+        emptyTitle="No collections found"
+        items={items}
+        loading={loading}
+        onConfirm={onChange}
+        onOpenChange={setOpen}
+        open={open}
+        searchPlaceholder="Search collections"
+        selectedIds={value}
+        selectionMode="multiple"
+        showCreateProductLink={false}
+        title="Choose collections"
+      />
+    </div>
+  );
+}

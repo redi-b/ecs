@@ -13,7 +13,11 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ConfirmDialog } from "@/components/app/confirm-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { getSelectedTemplateName } from "@/features/settings/settings-helpers";
+import {
+  getSelectedTemplateName,
+  getStorefrontPublicationState,
+  hasSavedStorefrontDraft,
+} from "@/features/settings/settings-helpers";
 import {
   SectionIntro,
   SettingsPanel,
@@ -37,15 +41,36 @@ export function StorefrontSection({
   const notSelected = t("settings.storefront.notSelected");
   const [selectedKey, setSelectedKey] = useState(summary.storefront.templateKey);
   const [isPublished, setIsPublished] = useState(summary.storefront.isPublished);
+  const [publishedTemplateKey, setPublishedTemplateKey] = useState(
+    summary.storefront.publishedTemplateKey,
+  );
+  const [hasUnpublishedChanges, setHasUnpublishedChanges] = useState(
+    summary.storefront.hasUnpublishedChanges ?? false,
+  );
   const [pausing, setPausing] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const activeKey = selectedKey ?? summary.storefront.templateKey;
+  const publicationState = getStorefrontPublicationState({
+    draftTemplateKey: activeKey,
+    hasUnpublishedChanges,
+    isPublished,
+    publishedTemplateKey,
+  });
+  const hasPendingTemplateChange = publicationState.hasPendingChanges;
   const singleTemplate = storefrontTemplates.length === 1;
   const busy = pausing || publishing;
 
   useEffect(() => {
+    setSelectedKey(summary.storefront.templateKey);
     setIsPublished(summary.storefront.isPublished);
-  }, [summary.storefront.isPublished]);
+    setPublishedTemplateKey(summary.storefront.publishedTemplateKey);
+    setHasUnpublishedChanges(summary.storefront.hasUnpublishedChanges ?? false);
+  }, [
+    summary.storefront.hasUnpublishedChanges,
+    summary.storefront.isPublished,
+    summary.storefront.publishedTemplateKey,
+    summary.storefront.templateKey,
+  ]);
 
   async function pauseShop() {
     if (busy || !isPublished) return;
@@ -80,7 +105,7 @@ export function StorefrontSection({
   }
 
   async function publishShop() {
-    if (busy || isPublished) return;
+    if (busy || (isPublished && !hasPendingTemplateChange)) return;
     setPublishing(true);
     try {
       const response = await fetch(dashboardRoutes.storefrontPublish, {
@@ -104,6 +129,8 @@ export function StorefrontSection({
       }
 
       setIsPublished(true);
+      setPublishedTemplateKey(activeKey);
+      setHasUnpublishedChanges(false);
       toast.success(t("settings.storefront.publishShopSuccess"));
       router.refresh();
     } catch {
@@ -116,8 +143,11 @@ export function StorefrontSection({
   const designName =
     storefrontTemplates.find((item) => item.version.templateKey === activeKey)?.name ??
     getSelectedTemplateName(storefrontTemplates, summary, notSelected);
-  const versionLabel = summary.storefront.templateVersion
-    ? `v${summary.storefront.templateVersion}`
+  const selectedVersion = storefrontTemplates.find(
+    (item) => item.version.templateKey === activeKey,
+  )?.version.version;
+  const versionLabel = selectedVersion ?? summary.storefront.templateVersion
+    ? `v${selectedVersion ?? summary.storefront.templateVersion}`
     : notSelected;
 
   return (
@@ -148,7 +178,9 @@ export function StorefrontSection({
             </div>
             <p className="max-w-xl text-sm text-muted-foreground">
               {isPublished
-                ? t("settings.storefront.liveDescription")
+                ? hasPendingTemplateChange
+                  ? t("settings.storefront.liveDescriptionWithDraft")
+                  : t("settings.storefront.liveDescription")
                 : t("settings.storefront.pausedDescription")}
             </p>
             <a
@@ -162,7 +194,11 @@ export function StorefrontSection({
             </a>
             <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
               <span>
-                {t("settings.storefront.selectedDesign")}:{" "}
+                {t(
+                  hasPendingTemplateChange
+                    ? "settings.storefront.draftDesign"
+                    : "settings.storefront.selectedDesign",
+                )}:{" "}
                 <span className="font-medium text-foreground">{designName}</span>
               </span>
               <span>
@@ -173,7 +209,20 @@ export function StorefrontSection({
           </div>
 
           <div className="flex shrink-0 flex-col gap-2 sm:min-w-[11.5rem]">
-            {isPublished ? (
+            {hasPendingTemplateChange ? (
+              <Button
+                className="w-full rounded-full"
+                disabled={busy}
+                onClick={() => void publishShop()}
+                size="sm"
+                type="button"
+              >
+                {publishing
+                  ? t("settings.storefront.publishShopPending")
+                  : t("settings.storefront.publishSelectedDesign", { name: designName })}
+              </Button>
+            ) : null}
+            {isPublished && !hasPendingTemplateChange ? (
               <ConfirmDialog
                 cancelDisabled={pausing}
                 confirmDisabled={pausing || busy}
@@ -197,7 +246,7 @@ export function StorefrontSection({
                   </Button>
                 }
               />
-            ) : (
+            ) : !hasPendingTemplateChange ? (
               <Button
                 className="w-full rounded-full"
                 disabled={busy}
@@ -209,7 +258,7 @@ export function StorefrontSection({
                   ? t("settings.storefront.publishShopPending")
                   : t("settings.storefront.publishShop")}
               </Button>
-            )}
+            ) : null}
             <Button asChild className="w-full rounded-full" size="sm" variant="outline">
               <a href={dashboardRoutes.editor}>{t("settings.storefront.editStorefront")}</a>
             </Button>
@@ -236,8 +285,16 @@ export function StorefrontSection({
             {storefrontTemplates.map((template) => (
               <StorefrontTemplateOption
                 currentTemplateKey={activeKey}
+                hasSavedDraft={hasSavedStorefrontDraft(
+                  summary.storefront.savedTemplateKeys,
+                  template.version.templateKey,
+                )}
                 key={template.version.templateKey}
-                onSelected={setSelectedKey}
+                publishedTemplateKey={publishedTemplateKey}
+                onSelected={(templateKey, nextHasUnpublishedChanges) => {
+                  setSelectedKey(templateKey);
+                  setHasUnpublishedChanges(nextHasUnpublishedChanges);
+                }}
                 template={template}
                 tenantId={summary.tenant.id}
               />

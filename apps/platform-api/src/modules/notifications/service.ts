@@ -53,6 +53,7 @@ const allowedEvents = new Set<NotificationEventType>([
   "shop.provisioning_failed",
   "shop.published",
   "shop.suspended",
+  "storefront.inquiry_created",
 ]);
 
 /** Map deprecated event ids to the canonical type used for delivery + prefs. */
@@ -93,6 +94,7 @@ const DEDUPE_EVENTS = new Set<string>([
   "inventory.low",
   "billing.past_due",
   "billing.invoice_ready",
+  "storefront.inquiry_created",
 ]);
 
 function extractDedupeEntityId(eventType: string, payload: unknown): string | null {
@@ -118,6 +120,9 @@ function extractDedupeEntityId(eventType: string, payload: unknown): string | nu
   }
   if (eventType === "billing.invoice_ready") {
     return pick("invoiceId", "invoice_id", "subscriptionId");
+  }
+  if (eventType === "storefront.inquiry_created") {
+    return pick("inquiryId", "inquiry_id");
   }
   return pick("orderId", "order_id");
 }

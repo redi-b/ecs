@@ -60,6 +60,7 @@ import { createPaymentOnboardingService } from "./modules/payments/payment-onboa
 import { createReceivingAccountsService } from "./modules/payments/receiving-accounts-service.js";
 import { wrapProductServiceWithStorefrontPurge } from "./modules/storefront/catalog-cache-invalidation.js";
 import { createStorefrontTemplateService } from "./modules/storefront/template-service.js";
+import { createStorefrontInquiryService } from "./modules/storefront/inquiry-service.js";
 import { createSupportService } from "./modules/support/service.js";
 import {
   createTenantCommerceContextService,
@@ -104,6 +105,7 @@ const platformDb = createPlatformDb({
 const findDomainByHostname = createDomainTenantLookup(platformDb.db);
 const billingService = createBillingService(platformDb.db);
 const deliverySettingsService = createDeliverySettingsService(platformDb.db);
+const storefrontInquiryService = createStorefrontInquiryService(platformDb.db);
 const domainManagementService = createDomainManagementService(platformDb.db);
 const mediaStorage = createMediaStorageFromEnv();
 if (mediaStorage.provider === "unconfigured") {
@@ -573,7 +575,12 @@ const auth = createPlatformAuth({
 });
 
 const app = createPlatformApp({
+  createStorefrontInquiry: storefrontInquiryService.createInquiry,
+  listStorefrontInquiries: storefrontInquiryService.listInquiries,
+  getStorefrontInquiry: storefrontInquiryService.getInquiry,
+  updateStorefrontInquiryStatus: storefrontInquiryService.updateInquiryStatus,
   logger,
+  storefrontPreviewSecret: process.env.STOREFRONT_PREVIEW_SECRET?.trim(),
   createMerchantPromotion: promotionService.createPromotion,
   authHandler: auth.handler,
   authorizeDashboardForTenant,

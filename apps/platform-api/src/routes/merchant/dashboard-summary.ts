@@ -25,7 +25,10 @@ type MerchantDashboardBase = {
   };
   storefront: {
     isPublished: boolean;
+    hasUnpublishedChanges?: boolean;
     publishedRevisionId: string | null;
+    publishedTemplateKey?: string | null;
+    savedTemplateKeys?: string[];
     templateId: string | null;
     templateKey: string | null;
     templateVersion: number | null;
@@ -72,6 +75,9 @@ export function createMerchantDashboardSummary(
     medusaStockLocationId: string | null;
     medusaStoreId: string | null;
     publishedRevisionId: string | null;
+    publishedTemplateKey: string | null;
+    hasUnpublishedChanges?: boolean;
+    savedTemplateKeys?: string[];
     status: string;
     templateId: string | null;
     templateKey: string | null;
@@ -104,7 +110,10 @@ export function createMerchantDashboardSummary(
       },
       storefront: {
         isPublished: Boolean(input.context.publishedRevisionId),
+        hasUnpublishedChanges: input.context.hasUnpublishedChanges ?? false,
         publishedRevisionId: input.context.publishedRevisionId,
+        publishedTemplateKey: input.context.publishedTemplateKey,
+        savedTemplateKeys: input.context.savedTemplateKeys ?? [],
         templateId: input.context.templateId,
         templateKey: input.context.templateKey,
         templateVersion: input.context.templateVersion,

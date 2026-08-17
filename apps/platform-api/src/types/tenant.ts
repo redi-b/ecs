@@ -233,6 +233,9 @@ export type TenantDashboardContext = {
   medusaStockLocationId: string | null;
   medusaStoreId: string | null;
   publishedRevisionId: string | null;
+  publishedTemplateKey: string | null;
+  hasUnpublishedChanges?: boolean;
+  savedTemplateKeys?: string[];
   status: string;
   templateId: string | null;
   templateKey: string | null;
@@ -265,7 +268,10 @@ export type TenantDashboardSummaryResult =
         };
         storefront: {
           isPublished: boolean;
+          hasUnpublishedChanges?: boolean;
           publishedRevisionId: string | null;
+          publishedTemplateKey?: string | null;
+          savedTemplateKeys?: string[];
           templateId: string | null;
           templateKey: string | null;
           templateVersion: number | null;

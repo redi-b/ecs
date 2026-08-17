@@ -2,11 +2,14 @@ import type { createPlatformDb } from "@ecs/db";
 import {
   domains,
   storefrontConfigs,
+  storefrontRevisions,
+  storefrontTemplateDrafts,
   storefrontTemplateVersions,
   tenantMemberships,
   tenants,
   users,
 } from "@ecs/db";
+import { isDeepStrictEqual } from "node:util";
 import { and, eq } from "drizzle-orm";
 
 import type {
@@ -26,6 +29,23 @@ type TenantCommerceContextRow = {
   medusaShippingProfileId: string | null;
   medusaShippingOptionId: string | null;
 };
+
+export function hasStorefrontUnpublishedChanges(input: {
+  draftData: unknown;
+  draftTemplateKey: string | null;
+  draftThemeTokens: unknown;
+  publishedData: unknown;
+  publishedRevisionId: string | null;
+  publishedTemplateKey: string | null;
+  publishedThemeTokens: unknown;
+}) {
+  return Boolean(
+    input.publishedRevisionId &&
+      (input.draftTemplateKey !== input.publishedTemplateKey ||
+        !isDeepStrictEqual(input.draftData, input.publishedData) ||
+        !isDeepStrictEqual(input.draftThemeTokens, input.publishedThemeTokens)),
+  );
+}
 
 export function buildTenantCommerceContext(
   row: TenantCommerceContextRow | undefined,
@@ -144,6 +164,11 @@ export function createTenantDashboardSummaryService(db: PlatformDb) {
         medusaPublishableKeyId: tenants.medusaPublishableKeyId,
         medusaRegionId: tenants.medusaRegionId,
         publishedRevisionId: storefrontConfigs.publishedRevisionId,
+        publishedTemplateKey: storefrontRevisions.templateKey,
+        draftData: storefrontConfigs.draftData,
+        draftThemeTokens: storefrontConfigs.draftThemeTokens,
+        publishedData: storefrontRevisions.data,
+        publishedThemeTokens: storefrontRevisions.themeTokens,
         templateId: storefrontConfigs.draftTemplateId,
         templateKey: storefrontTemplateVersions.templateKey,
         templateVersion: storefrontConfigs.draftTemplateVersion,
@@ -158,6 +183,10 @@ export function createTenantDashboardSummaryService(db: PlatformDb) {
           eq(storefrontTemplateVersions.version, storefrontConfigs.draftTemplateVersion),
         ),
       )
+      .leftJoin(
+        storefrontRevisions,
+        eq(storefrontRevisions.id, storefrontConfigs.publishedRevisionId),
+      )
       .where(eq(tenants.id, input.tenantId))
       .limit(1);
 
@@ -169,6 +198,25 @@ export function createTenantDashboardSummaryService(db: PlatformDb) {
       };
     }
 
+    const savedDrafts = await db
+      .select({ templateKey: storefrontTemplateVersions.templateKey })
+      .from(storefrontTemplateDrafts)
+      .innerJoin(
+        storefrontTemplateVersions,
+        eq(storefrontTemplateDrafts.templateVersionId, storefrontTemplateVersions.id),
+      )
+      .where(eq(storefrontTemplateDrafts.tenantId, input.tenantId));
+    const hasUnpublishedChanges = hasStorefrontUnpublishedChanges({
+      draftData: row.draftData,
+      draftTemplateKey: row.templateKey,
+      draftThemeTokens: row.draftThemeTokens,
+      publishedData: row.publishedData,
+      publishedRevisionId: row.publishedRevisionId,
+      publishedTemplateKey: row.publishedTemplateKey,
+      publishedThemeTokens: row.publishedThemeTokens,
+    });
+    const savedTemplateKeys = [...new Set(savedDrafts.map((draft) => draft.templateKey))];
+
     const context = {
       domainId: row.domainId,
       hostname: row.hostname,
@@ -178,6 +226,9 @@ export function createTenantDashboardSummaryService(db: PlatformDb) {
       medusaStockLocationId: row.medusaStockLocationId,
       medusaStoreId: row.medusaStoreId,
       publishedRevisionId: row.publishedRevisionId,
+      publishedTemplateKey: row.publishedTemplateKey,
+      hasUnpublishedChanges,
+      savedTemplateKeys,
       status: row.tenantStatus,
       templateId: row.templateId,
       templateKey: row.templateKey,
@@ -208,7 +259,10 @@ export function createTenantDashboardSummaryService(db: PlatformDb) {
         },
         storefront: {
           isPublished: Boolean(row.publishedRevisionId),
+          hasUnpublishedChanges,
           publishedRevisionId: row.publishedRevisionId,
+          publishedTemplateKey: row.publishedTemplateKey,
+          savedTemplateKeys,
           templateId: row.templateId,
           templateKey: row.templateKey,
           templateVersion: row.templateVersion,

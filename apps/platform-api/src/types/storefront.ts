@@ -22,12 +22,16 @@ export type StorefrontTemplateSelectionResult =
         templateId: string;
         templateVersion: number;
         templateKey: string;
+        source: "clean" | "saved";
+        hasUnpublishedChanges: boolean;
       };
     }
   | {
       ok: false;
       error: "template_not_found" | "tenant_not_found" | "template_plan_unavailable";
     };
+
+export type StorefrontTemplateSelectionMode = "clean" | "resume";
 
 export type StorefrontDraftResult =
   | {
@@ -43,6 +47,7 @@ export type StorefrontDraftResult =
         published?: {
           revisionId: string;
           publishedAt: string;
+          templateKey?: string | null;
           data: unknown;
           themeTokens: unknown;
         } | null;

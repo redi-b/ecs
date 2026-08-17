@@ -27,12 +27,15 @@ export async function loadPageContext(
   options?: {
     /** Skip cart cookie fetch (public catalog pages that defer cart badge). */
     skipCart?: boolean;
+    /** Short-lived capability used only by the editor preview route. */
+    previewToken?: string;
   },
 ): Promise<PageContext> {
   const platformApiBaseUrl = getPlatformApiBaseUrl();
   const requestHost = getRequestHost(request);
   const configResult = await getPublishedStorefrontConfig({
     platformApiBaseUrl,
+    previewToken: options?.previewToken,
     requestHost,
   });
 

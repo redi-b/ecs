@@ -14,6 +14,7 @@ export async function POST(request: Request) {
 
   let tenantId = "";
   let templateKey = "";
+  let mode: "clean" | "resume" = "resume";
   let returnTo = "/admin";
 
   if (contentType.includes("application/json")) {
@@ -21,9 +22,11 @@ export async function POST(request: Request) {
       tenantId?: unknown;
       templateKey?: unknown;
       returnTo?: unknown;
+      mode?: unknown;
     } | null;
     tenantId = typeof body?.tenantId === "string" ? body.tenantId.trim() : "";
     templateKey = typeof body?.templateKey === "string" ? body.templateKey.trim() : "";
+    mode = body?.mode === "clean" ? "clean" : "resume";
     if (typeof body?.returnTo === "string") {
       returnTo = getSafeReturnTo(body.returnTo);
     }
@@ -32,8 +35,10 @@ export async function POST(request: Request) {
     const rawTenant = formData.get("tenantId");
     const rawTemplate = formData.get("templateKey");
     const rawReturn = formData.get("returnTo");
+    const rawMode = formData.get("mode");
     tenantId = typeof rawTenant === "string" ? rawTenant.trim() : "";
     templateKey = typeof rawTemplate === "string" ? rawTemplate.trim() : "";
+    mode = rawMode === "clean" ? "clean" : "resume";
     if (typeof rawReturn === "string") {
       returnTo = getSafeReturnTo(rawReturn);
     }
@@ -56,6 +61,7 @@ export async function POST(request: Request) {
     platformApiBaseUrl: getPlatformApiBaseUrl(),
     tenantId,
     templateKey,
+    mode,
   });
 
   if (!result.ok) {

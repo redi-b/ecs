@@ -1,11 +1,19 @@
 import {
-  classicV1EditorSchema as classicV1EditorManifest,
-  defaultThemePageProps,
   generateThemeFromPrimary,
+  getStorefrontEditorManifest,
+  getStorefrontTemplateDefinition,
   inferSurfaceMode,
   type ThemeSurfaceMode,
 } from "@ecs/storefront-templates";
-import type { Data } from "@puckeditor/core";
+export type EditorData = {
+  content: Array<{
+    props: Record<string, unknown> & { id: string };
+    type: string;
+  }>;
+  root: { props?: Record<string, unknown> };
+};
+
+export type EditorAction = { data: EditorData; type: "setData" };
 
 export type StorefrontDraft = {
   data: unknown;
@@ -18,6 +26,7 @@ export type StorefrontDraft = {
     | {
         revisionId: string;
         publishedAt: string;
+        templateKey: string;
         data: unknown;
         themeTokens: unknown;
       }
@@ -26,6 +35,7 @@ export type StorefrontDraft = {
 };
 
 export type StorefrontPageProps = {
+  [key: string]: unknown;
   announcementEnabled?: boolean;
   announcementText?: string;
   backgroundColor?: string;
@@ -67,12 +77,12 @@ export type PublicationStatus = "published" | "saved-draft" | "unsaved";
 
 export const STOREFRONT_PAGE_COMPONENT = "StorefrontPage";
 
-export function buildPuckData(draft: StorefrontDraft): Data {
+export function buildEditorData(draft: StorefrontDraft): EditorData {
   return {
     content: [
       {
         props: {
-          ...flattenDraft(draft.data, draft.themeTokens),
+          ...flattenDraft(draft.data, draft.themeTokens, draft.templateKey),
           id: "storefront-page",
         },
         type: STOREFRONT_PAGE_COMPONENT,
@@ -84,7 +94,8 @@ export function buildPuckData(draft: StorefrontDraft): Data {
 
 export function buildDraftPayload(input: {
   data: unknown;
-  editorData: Data;
+  editorData: EditorData;
+  templateKey: string;
   tenantId: string;
   themeTokens: unknown;
 }) {
@@ -92,7 +103,8 @@ export function buildDraftPayload(input: {
   const themeTokens = cloneJson(input.themeTokens) as Record<string, unknown>;
   const props = getStorefrontPageProps(input.editorData);
 
-  for (const section of classicV1EditorManifest.sections) {
+  const manifest = requireEditorManifest(input.templateKey);
+  for (const section of manifest.sections) {
     for (const field of section.fields) {
       const value = (props as Record<string, unknown>)[field.prop];
       const draftValue = coerceFieldValue(field.kind, value);
@@ -129,13 +141,13 @@ export function buildDraftPayload(input: {
   };
 }
 
-export function getStorefrontPageProps(editorData: Data): StorefrontPageProps {
+export function getStorefrontPageProps(editorData: EditorData): StorefrontPageProps {
   const item = editorData.content.find((entry) => entry.type === STOREFRONT_PAGE_COMPONENT);
 
   return (item?.props ?? {}) as StorefrontPageProps;
 }
 
-export function serializeEditorData(data: Data) {
+export function serializeEditorData(data: EditorData) {
   return JSON.stringify(getStorefrontPageProps(data));
 }
 
@@ -167,6 +179,23 @@ export function isPreviewImageUrl(value: string | undefined) {
   return /^https?:\/\//i.test(value) || /^data:image\//i.test(value);
 }
 
+export function updateEditorLinkValue(
+  current: unknown,
+  fieldPath: string,
+  changedPath: string,
+  value: string,
+) {
+  if (!Array.isArray(current) || !changedPath.startsWith(`${fieldPath}.`)) return null;
+  const [rawIndex, key] = changedPath.slice(fieldPath.length + 1).split(".");
+  const index = Number.parseInt(rawIndex ?? "", 10);
+  if (!Number.isInteger(index) || (key !== "label" && key !== "href")) return null;
+  return current.map((item, itemIndex) =>
+    itemIndex === index && item && typeof item === "object"
+      ? { ...(item as Record<string, unknown>), [key]: value }
+      : item,
+  );
+}
+
 function coerceFieldValue(kind: string, value: unknown): unknown {
   if (kind === "boolean") {
     if (typeof value === "boolean") return value;
@@ -175,7 +204,7 @@ function coerceFieldValue(kind: string, value: unknown): unknown {
     return Boolean(value);
   }
 
-  if (kind === "products") {
+  if (kind === "products" || kind === "collections") {
     if (Array.isArray(value)) {
       return value.map(String).filter((id) => id.trim().length > 0);
     }
@@ -186,6 +215,25 @@ function coerceFieldValue(kind: string, value: unknown): unknown {
         .filter(Boolean);
     }
     return [];
+  }
+
+  if (kind === "product") {
+    const id = Array.isArray(value) ? value[0] : value;
+    const text = id == null ? "" : String(id).trim();
+    return text || undefined;
+  }
+
+  if (kind === "links") {
+    if (!Array.isArray(value)) return [];
+    return value
+      .map((item) => {
+        const candidate = item && typeof item === "object" ? item as Record<string, unknown> : {};
+        return {
+          label: typeof candidate.label === "string" ? candidate.label.trim() : "",
+          href: typeof candidate.href === "string" ? candidate.href.trim() : "",
+        };
+      })
+      .filter((item) => item.label && item.href);
   }
 
   if (kind === "collection") {
@@ -205,8 +253,21 @@ function normalizePropForEditor(kind: string, value: unknown): unknown {
   if (kind === "boolean") {
     return typeof value === "boolean" ? value : value == null ? true : Boolean(value);
   }
-  if (kind === "products") {
+  if (kind === "products" || kind === "collections") {
     return Array.isArray(value) ? value.map(String) : [];
+  }
+  if (kind === "product") {
+    return typeof value === "string" ? value : "";
+  }
+  if (kind === "links") {
+    if (!Array.isArray(value)) return [];
+    return value.map((item) => {
+      const candidate = item && typeof item === "object" ? item as Record<string, unknown> : {};
+      return {
+        label: typeof candidate.label === "string" ? candidate.label : "",
+        href: typeof candidate.href === "string" ? candidate.href : "",
+      };
+    });
   }
   if (kind === "collection") {
     return typeof value === "string" ? value : value == null ? "" : String(value);
@@ -214,10 +275,11 @@ function normalizePropForEditor(kind: string, value: unknown): unknown {
   return typeof value === "string" ? value : value == null ? undefined : String(value);
 }
 
-function flattenDraft(data: unknown, themeTokens: unknown): StorefrontPageProps {
+function flattenDraft(data: unknown, themeTokens: unknown, templateKey = "classic@1"): StorefrontPageProps {
   const props: Record<string, unknown> = {};
 
-  for (const section of classicV1EditorManifest.sections) {
+  const manifest = requireEditorManifest(templateKey);
+  for (const section of manifest.sections) {
     for (const field of section.fields) {
       const raw = getPathValue(
         field.path.startsWith("themeTokens.") ? themeTokens : data,
@@ -256,6 +318,14 @@ function flattenDraft(data: unknown, themeTokens: unknown): StorefrontPageProps 
   return props as StorefrontPageProps;
 }
 
+function requireEditorManifest(templateKey: string) {
+  const manifest = getStorefrontEditorManifest(templateKey);
+  if (!manifest) {
+    throw new Error(`No editor manifest is registered for ${templateKey}.`);
+  }
+  return manifest;
+}
+
 /** Build page props patch for a full palette from brand color + surface mode. */
 export function themePalettePageProps(
   primary: string,
@@ -274,8 +344,35 @@ export function themePalettePageProps(
 }
 
 /** Restore designed defaults for the current surface (seed colors, auto on). */
-export function themeResetPageProps(mode: ThemeSurfaceMode): Partial<StorefrontPageProps> {
-  return defaultThemePageProps(mode);
+export function themeResetPageProps(templateKey: string): Partial<StorefrontPageProps> {
+  const definition = getStorefrontTemplateDefinition(templateKey);
+  const tokens = definition?.defaultThemeTokens as {
+    autoPalette?: boolean;
+    colors?: Record<string, string | undefined>;
+    surfaceMode?: string;
+    colorMode?: string;
+    typography?: Record<string, string | undefined>;
+  } | undefined;
+  const colors = tokens?.colors ?? {};
+  const typography = tokens?.typography ?? {};
+  const backgroundColor = colors.background;
+
+  return {
+    accentColor: colors.accent,
+    autoPalette: tokens?.autoPalette ?? true,
+    backgroundColor,
+    bodyFont: typography.bodyFont,
+    foregroundColor: colors.foreground,
+    headingFont: typography.headingFont,
+    mutedColor: colors.muted,
+    primaryColor: colors.primary,
+    surfaceMode:
+      tokens?.surfaceMode === "dark" || tokens?.colorMode === "dark"
+        ? "dark"
+        : tokens?.surfaceMode === "light" || tokens?.colorMode === "light"
+          ? "light"
+          : inferSurfaceMode(backgroundColor),
+  };
 }
 
 function getPathValue(source: unknown, path: string) {

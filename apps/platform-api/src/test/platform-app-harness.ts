@@ -80,6 +80,10 @@ export const resolvedTenantContext: TenantContext = {
 export function appWithResolution(
   result: TenantResolutionResult,
   options?: {
+    createStorefrontInquiry?: import("../types/platform-app.js").PlatformAppOptions["createStorefrontInquiry"];
+    listStorefrontInquiries?: import("../types/platform-app.js").PlatformAppOptions["listStorefrontInquiries"];
+    getStorefrontInquiry?: import("../types/platform-app.js").PlatformAppOptions["getStorefrontInquiry"];
+    updateStorefrontInquiryStatus?: import("../types/platform-app.js").PlatformAppOptions["updateStorefrontInquiryStatus"];
     authHandler?: (request: Request) => Promise<Response>;
     authorizeDashboardForTenant?: (input: { tenantId: string; userId: string }) => Promise<
       | {
@@ -261,6 +265,7 @@ export function appWithResolution(
       tenantId: string;
     }) => Promise<SupportHistoryResult>;
     getStorefrontDraft?: (input: { tenantId: string }) => Promise<StorefrontDraftResult>;
+    storefrontPreviewSecret?: string;
     updateStorefrontDraft?: (input: {
       data: unknown;
       tenantId: string;
@@ -380,6 +385,11 @@ export function appWithResolution(
   },
 ) {
   return createPlatformApp({
+    createStorefrontInquiry: options?.createStorefrontInquiry,
+    listStorefrontInquiries: options?.listStorefrontInquiries,
+    getStorefrontInquiry: options?.getStorefrontInquiry,
+    updateStorefrontInquiryStatus: options?.updateStorefrontInquiryStatus,
+    storefrontPreviewSecret: options?.storefrontPreviewSecret,
     authHandler: options?.authHandler,
     authorizeDashboardForTenant: options?.authorizeDashboardForTenant,
     checkTenantHandleAvailability: options?.checkTenantHandleAvailability,

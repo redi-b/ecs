@@ -1,35 +1,241 @@
 "use client";
 
+import { getStorefrontEditorManifest } from "@ecs/storefront-templates";
 import { RiEditLine } from "@remixicon/react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   POPOVER_MOTION_CLASSNAME,
   storefrontGoogleFontsHref,
-  useStorefrontPuck,
+  useStorefrontEditor,
 } from "@/features/storefront-editor/editor-config";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 
 import { EditorImageSourceActions } from "./editor-settings";
-import { isPreviewImageUrl, type StorefrontPageProps } from "./editor-state";
+import { isPreviewImageUrl, updateEditorLinkValue, type StorefrontPageProps } from "./editor-state";
 import { preventPreviewLink, updateStorefrontProp } from "./editor-utils";
 
 export function TemplatePreview({
   props,
   storefrontName,
   templateKey,
+  previewUrl,
+  isFullscreen = false,
+  onSelectPath,
+  onSelectionInteractionChange,
+  selectedPath,
+  showEditHints = true,
 }: {
   props: StorefrontPageProps;
   storefrontName: string;
   templateKey: string;
+  previewUrl?: string | undefined;
+  isFullscreen?: boolean;
+  onSelectPath?: (path: string) => void;
+  onSelectionInteractionChange?: (active: boolean) => void;
+  selectedPath?: string | null;
+  showEditHints?: boolean;
 }) {
-  if (templateKey === "classic@1") {
+  const manifest = getStorefrontEditorManifest(templateKey);
+
+  if (manifest?.previewMode === "iframe" && previewUrl) {
+    return <StorefrontIframePreview isFullscreen={isFullscreen} onSelectPath={onSelectPath} onSelectionInteractionChange={onSelectionInteractionChange} previewUrl={previewUrl} props={props} selectedPath={selectedPath} showEditHints={showEditHints} templateKey={templateKey} />;
+  }
+
+  if (manifest?.previewMode === "iframe") {
+    return <UnavailableIframePreview templateKey={templateKey} />;
+  }
+
+  if (manifest?.previewMode === "react-legacy") {
     return <ClassicV1StorefrontPreview {...props} storefrontName={storefrontName} />;
   }
 
   return <UnsupportedTemplatePreview templateKey={templateKey} />;
+}
+
+function UnavailableIframePreview({ templateKey }: { templateKey: string }) {
+  return (
+    <div className="flex min-h-[32rem] items-center justify-center p-8 text-center">
+      <div className="max-w-md rounded-lg border bg-muted/30 p-6">
+        <div className="text-sm font-semibold">Preview session unavailable</div>
+        <p className="mt-2 text-sm text-muted-foreground">
+          The storefront renderer is registered, but the editor could not open a signed preview
+          session. Refresh after confirming the preview services are running.
+        </p>
+        <p className="mt-3 font-mono text-xs text-muted-foreground">{templateKey}</p>
+      </div>
+    </div>
+  );
+}
+
+function StorefrontIframePreview({
+  previewUrl,
+  props,
+  templateKey,
+  isFullscreen,
+  onSelectPath,
+  onSelectionInteractionChange,
+  selectedPath,
+  showEditHints,
+}: {
+  previewUrl: string;
+  props: StorefrontPageProps;
+  templateKey: string;
+  isFullscreen: boolean;
+  onSelectPath?: ((path: string) => void) | undefined;
+  onSelectionInteractionChange?: ((active: boolean) => void) | undefined;
+  selectedPath?: string | null | undefined;
+  showEditHints: boolean;
+}) {
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const connectedOriginRef = useRef<string | null>(null);
+  const [isLoaded, setIsLoaded] = useState(false);
+  const data = useStorefrontEditor((api) => api.appState.data);
+  const dispatch = useStorefrontEditor((api) => api.dispatch);
+  const manifest = useMemo(() => getStorefrontEditorManifest(templateKey), [templateKey]);
+  const fields = useMemo(() => {
+    const values: Record<string, unknown> = {};
+    for (const section of manifest?.sections ?? []) {
+      for (const field of section.fields) values[field.path] = props[field.prop as keyof StorefrontPageProps];
+    }
+    // Firefox cannot structured-clone URL instances. The manifest payload is a
+    // JSON contract, so normalize it before it crosses the iframe boundary.
+    return JSON.parse(JSON.stringify(values)) as Record<string, unknown>;
+  }, [manifest, props]);
+  const postConnected = useCallback((message: Record<string, unknown>) => {
+    const origin = connectedOriginRef.current;
+    if (!origin) return;
+    iframeRef.current?.contentWindow?.postMessage(message, origin);
+  }, []);
+  const connect = useCallback(() => {
+    iframeRef.current?.contentWindow?.postMessage({ type: "ecs:editor:connect" }, "*");
+  }, []);
+  const selectedField = useMemo(
+    () => manifest?.sections.flatMap((section) => section.fields).find((field) => field.path === selectedPath),
+    [manifest, selectedPath],
+  );
+
+  useEffect(() => {
+    connectedOriginRef.current = null;
+    setIsLoaded(false);
+  }, [previewUrl]);
+
+  useEffect(() => {
+    postConnected({ type: "ecs:editor:update", fields });
+  }, [fields, postConnected]);
+
+  useEffect(() => {
+    postConnected({ type: "ecs:editor:ui", selectedPath, showEditHints });
+  }, [postConnected, selectedPath, showEditHints]);
+
+  useEffect(() => {
+    if (isLoaded) return;
+    connect();
+    const timer = window.setInterval(connect, 700);
+    return () => window.clearInterval(timer);
+  }, [connect, isLoaded]);
+
+  useEffect(() => {
+    function onMessage(event: MessageEvent) {
+      if (event.source !== iframeRef.current?.contentWindow) return;
+      if (!event.data || typeof event.data !== "object") return;
+      if (event.data.type === "ecs:preview:ready") {
+        connectedOriginRef.current = event.origin;
+        postConnected({ type: "ecs:editor:update", fields });
+        postConnected({ type: "ecs:editor:ui", selectedPath, showEditHints });
+        setIsLoaded(true);
+        return;
+      }
+      if (!connectedOriginRef.current || event.origin !== connectedOriginRef.current) return;
+      if (event.data.type === "ecs:preview:select") {
+        const path = typeof event.data.path === "string" ? event.data.path : "";
+        const field = manifest?.sections
+          .flatMap((section) => section.fields)
+          .find((field) => field.path === path || path.startsWith(`${field.path}.`));
+        onSelectPath?.(field && path.startsWith(`${field.path}.`) ? path : field?.path ?? path);
+        return;
+      }
+      if (event.data.type !== "ecs:preview:field-change") return;
+      const path = typeof event.data.path === "string" ? event.data.path : "";
+      const field = manifest?.sections.flatMap((section) => section.fields).find((item) => item.path === path || path.startsWith(`${item.path}.`));
+      if (!field) return;
+      if (field.kind === "links" && path !== field.path) {
+        const current = props[field.prop as keyof StorefrontPageProps];
+        const next = updateEditorLinkValue(current, field.path, path, typeof event.data.value === "string" ? event.data.value : "");
+        if (!next) return;
+        updateStorefrontProp(data, dispatch, field.prop as keyof StorefrontPageProps, next);
+        return;
+      }
+      if (field.kind !== "text" && field.kind !== "textarea") return;
+      updateStorefrontProp(
+        data,
+        dispatch,
+        field.prop as keyof StorefrontPageProps,
+        typeof event.data.value === "string" ? event.data.value : "",
+      );
+    }
+    window.addEventListener("message", onMessage);
+    return () => window.removeEventListener("message", onMessage);
+  }, [data, dispatch, fields, manifest, onSelectPath, postConnected, selectedPath, showEditHints]);
+
+  return (
+    <div className={cn("relative h-full min-h-0 w-full bg-background", !isFullscreen && "max-lg:min-h-[42rem]")}>
+      <iframe
+        className={cn("block h-full min-h-0 w-full border-0 bg-background transition-opacity duration-500", !isFullscreen && "max-lg:min-h-[42rem]", isLoaded ? "opacity-100" : "opacity-0")}
+        onLoad={() => {
+          connectedOriginRef.current = null;
+          setIsLoaded(false);
+          connect();
+        }}
+        ref={iframeRef}
+        referrerPolicy="no-referrer"
+        sandbox="allow-scripts allow-same-origin"
+        src={previewUrl}
+        title="Storefront preview"
+      />
+      {isLoaded && selectedField?.kind === "image" ? (
+        <div className="absolute right-3 top-3 z-10 w-[min(22rem,calc(100%-1.5rem))] rounded-xl border border-border/80 bg-background/95 p-3 shadow-xl backdrop-blur-md" data-editor-selection-control onPointerDown={(event) => event.stopPropagation()}>
+          <div className="mb-2 text-xs font-medium text-muted-foreground">Edit {selectedField.label}</div>
+          <EditorImageSourceActions
+            onPickerOpenChange={onSelectionInteractionChange}
+            onPicked={(value) =>
+              updateStorefrontProp(
+                data,
+                dispatch,
+                selectedField.prop as keyof StorefrontPageProps,
+                value,
+              )
+            }
+          />
+        </div>
+      ) : null}
+      <div aria-live="polite" aria-label="Preparing storefront preview" className={cn("storefront-preview-loader absolute inset-0 grid place-items-center overflow-hidden bg-background transition-opacity duration-300", isLoaded ? "pointer-events-none opacity-0" : "opacity-100")} role="status">
+        <div className="storefront-preview-loader__halo" />
+        <div className="storefront-preview-loader__content">
+          <div className="storefront-preview-loader__scene" aria-hidden>
+            <div className="storefront-preview-loader__shadow" />
+            <div className="storefront-preview-loader__sheet storefront-preview-loader__sheet--back" />
+            <div className="storefront-preview-loader__sheet storefront-preview-loader__sheet--middle" />
+            <div className="storefront-preview-loader__sheet storefront-preview-loader__sheet--front">
+              <div className="storefront-preview-loader__nav"><span /><i /><i /><i /></div>
+              <div className="storefront-preview-loader__hero"><span /><span /><b /></div>
+              <div className="storefront-preview-loader__cards"><i /><i /><i /></div>
+              <div className="storefront-preview-loader__scan" />
+            </div>
+            <div className="storefront-preview-loader__cursor"><RiEditLine /></div>
+          </div>
+          <div className="storefront-preview-loader__copy">
+            <span>STOREFRONT PREVIEW</span>
+            <strong>Preparing your storefront</strong>
+            <p>Bringing your latest changes into view</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export function UnsupportedTemplatePreview({ templateKey }: { templateKey: string }) {
@@ -38,7 +244,7 @@ export function UnsupportedTemplatePreview({ templateKey }: { templateKey: strin
       <div className="max-w-md rounded-lg border bg-muted/30 p-6">
         <div className="text-sm font-semibold">Preview adapter unavailable</div>
         <p className="mt-2 text-sm text-muted-foreground">
-          This storefront template needs an editor preview adapter before it can be edited visually.
+          This storefront template does not have a registered preview renderer yet.
         </p>
         <p className="mt-3 font-mono text-xs text-muted-foreground">{templateKey}</p>
       </div>
@@ -330,8 +536,8 @@ export function EditableText({
   propName: keyof StorefrontPageProps;
   value?: string | undefined;
 }) {
-  const data = useStorefrontPuck((api) => api.appState.data);
-  const dispatch = useStorefrontPuck((api) => api.dispatch);
+  const data = useStorefrontEditor((api) => api.appState.data);
+  const dispatch = useStorefrontEditor((api) => api.dispatch);
   const displayValue = value?.trim() ? value : fallback;
 
   function updateValue(nextValue: string) {
@@ -392,8 +598,8 @@ export function EditableImage({
   value?: string | undefined;
   variant: "hero" | "logo";
 }) {
-  const data = useStorefrontPuck((api) => api.appState.data);
-  const dispatch = useStorefrontPuck((api) => api.dispatch);
+  const data = useStorefrontEditor((api) => api.appState.data);
+  const dispatch = useStorefrontEditor((api) => api.dispatch);
   const imageUrl = isPreviewImageUrl(value) ? value : "";
 
   function updateValue(nextValue: string) {

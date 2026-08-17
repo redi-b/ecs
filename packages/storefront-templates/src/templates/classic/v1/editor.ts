@@ -3,6 +3,7 @@ import type { StorefrontEditorManifest } from "../../../editor/schema";
 export const classicV1EditorSchema = {
   templateKey: "classic@1",
   templateVersion: 1,
+  previewMode: "iframe",
   sections: [
     {
       id: "announcement",

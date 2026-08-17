@@ -22,10 +22,11 @@ export type StorefrontConfigFetch = (request: Request) => Promise<Response>;
 export async function getPublishedStorefrontConfig(options: {
   fetcher?: StorefrontConfigFetch;
   platformApiBaseUrl: string;
+  previewToken?: string;
   requestHost?: string | null;
 }): Promise<StorefrontConfigResult> {
   const fetcher = options.fetcher ?? fetch;
-  const request = new Request(getConfigUrl(options.platformApiBaseUrl), {
+  const request = new Request(getConfigUrl(options.platformApiBaseUrl, options.previewToken), {
     headers: getStorefrontHeaders(options.requestHost),
   });
   const response = await fetcher(request);
@@ -59,8 +60,13 @@ export async function getPublishedStorefrontConfig(options: {
   };
 }
 
-function getConfigUrl(platformApiBaseUrl: string) {
-  return new URL("/platform/storefront/config", normalizeBaseUrl(platformApiBaseUrl));
+function getConfigUrl(platformApiBaseUrl: string, previewToken?: string) {
+  const url = new URL(
+    previewToken ? "/platform/storefront/preview-config" : "/platform/storefront/config",
+    normalizeBaseUrl(platformApiBaseUrl),
+  );
+  if (previewToken) url.searchParams.set("token", previewToken);
+  return url;
 }
 
 function getStorefrontHeaders(requestHost?: string | null) {

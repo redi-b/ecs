@@ -653,7 +653,10 @@ export const merchantDashboardSummarySchema = z.object({
   }),
   storefront: z.object({
     isPublished: z.boolean(),
+    hasUnpublishedChanges: z.boolean().optional(),
     publishedRevisionId: z.string().min(1).nullable(),
+    publishedTemplateKey: z.string().min(1).nullable().optional(),
+    savedTemplateKeys: z.array(z.string().min(1)).optional(),
     templateId: z.string().min(1).nullable(),
     templateKey: z.string().min(1).nullable(),
     templateVersion: z.number().int().positive().nullable(),
@@ -871,6 +874,8 @@ export const storefrontTemplateSelectionSchema = z.object({
     templateId: z.string().min(1),
     templateVersion: z.number().int().positive(),
     templateKey: z.string().min(1),
+    source: z.enum(["clean", "saved"]),
+    hasUnpublishedChanges: z.boolean(),
   }),
 });
 
@@ -889,6 +894,7 @@ export const storefrontDraftSchema = z.object({
       .object({
         revisionId: z.string().min(1),
         publishedAt: z.string().min(1),
+        templateKey: z.string().min(1),
         data: z.unknown(),
         themeTokens: z.unknown(),
       })
@@ -948,6 +954,13 @@ export const publishedStorefrontConfigSchema = z.object({
 });
 
 export type PublishedStorefrontConfig = z.infer<typeof publishedStorefrontConfigSchema>;
+
+export const storefrontPreviewSessionSchema = z.object({
+  token: z.string().min(1),
+  expiresAt: z.string().datetime(),
+});
+
+export type StorefrontPreviewSession = z.infer<typeof storefrontPreviewSessionSchema>;
 
 export const merchantDeleteResultSchema = z.object({
   id: z.string().min(1),

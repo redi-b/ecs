@@ -1,0 +1,211 @@
+---
+import type { StoreCategory, StoreCollection, StoreProduct } from "../../../lib/commerce/types";
+import Layout from "./Layout.astro";
+import ProductCard from "./ProductCard.astro";
+import heroBackground from "./assets/products-hero-background-image.png";
+import chevronIcon from "./icons/chevron-icon.svg";
+import { parseLuviaData } from "./lib";
+
+interface Props {
+  data: unknown;
+  tenantName: string;
+  cartCount?: number;
+  deferCartCount?: boolean;
+  products: StoreProduct[];
+  errorMessage?: string | null;
+  hasPrev: boolean;
+  hasNext: boolean;
+  prevHref?: string;
+  nextHref?: string;
+  collections?: StoreCollection[];
+  categories?: StoreCategory[];
+  filters?: { q?: string; collectionId?: string; categoryId?: string; order?: string };
+  totalCount?: number;
+  offset?: number;
+  limit?: number;
+}
+
+const {
+  data,
+  tenantName,
+  cartCount = 0,
+  deferCartCount = false,
+  products,
+  errorMessage,
+  hasPrev,
+  hasNext,
+  prevHref,
+  nextHref,
+  collections = [],
+  categories = [],
+  filters = {},
+  totalCount = products.length,
+  offset = 0,
+  limit = 24,
+} = Astro.props;
+
+const template = parseLuviaData(data);
+const activeCollection = collections.find((item) => item.id === filters.collectionId);
+const activeCategory = categories.find((item) => item.id === filters.categoryId);
+const hasActiveFilters = Boolean(
+  filters.q || filters.collectionId || filters.categoryId || filters.order,
+);
+const categoryLabel = activeCategory?.name ?? "All categories";
+const sortLabel =
+  filters.order === "created_at"
+    ? "Newest"
+    : filters.order === "title"
+      ? "Title A–Z"
+      : filters.order === "-title"
+        ? "Title Z–A"
+        : "Featured";
+const totalPages = Math.max(1, Math.ceil(totalCount / limit));
+const currentPage = Math.min(totalPages, Math.floor(offset / limit) + 1);
+
+function productsHref(nextOffset: number, overrides: Partial<NonNullable<Props["filters"]>> = {}) {
+  const next = { ...filters, ...overrides };
+  const params = new URLSearchParams();
+  if (next.q) params.set("q", next.q);
+  if (next.collectionId) params.set("collection", next.collectionId);
+  if (next.categoryId) params.set("category", next.categoryId);
+  if (next.order) params.set("order", next.order);
+  if (nextOffset > 0) params.set("offset", String(nextOffset));
+  const query = params.toString();
+  return query ? `/products?${query}` : "/products";
+}
+
+function clearFilterHref(key: "q" | "collectionId" | "categoryId" | "order") {
+  return productsHref(0, { [key]: undefined });
+}
+
+const pageWindow = Array.from({ length: totalPages }, (_, index) => index + 1).filter(
+  (page) => page === 1 || page === totalPages || Math.abs(page - currentPage) <= 1,
+);
+---
+
+<Layout tenantName={tenantName} header={template.header} footer={template.footer} cartCount={cartCount} deferCartCount={deferCartCount} title="Products Listing">
+  <main class="lv-shop">
+    <section class="lv-shop-hero" style={`--shop-hero: url(${heroBackground.src})`}>
+      <div class="lv-shop-hero__content">
+        <nav aria-label="Breadcrumb"><a href="/">Home</a><img src={chevronIcon.src} alt="" /><span>Shop</span></nav>
+        <h1>Our Products Listing</h1>
+      </div>
+    </section>
+
+    <section class="lv-shop-products" aria-labelledby="products-listing-title">
+      <form class="lv-catalog-filter" method="get" action="/products">
+        <header><h2 id="products-listing-title">Products Listing</h2><button class="lv-filter-toggle" type="button" aria-expanded="false" aria-controls="catalog-filter-controls">Filters <span aria-hidden="true">+</span></button></header>
+        <div class="lv-catalog-filter__body" id="catalog-filter-controls">
+          <div class="lv-catalog-filter__controls">
+            {filters.collectionId && <input type="hidden" name="collection" value={filters.collectionId} />}
+            <label class="lv-catalog-filter__search"><span class="sr-only">Search products</span><input name="q" type="search" value={filters.q ?? ""} placeholder="Search products" /></label>
+            {collections.slice(0, 3).map((collection) => <a class:list={["lv-filter-pill", { "is-active": filters.collectionId === collection.id }]} href={productsHref(0, { collectionId: collection.id })}>{collection.title ?? "Collection"}</a>)}
+            {categories.length > 0 && <details class="lv-filter-menu">
+              <summary><span>Category</span><strong data-filter-value>{categoryLabel}</strong></summary>
+              <div role="radiogroup" aria-label="Product category">
+                <label><input type="radio" name="category" value="" checked={!filters.categoryId} /><span>All categories</span></label>
+                {categories.map((category) => <label><input type="radio" name="category" value={category.id} checked={filters.categoryId === category.id} /><span>{category.name ?? "Category"}</span></label>)}
+              </div>
+            </details>}
+            <details class="lv-filter-menu lv-filter-menu--sort">
+              <summary><span>Sort by</span><strong data-filter-value>{sortLabel}</strong></summary>
+              <div role="radiogroup" aria-label="Sort products">
+                <label><input type="radio" name="order" value="" checked={!filters.order} /><span>Featured</span></label>
+                <label><input type="radio" name="order" value="created_at" checked={filters.order === "created_at"} /><span>Newest</span></label>
+                <label><input type="radio" name="order" value="title" checked={filters.order === "title"} /><span>Title A–Z</span></label>
+                <label><input type="radio" name="order" value="-title" checked={filters.order === "-title"} /><span>Title Z–A</span></label>
+              </div>
+            </details>
+            <button class="lv-filter-apply" type="submit">Apply filters</button>
+          </div>
+          <div class="lv-catalog-filter__active">
+            <div>
+              {filters.q && <a href={clearFilterHref("q")}><strong>Search:</strong> {filters.q}<span aria-hidden="true">×</span></a>}
+              {activeCollection && <a href={clearFilterHref("collectionId")}><strong>Collection:</strong> {activeCollection.title}<span aria-hidden="true">×</span></a>}
+              {activeCategory && <a href={clearFilterHref("categoryId")}><strong>Category:</strong> {activeCategory.name}<span aria-hidden="true">×</span></a>}
+              {filters.order && <a href={clearFilterHref("order")}><strong>Sort:</strong> {filters.order === "created_at" ? "Newest" : filters.order === "title" ? "Title A–Z" : "Title Z–A"}<span aria-hidden="true">×</span></a>}
+              {hasActiveFilters && <a class="lv-filter-clear" href="/products">Clear filters</a>}
+            </div>
+            <span>{totalCount} Results</span>
+          </div>
+        </div>
+      </form>
+
+      <div class="lv-catalog-loading" data-catalog-loading hidden role="status" aria-live="polite">
+        <div>{Array.from({ length: 8 }, () => <span></span>)}</div>
+        <p>Refreshing the collection…</p>
+      </div>
+
+      <div data-catalog-results>
+        {errorMessage ? <div class="lv-catalog-state" role="alert"><h2>We couldn’t load the collection.</h2><p>Please refresh the page or try again in a moment.</p></div> : products.length === 0 && hasActiveFilters ? <div class="lv-catalog-state" role="status"><h2>No products match your selection.</h2><p>Try a broader search or remove one of the active filters.</p><a href="/products">Clear all filters</a></div> : products.length === 0 ? <div class="lv-catalog-state" role="status"><h2>The collection is getting ready.</h2><p>There are no products available yet. Please check back soon.</p><a href="/">Return home</a></div> : <div class="lv-catalog-grid">{products.map((product, index) => <ProductCard product={product} eager={index < 4} />)}</div>}
+
+        {!errorMessage && products.length > 0 && <div class="lv-catalog-pagination"><p>Showing {Math.min(offset + products.length, totalCount)} out of <strong>{totalCount}</strong> results</p>{totalPages > 1 && <nav aria-label="Product pages">{hasPrev && prevHref ? <a href={prevHref} rel="prev" aria-label="Previous page">‹</a> : <span aria-disabled="true">‹</span>}{pageWindow.map((page, index) => <>{index > 0 && pageWindow[index - 1] !== page - 1 && <i aria-hidden="true">…</i>}<a class:list={{ "is-current": page === currentPage }} href={productsHref((page - 1) * limit)} aria-current={page === currentPage ? "page" : undefined}>{page}</a></>)}{hasNext && nextHref ? <a href={nextHref} rel="next" aria-label="Next page">›</a> : <span aria-disabled="true">›</span>}</nav>}</div>}
+      </div>
+    </section>
+  </main>
+</Layout>
+
+<script>
+  const toggle = document.querySelector<HTMLButtonElement>(".lv-filter-toggle");
+  const controls = document.querySelector<HTMLElement>("#catalog-filter-controls");
+  toggle?.addEventListener("click", () => {
+    const open = toggle.getAttribute("aria-expanded") === "true";
+    toggle.setAttribute("aria-expanded", String(!open));
+    controls?.toggleAttribute("data-open", !open);
+  });
+
+  const form = document.querySelector<HTMLFormElement>(".lv-catalog-filter");
+  const section = document.querySelector<HTMLElement>(".lv-shop-products");
+  const loading = document.querySelector<HTMLElement>("[data-catalog-loading]");
+  const results = document.querySelector<HTMLElement>("[data-catalog-results]");
+  const apply = form?.querySelector<HTMLButtonElement>(".lv-filter-apply");
+  const showLoading = () => {
+    if (!loading || !results || !section) return;
+    loading.hidden = false;
+    results.hidden = true;
+    section.setAttribute("aria-busy", "true");
+    if (apply) { apply.disabled = true; apply.textContent = "Applying…"; }
+  };
+  form?.addEventListener("submit", showLoading);
+  document.querySelectorAll<HTMLDetailsElement>(".lv-filter-menu").forEach((menu) => {
+    menu.addEventListener("toggle", () => {
+      if (!menu.open) return;
+      document.querySelectorAll<HTMLDetailsElement>(".lv-filter-menu").forEach((other) => {
+        if (other !== menu) other.open = false;
+      });
+    });
+    menu.addEventListener("change", (event) => {
+      const input = event.target instanceof HTMLInputElement ? event.target : null;
+      const value = menu.querySelector<HTMLElement>("[data-filter-value]");
+      const label = input?.closest("label")?.querySelector("span")?.textContent;
+      if (value && label) value.textContent = label;
+      menu.open = false;
+    });
+  });
+  document.addEventListener("click", (event) => {
+    const anchor = event.target instanceof Element ? event.target.closest<HTMLAnchorElement>('a[href^="/products"]') : null;
+    const mouseEvent = event instanceof MouseEvent ? event : null;
+    if (anchor && mouseEvent && !event.defaultPrevented && !mouseEvent.metaKey && !mouseEvent.ctrlKey && !mouseEvent.shiftKey && !mouseEvent.altKey) showLoading();
+    if (event.target instanceof Node) {
+      document.querySelectorAll<HTMLDetailsElement>(".lv-filter-menu[open]").forEach((menu) => {
+        if (!menu.contains(event.target as Node)) menu.open = false;
+      });
+    }
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape") return;
+    const openMenu = document.querySelector<HTMLDetailsElement>(".lv-filter-menu[open]");
+    if (!openMenu) return;
+    event.preventDefault();
+    openMenu.open = false;
+    openMenu.querySelector<HTMLElement>("summary")?.focus();
+  });
+  window.addEventListener("pageshow", () => {
+    if (loading) loading.hidden = true;
+    if (results) results.hidden = false;
+    section?.removeAttribute("aria-busy");
+    if (apply) { apply.disabled = false; apply.textContent = "Apply filters"; }
+  });
+</script>
+
+<style is:global lang="scss">@use "./styles/product-list.scss";</style>

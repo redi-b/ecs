@@ -2,6 +2,39 @@ import type { MerchantDashboardAccess, StorefrontTemplateCatalogItem } from "@ec
 
 import type { MessageKey } from "@/i18n/messages";
 
+export function getStorefrontPublicationState(input: {
+  draftTemplateKey: string | null;
+  hasUnpublishedChanges: boolean;
+  isPublished: boolean;
+  publishedTemplateKey: string | null | undefined;
+}) {
+  const hasPendingChanges = Boolean(
+    input.isPublished &&
+      (input.hasUnpublishedChanges ||
+        (input.draftTemplateKey && input.draftTemplateKey !== input.publishedTemplateKey)),
+  );
+
+  return {
+    canPause: input.isPublished && !hasPendingChanges,
+    canPublish: !input.isPublished || hasPendingChanges,
+    hasPendingChanges,
+  };
+}
+
+export function isStorefrontTemplateSelected(
+  currentTemplateKey: string | null,
+  candidateTemplateKey: string,
+) {
+  return currentTemplateKey === candidateTemplateKey;
+}
+
+export function hasSavedStorefrontDraft(
+  savedTemplateKeys: readonly string[] | undefined,
+  templateKey: string,
+) {
+  return savedTemplateKeys?.includes(templateKey) ?? false;
+}
+
 export function getSelectedTemplateName(
   templates: StorefrontTemplateCatalogItem[],
   summary: MerchantDashboardAccess,

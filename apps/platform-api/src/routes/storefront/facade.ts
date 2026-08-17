@@ -1,4 +1,5 @@
 import type { Hono } from "hono";
+import { z } from "zod";
 
 import type { PlatformAppOptions, PlatformAppVariables } from "../../app.js";
 import {
@@ -21,6 +22,105 @@ type StoreForwardRequestResult =
       error: string;
       status: 400 | 409;
     };
+
+const inquirySchema = z
+  .object({
+    type: z.enum(["contact", "product_request"]),
+    customerName: z.string().trim().min(2).max(120),
+    customerEmail: z.string().trim().email().max(254).nullable().optional(),
+    customerPhone: z.string().trim().max(60).nullable().optional(),
+    subject: z.string().trim().min(2).max(180),
+    message: z.string().trim().min(2).max(5_000),
+    sourcePath: z.string().trim().max(500).nullable().optional(),
+    website: z.string().max(500).optional(),
+    details: z.record(z.string(), z.string().trim().max(1_000)).optional(),
+  })
+  .superRefine((value, context) => {
+    if (!value.customerEmail && !value.customerPhone) {
+      context.addIssue({ code: "custom", message: "An email address or phone number is required." });
+    }
+  });
+
+const inquiryWindows = new Map<string, { count: number; resetAt: number }>();
+
+function consumeInquiryRateLimit(key: string, now = Date.now()) {
+  if (inquiryWindows.size > 10_000) {
+    for (const [windowKey, window] of inquiryWindows) {
+      if (window.resetAt <= now) inquiryWindows.delete(windowKey);
+    }
+    if (inquiryWindows.size > 10_000) inquiryWindows.delete(inquiryWindows.keys().next().value ?? "");
+  }
+  const current = inquiryWindows.get(key);
+  if (!current || current.resetAt <= now) {
+    inquiryWindows.set(key, { count: 1, resetAt: now + 10 * 60_000 });
+    return true;
+  }
+  if (current.count >= 5) return false;
+  current.count += 1;
+  return true;
+}
+
+async function createStorefrontInquiry(options: {
+  createInquiry: NonNullable<PlatformAppOptions["createStorefrontInquiry"]>;
+  recordNotificationEvent?: PlatformAppOptions["recordNotificationEvent"];
+  request: Request;
+  tenantId: string;
+}) {
+  let raw: unknown;
+  try {
+    raw = await options.request.json();
+  } catch {
+    return Response.json({ error: "invalid_inquiry" }, { status: 400 });
+  }
+
+  const parsed = inquirySchema.safeParse(raw);
+  if (!parsed.success) {
+    return Response.json(
+      { error: "invalid_inquiry", message: parsed.error.issues[0]?.message },
+      { status: 400 },
+    );
+  }
+
+  // A filled honeypot gets a generic success response so bots cannot tune around it.
+  if (parsed.data.website) {
+    return Response.json({ inquiry: { accepted: true } }, { status: 202 });
+  }
+
+  const forwardedFor = options.request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
+  const rateKey = `${options.tenantId}:${forwardedFor || "unknown"}`;
+  if (!consumeInquiryRateLimit(rateKey)) {
+    return Response.json({ error: "inquiry_rate_limited" }, { status: 429 });
+  }
+
+  const result = await options.createInquiry({
+    customerEmail: parsed.data.customerEmail || null,
+    customerName: parsed.data.customerName,
+    customerPhone: parsed.data.customerPhone || null,
+    details: parsed.data.details ?? {},
+    message: parsed.data.message,
+    sourcePath: parsed.data.sourcePath || null,
+    subject: parsed.data.subject,
+    tenantId: options.tenantId,
+    type: parsed.data.type,
+  });
+
+  if (options.recordNotificationEvent) {
+    await options.recordNotificationEvent({
+      eventType: "storefront.inquiry_created",
+      tenantId: options.tenantId,
+      payload: {
+        inquiryId: result.inquiry.id,
+        type: parsed.data.type,
+        customerName: parsed.data.customerName,
+        customerEmail: parsed.data.customerEmail || null,
+        customerPhone: parsed.data.customerPhone || null,
+        subject: parsed.data.subject,
+      },
+    }).catch(() => undefined);
+  }
+
+  return Response.json({ inquiry: result.inquiry }, { status: 201 });
+}
 
 function getStorePath(request: Request) {
   return new URL(request.url).pathname;
@@ -173,6 +273,23 @@ export function registerStoreFacadeRoutes(
         },
         storeErrorStatus[result.error],
       );
+    }
+
+    if (
+      context.req.raw.method === "POST" &&
+      new URL(context.req.raw.url).pathname === "/store/inquiries"
+    ) {
+      if (!options.createStorefrontInquiry) {
+        return context.json({ error: "inquiries_unavailable" }, 503);
+      }
+      return createStorefrontInquiry({
+        createInquiry: options.createStorefrontInquiry,
+        request: context.req.raw,
+        ...(options.recordNotificationEvent
+          ? { recordNotificationEvent: options.recordNotificationEvent }
+          : {}),
+        tenantId: result.context.tenantId,
+      });
     }
 
     if (

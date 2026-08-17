@@ -1,7 +1,10 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { buildTenantCommerceContext } from "./commerce-context-service.js";
+import {
+  buildTenantCommerceContext,
+  hasStorefrontUnpublishedChanges,
+} from "./commerce-context-service.js";
 
 const completeRow = {
   id: "tenant_1",
@@ -65,5 +68,36 @@ describe("buildTenantCommerceContext", () => {
       error: "commerce_region_unavailable",
       status: 503,
     });
+  });
+});
+
+describe("hasStorefrontUnpublishedChanges", () => {
+  const published = {
+    draftData: { headline: "Hello" },
+    draftTemplateKey: "luvia@1",
+    draftThemeTokens: { color: "green" },
+    publishedData: { headline: "Hello" },
+    publishedRevisionId: "revision_1",
+    publishedTemplateKey: "luvia@1",
+    publishedThemeTokens: { color: "green" },
+  };
+
+  it("recognizes a draft that exactly matches the live storefront", () => {
+    assert.equal(hasStorefrontUnpublishedChanges(published), false);
+  });
+
+  it("recognizes template, content, and theme changes", () => {
+    assert.equal(
+      hasStorefrontUnpublishedChanges({ ...published, draftTemplateKey: "classic@1" }),
+      true,
+    );
+    assert.equal(
+      hasStorefrontUnpublishedChanges({ ...published, draftData: { headline: "Changed" } }),
+      true,
+    );
+    assert.equal(
+      hasStorefrontUnpublishedChanges({ ...published, draftThemeTokens: { color: "blue" } }),
+      true,
+    );
   });
 });

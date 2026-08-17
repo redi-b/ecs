@@ -20,6 +20,7 @@ export const IN_APP_EVENT_SET = new Set<string>([
   "inventory.low",
   "billing.past_due",
   "billing.invoice_ready",
+  "storefront.inquiry_created",
 ]);
 
 export type InAppNotificationView = {
@@ -69,6 +70,7 @@ export function buildInAppDedupeKey(eventType: string, payload: unknown): string
       "productId",
       "invoiceId",
       "subscriptionId",
+      "inquiryId",
     ) ?? null;
 
   if (eventType === "notification.test") {
@@ -124,6 +126,10 @@ export function buildInAppHref(eventType: string, payload: unknown): string | nu
 
   if (eventType.startsWith("billing.")) {
     return "/admin/billing";
+  }
+
+  if (eventType === "storefront.inquiry_created") {
+    return "/admin/inquiries";
   }
 
   return null;

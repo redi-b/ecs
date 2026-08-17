@@ -413,6 +413,25 @@ export function createCodeNotificationRenderer(): NotificationRenderer {
       };
 
       switch (input.eventType) {
+        case "storefront.inquiry_created": {
+          const customerName = pickScalar(data, "customerName") ?? "A customer";
+          const inquiryType = pickScalar(data, "type") === "product_request" ? "Product request" : "Message";
+          const subject = pickScalar(data, "subject") ?? "New storefront inquiry";
+          return finish(
+            inquiryType === "Product request" ? "New product request" : "New customer message",
+            composeMessage(
+              `${customerName} sent a new storefront inquiry.`,
+              [
+                { label: "Type", value: inquiryType },
+                { label: "Subject", value: subject },
+                ...(pickScalar(data, "customerEmail") ? [{ label: "Email", value: pickScalar(data, "customerEmail")! }] : []),
+                ...(pickScalar(data, "customerPhone") ? [{ label: "Phone", value: pickScalar(data, "customerPhone")! }] : []),
+              ],
+              "Open Inquiries in your dashboard to read and respond.",
+            ),
+          );
+        }
+
         case "notification.test": {
           // Recipient-facing: they already know they received it. Do not restate the address.
           const channelLabel =

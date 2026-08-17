@@ -24,6 +24,8 @@ interface Props {
   currentPath?: string;
   searchQuery?: string | null;
   showSearch?: boolean;
+  editorMode?: boolean;
+  announcementEnabled?: boolean;
 }
 
 const {
@@ -43,6 +45,8 @@ const {
   currentPath,
   searchQuery = "",
   showSearch = true,
+  editorMode = false,
+  announcementEnabled = true,
 } = Astro.props;
 
 const pageTitle = title ? `${title} · ${tenantName}` : tenantName;
@@ -159,13 +163,13 @@ const mainLinks = links.filter((item) => !item.href.startsWith("/cart"));
     <link rel="stylesheet" href={googleFontsHref} />
     <link rel="stylesheet" href="/styles/classic.css" />
   </head>
-  <body class="at-body" style={style || undefined}>
+  <body class="at-body" style={style || undefined} data-editor-mode={editorMode ? "true" : undefined} data-editor-css-vars={editorMode ? JSON.stringify({ "themeTokens.colors.primary": "--at-primary", "themeTokens.typography.headingFont": "--at-display", "themeTokens.typography.bodyFont": "--at-sans" }) : undefined}>
     <div class="at-shell">
-      {announcement ? <div class="at-announcement">{announcement}</div> : null}
+      {editorMode || announcement ? <div class="at-announcement" data-editor-section="announcement" data-editor-visible-path="announcement.enabled" hidden={!announcementEnabled}><span data-editor-path="announcement.text" contenteditable={editorMode ? "plaintext-only" : undefined}>{announcement}</span></div> : null}
       <div class="at-header-bar">
         <header class="at-header">
           <a class="at-brand" href="/">
-            {logoUrl ? <img src={logoUrl} alt="" /> : null}
+            {logoUrl ? <img src={logoUrl} alt="" data-editor-image-path="header.logoAssetId" /> : null}
             <span>{tenantName}</span>
           </a>
 
@@ -254,8 +258,8 @@ const mainLinks = links.filter((item) => !item.href.startsWith("/cart"));
         <div>
           <strong>{tenantName}</strong>
           {footerBlurb ? <p style="margin:0.35rem 0 0;max-width:28rem">{footerBlurb}</p> : null}
-          {footerAddress ? <p style="margin:0.35rem 0 0">{footerAddress}</p> : null}
-          {footerPhone ? <p style="margin:0.35rem 0 0">{footerPhone}</p> : null}
+          {footerAddress ? <p style="margin:0.35rem 0 0" data-editor-path="footer.address" contenteditable={editorMode ? "plaintext-only" : undefined}>{footerAddress}</p> : null}
+          {footerPhone ? <p style="margin:0.35rem 0 0" data-editor-path="footer.phone" contenteditable={editorMode ? "plaintext-only" : undefined}>{footerPhone}</p> : null}
         </div>
         <nav class="at-footer-nav" aria-label="Footer">
           {

@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import {
+  createStorefrontPreviewSession,
   getStorefrontDraft,
   getStorefrontTemplates,
   publishStorefrontDraft,
@@ -10,6 +11,23 @@ import {
 } from "./storefront-templates.js";
 
 describe("storefront template helpers", () => {
+  it("creates an authenticated storefront preview session", async () => {
+    let forwardedRequest: Request | undefined;
+    const result = await createStorefrontPreviewSession({
+      cookieHeader: "better-auth.session_token=session_1",
+      platformApiBaseUrl: "http://platform.local",
+      tenantId: "tenant_1",
+      fetcher: async (input, init) => {
+        forwardedRequest = new Request(input, init);
+        return Response.json({ token: "preview_token", expiresAt: "2026-08-16T12:15:00.000Z" });
+      },
+    });
+    assert.deepEqual(result, { ok: true, token: "preview_token", expiresAt: "2026-08-16T12:15:00.000Z" });
+    assert.equal(forwardedRequest?.method, "POST");
+    assert.equal(forwardedRequest?.headers.get("cookie"), "better-auth.session_token=session_1");
+    assert.equal(forwardedRequest?.url, "http://platform.local/platform/tenants/tenant_1/storefront/preview-session");
+  });
+
   it("fetches the storefront template catalog", async () => {
     let forwardedRequest: Request | undefined;
     const result = await getStorefrontTemplates({
@@ -110,6 +128,7 @@ describe("storefront template helpers", () => {
             published: {
               revisionId: "revision_1",
               publishedAt: "2026-06-02T09:00:00.000Z",
+              templateKey: "classic@1",
               data: { home: { hero: { title: "Published" } } },
               themeTokens: { colors: { primary: "#111111" } },
             },
@@ -122,6 +141,7 @@ describe("storefront template helpers", () => {
     assert.deepEqual(result.ok ? result.draft.published : null, {
       revisionId: "revision_1",
       publishedAt: "2026-06-02T09:00:00.000Z",
+      templateKey: "classic@1",
       data: { home: { hero: { title: "Published" } } },
       themeTokens: { colors: { primary: "#111111" } },
     });

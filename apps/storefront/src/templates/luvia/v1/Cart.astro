@@ -1,0 +1,70 @@
+---
+import type { StoreCart } from "../../../lib/commerce/types";
+import { formatMoney } from "../../../lib/money";
+import Layout from "./Layout.astro";
+import cartIcon from "./icons/cart-icon.svg";
+import chevronIcon from "./icons/chevron-icon.svg";
+import { parseLuviaData } from "./lib";
+
+interface Props { data: unknown; tenantName: string; cartCount: number; cart: StoreCart | null; error?: string | null; }
+const { data, tenantName, cartCount, cart, error } = Astro.props;
+const template = parseLuviaData(data);
+const items = cart?.items ?? [];
+const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
+---
+
+<Layout tenantName={tenantName} header={template.header} footer={template.footer} cartCount={cartCount} title="Your Cart">
+  <main class="lv-cart-page" data-cart-page>
+    <nav class="lv-cart-page__breadcrumb" aria-label="Breadcrumb"><a href="/">Home</a><img src={chevronIcon.src} alt="" /><a href="/products">Shop</a><img src={chevronIcon.src} alt="" /><span>Cart</span></nav>
+    <header class="lv-cart-page__heading"><div><span>Your selection</span><h1>Your Cart</h1><p data-page-item-count>{itemCount} item{itemCount === 1 ? "" : "s"} ready for checkout</p></div><img src={cartIcon.src} alt="" /></header>
+    {error && <p class="lv-cart-page__error" role="alert">{error}</p>}
+    <p class="lv-cart-page__live" data-cart-page-status aria-live="polite"></p>
+
+    {items.length === 0 ? <section class="lv-cart-page__empty" data-cart-page-empty><span><img src={cartIcon.src} alt="" /></span><h2>Your cart is empty</h2><p>Explore the collection and add something you love.</p><a href="/products">Browse products</a></section> : <div class="lv-cart-page__layout" data-cart-page-layout>
+      <section class="lv-cart-lines" aria-label="Cart items" data-cart-page-lines>
+        {items.map((item) => <article class="lv-cart-line" data-cart-line={item.id}>
+          <a class="lv-cart-line__media" href={item.productHandle ? `/products/${encodeURIComponent(item.productHandle)}` : "/products"}>{item.thumbnail ? <img src={item.thumbnail} alt="" /> : <span>Image coming soon</span>}</a>
+          <div class="lv-cart-line__copy"><a href={item.productHandle ? `/products/${encodeURIComponent(item.productHandle)}` : "/products"}>{item.title ?? "Product"}</a>{item.variantTitle && <span>{item.variantTitle}</span>}<small>{formatMoney(item.unitPrice, cart?.currencyCode)} each</small></div>
+          <div class="lv-cart-line__quantity" aria-label={`Quantity for ${item.title ?? "product"}`}>
+            <form method="post" action="/actions/cart/update" data-cart-page-form><input type="hidden" name="lineItemId" value={item.id} /><input type="hidden" name="quantity" value={Math.max(1, item.quantity - 1)} /><button type="submit" aria-label="Decrease quantity" disabled={item.quantity <= 1}>−</button></form>
+            <span data-line-quantity>{item.quantity}</span>
+            <form method="post" action="/actions/cart/update" data-cart-page-form><input type="hidden" name="lineItemId" value={item.id} /><input type="hidden" name="quantity" value={item.quantity + 1} /><button type="submit" aria-label="Increase quantity">+</button></form>
+          </div>
+          <strong data-line-total>{formatMoney(item.total ?? item.unitPrice, cart?.currencyCode)}</strong>
+          <form method="post" action="/actions/cart/remove" class="lv-cart-line__remove" data-cart-page-form><input type="hidden" name="lineItemId" value={item.id} /><button type="submit">Remove</button></form>
+        </article>)}
+        <a class="lv-cart-page__continue" href="/products">← Continue shopping</a>
+      </section>
+
+      <aside class="lv-cart-summary" aria-label="Order summary">
+        <header><h2>Order Summary</h2><span data-summary-count>{itemCount} item{itemCount === 1 ? "" : "s"}</span></header>
+        <dl><div><dt>Subtotal</dt><dd data-summary-subtotal>{formatMoney(cart?.itemTotal ?? cart?.total, cart?.currencyCode)}</dd></div><div><dt>Delivery</dt><dd>{cart?.shippingTotal != null && cart.shippingTotal > 0 ? formatMoney(cart.shippingTotal, cart.currencyCode) : "Calculated at checkout"}</dd></div><div><dt>Total</dt><dd data-summary-total>{formatMoney(cart?.total ?? cart?.itemTotal, cart?.currencyCode)}</dd></div></dl>
+        <p>Delivery options and final fees are confirmed for your address during checkout.</p>
+        <a href="/checkout">Proceed to Checkout</a><small>Secure checkout · Your cart is saved for 14 days</small>
+      </aside>
+    </div>}
+    <script is:inline type="application/json" id="luvia-cart-state" set:html={JSON.stringify(cart)} />
+  </main>
+</Layout>
+
+<script is:inline>
+  (() => {
+    const root = document.querySelector("[data-cart-page]"); if (!root) return;
+    const status = root.querySelector("[data-cart-page-status]");
+    const money = (amount, currency) => { if (amount == null) return "—"; try { return new Intl.NumberFormat(undefined, { style: "currency", currency: (currency || "ETB").toUpperCase() }).format(amount); } catch { return String(amount); } };
+    const sync = (result) => {
+      const cart = result.cart; const items = Array.isArray(cart.items) ? cart.items : []; const count = items.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
+      root.querySelectorAll("[data-cart-line]").forEach((line) => { const item = items.find((candidate) => candidate.id === line.dataset.cartLine); if (!item) { line.remove(); return; } line.removeAttribute("data-updating"); const qty = line.querySelector("[data-line-quantity]"); const total = line.querySelector("[data-line-total]"); if (qty) qty.textContent = String(item.quantity); if (total) total.textContent = money(item.total ?? item.unitPrice, cart.currencyCode); const forms = [...line.querySelectorAll('form[action="/actions/cart/update"]')]; const decrease = forms[0]?.querySelector('input[name="quantity"]'); const increase = forms[1]?.querySelector('input[name="quantity"]'); if (decrease) decrease.value = String(Math.max(1, item.quantity - 1)); if (increase) increase.value = String(item.quantity + 1); const decreaseButton = forms[0]?.querySelector("button"); if (decreaseButton) decreaseButton.disabled = item.quantity <= 1; });
+      const countNodes = root.querySelectorAll("[data-page-item-count],[data-summary-count]"); countNodes.forEach((node) => node.textContent = `${count} item${count === 1 ? "" : "s"}${node.hasAttribute("data-page-item-count") ? " ready for checkout" : ""}`);
+      const subtotal = root.querySelector("[data-summary-subtotal]"); const total = root.querySelector("[data-summary-total]"); if (subtotal) subtotal.textContent = money(cart.itemTotal ?? cart.total, cart.currencyCode); if (total) total.textContent = money(cart.total ?? cart.itemTotal, cart.currencyCode);
+      if (!items.length) { const layout = root.querySelector("[data-cart-page-layout]"); layout?.remove(); const empty = document.createElement("section"); empty.className = "lv-cart-page__empty"; const title = document.createElement("h2"); title.textContent = "Your cart is empty"; const copy = document.createElement("p"); copy.textContent = "Explore the collection and add something you love."; const link = document.createElement("a"); link.href = "/products"; link.textContent = "Browse products"; empty.append(title, copy, link); root.append(empty); }
+      window.dispatchEvent(new CustomEvent("ecs:cart-updated", { detail: { ...result, openDrawer: false } }));
+    };
+    root.addEventListener("submit", async (event) => {
+      const form = event.target; if (!(form instanceof HTMLFormElement) || !form.matches("[data-cart-page-form]")) return; event.preventDefault(); const line = form.closest("[data-cart-line]"); line?.setAttribute("data-updating", ""); if (status) { status.textContent = form.action.endsWith("/remove") ? "Removing item…" : "Updating your cart…"; status.classList.remove("is-error"); }
+      try { const response = await fetch(form.action, { method: "POST", body: new FormData(form), credentials: "same-origin", headers: { Accept: "application/json" } }); const result = await response.json(); if (!response.ok || !result.ok) throw new Error(result.message || "Could not update your cart."); sync(result); if (status) status.textContent = "Cart updated."; setTimeout(() => { if (status?.textContent === "Cart updated.") status.textContent = ""; }, 1200); }
+      catch (cause) { line?.removeAttribute("data-updating"); if (status) { status.textContent = cause instanceof Error ? cause.message : "Could not update your cart."; status.classList.add("is-error"); } }
+    });
+  })();
+</script>
+<style is:global lang="scss">@use "./styles/cart.scss";</style>

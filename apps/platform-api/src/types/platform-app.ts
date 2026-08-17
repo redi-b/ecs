@@ -94,6 +94,23 @@ import type {
 } from "./tenant.js";
 
 export type PlatformAppOptions = {
+  createStorefrontInquiry?:
+    | ((input: import("../modules/storefront/inquiry-service.js").StorefrontInquiryInput) => Promise<{
+        ok: true;
+        inquiry: { id: string; createdAt: string };
+      }>)
+    | undefined;
+  listStorefrontInquiries?: ReturnType<
+    typeof import("../modules/storefront/inquiry-service.js").createStorefrontInquiryService
+  >["listInquiries"];
+  getStorefrontInquiry?: ReturnType<
+    typeof import("../modules/storefront/inquiry-service.js").createStorefrontInquiryService
+  >["getInquiry"];
+  updateStorefrontInquiryStatus?: ReturnType<
+    typeof import("../modules/storefront/inquiry-service.js").createStorefrontInquiryService
+  >["updateInquiryStatus"];
+  /** Shared HMAC secret for short-lived, tenant-scoped Astro editor previews. */
+  storefrontPreviewSecret?: string | undefined;
   /** Optional structured logger (used for HTTP access logs in development). */
   logger?: {
     info: (obj: Record<string, unknown>, msg?: string) => void;
@@ -1030,9 +1047,10 @@ export type PlatformAppOptions = {
     | undefined;
   selectStorefrontTemplate?:
     | ((input: {
-        tenantId: string;
-        templateKey: string;
-        userId: string;
+      tenantId: string;
+      templateKey: string;
+      mode?: "clean" | "resume";
+      userId: string;
       }) => Promise<StorefrontTemplateSelectionResult>)
     | undefined;
   updateMerchantProduct?:

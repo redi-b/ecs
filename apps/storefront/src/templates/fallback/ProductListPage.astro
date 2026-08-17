@@ -5,6 +5,8 @@ import type { StoreCategory, StoreCollection, StoreProduct } from "../../lib/com
 import type { ShellTheme } from "../../lib/theme";
 
 interface Props {
+  /** Template-owned storefront data; unused by the fallback shell. */
+  data?: unknown;
   tenantName: string;
   cartCount?: number;
   /** Accepted for template contract parity; classic shell shows server cart count. */
@@ -28,6 +30,8 @@ interface Props {
     order?: string;
   };
   totalCount?: number;
+  offset?: number;
+  limit?: number;
 }
 
 const {

@@ -1,0 +1,38 @@
+---
+import type { LastOrderCookie } from "../../../lib/session/cart-cookie";
+import { formatMoney } from "../../../lib/money";
+import Layout from "./Layout.astro";
+import bagIcon from "./icons/bag-icon.svg";
+import sparkleIcon from "./icons/sparkle-icon.svg";
+import { parseLuviaData } from "./lib";
+
+interface Props { data: unknown; tenantName: string; cartCount: number; orderId: string; lastOrder: LastOrderCookie | null; }
+const { data, tenantName, cartCount, orderId, lastOrder } = Astro.props;
+const template = parseLuviaData(data);
+const verified = Boolean(lastOrder && lastOrder.id === orderId);
+---
+
+<Layout tenantName={tenantName} header={template.header} footer={template.footer} cartCount={cartCount} title="Order Confirmed">
+  <main class="lv-confirmation">
+    <div class="lv-confirmation__glow" aria-hidden="true"></div>
+    <section class="lv-confirmation__card" aria-labelledby="confirmation-title">
+      <div class="lv-confirmation__mark"><span></span><svg viewBox="0 0 48 48" aria-hidden="true"><path d="m14 25 7 7 14-17" /></svg><img src={sparkleIcon.src} alt="" /></div>
+      <p class="lv-confirmation__eyebrow">ORDER RECEIVED</p>
+      <h1 id="confirmation-title">Your ritual is<br />on its way.</h1>
+      <p class="lv-confirmation__intro">Thank you for choosing {tenantName}. We’ve received your order and the shop will prepare it with care.</p>
+      <div class="lv-confirmation__receipt">
+        <div><span>Order reference</span><strong>{orderId}</strong><button type="button" data-copy-order data-order-id={orderId}>Copy</button></div>
+        {verified && lastOrder?.total != null && <div><span>Order total</span><strong>{formatMoney(lastOrder.total, lastOrder.currencyCode)}</strong></div>}
+        <div><span>Status</span><strong>{verified ? "Confirmed" : "Order placed"}</strong></div>
+      </div>
+      <p class="lv-confirmation__notice" data-copy-status aria-live="polite">Keep your order reference available in case the shop contacts you about fulfillment.</p>
+      <div class="lv-confirmation__actions"><a href="/products">Continue Shopping <img src={bagIcon.src} alt="" /></a><a href="/">Return Home</a></div>
+    </section>
+    <aside class="lv-confirmation__steps" aria-label="What happens next"><p>WHAT HAPPENS NEXT</p><ol><li><span>01</span><div><strong>Order review</strong><small>The shop confirms availability and fulfillment details.</small></div></li><li><span>02</span><div><strong>Careful preparation</strong><small>Your items are packed and prepared for delivery or pickup.</small></div></li><li><span>03</span><div><strong>Stay reachable</strong><small>The shop may contact you using the details provided at checkout.</small></div></li></ol></aside>
+  </main>
+</Layout>
+
+<script is:inline>
+  document.querySelector("[data-copy-order]")?.addEventListener("click", async (event) => { const button = event.currentTarget; if (!(button instanceof HTMLButtonElement)) return; const status = document.querySelector("[data-copy-status]"); try { await navigator.clipboard.writeText(button.dataset.orderId || ""); button.textContent = "Copied"; if (status) status.textContent = "Order reference copied to your clipboard."; setTimeout(() => button.textContent = "Copy", 1600); } catch { if (status) status.textContent = "Select the order reference above to copy it."; } });
+</script>
+<style is:global lang="scss">@use "./styles/order-confirmation.scss";</style>

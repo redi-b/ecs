@@ -10,6 +10,7 @@ import { registerPlatformStorefrontRoutes } from "./storefront.js";
 import { registerPlatformTenantCommerceRoutes } from "./tenant-commerce.js";
 import { registerPlatformTenantOpsRoutes } from "./tenant-ops.js";
 import { registerPlatformTenantRoutes } from "./tenants.js";
+import { registerPlatformInquiryRoutes } from "./inquiries.js";
 
 export function registerPlatformRoutes(
   app: Hono<{ Variables: PlatformAppVariables }>,
@@ -20,6 +21,7 @@ export function registerPlatformRoutes(
   registerPlatformOnboardingRoutes(app, options);
   registerPlatformTenantCommerceRoutes(app, options);
   registerPlatformTenantRoutes(app, options);
+  registerPlatformInquiryRoutes(app, options);
   registerPlatformStorefrontRoutes(app, options);
   registerPlatformTenantOpsRoutes(app, options);
   registerPlatformOperatorRoutes(app, options);

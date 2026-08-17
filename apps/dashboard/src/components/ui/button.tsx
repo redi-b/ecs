@@ -28,8 +28,8 @@ const buttonVariants = cva(
       size: {
         default: "h-8 gap-1.5 px-3",
         xs: "h-6 gap-1 px-2 text-xs in-data-[slot=button-group]:rounded-none [&_svg:not([class*='size-'])]:size-3",
-        // Keep icon box = text size (12px) so flex centering matches optically.
-        sm: "h-7 gap-1.5 px-2.5 text-xs in-data-[slot=button-group]:rounded-none [&_svg:not([class*='size-'])]:size-3",
+        // A 14px icon remains legible beside 12px labels without overpowering compact controls.
+        sm: "h-7 gap-1.5 px-2.5 text-xs in-data-[slot=button-group]:rounded-none [&_svg:not([class*='size-'])]:size-3.5",
         lg: "h-9 gap-1.5 px-3.5",
         icon: "size-8",
         "icon-xs":

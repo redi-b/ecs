@@ -7,6 +7,7 @@ import {
   type StorefrontUnpublish,
   storefrontDraftSchema,
   storefrontPublishSchema,
+  storefrontPreviewSessionSchema,
   storefrontTemplateCatalogSchema,
   storefrontTemplateSelectionSchema,
   storefrontUnpublishSchema,
@@ -47,6 +48,10 @@ export type StorefrontDraftResult =
     };
 
 export type StorefrontDraftUpdateResult = StorefrontDraftResult;
+
+export type StorefrontPreviewSessionResult =
+  | { ok: true; token: string; expiresAt: string }
+  | { ok: false; message: string; status: number };
 
 export type StorefrontPublishResult =
   | {
@@ -134,6 +139,24 @@ export async function getStorefrontDraft(options: {
     ok: true,
     draft: parsed.data.draft,
   };
+}
+
+export async function createStorefrontPreviewSession(options: {
+  cookieHeader?: string | null | undefined;
+  fetcher?: typeof fetch;
+  platformApiBaseUrl: string;
+  tenantId: string;
+}): Promise<StorefrontPreviewSessionResult> {
+  const fetcher = options.fetcher ?? fetch;
+  const response = await fetcher(
+    getStorefrontPreviewSessionUrl(options.platformApiBaseUrl, options.tenantId),
+    { cache: "no-store", headers: getJsonHeaders(options.cookieHeader), method: "POST" },
+  );
+  const data = await response.json().catch(() => undefined);
+  if (!response.ok) return getPlatformError(response, data, "Storefront preview request failed");
+  const parsed = storefrontPreviewSessionSchema.safeParse(data);
+  if (!parsed.success) return { ok: false, status: 502, message: "invalid_storefront_preview_response" };
+  return { ok: true, ...parsed.data };
 }
 
 export async function updateStorefrontDraft(options: {
@@ -259,6 +282,7 @@ export async function selectStorefrontTemplate(options: {
   platformApiBaseUrl: string;
   templateKey: string;
   tenantId: string;
+  mode?: "clean" | "resume";
 }): Promise<StorefrontTemplateSelectionResult> {
   const fetcher = options.fetcher ?? fetch;
   const response = await fetcher(
@@ -266,6 +290,7 @@ export async function selectStorefrontTemplate(options: {
     {
       body: JSON.stringify({
         templateKey: options.templateKey,
+        mode: options.mode ?? "resume",
       }),
       cache: "no-store",
       headers: getJsonHeaders(options.cookieHeader),
@@ -318,6 +343,13 @@ function getTemplateSelectionUrl(platformApiBaseUrl: string, tenantId: string) {
 function getStorefrontDraftUrl(platformApiBaseUrl: string, tenantId: string) {
   return new URL(
     `/platform/tenants/${encodeURIComponent(tenantId)}/storefront/draft`,
+    normalizeBaseUrl(platformApiBaseUrl),
+  );
+}
+
+function getStorefrontPreviewSessionUrl(platformApiBaseUrl: string, tenantId: string) {
+  return new URL(
+    `/platform/tenants/${encodeURIComponent(tenantId)}/storefront/preview-session`,
     normalizeBaseUrl(platformApiBaseUrl),
   );
 }

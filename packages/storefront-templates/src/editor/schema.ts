@@ -8,7 +8,10 @@ export const storefrontEditorFieldKindSchema = z.enum([
   "color",
   "boolean",
   "collection",
+  "collections",
+  "product",
   "products",
+  "links",
 ]);
 
 export const storefrontEditorFieldSchema = z.object({
@@ -28,6 +31,7 @@ export const storefrontEditorSectionSchema = z.object({
 export const storefrontEditorManifestSchema = z.object({
   templateKey: z.string().min(1),
   templateVersion: z.number().int().positive(),
+  previewMode: z.enum(["iframe", "react-legacy"]),
   sections: z.array(storefrontEditorSectionSchema).min(1),
 });
 

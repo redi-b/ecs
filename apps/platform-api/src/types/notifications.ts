@@ -17,7 +17,8 @@ export type NotificationEventType =
   | "payment.webhook_failed"
   | "shop.provisioning_failed"
   | "shop.published"
-  | "shop.suspended";
+  | "shop.suspended"
+  | "storefront.inquiry_created";
 
 export type NotificationChannel = "email" | "telegram";
 

@@ -1,0 +1,79 @@
+.lv-checkout { min-height: 100vh; padding: 122px 0 100px; color: var(--lv-ink); }
+.lv-checkout__hero { margin-bottom: 76px; text-align: center; }
+.lv-checkout__hero h1 { margin: 0; color: #101812; font: 400 clamp(82px,10vw,154px)/.8 "GC Molecule Demo", Arial, sans-serif; letter-spacing: -.055em; }
+.lv-checkout__hero p { margin: 24px 0 0; color: #879889; font-size: 16px; }
+.lv-checkout__layout, .lv-checkout__error, .lv-checkout__empty { width: calc(100% - 120px); max-width: 1392px; margin-right: auto; margin-left: auto; }
+.lv-checkout__layout { display: grid; grid-template-columns: minmax(0,1fr) 520px; gap: 80px; align-items: start; }
+.lv-checkout__error { margin-bottom: 18px; padding: 13px 16px; border-radius: 12px; background: #fff0f0; color: #8d2828; }
+.lv-checkout-form-wrap > header { padding-bottom: 14px; border-bottom: 1px solid #dbe7dc; }
+.lv-checkout-form-wrap > header h2 { margin: 0 0 8px; font: 400 29px/1 "GC Molecule Demo", Arial, sans-serif; }
+.lv-checkout-form-wrap > header p { margin: 0; color: #879889; font-size: 14px; }
+.lv-checkout-form { padding-top: 22px; }
+.lv-checkout-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 18px 28px; }
+.lv-checkout-fields label { min-width: 0; display: flex; flex-direction: column; gap: 8px; color: #47674b; font-size: 13px; }
+.lv-checkout-fields label.is-wide { grid-column: 1 / -1; }
+.lv-checkout-fields input, .lv-checkout-fields select, .lv-checkout-fields textarea { width: 100%; min-height: 52px; padding: 0 15px; border: 1px solid #dbe5dc; border-radius: 14px; outline: 0; background: white; color: var(--lv-ink); font: inherit; font-size: 16px; transition: border-color 150ms ease, box-shadow 150ms ease; }
+.lv-checkout-fields textarea { min-height: 86px; padding-top: 14px; resize: vertical; }
+.lv-checkout-fields input:focus, .lv-checkout-fields select:focus, .lv-checkout-fields textarea:focus { border-color: #3ee272; box-shadow: 0 0 0 3px rgba(62,226,114,.14); }
+.lv-checkout-fields input::placeholder, .lv-checkout-fields textarea::placeholder { color: #a8b2a9; }
+.lv-checkout-account { min-height: 44px; margin: 14px 0; display: flex; align-items: center; gap: 10px; color: #47674b; font-size: 14px; }
+.lv-checkout-account input { width: 19px; height: 19px; accent-color: #3ee272; }
+.lv-checkout-account:has(input:disabled) { color: #829284; }
+.lv-checkout-account small { margin-left: 6px; padding: 3px 7px; border-radius: 999px; background: #edf8ee; font-size: 11px; }
+.lv-checkout-payment { margin: 8px 0 16px; padding: 18px; display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; border: 1px solid #dbe5dc; border-radius: 15px; }
+.lv-checkout-payment legend { padding: 0 6px; color: #47674b; font-size: 13px; }
+.lv-checkout-payment > div { padding: 13px; display: flex; flex-direction: column; gap: 4px; border-radius: 12px; background: #edf8ee; }
+.lv-checkout-payment strong { font-size: 14px; }
+.lv-checkout-payment span, .lv-checkout-payment p { color: #7d8f7f; font-size: 12px; }
+.lv-checkout-actions { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; }
+.lv-checkout-actions button { min-height: 52px; padding: 0 18px; border: 0; border-radius: 999px; background: #3ee272; color: var(--lv-ink); font-size: 16px; font-weight: 600; cursor: pointer; }
+.lv-checkout-actions button.is-secondary { border: 1px solid #bcd8bf; background: white; }
+.lv-checkout-actions button:disabled { cursor: not-allowed; opacity: .5; }
+.lv-checkout-actions button[data-loading] { opacity: .72; }
+.lv-checkout-blocker { grid-column: 1 / -1; margin-bottom: 18px; padding: 16px; border-radius: 14px; background: #fff7eb; color: #7b541d; }
+.lv-checkout-blocker p { margin: 4px 0 0; }
+.lv-checkout-summary { padding: 24px; border: 1px solid #dbe5dc; border-radius: 20px; background: white; box-shadow: 1px 7px 34px rgba(183,216,186,.18); }
+.lv-checkout-summary header { display: flex; align-items: center; justify-content: space-between; }
+.lv-checkout-summary h2 { margin: 0; font: 400 28px/1 "GC Molecule Demo", Arial, sans-serif; }
+.lv-checkout-summary header span { padding: 5px 10px; border-radius: 999px; background: #edf8ee; color: #667a68; font-size: 12px; }
+.lv-checkout-summary ul { margin: 16px 0 20px; padding: 0; list-style: none; }
+.lv-checkout-summary li { min-height: 84px; padding: 10px 0; display: grid; grid-template-columns: 58px minmax(0,1fr) auto; gap: 12px; align-items: center; border-bottom: 1px solid #e2eae3; }
+.lv-checkout-summary li > div { width: 58px; height: 58px; display: grid; place-items: center; border-radius: 10px; background: #f0f8f1; }
+.lv-checkout-summary li img { width: 100%; height: 100%; padding: 7px; object-fit: contain; }
+.lv-checkout-summary li p { min-width: 0; margin: 0; display: flex; flex-direction: column; gap: 3px; }
+.lv-checkout-summary li strong { overflow: hidden; font-size: 14px; text-overflow: ellipsis; white-space: nowrap; }
+.lv-checkout-summary li span { color: #879889; font-size: 12px; }
+.lv-checkout-summary li b { font-size: 14px; white-space: nowrap; }
+.lv-checkout-summary dl { margin: 0; display: flex; flex-direction: column; gap: 10px; }
+.lv-checkout-summary dl > div { display: flex; justify-content: space-between; color: #879889; font-size: 14px; }
+.lv-checkout-summary dd { margin: 0; text-align: right; }
+.lv-checkout-summary dl > div:last-child { margin-top: 4px; padding-top: 16px; border-top: 1px solid #dbe5dc; color: var(--lv-ink); font-size: 17px; font-weight: 600; }
+.lv-checkout-summary > small { margin-top: 14px; display: block; color: #879889; text-align: center; }
+.lv-checkout__empty { padding: 80px 24px; border-radius: 22px; background: #edf8ee; text-align: center; }
+.lv-checkout__empty h2 { margin: 0 0 8px; font: 400 38px/1 "GC Molecule Demo", Arial, sans-serif; }
+.lv-checkout__empty p { color: #667a68; }
+.lv-checkout__empty a { min-height: 50px; padding: 0 22px; display: inline-flex; align-items: center; border-radius: 999px; background: #3ee272; color: var(--lv-ink); text-decoration: none; }
+
+@media (max-width: 1120px) {
+  .lv-checkout__layout, .lv-checkout__error, .lv-checkout__empty { width: calc(100% - 40px); }
+  .lv-checkout__layout { grid-template-columns: minmax(0,1fr) 410px; gap: 34px; }
+}
+
+@media (max-width: 820px) {
+  .lv-checkout { padding: 98px 0 70px; }
+  .lv-checkout__hero { margin-bottom: 44px; padding-inline: 12px; }
+  .lv-checkout__hero h1 { font-size: clamp(64px,19vw,100px); }
+  .lv-checkout__hero p { margin-top: 16px; }
+  .lv-checkout__layout, .lv-checkout__error, .lv-checkout__empty { width: calc(100% - 24px); }
+  .lv-checkout__layout { display: flex; flex-direction: column-reverse; gap: 28px; }
+  .lv-checkout-form-wrap, .lv-checkout-summary { width: 100%; }
+  .lv-checkout-summary ul { max-height: 260px; overflow-y: auto; }
+}
+
+@media (max-width: 560px) {
+  .lv-checkout-fields { grid-template-columns: 1fr; gap: 15px; }
+  .lv-checkout-fields label.is-wide { grid-column: auto; }
+  .lv-checkout-fields input, .lv-checkout-fields select, .lv-checkout-fields textarea { min-height: 50px; font-size: 16px; }
+  .lv-checkout-payment, .lv-checkout-actions { grid-template-columns: 1fr; }
+  .lv-checkout-summary { padding: 18px 14px; }
+}

@@ -78,6 +78,7 @@ if (ctx.ok && Product && product) {
     <StoreUnavailable message={ctx.ok ? "Template unavailable" : ctx.message} />
   ) : (
     <Product
+      data={ctx.config.storefront.data}
       tenantName={ctx.config.tenant.name}
       deferCartCount={true}
       primaryColor={getPrimaryColor(ctx.config.storefront.themeTokens)}

@@ -1,9 +1,11 @@
 "use client";
 
-import { classicV1EditorSchema as classicV1EditorManifest } from "@ecs/storefront-templates";
-import type { Data, PuckAction } from "@puckeditor/core";
+import {
+  getStorefrontEditorManifest,
+  type StorefrontEditorField,
+} from "@ecs/storefront-templates";
 import { RiImageLine } from "@remixicon/react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
@@ -15,7 +17,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   SETTINGS_SECTION_LABELS,
-  useStorefrontPuck,
+  useStorefrontEditor,
 } from "@/features/storefront-editor/editor-config";
 import { MediaLibraryDialog } from "@/features/media/media-library-dialog";
 import { MediaUrlImportField } from "@/features/media/media-url-import-field";
@@ -25,29 +27,54 @@ import { cn } from "@/lib/utils";
 
 import {
   StorefrontCollectionPicker,
+  StorefrontCollectionsPicker,
   StorefrontProductsPicker,
 } from "./editor-merchandising";
-import { getStorefrontPageProps, isPreviewImageUrl, type StorefrontPageProps } from "./editor-state";
+import { StorefrontLinksEditor } from "./editor-links";
+import {
+  getStorefrontPageProps,
+  isPreviewImageUrl,
+  type EditorAction,
+  type EditorData,
+  type StorefrontPageProps,
+} from "./editor-state";
 import { ThemeBrandSection, FontSelect, PremiumColorPicker } from "./editor-theme";
 import { updateStorefrontProp } from "./editor-utils";
 
-export function StorefrontSettingsPanel() {
+export function StorefrontSettingsPanel({ onSelectPath, selectedPath, templateKey }: { onSelectPath: (path: string) => void; selectedPath: string | null; templateKey: string }) {
   const { t } = useI18n();
-  const data = useStorefrontPuck((api) => api.appState.data);
-  const dispatch = useStorefrontPuck((api) => api.dispatch);
+  const data = useStorefrontEditor((api) => api.appState.data);
+  const dispatch = useStorefrontEditor((api) => api.dispatch);
   const props = getStorefrontPageProps(data);
+  const manifest = getStorefrontEditorManifest(templateKey);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!selectedPath) return;
+    const candidate = Array.from(scrollRef.current?.querySelectorAll<HTMLElement>("[data-editor-settings-path]") ?? []).find(
+      (element) => element.dataset.editorSettingsPath === selectedPath,
+    );
+    if (!candidate) return;
+    candidate.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [selectedPath]);
+
+  if (!manifest) {
+    return null;
+  }
 
   return (
-    <div className="min-h-0 flex-1 overflow-y-auto">
+    <div className="min-h-0 flex-1 overflow-y-auto" ref={scrollRef}>
       <div className="flex flex-col gap-3 p-3 pb-10 sm:p-4">
-        {classicV1EditorManifest.sections.map((section) => {
+        {manifest.sections.map((section) => {
           if (section.id === "theme") {
             return (
               <ThemeBrandSection
+                allowDarkMode={templateKey !== "luvia@1"}
                 data={data}
                 dispatch={dispatch}
                 key={section.id}
                 props={props}
+                templateKey={templateKey}
               />
             );
           }
@@ -65,17 +92,20 @@ export function StorefrontSettingsPanel() {
               : typeof enabledValue === "boolean"
                 ? enabledValue
                 : enabledValue !== false && enabledValue !== "false";
+          const sectionPath = enabledField?.path.replace(/\.enabled$/, "") ?? section.id;
 
           return (
             <section
               className={cn(
                 "min-w-0 overflow-hidden rounded-2xl border border-border/80 bg-card shadow-[0_1px_2px_color-mix(in_oklch,var(--foreground)_4%,transparent)] transition-opacity",
                 !sectionVisible && "opacity-70",
+                selectedPath === sectionPath && "ring-2 ring-primary/45 ring-offset-2 ring-offset-background",
               )}
+              data-editor-settings-path={sectionPath}
               key={section.id}
             >
               <div className="flex items-center justify-between gap-3 border-b border-border/80 bg-muted/10 px-4 py-3">
-                <div className="flex min-w-0 items-center gap-2">
+                <button className="flex min-w-0 items-center gap-2 text-left" onClick={() => onSelectPath(sectionPath)} type="button">
                   <div className="truncate text-sm font-medium tracking-tight">
                     {SETTINGS_SECTION_LABELS[section.id] ?? section.label}
                   </div>
@@ -84,7 +114,7 @@ export function StorefrontSettingsPanel() {
                       {t("editor.settings.sectionHidden")}
                     </Badge>
                   ) : null}
-                </div>
+                </button>
                 {enabledField ? (
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -126,9 +156,9 @@ export function StorefrontSettingsPanel() {
                     const showHelp = Boolean(helpText) && field.kind !== "products";
 
                     return (
-                      <Field className="min-w-0 gap-2.5" key={field.path}>
+                      <Field className={cn("-ml-3 min-w-0 gap-2.5 border-l-2 border-transparent py-1 pl-3 transition-[border-color,background-color] duration-150", (selectedPath === field.path || selectedPath?.startsWith(`${field.path}.`)) && "border-primary/60 bg-primary/[0.035]")} data-editor-settings-path={field.path} key={field.path} onFocusCapture={(event) => onSelectPath((event.target as Element).closest<HTMLElement>("[data-editor-settings-path]")?.dataset.editorSettingsPath ?? field.path)}>
                         {field.kind === "boolean" ? null : (
-                          <FieldLabel className="text-sm font-medium">{field.label}</FieldLabel>
+                          <FieldLabel className="text-sm font-medium" htmlFor={nativeControlId(field)}>{field.label}</FieldLabel>
                         )}
                         <div className="min-w-0">
                           <StorefrontSettingControl
@@ -162,15 +192,16 @@ export function StorefrontSettingControl({
   field,
   value,
 }: {
-  data: Data;
-  dispatch: (action: PuckAction) => void;
-  field: (typeof classicV1EditorManifest.sections)[number]["fields"][number];
+  data: EditorData;
+  dispatch: (action: EditorAction) => void;
+  field: StorefrontEditorField;
   value: unknown;
 }) {
   const update = (nextValue: unknown) =>
     updateStorefrontProp(data, dispatch, field.prop as keyof StorefrontPageProps, nextValue);
 
   const stringValue = typeof value === "string" ? value : "";
+  const controlId = nativeControlId(field);
 
   if (field.kind === "boolean") {
     const checked = typeof value === "boolean" ? value : value !== false && value !== "false";
@@ -196,6 +227,24 @@ export function StorefrontSettingControl({
   if (field.kind === "products") {
     const ids = Array.isArray(value) ? value.map(String) : [];
     return <StorefrontProductsPicker onChange={(next) => update(next)} value={ids} />;
+  }
+
+  if (field.kind === "collections") {
+    const ids = Array.isArray(value) ? value.map(String) : [];
+    return <StorefrontCollectionsPicker onChange={(next) => update(next)} value={ids} />;
+  }
+
+  if (field.kind === "product") {
+    return (
+      <StorefrontProductsPicker
+        onChange={(next) => update(next[0] || undefined)}
+        value={stringValue ? [stringValue] : []}
+      />
+    );
+  }
+
+  if (field.kind === "links") {
+    return <StorefrontLinksEditor label={field.label} onChange={update} path={field.path} value={value} />;
   }
 
   if (field.kind === "color") {
@@ -227,6 +276,7 @@ export function StorefrontSettingControl({
       <Textarea
         aria-label={field.label}
         className="min-h-24 w-full min-w-0"
+        id={controlId}
         name={field.prop}
         onChange={(event) => update(event.currentTarget.value)}
         value={stringValue}
@@ -238,12 +288,19 @@ export function StorefrontSettingControl({
     <Input
       aria-label={field.label}
       className="w-full min-w-0"
+      id={controlId}
       name={field.prop}
       onChange={(event) => update(event.currentTarget.value)}
       placeholder={field.kind === "link" ? "/" : undefined}
       value={stringValue}
     />
   );
+}
+
+function nativeControlId(field: StorefrontEditorField) {
+  return field.kind === "text" || field.kind === "textarea" || field.kind === "link"
+    ? `storefront-setting-${field.prop}`
+    : undefined;
 }
 
 export function ImageReferenceControl({
@@ -294,8 +351,10 @@ export function ImageReferenceControl({
 
 export function EditorImageSourceActions({
   onPicked,
+  onPickerOpenChange,
 }: {
   onPicked: (url: string | undefined) => void;
+  onPickerOpenChange?: ((open: boolean) => void) | undefined;
 }) {
   const { t } = useI18n();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -346,6 +405,7 @@ export function EditorImageSourceActions({
           {uploading ? t("editor.media.uploading") : t("editor.media.uploadImage")}
         </Button>
         <MediaLibraryDialog
+          onOpenChange={onPickerOpenChange}
           onSelect={(assets) => {
             const url = assets[0]?.publicUrl?.trim();
             if (url) onPicked(url);

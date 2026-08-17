@@ -38,6 +38,8 @@ export const dashboardRoutes = {
     `/admin/products/collections/actions/${encodeURIComponent(collectionId)}/products`,
   productCollectionsBatchDeleteAction: "/admin/products/collections/actions/batch-delete",
   orders: "/admin/orders",
+  inquiries: "/admin/inquiries",
+  inquiryAction: (inquiryId: string) => `/admin/inquiries/actions/${encodeURIComponent(inquiryId)}`,
   orderCreateAction: "/admin/orders/actions/create",
   media: "/admin/media",
   customers: "/admin/customers",

@@ -1,0 +1,22 @@
+---
+import Layout from "./Layout.astro";
+import aboutImage from "./assets/about-feature-image.png";
+import brandImage from "./assets/brand-statement-image.png";
+import categoriesImage from "./assets/categories-hero-image.png";
+import sparkleIcon from "./icons/sparkle-icon.svg";
+import { parseLuviaData, storefrontAsset } from "./lib";
+interface Props { data: unknown; tenantName: string; deferCartCount?: boolean; }
+const { data, tenantName, deferCartCount = false } = Astro.props;
+const template = parseLuviaData(data);
+const expertiseImage = storefrontAsset(template.home.expertise.imageAssetId, aboutImage.src);
+---
+<Layout tenantName={tenantName} header={template.header} footer={template.footer} deferCartCount={deferCartCount} title="About">
+  <main class="lv-about-page">
+    <section class="lv-about-hero"><p>ABOUT {tenantName.toUpperCase()}</p><h1>Beauty, considered<br />from every angle.</h1><div><span>{template.home.story.body}</span><a href="/products">Explore the collection</a></div></section>
+    <section class="lv-about-principle"><div><img src={brandImage.src} alt="Selected cosmetic ingredients" /><span><img src={sparkleIcon.src} alt="" />OUR APPROACH</span></div><div><h2>{template.home.expertise.title}</h2><p>{template.home.expertise.body}</p></div></section>
+    <blockquote>{template.home.expertise.quote}</blockquote>
+    <section class="lv-about-feature"><img src={expertiseImage} alt="Inside the beauty studio" /><div><p>WHAT GUIDES US</p><h2>{template.home.brandStatement.firstLine}<br />{template.home.brandStatement.middleLine}<br />{template.home.brandStatement.lastLine}</h2><span>Thoughtful selections, clear information, and a shopping experience designed to help every customer choose with confidence.</span><a href="/contact">Talk to our team</a></div></section>
+    <section class="lv-about-closing"><img src={categoriesImage.src} alt="Botanical skincare ritual" /><div><p>A better routine starts with a better choice.</p><a href="/products">Find your match</a></div></section>
+  </main>
+</Layout>
+<style is:global lang="scss">@use "./styles/about.scss";</style>

@@ -171,4 +171,23 @@ describe("createCodeNotificationRenderer", () => {
     // order_01ABCDEFGHJKLMN → last 6 = HJKLMN
     assert.equal(result.subject, "Payment received for HJKLMN");
   });
+
+  it("renders actionable storefront inquiry notifications", async () => {
+    const result = await renderer.render({
+      channel: "telegram",
+      eventType: "storefront.inquiry_created",
+      tenantId: "tenant-1",
+      recipient: "123",
+      payload: {
+        inquiryId: "inquiry_1",
+        type: "product_request",
+        customerName: "Jane Doe",
+        customerEmail: "jane@example.com",
+        subject: "Product request: Vitamin C serum",
+      },
+    });
+    assert.match(result.body, /Jane Doe sent a new storefront inquiry/);
+    assert.match(result.body, /Product request/);
+    assert.match(result.body, /Open Inquiries in your dashboard/);
+  });
 });

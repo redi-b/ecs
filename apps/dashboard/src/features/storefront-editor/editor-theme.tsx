@@ -1,6 +1,5 @@
 "use client";
 
-import type { Data, PuckAction } from "@puckeditor/core";
 import {
   RiInformationLine,
   RiMore2Line,
@@ -34,7 +33,7 @@ import {
 } from "@ecs/storefront-templates";
 
 import { ensureStorefrontFontOptionsLoaded, FONT_OPTIONS } from "./editor-config";
-import type { StorefrontPageProps } from "./editor-state";
+import type { EditorAction, EditorData, StorefrontPageProps } from "./editor-state";
 import { themePalettePageProps, themeResetPageProps } from "./editor-state";
 import { isHexColor, updateStorefrontProp, updateStorefrontProps } from "./editor-utils";
 
@@ -82,13 +81,17 @@ function SectionInfoTip({ title, body }: { title: string; body: string }) {
 }
 
 export function ThemeBrandSection({
+  allowDarkMode = true,
   data,
   dispatch,
   props,
+  templateKey,
 }: {
-  data: Data;
-  dispatch: (action: PuckAction) => void;
+  allowDarkMode?: boolean;
+  data: EditorData;
+  dispatch: (action: EditorAction) => void;
   props: StorefrontPageProps;
+  templateKey: string;
 }) {
   const { t } = useI18n();
   const mode: "light" | "dark" =
@@ -105,7 +108,7 @@ export function ThemeBrandSection({
   }
 
   function resetToDefaults() {
-    updateStorefrontProps(data, dispatch, themeResetPageProps(mode));
+    updateStorefrontProps(data, dispatch, themeResetPageProps(templateKey));
   }
 
   function setAutoPalette(enabled: boolean) {
@@ -205,7 +208,7 @@ export function ThemeBrandSection({
           />
         </div>
 
-        <div className="flex flex-col gap-2">
+        {allowDarkMode ? <div className="flex flex-col gap-2">
           <FieldLabel className="text-sm font-medium">{t("editor.theme.surface")}</FieldLabel>
           <SegmentedControl
             ariaLabel={t("editor.theme.surface")}
@@ -216,7 +219,7 @@ export function ThemeBrandSection({
             ]}
             value={mode}
           />
-        </div>
+        </div> : null}
 
         <div className="flex flex-col gap-3">
           <FieldLabel className="text-sm font-medium">{t("editor.theme.colors")}</FieldLabel>

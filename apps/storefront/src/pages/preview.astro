@@ -1,0 +1,227 @@
+---
+import { loadHomePageModel } from "../lib/home-page";
+import { loadPageContext } from "../lib/page-context";
+import { getStorefrontRenderer } from "../templates/registry";
+
+const token = Astro.url.searchParams.get("token")?.trim() ?? "";
+const configuredEditorOrigin = resolveConfiguredEditorOrigin();
+const editorOrigins = [Astro.url.origin, configuredEditorOrigin].filter(
+  (origin, index, origins): origin is string => Boolean(origin) && origins.indexOf(origin) === index,
+);
+const ctx = token
+  ? await loadPageContext(Astro.request, { previewToken: token, skipCart: true })
+  : { ok: false as const, status: 400, message: "Preview token is required." };
+const homeModel = ctx.ok ? await loadHomePageModel(ctx, { includeCatalogFallback: true }) : null;
+const Home = ctx.ok ? getStorefrontRenderer(ctx.config.storefront.templateKey)?.Home : undefined;
+
+Astro.response.headers.set("cache-control", "private, no-store");
+Astro.response.headers.set("referrer-policy", "no-referrer");
+Astro.response.headers.set("x-robots-tag", "noindex, nofollow");
+Astro.response.headers.set(
+  "content-security-policy",
+  `frame-ancestors 'self'${configuredEditorOrigin ? ` ${configuredEditorOrigin}` : ""}`,
+);
+if (!ctx.ok) Astro.response.status = ctx.status;
+else if (!Home) Astro.response.status = 503;
+
+function resolveConfiguredEditorOrigin() {
+  const configured = process.env.STOREFRONT_EDITOR_ORIGIN?.trim();
+  if (configured && /^https?:\/\/[^/]+$/.test(configured)) return configured;
+  return process.env.NODE_ENV === "development" ? "http://dashboard.lvh.me" : null;
+}
+---
+<!doctype html>
+<html lang="en">
+  <head><meta charset="utf-8" /><meta name="viewport" content="width=device-width" /><meta name="robots" content="noindex,nofollow" /><title>Storefront preview</title></head>
+  <body>
+    {!ctx.ok ? <main><h1>{ctx.message}</h1></main> : !Home ? <main><h1>Preview is unavailable.</h1></main> : <Home data={ctx.config.storefront.data} productsResult={homeModel?.productsResult ?? { products: [] }} collectionProducts={homeModel?.collectionProducts ?? []} collections={homeModel?.collections ?? []} tenantName={ctx.config.tenant.name} themeTokens={ctx.config.storefront.themeTokens} platformApiBaseUrl={ctx.platformApiBaseUrl} requestHost={ctx.requestHost} deferCartCount={true} editorMode={true} />}
+    {ctx.ok && Home ? <script is:inline define:vars={{ editorOrigins }}>
+      const allowedParentOrigins = new Set(editorOrigins);
+      let activeParentOrigin = null;
+      const fieldNodes = () => document.querySelectorAll('[data-editor-path]');
+      const postToParent = (message) => {
+        if (activeParentOrigin) {
+          window.parent.postMessage(message, activeParentOrigin);
+          return;
+        }
+        allowedParentOrigins.forEach((origin) => window.parent.postMessage(message, origin));
+      };
+      const selectPath = (path) => {
+        document.querySelectorAll('[data-editor-selected]').forEach((node) => node.removeAttribute('data-editor-selected'));
+        if (!path) return;
+        const node = Array.from(document.querySelectorAll('[data-editor-path],[data-editor-section],[data-editor-image-path],[data-editor-background-image-path],[data-editor-links-path],[data-editor-product-path],[data-editor-collections-path]')).find((candidate) =>
+          candidate.getAttribute('data-editor-path') === path || candidate.getAttribute('data-editor-section') === path || candidate.getAttribute('data-editor-image-path') === path || candidate.getAttribute('data-editor-background-image-path') === path || candidate.getAttribute('data-editor-links-path') === path || candidate.getAttribute('data-editor-product-path') === path || candidate.getAttribute('data-editor-collections-path') === path
+        );
+        node?.setAttribute('data-editor-selected', 'true');
+        node?.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+      };
+      document.querySelectorAll('a[href]').forEach((link) => {
+        link.setAttribute('data-preview-href', link.getAttribute('href') || '');
+        link.removeAttribute('href');
+      });
+      document.querySelectorAll('form[action]').forEach((form) => form.removeAttribute('action'));
+      document.querySelectorAll('a,button,input,select,textarea').forEach((control) => control.setAttribute('tabindex', '-1'));
+
+      const inertControlFor = (element) => {
+        const control = element?.closest('a,button,input,select,textarea');
+        const editable = element?.closest('[data-editor-path]');
+        return control && !editable ? control : null;
+      };
+
+      document.addEventListener('pointerdown', (event) => {
+        const element = event.target instanceof Element ? event.target : null;
+        if (inertControlFor(element)) event.preventDefault();
+      }, true);
+
+      document.addEventListener('focusin', (event) => {
+        const element = event.target instanceof Element ? event.target : null;
+        const control = inertControlFor(element);
+        if (control instanceof HTMLElement) control.blur();
+      }, true);
+
+      document.addEventListener('keydown', (event) => {
+        if (event.key !== 'Escape') return;
+        event.preventDefault();
+        if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
+        window.getSelection()?.removeAllRanges();
+        selectPath('');
+        postToParent({ type: 'ecs:preview:select', path: '' });
+      }, true);
+
+      document.addEventListener('click', (event) => {
+        const element = event.target instanceof Element ? event.target : null;
+        const target = element?.closest('[data-editor-path],[data-editor-image-path],[data-editor-background-image-path],[data-editor-links-path],[data-editor-product-path],[data-editor-collections-path],[data-editor-section]');
+        const path = target?.getAttribute('data-editor-path') || target?.getAttribute('data-editor-image-path') || target?.getAttribute('data-editor-background-image-path') || target?.getAttribute('data-editor-links-path') || target?.getAttribute('data-editor-product-path') || target?.getAttribute('data-editor-collections-path') || target?.getAttribute('data-editor-section');
+        if (path) {
+          selectPath(path);
+          postToParent({ type: 'ecs:preview:select', path });
+        } else {
+          selectPath('');
+          postToParent({ type: 'ecs:preview:select', path: '' });
+        }
+
+        const action = element?.closest('a,button');
+        if (action) event.preventDefault();
+      }, true);
+
+      document.addEventListener('submit', (event) => event.preventDefault(), true);
+      document.addEventListener('input', (event) => {
+        const node = event.target instanceof Element ? event.target.closest('[data-editor-path]') : null;
+        const path = node?.getAttribute('data-editor-path');
+        if (path) postToParent({ type: 'ecs:preview:field-change', path, value: node?.textContent || '' });
+      });
+
+      window.addEventListener('message', (event) => {
+        if (!allowedParentOrigins.has(event.origin) || event.source !== window.parent) return;
+        activeParentOrigin = event.origin;
+        if (event.data?.type === 'ecs:editor:connect') {
+          postToParent({ type: 'ecs:preview:ready' });
+          return;
+        }
+        if (event.data?.type === 'ecs:editor:ui') {
+          document.documentElement.dataset.editorHints = event.data.showEditHints === false ? 'off' : 'on';
+          selectPath(typeof event.data.selectedPath === 'string' ? event.data.selectedPath : '');
+          return;
+        }
+        if (event.data?.type !== 'ecs:editor:update') return;
+        const fields = event.data.fields || {};
+        fieldNodes().forEach((node) => {
+          const path = node.getAttribute('data-editor-path');
+          const ownsFocus = document.activeElement === node || node.contains(document.activeElement);
+          if (!ownsFocus && path && typeof fields[path] === 'string' && node.textContent !== fields[path]) node.textContent = fields[path];
+        });
+        document.querySelectorAll('[data-editor-visible-path]').forEach((node) => {
+          const path = node.getAttribute('data-editor-visible-path');
+          if (path && typeof fields[path] === 'boolean') node.hidden = !fields[path];
+        });
+        document.querySelectorAll('[data-editor-image-path]').forEach((node) => {
+          const path = node.getAttribute('data-editor-image-path');
+          if (node instanceof HTMLImageElement && path && typeof fields[path] === 'string') node.src = fields[path];
+        });
+        document.querySelectorAll('[data-editor-background-image-path]').forEach((node) => {
+          const path = node.getAttribute('data-editor-background-image-path');
+          if (node instanceof HTMLElement && path && typeof fields[path] === 'string') node.style.setProperty('--hero-bg', `url(${fields[path]})`);
+        });
+        document.querySelectorAll('[data-editor-links-path]').forEach((node) => {
+          const path = node.getAttribute('data-editor-links-path');
+          const links = path ? fields[path] : null;
+          if (!Array.isArray(links)) return;
+          // A field-change is echoed back immediately by the editor. Replacing this
+          // list while one of its links is being edited would destroy the active
+          // contenteditable node (and its caret) after every keystroke.
+          const activeElement = document.activeElement;
+          if (activeElement instanceof HTMLElement && activeElement.isContentEditable && node.contains(activeElement)) return;
+          const fragment = document.createDocumentFragment();
+          links.forEach((item, index) => {
+            if (!item || typeof item !== 'object' || typeof item.label !== 'string' || typeof item.href !== 'string') return;
+            const link = document.createElement('a');
+            link.textContent = item.label;
+            link.dataset.previewHref = item.href;
+            link.dataset.editorPath = `${path}.${index}.label`;
+            link.contentEditable = 'plaintext-only';
+            link.setAttribute('tabindex', '-1');
+            fragment.append(link);
+          });
+          node.replaceChildren(fragment);
+        });
+        document.querySelectorAll('[data-editor-product-path]').forEach((node) => {
+          const path = node.getAttribute('data-editor-product-path');
+          const productId = path && typeof fields[path] === 'string' ? fields[path] : '';
+          const option = productId
+            ? document.querySelector(`template[data-editor-product-option="${CSS.escape(productId)}"]`)
+            : document.querySelector('template[data-editor-product-option]');
+          if (option instanceof HTMLTemplateElement) node.replaceChildren(option.content.cloneNode(true));
+        });
+        document.querySelectorAll('[data-editor-collections-path]').forEach((node) => {
+          const path = node.getAttribute('data-editor-collections-path');
+          const requestedIds = path && Array.isArray(fields[path]) ? fields[path] : [];
+          const ids = requestedIds.length
+            ? requestedIds
+            : Array.from(document.querySelectorAll('template[data-editor-collection-option]')).slice(0, 4).map((option) => option.getAttribute('data-editor-collection-option'));
+          const fragment = document.createDocumentFragment();
+          ids.slice(0, 4).forEach((id, index) => {
+            if (typeof id !== 'string') return;
+            const option = document.querySelector(`template[data-editor-collection-option="${CSS.escape(id)}"]`);
+            if (!(option instanceof HTMLTemplateElement)) return;
+            const content = option.content.cloneNode(true);
+            const label = content.querySelector('span');
+            if (label) label.textContent = `${index + 1}/ ${label.textContent}`;
+            fragment.append(content);
+          });
+          node.replaceChildren(fragment);
+        });
+        document.querySelectorAll('[data-editor-css-vars]').forEach((node) => {
+          let mappings = {};
+          try { mappings = JSON.parse(node.getAttribute('data-editor-css-vars') || '{}'); } catch {}
+          Object.entries(mappings).forEach(([path, variable]) => {
+            if (typeof variable === 'string' && typeof fields[path] === 'string') node.style.setProperty(variable, fields[path]);
+          });
+        });
+      });
+
+      postToParent({ type: 'ecs:preview:ready' });
+    </script> : null}
+  </body>
+</html>
+<style>
+  html,body{margin:0;overflow-x:hidden}main{padding:20vh 1.5rem;font-family:system-ui;text-align:center}
+  :global([data-editor-path]),:global([data-editor-path] *){cursor:text!important}
+  :global([data-editor-empty-label]:empty){min-width:7rem;min-height:2rem;display:inline-flex!important;align-items:center;padding:.3rem .55rem;border-radius:.45rem;background:color-mix(in srgb,#1687ff 7%,transparent);color:color-mix(in srgb,#1687ff 78%,#425466);font-size:.75rem;line-height:1.2;cursor:pointer!important}
+  :global([data-editor-empty-label]:empty)::before{content:attr(data-editor-empty-label)}
+  :global([data-editor-path]),:global([data-editor-section]),:global([data-editor-image-path]),:global([data-editor-background-image-path]),:global([data-editor-links-path]),:global([data-editor-product-path]),:global([data-editor-collections-path]){outline:1px solid rgb(22 135 255 / 0);outline-offset:2px;box-shadow:0 0 0 3px rgb(22 135 255 / 0);transition:outline-offset .16s ease,box-shadow .16s ease,background-color .16s ease}
+  :global([data-editor-path]:focus),:global([data-editor-path]:focus-visible){outline-color:color-mix(in srgb,#1687ff 88%,transparent)!important}
+  :global(html[data-editor-hints="on"] [data-editor-section]){outline:1px dashed color-mix(in srgb,#1687ff 22%,transparent);outline-offset:2px}
+  :global(html[data-editor-hints="on"] [data-editor-path]){outline:1px solid color-mix(in srgb,#1687ff 34%,transparent);outline-offset:2px}
+  :global(html[data-editor-hints="on"] [data-editor-image-path]),:global(html[data-editor-hints="on"] [data-editor-background-image-path]){outline-color:color-mix(in srgb,#1687ff 34%,transparent)}
+  :global(html[data-editor-hints="on"] [data-editor-links-path]),:global(html[data-editor-hints="on"] [data-editor-product-path]),:global(html[data-editor-hints="on"] [data-editor-collections-path]){outline:1px solid color-mix(in srgb,#1687ff 34%,transparent);outline-offset:2px;cursor:pointer}
+  :global(html[data-editor-hints="on"] [data-editor-section]:hover){outline-color:color-mix(in srgb,#1687ff 52%,transparent);outline-offset:3px;background-color:color-mix(in srgb,#1687ff 2%,transparent)}
+  :global(html[data-editor-hints="on"] [data-editor-path]:hover){outline-color:color-mix(in srgb,#1687ff 78%,transparent);outline-offset:3px;box-shadow:0 0 0 3px color-mix(in srgb,#1687ff 7%,transparent)}
+  :global(html[data-editor-hints="on"] [data-editor-image-path]:hover),:global(html[data-editor-hints="on"] [data-editor-background-image-path]:hover),:global(html[data-editor-hints="off"] [data-editor-image-path]:hover),:global(html[data-editor-hints="off"] [data-editor-background-image-path]:hover){outline-color:color-mix(in srgb,#1687ff 76%,transparent);outline-offset:3px;box-shadow:0 0 0 3px color-mix(in srgb,#1687ff 6%,transparent);cursor:pointer}
+  :global(html[data-editor-hints="off"] [data-editor-section]:hover){outline-style:dashed;outline-color:color-mix(in srgb,#1687ff 48%,transparent);outline-offset:3px}
+  :global(html[data-editor-hints="off"] [data-editor-path]:hover){outline-color:color-mix(in srgb,#1687ff 76%,transparent);outline-offset:3px;box-shadow:0 0 0 3px color-mix(in srgb,#1687ff 6%,transparent)}
+  :global(html[data-editor-hints="on"] [data-editor-links-path]:hover),:global(html[data-editor-hints="on"] [data-editor-product-path]:hover),:global(html[data-editor-hints="on"] [data-editor-collections-path]:hover),:global(html[data-editor-hints="off"] [data-editor-links-path]:hover),:global(html[data-editor-hints="off"] [data-editor-product-path]:hover),:global(html[data-editor-hints="off"] [data-editor-collections-path]:hover){outline-color:color-mix(in srgb,#1687ff 76%,transparent);outline-offset:3px;box-shadow:0 0 0 3px color-mix(in srgb,#1687ff 6%,transparent)}
+  :global([data-editor-selected="true"]){outline:2px solid color-mix(in srgb,#1687ff 88%,transparent)!important;outline-offset:3px!important;box-shadow:0 0 0 3px color-mix(in srgb,#1687ff 10%,transparent)!important}
+  :global([data-preview-href]){cursor:default}
+  :global([data-preview-href] [data-editor-path]),:global([data-preview-href] [data-editor-path] *){cursor:text!important}
+  @media (prefers-reduced-motion:reduce){:global([data-editor-path]),:global([data-editor-section]),:global([data-editor-selected="true"]){scroll-behavior:auto;transition:none}}
+</style>

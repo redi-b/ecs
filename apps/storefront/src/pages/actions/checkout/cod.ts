@@ -25,7 +25,7 @@ export const POST: APIRoute = async ({ request }) => {
   const delivery =
     !isStoreError(deliveryResult) ? deliveryResult.delivery : null;
 
-  const name = String(form.get("name") ?? "").trim();
+  const name = String(form.get("name") ?? `${form.get("firstName") ?? ""} ${form.get("lastName") ?? ""}`).trim();
   const phone = String(form.get("phone") ?? "").trim();
   const email = String(form.get("email") ?? "").trim() || null;
   const deliveryChoice = String(form.get("deliveryChoice") ?? "").trim();

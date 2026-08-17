@@ -1,6 +1,5 @@
 "use client";
 
-import type { Data } from "@puckeditor/core";
 import {
   RiArrowGoBackLine,
   RiArrowGoForwardLine,
@@ -15,7 +14,7 @@ import {
   RiRocketLine,
   RiSave3Line,
 } from "@remixicon/react";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 import { ConfirmDialog } from "@/components/app/confirm-dialog";
 import { Badge } from "@/components/ui/badge";
@@ -24,30 +23,13 @@ import { SegmentedControl } from "@/components/ui/segmented-control";
 import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { StorefrontVisualEditorProps } from "@/features/storefront-editor/editor-config";
-import { useStorefrontPuck } from "@/features/storefront-editor/editor-config";
+import { useStorefrontEditor } from "@/features/storefront-editor/editor-config";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 
 import { TemplatePreview } from "./editor-preview";
 import { StorefrontSettingsPanel } from "./editor-settings";
-import { getStorefrontPageProps, type PublicationStatus } from "./editor-state";
-
-export function PuckDataOverride({ data }: { data: Data | null }) {
-  const dispatch = useStorefrontPuck((api) => api.dispatch);
-  const appliedRef = useRef<Data | null>(null);
-
-  useEffect(() => {
-    if (data && appliedRef.current !== data) {
-      appliedRef.current = data;
-      dispatch({
-        type: "setData",
-        data,
-      });
-    }
-  }, [data, dispatch]);
-
-  return null;
-}
+import { getStorefrontPageProps, type EditorData, type PublicationStatus } from "./editor-state";
 
 export function ShopLiveStatusBadge({ live }: { live: boolean }) {
   const { t } = useI18n();
@@ -315,23 +297,57 @@ export function StorefrontEditorShell({
   onRedo: () => void;
   onReset: () => void;
   onToggleFullscreen: () => void;
-  onPublish: (data: Data) => void;
+  onPublish: (data: EditorData) => void;
   onUnpublish?: (() => void) | undefined;
-  onSave: (data: Data) => void;
+  onSave: (data: EditorData) => void;
   onToggleEditHints: () => void;
   onUndo: () => void;
   publicationStatus: PublicationStatus;
   showEditHints: boolean;
 }) {
   const { t } = useI18n();
-  const data = useStorefrontPuck((api) => api.appState.data);
+  const data = useStorefrontEditor((api) => api.appState.data);
   const props = getStorefrontPageProps(data);
   const [mobilePanel, setMobilePanel] = useState<EditorMobilePanel>("preview");
+  const [selectedPath, setSelectedPath] = useState<string | null>(null);
+  const [selectionInteractionActive, setSelectionInteractionActive] = useState(false);
+
+  useEffect(() => {
+    function clearSelection() {
+      if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
+      setSelectedPath(null);
+    }
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key !== "Escape") return;
+      // Let the first Escape close an active portal. A subsequent Escape clears editor selection.
+      if (document.querySelector('[data-slot="dialog-content"],[data-slot="popover-content"]')) {
+        return;
+      }
+      clearSelection();
+    }
+    function onPointerDown(event: PointerEvent) {
+      if (selectionInteractionActive) return;
+      const target = event.target instanceof Element ? event.target : null;
+      if (
+        !target?.closest(
+          '[data-editor-settings-path],[data-editor-selection-control],[data-slot="dialog-content"],[data-slot="dialog-overlay"],[data-slot="popover-content"],[data-slot="dropdown-menu-content"]',
+        )
+      ) {
+        setSelectedPath(null);
+      }
+    }
+    document.addEventListener("keydown", onKeyDown);
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      document.removeEventListener("pointerdown", onPointerDown);
+    };
+  }, [selectionInteractionActive]);
 
   return (
     <div
       className={cn(
-        "storefront-editor-chrome flex min-w-0 flex-col overflow-hidden rounded-2xl border border-border/80 bg-background shadow-[0_1px_2px_color-mix(in_oklch,var(--foreground)_4%,transparent)]",
+        "storefront-editor-chrome flex min-w-0 flex-col overflow-hidden rounded-2xl border border-border/80 bg-background shadow-[0_1px_2px_color-mix(in_oklch,var(--foreground)_4%,transparent)] lg:h-full",
         "max-lg:min-h-[min(100dvh-5.5rem,52rem)]",
         isFullscreen && "max-lg:min-h-dvh",
       )}
@@ -395,16 +411,23 @@ export function StorefrontEditorShell({
       >
         <div
           className={cn(
-            "min-w-0 p-3 sm:p-5",
+            "min-h-0 min-w-0 p-3 sm:p-5",
+            isFullscreen && "h-full",
             mobilePanel !== "preview" && "max-lg:hidden",
             "max-lg:overflow-x-auto max-lg:overscroll-x-contain",
           )}
         >
-          <div className="mx-auto max-w-6xl overflow-hidden rounded-2xl border border-border/80 bg-background shadow-sm max-lg:min-w-[22rem]">
+          <div className={cn("mx-auto h-full overflow-hidden rounded-2xl border border-border/80 bg-background shadow-sm max-lg:min-w-[22rem]", isFullscreen ? "max-w-none" : "max-w-6xl")}>
             <TemplatePreview
+              isFullscreen={isFullscreen}
+              onSelectPath={(path) => setSelectedPath(path || null)}
+              onSelectionInteractionChange={setSelectionInteractionActive}
               props={props}
+              selectedPath={selectedPath}
+              showEditHints={showEditHints}
               storefrontName={editorMeta.storefrontName}
               templateKey={editorMeta.templateKey}
+              previewUrl={editorMeta.previewUrl}
             />
           </div>
         </div>
@@ -431,7 +454,7 @@ export function StorefrontEditorShell({
               </Button>
             </div>
           </div>
-          <StorefrontSettingsPanel />
+          <StorefrontSettingsPanel onSelectPath={setSelectedPath} selectedPath={selectedPath} templateKey={editorMeta.templateKey} />
         </aside>
       </div>
     </div>
