@@ -29,6 +29,7 @@ const BREADCRUMB_TITLE_KEYS: Record<string, MessageKey> = {
   "product-collections": "nav.productCollections",
   orders: "nav.orders",
   customers: "nav.customers",
+  inquiries: "nav.inquiries",
   promotions: "nav.promotions",
   media: "nav.media",
   editor: "nav.editor",

@@ -21,7 +21,7 @@ const platformDb = createPlatformDb({
 });
 
 try {
-  const templateCount = await syncStorefrontTemplateRegistry(platformDb.db);
+  const templateCount: number = await syncStorefrontTemplateRegistry(platformDb.db);
   console.info(
     `Synchronized ${templateCount} built-in storefront template${templateCount === 1 ? "" : "s"}.`,
   );

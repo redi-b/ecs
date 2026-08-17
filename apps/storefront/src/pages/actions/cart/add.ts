@@ -1,6 +1,7 @@
 import type { APIRoute } from "astro";
 
 import { addStoreCartLineItem, ensureStoreCart } from "../../../lib/commerce/cart.js";
+import { cartJson, cartJsonError } from "../../../lib/commerce/cart-json.js";
 import { customerFacingStoreError } from "../../../lib/commerce/errors.js";
 import { isStoreError } from "../../../lib/commerce/result.js";
 import { getPlatformApiBaseUrl, getRequestHost } from "../../../lib/env.js";
@@ -8,18 +9,19 @@ import { loadPageContext } from "../../../lib/page-context.js";
 import { appendSetCookies, cartIdSetCookie } from "../../../lib/session/cart-cookie.js";
 
 export const POST: APIRoute = async ({ request }) => {
+  const wantsJson = request.headers.get("accept")?.includes("application/json") ?? false;
   const form = await request.formData();
   const variantId = String(form.get("variantId") ?? "").trim();
   const quantity = Math.max(1, Number(form.get("quantity") ?? "1") || 1);
   const returnTo = String(form.get("returnTo") ?? "/cart").trim() || "/cart";
 
   if (!variantId) {
-    return redirectWithError(returnTo, "Choose a product option before adding to cart.");
+    return failure(returnTo, "Choose a product option before adding to cart.", wantsJson);
   }
 
   const ctx = await loadPageContext(request);
   if (!ctx.ok) {
-    return redirectWithError(returnTo, customerFacingStoreError(ctx.message));
+    return failure(returnTo, customerFacingStoreError(ctx.message), wantsJson);
   }
 
   const cartResult = await ensureStoreCart({
@@ -30,7 +32,7 @@ export const POST: APIRoute = async ({ request }) => {
   });
 
   if (isStoreError(cartResult)) {
-    return redirectWithError(returnTo, customerFacingStoreError(cartResult.message));
+    return failure(returnTo, customerFacingStoreError(cartResult.message), wantsJson);
   }
 
   const addResult = await addStoreCartLineItem({
@@ -42,21 +44,30 @@ export const POST: APIRoute = async ({ request }) => {
   });
 
   if (isStoreError(addResult)) {
-    return redirectWithError(
+    return failure(
       returnTo,
       customerFacingStoreError(addResult.message) ||
         "Could not add that item to your cart. Please try again.",
+      wantsJson,
     );
+  }
+
+  const headers = new Headers();
+  appendSetCookies(headers, [cartIdSetCookie(cartResult.cart.id)]);
+  if (wantsJson) {
+    return cartJson(addResult.cart, { headers });
   }
 
   const url = new URL(returnTo, request.url);
   url.searchParams.set("notice", "added");
-  const headers = new Headers({ Location: url.pathname + url.search });
-  appendSetCookies(headers, [cartIdSetCookie(cartResult.cart.id)]);
+  headers.set("Location", url.pathname + url.search);
   return new Response(null, { status: 303, headers });
 };
 
-function redirectWithError(returnTo: string, message: string) {
+function failure(returnTo: string, message: string, wantsJson: boolean) {
+  if (wantsJson) {
+    return cartJsonError(message);
+  }
   const url = new URL(returnTo, "http://local.invalid");
   url.searchParams.set("error", message);
   return new Response(null, {

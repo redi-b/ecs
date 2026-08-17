@@ -49,6 +49,7 @@ type MediaLibraryDialogProps = {
   triggerLabel?: string | undefined;
   triggerVariant?: "default" | "outline" | "secondary" | "ghost" | undefined;
   triggerSize?: "default" | "sm" | "xs" | "lg" | undefined;
+  onOpenChange?: ((open: boolean) => void) | undefined;
 };
 
 export function MediaLibraryDialog({
@@ -59,6 +60,7 @@ export function MediaLibraryDialog({
   triggerLabel,
   triggerVariant = "outline",
   triggerSize = "sm",
+  onOpenChange,
 }: MediaLibraryDialogProps) {
   const { t } = useI18n();
   const isMultiple = selectionMode === "multiple";
@@ -70,6 +72,11 @@ export function MediaLibraryDialog({
   const [type, setType] = useState("all");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+
+  function setDialogOpen(nextOpen: boolean) {
+    setOpen(nextOpen);
+    onOpenChange?.(nextOpen);
+  }
 
   useEffect(() => {
     if (!open) return;
@@ -156,7 +163,7 @@ export function MediaLibraryDialog({
   function confirmSelection(assetsToUse: MediaAsset[]) {
     if (!assetsToUse.length) return;
     onSelect(isMultiple ? assetsToUse : assetsToUse.slice(0, 1));
-    setOpen(false);
+    setDialogOpen(false);
   }
 
   const allVisibleSelected =
@@ -166,7 +173,7 @@ export function MediaLibraryDialog({
     <>
       <Button
         className={triggerClassName}
-        onClick={() => setOpen(true)}
+        onClick={() => setDialogOpen(true)}
         size={triggerSize}
         type="button"
         variant={triggerVariant}
@@ -174,7 +181,7 @@ export function MediaLibraryDialog({
         <AppIcons.image data-icon="inline-start" />
         {triggerLabel ?? t("media.chooseLibrary")}
       </Button>
-      <Dialog onOpenChange={setOpen} open={open}>
+      <Dialog onOpenChange={setDialogOpen} open={open}>
         <DialogContent className="flex max-h-[min(90vh,48rem)] w-full flex-col gap-0 overflow-hidden p-0 sm:max-w-4xl">
           <DialogHeader className="shrink-0 gap-1.5 border-b px-4 py-4 text-left sm:px-5">
             <DialogTitle>{t("media.chooseLibrary")}</DialogTitle>
@@ -379,7 +386,7 @@ export function MediaLibraryDialog({
               )}
             </div>
             <div className="flex flex-col-reverse gap-2 sm:flex-row">
-              <Button onClick={() => setOpen(false)} type="button" variant="outline">
+              <Button onClick={() => setDialogOpen(false)} type="button" variant="outline">
                 {t("common.cancel")}
               </Button>
               <Button

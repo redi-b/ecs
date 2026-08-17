@@ -1,0 +1,10 @@
+---
+import StoreUnavailable from "../components/shell/StoreUnavailable.astro";
+import { loadPageContext } from "../lib/page-context";
+import { getStorefrontRenderer } from "../templates/registry";
+
+const ctx = await loadPageContext(Astro.request, { skipCart: true });
+if (!ctx.ok) Astro.response.status = ctx.status;
+const Contact = ctx.ok ? getStorefrontRenderer(ctx.config.storefront.templateKey)?.Contact : null;
+---
+{!ctx.ok || !Contact ? <StoreUnavailable message={ctx.ok ? "This template does not include a contact page yet." : ctx.message} /> : <Contact data={ctx.config.storefront.data} tenantName={ctx.config.tenant.name} deferCartCount={true} />}

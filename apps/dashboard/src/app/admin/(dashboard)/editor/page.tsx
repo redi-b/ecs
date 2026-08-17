@@ -1,4 +1,8 @@
 import { RiLayoutMasonryLine } from "@remixicon/react";
+import {
+  getStorefrontEditorManifest,
+  getStorefrontTemplateDefinition,
+} from "@ecs/storefront-templates";
 import { headers } from "next/headers";
 import Link from "@/components/app/link";
 
@@ -18,6 +22,7 @@ import { getMerchantDashboardAccessShell } from "@/lib/merchant-dashboard";
 import { mapPlatformErrorMessage } from "@/lib/platform-api/errors";
 import {
   getStorefrontDraft,
+  createStorefrontPreviewSession,
   publishStorefrontDraft,
   unpublishStorefront,
   updateStorefrontDraft,
@@ -55,12 +60,24 @@ export default async function StorefrontEditorPage({ searchParams }: StorefrontE
           tenantId: access.access.tenant.id,
         })
       : null;
+  const editorManifest = draft?.ok
+    ? getStorefrontEditorManifest(draft.draft.templateKey)
+    : undefined;
+  const previewSession =
+    draft?.ok && editorManifest?.previewMode === "iframe"
+      ? await createStorefrontPreviewSession({
+          cookieHeader: requestHeaders.get("cookie"),
+          platformApiBaseUrl,
+          tenantId: draft.draft.tenantId,
+        })
+      : null;
 
   return (
     <PageShell
       className="gap-4 sm:gap-5"
       description={t("editor.description")}
       title={t("editor.title")}
+      viewportWorkspace
     >
       {!access.ok ? (
         <Alert variant="destructive">
@@ -90,6 +107,10 @@ export default async function StorefrontEditorPage({ searchParams }: StorefrontE
           editorMeta={{
             initiallyPublished: access.access.storefront.isPublished,
             liveStorefrontUrl: getLiveStorefrontUrl(access.access.domain.hostname),
+            previewUrl:
+              previewSession?.ok
+                ? getPreviewUrl(access.access.domain.hostname, previewSession.token)
+                : undefined,
             settingsUrl: "/admin/settings?tab=storefront",
             storefrontName: access.access.tenant.name,
             templateKey: draft.draft.templateKey,
@@ -105,11 +126,17 @@ export default async function StorefrontEditorPage({ searchParams }: StorefrontE
 }
 
 function getTemplateDisplayName(templateKey: string) {
-  return templateKey === "classic@1" ? "Classic" : templateKey;
+  return getStorefrontTemplateDefinition(templateKey)?.name ?? templateKey;
 }
 
 function getLiveStorefrontUrl(hostname: string) {
   return `http://${hostname}`;
+}
+
+function getPreviewUrl(hostname: string, token: string) {
+  const url = new URL("/preview", getLiveStorefrontUrl(hostname));
+  url.searchParams.set("token", token);
+  return url.toString();
 }
 
 async function saveDraftAction(payload: StorefrontDraftPayload) {

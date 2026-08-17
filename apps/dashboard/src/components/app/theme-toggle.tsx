@@ -38,7 +38,6 @@ export function ThemeToggle() {
       size="icon-lg"
       aria-label={mounted ? label : t("common.toggleTheme")}
       title={mounted ? label : t("common.toggleTheme")}
-      disabled={!mounted}
       onClick={toggleTheme}
     >
       <Icon

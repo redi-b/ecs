@@ -4,13 +4,14 @@ import {
   storefrontTemplates as dbStorefrontTemplates,
   storefrontConfigs,
   storefrontRevisions,
+  storefrontTemplateDrafts,
   storefrontTemplateVersions,
   tenants,
 } from "@ecs/db";
 import {
   storefrontTemplates as templateRegistry,
-  themeTokensSchema,
 } from "@ecs/storefront-templates";
+import { isDeepStrictEqual } from "node:util";
 import { and, asc, eq } from "drizzle-orm";
 import type {
   PublishedStorefrontConfigResult,
@@ -26,6 +27,39 @@ import { purgeStorefrontTenantCache } from "./cache-purge.js";
 type PlatformDb = ReturnType<typeof createPlatformDb>["db"];
 
 type StorefrontTemplateDefinition = (typeof templateRegistry)[number];
+
+function getTemplate(templateKey: string): StorefrontTemplateDefinition | undefined {
+  return templateRegistry.find((item) => item.templateKey === templateKey);
+}
+
+export function normalizeStorefrontDraftPayload(input: {
+  data: unknown;
+  templateKey: string;
+  themeTokens: unknown;
+}) {
+  const template = getTemplate(input.templateKey);
+
+  if (!template) {
+    return undefined;
+  }
+
+  const data = mergeStorefrontTemplateDefaults(template.defaultData, input.data);
+  const themeTokens = mergeStorefrontTemplateDefaults(
+    template.defaultThemeTokens,
+    input.themeTokens,
+  );
+  const parsedData = template.schema.safeParse(data);
+  const parsedThemeTokens = template.themeSchema.safeParse(themeTokens);
+
+  if (!parsedData.success || !parsedThemeTokens.success) {
+    return undefined;
+  }
+
+  return {
+    data: parsedData.data,
+    themeTokens: parsedThemeTokens.data,
+  };
+}
 
 export function mergeStorefrontTemplateDefaults(defaultValue: unknown, value: unknown): unknown {
   if (Array.isArray(defaultValue)) {
@@ -61,40 +95,19 @@ export function mergeStorefrontTemplateDefaults(defaultValue: unknown, value: un
   return value;
 }
 
+export function resolveTemplateDraft(input: {
+  defaultData: unknown;
+  defaultThemeTokens: unknown;
+  mode: "clean" | "resume";
+  saved?: { data: unknown; themeTokens: unknown } | null | undefined;
+}) {
+  if (input.mode === "resume" && input.saved) {
+    return { data: input.saved.data, source: "saved" as const, themeTokens: input.saved.themeTokens };
+  }
+  return { data: input.defaultData, source: "clean" as const, themeTokens: input.defaultThemeTokens };
+}
+
 export function createStorefrontTemplateService(db: PlatformDb) {
-  function getTemplate(templateKey: string): StorefrontTemplateDefinition | undefined {
-    return templateRegistry.find((item) => item.templateKey === templateKey);
-  }
-
-  function normalizeDraftPayload(input: {
-    data: unknown;
-    templateKey: string;
-    themeTokens: unknown;
-  }) {
-    const template = getTemplate(input.templateKey);
-
-    if (!template) {
-      return undefined;
-    }
-
-    const data = mergeStorefrontTemplateDefaults(template.defaultData, input.data);
-    const themeTokens = mergeStorefrontTemplateDefaults(
-      template.defaultThemeTokens,
-      input.themeTokens,
-    );
-    const parsedData = template.schema.safeParse(data);
-    const parsedThemeTokens = themeTokensSchema.safeParse(themeTokens);
-
-    if (!parsedData.success || !parsedThemeTokens.success) {
-      return undefined;
-    }
-
-    return {
-      data: parsedData.data,
-      themeTokens: parsedThemeTokens.data,
-    };
-  }
-
   async function getStorefrontDraft(input: { tenantId: string }): Promise<StorefrontDraftResult> {
     const [draft] = await db
       .select({
@@ -107,6 +120,7 @@ export function createStorefrontTemplateService(db: PlatformDb) {
         updatedAt: storefrontConfigs.updatedAt,
         publishedRevisionId: storefrontConfigs.publishedRevisionId,
         publishedAt: storefrontConfigs.publishedAt,
+        publishedTemplateKey: storefrontRevisions.templateKey,
         publishedData: storefrontRevisions.data,
         publishedThemeTokens: storefrontRevisions.themeTokens,
       })
@@ -147,6 +161,7 @@ export function createStorefrontTemplateService(db: PlatformDb) {
             ? {
                 revisionId: draft.publishedRevisionId,
                 publishedAt: draft.publishedAt.toISOString(),
+                templateKey: draft.publishedTemplateKey,
                 data: draft.publishedData,
                 themeTokens: draft.publishedThemeTokens,
               }
@@ -253,7 +268,7 @@ export function createStorefrontTemplateService(db: PlatformDb) {
         return currentDraft;
       }
 
-      const normalizedDraft = normalizeDraftPayload({
+      const normalizedDraft = normalizeStorefrontDraftPayload({
         data: input.data,
         templateKey: currentDraft.draft.templateKey,
         themeTokens: input.themeTokens,
@@ -278,6 +293,32 @@ export function createStorefrontTemplateService(db: PlatformDb) {
           .returning({
             tenantId: storefrontConfigs.tenantId,
           });
+
+        const [version] = await transaction
+          .select({ id: storefrontTemplateVersions.id })
+          .from(storefrontTemplateVersions)
+          .where(eq(storefrontTemplateVersions.templateKey, currentDraft.draft.templateKey))
+          .limit(1);
+
+        if (row && version) {
+          await transaction
+            .insert(storefrontTemplateDrafts)
+            .values({
+              tenantId: input.tenantId,
+              templateVersionId: version.id,
+              data: normalizedDraft.data,
+              themeTokens: normalizedDraft.themeTokens,
+              updatedAt: new Date(),
+            })
+            .onConflictDoUpdate({
+              target: [storefrontTemplateDrafts.tenantId, storefrontTemplateDrafts.templateVersionId],
+              set: {
+                data: normalizedDraft.data,
+                themeTokens: normalizedDraft.themeTokens,
+                updatedAt: new Date(),
+              },
+            });
+        }
 
         if (!row) {
           return false;
@@ -333,7 +374,7 @@ export function createStorefrontTemplateService(db: PlatformDb) {
           return null;
         }
 
-        const normalizedDraft = normalizeDraftPayload({
+        const normalizedDraft = normalizeStorefrontDraftPayload({
           data: draft.data,
           templateKey: draft.templateKey,
           themeTokens: draft.themeTokens,
@@ -491,6 +532,7 @@ export function createStorefrontTemplateService(db: PlatformDb) {
     selectStorefrontTemplate: async (input: {
       tenantId: string;
       templateKey: string;
+      mode?: "clean" | "resume";
       userId: string;
     }): Promise<StorefrontTemplateSelectionResult> => {
       const [tenant] = await db
@@ -511,6 +553,7 @@ export function createStorefrontTemplateService(db: PlatformDb) {
           id: dbStorefrontTemplates.id,
           minimumPlanId: dbStorefrontTemplates.minimumPlanId,
           version: storefrontTemplateVersions.version,
+          versionId: storefrontTemplateVersions.id,
           templateKey: storefrontTemplateVersions.templateKey,
           defaultData: storefrontTemplateVersions.defaultData,
           defaultThemeTokens: storefrontTemplateVersions.defaultThemeTokens,
@@ -537,31 +580,106 @@ export function createStorefrontTemplateService(db: PlatformDb) {
         return { ok: false, error: "template_plan_unavailable" };
       }
 
-      const [draft] = await db
-        .insert(storefrontConfigs)
-        .values({
-          tenantId: tenant.id,
-          draftTemplateId: template.id,
-          draftTemplateVersion: template.version,
-          draftData: template.defaultData,
-          draftThemeTokens: template.defaultThemeTokens,
-          updatedAt: new Date(),
-        })
-        .onConflictDoUpdate({
-          target: storefrontConfigs.tenantId,
-          set: {
+      const selected = await db.transaction(async (transaction) => {
+        const [current] = await transaction
+          .select({
+            data: storefrontConfigs.draftData,
+            publishedRevisionId: storefrontConfigs.publishedRevisionId,
+            templateId: storefrontConfigs.draftTemplateId,
+            templateVersion: storefrontConfigs.draftTemplateVersion,
+            themeTokens: storefrontConfigs.draftThemeTokens,
+          })
+          .from(storefrontConfigs)
+          .where(eq(storefrontConfigs.tenantId, tenant.id))
+          .limit(1);
+
+        if (current?.templateId && current.templateVersion) {
+          const [currentVersion] = await transaction
+            .select({ id: storefrontTemplateVersions.id })
+            .from(storefrontTemplateVersions)
+            .where(and(
+              eq(storefrontTemplateVersions.templateId, current.templateId),
+              eq(storefrontTemplateVersions.version, current.templateVersion),
+            ))
+            .limit(1);
+          if (currentVersion) {
+            await transaction
+              .insert(storefrontTemplateDrafts)
+              .values({
+                tenantId: tenant.id,
+                templateVersionId: currentVersion.id,
+                data: current.data,
+                themeTokens: current.themeTokens,
+                updatedAt: new Date(),
+              })
+              .onConflictDoUpdate({
+                target: [storefrontTemplateDrafts.tenantId, storefrontTemplateDrafts.templateVersionId],
+                set: { data: current.data, themeTokens: current.themeTokens, updatedAt: new Date() },
+              });
+          }
+        }
+
+        const [saved] = await transaction
+          .select({ data: storefrontTemplateDrafts.data, themeTokens: storefrontTemplateDrafts.themeTokens })
+          .from(storefrontTemplateDrafts)
+          .where(and(
+            eq(storefrontTemplateDrafts.tenantId, tenant.id),
+            eq(storefrontTemplateDrafts.templateVersionId, template.versionId),
+          ))
+          .limit(1);
+        const next = resolveTemplateDraft({
+          defaultData: template.defaultData,
+          defaultThemeTokens: template.defaultThemeTokens,
+          mode: input.mode ?? "resume",
+          saved,
+        });
+        const [published] = current?.publishedRevisionId
+          ? await transaction
+              .select({
+                data: storefrontRevisions.data,
+                templateKey: storefrontRevisions.templateKey,
+                themeTokens: storefrontRevisions.themeTokens,
+              })
+              .from(storefrontRevisions)
+              .where(eq(storefrontRevisions.id, current.publishedRevisionId))
+              .limit(1)
+          : [];
+        const hasUnpublishedChanges = Boolean(
+          published &&
+            (published.templateKey !== template.templateKey ||
+              !isDeepStrictEqual(published.data, next.data) ||
+              !isDeepStrictEqual(published.themeTokens, next.themeTokens)),
+        );
+
+        const [draft] = await transaction
+          .insert(storefrontConfigs)
+          .values({
+            tenantId: tenant.id,
             draftTemplateId: template.id,
             draftTemplateVersion: template.version,
-            draftData: template.defaultData,
-            draftThemeTokens: template.defaultThemeTokens,
+            draftData: next.data,
+            draftThemeTokens: next.themeTokens,
             updatedAt: new Date(),
-          },
-        })
-        .returning({
-          tenantId: storefrontConfigs.tenantId,
-          templateId: storefrontConfigs.draftTemplateId,
-          templateVersion: storefrontConfigs.draftTemplateVersion,
-        });
+          })
+          .onConflictDoUpdate({
+            target: storefrontConfigs.tenantId,
+            set: {
+              draftTemplateId: template.id,
+              draftTemplateVersion: template.version,
+              draftData: next.data,
+              draftThemeTokens: next.themeTokens,
+              updatedAt: new Date(),
+            },
+          })
+          .returning({
+            tenantId: storefrontConfigs.tenantId,
+            templateId: storefrontConfigs.draftTemplateId,
+            templateVersion: storefrontConfigs.draftTemplateVersion,
+          });
+        return { draft, hasUnpublishedChanges, source: next.source };
+      });
+
+      const draft = selected.draft;
 
       if (!draft?.templateId || !draft.templateVersion) {
         return { ok: false, error: "template_not_found" };
@@ -574,6 +692,8 @@ export function createStorefrontTemplateService(db: PlatformDb) {
           templateId: draft.templateId,
           templateVersion: draft.templateVersion,
           templateKey: template.templateKey,
+          source: selected.source,
+          hasUnpublishedChanges: selected.hasUnpublishedChanges,
         },
       };
     },
@@ -585,5 +705,9 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
 }
 
 function cloneJson(value: unknown) {
-  return JSON.parse(JSON.stringify(value ?? {})) as unknown;
+  if (value === undefined) {
+    return undefined;
+  }
+
+  return JSON.parse(JSON.stringify(value)) as unknown;
 }

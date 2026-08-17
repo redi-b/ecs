@@ -1,30 +1,23 @@
 "use client";
 
-import "@puckeditor/core/puck.css";
-
-import type { Data } from "@puckeditor/core";
-import { Puck } from "@puckeditor/core";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { UnsavedChangesDialog } from "@/components/app/unsaved-changes-dialog";
-import {
-  buildPuckConfig,
-  getErrorMessage,
-  PuckDataOverride,
-  StorefrontEditorShell,
-} from "@/features/storefront-editor/editor-components";
+import { getErrorMessage, StorefrontEditorShell } from "@/features/storefront-editor/editor-components";
 import type { StorefrontVisualEditorProps } from "@/features/storefront-editor/editor-config";
 import {
   HISTORY_COMMIT_DELAY_MS,
   HISTORY_LIMIT,
+  StorefrontEditorProvider,
 } from "@/features/storefront-editor/editor-config";
 import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes-guard";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 import {
   buildDraftPayload,
-  buildPuckData,
+  buildEditorData,
+  type EditorData,
   getPublicationStatus,
   serializeEditorData,
 } from "./editor-state";
@@ -37,12 +30,12 @@ export function StorefrontVisualEditor({
   onSave,
 }: StorefrontVisualEditorProps) {
   const { t, locale } = useI18n();
-  const initialData = useMemo(() => buildPuckData(draft), [draft]);
+  const initialData = useMemo(() => buildEditorData(draft), [draft]);
   const initialSnapshot = useMemo(() => serializeEditorData(initialData), [initialData]);
   const initialPublishedSnapshot = useMemo(() => {
-    if (draft.published) {
+    if (draft.published?.templateKey === draft.templateKey) {
       return serializeEditorData(
-        buildPuckData({
+        buildEditorData({
           ...draft,
           data: draft.published.data,
           themeTokens: draft.published.themeTokens,
@@ -50,12 +43,12 @@ export function StorefrontVisualEditor({
       );
     }
 
+    if (draft.published) return null;
     return editorMeta.initiallyPublished ? initialSnapshot : null;
   }, [draft, editorMeta.initiallyPublished, initialSnapshot]);
-  const [editorData, setEditorData] = useState<Data>(initialData);
-  const [history, setHistory] = useState<Data[]>([initialData]);
+  const [editorData, setEditorData] = useState<EditorData>(initialData);
+  const [history, setHistory] = useState<EditorData[]>([initialData]);
   const [historyIndex, setHistoryIndex] = useState(0);
-  const [puckDataOverride, setPuckDataOverride] = useState<Data | null>(null);
   const [savedSnapshot, setSavedSnapshot] = useState(initialSnapshot);
   const [publishedSnapshot, setPublishedSnapshot] = useState(initialPublishedSnapshot);
   const [isLive, setIsLive] = useState(
@@ -64,15 +57,11 @@ export function StorefrontVisualEditor({
   const [showEditHints, setShowEditHints] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isPending, setIsPending] = useState(false);
-  const historyRef = useRef<Data[]>([initialData]);
+  const historyRef = useRef<EditorData[]>([initialData]);
   const historyIndexRef = useRef(0);
-  const pendingHistoryDataRef = useRef<Data | null>(null);
+  const pendingHistoryDataRef = useRef<EditorData | null>(null);
   const historyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const skipHistoryRef = useRef(false);
-  const config = useMemo(
-    () => buildPuckConfig(draft.templateKey, editorMeta.storefrontName),
-    [draft.templateKey, editorMeta.storefrontName],
-  );
 
   useEffect(() => {
     if (!isFullscreen) {
@@ -103,16 +92,17 @@ export function StorefrontVisualEditor({
     [],
   );
 
-  function buildPayload(data: Data) {
+  function buildPayload(data: EditorData) {
     return buildDraftPayload({
       data: draft.data,
       editorData: data,
+      templateKey: draft.templateKey,
       tenantId: draft.tenantId,
       themeTokens: draft.themeTokens,
     });
   }
 
-  async function saveCurrentDraft(data: Data) {
+  async function saveCurrentDraft(data: EditorData) {
     const result = await onSave(buildPayload(data));
 
     if (!result.ok) {
@@ -122,7 +112,7 @@ export function StorefrontVisualEditor({
     setSavedSnapshot(serializeEditorData(data));
   }
 
-  function handleSaveDraft(data: Data) {
+  function handleSaveDraft(data: EditorData) {
     const promise = saveCurrentDraft(data);
 
     setIsPending(true);
@@ -134,7 +124,7 @@ export function StorefrontVisualEditor({
     });
   }
 
-  function handlePublishDraft(data: Data) {
+  function handlePublishDraft(data: EditorData) {
     const payload = buildPayload(data);
     const promise = (async () => {
       const saved = await onSave(payload);
@@ -185,7 +175,7 @@ export function StorefrontVisualEditor({
     });
   }
 
-  function commitHistory(nextData: Data) {
+  function commitHistory(nextData: EditorData) {
     const current = historyRef.current;
     const currentIndex = historyIndexRef.current;
     const latest = current[currentIndex];
@@ -203,7 +193,7 @@ export function StorefrontVisualEditor({
     setHistoryIndex(nextIndex);
   }
 
-  function scheduleHistoryCommit(nextData: Data) {
+  function scheduleHistoryCommit(nextData: EditorData) {
     pendingHistoryDataRef.current = nextData;
 
     if (historyTimerRef.current) {
@@ -235,9 +225,8 @@ export function StorefrontVisualEditor({
     pendingHistoryDataRef.current = null;
   }
 
-  function handleEditorChange(nextData: Data) {
+  function handleEditorChange(nextData: EditorData) {
     setEditorData(nextData);
-    setPuckDataOverride(null);
 
     if (skipHistoryRef.current) {
       skipHistoryRef.current = false;
@@ -247,9 +236,8 @@ export function StorefrontVisualEditor({
     scheduleHistoryCommit(nextData);
   }
 
-  function setDataFromHistory(nextData: Data, nextIndex: number) {
+  function setDataFromHistory(nextData: EditorData, nextIndex: number) {
     skipHistoryRef.current = true;
-    setPuckDataOverride(nextData);
     setEditorData(nextData);
     historyIndexRef.current = nextIndex;
     setHistoryIndex(nextIndex);
@@ -287,7 +275,6 @@ export function StorefrontVisualEditor({
 
   function handleReset() {
     skipHistoryRef.current = true;
-    setPuckDataOverride(initialData);
     setEditorData(initialData);
     historyRef.current = [initialData];
     historyIndexRef.current = 0;
@@ -312,33 +299,14 @@ export function StorefrontVisualEditor({
   return (
     <div
       className={cn(
-        "storefront-puck-editor flex min-h-0 flex-1 flex-col transition-all duration-300 ease-out",
-        // Pin Ethiopic UI face so Puck's Inter tokens cannot fall back to a system Amharic font.
-        locale === "am" && "storefront-puck-editor--am",
+        "storefront-editor-runtime h-full min-h-0 w-full flex-none transition-all duration-300 ease-out",
+        // Keep the editor chrome on the configured Ethiopic UI face in Amharic.
+        locale === "am" && "storefront-editor-runtime--am",
         isFullscreen &&
           "fixed inset-0 z-50 animate-in fade-in-0 bg-background p-2 duration-200 sm:p-3",
       )}
     >
-      <Puck
-        config={config}
-        data={editorData}
-        onChange={handleEditorChange}
-        permissions={{
-          delete: false,
-          drag: false,
-          duplicate: false,
-          insert: false,
-        }}
-        ui={{
-          itemSelector: {
-            index: 0,
-            zone: "default-zone",
-          },
-          leftSideBarVisible: false,
-          rightSideBarVisible: true,
-        }}
-      >
-        <PuckDataOverride data={puckDataOverride} />
+      <StorefrontEditorProvider data={editorData} onChange={handleEditorChange}>
         <StorefrontEditorShell
           canRedo={historyIndex < history.length - 1}
           canUndo={historyIndex > 0}
@@ -357,7 +325,7 @@ export function StorefrontVisualEditor({
           onUndo={handleUndo}
           showEditHints={showEditHints}
         />
-      </Puck>
+      </StorefrontEditorProvider>
 
       <UnsavedChangesDialog
         onLeave={confirmLeave}

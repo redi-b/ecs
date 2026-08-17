@@ -10,6 +10,8 @@ import type { ShellTheme } from "../../../lib/theme";
 import Layout from "./Layout.astro";
 
 interface Props {
+  /** Template-owned storefront data; unused by Classic. */
+  data?: unknown;
   tenantName: string;
   cartCount: number;
   primaryColor?: string;

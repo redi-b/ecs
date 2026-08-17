@@ -1,0 +1,103 @@
+---
+import type { StoreCollection, StorefrontError, StoreProduct, StoreProductsResponse } from "../../../lib/commerce/types";
+import { formatMoney } from "../../../lib/money";
+import Layout from "./Layout.astro";
+import ProductCard from "./ProductCard.astro";
+import aboutImage from "./assets/about-feature-image.png";
+import brandImage from "./assets/brand-statement-image.png";
+import categoryImage from "./assets/categories-hero-image.png";
+import categoryPreview from "./assets/category-preview-image.png";
+import ctaImage from "./assets/cta-layer-image.png";
+import heroBg from "./assets/hero-bg-alt-image.png";
+import heroPortrait from "./assets/hero-portrait-image.png";
+import scrollMark from "./assets/scroll-logomark.svg";
+import bagIcon from "./icons/bag-icon.svg";
+import checkBadge from "./icons/check-badge-icon.svg";
+import diagonalArrow from "./icons/diagonal-arrow-icon.svg";
+import sparkleIcon from "./icons/sparkle-icon.svg";
+import { parseLuviaData, storefrontAsset } from "./lib";
+
+interface Props {
+  data: unknown; productsResult: StoreProductsResponse | StorefrontError; collectionProducts?: StoreProduct[]; collections?: StoreCollection[];
+  tenantName: string; themeTokens: unknown; cartCount?: number; deferCartCount?: boolean;
+  editorMode?: boolean;
+}
+const { data, productsResult, collectionProducts = [], collections = [], tenantName, cartCount = 0, deferCartCount = false, editorMode = false } = Astro.props;
+const template = parseLuviaData(data);
+const products = "products" in productsResult ? productsResult.products : [];
+const hasError = "message" in productsResult;
+const heroBackground = storefrontAsset(template.home.hero.imageAssetId, heroBg.src);
+const portrait = storefrontAsset(template.home.hero.portraitAssetId, heroPortrait.src);
+const pickProducts = (ids: string[], source: StoreProduct[], limit: number) => {
+  if (!ids.length) return source.slice(0, limit);
+  const byId = new Map(source.map((product) => [product.id, product]));
+  return ids.map((id) => byId.get(id)).filter((product): product is StoreProduct => Boolean(product)).slice(0, limit);
+};
+const topPicks = pickProducts(template.home.featuredProducts.productIds, products, template.home.featuredProducts.limit);
+const listingSource = collectionProducts.length ? collectionProducts : products;
+const listing = pickProducts(template.home.products.productIds, listingSource, template.home.products.limit);
+const heroProduct = products.find((product) => product.id === template.home.hero.featuredProductId) ?? products[0];
+const heroProductHref = heroProduct?.handle ? `/products/${encodeURIComponent(heroProduct.handle)}` : "/products";
+const collectionById = new Map(collections.map((collection) => [collection.id, collection]));
+const categoryCollections = (template.home.categories.collectionIds.length
+  ? template.home.categories.collectionIds.map((id) => collectionById.get(id)).filter((item): item is StoreCollection => Boolean(item))
+  : collections
+).slice(0, 4);
+const collectionHref = (collection: StoreCollection) => `/products?collection=${encodeURIComponent(collection.id)}`;
+const marquee = ["PURE", "RADIANT", "ORGANIC", "POWERFUL", "LUMINOUS", "COSMETICS"];
+---
+<Layout tenantName={tenantName} header={template.header} footer={template.footer} cartCount={cartCount} deferCartCount={deferCartCount} title="Complete Cosmetic Essentials" editorMode={editorMode}>
+  <main class="lv-home">
+    {(editorMode || template.home.hero.enabled) && <section class="lv-hero" style={`--hero-bg: url(${heroBackground})`} data-editor-section="home.hero" data-editor-visible-path="home.hero.enabled" data-editor-background-image-path="home.hero.imageAssetId" hidden={!template.home.hero.enabled}>
+      <div class="lv-hero__copy"><h1 data-editor-path="home.hero.title" contenteditable={editorMode ? "plaintext-only" : undefined}>{template.home.hero.title}</h1><p data-editor-path="home.hero.subtitle" contenteditable={editorMode ? "plaintext-only" : undefined}>{template.home.hero.subtitle}</p><a class="lv-button" href={template.home.hero.primaryCtaHref}><span data-editor-path="home.hero.primaryCtaLabel" contenteditable={editorMode ? "plaintext-only" : undefined}>{template.home.hero.primaryCtaLabel}</span><img src={bagIcon.src} alt="" /></a>
+        <ul>{template.home.hero.trustLabels.map((label, index) => <li><img src={checkBadge.src} alt="" /><span data-editor-path={`home.hero.trustLabels.${index}`} contenteditable={editorMode ? "plaintext-only" : undefined}>{label}</span></li>)}</ul>
+      </div>
+      <div class="lv-hero__portrait"><img src={portrait} alt="Model with radiant skin" data-editor-image-path="home.hero.portraitAssetId" /><img class="lv-hero__scroll" src={scrollMark.src} alt="" />{heroProduct && <article class="lv-promo" data-editor-product-path="home.hero.featuredProductId"><div class="lv-promo__media">{heroProduct.thumbnail ? <img src={heroProduct.thumbnail} alt={heroProduct.title ?? "Featured product"} /> : <span>Image coming soon</span>}</div><div><small>{heroProduct.collectionTitle ?? "Featured product"}</small><strong>{heroProduct.title ?? "Product"}</strong><b>{formatMoney(heroProduct.priceAmount, heroProduct.currencyCode)}</b><a href={heroProductHref}>View product</a></div></article>}</div>
+    </section>}
+
+    {(editorMode || template.home.story.enabled) && <section class="lv-story" data-editor-section="home.story" data-editor-visible-path="home.story.enabled" hidden={!template.home.story.enabled}><div><p data-editor-path="home.story.body" contenteditable={editorMode ? "plaintext-only" : undefined}>{template.home.story.body}</p><a href={template.home.story.ctaHref} data-editor-path="home.story.ctaLabel" contenteditable={editorMode ? "plaintext-only" : undefined}>{template.home.story.ctaLabel}</a></div><h2><span data-editor-path="home.story.titleFirstLine" contenteditable={editorMode ? "plaintext-only" : undefined}>{template.home.story.titleFirstLine}</span><span data-editor-path="home.story.titleSecondLine" contenteditable={editorMode ? "plaintext-only" : undefined}>{template.home.story.titleSecondLine}</span></h2></section>}
+
+    {(editorMode || template.home.featuredProducts.enabled) && <section class="lv-section lv-top-picks" data-editor-section="home.featuredProducts" data-editor-visible-path="home.featuredProducts.enabled" hidden={!template.home.featuredProducts.enabled}><header><h2 data-editor-path="home.featuredProducts.title" contenteditable={editorMode ? "plaintext-only" : undefined}>{template.home.featuredProducts.title}</h2><div><button type="button" data-product-rail-prev aria-label="Previous products">←</button><button type="button" data-product-rail-next aria-label="Next products">→</button></div></header>{hasError ? <p class="lv-state">Products could not be loaded. Please try again.</p> : topPicks.length ? <div class="lv-product-rail" data-product-rail role="region" aria-label="Top product picks" tabindex="0">{topPicks.map((product, index) => <ProductCard product={product} eager={index < 4} />)}</div> : <p class="lv-state">Products will appear here when the catalog is ready.</p>}</section>}
+
+    {(editorMode || template.home.products.enabled) && <section class="lv-section lv-products" data-editor-section="home.products" data-editor-visible-path="home.products.enabled" hidden={!template.home.products.enabled}><header><h2 data-editor-path="home.products.title" contenteditable={editorMode ? "plaintext-only" : undefined}>{template.home.products.title}</h2><a href="/products">Full Shop <img src={diagonalArrow.src} alt="" /></a></header>{listing.length ? <div class="lv-product-grid">{listing.map((product) => <ProductCard product={product} />)}</div> : <p class="lv-state">No products are available yet.</p>}{listing.length > 0 && <div class:list={["lv-load-more", { "is-overflowing": listing.length > 8 }]}><p>Showing {listing.length} results</p><a href="/products">Explore the full collection</a></div>}</section>}
+
+    {(editorMode || template.home.brandStatement.enabled) && <section class="lv-statement" data-editor-section="home.brandStatement" data-editor-visible-path="home.brandStatement.enabled" hidden={!template.home.brandStatement.enabled}><h2 data-editor-path="home.brandStatement.firstLine" contenteditable={editorMode ? "plaintext-only" : undefined}>{template.home.brandStatement.firstLine}</h2><div><img src={storefrontAsset(template.home.brandStatement.imageAssetId, brandImage.src)} alt="Botanical cosmetic products" data-editor-image-path="home.brandStatement.imageAssetId" /><span data-editor-path="home.brandStatement.middleLine" contenteditable={editorMode ? "plaintext-only" : undefined}>{template.home.brandStatement.middleLine}</span></div><h2 data-editor-path="home.brandStatement.lastLine" contenteditable={editorMode ? "plaintext-only" : undefined}>{template.home.brandStatement.lastLine}</h2></section>}
+
+    {(editorMode || template.home.expertise.enabled) && <section class="lv-about" data-editor-section="home.expertise" data-editor-visible-path="home.expertise.enabled" hidden={!template.home.expertise.enabled}><div class="lv-about__feature"><div><h2 data-editor-path="home.expertise.title" contenteditable={editorMode ? "plaintext-only" : undefined}>{template.home.expertise.title}</h2><p data-editor-path="home.expertise.body" contenteditable={editorMode ? "plaintext-only" : undefined}>{template.home.expertise.body}</p><a href={template.home.expertise.ctaHref} data-editor-path="home.expertise.ctaLabel" contenteditable={editorMode ? "plaintext-only" : undefined}>{template.home.expertise.ctaLabel}</a></div><img src={storefrontAsset(template.home.expertise.imageAssetId, aboutImage.src)} alt="Cosmetic laboratory" data-editor-image-path="home.expertise.imageAssetId" /></div><div class="lv-marquee">{[...marquee, ...marquee].map((word) => <><span>{word}</span><img src={sparkleIcon.src} alt="" /></>)}</div><blockquote data-editor-path="home.expertise.quote" contenteditable={editorMode ? "plaintext-only" : undefined}>{template.home.expertise.quote}</blockquote></section>}
+
+    {(editorMode || template.home.categories.enabled) && <section class="lv-categories" data-editor-section="home.categories" data-editor-visible-path="home.categories.enabled" hidden={!template.home.categories.enabled}><img src={storefrontAsset(template.home.categories.imageAssetId, categoryImage.src)} alt="Woman wearing a botanical face mask" data-editor-image-path="home.categories.imageAssetId" /><div><h2 data-editor-path="home.categories.title" contenteditable={editorMode ? "plaintext-only" : undefined}>{template.home.categories.title}</h2><nav data-editor-collections-path="home.categories.collectionIds">{categoryCollections.length ? categoryCollections.map((collection, index) => <a href={collectionHref(collection)}><span>{index + 1}/ {collection.title ?? "Collection"}</span><img src={diagonalArrow.src} alt="" /></a>) : <a href="/products"><span>Explore all products</span><img src={diagonalArrow.src} alt="" /></a>}</nav><img src={storefrontAsset(template.home.categories.previewAssetId, categoryPreview.src)} alt="Cosmetic cleanser" data-editor-image-path="home.categories.previewAssetId" /></div></section>}
+
+    {(editorMode || template.home.cta.enabled) && <section class="lv-cta" data-editor-section="home.cta" data-editor-visible-path="home.cta.enabled" hidden={!template.home.cta.enabled}><img src={storefrontAsset(template.home.cta.imageAssetId, ctaImage.src)} alt="Cosmetics store" data-editor-image-path="home.cta.imageAssetId" /><div><h2 data-editor-path="home.cta.title" contenteditable={editorMode ? "plaintext-only" : undefined}>{template.home.cta.title}</h2><p>{template.home.cta.primary.enabled && <a class="lv-button" href={template.home.cta.primary.href}><span data-editor-path="home.cta.primary.label" contenteditable={editorMode ? "plaintext-only" : undefined}>{template.home.cta.primary.label}</span></a>}{template.home.cta.secondary.enabled && <a class="lv-button lv-button--light" href={template.home.cta.secondary.href}><span data-editor-path="home.cta.secondary.label" contenteditable={editorMode ? "plaintext-only" : undefined}>{template.home.cta.secondary.label}</span></a>}</p></div></section>}
+    {editorMode && products.map((product) => <template data-editor-product-option={product.id}><div class="lv-promo__media">{product.thumbnail ? <img src={product.thumbnail} alt={product.title ?? "Featured product"} /> : <span>Image coming soon</span>}</div><div><small>{product.collectionTitle ?? "Featured product"}</small><strong>{product.title ?? "Product"}</strong><b>{formatMoney(product.priceAmount, product.currencyCode)}</b><a data-preview-href={product.handle ? `/products/${encodeURIComponent(product.handle)}` : "/products"}>View product</a></div></template>)}
+    {editorMode && collections.map((collection) => <template data-editor-collection-option={collection.id}><a data-preview-href={collectionHref(collection)}><span>{collection.title ?? "Collection"}</span><img src={diagonalArrow.src} alt="" /></a></template>)}
+  </main>
+</Layout>
+<script>
+  const rail = document.querySelector<HTMLElement>("[data-product-rail]");
+  const previous = document.querySelector<HTMLButtonElement>("[data-product-rail-prev]");
+  const next = document.querySelector<HTMLButtonElement>("[data-product-rail-next]");
+  const updateRailControls = () => {
+    if (!rail || !previous || !next) return;
+    const max = Math.max(0, rail.scrollWidth - rail.clientWidth);
+    previous.disabled = rail.scrollLeft <= 2;
+    next.disabled = rail.scrollLeft >= max - 2;
+  };
+  const moveRail = (direction: -1 | 1) => {
+    if (!rail) return;
+    const card = rail.querySelector<HTMLElement>(".lv-product-card");
+    const distance = Math.max(card?.offsetWidth ?? rail.clientWidth * .75, rail.clientWidth * .72);
+    rail.scrollBy({ left: distance * direction, behavior: "smooth" });
+  };
+  previous?.addEventListener("click", () => moveRail(-1));
+  next?.addEventListener("click", () => moveRail(1));
+  rail?.addEventListener("scroll", updateRailControls, { passive: true });
+  rail?.addEventListener("keydown", (event) => {
+    if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
+      event.preventDefault();
+      moveRail(event.key === "ArrowLeft" ? -1 : 1);
+    }
+  });
+  if (rail) new ResizeObserver(updateRailControls).observe(rail);
+  updateRailControls();
+</script>
+<style is:global lang="scss">@use "./styles/home.scss";</style>

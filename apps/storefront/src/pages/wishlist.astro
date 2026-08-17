@@ -1,0 +1,9 @@
+---
+import StoreUnavailable from "../components/shell/StoreUnavailable.astro";
+import { loadPageContext } from "../lib/page-context";
+import { getStorefrontRenderer } from "../templates/registry";
+const ctx = await loadPageContext(Astro.request, { skipCart: true });
+if (!ctx.ok) Astro.response.status = ctx.status;
+const Page = ctx.ok ? getStorefrontRenderer(ctx.config.storefront.templateKey)?.Wishlist : null;
+---
+{!ctx.ok || !Page ? <StoreUnavailable message={ctx.ok ? "This template does not include a wishlist yet." : ctx.message} /> : <Page data={ctx.config.storefront.data} tenantName={ctx.config.tenant.name} deferCartCount={true} />}

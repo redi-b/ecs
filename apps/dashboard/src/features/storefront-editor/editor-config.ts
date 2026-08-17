@@ -1,6 +1,10 @@
-import { createUsePuck } from "@puckeditor/core";
+import { createContext, createElement, useContext, useMemo, type ReactNode } from "react";
 
-import type { StorefrontDraft } from "@/features/storefront-editor/editor-state";
+import type {
+  EditorAction,
+  EditorData,
+  StorefrontDraft,
+} from "@/features/storefront-editor/editor-state";
 
 export type { PublicationStatus, StorefrontDraft } from "@/features/storefront-editor/editor-state";
 
@@ -9,6 +13,7 @@ export type StorefrontVisualEditorProps = {
   editorMeta: {
     initiallyPublished: boolean;
     liveStorefrontUrl: string;
+    previewUrl?: string | undefined;
     settingsUrl: string;
     storefrontName: string;
     templateKey: string;
@@ -32,7 +37,40 @@ export type ActionResult =
       message: string;
     };
 
-export const useStorefrontPuck = createUsePuck();
+type StorefrontEditorApi = {
+  appState: { data: EditorData };
+  dispatch: (action: EditorAction) => void;
+};
+
+const StorefrontEditorContext = createContext<StorefrontEditorApi | null>(null);
+
+export function StorefrontEditorProvider({
+  children,
+  data,
+  onChange,
+}: {
+  children: ReactNode;
+  data: EditorData;
+  onChange: (data: EditorData) => void;
+}) {
+  const value = useMemo<StorefrontEditorApi>(
+    () => ({
+      appState: { data },
+      dispatch: (action) => {
+        if (action.type === "setData") onChange(action.data);
+      },
+    }),
+    [data, onChange],
+  );
+
+  return createElement(StorefrontEditorContext.Provider, { value }, children);
+}
+
+export function useStorefrontEditor<T>(selector: (api: StorefrontEditorApi) => T): T {
+  const context = useContext(StorefrontEditorContext);
+  if (!context) throw new Error("Storefront editor context is unavailable");
+  return selector(context);
+}
 export const HISTORY_LIMIT = 60;
 export const HISTORY_COMMIT_DELAY_MS = 700;
 export const FONT_OPTIONS = [

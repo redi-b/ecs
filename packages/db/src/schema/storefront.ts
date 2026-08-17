@@ -52,6 +52,28 @@ export const storefrontConfigs = pgTable(
   (table) => [uniqueIndex("storefront_configs_tenant_id_unique").on(table.tenantId)],
 );
 
+export const storefrontTemplateDrafts = pgTable(
+  "storefront_template_drafts",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id),
+    templateVersionId: uuid("template_version_id")
+      .notNull()
+      .references(() => storefrontTemplateVersions.id),
+    data: jsonb("data").notNull().default({}),
+    themeTokens: jsonb("theme_tokens").notNull().default({}),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("storefront_template_drafts_tenant_version_unique").on(
+      table.tenantId,
+      table.templateVersionId,
+    ),
+  ],
+);
+
 export const storefrontRevisions = pgTable("storefront_revisions", {
   id: uuid("id").primaryKey().defaultRandom(),
   tenantId: uuid("tenant_id")

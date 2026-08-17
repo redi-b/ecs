@@ -9,7 +9,9 @@ import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useI18n } from "@/i18n/provider";
+import { isStorefrontTemplateSelected } from "@/features/settings/settings-helpers";
 import { dashboardRoutes } from "@/lib/routes";
 import { cn } from "@/lib/utils";
 
@@ -119,27 +121,29 @@ export function ShopLiveStatusBadge({ live }: { live: boolean }) {
 
 export function StorefrontTemplateOption({
   currentTemplateKey,
+  hasSavedDraft,
   onSelected,
+  publishedTemplateKey,
   template,
   tenantId,
 }: {
   currentTemplateKey: string | null;
-  onSelected?: (templateKey: string) => void;
+  hasSavedDraft: boolean;
+  onSelected?: (templateKey: string, hasUnpublishedChanges: boolean) => void;
+  publishedTemplateKey?: string | null;
   template: StorefrontTemplateCatalogItem;
   tenantId: string;
 }) {
   const { t } = useI18n();
   const router = useRouter();
   const [pending, startTransition] = useTransition();
-  const [optimisticKey, setOptimisticKey] = useState<string | null>(null);
-  const selectedKey = optimisticKey ?? currentTemplateKey;
-  const selected = selectedKey === template.version.templateKey;
+  const [choiceOpen, setChoiceOpen] = useState(false);
+  const selected = isStorefrontTemplateSelected(currentTemplateKey, template.version.templateKey);
+  const published = publishedTemplateKey === template.version.templateKey;
   const palette = templatePreviewPalette(template.version.templateKey);
 
-  async function selectTemplate() {
+  async function selectTemplate(mode: "clean" | "resume") {
     if (selected || pending) return;
-
-    setOptimisticKey(template.version.templateKey);
 
     try {
       const response = await fetch(dashboardRoutes.storefrontTemplate, {
@@ -151,26 +155,32 @@ export function StorefrontTemplateOption({
         body: JSON.stringify({
           tenantId,
           templateKey: template.version.templateKey,
+          mode,
         }),
       });
       const data = (await response.json().catch(() => null)) as {
         ok?: boolean;
         message?: string;
+        selection?: {
+          draft?: { source?: "clean" | "saved"; hasUnpublishedChanges?: boolean };
+        };
       } | null;
 
       if (!response.ok || !data?.ok) {
-        setOptimisticKey(null);
         toast.error(data?.message?.replaceAll("_", " ") || t("settings.storefront.selectFailed"));
         return;
       }
 
-      toast.success(t("settings.status.templateSelected"));
-      onSelected?.(template.version.templateKey);
+      setChoiceOpen(false);
+      toast.success(data.selection?.draft?.source === "saved" ? t("settings.storefront.savedDraftRestored") : t("settings.status.templateSelected"));
+      onSelected?.(
+        template.version.templateKey,
+        data.selection?.draft?.hasUnpublishedChanges ?? true,
+      );
       startTransition(() => {
         router.refresh();
       });
     } catch {
-      setOptimisticKey(null);
       toast.error(t("settings.storefront.selectFailed"));
     }
   }
@@ -211,6 +221,17 @@ export function StorefrontTemplateOption({
               {t("settings.storefront.selected")}
             </Badge>
           ) : null}
+          {published ? (
+            <Badge className="gap-1 font-medium" variant="success">
+              <span className="size-1.5 rounded-full bg-current" aria-hidden />
+              {t("settings.storefront.live")}
+            </Badge>
+          ) : null}
+          {!selected && hasSavedDraft ? (
+            <Badge className="font-medium" variant="outline">
+              {t("settings.storefront.savedDraft")}
+            </Badge>
+          ) : null}
         </div>
         {template.description ? (
           <p className="mt-0.5 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
@@ -228,7 +249,13 @@ export function StorefrontTemplateOption({
           <Button
             className="rounded-full"
             disabled={pending}
-            onClick={() => void selectTemplate()}
+            onClick={() => {
+              if (hasSavedDraft) {
+                setChoiceOpen(true);
+                return;
+              }
+              void selectTemplate("clean");
+            }}
             size="sm"
             type="button"
           >
@@ -244,6 +271,27 @@ export function StorefrontTemplateOption({
         )}
       </div>
       <span className="sr-only">{t("settings.storefront.preview", { name: template.name })}</span>
+      <Dialog open={hasSavedDraft && choiceOpen} onOpenChange={(open) => !pending && setChoiceOpen(open)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t("settings.storefront.switchTitle", { name: template.name })}</DialogTitle>
+            <DialogDescription>{t("settings.storefront.switchDescription")}</DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-3 py-2">
+            <button className="rounded-xl border border-primary/35 bg-primary/[0.04] p-4 text-left transition-colors hover:bg-primary/[0.07] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" disabled={pending} onClick={() => void selectTemplate("resume")} type="button">
+              <span className="block text-sm font-semibold">{t("settings.storefront.continueDraft")}</span>
+              <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">{t("settings.storefront.continueDraftDescription")}</span>
+            </button>
+            <button className="rounded-xl border p-4 text-left transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" disabled={pending} onClick={() => void selectTemplate("clean")} type="button">
+              <span className="block text-sm font-semibold">{t("settings.storefront.startClean")}</span>
+              <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">{t("settings.storefront.startCleanDescription")}</span>
+            </button>
+          </div>
+          <DialogFooter>
+            <Button disabled={pending} onClick={() => setChoiceOpen(false)} type="button" variant="outline">{t("common.cancel")}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -264,4 +312,3 @@ function templatePreviewPalette(templateKey: string) {
     accent: "#0f3d2e",
   };
 }
-

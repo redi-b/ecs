@@ -13,5 +13,6 @@ export * from "./provisioning.js";
 export * from "./payment-banks.js";
 export * from "./receiving-accounts.js";
 export * from "./storefront.js";
+export * from "./storefront-inquiries.js";
 export * from "./system-secrets.js";
 export * from "./tenants.js";

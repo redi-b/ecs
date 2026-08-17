@@ -4,6 +4,7 @@ import test from "node:test";
 import { classicV1EditorSchema } from "../templates/classic/v1/editor";
 import { classicV1DataSchema } from "../templates/classic/v1/schema";
 import { classicV1Defaults } from "../templates/classic/v1/defaults";
+import { luviaV1EditorSchema } from "../templates/luvia/v1/editor";
 import { storefrontEditorManifestSchema } from "./schema";
 
 test("classic v1 editor manifest exposes CMS and merchandising field kinds", () => {
@@ -17,6 +18,25 @@ test("classic v1 editor manifest exposes CMS and merchandising field kinds", () 
     [...new Set(fieldKinds)].sort(),
     ["boolean", "collection", "color", "image", "link", "products", "text", "textarea"].sort(),
   );
+});
+
+test("editor preview strategy is declared as a capability", () => {
+  assert.equal(storefrontEditorManifestSchema.parse(luviaV1EditorSchema).previewMode, "iframe");
+  assert.equal(storefrontEditorManifestSchema.parse(classicV1EditorSchema).previewMode, "iframe");
+});
+
+test("Luvia editor exposes reusable catalog and link-list fields", () => {
+  const parsed = storefrontEditorManifestSchema.parse(luviaV1EditorSchema);
+  const fields = parsed.sections.flatMap((section) => section.fields);
+
+  assert.equal(fields.find((field) => field.path === "home.hero.featuredProductId")?.kind, "product");
+  assert.equal(fields.find((field) => field.path === "header.navigation")?.kind, "links");
+  assert.equal(fields.find((field) => field.path === "footer.socialLinks")?.kind, "links");
+  assert.equal(fields.find((field) => field.path === "home.categories.collectionIds")?.kind, "collections");
+  assert.equal(fields.find((field) => field.path === "footer.quickLinks")?.kind, "links");
+  assert.equal(fields.find((field) => field.path === "footer.inquiry.title")?.kind, "text");
+  assert.equal(fields.find((field) => field.path === "home.brandStatement.imageAssetId")?.kind, "image");
+  assert.equal(new Set(fields.map((field) => field.prop)).size, fields.length);
 });
 
 test("classic v1 editor manifest has no dynamic commerce pricing fields", () => {

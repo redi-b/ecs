@@ -263,6 +263,8 @@ describe("platform app storefront, delivery, billing, and operator", () => {
             templateId: "template_1",
             templateVersion: 1,
             templateKey: "classic@1",
+            source: "clean",
+            hasUnpublishedChanges: true,
           },
         }),
       },
@@ -283,7 +285,7 @@ describe("platform app storefront, delivery, billing, and operator", () => {
   });
 
   it("selects a storefront template draft for an authorized tenant member", async () => {
-    let selectionInput: { tenantId: string; templateKey: string; userId: string } | undefined;
+    let selectionInput: { tenantId: string; templateKey: string; mode?: "clean" | "resume"; userId: string } | undefined;
     const app = appWithResolution(
       { ok: false, error: "shop_context_required" },
       {
@@ -313,6 +315,8 @@ describe("platform app storefront, delivery, billing, and operator", () => {
               templateId: "template_1",
               templateVersion: 1,
               templateKey: input.templateKey,
+              source: "clean",
+              hasUnpublishedChanges: true,
             },
           };
         },
@@ -331,6 +335,7 @@ describe("platform app storefront, delivery, billing, and operator", () => {
     assert.deepEqual(selectionInput, {
       tenantId: "tenant_1",
       templateKey: "classic@1",
+      mode: "resume",
       userId: "user_1",
     });
     assert.deepEqual(await response.json(), {
@@ -339,6 +344,8 @@ describe("platform app storefront, delivery, billing, and operator", () => {
         templateId: "template_1",
         templateVersion: 1,
         templateKey: "classic@1",
+        source: "clean",
+        hasUnpublishedChanges: true,
       },
     });
   });
@@ -1887,5 +1894,76 @@ describe("platform app storefront, delivery, billing, and operator", () => {
         createdAt: "2026-06-02T10:00:00.000Z",
       },
     });
+  });
+
+  it("issues a tenant-scoped preview capability and serves the matching draft", async () => {
+    const secret = "test-preview-secret-that-is-at-least-32-bytes";
+    const getStorefrontDraft = async (input: { tenantId: string }) => ({
+      ok: true as const,
+      draft: {
+        tenantId: input.tenantId,
+        templateId: "template_luvia",
+        templateVersion: 1,
+        templateKey: "luvia@1",
+        data: { home: { hero: { title: "Draft title" } } },
+        themeTokens: { colors: { primary: "#3ee272" } },
+        updatedAt: "2026-08-16T00:00:00.000Z",
+      },
+    });
+    const app = appWithResolution(
+      { ok: true, context: resolvedTenantContext },
+      {
+        storefrontPreviewSecret: secret,
+        getStorefrontDraft,
+        getSession: async () => ({ user: { id: "user_1", email: "owner@abebe.local", name: "Owner" } }),
+        authorizeDashboardForTenant: async () => ({
+          ok: true,
+          actor: { id: "user_1", email: "owner@abebe.local", name: "Owner", role: "owner" },
+        }),
+      },
+    );
+    const sessionResponse = await app.request(
+      "/platform/tenants/tenant_1/storefront/preview-session",
+      { method: "POST" },
+    );
+    assert.equal(sessionResponse.status, 200);
+    const session = (await sessionResponse.json()) as { token: string; expiresAt: string };
+    assert.ok(session.token);
+    assert.ok(session.expiresAt);
+
+    const configResponse = await app.request(
+      `/platform/storefront/preview-config?token=${encodeURIComponent(session.token)}`,
+      { headers: { Host: "abebe.lvh.me" } },
+    );
+    assert.equal(configResponse.status, 200);
+    assert.equal(configResponse.headers.get("cache-control"), "private, no-store");
+    const config = (await configResponse.json()) as { storefront: { templateKey: string; data: unknown } };
+    assert.equal(config.storefront.templateKey, "luvia@1");
+    assert.deepEqual(config.storefront.data, { home: { hero: { title: "Draft title" } } });
+  });
+
+  it("rejects a preview capability on a different tenant host", async () => {
+    const secret = "test-preview-secret-that-is-at-least-32-bytes";
+    const issuingApp = appWithResolution(
+      { ok: true, context: resolvedTenantContext },
+      {
+        storefrontPreviewSecret: secret,
+        getStorefrontDraft: async () => ({
+          ok: true as const,
+          draft: { tenantId: "tenant_1", templateId: "template_luvia", templateVersion: 1, templateKey: "luvia@1", data: {}, themeTokens: {}, updatedAt: "2026-08-16T00:00:00.000Z" },
+        }),
+        getSession: async () => ({ user: { id: "user_1", email: "owner@abebe.local", name: "Owner" } }),
+        authorizeDashboardForTenant: async () => ({ ok: true, actor: { id: "user_1", email: "owner@abebe.local", name: "Owner", role: "owner" } }),
+      },
+    );
+    const sessionResponse = await issuingApp.request("/platform/tenants/tenant_1/storefront/preview-session", { method: "POST" });
+    const session = (await sessionResponse.json()) as { token: string };
+    const wrongTenant = { ...resolvedTenantContext, tenantId: "tenant_2" };
+    const consumingApp = appWithResolution(
+      { ok: true, context: wrongTenant },
+      { storefrontPreviewSecret: secret, getStorefrontDraft: async () => ({ ok: false as const, error: "storefront_draft_not_found" }) },
+    );
+    const response = await consumingApp.request(`/platform/storefront/preview-config?token=${encodeURIComponent(session.token)}`, { headers: { Host: "other.lvh.me" } });
+    assert.equal(response.status, 403);
   });
 });

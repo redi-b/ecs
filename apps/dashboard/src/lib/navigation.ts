@@ -83,6 +83,14 @@ export const appRoutes: AppRoute[] = [
     keywords: ["people", "buyers", "groups", "contacts"],
   },
   {
+    id: "inquiries",
+    title: "Inquiries",
+    href: dashboardRoutes.inquiries,
+    icon: AppIcons.mail,
+    section: "commerce",
+    keywords: ["messages", "requests", "contact", "leads"],
+  },
+  {
     id: "promotions",
     title: "Promotions",
     href: dashboardRoutes.promotions,

@@ -18,7 +18,6 @@
     "@ecs/config": "workspace:*",
     "@ecs/contracts": "workspace:*",
     "@ecs/storefront-templates": "workspace:*",
-    "@puckeditor/core": "^0.22.0",
     "@remixicon/react": "^4.9.0",
     "@tanstack/react-form": "^1.33.0",
     "@tanstack/react-query": "^5.80.0",

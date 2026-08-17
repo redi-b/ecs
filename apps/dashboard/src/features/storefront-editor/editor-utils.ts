@@ -1,4 +1,4 @@
-import type { Data, PuckAction } from "@puckeditor/core";
+import type { EditorAction, EditorData } from "./editor-state";
 
 import {
   STOREFRONT_PAGE_COMPONENT,
@@ -6,8 +6,8 @@ import {
 } from "./editor-state";
 
 export function updateStorefrontProp(
-  data: Data,
-  dispatch: (action: PuckAction) => void,
+  data: EditorData,
+  dispatch: (action: EditorAction) => void,
   propName: keyof StorefrontPageProps,
   value: unknown,
 ) {
@@ -15,8 +15,8 @@ export function updateStorefrontProp(
 }
 
 export function updateStorefrontProps(
-  data: Data,
-  dispatch: (action: PuckAction) => void,
+  data: EditorData,
+  dispatch: (action: EditorAction) => void,
   patch: Partial<StorefrontPageProps>,
 ) {
   dispatch({

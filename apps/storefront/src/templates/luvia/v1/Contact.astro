@@ -1,0 +1,57 @@
+---
+import Layout from "./Layout.astro";
+import contactMap from "./assets/contact-map-image.png";
+import locationIcon from "./icons/location-icon.svg";
+import mailIcon from "./icons/mail-icon.svg";
+import phoneIcon from "./icons/phone-icon.svg";
+import socialsIcon from "./icons/socials-web-icon.svg";
+import { parseLuviaData } from "./lib";
+
+interface Props { data: unknown; tenantName: string; deferCartCount?: boolean; }
+const { data, tenantName, deferCartCount = false } = Astro.props;
+const template = parseLuviaData(data);
+const email = template.footer.email?.trim();
+const phone = template.footer.phone?.trim();
+const address = template.footer.address?.trim();
+const socials = template.footer.socialLinks;
+const sent = Astro.url.searchParams.get("sent") === "1";
+const submitError = Astro.url.searchParams.get("error");
+---
+
+<Layout tenantName={tenantName} header={template.header} footer={template.footer} deferCartCount={deferCartCount} title="Contact">
+  <main class="lv-contact">
+    <header class="lv-contact__hero"><h1>CONTACT</h1><p>We’d love to hear from you. Reach out anytime.</p></header>
+    <section class="lv-contact__layout">
+      <div class="lv-contact__aside">
+        <article class="lv-contact-info"><h2>Contact Information</h2><div>
+          {address && <p><span><img src={locationIcon.src} alt="" /></span><span><small>Address</small><strong>{address}</strong></span></p>}
+          {email && <p><span><img src={mailIcon.src} alt="" /></span><span><small>Email</small><a href={`mailto:${email}`}>{email}</a></span></p>}
+          {phone && <p><span><img src={phoneIcon.src} alt="" /></span><span><small>Phone</small><a href={`tel:${phone}`}>{phone}</a></span></p>}
+          {socials.length > 0 && <p><span><img src={socialsIcon.src} alt="" /></span><span><small>Socials</small><span class="lv-contact-socials">{socials.map((social, index) => <><a href={social.href}>{social.label}</a>{index < socials.length - 1 && " · "}</>)}</span></span></p>}
+          {!address && !email && !phone && !socials.length && <p class="lv-contact-info__empty">Contact details will appear here when the shop adds them.</p>}
+        </div></article>
+        <div class="lv-contact-map"><img src={contactMap.src} alt="Map preview for the shop location" /></div>
+      </div>
+
+      <form class="lv-contact-form" action="/actions/inquiries" method="post" data-inquiry-form>
+        <input type="hidden" name="type" value="contact" />
+        <label class="lv-inquiry-honeypot" aria-hidden="true"><span>Website</span><input name="website" tabindex="-1" autocomplete="off" /></label>
+        <label class="is-wide"><span>Full Name*</span><input name="fullName" required autocomplete="name" placeholder="John Doe" /></label>
+        <label><span>Email*</span><input name="email" type="email" required autocomplete="email" placeholder="name@example.com" /></label>
+        <label><span>WhatsApp (optional)</span><input name="whatsapp" type="tel" autocomplete="tel" inputmode="tel" placeholder="0912345678" /></label>
+        <label class="is-wide"><span>Message*</span><textarea name="message" required placeholder="I’d like to know more about..."></textarea></label>
+        <button type="submit"><span>Send Message</span></button>
+        <p class:list={["lv-inquiry-status", sent && "is-success", submitError && "is-error"]} role="status" aria-live="polite" data-inquiry-status>{sent ? "Message received. The shop can now follow up with you." : submitError}</p>
+      </form>
+    </section>
+  </main>
+</Layout>
+
+<script is:inline>
+  (() => {
+    const form = document.querySelector("[data-inquiry-form]"); if (!(form instanceof HTMLFormElement)) return;
+    const status = form.querySelector("[data-inquiry-status]"); const button = form.querySelector("button[type=submit]");
+    form.addEventListener("submit", async (event) => { if (!form.reportValidity()) return; event.preventDefault(); if (button instanceof HTMLButtonElement) { button.disabled = true; button.setAttribute("aria-busy", "true"); } if (status) { status.textContent = "Sending your message…"; status.className = "lv-inquiry-status is-pending"; } try { const response = await fetch(form.action, { method: "POST", body: new FormData(form), headers: { Accept: "application/json" } }); const data = await response.json().catch(() => ({})); if (!response.ok) throw new Error(typeof data.error === "string" ? data.error : "Could not send your message."); form.reset(); if (status) { status.textContent = "Message received. The shop can now follow up with you."; status.className = "lv-inquiry-status is-success"; } } catch (error) { if (status) { status.textContent = error instanceof Error ? error.message : "Could not send your message."; status.className = "lv-inquiry-status is-error"; } } finally { if (button instanceof HTMLButtonElement) { button.disabled = false; button.removeAttribute("aria-busy"); } } });
+  })();
+</script>
+<style is:global lang="scss">@use "./styles/contact.scss";</style>

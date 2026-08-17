@@ -8,6 +8,7 @@ export type {
 } from "@/lib/platform-api/storefront/templates";
 export {
   getStorefrontDraft,
+  createStorefrontPreviewSession,
   getStorefrontTemplates,
   publishStorefrontDraft,
   selectStorefrontTemplate,

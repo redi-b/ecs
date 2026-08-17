@@ -1,6 +1,10 @@
 import type { Hono } from "hono";
 import type { PlatformAppOptions, PlatformAppVariables } from "../../app.js";
 import {
+  createStorefrontPreviewToken,
+  verifyStorefrontPreviewToken,
+} from "../../modules/storefront/preview-token.js";
+import {
   getJsonBody,
   getRequestHost,
   getRequiredBodyString,
@@ -73,6 +77,51 @@ export function registerPlatformStorefrontRoutes(
     });
   });
 
+  app.get("/platform/storefront/preview-config", async (context) => {
+    const secret = options.storefrontPreviewSecret?.trim();
+    if (!secret || secret.length < 32 || !options.getStorefrontDraft) {
+      return context.json({ error: "storefront_preview_unavailable" }, 503);
+    }
+    const token = context.req.query("token")?.trim() ?? "";
+    const capability = verifyStorefrontPreviewToken({ secret, token });
+    if (!capability) {
+      return context.json({ error: "storefront_preview_invalid" }, 401);
+    }
+    const host = getRequestHost(context.req.header("x-forwarded-host") ?? context.req.header("host"));
+    const tenant = await options.resolveTenantForHost(host);
+    if (!tenant.ok || tenant.context.tenantId !== capability.tenantId) {
+      return context.json({ error: "storefront_preview_forbidden" }, 403);
+    }
+    if (!tenant.context.medusaRegionId) {
+      return context.json({ error: "commerce_region_unavailable" }, 503);
+    }
+    const result = await options.getStorefrontDraft({ tenantId: capability.tenantId });
+    if (!result.ok) {
+      return context.json({ error: result.error }, 404);
+    }
+    context.header("cache-control", "private, no-store");
+    context.header("referrer-policy", "no-referrer");
+    return context.json({
+      tenant: {
+        id: tenant.context.tenantId,
+        name: tenant.context.tenantName,
+        handle: tenant.context.tenantHandle,
+        status: tenant.context.status,
+        domain: { id: tenant.context.domainId, hostname: tenant.context.hostname },
+      },
+      commerce: { regionId: tenant.context.medusaRegionId },
+      storefront: {
+        publishedRevisionId: `preview:${capability.nonce}`,
+        templateId: result.draft.templateId,
+        templateVersion: result.draft.templateVersion,
+        templateKey: result.draft.templateKey,
+        data: result.draft.data,
+        themeTokens: result.draft.themeTokens,
+        publishedAt: null,
+      },
+    });
+  });
+
   app.post("/platform/tenants/:tenantId/storefront/template/select", async (context) => {
     if (!options.selectStorefrontTemplate) {
       return context.json({ error: "storefront_templates_unavailable" }, 503);
@@ -104,6 +153,10 @@ export function registerPlatformStorefrontRoutes(
 
     const templateKey =
       typeof body === "object" && body !== null && "templateKey" in body ? body.templateKey : null;
+    const mode =
+      typeof body === "object" && body !== null && "mode" in body && body.mode === "clean"
+        ? "clean"
+        : "resume";
 
     if (typeof templateKey !== "string" || !templateKey.trim()) {
       return context.json({ error: "missing_template_key" }, 400);
@@ -112,6 +165,7 @@ export function registerPlatformStorefrontRoutes(
     const result = await options.selectStorefrontTemplate({
       tenantId,
       templateKey: templateKey.trim(),
+      mode,
       userId: session.user.id,
     });
 
@@ -157,6 +211,23 @@ export function registerPlatformStorefrontRoutes(
     return context.json({
       draft: result.draft,
     });
+  });
+
+  app.post("/platform/tenants/:tenantId/storefront/preview-session", async (context) => {
+    const secret = options.storefrontPreviewSecret?.trim();
+    if (!secret || secret.length < 32 || !options.getStorefrontDraft) {
+      return context.json({ error: "storefront_preview_unavailable" }, 503);
+    }
+    const session = await options.getSession?.(context.req.raw.headers);
+    if (!session) return context.json({ error: "auth_required" }, 401);
+    const tenantId = context.req.param("tenantId");
+    const authorization = await options.authorizeDashboardForTenant?.({ tenantId, userId: session.user.id });
+    if (!authorization?.ok) return context.json({ error: "dashboard_forbidden" }, 403);
+    const draft = await options.getStorefrontDraft({ tenantId });
+    if (!draft.ok) return context.json({ error: draft.error }, 404);
+    const issued = createStorefrontPreviewToken({ secret, tenantId, userId: session.user.id });
+    context.header("cache-control", "private, no-store");
+    return context.json(issued);
   });
 
   app.post("/platform/tenants/:tenantId/storefront/draft", async (context) => {

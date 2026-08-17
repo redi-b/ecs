@@ -20,6 +20,7 @@ const Cart = ctx.ok ? resolveRendererSlot(ctx.config.storefront.templateKey, "Ca
     <StoreUnavailable message={ctx.ok ? "Template unavailable" : ctx.message} />
   ) : (
     <Cart
+      data={ctx.config.storefront.data}
       tenantName={ctx.config.tenant.name}
       cartCount={ctx.cartCount}
       primaryColor={getPrimaryColor(ctx.config.storefront.themeTokens)}

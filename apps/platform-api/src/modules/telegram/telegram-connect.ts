@@ -17,6 +17,7 @@ export const DEFAULT_TELEGRAM_EVENTS = [
   "payment.paid",
   "payment.failed",
   "inventory.low",
+  "storefront.inquiry_created",
   "billing.past_due",
   "billing.invoice_ready",
   "notification.test",

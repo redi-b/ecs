@@ -25,6 +25,7 @@ interface Props {
   requestHost?: string | null;
   cartCount?: number;
   deferCartCount?: boolean;
+  editorMode?: boolean;
 }
 
 const {
@@ -37,6 +38,7 @@ const {
   requestHost = null,
   cartCount = 0,
   deferCartCount = false,
+  editorMode = false,
 } = Astro.props;
 
 const templateData = parseClassicData(data, tenantName);
@@ -121,18 +123,20 @@ function productCard(product: StoreProduct) {
   footerBlurb={templateData.footer.blurb}
   footerLinks={templateData.footer.socialLinks}
   currentPath="/"
+  editorMode={editorMode}
+  announcementEnabled={templateData.announcement?.enabled !== false}
 >
   {
-    showHero ? (
-      <section class="at-hero at-reveal">
+    editorMode || showHero ? (
+      <section class="at-hero at-reveal" data-editor-section="home.hero" data-editor-visible-path="home.hero.enabled" hidden={!showHero}>
         <div class="at-hero-copy">
-          <h1 class="at-h1">{templateData.home.hero.title}</h1>
+          <h1 class="at-h1" data-editor-path="home.hero.title" contenteditable={editorMode ? "plaintext-only" : undefined}>{templateData.home.hero.title}</h1>
           {templateData.home.hero.subtitle ? (
-            <p class="at-lede">{templateData.home.hero.subtitle}</p>
+            <p class="at-lede" data-editor-path="home.hero.subtitle" contenteditable={editorMode ? "plaintext-only" : undefined}>{templateData.home.hero.subtitle}</p>
           ) : null}
           <div class="at-actions">
             <a class="at-btn" href={templateData.home.hero.primaryCtaHref}>
-              {templateData.home.hero.primaryCtaLabel}
+              <span data-editor-path="home.hero.primaryCtaLabel" contenteditable={editorMode ? "plaintext-only" : undefined}>{templateData.home.hero.primaryCtaLabel}</span>
             </a>
             {templateData.home.hero.secondaryCtaLabel &&
             templateData.home.hero.secondaryCtaHref ? (
@@ -149,7 +153,7 @@ function productCard(product: StoreProduct) {
         {heroImageUrl ? (
           <figure class="at-hero-media at-bezel">
             <div class="at-bezel-inner">
-              <img src={heroImageUrl} alt="" loading="eager" />
+              <img src={heroImageUrl} alt="" loading="eager" data-editor-image-path="home.hero.imageAssetId" />
             </div>
           </figure>
         ) : (
@@ -164,10 +168,10 @@ function productCard(product: StoreProduct) {
   }
 
   {
-    showCollectionsStrip ? (
-      <section class="at-block at-reveal" aria-labelledby="collections-title">
+    editorMode || showCollectionsStrip ? (
+      <section class="at-block at-reveal" aria-labelledby="collections-title" data-editor-section="home.collectionsStrip" data-editor-visible-path="home.collectionsStrip.enabled" hidden={!showCollectionsStrip}>
         <div class="at-section-head">
-          <h2 class="at-h2" id="collections-title">
+          <h2 class="at-h2" id="collections-title" data-editor-path="home.collectionsStrip.title" contenteditable={editorMode ? "plaintext-only" : undefined}>
             {templateData.home.collectionsStrip?.title ?? "Collections"}
           </h2>
           <a class="at-text-link" href="/products">
@@ -186,10 +190,10 @@ function productCard(product: StoreProduct) {
   }
 
   {
-    showFeaturedCollection ? (
-      <section class="at-block at-reveal" aria-labelledby="featured-collection-title">
+    editorMode || showFeaturedCollection ? (
+      <section class="at-block at-reveal" aria-labelledby="featured-collection-title" data-editor-section="home.featuredCollection" data-editor-visible-path="home.featuredCollection.enabled" hidden={!showFeaturedCollection}>
         <div class="at-section-head">
-          <h2 class="at-h2" id="featured-collection-title">
+          <h2 class="at-h2" id="featured-collection-title" data-editor-path="home.featuredCollection.title" contenteditable={editorMode ? "plaintext-only" : undefined}>
             {featuredCollectionTitle}
           </h2>
           {featuredCollectionConfig?.collectionId ? (
@@ -201,7 +205,7 @@ function productCard(product: StoreProduct) {
             </a>
           ) : null}
         </div>
-        <ul class="at-grid">
+        {collectionProducts.length ? <ul class="at-grid">
           {collectionProducts.map((product) => {
             const { inStock } = productCard(product);
             return (
@@ -231,16 +235,16 @@ function productCard(product: StoreProduct) {
               </li>
             );
           })}
-        </ul>
+        </ul> : <div class="at-notice"><p><strong>No collection products yet</strong></p><p class="at-muted">Choose a populated collection in settings.</p></div>}
       </section>
     ) : null
   }
 
   {
-    showFeaturedProducts ? (
-      <section class="at-block at-reveal" id="products" aria-labelledby="featured-title">
+    editorMode || showFeaturedProducts ? (
+      <section class="at-block at-reveal" id="products" aria-labelledby="featured-title" data-editor-section="home.featuredProducts" data-editor-visible-path="home.featuredProducts.enabled" hidden={!showFeaturedProducts}>
         <div class="at-section-head">
-          <h2 class="at-h2" id="featured-title">{templateData.home.featuredProducts.title}</h2>
+          <h2 class="at-h2" id="featured-title" data-editor-path="home.featuredProducts.title" contenteditable={editorMode ? "plaintext-only" : undefined}>{templateData.home.featuredProducts.title}</h2>
           {!storeError && products.length > 0 ? (
             <p class="at-muted" style="margin:0">
               {products.length} available
@@ -307,10 +311,10 @@ function productCard(product: StoreProduct) {
   }
 
   {
-    showTestimonials ? (
-      <section class="at-block at-reveal" aria-labelledby="testimonials-title">
+    editorMode || showTestimonials ? (
+      <section class="at-block at-reveal" aria-labelledby="testimonials-title" data-editor-section="home.testimonials" data-editor-visible-path="home.testimonials.enabled" hidden={!showTestimonials}>
         <div class="at-section-head">
-          <h2 class="at-h2" id="testimonials-title">
+          <h2 class="at-h2" id="testimonials-title" data-editor-path="home.testimonials.title" contenteditable={editorMode ? "plaintext-only" : undefined}>
             {templateData.home.testimonials?.title ?? "What customers say"}
           </h2>
         </div>
@@ -329,8 +333,8 @@ function productCard(product: StoreProduct) {
   }
 
   {
-    showTrust ? (
-      <section class="at-trust at-reveal" aria-label="Why shop here">
+    editorMode || showTrust ? (
+      <section class="at-trust at-reveal" aria-label="Why shop here" data-editor-section="home.trust" data-editor-visible-path="home.trust.enabled" hidden={!showTrust}>
         {trustItems.map((item) => (
           <div class="at-trust-item">
             <strong>{item.title}</strong>
