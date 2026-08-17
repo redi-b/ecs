@@ -1,55 +1,55 @@
 .lv-request { width: calc(100% - 120px); max-width: 1392px; min-height: 850px; margin: auto; padding: 150px 0 100px; display: grid; grid-template-columns: .9fr 1.1fr; gap: 70px; align-items: center; }
-.lv-request__intro > p, .lv-account section > p, .lv-wishlist header > p { display: flex; align-items: center; gap: 7px; color: #4f7653; font-size: 11px; font-weight: 600; letter-spacing: .17em; }
+.lv-request__intro > p, .lv-account section > p, .lv-wishlist header > p { display: flex; align-items: center; gap: 7px; color: color-mix(in srgb,var(--lv-ink) 64%,var(--lv-bg)); font-size: 11px; font-weight: 600; letter-spacing: .17em; }
 .lv-request__intro > p img { width: 14px; }
 .lv-request__intro h1, .lv-account h1, .lv-wishlist h1 { margin: 26px 0; font: 400 clamp(64px,7vw,104px)/.84 "GC Molecule Demo",Arial,sans-serif; letter-spacing: -.055em; }
-.lv-request__intro > span { max-width: 520px; display: block; color: #667a68; font-size: 17px; line-height: 1.5; }
-.lv-request__panel { padding: 28px; border: 1px solid #d7e7d9; border-radius: 24px; background: white; box-shadow: 0 30px 80px rgba(70,119,75,.1); }
+.lv-request__intro > span { max-width: 520px; display: block; color: color-mix(in srgb,var(--lv-ink) 62%,var(--lv-bg)); font-size: 17px; line-height: 1.5; }
+.lv-request__panel { padding: 28px; border: 1px solid var(--lv-line); border-radius: 24px; background: white; box-shadow: 0 30px 80px rgba(70,119,75,.1); }
 .lv-request__panel > header { margin-bottom: 24px; display: flex; gap: 14px; align-items: center; }
-.lv-request__panel > header > span { width: 50px; height: 50px; display: grid; place-items: center; border-radius: 50%; background: #e0f8e2; }
+.lv-request__panel > header > span { width: 50px; height: 50px; display: grid; place-items: center; border-radius: 50%; background: var(--lv-accent); }
 .lv-request__panel > header img { width: 20px; }
 .lv-request__panel h2 { margin: 0 0 4px; font: 400 28px/1 "GC Molecule Demo",Arial,sans-serif; }
-.lv-request__panel header p { margin: 0; color: #7a8d7c; font-size: 13px; }
+.lv-request__panel header p { margin: 0; color: color-mix(in srgb,var(--lv-ink) 54%,var(--lv-bg)); font-size: 13px; }
 .lv-request form { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-.lv-request label { display: flex; min-width: 0; flex-direction: column; gap: 7px; color: #667a68; font-size: 13px; }
+.lv-request label { display: flex; min-width: 0; flex-direction: column; gap: 7px; color: color-mix(in srgb,var(--lv-ink) 62%,var(--lv-bg)); font-size: 13px; }
 .lv-request label.is-wide, .lv-request form > button, .lv-request__unavailable { grid-column: 1 / -1; }
-.lv-request input, .lv-request textarea { width: 100%; min-height: 52px; padding: 14px; border: 1px solid #dbe5dc; border-radius: 13px; outline: 0; font: inherit; font-size: 16px; }
+.lv-request input, .lv-request textarea { width: 100%; min-height: 52px; padding: 14px; border: 1px solid var(--lv-line); border-radius: 13px; outline: 0; font: inherit; font-size: 16px; }
 .lv-request textarea { min-height: 120px; resize: vertical; }
-.lv-request input:focus, .lv-request textarea:focus { border-color: #3ee272; box-shadow: 0 0 0 3px rgba(62,226,114,.12); }
-.lv-request form > button { min-height: 54px; border: 0; border-radius: 999px; background: #3ee272; color: var(--lv-ink); font-weight: 600; cursor: pointer; }
+.lv-request input:focus, .lv-request textarea:focus { border-color: var(--lv-green); box-shadow: 0 0 0 3px color-mix(in srgb, var(--lv-green) 14%, transparent); }
+.lv-request form > button { min-height: 54px; border: 0; border-radius: 999px; background: var(--lv-green); color: var(--lv-on-primary); font-weight: 600; cursor: pointer; }
 .lv-request__unavailable { padding: 14px; border-radius: 12px; background: #fff7eb; color: #7b541d; }
 .lv-wishlist { min-height: 75vh; padding: 150px 60px 100px; }
 .lv-wishlist > header { max-width: 1392px; margin: 0 auto 48px; text-align: center; }
-.lv-wishlist > header > span { width: 62px; height: 62px; margin: auto; display: grid; place-items: center; border: 1px solid #d3ffd7; border-radius: 50%; background: white; }
+.lv-wishlist > header > span { width: 62px; height: 62px; margin: auto; display: grid; place-items: center; border: 1px solid var(--lv-accent); border-radius: 50%; background: var(--lv-bg); }
 .lv-wishlist > header img { width: 24px; }
 .lv-wishlist h1 { margin: 16px 0 8px; }
 .lv-wishlist header p { justify-content: center; }
-.lv-wishlist header small { color: #7a8d7c; }
+.lv-wishlist header small { color: color-mix(in srgb,var(--lv-ink) 54%,var(--lv-bg)); }
 .lv-wishlist > section { max-width: 1392px; margin: auto; }
-.lv-wishlist__loading, .lv-wishlist__empty { padding: 80px 24px; border-radius: 22px; background: #edf8ee; color: #667a68; text-align: center; }
+.lv-wishlist__loading, .lv-wishlist__empty { padding: 80px 24px; border-radius: 22px; background: var(--lv-soft); color: color-mix(in srgb,var(--lv-ink) 62%,var(--lv-bg)); text-align: center; }
 .lv-wishlist__empty h2 { margin: 0 0 8px; font: 400 38px/1 "GC Molecule Demo",Arial,sans-serif; color: var(--lv-ink); }
 .lv-wishlist__empty p { margin: 0 0 22px; }
-.lv-wishlist__empty a { min-height: 50px; padding: 0 22px; display: inline-flex; align-items: center; border-radius: 999px; background: #3ee272; color: var(--lv-ink); text-decoration: none; }
+.lv-wishlist__empty a { min-height: 50px; padding: 0 22px; display: inline-flex; align-items: center; border-radius: 999px; background: var(--lv-green); color: var(--lv-on-primary); text-decoration: none; }
 .lv-wishlist__grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 12px; }
-.lv-wishlist__grid article { min-height: 320px; padding: 14px; display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-end; border: 1px solid #dbe5dc; border-radius: 18px; background: linear-gradient(145deg,#edf8ee,#fff); }
-.lv-wishlist__media { width: 100%; min-height: 190px; margin-bottom: 18px; display: grid; place-items: center; overflow: hidden; border-radius: 12px; background: #f7fff7; }
+.lv-wishlist__grid article { min-height: 320px; padding: 14px; display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-end; border: 1px solid var(--lv-line); border-radius: 18px; background: linear-gradient(145deg,var(--lv-soft),#fff); }
+.lv-wishlist__media { width: 100%; min-height: 190px; margin-bottom: 18px; display: grid; place-items: center; overflow: hidden; border-radius: 12px; background: var(--lv-bg); }
 .lv-wishlist__media img { width: 100%; height: 190px; padding: 20px; object-fit: contain; }
-.lv-wishlist__grid span { color: #7a8d7c; font-size: 12px; text-transform: uppercase; }
+.lv-wishlist__grid span { color: color-mix(in srgb,var(--lv-ink) 54%,var(--lv-bg)); font-size: 12px; text-transform: uppercase; }
 .lv-wishlist__grid a { margin: 10px 0 22px; color: var(--lv-ink); font: 400 28px/1 "GC Molecule Demo",Arial,sans-serif; text-transform: capitalize; text-decoration: none; }
 .lv-wishlist__grid strong { margin-top: -14px; margin-bottom: 18px; }
-.lv-wishlist__grid button { min-height: 40px; padding: 0 14px; border: 1px solid #cbd7cc; border-radius: 999px; background: white; color: #667a68; cursor: pointer; }
+.lv-wishlist__grid button { min-height: 40px; padding: 0 14px; border: 1px solid var(--lv-line); border-radius: 999px; background: white; color: color-mix(in srgb,var(--lv-ink) 62%,var(--lv-bg)); cursor: pointer; }
 .lv-account { width: calc(100% - 120px); max-width: 1392px; min-height: 820px; margin: auto; padding: 150px 0 100px; display: grid; grid-template-columns: 1.25fr .75fr; gap: 26px; }
 .lv-account > section, .lv-account > aside { padding: 52px; border-radius: 26px; }
-.lv-account > section { border: 1px solid #d7e7d9; background: white; }
-.lv-account section > span { width: 68px; height: 68px; display: grid; place-items: center; border-radius: 50%; background: #e0f8e2; }
+.lv-account > section { border: 1px solid var(--lv-line); background: white; }
+.lv-account section > span { width: 68px; height: 68px; display: grid; place-items: center; border-radius: 50%; background: var(--lv-accent); }
 .lv-account section > span img { width: 25px; }
-.lv-account section > div { max-width: 620px; color: #667a68; line-height: 1.5; }
+.lv-account section > div { max-width: 620px; color: color-mix(in srgb,var(--lv-ink) 62%,var(--lv-bg)); line-height: 1.5; }
 .lv-account nav { margin-top: 28px; display: flex; flex-wrap: wrap; gap: 9px; }
-.lv-account nav a { min-height: 48px; padding: 0 19px; display: inline-flex; align-items: center; border: 1px solid #cbd7cc; border-radius: 999px; color: var(--lv-ink); text-decoration: none; }
-.lv-account nav a:first-child { border-color: #3ee272; background: #3ee272; }
-.lv-account > aside { display: flex; flex-direction: column; justify-content: flex-end; background: #122116; color: white; }
-.lv-account aside > p { margin: 0 auto auto 0; color: #a8c4ab; font-size: 11px; letter-spacing: .17em; }
+.lv-account nav a { min-height: 48px; padding: 0 19px; display: inline-flex; align-items: center; border: 1px solid var(--lv-line); border-radius: 999px; color: var(--lv-ink); text-decoration: none; }
+.lv-account nav a:first-child { border-color: var(--lv-green); background: var(--lv-green); color: var(--lv-on-primary); }
+.lv-account > aside { display: flex; flex-direction: column; justify-content: flex-end; background: var(--lv-dark); color: white; }
+.lv-account aside > p { margin: 0 auto auto 0; color: color-mix(in srgb,var(--lv-ink) 38%,var(--lv-bg)); font-size: 11px; letter-spacing: .17em; }
 .lv-account ul { margin: 0; padding: 0; list-style: none; }
 .lv-account li { padding: 18px 0; border-bottom: 1px solid rgba(163,255,175,.17); color: #d6e5d8; }
-.lv-account li::before { content: "✓"; margin-right: 10px; color: #71ee87; }
+.lv-account li::before { content: "✓"; margin-right: 10px; color: var(--lv-green); }
 @media(max-width:900px){.lv-request,.lv-account{width:calc(100% - 40px);gap:30px}.lv-wishlist{padding-inline:20px}.lv-wishlist__grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:760px){.lv-request,.lv-account{width:calc(100% - 24px);padding:104px 0 60px;grid-template-columns:1fr}.lv-request__intro h1,.lv-account h1{font-size:58px}.lv-request__panel{padding:22px 16px}.lv-request form{grid-template-columns:1fr}.lv-request label.is-wide,.lv-request form>button,.lv-request__unavailable{grid-column:auto}.lv-wishlist{padding:104px 12px 60px}.lv-wishlist h1{font-size:64px}.lv-wishlist__grid{grid-template-columns:1fr}.lv-account>section,.lv-account>aside{padding:32px 22px}.lv-account>aside{min-height:430px}}

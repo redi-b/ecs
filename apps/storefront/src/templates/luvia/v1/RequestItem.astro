@@ -3,13 +3,13 @@ import Layout from "./Layout.astro";
 import searchIcon from "./icons/search-icon.svg";
 import sparkleIcon from "./icons/sparkle-icon.svg";
 import { parseLuviaData } from "./lib";
-interface Props { data: unknown; tenantName: string; deferCartCount?: boolean; }
-const { data, tenantName, deferCartCount = false } = Astro.props;
+interface Props { data: unknown; themeTokens?: unknown; tenantName: string; deferCartCount?: boolean; }
+const { data, themeTokens, tenantName, deferCartCount = false } = Astro.props;
 const template = parseLuviaData(data);
 const sent = Astro.url.searchParams.get("sent") === "1";
 const submitError = Astro.url.searchParams.get("error");
 ---
-<Layout tenantName={tenantName} header={template.header} footer={template.footer} deferCartCount={deferCartCount} title="Request an Item">
+<Layout tenantName={tenantName} header={template.header} footer={template.footer} themeTokens={themeTokens} deferCartCount={deferCartCount} title="Request an Item">
   <main class="lv-request">
     <section class="lv-request__intro"><p><img src={sparkleIcon.src} alt="" />PERSONAL SOURCING</p><h1>Can’t find it?<br />Let us look.</h1><span>Tell us what you are searching for. The shop can review your request and contact you about availability, alternatives, and pricing.</span></section>
     <section class="lv-request__panel"><header><span><img src={searchIcon.src} alt="" /></span><div><h2>Request an Item</h2><p>Provide as much detail as you have.</p></div></header>

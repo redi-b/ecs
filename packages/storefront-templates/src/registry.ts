@@ -42,6 +42,9 @@ export const storefrontTemplates = [
   },
 ] as const;
 
+/** Canonical compile-time key set consumed by storefront and editor registries. */
+export type StorefrontTemplateKey = (typeof storefrontTemplates)[number]["templateKey"];
+
 export function getStorefrontTemplateDefinition(templateKey: string) {
   return storefrontTemplates.find((template) => template.templateKey === templateKey);
 }

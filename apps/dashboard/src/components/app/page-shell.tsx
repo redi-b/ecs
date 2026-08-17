@@ -14,6 +14,8 @@ type PageShellProps = {
   className?: string;
   /** Locks the page to the dashboard viewport and delegates scrolling to its children. */
   viewportWorkspace?: boolean;
+  /** Immersive workspaces can move page identity into their own chrome. */
+  hideHeader?: boolean;
 };
 
 /**
@@ -29,6 +31,7 @@ export function PageShell({
   meta,
   className,
   viewportWorkspace = false,
+  hideHeader = false,
 }: PageShellProps) {
   return (
     <main
@@ -40,7 +43,7 @@ export function PageShell({
         className,
       )}
     >
-      <header className="flex flex-col gap-3 border-b border-border/80 pb-5 sm:pb-6 md:flex-row md:items-start md:justify-between md:gap-6">
+      {!hideHeader ? <header className="flex flex-col gap-3 border-b border-border/80 pb-5 sm:pb-6 md:flex-row md:items-start md:justify-between md:gap-6">
         <div className="flex min-w-0 max-w-3xl flex-col gap-1.5">
           {eyebrow ? <p className="type-eyebrow">{eyebrow}</p> : null}
           <h1 className="type-page-title text-balance">{title}</h1>
@@ -52,7 +55,7 @@ export function PageShell({
             {actions}
           </div>
         ) : null}
-      </header>
+      </header> : null}
       <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-4 sm:gap-5">{children}</div>
     </main>
   );

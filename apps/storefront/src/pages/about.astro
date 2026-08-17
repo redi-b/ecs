@@ -6,4 +6,4 @@ const ctx = await loadPageContext(Astro.request, { skipCart: true });
 if (!ctx.ok) Astro.response.status = ctx.status;
 const About = ctx.ok ? getStorefrontRenderer(ctx.config.storefront.templateKey)?.About : null;
 ---
-{!ctx.ok || !About ? <StoreUnavailable message={ctx.ok ? "This template does not include an about page yet." : ctx.message} /> : <About data={ctx.config.storefront.data} tenantName={ctx.config.tenant.name} deferCartCount={true} />}
+{!ctx.ok || !About ? <StoreUnavailable message={ctx.ok ? "This template does not include an about page yet." : ctx.message} /> : <About data={ctx.config.storefront.data} themeTokens={ctx.config.storefront.themeTokens} tenantName={ctx.config.tenant.name} deferCartCount={true} />}

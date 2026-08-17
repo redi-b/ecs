@@ -40,6 +40,13 @@ export const POST: APIRoute = async ({ request }) => {
     return redirect("/checkout?error=" + encodeURIComponent("Please fill all required fields."));
   }
 
+  if (!email) {
+    return redirect(
+      "/checkout?error=" +
+        encodeURIComponent("Enter a valid email address to pay securely with Chapa."),
+    );
+  }
+
   if (delivery && !delivery.deliveryEnabled && !delivery.pickupEnabled) {
     return redirect(
       "/checkout?error=" + encodeURIComponent("This shop is not accepting delivery or pickup right now."),

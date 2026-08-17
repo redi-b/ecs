@@ -30,6 +30,7 @@ export const luviaV1DataSchema = z.object({
       imageAssetId: z.string().min(1).optional(),
       portraitAssetId: z.string().min(1).optional(),
       featuredProductId: z.string().min(1).optional(),
+      featuredProductIds: z.array(z.string().min(1)).max(6).default([]),
       primaryCtaLabel: z.string().min(1),
       primaryCtaHref: z.string().min(1),
       trustLabels: z.array(z.string().min(1)).length(3),
@@ -83,6 +84,9 @@ export const luviaV1DataSchema = z.object({
   }),
   footer: z.object({
     blurb: z.string().optional(),
+    credit: z.object({
+      enabled: z.boolean().default(true),
+    }).default({ enabled: true }),
     phone: z.string().optional(),
     email: z.string().optional(),
     address: z.string().optional(),

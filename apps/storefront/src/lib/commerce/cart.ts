@@ -30,7 +30,7 @@ export async function getStoreCart(
     ...options,
     path: `/store/carts/${encodeURIComponent(options.cartId)}`,
     searchParams: {
-      fields: "*items,*items.variant,*items.product,+items.total,+items.unit_price,+total,+item_total,+shipping_total,+currency_code",
+      fields: "*items,*items.variant,*items.product,*promotions,+items.total,+items.subtotal,+items.original_total,+items.discount_total,+total,+subtotal,+tax_total,+discount_total,+original_total,+item_total,+item_subtotal,+item_discount_total,+shipping_total,+shipping_subtotal,+shipping_discount_total,+currency_code",
     },
   });
   const data = await response.json().catch(() => undefined);
@@ -42,6 +42,34 @@ export async function getStoreCart(
   return {
     cart: normalizeCart(isRecord(data) ? data.cart : undefined),
   };
+}
+
+export async function addStoreCartPromotion(
+  options: HostedStoreRequest & { cartId: string; code: string },
+): Promise<StoreCartResponse | StorefrontError> {
+  const response = await storeFetch({
+    ...options,
+    path: `/store/carts/${encodeURIComponent(options.cartId)}/promotions`,
+    method: "POST",
+    body: { promo_codes: [options.code] },
+  });
+  const data = await response.json().catch(() => undefined);
+  if (!response.ok) return asError(response.status, data, response.statusText);
+  return { cart: normalizeCart(isRecord(data) ? data.cart : undefined) };
+}
+
+export async function removeStoreCartPromotion(
+  options: HostedStoreRequest & { cartId: string; code: string },
+): Promise<StoreCartResponse | StorefrontError> {
+  const response = await storeFetch({
+    ...options,
+    path: `/store/carts/${encodeURIComponent(options.cartId)}/promotions`,
+    method: "DELETE",
+    body: { promo_codes: [options.code] },
+  });
+  const data = await response.json().catch(() => undefined);
+  if (!response.ok) return asError(response.status, data, response.statusText);
+  return { cart: normalizeCart(isRecord(data) ? data.cart : undefined) };
 }
 
 export async function updateStoreCart(

@@ -27,6 +27,11 @@ export type GeneratedThemeColors = {
 export type ThemePaletteSeed = {
   id: string;
   surfaceMode: ThemeSurfaceMode;
+  /**
+   * `tonal` keeps the designed palette on one brand hue (Luvia). `contrasting`
+   * preserves an intentional secondary hue relationship (Classic).
+   */
+  strategy?: "tonal" | "contrasting";
   colors: {
     primary: string;
     background: string;
@@ -213,7 +218,7 @@ function normHue(h: number) {
   return ((h % 360) + 360) % 360;
 }
 
-export type PaletteShiftRole = "primary" | "accent" | "surface" | "text";
+export type PaletteShiftRole = "primary" | "accent" | "tint" | "surface" | "text";
 
 /**
  * Classify seed tokens so neutrals (body text, page bg) do not pick up brand chroma.
@@ -267,6 +272,19 @@ export function shiftColorRelativeToPrimary(
     const l = clamp(sc.l + (np.l - sp.l) * 0.12, 3, 97);
     const s = clamp(sc.s * 0.5 + Math.min(np.s, 50) * 0.06, 0, 16);
     return hslToHex(np.h, s, l);
+  }
+
+  // Tonal accents are light/dark variations of the brand itself. Keeping the
+  // seed hue offset (usually zero) avoids inventing a second, unrelated hue.
+  if (resolvedRole === "tint") {
+    let dh = sc.h - sp.h;
+    while (dh > 180) dh -= 360;
+    while (dh < -180) dh += 360;
+    return hslToHex(
+      normHue(np.h + clamp(dh, -18, 18)),
+      clamp(np.s + (sc.s - sp.s) * 0.55, 18, 88),
+      clamp(np.l + (sc.l - sp.l), 72, 96),
+    );
   }
 
   // Accent: keep seed sat/light relationship, but cap hue so brand blue never
@@ -378,6 +396,25 @@ export function generateThemeFromSeed(
 ): GeneratedThemeColors {
   const mode = seed.surfaceMode;
   const seedPrimary = normalizeHex(seed.colors.primary, CLASSIC_DARK_SEED.colors.primary);
+  const requestedPrimary = normalizeHex(primaryInput, seedPrimary);
+
+  // The authored brand color must reproduce the authored design exactly. This
+  // invariant makes a template seed a true visual baseline rather than an
+  // input that is immediately reinterpreted by the generator.
+  if (requestedPrimary === seedPrimary) {
+    const colors = {
+      primary: seedPrimary,
+      background: normalizeHex(seed.colors.background),
+      foreground: normalizeHex(seed.colors.foreground),
+      muted: normalizeHex(seed.colors.muted),
+      accent: normalizeHex(seed.colors.accent),
+    };
+    return {
+      ...colors,
+      onPrimary: contrastingInk(colors.primary),
+      onAccent: contrastingInk(colors.accent),
+    };
+  }
   const primary = clampPrimaryForSurface(primaryInput, mode);
 
   const shifted = {
@@ -395,7 +432,12 @@ export function generateThemeFromSeed(
       "text",
     ),
     muted: shiftColorRelativeToPrimary(seed.colors.muted, seedPrimary, primary, "surface"),
-    accent: shiftColorRelativeToPrimary(seed.colors.accent, seedPrimary, primary, "accent"),
+    accent: shiftColorRelativeToPrimary(
+      seed.colors.accent,
+      seedPrimary,
+      primary,
+      seed.strategy === "tonal" ? "tint" : "accent",
+    ),
   };
 
   return ensurePaletteContrast(shifted);

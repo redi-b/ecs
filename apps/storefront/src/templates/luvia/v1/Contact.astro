@@ -7,8 +7,8 @@ import phoneIcon from "./icons/phone-icon.svg";
 import socialsIcon from "./icons/socials-web-icon.svg";
 import { parseLuviaData } from "./lib";
 
-interface Props { data: unknown; tenantName: string; deferCartCount?: boolean; }
-const { data, tenantName, deferCartCount = false } = Astro.props;
+interface Props { data: unknown; themeTokens?: unknown; tenantName: string; deferCartCount?: boolean; }
+const { data, themeTokens, tenantName, deferCartCount = false } = Astro.props;
 const template = parseLuviaData(data);
 const email = template.footer.email?.trim();
 const phone = template.footer.phone?.trim();
@@ -18,7 +18,7 @@ const sent = Astro.url.searchParams.get("sent") === "1";
 const submitError = Astro.url.searchParams.get("error");
 ---
 
-<Layout tenantName={tenantName} header={template.header} footer={template.footer} deferCartCount={deferCartCount} title="Contact">
+<Layout tenantName={tenantName} header={template.header} footer={template.footer} themeTokens={themeTokens} deferCartCount={deferCartCount} title="Contact">
   <main class="lv-contact">
     <header class="lv-contact__hero"><h1>CONTACT</h1><p>We’d love to hear from you. Reach out anytime.</p></header>
     <section class="lv-contact__layout">

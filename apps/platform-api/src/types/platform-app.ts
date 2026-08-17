@@ -279,7 +279,16 @@ export type PlatformAppOptions = {
         currencyCode: string;
         tenantId: string;
         userId: string;
-      }) => Promise<void>)
+      }) => Promise<
+        | { ok: true }
+        | {
+            ok: false;
+            error:
+              | "commerce_backend_unavailable"
+              | "delivery_shipping_option_unavailable"
+              | "pickup_option_sync_failed";
+          }
+      >)
     | undefined;
   /** Ensure free Store Pickup option exists for the tenant delivery zone. */
   ensurePickupOption?:

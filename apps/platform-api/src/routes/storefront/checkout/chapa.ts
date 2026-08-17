@@ -54,17 +54,18 @@ function getChapaCheckoutInput(body: Record<string, unknown>): ChapaCheckoutInpu
 
   const customer = getObjectValue(body.customer);
 
-  return {
+  const input: ChapaCheckoutInput = {
     cartId,
     returnUrl: getStringValue(body.returnUrl) ?? null,
-    customer: customer
-      ? {
-          email: getStringValue(customer.email) ?? null,
-          firstName: getStringValue(customer.firstName) ?? getStringValue(customer.name) ?? null,
-          lastName: getStringValue(customer.lastName) ?? null,
-        }
-      : undefined,
   };
+  if (customer) {
+    input.customer = {
+      email: getStringValue(customer.email) ?? null,
+      firstName: getStringValue(customer.firstName) ?? getStringValue(customer.name) ?? null,
+      lastName: getStringValue(customer.lastName) ?? null,
+    };
+  }
+  return input;
 }
 
 function getMedusaStoreJsonRequest(options: {
@@ -211,8 +212,17 @@ export async function initializeChapaCheckout(options: {
     getStringValue(cart?.currency_code) ?? getStringValue(cart?.currencyCode) ?? "ETB";
   const email =
     getStringValue(input.customer?.email) ??
-    getStringValue(cart?.email) ??
-    "customer@example.com";
+    getStringValue(cart?.email);
+
+  if (!email) {
+    return Response.json(
+      {
+        error: "chapa_customer_email_required",
+        message: "Enter a valid email address to pay securely with Chapa.",
+      },
+      { status: 422 },
+    );
+  }
 
   const txRef = `ecs_store_${input.cartId.replace(/[^a-zA-Z0-9]/g, "").slice(-12)}_${Date.now().toString(36)}`.slice(
     0,

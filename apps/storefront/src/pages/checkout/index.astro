@@ -61,6 +61,7 @@ const Checkout = ctx.ok
   ) : (
     <Checkout
       data={ctx.config.storefront.data}
+      themeTokens={ctx.config.storefront.themeTokens}
       tenantName={ctx.config.tenant.name}
       cartCount={ctx.cartCount}
       primaryColor={getPrimaryColor(ctx.config.storefront.themeTokens)}

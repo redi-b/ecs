@@ -4,14 +4,24 @@ import {
   getStorefrontEditorManifest,
   type StorefrontEditorField,
 } from "@ecs/storefront-templates";
-import { RiImageLine } from "@remixicon/react";
+import { RiArrowDownSLine, RiImageLine } from "@remixicon/react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -41,13 +51,30 @@ import {
 import { ThemeBrandSection, FontSelect, PremiumColorPicker } from "./editor-theme";
 import { updateStorefrontProp } from "./editor-utils";
 
-export function StorefrontSettingsPanel({ onSelectPath, selectedPath, templateKey }: { onSelectPath: (path: string) => void; selectedPath: string | null; templateKey: string }) {
+export function StorefrontSettingsPanel({ onSelectPath, selectedPath, templateKey }: { onSelectPath: (path: string | null) => void; selectedPath: string | null; templateKey: string }) {
   const { t } = useI18n();
   const data = useStorefrontEditor((api) => api.appState.data);
   const dispatch = useStorefrontEditor((api) => api.dispatch);
   const props = getStorefrontPageProps(data);
   const manifest = getStorefrontEditorManifest(templateKey);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [openSections, setOpenSections] = useState<Set<string>>(
+    () => new Set(["header", "hero"]),
+  );
+  const [sectionNavigatorOpen, setSectionNavigatorOpen] = useState(false);
+  const activeSection = manifest?.sections.find((section) =>
+    sectionContainsPath(section, selectedPath),
+  );
+
+  useEffect(() => {
+    if (!activeSection) return;
+    setOpenSections((current) => {
+      if (current.has(activeSection.id)) return current;
+      const next = new Set(current);
+      next.add(activeSection.id);
+      return next;
+    });
+  }, [activeSection]);
 
   useEffect(() => {
     if (!selectedPath) return;
@@ -55,27 +82,84 @@ export function StorefrontSettingsPanel({ onSelectPath, selectedPath, templateKe
       (element) => element.dataset.editorSettingsPath === selectedPath,
     );
     if (!candidate) return;
-    candidate.scrollIntoView({ behavior: "smooth", block: "center" });
+    const scroller = scrollRef.current;
+    if (!scroller) return;
+    const candidateBounds = candidate.getBoundingClientRect();
+    const scrollerBounds = scroller.getBoundingClientRect();
+    const candidateTop = scroller.scrollTop + candidateBounds.top - scrollerBounds.top;
+    scroller.scrollTo({
+      behavior: "smooth",
+      top: Math.max(0, candidateTop - (scroller.clientHeight - candidateBounds.height) / 2),
+    });
   }, [selectedPath]);
 
   if (!manifest) {
     return null;
   }
 
+  const selectSection = (sectionId: string) => {
+    const section = manifest.sections.find((candidate) => candidate.id === sectionId);
+    if (!section) return;
+    setOpenSections((current) => new Set(current).add(section.id));
+    onSelectPath(sectionSettingsPath(section));
+    setSectionNavigatorOpen(false);
+  };
+
   return (
     <div className="min-h-0 flex-1 overflow-y-auto" ref={scrollRef}>
+      <div className="sticky top-0 z-10 border-b border-border/80 bg-background/95 p-3 backdrop-blur-sm sm:px-4">
+        <Popover onOpenChange={setSectionNavigatorOpen} open={sectionNavigatorOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              aria-expanded={sectionNavigatorOpen}
+              className="h-9 w-full justify-between rounded-lg px-3 font-normal"
+              type="button"
+              variant="outline"
+            >
+              <span className={cn("truncate", !activeSection && "text-muted-foreground")}>
+                {activeSection
+                  ? SETTINGS_SECTION_LABELS[activeSection.id] ?? activeSection.label
+                  : "Jump to a section"}
+              </span>
+              <RiArrowDownSLine className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent align="start" className="w-[var(--radix-popover-trigger-width)] overflow-hidden p-0" sideOffset={6}>
+            <Command shouldFilter>
+              <CommandInput placeholder="Search sections…" size="panel" />
+              <CommandList className="max-h-72 px-1.5 pb-1.5">
+                <CommandEmpty>No matching section.</CommandEmpty>
+                <CommandGroup className="p-0">
+                  {manifest.sections.map((section) => (
+                    <CommandItem
+                      data-checked={activeSection?.id === section.id ? true : undefined}
+                      key={section.id}
+                      onSelect={() => selectSection(section.id)}
+                      value={`${section.label} ${section.id}`}
+                    >
+                      {SETTINGS_SECTION_LABELS[section.id] ?? section.label}
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              </CommandList>
+            </Command>
+          </PopoverContent>
+        </Popover>
+      </div>
       <div className="flex flex-col gap-3 p-3 pb-10 sm:p-4">
         {manifest.sections.map((section) => {
           if (section.id === "theme") {
             return (
-              <ThemeBrandSection
-                allowDarkMode={templateKey !== "luvia@1"}
-                data={data}
-                dispatch={dispatch}
-                key={section.id}
-                props={props}
-                templateKey={templateKey}
-              />
+              <div data-editor-settings-path={sectionSettingsPath(section)} key={section.id}>
+                <ThemeBrandSection
+                  allowDarkMode={manifest.theme?.allowSurfaceMode ?? true}
+                  data={data}
+                  dispatch={dispatch}
+                  editableColors={manifest.theme?.editableColors}
+                  props={props}
+                  templateKey={templateKey}
+                />
+              </div>
             );
           }
 
@@ -94,7 +178,24 @@ export function StorefrontSettingsPanel({ onSelectPath, selectedPath, templateKe
                 : enabledValue !== false && enabledValue !== "false";
           const sectionPath = enabledField?.path.replace(/\.enabled$/, "") ?? section.id;
 
+          const sectionOpen = openSections.has(section.id) || sectionContainsPath(section, selectedPath);
+
           return (
+            <Collapsible
+              key={section.id}
+              onOpenChange={(open) => {
+                setOpenSections((current) => {
+                  const next = new Set(current);
+                  if (open) next.add(section.id);
+                  else next.delete(section.id);
+                  return next;
+                });
+                if (!open && sectionContainsPath(section, selectedPath)) {
+                  onSelectPath(null);
+                }
+              }}
+              open={sectionOpen}
+            >
             <section
               className={cn(
                 "min-w-0 overflow-hidden rounded-2xl border border-border/80 bg-card shadow-[0_1px_2px_color-mix(in_oklch,var(--foreground)_4%,transparent)] transition-opacity",
@@ -102,7 +203,6 @@ export function StorefrontSettingsPanel({ onSelectPath, selectedPath, templateKe
                 selectedPath === sectionPath && "ring-2 ring-primary/45 ring-offset-2 ring-offset-background",
               )}
               data-editor-settings-path={sectionPath}
-              key={section.id}
             >
               <div className="flex items-center justify-between gap-3 border-b border-border/80 bg-muted/10 px-4 py-3">
                 <button className="flex min-w-0 items-center gap-2 text-left" onClick={() => onSelectPath(sectionPath)} type="button">
@@ -115,6 +215,7 @@ export function StorefrontSettingsPanel({ onSelectPath, selectedPath, templateKe
                     </Badge>
                   ) : null}
                 </button>
+                <div className="flex shrink-0 items-center gap-1">
                 {enabledField ? (
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -141,8 +242,15 @@ export function StorefrontSettingsPanel({ onSelectPath, selectedPath, templateKe
                     </TooltipContent>
                   </Tooltip>
                 ) : null}
+                {bodyFields.length > 0 ? <CollapsibleTrigger asChild>
+                  <Button aria-label={`${sectionOpen ? "Collapse" : "Expand"} ${section.label}`} size="icon-sm" type="button" variant="ghost">
+                    <RiArrowDownSLine className={cn("size-4 transition-transform", sectionOpen && "rotate-180")} aria-hidden />
+                  </Button>
+                </CollapsibleTrigger> : null}
+                </div>
               </div>
               {bodyFields.length > 0 ? (
+                <CollapsibleContent>
                 <div
                   className={cn(
                     "flex min-w-0 flex-col gap-5 p-4",
@@ -156,7 +264,7 @@ export function StorefrontSettingsPanel({ onSelectPath, selectedPath, templateKe
                     const showHelp = Boolean(helpText) && field.kind !== "products";
 
                     return (
-                      <Field className={cn("-ml-3 min-w-0 gap-2.5 border-l-2 border-transparent py-1 pl-3 transition-[border-color,background-color] duration-150", (selectedPath === field.path || selectedPath?.startsWith(`${field.path}.`)) && "border-primary/60 bg-primary/[0.035]")} data-editor-settings-path={field.path} key={field.path} onFocusCapture={(event) => onSelectPath((event.target as Element).closest<HTMLElement>("[data-editor-settings-path]")?.dataset.editorSettingsPath ?? field.path)}>
+                      <Field className={cn("-ml-3 min-w-0 gap-2.5 border-l-2 border-transparent py-1 pl-3 transition-[border-color,background-color] duration-150", (selectedPath === field.path || selectedPath?.startsWith(`${field.path}.`)) && "border-primary/60 bg-primary/[0.035]")} data-editor-settings-path={field.path} key={field.path} onClickCapture={() => onSelectPath(field.path)} onFocusCapture={(event) => onSelectPath((event.target as Element).closest<HTMLElement>("[data-editor-settings-path]")?.dataset.editorSettingsPath ?? field.path)}>
                         {field.kind === "boolean" ? null : (
                           <FieldLabel className="text-sm font-medium" htmlFor={nativeControlId(field)}>{field.label}</FieldLabel>
                         )}
@@ -177,13 +285,34 @@ export function StorefrontSettingsPanel({ onSelectPath, selectedPath, templateKe
                     );
                   })}
                 </div>
+                </CollapsibleContent>
               ) : null}
             </section>
+            </Collapsible>
           );
         })}
       </div>
     </div>
   );
+}
+
+function sectionSettingsPath(section: { id: string; fields: StorefrontEditorField[] }) {
+  if (section.id === "theme") return "themeTokens";
+  const enabledPath = section.fields.find(
+    (field) => field.kind === "boolean" && field.path.endsWith(".enabled"),
+  )?.path;
+  return enabledPath?.replace(/\.enabled$/, "") ?? section.id;
+}
+
+function sectionContainsPath(
+  section: { id: string; fields: StorefrontEditorField[] },
+  path: string | null,
+) {
+  if (!path) return false;
+  const sectionPath = sectionSettingsPath(section);
+  return path === sectionPath
+    || path.startsWith(`${sectionPath}.`)
+    || section.fields.some((field) => path === field.path || path.startsWith(`${field.path}.`));
 }
 
 export function StorefrontSettingControl({

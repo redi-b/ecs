@@ -4,6 +4,11 @@ export const luviaV1EditorSchema = {
   templateKey: "luvia@1",
   templateVersion: 1,
   previewMode: "iframe",
+  theme: {
+    allowSurfaceMode: false,
+    editableColors: ["primary", "foreground", "muted", "accent"],
+    paletteStrategy: "tonal",
+  },
   sections: [
     {
       id: "header",
@@ -22,7 +27,7 @@ export const luviaV1EditorSchema = {
         { path: "home.hero.subtitle", prop: "heroSubtitle", label: "Description", kind: "textarea" },
         { path: "home.hero.imageAssetId", prop: "heroImageAssetId", label: "Background", kind: "image" },
         { path: "home.hero.portraitAssetId", prop: "heroPortraitAssetId", label: "Portrait", kind: "image" },
-        { path: "home.hero.featuredProductId", prop: "heroFeaturedProductId", label: "Featured product card", kind: "product", helpText: "Choose the real catalog product shown over the hero image." },
+        { path: "home.hero.featuredProductIds", prop: "heroFeaturedProductIds", label: "Featured product carousel", kind: "products", deprecatedPaths: ["home.hero.featuredProductId"], helpText: "Choose up to six products. An empty selection uses the newest catalog products." },
         { path: "home.hero.primaryCtaLabel", prop: "heroCtaLabel", label: "Button label", kind: "text" },
         { path: "home.hero.primaryCtaHref", prop: "heroCtaHref", label: "Button link", kind: "link" },
         { path: "home.hero.trustLabels.0", prop: "heroTrustLabelOne", label: "First trust label", kind: "text" },
@@ -123,15 +128,22 @@ export const luviaV1EditorSchema = {
       label: "Footer",
       fields: [
         { path: "footer.blurb", prop: "footerBlurb", label: "Description", kind: "textarea" },
+        { path: "footer.quickLinks", prop: "footerQuickLinks", label: "Quick links", kind: "links" },
+        { path: "footer.shopLinks", prop: "footerShopLinks", label: "Shop links", kind: "links" },
+        { path: "footer.socialLinks", prop: "footerSocialLinks", label: "Social links", kind: "links", helpText: "Add only the social profiles you want customers to see." },
         { path: "footer.phone", prop: "footerPhone", label: "Phone", kind: "text" },
         { path: "footer.email", prop: "footerEmail", label: "Email", kind: "text" },
         { path: "footer.address", prop: "footerAddress", label: "Address", kind: "textarea" },
-        { path: "footer.socialLinks", prop: "footerSocialLinks", label: "Social links", kind: "links", helpText: "Add only the social profiles you want customers to see." },
-        { path: "footer.quickLinks", prop: "footerQuickLinks", label: "Quick links", kind: "links" },
-        { path: "footer.shopLinks", prop: "footerShopLinks", label: "Shop links", kind: "links" },
         { path: "footer.inquiry.title", prop: "footerInquiryTitle", label: "Inquiry banner title", kind: "text" },
         { path: "footer.inquiry.ctaLabel", prop: "footerInquiryCtaLabel", label: "Inquiry button label", kind: "text" },
         { path: "footer.inquiry.ctaHref", prop: "footerInquiryCtaHref", label: "Inquiry button link", kind: "link" },
+      ],
+    },
+    {
+      id: "footer-credit",
+      label: "Design credit",
+      fields: [
+        { path: "footer.credit.enabled", prop: "footerCreditEnabled", label: "Show design credit", kind: "boolean", helpText: "Show the fixed ECS design credit in the storefront footer." },
       ],
     },
     {
@@ -139,6 +151,10 @@ export const luviaV1EditorSchema = {
       label: "Appearance",
       fields: [
         { path: "themeTokens.colors.primary", prop: "primaryColor", label: "Brand color", kind: "color" },
+        { path: "themeTokens.colors.background", prop: "backgroundColor", label: "Background color", kind: "color" },
+        { path: "themeTokens.colors.foreground", prop: "foregroundColor", label: "Text color", kind: "color" },
+        { path: "themeTokens.colors.muted", prop: "mutedColor", label: "Soft surface", kind: "color" },
+        { path: "themeTokens.colors.accent", prop: "accentColor", label: "Accent color", kind: "color" },
         { path: "themeTokens.typography.headingFont", prop: "headingFont", label: "Heading font", kind: "text" },
         { path: "themeTokens.typography.bodyFont", prop: "bodyFont", label: "Body font", kind: "text" },
       ],

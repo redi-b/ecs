@@ -5,6 +5,7 @@
  * classic@1 is the default complete storefront (premium dark design system).
  * Missing optional slots fall back to `templates/fallback/*`.
  */
+import type { StorefrontTemplateKey } from "@ecs/storefront-templates";
 import ClassicV1Cart from "./classic/v1/Cart.astro";
 import ClassicV1Checkout from "./classic/v1/Checkout.astro";
 import ClassicV1Home from "./classic/v1/Home.astro";
@@ -27,7 +28,7 @@ import FallbackCheckoutPage from "./fallback/CheckoutPage.astro";
 import FallbackOrderConfirmPage from "./fallback/OrderConfirmPage.astro";
 import FallbackProductListPage from "./fallback/ProductListPage.astro";
 import FallbackProductPage from "./fallback/ProductPage.astro";
-import type { StorefrontRenderer } from "./types.js";
+import type { StorefrontPageComponent, StorefrontRenderer } from "./types.js";
 
 const fallbacks = {
   ProductList: FallbackProductListPage,
@@ -37,7 +38,7 @@ const fallbacks = {
   OrderConfirm: FallbackOrderConfirmPage,
 } as const;
 
-export const storefrontRenderers: Record<string, StorefrontRenderer> = {
+export const storefrontRenderers = {
   "luvia@1": {
     Home: LuviaV1Home,
     ProductList: LuviaV1ProductList,
@@ -59,10 +60,10 @@ export const storefrontRenderers: Record<string, StorefrontRenderer> = {
     Checkout: ClassicV1Checkout,
     OrderConfirm: ClassicV1OrderConfirm,
   },
-};
+} satisfies Record<StorefrontTemplateKey, StorefrontRenderer>;
 
 export function getStorefrontRenderer(templateKey: string): StorefrontRenderer | undefined {
-  return storefrontRenderers[templateKey];
+  return storefrontRenderers[templateKey as StorefrontTemplateKey];
 }
 
 export function resolveRendererSlot<K extends keyof typeof fallbacks>(
@@ -71,7 +72,7 @@ export function resolveRendererSlot<K extends keyof typeof fallbacks>(
 ) {
   const renderer = templateKey ? getStorefrontRenderer(templateKey) : undefined;
   const fromTemplate = renderer?.[slot];
-  return (fromTemplate ?? fallbacks[slot]) as (typeof fallbacks)[K];
+  return (fromTemplate ?? fallbacks[slot]) as StorefrontPageComponent;
 }
 
 export { fallbacks as storefrontFallbackPages };

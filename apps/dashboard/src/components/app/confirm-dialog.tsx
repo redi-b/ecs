@@ -118,7 +118,6 @@ export function ConfirmDialog({
             className="h-8 w-full rounded-full font-medium shadow-none"
             disabled={confirmDisabled}
             onClick={(event) => {
-              event.preventDefault();
               onConfirm(event);
             }}
             size="default"

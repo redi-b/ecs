@@ -1,10 +1,13 @@
 ---
-import type { LuviaV1Data } from "@ecs/storefront-templates";
+import { contrastingInk, type LuviaV1Data } from "@ecs/storefront-templates";
+import ActionButton from "./ActionButton.astro";
 import logo from "./assets/luvia-logo.svg";
 import cartIcon from "./icons/cart-icon.svg";
 import searchIcon from "./icons/search-icon.svg";
 import userIcon from "./icons/user-icon.svg";
 import wishlistIcon from "./icons/wishlist-icon.svg";
+import chatIcon from "./icons/chat-icon.svg";
+import { parseLuviaThemeTokens } from "./lib";
 
 interface Props {
   tenantName: string;
@@ -14,10 +17,21 @@ interface Props {
   deferCartCount?: boolean;
   title?: string;
   editorMode?: boolean;
+  themeTokens?: unknown;
 }
 
-const { tenantName, header, footer, cartCount = 0, deferCartCount = false, title, editorMode = false } = Astro.props;
+const { tenantName, header, footer, cartCount = 0, deferCartCount = false, title, editorMode = false, themeTokens } = Astro.props;
 const logoUrl = header.logoAssetId ?? logo.src;
+const theme = parseLuviaThemeTokens(themeTokens);
+const themeStyle = [
+  `--lv-bg:${theme.colors.background}`,
+  `--lv-ink:${theme.colors.foreground}`,
+  `--lv-green:${theme.colors.primary}`,
+  `--lv-soft:${theme.colors.muted}`,
+  `--lv-accent:${theme.colors.accent}`,
+  `--lv-on-primary:${contrastingInk(theme.colors.primary)}`,
+  "--lv-line:color-mix(in srgb, var(--lv-ink) 14%, var(--lv-bg))",
+].join(";");
 const pathname = Astro.url.pathname;
 const isActiveLink = (href: string) => href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`);
 ---
@@ -27,10 +41,22 @@ const isActiveLink = (href: string) => href === "/" ? pathname === "/" : pathnam
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta name="theme-color" content="#f7fff7" />
+    <meta name="theme-color" content={theme.colors.background} />
     <title>{title ? `${title} · ${tenantName}` : tenantName}</title>
   </head>
-  <body class="lv-body" data-editor-mode={editorMode ? "true" : undefined}>
+  <body
+    class="lv-body"
+    data-editor-mode={editorMode ? "true" : undefined}
+    data-editor-theme-vars={editorMode ? JSON.stringify({
+      background: "--lv-bg",
+      foreground: "--lv-ink",
+      primary: "--lv-green",
+      muted: "--lv-soft",
+      accent: "--lv-accent",
+      onPrimary: "--lv-on-primary",
+    }) : undefined}
+    style={themeStyle}
+  >
     <header class="lv-header">
       <a class="lv-logo" href="/" aria-label={`${tenantName} home`}><img src={logoUrl} alt={tenantName} data-editor-image-path="header.logoAssetId" /></a>
       <button class="lv-menu" type="button" aria-expanded="false" aria-controls="lv-navigation"><span></span><span></span><span></span><span class="sr-only">Menu</span></button>
@@ -43,21 +69,21 @@ const isActiveLink = (href: string) => href === "/" ? pathname === "/" : pathnam
           <input id="lv-search-input" name="q" type="search" placeholder="Search any product..." />
           <button type="submit" aria-label="Search"><img src={searchIcon.src} alt="" /></button>
         </form>
-        <a class="lv-action lv-action--wishlist" href="/wishlist" aria-label="Wishlist"><img src={wishlistIcon.src} alt="" /></a>
+        <a class="lv-action lv-action--wishlist" href="/wishlist" aria-label="Wishlist" data-wishlist-indicator><img src={wishlistIcon.src} alt="" /></a>
         <a class="lv-action" href="/cart" aria-label="Shopping cart" data-cart-trigger><img src={cartIcon.src} alt="" /><span class="lv-count" data-cart-count aria-live="polite" hidden={deferCartCount ? true : cartCount <= 0}>{deferCartCount ? "" : cartCount}</span></a>
         <a class="lv-action lv-action--account" href="/account" aria-label="Account"><img src={userIcon.src} alt="" /></a>
       </div>
     </header>
     <slot />
     <footer class="lv-footer">
-      <div class="lv-footer__intro"><p data-editor-path="footer.blurb" contenteditable={editorMode ? "plaintext-only" : undefined}>{footer.blurb}</p><a href="/">Web Design by <u>Eclipticcreative</u></a><img src={logoUrl} alt={tenantName} data-editor-image-path="header.logoAssetId" /></div>
+      <div class="lv-footer__intro"><p data-editor-path="footer.blurb" contenteditable={editorMode ? "plaintext-only" : undefined}>{footer.blurb}</p>{(editorMode || footer.credit.enabled) && <a href="https://eclipticcreative.com" rel="noreferrer" target="_blank" data-editor-section="footer.credit" data-editor-visible-path="footer.credit.enabled" hidden={!footer.credit.enabled}>Web Design by <u>Eclipticcreative</u></a>}<img src={logoUrl} alt={tenantName} data-editor-image-path="header.logoAssetId" /></div>
       <div><strong>QUICK LINKS</strong><span class="lv-footer__links" data-editor-links-path="footer.quickLinks" data-editor-empty-label="Add quick links">{footer.quickLinks.map((item, index) => <a href={item.href} data-editor-path={`footer.quickLinks.${index}.label`} contenteditable={editorMode ? "plaintext-only" : undefined}>{item.label}</a>)}</span></div>
       <div><strong>SHOP</strong><span class="lv-footer__links" data-editor-links-path="footer.shopLinks" data-editor-empty-label="Add shop links">{footer.shopLinks.map((item, index) => <a href={item.href} data-editor-path={`footer.shopLinks.${index}.label`} contenteditable={editorMode ? "plaintext-only" : undefined}>{item.label}</a>)}</span></div>
       <div><strong>SOCIALS</strong><span class="lv-footer__links" data-editor-links-path="footer.socialLinks" data-editor-empty-label="Add social links">{footer.socialLinks.map((item, index) => <a href={item.href} data-editor-path={`footer.socialLinks.${index}.label`} contenteditable={editorMode ? "plaintext-only" : undefined}>{item.label}</a>)}</span></div>
       <div><strong>CONTACT INFO</strong>{(editorMode || footer.phone) && <a href={`tel:${footer.phone ?? ""}`} data-editor-path="footer.phone" data-editor-empty-label="Add phone" contenteditable={editorMode ? "plaintext-only" : undefined}>{footer.phone}</a>}{(editorMode || footer.email) && <a href={`mailto:${footer.email ?? ""}`} data-editor-path="footer.email" data-editor-empty-label="Add email" contenteditable={editorMode ? "plaintext-only" : undefined}>{footer.email}</a>}{(editorMode || footer.address) && <p data-editor-path="footer.address" data-editor-empty-label="Add address" contenteditable={editorMode ? "plaintext-only" : undefined}>{footer.address}</p>}</div>
       <small>© {new Date().getFullYear()} {tenantName}. All rights reserved.</small>
     </footer>
-    <aside class="lv-inquiry" data-editor-section="footer.inquiry"><p data-editor-path="footer.inquiry.title" contenteditable={editorMode ? "plaintext-only" : undefined}>{footer.inquiry.title}</p><a href={footer.inquiry.ctaHref} data-editor-path="footer.inquiry.ctaLabel" contenteditable={editorMode ? "plaintext-only" : undefined}>{footer.inquiry.ctaLabel}</a></aside>
+    <aside class="lv-inquiry" data-editor-section="footer.inquiry"><p data-editor-path="footer.inquiry.title" contenteditable={editorMode ? "plaintext-only" : undefined}>{footer.inquiry.title}</p><ActionButton href={footer.inquiry.ctaHref} iconSrc={chatIcon.src} tone="secondary" size="small" editorPath="footer.inquiry.ctaLabel" editorRelatedPaths={["footer.inquiry.ctaHref"]} editorMode={editorMode}>{footer.inquiry.ctaLabel}</ActionButton></aside>
     <button class="lv-cart-backdrop" type="button" data-cart-backdrop aria-label="Close cart" hidden></button>
     <aside class="lv-cart-drawer" data-cart-drawer role="dialog" aria-modal="true" aria-labelledby="lv-cart-title" hidden>
       <header><div><h2 id="lv-cart-title">Your Cart</h2><span data-cart-drawer-count>0 items</span></div><button type="button" data-cart-close aria-label="Close cart">×</button></header>
@@ -66,6 +92,10 @@ const isActiveLink = (href: string) => href === "/" ? pathname === "/" : pathnam
       <footer data-cart-footer hidden><dl><div><dt>Subtotal</dt><dd data-cart-subtotal></dd></div><div><dt>Delivery</dt><dd>Calculated at checkout</dd></div><div><dt>Total</dt><dd data-cart-total></dd></div></dl><a class="lv-cart-checkout" href="/checkout">Checkout</a><button type="button" data-cart-continue>Continue shopping</button></footer>
     </aside>
     <script>
+      import { loadAndSyncCartCount, setCartCount as syncCartCount } from "../../../lib/browser/cart-count";
+      import { initWishlistController } from "../../../lib/browser/wishlist";
+
+      const editorPreview = document.body.dataset.editorMode === "true";
       const menu = document.querySelector<HTMLButtonElement>(".lv-menu");
       const nav = document.querySelector<HTMLElement>(".lv-nav");
       menu?.addEventListener("click", () => {
@@ -104,9 +134,7 @@ const isActiveLink = (href: string) => href === "/" ? pathname === "/" : pathnam
         }
       });
       const badge = document.querySelector<HTMLElement>("[data-cart-count]");
-      if (badge?.hidden) fetch("/cart-count").then((r) => r.ok ? r.json() : null).then((data) => {
-        const count = Number(data?.count ?? 0); if (count > 0) { badge.textContent = String(count); badge.hidden = false; }
-      }).catch(() => {});
+      if (!editorPreview && badge?.hidden) void loadAndSyncCartCount();
 
       const trigger = document.querySelector<HTMLAnchorElement>("[data-cart-trigger]");
       const drawer = document.querySelector<HTMLElement>("[data-cart-drawer]");
@@ -124,7 +152,7 @@ const isActiveLink = (href: string) => href === "/" ? pathname === "/" : pathnam
         catch { return String(amount); }
       };
       const setCartCount = (count: number) => {
-        if (badge) { badge.textContent = count > 0 ? String(count) : ""; badge.hidden = count <= 0; badge.setAttribute("aria-label", `${count} cart items`); }
+        syncCartCount(count);
         if (drawerCount) drawerCount.textContent = `${count} item${count === 1 ? "" : "s"}`;
       };
       const node = <K extends keyof HTMLElementTagNameMap>(tag: K, className?: string, text?: string) => {
@@ -167,9 +195,10 @@ const isActiveLink = (href: string) => href === "/" ? pathname === "/" : pathnam
         if (!drawer || !backdrop) return; lastFocused = document.activeElement instanceof HTMLElement ? document.activeElement : trigger; drawer.hidden = false; backdrop.hidden = false; requestAnimationFrame(() => { drawer.dataset.open = ""; backdrop.dataset.open = ""; }); document.body.dataset.cartOpen = ""; if (cart) renderCart(cart); else await loadCart(); closeButton?.focus();
       };
       const closeCart = () => { if (!drawer || !backdrop) return; delete drawer.dataset.open; delete backdrop.dataset.open; delete document.body.dataset.cartOpen; setTimeout(() => { drawer.hidden = true; backdrop.hidden = true; }, 260); lastFocused?.focus(); };
-      trigger?.addEventListener("click", (event) => { if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return; event.preventDefault(); void openCart(); });
+      trigger?.addEventListener("click", (event) => { if (editorPreview || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return; event.preventDefault(); void openCart(); });
       closeButton?.addEventListener("click", closeCart); continueButton?.addEventListener("click", closeCart); backdrop?.addEventListener("click", closeCart);
       drawer?.addEventListener("click", async (event) => {
+        if (editorPreview) return;
         const target = event.target instanceof Element ? event.target : null; const item = target?.closest<HTMLElement>("[data-line-item-id]"); if (!item) return;
         const quantityButton = target?.closest<HTMLButtonElement>("[data-cart-quantity]"); const removeButton = target?.closest<HTMLButtonElement>("[data-cart-remove]"); if (!quantityButton && !removeButton) return;
         const body = new FormData(); body.set("lineItemId", item.dataset.lineItemId || ""); if (quantityButton) body.set("quantity", quantityButton.dataset.cartQuantity || "1");
@@ -178,46 +207,42 @@ const isActiveLink = (href: string) => href === "/" ? pathname === "/" : pathnam
         catch (cause) { delete item.dataset.updating; if (status) { status.textContent = cause instanceof Error ? cause.message : "Could not update your cart."; status.classList.add("is-error"); } }
       });
       drawer?.addEventListener("keydown", (event) => { if (event.key === "Escape") { event.preventDefault(); closeCart(); return; } if (event.key !== "Tab") return; const focusable = [...drawer.querySelectorAll<HTMLElement>('a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])')]; if (!focusable.length) return; const first = focusable[0]; const last = focusable.at(-1); if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); } else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); } });
-      window.addEventListener("ecs:cart-updated", ((event: CustomEvent) => { const detail = event.detail; if (detail?.count != null) setCartCount(detail.count); if (detail?.cart) { renderCart(detail.cart); if (detail.openDrawer === true && !drawer?.hasAttribute("data-open")) void openCart(detail.cart); } }) as EventListener);
+      window.addEventListener("ecs:cart-updated", ((event: CustomEvent) => { if (editorPreview) return; const detail = event.detail; if (detail?.count != null) setCartCount(detail.count); if (detail?.cart) { renderCart(detail.cart); if (detail.openDrawer === true && !drawer?.hasAttribute("data-open")) void openCart(detail.cart); } }) as EventListener);
 
-      type WishlistEntry = { path: string; title: string; thumbnail: string | null; priceAmount: number | null; currencyCode: string | null };
-      const editorPreview = document.body.dataset.editorMode === "true";
-      const wishlistKey = `ecs:wishlist:${location.hostname}`;
-      const readWishlist = (): WishlistEntry[] => {
+      document.addEventListener("submit", async (event) => {
+        const form = event.target instanceof HTMLFormElement
+          ? event.target.closest<HTMLFormElement>("[data-card-add-form]")
+          : null;
+        if (!form || event.defaultPrevented || editorPreview) return;
+        event.preventDefault();
+        const button = form.querySelector<HTMLButtonElement>('button[type="submit"]');
+        const label = form.querySelector<HTMLElement>("[data-card-add-label]");
+        if (!button || button.disabled) return;
+        const originalLabel = label?.textContent ?? "Add to Cart";
+        button.disabled = true;
+        if (label) label.textContent = "Adding…";
         try {
-          const raw = JSON.parse(localStorage.getItem(wishlistKey) || "[]");
-          if (!Array.isArray(raw)) return [];
-          const normalized = raw.map((entry): WishlistEntry | null => {
-            if (typeof entry === "string") return { path: entry, title: decodeURIComponent(entry.split("/").filter(Boolean).at(-1) || "Product").replace(/[-_]+/g, " "), thumbnail: null, priceAmount: null, currencyCode: null };
-            if (!entry || typeof entry !== "object" || typeof entry.path !== "string") return null;
-            return { path: entry.path, title: typeof entry.title === "string" ? entry.title : "Product", thumbnail: typeof entry.thumbnail === "string" ? entry.thumbnail : null, priceAmount: typeof entry.priceAmount === "number" ? entry.priceAmount : null, currencyCode: typeof entry.currencyCode === "string" ? entry.currencyCode : null };
-          }).filter((entry): entry is WishlistEntry => Boolean(entry));
-          const unique = [...new Map(normalized.map((entry) => [entry.path, entry])).values()];
-          if (JSON.stringify(raw) !== JSON.stringify(unique)) localStorage.setItem(wishlistKey, JSON.stringify(unique));
-          return unique;
-        } catch { return []; }
-      };
-      const syncWishlistButtons = () => {
-        if (editorPreview) {
-          document.querySelectorAll<HTMLElement>("[data-wishlist-toggle]").forEach((button) => button.setAttribute("aria-pressed", "false"));
-          return;
+          const response = await fetch(form.action, {
+            method: "POST",
+            body: new FormData(form),
+            credentials: "same-origin",
+            headers: { Accept: "application/json" },
+          });
+          const result = await response.json();
+          if (!response.ok || !result.ok) throw new Error(result.message || "Could not add this item to your cart.");
+          if (label) label.textContent = "Added";
+          window.dispatchEvent(new CustomEvent("ecs:cart-updated", { detail: { ...result, openDrawer: true } }));
+        } catch {
+          if (label) label.textContent = "Try again";
+        } finally {
+          window.setTimeout(() => {
+            button.disabled = false;
+            if (label) label.textContent = originalLabel;
+          }, 1200);
         }
-        const paths = new Set(readWishlist().map((entry) => entry.path));
-        document.querySelectorAll<HTMLElement>("[data-wishlist-toggle]").forEach((button) => {
-          try { const entry = JSON.parse(button.dataset.wishlistItem || "{}"); const active = typeof entry.path === "string" && paths.has(entry.path); button.setAttribute("aria-pressed", String(active)); button.setAttribute("aria-label", active ? `Remove ${entry.title || "product"} from wishlist` : `Save ${entry.title || "product"} to wishlist`); } catch { button.setAttribute("aria-disabled", "true"); }
-        });
-      };
-      document.addEventListener("click", (event) => {
-        const target = event.target instanceof Element ? event.target.closest<HTMLElement>("[data-wishlist-toggle]") : null;
-        if (!target || editorPreview) return;
-        event.preventDefault(); event.stopPropagation();
-        try {
-          const candidate = JSON.parse(target.dataset.wishlistItem || "{}"); if (typeof candidate.path !== "string") return;
-          const entry: WishlistEntry = { path: candidate.path, title: typeof candidate.title === "string" ? candidate.title : "Product", thumbnail: typeof candidate.thumbnail === "string" ? candidate.thumbnail : null, priceAmount: typeof candidate.priceAmount === "number" ? candidate.priceAmount : null, currencyCode: typeof candidate.currencyCode === "string" ? candidate.currencyCode : null };
-          const saved = readWishlist(); const exists = saved.some((item) => item.path === entry.path); const next = exists ? saved.filter((item) => item.path !== entry.path) : [...saved, entry]; localStorage.setItem(wishlistKey, JSON.stringify(next)); syncWishlistButtons(); window.dispatchEvent(new CustomEvent("ecs:wishlist-updated", { detail: { items: next } }));
-        } catch { target.setAttribute("aria-disabled", "true"); }
       });
-      syncWishlistButtons();
+
+      initWishlistController({ disabled: editorPreview });
     </script>
     <script>
       import { initLuviaMotion } from "./scripts/motion";

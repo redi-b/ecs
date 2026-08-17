@@ -79,3 +79,23 @@ test("light seed is available for light surface mode", () => {
   const colors = generateThemeFromPrimary(CLASSIC_LIGHT_SEED.colors.primary, "light");
   assert.ok(relativeLuminance(colors.background) > 0.7);
 });
+
+test("an authored primary reproduces its template seed exactly", () => {
+  const seed = {
+    id: "luvia-light",
+    surfaceMode: "light" as const,
+    strategy: "tonal" as const,
+    colors: {
+      primary: "#3ee272",
+      background: "#f7fff7",
+      foreground: "#0f3112",
+      muted: "#edf8ee",
+      accent: "#b5ffa2",
+    },
+  };
+  const colors = generateThemeFromSeed(seed.colors.primary, seed);
+  assert.deepEqual(
+    { background: colors.background, foreground: colors.foreground, primary: colors.primary, muted: colors.muted, accent: colors.accent },
+    seed.colors,
+  );
+});

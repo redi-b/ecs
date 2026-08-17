@@ -1,5 +1,6 @@
 ---
 import type { StoreProduct, StoreProductVariant } from "../../../lib/commerce/types";
+import { resolveProductBadge } from "../../../lib/commerce/merchandising";
 import { formatMoney } from "../../../lib/money";
 import Layout from "./Layout.astro";
 import ProductCard from "./ProductCard.astro";
@@ -10,6 +11,7 @@ import { parseLuviaData } from "./lib";
 
 interface Props {
   data: unknown;
+  themeTokens?: unknown;
   tenantName: string;
   cartCount?: number;
   deferCartCount?: boolean;
@@ -20,7 +22,7 @@ interface Props {
   relatedProducts?: StoreProduct[];
 }
 
-const { data, tenantName, cartCount = 0, deferCartCount = false, product, handle, notice, error, relatedProducts = [] } = Astro.props;
+const { data, themeTokens, tenantName, cartCount = 0, deferCartCount = false, product, handle, notice, error, relatedProducts = [] } = Astro.props;
 const template = parseLuviaData(data);
 const defaultVariant: StoreProductVariant | null = product?.variants.find((variant) => variant.inStock) ?? product?.variants[0] ?? null;
 const optionAxes = product?.options?.length ? product.options : (() => {
@@ -36,12 +38,16 @@ const variantsPayload = (product?.variants ?? []).map((variant) => ({
   id: variant.id,
   inStock: variant.inStock,
   priceAmount: variant.priceAmount,
+  originalPriceAmount: variant.originalPriceAmount,
+  discountPercentage: variant.discountPercentage,
   currencyCode: variant.currencyCode,
   sku: variant.sku,
   optionValues: Object.fromEntries(variant.optionValues.map((option) => [option.optionTitle, option.value])),
 }));
 const brand = product?.collectionTitle?.toUpperCase() || tenantName.toUpperCase();
 const currentPrice = formatMoney(defaultVariant?.priceAmount ?? product?.priceAmount, defaultVariant?.currencyCode ?? product?.currencyCode);
+const originalPrice = defaultVariant?.originalPriceAmount ?? product?.originalPriceAmount ?? null;
+const badge = product ? resolveProductBadge(product, defaultVariant) : null;
 const wishlistItem = product ? JSON.stringify({ path: `/products/${encodeURIComponent(handle)}`, title: product.title ?? "Product", thumbnail: product.thumbnail ?? gallery[0] ?? null, priceAmount: defaultVariant?.priceAmount ?? product.priceAmount, currencyCode: defaultVariant?.currencyCode ?? product.currencyCode }) : "";
 const jsonLd = product ? {
   "@context": "https://schema.org", "@type": "Product", name: product.title, description: product.description,
@@ -50,7 +56,7 @@ const jsonLd = product ? {
 } : null;
 ---
 
-<Layout tenantName={tenantName} header={template.header} footer={template.footer} cartCount={cartCount} deferCartCount={deferCartCount} title={product?.title ?? "Product not found"}>
+<Layout tenantName={tenantName} header={template.header} footer={template.footer} themeTokens={themeTokens} cartCount={cartCount} deferCartCount={deferCartCount} title={product?.title ?? "Product not found"}>
   {jsonLd && <script is:inline type="application/ld+json" set:html={JSON.stringify(jsonLd)} />}
   {!product ? <main class="lv-product-missing"><h1>Product not found</h1><p>This product is unavailable or no longer exists.</p><a href="/products">Back to shop</a></main> : <main class="lv-product-page" data-product-detail>
     <nav class="lv-product-breadcrumb" aria-label="Breadcrumb"><a href="/">Home</a><img src={caretIcon.src} alt="" /><a href="/products">Shop</a><img src={caretIcon.src} alt="" /><span>Product Detail</span></nav>
@@ -59,11 +65,11 @@ const jsonLd = product ? {
     <section class="lv-product-detail">
       <div class="lv-product-gallery">
         {gallery.length > 1 && <div class="lv-product-gallery__thumbs" aria-label="Product images">{gallery.map((src, index) => <button type="button" data-gallery-thumb={src} aria-current={index === 0 ? "true" : undefined} aria-label={`View image ${index + 1}`}><img src={src} alt="" /></button>)}</div>}
-        <div class="lv-product-gallery__main" data-gallery-main>{gallery[0] ? <img src={gallery[0]} alt={product.title ?? "Product"} /> : <span>Product image coming soon</span>}<span class="lv-product-gallery__badge"><img src={sparkleIcon.src} alt="" />Best Seller</span></div>
+        <div class="lv-product-gallery__main" data-gallery-main>{gallery[0] ? <img src={gallery[0]} alt={product.title ?? "Product"} /> : <span>Product image coming soon</span>}<span class:list={["lv-product-gallery__badge", badge ? `is-${badge.kind}` : null]} data-product-badge hidden={!badge}><img src={sparkleIcon.src} alt="" /><span>{badge?.label ?? ""}</span></span></div>
       </div>
 
       <div class="lv-product-buy">
-        <div class="lv-product-title"><span>{brand}</span><h1>{product.title}</h1><p data-product-price>{currentPrice}</p><small data-product-stock class:list={{ "is-out": !defaultVariant?.inStock }}>{defaultVariant?.inStock ? "In stock" : "Out of stock"}{defaultVariant?.sku ? ` · SKU ${defaultVariant.sku}` : ""}</small></div>
+        <div class="lv-product-title"><span>{brand}</span><h1>{product.title}</h1><p class="lv-product-price"><strong data-product-price>{currentPrice}</strong><del data-product-original-price hidden={!originalPrice}>{originalPrice ? formatMoney(originalPrice, defaultVariant?.currencyCode ?? product.currencyCode) : ""}</del></p><small data-product-stock class:list={{ "is-out": !defaultVariant?.inStock }}>{defaultVariant?.inStock ? "In stock" : "Out of stock"}{defaultVariant?.sku ? ` · SKU ${defaultVariant.sku}` : ""}</small></div>
         <form method="post" action="/actions/cart/add" data-add-form>
           <input type="hidden" name="variantId" value={defaultVariant?.id ?? ""} data-variant-id />
           <input type="hidden" name="returnTo" value={`/products/${encodeURIComponent(handle)}`} />
@@ -104,12 +110,16 @@ const jsonLd = product ? {
       const variant = selectedVariant();
       const id = root.querySelector("[data-variant-id]");
       const price = root.querySelector("[data-product-price]");
+      const originalPrice = root.querySelector("[data-product-original-price]");
+      const badge = root.querySelector("[data-product-badge]");
       const stickyPrice = root.querySelector("[data-sticky-price]");
       const stock = root.querySelector("[data-product-stock]");
       const add = root.querySelector("[data-add-button]");
       const stickyAdd = root.querySelector("[data-sticky-add]");
       if (id) id.value = variant?.id || "";
       if (variant?.priceAmount != null) { const value = money(variant.priceAmount, variant.currencyCode); if (price) price.textContent = value; if (stickyPrice) stickyPrice.textContent = value; }
+      if (originalPrice) { const original = variant?.originalPriceAmount; originalPrice.textContent = original != null ? money(original, variant?.currencyCode) : ""; originalPrice.toggleAttribute("hidden", original == null); }
+      if (badge) { const percentage = Number(variant?.discountPercentage || 0); const hasPromotion = percentage > 0 && variant?.originalPriceAmount > variant?.priceAmount; const soldOut = variant && !variant.inStock; const label = badge.querySelector("span"); badge.toggleAttribute("hidden", !soldOut && !hasPromotion); badge.classList.toggle("is-out-of-stock", Boolean(soldOut)); badge.classList.toggle("is-promotion", !soldOut && hasPromotion); if (label) label.textContent = soldOut ? "Out of stock" : hasPromotion ? `${percentage}% off` : ""; }
       if (stock) { stock.textContent = variant?.inStock ? `In stock${variant.sku ? ` · SKU ${variant.sku}` : ""}` : "Out of stock"; stock.classList.toggle("is-out", !variant?.inStock); }
       [add, stickyAdd].forEach((button) => { if (button instanceof HTMLButtonElement) button.disabled = !variant?.inStock; });
       root.querySelectorAll("[data-option-title]").forEach((node) => { if (!(node instanceof HTMLButtonElement)) return; const title = node.dataset.optionTitle; const value = node.dataset.optionValue; const probe = { ...selected, [title]: value }; const possible = variants.some((variant) => variant.inStock && Object.entries(probe).every(([key, expected]) => !variant.optionValues[key] || variant.optionValues[key] === expected)); node.disabled = !possible; node.setAttribute("aria-pressed", selected[title] === value ? "true" : "false"); });

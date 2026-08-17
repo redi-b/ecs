@@ -1,7 +1,13 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { createStoreCart, getStoreDeliveryOptions, listStoreProducts } from "./index.js";
+import {
+  addStoreCartPromotion,
+  createStoreCart,
+  getStoreDeliveryOptions,
+  listStoreProducts,
+  removeStoreCartPromotion,
+} from "./index.js";
 import { normalizeProduct } from "./normalize.js";
 
 test("listStoreProducts calls the platform store facade with host context", async () => {
@@ -124,6 +130,35 @@ test("createStoreCart creates a Medusa cart through the platform facade", async 
   assert.equal("cart" in result && result.cart.regionId, "reg_1");
 });
 
+test("cart promotion mutations use Medusa's promotion contract", async () => {
+  const requests: Request[] = [];
+  const options = {
+    fetcher: async (request: Request) => {
+      requests.push(request);
+      return Response.json({
+        cart: {
+          id: "cart_1",
+          promotions: [{ id: "promo_1", code: "WELCOME", is_automatic: false }],
+          items: [],
+        },
+      });
+    },
+    platformApiBaseUrl: "http://api.lvh.me",
+    requestHost: "abebe.lvh.me",
+    cartId: "cart_1",
+    code: "WELCOME",
+  };
+
+  await addStoreCartPromotion(options);
+  await removeStoreCartPromotion(options);
+
+  assert.equal(requests[0]?.url, "http://api.lvh.me/store/carts/cart_1/promotions");
+  assert.equal(requests[0]?.method, "POST");
+  assert.deepEqual(JSON.parse(String(await requests[0]?.text())), { promo_codes: ["WELCOME"] });
+  assert.equal(requests[1]?.method, "DELETE");
+  assert.deepEqual(JSON.parse(String(await requests[1]?.text())), { promo_codes: ["WELCOME"] });
+});
+
 test("normalizeProduct maps calculated prices and variants", () => {
   const product = normalizeProduct({
     id: "prod_1",
@@ -141,6 +176,7 @@ test("normalizeProduct maps calculated prices and variants", () => {
         options: [{ option_id: "opt_1", value: "M" }],
         calculated_price: {
           calculated_amount: 499,
+          original_amount: 699,
           currency_code: "etb",
         },
       },
@@ -149,6 +185,9 @@ test("normalizeProduct maps calculated prices and variants", () => {
 
   assert.equal(product.handle, "shirt");
   assert.equal(product.priceAmount, 499);
+  assert.equal(product.originalPriceAmount, 699);
+  assert.equal(product.discountAmount, 200);
+  assert.equal(product.discountPercentage, 29);
   assert.equal(product.variants[0]?.inStock, true);
   assert.equal(product.variants[0]?.optionValues[0]?.value, "M");
 });

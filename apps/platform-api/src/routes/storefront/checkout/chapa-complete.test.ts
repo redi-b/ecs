@@ -1,7 +1,98 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { completeChapaCheckout } from "./chapa.js";
+import { completeChapaCheckout, initializeChapaCheckout } from "./chapa.js";
+
+describe("initializeChapaCheckout", () => {
+  it("rejects a Chapa checkout without a payer email before calling Chapa", async () => {
+    const response = await initializeChapaCheckout({
+      getMerchantChapaCredentials: async () => ({
+        ok: true,
+        secretKey: "sk_test",
+        providerAccountRef: null,
+      }),
+      medusaInternalUrl: "http://medusa:9000",
+      medusaPublishableKeyId: "pk_test",
+      medusaStoreFetch: async () =>
+        Response.json({
+          cart: {
+            id: "cart_1",
+            total: 250,
+            currency_code: "etb",
+          },
+        }),
+      platformPublicBaseUrl: "http://api.lvh.me",
+      request: new Request("http://api/store/checkout/chapa", {
+        method: "POST",
+        body: JSON.stringify({ cartId: "cart_1" }),
+        headers: { "content-type": "application/json" },
+      }),
+      tenantId: "tenant_1",
+    });
+
+    assert.equal(response.status, 422);
+    assert.deepEqual(await response.json(), {
+      error: "chapa_customer_email_required",
+      message: "Enter a valid email address to pay securely with Chapa.",
+    });
+  });
+
+  it("initializes Chapa with the cart email and records the transaction reference", async () => {
+    const originalFetch = globalThis.fetch;
+    let recordedMetadata: Record<string, unknown> | undefined;
+    globalThis.fetch = (async (input: RequestInfo | URL) => {
+      if (String(input).includes("/transaction/initialize")) {
+        return Response.json({
+          status: "success",
+          data: { checkout_url: "https://checkout.chapa.co/test" },
+        });
+      }
+      throw new Error(`unexpected fetch ${String(input)}`);
+    }) as typeof fetch;
+
+    try {
+      const response = await initializeChapaCheckout({
+        getMerchantChapaCredentials: async () => ({
+          ok: true,
+          secretKey: "sk_test",
+          providerAccountRef: null,
+        }),
+        medusaInternalUrl: "http://medusa:9000",
+        medusaPublishableKeyId: "pk_test",
+        medusaStoreFetch: async (input, init) => {
+          const request = input instanceof Request ? input : new Request(input, init);
+          if (request.method === "GET") {
+            return Response.json({
+              cart: {
+                id: "cart_1",
+                total: 250,
+                currency_code: "etb",
+                email: "buyer@example.org",
+              },
+            });
+          }
+          recordedMetadata = (await request.json()) as Record<string, unknown>;
+          return Response.json({ cart: { id: "cart_1" } });
+        },
+        platformPublicBaseUrl: "http://api.lvh.me",
+        request: new Request("http://api/store/checkout/chapa", {
+          method: "POST",
+          body: JSON.stringify({ cartId: "cart_1" }),
+          headers: { "content-type": "application/json" },
+        }),
+        tenantId: "tenant_1",
+      });
+
+      assert.equal(response.status, 200);
+      const body = await response.json();
+      assert.equal(body.checkoutUrl, "https://checkout.chapa.co/test");
+      assert.equal(typeof body.paymentSession.id, "string");
+      assert.ok(recordedMetadata);
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+});
 
 describe("completeChapaCheckout", () => {
   it("rejects when merchant credentials are missing", async () => {

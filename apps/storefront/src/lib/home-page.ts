@@ -7,7 +7,7 @@ import type { StoreCollection, StoreProduct } from "./commerce/types";
 import type { PageContext } from "./page-context";
 
 type HomeMerchandising = {
-  hero?: { featuredProductId?: string };
+  hero?: { featuredProductId?: string; featuredProductIds?: string[] };
   featuredCollection?: { collectionId?: string; enabled?: boolean; limit?: number };
   featuredProducts: { enabled?: boolean; limit?: number; productIds: string[] };
   products?: { enabled?: boolean; limit?: number; productIds: string[] };
@@ -33,7 +33,7 @@ export async function loadHomePageModel(
 
   if (featured.enabled !== false || catalog?.enabled !== false) {
     const configuredIds = featured.productIds.length > 0 ? featured.productIds : catalog?.productIds ?? [];
-    const productIds = [...new Set([data.home.hero?.featuredProductId, ...configuredIds].filter((id): id is string => Boolean(id?.trim())))];
+    const productIds = [...new Set([...(data.home.hero?.featuredProductIds ?? []), data.home.hero?.featuredProductId, ...configuredIds].filter((id): id is string => Boolean(id?.trim())))];
     const result = options?.includeCatalogFallback
       ? await listStoreProducts({
           platformApiBaseUrl: ctx.platformApiBaseUrl,

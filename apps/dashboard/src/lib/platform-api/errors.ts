@@ -65,6 +65,8 @@ const PLATFORM_ERROR_MESSAGES: Record<string, string> = {
   settings_unavailable: "Shop settings are temporarily unavailable.",
   fulfillment_method_required: "Keep at least delivery or pickup enabled for checkout.",
   invalid_delivery_settings: "Check fulfillment settings and try again.",
+  delivery_price_sync_failed:
+    "The fulfillment settings were not saved because the checkout delivery price could not be updated. Try again in a moment.",
   invalid_promotion: "Check the promotion details and try again.",
   promotion_max_quantity_required:
     "Set a max quantity per item when the discount applies to each item.",

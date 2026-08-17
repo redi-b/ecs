@@ -2,26 +2,28 @@
 import Layout from "./Layout.astro";
 import wishlistIcon from "./icons/wishlist-icon.svg";
 import { parseLuviaData } from "./lib";
-interface Props { data: unknown; tenantName: string; deferCartCount?: boolean; }
-const { data, tenantName, deferCartCount = false } = Astro.props;
+interface Props { data: unknown; themeTokens?: unknown; tenantName: string; deferCartCount?: boolean; }
+const { data, themeTokens, tenantName, deferCartCount = false } = Astro.props;
 const template = parseLuviaData(data);
 ---
-<Layout tenantName={tenantName} header={template.header} footer={template.footer} deferCartCount={deferCartCount} title="Wishlist">
+<Layout tenantName={tenantName} header={template.header} footer={template.footer} themeTokens={themeTokens} deferCartCount={deferCartCount} title="Wishlist">
   <main class="lv-wishlist" data-wishlist-page><header><span><img src={wishlistIcon.src} alt="" /></span><p>YOUR SAVED EDIT</p><h1>Wishlist</h1><small>Saved on this device</small></header><section data-wishlist-content><div class="lv-wishlist__loading">Loading your saved items…</div></section></main>
 </Layout>
-<script is:inline>
+<script>
+  import { createWishlistStore, WISHLIST_UPDATED_EVENT } from "../../../lib/browser/wishlist";
+
   (() => {
-    const root = document.querySelector("[data-wishlist-page]"); const content = root?.querySelector("[data-wishlist-content]"); if (!content) return; const key = `ecs:wishlist:${location.hostname}`;
-    const read = () => { try { const value = JSON.parse(localStorage.getItem(key) || "[]"); if (!Array.isArray(value)) return []; return value.map((item) => typeof item === "string" ? { path: item, title: decodeURIComponent(item.split("/").filter(Boolean).at(-1) || "Product").replace(/[-_]+/g," "), thumbnail: null, priceAmount: null, currencyCode: null } : item).filter((item) => item && typeof item.path === "string"); } catch { return []; } };
-    const money = (amount, currency) => { if (typeof amount !== "number") return ""; try { return new Intl.NumberFormat(undefined,{ style:"currency", currency:(currency || "ETB").toUpperCase() }).format(amount); } catch { return String(amount); } };
+    const root = document.querySelector("[data-wishlist-page]"); const content = root?.querySelector("[data-wishlist-content]"); if (!content) return;
+    const store = createWishlistStore(localStorage, location.hostname);
+    const money = (amount: number | null, currency: string | null) => { if (typeof amount !== "number") return ""; try { return new Intl.NumberFormat(undefined,{ style:"currency", currency:(currency || "ETB").toUpperCase() }).format(amount); } catch { return String(amount); } };
     const render = () => {
-      const items = read(); content.replaceChildren();
+      const items = store.read(); content.replaceChildren();
       if (!items.length) { const empty = document.createElement("div"); empty.className = "lv-wishlist__empty"; const title = document.createElement("h2"); title.textContent = "Nothing saved yet"; const copy = document.createElement("p"); copy.textContent = "Use the heart on a product to keep it here for later."; const link = document.createElement("a"); link.href = "/products"; link.textContent = "Explore products"; empty.append(title, copy, link); content.append(empty); return; }
       const grid = document.createElement("div"); grid.className = "lv-wishlist__grid";
-      for (const item of items) { const card = document.createElement("article"); if (item.thumbnail) { const media = document.createElement("a"); media.className = "lv-wishlist__media"; media.href = item.path; const image = document.createElement("img"); image.src = item.thumbnail; image.alt = ""; image.loading = "lazy"; media.append(image); card.append(media); } const meta = document.createElement("span"); meta.textContent = "Saved product"; const link = document.createElement("a"); link.href = item.path; link.textContent = item.title || "Product"; const price = document.createElement("strong"); price.textContent = money(item.priceAmount,item.currencyCode); const remove = document.createElement("button"); remove.type = "button"; remove.textContent = "Remove"; remove.addEventListener("click", () => { const next = items.filter((saved) => saved.path !== item.path); localStorage.setItem(key, JSON.stringify(next)); window.dispatchEvent(new CustomEvent("ecs:wishlist-updated",{ detail:{ items:next } })); render(); }); card.append(meta,link); if (price.textContent) card.append(price); card.append(remove); grid.append(card); }
+      for (const item of items) { const card = document.createElement("article"); if (item.thumbnail) { const media = document.createElement("a"); media.className = "lv-wishlist__media"; media.href = item.path; const image = document.createElement("img"); image.src = item.thumbnail; image.alt = ""; image.loading = "lazy"; media.append(image); card.append(media); } const meta = document.createElement("span"); meta.textContent = "Saved product"; const link = document.createElement("a"); link.href = item.path; link.textContent = item.title || "Product"; const price = document.createElement("strong"); price.textContent = money(item.priceAmount,item.currencyCode); const remove = document.createElement("button"); remove.type = "button"; remove.textContent = "Remove"; remove.addEventListener("click", () => { const next = store.remove(item.path); window.dispatchEvent(new CustomEvent(WISHLIST_UPDATED_EVENT,{ detail:{ items:next } })); }); card.append(meta,link); if (price.textContent) card.append(price); card.append(remove); grid.append(card); }
       content.append(grid);
     };
-    window.addEventListener("ecs:wishlist-updated",render); render();
+    window.addEventListener(WISHLIST_UPDATED_EVENT, render); render();
   })();
 </script>
 <style is:global lang="scss">@use "./styles/secondary-pages.scss";</style>

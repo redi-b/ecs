@@ -853,7 +853,10 @@ const app = createPlatformApp({
         { tenantId: input.tenantId },
         "delivery_fee_sync_skipped_missing_shipping_option",
       );
-      return;
+      return {
+        ok: false as const,
+        error: "delivery_shipping_option_unavailable" as const,
+      };
     }
 
     const result = await updateTenantShippingPrice({
@@ -867,6 +870,7 @@ const app = createPlatformApp({
         { tenantId: input.tenantId, error: result.error },
         "delivery_fee_sync_failed",
       );
+      return { ok: false as const, error: "commerce_backend_unavailable" as const };
     }
 
     // Pickup is free: ensure a zero-amount Store Pickup option exists for older shops.
@@ -879,7 +883,10 @@ const app = createPlatformApp({
         { tenantId: input.tenantId, error: pickup.error },
         "pickup_option_ensure_failed",
       );
+      return { ok: false as const, error: "pickup_option_sync_failed" as const };
     }
+
+    return { ok: true as const };
   },
   updateTenantShopSettings,
   updateMerchantProduct: productService.updateMerchantProduct,

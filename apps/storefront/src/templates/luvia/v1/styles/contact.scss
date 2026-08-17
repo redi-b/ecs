@@ -1,30 +1,30 @@
 .lv-contact { min-height: 100vh; padding-bottom: 80px; color: var(--lv-ink); }
-.lv-contact__hero { min-height: 335px; padding: 110px 20px 34px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; background: linear-gradient(180deg,#e3ffe7 0%,rgba(227,255,231,0) 100%); text-align: center; }
-.lv-contact__hero h1 { margin: 0; color: #101812; font: 400 clamp(84px,10vw,154px)/.8 "GC Molecule Demo",Arial,sans-serif; letter-spacing: -.055em; }
-.lv-contact__hero p { margin: 25px 0 0; color: #879889; font-size: 16px; }
+.lv-contact__hero { min-height: 335px; padding: 110px 20px 34px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; background: linear-gradient(180deg,var(--lv-accent) 0%,color-mix(in srgb,var(--lv-accent) 0%,transparent) 100%); text-align: center; }
+.lv-contact__hero h1 { margin: 0; color: var(--lv-dark); font-family: var(--lv-font-display); font-size: clamp(56px,9.79vw,148px); font-weight: 500; line-height: clamp(48px,7.67vw,116px); letter-spacing: -.03em; }
+.lv-contact__hero p { margin: 25px 0 0; color: color-mix(in srgb,var(--lv-ink) 48%,var(--lv-bg)); font-size: 16px; }
 .lv-contact__layout { width: calc(100% - 120px); max-width: 1392px; margin: 38px auto 0; display: grid; grid-template-columns: minmax(0,539px) minmax(0,832px); gap: 22px; align-items: start; }
 .lv-contact__aside { display: flex; flex-direction: column; gap: 12px; }
-.lv-contact-info, .lv-contact-form { border: 1px solid #dbe5dc; border-radius: 14px; background: white; }
+.lv-contact-info, .lv-contact-form { border: 1px solid var(--lv-line); border-radius: 14px; background: white; }
 .lv-contact-info { min-height: 282px; padding: 20px 16px; }
-.lv-contact-info h2 { margin: 0 0 20px; font: 400 29px/1 "GC Molecule Demo",Arial,sans-serif; }
+.lv-contact-info h2 { margin: 0 0 20px; font-family: var(--lv-font-display); font-size: clamp(22px,1.72vw,26px); font-weight: 400; line-height: normal; letter-spacing: 0; }
 .lv-contact-info > div { display: flex; flex-direction: column; gap: 12px; }
 .lv-contact-info p { margin: 0; display: grid; grid-template-columns: 40px minmax(0,1fr); gap: 10px; align-items: center; }
-.lv-contact-info p > span:first-child { width: 40px; height: 40px; display: grid; place-items: center; border: 1px solid #f7fff7; border-radius: 8px; background: #75ed8b; box-shadow: 0 4px 11px rgba(201,255,194,.8); }
+.lv-contact-info p > span:first-child { width: 40px; height: 40px; display: grid; place-items: center; border: 1px solid var(--lv-bg); border-radius: 8px; background: var(--lv-green); color: var(--lv-on-primary); box-shadow: 0 4px 11px color-mix(in srgb,var(--lv-accent) 72%,transparent); }
 .lv-contact-info p > span:first-child img { width: 16px; height: 16px; }
 .lv-contact-info p > span:last-child { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
-.lv-contact-info small { color: #667a68; }
+.lv-contact-info small { color: color-mix(in srgb,var(--lv-ink) 62%,var(--lv-bg)); }
 .lv-contact-info strong, .lv-contact-info a, .lv-contact-info .lv-contact-socials { color: var(--lv-ink); font-size: 14px; font-weight: 400; text-decoration: none; }
-.lv-contact-info__empty { display: block !important; color: #667a68; }
-.lv-contact-map { height: 443px; overflow: hidden; border-radius: 14px; background: #edf8ee; }
+.lv-contact-info__empty { display: block !important; color: color-mix(in srgb,var(--lv-ink) 62%,var(--lv-bg)); }
+.lv-contact-map { height: 443px; overflow: hidden; border-radius: 14px; background: var(--lv-soft); }
 .lv-contact-map img { width: 100%; height: 100%; object-fit: cover; }
 .lv-contact-form { position: sticky; top: 110px; padding: 30px 31px 32px; display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 18px 28px; }
-.lv-contact-form label { min-width: 0; display: flex; flex-direction: column; gap: 7px; color: #667a68; font-size: 14px; }
+.lv-contact-form label { min-width: 0; display: flex; flex-direction: column; gap: 7px; color: color-mix(in srgb,var(--lv-ink) 62%,var(--lv-bg)); font-size: 14px; }
 .lv-contact-form label.is-wide { grid-column: 1 / -1; }
-.lv-contact-form input, .lv-contact-form textarea { width: 100%; min-height: 52px; padding: 14px 16px; border: 1px solid #dbe5dc; border-radius: 14px; outline: 0; background: white; color: #101812; font: inherit; font-size: 16px; transition: border-color 150ms ease,box-shadow 150ms ease; }
+.lv-contact-form input, .lv-contact-form textarea { width: 100%; min-height: 52px; padding: 14px 16px; border: 1px solid var(--lv-line); border-radius: 14px; outline: 0; background: white; color: var(--lv-dark); font: inherit; font-size: 16px; transition: border-color 150ms ease,box-shadow 150ms ease; }
 .lv-contact-form textarea { min-height: 158px; resize: vertical; }
-.lv-contact-form input:focus, .lv-contact-form textarea:focus { border-color: #3ee272; box-shadow: 0 0 0 3px rgba(62,226,114,.12); }
-.lv-contact-form input::placeholder, .lv-contact-form textarea::placeholder { color: #a8b2a9; }
-.lv-contact-form button { min-height: 54px; grid-column: 1 / -1; margin-top: 4px; border: 0; border-radius: 999px; background: #3ee272; color: var(--lv-ink); font-size: 17px; font-weight: 600; cursor: pointer; }
+.lv-contact-form input:focus, .lv-contact-form textarea:focus { border-color: var(--lv-green); box-shadow: 0 0 0 3px color-mix(in srgb, var(--lv-green) 14%, transparent); }
+.lv-contact-form input::placeholder, .lv-contact-form textarea::placeholder { color: color-mix(in srgb,var(--lv-ink) 32%,var(--lv-bg)); }
+.lv-contact-form button { min-height: 54px; grid-column: 1 / -1; margin-top: 4px; border: 0; border-radius: 999px; background: var(--lv-green); color: var(--lv-on-primary); font-size: 18px; font-weight: 500; letter-spacing: 0; cursor: pointer; }
 .lv-contact-form__unavailable { grid-column: 1 / -1; margin: 4px 0 0; padding: 14px; border-radius: 12px; background: #fff7eb; color: #7b541d; }
 
 @media (max-width: 1000px) {

@@ -163,7 +163,7 @@ const mainLinks = links.filter((item) => !item.href.startsWith("/cart"));
     <link rel="stylesheet" href={googleFontsHref} />
     <link rel="stylesheet" href="/styles/classic.css" />
   </head>
-  <body class="at-body" style={style || undefined} data-editor-mode={editorMode ? "true" : undefined} data-editor-css-vars={editorMode ? JSON.stringify({ "themeTokens.colors.primary": "--at-primary", "themeTokens.typography.headingFont": "--at-display", "themeTokens.typography.bodyFont": "--at-sans" }) : undefined}>
+  <body class="at-body" style={style || undefined} data-editor-mode={editorMode ? "true" : undefined} data-defer-cart-count={deferCartCount ? "true" : undefined} data-editor-css-vars={editorMode ? JSON.stringify({ "themeTokens.colors.primary": "--at-primary", "themeTokens.typography.headingFont": "--at-display", "themeTokens.typography.bodyFont": "--at-sans" }) : undefined}>
     <div class="at-shell">
       {editorMode || announcement ? <div class="at-announcement" data-editor-section="announcement" data-editor-visible-path="announcement.enabled" hidden={!announcementEnabled}><span data-editor-path="announcement.text" contenteditable={editorMode ? "plaintext-only" : undefined}>{announcement}</span></div> : null}
       <div class="at-header-bar">
@@ -273,7 +273,9 @@ const mainLinks = links.filter((item) => !item.href.startsWith("/cart"));
         </nav>
       </footer>
     </div>
-    <script is:inline define:vars={{ deferCartCount }}>
+    <script>
+      import { loadAndSyncCartCount } from "../../../lib/browser/cart-count";
+
       (() => {
         const btn = document.querySelector("[data-menu-toggle]");
         const panel = document.querySelector("[data-mobile-nav]");
@@ -292,25 +294,8 @@ const mainLinks = links.filter((item) => !item.href.startsWith("/cart"));
           });
         }
 
-        if (deferCartCount) {
-          fetch("/cart-count", { credentials: "same-origin", cache: "no-store" })
-            .then((r) => (r.ok ? r.json() : null))
-            .then((data) => {
-              const count = data && typeof data.count === "number" ? data.count : 0;
-              document.querySelectorAll("[data-cart-count]").forEach((el) => {
-                if (count > 0) {
-                  el.textContent = String(count);
-                  el.removeAttribute("hidden");
-                } else {
-                  el.textContent = "";
-                  el.setAttribute("hidden", "");
-                }
-              });
-              document.querySelectorAll("[data-cart-count-label]").forEach((el) => {
-                el.textContent = count > 0 ? ` (${count})` : "";
-              });
-            })
-            .catch(() => {});
+        if (document.body.dataset.deferCartCount === "true" && document.body.dataset.editorMode !== "true") {
+          void loadAndSyncCartCount();
         }
       })();
     </script>
