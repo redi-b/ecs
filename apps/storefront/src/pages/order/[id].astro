@@ -2,16 +2,22 @@
 import StoreUnavailable from "../../components/shell/StoreUnavailable.astro";
 import { applyPrivateNoStore } from "../../lib/http-cache";
 import { loadPageContext } from "../../lib/page-context";
-import { getLastOrderFromRequest } from "../../lib/session/cart-cookie";
+import {
+  getLastOrderFromRequest,
+  isLastOrderReceiptAuthorized,
+} from "../../lib/session/cart-cookie";
 import { getPrimaryColor, themeFromTokens } from "../../lib/theme";
 import { resolveRendererSlot } from "../../templates/registry";
 
 const ctx = await loadPageContext(Astro.request);
 const orderId = Astro.params.id ?? "";
 const lastOrder = getLastOrderFromRequest(Astro.request);
+const receiptAuthorized = isLastOrderReceiptAuthorized(orderId, lastOrder);
 
 if (!ctx.ok) {
   Astro.response.status = ctx.status;
+} else if (!receiptAuthorized) {
+  Astro.response.status = 404;
 }
 
 applyPrivateNoStore(Astro.cache, Astro.response);
@@ -22,11 +28,20 @@ const OrderConfirm = ctx.ok
 ---
 
 {
-  !ctx.ok || !OrderConfirm ? (
-    <StoreUnavailable message={ctx.ok ? "Template unavailable" : ctx.message} />
+  !ctx.ok || !OrderConfirm || !receiptAuthorized ? (
+    <StoreUnavailable
+      message={
+        !ctx.ok
+          ? ctx.message
+          : !receiptAuthorized
+            ? "This order confirmation is only available on the device that placed the order."
+            : "Template unavailable"
+      }
+    />
   ) : (
     <OrderConfirm
       data={ctx.config.storefront.data}
+      themeTokens={ctx.config.storefront.themeTokens}
       tenantName={ctx.config.tenant.name}
       cartCount={ctx.cartCount}
       primaryColor={getPrimaryColor(ctx.config.storefront.themeTokens)}

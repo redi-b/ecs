@@ -5,12 +5,12 @@ import brandImage from "./assets/brand-statement-image.png";
 import categoriesImage from "./assets/categories-hero-image.png";
 import sparkleIcon from "./icons/sparkle-icon.svg";
 import { parseLuviaData, storefrontAsset } from "./lib";
-interface Props { data: unknown; tenantName: string; deferCartCount?: boolean; }
-const { data, tenantName, deferCartCount = false } = Astro.props;
+interface Props { data: unknown; themeTokens?: unknown; tenantName: string; deferCartCount?: boolean; }
+const { data, themeTokens, tenantName, deferCartCount = false } = Astro.props;
 const template = parseLuviaData(data);
 const expertiseImage = storefrontAsset(template.home.expertise.imageAssetId, aboutImage.src);
 ---
-<Layout tenantName={tenantName} header={template.header} footer={template.footer} deferCartCount={deferCartCount} title="About">
+<Layout tenantName={tenantName} header={template.header} footer={template.footer} themeTokens={themeTokens} deferCartCount={deferCartCount} title="About">
   <main class="lv-about-page">
     <section class="lv-about-hero"><p>ABOUT {tenantName.toUpperCase()}</p><h1>Beauty, considered<br />from every angle.</h1><div><span>{template.home.story.body}</span><a href="/products">Explore the collection</a></div></section>
     <section class="lv-about-principle"><div><img src={brandImage.src} alt="Selected cosmetic ingredients" /><span><img src={sparkleIcon.src} alt="" />OUR APPROACH</span></div><div><h2>{template.home.expertise.title}</h2><p>{template.home.expertise.body}</p></div></section>

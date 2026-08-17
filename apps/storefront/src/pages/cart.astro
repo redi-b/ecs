@@ -21,6 +21,7 @@ const Cart = ctx.ok ? resolveRendererSlot(ctx.config.storefront.templateKey, "Ca
   ) : (
     <Cart
       data={ctx.config.storefront.data}
+      themeTokens={ctx.config.storefront.themeTokens}
       tenantName={ctx.config.tenant.name}
       cartCount={ctx.cartCount}
       primaryColor={getPrimaryColor(ctx.config.storefront.themeTokens)}

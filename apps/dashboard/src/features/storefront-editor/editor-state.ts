@@ -3,6 +3,7 @@ import {
   getStorefrontEditorManifest,
   getStorefrontTemplateDefinition,
   inferSurfaceMode,
+  type ThemePaletteSeed,
   type ThemeSurfaceMode,
 } from "@ecs/storefront-templates";
 export type EditorData = {
@@ -46,6 +47,7 @@ export type StorefrontPageProps = {
   featuredCollectionId?: string;
   featuredCollectionTitle?: string;
   featuredProductIds?: string[];
+  heroFeaturedProductIds?: string[];
   featuredProductsEnabled?: boolean;
   footerAddress?: string;
   footerPhone?: string;
@@ -113,6 +115,7 @@ export function buildDraftPayload(input: {
         setPathValue(themeTokens, field.path.replace(/^themeTokens\./, ""), draftValue);
       } else {
         setPathValue(data, field.path, draftValue);
+        field.deprecatedPaths?.forEach((path) => deletePathValue(data, path));
       }
     }
   }
@@ -330,8 +333,31 @@ function requireEditorManifest(templateKey: string) {
 export function themePalettePageProps(
   primary: string,
   mode: ThemeSurfaceMode,
+  templateKey?: string,
 ): Partial<StorefrontPageProps> {
-  const generated = generateThemeFromPrimary(primary, mode);
+  const definition = templateKey ? getStorefrontTemplateDefinition(templateKey) : undefined;
+  const manifest = templateKey ? getStorefrontEditorManifest(templateKey) : undefined;
+  const defaults = definition?.defaultThemeTokens as {
+    colors?: Partial<ThemePaletteSeed["colors"]>;
+  } | undefined;
+  const colors = defaults?.colors;
+  const seed = colors?.primary && colors.background && colors.foreground && colors.muted && colors.accent
+      ? {
+        id: `${templateKey ?? "template"}-${mode}`,
+        surfaceMode: mode,
+        ...(manifest?.theme?.paletteStrategy
+          ? { strategy: manifest.theme.paletteStrategy }
+          : {}),
+        colors: {
+          primary: colors.primary,
+          background: colors.background,
+          foreground: colors.foreground,
+          muted: colors.muted,
+          accent: colors.accent,
+        },
+      } satisfies ThemePaletteSeed
+    : undefined;
+  const generated = generateThemeFromPrimary(primary, mode, seed);
   return {
     surfaceMode: mode,
     autoPalette: true,
@@ -357,15 +383,8 @@ export function themeResetPageProps(templateKey: string): Partial<StorefrontPage
   const typography = tokens?.typography ?? {};
   const backgroundColor = colors.background;
 
-  return {
-    accentColor: colors.accent,
+  const reset: Partial<StorefrontPageProps> = {
     autoPalette: tokens?.autoPalette ?? true,
-    backgroundColor,
-    bodyFont: typography.bodyFont,
-    foregroundColor: colors.foreground,
-    headingFont: typography.headingFont,
-    mutedColor: colors.muted,
-    primaryColor: colors.primary,
     surfaceMode:
       tokens?.surfaceMode === "dark" || tokens?.colorMode === "dark"
         ? "dark"
@@ -373,6 +392,14 @@ export function themeResetPageProps(templateKey: string): Partial<StorefrontPage
           ? "light"
           : inferSurfaceMode(backgroundColor),
   };
+  if (colors.accent) reset.accentColor = colors.accent;
+  if (backgroundColor) reset.backgroundColor = backgroundColor;
+  if (typography.bodyFont) reset.bodyFont = typography.bodyFont;
+  if (colors.foreground) reset.foregroundColor = colors.foreground;
+  if (typography.headingFont) reset.headingFont = typography.headingFont;
+  if (colors.muted) reset.mutedColor = colors.muted;
+  if (colors.primary) reset.primaryColor = colors.primary;
+  return reset;
 }
 
 function getPathValue(source: unknown, path: string) {
@@ -404,6 +431,18 @@ function setPathValue(target: unknown, path: string, value: unknown) {
   });
 
   current[segments[segments.length - 1] ?? ""] = value;
+}
+
+function deletePathValue(target: unknown, path: string) {
+  if (target === null || typeof target !== "object") return;
+  const segments = path.split(".");
+  const parent = segments.slice(0, -1).reduce<unknown>((current, segment) => {
+    if (current === null || typeof current !== "object") return undefined;
+    return (current as Record<string, unknown>)[segment];
+  }, target);
+  if (parent && typeof parent === "object") {
+    delete (parent as Record<string, unknown>)[segments.at(-1) ?? ""];
+  }
 }
 
 function cloneJson(value: unknown) {

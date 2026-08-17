@@ -19,6 +19,7 @@ export const luviaV1Defaults: LuviaV1Data = {
       primaryCtaLabel: "Shop Our Essentials",
       primaryCtaHref: "/products",
       trustLabels: ["Clean & Natural", "Barrier Focused", "Clinically Inspired"],
+      featuredProductIds: [],
     },
     featuredProducts: {
       enabled: true,
@@ -77,6 +78,9 @@ export const luviaV1Defaults: LuviaV1Data = {
   footer: {
     blurb:
       "A collection of leading beauty products for thoughtful, effective skincare routines.",
+    credit: {
+      enabled: true,
+    },
     phone: "+251 91 266 5485",
     email: "hello@luviabeauty.com",
     address: "Kassanchis, Addis Ababa, Ethiopia",
@@ -114,7 +118,7 @@ export const luviaV1ThemeTokens: LuviaV1ThemeTokens = {
     foreground: "#0f3112",
     primary: "#3ee272",
     muted: "#edf8ee",
-    accent: "#d3ffd7",
+    accent: "#b5ffa2",
   },
   typography: {
     headingFont: "GC Molecule Demo",

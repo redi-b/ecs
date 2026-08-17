@@ -30,6 +30,7 @@ import {
   hslToHex,
   normalizeHex,
   rgbToHex,
+  type StorefrontEditorColorRole,
 } from "@ecs/storefront-templates";
 
 import { ensureStorefrontFontOptionsLoaded, FONT_OPTIONS } from "./editor-config";
@@ -84,12 +85,14 @@ export function ThemeBrandSection({
   allowDarkMode = true,
   data,
   dispatch,
+  editableColors,
   props,
   templateKey,
 }: {
   allowDarkMode?: boolean;
   data: EditorData;
   dispatch: (action: EditorAction) => void;
+  editableColors?: StorefrontEditorColorRole[] | undefined;
   props: StorefrontPageProps;
   templateKey: string;
 }) {
@@ -104,7 +107,7 @@ export function ThemeBrandSection({
     : "#9bc4a0";
 
   function regenerate(nextPrimary = primary, nextMode = mode) {
-    updateStorefrontProps(data, dispatch, themePalettePageProps(nextPrimary, nextMode));
+    updateStorefrontProps(data, dispatch, themePalettePageProps(nextPrimary, nextMode, templateKey));
   }
 
   function resetToDefaults() {
@@ -223,8 +226,15 @@ export function ThemeBrandSection({
 
         <div className="flex flex-col gap-3">
           <FieldLabel className="text-sm font-medium">{t("editor.theme.colors")}</FieldLabel>
-          <div className="grid grid-cols-5 gap-2.5">
-            {PALETTE_FIELDS.map((field) => {
+          <div
+            className="grid gap-2.5"
+            style={{
+              gridTemplateColumns: `repeat(${Math.min(editableColors?.length ?? PALETTE_FIELDS.length, 5)}, minmax(0, 1fr))`,
+            }}
+          >
+            {PALETTE_FIELDS.filter((field) =>
+              (editableColors ?? PALETTE_FIELDS.map((item) => item.key)).includes(field.key),
+            ).map((field) => {
               const value = props[field.prop];
               const hex =
                 typeof value === "string" && isHexColor(value) ? value : "#888888";

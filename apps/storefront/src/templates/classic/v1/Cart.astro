@@ -1,5 +1,6 @@
 ---
 import type { StoreCart } from "../../../lib/commerce/types";
+import { resolveStoreCartSummary } from "../../../lib/commerce/cart-summary";
 import { formatMoney } from "../../../lib/money";
 import type { ShellTheme } from "../../../lib/theme";
 import Layout from "./Layout.astro";
@@ -19,6 +20,7 @@ interface Props {
 const { tenantName, cartCount, primaryColor, theme, currentPath = "/cart", cart, error } =
   Astro.props;
 const items = cart?.items ?? [];
+const summary = resolveStoreCartSummary(cart);
 ---
 
 <Layout
@@ -130,10 +132,17 @@ const items = cart?.items ?? [];
 
         <aside class="at-panel at-cart-summary" aria-label="Order summary">
           <h2>Summary</h2>
+          <form method="post" action="/actions/cart/promotion" class="at-row" style="margin-bottom:1rem">
+            <label class="at-sr-only" for="classic-promotion-code">Discount code</label>
+            <input id="classic-promotion-code" name="code" autocomplete="off" autocapitalize="characters" placeholder="Discount code" />
+            <button class="at-btn at-btn-ghost at-btn-sm" type="submit">Apply</button>
+          </form>
+          {summary.appliedCodes.map((promotion) => <form method="post" action="/actions/cart/promotion" class="at-summary-line"><input type="hidden" name="intent" value="remove" /><input type="hidden" name="code" value={promotion.code ?? ""} /><span>Code: <strong>{promotion.code}</strong></span><button class="at-btn at-btn-ghost at-btn-sm" type="submit">Remove</button></form>)}
           <div class="at-summary-line">
             <span>Subtotal</span>
-            <span>{formatMoney(cart?.itemTotal ?? cart?.total, cart?.currencyCode)}</span>
+            <span>{formatMoney(summary.subtotal, cart?.currencyCode)}</span>
           </div>
+          {summary.savingsTotal != null && summary.savingsTotal > 0 ? <div class="at-summary-line"><span>Discount</span><span>−{formatMoney(summary.savingsTotal, cart?.currencyCode)}</span></div> : null}
           {cart?.shippingTotal != null ? (
             <div class="at-summary-line">
               <span>Shipping</span>
@@ -147,7 +156,7 @@ const items = cart?.items ?? [];
           )}
           <div class="at-summary-line total">
             <span>Total</span>
-            <span>{formatMoney(cart?.total ?? cart?.itemTotal, cart?.currencyCode)}</span>
+            <span>{formatMoney(summary.total, cart?.currencyCode)}</span>
           </div>
           <div class="at-actions" style="margin-top:1.25rem">
             <a class="at-btn at-btn-accent at-btn-block" href="/checkout">

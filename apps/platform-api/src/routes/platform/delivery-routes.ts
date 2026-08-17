@@ -139,6 +139,29 @@ export function registerDeliveryRoutes(
       return context.json({ error: "fulfillment_method_required" }, 400);
     }
 
+    // The commerce price is authoritative at checkout. A settings save must not
+    // report success while Medusa still holds a different delivery amount.
+    if (options.syncDeliveryShippingPrice) {
+      const feeAmount = Number.parseFloat(defaultDeliveryFee);
+      if (Number.isFinite(feeAmount) && feeAmount >= 0) {
+        const syncResult = await options.syncDeliveryShippingPrice({
+          amount: feeAmount,
+          currencyCode: currency,
+          tenantId,
+          userId: session.user.id,
+        });
+        if (!syncResult.ok) {
+          return context.json(
+            {
+              error: "delivery_price_sync_failed",
+              reason: syncResult.error,
+            },
+            502,
+          );
+        }
+      }
+    }
+
     const result = await options.updateDeliverySettings({
       currency: currency,
       defaultDeliveryFee,
@@ -151,19 +174,6 @@ export function registerDeliveryRoutes(
       userId: session.user.id,
       zones,
     });
-
-    // Best-effort: push fee onto Medusa flat-rate shipping option so cart totals match.
-    if (options.syncDeliveryShippingPrice) {
-      const feeAmount = Number.parseFloat(defaultDeliveryFee);
-      if (Number.isFinite(feeAmount) && feeAmount >= 0) {
-        await options.syncDeliveryShippingPrice({
-          amount: feeAmount,
-          currencyCode: currency,
-          tenantId,
-          userId: session.user.id,
-        });
-      }
-    }
 
     return context.json({
       delivery: result.delivery,

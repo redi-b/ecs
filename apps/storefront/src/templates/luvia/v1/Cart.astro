@@ -1,19 +1,21 @@
 ---
 import type { StoreCart } from "../../../lib/commerce/types";
+import { resolveStoreCartSummary } from "../../../lib/commerce/cart-summary";
 import { formatMoney } from "../../../lib/money";
 import Layout from "./Layout.astro";
 import cartIcon from "./icons/cart-icon.svg";
 import chevronIcon from "./icons/chevron-icon.svg";
 import { parseLuviaData } from "./lib";
 
-interface Props { data: unknown; tenantName: string; cartCount: number; cart: StoreCart | null; error?: string | null; }
-const { data, tenantName, cartCount, cart, error } = Astro.props;
+interface Props { data: unknown; themeTokens?: unknown; tenantName: string; cartCount: number; cart: StoreCart | null; error?: string | null; }
+const { data, themeTokens, tenantName, cartCount, cart, error } = Astro.props;
 const template = parseLuviaData(data);
 const items = cart?.items ?? [];
 const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
+const summary = resolveStoreCartSummary(cart);
 ---
 
-<Layout tenantName={tenantName} header={template.header} footer={template.footer} cartCount={cartCount} title="Your Cart">
+<Layout tenantName={tenantName} header={template.header} footer={template.footer} themeTokens={themeTokens} cartCount={cartCount} title="Your Cart">
   <main class="lv-cart-page" data-cart-page>
     <nav class="lv-cart-page__breadcrumb" aria-label="Breadcrumb"><a href="/">Home</a><img src={chevronIcon.src} alt="" /><a href="/products">Shop</a><img src={chevronIcon.src} alt="" /><span>Cart</span></nav>
     <header class="lv-cart-page__heading"><div><span>Your selection</span><h1>Your Cart</h1><p data-page-item-count>{itemCount} item{itemCount === 1 ? "" : "s"} ready for checkout</p></div><img src={cartIcon.src} alt="" /></header>
@@ -38,7 +40,16 @@ const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
 
       <aside class="lv-cart-summary" aria-label="Order summary">
         <header><h2>Order Summary</h2><span data-summary-count>{itemCount} item{itemCount === 1 ? "" : "s"}</span></header>
-        <dl><div><dt>Subtotal</dt><dd data-summary-subtotal>{formatMoney(cart?.itemTotal ?? cart?.total, cart?.currencyCode)}</dd></div><div><dt>Delivery</dt><dd>{cart?.shippingTotal != null && cart.shippingTotal > 0 ? formatMoney(cart.shippingTotal, cart.currencyCode) : "Calculated at checkout"}</dd></div><div><dt>Total</dt><dd data-summary-total>{formatMoney(cart?.total ?? cart?.itemTotal, cart?.currencyCode)}</dd></div></dl>
+        <section class="lv-cart-summary__promotion" aria-labelledby="promotion-code-label">
+          <form method="post" action="/actions/cart/promotion" data-cart-promotion-form>
+            <label id="promotion-code-label" for="promotion-code">Discount code</label>
+            <div><input id="promotion-code" name="code" autocomplete="off" autocapitalize="characters" placeholder="Enter code" /><button type="submit">Apply</button></div>
+          </form>
+          <div data-applied-promotions>
+            {summary.appliedCodes.map((promotion) => <form method="post" action="/actions/cart/promotion" data-cart-promotion-form><input type="hidden" name="intent" value="remove" /><input type="hidden" name="code" value={promotion.code ?? ""} /><span><b>{promotion.code}</b><small>Applied</small></span><button type="submit" aria-label={`Remove discount ${promotion.code}`}>Remove</button></form>)}
+          </div>
+        </section>
+        <dl><div><dt>Subtotal</dt><dd data-summary-subtotal>{formatMoney(summary.subtotal, cart?.currencyCode)}</dd></div><div data-summary-discount hidden={!summary.savingsTotal}><dt>Discount</dt><dd data-summary-discount-value>−{formatMoney(summary.savingsTotal, cart?.currencyCode)}</dd></div><div><dt>Delivery</dt><dd data-summary-shipping>{summary.shippingTotal != null && summary.shippingTotal > 0 ? formatMoney(summary.shippingTotal, cart?.currencyCode) : "Calculated at checkout"}</dd></div>{summary.taxTotal != null && summary.taxTotal > 0 && <div data-summary-tax><dt>Tax</dt><dd>{formatMoney(summary.taxTotal, cart?.currencyCode)}</dd></div>}<div><dt>Total</dt><dd data-summary-total>{formatMoney(summary.total, cart?.currencyCode)}</dd></div></dl>
         <p>Delivery options and final fees are confirmed for your address during checkout.</p>
         <a href="/checkout">Proceed to Checkout</a><small>Secure checkout · Your cart is saved for 14 days</small>
       </aside>
@@ -52,17 +63,18 @@ const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
     const root = document.querySelector("[data-cart-page]"); if (!root) return;
     const status = root.querySelector("[data-cart-page-status]");
     const money = (amount, currency) => { if (amount == null) return "—"; try { return new Intl.NumberFormat(undefined, { style: "currency", currency: (currency || "ETB").toUpperCase() }).format(amount); } catch { return String(amount); } };
+    const renderPromotions = (cart) => { const target = root.querySelector("[data-applied-promotions]"); if (!target) return; target.replaceChildren(); (cart.promotions || []).filter((promotion) => !promotion.isAutomatic && promotion.code).forEach((promotion) => { const form = document.createElement("form"); form.method = "post"; form.action = "/actions/cart/promotion"; form.dataset.cartPromotionForm = ""; const intent = document.createElement("input"); intent.type = "hidden"; intent.name = "intent"; intent.value = "remove"; const code = document.createElement("input"); code.type = "hidden"; code.name = "code"; code.value = promotion.code; const label = document.createElement("span"); const strong = document.createElement("b"); strong.textContent = promotion.code; const small = document.createElement("small"); small.textContent = "Applied"; label.append(strong, small); const button = document.createElement("button"); button.type = "submit"; button.textContent = "Remove"; button.setAttribute("aria-label", `Remove discount ${promotion.code}`); form.append(intent, code, label, button); target.append(form); }); };
     const sync = (result) => {
       const cart = result.cart; const items = Array.isArray(cart.items) ? cart.items : []; const count = items.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
       root.querySelectorAll("[data-cart-line]").forEach((line) => { const item = items.find((candidate) => candidate.id === line.dataset.cartLine); if (!item) { line.remove(); return; } line.removeAttribute("data-updating"); const qty = line.querySelector("[data-line-quantity]"); const total = line.querySelector("[data-line-total]"); if (qty) qty.textContent = String(item.quantity); if (total) total.textContent = money(item.total ?? item.unitPrice, cart.currencyCode); const forms = [...line.querySelectorAll('form[action="/actions/cart/update"]')]; const decrease = forms[0]?.querySelector('input[name="quantity"]'); const increase = forms[1]?.querySelector('input[name="quantity"]'); if (decrease) decrease.value = String(Math.max(1, item.quantity - 1)); if (increase) increase.value = String(item.quantity + 1); const decreaseButton = forms[0]?.querySelector("button"); if (decreaseButton) decreaseButton.disabled = item.quantity <= 1; });
       const countNodes = root.querySelectorAll("[data-page-item-count],[data-summary-count]"); countNodes.forEach((node) => node.textContent = `${count} item${count === 1 ? "" : "s"}${node.hasAttribute("data-page-item-count") ? " ready for checkout" : ""}`);
-      const subtotal = root.querySelector("[data-summary-subtotal]"); const total = root.querySelector("[data-summary-total]"); if (subtotal) subtotal.textContent = money(cart.itemTotal ?? cart.total, cart.currencyCode); if (total) total.textContent = money(cart.total ?? cart.itemTotal, cart.currencyCode);
+      const subtotal = root.querySelector("[data-summary-subtotal]"); const total = root.querySelector("[data-summary-total]"); const shipping = root.querySelector("[data-summary-shipping]"); const discountRow = root.querySelector("[data-summary-discount]"); const discountValue = root.querySelector("[data-summary-discount-value]"); const savings = Math.max(0, cart.discountTotal != null ? Number(cart.discountTotal) : Number(cart.itemDiscountTotal || 0) + Number(cart.shippingDiscountTotal || 0)); if (subtotal) subtotal.textContent = money(cart.subtotal ?? cart.itemSubtotal ?? cart.itemTotal ?? cart.total, cart.currencyCode); if (total) total.textContent = money(cart.total ?? cart.itemTotal, cart.currencyCode); if (shipping) shipping.textContent = cart.shippingTotal > 0 ? money(cart.shippingTotal, cart.currencyCode) : "Calculated at checkout"; if (discountRow) discountRow.hidden = savings <= 0; if (discountValue) discountValue.textContent = `−${money(savings, cart.currencyCode)}`; renderPromotions(cart);
       if (!items.length) { const layout = root.querySelector("[data-cart-page-layout]"); layout?.remove(); const empty = document.createElement("section"); empty.className = "lv-cart-page__empty"; const title = document.createElement("h2"); title.textContent = "Your cart is empty"; const copy = document.createElement("p"); copy.textContent = "Explore the collection and add something you love."; const link = document.createElement("a"); link.href = "/products"; link.textContent = "Browse products"; empty.append(title, copy, link); root.append(empty); }
       window.dispatchEvent(new CustomEvent("ecs:cart-updated", { detail: { ...result, openDrawer: false } }));
     };
     root.addEventListener("submit", async (event) => {
-      const form = event.target; if (!(form instanceof HTMLFormElement) || !form.matches("[data-cart-page-form]")) return; event.preventDefault(); const line = form.closest("[data-cart-line]"); line?.setAttribute("data-updating", ""); if (status) { status.textContent = form.action.endsWith("/remove") ? "Removing item…" : "Updating your cart…"; status.classList.remove("is-error"); }
-      try { const response = await fetch(form.action, { method: "POST", body: new FormData(form), credentials: "same-origin", headers: { Accept: "application/json" } }); const result = await response.json(); if (!response.ok || !result.ok) throw new Error(result.message || "Could not update your cart."); sync(result); if (status) status.textContent = "Cart updated."; setTimeout(() => { if (status?.textContent === "Cart updated.") status.textContent = ""; }, 1200); }
+      const form = event.target; if (!(form instanceof HTMLFormElement) || !form.matches("[data-cart-page-form],[data-cart-promotion-form]")) return; event.preventDefault(); const line = form.closest("[data-cart-line]"); const isPromotion = form.matches("[data-cart-promotion-form]"); line?.setAttribute("data-updating", ""); if (status) { status.textContent = isPromotion ? (new FormData(form).get("intent") === "remove" ? "Removing discount…" : "Applying discount…") : form.action.endsWith("/remove") ? "Removing item…" : "Updating your cart…"; status.classList.remove("is-error"); }
+      try { const response = await fetch(form.action, { method: "POST", body: new FormData(form), credentials: "same-origin", headers: { Accept: "application/json" } }); const result = await response.json(); if (!response.ok || !result.ok) throw new Error(result.message || "Could not update your cart."); sync(result); if (isPromotion && new FormData(form).get("intent") !== "remove") form.reset(); if (status) status.textContent = isPromotion ? "Discount updated." : "Cart updated."; setTimeout(() => { if (status?.textContent === "Cart updated." || status?.textContent === "Discount updated.") status.textContent = ""; }, 1200); }
       catch (cause) { line?.removeAttribute("data-updating"); if (status) { status.textContent = cause instanceof Error ? cause.message : "Could not update your cart."; status.classList.add("is-error"); } }
     });
   })();

@@ -1,6 +1,6 @@
 "use client";
 
-import { getStorefrontEditorManifest } from "@ecs/storefront-templates";
+import { contrastingInk, getStorefrontEditorManifest } from "@ecs/storefront-templates";
 import { RiEditLine } from "@remixicon/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
@@ -105,6 +105,15 @@ function StorefrontIframePreview({
     // JSON contract, so normalize it before it crosses the iframe boundary.
     return JSON.parse(JSON.stringify(values)) as Record<string, unknown>;
   }, [manifest, props]);
+  const resolvedTheme = useMemo(() => ({
+    accent: props.accentColor,
+    background: props.backgroundColor,
+    foreground: props.foregroundColor,
+    muted: props.mutedColor,
+    onAccent: props.accentColor ? contrastingInk(props.accentColor) : undefined,
+    onPrimary: props.primaryColor ? contrastingInk(props.primaryColor) : undefined,
+    primary: props.primaryColor,
+  }), [props.accentColor, props.backgroundColor, props.foregroundColor, props.mutedColor, props.primaryColor]);
   const postConnected = useCallback((message: Record<string, unknown>) => {
     const origin = connectedOriginRef.current;
     if (!origin) return;
@@ -124,8 +133,8 @@ function StorefrontIframePreview({
   }, [previewUrl]);
 
   useEffect(() => {
-    postConnected({ type: "ecs:editor:update", fields });
-  }, [fields, postConnected]);
+    postConnected({ type: "ecs:editor:update", fields, theme: resolvedTheme });
+  }, [fields, postConnected, resolvedTheme]);
 
   useEffect(() => {
     postConnected({ type: "ecs:editor:ui", selectedPath, showEditHints });
@@ -144,7 +153,7 @@ function StorefrontIframePreview({
       if (!event.data || typeof event.data !== "object") return;
       if (event.data.type === "ecs:preview:ready") {
         connectedOriginRef.current = event.origin;
-        postConnected({ type: "ecs:editor:update", fields });
+        postConnected({ type: "ecs:editor:update", fields, theme: resolvedTheme });
         postConnected({ type: "ecs:editor:ui", selectedPath, showEditHints });
         setIsLoaded(true);
         return;
@@ -179,7 +188,7 @@ function StorefrontIframePreview({
     }
     window.addEventListener("message", onMessage);
     return () => window.removeEventListener("message", onMessage);
-  }, [data, dispatch, fields, manifest, onSelectPath, postConnected, selectedPath, showEditHints]);
+  }, [data, dispatch, fields, manifest, onSelectPath, postConnected, resolvedTheme, selectedPath, showEditHints]);
 
   return (
     <div className={cn("relative h-full min-h-0 w-full bg-background", !isFullscreen && "max-lg:min-h-[42rem]")}>

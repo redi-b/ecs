@@ -12,19 +12,34 @@ import type {
 function getCalculatedPrice(variant: Record<string, unknown>) {
   const calculated = isRecord(variant.calculated_price) ? variant.calculated_price : null;
   if (!calculated) {
-    return { amount: null as number | null, currency: null as string | null };
+    return {
+      amount: null as number | null,
+      originalAmount: null as number | null,
+      discountAmount: null as number | null,
+      discountPercentage: null as number | null,
+      currency: null as string | null,
+    };
   }
 
-  const amount =
-    getNumber(calculated.calculated_amount) ??
-    getNumber(calculated.original_amount) ??
-    getNumber(calculated.amount) ??
-    null;
+  const calculatedAmount = getNumber(calculated.calculated_amount);
+  const originalAmount = getNumber(calculated.original_amount);
+  const amount = calculatedAmount ?? originalAmount ?? getNumber(calculated.amount) ?? null;
+  const hasDiscount = amount != null && originalAmount != null && originalAmount > amount;
+  const discountAmount = hasDiscount ? originalAmount - amount : null;
+  const discountPercentage = hasDiscount && originalAmount > 0
+    ? Math.round((discountAmount! / originalAmount) * 100)
+    : null;
 
   const currency =
     getString(calculated.currency_code) ?? getString(calculated.currencyCode) ?? null;
 
-  return { amount, currency };
+  return {
+    amount,
+    originalAmount: hasDiscount ? originalAmount : null,
+    discountAmount,
+    discountPercentage,
+    currency,
+  };
 }
 
 function normalizeOptionValues(
@@ -82,6 +97,9 @@ function normalizeVariant(
     inventoryQuantity,
     inStock,
     priceAmount: price.amount,
+    originalPriceAmount: price.originalAmount,
+    discountAmount: price.discountAmount,
+    discountPercentage: price.discountPercentage,
     currencyCode: price.currency,
     optionValues: normalizeOptionValues(value, productOptions),
   };
@@ -173,6 +191,9 @@ export function normalizeProduct(value: unknown): StoreProduct {
     collectionTitle: getString(collection?.title),
     categoryIds,
     priceAmount: priced?.priceAmount ?? null,
+    originalPriceAmount: priced?.originalPriceAmount ?? null,
+    discountAmount: priced?.discountAmount ?? null,
+    discountPercentage: priced?.discountPercentage ?? null,
     currencyCode: priced?.currencyCode ?? null,
   };
 }
@@ -202,36 +223,84 @@ function normalizeCartItem(value: unknown): StoreCartItem | null {
     variantId: getString(value.variant_id) ?? getString(variant?.id),
     productHandle: getString(product?.handle) ?? getString(value.product_handle),
     variantTitle: getString(value.variant_title) ?? getString(variant?.title),
+    subtotal: getNumber(value.subtotal) ?? null,
+    discountTotal: getNumber(value.discount_total) ?? null,
+    originalTotal: getNumber(value.original_total) ?? null,
+  };
+}
+
+function normalizeCartPromotion(value: unknown) {
+  if (!isRecord(value)) return null;
+  const id = getString(value.id);
+  if (!id) return null;
+  const method = isRecord(value.application_method) ? value.application_method : null;
+
+  return {
+    id,
+    code: getString(value.code),
+    isAutomatic: getBoolean(value.is_automatic),
+    applicationMethod: method
+      ? {
+          type: getString(method.type),
+          value: getNumber(method.value) ?? null,
+          currencyCode: getString(method.currency_code),
+        }
+      : null,
   };
 }
 
 export function normalizeCart(value: unknown): StoreCart {
   if (!isRecord(value)) {
-    return {
-      id: "",
-      regionId: null,
-      email: null,
-      currencyCode: null,
-      itemTotal: null,
-      shippingTotal: null,
-      total: null,
-      items: [],
-    };
+    return createEmptyStoreCart();
   }
 
   const items = (Array.isArray(value.items) ? value.items : [])
     .map(normalizeCartItem)
     .filter((item): item is StoreCartItem => Boolean(item));
+  const promotions = (Array.isArray(value.promotions) ? value.promotions : [])
+    .map(normalizeCartPromotion)
+    .filter((promotion): promotion is NonNullable<typeof promotion> => Boolean(promotion));
 
   return {
     id: getString(value.id) ?? "",
     regionId: getString(value.region_id) ?? getString(value.regionId),
     email: getString(value.email),
     currencyCode: getString(value.currency_code) ?? getString(value.currencyCode),
+    subtotal: getNumber(value.subtotal) ?? null,
     itemTotal: getNumber(value.item_total) ?? getNumber(value.itemTotal) ?? null,
+    itemSubtotal: getNumber(value.item_subtotal) ?? null,
+    itemDiscountTotal: getNumber(value.item_discount_total) ?? null,
     shippingTotal: getNumber(value.shipping_total) ?? getNumber(value.shippingTotal) ?? null,
+    shippingSubtotal: getNumber(value.shipping_subtotal) ?? null,
+    shippingDiscountTotal: getNumber(value.shipping_discount_total) ?? null,
+    taxTotal: getNumber(value.tax_total) ?? null,
+    discountTotal: getNumber(value.discount_total) ?? null,
+    originalTotal: getNumber(value.original_total) ?? null,
     total: getNumber(value.total) ?? null,
+    promotions,
     items,
+  };
+}
+
+export function createEmptyStoreCart(): StoreCart {
+  return {
+    id: "",
+    regionId: null,
+    email: null,
+    currencyCode: null,
+    subtotal: null,
+    itemTotal: null,
+    itemSubtotal: null,
+    itemDiscountTotal: null,
+    shippingTotal: null,
+    shippingSubtotal: null,
+    shippingDiscountTotal: null,
+    taxTotal: null,
+    discountTotal: null,
+    originalTotal: null,
+    total: null,
+    promotions: [],
+    items: [],
   };
 }
 

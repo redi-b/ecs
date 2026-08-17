@@ -290,7 +290,7 @@ export function StorefrontSection({
                   template.version.templateKey,
                 )}
                 key={template.version.templateKey}
-                publishedTemplateKey={publishedTemplateKey}
+                {...(publishedTemplateKey !== undefined ? { publishedTemplateKey } : {})}
                 onSelected={(templateKey, nextHasUnpublishedChanges) => {
                   setSelectedKey(templateKey);
                   setHasUnpublishedChanges(nextHasUnpublishedChanges);

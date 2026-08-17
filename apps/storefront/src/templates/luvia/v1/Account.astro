@@ -2,11 +2,11 @@
 import Layout from "./Layout.astro";
 import userIcon from "./icons/user-icon.svg";
 import { parseLuviaData } from "./lib";
-interface Props { data: unknown; tenantName: string; deferCartCount?: boolean; }
-const { data, tenantName, deferCartCount = false } = Astro.props;
+interface Props { data: unknown; themeTokens?: unknown; tenantName: string; deferCartCount?: boolean; }
+const { data, themeTokens, tenantName, deferCartCount = false } = Astro.props;
 const template = parseLuviaData(data);
 ---
-<Layout tenantName={tenantName} header={template.header} footer={template.footer} deferCartCount={deferCartCount} title="Account">
+<Layout tenantName={tenantName} header={template.header} footer={template.footer} themeTokens={themeTokens} deferCartCount={deferCartCount} title="Account">
   <main class="lv-account"><section><span><img src={userIcon.src} alt="" /></span><p>CUSTOMER ACCOUNT</p><h1>Accounts are<br />coming soon.</h1><div><p>You can already browse, save products on this device, and check out as a guest. Customer sign-in and saved order history will appear here once secure account support is enabled.</p><nav><a href="/products">Continue shopping</a><a href="/contact">Get order help</a></nav></div></section><aside><p>AVAILABLE NOW</p><ul><li>Guest checkout</li><li>Device-local wishlist</li><li>Order confirmation after purchase</li><li>Direct support from the shop</li></ul></aside></main>
 </Layout>
 <style is:global lang="scss">@use "./styles/secondary-pages.scss";</style>

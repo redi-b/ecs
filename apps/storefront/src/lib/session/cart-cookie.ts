@@ -54,6 +54,13 @@ export function getLastOrderFromRequest(request: Request): LastOrderCookie | nul
   }
 }
 
+export function isLastOrderReceiptAuthorized(
+  orderId: string,
+  receipt: LastOrderCookie | null,
+) {
+  return Boolean(orderId.trim() && receipt?.id === orderId.trim());
+}
+
 function serializeCookie(
   name: string,
   value: string,

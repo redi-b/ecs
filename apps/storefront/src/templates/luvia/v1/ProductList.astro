@@ -8,6 +8,7 @@ import { parseLuviaData } from "./lib";
 
 interface Props {
   data: unknown;
+  themeTokens?: unknown;
   tenantName: string;
   cartCount?: number;
   deferCartCount?: boolean;
@@ -27,6 +28,7 @@ interface Props {
 
 const {
   data,
+  themeTokens,
   tenantName,
   cartCount = 0,
   deferCartCount = false,
@@ -83,7 +85,7 @@ const pageWindow = Array.from({ length: totalPages }, (_, index) => index + 1).f
 );
 ---
 
-<Layout tenantName={tenantName} header={template.header} footer={template.footer} cartCount={cartCount} deferCartCount={deferCartCount} title="Products Listing">
+<Layout tenantName={tenantName} header={template.header} footer={template.footer} themeTokens={themeTokens} cartCount={cartCount} deferCartCount={deferCartCount} title="Products Listing">
   <main class="lv-shop">
     <section class="lv-shop-hero" style={`--shop-hero: url(${heroBackground.src})`}>
       <div class="lv-shop-hero__content">

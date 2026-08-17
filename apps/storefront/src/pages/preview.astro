@@ -1,9 +1,12 @@
 ---
-import { loadHomePageModel } from "../lib/home-page";
 import { loadPageContext } from "../lib/page-context";
-import { getStorefrontRenderer } from "../templates/registry";
+import {
+  loadStorefrontPreviewPage,
+} from "../lib/storefront-preview-pages";
+import { parseStorefrontPreviewPageId } from "../lib/storefront-preview-page-contract";
 
 const token = Astro.url.searchParams.get("token")?.trim() ?? "";
+const pageId = parseStorefrontPreviewPageId(Astro.url.searchParams.get("page"));
 const configuredEditorOrigin = resolveConfiguredEditorOrigin();
 const editorOrigins = [Astro.url.origin, configuredEditorOrigin].filter(
   (origin, index, origins): origin is string => Boolean(origin) && origins.indexOf(origin) === index,
@@ -11,8 +14,8 @@ const editorOrigins = [Astro.url.origin, configuredEditorOrigin].filter(
 const ctx = token
   ? await loadPageContext(Astro.request, { previewToken: token, skipCart: true })
   : { ok: false as const, status: 400, message: "Preview token is required." };
-const homeModel = ctx.ok ? await loadHomePageModel(ctx, { includeCatalogFallback: true }) : null;
-const Home = ctx.ok ? getStorefrontRenderer(ctx.config.storefront.templateKey)?.Home : undefined;
+const previewPage = ctx.ok && pageId ? await loadStorefrontPreviewPage(ctx, pageId) : null;
+const PreviewComponent = previewPage?.component;
 
 Astro.response.headers.set("cache-control", "private, no-store");
 Astro.response.headers.set("referrer-policy", "no-referrer");
@@ -22,7 +25,8 @@ Astro.response.headers.set(
   `frame-ancestors 'self'${configuredEditorOrigin ? ` ${configuredEditorOrigin}` : ""}`,
 );
 if (!ctx.ok) Astro.response.status = ctx.status;
-else if (!Home) Astro.response.status = 503;
+else if (!pageId) Astro.response.status = 404;
+else if (!PreviewComponent) Astro.response.status = 503;
 
 function resolveConfiguredEditorOrigin() {
   const configured = process.env.STOREFRONT_EDITOR_ORIGIN?.trim();
@@ -34,8 +38,8 @@ function resolveConfiguredEditorOrigin() {
 <html lang="en">
   <head><meta charset="utf-8" /><meta name="viewport" content="width=device-width" /><meta name="robots" content="noindex,nofollow" /><title>Storefront preview</title></head>
   <body>
-    {!ctx.ok ? <main><h1>{ctx.message}</h1></main> : !Home ? <main><h1>Preview is unavailable.</h1></main> : <Home data={ctx.config.storefront.data} productsResult={homeModel?.productsResult ?? { products: [] }} collectionProducts={homeModel?.collectionProducts ?? []} collections={homeModel?.collections ?? []} tenantName={ctx.config.tenant.name} themeTokens={ctx.config.storefront.themeTokens} platformApiBaseUrl={ctx.platformApiBaseUrl} requestHost={ctx.requestHost} deferCartCount={true} editorMode={true} />}
-    {ctx.ok && Home ? <script is:inline define:vars={{ editorOrigins }}>
+    {!ctx.ok ? <main><h1>{ctx.message}</h1></main> : !pageId ? <main><h1>This page is not editable.</h1></main> : !PreviewComponent ? <main><h1>Preview is unavailable.</h1></main> : <PreviewComponent {...previewPage?.props} data={ctx.config.storefront.data} tenantName={ctx.config.tenant.name} themeTokens={ctx.config.storefront.themeTokens} platformApiBaseUrl={ctx.platformApiBaseUrl} requestHost={ctx.requestHost} deferCartCount={true} editorMode={true} />}
+    {ctx.ok && PreviewComponent ? <script is:inline define:vars={{ editorOrigins }}>
       const allowedParentOrigins = new Set(editorOrigins);
       let activeParentOrigin = null;
       const fieldNodes = () => document.querySelectorAll('[data-editor-path]');
@@ -49,11 +53,37 @@ function resolveConfiguredEditorOrigin() {
       const selectPath = (path) => {
         document.querySelectorAll('[data-editor-selected]').forEach((node) => node.removeAttribute('data-editor-selected'));
         if (!path) return;
-        const node = Array.from(document.querySelectorAll('[data-editor-path],[data-editor-section],[data-editor-image-path],[data-editor-background-image-path],[data-editor-links-path],[data-editor-product-path],[data-editor-collections-path]')).find((candidate) =>
-          candidate.getAttribute('data-editor-path') === path || candidate.getAttribute('data-editor-section') === path || candidate.getAttribute('data-editor-image-path') === path || candidate.getAttribute('data-editor-background-image-path') === path || candidate.getAttribute('data-editor-links-path') === path || candidate.getAttribute('data-editor-product-path') === path || candidate.getAttribute('data-editor-collections-path') === path
+        const node = Array.from(document.querySelectorAll('[data-editor-path],[data-editor-section],[data-editor-image-path],[data-editor-background-image-path],[data-editor-links-path],[data-editor-product-path],[data-editor-products-path],[data-editor-collections-path],[data-editor-related-paths]')).find((candidate) =>
+          candidate.getAttribute('data-editor-path') === path || candidate.getAttribute('data-editor-section') === path || candidate.getAttribute('data-editor-image-path') === path || candidate.getAttribute('data-editor-background-image-path') === path || candidate.getAttribute('data-editor-links-path') === path || candidate.getAttribute('data-editor-product-path') === path || candidate.getAttribute('data-editor-products-path') === path || candidate.getAttribute('data-editor-collections-path') === path
+          || (candidate.getAttribute('data-editor-related-paths') || '').split(/\s+/).includes(path)
         );
         node?.setAttribute('data-editor-selected', 'true');
-        node?.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+        if (node instanceof HTMLElement) {
+          const viewport = document.scrollingElement;
+          const bounds = node.getBoundingClientRect();
+          if (viewport && (bounds.top < 24 || bounds.bottom > window.innerHeight - 24)) {
+            viewport.scrollTo({
+              behavior: 'smooth',
+              top: Math.max(0, viewport.scrollTop + bounds.top - (window.innerHeight - bounds.height) / 2),
+            });
+          }
+        }
+      };
+      const focusTextTarget = (editable, clickedElement) => {
+        if (!(editable instanceof HTMLElement)) return;
+        const textTarget = editable.matches('[data-editor-text-target]')
+          ? editable
+          : editable.querySelector('[data-editor-text-target]');
+        if (!(textTarget instanceof HTMLElement) || !textTarget.isContentEditable) return;
+        if (clickedElement instanceof Node && textTarget.contains(clickedElement)) return;
+        textTarget.focus({ preventScroll: true });
+        const selection = window.getSelection();
+        if (!selection) return;
+        const range = document.createRange();
+        range.selectNodeContents(textTarget);
+        range.collapse(false);
+        selection.removeAllRanges();
+        selection.addRange(range);
       };
       document.querySelectorAll('a[href]').forEach((link) => {
         link.setAttribute('data-preview-href', link.getAttribute('href') || '');
@@ -90,11 +120,12 @@ function resolveConfiguredEditorOrigin() {
 
       document.addEventListener('click', (event) => {
         const element = event.target instanceof Element ? event.target : null;
-        const target = element?.closest('[data-editor-path],[data-editor-image-path],[data-editor-background-image-path],[data-editor-links-path],[data-editor-product-path],[data-editor-collections-path],[data-editor-section]');
-        const path = target?.getAttribute('data-editor-path') || target?.getAttribute('data-editor-image-path') || target?.getAttribute('data-editor-background-image-path') || target?.getAttribute('data-editor-links-path') || target?.getAttribute('data-editor-product-path') || target?.getAttribute('data-editor-collections-path') || target?.getAttribute('data-editor-section');
+        const target = element?.closest('[data-editor-path],[data-editor-image-path],[data-editor-background-image-path],[data-editor-links-path],[data-editor-product-path],[data-editor-products-path],[data-editor-collections-path],[data-editor-section]');
+        const path = target?.getAttribute('data-editor-path') || target?.getAttribute('data-editor-image-path') || target?.getAttribute('data-editor-background-image-path') || target?.getAttribute('data-editor-links-path') || target?.getAttribute('data-editor-product-path') || target?.getAttribute('data-editor-products-path') || target?.getAttribute('data-editor-collections-path') || target?.getAttribute('data-editor-section');
         if (path) {
           selectPath(path);
           postToParent({ type: 'ecs:preview:select', path });
+          if (target?.hasAttribute('data-editor-path')) focusTextTarget(target, element);
         } else {
           selectPath('');
           postToParent({ type: 'ecs:preview:select', path: '' });
@@ -128,7 +159,8 @@ function resolveConfiguredEditorOrigin() {
         fieldNodes().forEach((node) => {
           const path = node.getAttribute('data-editor-path');
           const ownsFocus = document.activeElement === node || node.contains(document.activeElement);
-          if (!ownsFocus && path && typeof fields[path] === 'string' && node.textContent !== fields[path]) node.textContent = fields[path];
+          const textTarget = node.querySelector('[data-editor-text-target]') || node;
+          if (!ownsFocus && path && typeof fields[path] === 'string' && textTarget.textContent !== fields[path]) textTarget.textContent = fields[path];
         });
         document.querySelectorAll('[data-editor-visible-path]').forEach((node) => {
           const path = node.getAttribute('data-editor-visible-path');
@@ -172,6 +204,23 @@ function resolveConfiguredEditorOrigin() {
             : document.querySelector('template[data-editor-product-option]');
           if (option instanceof HTMLTemplateElement) node.replaceChildren(option.content.cloneNode(true));
         });
+        document.querySelectorAll('[data-editor-products-path]').forEach((node) => {
+          const path = node.getAttribute('data-editor-products-path');
+          const requestedIds = path && Array.isArray(fields[path]) ? fields[path] : [];
+          const ids = requestedIds.length
+            ? requestedIds
+            : Array.from(document.querySelectorAll('template[data-editor-product-option]')).slice(0, 3).map((option) => option.getAttribute('data-editor-product-option'));
+          const track = node.querySelector('[data-promo-track]');
+          if (!track) return;
+          const fragment = document.createDocumentFragment();
+          ids.slice(0, 6).forEach((id) => {
+            if (typeof id !== 'string') return;
+            const option = document.querySelector(`template[data-editor-product-option="${CSS.escape(id)}"]`);
+            if (option instanceof HTMLTemplateElement) fragment.append(option.content.cloneNode(true));
+          });
+          track.replaceChildren(fragment);
+          node.dispatchEvent(new CustomEvent('ecs:hero-carousel-updated'));
+        });
         document.querySelectorAll('[data-editor-collections-path]').forEach((node) => {
           const path = node.getAttribute('data-editor-collections-path');
           const requestedIds = path && Array.isArray(fields[path]) ? fields[path] : [];
@@ -190,11 +239,12 @@ function resolveConfiguredEditorOrigin() {
           });
           node.replaceChildren(fragment);
         });
-        document.querySelectorAll('[data-editor-css-vars]').forEach((node) => {
+        document.querySelectorAll('[data-editor-theme-vars]').forEach((node) => {
           let mappings = {};
-          try { mappings = JSON.parse(node.getAttribute('data-editor-css-vars') || '{}'); } catch {}
-          Object.entries(mappings).forEach(([path, variable]) => {
-            if (typeof variable === 'string' && typeof fields[path] === 'string') node.style.setProperty(variable, fields[path]);
+          try { mappings = JSON.parse(node.getAttribute('data-editor-theme-vars') || '{}'); } catch {}
+          const theme = event.data.theme || {};
+          Object.entries(mappings).forEach(([role, variable]) => {
+            if (typeof variable === 'string' && typeof theme[role] === 'string') node.style.setProperty(variable, theme[role]);
           });
         });
       });
@@ -208,19 +258,20 @@ function resolveConfiguredEditorOrigin() {
   :global([data-editor-path]),:global([data-editor-path] *){cursor:text!important}
   :global([data-editor-empty-label]:empty){min-width:7rem;min-height:2rem;display:inline-flex!important;align-items:center;padding:.3rem .55rem;border-radius:.45rem;background:color-mix(in srgb,#1687ff 7%,transparent);color:color-mix(in srgb,#1687ff 78%,#425466);font-size:.75rem;line-height:1.2;cursor:pointer!important}
   :global([data-editor-empty-label]:empty)::before{content:attr(data-editor-empty-label)}
-  :global([data-editor-path]),:global([data-editor-section]),:global([data-editor-image-path]),:global([data-editor-background-image-path]),:global([data-editor-links-path]),:global([data-editor-product-path]),:global([data-editor-collections-path]){outline:1px solid rgb(22 135 255 / 0);outline-offset:2px;box-shadow:0 0 0 3px rgb(22 135 255 / 0);transition:outline-offset .16s ease,box-shadow .16s ease,background-color .16s ease}
+  :global([data-editor-path]),:global([data-editor-section]),:global([data-editor-image-path]),:global([data-editor-background-image-path]),:global([data-editor-links-path]),:global([data-editor-product-path]),:global([data-editor-products-path]),:global([data-editor-collections-path]){outline:1px solid rgb(22 135 255 / 0);outline-offset:2px;box-shadow:0 0 0 3px rgb(22 135 255 / 0);transition:outline-offset .16s ease,box-shadow .16s ease,background-color .16s ease}
   :global([data-editor-path]:focus),:global([data-editor-path]:focus-visible){outline-color:color-mix(in srgb,#1687ff 88%,transparent)!important}
   :global(html[data-editor-hints="on"] [data-editor-section]){outline:1px dashed color-mix(in srgb,#1687ff 22%,transparent);outline-offset:2px}
   :global(html[data-editor-hints="on"] [data-editor-path]){outline:1px solid color-mix(in srgb,#1687ff 34%,transparent);outline-offset:2px}
   :global(html[data-editor-hints="on"] [data-editor-image-path]),:global(html[data-editor-hints="on"] [data-editor-background-image-path]){outline-color:color-mix(in srgb,#1687ff 34%,transparent)}
-  :global(html[data-editor-hints="on"] [data-editor-links-path]),:global(html[data-editor-hints="on"] [data-editor-product-path]),:global(html[data-editor-hints="on"] [data-editor-collections-path]){outline:1px solid color-mix(in srgb,#1687ff 34%,transparent);outline-offset:2px;cursor:pointer}
+  :global(html[data-editor-hints="on"] [data-editor-links-path]),:global(html[data-editor-hints="on"] [data-editor-product-path]),:global(html[data-editor-hints="on"] [data-editor-products-path]),:global(html[data-editor-hints="on"] [data-editor-collections-path]){outline:1px solid color-mix(in srgb,#1687ff 34%,transparent);outline-offset:2px;cursor:pointer}
   :global(html[data-editor-hints="on"] [data-editor-section]:hover){outline-color:color-mix(in srgb,#1687ff 52%,transparent);outline-offset:3px;background-color:color-mix(in srgb,#1687ff 2%,transparent)}
   :global(html[data-editor-hints="on"] [data-editor-path]:hover){outline-color:color-mix(in srgb,#1687ff 78%,transparent);outline-offset:3px;box-shadow:0 0 0 3px color-mix(in srgb,#1687ff 7%,transparent)}
   :global(html[data-editor-hints="on"] [data-editor-image-path]:hover),:global(html[data-editor-hints="on"] [data-editor-background-image-path]:hover),:global(html[data-editor-hints="off"] [data-editor-image-path]:hover),:global(html[data-editor-hints="off"] [data-editor-background-image-path]:hover){outline-color:color-mix(in srgb,#1687ff 76%,transparent);outline-offset:3px;box-shadow:0 0 0 3px color-mix(in srgb,#1687ff 6%,transparent);cursor:pointer}
   :global(html[data-editor-hints="off"] [data-editor-section]:hover){outline-style:dashed;outline-color:color-mix(in srgb,#1687ff 48%,transparent);outline-offset:3px}
   :global(html[data-editor-hints="off"] [data-editor-path]:hover){outline-color:color-mix(in srgb,#1687ff 76%,transparent);outline-offset:3px;box-shadow:0 0 0 3px color-mix(in srgb,#1687ff 6%,transparent)}
-  :global(html[data-editor-hints="on"] [data-editor-links-path]:hover),:global(html[data-editor-hints="on"] [data-editor-product-path]:hover),:global(html[data-editor-hints="on"] [data-editor-collections-path]:hover),:global(html[data-editor-hints="off"] [data-editor-links-path]:hover),:global(html[data-editor-hints="off"] [data-editor-product-path]:hover),:global(html[data-editor-hints="off"] [data-editor-collections-path]:hover){outline-color:color-mix(in srgb,#1687ff 76%,transparent);outline-offset:3px;box-shadow:0 0 0 3px color-mix(in srgb,#1687ff 6%,transparent)}
+  :global(html[data-editor-hints="on"] [data-editor-links-path]:hover),:global(html[data-editor-hints="on"] [data-editor-product-path]:hover),:global(html[data-editor-hints="on"] [data-editor-products-path]:hover),:global(html[data-editor-hints="on"] [data-editor-collections-path]:hover),:global(html[data-editor-hints="off"] [data-editor-links-path]:hover),:global(html[data-editor-hints="off"] [data-editor-product-path]:hover),:global(html[data-editor-hints="off"] [data-editor-products-path]:hover),:global(html[data-editor-hints="off"] [data-editor-collections-path]:hover){outline-color:color-mix(in srgb,#1687ff 76%,transparent);outline-offset:3px;box-shadow:0 0 0 3px color-mix(in srgb,#1687ff 6%,transparent)}
   :global([data-editor-selected="true"]){outline:2px solid color-mix(in srgb,#1687ff 88%,transparent)!important;outline-offset:3px!important;box-shadow:0 0 0 3px color-mix(in srgb,#1687ff 10%,transparent)!important}
+  :global(.lv-button[data-editor-path]){border-radius:999px}
   :global([data-preview-href]){cursor:default}
   :global([data-preview-href] [data-editor-path]),:global([data-preview-href] [data-editor-path] *){cursor:text!important}
   @media (prefers-reduced-motion:reduce){:global([data-editor-path]),:global([data-editor-section]),:global([data-editor-selected="true"]){scroll-behavior:auto;transition:none}}

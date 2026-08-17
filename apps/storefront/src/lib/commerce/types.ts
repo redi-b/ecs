@@ -21,6 +21,9 @@ export type StoreProductVariant = {
   inventoryQuantity: number | null;
   inStock: boolean;
   priceAmount: number | null;
+  originalPriceAmount?: number | null;
+  discountAmount?: number | null;
+  discountPercentage?: number | null;
   currencyCode: string | null;
   optionValues: Array<{ optionTitle: string; value: string }>;
 };
@@ -44,6 +47,9 @@ export type StoreProduct = {
   collectionTitle: string | null;
   categoryIds: string[];
   priceAmount: number | null;
+  originalPriceAmount?: number | null;
+  discountAmount?: number | null;
+  discountPercentage?: number | null;
   currencyCode: string | null;
 };
 
@@ -92,6 +98,20 @@ export type StoreCartItem = {
   variantId: string | null;
   productHandle: string | null;
   variantTitle: string | null;
+  subtotal: number | null;
+  discountTotal: number | null;
+  originalTotal: number | null;
+};
+
+export type StoreCartPromotion = {
+  id: string;
+  code: string | null;
+  isAutomatic: boolean;
+  applicationMethod: {
+    type: string | null;
+    value: number | null;
+    currencyCode: string | null;
+  } | null;
 };
 
 export type StoreCart = {
@@ -99,9 +119,18 @@ export type StoreCart = {
   regionId: string | null;
   email: string | null;
   currencyCode: string | null;
+  subtotal: number | null;
   itemTotal: number | null;
+  itemSubtotal: number | null;
+  itemDiscountTotal: number | null;
   shippingTotal: number | null;
+  shippingSubtotal: number | null;
+  shippingDiscountTotal: number | null;
+  taxTotal: number | null;
+  discountTotal: number | null;
+  originalTotal: number | null;
   total: number | null;
+  promotions: StoreCartPromotion[];
   items: StoreCartItem[];
 };
 

@@ -1,11 +1,13 @@
 ---
 import type { StoreCart, StoreDeliveryOptions, StorePaymentOptions, StoreShippingOption } from "../../../lib/commerce/types";
+import { resolveStoreFulfillmentOptions } from "../../../lib/commerce/fulfillment";
+import { resolveStoreCartSummary } from "../../../lib/commerce/cart-summary";
 import { formatMoney } from "../../../lib/money";
 import Layout from "./Layout.astro";
 import { parseLuviaData } from "./lib";
 
-interface Props { data: unknown; tenantName: string; cartCount: number; cart: StoreCart | null; delivery: StoreDeliveryOptions | null; payment: StorePaymentOptions; shippingOptions: StoreShippingOption[]; shippingError?: string | null; error?: string | null; }
-const { data, tenantName, cartCount, cart, delivery, payment, shippingOptions, shippingError, error } = Astro.props;
+interface Props { data: unknown; themeTokens?: unknown; tenantName: string; cartCount: number; cart: StoreCart | null; delivery: StoreDeliveryOptions | null; payment: StorePaymentOptions; shippingOptions: StoreShippingOption[]; shippingError?: string | null; error?: string | null; }
+const { data, themeTokens, tenantName, cartCount, cart, delivery, payment, shippingOptions, shippingError, error } = Astro.props;
 const template = parseLuviaData(data);
 const items = cart?.items ?? [];
 const deliveryEnabled = delivery?.deliveryEnabled === true;
@@ -13,53 +15,60 @@ const pickupEnabled = delivery?.pickupEnabled === true;
 const fulfillmentAvailable = deliveryEnabled || pickupEnabled;
 const phoneRequired = delivery?.phoneConfirmationRequired !== false;
 const defaultChoice = deliveryEnabled ? "delivery" : pickupEnabled ? "pickup" : "delivery";
-const paidOptions = shippingOptions.filter((option) => (option.amount == null || option.amount > 0) && !/pickup|collect/i.test(option.name ?? ""));
-const pickupOptions = shippingOptions.filter((option) => option.amount === 0 || /pickup|collect/i.test(option.name ?? ""));
-const deliveryOptions = paidOptions.length ? paidOptions : shippingOptions;
-const pickupOption = pickupOptions[0] ?? deliveryOptions[0] ?? null;
-const canSubmit = items.length > 0 && fulfillmentAvailable && (defaultChoice === "pickup" ? Boolean(pickupOption) : deliveryOptions.length > 0);
+const { deliveryOptions, pickupOption, priceMismatch } = resolveStoreFulfillmentOptions(shippingOptions, delivery);
+const canSubmit = items.length > 0 && fulfillmentAvailable && !priceMismatch && (defaultChoice === "pickup" ? Boolean(pickupOption) : deliveryOptions.length > 0);
+const initialShippingAmount = defaultChoice === "pickup" ? (pickupOption?.amount ?? 0) : (deliveryOptions[0]?.amount ?? 0);
+const cartShippingAmount = cart?.shippingTotal ?? 0;
+const baseTotal = (cart?.total ?? cart?.itemTotal ?? 0) - cartShippingAmount;
+const summary = resolveStoreCartSummary(cart);
+const defaultPayment = payment.cod ? "cod" : payment.chapa ? "chapa" : null;
 ---
 
-<Layout tenantName={tenantName} header={template.header} footer={template.footer} cartCount={cartCount} title="Checkout">
+<Layout tenantName={tenantName} header={template.header} footer={template.footer} themeTokens={themeTokens} cartCount={cartCount} title="Checkout">
   <main class="lv-checkout">
     <header class="lv-checkout__hero"><h1>CHECKOUT</h1><p>Complete your order — natural beauty, delivered with care.</p></header>
     {error && <p class="lv-checkout__error" role="alert">{error}</p>}
     {shippingError && <p class="lv-checkout__error" role="alert">Delivery options could not be loaded. Please refresh and try again.</p>}
+    {priceMismatch && <p class="lv-checkout__error" role="alert">Delivery pricing is being updated. Please ask the shop to resave its fulfillment settings, then refresh checkout.</p>}
     {!items.length ? <section class="lv-checkout__empty"><h2>Your cart is empty</h2><p>Add products before continuing to checkout.</p><a href="/products">Browse products</a></section> : <div class="lv-checkout__layout">
       <section class="lv-checkout-form-wrap">
         <header><h2>Payment Details</h2><p>By proceeding you agree to our Terms of Service and Privacy Policy.</p></header>
-        <form method="post" action="/actions/checkout/cod" class="lv-checkout-form" data-checkout-form>
+        <form method="post" action={defaultPayment === "chapa" ? "/actions/checkout/chapa" : "/actions/checkout/cod"} class="lv-checkout-form" data-checkout-form>
           {!fulfillmentAvailable && <div class="lv-checkout-blocker" role="status"><strong>Orders are temporarily unavailable.</strong><p>This shop has not enabled delivery or pickup yet.</p></div>}
           <div class="lv-checkout-fields">
             <label><span>First Name*</span><input name="firstName" required autocomplete="given-name" placeholder="Jane" /></label>
             <label><span>Last Name*</span><input name="lastName" required autocomplete="family-name" placeholder="Doe" /></label>
             <label><span>Phone Number{phoneRequired ? "*" : ""}</span><input name="phone" required={phoneRequired} autocomplete="tel" inputmode="tel" placeholder="0912345678" /></label>
-            <label><span>Email (optional)</span><input name="email" type="email" autocomplete="email" placeholder="name@example.com" /></label>
-            <label><span>Fulfillment*</span><select name="deliveryChoice" data-delivery-choice required disabled={!fulfillmentAvailable}>{deliveryEnabled && <option value="delivery" selected={defaultChoice === "delivery"}>Delivery</option>}{pickupEnabled && <option value="pickup" selected={defaultChoice === "pickup"}>Pickup</option>}</select></label>
+            <label><span>Email <small data-email-requirement>{defaultPayment === "chapa" ? "(required for Chapa)" : "(optional)"}</small></span><input name="email" type="email" required={defaultPayment === "chapa"} autocomplete="email" placeholder="name@example.com" /></label>
+            <fieldset class="lv-checkout-choice-group is-wide" data-delivery-choice><legend>How would you like to receive it?*</legend><div>{deliveryEnabled && <label><input type="radio" name="deliveryChoice" value="delivery" checked={defaultChoice === "delivery"} disabled={!fulfillmentAvailable} /><span><strong>Delivery</strong><small>Send the order to your address.</small></span></label>}{pickupEnabled && <label><input type="radio" name="deliveryChoice" value="pickup" checked={defaultChoice === "pickup"} disabled={!fulfillmentAvailable} /><span><strong>Pickup</strong><small>Collect it from the shop.</small></span></label>}</div></fieldset>
             <label data-delivery-field><span>City*</span><input name="city" value="Addis Ababa" required={defaultChoice === "delivery"} disabled={defaultChoice !== "delivery"} autocomplete="address-level2" /></label>
             <label class="is-wide" data-delivery-field><span>Street Address*</span><input name="address1" required={defaultChoice === "delivery"} disabled={defaultChoice !== "delivery"} autocomplete="street-address" placeholder="Bole, Ayat Road" /></label>
             {delivery?.landmarkRequired || delivery?.notesEnabled !== false ? <label class="is-wide" data-delivery-field><span>Landmark{delivery?.landmarkRequired ? "*" : " (optional)"}</span><input name="landmark" required={Boolean(delivery?.landmarkRequired) && defaultChoice === "delivery"} disabled={defaultChoice !== "delivery"} data-landmark-required={delivery?.landmarkRequired ? "true" : "false"} placeholder="Nearby landmark" /></label> : null}
             {delivery?.notesEnabled !== false && <label class="is-wide"><span>Order Notes (optional)</span><textarea name="notes" rows="3" placeholder="Helpful delivery details" /></label>}
-            <label class="is-wide" data-delivery-option><span>Delivery Option*</span><select name="shippingOptionId" required={defaultChoice === "delivery"} disabled={defaultChoice !== "delivery"}>{deliveryOptions.map((option) => <option value={option.id}>{option.name?.trim() || "Standard Delivery"}{option.amount != null ? ` · ${formatMoney(option.amount, option.currencyCode ?? cart?.currencyCode)}` : ""}</option>)}</select></label>
+            <fieldset class="lv-checkout-choice-group is-wide" data-delivery-option><legend>Delivery option*</legend><div>{deliveryOptions.map((option, index) => <label><input type="radio" name="shippingOptionId" value={option.id} data-amount={option.amount ?? 0} checked={index === 0} required={defaultChoice === "delivery"} disabled={defaultChoice !== "delivery"} /><span><strong>{option.name?.trim() || "Standard delivery"}</strong><small>{option.amount === 0 ? "Free" : formatMoney(option.amount, option.currencyCode ?? cart?.currencyCode)}</small></span></label>)}</div></fieldset>
             <div data-pickup-option hidden>{pickupOption && <input type="hidden" name="shippingOptionId" value={pickupOption.id} disabled={defaultChoice !== "pickup"} />}</div>
           </div>
           <label class="lv-checkout-account"><input type="checkbox" disabled /><span>Create an account at checkout <small>Coming soon</small></span></label>
-          <fieldset class="lv-checkout-payment"><legend>Payment Option*</legend>{payment.cod && <div><strong>Pay on delivery</strong><span>Pay when your order arrives.</span></div>}{payment.chapa && <div><strong>Chapa</strong><span>Pay securely online.</span></div>}{!payment.cod && !payment.chapa && <p>No payment method is available for this order.</p>}</fieldset>
-          <div class="lv-checkout-actions">{payment.cod && <button type="submit" disabled={!canSubmit}>Place order · Pay on delivery</button>}{payment.chapa && <button class="is-secondary" type="submit" formaction="/actions/checkout/chapa" disabled={!canSubmit}>Proceed with Chapa</button>}</div>
+          <fieldset class="lv-checkout-payment" data-payment-choice><legend>How would you like to pay?*</legend>{payment.cod && <label><input type="radio" name="paymentMethod" value="cod" checked={defaultPayment === "cod"} /><span><strong>Pay on delivery</strong><small>Pay when your order arrives.</small></span></label>}{payment.chapa && <label><input type="radio" name="paymentMethod" value="chapa" checked={defaultPayment === "chapa"} /><span><strong>Chapa</strong><small>Pay securely online. An email address is required.</small></span></label>}{!payment.cod && !payment.chapa && <p>No payment method is available for this order.</p>}</fieldset>
+          <div class="lv-checkout-actions"><button type="submit" data-place-order disabled={!canSubmit || !defaultPayment}>{defaultPayment === "chapa" ? "Continue to secure payment" : "Place order"}</button></div>
         </form>
       </section>
 
-      <aside class="lv-checkout-summary" aria-label="Order summary"><header><h2>Order Summary</h2><span>{items.length} item{items.length === 1 ? "" : "s"}</span></header><ul>{items.map((item) => <li><div>{item.thumbnail ? <img src={item.thumbnail} alt="" /> : null}</div><p><strong>{item.title ?? "Product"}</strong><span>{item.variantTitle ?? ""}{item.quantity > 1 ? ` × ${item.quantity}` : ""}</span></p><b>{formatMoney(item.total ?? item.unitPrice, cart?.currencyCode)}</b></li>)}</ul><dl><div><dt>Subtotal</dt><dd>{formatMoney(cart?.itemTotal ?? cart?.total, cart?.currencyCode)}</dd></div><div><dt>Delivery</dt><dd>Confirmed above</dd></div><div><dt>Total</dt><dd>{formatMoney(cart?.total ?? cart?.itemTotal, cart?.currencyCode)}</dd></div></dl><small>Delivery timing is confirmed after your order is placed.</small></aside>
+      <aside class="lv-checkout-summary" aria-label="Order summary" data-currency={cart?.currencyCode ?? "ETB"} data-base-total={baseTotal}><header><h2>Order Summary</h2><span>{summary.itemCount} item{summary.itemCount === 1 ? "" : "s"}</span></header><ul>{items.map((item) => <li><div>{item.thumbnail ? <img src={item.thumbnail} alt="" /> : null}</div><p><strong>{item.title ?? "Product"}</strong><span>{item.variantTitle ?? ""}{item.quantity > 1 ? ` × ${item.quantity}` : ""}</span></p><b>{formatMoney(item.total ?? item.unitPrice, cart?.currencyCode)}</b></li>)}</ul><dl><div><dt>Subtotal</dt><dd>{formatMoney(summary.subtotal, cart?.currencyCode)}</dd></div>{summary.savingsTotal != null && summary.savingsTotal > 0 && <div class="is-savings"><dt>Discount</dt><dd>−{formatMoney(summary.savingsTotal, cart?.currencyCode)}</dd></div>}<div><dt>Delivery</dt><dd data-summary-delivery>{initialShippingAmount === 0 ? "Free" : formatMoney(initialShippingAmount, cart?.currencyCode)}</dd></div>{summary.taxTotal != null && summary.taxTotal > 0 && <div><dt>Tax</dt><dd>{formatMoney(summary.taxTotal, cart?.currencyCode)}</dd></div>}<div><dt>Estimated total</dt><dd data-summary-total>{formatMoney(baseTotal + initialShippingAmount, cart?.currencyCode)}</dd></div></dl><small>The final total is confirmed securely when you place the order.</small></aside>
     </div>}
   </main>
 </Layout>
 
 <script is:inline>
   (() => {
-    const select = document.querySelector("[data-delivery-choice]"); if (!(select instanceof HTMLSelectElement)) return;
-    const sync = () => { const delivery = select.value === "delivery"; document.querySelectorAll("[data-delivery-field]").forEach((wrapper) => { wrapper.hidden = !delivery; wrapper.querySelectorAll("input,select,textarea").forEach((field) => { field.disabled = !delivery; if (field.name === "landmark") field.required = delivery && field.dataset.landmarkRequired === "true"; else if (field.name !== "notes") field.required = delivery; }); }); const deliveryOption = document.querySelector("[data-delivery-option]"); const pickupOption = document.querySelector("[data-pickup-option]"); if (deliveryOption) { deliveryOption.hidden = !delivery; deliveryOption.querySelectorAll("select").forEach((field) => { field.disabled = !delivery; field.required = delivery; }); } if (pickupOption) { pickupOption.hidden = delivery; pickupOption.querySelectorAll("input").forEach((field) => field.disabled = delivery); } };
-    select.addEventListener("change", sync); sync();
-    const form = document.querySelector("[data-checkout-form]"); form?.addEventListener("submit", (event) => { const button = event.submitter; if (button instanceof HTMLButtonElement) { button.disabled = true; button.dataset.loading = "true"; button.textContent = button.formAction.endsWith("/chapa") ? "Opening secure payment…" : "Placing your order…"; } });
+    const fulfillment = document.querySelector("[data-delivery-choice]"); if (!fulfillment) return;
+    const selectedValue = (name) => document.querySelector(`input[name="${name}"]:checked`)?.value;
+    const sync = () => { const delivery = selectedValue("deliveryChoice") === "delivery"; document.querySelectorAll("[data-delivery-field]").forEach((wrapper) => { wrapper.hidden = !delivery; wrapper.querySelectorAll("input,select,textarea").forEach((field) => { field.disabled = !delivery; if (field.name === "landmark") field.required = delivery && field.dataset.landmarkRequired === "true"; else if (field.name !== "notes") field.required = delivery; }); }); const deliveryOption = document.querySelector("[data-delivery-option]"); const pickupOption = document.querySelector("[data-pickup-option]"); if (deliveryOption) { deliveryOption.hidden = !delivery; deliveryOption.querySelectorAll('input[name="shippingOptionId"]').forEach((field) => { field.disabled = !delivery; field.required = delivery; }); } if (pickupOption) { pickupOption.hidden = delivery; pickupOption.querySelectorAll("input").forEach((field) => field.disabled = delivery); } };
+    const summary = document.querySelector("[data-base-total]");
+    const money = (amount) => new Intl.NumberFormat("en-ET", { style: "currency", currency: summary?.dataset.currency || "ETB", maximumFractionDigits: 2 }).format(amount);
+    const syncSummary = () => { if (!(summary instanceof HTMLElement)) return; const selected = document.querySelector('input[name="shippingOptionId"]:checked'); const amount = selectedValue("deliveryChoice") === "pickup" ? 0 : Number(selected?.dataset.amount || 0); const deliveryNode = document.querySelector("[data-summary-delivery]"); const totalNode = document.querySelector("[data-summary-total]"); if (deliveryNode) deliveryNode.textContent = amount === 0 ? "Free" : money(amount); if (totalNode) totalNode.textContent = money(Number(summary.dataset.baseTotal || 0) + amount); };
+    fulfillment.addEventListener("change", () => { sync(); syncSummary(); }); document.querySelector("[data-delivery-option]")?.addEventListener("change", syncSummary); sync(); syncSummary();
+    const form = document.querySelector("[data-checkout-form]"); const email = form?.querySelector('input[name="email"]'); const submit = form?.querySelector("[data-place-order]"); const emailRequirement = form?.querySelector("[data-email-requirement]"); const syncPayment = () => { const chapa = selectedValue("paymentMethod") === "chapa"; if (form instanceof HTMLFormElement) form.action = chapa ? "/actions/checkout/chapa" : "/actions/checkout/cod"; if (email instanceof HTMLInputElement) email.required = chapa; if (emailRequirement) emailRequirement.textContent = chapa ? "(required for Chapa)" : "(optional)"; if (submit) submit.textContent = chapa ? "Continue to secure payment" : "Place order"; }; form?.querySelector("[data-payment-choice]")?.addEventListener("change", syncPayment); syncPayment(); form?.addEventListener("submit", (event) => { const button = event.submitter; if (button instanceof HTMLButtonElement) { button.disabled = true; button.dataset.loading = "true"; button.textContent = selectedValue("paymentMethod") === "chapa" ? "Opening secure payment…" : "Placing your order…"; } });
   })();
 </script>
 <style is:global lang="scss">@use "./styles/checkout.scss";</style>

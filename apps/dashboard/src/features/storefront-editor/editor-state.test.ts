@@ -98,6 +98,8 @@ describe("storefront editor state", () => {
             subtitle: "Description",
             primaryCtaLabel: "Shop",
             primaryCtaHref: "/products",
+            featuredProductId: "prod_legacy",
+            featuredProductIds: [],
             trustLabels: ["One", "Two", "Three"],
           },
           featuredProducts: { enabled: true, title: "Top picks", productIds: [], limit: 8 },
@@ -125,6 +127,7 @@ describe("storefront editor state", () => {
         props: {
           ...item.props,
           heroTitle: "Edited Luvia hero",
+          heroFeaturedProductIds: ["prod_one", "prod_two"],
           footerBlurb: "Edited footer",
           headerNavigation: [{ label: "Shop", href: "/products" }],
           footerSocialLinks: [
@@ -143,10 +146,12 @@ describe("storefront editor state", () => {
     });
     const data = payload.data as {
       header: { navigation: Array<{ label: string; href: string }> };
-      home: { hero: { title: string } };
+      home: { hero: { title: string; featuredProductId?: string; featuredProductIds: string[] } };
       footer: { blurb: string; socialLinks: Array<{ label: string; href: string }> };
     };
     assert.equal(data.home.hero.title, "Edited Luvia hero");
+    assert.deepEqual(data.home.hero.featuredProductIds, ["prod_one", "prod_two"]);
+    assert.equal(data.home.hero.featuredProductId, undefined);
     assert.equal(data.footer.blurb, "Edited footer");
     assert.deepEqual(data.header.navigation, [{ label: "Shop", href: "/products" }]);
     assert.deepEqual(data.footer.socialLinks, [
@@ -158,7 +163,7 @@ describe("storefront editor state", () => {
     const savedData = {
       content: [
         {
-          props: { heroTitle: "Saved" },
+          props: { heroTitle: "Saved", id: "storefront-page" },
           type: "StorefrontPage",
         },
       ],
@@ -167,7 +172,7 @@ describe("storefront editor state", () => {
     const editedData = {
       content: [
         {
-          props: { heroTitle: "Edited" },
+          props: { heroTitle: "Edited", id: "storefront-page" },
           type: "StorefrontPage",
         },
       ],
