@@ -10,7 +10,7 @@
 .lv-cart-page__heading p { margin: 12px 0 0; color: color-mix(in srgb,var(--lv-ink) 62%,var(--lv-bg)); }
 .lv-cart-page__heading > img { width: 54px; height: 54px; padding: 15px; border: 1px solid var(--lv-accent); border-radius: 50%; background: var(--lv-bg); }
 .lv-cart-page__error { padding: 13px 16px; border-radius: 12px; background: #fff0f0; color: #8d2828; }
-.lv-cart-page__live { min-height: 20px; margin-top: -12px; margin-bottom: 12px; color: #338246; font-size: 13px; }
+.lv-cart-page__live { min-height: 20px; margin-top: -12px; margin-bottom: 12px; color: color-mix(in srgb,var(--lv-green) 74%,var(--lv-ink)); font-size: 13px; }
 .lv-cart-page__live.is-error { color: #a13b3b; }
 .lv-cart-page__layout { display: grid; grid-template-columns: minmax(0,1fr) 390px; gap: 26px; align-items: start; }
 .lv-cart-lines { display: flex; flex-direction: column; gap: 12px; }

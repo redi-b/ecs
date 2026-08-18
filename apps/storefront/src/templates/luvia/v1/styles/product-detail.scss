@@ -7,7 +7,7 @@
 .lv-product-detail { width: calc(100% - 120px); max-width: 1392px; margin: 0 auto; display: grid; grid-template-columns: minmax(0,1fr) 489px; gap: 36px; align-items: start; }
 .lv-product-gallery { display: flex; justify-content: center; gap: 12px; min-width: 0; }
 .lv-product-gallery__thumbs { width: 86px; display: flex; flex: none; flex-direction: column; gap: 8px; }
-.lv-product-gallery__thumbs button { width: 86px; height: 72px; padding: 0; overflow: hidden; border: 2px solid #eef6ef; border-radius: 10px; background: #eef6ef; cursor: pointer; }
+.lv-product-gallery__thumbs button { width: 86px; height: 72px; padding: 0; overflow: hidden; border: 2px solid var(--lv-soft); border-radius: 10px; background: var(--lv-soft); cursor: pointer; }
 .lv-product-gallery__thumbs button[aria-current="true"] { border-color: var(--lv-green); }
 .lv-product-gallery__thumbs img { width: 100%; height: 100%; object-fit: cover; }
 .lv-product-gallery__main { position: relative; width: min(100%, 548px); aspect-ratio: 478/548; display: grid; place-items: center; overflow: hidden; border: 1px solid var(--lv-accent); border-radius: 14px; background: var(--lv-soft); color: color-mix(in srgb, var(--lv-ink) 62%, transparent); }
@@ -21,7 +21,7 @@
 .lv-product-title > span { padding: 6px 12px; border: 1px solid var(--lv-line); border-radius: 999px; color: color-mix(in srgb,var(--lv-ink) 62%,var(--lv-bg)); font-size: 12px; }
 .lv-product-title h1 { margin: 7px 0 0; font-size: clamp(18px,1.46vw,22px); font-weight: 500; line-height: normal; letter-spacing: 0; text-transform: capitalize; }
 .lv-product-title p { margin: 0; font-size: 20px; line-height: normal; letter-spacing: -.02em; }.lv-product-price { display: flex; align-items: baseline; gap: 8px; }.lv-product-price strong { font-weight: 600; }.lv-product-price del { color: color-mix(in srgb,var(--lv-ink) 48%,transparent); font-size: 15px; }
-.lv-product-title small { color: #338246; }
+.lv-product-title small { color: color-mix(in srgb,var(--lv-green) 74%,var(--lv-ink)); }
 .lv-product-title small.is-out { color: #a13b3b; }
 .lv-product-buy form { display: flex; flex-direction: column; gap: 18px; }
 .lv-product-buy fieldset { margin: 0; padding: 0; border: 0; }
@@ -40,7 +40,7 @@
 .lv-product-wishlist { width: 52px; height: 52px; padding: 0; display: grid; place-items: center; flex: none; border: 1px solid var(--lv-line); border-radius: 50%; background: white; cursor: pointer; }
 .lv-product-wishlist img { width: 19px; }
 .lv-product-wishlist[aria-pressed="true"] { border-color: var(--lv-green); background: var(--lv-accent); box-shadow: inset 0 0 0 2px var(--lv-bg); }
-.lv-product-feedback { min-height: 18px; margin: -8px 5px 0; color: #338246; font-size: 13px; }
+.lv-product-feedback { min-height: 18px; margin: -8px 5px 0; color: color-mix(in srgb,var(--lv-green) 74%,var(--lv-ink)); font-size: 13px; }
 .lv-product-feedback.is-error { color: #a13b3b; }
 .lv-product-accordions { display: flex; flex-direction: column; gap: 10px; }
 .lv-product-accordions details { padding: 20px 16px; border: 1px solid var(--lv-line); border-radius: 14px; background: white; box-shadow: 0 4px 37px rgba(238,238,238,.31); }

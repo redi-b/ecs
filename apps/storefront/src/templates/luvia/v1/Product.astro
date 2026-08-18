@@ -5,7 +5,7 @@ import { formatMoney } from "../../../lib/money";
 import Layout from "./Layout.astro";
 import ProductCard from "./ProductCard.astro";
 import caretIcon from "./icons/chevron-icon.svg";
-import sparkleIcon from "./icons/sparkle-icon.svg";
+import starIcon from "./icons/star-icon.svg";
 import wishlistIcon from "./icons/wishlist-icon.svg";
 import { parseLuviaData } from "./lib";
 
@@ -65,7 +65,7 @@ const jsonLd = product ? {
     <section class="lv-product-detail">
       <div class="lv-product-gallery">
         {gallery.length > 1 && <div class="lv-product-gallery__thumbs" aria-label="Product images">{gallery.map((src, index) => <button type="button" data-gallery-thumb={src} aria-current={index === 0 ? "true" : undefined} aria-label={`View image ${index + 1}`}><img src={src} alt="" /></button>)}</div>}
-        <div class="lv-product-gallery__main" data-gallery-main>{gallery[0] ? <img src={gallery[0]} alt={product.title ?? "Product"} /> : <span>Product image coming soon</span>}<span class:list={["lv-product-gallery__badge", badge ? `is-${badge.kind}` : null]} data-product-badge hidden={!badge}><img src={sparkleIcon.src} alt="" /><span>{badge?.label ?? ""}</span></span></div>
+        <div class="lv-product-gallery__main" data-gallery-main>{gallery[0] ? <img src={gallery[0]} alt={product.title ?? "Product"} /> : <span>Product image coming soon</span>}<span class:list={["lv-product-gallery__badge", badge ? `is-${badge.kind}` : null]} data-product-badge hidden={!badge}><img src={starIcon.src} alt="" data-product-badge-icon hidden={badge?.kind !== "promotion"} /><span>{badge?.label ?? ""}</span></span></div>
       </div>
 
       <div class="lv-product-buy">
@@ -119,7 +119,7 @@ const jsonLd = product ? {
       if (id) id.value = variant?.id || "";
       if (variant?.priceAmount != null) { const value = money(variant.priceAmount, variant.currencyCode); if (price) price.textContent = value; if (stickyPrice) stickyPrice.textContent = value; }
       if (originalPrice) { const original = variant?.originalPriceAmount; originalPrice.textContent = original != null ? money(original, variant?.currencyCode) : ""; originalPrice.toggleAttribute("hidden", original == null); }
-      if (badge) { const percentage = Number(variant?.discountPercentage || 0); const hasPromotion = percentage > 0 && variant?.originalPriceAmount > variant?.priceAmount; const soldOut = variant && !variant.inStock; const label = badge.querySelector("span"); badge.toggleAttribute("hidden", !soldOut && !hasPromotion); badge.classList.toggle("is-out-of-stock", Boolean(soldOut)); badge.classList.toggle("is-promotion", !soldOut && hasPromotion); if (label) label.textContent = soldOut ? "Out of stock" : hasPromotion ? `${percentage}% off` : ""; }
+      if (badge) { const percentage = Number(variant?.discountPercentage || 0); const hasPromotion = percentage > 0 && variant?.originalPriceAmount > variant?.priceAmount; const soldOut = variant && !variant.inStock; const label = badge.querySelector("span"); const icon = badge.querySelector("[data-product-badge-icon]"); badge.toggleAttribute("hidden", !soldOut && !hasPromotion); badge.classList.toggle("is-out-of-stock", Boolean(soldOut)); badge.classList.toggle("is-promotion", !soldOut && hasPromotion); icon?.toggleAttribute("hidden", !hasPromotion || Boolean(soldOut)); if (label) label.textContent = soldOut ? "Out of stock" : hasPromotion ? `${percentage}% off` : ""; }
       if (stock) { stock.textContent = variant?.inStock ? `In stock${variant.sku ? ` · SKU ${variant.sku}` : ""}` : "Out of stock"; stock.classList.toggle("is-out", !variant?.inStock); }
       [add, stickyAdd].forEach((button) => { if (button instanceof HTMLButtonElement) button.disabled = !variant?.inStock; });
       root.querySelectorAll("[data-option-title]").forEach((node) => { if (!(node instanceof HTMLButtonElement)) return; const title = node.dataset.optionTitle; const value = node.dataset.optionValue; const probe = { ...selected, [title]: value }; const possible = variants.some((variant) => variant.inStock && Object.entries(probe).every(([key, expected]) => !variant.optionValues[key] || variant.optionValues[key] === expected)); node.disabled = !possible; node.setAttribute("aria-pressed", selected[title] === value ? "true" : "false"); });

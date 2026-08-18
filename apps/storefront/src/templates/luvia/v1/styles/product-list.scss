@@ -24,11 +24,11 @@
 .lv-filter-menu summary { min-height: 45px; padding: 0 13px; display: flex; align-items: center; gap: 7px; border: 1px solid transparent; border-radius: 999px; cursor: pointer; list-style: none; transition: border-color 180ms ease, background-color 180ms ease, box-shadow 180ms ease; }
 .lv-filter-menu summary::-webkit-details-marker { display: none; }
 .lv-filter-menu summary::after { width: 7px; height: 7px; margin-left: 2px; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; content: ""; transform: translateY(-2px) rotate(45deg); transition: transform 180ms ease; }
-.lv-filter-menu summary:hover { border-color: #c4d9c6; background: #f4fbf5; }
+.lv-filter-menu summary:hover { border-color: color-mix(in srgb,var(--lv-green) 40%,var(--lv-bg)); background: color-mix(in srgb,var(--lv-soft) 72%,var(--lv-bg)); }
 .lv-filter-menu summary:focus-visible { outline: none; border-color: var(--lv-green); box-shadow: 0 0 0 4px color-mix(in srgb, var(--lv-green) 14%, transparent); }
-.lv-filter-menu[open] summary { border-color: #b7ddb9; background: var(--lv-soft); }
+.lv-filter-menu[open] summary { border-color: color-mix(in srgb,var(--lv-green) 34%,var(--lv-bg)); background: var(--lv-soft); }
 .lv-filter-menu[open] summary::after { transform: translateY(2px) rotate(225deg); }
-.lv-filter-menu summary > span { color: #718274; font-size: 12px; }
+.lv-filter-menu summary > span { color: color-mix(in srgb,var(--lv-ink) 56%,var(--lv-bg)); font-size: 12px; }
 .lv-filter-menu summary > strong { max-width: 132px; overflow: hidden; font-size: 14px; font-weight: 500; text-overflow: ellipsis; white-space: nowrap; }
 .lv-filter-menu > div { position: absolute; z-index: 8; top: calc(100% + 8px); left: 0; width: max-content; min-width: 210px; max-height: 280px; padding: 7px; overflow-y: auto; border: 1px solid var(--lv-line); border-radius: 15px; background: var(--lv-bg); box-shadow: 0 18px 48px rgba(23,58,27,.16); }
 .lv-filter-menu--sort > div { right: 0; left: auto; }
@@ -42,7 +42,7 @@
 .lv-catalog-filter__active a { min-height: 34px; padding: 0 11px; display: inline-flex; align-items: center; gap: 5px; border: 1px solid var(--lv-line); border-radius: 999px; color: color-mix(in srgb,var(--lv-ink) 62%,var(--lv-bg)); text-decoration: none; font-size: 13px; }
 .lv-catalog-filter__active a span { margin-left: 2px; font-size: 18px; line-height: 1; }
 .lv-catalog-filter__active .lv-filter-clear { border-color: rgba(133,77,77,.48); color: rgba(176,55,55,.85); background: rgba(255,228,228,.26); }
-.lv-catalog-filter__active > span { padding: 4px 7px; flex: none; border-radius: 12px; background: #e8f8e9; color: color-mix(in srgb,var(--lv-ink) 78%,var(--lv-bg)); font-size: 13px; }
+.lv-catalog-filter__active > span { padding: 4px 7px; flex: none; border-radius: 12px; background: color-mix(in srgb,var(--lv-accent) 58%,var(--lv-bg)); color: color-mix(in srgb,var(--lv-ink) 78%,var(--lv-bg)); font-size: 13px; }
 .lv-catalog-grid { margin-top: 36px; display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 48px 8px; }
 .lv-catalog-grid .lv-product-card { min-width: 0; }
 .lv-catalog-state { margin-top: 36px; padding: 72px 24px; border-radius: 18px; background: var(--lv-soft); text-align: center; }
@@ -52,7 +52,7 @@
 .lv-catalog-loading { position: relative; margin-top: 36px; min-height: 620px; }
 .lv-catalog-loading[hidden] { display: none; }
 .lv-catalog-loading > div { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 48px 8px; }
-.lv-catalog-loading span { position: relative; aspect-ratio: 342/420; overflow: hidden; border-radius: 12px; background: #edf5ee; }
+.lv-catalog-loading span { position: relative; aspect-ratio: 342/420; overflow: hidden; border-radius: 12px; background: color-mix(in srgb,var(--lv-soft) 84%,var(--lv-bg)); }
 .lv-catalog-loading span::after { position: absolute; inset: 0; content: ""; background: linear-gradient(105deg,transparent 25%,rgba(255,255,255,.78) 45%,transparent 65%); transform: translateX(-100%); animation: lv-catalog-shimmer 1.1s infinite; }
 .lv-catalog-loading p { position: sticky; bottom: 24px; width: fit-content; margin: 28px auto 0; padding: 10px 16px; border-radius: 999px; background: var(--lv-dark); color: #fff; font-size: 13px; box-shadow: 0 10px 30px rgba(16,24,18,.2); }
 @keyframes lv-catalog-shimmer { to { transform: translateX(100%); } }
@@ -60,7 +60,7 @@
 .lv-catalog-pagination p { margin: 0; }
 .lv-catalog-pagination p strong { color: var(--lv-ink); }
 .lv-catalog-pagination nav { display: flex; align-items: center; gap: 6px; }
-.lv-catalog-pagination nav a, .lv-catalog-pagination nav span { width: 38px; height: 38px; display: grid; place-items: center; border: 1px solid #d9e5da; border-radius: 9px; color: var(--lv-ink); text-decoration: none; background: var(--lv-bg); }
+.lv-catalog-pagination nav a, .lv-catalog-pagination nav span { width: 38px; height: 38px; display: grid; place-items: center; border: 1px solid var(--lv-line); border-radius: 9px; color: var(--lv-ink); text-decoration: none; background: var(--lv-bg); }
 .lv-catalog-pagination nav a.is-current { border-color: var(--lv-green); background: var(--lv-accent); color: var(--lv-ink); }
 .lv-catalog-pagination nav span { opacity: .4; }
 .lv-catalog-pagination nav i { padding: 0 3px; font-style: normal; }
