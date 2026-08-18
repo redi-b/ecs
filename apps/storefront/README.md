@@ -25,7 +25,7 @@ Public requests resolve tenant context from the host, load the published storefr
 - Commerce ops: `src/lib/commerce/*` (shared; templates stay presentation)
 - Session: `ecs_cart_id` cookie
 - Platform calls: `PLATFORM_API_BASE_URL` + `x-forwarded-host`
-- Templates: static registry (`classic@1`, …) — never dynamic import from DB
+- Templates: static versioned registry (`<slug>@<version>`) — never dynamic import from DB
 - **Chapa:** per-merchant secret on `payment_onboarding.secret_key` (never platform billing `CHAPA_SECRET_KEY`)
 - **CSRF / reverse proxy:** `astro.config.mjs` sets `security.allowedDomains` so form POSTs work when TLS terminates at Caddy
 

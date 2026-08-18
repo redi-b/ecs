@@ -9,7 +9,7 @@ interface Props {
   data?: unknown;
   tenantName: string;
   cartCount?: number;
-  /** Accepted for template contract parity; classic shell shows server cart count. */
+  /** Accepted for template contract parity; the fallback shell shows server cart count. */
   deferCartCount?: boolean;
   primaryColor?: string;
   theme?: ShellTheme;
@@ -20,7 +20,7 @@ interface Props {
   hasNext: boolean;
   prevHref?: string;
   nextHref?: string;
-  /** Optional filters (used by premium templates; ignored by classic shell). */
+  /** Optional filters (used by full templates; ignored by the fallback shell). */
   collections?: StoreCollection[];
   categories?: StoreCategory[];
   filters?: {

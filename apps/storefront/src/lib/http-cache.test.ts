@@ -12,9 +12,9 @@ test("tenantCacheTags includes tenant and revision", () => {
     tenantCacheTags({
       tenantId: "tenant_1",
       publishedRevisionId: "rev_1",
-      templateKey: "classic@1",
+      templateKey: "luvia@1",
     }),
-    ["tenant:tenant_1", "revision:rev_1", "template:classic@1"],
+    ["tenant:tenant_1", "revision:rev_1", "template:luvia@1"],
   );
 });
 
@@ -29,7 +29,7 @@ test("applyCatalogCache sets maxAge tags and swr", () => {
     {
       tenantId: "t1",
       publishedRevisionId: "r1",
-      templateKey: "classic@1",
+      templateKey: "luvia@1",
       maxAge: 60,
       swr: 120,
     },
@@ -39,7 +39,7 @@ test("applyCatalogCache sets maxAge tags and swr", () => {
     {
       maxAge: 60,
       swr: 120,
-      tags: ["tenant:t1", "revision:r1", "template:classic@1"],
+      tags: ["tenant:t1", "revision:r1", "template:luvia@1"],
     },
   ]);
 });

@@ -55,7 +55,7 @@ export function DialogStepRail({
         className={cn("min-w-0 border-b border-border/70 px-4 py-3.5 sm:px-5", className)}
       >
         {/*
-          Classic layout: node · connector · node · connector · node
+          Linear layout: node · connector · node · connector · node
           Fill animates inside each connector (not a line through circles).
         */}
         <ol className="mx-auto flex w-full max-w-lg items-center justify-center">

@@ -62,7 +62,7 @@ test("POST /admin/onboarding/submit provisions a shop for the signed-in account"
   const body = new FormData();
   body.set("shopName", "Addis Pantry");
   body.set("handle", "addis-pantry");
-  body.set("templateKey", "classic@1");
+  body.set("templateKey", "luvia@1");
   body.set("businessCategory", "Groceries");
 
   const response = await POST(
@@ -85,7 +85,7 @@ test("POST /admin/onboarding/submit provisions a shop for the signed-in account"
     businessCategory: "Groceries",
     handle: "addis-pantry",
     name: "Addis Pantry",
-    templateKey: "classic@1",
+    templateKey: "luvia@1",
   });
 });
 
@@ -93,7 +93,7 @@ test("POST /admin/onboarding/submit requires an existing session", async () => {
   const body = new FormData();
   body.set("shopName", "Addis Pantry");
   body.set("handle", "addis-pantry");
-  body.set("templateKey", "classic@1");
+  body.set("templateKey", "luvia@1");
 
   const response = await POST(
     new Request("http://dashboard.lvh.me/admin/onboarding/submit", {

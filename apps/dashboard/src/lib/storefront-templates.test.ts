@@ -39,8 +39,8 @@ describe("storefront template helpers", () => {
           templates: [
             {
               id: "template_1",
-              slug: "classic",
-              name: "Classic",
+              slug: "luvia",
+              name: "Luvia",
               description: "A clean storefront.",
               previewAssetId: null,
               tags: ["default"],
@@ -48,7 +48,7 @@ describe("storefront template helpers", () => {
               version: {
                 id: "template_version_1",
                 version: 1,
-                templateKey: "classic@1",
+                templateKey: "luvia@1",
                 previewData: {
                   home: {},
                 },
@@ -69,7 +69,7 @@ describe("storefront template helpers", () => {
       cookieHeader: "better-auth.session_token=session_1",
       platformApiBaseUrl: "http://platform.local",
       tenantId: "tenant_1",
-      templateKey: "classic@1",
+      templateKey: "luvia@1",
       fetcher: async (input, init) => {
         forwardedRequest = new Request(input, init);
 
@@ -78,7 +78,9 @@ describe("storefront template helpers", () => {
             tenantId: "tenant_1",
             templateId: "template_1",
             templateVersion: 1,
-            templateKey: "classic@1",
+            templateKey: "luvia@1",
+            source: "clean",
+            hasUnpublishedChanges: true,
           },
         });
       },
@@ -91,7 +93,7 @@ describe("storefront template helpers", () => {
     );
     assert.equal(forwardedRequest?.method, "POST");
     assert.equal(forwardedRequest?.headers.get("cookie"), "better-auth.session_token=session_1");
-    assert.deepEqual(await forwardedRequest?.json(), { templateKey: "classic@1" });
+    assert.deepEqual(await forwardedRequest?.json(), { mode: "resume", templateKey: "luvia@1" });
   });
 
   it("returns a catalog error for invalid platform responses", async () => {
@@ -121,14 +123,14 @@ describe("storefront template helpers", () => {
             tenantId: "tenant_1",
             templateId: "template_1",
             templateVersion: 1,
-            templateKey: "classic@1",
+            templateKey: "luvia@1",
             data: { home: {} },
             themeTokens: { colors: {} },
             updatedAt: "2026-06-02T10:00:00.000Z",
             published: {
               revisionId: "revision_1",
               publishedAt: "2026-06-02T09:00:00.000Z",
-              templateKey: "classic@1",
+              templateKey: "luvia@1",
               data: { home: { hero: { title: "Published" } } },
               themeTokens: { colors: { primary: "#111111" } },
             },
@@ -141,7 +143,7 @@ describe("storefront template helpers", () => {
     assert.deepEqual(result.ok ? result.draft.published : null, {
       revisionId: "revision_1",
       publishedAt: "2026-06-02T09:00:00.000Z",
-      templateKey: "classic@1",
+      templateKey: "luvia@1",
       data: { home: { hero: { title: "Published" } } },
       themeTokens: { colors: { primary: "#111111" } },
     });
@@ -169,7 +171,7 @@ describe("storefront template helpers", () => {
             tenantId: "tenant_1",
             templateId: "template_1",
             templateVersion: 1,
-            templateKey: "classic@1",
+            templateKey: "luvia@1",
             data: { home: { hero: { title: "Updated" } } },
             themeTokens: { colors: { primary: "#111111" } },
             updatedAt: "2026-06-02T10:00:00.000Z",
@@ -202,7 +204,7 @@ describe("storefront template helpers", () => {
             publishedRevisionId: "revision_1",
             templateId: "template_1",
             templateVersion: 1,
-            templateKey: "classic@1",
+            templateKey: "luvia@1",
             publishedAt: "2026-06-02T10:00:00.000Z",
           },
         });

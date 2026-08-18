@@ -29,7 +29,7 @@ const shellPayload = {
     isPublished: true,
     publishedRevisionId: "revision_1",
     templateId: "template_1",
-    templateKey: "classic@1",
+    templateKey: "luvia@1",
     templateVersion: 1,
   },
 };

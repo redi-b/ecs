@@ -32,7 +32,7 @@ describe("storefront editor state", () => {
         },
         footer: { address: "1 Main St", phone: "555-0100" },
       },
-      templateKey: "classic@1",
+      templateKey: "luvia@1",
       templateVersion: 1,
       tenantId: "tenant_1",
       themeTokens: {

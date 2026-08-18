@@ -27,7 +27,7 @@ test("getPublishedStorefrontConfig calls platform config with host context", asy
           publishedRevisionId: "revision_1",
           templateId: "template_1",
           templateVersion: 1,
-          templateKey: "classic@1",
+          templateKey: "luvia@1",
           data: {
             home: {
               hero: {

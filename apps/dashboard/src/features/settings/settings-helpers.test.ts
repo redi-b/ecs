@@ -33,9 +33,9 @@ describe("storefront settings state", () => {
   });
 
   it("selects exactly one matching card and only offers a saved draft when one exists", () => {
-    assert.equal(isStorefrontTemplateSelected("classic@1", "classic@1"), true);
-    assert.equal(isStorefrontTemplateSelected("classic@1", "luvia@1"), false);
+    assert.equal(isStorefrontTemplateSelected("luvia@1", "luvia@1"), true);
+    assert.equal(isStorefrontTemplateSelected("luvia@1", "alternate@1"), false);
     assert.equal(hasSavedStorefrontDraft(["luvia@1"], "luvia@1"), true);
-    assert.equal(hasSavedStorefrontDraft(["luvia@1"], "classic@1"), false);
+    assert.equal(hasSavedStorefrontDraft(["luvia@1"], "alternate@1"), false);
   });
 });

@@ -22,7 +22,7 @@ const activePublishedRecord: TenantDomainRecord = {
   medusaShippingOptionId: "so_1",
   publishedRevisionId: "revision_1",
   templateId: "template_1",
-  templateKey: "classic@1",
+  templateKey: "luvia@1",
   templateVersion: 1,
 };
 
@@ -137,7 +137,7 @@ describe("resolveTenantFromHost", () => {
         medusaShippingOptionId: "so_1",
         publishedRevisionId: "revision_1",
         templateId: "template_1",
-        templateKey: "classic@1",
+        templateKey: "luvia@1",
         templateVersion: 1,
       },
     });

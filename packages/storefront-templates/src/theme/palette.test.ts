@@ -2,8 +2,8 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
-  CLASSIC_DARK_SEED,
-  CLASSIC_LIGHT_SEED,
+  DEFAULT_DARK_SEED,
+  DEFAULT_LIGHT_SEED,
   contrastRatio,
   contrastingInk,
   generateThemeFromPrimary,
@@ -54,7 +54,7 @@ test("inferSurfaceMode from background", () => {
 });
 
 test("accent stays brand-adjacent for blue primary (not neon green)", () => {
-  const colors = generateThemeFromSeed("#2b7fd4", CLASSIC_DARK_SEED);
+  const colors = generateThemeFromSeed("#2b7fd4", DEFAULT_DARK_SEED);
   const brand = hexToHsl(colors.primary)!;
   const accent = hexToHsl(colors.accent)!;
   let dh = accent.h - brand.h;
@@ -65,7 +65,7 @@ test("accent stays brand-adjacent for blue primary (not neon green)", () => {
 });
 
 test("body text stays low saturation when brand is red", () => {
-  const colors = generateThemeFromSeed("#c45c5c", CLASSIC_DARK_SEED);
+  const colors = generateThemeFromSeed("#c45c5c", DEFAULT_DARK_SEED);
   const fg = hexToHsl(colors.foreground)!;
   assert.ok(fg.s <= 10, `foreground too saturated: ${fg.s}`);
   assert.ok(fg.l >= 85, `foreground too dark: ${fg.l}`);
@@ -75,8 +75,8 @@ test("body text stays low saturation when brand is red", () => {
 });
 
 test("light seed is available for light surface mode", () => {
-  assert.equal(CLASSIC_LIGHT_SEED.surfaceMode, "light");
-  const colors = generateThemeFromPrimary(CLASSIC_LIGHT_SEED.colors.primary, "light");
+  assert.equal(DEFAULT_LIGHT_SEED.surfaceMode, "light");
+  const colors = generateThemeFromPrimary(DEFAULT_LIGHT_SEED.colors.primary, "light");
   assert.ok(relativeLuminance(colors.background) > 0.7);
 });
 

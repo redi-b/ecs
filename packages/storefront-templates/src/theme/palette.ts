@@ -5,7 +5,7 @@
  *   → HSL offset shift relative to seed primary
  *   → contrast cleanup for text/fills
  *
- * Templates can pass their own seed later; defaults use classic light/dark seeds.
+ * Templates can pass their own seed; neutral defaults support contracts without one.
  * Storefront applies colors as CSS variables (--at-bg, --at-primary, …).
  */
 
@@ -28,8 +28,8 @@ export type ThemePaletteSeed = {
   id: string;
   surfaceMode: ThemeSurfaceMode;
   /**
-   * `tonal` keeps the designed palette on one brand hue (Luvia). `contrasting`
-   * preserves an intentional secondary hue relationship (Classic).
+   * `tonal` keeps the designed palette on one brand hue. `contrasting`
+   * preserves an intentional secondary hue relationship.
    */
   strategy?: "tonal" | "contrasting";
   colors: {
@@ -175,9 +175,9 @@ export function inferSurfaceMode(backgroundHex: string | undefined | null): Them
 // Designed seeds (swap / extend when real template designs land)
 // ---------------------------------------------------------------------------
 
-/** Classic dark: cold forest base, sage brand, clay accent. */
-export const CLASSIC_DARK_SEED: ThemePaletteSeed = {
-  id: "classic-dark",
+/** Neutral dark fallback seed for contracts without an authored palette. */
+export const DEFAULT_DARK_SEED: ThemePaletteSeed = {
+  id: "default-dark",
   surfaceMode: "dark",
   colors: {
     primary: "#9bc4a0",
@@ -188,9 +188,9 @@ export const CLASSIC_DARK_SEED: ThemePaletteSeed = {
   },
 };
 
-/** Classic light: soft paper base, deep teal brand, warm clay accent. */
-export const CLASSIC_LIGHT_SEED: ThemePaletteSeed = {
-  id: "classic-light",
+/** Neutral light fallback seed for contracts without an authored palette. */
+export const DEFAULT_LIGHT_SEED: ThemePaletteSeed = {
+  id: "default-light",
   surfaceMode: "light",
   colors: {
     primary: "#0f766e",
@@ -202,8 +202,8 @@ export const CLASSIC_LIGHT_SEED: ThemePaletteSeed = {
 };
 
 export const DEFAULT_THEME_SEEDS: Record<ThemeSurfaceMode, ThemePaletteSeed> = {
-  dark: CLASSIC_DARK_SEED,
-  light: CLASSIC_LIGHT_SEED,
+  dark: DEFAULT_DARK_SEED,
+  light: DEFAULT_LIGHT_SEED,
 };
 
 export function getDefaultThemeSeed(mode: ThemeSurfaceMode): ThemePaletteSeed {
@@ -308,7 +308,7 @@ export function shiftColorRelativeToPrimary(
 
 /** Keep brand primary usable on both surfaces. */
 export function clampPrimaryForSurface(primaryHex: string, mode: ThemeSurfaceMode): string {
-  const primary = normalizeHex(primaryHex, CLASSIC_DARK_SEED.colors.primary);
+  const primary = normalizeHex(primaryHex, DEFAULT_DARK_SEED.colors.primary);
   const hsl = hexToHsl(primary);
   if (!hsl) return primary;
 
@@ -395,7 +395,7 @@ export function generateThemeFromSeed(
   seed: ThemePaletteSeed,
 ): GeneratedThemeColors {
   const mode = seed.surfaceMode;
-  const seedPrimary = normalizeHex(seed.colors.primary, CLASSIC_DARK_SEED.colors.primary);
+  const seedPrimary = normalizeHex(seed.colors.primary, DEFAULT_DARK_SEED.colors.primary);
   const requestedPrimary = normalizeHex(primaryInput, seedPrimary);
 
   // The authored brand color must reproduce the authored design exactly. This
@@ -480,7 +480,7 @@ export function generateThemeFromPrimary(
   return generateThemeFromSeed(primaryInput, useSeed);
 }
 
-/** Convenience: merge generated colors into classic theme token shape. */
+/** Convenience: project generated colors into the shared theme-token shape. */
 export function themeColorsForTokens(
   primary: string,
   mode: ThemeSurfaceMode,

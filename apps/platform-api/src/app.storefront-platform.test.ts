@@ -11,8 +11,8 @@ describe("platform app storefront, delivery, billing, and operator", () => {
         listStorefrontTemplates: async () => [
           {
             id: "template_1",
-            slug: "classic",
-            name: "Classic",
+            slug: "luvia",
+            name: "Luvia",
             description: "A clean storefront.",
             previewAssetId: null,
             tags: ["default"],
@@ -20,7 +20,7 @@ describe("platform app storefront, delivery, billing, and operator", () => {
             version: {
               id: "template_version_1",
               version: 1,
-              templateKey: "classic@1",
+              templateKey: "luvia@1",
               previewData: {
                 home: {},
               },
@@ -37,8 +37,8 @@ describe("platform app storefront, delivery, billing, and operator", () => {
       templates: [
         {
           id: "template_1",
-          slug: "classic",
-          name: "Classic",
+          slug: "luvia",
+          name: "Luvia",
           description: "A clean storefront.",
           previewAssetId: null,
           tags: ["default"],
@@ -46,7 +46,7 @@ describe("platform app storefront, delivery, billing, and operator", () => {
           version: {
             id: "template_version_1",
             version: 1,
-            templateKey: "classic@1",
+            templateKey: "luvia@1",
             previewData: {
               home: {},
             },
@@ -73,7 +73,7 @@ describe("platform app storefront, delivery, billing, and operator", () => {
               publishedRevisionId: "revision_1",
               templateId: "template_1",
               templateVersion: 1,
-              templateKey: "classic@1",
+              templateKey: "luvia@1",
               data: {
                 home: {
                   hero: {
@@ -122,7 +122,7 @@ describe("platform app storefront, delivery, billing, and operator", () => {
         publishedRevisionId: "revision_1",
         templateId: "template_1",
         templateVersion: 1,
-        templateKey: "classic@1",
+        templateKey: "luvia@1",
         data: {
           home: {
             hero: {
@@ -161,7 +161,7 @@ describe("platform app storefront, delivery, billing, and operator", () => {
               publishedRevisionId: "revision_1",
               templateId: "template_1",
               templateVersion: 1,
-              templateKey: "classic@1",
+              templateKey: "luvia@1",
               data: {
                 home: {
                   hero: {
@@ -262,7 +262,7 @@ describe("platform app storefront, delivery, billing, and operator", () => {
             tenantId: "tenant_1",
             templateId: "template_1",
             templateVersion: 1,
-            templateKey: "classic@1",
+            templateKey: "luvia@1",
             source: "clean",
             hasUnpublishedChanges: true,
           },
@@ -271,7 +271,7 @@ describe("platform app storefront, delivery, billing, and operator", () => {
     );
 
     const response = await app.request("/platform/tenants/tenant_1/storefront/template/select", {
-      body: JSON.stringify({ templateKey: "classic@1" }),
+      body: JSON.stringify({ templateKey: "luvia@1" }),
       headers: {
         "content-type": "application/json",
       },
@@ -324,7 +324,7 @@ describe("platform app storefront, delivery, billing, and operator", () => {
     );
 
     const response = await app.request("/platform/tenants/tenant_1/storefront/template/select", {
-      body: JSON.stringify({ templateKey: " classic@1 " }),
+      body: JSON.stringify({ templateKey: " luvia@1 " }),
       headers: {
         "content-type": "application/json",
       },
@@ -334,7 +334,7 @@ describe("platform app storefront, delivery, billing, and operator", () => {
     assert.equal(response.status, 200);
     assert.deepEqual(selectionInput, {
       tenantId: "tenant_1",
-      templateKey: "classic@1",
+      templateKey: "luvia@1",
       mode: "resume",
       userId: "user_1",
     });
@@ -343,7 +343,7 @@ describe("platform app storefront, delivery, billing, and operator", () => {
         tenantId: "tenant_1",
         templateId: "template_1",
         templateVersion: 1,
-        templateKey: "classic@1",
+        templateKey: "luvia@1",
         source: "clean",
         hasUnpublishedChanges: true,
       },
@@ -380,7 +380,7 @@ describe("platform app storefront, delivery, billing, and operator", () => {
               tenantId: input.tenantId,
               templateId: "template_1",
               templateVersion: 1,
-              templateKey: "classic@1",
+              templateKey: "luvia@1",
               data: {
                 heroTitle: "Abebe Market",
               },
@@ -415,7 +415,7 @@ describe("platform app storefront, delivery, billing, and operator", () => {
         tenantId: "tenant_1",
         templateId: "template_1",
         templateVersion: 1,
-        templateKey: "classic@1",
+        templateKey: "luvia@1",
         data: {
           heroTitle: "Abebe Market",
         },
@@ -474,7 +474,7 @@ describe("platform app storefront, delivery, billing, and operator", () => {
               tenantId: input.tenantId,
               templateId: "template_1",
               templateVersion: 1,
-              templateKey: "classic@1",
+              templateKey: "luvia@1",
               data: input.data,
               themeTokens: input.themeTokens,
               updatedAt: "2026-06-02T10:00:00.000Z",
@@ -515,7 +515,7 @@ describe("platform app storefront, delivery, billing, and operator", () => {
         tenantId: "tenant_1",
         templateId: "template_1",
         templateVersion: 1,
-        templateKey: "classic@1",
+        templateKey: "luvia@1",
         data: {
           heroTitle: "Updated Market",
         },
@@ -611,7 +611,7 @@ describe("platform app storefront, delivery, billing, and operator", () => {
               tenantId: input.tenantId,
               templateId: "template_1",
               templateVersion: 1,
-              templateKey: "classic@1",
+              templateKey: "luvia@1",
               publishedAt: "2026-06-02T10:00:00.000Z",
             },
           };
@@ -634,7 +634,7 @@ describe("platform app storefront, delivery, billing, and operator", () => {
         publishedRevisionId: "revision_2",
         templateId: "template_1",
         templateVersion: 1,
-        templateKey: "classic@1",
+        templateKey: "luvia@1",
         publishedAt: "2026-06-02T10:00:00.000Z",
       },
     });
@@ -925,7 +925,7 @@ describe("platform app storefront, delivery, billing, and operator", () => {
     );
 
     const response = await app.request("/platform/tenants/tenant_1/storefront/template/select", {
-      body: JSON.stringify({ templateKey: "classic@1" }),
+      body: JSON.stringify({ templateKey: "luvia@1" }),
       headers: {
         "content-type": "application/json",
       },
