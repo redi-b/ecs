@@ -89,7 +89,7 @@ const isActiveLink = (href: string) => href === "/" ? pathname === "/" : pathnam
       <header><div><h2 id="lv-cart-title">Your Cart</h2><span data-cart-drawer-count>0 items</span></div><button type="button" data-cart-close aria-label="Close cart">×</button></header>
       <div class="lv-cart-drawer__status" data-cart-status aria-live="polite"></div>
       <div class="lv-cart-drawer__items" data-cart-items></div>
-      <footer data-cart-footer hidden><dl><div><dt>Subtotal</dt><dd data-cart-subtotal></dd></div><div><dt>Delivery</dt><dd>Calculated at checkout</dd></div><div><dt>Total</dt><dd data-cart-total></dd></div></dl><a class="lv-cart-checkout" href="/checkout">Checkout</a><button type="button" data-cart-continue>Continue shopping</button></footer>
+      <footer data-cart-footer hidden><dl><div><dt>Subtotal</dt><dd data-cart-subtotal></dd></div><div><dt>Delivery</dt><dd>Calculated at checkout</dd></div><div><dt>Total</dt><dd data-cart-total></dd></div></dl><a class="lv-cart-checkout" href="/checkout">Checkout</a><a class="lv-cart-view" href="/cart">View cart and discounts</a><button type="button" data-cart-continue>Continue shopping</button></footer>
     </aside>
     <script>
       import { loadAndSyncCartCount, setCartCount as syncCartCount } from "../../../lib/browser/cart-count";

@@ -1,6 +1,6 @@
-.lv-confirmation { position: relative; min-height: 920px; padding: 150px max(60px,calc((100vw - 1392px)/2)) 110px; display: grid; grid-template-columns: minmax(0,1.2fr) minmax(330px,.8fr); gap: 28px; align-items: stretch; overflow: hidden; color: var(--lv-ink); }
+.lv-confirmation { position: relative; min-height: 920px; padding: 150px max(60px,calc((100vw - 1392px)/2)) 110px; display: grid; grid-template-columns: minmax(0,1.2fr) minmax(330px,.8fr); gap: 28px; align-items: start; overflow: hidden; color: var(--lv-ink); }
 .lv-confirmation__glow { position: absolute; z-index: 0; top: -260px; left: 8%; width: 760px; height: 760px; border-radius: 50%; background: radial-gradient(circle,color-mix(in srgb, var(--lv-green) 24%, transparent),color-mix(in srgb, var(--lv-accent) 10%, transparent) 48%,transparent 72%); filter: blur(18px); pointer-events: none; }
-.lv-confirmation__card, .lv-confirmation__steps { position: relative; z-index: 1; border: 1px solid #d4e8d6; border-radius: 26px; background: rgba(255,255,255,.84); box-shadow: 0 30px 90px rgba(70,119,75,.11); backdrop-filter: blur(20px); }
+.lv-confirmation__card, .lv-confirmation__steps { position: relative; z-index: 1; border: 1px solid var(--lv-line); border-radius: 26px; background: color-mix(in srgb,var(--lv-bg) 84%,transparent); box-shadow: 0 30px 90px color-mix(in srgb,var(--lv-ink) 11%,transparent); backdrop-filter: blur(20px); }
 .lv-confirmation__card { padding: 54px; }
 .lv-confirmation__mark { position: relative; width: 82px; height: 82px; display: grid; place-items: center; border-radius: 50%; background: var(--lv-green); color: var(--lv-on-primary); box-shadow: 0 0 0 10px color-mix(in srgb, var(--lv-green) 12%, transparent),0 18px 40px color-mix(in srgb, var(--lv-green) 24%, transparent); }
 .lv-confirmation__mark span { position: absolute; inset: 9px; border: 1px solid rgba(15,49,18,.18); border-radius: inherit; }
@@ -8,16 +8,16 @@
 .lv-confirmation__mark img { position: absolute; right: -19px; top: -6px; width: 18px; }
 .lv-confirmation__eyebrow { margin: 42px 0 14px; color: color-mix(in srgb,var(--lv-ink) 64%,var(--lv-bg)); font-size: 12px; font-weight: 600; letter-spacing: .18em; }
 .lv-confirmation h1 { margin: 0; color: var(--lv-dark); font: 400 clamp(58px,6vw,92px)/.88 "GC Molecule Demo",Arial,sans-serif; letter-spacing: -.05em; }
-.lv-confirmation__intro { max-width: 610px; margin: 28px 0 34px; color: #627865; font-size: 17px; line-height: 1.5; }
-.lv-confirmation__receipt { padding: 4px 22px; border: 1px solid var(--lv-line); border-radius: 18px; background: #f8fff8; }
-.lv-confirmation__receipt > div { min-height: 64px; display: grid; grid-template-columns: 150px minmax(0,1fr) auto; gap: 16px; align-items: center; border-bottom: 1px solid #e2ebe3; }
+.lv-confirmation__intro { max-width: 610px; margin: 28px 0 34px; color: color-mix(in srgb,var(--lv-ink) 62%,var(--lv-bg)); font-size: 17px; line-height: 1.5; }
+.lv-confirmation__receipt { padding: 4px 22px; border: 1px solid var(--lv-line); border-radius: 18px; background: color-mix(in srgb,var(--lv-soft) 48%,var(--lv-bg)); }
+.lv-confirmation__receipt > div { min-height: 64px; display: grid; grid-template-columns: 150px minmax(0,1fr) auto; gap: 16px; align-items: center; border-bottom: 1px solid var(--lv-line); }
 .lv-confirmation__receipt > div:last-child { border-bottom: 0; }
 .lv-confirmation__receipt span { color: color-mix(in srgb,var(--lv-ink) 54%,var(--lv-bg)); font-size: 13px; }
 .lv-confirmation__receipt strong { overflow-wrap: anywhere; font-size: 15px; }
 .lv-confirmation__receipt button { min-height: 36px; padding: 0 13px; border: 1px solid var(--lv-line); border-radius: 999px; background: white; color: var(--lv-ink); cursor: pointer; }
 .lv-confirmation__notice { min-height: 20px; margin: 18px 2px 0; color: color-mix(in srgb,var(--lv-ink) 54%,var(--lv-bg)); font-size: 13px; }
 .lv-confirmation__actions { margin-top: 32px; display: flex; flex-wrap: wrap; gap: 9px; }
-.lv-confirmation__steps { padding: 42px 34px; display: flex; flex-direction: column; justify-content: flex-end; background: var(--lv-dark); color: white; }
+.lv-confirmation__steps { min-height: 620px; padding: 42px 34px; display: flex; flex-direction: column; justify-content: flex-end; background: var(--lv-dark); color: white; }
 .lv-confirmation__steps > p { margin: 0 auto auto 0; color: color-mix(in srgb,var(--lv-ink) 38%,var(--lv-bg)); font-size: 11px; font-weight: 600; letter-spacing: .17em; }
 .lv-confirmation__steps ol { margin: 80px 0 0; padding: 0; list-style: none; }
 .lv-confirmation__steps li { position: relative; min-height: 120px; display: grid; grid-template-columns: 44px 1fr; gap: 18px; }
@@ -25,7 +25,7 @@
 .lv-confirmation__steps li > span { width: 44px; height: 44px; display: grid; place-items: center; border: 1px solid color-mix(in srgb,var(--lv-green) 30%,transparent); border-radius: 50%; color: var(--lv-green); font-size: 12px; }
 .lv-confirmation__steps li div { display: flex; flex-direction: column; gap: 7px; }
 .lv-confirmation__steps strong { font: 400 24px/1 "GC Molecule Demo",Arial,sans-serif; }
-.lv-confirmation__steps small { max-width: 290px; color: #a8b8aa; font-size: 13px; line-height: 1.4; }
+.lv-confirmation__steps small { max-width: 290px; color: color-mix(in srgb,var(--lv-on-dark) 68%,var(--lv-dark)); font-size: 13px; line-height: 1.4; }
 
 @media (max-width: 980px) {
   .lv-confirmation { padding-right: 20px; padding-left: 20px; grid-template-columns: minmax(0,1.1fr) minmax(300px,.9fr); }

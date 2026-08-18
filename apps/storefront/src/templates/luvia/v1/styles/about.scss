@@ -1,9 +1,9 @@
 .lv-about-page { padding: 150px 0 100px; color: var(--lv-ink); }
 .lv-about-hero { width: calc(100% - 120px); max-width: 1392px; min-height: 580px; margin: auto; padding: 60px; display: flex; flex-direction: column; justify-content: space-between; border-radius: 28px; background: linear-gradient(115deg,rgba(8,43,14,.93),rgba(8,43,14,.28)),url("../assets/hero-bg-alt-image.png") center/cover; color: white; }
-.lv-about-hero > p, .lv-about-feature > div > p { margin: 0; color: #a5f5b1; font-size: 12px; font-weight: 600; letter-spacing: .17em; }
+.lv-about-hero > p, .lv-about-feature > div > p { margin: 0; color: color-mix(in srgb,var(--lv-green) 42%,var(--lv-on-dark)); font-size: 12px; font-weight: 600; letter-spacing: .17em; }
 .lv-about-hero h1 { max-width: 900px; margin: 50px 0; font: 400 clamp(62px,7.4vw,112px)/.84 "GC Molecule Demo",Arial,sans-serif; letter-spacing: -.055em; }
 .lv-about-hero > div { display: flex; align-items: flex-end; justify-content: space-between; gap: 30px; }
-.lv-about-hero > div span { max-width: 520px; color: #dbe9dd; line-height: 1.5; }
+.lv-about-hero > div span { max-width: 520px; color: color-mix(in srgb,var(--lv-on-dark) 82%,var(--lv-dark)); line-height: 1.5; }
 .lv-about-hero a, .lv-about-feature a, .lv-about-closing a { min-height: 50px; padding: 0 20px; display: inline-flex; align-items: center; border-radius: 999px; background: var(--lv-green); color: var(--lv-on-primary); text-decoration: none; }
 .lv-about-principle { width: calc(100% - 120px); max-width: 1392px; margin: 120px auto; display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: center; }
 .lv-about-principle > div:first-child { position: relative; }

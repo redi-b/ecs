@@ -4,7 +4,7 @@ import { resolveProductBadge } from "../../../lib/commerce/merchandising";
 import { formatMoney } from "../../../lib/money";
 import ActionButton from "./ActionButton.astro";
 import bagIcon from "./icons/bag-icon.svg";
-import sparkleIcon from "./icons/sparkle-icon.svg";
+import starIcon from "./icons/star-icon.svg";
 import wishlistIcon from "./icons/wishlist-icon.svg";
 
 interface Props { product: StoreProduct; eager?: boolean; }
@@ -21,7 +21,7 @@ const originalPrice = purchasableVariant?.originalPriceAmount ?? product.origina
     <a class="lv-product-card__media-link" href={href} aria-label={product.title ?? "View product"}>
       {product.thumbnail ? <img src={product.thumbnail} alt={product.title ?? "Product"} loading={eager ? "eager" : "lazy"} /> : <span class="lv-product-card__empty">Image coming soon</span>}
     </a>
-    {badge ? <span class:list={["lv-product-card__badge", `is-${badge.kind}`]}>{badge.kind === "promotion" ? <img src={sparkleIcon.src} alt="" /> : null}{badge.label}</span> : null}
+    {badge ? <span class:list={["lv-product-card__badge", `is-${badge.kind}`]}>{badge.kind === "promotion" ? <img src={starIcon.src} alt="" /> : null}{badge.label}</span> : null}
     <button class="lv-product-card__heart" type="button" data-wishlist-toggle data-wishlist-item={wishlistItem} aria-pressed="false" aria-label={`Save ${product.title ?? "product"} to wishlist`}><img src={wishlistIcon.src} alt="" /></button>
     {purchasableVariant ? <form class="lv-product-card__cta" action="/actions/cart/add" method="post" data-card-add-form><input type="hidden" name="variantId" value={purchasableVariant.id} /><input type="hidden" name="quantity" value="1" /><ActionButton iconSrc={bagIcon.src} tone="secondary" size="small" type="submit" disabled={!purchasableVariant.inStock}><span data-card-add-label>{purchasableVariant.inStock ? "Add to Cart" : "Out of stock"}</span></ActionButton></form> : null}
   </div>
