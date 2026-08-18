@@ -2,6 +2,7 @@
 import type { LastOrderCookie } from "../../../lib/session/cart-cookie";
 import { formatMoney } from "../../../lib/money";
 import Layout from "./Layout.astro";
+import ActionButton from "./ActionButton.astro";
 import bagIcon from "./icons/bag-icon.svg";
 import sparkleIcon from "./icons/sparkle-icon.svg";
 import { parseLuviaData } from "./lib";
@@ -26,7 +27,7 @@ const verified = Boolean(lastOrder && lastOrder.id === orderId);
         <div><span>Status</span><strong>{verified ? "Confirmed" : "Order placed"}</strong></div>
       </div>
       <p class="lv-confirmation__notice" data-copy-status aria-live="polite">Keep this reference somewhere safe. You may need it when contacting the shop about your order. Order history will become available with customer accounts.</p>
-      <div class="lv-confirmation__actions"><a href="/products">Continue Shopping <img src={bagIcon.src} alt="" /></a><a href="/">Return Home</a></div>
+      <div class="lv-confirmation__actions"><ActionButton href="/products" iconSrc={bagIcon.src}>Continue Shopping</ActionButton><ActionButton href="/" tone="secondary">Return Home</ActionButton></div>
     </section>
     <aside class="lv-confirmation__steps" aria-label="What happens next"><p>WHAT HAPPENS NEXT</p><ol><li><span>01</span><div><strong>Order review</strong><small>The shop confirms availability and fulfillment details.</small></div></li><li><span>02</span><div><strong>Careful preparation</strong><small>Your items are packed and prepared for delivery or pickup.</small></div></li><li><span>03</span><div><strong>Stay reachable</strong><small>The shop may contact you using the details provided at checkout.</small></div></li></ol></aside>
   </main>
