@@ -115,6 +115,10 @@ export function isAllowedStoreFacadeRoute(request: Request) {
     return true;
   }
 
+  if (method === "POST" && /^\/store\/carts\/[^/]+\/customer$/.test(path)) {
+    return true;
+  }
+
   if (method === "POST" && /^\/store\/carts\/[^/]+\/line-items$/.test(path)) {
     return true;
   }

@@ -70,11 +70,10 @@ export async function storeFetch(
 
   const headers = getStoreHeaders(
     options.requestHost,
-    options.body === undefined
-      ? undefined
-      : {
-          "content-type": "application/json",
-        },
+    {
+      ...(options.body === undefined ? {} : { "content-type": "application/json" }),
+      ...options.headers,
+    },
   );
 
   const request = new Request(url, {

@@ -19,6 +19,14 @@ export function customerFacingStoreError(message: string | null | undefined): st
     store_route_not_allowed: "That page is not available.",
     invalid_storefront_config_response: "Please try again later.",
     config_request_failed: "Please try again later.",
+    invalid_customer_credentials: "That email or password is not correct.",
+    invalid_customer_registration: "Check your details and use a password with at least 8 characters.",
+    customer_account_exists: "An account already exists for this email. Try signing in instead.",
+    customer_registration_failed: "We could not create your account. Please try again.",
+    customer_login_failed: "We could not sign you in. Please try again.",
+    customer_auth_required: "Sign in to view your account.",
+    customer_session_invalid: "Your session has expired. Please sign in again.",
+    customer_orders_unavailable: "Your order history is temporarily unavailable.",
   };
 
   if (key && map[key]) {

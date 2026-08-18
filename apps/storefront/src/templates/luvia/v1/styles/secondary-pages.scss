@@ -40,8 +40,8 @@
 .lv-account { width: calc(100% - 120px); max-width: 1392px; min-height: 820px; margin: auto; padding: 150px 0 100px; display: grid; grid-template-columns: 1.25fr .75fr; gap: 26px; }
 .lv-account > section, .lv-account > aside { padding: 52px; border-radius: 26px; }
 .lv-account > section { border: 1px solid var(--lv-line); background: white; }
-.lv-account section > span { width: 68px; height: 68px; display: grid; place-items: center; border-radius: 50%; background: var(--lv-accent); }
-.lv-account section > span img { width: 25px; }
+.lv-account__icon { width: 68px; height: 68px; display: grid; place-items: center; border-radius: 50%; background: var(--lv-accent); }
+.lv-account__icon img { width: 25px; }
 .lv-account section > div { max-width: 620px; color: color-mix(in srgb,var(--lv-ink) 62%,var(--lv-bg)); line-height: 1.5; }
 .lv-account nav { margin-top: 28px; display: flex; flex-wrap: wrap; gap: 9px; }
 .lv-account nav a { min-height: 48px; padding: 0 19px; display: inline-flex; align-items: center; border: 1px solid var(--lv-line); border-radius: 999px; color: var(--lv-ink); text-decoration: none; }
@@ -51,5 +51,36 @@
 .lv-account ul { margin: 0; padding: 0; list-style: none; }
 .lv-account li { padding: 18px 0; border-bottom: 1px solid rgba(163,255,175,.17); color: #d6e5d8; }
 .lv-account li::before { content: "✓"; margin-right: 10px; color: var(--lv-green); }
+.lv-account__auth { justify-content: flex-start!important; gap: 14px; background: color-mix(in srgb,var(--lv-soft) 65%,white)!important; color: var(--lv-ink)!important; }
+.lv-account__auth-heading { margin-bottom: 12px; }
+.lv-account__auth-heading>p,.lv-account__orders header p { margin: 0 0 10px; font-size: 11px; font-weight: 600; letter-spacing: .17em; }
+.lv-account__auth-heading h2,.lv-account__orders h2 { margin: 0 0 8px; font-size: 32px; font-weight: 500; letter-spacing: -.035em; }
+.lv-account__auth-heading span { color: color-mix(in srgb,var(--lv-ink) 62%,var(--lv-bg)); }
+.lv-account__auth details { border: 1px solid var(--lv-line); border-radius: 18px; background: white; overflow: hidden; }
+.lv-account__auth summary { padding: 18px 20px; cursor: pointer; font-weight: 500; }
+.lv-account__auth details[open] summary { border-bottom: 1px solid var(--lv-line); }
+.lv-account__auth form { padding: 20px; display: grid; gap: 15px; }
+.lv-account__auth form>div { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.lv-account__auth label { display: grid; gap: 7px; font-size: 13px; }
+.lv-account__auth input { width: 100%; min-height: 49px; padding: 0 15px; border: 1px solid var(--lv-line); border-radius: 14px; background: var(--lv-bg); color: var(--lv-ink); font: inherit; }
+.lv-account__auth input:focus { outline: 2px solid color-mix(in srgb,var(--lv-green) 50%,transparent); border-color: var(--lv-green); }
+.lv-account__auth small { color: color-mix(in srgb,var(--lv-ink) 55%,var(--lv-bg)); }
+.lv-account__auth button,.lv-account__identity button { min-height: 48px; padding: 0 20px; border: 0; border-radius: 999px; background: var(--lv-green); color: var(--lv-on-primary); font: inherit; font-weight: 500; cursor: pointer; }
+.lv-account__error { margin: 0; padding: 12px 14px; border-radius: 13px; background: #fff0f0; color: #8c2424; }
+.lv-account.is-signed-in { grid-template-columns: .75fr 1.25fr; }
+.lv-account__identity { display: flex; align-items: center; justify-content: space-between; gap: 15px; }
+.lv-account__identity p { overflow-wrap: anywhere; }
+.lv-account__orders { border: 1px solid var(--lv-line); background: color-mix(in srgb,var(--lv-soft) 70%,white); }
+.lv-account__orders header { display: flex; align-items: flex-start; justify-content: space-between; }
+.lv-account__orders header>span { min-width: 38px; height: 38px; display: grid; place-items: center; border-radius: 50%; background: var(--lv-accent); }
+.lv-account__orders ol { margin: 30px 0 0; padding: 0; display: grid; list-style: none; }
+.lv-account__orders li { padding: 19px 0; display: flex; justify-content: space-between; gap: 20px; border-top: 1px solid var(--lv-line); }
+.lv-account__orders li::before { display: none; }
+.lv-account__orders li div { display: grid; gap: 5px; }
+.lv-account__orders li div:last-child { text-align: right; }
+.lv-account__orders li span { color: color-mix(in srgb,var(--lv-ink) 58%,var(--lv-bg)); font-size: 13px; text-transform: capitalize; }
+.lv-account__empty { margin-top: 34px; padding: 30px; border: 1px dashed var(--lv-line); border-radius: 18px; text-align: center; }
+.lv-account__empty p { color: color-mix(in srgb,var(--lv-ink) 60%,var(--lv-bg)); }
+.lv-account__empty a { color: var(--lv-ink); font-weight: 500; }
 @media(max-width:900px){.lv-request,.lv-account{width:calc(100% - 40px);gap:30px}.lv-wishlist{padding-inline:20px}.lv-wishlist__grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(max-width:760px){.lv-request,.lv-account{width:calc(100% - 24px);padding:104px 0 60px;grid-template-columns:1fr}.lv-request__intro h1,.lv-account h1{font-size:58px}.lv-request__panel{padding:22px 16px}.lv-request form{grid-template-columns:1fr}.lv-request label.is-wide,.lv-request form>button,.lv-request__unavailable{grid-column:auto}.lv-wishlist{padding:104px 12px 60px}.lv-wishlist h1{font-size:64px}.lv-wishlist__grid{grid-template-columns:1fr}.lv-account>section,.lv-account>aside{padding:32px 22px}.lv-account>aside{min-height:430px}}
+@media(max-width:760px){.lv-request,.lv-account,.lv-account.is-signed-in{width:calc(100% - 24px);padding:104px 0 60px;grid-template-columns:1fr}.lv-request__intro h1,.lv-account h1{font-size:58px}.lv-request__panel{padding:22px 16px}.lv-request form{grid-template-columns:1fr}.lv-request label.is-wide,.lv-request form>button,.lv-request__unavailable{grid-column:auto}.lv-wishlist{padding:104px 12px 60px}.lv-wishlist h1{font-size:64px}.lv-wishlist__grid{grid-template-columns:1fr}.lv-account>section,.lv-account>aside{padding:32px 22px}.lv-account__auth form>div{grid-template-columns:1fr}.lv-account__orders li{flex-direction:column}.lv-account__orders li div:last-child{text-align:left}}
