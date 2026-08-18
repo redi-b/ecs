@@ -9,18 +9,23 @@ const ctx = await loadPageContext(Astro.request, { skipCart: true });
 if (!ctx.ok) Astro.response.status = ctx.status;
 const Page = ctx.ok ? getStorefrontRenderer(ctx.config.storefront.templateKey)?.Account : null;
 const token = getCustomerTokenFromRequest(Astro.request);
+const requestedPage = Math.max(1, Number.parseInt(Astro.url.searchParams.get("page") ?? "1", 10) || 1);
+const orderLimit = 10;
 const accountResult = ctx.ok && token
   ? await getCustomerAccount({
       platformApiBaseUrl: ctx.platformApiBaseUrl,
       requestHost: ctx.requestHost,
       token,
+      orderLimit,
+      orderOffset: (requestedPage - 1) * orderLimit,
     })
   : null;
 const account = accountResult && !("ok" in accountResult) ? accountResult : null;
 const error = Astro.url.searchParams.get("error") ?? (accountResult && "ok" in accountResult ? accountResult.message : null);
+const success = Astro.url.searchParams.get("saved") === "profile" ? "Your profile details are saved." : null;
 Astro.response.headers.set("Cache-Control", "private, no-store");
 if (accountResult && "ok" in accountResult && accountResult.status === 401) {
   Astro.response.headers.append("Set-Cookie", customerSessionClearCookie());
 }
 ---
-{!ctx.ok || !Page ? <StoreUnavailable message={ctx.ok ? "Customer accounts are not available for this template yet." : ctx.message} /> : <Page data={ctx.config.storefront.data} themeTokens={ctx.config.storefront.themeTokens} tenantName={ctx.config.tenant.name} deferCartCount={true} account={account} error={error} initialMode={Astro.url.searchParams.get("mode") === "register" ? "register" : "login"} />}
+{!ctx.ok || !Page ? <StoreUnavailable message={ctx.ok ? "Customer accounts are not available for this template yet." : ctx.message} /> : <Page data={ctx.config.storefront.data} themeTokens={ctx.config.storefront.themeTokens} tenantName={ctx.config.tenant.name} deferCartCount={true} account={account} error={error} success={success} initialMode={Astro.url.searchParams.get("mode") === "register" ? "register" : "login"} />}

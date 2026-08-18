@@ -1,11 +1,13 @@
 ---
 import Layout from "./Layout.astro";
+import ActionButton from "./ActionButton.astro";
 import userIcon from "./icons/user-icon.svg";
 import { parseLuviaData } from "./lib";
 import type { CustomerAccountView } from "../../../lib/commerce/account";
 import { formatMoney } from "../../../lib/money";
-interface Props { data: unknown; themeTokens?: unknown; tenantName: string; deferCartCount?: boolean; account?: CustomerAccountView | null; error?: string | null; initialMode?: "login" | "register"; }
-const { data, themeTokens, tenantName, deferCartCount = false, account = null, error = null, initialMode = "login" } = Astro.props;
+import { formatOrderReference } from "../../../lib/order-reference";
+interface Props { data: unknown; themeTokens?: unknown; tenantName: string; deferCartCount?: boolean; account?: CustomerAccountView | null; error?: string | null; success?: string | null; initialMode?: "login" | "register"; }
+const { data, themeTokens, tenantName, deferCartCount = false, account = null, error = null, success = null, initialMode = "login" } = Astro.props;
 const template = parseLuviaData(data);
 function formatOrderDate(value: string | null) {
   if (!value) return "Date unavailable";
@@ -25,11 +27,25 @@ function formatOrderDate(value: string | null) {
             <p>{account.customer.email}</p>
             <form action="/actions/account/logout" method="post"><button type="submit">Sign out</button></form>
           </div>
+          <form class="lv-account__profile-form" action="/actions/account/profile" method="post">
+            <header><h2>Your details</h2><p>These details make future checkouts faster.</p></header>
+            {error && <p class="lv-account__error" role="alert">{error}</p>}
+            {success && <p class="lv-account__success" role="status">{success}</p>}
+            <div>
+              <label>First name<input name="firstName" value={account.customer.firstName} autocomplete="given-name" required /></label>
+              <label>Last name<input name="lastName" value={account.customer.lastName} autocomplete="family-name" required /></label>
+            </div>
+            <label>Email address<input value={account.customer.email} autocomplete="email" readonly aria-describedby="account-email-help" /></label>
+            <small id="account-email-help">Email changes require a verified account-recovery flow and are not available yet.</small>
+            <label>Phone number <small>(optional)</small><input name="phone" value={account.customer.phone} autocomplete="tel" inputmode="tel" /></label>
+            <ActionButton type="submit">Save details</ActionButton>
+          </form>
         </section>
         <section class="lv-account__orders" aria-labelledby="order-history-title">
-          <header><div><p>YOUR ORDERS</p><h2 id="order-history-title">Order history</h2></div><span>{account.orders.length}</span></header>
+          <header><div><p>YOUR ORDERS</p><h2 id="order-history-title">Order history</h2></div><span>{account.orderCount}</span></header>
           {account.orders.length ? (
-            <ol>{account.orders.map((order) => <li><div><strong>Order {order.displayId ? `#${order.displayId}` : order.id}</strong><span>{formatOrderDate(order.createdAt)}</span></div><div><strong>{order.total == null ? "Total unavailable" : formatMoney(order.total, order.currencyCode)}</strong><span>{order.itemCount} {order.itemCount === 1 ? "item" : "items"} · {order.status.replaceAll("_", " ")}</span></div></li>)}</ol>
+            <><ol>{account.orders.map((order) => <li><a href={`/account/orders/${encodeURIComponent(order.id)}`} aria-label={`View order ${formatOrderReference(order.id, order.customDisplayId)}`}><div><strong>Order {formatOrderReference(order.id, order.customDisplayId)}</strong><span>{formatOrderDate(order.createdAt)}</span></div><div><strong>{order.total == null ? "Total unavailable" : formatMoney(order.total, order.currencyCode)}</strong><span>{order.itemCount} {order.itemCount === 1 ? "item" : "items"} · {order.status.replaceAll("_", " ")}</span></div><span class="lv-account__order-arrow" aria-hidden="true">↗</span></a></li>)}</ol>
+            {account.orderCount > account.orderLimit && <nav class="lv-account__order-pages" aria-label="Order history pages">{account.orderOffset > 0 && <a href={`/account?page=${Math.max(1, account.orderOffset / account.orderLimit)}`}>Previous</a>}<span>Page {Math.floor(account.orderOffset / account.orderLimit) + 1} of {Math.ceil(account.orderCount / account.orderLimit)}</span>{account.orderOffset + account.orderLimit < account.orderCount && <a href={`/account?page=${account.orderOffset / account.orderLimit + 2}`}>Next</a>}</nav>}</>
           ) : (
             <div class="lv-account__empty"><strong>Your first order will appear here.</strong><p>Browse the collection and check out whenever you are ready.</p><a href="/products">Explore products</a></div>
           )}
@@ -41,16 +57,180 @@ function formatOrderDate(value: string | null) {
           <span class="lv-account__icon"><img src={userIcon.src} alt="" /></span>
           <p>CUSTOMER ACCOUNT</p>
           <h1>Your orders,<br />kept together.</h1>
-          <div><p>Sign in to revisit orders from this shop. You can always browse and check out as a guest.</p><nav><a href="/products">Continue as guest</a><a href="/contact">Get order help</a></nav></div>
+          <div><p>Sign in to revisit orders from this shop. You can always browse and check out as a guest.</p><nav class="lv-account__guest-actions"><a href="/products">Continue as guest</a><a href="/contact">Get order help</a></nav></div>
         </section>
         <aside class="lv-account__auth">
-          <div class="lv-account__auth-heading"><p>WELCOME</p><h2>{initialMode === "register" ? "Create your account" : "Sign in securely"}</h2><span>Use the email connected to your orders.</span></div>
-          {error && <p class="lv-account__error" role="alert">{error}</p>}
-          <details open={initialMode === "login"}><summary>Sign in</summary><form action="/actions/account/login" method="post"><label>Email<input name="email" type="email" autocomplete="email" required /></label><label>Password<input name="password" type="password" autocomplete="current-password" minlength="8" required /></label><button type="submit">Sign in</button></form></details>
-          <details open={initialMode === "register"}><summary>Create account</summary><form action="/actions/account/register" method="post"><div><label>First name<input name="firstName" autocomplete="given-name" required /></label><label>Last name<input name="lastName" autocomplete="family-name" required /></label></div><label>Email<input name="email" type="email" autocomplete="email" required /></label><label>Password<input name="password" type="password" autocomplete="new-password" minlength="8" required /><small>Use at least 8 characters.</small></label><button type="submit">Create account</button></form></details>
+          <div class="lv-account__auth-heading">
+            <p>CUSTOMER ACCESS</p>
+            <h2>{initialMode === "register" ? "Create your account" : "Welcome back"}</h2>
+            <span>{initialMode === "register" ? "Keep future orders and details in one place." : "Use the email connected to your orders."}</span>
+          </div>
+          <nav class="lv-account__auth-tabs" aria-label="Customer account access" role="tablist">
+            <a id="account-login-tab" href="/account?mode=login" role="tab" aria-selected={initialMode === "login" ? "true" : "false"} aria-controls="account-login" tabindex={initialMode === "login" ? 0 : -1} data-account-mode="login">Sign in</a>
+            <a id="account-register-tab" href="/account?mode=register" role="tab" aria-selected={initialMode === "register" ? "true" : "false"} aria-controls="account-register" tabindex={initialMode === "register" ? 0 : -1} data-account-mode="register">Create account</a>
+          </nav>
+          {error && <p class="lv-account__error" role="alert" data-account-error>{error}</p>}
+          <section class="lv-account__auth-panel" id="account-login" role="tabpanel" aria-labelledby="account-login-tab" hidden={initialMode !== "login"} data-account-panel="login">
+            <form action="/actions/account/login" method="post">
+              <label>Email address<input name="email" type="email" autocomplete="email" inputmode="email" required /></label>
+              <label>
+                Password
+                <span class="lv-account__password-control">
+                  <input name="password" type="password" autocomplete="current-password" minlength="8" required />
+                  <button type="button" aria-label="Show password" aria-pressed="false" data-password-toggle>
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.4 12s3.5-6 9.6-6 9.6 6 9.6 6-3.5 6-9.6 6-9.6-6-9.6-6Z"/><circle cx="12" cy="12" r="2.6"/><path class="lv-account__password-slash" d="m4 4 16 16"/></svg>
+                  </button>
+                </span>
+              </label>
+              <ActionButton type="submit" fullWidth={true}>Sign in</ActionButton>
+            </form>
+            <p class="lv-account__auth-switch">New here? <a href="/account?mode=register" data-account-mode="register">Create an account</a></p>
+          </section>
+          <section class="lv-account__auth-panel" id="account-register" role="tabpanel" aria-labelledby="account-register-tab" hidden={initialMode !== "register"} data-account-panel="register">
+            <form action="/actions/account/register" method="post">
+              <div class="lv-account__name-fields">
+                <label>First name<input name="firstName" autocomplete="given-name" required /></label>
+                <label>Last name<input name="lastName" autocomplete="family-name" required /></label>
+              </div>
+              <label>Email address<input name="email" type="email" autocomplete="email" inputmode="email" required /></label>
+              <label>
+                Password
+                <span class="lv-account__password-control">
+                  <input name="password" type="password" autocomplete="new-password" minlength="8" required />
+                  <button type="button" aria-label="Show password" aria-pressed="false" data-password-toggle>
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.4 12s3.5-6 9.6-6 9.6 6 9.6 6-3.5 6-9.6 6-9.6-6-9.6-6Z"/><circle cx="12" cy="12" r="2.6"/><path class="lv-account__password-slash" d="m4 4 16 16"/></svg>
+                  </button>
+                </span>
+                <small>Use at least 8 characters.</small>
+              </label>
+              <ActionButton type="submit" fullWidth={true}>Create account</ActionButton>
+            </form>
+            <p class="lv-account__auth-switch">Already have an account? <a href="/account?mode=login" data-account-mode="login">Sign in</a></p>
+          </section>
         </aside>
       </>
     )}
   </main>
 </Layout>
 <style is:global lang="scss">@use "./styles/secondary-pages.scss";</style>
+<script>
+  const authRoot = document.querySelector<HTMLElement>(".lv-account__auth");
+
+  if (authRoot) {
+    const setMode = (mode: "login" | "register", focus = false) => {
+      const activeEmail = authRoot.querySelector<HTMLInputElement>("[data-account-panel]:not([hidden]) input[type='email']")?.value ?? "";
+      authRoot.querySelectorAll<HTMLElement>("[data-account-panel]").forEach((panel) => {
+        panel.hidden = panel.dataset.accountPanel !== mode;
+      });
+      authRoot.querySelectorAll<HTMLElement>("[role='tab']").forEach((tab) => {
+        const selected = tab.dataset.accountMode === mode;
+        tab.setAttribute("aria-selected", String(selected));
+        tab.tabIndex = selected ? 0 : -1;
+      });
+      const heading = authRoot.querySelector<HTMLElement>(".lv-account__auth-heading h2");
+      const description = authRoot.querySelector<HTMLElement>(".lv-account__auth-heading span");
+      if (heading) heading.textContent = mode === "register" ? "Create your account" : "Welcome back";
+      if (description) description.textContent = mode === "register" ? "Keep future orders and details in one place." : "Use the email connected to your orders.";
+      authRoot.querySelector<HTMLElement>("[data-account-error]")?.remove();
+      const nextEmail = authRoot.querySelector<HTMLInputElement>(`[data-account-panel='${mode}'] input[type='email']`);
+      if (nextEmail && !nextEmail.value && activeEmail) nextEmail.value = activeEmail;
+      if (focus) authRoot.querySelector<HTMLInputElement>(`[data-account-panel='${mode}'] input`)?.focus();
+      window.history.replaceState({}, "", mode === "register" ? "/account?mode=register" : "/account");
+    };
+
+    authRoot.querySelectorAll<HTMLAnchorElement>("[data-account-mode]").forEach((link) => {
+      link.addEventListener("click", (event) => {
+        event.preventDefault();
+        setMode(link.dataset.accountMode === "register" ? "register" : "login", true);
+      });
+    });
+
+    authRoot.querySelectorAll<HTMLAnchorElement>("[role='tab']").forEach((tab) => {
+      tab.addEventListener("keydown", (event) => {
+        if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+        event.preventDefault();
+        const mode = tab.dataset.accountMode === "register" ? "login" : "register";
+        setMode(mode);
+        authRoot.querySelector<HTMLElement>(`[role='tab'][data-account-mode='${mode}']`)?.focus();
+      });
+    });
+
+    authRoot.querySelectorAll<HTMLButtonElement>("[data-password-toggle]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const input = button.parentElement?.querySelector<HTMLInputElement>("input");
+        if (!input) return;
+        const visible = input.type === "text";
+        input.type = visible ? "password" : "text";
+        button.setAttribute("aria-pressed", String(!visible));
+        button.setAttribute("aria-label", visible ? "Show password" : "Hide password");
+        input.focus({ preventScroll: true });
+      });
+    });
+
+    authRoot.querySelectorAll<HTMLFormElement>("form").forEach((form) => {
+      form.addEventListener("invalid", (event) => {
+        const field = event.target;
+        if (!(field instanceof HTMLInputElement)) return;
+        field.setAttribute("aria-invalid", "true");
+        const owner = field.closest("label");
+        if (!owner) return;
+        let message = owner.querySelector<HTMLElement>("[data-field-error]");
+        if (!message) {
+          message = document.createElement("small");
+          message.dataset.fieldError = "";
+          message.className = "lv-account__field-error";
+          message.setAttribute("role", "alert");
+          owner.append(message);
+        }
+        message.textContent = field.validationMessage;
+      }, true);
+      form.querySelectorAll<HTMLInputElement>("input").forEach((field) => {
+        field.addEventListener("input", () => {
+          field.removeAttribute("aria-invalid");
+          field.closest("label")?.querySelector("[data-field-error]")?.remove();
+        });
+      });
+      form.addEventListener("submit", async (event) => {
+        if (!form.checkValidity()) return;
+        event.preventDefault();
+        form.setAttribute("aria-busy", "true");
+        const button = form.querySelector<HTMLButtonElement>("button[type='submit']");
+        if (!button) return;
+        const originalText = form.action.endsWith("/register") ? "Create account" : "Sign in";
+        button.disabled = true;
+        const text = button.querySelector<HTMLElement>(".lv-button__text");
+        if (text) text.textContent = form.action.endsWith("/register") ? "Creating account…" : "Signing in…";
+        authRoot.querySelector<HTMLElement>("[data-account-error]")?.remove();
+        try {
+          const response = await fetch(form.action, {
+            body: new FormData(form),
+            headers: { accept: "application/json" },
+            method: "POST",
+          });
+          const result = await response.json().catch(() => ({}));
+          if (response.ok && typeof result.redirectTo === "string") {
+            window.location.assign(result.redirectTo);
+            return;
+          }
+          const message = document.createElement("p");
+          message.className = "lv-account__error";
+          message.dataset.accountError = "";
+          message.setAttribute("role", "alert");
+          message.textContent = typeof result.message === "string" ? result.message : "Something went wrong. Please try again.";
+          authRoot.querySelector(".lv-account__auth-tabs")?.after(message);
+        } catch {
+          const message = document.createElement("p");
+          message.className = "lv-account__error";
+          message.dataset.accountError = "";
+          message.setAttribute("role", "alert");
+          message.textContent = "We could not reach the shop. Check your connection and try again.";
+          authRoot.querySelector(".lv-account__auth-tabs")?.after(message);
+        } finally {
+          form.removeAttribute("aria-busy");
+          button.disabled = false;
+          if (text) text.textContent = originalText;
+        }
+      });
+    });
+  }
+</script>

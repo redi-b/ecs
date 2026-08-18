@@ -356,11 +356,13 @@ export function registerStoreFacadeRoutes(
 
     try {
       const customerAccountResponse = await handleCustomerAccountRequest({
+        ensureTenantCustomer: options.ensureMerchantCustomer,
         medusaInternalUrl: options.medusaInternalUrl,
         medusaPublishableKey: result.context.medusaPublishableKeyId,
         medusaSalesChannelId: result.context.medusaSalesChannelId,
         medusaStoreFetch,
         request: context.req.raw,
+        tenantId: result.context.tenantId,
       });
       if (customerAccountResponse) return customerAccountResponse;
     } catch {

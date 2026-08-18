@@ -1,13 +1,14 @@
 ---
 import type { StoreCart, StoreDeliveryOptions, StorePaymentOptions, StoreShippingOption } from "../../../lib/commerce/types";
+import type { StoreCustomer } from "../../../lib/commerce/account";
 import { resolveStoreFulfillmentOptions } from "../../../lib/commerce/fulfillment";
 import { resolveStoreCartSummary } from "../../../lib/commerce/cart-summary";
 import { formatMoney } from "../../../lib/money";
 import Layout from "./Layout.astro";
 import { parseLuviaData } from "./lib";
 
-interface Props { data: unknown; themeTokens?: unknown; tenantName: string; cartCount: number; cart: StoreCart | null; delivery: StoreDeliveryOptions | null; payment: StorePaymentOptions; shippingOptions: StoreShippingOption[]; shippingError?: string | null; error?: string | null; }
-const { data, themeTokens, tenantName, cartCount, cart, delivery, payment, shippingOptions, shippingError, error } = Astro.props;
+interface Props { data: unknown; themeTokens?: unknown; tenantName: string; cartCount: number; cart: StoreCart | null; delivery: StoreDeliveryOptions | null; payment: StorePaymentOptions; shippingOptions: StoreShippingOption[]; shippingError?: string | null; error?: string | null; customer?: StoreCustomer | null; }
+const { data, themeTokens, tenantName, cartCount, cart, delivery, payment, shippingOptions, shippingError, error, customer = null } = Astro.props;
 const template = parseLuviaData(data);
 const items = cart?.items ?? [];
 const deliveryEnabled = delivery?.deliveryEnabled === true;
@@ -36,10 +37,10 @@ const defaultPayment = payment.cod ? "cod" : payment.chapa ? "chapa" : null;
         <form method="post" action={defaultPayment === "chapa" ? "/actions/checkout/chapa" : "/actions/checkout/cod"} class="lv-checkout-form" data-checkout-form>
           {!fulfillmentAvailable && <div class="lv-checkout-blocker" role="status"><strong>Orders are temporarily unavailable.</strong><p>This shop has not enabled delivery or pickup yet.</p></div>}
           <div class="lv-checkout-fields">
-            <label><span>First Name*</span><input name="firstName" required autocomplete="given-name" placeholder="Jane" /></label>
-            <label><span>Last Name*</span><input name="lastName" required autocomplete="family-name" placeholder="Doe" /></label>
-            <label><span>Phone Number{phoneRequired ? "*" : ""}</span><input name="phone" required={phoneRequired} autocomplete="tel" inputmode="tel" placeholder="0912345678" /></label>
-            <label><span>Email <small data-email-requirement>{defaultPayment === "chapa" ? "(required for Chapa)" : "(optional)"}</small></span><input name="email" type="email" required={defaultPayment === "chapa"} autocomplete="email" placeholder="name@example.com" /></label>
+            <label><span>First Name*</span><input name="firstName" value={customer?.firstName} required autocomplete="given-name" placeholder="Jane" /></label>
+            <label><span>Last Name*</span><input name="lastName" value={customer?.lastName} required autocomplete="family-name" placeholder="Doe" /></label>
+            <label><span>Phone Number{phoneRequired ? "*" : ""}</span><input name="phone" value={customer?.phone} required={phoneRequired} autocomplete="tel" inputmode="tel" placeholder="0912345678" /></label>
+            <label><span>Email <small data-email-requirement>{defaultPayment === "chapa" ? "(required for Chapa)" : "(optional)"}</small></span><input name="email" value={customer?.email} type="email" required={defaultPayment === "chapa"} autocomplete="email" placeholder="name@example.com" /></label>
             <fieldset class="lv-checkout-choice-group is-wide" data-delivery-choice><legend>How would you like to receive it?*</legend><div>{deliveryEnabled && <label><input type="radio" name="deliveryChoice" value="delivery" checked={defaultChoice === "delivery"} disabled={!fulfillmentAvailable} /><span><strong>Delivery</strong><small>Send the order to your address.</small></span></label>}{pickupEnabled && <label><input type="radio" name="deliveryChoice" value="pickup" checked={defaultChoice === "pickup"} disabled={!fulfillmentAvailable} /><span><strong>Pickup</strong><small>Collect it from the shop.</small></span></label>}</div></fieldset>
             <label data-delivery-field><span>City*</span><input name="city" value="Addis Ababa" required={defaultChoice === "delivery"} disabled={defaultChoice !== "delivery"} autocomplete="address-level2" /></label>
             <label class="is-wide" data-delivery-field><span>Street Address*</span><input name="address1" required={defaultChoice === "delivery"} disabled={defaultChoice !== "delivery"} autocomplete="street-address" placeholder="Bole, Ayat Road" /></label>
@@ -48,7 +49,7 @@ const defaultPayment = payment.cod ? "cod" : payment.chapa ? "chapa" : null;
             <fieldset class="lv-checkout-choice-group is-wide" data-delivery-option><legend>Delivery option*</legend><div>{deliveryOptions.map((option, index) => <label><input type="radio" name="shippingOptionId" value={option.id} data-amount={option.amount ?? 0} checked={index === 0} required={defaultChoice === "delivery"} disabled={defaultChoice !== "delivery"} /><span><strong>{option.name?.trim() || "Standard delivery"}</strong><small>{option.amount === 0 ? "Free" : formatMoney(option.amount, option.currencyCode ?? cart?.currencyCode)}</small></span></label>)}</div></fieldset>
             <div data-pickup-option hidden>{pickupOption && <input type="hidden" name="shippingOptionId" value={pickupOption.id} disabled={defaultChoice !== "pickup"} />}</div>
           </div>
-          <label class="lv-checkout-account"><input type="checkbox" disabled /><span>Create an account at checkout <small>Coming soon</small></span></label>
+          {customer ? <p class="lv-checkout-account is-signed-in"><strong>Using your saved account details</strong><span>You can change them for this order without changing your profile.</span></p> : <p class="lv-checkout-account"><span>Want faster checkout next time?</span><a href="/account?mode=register">Create an account</a></p>}
           <fieldset class="lv-checkout-payment" data-payment-choice><legend>How would you like to pay?*</legend>{payment.cod && <label><input type="radio" name="paymentMethod" value="cod" checked={defaultPayment === "cod"} /><span><strong>Pay on delivery</strong><small>Pay when your order arrives.</small></span></label>}{payment.chapa && <label><input type="radio" name="paymentMethod" value="chapa" checked={defaultPayment === "chapa"} /><span><strong>Chapa</strong><small>Pay securely online. An email address is required.</small></span></label>}{!payment.cod && !payment.chapa && <p>No payment method is available for this order.</p>}</fieldset>
           <div class="lv-checkout-actions"><button type="submit" data-place-order disabled={!canSubmit || !defaultPayment}>{defaultPayment === "chapa" ? "Continue to secure payment" : "Place order"}</button></div>
         </form>

@@ -16,6 +16,7 @@ import LuviaV1About from "./luvia/v1/About.astro";
 import LuviaV1RequestItem from "./luvia/v1/RequestItem.astro";
 import LuviaV1Wishlist from "./luvia/v1/Wishlist.astro";
 import LuviaV1Account from "./luvia/v1/Account.astro";
+import LuviaV1AccountOrder from "./luvia/v1/AccountOrder.astro";
 import FallbackCartPage from "./fallback/CartPage.astro";
 import FallbackCheckoutPage from "./fallback/CheckoutPage.astro";
 import FallbackOrderConfirmPage from "./fallback/OrderConfirmPage.astro";
@@ -44,6 +45,7 @@ export const storefrontRenderers = {
     RequestItem: LuviaV1RequestItem,
     Wishlist: LuviaV1Wishlist,
     Account: LuviaV1Account,
+    AccountOrder: LuviaV1AccountOrder,
   },
 } satisfies Record<StorefrontTemplateKey, StorefrontRenderer>;
 

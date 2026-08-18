@@ -1,0 +1,98 @@
+---
+import type { StoreCustomerOrderDetail } from "../../../lib/commerce/account";
+import { formatMoney } from "../../../lib/money";
+import { formatOrderReference } from "../../../lib/order-reference";
+import ActionButton from "./ActionButton.astro";
+import Layout from "./Layout.astro";
+import { parseLuviaData } from "./lib";
+
+interface Props {
+  data: unknown;
+  themeTokens?: unknown;
+  tenantName: string;
+  cartCount: number;
+  order: StoreCustomerOrderDetail;
+}
+
+const { data, themeTokens, tenantName, cartCount, order } = Astro.props;
+const template = parseLuviaData(data);
+const reference = formatOrderReference(order.id, order.customDisplayId);
+const placedAt = order.createdAt
+  ? new Intl.DateTimeFormat("en", { dateStyle: "long" }).format(new Date(order.createdAt))
+  : "Date unavailable";
+const stateLabel = {
+  received: "Order received",
+  preparing: "Being prepared",
+  shipped: "Shipped",
+  delivered: "Delivered",
+  cancelled: "Cancelled",
+}[order.fulfillmentState];
+const money = (value: number | null) => value == null ? "—" : formatMoney(value, order.currencyCode);
+const address = order.shippingAddress;
+const isPickup = /pickup|pick up|collect/i.test(order.shippingMethod ?? "");
+---
+
+<Layout tenantName={tenantName} header={template.header} footer={template.footer} themeTokens={themeTokens} cartCount={cartCount} title={`Order ${reference}`}>
+  <main class="lv-account-order">
+    <a class="lv-account-order__back" href="/account">← Back to your account</a>
+    <header class="lv-account-order__hero">
+      <div>
+        <p>YOUR ORDER</p>
+        <h1>Order {reference}</h1>
+        <span>Placed {placedAt}</span>
+      </div>
+      <strong class:list={["lv-account-order__status", `is-${order.fulfillmentState}`]}>{stateLabel}</strong>
+    </header>
+
+    <div class="lv-account-order__layout">
+      <section class="lv-account-order__items" aria-labelledby="order-items-title">
+        <header><div><p>ORDER DETAILS</p><h2 id="order-items-title">What you ordered</h2></div><span>{order.itemCount} {order.itemCount === 1 ? "item" : "items"}</span></header>
+        <ol>
+          {order.items.map((item) => (
+            <li>
+              <span class="lv-account-order__media">{item.thumbnail && <img src={item.thumbnail} alt="" loading="lazy" />}</span>
+              <div><strong>{item.title}</strong>{item.variantTitle && <span>{item.variantTitle}</span>}<small>Quantity {item.quantity}</small></div>
+              <b>{money(item.total ?? (item.unitPrice == null ? null : item.unitPrice * item.quantity))}</b>
+            </li>
+          ))}
+        </ol>
+      </section>
+
+      <aside class="lv-account-order__side">
+        <section aria-labelledby="order-summary-title">
+          <p>PAYMENT SUMMARY</p><h2 id="order-summary-title">Order total</h2>
+          <dl>
+            <div><dt>Subtotal</dt><dd>{money(order.subtotal)}</dd></div>
+            {Boolean(order.discountTotal && order.discountTotal > 0) && <div class="is-saving"><dt>Discount</dt><dd>−{money(order.discountTotal)}</dd></div>}
+            <div><dt>Delivery</dt><dd>{money(order.shippingTotal)}</dd></div>
+            {Boolean(order.taxTotal && order.taxTotal > 0) && <div><dt>Tax</dt><dd>{money(order.taxTotal)}</dd></div>}
+            <div class="is-total"><dt>Total</dt><dd>{money(order.total)}</dd></div>
+          </dl>
+        </section>
+
+        <section aria-labelledby="order-fulfillment-title">
+          <p>FULFILLMENT</p><h2 id="order-fulfillment-title">{stateLabel}</h2>
+          <span>{order.shippingMethod ?? "The shop will confirm the fulfillment method."}</span>
+          {order.trackingNumber && <small>Tracking number: <strong>{order.trackingNumber}</strong></small>}
+          {order.trackingUrl && <a href={order.trackingUrl} rel="noreferrer" target="_blank">Open carrier tracking ↗</a>}
+        </section>
+
+        {address && !isPickup && (
+          <section aria-labelledby="order-address-title">
+            <p>DELIVERY DETAILS</p><h2 id="order-address-title">Shipping address</h2>
+            <address>
+              <strong>{[address.firstName, address.lastName].filter(Boolean).join(" ")}</strong>
+              <span>{address.address1}</span>{address.address2 && <span>{address.address2}</span>}
+              <span>{[address.city, address.province, address.postalCode].filter(Boolean).join(", ")}</span>
+              {address.phone && <span>{address.phone}</span>}
+            </address>
+          </section>
+        )}
+      </aside>
+    </div>
+
+    <footer class="lv-account-order__help"><div><p>NEED HELP?</p><h2>Have a question about this order?</h2><span>Keep order {reference} handy when you contact the shop.</span></div><ActionButton href="/contact" tone="secondary">Contact the shop</ActionButton></footer>
+  </main>
+</Layout>
+
+<style is:global lang="scss">@use "./styles/account-order.scss";</style>

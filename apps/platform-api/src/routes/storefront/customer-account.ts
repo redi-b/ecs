@@ -12,12 +12,26 @@ const registrationSchema = credentialsSchema.extend({
   lastName: z.string().trim().min(1).max(100),
 });
 
+const profileSchema = z.object({
+  firstName: z.string().trim().min(1).max(100),
+  lastName: z.string().trim().min(1).max(100),
+  phone: z.string().trim().max(50),
+});
+
 type CustomerAccountRequest = {
+  ensureTenantCustomer?: ((input: {
+    email: string;
+    firstName?: string | null;
+    lastName?: string | null;
+    phone?: string | null;
+    tenantId: string;
+  }) => Promise<unknown>) | undefined;
   medusaInternalUrl: string;
   medusaPublishableKey: string;
   medusaSalesChannelId: string | null;
   medusaStoreFetch: typeof fetch;
   request: Request;
+  tenantId: string;
 };
 
 export async function handleCustomerAccountRequest(
@@ -33,7 +47,9 @@ export async function handleCustomerAccountRequest(
       body: parsed.data,
       method: "POST",
     });
-    return sanitizeAuthResponse(response, "customer_login_failed");
+    const sanitized = await sanitizeAuthResponse(response, "customer_login_failed");
+    await projectAuthenticatedCustomer(input, sanitized);
+    return sanitized;
   }
 
   if (input.request.method === "POST" && path === "/store/customer-auth/register") {
@@ -68,7 +84,13 @@ export async function handleCustomerAccountRequest(
       body: { email: parsed.data.email, password: parsed.data.password },
       method: "POST",
     });
-    return sanitizeAuthResponse(login, "customer_login_failed");
+    const sanitized = await sanitizeAuthResponse(login, "customer_login_failed");
+    await projectAuthenticatedCustomer(input, sanitized, {
+      email: parsed.data.email,
+      firstName: parsed.data.firstName,
+      lastName: parsed.data.lastName,
+    });
+    return sanitized;
   }
 
   if (input.request.method === "GET" && path === "/store/customer/me") {
@@ -77,6 +99,22 @@ export async function handleCustomerAccountRequest(
     return proxyCustomerResponse(
       await medusaRequest(input, "/store/customers/me", { authorization: token }),
     );
+  }
+
+  if (input.request.method === "POST" && path === "/store/customer/profile") {
+    const token = bearerToken(input.request);
+    if (!token) return error("customer_auth_required", 401);
+    const parsed = profileSchema.safeParse(await readJson(input.request));
+    if (!parsed.success) return error("invalid_customer_profile", 422);
+    return proxyCustomerResponse(await medusaRequest(input, "/store/customers/me", {
+      authorization: token,
+      body: {
+        first_name: parsed.data.firstName,
+        last_name: parsed.data.lastName,
+        phone: parsed.data.phone || null,
+      },
+      method: "POST",
+    }));
   }
 
   if (input.request.method === "GET" && path === "/store/customer/orders") {
@@ -101,7 +139,62 @@ export async function handleCustomerAccountRequest(
     });
   }
 
+  const orderMatch = path.match(/^\/store\/customer\/orders\/([A-Za-z0-9_-]+)$/);
+  if (input.request.method === "GET" && orderMatch) {
+    const token = bearerToken(input.request);
+    if (!token) return error("customer_auth_required", 401);
+    const orderId = orderMatch[1]!;
+    const medusaPath = new URL(`/store/orders/${encodeURIComponent(orderId)}`, normalizeBaseUrl(input.medusaInternalUrl));
+    medusaPath.searchParams.set(
+      "fields",
+      "id,display_id,custom_display_id,status,created_at,currency_code,total,subtotal,item_total,shipping_total,tax_total,discount_total,sales_channel_id,*items,*items.variant,*shipping_address,*shipping_methods,*fulfillments,*fulfillments.labels",
+    );
+    const response = await medusaRequest(input, `${medusaPath.pathname}${medusaPath.search}`, {
+      authorization: token,
+    });
+    const data = await readResponseJson(response);
+    if (!response.ok) return errorFromMedusa(response, data, "customer_order_not_found");
+    const order = isRecord(data.order) ? data.order : null;
+    if (!order || !input.medusaSalesChannelId || order.sales_channel_id !== input.medusaSalesChannelId) {
+      return error("customer_order_not_found", 404);
+    }
+    return Response.json({ order });
+  }
+
   return null;
+}
+
+async function projectAuthenticatedCustomer(
+  input: CustomerAccountRequest,
+  response: Response,
+  known?: { email: string; firstName?: string; lastName?: string },
+) {
+  if (!input.ensureTenantCustomer || !response.ok) return;
+  const data = await response.clone().json().catch(() => ({}));
+  const token = isRecord(data) ? stringValue(data, "token") : null;
+  if (!token) return;
+  let customer = known;
+  if (!customer) {
+    const current = await medusaRequest(input, "/store/customers/me", { authorization: token });
+    const currentData = await readResponseJson(current);
+    const raw = isRecord(currentData.customer) ? currentData.customer : null;
+    const email = raw ? stringValue(raw, "email") : null;
+    if (!current.ok || !email) return;
+    const firstName = stringValue(raw!, "first_name");
+    const lastName = stringValue(raw!, "last_name");
+    customer = {
+      email,
+      ...(firstName ? { firstName } : {}),
+      ...(lastName ? { lastName } : {}),
+    };
+  }
+  if (!customer) return;
+  await input.ensureTenantCustomer({
+    email: customer.email,
+    ...(customer.firstName ? { firstName: customer.firstName } : {}),
+    ...(customer.lastName ? { lastName: customer.lastName } : {}),
+    tenantId: input.tenantId,
+  }).catch(() => undefined);
 }
 
 async function loadCustomerOrders(input: CustomerAccountRequest, token: string): Promise<
@@ -119,7 +212,7 @@ async function loadCustomerOrders(input: CustomerAccountRequest, token: string):
     medusaPath.searchParams.set("offset", String(offset));
     medusaPath.searchParams.set(
       "fields",
-      "id,display_id,status,created_at,currency_code,total,subtotal,item_total,shipping_total,discount_total,sales_channel_id,*items,*items.variant,*shipping_address",
+      "id,display_id,custom_display_id,status,created_at,currency_code,total,subtotal,item_total,shipping_total,discount_total,sales_channel_id,*items,*items.variant,*shipping_address",
     );
     const response = await medusaRequest(input, `${medusaPath.pathname}${medusaPath.search}`, {
       authorization: token,
