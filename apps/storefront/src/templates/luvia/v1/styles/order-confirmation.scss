@@ -17,9 +17,6 @@
 .lv-confirmation__receipt button { min-height: 36px; padding: 0 13px; border: 1px solid var(--lv-line); border-radius: 999px; background: white; color: var(--lv-ink); cursor: pointer; }
 .lv-confirmation__notice { min-height: 20px; margin: 18px 2px 0; color: color-mix(in srgb,var(--lv-ink) 54%,var(--lv-bg)); font-size: 13px; }
 .lv-confirmation__actions { margin-top: 32px; display: flex; flex-wrap: wrap; gap: 9px; }
-.lv-confirmation__actions a { min-height: 52px; padding: 0 22px; display: inline-flex; align-items: center; justify-content: center; gap: 9px; border: 1px solid var(--lv-line); border-radius: 999px; color: var(--lv-ink); text-decoration: none; }
-.lv-confirmation__actions a:first-child { border-color: var(--lv-green); background: var(--lv-green); color: var(--lv-on-primary); font-weight: 600; }
-.lv-confirmation__actions img { width: 16px; }
 .lv-confirmation__steps { padding: 42px 34px; display: flex; flex-direction: column; justify-content: flex-end; background: var(--lv-dark); color: white; }
 .lv-confirmation__steps > p { margin: 0 auto auto 0; color: color-mix(in srgb,var(--lv-ink) 38%,var(--lv-bg)); font-size: 11px; font-weight: 600; letter-spacing: .17em; }
 .lv-confirmation__steps ol { margin: 80px 0 0; padding: 0; list-style: none; }
@@ -45,7 +42,8 @@
   .lv-confirmation__receipt strong { grid-column: 1; grid-row: 2; }
   .lv-confirmation__receipt button { grid-column: 2; grid-row: 1 / 3; }
   .lv-confirmation__actions { flex-direction: column; }
-  .lv-confirmation__actions a { width: 100%; }
+  .lv-confirmation__actions .lv-button { width: 100%; }
+  .lv-confirmation__actions .lv-button__text { flex: 1; }
   .lv-confirmation__steps { min-height: 510px; padding: 32px 24px; border-radius: 22px; }
   .lv-confirmation__steps ol { margin-top: 56px; }
 }
