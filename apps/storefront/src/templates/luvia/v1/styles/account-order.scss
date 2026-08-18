@@ -4,8 +4,18 @@
 .lv-account-order p { margin: 0 0 8px; font-size: 11px; font-weight: 600; letter-spacing: .17em; }
 .lv-account-order h1 { margin: 0 0 10px; font: 400 clamp(50px,6vw,88px)/.9 "GC Molecule Demo",Arial,sans-serif; letter-spacing: -.055em; }
 .lv-account-order__hero span { color: color-mix(in srgb,var(--lv-ink) 62%,var(--lv-bg)); }
+.lv-account-order__tracking { display: grid; justify-items: end; gap: 7px; }
+.lv-account-order__status-row { display: flex; align-items: center; gap: 7px; }
 .lv-account-order__status { padding: 11px 16px; border-radius: 999px; background: var(--lv-accent); white-space: nowrap; }
 .lv-account-order__status.is-cancelled { background: #f5dddd; color: #7d2020; }
+.lv-account-order__refresh { width: 40px; height: 40px; padding: 0; display: inline-grid; place-items: center; flex: 0 0 auto; border: 1px solid var(--lv-line); border-radius: 50%; background: color-mix(in srgb,white 76%,var(--lv-soft)); color: var(--lv-ink); cursor: pointer; transition: border-color .18s ease,background-color .18s ease,opacity .18s ease; }
+.lv-account-order__refresh:hover { border-color: color-mix(in srgb,var(--lv-brand) 55%,var(--lv-line)); background: color-mix(in srgb,var(--lv-soft) 70%,white); }
+.lv-account-order__refresh:focus-visible { outline: 2px solid var(--lv-brand); outline-offset: 3px; }
+.lv-account-order__refresh:disabled { cursor: wait; opacity: .65; }
+.lv-account-order__refresh svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
+.lv-account-order__refresh[data-loading="true"] svg { animation: lv-order-refresh-spin .8s linear infinite; }
+.lv-account-order__refresh-note { color: color-mix(in srgb,var(--lv-ink) 48%,var(--lv-bg)); font-size: 11px; letter-spacing: .01em; }
+@keyframes lv-order-refresh-spin { to { transform: rotate(360deg); } }
 .lv-account-order__layout { margin-top: 18px; display: grid; grid-template-columns: minmax(0,1.45fr) minmax(310px,.75fr); gap: 18px; align-items: start; }
 .lv-account-order__items,.lv-account-order__side>section,.lv-account-order__help { border: 1px solid var(--lv-line); border-radius: 24px; background: white; }
 .lv-account-order__items { padding: 34px; }
@@ -37,4 +47,5 @@
 .lv-account-order__help h2 { margin-bottom: 7px; }
 .lv-account-order__help>div>span { color: color-mix(in srgb,var(--lv-on-dark) 70%,transparent); }
 @media(max-width:900px){.lv-account-order{width:calc(100% - 40px)}.lv-account-order__layout{grid-template-columns:1fr}.lv-account-order__side{grid-template-columns:repeat(2,minmax(0,1fr))}.lv-account-order__side>section:first-child{grid-column:1 / -1}}
-@media(max-width:620px){.lv-account-order{width:calc(100% - 24px);padding:104px 0 60px}.lv-account-order__hero{padding:28px 22px;align-items:flex-start;flex-direction:column}.lv-account-order__layout,.lv-account-order__side{grid-template-columns:1fr}.lv-account-order__side>section:first-child{grid-column:auto}.lv-account-order__items{padding:24px 18px}.lv-account-order__items li{grid-template-columns:64px 1fr}.lv-account-order__media{width:64px}.lv-account-order__items li>b{grid-column:2}.lv-account-order__help{padding:25px 22px;align-items:flex-start;flex-direction:column}.lv-account-order__help .lv-button{width:100%}}
+@media(max-width:620px){.lv-account-order{width:calc(100% - 24px);padding:104px 0 60px}.lv-account-order__hero{padding:28px 22px;align-items:flex-start;flex-direction:column}.lv-account-order__tracking{justify-items:start}.lv-account-order__layout,.lv-account-order__side{grid-template-columns:1fr}.lv-account-order__side>section:first-child{grid-column:auto}.lv-account-order__items{padding:24px 18px}.lv-account-order__items li{grid-template-columns:64px 1fr}.lv-account-order__media{width:64px}.lv-account-order__items li>b{grid-column:2}.lv-account-order__help{padding:25px 22px;align-items:flex-start;flex-direction:column}.lv-account-order__help .lv-button{width:100%}}
+@media(prefers-reduced-motion:reduce){.lv-account-order__refresh{transition:none}}

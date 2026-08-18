@@ -41,7 +41,18 @@ const isPickup = /pickup|pick up|collect/i.test(order.shippingMethod ?? "");
         <h1>Order {reference}</h1>
         <span>Placed {placedAt}</span>
       </div>
-      <strong class:list={["lv-account-order__status", `is-${order.fulfillmentState}`]}>{stateLabel}</strong>
+      <div class="lv-account-order__tracking">
+        <div class="lv-account-order__status-row">
+          <strong data-order-live-status class:list={["lv-account-order__status", `is-${order.fulfillmentState}`]}>{stateLabel}</strong>
+          <button class="lv-account-order__refresh" type="button" data-order-refresh aria-describedby="order-refresh-note" aria-label="Check for an updated order status" title="Check for updates">
+            <svg aria-hidden="true" viewBox="0 0 24 24">
+              <path d="M20 7v5h-5" />
+              <path d="M18.4 16.6A8 8 0 1 1 20 12" />
+            </svg>
+          </button>
+        </div>
+        <small id="order-refresh-note" class="lv-account-order__refresh-note" data-order-refresh-note aria-live="polite">Status checked when this page opened</small>
+      </div>
     </header>
 
     <div class="lv-account-order__layout">
@@ -70,7 +81,7 @@ const isPickup = /pickup|pick up|collect/i.test(order.shippingMethod ?? "");
           </dl>
         </section>
 
-        <section aria-labelledby="order-fulfillment-title">
+        <section data-order-live-fulfillment aria-labelledby="order-fulfillment-title">
           <p>FULFILLMENT</p><h2 id="order-fulfillment-title">{stateLabel}</h2>
           <span>{order.shippingMethod ?? "The shop will confirm the fulfillment method."}</span>
           {order.trackingNumber && <small>Tracking number: <strong>{order.trackingNumber}</strong></small>}
@@ -94,5 +105,47 @@ const isPickup = /pickup|pick up|collect/i.test(order.shippingMethod ?? "");
     <footer class="lv-account-order__help"><div><p>NEED HELP?</p><h2>Have a question about this order?</h2><span>Keep order {reference} handy when you contact the shop.</span></div><ActionButton href="/contact" tone="secondary">Contact the shop</ActionButton></footer>
   </main>
 </Layout>
+
+<script>
+  const refreshButton = document.querySelector<HTMLButtonElement>("[data-order-refresh]");
+  const refreshNote = document.querySelector<HTMLElement>("[data-order-refresh-note]");
+
+  refreshButton?.addEventListener("click", async () => {
+    if (refreshButton.disabled) return;
+
+    refreshButton.disabled = true;
+    refreshButton.dataset.loading = "true";
+    if (refreshNote) refreshNote.textContent = "Checking for updates…";
+
+    try {
+      const response = await fetch(window.location.href, {
+        cache: "no-store",
+        credentials: "same-origin",
+        headers: { Accept: "text/html" },
+      });
+      if (!response.ok) throw new Error(`Order refresh failed (${response.status})`);
+
+      const nextDocument = new DOMParser().parseFromString(await response.text(), "text/html");
+      const replacements = ["[data-order-live-status]", "[data-order-live-fulfillment]"];
+
+      for (const selector of replacements) {
+        const current = document.querySelector<HTMLElement>(selector);
+        const next = nextDocument.querySelector<HTMLElement>(selector);
+        if (!current || !next) throw new Error(`Missing refreshed order fragment: ${selector}`);
+        current.replaceWith(next);
+      }
+
+      if (refreshNote) {
+        const checkedAt = new Intl.DateTimeFormat(undefined, { hour: "numeric", minute: "2-digit" }).format(new Date());
+        refreshNote.textContent = `Updated at ${checkedAt}`;
+      }
+    } catch {
+      if (refreshNote) refreshNote.textContent = "Could not refresh. Please try again.";
+    } finally {
+      refreshButton.disabled = false;
+      delete refreshButton.dataset.loading;
+    }
+  });
+</script>
 
 <style is:global lang="scss">@use "./styles/account-order.scss";</style>
