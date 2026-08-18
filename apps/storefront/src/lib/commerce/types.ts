@@ -8,6 +8,7 @@ export type StorefrontFetch = (request: Request) => Promise<Response>;
 
 export type HostedStoreRequest = {
   fetcher?: StorefrontFetch;
+  headers?: Record<string, string>;
   platformApiBaseUrl: string;
   requestHost?: string | null;
 };

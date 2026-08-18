@@ -9,6 +9,7 @@ import {
   isAllowedStoreFacadeRoute,
   storeErrorStatus,
 } from "../shared.js";
+import { handleCustomerAccountRequest } from "./customer-account.js";
 import { completeChapaCheckout, initializeChapaCheckout } from "./checkout/chapa.js";
 import { completeCodCheckout } from "./checkout/cod.js";
 
@@ -351,6 +352,19 @@ export function registerStoreFacadeRoutes(
 
     if (!result.context.medusaPublishableKeyId) {
       return context.json({ error: "domain_misconfigured" }, 409);
+    }
+
+    try {
+      const customerAccountResponse = await handleCustomerAccountRequest({
+        medusaInternalUrl: options.medusaInternalUrl,
+        medusaPublishableKey: result.context.medusaPublishableKeyId,
+        medusaSalesChannelId: result.context.medusaSalesChannelId,
+        medusaStoreFetch,
+        request: context.req.raw,
+      });
+      if (customerAccountResponse) return customerAccountResponse;
+    } catch {
+      return context.json({ error: "commerce_backend_unavailable" }, 503);
     }
 
     if (

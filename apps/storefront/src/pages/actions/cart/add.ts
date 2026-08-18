@@ -7,6 +7,7 @@ import { isStoreError } from "../../../lib/commerce/result.js";
 import { getPlatformApiBaseUrl, getRequestHost } from "../../../lib/env.js";
 import { loadPageContext } from "../../../lib/page-context.js";
 import { appendSetCookies, cartIdSetCookie } from "../../../lib/session/cart-cookie.js";
+import { getCustomerTokenFromRequest } from "../../../lib/session/customer-cookie.js";
 
 export const POST: APIRoute = async ({ request }) => {
   const wantsJson = request.headers.get("accept")?.includes("application/json") ?? false;
@@ -24,11 +25,14 @@ export const POST: APIRoute = async ({ request }) => {
     return failure(returnTo, customerFacingStoreError(ctx.message), wantsJson);
   }
 
+  const customerToken = getCustomerTokenFromRequest(request);
+  const customerHeaders = customerToken ? { authorization: `Bearer ${customerToken}` } : undefined;
   const cartResult = await ensureStoreCart({
     cartId: ctx.cartId,
     platformApiBaseUrl: ctx.platformApiBaseUrl,
     regionId: ctx.config.commerce.regionId,
     requestHost: ctx.requestHost,
+    ...(customerHeaders ? { headers: customerHeaders } : {}),
   });
 
   if (isStoreError(cartResult)) {
@@ -40,6 +44,7 @@ export const POST: APIRoute = async ({ request }) => {
     platformApiBaseUrl: getPlatformApiBaseUrl(),
     quantity,
     requestHost: getRequestHost(request),
+    ...(customerHeaders ? { headers: customerHeaders } : {}),
     variantId,
   });
 

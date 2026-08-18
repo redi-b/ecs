@@ -2,11 +2,55 @@
 import Layout from "./Layout.astro";
 import userIcon from "./icons/user-icon.svg";
 import { parseLuviaData } from "./lib";
-interface Props { data: unknown; themeTokens?: unknown; tenantName: string; deferCartCount?: boolean; }
-const { data, themeTokens, tenantName, deferCartCount = false } = Astro.props;
+import type { CustomerAccountView } from "../../../lib/commerce/account";
+import { formatMoney } from "../../../lib/money";
+interface Props { data: unknown; themeTokens?: unknown; tenantName: string; deferCartCount?: boolean; account?: CustomerAccountView | null; error?: string | null; initialMode?: "login" | "register"; }
+const { data, themeTokens, tenantName, deferCartCount = false, account = null, error = null, initialMode = "login" } = Astro.props;
 const template = parseLuviaData(data);
+function formatOrderDate(value: string | null) {
+  if (!value) return "Date unavailable";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "Date unavailable" : new Intl.DateTimeFormat("en", { dateStyle: "medium" }).format(date);
+}
 ---
 <Layout tenantName={tenantName} header={template.header} footer={template.footer} themeTokens={themeTokens} deferCartCount={deferCartCount} title="Account">
-  <main class="lv-account"><section><span><img src={userIcon.src} alt="" /></span><p>CUSTOMER ACCOUNT</p><h1>Accounts are<br />coming soon.</h1><div><p>You can already browse, save products on this device, and check out as a guest. Customer sign-in and saved order history will appear here once secure account support is enabled.</p><nav><a href="/products">Continue shopping</a><a href="/contact">Get order help</a></nav></div></section><aside><p>AVAILABLE NOW</p><ul><li>Guest checkout</li><li>Device-local wishlist</li><li>Order confirmation after purchase</li><li>Direct support from the shop</li></ul></aside></main>
+  <main class:list={["lv-account", { "is-signed-in": account }]}>
+    {account ? (
+      <>
+        <section class="lv-account__profile">
+          <span class="lv-account__icon"><img src={userIcon.src} alt="" /></span>
+          <p>CUSTOMER ACCOUNT</p>
+          <h1>Welcome back,<br />{account.customer.firstName || "friend"}.</h1>
+          <div class="lv-account__identity">
+            <p>{account.customer.email}</p>
+            <form action="/actions/account/logout" method="post"><button type="submit">Sign out</button></form>
+          </div>
+        </section>
+        <section class="lv-account__orders" aria-labelledby="order-history-title">
+          <header><div><p>YOUR ORDERS</p><h2 id="order-history-title">Order history</h2></div><span>{account.orders.length}</span></header>
+          {account.orders.length ? (
+            <ol>{account.orders.map((order) => <li><div><strong>Order {order.displayId ? `#${order.displayId}` : order.id}</strong><span>{formatOrderDate(order.createdAt)}</span></div><div><strong>{order.total == null ? "Total unavailable" : formatMoney(order.total, order.currencyCode)}</strong><span>{order.itemCount} {order.itemCount === 1 ? "item" : "items"} · {order.status.replaceAll("_", " ")}</span></div></li>)}</ol>
+          ) : (
+            <div class="lv-account__empty"><strong>Your first order will appear here.</strong><p>Browse the collection and check out whenever you are ready.</p><a href="/products">Explore products</a></div>
+          )}
+        </section>
+      </>
+    ) : (
+      <>
+        <section class="lv-account__welcome">
+          <span class="lv-account__icon"><img src={userIcon.src} alt="" /></span>
+          <p>CUSTOMER ACCOUNT</p>
+          <h1>Your orders,<br />kept together.</h1>
+          <div><p>Sign in to revisit orders from this shop. You can always browse and check out as a guest.</p><nav><a href="/products">Continue as guest</a><a href="/contact">Get order help</a></nav></div>
+        </section>
+        <aside class="lv-account__auth">
+          <div class="lv-account__auth-heading"><p>WELCOME</p><h2>{initialMode === "register" ? "Create your account" : "Sign in securely"}</h2><span>Use the email connected to your orders.</span></div>
+          {error && <p class="lv-account__error" role="alert">{error}</p>}
+          <details open={initialMode === "login"}><summary>Sign in</summary><form action="/actions/account/login" method="post"><label>Email<input name="email" type="email" autocomplete="email" required /></label><label>Password<input name="password" type="password" autocomplete="current-password" minlength="8" required /></label><button type="submit">Sign in</button></form></details>
+          <details open={initialMode === "register"}><summary>Create account</summary><form action="/actions/account/register" method="post"><div><label>First name<input name="firstName" autocomplete="given-name" required /></label><label>Last name<input name="lastName" autocomplete="family-name" required /></label></div><label>Email<input name="email" type="email" autocomplete="email" required /></label><label>Password<input name="password" type="password" autocomplete="new-password" minlength="8" required /><small>Use at least 8 characters.</small></label><button type="submit">Create account</button></form></details>
+        </aside>
+      </>
+    )}
+  </main>
 </Layout>
 <style is:global lang="scss">@use "./styles/secondary-pages.scss";</style>

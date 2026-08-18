@@ -1,9 +1,26 @@
 ---
 import StoreUnavailable from "../components/shell/StoreUnavailable.astro";
 import { loadPageContext } from "../lib/page-context";
+import { getCustomerAccount } from "../lib/commerce/account";
+import { getCustomerTokenFromRequest } from "../lib/session/customer-cookie";
+import { customerSessionClearCookie } from "../lib/session/customer-cookie";
 import { getStorefrontRenderer } from "../templates/registry";
 const ctx = await loadPageContext(Astro.request, { skipCart: true });
 if (!ctx.ok) Astro.response.status = ctx.status;
 const Page = ctx.ok ? getStorefrontRenderer(ctx.config.storefront.templateKey)?.Account : null;
+const token = getCustomerTokenFromRequest(Astro.request);
+const accountResult = ctx.ok && token
+  ? await getCustomerAccount({
+      platformApiBaseUrl: ctx.platformApiBaseUrl,
+      requestHost: ctx.requestHost,
+      token,
+    })
+  : null;
+const account = accountResult && !("ok" in accountResult) ? accountResult : null;
+const error = Astro.url.searchParams.get("error") ?? (accountResult && "ok" in accountResult ? accountResult.message : null);
+Astro.response.headers.set("Cache-Control", "private, no-store");
+if (accountResult && "ok" in accountResult && accountResult.status === 401) {
+  Astro.response.headers.append("Set-Cookie", customerSessionClearCookie());
+}
 ---
-{!ctx.ok || !Page ? <StoreUnavailable message={ctx.ok ? "Customer accounts are not available for this template yet." : ctx.message} /> : <Page data={ctx.config.storefront.data} themeTokens={ctx.config.storefront.themeTokens} tenantName={ctx.config.tenant.name} deferCartCount={true} />}
+{!ctx.ok || !Page ? <StoreUnavailable message={ctx.ok ? "Customer accounts are not available for this template yet." : ctx.message} /> : <Page data={ctx.config.storefront.data} themeTokens={ctx.config.storefront.themeTokens} tenantName={ctx.config.tenant.name} deferCartCount={true} account={account} error={error} initialMode={Astro.url.searchParams.get("mode") === "register" ? "register" : "login"} />}
