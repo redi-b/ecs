@@ -22,7 +22,14 @@ const accountResult = ctx.ok && token
   : null;
 const account = accountResult && !("ok" in accountResult) ? accountResult : null;
 const error = Astro.url.searchParams.get("error") ?? (accountResult && "ok" in accountResult ? accountResult.message : null);
-const success = Astro.url.searchParams.get("saved") === "profile" ? "Your profile details are saved." : null;
+const saved = Astro.url.searchParams.get("saved");
+const success = saved === "profile"
+  ? "Your profile details are saved."
+  : saved === "address"
+    ? "Your saved address is ready for checkout."
+    : saved === "address-removed"
+      ? "The saved address was removed."
+      : null;
 Astro.response.headers.set("Cache-Control", "private, no-store");
 if (accountResult && "ok" in accountResult && accountResult.status === 401) {
   Astro.response.headers.append("Set-Cookie", customerSessionClearCookie());

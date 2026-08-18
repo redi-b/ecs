@@ -1,7 +1,7 @@
 ---
 import StoreUnavailable from "../../components/shell/StoreUnavailable.astro";
 import { getStorePaymentOptions } from "../../lib/commerce/checkout";
-import { getStoreCustomer } from "../../lib/commerce/account";
+import { getStoreCustomer, getStoreCustomerAddresses } from "../../lib/commerce/account";
 import { getStoreDeliveryOptions } from "../../lib/commerce/delivery";
 import { isStoreError } from "../../lib/commerce/result";
 import { listStoreShippingOptions } from "../../lib/commerce/shipping";
@@ -28,6 +28,14 @@ const customerResult = ctx.ok && customerToken
     })
   : null;
 const customer = customerResult && !isStoreError(customerResult) ? customerResult : null;
+const addressesResult = ctx.ok && customerToken && customer
+  ? await getStoreCustomerAddresses({
+      platformApiBaseUrl: ctx.platformApiBaseUrl,
+      requestHost: ctx.requestHost,
+      token: customerToken,
+    })
+  : null;
+const customerAddresses = addressesResult && !isStoreError(addressesResult) ? addressesResult : [];
 if (customerResult && isStoreError(customerResult) && customerResult.status === 401) {
   Astro.response.headers.append("Set-Cookie", customerSessionClearCookie());
 }
@@ -89,6 +97,7 @@ const Checkout = ctx.ok
       shippingError={shippingError}
       error={Astro.url.searchParams.get("error")}
       customer={customer}
+      customerAddresses={customerAddresses}
     />
   )
 }

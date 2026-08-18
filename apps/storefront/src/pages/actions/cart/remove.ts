@@ -4,6 +4,7 @@ import { removeStoreCartLineItem } from "../../../lib/commerce/cart.js";
 import { cartJson, cartJsonError } from "../../../lib/commerce/cart-json.js";
 import { isStoreError } from "../../../lib/commerce/result.js";
 import { loadPageContext } from "../../../lib/page-context.js";
+import { getCustomerTokenFromRequest } from "../../../lib/session/customer-cookie.js";
 
 export const POST: APIRoute = async ({ request }) => {
   const wantsJson = request.headers.get("accept")?.includes("application/json") ?? false;
@@ -20,12 +21,16 @@ export const POST: APIRoute = async ({ request }) => {
     if (wantsJson) return cartJsonError("Missing cart item.");
     return redirect("/cart?error=" + encodeURIComponent("Missing cart item."));
   }
+  const customerToken = getCustomerTokenFromRequest(request);
 
   const result = await removeStoreCartLineItem({
     cartId: ctx.cartId,
     lineItemId,
     platformApiBaseUrl: ctx.platformApiBaseUrl,
     requestHost: ctx.requestHost,
+    ...(customerToken
+      ? { headers: { authorization: `Bearer ${customerToken}` } }
+      : {}),
   });
 
   if (isStoreError(result)) {

@@ -9,6 +9,36 @@ export type StoreCustomer = {
   phone: string;
 };
 
+export type StoreCustomerAddress = {
+  id: string;
+  addressName: string;
+  firstName: string;
+  lastName: string;
+  phone: string;
+  address1: string;
+  address2: string;
+  city: string;
+  province: string;
+  postalCode: string;
+  countryCode: string;
+  isDefaultShipping: boolean;
+};
+
+export type StoreCustomerAddressInput = Omit<StoreCustomerAddress, "id">;
+
+export type StoreCustomerWishlistEntry = {
+  path: string;
+  title: string;
+  thumbnail: string | null;
+  priceAmount: number | null;
+  currencyCode: string | null;
+};
+
+export type StoreCustomerCommerceState = {
+  activeCartId: string | null;
+  wishlist: StoreCustomerWishlistEntry[];
+};
+
 export type StoreCustomerOrder = {
   id: string;
   displayId: number | null;
@@ -57,6 +87,7 @@ export type StoreCustomerOrderDetail = StoreCustomerOrder & {
 
 export type CustomerAccountView = {
   customer: StoreCustomer;
+  addresses: StoreCustomerAddress[];
   orders: StoreCustomerOrder[];
   orderCount: number;
   orderLimit: number;
@@ -94,14 +125,17 @@ export async function getCustomerAccount(
   options: HostedStoreRequest & { token: string; orderLimit?: number; orderOffset?: number },
 ): Promise<CustomerAccountView | StorefrontError> {
   const headers = { authorization: `Bearer ${options.token}` };
-  const [customerResponse, ordersResponse] = await Promise.all([
+  const [customerResponse, ordersResponse, addressesResponse] = await Promise.all([
     storeFetch({ ...options, path: "/store/customer/me", headers }),
     storeFetch({ ...options, path: "/store/customer/orders", headers, searchParams: { limit: options.orderLimit ?? 10, offset: options.orderOffset ?? 0 } }),
+    storeFetch({ ...options, path: "/store/customer/addresses", headers, searchParams: { limit: 50, offset: 0 } }),
   ]);
   const customerData = await customerResponse.json().catch(() => null);
   if (!customerResponse.ok) return asError(customerResponse.status, customerData, "Your session has expired.");
   const ordersData = await ordersResponse.json().catch(() => null);
   if (!ordersResponse.ok) return asError(ordersResponse.status, ordersData, "Order history is unavailable.");
+  const addressesData = await addressesResponse.json().catch(() => null);
+  if (!addressesResponse.ok) return asError(addressesResponse.status, addressesData, "Saved addresses are unavailable.");
 
   const customer = normalizeCustomer(customerData);
   if (!customer) {
@@ -111,11 +145,62 @@ export async function getCustomerAccount(
   const rawOrders = isRecord(ordersData) && Array.isArray(ordersData.orders) ? ordersData.orders : [];
   return {
     customer,
+    addresses: normalizeAddresses(addressesData),
     orders: rawOrders.filter(isRecord).map(normalizeOrder),
     orderCount: isRecord(ordersData) && typeof ordersData.count === "number" ? ordersData.count : rawOrders.length,
     orderLimit: isRecord(ordersData) && typeof ordersData.limit === "number" ? ordersData.limit : options.orderLimit ?? 10,
     orderOffset: isRecord(ordersData) && typeof ordersData.offset === "number" ? ordersData.offset : options.orderOffset ?? 0,
   };
+}
+
+export async function getStoreCustomerAddresses(
+  options: HostedStoreRequest & { token: string },
+): Promise<StoreCustomerAddress[] | StorefrontError> {
+  const response = await storeFetch({
+    ...options,
+    path: "/store/customer/addresses",
+    headers: { authorization: `Bearer ${options.token}` },
+    searchParams: { limit: 50, offset: 0 },
+  });
+  const data = await response.json().catch(() => null);
+  if (!response.ok) return asError(response.status, data, "Saved addresses are unavailable.");
+  return normalizeAddresses(data);
+}
+
+export async function saveStoreCustomerAddress(
+  options: HostedStoreRequest & {
+    token: string;
+    addressId?: string;
+    address: StoreCustomerAddressInput;
+  },
+): Promise<StoreCustomerAddress[] | StorefrontError> {
+  const response = await storeFetch({
+    ...options,
+    path: options.addressId
+      ? `/store/customer/addresses/${encodeURIComponent(options.addressId)}`
+      : "/store/customer/addresses",
+    method: "POST",
+    headers: { authorization: `Bearer ${options.token}` },
+    body: options.address,
+  });
+  const data = await response.json().catch(() => null);
+  if (!response.ok) return asError(response.status, data, "We could not save that address.");
+  return normalizeAddresses(data);
+}
+
+export async function deleteStoreCustomerAddress(
+  options: HostedStoreRequest & { token: string; addressId: string },
+): Promise<true | StorefrontError> {
+  const response = await storeFetch({
+    ...options,
+    path: `/store/customer/addresses/${encodeURIComponent(options.addressId)}`,
+    method: "DELETE",
+    headers: { authorization: `Bearer ${options.token}` },
+  });
+  if (!response.ok) {
+    return asError(response.status, await response.json().catch(() => null), "We could not remove that address.");
+  }
+  return true;
 }
 
 export async function getStoreCustomer(
@@ -174,12 +259,56 @@ export async function transferStoreCartToCustomer(
 ): Promise<true | StorefrontError> {
   const response = await storeFetch({
     ...options,
-    path: `/store/carts/${encodeURIComponent(options.cartId)}/customer`,
+    path: "/store/customer/cart",
     method: "POST",
     headers: { authorization: `Bearer ${options.token}` },
+    body: { cartId: options.cartId },
   });
   if (response.ok) return true;
   return asError(response.status, await response.json().catch(() => null), "Unable to connect your cart to your account.");
+}
+
+export async function getStoreCustomerCommerceState(
+  options: HostedStoreRequest & { token: string },
+): Promise<StoreCustomerCommerceState | StorefrontError> {
+  const response = await storeFetch({
+    ...options,
+    path: "/store/customer/commerce-state",
+    headers: { authorization: `Bearer ${options.token}` },
+  });
+  const data = await response.json().catch(() => null);
+  if (!response.ok) return asError(response.status, data, "Account shopping state is unavailable.");
+  return normalizeCommerceState(data);
+}
+
+export async function saveStoreCustomerWishlist(
+  options: HostedStoreRequest & { token: string; items: StoreCustomerWishlistEntry[] },
+): Promise<StoreCustomerCommerceState | StorefrontError> {
+  const response = await storeFetch({
+    ...options,
+    path: "/store/customer/commerce-state",
+    method: "PUT",
+    headers: { authorization: `Bearer ${options.token}` },
+    body: { items: options.items },
+  });
+  const data = await response.json().catch(() => null);
+  if (!response.ok) return asError(response.status, data, "We could not sync your wishlist.");
+  return normalizeCommerceState(data);
+}
+
+export async function getRememberedStoreCustomerCart(
+  options: HostedStoreRequest & { token: string },
+): Promise<string | null | StorefrontError> {
+  const response = await storeFetch({
+    ...options,
+    path: "/store/customer/cart",
+    method: "POST",
+    headers: { authorization: `Bearer ${options.token}` },
+    body: {},
+  });
+  const data = await response.json().catch(() => null);
+  if (!response.ok) return asError(response.status, data, "We could not restore your cart.");
+  return isRecord(data) && typeof data.cartId === "string" ? data.cartId : null;
 }
 
 function normalizeOrder(order: Record<string, unknown>): StoreCustomerOrder {
@@ -263,6 +392,49 @@ function normalizeCustomer(value: unknown): StoreCustomer | null {
     firstName: recordString(customer, "first_name") ?? "",
     lastName: recordString(customer, "last_name") ?? "",
     phone: recordString(customer, "phone") ?? "",
+  };
+}
+
+function normalizeAddresses(value: unknown) {
+  const root = isRecord(value) ? value : null;
+  const customer = root && isRecord(root.customer) ? root.customer : null;
+  const raw = root && Array.isArray(root.addresses)
+    ? root.addresses
+    : customer && Array.isArray(customer.addresses)
+      ? customer.addresses
+      : [];
+  return raw.filter(isRecord).map((address): StoreCustomerAddress => ({
+    id: recordString(address, "id") ?? "",
+    addressName: recordString(address, "address_name") ?? "",
+    firstName: recordString(address, "first_name") ?? "",
+    lastName: recordString(address, "last_name") ?? "",
+    phone: recordString(address, "phone") ?? "",
+    address1: recordString(address, "address_1") ?? "",
+    address2: recordString(address, "address_2") ?? "",
+    city: recordString(address, "city") ?? "",
+    province: recordString(address, "province") ?? "",
+    postalCode: recordString(address, "postal_code") ?? "",
+    countryCode: recordString(address, "country_code") ?? "et",
+    isDefaultShipping: address.is_default_shipping === true,
+  })).filter((address) => address.id);
+}
+
+function normalizeCommerceState(value: unknown): StoreCustomerCommerceState {
+  const root = isRecord(value) && isRecord(value.state) ? value.state : null;
+  const wishlist = root && Array.isArray(root.wishlist) ? root.wishlist : [];
+  return {
+    activeCartId: root ? recordString(root, "activeCartId") : null,
+    wishlist: wishlist.filter(isRecord).flatMap((item) => {
+      const path = recordString(item, "path");
+      if (!path?.startsWith("/products/")) return [];
+      return [{
+        path,
+        title: recordString(item, "title") ?? "Product",
+        thumbnail: recordString(item, "thumbnail"),
+        priceAmount: numberValue(item, "priceAmount"),
+        currencyCode: recordString(item, "currencyCode"),
+      }];
+    }),
   };
 }
 

@@ -1,14 +1,14 @@
 ---
 import type { StoreCart, StoreDeliveryOptions, StorePaymentOptions, StoreShippingOption } from "../../../lib/commerce/types";
-import type { StoreCustomer } from "../../../lib/commerce/account";
+import type { StoreCustomer, StoreCustomerAddress } from "../../../lib/commerce/account";
 import { resolveStoreFulfillmentOptions } from "../../../lib/commerce/fulfillment";
 import { resolveStoreCartSummary } from "../../../lib/commerce/cart-summary";
 import { formatMoney } from "../../../lib/money";
 import Layout from "./Layout.astro";
 import { parseLuviaData } from "./lib";
 
-interface Props { data: unknown; themeTokens?: unknown; tenantName: string; cartCount: number; cart: StoreCart | null; delivery: StoreDeliveryOptions | null; payment: StorePaymentOptions; shippingOptions: StoreShippingOption[]; shippingError?: string | null; error?: string | null; customer?: StoreCustomer | null; }
-const { data, themeTokens, tenantName, cartCount, cart, delivery, payment, shippingOptions, shippingError, error, customer = null } = Astro.props;
+interface Props { data: unknown; themeTokens?: unknown; tenantName: string; cartCount: number; cart: StoreCart | null; delivery: StoreDeliveryOptions | null; payment: StorePaymentOptions; shippingOptions: StoreShippingOption[]; shippingError?: string | null; error?: string | null; customer?: StoreCustomer | null; customerAddresses?: StoreCustomerAddress[]; }
+const { data, themeTokens, tenantName, cartCount, cart, delivery, payment, shippingOptions, shippingError, error, customer = null, customerAddresses = [] } = Astro.props;
 const template = parseLuviaData(data);
 const items = cart?.items ?? [];
 const deliveryEnabled = delivery?.deliveryEnabled === true;
@@ -23,6 +23,7 @@ const cartShippingAmount = cart?.shippingTotal ?? 0;
 const baseTotal = (cart?.total ?? cart?.itemTotal ?? 0) - cartShippingAmount;
 const summary = resolveStoreCartSummary(cart);
 const defaultPayment = payment.cod ? "cod" : payment.chapa ? "chapa" : null;
+const defaultAddress = customerAddresses.find((address) => address.isDefaultShipping) ?? customerAddresses[0] ?? null;
 ---
 
 <Layout tenantName={tenantName} header={template.header} footer={template.footer} themeTokens={themeTokens} cartCount={cartCount} title="Checkout">
@@ -37,13 +38,14 @@ const defaultPayment = payment.cod ? "cod" : payment.chapa ? "chapa" : null;
         <form method="post" action={defaultPayment === "chapa" ? "/actions/checkout/chapa" : "/actions/checkout/cod"} class="lv-checkout-form" data-checkout-form>
           {!fulfillmentAvailable && <div class="lv-checkout-blocker" role="status"><strong>Orders are temporarily unavailable.</strong><p>This shop has not enabled delivery or pickup yet.</p></div>}
           <div class="lv-checkout-fields">
-            <label><span>First Name*</span><input name="firstName" value={customer?.firstName} required autocomplete="given-name" placeholder="Jane" /></label>
-            <label><span>Last Name*</span><input name="lastName" value={customer?.lastName} required autocomplete="family-name" placeholder="Doe" /></label>
-            <label><span>Phone Number{phoneRequired ? "*" : ""}</span><input name="phone" value={customer?.phone} required={phoneRequired} autocomplete="tel" inputmode="tel" placeholder="0912345678" /></label>
+            {customerAddresses.length > 0 && <fieldset class="lv-checkout-saved-addresses is-wide" data-saved-addresses><legend>Saved address</legend><div>{customerAddresses.map((address) => <label><input type="radio" name="savedAddressId" value={address.id} checked={address.id === defaultAddress?.id} data-address={JSON.stringify(address)} /><span><strong>{address.addressName || `${address.firstName} ${address.lastName}`}</strong><small>{address.address1}, {address.city}</small></span></label>)}<label><input type="radio" name="savedAddressId" value="" checked={!defaultAddress} /><span><strong>Use a different address</strong><small>Only for this order.</small></span></label></div><p>Choosing or editing an address here does not change your saved account address.</p></fieldset>}
+            <label><span>First Name*</span><input name="firstName" value={defaultAddress?.firstName || customer?.firstName} required autocomplete="given-name" placeholder="Jane" /></label>
+            <label><span>Last Name*</span><input name="lastName" value={defaultAddress?.lastName || customer?.lastName} required autocomplete="family-name" placeholder="Doe" /></label>
+            <label><span>Phone Number{phoneRequired ? "*" : ""}</span><input name="phone" value={defaultAddress?.phone || customer?.phone} required={phoneRequired} autocomplete="tel" inputmode="tel" placeholder="0912345678" /></label>
             <label><span>Email <small data-email-requirement>{defaultPayment === "chapa" ? "(required for Chapa)" : "(optional)"}</small></span><input name="email" value={customer?.email} type="email" required={defaultPayment === "chapa"} autocomplete="email" placeholder="name@example.com" /></label>
             <fieldset class="lv-checkout-choice-group is-wide" data-delivery-choice><legend>How would you like to receive it?*</legend><div>{deliveryEnabled && <label><input type="radio" name="deliveryChoice" value="delivery" checked={defaultChoice === "delivery"} disabled={!fulfillmentAvailable} /><span><strong>Delivery</strong><small>Send the order to your address.</small></span></label>}{pickupEnabled && <label><input type="radio" name="deliveryChoice" value="pickup" checked={defaultChoice === "pickup"} disabled={!fulfillmentAvailable} /><span><strong>Pickup</strong><small>Collect it from the shop.</small></span></label>}</div></fieldset>
-            <label data-delivery-field><span>City*</span><input name="city" value="Addis Ababa" required={defaultChoice === "delivery"} disabled={defaultChoice !== "delivery"} autocomplete="address-level2" /></label>
-            <label class="is-wide" data-delivery-field><span>Street Address*</span><input name="address1" required={defaultChoice === "delivery"} disabled={defaultChoice !== "delivery"} autocomplete="street-address" placeholder="Bole, Ayat Road" /></label>
+            <label data-delivery-field><span>City*</span><input name="city" value={defaultAddress?.city || "Addis Ababa"} required={defaultChoice === "delivery"} disabled={defaultChoice !== "delivery"} autocomplete="address-level2" /></label>
+            <label class="is-wide" data-delivery-field><span>Street Address*</span><input name="address1" value={defaultAddress?.address1} required={defaultChoice === "delivery"} disabled={defaultChoice !== "delivery"} autocomplete="street-address" placeholder="Bole, Ayat Road" /></label>
             {delivery?.landmarkRequired || delivery?.notesEnabled !== false ? <label class="is-wide" data-delivery-field><span>Landmark{delivery?.landmarkRequired ? "*" : " (optional)"}</span><input name="landmark" required={Boolean(delivery?.landmarkRequired) && defaultChoice === "delivery"} disabled={defaultChoice !== "delivery"} data-landmark-required={delivery?.landmarkRequired ? "true" : "false"} placeholder="Nearby landmark" /></label> : null}
             {delivery?.notesEnabled !== false && <label class="is-wide"><span>Order Notes (optional)</span><textarea name="notes" rows="3" placeholder="Helpful delivery details" /></label>}
             <fieldset class="lv-checkout-choice-group is-wide" data-delivery-option><legend>Delivery option*</legend><div>{deliveryOptions.map((option, index) => <label><input type="radio" name="shippingOptionId" value={option.id} data-amount={option.amount ?? 0} checked={index === 0} required={defaultChoice === "delivery"} disabled={defaultChoice !== "delivery"} /><span><strong>{option.name?.trim() || "Standard delivery"}</strong><small>{option.amount === 0 ? "Free" : formatMoney(option.amount, option.currencyCode ?? cart?.currencyCode)}</small></span></label>)}</div></fieldset>
@@ -63,6 +65,7 @@ const defaultPayment = payment.cod ? "cod" : payment.chapa ? "chapa" : null;
 <script is:inline>
   (() => {
     const fulfillment = document.querySelector("[data-delivery-choice]"); if (!fulfillment) return;
+    document.querySelector("[data-saved-addresses]")?.addEventListener("change", (event) => { const field = event.target; if (!(field instanceof HTMLInputElement) || field.name !== "savedAddressId") return; let address = null; try { address = field.dataset.address ? JSON.parse(field.dataset.address) : null; } catch {} const form = field.form; if (!form) return; const values = address ? { firstName: address.firstName, lastName: address.lastName, phone: address.phone, address1: address.address1, city: address.city } : { address1: "", city: "Addis Ababa" }; Object.entries(values).forEach(([name, value]) => { const input = form.elements.namedItem(name); if (input instanceof HTMLInputElement) { input.value = String(value || ""); input.dispatchEvent(new Event("input", { bubbles: true })); } }); });
     const selectedValue = (name) => document.querySelector(`input[name="${name}"]:checked`)?.value;
     const sync = () => { const delivery = selectedValue("deliveryChoice") === "delivery"; document.querySelectorAll("[data-delivery-field]").forEach((wrapper) => { wrapper.hidden = !delivery; wrapper.querySelectorAll("input,select,textarea").forEach((field) => { field.disabled = !delivery; if (field.name === "landmark") field.required = delivery && field.dataset.landmarkRequired === "true"; else if (field.name !== "notes") field.required = delivery; }); }); const deliveryOption = document.querySelector("[data-delivery-option]"); const pickupOption = document.querySelector("[data-pickup-option]"); if (deliveryOption) { deliveryOption.hidden = !delivery; deliveryOption.querySelectorAll('input[name="shippingOptionId"]').forEach((field) => { field.disabled = !delivery; field.required = delivery; }); } if (pickupOption) { pickupOption.hidden = delivery; pickupOption.querySelectorAll("input").forEach((field) => field.disabled = delivery); } };
     const summary = document.querySelector("[data-base-total]");

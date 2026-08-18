@@ -1,7 +1,13 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { getCustomerOrder, getStoreCustomer, updateStoreCustomer } from "./account.js";
+import {
+  getCustomerOrder,
+  getStoreCustomer,
+  getStoreCustomerAddresses,
+  saveStoreCustomerAddress,
+  updateStoreCustomer,
+} from "./account.js";
 
 describe("storefront customer normalization", () => {
   it("returns only the stable profile fields used by templates and checkout", async () => {
@@ -72,6 +78,79 @@ describe("storefront customer normalization", () => {
       lastName: "Tadesse",
       phone: "+251911000000",
     });
+  });
+
+  it("normalizes saved addresses without exposing Medusa internals", async () => {
+    const result = await getStoreCustomerAddresses({
+      fetcher: async () => Response.json({
+        addresses: [{
+          id: "ca_1",
+          address_name: "Home",
+          first_name: "Liya",
+          last_name: "Tadesse",
+          phone: "+251911000000",
+          address_1: "Bole Road",
+          address_2: "Apartment 4",
+          city: "Addis Ababa",
+          province: "Addis Ababa",
+          postal_code: "1000",
+          country_code: "et",
+          is_default_shipping: true,
+          metadata: { private: true },
+        }],
+      }),
+      platformApiBaseUrl: "http://platform.test",
+      requestHost: "shop.test",
+      token: "customer_token",
+    });
+
+    assert.deepEqual(result, [{
+      id: "ca_1",
+      addressName: "Home",
+      firstName: "Liya",
+      lastName: "Tadesse",
+      phone: "+251911000000",
+      address1: "Bole Road",
+      address2: "Apartment 4",
+      city: "Addis Ababa",
+      province: "Addis Ababa",
+      postalCode: "1000",
+      countryCode: "et",
+      isDefaultShipping: true,
+    }]);
+  });
+
+  it("sends the template-neutral saved-address contract to Platform", async () => {
+    let forwarded: Request | null = null;
+    const address = {
+      addressName: "Home",
+      firstName: "Liya",
+      lastName: "Tadesse",
+      phone: "+251911000000",
+      address1: "Bole Road",
+      address2: "",
+      city: "Addis Ababa",
+      province: "",
+      postalCode: "",
+      countryCode: "et",
+      isDefaultShipping: true,
+    };
+    const result = await saveStoreCustomerAddress({
+      address,
+      fetcher: async (request) => {
+        forwarded = request instanceof Request ? request : new Request(request);
+        return Response.json({ customer: { addresses: [{ id: "ca_1", address_name: "Home", first_name: "Liya", last_name: "Tadesse", address_1: "Bole Road", city: "Addis Ababa", country_code: "et", is_default_shipping: true }] } });
+      },
+      platformApiBaseUrl: "http://platform.test",
+      requestHost: "shop.test",
+      token: "customer_token",
+    });
+
+    const captured = forwarded as Request | null;
+    assert.ok(captured);
+    assert.equal(new URL(captured.url).pathname, "/store/customer/addresses");
+    assert.deepEqual(await captured.json(), address);
+    assert.equal(Array.isArray(result), true);
   });
 
   it("normalizes a private order into the template-safe order detail model", async () => {

@@ -18,7 +18,45 @@ const profileSchema = z.object({
   phone: z.string().trim().max(50),
 });
 
+const customerAddressSchema = z.object({
+  addressName: z.string().trim().max(100).optional().default(""),
+  firstName: z.string().trim().min(1).max(100),
+  lastName: z.string().trim().min(1).max(100),
+  phone: z.string().trim().max(50).optional().default(""),
+  address1: z.string().trim().min(1).max(255),
+  address2: z.string().trim().max(255).optional().default(""),
+  city: z.string().trim().min(1).max(100),
+  province: z.string().trim().max(100).optional().default(""),
+  postalCode: z.string().trim().max(30).optional().default(""),
+  countryCode: z.string().trim().length(2).transform((value) => value.toLowerCase()),
+  isDefaultShipping: z.boolean().optional().default(false),
+});
+
+const wishlistSchema = z.object({
+  items: z.array(z.object({
+    path: z.string().trim().startsWith("/products/").max(500),
+    title: z.string().trim().min(1).max(200),
+    // Medusa can return either an absolute asset URL or a storefront-relative path.
+    thumbnail: z.string().trim().max(2_000).nullable(),
+    priceAmount: z.number().finite().nonnegative().nullable(),
+    currencyCode: z.string().trim().max(10).nullable(),
+  })).max(200),
+});
+
+type CustomerCommerceKey = { tenantId: string; customerId: string };
+
 type CustomerAccountRequest = {
+  getCustomerCommerceState?: ((input: CustomerCommerceKey) => Promise<{
+    activeCartId: string | null;
+    wishlist: unknown[];
+  }>) | undefined;
+  updateCustomerCommerceState?: ((input: CustomerCommerceKey, values: {
+    activeCartId?: string | null;
+    wishlist?: z.infer<typeof wishlistSchema>["items"];
+  }) => Promise<{
+    activeCartId: string | null;
+    wishlist: unknown[];
+  }>) | undefined;
   ensureTenantCustomer?: ((input: {
     email: string;
     firstName?: string | null;
@@ -117,6 +155,121 @@ export async function handleCustomerAccountRequest(
     }));
   }
 
+  if (path === "/store/customer/commerce-state") {
+    const token = bearerToken(input.request);
+    if (!token) return error("customer_auth_required", 401);
+    if (!input.getCustomerCommerceState || !input.updateCustomerCommerceState) {
+      return error("customer_commerce_state_unavailable", 503);
+    }
+    const customerId = await resolveCustomerId(input, token);
+    if (!customerId.ok) return customerId.response;
+    const key = { customerId: customerId.id, tenantId: input.tenantId };
+
+    if (input.request.method === "GET") {
+      return Response.json({ state: await input.getCustomerCommerceState(key) });
+    }
+    if (input.request.method === "PUT") {
+      const parsed = wishlistSchema.safeParse(await readJson(input.request));
+      if (!parsed.success) return error("invalid_customer_wishlist", 422);
+      return Response.json({
+        state: await input.updateCustomerCommerceState(key, { wishlist: parsed.data.items }),
+      });
+    }
+  }
+
+  if (input.request.method === "POST" && path === "/store/customer/cart") {
+    const token = bearerToken(input.request);
+    if (!token) return error("customer_auth_required", 401);
+    if (!input.getCustomerCommerceState || !input.updateCustomerCommerceState) {
+      return error("customer_commerce_state_unavailable", 503);
+    }
+    const customerId = await resolveCustomerId(input, token);
+    if (!customerId.ok) return customerId.response;
+    const key = { customerId: customerId.id, tenantId: input.tenantId };
+    const body = await readJson(input.request);
+    const requestedCartId = isRecord(body) ? stringValue(body, "cartId") : null;
+
+    if (requestedCartId) {
+      const currentState = await input.getCustomerCommerceState(key);
+      if (currentState.activeCartId && currentState.activeCartId !== requestedCartId) {
+        const mergeError = await mergeCustomerCarts(
+          input,
+          token,
+          currentState.activeCartId,
+          requestedCartId,
+        );
+        if (mergeError) return mergeError;
+      }
+      const attached = await medusaRequest(
+        input,
+        `/store/carts/${encodeURIComponent(requestedCartId)}/customer`,
+        { authorization: token, method: "POST" },
+      );
+      const attachedData = await readResponseJson(attached);
+      if (!attached.ok) return errorFromMedusa(attached, attachedData, "customer_cart_association_failed");
+      await input.updateCustomerCommerceState(key, { activeCartId: requestedCartId });
+      return Response.json({ cartId: requestedCartId });
+    }
+
+    const state = await input.getCustomerCommerceState(key);
+    if (!state.activeCartId) return Response.json({ cartId: null });
+    const cart = await medusaRequest(
+      input,
+      `/store/carts/${encodeURIComponent(state.activeCartId)}`,
+      { authorization: token },
+    );
+    if (!cart.ok) {
+      await input.updateCustomerCommerceState(key, { activeCartId: null });
+      return Response.json({ cartId: null });
+    }
+    return Response.json({ cartId: state.activeCartId });
+  }
+
+  if (input.request.method === "GET" && path === "/store/customer/addresses") {
+    const token = bearerToken(input.request);
+    if (!token) return error("customer_auth_required", 401);
+    const incoming = new URL(input.request.url);
+    const limit = clampPageValue(incoming.searchParams.get("limit"), 20, 50);
+    const offset = clampPageValue(incoming.searchParams.get("offset"), 0, 10_000);
+    return proxyCustomerResponse(await medusaRequest(
+      input,
+      `/store/customers/me/addresses?limit=${limit}&offset=${offset}`,
+      { authorization: token },
+    ));
+  }
+
+  if (input.request.method === "POST" && path === "/store/customer/addresses") {
+    const token = bearerToken(input.request);
+    if (!token) return error("customer_auth_required", 401);
+    const parsed = customerAddressSchema.safeParse(await readJson(input.request));
+    if (!parsed.success) return error("invalid_customer_address", 422);
+    return proxyCustomerResponse(await medusaRequest(input, "/store/customers/me/addresses", {
+      authorization: token,
+      body: toMedusaAddress(parsed.data),
+      method: "POST",
+    }));
+  }
+
+  const addressMatch = path.match(/^\/store\/customer\/addresses\/([A-Za-z0-9_-]+)$/);
+  if ((input.request.method === "POST" || input.request.method === "DELETE") && addressMatch) {
+    const token = bearerToken(input.request);
+    if (!token) return error("customer_auth_required", 401);
+    const addressPath = `/store/customers/me/addresses/${encodeURIComponent(addressMatch[1]!)}`;
+    if (input.request.method === "DELETE") {
+      return proxyCustomerResponse(await medusaRequest(input, addressPath, {
+        authorization: token,
+        method: "DELETE",
+      }));
+    }
+    const parsed = customerAddressSchema.safeParse(await readJson(input.request));
+    if (!parsed.success) return error("invalid_customer_address", 422);
+    return proxyCustomerResponse(await medusaRequest(input, addressPath, {
+      authorization: token,
+      body: toMedusaAddress(parsed.data),
+      method: "POST",
+    }));
+  }
+
   if (input.request.method === "GET" && path === "/store/customer/orders") {
     const token = bearerToken(input.request);
     if (!token) return error("customer_auth_required", 401);
@@ -162,6 +315,97 @@ export async function handleCustomerAccountRequest(
   }
 
   return null;
+}
+
+async function mergeCustomerCarts(
+  input: CustomerAccountRequest,
+  token: string,
+  sourceCartId: string,
+  targetCartId: string,
+): Promise<Response | null> {
+  const load = async (cartId: string) => {
+    const path = `/store/carts/${encodeURIComponent(cartId)}?fields=id,*items,*items.variant`;
+    const response = await medusaRequest(input, path, { authorization: token });
+    const data = await readResponseJson(response);
+    return { response, cart: isRecord(data.cart) ? data.cart : null };
+  };
+  const [source, target] = await Promise.all([load(sourceCartId), load(targetCartId)]);
+
+  // A stale remembered cart is safe to ignore; an unreadable browser cart is not.
+  if (!target.response.ok || !target.cart) {
+    return errorFromMedusa(target.response, {}, "customer_cart_unavailable");
+  }
+  if (!source.response.ok || !source.cart) return null;
+
+  const sourceItems = cartItemsByVariant(source.cart);
+  const targetItems = cartItemsByVariant(target.cart);
+  for (const [variantId, sourceItem] of sourceItems) {
+    const targetItem = targetItems.get(variantId);
+    if (targetItem && targetItem.quantity >= sourceItem.quantity) continue;
+    const path = targetItem
+      ? `/store/carts/${encodeURIComponent(targetCartId)}/line-items/${encodeURIComponent(targetItem.id)}`
+      : `/store/carts/${encodeURIComponent(targetCartId)}/line-items`;
+    const response = await medusaRequest(input, path, {
+      authorization: token,
+      body: targetItem
+        ? { quantity: sourceItem.quantity }
+        : { variant_id: variantId, quantity: sourceItem.quantity },
+      method: "POST",
+    });
+    if (!response.ok) {
+      return errorFromMedusa(
+        response,
+        await readResponseJson(response),
+        "customer_cart_merge_failed",
+      );
+    }
+  }
+  return null;
+}
+
+function cartItemsByVariant(cart: Record<string, unknown>) {
+  const result = new Map<string, { id: string; quantity: number }>();
+  const items = Array.isArray(cart.items) ? cart.items.filter(isRecord) : [];
+  for (const item of items) {
+    const variant = isRecord(item.variant) ? item.variant : null;
+    const variantId = stringValue(item, "variant_id") ?? (variant ? stringValue(variant, "id") : null);
+    const id = stringValue(item, "id");
+    const quantity = typeof item.quantity === "number" && Number.isFinite(item.quantity)
+      ? Math.max(1, Math.floor(item.quantity))
+      : 1;
+    if (variantId && id) result.set(variantId, { id, quantity });
+  }
+  return result;
+}
+
+async function resolveCustomerId(
+  input: CustomerAccountRequest,
+  token: string,
+): Promise<{ ok: true; id: string } | { ok: false; response: Response }> {
+  const response = await medusaRequest(input, "/store/customers/me", { authorization: token });
+  const data = await readResponseJson(response);
+  const customer = isRecord(data.customer) ? data.customer : null;
+  const id = customer ? stringValue(customer, "id") : null;
+  if (!response.ok || !id) {
+    return { ok: false, response: errorFromMedusa(response, data, "customer_session_invalid") };
+  }
+  return { ok: true, id };
+}
+
+function toMedusaAddress(input: z.infer<typeof customerAddressSchema>) {
+  return {
+    address_name: input.addressName || null,
+    first_name: input.firstName,
+    last_name: input.lastName,
+    phone: input.phone || null,
+    address_1: input.address1,
+    address_2: input.address2 || null,
+    city: input.city,
+    province: input.province || null,
+    postal_code: input.postalCode || null,
+    country_code: input.countryCode,
+    is_default_shipping: input.isDefaultShipping,
+  };
 }
 
 async function projectAuthenticatedCustomer(

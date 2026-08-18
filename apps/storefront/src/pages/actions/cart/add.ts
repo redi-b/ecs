@@ -1,6 +1,7 @@
 import type { APIRoute } from "astro";
 
 import { addStoreCartLineItem, ensureStoreCart } from "../../../lib/commerce/cart.js";
+import { associateCartWithCustomer } from "../../../lib/commerce/customer-cart.js";
 import { cartJson, cartJsonError } from "../../../lib/commerce/cart-json.js";
 import { customerFacingStoreError } from "../../../lib/commerce/errors.js";
 import { isStoreError } from "../../../lib/commerce/result.js";
@@ -37,6 +38,16 @@ export const POST: APIRoute = async ({ request }) => {
 
   if (isStoreError(cartResult)) {
     return failure(returnTo, customerFacingStoreError(cartResult.message), wantsJson);
+  }
+
+  if (customerToken) {
+    const association = await associateCartWithCustomer({
+      cartId: cartResult.cart.id,
+      token: customerToken,
+      platformApiBaseUrl: ctx.platformApiBaseUrl,
+      requestHost: ctx.requestHost,
+    });
+    if (!association.ok) return failure(returnTo, association.message, wantsJson);
   }
 
   const addResult = await addStoreCartLineItem({

@@ -7,7 +7,7 @@ const { data, themeTokens, tenantName, deferCartCount = false } = Astro.props;
 const template = parseLuviaData(data);
 ---
 <Layout tenantName={tenantName} header={template.header} footer={template.footer} themeTokens={themeTokens} deferCartCount={deferCartCount} title="Wishlist">
-  <main class="lv-wishlist" data-wishlist-page><header><span><img src={wishlistIcon.src} alt="" /></span><p>YOUR SAVED EDIT</p><h1>Wishlist</h1><small>Saved on this device</small></header><section data-wishlist-content><div class="lv-wishlist__loading">Loading your saved items…</div></section></main>
+  <main class="lv-wishlist" data-wishlist-page><header><span><img src={wishlistIcon.src} alt="" /></span><p>YOUR SAVED EDIT</p><h1>Wishlist</h1><small data-wishlist-account-copy>Saved on this device</small></header><section data-wishlist-content><div class="lv-wishlist__loading">Loading your saved items…</div></section></main>
 </Layout>
 <script>
   import { createWishlistStore, WISHLIST_UPDATED_EVENT } from "../../../lib/browser/wishlist";
