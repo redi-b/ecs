@@ -31,6 +31,9 @@
 .lv-checkout-account input { width: 19px; height: 19px; accent-color: var(--lv-green); }
 .lv-checkout-account:has(input:disabled) { color: color-mix(in srgb,var(--lv-ink) 46%,var(--lv-bg)); }
 .lv-checkout-account small { margin-left: 6px; padding: 3px 7px; border-radius: 999px; background: var(--lv-soft); font-size: 11px; }
+.lv-checkout-account a { color: var(--lv-ink); font-weight: 600; text-underline-offset: 3px; }
+.lv-checkout-account.is-signed-in { padding: 12px 16px; align-items: flex-start; flex-direction: column; gap: 3px; border: 1px solid var(--lv-line); border-radius: 16px; background: color-mix(in srgb,var(--lv-soft) 72%,white); }
+.lv-checkout-account.is-signed-in span { color: color-mix(in srgb,var(--lv-ink) 58%,var(--lv-bg)); font-size: 12px; }
 .lv-checkout-payment { margin: 8px 0 16px; padding: 0; display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; border: 0; }
 .lv-checkout-payment legend { grid-column: 1 / -1; }
 .lv-checkout-payment > p { grid-column: 1 / -1; margin: 0; padding: 14px; border-radius: 14px; background: var(--lv-soft); color: color-mix(in srgb,var(--lv-ink) 62%,var(--lv-bg)); }

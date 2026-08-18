@@ -6,6 +6,7 @@ import { customerSessionSetCookie } from "../../../lib/session/customer-cookie.j
 import { getCartIdFromRequest } from "../../../lib/session/cart-cookie.js";
 
 export const POST: APIRoute = async ({ request }) => {
+  const json = request.headers.get("accept")?.includes("application/json") ?? false;
   const form = await request.formData();
   const result = await authenticateStoreCustomer({
     email: String(form.get("email") ?? "").trim(),
@@ -16,7 +17,9 @@ export const POST: APIRoute = async ({ request }) => {
     platformApiBaseUrl: getPlatformApiBaseUrl(),
     requestHost: getRequestHost(request),
   });
-  if (!("token" in result)) return redirect(`/account?mode=register&error=${encodeURIComponent(result.message)}`);
+  if (!("token" in result)) return json
+    ? Response.json({ ok: false, message: result.message }, { status: result.status })
+    : redirect(`/account?mode=register&error=${encodeURIComponent(result.message)}`);
   const cartId = getCartIdFromRequest(request);
   if (cartId) await transferStoreCartToCustomer({
     cartId,
@@ -24,9 +27,11 @@ export const POST: APIRoute = async ({ request }) => {
     platformApiBaseUrl: getPlatformApiBaseUrl(),
     requestHost: getRequestHost(request),
   });
-  const headers = new Headers({ Location: "/account" });
+  const headers = new Headers(json ? undefined : { Location: "/account" });
   headers.append("Set-Cookie", customerSessionSetCookie(result.token));
-  return new Response(null, { status: 303, headers });
+  return json
+    ? Response.json({ ok: true, redirectTo: "/account" }, { headers })
+    : new Response(null, { status: 303, headers });
 };
 
 function redirect(location: string) { return new Response(null, { status: 303, headers: { Location: location } }); }

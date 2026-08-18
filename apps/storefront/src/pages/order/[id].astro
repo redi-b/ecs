@@ -7,12 +7,14 @@ import {
   isLastOrderReceiptAuthorized,
 } from "../../lib/session/cart-cookie";
 import { getPrimaryColor, themeFromTokens } from "../../lib/theme";
+import { getCustomerTokenFromRequest } from "../../lib/session/customer-cookie";
 import { resolveRendererSlot } from "../../templates/registry";
 
 const ctx = await loadPageContext(Astro.request);
 const orderId = Astro.params.id ?? "";
 const lastOrder = getLastOrderFromRequest(Astro.request);
 const receiptAuthorized = isLastOrderReceiptAuthorized(orderId, lastOrder);
+const hasCustomerSession = Boolean(getCustomerTokenFromRequest(Astro.request));
 
 if (!ctx.ok) {
   Astro.response.status = ctx.status;
@@ -48,6 +50,7 @@ const OrderConfirm = ctx.ok
       theme={themeFromTokens(ctx.config.storefront.themeTokens)}
       orderId={orderId}
       lastOrder={lastOrder}
+      hasCustomerSession={hasCustomerSession}
     />
   )
 }

@@ -1,6 +1,7 @@
 ---
 import StoreUnavailable from "../../components/shell/StoreUnavailable.astro";
 import { getStorePaymentOptions } from "../../lib/commerce/checkout";
+import { getStoreCustomer } from "../../lib/commerce/account";
 import { getStoreDeliveryOptions } from "../../lib/commerce/delivery";
 import { isStoreError } from "../../lib/commerce/result";
 import { listStoreShippingOptions } from "../../lib/commerce/shipping";
@@ -9,6 +10,7 @@ import { applyPrivateNoStore } from "../../lib/http-cache";
 import { loadPageContext } from "../../lib/page-context";
 import { getPrimaryColor, themeFromTokens } from "../../lib/theme";
 import { resolveRendererSlot } from "../../templates/registry";
+import { getCustomerTokenFromRequest, customerSessionClearCookie } from "../../lib/session/customer-cookie";
 
 const ctx = await loadPageContext(Astro.request);
 if (!ctx.ok) {
@@ -16,6 +18,19 @@ if (!ctx.ok) {
 }
 
 applyPrivateNoStore(Astro.cache, Astro.response);
+
+const customerToken = getCustomerTokenFromRequest(Astro.request);
+const customerResult = ctx.ok && customerToken
+  ? await getStoreCustomer({
+      platformApiBaseUrl: ctx.platformApiBaseUrl,
+      requestHost: ctx.requestHost,
+      token: customerToken,
+    })
+  : null;
+const customer = customerResult && !isStoreError(customerResult) ? customerResult : null;
+if (customerResult && isStoreError(customerResult) && customerResult.status === 401) {
+  Astro.response.headers.append("Set-Cookie", customerSessionClearCookie());
+}
 
 const deliveryResult = ctx.ok
   ? await getStoreDeliveryOptions({
@@ -73,6 +88,7 @@ const Checkout = ctx.ok
       shippingOptions={shippingOptions}
       shippingError={shippingError}
       error={Astro.url.searchParams.get("error")}
+      customer={customer}
     />
   )
 }

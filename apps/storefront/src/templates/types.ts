@@ -29,6 +29,7 @@ export type StorefrontRenderer = {
   RequestItem?: StorefrontPageComponent;
   Wishlist?: StorefrontPageComponent;
   Account?: StorefrontPageComponent;
+  AccountOrder?: StorefrontPageComponent;
 };
 
 export type StorefrontRendererMap = Record<string, StorefrontRenderer>;

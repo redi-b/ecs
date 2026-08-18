@@ -1,16 +1,18 @@
 ---
 import type { LastOrderCookie } from "../../../lib/session/cart-cookie";
 import { formatMoney } from "../../../lib/money";
+import { formatOrderReference } from "../../../lib/order-reference";
 import Layout from "./Layout.astro";
 import ActionButton from "./ActionButton.astro";
 import bagIcon from "./icons/bag-icon.svg";
 import sparkleIcon from "./icons/sparkle-icon.svg";
 import { parseLuviaData } from "./lib";
 
-interface Props { data: unknown; themeTokens?: unknown; tenantName: string; cartCount: number; orderId: string; lastOrder: LastOrderCookie | null; }
-const { data, themeTokens, tenantName, cartCount, orderId, lastOrder } = Astro.props;
+interface Props { data: unknown; themeTokens?: unknown; tenantName: string; cartCount: number; orderId: string; lastOrder: LastOrderCookie | null; hasCustomerSession?: boolean; }
+const { data, themeTokens, tenantName, cartCount, orderId, lastOrder, hasCustomerSession = false } = Astro.props;
 const template = parseLuviaData(data);
 const verified = Boolean(lastOrder && lastOrder.id === orderId);
+const reference = formatOrderReference(orderId);
 ---
 
 <Layout tenantName={tenantName} header={template.header} footer={template.footer} themeTokens={themeTokens} cartCount={cartCount} title="Order Confirmed">
@@ -22,12 +24,12 @@ const verified = Boolean(lastOrder && lastOrder.id === orderId);
       <h1 id="confirmation-title">Your ritual is<br />on its way.</h1>
       <p class="lv-confirmation__intro">Thank you for choosing {tenantName}. We’ve received your order and the shop will prepare it with care.</p>
       <div class="lv-confirmation__receipt">
-        <div><span>Order reference</span><strong>{orderId}</strong><button type="button" data-copy-order data-order-id={orderId}>Copy</button></div>
+        <div><span>Order reference</span><strong>{reference}</strong><button type="button" data-copy-order data-order-id={reference}>Copy</button></div>
         {verified && lastOrder?.total != null && <div><span>Order total</span><strong>{formatMoney(lastOrder.total, lastOrder.currencyCode)}</strong></div>}
         <div><span>Status</span><strong>{verified ? "Confirmed" : "Order placed"}</strong></div>
       </div>
-      <p class="lv-confirmation__notice" data-copy-status aria-live="polite">Keep this reference somewhere safe. You may need it when contacting the shop about your order. Order history will become available with customer accounts.</p>
-      <div class="lv-confirmation__actions"><ActionButton href="/products" iconSrc={bagIcon.src}>Continue Shopping</ActionButton><ActionButton href="/" tone="secondary">Return Home</ActionButton></div>
+      <p class="lv-confirmation__notice" data-copy-status aria-live="polite">Keep this reference somewhere safe. You may need it when contacting the shop about your order.{hasCustomerSession ? " Orders placed while signed in also appear in your account." : " Create an account before your next checkout to keep future orders together."}</p>
+      <div class="lv-confirmation__actions"><ActionButton href="/products" iconSrc={bagIcon.src}>Continue Shopping</ActionButton>{hasCustomerSession && <ActionButton href="/account" tone="secondary">View order history</ActionButton>}<ActionButton href="/" tone="secondary">Return Home</ActionButton></div>
     </section>
     <aside class="lv-confirmation__steps" aria-label="What happens next"><p>WHAT HAPPENS NEXT</p><ol><li><span>01</span><div><strong>Order review</strong><small>The shop confirms availability and fulfillment details.</small></div></li><li><span>02</span><div><strong>Careful preparation</strong><small>Your items are packed and prepared for delivery or pickup.</small></div></li><li><span>03</span><div><strong>Stay reachable</strong><small>The shop may contact you using the details provided at checkout.</small></div></li></ol></aside>
   </main>

@@ -27,6 +27,9 @@ export function customerFacingStoreError(message: string | null | undefined): st
     customer_auth_required: "Sign in to view your account.",
     customer_session_invalid: "Your session has expired. Please sign in again.",
     customer_orders_unavailable: "Your order history is temporarily unavailable.",
+    invalid_customer_profile: "Check your name and phone number, then try again.",
+    customer_profile_update_failed: "We could not update your profile. Please try again.",
+    customer_order_not_found: "We could not find that order in this account.",
   };
 
   if (key && map[key]) {

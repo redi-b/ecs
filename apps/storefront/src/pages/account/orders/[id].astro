@@ -1,0 +1,66 @@
+---
+import StoreUnavailable from "../../../components/shell/StoreUnavailable.astro";
+import { getCustomerOrder } from "../../../lib/commerce/account";
+import { applyPrivateNoStore } from "../../../lib/http-cache";
+import { loadPageContext } from "../../../lib/page-context";
+import {
+  customerSessionClearCookie,
+  getCustomerTokenFromRequest,
+} from "../../../lib/session/customer-cookie";
+import { getStorefrontRenderer } from "../../../templates/registry";
+
+const ctx = await loadPageContext(Astro.request);
+const orderId = Astro.params.id ?? "";
+const token = getCustomerTokenFromRequest(Astro.request);
+
+if (!token) {
+  return Astro.redirect(`/account?error=${encodeURIComponent("Sign in to view that order.")}`);
+}
+
+const result = ctx.ok && orderId
+  ? await getCustomerOrder({
+      orderId,
+      platformApiBaseUrl: ctx.platformApiBaseUrl,
+      requestHost: ctx.requestHost,
+      token,
+    })
+  : null;
+
+const order = result && !("ok" in result) ? result : null;
+const error = result && "ok" in result ? result : null;
+
+if (!ctx.ok) Astro.response.status = ctx.status;
+else if (!order) Astro.response.status = error?.status === 401 ? 401 : 404;
+
+if (error?.status === 401) {
+  Astro.response.headers.append("Set-Cookie", customerSessionClearCookie());
+}
+
+applyPrivateNoStore(Astro.cache, Astro.response);
+
+const Page = ctx.ok
+  ? getStorefrontRenderer(ctx.config.storefront.templateKey)?.AccountOrder
+  : null;
+---
+
+{
+  !ctx.ok || !Page || !order ? (
+    <StoreUnavailable
+      message={
+        !ctx.ok
+          ? ctx.message
+          : !Page
+            ? "Order details are not available for this template yet."
+            : error?.message ?? "We could not find that order in this account."
+      }
+    />
+  ) : (
+    <Page
+      data={ctx.config.storefront.data}
+      themeTokens={ctx.config.storefront.themeTokens}
+      tenantName={ctx.config.tenant.name}
+      cartCount={ctx.cartCount}
+      order={order}
+    />
+  )
+}
