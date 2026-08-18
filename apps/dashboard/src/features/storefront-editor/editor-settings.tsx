@@ -4,7 +4,7 @@ import {
   getStorefrontEditorManifest,
   type StorefrontEditorField,
 } from "@ecs/storefront-templates";
-import { RiArrowDownSLine, RiImageLine } from "@remixicon/react";
+import { RiArrowDownSLine, RiExpandUpDownLine, RiImageLine } from "@remixicon/react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -59,12 +59,29 @@ export function StorefrontSettingsPanel({ onSelectPath, selectedPath, templateKe
   const manifest = getStorefrontEditorManifest(templateKey);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [openSections, setOpenSections] = useState<Set<string>>(
-    () => new Set(["header", "hero"]),
+    () => new Set(["header", "hero", "theme"]),
   );
   const [sectionNavigatorOpen, setSectionNavigatorOpen] = useState(false);
   const activeSection = manifest?.sections.find((section) =>
     sectionContainsPath(section, selectedPath),
   );
+
+  const scrollSettingsPathIntoView = (path: string) => {
+    requestAnimationFrame(() => {
+      const scroller = scrollRef.current;
+      const candidate = Array.from(
+        scroller?.querySelectorAll<HTMLElement>("[data-editor-settings-path]") ?? [],
+      ).find((element) => element.dataset.editorSettingsPath === path);
+      if (!candidate || !scroller) return;
+      const candidateBounds = candidate.getBoundingClientRect();
+      const scrollerBounds = scroller.getBoundingClientRect();
+      const candidateTop = scroller.scrollTop + candidateBounds.top - scrollerBounds.top;
+      scroller.scrollTo({
+        behavior: "smooth",
+        top: Math.max(0, candidateTop - 64),
+      });
+    });
+  };
 
   useEffect(() => {
     if (!activeSection) return;
@@ -78,19 +95,9 @@ export function StorefrontSettingsPanel({ onSelectPath, selectedPath, templateKe
 
   useEffect(() => {
     if (!selectedPath) return;
-    const candidate = Array.from(scrollRef.current?.querySelectorAll<HTMLElement>("[data-editor-settings-path]") ?? []).find(
-      (element) => element.dataset.editorSettingsPath === selectedPath,
-    );
-    if (!candidate) return;
-    const scroller = scrollRef.current;
-    if (!scroller) return;
-    const candidateBounds = candidate.getBoundingClientRect();
-    const scrollerBounds = scroller.getBoundingClientRect();
-    const candidateTop = scroller.scrollTop + candidateBounds.top - scrollerBounds.top;
-    scroller.scrollTo({
-      behavior: "smooth",
-      top: Math.max(0, candidateTop - (scroller.clientHeight - candidateBounds.height) / 2),
-    });
+    scrollSettingsPathIntoView(selectedPath);
+    // The scroll target is intentionally derived from the selected path only.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedPath]);
 
   if (!manifest) {
@@ -101,18 +108,34 @@ export function StorefrontSettingsPanel({ onSelectPath, selectedPath, templateKe
     const section = manifest.sections.find((candidate) => candidate.id === sectionId);
     if (!section) return;
     setOpenSections((current) => new Set(current).add(section.id));
-    onSelectPath(sectionSettingsPath(section));
+    const path = sectionSettingsPath(section);
+    onSelectPath(path);
+    scrollSettingsPathIntoView(path);
     setSectionNavigatorOpen(false);
+  };
+
+  const collapsibleSectionIds = manifest.sections
+    .filter((section) => section.id === "theme" || sectionHasCollapsibleBody(section))
+    .map((section) => section.id);
+  const allSectionsExpanded = collapsibleSectionIds.every((id) => openSections.has(id));
+
+  const toggleAllSections = () => {
+    if (allSectionsExpanded) {
+      setOpenSections(new Set());
+      onSelectPath(null);
+      return;
+    }
+    setOpenSections(new Set(collapsibleSectionIds));
   };
 
   return (
     <div className="min-h-0 flex-1 overflow-y-auto" ref={scrollRef}>
-      <div className="sticky top-0 z-10 border-b border-border/80 bg-background/95 p-3 backdrop-blur-sm sm:px-4">
+      <div className="sticky top-0 z-10 flex items-center gap-2 border-b border-border/80 bg-background/95 p-3 backdrop-blur-sm sm:px-4">
         <Popover onOpenChange={setSectionNavigatorOpen} open={sectionNavigatorOpen}>
           <PopoverTrigger asChild>
             <Button
               aria-expanded={sectionNavigatorOpen}
-              className="h-9 w-full justify-between rounded-lg px-3 font-normal"
+              className="h-9 min-w-0 flex-1 justify-between px-3 font-normal"
               type="button"
               variant="outline"
             >
@@ -145,17 +168,46 @@ export function StorefrontSettingsPanel({ onSelectPath, selectedPath, templateKe
             </Command>
           </PopoverContent>
         </Popover>
+        <Button
+          className="h-9 w-[7.75rem] shrink-0 gap-1.5 px-3 text-xs"
+          onClick={toggleAllSections}
+          type="button"
+          variant="ghost"
+        >
+          <RiExpandUpDownLine aria-hidden className="size-3.5 shrink-0" />
+          {allSectionsExpanded
+            ? t("editor.settings.collapseAll")
+            : t("editor.settings.expandAll")}
+        </Button>
       </div>
       <div className="flex flex-col gap-3 p-3 pb-10 sm:p-4">
         {manifest.sections.map((section) => {
           if (section.id === "theme") {
             return (
-              <div data-editor-settings-path={sectionSettingsPath(section)} key={section.id}>
+              <div
+                className={cn(
+                  "rounded-2xl transition-shadow",
+                  selectedPath === sectionSettingsPath(section)
+                    && "ring-2 ring-primary/45 ring-offset-2 ring-offset-background",
+                )}
+                data-editor-settings-path={sectionSettingsPath(section)}
+                key={section.id}
+              >
                 <ThemeBrandSection
                   allowDarkMode={manifest.theme?.allowSurfaceMode ?? true}
                   data={data}
                   dispatch={dispatch}
                   editableColors={manifest.theme?.editableColors}
+                  onOpenChange={(open) => {
+                    setOpenSections((current) => {
+                      const next = new Set(current);
+                      if (open) next.add(section.id);
+                      else next.delete(section.id);
+                      return next;
+                    });
+                    if (!open && activeSection?.id === section.id) onSelectPath(null);
+                  }}
+                  open={openSections.has(section.id) || activeSection?.id === section.id}
                   props={props}
                   templateKey={templateKey}
                 />
@@ -302,6 +354,12 @@ function sectionSettingsPath(section: { id: string; fields: StorefrontEditorFiel
     (field) => field.kind === "boolean" && field.path.endsWith(".enabled"),
   )?.path;
   return enabledPath?.replace(/\.enabled$/, "") ?? section.id;
+}
+
+function sectionHasCollapsibleBody(section: { fields: StorefrontEditorField[] }) {
+  return section.fields.some(
+    (field) => !(field.kind === "boolean" && field.path.endsWith(".enabled")),
+  );
 }
 
 function sectionContainsPath(

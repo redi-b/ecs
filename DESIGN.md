@@ -15,8 +15,10 @@ No glass, mesh gradients, purple AI glows, or side-stripe card accents.
 ## Radius
 
 - Base: `0.85rem` (ops-premium, not marshmallow)
-- Pills stay full for buttons/chips
-- Nested chrome prefers concentric rounding
+- Standard single-line inputs, input groups, buttons, chips, badges, and compact action controls are full pills. Consumers must not override the shared primitive radius.
+- Textareas, multi-line editors, media thumbnails, menus, cards, choice tiles, and other structural surfaces use the radius scale instead of pills.
+- Nested chrome uses concentric rounding: the inner radius is the outer radius minus the inset or padding between their edges. Do not choose nested radii independently.
+- Square icon actions are circular. Image thumbnails and canvas editing outlines may follow the geometry of their content.
 
 ## Type
 

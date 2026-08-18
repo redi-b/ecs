@@ -438,7 +438,7 @@ export function ShopOnboardingForm({
                   <Input
                     autoComplete="organization"
                     autoFocus={step === 0}
-                    className="h-11 rounded-xl px-3.5"
+                    className="h-11 px-3.5"
                     id={`${fieldId}-shopName`}
                     name="shopName"
                     onChange={(event) => setShopName(event.target.value)}
@@ -453,7 +453,7 @@ export function ShopOnboardingForm({
                   <FieldLabel htmlFor={`${fieldId}-handle`}>
                     {t("onboarding.shopAddress")}
                   </FieldLabel>
-                  <div className="overflow-hidden rounded-xl border border-input bg-background transition-colors focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/25">
+                  <div className="overflow-hidden rounded-full border border-input bg-background transition-colors focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/25">
                     <div className="flex items-stretch">
                       <span className="hidden items-center border-r bg-muted/40 px-3.5 text-sm text-muted-foreground sm:flex">
                         https://
@@ -506,7 +506,7 @@ export function ShopOnboardingForm({
                     </FieldLabel>
                     <Input
                       autoComplete="tel"
-                      className="h-11 rounded-xl px-3.5"
+                      className="h-11 px-3.5"
                       id={`${fieldId}-contactPhone`}
                       name="contactPhone"
                       onChange={(event) => setContactPhone(event.target.value)}
