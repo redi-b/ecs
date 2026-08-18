@@ -9,10 +9,9 @@ src/
   lib/commerce/          # shared logic (cart, checkout, products) — no UI
   pages/                 # stable routes; load data → resolve template slot
   templates/
-    classic/v1/          # default complete storefront (premium dark UI)
+    luvia/v1/            # complete versioned storefront adapter
     fallback/            # shared UI if a template omits a slot
     registry.ts          # template_key → page components (static only)
-public/styles/classic.css  # classic design system (`at-*` classes)
 public/styles/commerce.css # legacy shell styles used by fallbacks
 ```
 
@@ -30,7 +29,7 @@ public/styles/commerce.css # legacy shell styles used by fallbacks
 
 Forms always post to `/actions/cart/*` and `/actions/checkout/*` with the same field names.
 
-## classic@1 (default)
+## luvia@1
 
 Full commerce surface inspired by Medusa starter patterns:
 
@@ -45,6 +44,6 @@ Full commerce surface inspired by Medusa starter patterns:
 1. Package schema/defaults/editor under `packages/storefront-templates`
 2. Astro UI under `apps/storefront/src/templates/<name>/v1/`
 3. Register `"name@1"` in `registry.ts`
-4. Add editor twin + sync templates to platform DB
+4. Add its editor manifest, then sync templates to the platform database
 
 Do **not** call Medusa from templates. Use `lib/commerce` and page props only.

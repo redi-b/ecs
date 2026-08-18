@@ -812,7 +812,7 @@ describe("platform app health, auth, and tenant bootstrap", () => {
             name: "New Shop",
             handle: "new-shop",
             ownerUserId: "user_1",
-            templateKey: "classic@1",
+            templateKey: "luvia@1",
           });
 
           return {
@@ -839,7 +839,7 @@ describe("platform app health, auth, and tenant bootstrap", () => {
       body: JSON.stringify({
         name: "New Shop",
         handle: "new-shop",
-        templateKey: "classic@1",
+        templateKey: "luvia@1",
       }),
       headers: {
         "content-type": "application/json",

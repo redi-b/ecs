@@ -1,8 +1,3 @@
-import { classicV1Defaults, classicV1ThemeTokens } from "./templates/classic/v1/defaults";
-import {
-  classicThemeTokensSchema,
-  classicV1DataSchema,
-} from "./templates/classic/v1/schema";
 import { luviaV1Defaults, luviaV1ThemeTokens } from "./templates/luvia/v1/defaults";
 import {
   luviaV1DataSchema,
@@ -11,6 +6,7 @@ import {
 
 export const storefrontTemplates = [
   {
+    availability: "selectable",
     id: "00000000-0000-4000-8000-000000000005",
     versionId: "00000000-0000-4000-8000-000000000006",
     slug: "luvia",
@@ -25,22 +21,12 @@ export const storefrontTemplates = [
     defaultData: luviaV1Defaults,
     defaultThemeTokens: luviaV1ThemeTokens,
   },
-  {
-    id: "00000000-0000-4000-8000-000000000003",
-    versionId: "00000000-0000-4000-8000-000000000004",
-    slug: "classic",
-    name: "Classic",
-    description: "A polished shop layout for product browsing and checkout.",
-    version: 1,
-    templateKey: "classic@1",
-    componentRegistryVersion: "built-in-v1",
-    sourceHash: "classic@1",
-    schema: classicV1DataSchema,
-    themeSchema: classicThemeTokensSchema,
-    defaultData: classicV1Defaults,
-    defaultThemeTokens: classicV1ThemeTokens,
-  },
 ] as const;
+
+/** Templates merchants may choose for a new storefront or template switch. */
+export const selectableStorefrontTemplates = storefrontTemplates.filter(
+  (template) => template.availability === "selectable",
+);
 
 /** Canonical compile-time key set consumed by storefront and editor registries. */
 export type StorefrontTemplateKey = (typeof storefrontTemplates)[number]["templateKey"];

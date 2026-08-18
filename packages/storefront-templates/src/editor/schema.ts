@@ -56,7 +56,7 @@ export const storefrontEditorThemeSchema = z.object({
 export const storefrontEditorManifestSchema = z.object({
   templateKey: z.string().min(1),
   templateVersion: z.number().int().positive(),
-  previewMode: z.enum(["iframe", "react-legacy"]),
+  previewMode: z.literal("iframe"),
   theme: storefrontEditorThemeSchema.optional(),
   sections: z.array(storefrontEditorSectionSchema).min(1),
 });

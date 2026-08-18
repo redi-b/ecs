@@ -278,7 +278,7 @@ function normalizePropForEditor(kind: string, value: unknown): unknown {
   return typeof value === "string" ? value : value == null ? undefined : String(value);
 }
 
-function flattenDraft(data: unknown, themeTokens: unknown, templateKey = "classic@1"): StorefrontPageProps {
+function flattenDraft(data: unknown, themeTokens: unknown, templateKey = "luvia@1"): StorefrontPageProps {
   const props: Record<string, unknown> = {};
 
   const manifest = requireEditorManifest(templateKey);

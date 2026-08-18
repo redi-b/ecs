@@ -88,7 +88,7 @@ describe("hasStorefrontUnpublishedChanges", () => {
 
   it("recognizes template, content, and theme changes", () => {
     assert.equal(
-      hasStorefrontUnpublishedChanges({ ...published, draftTemplateKey: "classic@1" }),
+      hasStorefrontUnpublishedChanges({ ...published, draftTemplateKey: "alternate@1" }),
       true,
     );
     assert.equal(

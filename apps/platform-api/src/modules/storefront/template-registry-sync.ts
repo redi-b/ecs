@@ -1,12 +1,14 @@
 import type { createPlatformDb } from "@ecs/db";
 import { storefrontTemplates as storefrontTemplateRows, storefrontTemplateVersions } from "@ecs/db";
 import { storefrontTemplates } from "@ecs/storefront-templates";
+import { inArray } from "drizzle-orm";
 import { z } from "zod";
 
 type PlatformDatabase = ReturnType<typeof createPlatformDb>["db"];
 
 export async function syncStorefrontTemplateRegistry(db: PlatformDatabase) {
   for (const [sortOrder, template] of storefrontTemplates.entries()) {
+    const status = template.availability === "selectable" ? "active" : "deprecated";
     const [templateRow] = await db
       .insert(storefrontTemplateRows)
       .values({
@@ -14,7 +16,7 @@ export async function syncStorefrontTemplateRegistry(db: PlatformDatabase) {
         slug: template.slug,
         name: template.name,
         description: template.description,
-        status: "active",
+        status,
         tags: ["default", "built-in"],
         sortOrder,
       })
@@ -23,7 +25,7 @@ export async function syncStorefrontTemplateRegistry(db: PlatformDatabase) {
         set: {
           name: template.name,
           description: template.description,
-          status: "active",
+          status,
           tags: ["default", "built-in"],
           sortOrder,
           updatedAt: new Date(),
@@ -48,7 +50,7 @@ export async function syncStorefrontTemplateRegistry(db: PlatformDatabase) {
         previewData: template.defaultData,
         componentRegistryVersion: template.componentRegistryVersion,
         sourceHash: template.sourceHash,
-        status: "active",
+        status,
       })
       .onConflictDoUpdate({
         target: storefrontTemplateVersions.templateKey,
@@ -61,9 +63,35 @@ export async function syncStorefrontTemplateRegistry(db: PlatformDatabase) {
           previewData: template.defaultData,
           componentRegistryVersion: template.componentRegistryVersion,
           sourceHash: template.sourceHash,
-          status: "active",
+          status,
         },
       });
+  }
+
+  const registeredTemplateIds = new Set<string>(
+    storefrontTemplates.map((template) => template.id),
+  );
+  const builtInRows = await db
+    .select({ id: storefrontTemplateRows.id, tags: storefrontTemplateRows.tags })
+    .from(storefrontTemplateRows);
+  const removedBuiltInIds = builtInRows
+    .filter(
+      (row) =>
+        Array.isArray(row.tags) &&
+        row.tags.includes("built-in") &&
+        !registeredTemplateIds.has(row.id),
+    )
+    .map((row) => row.id);
+
+  if (removedBuiltInIds.length > 0) {
+    await db
+      .update(storefrontTemplateVersions)
+      .set({ status: "disabled" })
+      .where(inArray(storefrontTemplateVersions.templateId, removedBuiltInIds));
+    await db
+      .update(storefrontTemplateRows)
+      .set({ status: "disabled", updatedAt: new Date() })
+      .where(inArray(storefrontTemplateRows.id, removedBuiltInIds));
   }
 
   return storefrontTemplates.length;

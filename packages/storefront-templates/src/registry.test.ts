@@ -1,7 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { getStorefrontTemplateDefinition, storefrontTemplates } from "./registry";
+import {
+  getStorefrontTemplateDefinition,
+  selectableStorefrontTemplates,
+  storefrontTemplates,
+} from "./registry";
 import {
   luviaV1DataSchema,
   luviaV1ThemeTokensSchema,
@@ -14,8 +18,17 @@ test("registers Luvia independently from its display name", () => {
   assert.equal(template.slug, "luvia");
   assert.equal(template.version, 1);
   assert.equal(template.templateKey, "luvia@1");
+  assert.equal(template.availability, "selectable");
   assert.doesNotThrow(() => luviaV1DataSchema.parse(template.defaultData));
   assert.doesNotThrow(() => luviaV1ThemeTokensSchema.parse(template.defaultThemeTokens));
+});
+
+test("exposes only production-ready templates to merchants", () => {
+  assert.deepEqual(
+    selectableStorefrontTemplates.map((template) => template.templateKey),
+    ["luvia@1"],
+  );
+  assert.equal(getStorefrontTemplateDefinition("removed@1"), undefined);
 });
 
 test("every registered template owns valid content and theme contracts", () => {

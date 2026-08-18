@@ -140,7 +140,7 @@ export function StorefrontTemplateOption({
   const [choiceOpen, setChoiceOpen] = useState(false);
   const selected = isStorefrontTemplateSelected(currentTemplateKey, template.version.templateKey);
   const published = publishedTemplateKey === template.version.templateKey;
-  const palette = templatePreviewPalette(template.version.templateKey);
+  const palette = templatePreviewPalette();
 
   async function selectTemplate(mode: "clean" | "resume") {
     if (selected || pending) return;
@@ -296,15 +296,7 @@ export function StorefrontTemplateOption({
   );
 }
 
-function templatePreviewPalette(templateKey: string) {
-  if (templateKey.startsWith("classic")) {
-    return {
-      bg: "#0b0f0d",
-      muted: "#141a16",
-      primary: "#9bc4a0",
-      accent: "#d4785a",
-    };
-  }
+function templatePreviewPalette() {
   return {
     bg: "#f6f1ea",
     muted: "#ebe4d8",

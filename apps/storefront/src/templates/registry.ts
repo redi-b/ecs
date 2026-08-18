@@ -2,16 +2,9 @@
  * Static template registry. Keys must match platform `template_key` values.
  * Never load template modules from merchant or database input.
  *
- * classic@1 is the default complete storefront (premium dark design system).
  * Missing optional slots fall back to `templates/fallback/*`.
  */
 import type { StorefrontTemplateKey } from "@ecs/storefront-templates";
-import ClassicV1Cart from "./classic/v1/Cart.astro";
-import ClassicV1Checkout from "./classic/v1/Checkout.astro";
-import ClassicV1Home from "./classic/v1/Home.astro";
-import ClassicV1OrderConfirm from "./classic/v1/OrderConfirm.astro";
-import ClassicV1Product from "./classic/v1/Product.astro";
-import ClassicV1ProductList from "./classic/v1/ProductList.astro";
 import LuviaV1Home from "./luvia/v1/Home.astro";
 import LuviaV1ProductList from "./luvia/v1/ProductList.astro";
 import LuviaV1Product from "./luvia/v1/Product.astro";
@@ -51,14 +44,6 @@ export const storefrontRenderers = {
     RequestItem: LuviaV1RequestItem,
     Wishlist: LuviaV1Wishlist,
     Account: LuviaV1Account,
-  },
-  "classic@1": {
-    Home: ClassicV1Home,
-    ProductList: ClassicV1ProductList,
-    Product: ClassicV1Product,
-    Cart: ClassicV1Cart,
-    Checkout: ClassicV1Checkout,
-    OrderConfirm: ClassicV1OrderConfirm,
   },
 } satisfies Record<StorefrontTemplateKey, StorefrontRenderer>;
 

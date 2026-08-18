@@ -5,7 +5,7 @@
  * - editor-settings: settings panel + field controls + media pickers
  * - editor-theme: appearance / palette / fonts
  * - editor-merchandising: collection & product pickers
- * - editor-preview: classic template preview + inline editables
+ * - editor-preview: iframe preview + inline editing controls
  * - editor-state / editor-utils / editor-config: pure state & helpers
  */
 export {
@@ -24,7 +24,6 @@ export {
 } from "./editor-settings";
 
 export {
-  ClassicV1StorefrontPreview,
   EditableHint,
   EditableImage,
   EditableText,

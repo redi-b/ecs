@@ -74,7 +74,7 @@ describe("getAuthenticatedDashboardRedirect", () => {
           isPublished: false,
           publishedRevisionId: null,
           templateId: "template_1",
-          templateKey: "classic@1",
+          templateKey: "luvia@1",
           templateVersion: 1,
         },
       });
