@@ -30,7 +30,7 @@ function formatOrderDate(value: string | null) {
           <form class="lv-account__profile-form" action="/actions/account/profile" method="post">
             <header><h2>Your details</h2><p>These details make future checkouts faster.</p></header>
             {error && <p class="lv-account__error" role="alert">{error}</p>}
-            {success && <p class="lv-account__success" role="status">{success}</p>}
+            {success && !success.toLowerCase().includes("address") && <p class="lv-account__success" role="status">{success}</p>}
             <div>
               <label>First name<input name="firstName" value={account.customer.firstName} autocomplete="given-name" required /></label>
               <label>Last name<input name="lastName" value={account.customer.lastName} autocomplete="family-name" required /></label>
@@ -49,6 +49,14 @@ function formatOrderDate(value: string | null) {
           ) : (
             <div class="lv-account__empty"><strong>Your first order will appear here.</strong><p>Browse the collection and check out whenever you are ready.</p><a href="/products">Explore products</a></div>
           )}
+        </section>
+        <section class="lv-account__addresses" id="saved-addresses" aria-labelledby="saved-addresses-title">
+          <header><div><p>FASTER CHECKOUT</p><h2 id="saved-addresses-title">Saved addresses</h2><span>Keep delivery details ready without changing any past order.</span></div><span>{account.addresses.length}</span></header>
+          {success?.toLowerCase().includes("address") && <p class="lv-account__success" role="status">{success}</p>}
+          <div class="lv-account__address-grid">
+            {account.addresses.map((address) => <article class="lv-account__address-card"><button class="lv-account__address-toggle" type="button" aria-expanded="false" data-address-toggle><span><strong>{address.addressName || `${address.firstName} ${address.lastName}`}</strong><small>{address.address1}, {address.city}</small></span>{address.isDefaultShipping && <em>Default</em>}</button><form action="/actions/account/address" method="post" hidden><input type="hidden" name="addressId" value={address.id} /><div><label>Label<input name="addressName" value={address.addressName} placeholder="Home" /></label><label>Phone<input name="phone" value={address.phone} autocomplete="tel" inputmode="tel" /></label><label>First name<input name="firstName" value={address.firstName} required autocomplete="given-name" /></label><label>Last name<input name="lastName" value={address.lastName} required autocomplete="family-name" /></label><label class="is-wide">Street address<input name="address1" value={address.address1} required autocomplete="street-address" /></label><label>City<input name="city" value={address.city} required autocomplete="address-level2" /></label><label>Area / region <small>(optional)</small><input name="province" value={address.province} autocomplete="address-level1" /></label></div><label class="lv-account__default-address"><input type="checkbox" name="isDefaultShipping" checked={address.isDefaultShipping} /> Use first at checkout</label><footer><button type="submit" name="intent" value="save">Save changes</button><button type="submit" name="intent" value="delete" class="is-secondary">Remove</button></footer></form></article>)}
+            <article class="lv-account__address-card is-new"><button class="lv-account__address-toggle" type="button" aria-expanded={account.addresses.length === 0 ? "true" : "false"} data-address-toggle><span><strong>Add an address</strong><small>Save delivery details for a faster checkout.</small></span><b aria-hidden="true">+</b></button><form action="/actions/account/address" method="post" hidden={account.addresses.length !== 0}><div><label>Label<input name="addressName" placeholder="Home" /></label><label>Phone<input name="phone" value={account.customer.phone} autocomplete="tel" inputmode="tel" /></label><label>First name<input name="firstName" value={account.customer.firstName} required autocomplete="given-name" /></label><label>Last name<input name="lastName" value={account.customer.lastName} required autocomplete="family-name" /></label><label class="is-wide">Street address<input name="address1" required autocomplete="street-address" placeholder="Bole, Ayat Road" /></label><label>City<input name="city" value="Addis Ababa" required autocomplete="address-level2" /></label><label>Area / region <small>(optional)</small><input name="province" autocomplete="address-level1" /></label></div><label class="lv-account__default-address"><input type="checkbox" name="isDefaultShipping" checked={account.addresses.length === 0} /> Use first at checkout</label><footer><button type="submit" name="intent" value="save">Save address</button></footer></form></article>
+          </div>
         </section>
       </>
     ) : (
@@ -114,6 +122,17 @@ function formatOrderDate(value: string | null) {
 </Layout>
 <style is:global lang="scss">@use "./styles/secondary-pages.scss";</style>
 <script>
+  document.querySelectorAll<HTMLButtonElement>("[data-address-toggle]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const form = button.parentElement?.querySelector<HTMLFormElement>("form");
+      if (!form) return;
+      const expanded = button.getAttribute("aria-expanded") === "true";
+      button.setAttribute("aria-expanded", String(!expanded));
+      form.hidden = expanded;
+      if (!expanded) form.querySelector<HTMLInputElement>("input:not([type='hidden'])")?.focus();
+    });
+  });
+
   const authRoot = document.querySelector<HTMLElement>(".lv-account__auth");
 
   if (authRoot) {

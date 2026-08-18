@@ -1,6 +1,7 @@
 import type { APIRoute } from "astro";
 
 import { completeCodCheckout } from "../../../lib/commerce/checkout.js";
+import { associateRequestCartWithCustomer } from "../../../lib/commerce/customer-cart.js";
 import { getStoreDeliveryOptions } from "../../../lib/commerce/delivery.js";
 import { isStoreError } from "../../../lib/commerce/result.js";
 import { loadPageContext } from "../../../lib/page-context.js";
@@ -16,6 +17,15 @@ export const POST: APIRoute = async ({ request }) => {
 
   if (!ctx.ok || !ctx.cartId) {
     return redirect("/checkout?error=" + encodeURIComponent("Cart not found."));
+  }
+
+  const association = await associateRequestCartWithCustomer(request, {
+    cartId: ctx.cartId,
+    platformApiBaseUrl: ctx.platformApiBaseUrl,
+    requestHost: ctx.requestHost,
+  });
+  if (!association.ok) {
+    return redirect("/checkout?error=" + encodeURIComponent(association.message));
   }
 
   const deliveryResult = await getStoreDeliveryOptions({

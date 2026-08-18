@@ -97,6 +97,7 @@ interface WishlistControllerOptions {
   storage?: WishlistStorage;
   shopScope?: string;
   disabled?: boolean;
+  fetcher?: typeof fetch;
 }
 
 export const initWishlistController = (options: WishlistControllerOptions = {}) => {
@@ -105,7 +106,9 @@ export const initWishlistController = (options: WishlistControllerOptions = {}) 
   const storage = options.storage ?? windowRef.localStorage;
   const shopScope = options.shopScope ?? windowRef.location.hostname;
   const disabled = options.disabled ?? documentRef.body.dataset.editorMode === "true";
+  const fetcher = options.fetcher ?? globalThis.fetch?.bind(globalThis);
   const store = createWishlistStore(storage, shopScope);
+  let persistVersion = 0;
   const sync = (items = disabled ? [] : store.read()) => {
     const paths = new Set(items.map((entry) => entry.path));
     documentRef.querySelectorAll<HTMLElement>("[data-wishlist-toggle]").forEach((button) => {
@@ -128,7 +131,53 @@ export const initWishlistController = (options: WishlistControllerOptions = {}) 
   };
   const publish = (items: WishlistEntry[]) => {
     sync(items);
-    windowRef.dispatchEvent(new CustomEvent(WISHLIST_UPDATED_EVENT, { detail: { items } }));
+    windowRef.dispatchEvent(new CustomEvent(WISHLIST_UPDATED_EVENT, { detail: { items, origin: "controller" } }));
+    void persist(items);
+  };
+  const persist = async (items: WishlistEntry[]) => {
+    if (disabled || !fetcher) return false;
+    const version = ++persistVersion;
+    try {
+      const response = await fetcher("/actions/account/wishlist", {
+        body: JSON.stringify({ items }),
+        headers: { "content-type": "application/json" },
+        method: "PUT",
+      });
+      if (!response.ok || version !== persistVersion) return false;
+      const data = await response.json().catch(() => null) as { items?: unknown[] } | null;
+      if (Array.isArray(data?.items)) {
+        const normalized = data.items
+          .map(normalizeWishlistEntry)
+          .filter((item): item is WishlistEntry => Boolean(item));
+        sync(store.write(normalized));
+      }
+      return true;
+    } catch {
+      return false;
+    }
+  };
+  const hydrateAccount = async () => {
+    if (disabled || !fetcher) return false;
+    try {
+      const response = await fetcher("/actions/account/wishlist", { headers: { accept: "application/json" } });
+      if (!response.ok) return false;
+      const data = await response.json().catch(() => null) as { items?: unknown[] } | null;
+      if (!Array.isArray(data?.items)) return false;
+      const local = store.read();
+      const remote = data.items.map(normalizeWishlistEntry).filter((item): item is WishlistEntry => Boolean(item));
+      const merged = store.write([...remote, ...local]);
+      sync(merged);
+      windowRef.dispatchEvent(new CustomEvent(WISHLIST_UPDATED_EVENT, {
+        detail: { items: merged, origin: "controller" },
+      }));
+      if (JSON.stringify(remote) !== JSON.stringify(merged)) await persist(merged);
+      documentRef.querySelectorAll<HTMLElement>("[data-wishlist-account-copy]").forEach((node) => {
+        node.textContent = "Saved to your account";
+      });
+      return true;
+    } catch {
+      return false;
+    }
   };
   const onClick = (event: MouseEvent) => {
     const target = event.target instanceof Element
@@ -142,13 +191,19 @@ export const initWishlistController = (options: WishlistControllerOptions = {}) 
     publish(store.toggle(entry));
   };
   const onUpdate = (event: Event) => {
-    const items = (event as CustomEvent<{ items?: WishlistEntry[] }>).detail?.items;
-    sync(Array.isArray(items) ? items : undefined);
+    const detail = (event as CustomEvent<{ items?: WishlistEntry[]; origin?: string }>).detail;
+    const items = detail?.items;
+    if (!Array.isArray(items)) return sync();
+    const saved = store.write(items);
+    sync(saved);
+    if (detail?.origin !== "controller") void persist(saved);
   };
   documentRef.addEventListener("click", onClick);
   windowRef.addEventListener(WISHLIST_UPDATED_EVENT, onUpdate);
   sync();
+  const ready = hydrateAccount();
   return {
+    ready,
     store,
     sync,
     publish,

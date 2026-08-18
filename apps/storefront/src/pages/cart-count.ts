@@ -3,6 +3,7 @@ import type { APIRoute } from "astro";
 import { getStoreCart } from "../lib/commerce/cart";
 import { getPlatformApiBaseUrl, getRequestHost } from "../lib/env";
 import { getCartIdFromRequest } from "../lib/session/cart-cookie";
+import { getCustomerTokenFromRequest } from "../lib/session/customer-cookie";
 
 /**
  * Lightweight no-store endpoint for cart badge on publicly cached pages.
@@ -10,6 +11,7 @@ import { getCartIdFromRequest } from "../lib/session/cart-cookie";
  */
 export const GET: APIRoute = async ({ request }) => {
   const cartId = getCartIdFromRequest(request);
+  const customerToken = getCustomerTokenFromRequest(request);
   let count = 0;
 
   if (cartId) {
@@ -17,6 +19,9 @@ export const GET: APIRoute = async ({ request }) => {
       cartId,
       platformApiBaseUrl: getPlatformApiBaseUrl(),
       requestHost: getRequestHost(request),
+      ...(customerToken
+        ? { headers: { authorization: `Bearer ${customerToken}` } }
+        : {}),
     });
     if (
       cartResult &&

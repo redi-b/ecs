@@ -2,6 +2,7 @@ export * from "./analytics.js";
 export * from "./audit.js";
 export * from "./auth.js";
 export * from "./billing.js";
+export * from "./customer-commerce.js";
 export * from "./delivery.js";
 export * from "./domains.js";
 export * from "./enums.js";

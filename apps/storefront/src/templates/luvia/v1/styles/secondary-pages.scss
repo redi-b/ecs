@@ -114,5 +114,31 @@
 .lv-account__empty { margin-top: 34px; padding: 30px; border: 1px dashed var(--lv-line); border-radius: 18px; text-align: center; }
 .lv-account__empty p { color: color-mix(in srgb,var(--lv-ink) 60%,var(--lv-bg)); }
 .lv-account__empty a { color: var(--lv-ink); font-weight: 500; }
+.lv-account__addresses { grid-column: 1 / -1; }
+.lv-account__addresses>header { display:flex; align-items:flex-start; justify-content:space-between; gap:20px; }
+.lv-account__addresses>header p { margin:0 0 10px; font-size:11px; font-weight:600; letter-spacing:.17em; }
+.lv-account__addresses>header h2 { margin:0 0 6px; font-size:32px; font-weight:500; letter-spacing:-.035em; }
+.lv-account__addresses>header div>span { color:color-mix(in srgb,var(--lv-ink) 58%,var(--lv-bg)); font-size:14px; }
+.lv-account__addresses>header>span { min-width:38px; height:38px; display:grid; place-items:center; border-radius:50%; background:var(--lv-accent); }
+.lv-account__address-grid { margin-top:26px; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+.lv-account__address-card { border:1px solid var(--lv-line); border-radius:20px; background:color-mix(in srgb,var(--lv-soft) 55%,white); overflow:hidden; }
+.lv-account__address-toggle { width:100%; min-height:88px; padding:18px 20px; display:flex; align-items:center; justify-content:space-between; gap:16px; border:0; background:transparent; color:var(--lv-ink); font:inherit; text-align:left; cursor:pointer; }
+.lv-account__address-toggle span { display:grid; gap:5px; }
+.lv-account__address-toggle small { color:color-mix(in srgb,var(--lv-ink) 58%,var(--lv-bg)); }
+.lv-account__address-toggle em { padding:7px 10px; border-radius:999px; background:var(--lv-accent); color:var(--lv-ink); font-size:11px; font-style:normal; }
+.lv-account__address-toggle b { width:32px; height:32px; display:grid; place-items:center; border-radius:50%; background:var(--lv-dark); color:var(--lv-on-dark); font-size:20px; font-weight:400; transition:transform .18s ease; }
+.lv-account__address-toggle[aria-expanded="true"] { border-bottom:1px solid var(--lv-line); }
+.lv-account__address-toggle[aria-expanded="true"] b { transform:rotate(45deg); }
+.lv-account__address-card form { padding:20px; display:grid; gap:15px; }
+.lv-account__address-card form>div { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.lv-account__address-card label { display:grid; gap:7px; font-size:13px; }
+.lv-account__address-card label.is-wide { grid-column:1/-1; }
+.lv-account__address-card input:not([type="checkbox"]) { width:100%; min-height:47px; padding:0 14px; border:1px solid var(--lv-line); border-radius:999px; background:white; color:var(--lv-ink); font:inherit; }
+.lv-account__address-card input:focus-visible { outline:2px solid var(--lv-green); outline-offset:1px; }
+.lv-account__default-address { display:flex!important; grid-template-columns:auto 1fr; align-items:center; justify-content:flex-start; }
+.lv-account__default-address input { width:18px; height:18px; accent-color:var(--lv-green); }
+.lv-account__address-card footer { display:flex; flex-wrap:wrap; gap:8px; }
+.lv-account__address-card footer button { min-height:43px; padding:0 17px; border:1px solid var(--lv-dark); border-radius:999px; background:var(--lv-dark); color:var(--lv-on-dark); font:inherit; cursor:pointer; }
+.lv-account__address-card footer button.is-secondary { background:transparent; color:var(--lv-ink); }
 @media(max-width:900px){.lv-request,.lv-account{width:calc(100% - 40px);gap:30px}.lv-wishlist{padding-inline:20px}.lv-wishlist__grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(max-width:760px){.lv-request,.lv-account,.lv-account.is-signed-in{width:calc(100% - 24px);padding:104px 0 60px;grid-template-columns:1fr}.lv-request__intro h1,.lv-account h1{font-size:58px}.lv-request__panel{padding:22px 16px}.lv-request form{grid-template-columns:1fr}.lv-request label.is-wide,.lv-request form>button,.lv-request__unavailable{grid-column:auto}.lv-wishlist{padding:104px 12px 60px}.lv-wishlist h1{font-size:64px}.lv-wishlist__grid{grid-template-columns:1fr}.lv-account>section,.lv-account>aside{padding:32px 22px}.lv-account__name-fields,.lv-account__profile-form>div{grid-template-columns:1fr}.lv-account__auth-panel{padding:18px}.lv-account__orders li>a{grid-template-columns:1fr 34px;gap:12px}.lv-account__orders li div:nth-child(2){grid-column:1;text-align:left}.lv-account__order-arrow{grid-column:2;grid-row:1 / span 2}.lv-account__orders li div:last-child{text-align:left}}
+@media(max-width:760px){.lv-request,.lv-account,.lv-account.is-signed-in{width:calc(100% - 24px);padding:104px 0 60px;grid-template-columns:1fr}.lv-request__intro h1,.lv-account h1{font-size:58px}.lv-request__panel{padding:22px 16px}.lv-request form{grid-template-columns:1fr}.lv-request label.is-wide,.lv-request form>button,.lv-request__unavailable{grid-column:auto}.lv-wishlist{padding:104px 12px 60px}.lv-wishlist h1{font-size:64px}.lv-wishlist__grid,.lv-account__address-grid{grid-template-columns:1fr}.lv-account>section,.lv-account>aside{padding:32px 22px}.lv-account__name-fields,.lv-account__profile-form>div,.lv-account__address-card form>div{grid-template-columns:1fr}.lv-account__address-card label.is-wide{grid-column:auto}.lv-account__auth-panel{padding:18px}.lv-account__orders li>a{grid-template-columns:1fr 34px;gap:12px}.lv-account__orders li div:nth-child(2){grid-column:1;text-align:left}.lv-account__order-arrow{grid-column:2;grid-row:1 / span 2}.lv-account__orders li div:last-child{text-align:left}}

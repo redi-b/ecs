@@ -356,6 +356,8 @@ export function registerStoreFacadeRoutes(
 
     try {
       const customerAccountResponse = await handleCustomerAccountRequest({
+        getCustomerCommerceState: options.getCustomerCommerceState,
+        updateCustomerCommerceState: options.updateCustomerCommerceState,
         ensureTenantCustomer: options.ensureMerchantCustomer,
         medusaInternalUrl: options.medusaInternalUrl,
         medusaPublishableKey: result.context.medusaPublishableKeyId,

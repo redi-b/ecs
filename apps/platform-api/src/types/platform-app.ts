@@ -94,6 +94,12 @@ import type {
 } from "./tenant.js";
 
 export type PlatformAppOptions = {
+  getCustomerCommerceState?: ReturnType<
+    typeof import("../modules/storefront/customer-commerce-service.js").createCustomerCommerceService
+  >["getState"];
+  updateCustomerCommerceState?: ReturnType<
+    typeof import("../modules/storefront/customer-commerce-service.js").createCustomerCommerceService
+  >["updateState"];
   createStorefrontInquiry?:
     | ((input: import("../modules/storefront/inquiry-service.js").StorefrontInquiryInput) => Promise<{
         ok: true;

@@ -23,6 +23,15 @@
 .lv-checkout-choice-group label > span, .lv-checkout-payment label > span { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
 .lv-checkout-choice-group strong, .lv-checkout-payment strong { color: var(--lv-ink); font-size: 14px; }
 .lv-checkout-choice-group small, .lv-checkout-payment small { color: color-mix(in srgb,var(--lv-ink) 52%,var(--lv-bg)); font-size: 12px; line-height: 1.35; }
+.lv-checkout-saved-addresses { min-width:0; margin:0; padding:0; border:0; grid-column:1/-1; }
+.lv-checkout-saved-addresses legend { margin-bottom:9px; color:color-mix(in srgb,var(--lv-ink) 72%,var(--lv-bg)); font-size:13px; }
+.lv-checkout-saved-addresses>div { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+.lv-checkout-saved-addresses label { min-height:70px; padding:14px 16px; display:flex; align-items:center; gap:12px; border:1px solid var(--lv-line); border-radius:15px; background:white; cursor:pointer; }
+.lv-checkout-saved-addresses label:has(input:checked) { border-color:var(--lv-green); background:color-mix(in srgb,var(--lv-soft) 62%,white); box-shadow:0 0 0 3px color-mix(in srgb,var(--lv-green) 10%,transparent); }
+.lv-checkout-saved-addresses input { width:19px; height:19px; flex:0 0 auto; accent-color:var(--lv-green); }
+.lv-checkout-saved-addresses label span { min-width:0; display:grid; gap:3px; }
+.lv-checkout-saved-addresses label small { overflow:hidden; color:color-mix(in srgb,var(--lv-ink) 52%,var(--lv-bg)); font-size:12px; text-overflow:ellipsis; white-space:nowrap; }
+.lv-checkout-saved-addresses>p { margin:9px 0 0; color:color-mix(in srgb,var(--lv-ink) 52%,var(--lv-bg)); font-size:12px; }
 .lv-checkout-fields > label > input, .lv-checkout-fields > label > select, .lv-checkout-fields > label > textarea { width: 100%; min-height: 52px; padding: 0 15px; border: 1px solid var(--lv-line); border-radius: 14px; outline: 0; background: white; color: var(--lv-ink); font: inherit; font-size: 16px; transition: border-color 150ms ease, box-shadow 150ms ease; }
 .lv-checkout-fields > label > textarea { min-height: 86px; padding-top: 14px; resize: vertical; }
 .lv-checkout-fields > label > input:focus, .lv-checkout-fields > label > select:focus, .lv-checkout-fields > label > textarea:focus { border-color: var(--lv-green); box-shadow: 0 0 0 3px color-mix(in srgb, var(--lv-green) 14%, transparent); }
@@ -86,7 +95,7 @@
 @media (max-width: 560px) {
   .lv-checkout-fields { grid-template-columns: 1fr; gap: 15px; }
   .lv-checkout-fields > label.is-wide, .lv-checkout-choice-group.is-wide { grid-column: auto; }
-  .lv-checkout-choice-group > div, .lv-checkout-payment { grid-template-columns: 1fr; }
+  .lv-checkout-choice-group > div, .lv-checkout-payment, .lv-checkout-saved-addresses>div { grid-template-columns: 1fr; }
   .lv-checkout-fields input, .lv-checkout-fields select, .lv-checkout-fields textarea { min-height: 50px; font-size: 16px; }
   .lv-checkout-payment, .lv-checkout-actions { grid-template-columns: 1fr; }
   .lv-checkout-summary { padding: 18px 14px; }

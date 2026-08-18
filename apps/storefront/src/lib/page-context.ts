@@ -1,6 +1,7 @@
 import type { PublishedStorefrontConfig } from "@ecs/contracts";
 
 import { getCartIdFromRequest } from "./session/cart-cookie.js";
+import { getCustomerTokenFromRequest } from "./session/customer-cookie.js";
 import { getStoreCart } from "./commerce/cart.js";
 import type { StoreCart, StorefrontError } from "./commerce/types.js";
 import { getPlatformApiBaseUrl, getRequestHost } from "./env.js";
@@ -60,6 +61,7 @@ export async function loadPageContext(
   }
 
   const cartId = getCartIdFromRequest(request);
+  const customerToken = getCustomerTokenFromRequest(request);
   let cart: StoreCart | null = null;
 
   if (cartId) {
@@ -67,6 +69,9 @@ export async function loadPageContext(
       cartId,
       platformApiBaseUrl,
       requestHost,
+      ...(customerToken
+        ? { headers: { authorization: `Bearer ${customerToken}` } }
+        : {}),
     });
     if (!isError(cartResult) && cartResult.cart.id) {
       cart = cartResult.cart;

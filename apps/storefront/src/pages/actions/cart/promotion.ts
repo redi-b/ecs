@@ -4,6 +4,7 @@ import { cartJson, cartJsonError } from "../../../lib/commerce/cart-json.js";
 import { isStoreError } from "../../../lib/commerce/result.js";
 import { getCartIdFromRequest } from "../../../lib/session/cart-cookie.js";
 import { getPlatformApiBaseUrl, getRequestHost } from "../../../lib/env.js";
+import { getCustomerTokenFromRequest } from "../../../lib/session/customer-cookie.js";
 
 export const POST: APIRoute = async ({ request, redirect }) => {
   const wantsJson = request.headers.get("accept")?.includes("application/json") === true;
@@ -17,12 +18,16 @@ export const POST: APIRoute = async ({ request, redirect }) => {
     const message = "Enter a discount code.";
     return wantsJson ? cartJsonError(message, 400) : redirect(`/cart?error=${encodeURIComponent(message)}`);
   }
+  const customerToken = getCustomerTokenFromRequest(request);
 
   const requestOptions = {
     cartId,
     code,
     platformApiBaseUrl: getPlatformApiBaseUrl(),
     requestHost: getRequestHost(request),
+    ...(customerToken
+      ? { headers: { authorization: `Bearer ${customerToken}` } }
+      : {}),
   };
   const result =
     intent === "remove"

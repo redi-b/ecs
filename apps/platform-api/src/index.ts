@@ -61,6 +61,7 @@ import { createReceivingAccountsService } from "./modules/payments/receiving-acc
 import { wrapProductServiceWithStorefrontPurge } from "./modules/storefront/catalog-cache-invalidation.js";
 import { createStorefrontTemplateService } from "./modules/storefront/template-service.js";
 import { createStorefrontInquiryService } from "./modules/storefront/inquiry-service.js";
+import { createCustomerCommerceService } from "./modules/storefront/customer-commerce-service.js";
 import { createSupportService } from "./modules/support/service.js";
 import {
   createTenantCommerceContextService,
@@ -106,6 +107,7 @@ const findDomainByHostname = createDomainTenantLookup(platformDb.db);
 const billingService = createBillingService(platformDb.db);
 const deliverySettingsService = createDeliverySettingsService(platformDb.db);
 const storefrontInquiryService = createStorefrontInquiryService(platformDb.db);
+const customerCommerceService = createCustomerCommerceService(platformDb.db);
 const domainManagementService = createDomainManagementService(platformDb.db);
 const mediaStorage = createMediaStorageFromEnv();
 if (mediaStorage.provider === "unconfigured") {
@@ -575,6 +577,8 @@ const auth = createPlatformAuth({
 });
 
 const app = createPlatformApp({
+  getCustomerCommerceState: customerCommerceService.getState,
+  updateCustomerCommerceState: customerCommerceService.updateState,
   createStorefrontInquiry: storefrontInquiryService.createInquiry,
   listStorefrontInquiries: storefrontInquiryService.listInquiries,
   getStorefrontInquiry: storefrontInquiryService.getInquiry,
