@@ -329,7 +329,7 @@ export function CommandCenter() {
           size="icon"
           className={cn(
             "size-9 shrink-0 text-muted-foreground",
-            "sm:h-9 sm:w-auto sm:min-w-[15.5rem] sm:justify-start sm:gap-2 sm:rounded-xl sm:border sm:border-border/80 sm:bg-background sm:px-3 sm:shadow-sm",
+            "sm:h-9 sm:w-auto sm:min-w-[15.5rem] sm:justify-start sm:gap-2 sm:border sm:border-border/80 sm:bg-background sm:px-3 sm:shadow-sm",
             "sm:hover:bg-accent sm:hover:text-accent-foreground",
           )}
         >

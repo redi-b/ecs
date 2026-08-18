@@ -453,7 +453,7 @@ export function NotificationCenter() {
             </p>
           </div>
           <Button
-            className="h-7 shrink-0 rounded-lg px-2.5 text-xs font-medium"
+            className="h-7 shrink-0 px-2.5 text-xs font-medium"
             disabled={busy || count === 0}
             size="sm"
             type="button"
@@ -620,7 +620,7 @@ export function NotificationCenter() {
                               aria-label={t("common.inbox.markItemReadAria", {
                                 title: item.title,
                               })}
-                              className="size-7 rounded-lg bg-popover/95 text-muted-foreground shadow-sm ring-1 ring-border/60 hover:bg-background hover:text-foreground"
+                              className="size-7 bg-popover/95 text-muted-foreground shadow-sm ring-1 ring-border/60 hover:bg-background hover:text-foreground"
                               disabled={busy}
                               size="icon-sm"
                               type="button"

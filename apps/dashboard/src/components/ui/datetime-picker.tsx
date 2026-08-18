@@ -153,7 +153,7 @@ export function DateTimePicker({
         <Button
           aria-expanded={open}
           className={cn(
-            "group h-9 w-full justify-between gap-2 rounded-xl border-input bg-background px-3 font-normal shadow-none",
+            "group h-9 w-full justify-between gap-2 border-input bg-background px-3 font-normal shadow-none",
             "hover:bg-background hover:border-foreground/20",
             open && "border-ring ring-3 ring-ring/30",
             !selected && "text-muted-foreground",

@@ -71,7 +71,9 @@
     "changeTemplate": "Change template",
     "sectionHidden": "Hidden",
     "sectionVisibleTooltip": "Visible on storefront",
-    "sectionHiddenTooltip": "Hidden on storefront"
+    "sectionHiddenTooltip": "Hidden on storefront",
+    "collapseAll": "Collapse all",
+    "expandAll": "Expand all"
   },
   "theme": {
     "appearance": "Appearance",

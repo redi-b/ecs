@@ -139,7 +139,7 @@ function CommandInput({
     >
       <InputGroup
         className={cn(
-          "rounded-md! border-0 bg-transparent! shadow-none! dark:bg-transparent!",
+          "border-0 bg-transparent! shadow-none! dark:bg-transparent!",
           "*:data-[slot=input-group-addon]:pl-0.5!",
           isLg ? "h-9!" : "h-7!",
           "has-[[data-slot=input-group-control]:focus-visible]:border-0",

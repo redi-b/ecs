@@ -83,7 +83,7 @@ export function AccountSignUpForm({
       <form className="flex flex-col gap-5" onSubmit={(event) => void onSubmit(event)}>
         <Field>
           <FieldLabel htmlFor={`${fieldId}-ownerName`}>{t("auth.ownerName")}</FieldLabel>
-          <InputGroup className="h-11 rounded-xl bg-background px-1 transition-colors hover:border-ring/50 focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/25">
+          <InputGroup className="h-11 bg-background px-1 transition-colors hover:border-ring/50 focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/25">
             <InputGroupInput
               autoComplete="name"
               autoFocus
@@ -101,7 +101,7 @@ export function AccountSignUpForm({
         </Field>
         <Field>
           <FieldLabel htmlFor={`${fieldId}-email`}>{t("auth.workEmail")}</FieldLabel>
-          <InputGroup className="h-11 rounded-xl bg-background px-1 transition-colors hover:border-ring/50 focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/25">
+          <InputGroup className="h-11 bg-background px-1 transition-colors hover:border-ring/50 focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/25">
             <InputGroupInput
               autoComplete="email"
               className="px-3 text-sm"
@@ -118,7 +118,7 @@ export function AccountSignUpForm({
         </Field>
         <Field>
           <FieldLabel htmlFor={`${fieldId}-password`}>{t("auth.password")}</FieldLabel>
-          <InputGroup className="h-11 rounded-xl bg-background px-1 transition-colors hover:border-ring/50 focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/25">
+          <InputGroup className="h-11 bg-background px-1 transition-colors hover:border-ring/50 focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/25">
             <InputGroupInput
               autoComplete="new-password"
               className="px-3 text-sm"
@@ -151,7 +151,7 @@ export function AccountSignUpForm({
         ) : null}
         <Button
           aria-busy={isSubmitting}
-          className="mt-2 h-11 w-full rounded-xl text-sm font-semibold"
+          className="mt-2 h-11 w-full text-sm font-semibold"
           disabled={isSubmitting}
           type="submit"
         >

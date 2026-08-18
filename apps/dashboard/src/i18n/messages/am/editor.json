@@ -71,7 +71,9 @@
     "changeTemplate": "ንድፍ ቀይር",
     "sectionHidden": "ተደብቋል",
     "sectionVisibleTooltip": "በመደብር ላይ ይታያል",
-    "sectionHiddenTooltip": "በመደብር ላይ ተደብቋል"
+    "sectionHiddenTooltip": "በመደብር ላይ ተደብቋል",
+    "collapseAll": "ሁሉንም ዝጋ",
+    "expandAll": "ሁሉንም ክፈት"
   },
   "theme": {
     "appearance": "ገጽታ",

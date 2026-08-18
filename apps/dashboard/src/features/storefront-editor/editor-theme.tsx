@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  RiArrowDownSLine,
   RiInformationLine,
   RiMore2Line,
   RiRefreshLine,
@@ -11,6 +12,7 @@ import { HexColorPicker } from "react-colorful";
 
 import { SearchableCombobox } from "@/components/app/searchable-combobox";
 import { Button } from "@/components/ui/button";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import {
   DropdownMenu,
@@ -86,6 +88,8 @@ export function ThemeBrandSection({
   data,
   dispatch,
   editableColors,
+  onOpenChange,
+  open = true,
   props,
   templateKey,
 }: {
@@ -93,6 +97,8 @@ export function ThemeBrandSection({
   data: EditorData;
   dispatch: (action: EditorAction) => void;
   editableColors?: StorefrontEditorColorRole[] | undefined;
+  onOpenChange?: (open: boolean) => void;
+  open?: boolean;
   props: StorefrontPageProps;
   templateKey: string;
 }) {
@@ -150,6 +156,7 @@ export function ThemeBrandSection({
   }
 
   return (
+    <Collapsible {...(onOpenChange ? { onOpenChange } : {})} open={open}>
     <section className="min-w-0 overflow-hidden rounded-2xl border border-border/80 bg-card shadow-[0_1px_2px_color-mix(in_oklch,var(--foreground)_4%,transparent)]">
       <div className="flex items-center justify-between gap-2 border-b border-border/80 bg-muted/10 px-4 py-3">
         <div className="text-sm font-medium tracking-tight">{t("editor.theme.appearance")}</div>
@@ -191,9 +198,24 @@ export function ThemeBrandSection({
             body={t("editor.theme.appearanceHelp")}
             title={t("editor.theme.appearance")}
           />
+          <CollapsibleTrigger asChild>
+            <Button
+              aria-label={`${open ? "Collapse" : "Expand"} ${t("editor.theme.appearance")}`}
+              className="size-7 text-muted-foreground"
+              size="icon"
+              type="button"
+              variant="ghost"
+            >
+              <RiArrowDownSLine
+                aria-hidden
+                className={cn("size-4 transition-transform", open && "rotate-180")}
+              />
+            </Button>
+          </CollapsibleTrigger>
         </div>
       </div>
 
+      <CollapsibleContent>
       <div className="flex min-w-0 flex-col gap-5 p-4">
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
@@ -280,7 +302,9 @@ export function ThemeBrandSection({
           </div>
         </div>
       </div>
+      </CollapsibleContent>
     </section>
+    </Collapsible>
   );
 }
 
