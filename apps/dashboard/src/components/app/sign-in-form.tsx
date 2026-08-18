@@ -66,7 +66,12 @@ export function SignInForm({
   }
 
   return (
-    <form className="flex flex-col gap-5" onSubmit={(event) => void onSubmit(event)}>
+    <form
+      action="/admin/session"
+      className="flex flex-col gap-5"
+      method="post"
+      onSubmit={(event) => void onSubmit(event)}
+    >
       <input name="next" type="hidden" value={nextPath} />
       <FieldGroup className="gap-4">
         <Field>
