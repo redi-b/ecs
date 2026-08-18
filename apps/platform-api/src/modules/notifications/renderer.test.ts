@@ -13,8 +13,11 @@ describe("formatOrderRef", () => {
     assert.equal(formatOrderRef("#10"), "#10");
   });
 
-  it("turns medusa order ids into short shop codes", () => {
-    assert.equal(formatOrderRef("order_01KXE59NRXJY6H5P2T4F0H3FR2"), "0H3FR2");
+  it("turns medusa order ids into shared public references", () => {
+    assert.equal(
+      formatOrderRef("order_01KXE59NRXJY6H5P2T4F0H3FR2"),
+      "ORD-2T4F0H3FR2",
+    );
   });
 
   it("keeps short alphanumeric codes", () => {
@@ -58,7 +61,7 @@ describe("createCodeNotificationRenderer", () => {
       },
     });
 
-    assert.match(result.body, /new order 0H3FR2/i);
+    assert.match(result.body, /new order ORD-2T4F0H3FR2/i);
     assert.match(result.body, /ETB 10,880/);
     assert.match(result.body, /Customer: Abebe Kebede/);
     assert.match(result.body, /Phone: \+251911000000/);
@@ -108,8 +111,8 @@ describe("createCodeNotificationRenderer", () => {
         customerName: "Sara",
       },
     });
-    assert.equal(cancelled.subject, "Order CODE99 cancelled");
-    assert.match(cancelled.body, /Order CODE99 was cancelled/);
+    assert.equal(cancelled.subject, "Order ORD-NCELCODE99 cancelled");
+    assert.match(cancelled.body, /Order ORD-NCELCODE99 was cancelled/);
     assert.match(cancelled.body, /Customer: Sara/);
 
     const paid = await renderer.render({
@@ -126,7 +129,7 @@ describe("createCodeNotificationRenderer", () => {
         txRef: "ecs_pay_should_not_show",
       },
     });
-    assert.match(paid.body, /Payment received for order TPAID1/i);
+    assert.match(paid.body, /Payment received for order ORD-YMENTPAID1/i);
     assert.match(paid.body, /Amount: ETB 10,880/);
     assert.match(paid.body, /Marked paid in dashboard/);
     assert.doesNotMatch(paid.body, /ecs_pay/i);
@@ -168,8 +171,7 @@ describe("createCodeNotificationRenderer", () => {
         currencyCode: "etb",
       },
     });
-    // order_01ABCDEFGHJKLMN → last 6 = HJKLMN
-    assert.equal(result.subject, "Payment received for HJKLMN");
+    assert.equal(result.subject, "Payment received for ORD-DEFGHJKLMN");
   });
 
   it("renders actionable storefront inquiry notifications", async () => {

@@ -316,9 +316,9 @@ describe("order table state", () => {
   });
 
   it("formats display ids, totals, money, dates, and counts", () => {
-    // Shop-friendly short refs from Medusa order ids (not global display_id).
-    assert.equal(formatOrderDisplayId({ ...paidOrder, id: "order_01ABCXYZ1024" }), "YZ1024");
-    assert.equal(formatOrderDisplayId(completedOrder), "2");
+    // Shared tenant-safe refs from Medusa order ids (not global display_id).
+    assert.equal(formatOrderDisplayId({ ...paidOrder, id: "order_01ABCXYZ1024" }), "ORD-ABCXYZ1024");
+    assert.equal(formatOrderDisplayId(completedOrder), "ORD-2");
     assert.equal(getOrderTotalSortValue(paidOrder), 1250);
     assert.equal(getOrderTotalSortValue(completedOrder), null);
     assert.equal(formatOrderMoney(null, "etb"), "Not available");

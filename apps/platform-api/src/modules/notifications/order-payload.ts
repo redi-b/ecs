@@ -1,3 +1,5 @@
+import { formatPublicOrderReference } from "@ecs/contracts";
+
 import type { MerchantOrder } from "../../types/index.js";
 import { buildOrderItemLines, formatOrderLineItemLabel } from "../telegram/telegram-presentation.js";
 
@@ -31,7 +33,7 @@ export function buildMerchantOrderNotificationPayload(
   const deliveryName = order.delivery?.customerName?.trim();
   const payload: Record<string, unknown> = {
     orderId: order.id,
-    orderCode: formatOrderCode(order.id),
+    orderCode: formatPublicOrderReference(order.id, order.customDisplayId),
     ...extras,
   };
   if (order.total != null) {
@@ -87,9 +89,11 @@ export function buildOrderCreatedPayloadFromComplete(input: {
   paymentStatus?: string | null;
 }): Record<string, unknown> {
   const order = extractCompletedOrderRecord(input.completeBody);
+  const customDisplayId =
+    order && typeof order.custom_display_id === "string" ? order.custom_display_id : null;
   const payload: Record<string, unknown> = {
     orderId: input.orderId,
-    orderCode: formatOrderCode(input.orderId),
+    orderCode: formatPublicOrderReference(input.orderId, customDisplayId),
     paymentMethod: input.paymentMethod,
   };
   if (input.paymentStatus) payload.paymentStatus = input.paymentStatus;
@@ -187,10 +191,4 @@ export function buildOrderCancelledPayload(
     source,
     orderStatus: "canceled",
   });
-}
-
-/** Last 6 of Medusa order id — same convention as the merchant dashboard. */
-function formatOrderCode(orderId: string) {
-  const raw = orderId.replace(/^order_/i, "");
-  return (raw.slice(-6) || orderId.slice(-6)).toUpperCase();
 }

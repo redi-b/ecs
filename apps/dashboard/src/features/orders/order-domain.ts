@@ -1,4 +1,4 @@
-import type { MerchantOrder } from "@ecs/contracts";
+import { formatPublicOrderReference, type MerchantOrder } from "@ecs/contracts";
 import type { MessageKey } from "@/i18n/messages";
 
 type Translate = (key: MessageKey, values?: Record<string, string | number | Date>) => string;
@@ -55,11 +55,10 @@ export function getDisplayOrderEmail(email: string | null | undefined): string |
  * Shop-facing order code from Medusa id (last 6 chars after stripping `order_`).
  * Keep in sync with platform-api `formatMerchantOrderCode` / list search.
  */
-export function formatOrderReference(order: Pick<MerchantOrder, "id">) {
-  const id = order.id ?? "";
-  const raw = id.replace(/^order_/i, "");
-  const tail = (raw || id).slice(-6).toUpperCase();
-  return tail || id.slice(-6).toUpperCase();
+export function formatOrderReference(
+  order: Pick<MerchantOrder, "id" | "customDisplayId">,
+) {
+  return formatPublicOrderReference(order.id, order.customDisplayId);
 }
 
 export function getOrderProgress(order: MerchantOrder): OrderProgress {

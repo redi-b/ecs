@@ -45,6 +45,7 @@ import { cn } from "@/lib/utils";
 
 type OrderDetailProps = {
   action: string;
+  customerProfileAvailable?: boolean;
   order: MerchantOrder;
   tenantId?: string | undefined;
 };
@@ -106,7 +107,12 @@ function buildActivity(order: MerchantOrder, t: Translate) {
     .sort((a, b) => new Date(a.at!).getTime() - new Date(b.at!).getTime());
 }
 
-export async function OrderDetail({ action, order, tenantId }: OrderDetailProps) {
+export async function OrderDetail({
+  action,
+  customerProfileAvailable = false,
+  order,
+  tenantId,
+}: OrderDetailProps) {
   const t = await getTranslations();
   const customerName = getOrderCustomerName(order, t);
   const customerPhone = getOrderCustomerPhone(order);
@@ -423,14 +429,14 @@ export async function OrderDetail({ action, order, tenantId }: OrderDetailProps)
                 label={t("orders.detail.email")}
                 value={getDisplayOrderEmail(order.email)}
               />
-              {order.customerId ? (
+              {order.customerId && customerProfileAvailable ? (
                 <DetailField
                   label={t("orders.detail.inCustomers")}
                   value={
                     <Link
                       className={cn(listEntityLinkClassName, "inline-flex items-center gap-1")}
                       href={getTenantScopedPath(
-                        `${dashboardRoutes.customers}?highlight=${encodeURIComponent(order.customerId)}`,
+                        dashboardRoutes.customerDetail(order.customerId),
                         tenantId,
                       )}
                     >
@@ -440,6 +446,11 @@ export async function OrderDetail({ action, order, tenantId }: OrderDetailProps)
                       </span>
                     </Link>
                   }
+                />
+              ) : order.customerId ? (
+                <DetailField
+                  label={t("orders.detail.inCustomers")}
+                  value={t("orders.detail.customerProfileUnavailable")}
                 />
               ) : null}
             </DetailFieldGrid>

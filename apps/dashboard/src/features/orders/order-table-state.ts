@@ -1,4 +1,4 @@
-import type { MerchantOrder } from "@ecs/contracts";
+import { formatPublicOrderReference, type MerchantOrder } from "@ecs/contracts";
 
 export type OrderLifecycleFilter =
   | "all"
@@ -212,11 +212,10 @@ export function getOrderTableCounts(input: {
  * Avoid global display_id — it increments across the whole shared commerce DB.
  * Same algorithm as order-domain.formatOrderReference (list UI + search).
  */
-export function formatOrderReference(order: Pick<MerchantOrder, "id">) {
-  const id = order.id ?? "";
-  const raw = id.replace(/^order_/i, "");
-  const tail = (raw || id).slice(-6).toUpperCase();
-  return tail || id.slice(-6).toUpperCase();
+export function formatOrderReference(
+  order: Pick<MerchantOrder, "id" | "customDisplayId">,
+) {
+  return formatPublicOrderReference(order.id, order.customDisplayId);
 }
 
 export function formatOrderDisplayId(order: MerchantOrder) {

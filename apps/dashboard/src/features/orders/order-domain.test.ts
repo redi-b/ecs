@@ -29,7 +29,11 @@ function order(partial: Partial<MerchantOrder>): MerchantOrder {
 
 describe("order-domain", () => {
   it("formats short order references", () => {
-    assert.equal(formatOrderReference(order({ id: "order_01ABCDEF" })), "ABCDEF");
+    assert.equal(formatOrderReference(order({ id: "order_01ABCDEF" })), "ORD-01ABCDEF");
+    assert.equal(
+      formatOrderReference(order({ customDisplayId: "BOLE-1042" })),
+      "BOLE-1042",
+    );
   });
 
   it("maps progress and next actions", () => {

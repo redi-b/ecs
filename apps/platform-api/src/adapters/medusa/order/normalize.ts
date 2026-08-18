@@ -38,6 +38,7 @@ export function normalizeOrder(value: unknown, salesChannelId: string): Merchant
     getString(metadata.customer_notes) ??
     null;
   const customerId = getString(value.customer_id) ?? null;
+  const customDisplayId = getString(value.custom_display_id);
   const itemCount =
     items.length > 0
       ? items.reduce((sum, item) => sum + (item.quantity ?? 0), 0)
@@ -53,6 +54,7 @@ export function normalizeOrder(value: unknown, salesChannelId: string): Merchant
     {
       id,
       displayId: getNumber(value.display_id) ?? null,
+      ...(customDisplayId ? { customDisplayId } : {}),
       email: getString(value.email),
       customerId,
       status: getString(value.status),

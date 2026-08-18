@@ -18,7 +18,7 @@ describe("medusaToPlatformNotificationEvent", () => {
 describe("buildOrderNotificationPayload", () => {
   it("keeps a small safe payload", () => {
     const payload = buildOrderNotificationPayload({
-      id: "ord_1",
+      id: "order_1",
       display_id: 42,
       total: 120000,
       currency_code: "etb",
@@ -26,8 +26,8 @@ describe("buildOrderNotificationPayload", () => {
       email: "buyer@example.com",
     });
 
-    assert.equal(payload.orderId, "ord_1");
-    assert.equal(payload.orderCode, "ORD_1");
+    assert.equal(payload.orderId, "order_1");
+    assert.equal(payload.orderCode, "ORD-1");
     assert.equal(payload.orderDisplayId, undefined);
     assert.equal(payload.medusaSalesChannelId, "sc_1");
     assert.equal(payload.amount, "120000");

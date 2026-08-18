@@ -21,6 +21,7 @@ import {
   getTenantScopedPath,
 } from "@/lib/dashboard-tenant-context";
 import { getListErrorState } from "@/lib/list-error-state";
+import { getMerchantCustomer } from "@/lib/merchant-customers";
 import { getMerchantOrder } from "@/lib/merchant-orders";
 import { dashboardRoutes } from "@/lib/routes";
 
@@ -49,6 +50,20 @@ export default async function MerchantOrderDetailPage({
   const setupError =
     errorState?.kind === "setup" || errorState?.kind === "service" ? errorState : null;
   const breadcrumbLabel = result.ok ? formatOrderReference(result.order) : null;
+  const customerProfileAvailable =
+    result.ok && result.order.customerId
+      ? (
+          await getMerchantCustomer(
+            {
+              cookieHeader: cookieStore.toString(),
+              platformApiBaseUrl:
+                process.env.PLATFORM_API_BASE_URL ?? "http://localhost:3000",
+              requestHost: requestHeaders.get("host"),
+            },
+            result.order.customerId,
+          )
+        ).ok
+      : false;
 
   return (
     <PageShell
@@ -66,6 +81,7 @@ export default async function MerchantOrderDetailPage({
       ) : result.ok ? (
         <OrderDetail
           action={getTenantScopedPath(dashboardRoutes.orderAction(result.order.id), tenantId)}
+          customerProfileAvailable={customerProfileAvailable}
           order={result.order}
           tenantId={tenantId}
         />

@@ -1,3 +1,5 @@
+import { formatPublicOrderReference } from "@ecs/contracts";
+
 import type { NotificationChannelId } from "./providers/types.js";
 
 export type RenderNotificationInput = {
@@ -54,10 +56,9 @@ export function formatOrderRef(raw: string | undefined): string {
   const value = raw.trim();
   if (value === "unknown") return "order";
 
-  // Medusa resource id → short shop code (matches dashboard formatOrderReference).
+  // Medusa resource id → shared tenant-safe public reference.
   if (/^order_[a-zA-Z0-9]+$/i.test(value)) {
-    const tail = value.replace(/^order_/i, "").slice(-6).toUpperCase();
-    return tail || "order";
+    return formatPublicOrderReference(value);
   }
 
   // Explicit short codes (already formatted).
@@ -306,9 +307,9 @@ function pickItemLines(data: Record<string, unknown>): string[] | undefined {
 }
 
 function buildContext(data: Record<string, unknown>): Context {
-  // Prefer Medusa order id → shop code. Fall back to orderCode, then legacy display id.
+  // Prefer the normalized public reference emitted by producers, then derive from order id.
   const orderRef = formatOrderRef(
-    pickScalar(data, "orderId", "order_id", "orderCode", "orderDisplayId", "displayId"),
+    pickScalar(data, "publicOrderReference", "orderCode", "orderId", "order_id", "orderDisplayId", "displayId"),
   );
   const amount = formatMoneyAmount(
     pickScalar(data, "amount", "total", "totalAmount"),
