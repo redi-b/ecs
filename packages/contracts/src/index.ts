@@ -419,6 +419,21 @@ export const merchantOrderSettlementSchema = z.object({
 
 export type MerchantOrderSettlement = z.infer<typeof merchantOrderSettlementSchema>;
 
+/** Tenant-safe public reference; never expose Medusa's shared global display_id. */
+export function formatPublicOrderReference(
+  orderId: string,
+  customDisplayId?: string | null,
+): string {
+  const custom = customDisplayId?.trim();
+  if (custom) return custom;
+  const suffix = orderId
+    .replace(/^order_/i, "")
+    .replace(/[^a-z0-9]/gi, "")
+    .slice(-10)
+    .toUpperCase();
+  return suffix ? `ORD-${suffix}` : "Order";
+}
+
 export const merchantReceivingAccountSchema = z.object({
   id: z.string().min(1),
   bankCode: z.string().min(1).nullable(),
@@ -437,6 +452,7 @@ export type MerchantReceivingAccount = z.infer<typeof merchantReceivingAccountSc
 export const merchantOrderSchema = z.object({
   id: z.string().min(1),
   displayId: z.number().int().nullable(),
+  customDisplayId: z.string().min(1).nullable().optional(),
   email: z.string().min(1).nullable(),
   customerId: z.string().min(1).nullable().optional(),
   status: z.string().min(1).nullable(),

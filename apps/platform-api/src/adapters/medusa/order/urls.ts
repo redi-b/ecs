@@ -4,6 +4,7 @@ import { resolveCreatedRange } from "./list-query.js";
 const LIST_FIELDS = [
   "id",
   "display_id",
+  "custom_display_id",
   "email",
   "customer_id",
   "status",
@@ -29,6 +30,7 @@ const LIST_FIELDS = [
 const DETAIL_FIELDS = [
   "id",
   "display_id",
+  "custom_display_id",
   "email",
   "customer_id",
   "status",

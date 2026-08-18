@@ -107,6 +107,7 @@ export const medusaToPlatformNotificationEvent: Record<string, string> = {
 export type OrderNotificationFields = {
   id: string;
   display_id?: number | string | null;
+  custom_display_id?: string | null;
   currency_code?: string | null;
   total?: number | string | null;
   email?: string | null;
@@ -135,8 +136,7 @@ function pickMetaString(metadata: Record<string, unknown> | null | undefined, ..
 export function buildOrderNotificationPayload(order: OrderNotificationFields) {
   const payload: Record<string, unknown> = {
     orderId: order.id,
-    // Shop-facing short code (dashboard/notifications use last 6 of Medusa id).
-    orderCode: formatOrderCode(order.id),
+    orderCode: formatPublicOrderReference(order.id, order.custom_display_id),
     source: "medusa",
   };
   if (order.currency_code) {
@@ -206,7 +206,4 @@ export function buildOrderNotificationPayload(order: OrderNotificationFields) {
   return payload;
 }
 
-function formatOrderCode(orderId: string) {
-  const raw = orderId.replace(/^order_/i, "");
-  return (raw.slice(-6) || orderId.slice(-6)).toUpperCase();
-}
+import { formatPublicOrderReference } from "@ecs/contracts";

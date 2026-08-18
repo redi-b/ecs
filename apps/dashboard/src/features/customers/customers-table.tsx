@@ -49,14 +49,11 @@ async function copyToClipboard(value: string, label: string, t: Translate) {
 export function CustomersTable({
   customers,
   footer,
-  highlightCustomerId,
   initialQuery = "",
   totalCount,
 }: {
   customers: MerchantCustomer[];
   footer?: ReactNode;
-  /** When set (e.g. from order detail), flash that row and open edit if present. */
-  highlightCustomerId?: string | undefined;
   initialQuery?: string | undefined;
   totalCount: number;
 }) {
@@ -65,26 +62,10 @@ export function CustomersTable({
   const [pending, startTransition] = useTransition();
   const [searchValue, setSearchValue] = useState(initialQuery);
   const [editing, setEditing] = useState<MerchantCustomer | null>(null);
-  const [highlightedId, setHighlightedId] = useState<string | null>(null);
 
   useEffect(() => {
     setSearchValue(initialQuery);
   }, [initialQuery]);
-
-  useEffect(() => {
-    if (!highlightCustomerId) return;
-    setHighlightedId(highlightCustomerId);
-    const timeout = window.setTimeout(() => setHighlightedId(null), 3500);
-    // Drop highlight query from the URL without a navigation stack entry.
-    if (typeof window !== "undefined") {
-      const url = new URL(window.location.href);
-      if (url.searchParams.has("highlight")) {
-        url.searchParams.delete("highlight");
-        window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}`);
-      }
-    }
-    return () => window.clearTimeout(timeout);
-  }, [customers, highlightCustomerId]);
 
   const pushQuery = useCallback(
     (q: string) => {
@@ -130,16 +111,8 @@ export function CustomersTable({
         accessorFn: (customer) => customerDisplayName(customer),
         header: ({ column }) => <DataTableHeader column={column} title={t("table.headers.customer")} />,
         cell: ({ row }) => {
-          const isHighlighted = highlightedId === row.original.id;
           return (
-            <div
-              className={cn(
-                "min-w-0 rounded-md px-1.5 py-1 transition-colors",
-                isHighlighted && "bg-primary/10 ring-2 ring-primary/40",
-              )}
-              data-highlighted={isHighlighted ? "true" : undefined}
-              id={isHighlighted ? `customer-row-${row.original.id}` : undefined}
-            >
+            <div className="min-w-0 px-1.5 py-1">
               <Link
                 className={cn(listEntityLinkClassName, "truncate")}
                 href={dashboardRoutes.customerDetail(row.original.id)}

@@ -1,3 +1,5 @@
+import { formatPublicOrderReference } from "@ecs/contracts";
+
 import type {
   MerchantOrder,
   MerchantOrderCreatedPreset,
@@ -180,18 +182,16 @@ export function orderMatchesDelivery(order: MerchantOrder, delivery: MerchantOrd
   return choice.includes("deliver") || choice === "shipping" || choice === "local_delivery";
 }
 
-/** Shop-facing short code shown in the dashboard (last 6 of Medusa id, sans order_ prefix). */
-export function formatMerchantOrderCode(orderId: string) {
-  const raw = orderId.replace(/^order_/i, "");
-  const tail = (raw || orderId).slice(-6);
-  return tail.toUpperCase();
+/** @deprecated Compatibility alias for the shared public-reference contract. */
+export function formatMerchantOrderCode(orderId: string, customDisplayId?: string | null) {
+  return formatPublicOrderReference(orderId, customDisplayId);
 }
 
 export function orderMatchesQuery(order: MerchantOrder, q: string) {
   const needle = normalizeKey(q);
   if (!needle) return true;
 
-  const code = formatMerchantOrderCode(order.id);
+  const code = formatMerchantOrderCode(order.id, order.customDisplayId);
   const haystack = [
     order.id,
     order.id.replace(/^order_/i, ""),

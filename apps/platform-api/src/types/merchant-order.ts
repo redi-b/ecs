@@ -63,6 +63,7 @@ export type MerchantOrderListQuery = {
 export type MerchantOrder = {
   id: string;
   displayId: number | null;
+  customDisplayId?: string | null;
   email: string | null;
   customerId?: string | null;
   status: string | null;

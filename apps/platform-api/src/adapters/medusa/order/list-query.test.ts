@@ -24,15 +24,15 @@ const sample: MerchantOrder = {
 };
 
 describe("formatMerchantOrderCode", () => {
-  it("uses last 6 of the id without the order_ prefix", () => {
-    assert.equal(formatMerchantOrderCode(sample.id), "23XYZ9");
+  it("uses the shared tenant-safe public reference", () => {
+    assert.equal(formatMerchantOrderCode(sample.id), "ORD-DEF123XYZ9");
   });
 });
 
 describe("orderMatchesQuery", () => {
   it("matches shop order codes case-insensitively", () => {
-    assert.equal(orderMatchesQuery(sample, "23XYZ9"), true);
-    assert.equal(orderMatchesQuery(sample, "23xyz9"), true);
+    assert.equal(orderMatchesQuery(sample, "ORD-DEF123XYZ9"), true);
+    assert.equal(orderMatchesQuery(sample, "ord-def123xyz9"), true);
     assert.equal(orderMatchesQuery(sample, "xyz9"), true);
   });
 

@@ -9,6 +9,7 @@ type QueryGraph = {
 export type LoadedOrderForNotification = {
   id: string;
   display_id?: number | string | null;
+  custom_display_id?: string | null;
   currency_code?: string | null;
   total?: number | string | null;
   email?: string | null;
@@ -41,6 +42,7 @@ export async function loadOrderForNotification(
     fields: [
       "id",
       "display_id",
+      "custom_display_id",
       "currency_code",
       "total",
       "email",
@@ -93,6 +95,8 @@ export async function loadOrderForNotification(
       typeof raw.display_id === "number" || typeof raw.display_id === "string"
         ? raw.display_id
         : null,
+    custom_display_id:
+      typeof raw.custom_display_id === "string" ? raw.custom_display_id : null,
     currency_code: typeof raw.currency_code === "string" ? raw.currency_code : null,
     total:
       typeof raw.total === "number" || typeof raw.total === "string" ? raw.total : null,

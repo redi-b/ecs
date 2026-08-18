@@ -154,6 +154,9 @@ importers:
 
   apps/medusa:
     dependencies:
+      '@ecs/contracts':
+        specifier: workspace:*
+        version: link:../../packages/contracts
       '@medusajs/admin-sdk':
         specifier: 2.16.0
         version: 2.16.0
