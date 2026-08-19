@@ -74,7 +74,10 @@ describe("platform app merchant dashboard and orders", () => {
       },
       storefront: {
         isPublished: true,
+        hasUnpublishedChanges: false,
         publishedRevisionId: "revision_1",
+        publishedTemplateKey: "luvia@1",
+        savedTemplateKeys: [],
         templateId: "template_1",
         templateKey: "luvia@1",
         templateVersion: 1,
@@ -126,6 +129,8 @@ describe("platform app merchant dashboard and orders", () => {
         unavailable: true,
       },
       billing: {
+        availablePaidPlans: [],
+        catalog: [],
         subscription: null,
         plan: null,
         invoices: [],
@@ -666,6 +671,10 @@ describe("platform app merchant dashboard and orders", () => {
 
     assert.equal(response.status, 200);
     assert.deepEqual(await response.json(), {
+      channels: {
+        email: { available: true },
+        telegram: { available: true },
+      },
       preferences: [
         {
           id: "np_1",
@@ -1182,6 +1191,7 @@ describe("platform app merchant dashboard and orders", () => {
       action: "fulfill",
       orderId: "order_1",
       salesChannelId: "channel_1",
+      shippingOptionId: "so_1",
       stockLocationId: "sloc_1",
     });
     assert.deepEqual(await response.json(), {
@@ -1689,6 +1699,7 @@ describe("platform app merchant dashboard and orders", () => {
       action: "fulfill",
       orderId: "order_1",
       salesChannelId: "channel_1",
+      shippingOptionId: undefined,
       stockLocationId: "sloc_1",
     });
     assert.deepEqual(await response.json(), {
