@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+export { formatPublicOrderReference } from "./order-reference.cjs";
+
 export const tenantStatusSchema = z.enum(["draft", "active", "suspended", "cancelled"]);
 
 export type TenantStatus = z.infer<typeof tenantStatusSchema>;
@@ -418,21 +420,6 @@ export const merchantOrderSettlementSchema = z.object({
 });
 
 export type MerchantOrderSettlement = z.infer<typeof merchantOrderSettlementSchema>;
-
-/** Tenant-safe public reference; never expose Medusa's shared global display_id. */
-export function formatPublicOrderReference(
-  orderId: string,
-  customDisplayId?: string | null,
-): string {
-  const custom = customDisplayId?.trim();
-  if (custom) return custom;
-  const suffix = orderId
-    .replace(/^order_/i, "")
-    .replace(/[^a-z0-9]/gi, "")
-    .slice(-10)
-    .toUpperCase();
-  return suffix ? `ORD-${suffix}` : "Order";
-}
 
 export const merchantReceivingAccountSchema = z.object({
   id: z.string().min(1),

@@ -1,3 +1,5 @@
+import { formatPublicOrderReference } from "@ecs/contracts/order-reference";
+
 export type PlatformNotificationEmitInput = {
   eventType: string;
   medusaSalesChannelId: string;
@@ -205,5 +207,3 @@ export function buildOrderNotificationPayload(order: OrderNotificationFields) {
 
   return payload;
 }
-
-import { formatPublicOrderReference } from "@ecs/contracts";
