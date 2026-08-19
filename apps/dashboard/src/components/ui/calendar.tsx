@@ -13,6 +13,7 @@ import {
   isSameDay,
   isSameMonth,
   isToday,
+  startOfDay,
   startOfMonth,
   startOfWeek,
   subMonths,
@@ -27,15 +28,23 @@ export function Calendar({
   onMonthChange,
   onSelect,
   selected,
+  selectedRange,
+  minDate,
+  maxDate,
 }: {
   className?: string;
   month: Date;
   onMonthChange: (month: Date) => void;
   onSelect: (date: Date) => void;
   selected?: Date | null | undefined;
+  selectedRange?: { start: Date; end?: Date | null | undefined } | null | undefined;
+  minDate?: Date | null | undefined;
+  maxDate?: Date | null | undefined;
 }) {
   const [view, setView] = useState<"days" | "years">("days");
   const monthStart = startOfMonth(month);
+  const atMinimumMonth = minDate ? monthStart <= startOfMonth(minDate) : false;
+  const atMaximumMonth = maxDate ? monthStart >= startOfMonth(maxDate) : false;
   const days = eachDayOfInterval({
     end: endOfWeek(endOfMonth(monthStart)),
     start: startOfWeek(monthStart),
@@ -53,6 +62,7 @@ export function Calendar({
         <Button
           aria-label={view === "days" ? "Previous month" : "Previous years"}
           className="rounded-full"
+          disabled={view === "days" && atMinimumMonth}
           onClick={() =>
             onMonthChange(
               view === "days"
@@ -81,6 +91,7 @@ export function Calendar({
         <Button
           aria-label={view === "days" ? "Next month" : "Next years"}
           className="rounded-full"
+          disabled={view === "days" && atMaximumMonth}
           onClick={() =>
             onMonthChange(
               view === "days"
@@ -140,6 +151,17 @@ export function Calendar({
             {days.map((day) => {
               const inMonth = isSameMonth(day, month);
               const selectedDay = selected ? isSameDay(day, selected) : false;
+              const rangeStart = selectedRange ? isSameDay(day, selectedRange.start) : false;
+              const rangeEnd = selectedRange?.end ? isSameDay(day, selectedRange.end) : false;
+              const inRange = Boolean(
+                selectedRange?.end &&
+                  startOfDay(day) >= startOfDay(selectedRange.start) &&
+                  startOfDay(day) <= startOfDay(selectedRange.end),
+              );
+              const disabled = Boolean(
+                (minDate && startOfDay(day) < startOfDay(minDate)) ||
+                  (maxDate && startOfDay(day) > startOfDay(maxDate)),
+              );
               const today = isToday(day);
               return (
                 <button
@@ -150,12 +172,15 @@ export function Calendar({
                     "grid place-items-center",
                     "hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 focus-visible:ring-ring/50",
                     !inMonth && "text-muted-foreground/40",
+                    inRange && "bg-primary/10 text-foreground hover:bg-primary/15",
                     today &&
-                      !selectedDay &&
+                      !selectedDay && !rangeStart && !rangeEnd &&
                       "font-semibold text-primary ring-1 ring-primary/35 ring-inset",
-                    selectedDay &&
+                    (selectedDay || rangeStart || rangeEnd) &&
                       "bg-primary font-semibold text-primary-foreground shadow-sm hover:bg-primary/90 hover:text-primary-foreground",
+                    disabled && "pointer-events-none opacity-30",
                   )}
+                  disabled={disabled}
                   key={day.toISOString()}
                   onClick={() => onSelect(day)}
                   type="button"

@@ -21,6 +21,10 @@ import { type DashboardSearchParams, getSelectedTenantId } from "@/lib/dashboard
 import { getMerchantDashboardAccessShell } from "@/lib/merchant-dashboard";
 import { mapPlatformErrorMessage } from "@/lib/platform-api/errors";
 import {
+  buildStorefrontPreviewUrl,
+  resolvePublicStorefrontProtocol,
+} from "@/lib/storefront-preview-url";
+import {
   getStorefrontDraft,
   createStorefrontPreviewSession,
   publishStorefrontDraft,
@@ -43,6 +47,12 @@ export default async function StorefrontEditorPage({ searchParams }: StorefrontE
   const selectedTenantId = getSelectedTenantId(resolvedSearchParams);
   const t = await getTranslations();
   const requestHeaders = await headers();
+  const storefrontProtocol = resolvePublicStorefrontProtocol({
+    configuredProtocol: process.env.STOREFRONT_PUBLIC_PROTOCOL,
+    forwardedProtocol: requestHeaders.get("x-forwarded-proto"),
+    hostname: requestHeaders.get("host")?.split(":", 1)[0] ?? "localhost",
+    nodeEnv: process.env.NODE_ENV,
+  });
   const platformApiBaseUrl = process.env.PLATFORM_API_BASE_URL ?? "http://localhost:3000";
   // Editor only needs tenant name, domain, publish flag — not ops/metrics/billing.
   const access = await getMerchantDashboardAccessShell({
@@ -107,10 +117,17 @@ export default async function StorefrontEditorPage({ searchParams }: StorefrontE
           draft={draft.draft}
           editorMeta={{
             initiallyPublished: access.access.storefront.isPublished,
-            liveStorefrontUrl: getLiveStorefrontUrl(access.access.domain.hostname),
+            liveStorefrontUrl: getLiveStorefrontUrl(
+              access.access.domain.hostname,
+              storefrontProtocol,
+            ),
             previewUrl:
               previewSession?.ok
-                ? getPreviewUrl(access.access.domain.hostname, previewSession.token)
+                ? buildStorefrontPreviewUrl({
+                    hostname: access.access.domain.hostname,
+                    protocol: storefrontProtocol,
+                    token: previewSession.token,
+                  })
                 : undefined,
             settingsUrl: "/admin/settings?tab=storefront",
             storefrontName: access.access.tenant.name,
@@ -130,14 +147,8 @@ function getTemplateDisplayName(templateKey: string) {
   return getStorefrontTemplateDefinition(templateKey)?.name ?? templateKey;
 }
 
-function getLiveStorefrontUrl(hostname: string) {
-  return `http://${hostname}`;
-}
-
-function getPreviewUrl(hostname: string, token: string) {
-  const url = new URL("/preview", getLiveStorefrontUrl(hostname));
-  url.searchParams.set("token", token);
-  return url.toString();
+function getLiveStorefrontUrl(hostname: string, protocol: "http" | "https") {
+  return `${protocol}://${hostname}`;
 }
 
 async function saveDraftAction(payload: StorefrontDraftPayload) {

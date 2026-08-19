@@ -1,7 +1,7 @@
 "use client";
 
 import { contrastingInk, getStorefrontEditorManifest } from "@ecs/storefront-templates";
-import { RiEditLine } from "@remixicon/react";
+import { RiEditLine, RiExternalLinkLine, RiRefreshLine } from "@remixicon/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ import {
   useStorefrontEditor,
 } from "@/features/storefront-editor/editor-config";
 import { cn } from "@/lib/utils";
+import { isMixedContentPreviewUrl } from "@/lib/storefront-preview-url";
 
 import { EditorImageSourceActions } from "./editor-settings";
 import { isPreviewImageUrl, updateEditorLinkValue, type StorefrontPageProps } from "./editor-state";
@@ -85,7 +86,10 @@ function StorefrontIframePreview({
 }) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const connectedOriginRef = useRef<string | null>(null);
-  const [isLoaded, setIsLoaded] = useState(false);
+  const [previewState, setPreviewState] = useState<"loading" | "ready" | "failed">("loading");
+  const [iframeDocumentLoaded, setIframeDocumentLoaded] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+  const isLoaded = previewState === "ready";
   const data = useStorefrontEditor((api) => api.appState.data);
   const dispatch = useStorefrontEditor((api) => api.dispatch);
   const manifest = useMemo(() => getStorefrontEditorManifest(templateKey), [templateKey]);
@@ -122,7 +126,9 @@ function StorefrontIframePreview({
 
   useEffect(() => {
     connectedOriginRef.current = null;
-    setIsLoaded(false);
+    setPreviewState("loading");
+    setIframeDocumentLoaded(false);
+    setAttempt(0);
   }, [previewUrl]);
 
   useEffect(() => {
@@ -134,11 +140,26 @@ function StorefrontIframePreview({
   }, [postConnected, selectedPath, showEditHints]);
 
   useEffect(() => {
-    if (isLoaded) return;
+    if (previewState !== "loading") return;
     connect();
     const timer = window.setInterval(connect, 700);
     return () => window.clearInterval(timer);
-  }, [connect, isLoaded]);
+  }, [attempt, connect, previewState]);
+
+  useEffect(() => {
+    if (previewState !== "loading") return;
+    if (isMixedContentPreviewUrl(previewUrl, window.location.protocol)) {
+      setPreviewState("failed");
+      return;
+    }
+    // A slow connection or cold deployment gets a generous document-loading
+    // window. Once HTML has arrived, the renderer should complete its editor
+    // handshake much sooner; an Astro/runtime error otherwise cannot leave the
+    // loading surface active forever.
+    const timeout = iframeDocumentLoaded ? 15_000 : 45_000;
+    const timer = window.setTimeout(() => setPreviewState("failed"), timeout);
+    return () => window.clearTimeout(timer);
+  }, [attempt, iframeDocumentLoaded, previewState, previewUrl]);
 
   useEffect(() => {
     function onMessage(event: MessageEvent) {
@@ -148,7 +169,7 @@ function StorefrontIframePreview({
         connectedOriginRef.current = event.origin;
         postConnected({ type: "ecs:editor:update", fields, theme: resolvedTheme });
         postConnected({ type: "ecs:editor:ui", selectedPath, showEditHints });
-        setIsLoaded(true);
+        setPreviewState("ready");
         return;
       }
       if (!connectedOriginRef.current || event.origin !== connectedOriginRef.current) return;
@@ -189,9 +210,12 @@ function StorefrontIframePreview({
         className={cn("block h-full min-h-0 w-full border-0 bg-background transition-opacity duration-500", !isFullscreen && "max-lg:min-h-[42rem]", isLoaded ? "opacity-100" : "opacity-0")}
         onLoad={() => {
           connectedOriginRef.current = null;
-          setIsLoaded(false);
+          setIframeDocumentLoaded(true);
+          setPreviewState("loading");
           connect();
         }}
+        onError={() => setPreviewState("failed")}
+        key={attempt}
         ref={iframeRef}
         referrerPolicy="no-referrer"
         sandbox="allow-scripts allow-same-origin"
@@ -214,7 +238,41 @@ function StorefrontIframePreview({
           />
         </div>
       ) : null}
-      <div aria-live="polite" aria-label="Preparing storefront preview" className={cn("storefront-preview-loader absolute inset-0 grid place-items-center overflow-hidden bg-background transition-opacity duration-300", isLoaded ? "pointer-events-none opacity-0" : "opacity-100")} role="status">
+      <div aria-live="polite" aria-label={previewState === "failed" ? "Storefront preview failed to load" : "Preparing storefront preview"} className={cn("storefront-preview-loader absolute inset-0 grid place-items-center overflow-hidden bg-background transition-opacity duration-300", isLoaded ? "pointer-events-none opacity-0" : "opacity-100")} role={previewState === "failed" ? "alert" : "status"}>
+        {previewState === "failed" ? (
+          <div className="mx-auto flex max-w-md flex-col items-center px-6 text-center">
+            <div className="grid size-12 place-items-center rounded-full border border-border bg-card text-foreground shadow-sm">
+              <RiRefreshLine className="size-5" aria-hidden />
+            </div>
+            <strong className="mt-4 text-base font-semibold">The storefront preview did not respond</strong>
+            <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
+              The storefront may be restarting or unable to render this draft. Retry here, or open
+              the preview separately to inspect the storefront error.
+            </p>
+            <div className="mt-5 flex flex-wrap justify-center gap-2">
+              <Button
+                onClick={() => {
+                  connectedOriginRef.current = null;
+                  setIframeDocumentLoaded(false);
+                  setPreviewState("loading");
+                  setAttempt((value) => value + 1);
+                }}
+                size="sm"
+                type="button"
+              >
+                <RiRefreshLine aria-hidden />
+                Retry preview
+              </Button>
+              <Button asChild size="sm" variant="outline">
+                <a href={previewUrl} rel="noreferrer" target="_blank">
+                  <RiExternalLinkLine aria-hidden />
+                  Open separately
+                </a>
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <>
         <div className="storefront-preview-loader__halo" />
         <div className="storefront-preview-loader__content">
           <div className="storefront-preview-loader__scene" aria-hidden>
@@ -235,6 +293,8 @@ function StorefrontIframePreview({
             <p>Bringing your latest changes into view</p>
           </div>
         </div>
+          </>
+        )}
       </div>
     </div>
   );
