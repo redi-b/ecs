@@ -12,6 +12,7 @@ import { AppIcons } from "@/components/app/icons";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ConfirmDialog } from "@/components/app/confirm-dialog";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   getSelectedTemplateName,
@@ -175,11 +176,19 @@ export function StorefrontSection({
                   ? t("settings.storefront.liveTitle")
                   : t("settings.storefront.pausedTitle")}
               </span>
+              {publicationState.mode === "live-current" ? (
+                <Badge variant="outline">{t("settings.storefront.upToDate")}</Badge>
+              ) : null}
+              {publicationState.mode === "live-with-draft" ? (
+                <Badge variant="secondary">{t("settings.storefront.unpublishedChanges")}</Badge>
+              ) : null}
             </div>
             <p className="max-w-xl text-sm text-muted-foreground">
               {isPublished
                 ? hasPendingTemplateChange
-                  ? t("settings.storefront.liveDescriptionWithDraft")
+                  ? publicationState.draftUsesDifferentTemplate
+                    ? t("settings.storefront.liveDescriptionWithDraft")
+                    : t("settings.storefront.liveDescriptionWithChanges")
                   : t("settings.storefront.liveDescription")
                 : t("settings.storefront.pausedDescription")}
             </p>
@@ -209,7 +218,7 @@ export function StorefrontSection({
           </div>
 
           <div className="flex shrink-0 flex-col gap-2 sm:min-w-[11.5rem]">
-            {hasPendingTemplateChange ? (
+            {publicationState.canPublish ? (
               <Button
                 className="w-full rounded-full"
                 disabled={busy}
@@ -219,10 +228,14 @@ export function StorefrontSection({
               >
                 {publishing
                   ? t("settings.storefront.publishShopPending")
-                  : t("settings.storefront.publishSelectedDesign", { name: designName })}
+                  : !isPublished
+                    ? t("settings.storefront.publishShop")
+                    : publicationState.draftUsesDifferentTemplate
+                      ? t("settings.storefront.publishSelectedDesign", { name: designName })
+                      : t("settings.storefront.publishChanges")}
               </Button>
             ) : null}
-            {isPublished && !hasPendingTemplateChange ? (
+            {publicationState.canPause ? (
               <ConfirmDialog
                 cancelDisabled={pausing}
                 confirmDisabled={pausing || busy}
@@ -246,18 +259,6 @@ export function StorefrontSection({
                   </Button>
                 }
               />
-            ) : !hasPendingTemplateChange ? (
-              <Button
-                className="w-full rounded-full"
-                disabled={busy}
-                onClick={() => void publishShop()}
-                size="sm"
-                type="button"
-              >
-                {publishing
-                  ? t("settings.storefront.publishShopPending")
-                  : t("settings.storefront.publishShop")}
-              </Button>
             ) : null}
             <Button asChild className="w-full rounded-full" size="sm" variant="outline">
               <a href={dashboardRoutes.editor}>{t("settings.storefront.editStorefront")}</a>
