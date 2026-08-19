@@ -1,5 +1,3 @@
-import { formatPublicOrderReference } from "@ecs/contracts/order-reference";
-
 export type PlatformNotificationEmitInput = {
   eventType: string;
   medusaSalesChannelId: string;
@@ -138,9 +136,11 @@ function pickMetaString(metadata: Record<string, unknown> | null | undefined, ..
 export function buildOrderNotificationPayload(order: OrderNotificationFields) {
   const payload: Record<string, unknown> = {
     orderId: order.id,
-    orderCode: formatPublicOrderReference(order.id, order.custom_display_id),
     source: "medusa",
   };
+  if (order.custom_display_id?.trim()) {
+    payload.publicOrderReference = order.custom_display_id.trim();
+  }
   if (order.currency_code) {
     payload.currencyCode = String(order.currency_code).toUpperCase();
   }
