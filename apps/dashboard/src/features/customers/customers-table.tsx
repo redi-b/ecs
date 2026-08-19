@@ -232,14 +232,8 @@ export function CustomersTable({
         enableSorting: false,
       },
     ],
-    [highlightedId, t, locale],
+    [t, locale],
   );
-
-  useEffect(() => {
-    if (!highlightedId) return;
-    const el = document.getElementById(`customer-row-${highlightedId}`);
-    el?.scrollIntoView({ behavior: "smooth", block: "center" });
-  }, [highlightedId, customers]);
 
   return (
     <>
