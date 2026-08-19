@@ -26,6 +26,12 @@ export function initLuviaMotion() {
   lenis.on("scroll", onScroll);
   gsap.ticker.add(onTick);
   gsap.ticker.lagSmoothing(0);
+  const onOverlayLockChange = (event: Event) => {
+    const locked = event instanceof CustomEvent && event.detail?.locked === true;
+    if (locked) lenis.stop();
+    else lenis.start();
+  };
+  window.addEventListener("ecs:overlay-lock-change", onOverlayLockChange);
 
   const context = gsap.context(() => {
     const heroItems = gsap.utils.toArray<HTMLElement>(
@@ -67,6 +73,7 @@ export function initLuviaMotion() {
 
   cleanup = () => {
     context.revert();
+    window.removeEventListener("ecs:overlay-lock-change", onOverlayLockChange);
     gsap.ticker.remove(onTick);
     lenis.destroy();
   };

@@ -205,9 +205,9 @@ function StorefrontIframePreview({
   }, [data, dispatch, fields, manifest, onSelectPath, postConnected, resolvedTheme, selectedPath, showEditHints]);
 
   return (
-    <div className={cn("relative h-full min-h-0 w-full bg-background", !isFullscreen && "max-lg:min-h-[42rem]")}>
+    <div className="relative h-full min-h-0 w-full bg-background">
       <iframe
-        className={cn("block h-full min-h-0 w-full border-0 bg-background transition-opacity duration-500", !isFullscreen && "max-lg:min-h-[42rem]", isLoaded ? "opacity-100" : "opacity-0")}
+        className={cn("block h-full min-h-0 w-full border-0 bg-background transition-opacity duration-500", isLoaded ? "opacity-100" : "opacity-0")}
         onLoad={() => {
           connectedOriginRef.current = null;
           setIframeDocumentLoaded(true);

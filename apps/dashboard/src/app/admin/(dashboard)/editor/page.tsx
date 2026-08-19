@@ -84,7 +84,7 @@ export default async function StorefrontEditorPage({ searchParams }: StorefrontE
 
   return (
     <PageShell
-      className="gap-0 p-0"
+      className="gap-0 p-2 sm:p-4 md:p-6 lg:p-8"
       description={t("editor.description")}
       hideHeader
       title={t("editor.title")}

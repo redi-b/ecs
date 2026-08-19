@@ -35,10 +35,11 @@ export function PageShell({
 }: PageShellProps) {
   return (
     <main
+      data-viewport-workspace={viewportWorkspace ? "" : undefined}
       className={cn(
         "flex min-h-0 min-w-0 flex-col gap-5 overflow-x-hidden p-4 sm:gap-6 sm:p-5 md:gap-7 md:p-8",
         viewportWorkspace
-          ? "absolute inset-x-0 top-14 bottom-0 overflow-y-hidden"
+          ? "h-[calc(100dvh-3.5rem)] flex-none overflow-hidden"
           : "flex-1",
         className,
       )}

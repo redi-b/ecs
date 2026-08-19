@@ -347,9 +347,8 @@ export function StorefrontEditorShell({
   return (
     <div
       className={cn(
-        "storefront-editor-chrome flex min-w-0 flex-col overflow-hidden rounded-2xl border border-border/80 bg-background shadow-[0_1px_2px_color-mix(in_oklch,var(--foreground)_4%,transparent)] lg:h-full",
-        "max-lg:min-h-[min(100dvh-5.5rem,52rem)]",
-        isFullscreen && "max-lg:min-h-dvh",
+        "storefront-editor-chrome flex h-full min-h-0 min-w-0 flex-col overflow-hidden rounded-2xl border border-border/80 bg-background shadow-[0_1px_2px_color-mix(in_oklch,var(--foreground)_4%,transparent)]",
+        isFullscreen && "h-dvh",
       )}
     >
       <div className="flex shrink-0 flex-col gap-2.5 border-b border-border/80 bg-muted/20 px-3 py-3 sm:gap-3 sm:px-4">
@@ -404,20 +403,19 @@ export function StorefrontEditorShell({
 
       <div
         className={cn(
-          "grid min-h-0 flex-1 bg-muted/20 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,24rem)]",
+          "grid min-h-0 flex-1 grid-rows-[minmax(0,1fr)] overflow-hidden bg-muted/20 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,24rem)]",
           isFullscreen && "lg:min-h-[calc(100dvh-7.5rem)]",
         )}
         data-edit-hints={showEditHints ? "on" : "off"}
       >
         <div
           className={cn(
-            "min-h-0 min-w-0 p-3 sm:p-5",
+            "min-h-0 min-w-0 overflow-hidden p-3 sm:p-5",
             isFullscreen && "h-full",
             mobilePanel !== "preview" && "max-lg:hidden",
-            "max-lg:overflow-x-auto max-lg:overscroll-x-contain",
           )}
         >
-          <div className={cn("mx-auto h-full overflow-hidden rounded-2xl border border-border/80 bg-background shadow-sm max-lg:min-w-[22rem]", isFullscreen ? "max-w-none" : "max-w-6xl")}>
+          <div className={cn("mx-auto h-full min-h-0 w-full overflow-hidden rounded-2xl border border-border/80 bg-background shadow-sm", isFullscreen ? "max-w-none" : "max-w-6xl")}>
             <TemplatePreview
               isFullscreen={isFullscreen}
               onSelectPath={(path) => setSelectedPath(path || null)}
@@ -433,10 +431,9 @@ export function StorefrontEditorShell({
         </div>
         <aside
           className={cn(
-            "flex min-h-0 flex-col overflow-hidden border-t border-border/80 bg-background",
-            "lg:h-0 lg:min-h-full lg:border-l lg:border-t-0",
+            "flex h-full min-h-0 flex-col overflow-hidden border-t border-border/80 bg-background",
+            "lg:border-l lg:border-t-0",
             mobilePanel !== "settings" && "max-lg:hidden",
-            "max-lg:min-h-0 max-lg:flex-1",
           )}
         >
           <div className="shrink-0 border-b border-border/80 bg-muted/15 px-4 py-3 sm:py-3.5">

@@ -123,6 +123,34 @@ function formatOrderDate(value: string | null) {
 </Layout>
 <style is:global lang="scss">@use "./styles/secondary-pages.scss";</style>
 <script>
+  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+  const formAnimations = new WeakMap<HTMLFormElement, Animation>();
+  const setAddressFormOpen = (form: HTMLFormElement, open: boolean) => {
+    formAnimations.get(form)?.cancel();
+    if (reducedMotion.matches) { form.hidden = !open; return; }
+    if (open) form.hidden = false;
+    const startHeight = open ? 0 : form.scrollHeight;
+    const endHeight = open ? form.scrollHeight : 0;
+    form.style.overflow = "hidden";
+    const animation = form.animate(
+      {
+        height: [`${startHeight}px`, `${endHeight}px`],
+        opacity: open ? [0, 1] : [1, 0],
+        transform: open ? ["translateY(-6px)", "translateY(0)"] : ["translateY(0)", "translateY(-4px)"],
+      },
+      { duration: 220, easing: "cubic-bezier(.22,1,.36,1)" },
+    );
+    formAnimations.set(form, animation);
+    animation.addEventListener("finish", () => {
+      if (!open) form.hidden = true;
+      form.style.removeProperty("overflow");
+      formAnimations.delete(form);
+    }, { once: true });
+    animation.addEventListener("cancel", () => {
+      form.style.removeProperty("overflow");
+      formAnimations.delete(form);
+    }, { once: true });
+  };
   document.querySelectorAll<HTMLButtonElement>("[data-address-toggle]").forEach((button) => {
     button.addEventListener("click", () => {
       const form = button.parentElement?.querySelector<HTMLFormElement>("form");
@@ -134,12 +162,12 @@ function formatOrderDate(value: string | null) {
         const otherLabel = other.querySelector<HTMLElement>("[data-toggle-label]");
         if (otherLabel) otherLabel.textContent = other.closest(".is-new") ? "Add address" : "Edit";
         const otherForm = other.parentElement?.querySelector<HTMLFormElement>("form");
-        if (otherForm) otherForm.hidden = true;
+        if (otherForm && !otherForm.hidden) setAddressFormOpen(otherForm, false);
       });
       button.setAttribute("aria-expanded", String(!expanded));
       const toggleLabel = button.querySelector<HTMLElement>("[data-toggle-label]");
       if (toggleLabel) toggleLabel.textContent = expanded ? (button.closest(".is-new") ? "Add address" : "Edit") : "Close";
-      form.hidden = expanded;
+      setAddressFormOpen(form, !expanded);
       if (!expanded) form.querySelector<HTMLInputElement>("input:not([type='hidden'])")?.focus();
     });
   });

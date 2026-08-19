@@ -62,18 +62,23 @@ const isActiveLink = (href: string) => href === "/" ? pathname === "/" : pathnam
       <button class="lv-menu" type="button" aria-expanded="false" aria-controls="lv-navigation"><span></span><span></span><span></span><span class="sr-only">Menu</span></button>
       <nav class="lv-nav" id="lv-navigation" aria-label="Store" data-editor-links-path="header.navigation">
         {header.navigation.map((item, index) => <a class:list={{ "is-active": isActiveLink(item.href) }} href={item.href} aria-current={isActiveLink(item.href) ? "page" : undefined} data-editor-path={`header.navigation.${index}.label`} contenteditable={editorMode ? "plaintext-only" : undefined}>{item.label}</a>)}
+        <span class="lv-nav__customer" aria-label="Customer links">
+          <a href="/wishlist">Wishlist</a>
+          <a href="/account">Account</a>
+        </span>
       </nav>
       <div class="lv-actions">
         <form class="lv-search" action="/products" method="get" role="search">
           <label class="sr-only" for="lv-search-input">Search products</label>
           <input id="lv-search-input" name="q" type="search" placeholder="Search any product..." />
-          <button type="submit" aria-label="Search"><img src={searchIcon.src} alt="" /></button>
+          <button type="submit" aria-label="Search" aria-controls="lv-search-input" aria-expanded="false"><img src={searchIcon.src} alt="" /></button>
         </form>
         <a class="lv-action lv-action--wishlist" href="/wishlist" aria-label="Wishlist" data-wishlist-indicator><img src={wishlistIcon.src} alt="" /></a>
         <a class="lv-action" href="/cart" aria-label="Shopping cart" data-cart-trigger><img src={cartIcon.src} alt="" /><span class="lv-count" data-cart-count aria-live="polite" hidden={deferCartCount ? true : cartCount <= 0}>{deferCartCount ? "" : cartCount}</span></a>
         <a class="lv-action lv-action--account" href="/account" aria-label="Account"><img src={userIcon.src} alt="" /></a>
       </div>
     </header>
+    <button class="lv-header-backdrop" type="button" data-header-backdrop aria-label="Close navigation" hidden></button>
     <slot />
     <footer class="lv-footer">
       <div class="lv-footer__intro"><p data-editor-path="footer.blurb" contenteditable={editorMode ? "plaintext-only" : undefined}>{footer.blurb}</p>{(editorMode || footer.credit.enabled) && <a href="https://eclipticcreative.com" rel="noreferrer" target="_blank" data-editor-section="footer.credit" data-editor-visible-path="footer.credit.enabled" hidden={!footer.credit.enabled}>Web Design by <u>Eclipticcreative</u></a>}<img src={logoUrl} alt={tenantName} data-editor-image-path="header.logoAssetId" /></div>
@@ -86,7 +91,7 @@ const isActiveLink = (href: string) => href === "/" ? pathname === "/" : pathnam
     <aside class="lv-inquiry" data-editor-section="footer.inquiry"><p data-editor-path="footer.inquiry.title" contenteditable={editorMode ? "plaintext-only" : undefined}>{footer.inquiry.title}</p><ActionButton href={footer.inquiry.ctaHref} iconSrc={chatIcon.src} tone="secondary" size="small" editorPath="footer.inquiry.ctaLabel" editorRelatedPaths={["footer.inquiry.ctaHref"]} editorMode={editorMode}>{footer.inquiry.ctaLabel}</ActionButton></aside>
     <button class="lv-cart-backdrop" type="button" data-cart-backdrop aria-label="Close cart" hidden></button>
     <aside class="lv-cart-drawer" data-cart-drawer role="dialog" aria-modal="true" aria-labelledby="lv-cart-title" hidden>
-      <header><div><h2 id="lv-cart-title">Your Cart</h2><span data-cart-drawer-count>0 items</span></div><button type="button" data-cart-close aria-label="Close cart">×</button></header>
+      <header><div><h2 id="lv-cart-title">Your Cart</h2><span data-cart-drawer-count>0 items</span></div><button type="button" data-cart-close aria-label="Close cart"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 7 10 10M17 7 7 17" /></svg></button></header>
       <div class="lv-cart-drawer__status" data-cart-status aria-live="polite"></div>
       <div class="lv-cart-drawer__items" data-cart-items></div>
       <footer data-cart-footer hidden><dl><div><dt>Subtotal</dt><dd data-cart-subtotal></dd></div><div><dt>Delivery</dt><dd>Calculated at checkout</dd></div><div><dt>Total</dt><dd data-cart-total></dd></div></dl><a class="lv-cart-checkout" href="/checkout">Checkout</a><a class="lv-cart-view" href="/cart">View cart and discounts</a><button type="button" data-cart-continue>Continue shopping</button></footer>
@@ -98,41 +103,66 @@ const isActiveLink = (href: string) => href === "/" ? pathname === "/" : pathnam
       const editorPreview = document.body.dataset.editorMode === "true";
       const menu = document.querySelector<HTMLButtonElement>(".lv-menu");
       const nav = document.querySelector<HTMLElement>(".lv-nav");
-      menu?.addEventListener("click", () => {
-        const open = menu.getAttribute("aria-expanded") === "true";
-        menu.setAttribute("aria-expanded", String(!open));
-        nav?.toggleAttribute("data-open", !open);
-      });
+      const headerBackdrop = document.querySelector<HTMLButtonElement>("[data-header-backdrop]");
       const searchForm = document.querySelector<HTMLFormElement>(".lv-search");
       const searchInput = searchForm?.querySelector<HTMLInputElement>('input[type="search"]');
       const searchButton = searchForm?.querySelector<HTMLButtonElement>('button[type="submit"]');
-      const openMobileSearch = () => {
-        if (!searchInput) return;
-        searchInput.dataset.open = "";
-        searchInput.focus();
+      let headerSurface: "menu" | "search" | null = null;
+      let headerCloseTimer = 0;
+      const syncPageScrollLock = () => {
+        const locked = headerSurface !== null || document.body.hasAttribute("data-cart-open");
+        document.documentElement.toggleAttribute("data-overlay-open", locked);
+        document.body.toggleAttribute("data-overlay-open", locked);
+        window.dispatchEvent(new CustomEvent("ecs:overlay-lock-change", { detail: { locked } }));
       };
+      const setHeaderSurface = (surface: "menu" | "search" | null, restoreFocus = false) => {
+        window.clearTimeout(headerCloseTimer);
+        const previous = headerSurface;
+        headerSurface = surface;
+        const menuOpen = surface === "menu";
+        const searchOpen = surface === "search";
+        menu?.setAttribute("aria-expanded", String(menuOpen));
+        searchButton?.setAttribute("aria-expanded", String(searchOpen));
+        nav?.toggleAttribute("data-open", menuOpen);
+        searchForm?.toggleAttribute("data-open", searchOpen);
+        if (searchInput) searchInput.toggleAttribute("data-open", searchOpen);
+        document.body.toggleAttribute("data-header-open", surface !== null);
+        syncPageScrollLock();
+        if (surface && headerBackdrop) {
+          headerBackdrop.hidden = false;
+          headerBackdrop.setAttribute("aria-label", surface === "menu" ? "Close navigation" : "Close search");
+          requestAnimationFrame(() => headerBackdrop.toggleAttribute("data-open", true));
+        } else if (headerBackdrop) {
+          headerBackdrop.removeAttribute("data-open");
+          headerCloseTimer = window.setTimeout(() => { headerBackdrop.hidden = true; }, 220);
+        }
+        if (searchOpen) requestAnimationFrame(() => searchInput?.focus());
+        if (!surface && restoreFocus) (previous === "menu" ? menu : searchButton)?.focus();
+      };
+      menu?.addEventListener("click", () => setHeaderSurface(headerSurface === "menu" ? null : "menu"));
+      nav?.addEventListener("click", (event) => {
+        if (!(event.target instanceof Element) || !event.target.closest("a")) return;
+        setHeaderSurface(null);
+      });
+      headerBackdrop?.addEventListener("click", () => setHeaderSurface(null, true));
       searchButton?.addEventListener("click", (event) => {
-        if (window.matchMedia("(max-width: 760px)").matches && !searchInput?.hasAttribute("data-open")) {
+        if (window.matchMedia("(max-width: 760px)").matches && headerSurface !== "search") {
           event.preventDefault();
-          openMobileSearch();
+          setHeaderSurface("search");
         }
       });
-      searchInput?.addEventListener("keydown", (event) => {
-        if (event.key === "Escape" && window.matchMedia("(max-width: 760px)").matches) {
-          event.preventDefault();
-          delete searchInput.dataset.open;
-          searchButton?.focus();
-        }
+      searchForm?.addEventListener("submit", (event) => {
+        if (searchInput?.value.trim()) return;
+        event.preventDefault();
+        if (window.matchMedia("(max-width: 760px)").matches) setHeaderSurface("search");
+        searchInput?.focus();
       });
-      document.addEventListener("pointerdown", (event) => {
-        if (
-          searchInput?.hasAttribute("data-open") &&
-          event.target instanceof Node &&
-          !searchForm?.contains(event.target)
-        ) {
-          delete searchInput.dataset.open;
-        }
+      document.addEventListener("keydown", (event) => {
+        if (event.key !== "Escape" || !headerSurface) return;
+        event.preventDefault();
+        setHeaderSurface(null, true);
       });
+      window.matchMedia("(min-width: 761px)").addEventListener("change", (event) => { if (event.matches) setHeaderSurface(null); });
       const badge = document.querySelector<HTMLElement>("[data-cart-count]");
       if (!editorPreview && badge?.hidden) void loadAndSyncCartCount();
 
@@ -192,9 +222,9 @@ const isActiveLink = (href: string) => href === "/" ? pathname === "/" : pathnam
         catch (cause) { if (status) { status.textContent = cause instanceof Error ? cause.message : "Could not load your cart."; status.classList.add("is-error"); } }
       };
       const openCart = async (cart?: any) => {
-        if (!drawer || !backdrop) return; lastFocused = document.activeElement instanceof HTMLElement ? document.activeElement : trigger; drawer.hidden = false; backdrop.hidden = false; requestAnimationFrame(() => { drawer.dataset.open = ""; backdrop.dataset.open = ""; }); document.body.dataset.cartOpen = ""; if (cart) renderCart(cart); else await loadCart(); closeButton?.focus();
+        if (!drawer || !backdrop) return; setHeaderSurface(null); lastFocused = document.activeElement instanceof HTMLElement ? document.activeElement : trigger; drawer.hidden = false; backdrop.hidden = false; requestAnimationFrame(() => { drawer.dataset.open = ""; backdrop.dataset.open = ""; }); document.body.dataset.cartOpen = ""; syncPageScrollLock(); if (cart) renderCart(cart); else await loadCart(); closeButton?.focus();
       };
-      const closeCart = () => { if (!drawer || !backdrop) return; delete drawer.dataset.open; delete backdrop.dataset.open; delete document.body.dataset.cartOpen; setTimeout(() => { drawer.hidden = true; backdrop.hidden = true; }, 260); lastFocused?.focus(); };
+      const closeCart = () => { if (!drawer || !backdrop) return; delete drawer.dataset.open; delete backdrop.dataset.open; delete document.body.dataset.cartOpen; syncPageScrollLock(); setTimeout(() => { drawer.hidden = true; backdrop.hidden = true; }, 260); lastFocused?.focus(); };
       trigger?.addEventListener("click", (event) => { if (editorPreview || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return; event.preventDefault(); void openCart(); });
       closeButton?.addEventListener("click", closeCart); continueButton?.addEventListener("click", closeCart); backdrop?.addEventListener("click", closeCart);
       drawer?.addEventListener("click", async (event) => {
