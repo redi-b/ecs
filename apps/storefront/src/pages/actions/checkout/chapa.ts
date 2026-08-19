@@ -3,6 +3,7 @@ import type { APIRoute } from "astro";
 import { associateRequestCartWithCustomer } from "../../../lib/commerce/customer-cart.js";
 import { updateStoreCart } from "../../../lib/commerce/cart.js";
 import { initializeChapaCheckout } from "../../../lib/commerce/checkout.js";
+import { saveCheckoutAddressIfRequested } from "../../../lib/commerce/checkout-address.js";
 import { getStoreDeliveryOptions } from "../../../lib/commerce/delivery.js";
 import { isStoreError } from "../../../lib/commerce/result.js";
 import { setStoreCartShippingMethod } from "../../../lib/commerce/shipping.js";
@@ -82,6 +83,14 @@ export const POST: APIRoute = async ({ request }) => {
     if (delivery?.landmarkRequired && !landmark) {
       return redirect("/checkout?error=" + encodeURIComponent("Landmark is required for delivery."));
     }
+  }
+
+  const addressSave = await saveCheckoutAddressIfRequested(request, form, {
+    platformApiBaseUrl: ctx.platformApiBaseUrl,
+    requestHost: ctx.requestHost,
+  });
+  if (!addressSave.ok) {
+    return redirect("/checkout?error=" + encodeURIComponent(addressSave.message));
   }
 
   const resolvedAddress1 = deliveryChoice === "pickup" ? address1 || "Pickup" : address1;

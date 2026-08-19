@@ -7,6 +7,7 @@ const memoryStorage = () => {
   return {
     getItem: (key: string) => values.get(key) ?? null,
     setItem: (key: string, value: string) => values.set(key, value),
+    removeItem: (key: string) => values.delete(key),
     values,
   };
 };
@@ -40,4 +41,8 @@ test("wishlist store migrates, de-duplicates, toggles, and removes entries", () 
   assert.equal(store.toggle({ path: "/products/night-cream", title: "Night Cream" }).length, 2);
   assert.equal(store.toggle({ path: "/products/night-cream", title: "Night Cream" }).length, 1);
   assert.deepEqual(store.remove("/products/glow-serum"), []);
+  store.write([{ path: "/products/account-only", title: "Account only", thumbnail: null, priceAmount: null, currencyCode: null }]);
+  store.clear();
+  assert.equal(storage.getItem(key), null);
+  assert.deepEqual(store.read(), []);
 });

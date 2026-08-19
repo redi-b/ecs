@@ -1,6 +1,7 @@
 import type { APIRoute } from "astro";
 
 import { completeCodCheckout } from "../../../lib/commerce/checkout.js";
+import { saveCheckoutAddressIfRequested } from "../../../lib/commerce/checkout-address.js";
 import { associateRequestCartWithCustomer } from "../../../lib/commerce/customer-cart.js";
 import { getStoreDeliveryOptions } from "../../../lib/commerce/delivery.js";
 import { isStoreError } from "../../../lib/commerce/result.js";
@@ -74,6 +75,14 @@ export const POST: APIRoute = async ({ request }) => {
     if (delivery?.landmarkRequired && !landmark) {
       return redirect("/checkout?error=" + encodeURIComponent("Landmark is required for delivery."));
     }
+  }
+
+  const addressSave = await saveCheckoutAddressIfRequested(request, form, {
+    platformApiBaseUrl: ctx.platformApiBaseUrl,
+    requestHost: ctx.requestHost,
+  });
+  if (!addressSave.ok) {
+    return redirect("/checkout?error=" + encodeURIComponent(addressSave.message));
   }
 
   const result = await completeCodCheckout({

@@ -243,6 +243,29 @@ export async function handleCustomerAccountRequest(
     if (!token) return error("customer_auth_required", 401);
     const parsed = customerAddressSchema.safeParse(await readJson(input.request));
     if (!parsed.success) return error("invalid_customer_address", 422);
+
+    const existingResponse = await medusaRequest(
+      input,
+      "/store/customers/me/addresses?limit=50&offset=0",
+      { authorization: token },
+    );
+    if (!existingResponse.ok) return proxyCustomerResponse(existingResponse);
+    const existingData = await readResponseJson(existingResponse);
+    const existingAddress = findMatchingCustomerAddress(existingData, parsed.data);
+    if (existingAddress) {
+      if (parsed.data.isDefaultShipping && existingAddress.is_default_shipping !== true) {
+        return proxyCustomerResponse(await medusaRequest(
+          input,
+          `/store/customers/me/addresses/${encodeURIComponent(String(existingAddress.id))}`,
+          {
+            authorization: token,
+            body: toMedusaAddress(parsed.data),
+            method: "POST",
+          },
+        ));
+      }
+      return Response.json({ ...existingData, reused: true });
+    }
     return proxyCustomerResponse(await medusaRequest(input, "/store/customers/me/addresses", {
       authorization: token,
       body: toMedusaAddress(parsed.data),
@@ -406,6 +429,32 @@ function toMedusaAddress(input: z.infer<typeof customerAddressSchema>) {
     country_code: input.countryCode,
     is_default_shipping: input.isDefaultShipping,
   };
+}
+
+function findMatchingCustomerAddress(
+  value: Record<string, unknown>,
+  candidate: z.infer<typeof customerAddressSchema>,
+) {
+  const raw = Array.isArray(value.addresses)
+    ? value.addresses
+    : isRecord(value.customer) && Array.isArray(value.customer.addresses)
+      ? value.customer.addresses
+      : [];
+  const signature = addressSignature({
+    address_1: candidate.address1,
+    city: candidate.city,
+    country_code: candidate.countryCode,
+  });
+  return raw.filter(isRecord).find((address) => addressSignature(address) === signature) ?? null;
+}
+
+function addressSignature(value: Record<string, unknown>) {
+  // The Ethiopian checkout currently collects street + city. These fields are
+  // therefore the canonical delivery-location identity; labels and recipient
+  // details may legitimately change without creating a second address.
+  return ["address_1", "city", "country_code"]
+    .map((key) => String(value[key] ?? "").trim().toLocaleLowerCase("en").replace(/\s+/g, " "))
+    .join("|");
 }
 
 async function projectAuthenticatedCustomer(
