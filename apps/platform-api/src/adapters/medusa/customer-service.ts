@@ -112,7 +112,9 @@ export function createMedusaCustomerService(options: Options) {
     }).catch(() => null);
     if (!response?.ok) return await mapError(response);
     const data = await response.json().catch(() => ({}));
-    const customers = (Array.isArray(data.customers) ? data.customers : []).map(normalizeCustomer);
+    const customers = (Array.isArray(data.customers) ? data.customers : [])
+      .map(normalizeCustomer)
+      .map((customer: MerchantCustomer) => withoutGroup(customer, String(group.id)));
     return {
       count: Number(data.count ?? customers.length),
       customers,
@@ -202,7 +204,6 @@ export function createMedusaCustomerService(options: Options) {
     const group = await tenantGroup(input.tenantId);
     if (!group) return unavailable();
     const groupId = String(group.id);
-    const groupName = String(group.name ?? "Customers");
 
     // Always load the full customer (with addresses). Membership may be checked via
     // list filters because retrieve sometimes omits shop groups.
@@ -213,7 +214,7 @@ export function createMedusaCustomerService(options: Options) {
     const customer = retrieved.customer;
 
     if (customer.groups.some((item) => item.id === groupId)) {
-      return { customer: ensureShopGroup(customer, groupId, groupName), ok: true };
+      return { customer: withoutGroup(customer, groupId), ok: true };
     }
 
     const inShop =
@@ -230,7 +231,7 @@ export function createMedusaCustomerService(options: Options) {
         : false);
 
     if (inShop) {
-      return { customer: ensureShopGroup(customer, groupId, groupName), ok: true };
+      return { customer: withoutGroup(customer, groupId), ok: true };
     }
 
     return { error: "customer_not_found", ok: false, status: 404 };
@@ -553,6 +554,14 @@ function ensureShopGroup(
   return {
     ...customer,
     groups: [...customer.groups, { id: groupId, name: groupName }],
+  };
+}
+
+/** Tenant membership is an authorization boundary, not a merchant-facing segment. */
+function withoutGroup(customer: MerchantCustomer, groupId: string): MerchantCustomer {
+  return {
+    ...customer,
+    groups: customer.groups.filter((group) => group.id !== groupId),
   };
 }
 

@@ -39,6 +39,7 @@ import { getTenantScopedPath } from "@/lib/dashboard-tenant-context";
 import { dashboardRoutes } from "@/lib/routes";
 
 type OrdersTableProps = {
+  customerId?: string | undefined;
   filters: OrderListFilterState;
   footer?: ReactNode;
   orders: MerchantOrder[];
@@ -187,6 +188,7 @@ function getOrderColumns(t: Translate, tenantId?: string): ColumnDef<MerchantOrd
 }
 
 export function OrdersTable({
+  customerId,
   filters,
   footer,
   orders,
@@ -231,15 +233,14 @@ export function OrdersTable({
 
   const clearFilters = useCallback(() => {
     setSearchValue("");
-    pushFilters({
-      q: "",
-      progress: "all",
-      payment: "all",
-      method: "all",
-      delivery: "all",
-      created: "all",
+    const url = new URL(window.location.href);
+    ["q", "progress", "payment", "method", "delivery", "created", "customerId", "page"].forEach(
+      (key) => url.searchParams.delete(key),
+    );
+    startTransition(() => {
+      router.push(`${url.pathname}?${url.searchParams.toString()}`);
     });
-  }, [pushFilters]);
+  }, [router]);
 
   const filterDefs = useMemo<DataTableFilterDefinition[]>(
     () => [
@@ -317,6 +318,7 @@ export function OrdersTable({
   );
 
   const hasActiveFilters =
+    Boolean(customerId) ||
     Boolean(filters.q) ||
     filters.progress !== "all" ||
     filters.payment !== "all" ||

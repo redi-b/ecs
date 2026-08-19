@@ -49,13 +49,6 @@ function customerInitials(customer: MerchantCustomer) {
   return (emailLead ?? "?").toUpperCase();
 }
 
-/** Platform shop/tenant groups are internal — hide them from merchants. */
-function merchantFacingGroups(customer: MerchantCustomer) {
-  return customer.groups.filter(
-    (group) => !group.name.startsWith("Tenant ") && !group.name.startsWith("Shop "),
-  );
-}
-
 function progressBadgeVariant(progress: ReturnType<typeof getOrderProgress>) {
   if (progress === "completed") return "default" as const;
   if (progress === "canceled") return "outline" as const;
@@ -87,13 +80,11 @@ export function CustomerDetail({
   ordersTotalCount,
 }: CustomerDetailProps) {
   const { t, locale } = useI18n();
-  const groups = merchantFacingGroups(customer);
+  const groups = customer.groups;
   const memberSince = new Intl.DateTimeFormat(locale, { dateStyle: "medium" }).format(
     new Date(customer.createdAt),
   );
-  const ordersHref = customer.email
-    ? `${dashboardRoutes.orders}?q=${encodeURIComponent(customer.email)}`
-    : dashboardRoutes.orders;
+  const ordersHref = `${dashboardRoutes.orders}?customerId=${encodeURIComponent(customer.id)}`;
   const isWalkIn = isWalkInCustomerEmail(customer.email);
   const addressCount = customer.addresses.length;
   const contactDefaults = {

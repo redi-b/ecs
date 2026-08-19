@@ -133,26 +133,6 @@ export function CustomersTable({
         ),
       },
       {
-        id: "groups",
-        header: ({ column }) => <DataTableHeader column={column} title={t("customers.detail.groups")} />,
-        cell: ({ row }) => (
-          <div className="flex flex-wrap gap-1">
-            {row.original.groups.length ? (
-              row.original.groups.map((group) => (
-                <Badge key={group.id} variant="secondary">
-                  {group.name.startsWith("Tenant ") || group.name.startsWith("Shop ")
-                    ? t("customers.table.groupCustomer")
-                    : group.name}
-                </Badge>
-              ))
-            ) : (
-              <span className="text-sm text-muted-foreground">—</span>
-            )}
-          </div>
-        ),
-        enableSorting: false,
-      },
-      {
         id: "addresses",
         accessorFn: (customer) => customer.addresses.length,
         header: ({ column }) => <DataTableHeader column={column} title={t("customers.detail.addresses")} />,
