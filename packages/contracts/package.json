@@ -4,7 +4,13 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./order-reference": {
+      "types": "./src/order-reference.d.cts",
+      "import": "./src/order-reference.cjs",
+      "require": "./src/order-reference.cjs",
+      "default": "./src/order-reference.cjs"
+    }
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
