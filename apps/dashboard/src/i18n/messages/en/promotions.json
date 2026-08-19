@@ -17,7 +17,10 @@
     "copyCodes": "Copy codes",
     "promotionCode": "Promotion code",
     "promotionCodes": "Promotion codes",
-    "codeHeader": "Code"
+    "codeHeader": "Code",
+    "automaticCode": "Applied automatically",
+    "automaticCodeHelp": "No customer code",
+    "customerCode": "Customer enters this code"
   },
   "filter": {
     "status": {

@@ -17,7 +17,10 @@
     "copyCodes": "ኮዶችን ቅዳ",
     "promotionCode": "የቅናሽ ኮድ",
     "promotionCodes": "የቅናሽ ኮዶች",
-    "codeHeader": "ኮድ"
+    "codeHeader": "ኮድ",
+    "automaticCode": "በራሱ ይተገበራል",
+    "automaticCodeHelp": "ደንበኛ ኮድ አያስገባም",
+    "customerCode": "ደንበኛው ይህን ኮድ ያስገባል"
   },
   "filter": {
     "status": {

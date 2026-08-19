@@ -8,7 +8,6 @@
 .lv-cart-page__heading span { margin-bottom: 9px; padding: 5px 10px; border-radius: 999px; background: var(--lv-accent); color: var(--lv-ink); font-size: 12px; }
 .lv-cart-page__heading h1 { margin: 0; font: 400 clamp(54px,6vw,86px)/.92 "GC Molecule Demo", Arial, sans-serif; letter-spacing: -.045em; }
 .lv-cart-page__heading p { margin: 12px 0 0; color: color-mix(in srgb,var(--lv-ink) 62%,var(--lv-bg)); }
-.lv-cart-page__heading > img { width: 54px; height: 54px; padding: 15px; border: 1px solid var(--lv-accent); border-radius: 50%; background: var(--lv-bg); }
 .lv-cart-page__error { padding: 13px 16px; border-radius: 12px; background: #fff0f0; color: #8d2828; }
 .lv-cart-page__live { min-height: 20px; margin-top: -12px; margin-bottom: 12px; color: color-mix(in srgb,var(--lv-green) 74%,var(--lv-ink)); font-size: 13px; }
 .lv-cart-page__live.is-error { color: #a13b3b; }
@@ -34,19 +33,7 @@
 .lv-cart-summary header { display: flex; align-items: center; justify-content: space-between; }
 .lv-cart-summary h2 { margin: 0; font: 400 30px/1 "GC Molecule Demo", Arial, sans-serif; }
 .lv-cart-summary header span { padding: 5px 9px; border-radius: 999px; background: var(--lv-soft); color: color-mix(in srgb,var(--lv-ink) 62%,var(--lv-bg)); font-size: 12px; }
-.lv-cart-summary__promotion { margin-top: 24px; padding: 16px; border: 1px solid var(--lv-line); border-radius: 16px; background: color-mix(in srgb,var(--lv-soft) 48%,white); }
-.lv-cart-summary__promotion label { display: block; margin-bottom: 8px; color: var(--lv-ink); font-size: 13px; font-weight: 600; }
-.lv-cart-summary__promotion > form > div { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 8px; }
-.lv-cart-summary__promotion input { min-width: 0; height: 42px; padding: 0 13px; border: 1px solid var(--lv-line); border-radius: 999px; background: white; color: var(--lv-ink); font: inherit; text-transform: uppercase; outline: none; }
-.lv-cart-summary__promotion input:focus-visible { border-color: var(--lv-green); box-shadow: 0 0 0 3px color-mix(in srgb,var(--lv-green) 18%,transparent); }
-.lv-cart-summary__promotion button { min-height: 42px; padding: 0 15px; border: 0; border-radius: 999px; background: var(--lv-ink); color: white; font: inherit; font-weight: 600; cursor: pointer; }
-.lv-cart-summary__promotion [data-applied-promotions] { display: grid; gap: 8px; }
-.lv-cart-summary__promotion [data-applied-promotions]:not(:empty) { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--lv-line); }
-.lv-cart-summary__promotion [data-applied-promotions] form { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.lv-cart-summary__promotion [data-applied-promotions] span { display: flex; min-width: 0; flex-direction: column; }
-.lv-cart-summary__promotion [data-applied-promotions] b { overflow: hidden; font-size: 13px; text-overflow: ellipsis; }
-.lv-cart-summary__promotion [data-applied-promotions] small { color: color-mix(in srgb,var(--lv-ink) 54%,var(--lv-bg)); }
-.lv-cart-summary__promotion [data-applied-promotions] button { min-height: 34px; padding-inline: 11px; background: transparent; color: var(--lv-ink); font-size: 12px; }
+.lv-cart-summary .lv-discount-code { margin-top: 24px; }
 .lv-cart-summary dl { margin: 28px 0 18px; display: flex; flex-direction: column; gap: 12px; }
 .lv-cart-summary dl > div { display: flex; justify-content: space-between; gap: 20px; color: color-mix(in srgb,var(--lv-ink) 54%,var(--lv-bg)); font-size: 14px; }
 .lv-cart-summary dd { margin: 0; text-align: right; }
@@ -76,7 +63,6 @@
   .lv-cart-page__breadcrumb { margin-bottom: 22px; }
   .lv-cart-page__heading { margin-bottom: 24px; align-items: center; }
   .lv-cart-page__heading h1 { font-size: 54px; }
-  .lv-cart-page__heading > img { display: none; }
   .lv-cart-page__layout { display: flex; flex-direction: column; gap: 24px; }
   .lv-cart-lines, .lv-cart-summary { width: 100%; }
   .lv-cart-line { min-height: 0; padding: 12px; grid-template-columns: 76px minmax(0,1fr) auto; grid-template-rows: auto auto auto; gap: 8px 11px; }

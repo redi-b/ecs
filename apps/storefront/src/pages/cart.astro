@@ -29,6 +29,7 @@ const Cart = ctx.ok ? resolveRendererSlot(ctx.config.storefront.templateKey, "Ca
       currentPath="/cart"
       cart={ctx.cart}
       error={Astro.url.searchParams.get("error")}
+      discountError={Astro.url.searchParams.get("discountError")}
     />
   )
 }

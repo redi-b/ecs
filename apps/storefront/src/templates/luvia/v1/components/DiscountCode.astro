@@ -1,0 +1,43 @@
+---
+import type { StoreCartPromotion } from "../../../../lib/commerce/types";
+
+interface Props {
+  appliedCodes: StoreCartPromotion[];
+  idPrefix: string;
+  helper?: string;
+  error?: string | null;
+}
+
+const { appliedCodes, idPrefix, helper, error } = Astro.props;
+const labelId = `${idPrefix}-discount-label`;
+const inputId = `${idPrefix}-discount-code`;
+---
+
+<section class="lv-discount-code" aria-labelledby={labelId} data-discount-code>
+  <form method="post" action="/actions/cart/promotion" data-cart-promotion-form>
+    <label id={labelId} for={inputId}>Have a discount code?</label>
+    <div class="lv-discount-code__field">
+      <input
+        id={inputId}
+        name="code"
+        autocomplete="off"
+        autocapitalize="characters"
+        spellcheck="false"
+        placeholder="Enter your code"
+      />
+      <button type="submit">Apply</button>
+    </div>
+    {helper && <small>{helper}</small>}
+  </form>
+  <div class="lv-discount-code__applied" data-applied-promotions>
+    {appliedCodes.map((promotion) => (
+      <form method="post" action="/actions/cart/promotion" data-cart-promotion-form>
+        <input type="hidden" name="intent" value="remove" />
+        <input type="hidden" name="code" value={promotion.code ?? ""} />
+        <span><b>{promotion.code}</b><small>Applied</small></span>
+        <button type="submit" aria-label={`Remove discount ${promotion.code}`}>Remove</button>
+      </form>
+    ))}
+  </div>
+  <p class:list={["lv-discount-code__status", { "is-error": Boolean(error) }]} data-discount-status aria-live="polite">{error}</p>
+</section>

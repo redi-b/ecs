@@ -2927,6 +2927,43 @@ describe("platform app merchant and tenant catalog", () => {
     assert.equal(fetchCalls, 0);
   });
 
+  it("forwards cart promotion changes to Medusa", async () => {
+    const forwarded: Request[] = [];
+    const app = appWithResolution(
+      {
+        ok: true,
+        context: resolvedTenantContext,
+      },
+      {
+        medusaStoreFetch: async (request) => {
+          forwarded.push(request instanceof Request ? request : new Request(request));
+          return Response.json({ cart: { id: "cart_1" } });
+        },
+      },
+    );
+
+    for (const method of ["POST", "DELETE"] as const) {
+      const response = await app.request("/store/carts/cart_1/promotions", {
+        body: JSON.stringify({ promo_codes: ["BOLESTWELCOME10"] }),
+        headers: {
+          "content-type": "application/json",
+          Host: "abebe.lvh.me",
+        },
+        method,
+      });
+      assert.equal(response.status, 200);
+    }
+
+    assert.equal(forwarded.length, 2);
+    for (const request of forwarded) {
+      assert.equal(request.url, "http://medusa:9000/store/carts/cart_1/promotions");
+      assert.equal(request.headers.get("x-publishable-api-key"), "pk_1");
+      assert.deepEqual(JSON.parse(await request.text()), {
+        promo_codes: ["BOLESTWELCOME10"],
+      });
+    }
+  });
+
   it("does not forward resolved tenants without a publishable key", async () => {
     let fetchCalls = 0;
     const app = appWithResolution(

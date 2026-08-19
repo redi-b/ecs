@@ -131,6 +131,13 @@ export function isAllowedStoreFacadeRoute(request: Request) {
     return true;
   }
 
+  if (
+    (method === "POST" || method === "DELETE") &&
+    /^\/store\/carts\/[^/]+\/promotions$/.test(path)
+  ) {
+    return true;
+  }
+
   return false;
 }
 

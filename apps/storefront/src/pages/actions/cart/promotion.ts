@@ -16,7 +16,7 @@ export const POST: APIRoute = async ({ request, redirect }) => {
   const code = String(form.get("code") ?? "").trim().toUpperCase();
   if (!code) {
     const message = "Enter a discount code.";
-    return wantsJson ? cartJsonError(message, 400) : redirect(`/cart?error=${encodeURIComponent(message)}`);
+    return wantsJson ? cartJsonError(message, 400) : redirect(`/cart?discountError=${encodeURIComponent(message)}`);
   }
   const customerToken = getCustomerTokenFromRequest(request);
 
@@ -37,11 +37,13 @@ export const POST: APIRoute = async ({ request, redirect }) => {
   if (isStoreError(result)) {
     const message =
       intent === "remove"
-        ? "We could not remove that discount. Please try again."
+        ? "Could not remove this discount. Try again."
         : result.status === 404
-          ? "We could not find that discount code."
-          : "That discount code could not be applied. Check the code and try again.";
-    return wantsJson ? cartJsonError(message, result.status) : redirect(`/cart?error=${encodeURIComponent(message)}`);
+          ? "Code not found."
+          : result.status === 400 || result.status === 422
+            ? "This code does not apply to your cart."
+            : "Could not apply this code. Try again.";
+    return wantsJson ? cartJsonError(message, result.status) : redirect(`/cart?discountError=${encodeURIComponent(message)}`);
   }
 
   return wantsJson ? cartJson(result.cart) : redirect("/cart");

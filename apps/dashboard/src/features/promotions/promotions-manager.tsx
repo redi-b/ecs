@@ -296,11 +296,18 @@ export function PromotionsManager({
         header: ({ column }) => <DataTableHeader column={column} title={t("promotions.table.codeHeader")} />,
         cell: ({ row }) => (
           <button
-            className="font-mono text-sm font-medium text-foreground transition-colors hover:text-primary"
+            className="flex flex-col items-start text-left transition-colors hover:text-primary"
             onClick={() => setEditing(row.original)}
             type="button"
           >
-            {row.original.code}
+            <span className="font-mono text-sm font-medium">
+              {row.original.isAutomatic ? t("promotions.table.automaticCode") : row.original.code}
+            </span>
+            <span className="text-xs text-muted-foreground">
+              {row.original.isAutomatic
+                ? t("promotions.table.automaticCodeHelp")
+                : t("promotions.table.customerCode")}
+            </span>
           </button>
         ),
       },
@@ -375,12 +382,14 @@ export function PromotionsManager({
                   onSelect: () => setEditing(item),
                   type: "button",
                 },
-                {
-                  icon: AppIcons.copy,
-                  label: t("promotions.action.copy"),
-                  onSelect: () => void copyToClipboard(item.code, t("promotions.table.promotionCode"), t),
-                  type: "button",
-                },
+                ...(!item.isAutomatic
+                  ? [{
+                      icon: AppIcons.copy,
+                      label: t("promotions.action.copy"),
+                      onSelect: () => void copyToClipboard(item.code, t("promotions.table.promotionCode"), t),
+                      type: "button" as const,
+                    }]
+                  : []),
                 { id: "danger", type: "separator" },
                 {
                   icon: AppIcons.trash,
@@ -409,9 +418,10 @@ export function PromotionsManager({
         bulkActions={(selected) => (
           <div className="flex items-center gap-2">
             <Button
+              disabled={selected.every((item) => item.isAutomatic)}
               onClick={() =>
                 void copyToClipboard(
-                  selected.map((item) => item.code).join("\n"),
+                  selected.filter((item) => !item.isAutomatic).map((item) => item.code).join("\n"),
                   t("promotions.table.promotionCodes"),
                   t,
                 )
