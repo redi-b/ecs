@@ -22,6 +22,10 @@ export default async function MerchantOrdersPage({ searchParams }: MerchantOrder
   const resolvedSearchParams = (await searchParams) ?? {};
   const listParams = parseListSearchParams(resolvedSearchParams);
   const filters = parseOrderListFilters(resolvedSearchParams);
+  const customerIdValue = resolvedSearchParams.customerId;
+  const customerId = (
+    Array.isArray(customerIdValue) ? customerIdValue[0] : customerIdValue
+  )?.trim();
   const tenantId = getSelectedTenantId(resolvedSearchParams);
   const t = await getTranslations();
   const requestHeaders = await headers();
@@ -34,6 +38,7 @@ export default async function MerchantOrdersPage({ searchParams }: MerchantOrder
     platformApiBaseUrl: process.env.PLATFORM_API_BASE_URL ?? "http://localhost:3000",
     requestHost: requestHeaders.get("host"),
     tenantId,
+    customerId: customerId || undefined,
     q: filters.q || undefined,
     progress: filters.progress !== "all" ? filters.progress : undefined,
     payment: filters.payment !== "all" ? filters.payment : undefined,
@@ -44,6 +49,7 @@ export default async function MerchantOrdersPage({ searchParams }: MerchantOrder
   const errorState = result.ok ? null : getListErrorState("orders", result.message);
   const listFiltered =
     Boolean(filters.q) ||
+    Boolean(customerId) ||
     filters.progress !== "all" ||
     filters.payment !== "all" ||
     filters.method !== "all" ||
@@ -70,6 +76,7 @@ export default async function MerchantOrdersPage({ searchParams }: MerchantOrder
             pageSize={result.orders.limit}
           />
           <OrdersTable
+            customerId={customerId}
             filters={filters}
             footer={
               <PaginationControls
