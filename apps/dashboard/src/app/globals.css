@@ -747,6 +747,13 @@ html[lang="am"] .storefront-editor-chrome *,
   display: none !important;
 }
 
+/* Immersive dashboard routes own the viewport; their nested panes own scrolling. */
+[data-slot="sidebar-inset"]:has(> [data-viewport-workspace]) {
+  height: 100svh;
+  min-height: 0;
+  overflow: hidden;
+}
+
 /* Storefront preview: a lightweight dimensional assembly animation. */
 .storefront-preview-loader {
   --preview-loader-accent: color-mix(in oklch, var(--primary) 82%, #1687ff);

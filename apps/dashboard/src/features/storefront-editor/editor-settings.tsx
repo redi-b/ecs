@@ -129,7 +129,7 @@ export function StorefrontSettingsPanel({ onSelectPath, selectedPath, templateKe
   };
 
   return (
-    <div className="min-h-0 flex-1 overflow-y-auto" ref={scrollRef}>
+    <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain" ref={scrollRef}>
       <div className="sticky top-0 z-10 flex items-center gap-2 border-b border-border/80 bg-background/95 p-3 backdrop-blur-sm sm:px-4">
         <Popover onOpenChange={setSectionNavigatorOpen} open={sectionNavigatorOpen}>
           <PopoverTrigger asChild>

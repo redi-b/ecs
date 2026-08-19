@@ -9,8 +9,8 @@
 .lv-contact-info h2 { margin: 0 0 20px; font-family: var(--lv-font-display); font-size: clamp(22px,1.72vw,26px); font-weight: 400; line-height: normal; letter-spacing: 0; }
 .lv-contact-info > div { display: flex; flex-direction: column; gap: 12px; }
 .lv-contact-info p { margin: 0; display: grid; grid-template-columns: 40px minmax(0,1fr); gap: 10px; align-items: center; }
-.lv-contact-info p > span:first-child { width: 40px; height: 40px; display: grid; place-items: center; border: 1px solid var(--lv-bg); border-radius: 8px; background: var(--lv-green); color: var(--lv-on-primary); box-shadow: 0 4px 11px color-mix(in srgb,var(--lv-accent) 72%,transparent); }
-.lv-contact-info p > span:first-child img { width: 16px; height: 16px; }
+.lv-contact-info p > span:first-child { width: 42px; height: 42px; display: grid; place-items: center; border: 1px solid color-mix(in srgb,var(--lv-green) 34%,var(--lv-bg)); border-radius: 12px; background: color-mix(in srgb,var(--lv-accent) 62%,var(--lv-bg)); color: var(--lv-ink); }
+.lv-contact-info p > span:first-child img { width: 17px; height: 17px; }
 .lv-contact-info p > span:last-child { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
 .lv-contact-info small { color: color-mix(in srgb,var(--lv-ink) 62%,var(--lv-bg)); }
 .lv-contact-info strong, .lv-contact-info a, .lv-contact-info .lv-contact-socials { color: var(--lv-ink); font-size: 14px; font-weight: 400; text-decoration: none; }
@@ -39,4 +39,7 @@
   .lv-contact-form { position: static; order: -1; grid-template-columns: 1fr; padding: 20px 16px; }
   .lv-contact-form label.is-wide, .lv-contact-form button, .lv-contact-form__unavailable { grid-column: auto; }
   .lv-contact-map { height: 320px; }
+  .lv-contact-info { padding: 20px; }
+  .lv-contact-info p { grid-template-columns: 42px minmax(0,1fr); gap: 12px; }
+  .lv-contact-info strong, .lv-contact-info a, .lv-contact-info .lv-contact-socials { overflow-wrap: anywhere; }
 }
