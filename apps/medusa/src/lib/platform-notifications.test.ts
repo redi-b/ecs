@@ -27,7 +27,7 @@ describe("buildOrderNotificationPayload", () => {
     });
 
     assert.equal(payload.orderId, "order_1");
-    assert.equal(payload.orderCode, "ORD-1");
+    assert.equal(payload.orderCode, undefined);
     assert.equal(payload.orderDisplayId, undefined);
     assert.equal(payload.medusaSalesChannelId, "sc_1");
     assert.equal(payload.amount, "120000");
