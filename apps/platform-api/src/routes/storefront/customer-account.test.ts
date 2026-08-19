@@ -182,6 +182,36 @@ describe("storefront customer account boundary", () => {
     });
   });
 
+  it("reuses an equivalent saved address instead of creating a duplicate", async () => {
+    const forwarded: Request[] = [];
+    const response = await handleCustomerAccountRequest({
+      ...base,
+      request: new Request("http://shop.test/store/customer/addresses", {
+        body: JSON.stringify({
+          addressName: "Another label",
+          firstName: "Liya",
+          lastName: "Tadesse",
+          phone: "+251911000000",
+          address1: "  Bole   Road ",
+          city: "addis ababa",
+          countryCode: "ET",
+        }),
+        headers: { authorization: "Bearer customer_token", "content-type": "application/json" },
+        method: "POST",
+      }),
+      medusaStoreFetch: async (request) => {
+        const captured = request instanceof Request ? request : new Request(request);
+        forwarded.push(captured);
+        return Response.json({ addresses: [{ id: "ca_1", address_1: "Bole Road", city: "Addis Ababa", country_code: "et" }] });
+      },
+    });
+
+    assert.equal(response?.status, 200);
+    assert.equal(forwarded.length, 1);
+    assert.equal(forwarded[0]?.method, "GET");
+    assert.equal((await response?.json())?.reused, true);
+  });
+
   it("rejects saved-address access without customer authentication", async () => {
     const response = await handleCustomerAccountRequest({
       ...base,
