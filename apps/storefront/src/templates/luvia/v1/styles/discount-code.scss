@@ -1,0 +1,73 @@
+.lv-discount-code {
+  padding: 16px;
+  display: grid;
+  gap: 12px;
+  border: 1px solid var(--lv-line);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--lv-soft) 48%, white);
+}
+
+.lv-discount-code label {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--lv-ink);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.lv-discount-code__field {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+}
+
+.lv-discount-code input {
+  min-width: 0;
+  height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--lv-line);
+  border-radius: 999px;
+  background: white;
+  color: var(--lv-ink);
+  font: inherit;
+  text-transform: uppercase;
+  outline: none;
+}
+
+.lv-discount-code input:focus-visible {
+  border-color: var(--lv-green);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--lv-green) 18%, transparent);
+}
+
+.lv-discount-code button {
+  min-height: 44px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--lv-ink);
+  color: var(--lv-bg);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.lv-discount-code button:disabled { cursor: wait; opacity: .58; }
+.lv-discount-code form > small,
+.lv-discount-code__applied small { color: color-mix(in srgb, var(--lv-ink) 54%, var(--lv-bg)); font-size: 11px; }
+.lv-discount-code form > small { display: block; margin-top: 8px; line-height: 1.4; }
+.lv-discount-code__applied { display: grid; gap: 8px; }
+.lv-discount-code__applied:empty { display: none; }
+.lv-discount-code__applied:not(:empty) { padding-top: 12px; border-top: 1px solid var(--lv-line); }
+.lv-discount-code__applied form { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.lv-discount-code__applied span { display: flex; min-width: 0; flex-direction: column; }
+.lv-discount-code__applied b { overflow: hidden; font-size: 13px; text-overflow: ellipsis; }
+.lv-discount-code__applied button { min-height: 34px; padding-inline: 11px; background: transparent; color: var(--lv-ink); font-size: 12px; }
+.lv-discount-code__status { min-height: 0; margin: 0; color: color-mix(in srgb, var(--lv-green) 76%, var(--lv-ink)); font-size: 12px; line-height: 1.4; }
+.lv-discount-code__status:empty { display: none; }
+.lv-discount-code__status.is-error { color: #a13b3b; }
+
+@media (max-width: 420px) {
+  .lv-discount-code { padding: 14px; }
+  .lv-discount-code__field { grid-template-columns: 1fr; }
+  .lv-discount-code__field button { width: 100%; }
+}

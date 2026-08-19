@@ -83,6 +83,7 @@
 .lv-checkout-summary li strong { overflow: hidden; font-size: 14px; text-overflow: ellipsis; white-space: nowrap; }
 .lv-checkout-summary li span { color: color-mix(in srgb,var(--lv-ink) 48%,var(--lv-bg)); font-size: 12px; }
 .lv-checkout-summary li b { font-size: 14px; white-space: nowrap; }
+.lv-checkout-summary .lv-discount-code { margin: 4px 0 20px; }
 .lv-checkout-summary dl { margin: 0; display: flex; flex-direction: column; gap: 10px; }
 .lv-checkout-summary dl > div { display: flex; justify-content: space-between; color: color-mix(in srgb,var(--lv-ink) 48%,var(--lv-bg)); font-size: 14px; }
 .lv-checkout-summary dd { margin: 0; text-align: right; }
