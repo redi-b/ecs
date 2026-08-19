@@ -16,7 +16,13 @@ describe("storefront settings state", () => {
         isPublished: true,
         publishedTemplateKey: "luvia@1",
       }),
-      { canPause: true, canPublish: false, hasPendingChanges: false },
+      {
+        canPause: true,
+        canPublish: false,
+        draftUsesDifferentTemplate: false,
+        hasPendingChanges: false,
+        mode: "live-current",
+      },
     );
   });
 
@@ -28,7 +34,49 @@ describe("storefront settings state", () => {
         isPublished: true,
         publishedTemplateKey: "luvia@1",
       }),
-      { canPause: false, canPublish: true, hasPendingChanges: true },
+      {
+        canPause: true,
+        canPublish: true,
+        draftUsesDifferentTemplate: false,
+        hasPendingChanges: true,
+        mode: "live-with-draft",
+      },
+    );
+  });
+
+  it("keeps pause available while a different draft design awaits publication", () => {
+    assert.deepEqual(
+      getStorefrontPublicationState({
+        draftTemplateKey: "editorial@1",
+        hasUnpublishedChanges: false,
+        isPublished: true,
+        publishedTemplateKey: "luvia@1",
+      }),
+      {
+        canPause: true,
+        canPublish: true,
+        draftUsesDifferentTemplate: true,
+        hasPendingChanges: true,
+        mode: "live-with-draft",
+      },
+    );
+  });
+
+  it("offers publish but never pause when the shop is offline", () => {
+    assert.deepEqual(
+      getStorefrontPublicationState({
+        draftTemplateKey: "luvia@1",
+        hasUnpublishedChanges: false,
+        isPublished: false,
+        publishedTemplateKey: null,
+      }),
+      {
+        canPause: false,
+        canPublish: true,
+        draftUsesDifferentTemplate: false,
+        hasPendingChanges: false,
+        mode: "paused",
+      },
     );
   });
 

@@ -8,16 +8,26 @@ export function getStorefrontPublicationState(input: {
   isPublished: boolean;
   publishedTemplateKey: string | null | undefined;
 }) {
-  const hasPendingChanges = Boolean(
+  const draftUsesDifferentTemplate = Boolean(
     input.isPublished &&
-      (input.hasUnpublishedChanges ||
-        (input.draftTemplateKey && input.draftTemplateKey !== input.publishedTemplateKey)),
+      input.draftTemplateKey &&
+      input.draftTemplateKey !== input.publishedTemplateKey,
   );
+  const hasPendingChanges = Boolean(
+    input.isPublished && (input.hasUnpublishedChanges || draftUsesDifferentTemplate),
+  );
+  const mode = !input.isPublished
+    ? "paused"
+    : hasPendingChanges
+      ? "live-with-draft"
+      : "live-current";
 
   return {
-    canPause: input.isPublished && !hasPendingChanges,
+    canPause: input.isPublished,
     canPublish: !input.isPublished || hasPendingChanges,
+    draftUsesDifferentTemplate,
     hasPendingChanges,
+    mode,
   };
 }
 
