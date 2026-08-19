@@ -7,6 +7,7 @@
   "aria": {
     "section": "አጠቃላይ እይታ",
     "chartMetric": "ምን እንደሚታይ",
+    "chartRange": "የጊዜ ክልል",
     "mixView": "እንዴት እንደሚከፈል",
     "closeLaunch": "የጀማሪ ረዳትን ዝጋ"
   },
@@ -58,7 +59,26 @@
     "description": "ገቢ፣ ትዕዛዞች እና ደንበኞች በጊዜ።",
     "empty": "ትዕዛዝ ሲጀመር እዚህ ይታያል።",
     "emptyTitle": "ገና የሽያጭ እንቅስቃሴ የለም",
-    "emptyCta": "በእጅ ትዕዛዝ"
+    "emptyCta": "በእጅ ትዕዛዝ",
+    "rangeStart": "ከ",
+    "rangeEnd": "እስከ",
+    "customRangeLabel": "{start} – {end}",
+    "datePicker": {
+      "apply": "ተግብር",
+      "available": "ያለው መረጃ",
+      "cancel": "ተው",
+      "chooseEnd": "የመጨረሻ ቀን ይምረጡ",
+      "chooseStart": "የመጀመሪያ ቀን ይምረጡ",
+      "clear": "አጽዳ",
+      "end": "እስከ",
+      "start": "ከ"
+    },
+    "range": {
+      "7d": "ያለፉት 7 ቀናት",
+      "30d": "ያለፉት 30 ቀናት",
+      "90d": "ያለፉት 90 ቀናት",
+      "custom": "ቀን ይምረጡ"
+    }
   },
   "basket": {
     "title": "አማካይ የትዕዛዝ ዋጋ",

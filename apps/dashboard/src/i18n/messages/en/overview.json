@@ -7,6 +7,7 @@
   "aria": {
     "section": "Merchant overview",
     "chartMetric": "Chart metric",
+    "chartRange": "Chart date range",
     "mixView": "Mix view",
     "closeLaunch": "Close launch assistant"
   },
@@ -58,7 +59,26 @@
     "description": "Revenue, orders, and customers from available commerce records.",
     "empty": "Commerce activity will appear here after orders are available for this shop.",
     "emptyTitle": "No sales activity yet",
-    "emptyCta": "Draft order"
+    "emptyCta": "Draft order",
+    "rangeStart": "From",
+    "rangeEnd": "To",
+    "customRangeLabel": "{start} – {end}",
+    "datePicker": {
+      "apply": "Apply range",
+      "available": "Available",
+      "cancel": "Cancel",
+      "chooseEnd": "Choose the end date",
+      "chooseStart": "Choose the start date",
+      "clear": "Clear",
+      "end": "End",
+      "start": "Start"
+    },
+    "range": {
+      "7d": "Last 7 days",
+      "30d": "Last 30 days",
+      "90d": "Last 90 days",
+      "custom": "Custom range"
+    }
   },
   "basket": {
     "title": "Basket quality",

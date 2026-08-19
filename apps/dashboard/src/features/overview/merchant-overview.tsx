@@ -6,7 +6,6 @@ import { useMemo, useState } from "react";
 import {
   Area,
   Bar,
-  Brush,
   CartesianGrid,
   ComposedChart,
   Line,
@@ -22,6 +21,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { DateRangePicker } from "@/components/ui/date-range-picker";
 import {
   ChartContainer,
   ChartLegend,
@@ -39,6 +39,12 @@ import {
 } from "@/components/ui/select";
 import type { ChartMetric, MerchantOverviewProps } from "@/features/overview/overview-config";
 import { chartColorConfig } from "@/features/overview/overview-config";
+import {
+  filterSeriesByRange,
+  getPresetRange,
+  getSeriesBounds,
+  type OverviewRangePreset,
+} from "@/features/overview/overview-range";
 import { useI18n } from "@/i18n/provider";
 import type { MessageKey } from "@/i18n/messages";
 import { LaunchAssistant } from "@/features/overview/launch-assistant";
@@ -196,6 +202,8 @@ function getBillingNotice(
 export function MerchantOverview({ summary }: MerchantOverviewProps) {
   const { t, locale } = useI18n();
   const [metric, setMetric] = useState<ChartMetric>("revenue");
+  const [rangePreset, setRangePreset] = useState<OverviewRangePreset>("30d");
+  const [customRange, setCustomRange] = useState({ start: "", end: "" });
   const [mixView, setMixView] = useState<MixView>("payment");
 
   const tradingChartConfig = useMemo(
@@ -223,11 +231,25 @@ export function MerchantOverview({ summary }: MerchantOverviewProps) {
   const operations = summary.operations;
   const series = operations?.series ?? [];
   const hasSeries = series.length > 0;
-  const tradingRows = series.map((row) => ({
+  const seriesBounds = getSeriesBounds(series);
+  const selectedRange = rangePreset === "custom"
+    ? {
+        start: customRange.start || seriesBounds?.start || "",
+        end: customRange.end || seriesBounds?.end || "",
+      }
+    : getPresetRange(series, rangePreset);
+  const visibleSeries = selectedRange ? filterSeriesByRange(series, selectedRange) : series;
+  const tradingRows = visibleSeries.map((row) => ({
     ...row,
     orderBars: row.orders,
     orderTrend: row.orders,
   }));
+  const rangeLabel = rangePreset === "custom" && selectedRange
+    ? t("overview.trading.customRangeLabel", {
+        end: formatReadableDate(selectedRange.end, locale),
+        start: formatReadableDate(selectedRange.start, locale),
+      })
+    : t(`overview.trading.range.${rangePreset}` as MessageKey);
   const currencyCode = operations?.totals.currencyCode?.toUpperCase() ?? "ETB";
   const metricLabel =
     metric === "revenue"
@@ -500,7 +522,29 @@ export function MerchantOverview({ summary }: MerchantOverviewProps) {
             <CardDescription>{t("overview.trading.description")}</CardDescription>
           </div>
           {hasSeries ? (
-            <div className="col-start-2 row-span-2 row-start-1 self-start justify-self-end">
+            <div className="col-start-2 row-span-2 row-start-1 flex flex-wrap justify-end gap-2 self-start justify-self-end">
+              <Select
+                value={rangePreset}
+                onValueChange={(value) => {
+                  const next = value as OverviewRangePreset;
+                  if (next === "custom" && seriesBounds && !customRange.start) {
+                    setCustomRange(seriesBounds);
+                  }
+                  setRangePreset(next);
+                }}
+              >
+                <SelectTrigger size="sm" aria-label={t("overview.aria.chartRange")}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent align="end">
+                  <SelectGroup>
+                    <SelectItem value="7d">{t("overview.trading.range.7d")}</SelectItem>
+                    <SelectItem value="30d">{t("overview.trading.range.30d")}</SelectItem>
+                    <SelectItem value="90d">{t("overview.trading.range.90d")}</SelectItem>
+                    <SelectItem value="custom">{t("overview.trading.range.custom")}</SelectItem>
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
               <Select value={metric} onValueChange={(value) => setMetric(value as ChartMetric)}>
                 <SelectTrigger size="sm" aria-label={t("overview.aria.chartMetric")}>
                   <SelectValue />
@@ -517,6 +561,29 @@ export function MerchantOverview({ summary }: MerchantOverviewProps) {
           ) : null}
         </CardHeader>
         <CardContent className="flex min-h-0 flex-1 flex-col pt-4">
+          {hasSeries && rangePreset === "custom" && seriesBounds ? (
+            <div className="mb-3 flex justify-end rounded-xl border border-border/80 bg-muted/25 p-3">
+              <DateRangePicker
+                className="w-full sm:w-auto sm:min-w-72"
+                id="trading-date-range"
+                max={seriesBounds.end}
+                min={seriesBounds.start}
+                labels={{
+                  apply: t("overview.trading.datePicker.apply"),
+                  available: t("overview.trading.datePicker.available"),
+                  cancel: t("overview.trading.datePicker.cancel"),
+                  chooseEnd: t("overview.trading.datePicker.chooseEnd"),
+                  chooseStart: t("overview.trading.datePicker.chooseStart"),
+                  clear: t("overview.trading.datePicker.clear"),
+                  end: t("overview.trading.datePicker.end"),
+                  start: t("overview.trading.datePicker.start"),
+                }}
+                onChange={setCustomRange}
+                placeholder={t("overview.trading.range.custom")}
+                value={customRange}
+              />
+            </div>
+          ) : null}
           {hasSeries ? (
             <div className="relative min-h-72 w-full flex-1">
               <div className="absolute inset-0 px-2">
@@ -603,13 +670,6 @@ export function MerchantOverview({ summary }: MerchantOverviewProps) {
                       dot={false}
                       hide={metric === "revenue"}
                     />
-                    <Brush
-                      dataKey="date"
-                      height={22}
-                      stroke="var(--muted-foreground)"
-                      travellerWidth={10}
-                      tickFormatter={(v) => formatShortDate(String(v), locale)}
-                    />
                   </ComposedChart>
                 </ChartContainer>
               </div>
@@ -626,7 +686,7 @@ export function MerchantOverview({ summary }: MerchantOverviewProps) {
           {hasSeries ? (
             <div className="mt-3 flex shrink-0 flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
               <span>{t("overview.metrics.metricView", { label: String(metricLabel) })}</span>
-              <span>{operations?.range.label ?? t("overview.metrics.noSalesYet")}</span>
+              <span>{rangeLabel}</span>
             </div>
           ) : null}
         </CardContent>
