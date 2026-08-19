@@ -384,6 +384,61 @@ export function appWithResolution(
     }) => Promise<MerchantProductStockUpdateResult>;
   },
 ) {
+  const defaultDashboardSummary = async (input: { tenantId: string }) => {
+    if (!result.ok || result.context.tenantId !== input.tenantId) {
+      return { ok: false as const, error: "tenant_not_found" as const, status: 404 as const };
+    }
+
+    const tenant = result.context;
+    return {
+      ok: true as const,
+      context: {
+        domainId: tenant.domainId,
+        hostname: tenant.hostname,
+        medusaPublishableKeyId: tenant.medusaPublishableKeyId,
+        medusaRegionId: tenant.medusaRegionId,
+        medusaSalesChannelId: tenant.medusaSalesChannelId,
+        medusaStockLocationId: tenant.medusaStockLocationId,
+        medusaStoreId: tenant.medusaStoreId,
+        publishedRevisionId: tenant.publishedRevisionId,
+        publishedTemplateKey: tenant.publishedRevisionId ? tenant.templateKey : null,
+        hasUnpublishedChanges: false,
+        savedTemplateKeys: [],
+        status: tenant.status,
+        templateId: tenant.templateId,
+        templateKey: tenant.templateKey,
+        templateVersion: tenant.templateVersion,
+        tenantHandle: tenant.tenantHandle,
+        tenantId: tenant.tenantId,
+        tenantName: tenant.tenantName,
+      },
+      summary: {
+        tenant: {
+          id: tenant.tenantId,
+          name: tenant.tenantName,
+          handle: tenant.tenantHandle,
+          status: tenant.status,
+        },
+        domain: { id: tenant.domainId, hostname: tenant.hostname },
+        commerce: {
+          hasPublishableKey: Boolean(tenant.medusaPublishableKeyId),
+          hasSalesChannel: Boolean(tenant.medusaSalesChannelId),
+          hasStore: Boolean(tenant.medusaStoreId),
+        },
+        storefront: {
+          isPublished: Boolean(tenant.publishedRevisionId),
+          hasUnpublishedChanges: false,
+          publishedRevisionId: tenant.publishedRevisionId,
+          publishedTemplateKey: tenant.publishedRevisionId ? tenant.templateKey : null,
+          savedTemplateKeys: [],
+          templateId: tenant.templateId,
+          templateKey: tenant.templateKey,
+          templateVersion: tenant.templateVersion,
+        },
+      },
+    };
+  };
+
   return createPlatformApp({
     createStorefrontInquiry: options?.createStorefrontInquiry,
     listStorefrontInquiries: options?.listStorefrontInquiries,
@@ -414,7 +469,7 @@ export function appWithResolution(
     getTenantForUser: options?.getTenantForUser,
     updateTenantShopSettings: options?.updateTenantShopSettings,
     getTenantCommerceContext: options?.getTenantCommerceContext,
-    getTenantDashboardSummary: options?.getTenantDashboardSummary,
+    getTenantDashboardSummary: options?.getTenantDashboardSummary ?? defaultDashboardSummary,
     getTenantInsightsSummary: options?.getTenantInsightsSummary,
     getTenantReadiness: options?.getTenantReadiness,
     getOnboardingState: options?.getOnboardingState,

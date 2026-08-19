@@ -40,10 +40,18 @@ export function registerMerchantDashboardRoutes(
       return context.json({ error: "dashboard_forbidden" }, 403);
     }
 
+    const dashboard = await options.getTenantDashboardSummary?.({
+      tenantId: result.context.tenantId,
+    });
+
+    if (!dashboard?.ok || !dashboard.context) {
+      return context.json({ error: "dashboard_summary_unavailable" }, 503);
+    }
+
     return context.json(
       await getMerchantDashboardAccessPayload({
         actor: authorization.actor,
-        context: result.context,
+        context: dashboard.context,
       }),
     );
   });
@@ -73,10 +81,18 @@ export function registerMerchantDashboardRoutes(
       return context.json({ error: "dashboard_forbidden" }, 403);
     }
 
+    const dashboard = await options.getTenantDashboardSummary?.({
+      tenantId: result.context.tenantId,
+    });
+
+    if (!dashboard?.ok || !dashboard.context) {
+      return context.json({ error: "dashboard_summary_unavailable" }, 503);
+    }
+
     return context.json(
       await getMerchantDashboardPayload({
         actor: authorization.actor,
-        context: result.context,
+        context: dashboard.context,
       }),
     );
   });
