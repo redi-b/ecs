@@ -2,7 +2,8 @@
 import type { StoreCategory, StoreCollection, StoreProduct } from "../../../lib/commerce/types";
 import Layout from "./Layout.astro";
 import ProductCard from "./ProductCard.astro";
-import heroBackground from "./assets/products-hero-background-image.png";
+import TemplateImage from "./TemplateImage.astro";
+import heroBackground from "./assets/products-hero-background-image.webp";
 import chevronIcon from "./icons/chevron-icon.svg";
 import { parseLuviaData } from "./lib";
 
@@ -87,7 +88,8 @@ const pageWindow = Array.from({ length: totalPages }, (_, index) => index + 1).f
 
 <Layout tenantName={tenantName} header={template.header} footer={template.footer} themeTokens={themeTokens} cartCount={cartCount} deferCartCount={deferCartCount} title="Products Listing">
   <main class="lv-shop">
-    <section class="lv-shop-hero" style={`--shop-hero: url(${heroBackground.src})`}>
+    <section class="lv-shop-hero">
+      <TemplateImage class="lv-shop-hero__media" fallback={heroBackground} alt="" widths={[480, 768, 1024, 1512, 2400]} sizes="100vw" loading="eager" fetchpriority="high" />
       <div class="lv-shop-hero__content">
         <nav aria-label="Breadcrumb"><a href="/">Home</a><img src={chevronIcon.src} alt="" /><span>Shop</span></nav>
         <h1>Our Products Listing</h1>

@@ -1,0 +1,34 @@
+---
+import { Image } from "astro:assets";
+
+interface Props {
+  src?: string | null;
+  fallback: ImageMetadata;
+  alt: string;
+  widths?: number[];
+  sizes?: string;
+  loading?: "eager" | "lazy";
+  fetchpriority?: "high" | "low" | "auto";
+  class?: string;
+  [key: `data-${string}`]: string | undefined;
+}
+
+const {
+  src,
+  fallback,
+  alt,
+  widths = [480, 768, 1024, 1440, 1920],
+  sizes = "100vw",
+  loading = "lazy",
+  fetchpriority = "auto",
+  ...attributes
+} = Astro.props;
+const override = src && src !== fallback.src ? src : null;
+const responsiveWidths = [...new Set([...widths.filter((width) => width < fallback.width), fallback.width])];
+---
+
+{override ? (
+  <Image src={override} width={fallback.width} height={fallback.height} alt={alt} loading={loading} decoding="async" fetchpriority={fetchpriority} {...attributes} />
+) : (
+  <Image src={fallback} format="webp" quality={82} widths={responsiveWidths} sizes={sizes} alt={alt} loading={loading} decoding="async" fetchpriority={fetchpriority} {...attributes} />
+)}
