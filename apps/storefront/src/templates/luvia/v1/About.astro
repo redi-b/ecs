@@ -1,8 +1,10 @@
 ---
 import Layout from "./Layout.astro";
-import aboutImage from "./assets/about-feature-image.png";
-import brandImage from "./assets/brand-statement-image.png";
-import categoriesImage from "./assets/categories-hero-image.png";
+import TemplateImage from "./TemplateImage.astro";
+import aboutImage from "./assets/about-feature-image.webp";
+import brandImage from "./assets/brand-statement-image.webp";
+import categoriesImage from "./assets/categories-hero-image.webp";
+import heroImage from "./assets/hero-bg-alt-image.webp";
 import sparkleIcon from "./icons/sparkle-icon.svg";
 import { parseLuviaData, storefrontAsset } from "./lib";
 interface Props { data: unknown; themeTokens?: unknown; tenantName: string; deferCartCount?: boolean; }
@@ -12,11 +14,11 @@ const expertiseImage = storefrontAsset(template.home.expertise.imageAssetId, abo
 ---
 <Layout tenantName={tenantName} header={template.header} footer={template.footer} themeTokens={themeTokens} deferCartCount={deferCartCount} title="About">
   <main class="lv-about-page">
-    <section class="lv-about-hero"><p>ABOUT {tenantName.toUpperCase()}</p><h1>Beauty, considered<br />from every angle.</h1><div><span>{template.home.story.body}</span><a href="/products">Explore the collection</a></div></section>
-    <section class="lv-about-principle"><div><img src={brandImage.src} alt="Selected cosmetic ingredients" /><span><img src={sparkleIcon.src} alt="" />OUR APPROACH</span></div><div><h2>{template.home.expertise.title}</h2><p>{template.home.expertise.body}</p></div></section>
+    <section class="lv-about-hero"><TemplateImage class="lv-about-hero__media" fallback={heroImage} alt="" widths={[480, 768, 1024, 1512, 2400]} sizes="(max-width: 900px) calc(100vw - 40px), calc(100vw - 120px)" loading="eager" fetchpriority="high" /><p>ABOUT {tenantName.toUpperCase()}</p><h1>Beauty, considered<br />from every angle.</h1><div><span>{template.home.story.body}</span><a href="/products">Explore the collection</a></div></section>
+    <section class="lv-about-principle"><div><TemplateImage fallback={brandImage} alt="Selected cosmetic ingredients" widths={[480, 768, 1024, 1440]} sizes="(max-width: 760px) calc(100vw - 40px), 50vw" /><span><img src={sparkleIcon.src} alt="" />OUR APPROACH</span></div><div><h2>{template.home.expertise.title}</h2><p>{template.home.expertise.body}</p></div></section>
     <blockquote>{template.home.expertise.quote}</blockquote>
-    <section class="lv-about-feature"><img src={expertiseImage} alt="Inside the beauty studio" /><div><p>WHAT GUIDES US</p><h2>{template.home.brandStatement.firstLine}<br />{template.home.brandStatement.middleLine}<br />{template.home.brandStatement.lastLine}</h2><span>Thoughtful selections, clear information, and a shopping experience designed to help every customer choose with confidence.</span><a href="/contact">Talk to our team</a></div></section>
-    <section class="lv-about-closing"><img src={categoriesImage.src} alt="Botanical skincare ritual" /><div><p>A better routine starts with a better choice.</p><a href="/products">Find your match</a></div></section>
+    <section class="lv-about-feature"><TemplateImage src={expertiseImage} fallback={aboutImage} alt="Inside the beauty studio" widths={[480, 768, 1024]} sizes="(max-width: 760px) calc(100vw - 40px), 58vw" /><div><p>WHAT GUIDES US</p><h2>{template.home.brandStatement.firstLine}<br />{template.home.brandStatement.middleLine}<br />{template.home.brandStatement.lastLine}</h2><span>Thoughtful selections, clear information, and a shopping experience designed to help every customer choose with confidence.</span><a href="/contact">Talk to our team</a></div></section>
+    <section class="lv-about-closing"><TemplateImage fallback={categoriesImage} alt="Botanical skincare ritual" widths={[480, 768, 1024]} sizes="(max-width: 760px) calc(100vw - 40px), calc(100vw - 120px)" /><div><p>A better routine starts with a better choice.</p><a href="/products">Find your match</a></div></section>
   </main>
 </Layout>
 <style is:global lang="scss">@use "./styles/about.scss";</style>

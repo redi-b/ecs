@@ -1,5 +1,7 @@
 .lv-shop { min-height: 100vh; padding-bottom: 110px; }
-.lv-shop-hero { position: relative; height: 485px; overflow: hidden; border-radius: 0 0 24px 24px; background: linear-gradient(rgba(10,25,12,.23), rgba(10,25,12,.23)), var(--shop-hero) center/cover no-repeat; }
+.lv-shop-hero { position: relative; isolation: isolate; height: 485px; overflow: hidden; border-radius: 0 0 24px 24px; background: rgba(10,25,12,.23); }
+.lv-shop-hero::after { position: absolute; z-index: -1; inset: 0; content: ""; background: rgba(10,25,12,.23); }
+.lv-shop-hero__media { position: absolute; z-index: -2; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .lv-shop-hero__content { height: 100%; padding-top: 64px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px; color: white; }
 .lv-shop-hero nav { display: flex; align-items: center; gap: 7px; font-size: 14px; }
 .lv-shop-hero nav a { color: inherit; text-decoration: none; }

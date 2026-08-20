@@ -1,0 +1,10 @@
+---
+import TemplateAsset from "../../../components/media/TemplateAsset.astro";
+import type { ComponentProps } from "astro/types";
+
+type Props = ComponentProps<typeof TemplateAsset>;
+
+const props = Astro.props;
+---
+
+<TemplateAsset {...props} />

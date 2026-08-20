@@ -1,6 +1,7 @@
 .lv-home { overflow: hidden; background: var(--lv-bg); }
 
-.lv-hero { position: relative; min-height: 739px; background: var(--lv-dark) var(--hero-bg) center/cover no-repeat; color: var(--lv-on-dark); }
+.lv-hero { position: relative; min-height: 739px; overflow: hidden; background: var(--lv-dark); color: var(--lv-on-dark); }
+.lv-hero__background { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .lv-hero::before { position: absolute; inset: 0; content: ""; background: rgba(8,51,12,.24); }
 .lv-hero__copy { position: relative; z-index: 2; width: 68%; padding: 143px 0 34px 60px; }
 .lv-hero__copy h1 { max-width: 1039px; margin: 0; font-family: var(--lv-font-hero); font-size: clamp(44px, 6.75vw, 102px); font-weight: 500; line-height: clamp(44px, 6.62vw, 100px); letter-spacing: -.04em; text-shadow: 0 4px 6px rgba(203,243,207,.42); }
