@@ -18,8 +18,14 @@ export function initLuviaMotion() {
     anchors: true,
     lerp: 0.08,
     smoothWheel: true,
-    syncTouch: true,
-    touchMultiplier: 1,
+    syncTouch: false,
+    prevent: (node) => {
+      return Boolean(
+        node instanceof Element &&
+          (node.hasAttribute("data-lenis-prevent") ||
+            node.closest("[data-lenis-prevent], [data-cart-drawer], .lv-cart-drawer, .lv-nav") !== null),
+      );
+    },
   });
   const onScroll = () => ScrollTrigger.update();
   const onTick = (time: number) => lenis.raf(time * 1000);

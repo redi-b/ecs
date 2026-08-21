@@ -60,7 +60,7 @@ const isActiveLink = (href: string) => href === "/" ? pathname === "/" : pathnam
     <header class="lv-header">
       <a class="lv-logo" href="/" aria-label={`${tenantName} home`}><img src={logoUrl} alt={tenantName} data-editor-image-path="header.logoAssetId" /></a>
       <button class="lv-menu" type="button" aria-expanded="false" aria-controls="lv-navigation"><span></span><span></span><span></span><span class="sr-only">Menu</span></button>
-      <nav class="lv-nav" id="lv-navigation" aria-label="Store" data-editor-links-path="header.navigation">
+      <nav class="lv-nav" id="lv-navigation" data-lenis-prevent aria-label="Store" data-editor-links-path="header.navigation">
         {header.navigation.map((item, index) => <a class:list={{ "is-active": isActiveLink(item.href) }} href={item.href} aria-current={isActiveLink(item.href) ? "page" : undefined} data-editor-path={`header.navigation.${index}.label`} contenteditable={editorMode ? "plaintext-only" : undefined}>{item.label}</a>)}
         <span class="lv-nav__customer" aria-label="Customer links">
           <a href="/wishlist">Wishlist</a>
@@ -90,10 +90,10 @@ const isActiveLink = (href: string) => href === "/" ? pathname === "/" : pathnam
     </footer>
     <aside class="lv-inquiry" data-editor-section="footer.inquiry"><p data-editor-path="footer.inquiry.title" contenteditable={editorMode ? "plaintext-only" : undefined}>{footer.inquiry.title}</p><ActionButton href={footer.inquiry.ctaHref} iconSrc={chatIcon.src} tone="secondary" size="small" editorPath="footer.inquiry.ctaLabel" editorRelatedPaths={["footer.inquiry.ctaHref"]} editorMode={editorMode}>{footer.inquiry.ctaLabel}</ActionButton></aside>
     <button class="lv-cart-backdrop" type="button" data-cart-backdrop aria-label="Close cart" hidden></button>
-    <aside class="lv-cart-drawer" data-cart-drawer role="dialog" aria-modal="true" aria-labelledby="lv-cart-title" hidden>
+    <aside class="lv-cart-drawer" data-cart-drawer data-lenis-prevent role="dialog" aria-modal="true" aria-labelledby="lv-cart-title" hidden>
       <header><div><h2 id="lv-cart-title">Your Cart</h2><span data-cart-drawer-count>0 items</span></div><button type="button" data-cart-close aria-label="Close cart"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 7 10 10M17 7 7 17" /></svg></button></header>
       <div class="lv-cart-drawer__status" data-cart-status aria-live="polite"></div>
-      <div class="lv-cart-drawer__items" data-cart-items></div>
+      <div class="lv-cart-drawer__items" data-cart-items data-lenis-prevent></div>
       <footer data-cart-footer hidden><dl><div><dt>Subtotal</dt><dd data-cart-subtotal></dd></div><div><dt>Delivery</dt><dd>Calculated at checkout</dd></div><div><dt>Total</dt><dd data-cart-total></dd></div></dl><a class="lv-cart-checkout" href="/checkout">Checkout</a><a class="lv-cart-view" href="/cart">View cart and discounts</a><button type="button" data-cart-continue>Continue shopping</button></footer>
     </aside>
     <script>
