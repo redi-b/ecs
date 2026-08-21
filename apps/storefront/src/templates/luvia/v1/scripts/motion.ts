@@ -40,25 +40,6 @@ export function initLuviaMotion() {
   window.addEventListener("ecs:overlay-lock-change", onOverlayLockChange);
 
   const context = gsap.context(() => {
-    const heroItems = gsap.utils.toArray<HTMLElement>(
-      ".lv-hero__copy > h1, .lv-hero__copy > p, .lv-hero__copy > .lv-button, .lv-hero__copy > ul",
-    );
-    if (heroItems.length) {
-      gsap.from(heroItems, {
-        autoAlpha: 0,
-        duration: 0.9,
-        ease: "power3.out",
-        stagger: 0.1,
-        y: 28,
-      });
-    }
-    gsap.from(".lv-hero__portrait", {
-      autoAlpha: 0,
-      duration: 1.15,
-      ease: "power3.out",
-      scale: 1.025,
-    });
-
     gsap.utils.toArray<HTMLElement>(
       ".lv-story, .lv-top-picks, .lv-products, .lv-statement, .lv-about, .lv-categories, .lv-cta",
     ).forEach((section) => {

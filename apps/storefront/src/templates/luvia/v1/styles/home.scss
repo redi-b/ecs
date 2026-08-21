@@ -4,12 +4,22 @@
 .lv-hero__background { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .lv-hero::before { position: absolute; inset: 0; content: ""; background: rgba(8,51,12,.24); }
 .lv-hero__copy { position: relative; z-index: 2; width: 68%; padding: 143px 0 34px 60px; }
-.lv-hero__copy h1 { max-width: 1039px; margin: 0; font-family: var(--lv-font-hero); font-size: clamp(44px, 6.75vw, 102px); font-weight: 500; line-height: clamp(44px, 6.62vw, 100px); letter-spacing: -.04em; text-shadow: 0 4px 6px rgba(203,243,207,.42); }
-.lv-hero__copy > p { max-width: 510px; margin: 24px 0 30px; font-size: 16px; line-height: 23px; letter-spacing: -.02em; }
-.lv-hero__copy ul { margin: 150px 0 0; padding: 0; display: flex; gap: 8px; list-style: none; }
+@keyframes lv-hero-fade-up {
+  from { opacity: 0; transform: translateY(22px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes lv-hero-portrait-in {
+  from { opacity: 0; transform: scale(1.025); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.lv-hero__copy h1 { max-width: 1039px; margin: 0; font-family: var(--lv-font-hero); font-size: clamp(44px, 6.75vw, 102px); font-weight: 500; line-height: clamp(44px, 6.62vw, 100px); letter-spacing: -.04em; text-shadow: 0 4px 6px rgba(203,243,207,.42); animation: lv-hero-fade-up 0.8s cubic-bezier(.22,1,.36,1) 0.04s backwards; }
+.lv-hero__copy > p { max-width: 510px; margin: 24px 0 30px; font-size: 16px; line-height: 23px; letter-spacing: -.02em; animation: lv-hero-fade-up 0.8s cubic-bezier(.22,1,.36,1) 0.14s backwards; }
+.lv-hero__copy > .lv-button { animation: lv-hero-fade-up 0.8s cubic-bezier(.22,1,.36,1) 0.24s backwards; }
+.lv-hero__copy ul { margin: 150px 0 0; padding: 0; display: flex; gap: 8px; list-style: none; animation: lv-hero-fade-up 0.8s cubic-bezier(.22,1,.36,1) 0.34s backwards; }
 .lv-hero__copy li { position: relative; width: 146px; height: 71px; padding: 24px 10px 14px; border: 0; border-radius: 3px 14px 14px; background: rgba(12,35,15,.56); box-shadow: inset 0 1px 0 rgba(255,255,255,.12), 0 8px 24px rgba(4,20,7,.12); backdrop-filter: blur(12px) saturate(118%); -webkit-backdrop-filter: blur(12px) saturate(118%); font-size: 16px; line-height: 23px; letter-spacing: -.02em; }
 .lv-trust-badge { position: absolute; top: -17px; left: 9px; width: 34px; height: 34px; display: block; }
-.lv-hero__portrait { position: absolute; inset: 0 0 0 auto; width: 50%; }
+.lv-hero__portrait { position: absolute; inset: 0 0 0 auto; width: 50%; animation: lv-hero-portrait-in 1.1s cubic-bezier(.22,1,.36,1) backwards; }
 .lv-hero__portrait > img:first-child { width: 100%; height: 100%; object-fit: cover; border-radius: 0 0 0 100px; }
 .lv-hero__scroll { position: absolute; top: 580px; left: -35px; width: 70px; }
 .lv-promo { position: absolute; right: 60px; bottom: 40px; box-sizing: border-box; width: 375px; height: 178px; padding: 8px; overflow: hidden; border: 6px solid color-mix(in srgb,var(--lv-ink) 24%,var(--lv-bg)); border-radius: 22px; background: var(--lv-bg); color: var(--lv-ink); box-shadow: 0 8px 62px color-mix(in srgb,var(--lv-ink) 42%,transparent); }
