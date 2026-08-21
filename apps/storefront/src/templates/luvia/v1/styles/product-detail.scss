@@ -56,9 +56,9 @@
 .lv-related { width: calc(100% - 120px); max-width: 1392px; margin: 92px auto 0; }
 .lv-related header { margin-bottom: 28px; display: flex; align-items: center; justify-content: space-between; }
 .lv-related h2 { margin: 0; font: 400 38px/1 "GC Molecule Demo", Arial, sans-serif; letter-spacing: -.03em; }
-.lv-related__rail { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 8px; overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; scroll-snap-type: x mandatory; scroll-behavior: smooth; scrollbar-width: none; touch-action: pan-x pinch-zoom; -webkit-overflow-scrolling: touch; }
+.lv-related__rail { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; }
 .lv-related__rail::-webkit-scrollbar { display: none; }
-.lv-related__rail > * { scroll-snap-align: start; }
+.lv-related__rail .lv-product-card { width: calc((100vw - 144px) / 4); min-width: 270px; flex: none; scroll-snap-align: start; }
 .lv-sticky-product { display: none; }
 .lv-product-missing { min-height: 70vh; padding: 180px 24px 80px; text-align: center; }
 .lv-product-missing h1 { font: 400 52px/1 "GC Molecule Demo", Arial, sans-serif; }
@@ -68,7 +68,7 @@
   .lv-product-breadcrumb, .lv-product-detail, .lv-product-server-notice, .lv-related { width: calc(100% - 40px); }
   .lv-product-detail { grid-template-columns: minmax(0,1fr) minmax(360px,44%); gap: 24px; }
   .lv-product-gallery__main { width: 100%; }
-  .lv-related__rail { grid-template-columns: repeat(4,minmax(250px,1fr)); }
+  .lv-related__rail .lv-product-card { width: calc((100vw - 64px) / 3); min-width: 240px; }
 }
 
 @media (max-width: 760px) {
@@ -88,8 +88,8 @@
   .lv-product-feedback { margin-top: -4px; }
   .lv-related { margin-top: 58px; }
   .lv-related h2 { font-size: 32px; }
-  .lv-related .lv-rail-controls { display: none; }
-  .lv-related__rail { width: 100%; min-width: 0; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(72vw,280px); grid-template-columns: none; gap: 10px; scroll-snap-type: x proximity; }
+  .lv-related__rail { width: 100%; min-width: 0; }
+  .lv-related__rail .lv-product-card { width: 78vw; min-width: 250px; }
   .lv-sticky-product { position: fixed; z-index: 40; right: 0; bottom: 0; left: 0; min-height: 78px; padding: 10px 12px calc(10px + env(safe-area-inset-bottom)); display: flex; align-items: center; gap: 12px; border-top: 1px solid var(--lv-line); background: color-mix(in srgb,var(--lv-bg) 96%,white); box-shadow: 0 -12px 34px color-mix(in srgb,var(--lv-ink) 12%,transparent); transform: translateY(0); transition: transform 180ms ease,visibility 180ms ease; }
   .lv-sticky-product[data-hidden] { visibility: hidden; transform: translateY(110%); }
   .lv-sticky-product > div { min-width: 0; display: flex; flex: 1; flex-direction: column; }

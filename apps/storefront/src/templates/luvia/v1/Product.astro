@@ -86,7 +86,7 @@ const jsonLd = product ? {
       </div>
     </section>
 
-    {relatedProducts.length > 0 && <section class="lv-related" aria-labelledby="related-products-title"><header><h2 id="related-products-title">Related Products</h2><div class="lv-rail-controls"><button type="button" data-related-prev aria-label="Previous related products">←</button><button type="button" data-related-next aria-label="Next related products">→</button></div></header><div class="lv-related__rail" data-related-rail role="region" aria-label="Related products" tabindex="0">{relatedProducts.map((item) => <ProductCard product={item} />)}</div></section>}
+    {relatedProducts.length > 0 && <section class="lv-related" aria-labelledby="related-products-title"><header><h2 id="related-products-title">Related Products</h2><div class="lv-rail-controls"><button type="button" data-related-prev aria-label="Previous related products">←</button><button type="button" data-related-next aria-label="Next related products">→</button></div></header><div class="lv-related__rail" data-related-rail role="region" aria-label="Related products">{relatedProducts.map((item) => <ProductCard product={item} />)}</div></section>}
 
     <div class="lv-sticky-product" data-sticky-product><div><strong>{product.title}</strong><span data-sticky-price>{currentPrice}</span></div><button type="button" data-sticky-add disabled={!defaultVariant?.inStock}><span data-add-label>{defaultVariant?.inStock ? "Add to Cart" : "Out of stock"}</span><span class="lv-product-spinner" aria-hidden="true"></span></button></div>
     <script is:inline type="application/json" id="luvia-product-variants" set:html={JSON.stringify(variantsPayload)} />
