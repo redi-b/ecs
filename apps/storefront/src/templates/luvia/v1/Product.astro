@@ -88,7 +88,7 @@ const jsonLd = product ? {
 
     {relatedProducts.length > 0 && <section class="lv-related" aria-labelledby="related-products-title"><header><h2 id="related-products-title">Related Products</h2><div class="lv-rail-controls"><button type="button" data-related-prev aria-label="Previous related products">←</button><button type="button" data-related-next aria-label="Next related products">→</button></div></header><div class="lv-related__rail" data-related-rail role="region" aria-label="Related products" tabindex="0">{relatedProducts.map((item) => <ProductCard product={item} />)}</div></section>}
 
-    <div class="lv-sticky-product" data-sticky-product><div><strong>{product.title}</strong><span data-sticky-price>{currentPrice}</span></div><button type="button" data-sticky-add disabled={!defaultVariant?.inStock}>Add to Cart</button></div>
+    <div class="lv-sticky-product" data-sticky-product><div><strong>{product.title}</strong><span data-sticky-price>{currentPrice}</span></div><button type="button" data-sticky-add disabled={!defaultVariant?.inStock}><span data-add-label>{defaultVariant?.inStock ? "Add to Cart" : "Out of stock"}</span><span class="lv-product-spinner" aria-hidden="true"></span></button></div>
     <script is:inline type="application/json" id="luvia-product-variants" set:html={JSON.stringify(variantsPayload)} />
   </main>}
 </Layout>
@@ -121,7 +121,13 @@ const jsonLd = product ? {
       if (originalPrice) { const original = variant?.originalPriceAmount; originalPrice.textContent = original != null ? money(original, variant?.currencyCode) : ""; originalPrice.toggleAttribute("hidden", original == null); }
       if (badge) { const percentage = Number(variant?.discountPercentage || 0); const hasPromotion = percentage > 0 && variant?.originalPriceAmount > variant?.priceAmount; const soldOut = variant && !variant.inStock; const label = badge.querySelector("span"); const icon = badge.querySelector("[data-product-badge-icon]"); badge.toggleAttribute("hidden", !soldOut && !hasPromotion); badge.classList.toggle("is-out-of-stock", Boolean(soldOut)); badge.classList.toggle("is-promotion", !soldOut && hasPromotion); icon?.toggleAttribute("hidden", !hasPromotion || Boolean(soldOut)); if (label) label.textContent = soldOut ? "Out of stock" : hasPromotion ? `${percentage}% off` : ""; }
       if (stock) { stock.textContent = variant?.inStock ? `In stock${variant.sku ? ` · SKU ${variant.sku}` : ""}` : "Out of stock"; stock.classList.toggle("is-out", !variant?.inStock); }
-      [add, stickyAdd].forEach((button) => { if (button instanceof HTMLButtonElement) button.disabled = !variant?.inStock; });
+      [add, stickyAdd].forEach((button) => {
+        if (button instanceof HTMLButtonElement) {
+          button.disabled = !variant?.inStock;
+          const label = button.querySelector("[data-add-label]");
+          if (label) label.textContent = variant?.inStock ? "Add to Cart" : "Out of stock";
+        }
+      });
       root.querySelectorAll("[data-option-title]").forEach((node) => { if (!(node instanceof HTMLButtonElement)) return; const title = node.dataset.optionTitle; const value = node.dataset.optionValue; const probe = { ...selected, [title]: value }; const possible = variants.some((variant) => variant.inStock && Object.entries(probe).every(([key, expected]) => !variant.optionValues[key] || variant.optionValues[key] === expected)); node.disabled = !possible; node.setAttribute("aria-pressed", selected[title] === value ? "true" : "false"); });
     };
     root.addEventListener("click", (event) => {
@@ -174,31 +180,49 @@ const jsonLd = product ? {
     });
     const form = root.querySelector("[data-add-form]");
     const addButton = root.querySelector("[data-add-button]");
+    const stickyAdd = root.querySelector("[data-sticky-add]");
     const feedback = root.querySelector("[data-add-feedback]");
+    const updateButtons = (loading, text) => {
+      [addButton, stickyAdd].forEach((btn) => {
+        if (!(btn instanceof HTMLButtonElement)) return;
+        btn.disabled = loading;
+        btn.dataset.loading = loading ? "true" : "false";
+        const label = btn.querySelector("[data-add-label]");
+        if (label) label.textContent = text;
+      });
+    };
     form?.addEventListener("submit", async (event) => {
       event.preventDefault();
       if (!(form instanceof HTMLFormElement) || !(addButton instanceof HTMLButtonElement) || addButton.disabled) return;
-      const label = addButton.querySelector("[data-add-label]");
       const badge = document.querySelector("[data-cart-count]");
       const previousCount = Number(badge?.textContent || 0);
-      addButton.disabled = true; addButton.dataset.loading = "true"; if (label) label.textContent = "Adding…"; if (feedback) { feedback.textContent = ""; feedback.classList.remove("is-error"); }
+      updateButtons(true, "Adding…");
+      if (feedback) { feedback.textContent = ""; feedback.classList.remove("is-error"); }
       if (badge) { badge.textContent = String(previousCount + 1); badge.hidden = false; }
       try {
         const response = await fetch(form.action, { method: "POST", body: new FormData(form), headers: { Accept: "application/json" }, credentials: "same-origin" });
         const result = await response.json();
         if (!response.ok || !result.ok) throw new Error(result.message || "Could not add this item to your cart.");
         if (badge) { badge.textContent = String(result.count); badge.hidden = result.count <= 0; }
-        if (label) label.textContent = "Added to Cart";
+        updateButtons(true, "Added to Cart");
         if (feedback) feedback.textContent = "Added to your cart. You can keep shopping or open your cart.";
         window.dispatchEvent(new CustomEvent("ecs:cart-updated", { detail: { ...result, openDrawer: true } }));
-        setTimeout(() => { if (label) label.textContent = "Add to Cart"; }, 1400);
+        setTimeout(() => { updateButtons(!selectedVariant()?.inStock, selectedVariant()?.inStock ? "Add to Cart" : "Out of stock"); }, 1400);
       } catch (cause) {
         if (badge) { badge.textContent = previousCount ? String(previousCount) : ""; badge.hidden = previousCount <= 0; }
-        if (label) label.textContent = "Add to Cart";
+        updateButtons(!selectedVariant()?.inStock, "Add to Cart");
         if (feedback) { feedback.textContent = cause instanceof Error ? cause.message : "Could not add this item to your cart."; feedback.classList.add("is-error"); }
-      } finally { addButton.disabled = !selectedVariant()?.inStock; delete addButton.dataset.loading; }
+      } finally {
+        const inStock = Boolean(selectedVariant()?.inStock);
+        [addButton, stickyAdd].forEach((btn) => {
+          if (btn instanceof HTMLButtonElement) {
+            btn.disabled = !inStock;
+            delete btn.dataset.loading;
+          }
+        });
+      }
     });
-    root.querySelector("[data-sticky-add]")?.addEventListener("click", () => { if (form instanceof HTMLFormElement) form.requestSubmit(); });
+    stickyAdd?.addEventListener("click", () => { if (form instanceof HTMLFormElement) form.requestSubmit(); });
     const rail = document.querySelector("[data-related-rail]");
     document.querySelector("[data-related-prev]")?.addEventListener("click", () => rail?.scrollBy({ left: -Math.max(280, rail.clientWidth * .75), behavior: "smooth" }));
     document.querySelector("[data-related-next]")?.addEventListener("click", () => rail?.scrollBy({ left: Math.max(280, rail.clientWidth * .75), behavior: "smooth" }));

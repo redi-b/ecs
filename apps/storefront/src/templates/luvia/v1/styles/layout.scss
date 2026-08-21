@@ -4,7 +4,7 @@
 @font-face { font-family: "GC Molecule Demo"; src: url("/fonts/GC-Molecule-Demo-SemiBold.woff2") format("woff2"); font-weight: 600; font-style: normal; font-display: swap; }
 
 :root { --lv-bg: #f7fff7; --lv-ink: #0f3112; --lv-green: #3ee272; --lv-soft: #edf8ee; --lv-accent: #b5ffa2; --lv-line: color-mix(in srgb,var(--lv-ink) 14%,var(--lv-bg)); --lv-on-primary: #0f3112; --lv-dark: color-mix(in srgb, var(--lv-ink) 94%, black); --lv-on-dark: var(--lv-bg); --lv-font-body: "GC Molecule Demo", sans-serif; --lv-font-display: "GC Molecule Demo", sans-serif; --lv-font-hero: "Right Grotesk", sans-serif; --lv-motion-fast: 160ms; --lv-motion-medium: 220ms; --lv-ease-out: cubic-bezier(.22,1,.36,1); }
-* { box-sizing: border-box; }
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html { background: var(--lv-bg); color: var(--lv-ink); scrollbar-gutter: stable; }
 html[data-overlay-open], html[data-overlay-open] body { overflow: hidden; overscroll-behavior: none; }
 body.lv-body { margin: 0; overflow-x: clip; background: var(--lv-bg); color: var(--lv-ink); font: 400 16px/23px var(--lv-font-body); letter-spacing: -.02em; }

@@ -34,7 +34,8 @@
 .lv-product-add { position: relative; height: 52px; flex: 1; border: 0; border-radius: 999px; background: var(--lv-green); color: var(--lv-on-primary); font-size: 18px; font-weight: 500; cursor: pointer; transition: transform 160ms ease, opacity 160ms ease; }
 .lv-product-add:hover:not(:disabled) { transform: translateY(-1px); }
 .lv-product-add:disabled { cursor: not-allowed; opacity: .55; }
-.lv-product-add[data-loading="true"] .lv-product-spinner { display: inline-block; }
+.lv-product-add[data-loading="true"] .lv-product-spinner,
+.lv-sticky-product button[data-loading="true"] .lv-product-spinner { display: inline-block; }
 .lv-product-spinner { width: 16px; height: 16px; margin-left: 8px; display: none; vertical-align: -3px; border: 2px solid rgba(15,49,18,.25); border-top-color: var(--lv-ink); border-radius: 50%; animation: lv-product-spin .7s linear infinite; }
 @keyframes lv-product-spin { to { transform: rotate(360deg); } }
 .lv-product-wishlist { width: 52px; height: 52px; padding: 0; display: grid; place-items: center; flex: none; border: 1px solid var(--lv-line); border-radius: 50%; background: white; cursor: pointer; }
@@ -94,7 +95,8 @@
   .lv-sticky-product > div { min-width: 0; display: flex; flex: 1; flex-direction: column; }
   .lv-sticky-product strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
   .lv-sticky-product span { font-size: 15px; font-weight: 600; }
-  .lv-sticky-product button { min-width: 144px; min-height: 50px; border: 0; border-radius: 999px; background: var(--lv-green); color: var(--lv-on-primary); font-weight: 600; }
-  .lv-sticky-product button:disabled { opacity: .5; }
+  .lv-sticky-product button { min-width: 144px; min-height: 50px; padding: 0 16px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 0; border-radius: 999px; background: var(--lv-green); color: var(--lv-on-primary); font-weight: 600; font-size: 16px; cursor: pointer; transition: opacity 160ms ease, transform 160ms ease; }
+  .lv-sticky-product button:disabled { opacity: .5; cursor: not-allowed; }
+  .lv-sticky-product button[data-loading="true"] { opacity: .85; }
 }
 @media (prefers-reduced-motion: reduce) { .lv-sticky-product { transition: none; } }
