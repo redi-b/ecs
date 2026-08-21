@@ -98,7 +98,7 @@ const pageWindow = Array.from({ length: totalPages }, (_, index) => index + 1).f
 
     <section class="lv-shop-products" aria-labelledby="products-listing-title">
       <form class="lv-catalog-filter" method="get" action="/products">
-        <header><h2 id="products-listing-title">Products Listing</h2><button class="lv-filter-toggle" type="button" aria-expanded="false" aria-controls="catalog-filter-controls">Filters <span aria-hidden="true">+</span></button></header>
+        <header><h2 id="products-listing-title">Products Listing</h2><button class="lv-filter-toggle" type="button" aria-expanded="false" aria-controls="catalog-filter-controls"><span>Filters</span><svg class="lv-filter-toggle__icon" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h10M8 3v10" /></svg></button></header>
         <div class="lv-catalog-filter__body" id="catalog-filter-controls">
           <div class="lv-catalog-filter__controls">
             {filters.collectionId && <input type="hidden" name="collection" value={filters.collectionId} />}
@@ -187,7 +187,9 @@ const pageWindow = Array.from({ length: totalPages }, (_, index) => index + 1).f
     });
   });
   document.addEventListener("click", (event) => {
-    const anchor = event.target instanceof Element ? event.target.closest<HTMLAnchorElement>('a[href^="/products"]') : null;
+    const anchor = event.target instanceof Element
+      ? event.target.closest<HTMLAnchorElement>(".lv-catalog-filter a, .lv-catalog-pagination a, .lv-catalog-state a")
+      : null;
     const mouseEvent = event instanceof MouseEvent ? event : null;
     if (anchor && mouseEvent && !event.defaultPrevented && !mouseEvent.metaKey && !mouseEvent.ctrlKey && !mouseEvent.shiftKey && !mouseEvent.altKey) showLoading();
     if (event.target instanceof Node) {
