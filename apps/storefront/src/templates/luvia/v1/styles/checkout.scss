@@ -77,8 +77,8 @@
 .lv-checkout-summary header span { padding: 5px 10px; border-radius: 999px; background: var(--lv-soft); color: color-mix(in srgb,var(--lv-ink) 62%,var(--lv-bg)); font-size: 12px; }
 .lv-checkout-summary ul { margin: 16px 0 20px; padding: 0; list-style: none; }
 .lv-checkout-summary li { min-height: 84px; padding: 10px 0; display: grid; grid-template-columns: 58px minmax(0,1fr) auto; gap: 12px; align-items: center; border-bottom: 1px solid #e2eae3; }
-.lv-checkout-summary li > div { width: 58px; height: 58px; display: grid; place-items: center; border-radius: 10px; background: color-mix(in srgb,var(--lv-soft) 82%,var(--lv-bg)); }
-.lv-checkout-summary li img { width: 100%; height: 100%; padding: 7px; object-fit: contain; }
+.lv-checkout-summary li > div { width: 58px; height: 58px; display: grid; place-items: center; overflow: hidden; border-radius: 10px; background: color-mix(in srgb,var(--lv-soft) 82%,var(--lv-bg)); }
+.lv-checkout-summary li img { width: 100%; height: 100%; object-fit: cover; }
 .lv-checkout-summary li p { min-width: 0; margin: 0; display: flex; flex-direction: column; gap: 3px; }
 .lv-checkout-summary li strong { overflow: hidden; font-size: 14px; text-overflow: ellipsis; white-space: nowrap; }
 .lv-checkout-summary li span { color: color-mix(in srgb,var(--lv-ink) 48%,var(--lv-bg)); font-size: 12px; }

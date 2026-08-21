@@ -39,8 +39,8 @@
 .lv-wishlist__empty a { min-height: 50px; padding: 0 22px; display: inline-flex; align-items: center; border-radius: 999px; background: var(--lv-green); color: var(--lv-on-primary); text-decoration: none; }
 .lv-wishlist__grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 12px; }
 .lv-wishlist__grid article { min-height: 320px; padding: 14px; display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-end; border: 1px solid var(--lv-line); border-radius: 18px; background: linear-gradient(145deg,var(--lv-soft),#fff); }
-.lv-wishlist__media { width: 100%; min-height: 190px; margin-bottom: 18px; display: grid; place-items: center; overflow: hidden; border-radius: 12px; background: var(--lv-bg); }
-.lv-wishlist__media img { width: 100%; height: 190px; padding: 20px; object-fit: contain; }
+.lv-wishlist__media { width: 100%; height: 190px; margin-bottom: 18px; display: grid; place-items: center; overflow: hidden; border-radius: 12px; background: var(--lv-bg); }
+.lv-wishlist__media img { width: 100%; height: 100%; object-fit: cover; }
 .lv-wishlist__grid span { color: color-mix(in srgb,var(--lv-ink) 54%,var(--lv-bg)); font-size: 12px; text-transform: uppercase; }
 .lv-wishlist__grid a { margin: 10px 0 22px; color: var(--lv-ink); font: 400 28px/1 "GC Molecule Demo",Arial,sans-serif; text-transform: capitalize; text-decoration: none; }
 .lv-wishlist__grid strong { margin-top: -14px; margin-bottom: 18px; }

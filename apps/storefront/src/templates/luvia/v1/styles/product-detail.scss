@@ -13,9 +13,11 @@
 .lv-product-gallery__main { position: relative; width: min(100%, 548px); aspect-ratio: 478/548; display: grid; place-items: center; overflow: hidden; border: 1px solid var(--lv-accent); border-radius: 14px; background: var(--lv-soft); color: color-mix(in srgb, var(--lv-ink) 62%, transparent); }
 .lv-product-gallery__main > img { width: 100%; height: 100%; object-fit: cover; }
 .lv-product-gallery__badge { position: absolute; top: 14px; left: 12px; padding: 6px 9px; display: flex; align-items: center; gap: 4px; border-radius: 999px; background: var(--lv-accent); color: var(--lv-ink); font-size: 13px; }
+.lv-product-gallery__badge[hidden] { display: none !important; }
 .lv-product-gallery__badge.is-out-of-stock { background: var(--lv-dark); color: white; }
 .lv-product-gallery__badge.is-out-of-stock img { display: none; }
 .lv-product-gallery__badge img { width: 12px; height: 12px; }
+.lv-product-gallery__badge img[hidden] { display: none !important; }
 .lv-product-buy { padding-top: 20px; display: flex; flex-direction: column; gap: 20px; }
 .lv-product-title { display: flex; flex-direction: column; align-items: flex-start; gap: 9px; }
 .lv-product-title > span { padding: 6px 12px; border: 1px solid var(--lv-line); border-radius: 999px; color: color-mix(in srgb,var(--lv-ink) 62%,var(--lv-bg)); font-size: 12px; }
