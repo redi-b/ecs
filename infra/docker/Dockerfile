@@ -42,6 +42,7 @@ RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
     rm -rf /out/storefront/dist /out/storefront/src && \
     cp -R apps/storefront/dist /out/storefront/dist && \
     test -d /out/storefront/node_modules/ioredis && \
+    test -d /out/storefront/node_modules/sharp && \
     test -f /out/storefront/dist/server/entry.mjs
 
 FROM workspace AS platform-api-build
