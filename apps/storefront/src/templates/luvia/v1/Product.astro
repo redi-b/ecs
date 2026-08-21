@@ -119,7 +119,25 @@ const jsonLd = product ? {
       if (id) id.value = variant?.id || "";
       if (variant?.priceAmount != null) { const value = money(variant.priceAmount, variant.currencyCode); if (price) price.textContent = value; if (stickyPrice) stickyPrice.textContent = value; }
       if (originalPrice) { const original = variant?.originalPriceAmount; originalPrice.textContent = original != null ? money(original, variant?.currencyCode) : ""; originalPrice.toggleAttribute("hidden", original == null); }
-      if (badge) { const percentage = Number(variant?.discountPercentage || 0); const hasPromotion = percentage > 0 && variant?.originalPriceAmount > variant?.priceAmount; const soldOut = variant && !variant.inStock; const label = badge.querySelector("span"); const icon = badge.querySelector("[data-product-badge-icon]"); badge.toggleAttribute("hidden", !soldOut && !hasPromotion); badge.classList.toggle("is-out-of-stock", Boolean(soldOut)); badge.classList.toggle("is-promotion", !soldOut && hasPromotion); icon?.toggleAttribute("hidden", !hasPromotion || Boolean(soldOut)); if (label) label.textContent = soldOut ? "Out of stock" : hasPromotion ? `${percentage}% off` : ""; }
+      if (badge) {
+        const percentage = Number(variant?.discountPercentage || 0);
+        const originalAmount = Number(variant?.originalPriceAmount ?? 0);
+        const currentAmount = Number(variant?.priceAmount ?? 0);
+        const hasPromotion = percentage > 0 && originalAmount > currentAmount;
+        const soldOut = Boolean(variant && !variant.inStock);
+        const shouldShow = soldOut || hasPromotion;
+        const label = badge.querySelector("span");
+        const icon = badge.querySelector("[data-product-badge-icon]");
+        badge.hidden = !shouldShow;
+        badge.toggleAttribute("hidden", !shouldShow);
+        badge.classList.toggle("is-out-of-stock", soldOut);
+        badge.classList.toggle("is-promotion", !soldOut && hasPromotion);
+        if (icon instanceof HTMLElement) {
+          icon.hidden = !hasPromotion || soldOut;
+          icon.toggleAttribute("hidden", !hasPromotion || soldOut);
+        }
+        if (label) label.textContent = soldOut ? "Out of stock" : hasPromotion ? `${percentage}% off` : "";
+      }
       if (stock) { stock.textContent = variant?.inStock ? `In stock${variant.sku ? ` · SKU ${variant.sku}` : ""}` : "Out of stock"; stock.classList.toggle("is-out", !variant?.inStock); }
       [add, stickyAdd].forEach((button) => {
         if (button instanceof HTMLButtonElement) {
