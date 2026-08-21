@@ -53,8 +53,9 @@
 .lv-product-grid { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 54px 8px; }
 .lv-product-card { min-width: 0; }
 .lv-product-card__media { position: relative; height: 355px; overflow: hidden; border-radius: 8px; background: color-mix(in srgb,var(--lv-soft) 82%,var(--lv-bg)); color: color-mix(in srgb,var(--lv-ink) 58%,transparent); }
-.lv-product-card__media-link { position: absolute; inset: 0; display: grid; place-items: center; color: inherit; text-decoration: none; }
-.lv-product-card__media-link > img { width: 78%; height: 78%; object-fit: contain; }
+.lv-product-card__media-link { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: inherit; text-decoration: none; }
+.lv-product-card__media-link > img { width: 100%; height: 100%; object-fit: cover; transition: transform 280ms ease; }
+.lv-product-card:hover .lv-product-card__media-link > img { transform: scale(1.035); }
 .lv-product-card__badge { position: absolute; z-index: 1; top: 12px; left: 12px; padding: 6px 9px; display: flex; align-items: center; gap: 4px; border-radius: 99px; background: var(--lv-accent); font-size: 12px; }.lv-product-card__badge img { width: 11px; height: 11px; }.lv-product-card__badge.is-out-of-stock { background: var(--lv-dark); color: white; }
 .lv-product-card__heart { position: absolute; z-index: 1; top: 10px; right: 10px; width: 30px; height: 30px; padding: 0; display: grid; place-items: center; border: 1px solid transparent; border-radius: 50%; background: var(--lv-bg); cursor: pointer; }.lv-product-card__heart img { width: 14px; }.lv-product-card__heart[aria-pressed="true"] { border-color: var(--lv-green); background: var(--lv-accent); }
 .lv-product-card__cta { position: absolute; z-index: 2; left: 50%; bottom: 0; margin: 0; opacity: 0; visibility: hidden; transform: translate(-50%, 20px); transition: opacity 220ms ease, transform 220ms ease, visibility 220ms ease; }
