@@ -242,12 +242,23 @@ export function ProductDetail({ action, product, readOnly = false, tenantId }: P
               <DetailField
                 label={t("products.detail.collection")}
                 value={
-                  <CollectionValue collection={collection} product={product} tenantId={tenantId} />
+                  <CollectionValue
+                    collection={collection}
+                    product={product}
+                    readOnly={readOnly}
+                    tenantId={tenantId}
+                  />
                 }
               />
               <DetailField
                 label={t("products.detail.categories")}
-                value={<CategoryValue categories={productCategories} tenantId={tenantId} />}
+                value={
+                  <CategoryValue
+                    categories={productCategories}
+                    readOnly={readOnly}
+                    tenantId={tenantId}
+                  />
+                }
               />
               <DetailField
                 label={t("products.detail.created")}
@@ -419,10 +430,12 @@ function ProductStatusBadge({ status }: { status: string | null }) {
 function CollectionValue({
   collection,
   product,
+  readOnly,
   tenantId,
 }: {
   collection: MerchantProductCollection | undefined;
   product: MerchantProduct;
+  readOnly: boolean;
   tenantId?: string | undefined;
 }) {
   const { t } = useI18n();
@@ -431,7 +444,10 @@ function CollectionValue({
   }
 
   return (
-    <TaxonomyLink href={getTenantScopedPath(dashboardRoutes.productCollections, tenantId)}>
+    <TaxonomyLink
+      href={getTenantScopedPath(dashboardRoutes.productCollections, tenantId)}
+      readOnly={readOnly}
+    >
       {collection ? getCollectionLabel(collection) : product.collectionId}
     </TaxonomyLink>
   );
@@ -439,9 +455,11 @@ function CollectionValue({
 
 function CategoryValue({
   categories,
+  readOnly,
   tenantId,
 }: {
   categories: Array<{ category: MerchantProductCategory | undefined; id: string }>;
+  readOnly: boolean;
   tenantId?: string | undefined;
 }) {
   const { t } = useI18n();
@@ -455,6 +473,7 @@ function CategoryValue({
         <TaxonomyLink
           href={getTenantScopedPath(dashboardRoutes.productCategories, tenantId)}
           key={id}
+          readOnly={readOnly}
         >
           {category ? getCategoryLabel(category) : id}
         </TaxonomyLink>
@@ -463,10 +482,23 @@ function CategoryValue({
   );
 }
 
-function TaxonomyLink({ children, href }: { children: ReactNode; href: string }) {
+function TaxonomyLink({
+  children,
+  href,
+  readOnly,
+}: {
+  children: ReactNode;
+  href: string;
+  readOnly: boolean;
+}) {
+  const className =
+    "rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-foreground transition-colors";
+
+  if (readOnly) return <span className={className}>{children}</span>;
+
   return (
     <Link
-      className="rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-foreground transition-colors hover:bg-primary/10 hover:text-primary"
+      className={cn(className, "hover:bg-primary/10 hover:text-primary")}
       href={href}
     >
       {children}

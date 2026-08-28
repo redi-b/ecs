@@ -2,7 +2,12 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import { appRoutes } from "@/lib/navigation";
-import { getDemoInsightsHref, getDemoSidebarRoute } from "./dashboard-demo-routes.js";
+import {
+  getDashboardPathFromDemo,
+  getDemoInsightsHref,
+  getDemoPathFromDashboard,
+  getDemoSidebarRoute,
+} from "./dashboard-demo-routes.js";
 
 test("the demo keeps every primary dashboard capability visible", () => {
   const demoRoutes = appRoutes.map(getDemoSidebarRoute);
@@ -27,4 +32,12 @@ test("the demo keeps every primary dashboard capability visible", () => {
 test("demo insight reports stay inside the public preview route family", () => {
   assert.equal(getDemoInsightsHref("overview"), "/demo/insights");
   assert.equal(getDemoInsightsHref("sales"), "/demo/insights/sales");
+});
+
+test("demo detail routes round-trip without escaping to the authenticated dashboard", () => {
+  assert.equal(getDashboardPathFromDemo("/demo/products/prod_1"), "/admin/products/prod_1");
+  assert.equal(getDemoPathFromDashboard("/admin/products/prod_1"), "/demo/products/prod_1");
+  assert.equal(getDashboardPathFromDemo("/demo/insights/sales"), "/admin/insights/sales");
+  assert.equal(getDemoPathFromDashboard("/admin/insights/sales"), "/demo/insights/sales");
+  assert.equal(getDemoPathFromDashboard("/admin/customers/cus_1"), "/demo");
 });

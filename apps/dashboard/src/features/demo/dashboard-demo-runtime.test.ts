@@ -38,6 +38,12 @@ describe("dashboard demo runtime boundaries", () => {
     assert.match(sections, /<InsightsWorkspace/);
   });
 
+  it("keeps not-found recovery inside the public preview", async () => {
+    const source = await readFile(new URL("app/demo/not-found.tsx", root), "utf8");
+    assert.match(source, /actionHref="\/demo"/);
+    assert.doesNotMatch(source, /actionHref="\/admin"/);
+  });
+
   it("uses Next Script for the pre-paint theme bootstrap", async () => {
     const source = await readFile(new URL("app/layout.tsx", root), "utf8");
     assert.match(source, /strategy="beforeInteractive"/);
