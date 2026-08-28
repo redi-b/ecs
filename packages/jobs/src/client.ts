@@ -9,27 +9,22 @@ import {
   DEFAULT_REDIS_PREFIX,
 } from "./defaults.js";
 import {
-  removeRepeatableJobOnQueue,
-  scheduleRepeatableJobOnQueue,
   type RemoveRepeatableJobInput,
+  removeRepeatableJobOnQueue,
   type ScheduleRepeatableJobInput,
   type ScheduleRepeatableJobResult,
+  scheduleRepeatableJobOnQueue,
 } from "./repeatable.js";
 import {
   findJobRunById,
   findJobRunByIdempotency,
+  type InsertJobRunInput,
   insertJobRun,
   markJobRunFailed,
   setBullmqJobId,
   shouldReuseExistingRun,
-  type InsertJobRunInput,
 } from "./runs.js";
-import type {
-  EnqueueJobInput,
-  EnqueueJobResult,
-  JobRunRecord,
-  PlatformDb,
-} from "./types.js";
+import type { EnqueueJobInput, EnqueueJobResult, JobRunRecord, PlatformDb } from "./types.js";
 
 export type JobsLogger = {
   error?: (obj: Record<string, unknown>, msg?: string) => void;
@@ -66,6 +61,7 @@ export type JobsQueueLike = {
 };
 
 export type JobsClient = {
+  ping(): Promise<void>;
   enqueueJob(input: EnqueueJobInput): Promise<EnqueueJobResult>;
   getJobRun(id: string): Promise<JobRunRecord | null>;
   /**
@@ -188,6 +184,9 @@ export function createJobsClient(options: JobsClientOptions): JobsClient {
   });
 
   return {
+    async ping() {
+      await connection.ping();
+    },
     enqueueJob(input) {
       const enqueueOptions: EnqueueWithQueueOptions = {
         db: options.db,

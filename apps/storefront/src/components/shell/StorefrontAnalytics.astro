@@ -1,0 +1,85 @@
+---
+interface Props {
+  disabled?: boolean;
+}
+
+const { disabled = false } = Astro.props;
+---
+
+<span data-storefront-analytics={disabled ? "disabled" : "enabled"} hidden></span>
+
+<script>
+  import { resolveStorefrontAnalyticsSession } from "../../lib/analytics-session";
+
+  const analyticsMarker = document.querySelector<HTMLElement>("[data-storefront-analytics]");
+  if (analyticsMarker?.dataset.storefrontAnalytics === "enabled") {
+    const sessionKey = "ecs:storefront-session";
+    let storedSession: string | null = null;
+    try {
+      storedSession = window.localStorage.getItem(sessionKey);
+    } catch {
+      // Analytics must never prevent the storefront from working.
+    }
+    const session = resolveStorefrontAnalyticsSession({
+      createId: () => globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`,
+      now: Date.now(),
+      stored: storedSession,
+    });
+    const sessionId = session.id;
+    try {
+      window.localStorage.setItem(sessionKey, JSON.stringify(session));
+    } catch {
+      // The in-memory session still keeps this page's events correlated.
+    }
+
+    const record = (
+      eventType: string,
+      subjectType?: string,
+      subjectId?: string,
+      properties: Record<string, unknown> = {},
+    ) => {
+      const payload = JSON.stringify({
+        eventType,
+        idempotencyKey: `${sessionId}:${eventType}:${location.pathname}:${Date.now()}`,
+        occurredAt: new Date().toISOString(),
+        properties: { path: location.pathname, ...properties },
+        sessionId,
+        subjectId: subjectId ?? null,
+        subjectType: subjectType ?? null,
+      });
+      if (
+        navigator.sendBeacon?.(
+          "/actions/analytics",
+          new Blob([payload], { type: "application/json" }),
+        )
+      ) {
+        return;
+      }
+      void fetch("/actions/analytics", {
+        body: payload,
+        headers: { "content-type": "application/json" },
+        keepalive: true,
+        method: "POST",
+      });
+    };
+
+    record("storefront.page_viewed");
+    const productMatch = location.pathname.match(/^\/products\/([^/]+)\/?$/);
+    const productHandle = productMatch?.[1];
+    if (productHandle) record("storefront.product_viewed", "product", productHandle);
+    if (location.pathname === "/checkout") record("storefront.checkout_started");
+
+    document.addEventListener("submit", (event) => {
+      const form = event.target;
+      if (form instanceof HTMLFormElement && form.action.includes("/actions/cart/add")) {
+        const variantId = String(new FormData(form).get("variantId") ?? "");
+        record(
+          "storefront.add_to_cart_clicked",
+          productHandle ? "product" : "variant",
+          productHandle ?? variantId,
+          { variantId },
+        );
+      }
+    });
+  }
+</script>

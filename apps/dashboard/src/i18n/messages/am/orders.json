@@ -1,6 +1,11 @@
 {
   "title": "ትዕዛዞች",
   "description": "ትዕዛዞችን፣ የክፍያ ሁኔታዎችን እና የማስረከብ ሂደትን ይገምግሙ።",
+  "export": {
+    "label": "ትዕዛዞችን አውርድ",
+    "pending": "ፋይሉን በማዘጋጀት ላይ…",
+    "failed": "ትዕዛዞቹን ማውረድ አልተቻለም። እንደገና ይሞክሩ።"
+  },
   "error": {
     "loadTitle": "ትዕዛዞችን መጫን አልተቻለም"
   },
@@ -8,7 +13,7 @@
     "shellTitle": "የትዕዛዝ ዝርዝሮች",
     "shellDescription": "ደንበኛ፣ ክፍያ፣ አቅርቦት እና ማስረከብ ለዚህ ትዕዛዝ።",
     "notFoundTitle": "ትዕዛዝ አልተገኘም",
-    "notFoundDesc": "ይህ ትዕዛዝ ከተመረጠው የነጋዴ መረጃ ጋር ሊገኝ አልቻለም።",
+    "notFoundDesc": "ይህ ትዕዛዝ ለዚህ ሱቅ አይገኝም።",
     "loadErrorTitle": "ትዕዛዙን መጫን አልተቻለም",
     "loadErrorDesc": "ዳሽቦርዱ ይህንን ትዕዛዝ መጫን አልቻለም። ገጹን ያድሱ ወይም ቆይተው እንደገና ይሞክሩ።",
     "orderHeading": "ትዕዛዝ {ref}",
@@ -157,7 +162,6 @@
     "lastName": "የአባት ስም",
     "phone": "ስልክ",
     "emailPlaceholder": "buyer@example.com",
-    "phonePlaceholder": "09…",
     "products": "ምርቶች",
     "productsDesc": "አንድ ወይም ከዚያ በላይ አማራጮችን ይምረጡ፣ ከዚያ ብዛት ያስገቡ።",
     "quantities": "ብዛት",

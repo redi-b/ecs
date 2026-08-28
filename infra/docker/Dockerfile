@@ -13,6 +13,7 @@ COPY apps/dashboard/package.json apps/dashboard/package.json
 COPY apps/medusa/package.json apps/medusa/package.json
 COPY apps/platform-api/package.json apps/platform-api/package.json
 COPY apps/storefront/package.json apps/storefront/package.json
+COPY apps/superadmin/package.json apps/superadmin/package.json
 COPY packages/config/package.json packages/config/package.json
 COPY packages/contracts/package.json packages/contracts/package.json
 COPY packages/db/package.json packages/db/package.json
@@ -30,6 +31,11 @@ FROM workspace AS dashboard-build
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN --mount=type=cache,id=next-cache,target=/workspace/apps/dashboard/.next/cache \
     pnpm --filter @ecs/dashboard build
+
+FROM workspace AS superadmin-build
+ENV NEXT_TELEMETRY_DISABLED=1
+RUN --mount=type=cache,id=superadmin-next-cache,target=/workspace/apps/superadmin/.next/cache \
+    pnpm --filter @ecs/superadmin build
 
 FROM workspace AS storefront-build
 ENV ASTRO_TELEMETRY_DISABLED=1
@@ -82,6 +88,17 @@ USER node
 EXPOSE 3001
 ENTRYPOINT ["dumb-init", "--"]
 CMD ["node", "apps/dashboard/server.js"]
+
+FROM runtime AS superadmin
+ENV HOSTNAME=0.0.0.0
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV PORT=3002
+COPY --chown=node:node --from=superadmin-build /workspace/apps/superadmin/.next/standalone ./
+COPY --chown=node:node --from=superadmin-build /workspace/apps/superadmin/.next/static ./apps/superadmin/.next/static
+USER node
+EXPOSE 3002
+ENTRYPOINT ["dumb-init", "--"]
+CMD ["node", "apps/superadmin/server.js"]
 
 FROM runtime AS storefront
 ENV ASTRO_TELEMETRY_DISABLED=1

@@ -19,6 +19,9 @@ test("getPublishedStorefrontConfig calls platform config with host context", asy
             id: "domain_1",
             hostname: "abebe.lvh.me",
           },
+          primaryDomain: {
+            hostname: "abebe.lvh.me",
+          },
         },
         commerce: {
           regionId: "reg_1",
@@ -41,6 +44,7 @@ test("getPublishedStorefrontConfig calls platform config with host context", asy
             },
           },
           publishedAt: "2026-01-01T00:00:00.000Z",
+          seo: { title: null, description: null, socialImageUrl: null },
         },
       });
     },

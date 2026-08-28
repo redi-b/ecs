@@ -91,8 +91,7 @@ describe("ensureTelegramWebhookIfConfigured", () => {
   });
 
   it("registers when polling is off and URL is set", async () => {
-    const fetchImpl = async () =>
-      new Response(JSON.stringify({ ok: true }), { status: 200 });
+    const fetchImpl = async () => new Response(JSON.stringify({ ok: true }), { status: 200 });
     const result = await ensureTelegramWebhookIfConfigured({
       botToken: "tok",
       pollingEnabled: false,
@@ -102,7 +101,10 @@ describe("ensureTelegramWebhookIfConfigured", () => {
       },
       fetchImpl: fetchImpl as unknown as typeof fetch,
     });
-    assert.equal(result.ok === true || ("skipped" in result && result.skipped), true);
+    assert.equal(
+      ("ok" in result && result.ok === true) || ("skipped" in result && result.skipped),
+      true,
+    );
     if ("ok" in result && result.ok) {
       assert.equal(result.url, "https://api.example.com/platform/webhooks/telegram");
     }

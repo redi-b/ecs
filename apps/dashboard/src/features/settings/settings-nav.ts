@@ -6,6 +6,7 @@ export type SettingsSectionId =
   | "payments"
   | "fulfillment"
   | "storefront"
+  | "domains"
   | "account";
 
 export const SETTINGS_SECTION_IDS: SettingsSectionId[] = [
@@ -16,6 +17,7 @@ export const SETTINGS_SECTION_IDS: SettingsSectionId[] = [
   "payments",
   "fulfillment",
   "storefront",
+  "domains",
   "account",
 ];
 
@@ -61,6 +63,11 @@ export const SETTINGS_SECTIONS: Array<{
     description: "Template and live status",
   },
   {
+    id: "domains",
+    label: "Domains",
+    description: "Custom address and DNS setup",
+  },
+  {
     id: "account",
     label: "Account",
     description: "Profile, password, sessions",
@@ -76,6 +83,7 @@ export function parseSettingsSection(value: string | undefined): SettingsSection
     value === "payments" ||
     value === "fulfillment" ||
     value === "storefront" ||
+    value === "domains" ||
     value === "account"
   ) {
     return value;

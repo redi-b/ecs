@@ -21,6 +21,7 @@ export type StoredObjectMetadata = {
 
 export type StorageAdapter = {
   bucket: string;
+  checkHealth(): Promise<void>;
   createUpload(input: StorageUploadRequest): Promise<StorageUploadDescriptor>;
   deleteObject(objectKey: string): Promise<void>;
   getObjectMetadata(objectKey: string): Promise<StoredObjectMetadata | null>;
@@ -41,6 +42,7 @@ export function createUnavailableStorageAdapter(): StorageAdapter {
 
   return {
     bucket: "unconfigured",
+    checkHealth: unavailable,
     createUpload: unavailable,
     deleteObject: unavailable,
     getObjectMetadata: unavailable,

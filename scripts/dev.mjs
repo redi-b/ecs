@@ -66,6 +66,7 @@ box([
   `Total setup time  ${formatMs(bootstrapMs)}`,
   "",
   "Dashboard   http://dashboard.lvh.me/admin",
+  "Operations  http://ops.lvh.me",
   "API         http://api.lvh.me",
   "Storefront  http://*.lvh.me (tenant hosts)",
   "Medusa      http://localhost:9000",

@@ -1,0 +1,15 @@
+---
+import { luviaV1Defaults, luviaV1ThemeTokens } from "@ecs/storefront-templates";
+import { luviaDemoOrder } from "../../../../lib/demo/luvia-fixture";
+import LuviaV1OrderConfirm from "../../../../templates/luvia/v1/OrderConfirm.astro";
+---
+
+<LuviaV1OrderConfirm
+  data={luviaV1Defaults}
+  themeTokens={luviaV1ThemeTokens}
+  tenantName="Luvia Beauty"
+  cartCount={0}
+  orderId={luviaDemoOrder.id}
+  lastOrder={luviaDemoOrder}
+  demoMode
+/>

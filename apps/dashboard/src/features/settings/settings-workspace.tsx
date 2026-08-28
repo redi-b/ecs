@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useId, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useEffect, useId, useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import { UnsavedChangesDialog } from "@/components/app/unsaved-changes-dialog";
@@ -16,25 +16,23 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { AccountSecurityPanel } from "@/features/settings/account-security-panel";
+import { DomainsSection } from "@/features/settings/domains-section";
 import { NotificationsSection } from "@/features/settings/notifications-section";
 import { PaymentsSection } from "@/features/settings/payments-section";
-import { SettingsSectionNav } from "@/features/settings/settings-section-nav";
 import { FulfillmentSection } from "@/features/settings/settings-fulfillment-section";
-import { PreferencesSection } from "@/features/settings/settings-preferences-section";
-import { ShopSection } from "@/features/settings/settings-shop-section";
-import { StorefrontSection } from "@/features/settings/settings-storefront-section";
 import {
   formatHandleReason,
   HANDLE_PATTERN,
   type HandleAvailability,
   statusCopy,
 } from "@/features/settings/settings-helpers";
-import {
-  parseSettingsSection,
-  type SettingsSectionId,
-} from "@/features/settings/settings-nav";
-import { TelegramSection } from "@/features/settings/telegram-section";
+import { parseSettingsSection, type SettingsSectionId } from "@/features/settings/settings-nav";
+import { PreferencesSection } from "@/features/settings/settings-preferences-section";
+import { SettingsSectionNav } from "@/features/settings/settings-section-nav";
+import { ShopSection } from "@/features/settings/settings-shop-section";
+import { StorefrontSection } from "@/features/settings/settings-storefront-section";
 import type { Delivery, SettingsWorkspaceProps } from "@/features/settings/settings-types";
+import { TelegramSection } from "@/features/settings/telegram-section";
 import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes-guard";
 import { useI18n } from "@/i18n/provider";
 import {
@@ -45,19 +43,19 @@ import { dashboardRoutes } from "@/lib/routes";
 
 export function SettingsWorkspace({
   delivery,
+  domains,
   initialTab,
   payments,
   paymentsSupportHref = null,
   settingsStatus,
   storefrontTemplates,
+  storefrontSeo,
   summary,
   templateStatus,
 }: SettingsWorkspaceProps) {
   const router = useRouter();
   const { t } = useI18n();
-  const [section, setSection] = useState<SettingsSectionId>(() =>
-    parseSettingsSection(initialTab),
-  );
+  const [section, setSection] = useState<SettingsSectionId>(() => parseSettingsSection(initialTab));
   const [name, setName] = useState(summary.tenant.name);
   const [handle, setHandle] = useState(summary.tenant.handle);
   const [handleUnlocked, setHandleUnlocked] = useState(false);
@@ -152,9 +150,7 @@ export function SettingsWorkspace({
       }
 
       setHandleAvailability(
-        data.hostname
-          ? { status: "available", hostname: data.hostname }
-          : { status: "available" },
+        data.hostname ? { status: "available", hostname: data.hostname } : { status: "available" },
       );
     }, 350);
 
@@ -183,10 +179,7 @@ export function SettingsWorkspace({
     });
   }
 
-  function saveDelivery(
-    nextDelivery: Delivery,
-    label = t("settings.labels.fulfillmentSettings"),
-  ) {
+  function saveDelivery(nextDelivery: Delivery, label = t("settings.labels.fulfillmentSettings")) {
     const previous = deliveryState;
     setDeliveryState(nextDelivery);
 
@@ -258,10 +251,9 @@ export function SettingsWorkspace({
       };
 
       if (!response?.ok) {
-        toast.error(
-          body.error ? statusCopy(body.error, t) : t("settings.toast.saveShopFailed"),
-          { id: toastId },
-        );
+        toast.error(body.error ? statusCopy(body.error, t) : t("settings.toast.saveShopFailed"), {
+          id: toastId,
+        });
         return;
       }
 
@@ -337,9 +329,7 @@ export function SettingsWorkspace({
             <NotificationsSection tenantId={summary.tenant.id} />
           ) : null}
 
-          {section === "telegram" ? (
-            <TelegramSection tenantId={summary.tenant.id} />
-          ) : null}
+          {section === "telegram" ? <TelegramSection tenantId={summary.tenant.id} /> : null}
 
           {section === "payments" ? (
             <PaymentsSection
@@ -376,16 +366,16 @@ export function SettingsWorkspace({
 
           {section === "storefront" ? (
             <StorefrontSection
+              seo={storefrontSeo}
               storefrontTemplates={storefrontTemplates}
               summary={summary}
             />
           ) : null}
 
+          {section === "domains" ? <DomainsSection initialDomains={domains} /> : null}
+
           {section === "account" ? (
-            <AccountSecurityPanel
-              email={summary.actor.email}
-              initialName={summary.actor.name}
-            />
+            <AccountSecurityPanel email={summary.actor.email} initialName={summary.actor.name} />
           ) : null}
         </div>
       </div>
@@ -419,11 +409,7 @@ export function SettingsWorkspace({
         </DialogContent>
       </Dialog>
 
-      <UnsavedChangesDialog
-        onLeave={confirmLeave}
-        onStay={cancelLeave}
-        open={leaveDialogOpen}
-      />
+      <UnsavedChangesDialog onLeave={confirmLeave} onStay={cancelLeave} open={leaveDialogOpen} />
     </div>
   );
 }

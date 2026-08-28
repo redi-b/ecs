@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { createTranslator } from "next-intl";
 
-import { locales, type AppLocale } from "./config";
+import { type AppLocale, locales } from "./config";
 import { messagesByLocale } from "./messages";
 
 type LeafMap = Record<string, string>;
@@ -23,7 +23,9 @@ function flatten(messages: unknown, prefix = ""): LeafMap {
 }
 
 function placeholderNames(message: string): string[] {
-  return [...message.matchAll(/\{(\w+)\}/g)].map((match) => match[1]!).sort();
+  return [...message.matchAll(/\{(\w+)\}/g)]
+    .flatMap((match) => (match[1] ? [match[1]] : []))
+    .sort();
 }
 
 function normalizeForPlaceholders(message: string): string {
@@ -90,13 +92,48 @@ describe("i18n message catalogs", () => {
     assert.deepEqual(empties, [], `empty messages:\n${empties.join("\n")}`);
   });
 
+  it("does not silently copy ordinary English labels into Amharic", () => {
+    const amharicLeaves = flatten(messagesByLocale.am);
+    const allowedSharedValues = new Set([
+      "+251…",
+      "100 KB – 1 MB",
+      "IP",
+      "Mac",
+      "SEO",
+      "SKU",
+      "SKU {sku}",
+      "Telegram",
+      "coffee-beans",
+      "customer@example.com",
+      "buyer@example.com",
+      "https://example.com/photo.jpg",
+      "iPad",
+      "iPhone",
+      "you@business.com",
+    ]);
+    const copied = englishKeys.filter((key) => {
+      const english = englishLeaves[key] ?? "";
+      const visibleEnglish = english.replace(/\{\w+\}/g, "");
+      return (
+        english === amharicLeaves[key] &&
+        /[A-Za-z]{3}/.test(visibleEnglish) &&
+        !allowedSharedValues.has(english)
+      );
+    });
+
+    assert.deepEqual(copied, [], `English labels copied into Amharic:\n${copied.join("\n")}`);
+  });
+
   it("resolves nested paths through next-intl (including renamed conflict keys)", () => {
     const t = createTranslator({ locale: "en", messages: messagesByLocale.en });
 
     assert.equal(t("nav.products"), "Products");
     assert.equal(t("auth.brandFooter.label"), englishLeaves["auth.brandFooter.label"]);
     assert.equal(t("auth.brandFooter.signIn"), englishLeaves["auth.brandFooter.signIn"]);
-    assert.equal(t("taxonomy.entity.category.label"), englishLeaves["taxonomy.entity.category.label"]);
+    assert.equal(
+      t("taxonomy.entity.category.label"),
+      englishLeaves["taxonomy.entity.category.label"],
+    );
     assert.equal(
       t("taxonomy.entity.category.plural"),
       englishLeaves["taxonomy.entity.category.plural"],

@@ -12,7 +12,7 @@ import {
   normalizeProductCollection,
 } from "./normalize.js";
 import type { ProductOptionInput, ProductVariantWriteInput, ProductWriteInput } from "./types.js";
-import { getBoolean, getErrorMessage, getString, isRecord } from "./values.js";
+import { getBoolean, getString } from "./values.js";
 
 export function getProductWriteBody(input: ProductWriteInput) {
   const body = Object.fromEntries(
@@ -33,6 +33,10 @@ export function getProductWriteBody(input: ProductWriteInput) {
 
   if (input.imageUrls?.length) {
     body.images = input.imageUrls.map((url) => ({ url }));
+  }
+
+  if (input.metadata && Object.keys(input.metadata).length > 0) {
+    body.metadata = input.metadata;
   }
 
   if (input.priceAmount !== undefined) {
@@ -80,9 +84,12 @@ export function getProductOptionsForWrite(options: ProductOptionInput[] | undefi
 export function getProductVariantsForWrite(variants: ProductVariantWriteInput[] | undefined) {
   return (variants ?? []).filter(
     (variant) =>
-      Number.isFinite(variant.priceAmount) &&
+      (Number.isFinite(variant.priceAmount) ||
+        variant.prices?.some(
+          (price) => Number.isFinite(price.amount) && Boolean(price.currencyCode.trim()),
+        )) &&
       Object.keys(variant.optionValues).length > 0 &&
-      variant.currencyCode.trim(),
+      (variant.currencyCode.trim() || variant.prices?.some((price) => price.currencyCode.trim())),
   );
 }
 
@@ -96,24 +103,32 @@ export function getProductVariantWriteBody(
       .filter(([title, value]) => title && value),
   );
 
+  const prices = variant.prices?.length
+    ? variant.prices
+    : [
+        {
+          amount: variant.priceAmount ?? 0,
+          currencyCode: variant.currencyCode,
+        },
+      ];
+
   return {
+    ...(variant.id?.trim() ? { id: variant.id.trim() } : {}),
     title: Object.values(optionValues).join(" / ") || "Default",
     ...(variant.sku?.trim() ? { sku: variant.sku.trim() } : {}),
     manage_inventory: true,
     options: optionValues,
-    prices: [
-      {
-        amount: variant.priceAmount,
-        currency_code: variant.currencyCode.trim().toLowerCase(),
-        ...(regionId?.trim()
-          ? {
-              rules: {
-                region_id: regionId,
-              },
-            }
-          : {}),
-      },
-    ],
+    prices: prices.map((price) => ({
+      amount: price.amount,
+      currency_code: price.currencyCode.trim().toLowerCase(),
+      ...(regionId?.trim()
+        ? {
+            rules: {
+              region_id: regionId,
+            },
+          }
+        : {}),
+    })),
   };
 }
 

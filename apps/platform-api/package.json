@@ -12,7 +12,9 @@
     "sync:storefront-templates": "tsx src/sync-storefront-templates.ts",
     "seed:demo": "tsx src/seeds/demo-seed.ts",
     "seed:demo:clean": "tsx src/seeds/demo-seed.ts --clean",
+    "seed:operations": "tsx src/seeds/demo-seed.ts --operations-only",
     "seed:bank-logos": "tsx src/seeds/bank-logos-seed.ts",
+    "bootstrap:platform-access": "tsx src/scripts/platform-access-bootstrap.ts",
     "start": "tsx src/index.ts"
   },
   "dependencies": {

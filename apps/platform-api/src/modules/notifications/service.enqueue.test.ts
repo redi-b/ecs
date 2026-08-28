@@ -5,10 +5,14 @@ import { createNotificationService } from "./service.js";
 
 describe("createNotificationService enqueue", () => {
   it("returns empty logIds when no preferences match", async () => {
+    let selectCall = 0;
     const db = {
       select: () => ({
         from: () => ({
-          where: async () => [],
+          where: () => {
+            selectCall += 1;
+            return selectCall === 1 ? { limit: async () => [] } : Promise.resolve([]);
+          },
         }),
       }),
       insert: () => ({

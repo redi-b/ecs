@@ -55,8 +55,9 @@ export type MerchantProductsResult =
         | "commerce_backend_unavailable"
         | "commerce_credentials_invalid"
         | "commerce_credentials_missing"
-        | "commerce_resource_missing";
-      status: 401 | 503;
+        | "commerce_resource_missing"
+        | "product_filter_too_large";
+      status: 401 | 413 | 503;
     };
 
 export type MerchantProductDetailResult = MerchantProductWriteResult;

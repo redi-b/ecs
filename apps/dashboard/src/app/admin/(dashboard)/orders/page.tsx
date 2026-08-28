@@ -1,4 +1,5 @@
 import { headers } from "next/headers";
+import { ExportDownloadButton } from "@/components/app/export-download-button";
 import { ListSetupState } from "@/components/app/list-error-state";
 import { ListSummary, PaginationControls } from "@/components/app/list-page-controls";
 import { PageShell } from "@/components/app/page-shell";
@@ -6,8 +7,8 @@ import { RefreshButton } from "@/components/app/refresh-button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ManualOrderCreateDialog } from "@/features/orders/manual-order-create-dialog";
 import { parseOrderListFilters } from "@/features/orders/order-domain";
-import { getTranslations } from "@/i18n/server";
 import { OrdersTable } from "@/features/orders/orders-table";
+import { getTranslations } from "@/i18n/server";
 import { type DashboardSearchParams, getSelectedTenantId } from "@/lib/dashboard-tenant-context";
 import { getListErrorState } from "@/lib/list-error-state";
 import { getMerchantOrders } from "@/lib/merchant-orders";
@@ -70,6 +71,17 @@ export default async function MerchantOrdersPage({ searchParams }: MerchantOrder
       {result.ok ? (
         <>
           <ListSummary
+            actions={
+              !tenantId ? (
+                <ExportDownloadButton
+                  failedMessage={t("orders.export.failed")}
+                  fallbackFilename="ecs-orders.csv"
+                  href={dashboardRoutes.ordersExportAction}
+                  label={t("orders.export.label")}
+                  pendingLabel={t("orders.export.pending")}
+                />
+              ) : null
+            }
             count={result.orders.count}
             filtered={listFiltered}
             page={listParams.page}

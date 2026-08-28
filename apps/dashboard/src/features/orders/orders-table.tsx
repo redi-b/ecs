@@ -3,7 +3,7 @@
 import type { MerchantOrder } from "@ecs/contracts";
 import type { ColumnDef } from "@tanstack/react-table";
 import { useRouter } from "next/navigation";
-import { useCallback, useMemo, useState, useTransition, type ReactNode } from "react";
+import { type ReactNode, useCallback, useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import { DataTable } from "@/components/app/data-table";
@@ -19,6 +19,11 @@ import { RowActionsMenu } from "@/components/app/row-actions-menu";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
+  formatOrderReference,
+  getOrderCustomerPhone,
+  type OrderListFilterState,
+} from "@/features/orders/order-domain";
+import {
   OrderCustomerCell,
   OrderDeliveryCell,
   OrderIdentityCell,
@@ -27,11 +32,6 @@ import {
   OrderPlacedCell,
   OrderProgressBadge,
 } from "@/features/orders/order-table-cells";
-import {
-  formatOrderReference,
-  getOrderCustomerPhone,
-  type OrderListFilterState,
-} from "@/features/orders/order-domain";
 import type { MessageKey } from "@/i18n/messages";
 import { useI18n } from "@/i18n/provider";
 import { copyTextToClipboard } from "@/lib/clipboard";
@@ -196,7 +196,6 @@ export function OrdersTable({
   tenantId,
   totalCount,
 }: OrdersTableProps) {
-
   // (that enables a second client pagination footer).
   void _pageSize;
 
@@ -234,9 +233,18 @@ export function OrdersTable({
   const clearFilters = useCallback(() => {
     setSearchValue("");
     const url = new URL(window.location.href);
-    ["q", "progress", "payment", "method", "delivery", "created", "customerId", "page"].forEach(
-      (key) => url.searchParams.delete(key),
-    );
+    for (const key of [
+      "q",
+      "progress",
+      "payment",
+      "method",
+      "delivery",
+      "created",
+      "customerId",
+      "page",
+    ]) {
+      url.searchParams.delete(key);
+    }
     startTransition(() => {
       router.push(`${url.pathname}?${url.searchParams.toString()}`);
     });
@@ -257,8 +265,7 @@ export function OrdersTable({
           { label: t("orders.filter.progress.completed"), value: "completed" },
           { label: t("orders.filter.progress.canceled"), value: "canceled" },
         ],
-        onChange: (value) =>
-          pushFilters({ progress: value as OrderListFilterState["progress"] }),
+        onChange: (value) => pushFilters({ progress: value as OrderListFilterState["progress"] }),
       },
       {
         id: "payment",
@@ -271,8 +278,7 @@ export function OrdersTable({
           { label: t("orders.filter.payment.paid"), value: "paid" },
           { label: t("orders.filter.payment.failed"), value: "failed" },
         ],
-        onChange: (value) =>
-          pushFilters({ payment: value as OrderListFilterState["payment"] }),
+        onChange: (value) => pushFilters({ payment: value as OrderListFilterState["payment"] }),
       },
       {
         id: "method",
@@ -296,8 +302,7 @@ export function OrdersTable({
           { label: t("orders.filter.delivery.delivery"), value: "delivery" },
           { label: t("orders.filter.delivery.pickup"), value: "pickup" },
         ],
-        onChange: (value) =>
-          pushFilters({ delivery: value as OrderListFilterState["delivery"] }),
+        onChange: (value) => pushFilters({ delivery: value as OrderListFilterState["delivery"] }),
       },
       {
         id: "created",
@@ -310,8 +315,7 @@ export function OrdersTable({
           { label: t("orders.filter.created.last_7_days"), value: "last_7_days" },
           { label: t("orders.filter.created.last_30_days"), value: "last_30_days" },
         ],
-        onChange: (value) =>
-          pushFilters({ created: value as OrderListFilterState["created"] }),
+        onChange: (value) => pushFilters({ created: value as OrderListFilterState["created"] }),
       },
     ],
     [filters, pushFilters, t],
@@ -391,6 +395,7 @@ export function OrdersTable({
       )}
       columns={columns}
       data={orders}
+      enableSorting={false}
       emptyIcon={<AppIcons.orders className="size-5" aria-hidden />}
       emptyMessage={
         hasActiveFilters ? t("orders.table.filteredEmptyMessage") : t("orders.table.emptyMessage")

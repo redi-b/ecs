@@ -29,6 +29,14 @@
     "theFreePlan": "ነፃው ዕቅድ",
     "scheduledChange": "በ{date} ወደ {name} ይቀየራል። ለቀሩት ቀናት ተመላሽ ክፍያ የለም። ከዚያ በፊት ማቋረጥ ይችላሉ።"
   },
+  "entitlements": {
+    "title": "በዕቅድዎ ውስጥ የተካተቱ",
+    "description": "ለዚህ ሱቅ አሁን የሚገኙትን ይመልከቱ።",
+    "customDomains": "ብጁ ዶሜይን",
+    "included": "ተካትቷል",
+    "upgradeRequired": "Growth ያስፈልጋል",
+    "unavailable": "ገና አይገኝም"
+  },
   "plans": {
     "starter": {
       "tagline": "ሱቅዎን በመስመር ላይ ለማስኬድ የሚያስፈልጉዎት ሁሉ።",
@@ -78,8 +86,8 @@
     "planUpgrade": "የዕቅድ ማሻሻያ",
     "open": "ክፍት የክፍያ መጠየቂያ",
     "generic": "የክፍያ መጠየቂያ",
-    "unpaid": "Unpaid",
-    "paid": "Paid",
+    "unpaid": "ያልተከፈለ",
+    "paid": "የተከፈለ",
     "cancelled": "ተሰርዟል"
   },
   "primary": {

@@ -1,7 +1,10 @@
 import { formatPublicOrderReference } from "@ecs/contracts";
 
 import type { MerchantOrder } from "../../types/index.js";
-import { buildOrderItemLines, formatOrderLineItemLabel } from "../telegram/telegram-presentation.js";
+import {
+  buildOrderItemLines,
+  formatOrderLineItemLabel,
+} from "../telegram/telegram-presentation.js";
 
 /** Hide Medusa placeholder emails from merchant-facing notifications. */
 export function isSyntheticOrderEmail(email: string | null | undefined): boolean {
@@ -105,7 +108,11 @@ export function buildOrderCreatedPayloadFromComplete(input: {
   if (input.customerCity?.trim()) payload.customerCity = input.customerCity.trim();
 
   if (order) {
-    const total = order.total ?? order.summary?.total;
+    const summary =
+      order.summary && typeof order.summary === "object"
+        ? (order.summary as Record<string, unknown>)
+        : null;
+    const total = order.total ?? summary?.total;
     if (total != null && (typeof total === "number" || typeof total === "string")) {
       payload.amount = String(total);
     }

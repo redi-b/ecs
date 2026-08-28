@@ -103,6 +103,13 @@ export function getProductStockUrl(options: {
   );
 }
 
+export function getBulkInventoryUrl(platformApiBaseUrl: string) {
+  return new URL(
+    "/platform/merchant/products/inventory/batch",
+    normalizeBaseUrl(platformApiBaseUrl),
+  );
+}
+
 export function getProductVariantStockUrl(options: {
   platformApiBaseUrl: string;
   productId: string;

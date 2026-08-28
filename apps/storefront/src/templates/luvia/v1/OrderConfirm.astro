@@ -1,21 +1,39 @@
 ---
-import type { LastOrderCookie } from "../../../lib/session/cart-cookie";
 import { formatMoney } from "../../../lib/money";
 import { formatOrderReference } from "../../../lib/order-reference";
-import Layout from "./Layout.astro";
+import type { LastOrderCookie } from "../../../lib/session/cart-cookie";
 import ActionButton from "./ActionButton.astro";
 import bagIcon from "./icons/bag-icon.svg";
 import sparkleIcon from "./icons/sparkle-icon.svg";
+import Layout from "./Layout.astro";
 import { parseLuviaData } from "./lib";
 
-interface Props { data: unknown; themeTokens?: unknown; tenantName: string; cartCount: number; orderId: string; lastOrder: LastOrderCookie | null; hasCustomerSession?: boolean; }
-const { data, themeTokens, tenantName, cartCount, orderId, lastOrder, hasCustomerSession = false } = Astro.props;
+interface Props {
+  data: unknown;
+  themeTokens?: unknown;
+  tenantName: string;
+  cartCount: number;
+  orderId: string;
+  lastOrder: LastOrderCookie | null;
+  hasCustomerSession?: boolean;
+  demoMode?: boolean;
+}
+const {
+  data,
+  themeTokens,
+  tenantName,
+  cartCount,
+  orderId,
+  lastOrder,
+  hasCustomerSession = false,
+  demoMode = false,
+} = Astro.props;
 const template = parseLuviaData(data);
 const verified = Boolean(lastOrder && lastOrder.id === orderId);
 const reference = formatOrderReference(orderId);
 ---
 
-<Layout tenantName={tenantName} header={template.header} footer={template.footer} themeTokens={themeTokens} cartCount={cartCount} title="Order Confirmed">
+<Layout tenantName={tenantName} header={template.header} footer={template.footer} themeTokens={themeTokens} cartCount={cartCount} demoMode={demoMode} title="Order Confirmed">
   <main class="lv-confirmation">
     <div class="lv-confirmation__glow" aria-hidden="true"></div>
     <section class="lv-confirmation__card" aria-labelledby="confirmation-title">

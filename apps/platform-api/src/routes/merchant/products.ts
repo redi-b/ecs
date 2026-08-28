@@ -1,6 +1,21 @@
 import type { Hono } from "hono";
+import type { ContentfulStatusCode } from "hono/utils/http-status";
 
 import type { PlatformAppOptions, PlatformAppVariables } from "../../app.js";
+import {
+  exportProductsToCsv,
+  productExportFilename,
+} from "../../modules/data-transfer/product-export.js";
+import {
+  dryRunProductImport,
+  loadExistingProductsForImport,
+  MAX_PRODUCT_IMPORT_BYTES,
+} from "../../modules/data-transfer/product-import-dry-run.js";
+import { buildProductImportWritePlan } from "../../modules/data-transfer/product-import-plan.js";
+import {
+  applyBulkInventoryUpdates,
+  parseBulkInventoryUpdates,
+} from "../../modules/inventory/bulk-adjustment.js";
 import {
   getJsonBody,
   getOptionalBodyNumber,
@@ -161,6 +176,146 @@ export function registerMerchantProductRoutes(
       limit: products.limit,
       offset: products.offset,
     });
+  });
+
+  app.get("/platform/merchant/products/export.csv", async (context) => {
+    const merchant = await getAuthorizedMerchantContext(context);
+    if (!merchant.ok) return merchant.response;
+
+    const commerce = getResolvedCommerce(merchant.result.context);
+    if (!commerce.ok) return context.json({ error: commerce.error }, commerce.status);
+    if (!options.listMerchantProducts) {
+      return context.json({ error: "commerce_backend_unavailable" }, 503);
+    }
+
+    const result = await exportProductsToCsv({
+      listProducts: options.listMerchantProducts,
+      salesChannelId: commerce.context.medusaSalesChannelId,
+      stockLocationId: merchant.result.context.medusaStockLocationId,
+    });
+    if (!result.ok) {
+      return context.json({ error: result.error }, result.status as ContentfulStatusCode);
+    }
+
+    return new Response(result.csv, {
+      headers: {
+        "cache-control": "no-store",
+        "content-disposition": `attachment; filename="${productExportFilename()}"`,
+        "content-type": "text/csv; charset=utf-8",
+        "x-ecs-export-products": String(result.productCount),
+        "x-ecs-export-rows": String(result.rowCount),
+      },
+    });
+  });
+
+  app.post("/platform/merchant/products/inventory/batch", async (context) => {
+    const merchant = await getAuthorizedMerchantContext(context);
+    if (!merchant.ok) return merchant.response;
+    const commerce = getResolvedCommerce(merchant.result.context, {
+      requireStockLocation: true,
+    });
+    if (!commerce.ok) return context.json({ error: commerce.error }, commerce.status);
+    if (!options.updateMerchantProductVariantStock) {
+      return context.json({ error: "commerce_backend_unavailable" }, 503);
+    }
+
+    const body = await getJsonBody(context.req.raw);
+    const parsed = parseBulkInventoryUpdates(body.updates);
+    if (!parsed.ok) return context.json({ error: parsed.error }, 400);
+    const stockLocationId = commerce.context.medusaStockLocationId;
+    if (!stockLocationId) {
+      return context.json({ error: "inventory_location_unavailable" }, 503);
+    }
+
+    const result = await applyBulkInventoryUpdates({
+      salesChannelId: commerce.context.medusaSalesChannelId,
+      stockLocationId,
+      updates: parsed.updates,
+      updateStock: options.updateMerchantProductVariantStock,
+    });
+    return context.json(result);
+  });
+
+  app.post("/platform/merchant/products/import/dry-run", async (context) => {
+    const merchant = await getAuthorizedMerchantContext(context);
+    if (!merchant.ok) return merchant.response;
+    const commerce = getResolvedCommerce(merchant.result.context);
+    if (!commerce.ok) return context.json({ error: commerce.error }, commerce.status);
+    if (!options.listMerchantProducts) {
+      return context.json({ error: "commerce_backend_unavailable" }, 503);
+    }
+    const declaredLength = Number(context.req.header("content-length") ?? 0);
+    if (declaredLength > MAX_PRODUCT_IMPORT_BYTES) {
+      return context.json({ error: "product_import_file_too_large" }, 413);
+    }
+    const csv = await context.req.text();
+    if (new TextEncoder().encode(csv).byteLength > MAX_PRODUCT_IMPORT_BYTES) {
+      return context.json({ error: "product_import_file_too_large" }, 413);
+    }
+    const existing = await loadExistingProductsForImport({
+      listProducts: options.listMerchantProducts,
+      salesChannelId: commerce.context.medusaSalesChannelId,
+    });
+    if (!existing.ok) {
+      return context.json({ error: existing.error }, existing.status as ContentfulStatusCode);
+    }
+    const dryRun = dryRunProductImport({ csv, existingProducts: existing.products });
+    const writePlan = buildProductImportWritePlan({ csv, existingProducts: existing.products });
+    if (!writePlan.ok || !options.createReviewedProductImportArtifact) {
+      return context.json(dryRun);
+    }
+    const session = await options.getSession?.(context.req.raw.headers);
+    if (!session) return context.json({ error: "auth_required" }, 401);
+    const artifact = await options.createReviewedProductImportArtifact({
+      csv,
+      dryRun,
+      tenantId: merchant.result.context.tenantId,
+      userId: session.user.id,
+      writes: writePlan.writes,
+    });
+    return context.json({ ...dryRun, artifact });
+  });
+
+  app.post("/platform/merchant/products/import/apply", async (context) => {
+    const merchant = await getAuthorizedMerchantContext(context);
+    if (!merchant.ok) return merchant.response;
+    const session = await options.getSession?.(context.req.raw.headers);
+    if (!session) return context.json({ error: "auth_required" }, 401);
+    if (!options.requestProductImportApply) {
+      return context.json({ error: "product_import_queue_unavailable" }, 503);
+    }
+    const body = await getJsonBody(context.req.raw);
+    const artifactId = getRequiredBodyString(body, "artifactId");
+    const contentDigest = getRequiredBodyString(body, "contentDigest");
+    const idempotencyKey = getRequiredBodyString(body, "idempotencyKey");
+    if (!artifactId || !contentDigest || !idempotencyKey) {
+      return context.json({ error: "product_import_apply_invalid" }, 400);
+    }
+    const result = await options.requestProductImportApply({
+      artifactId,
+      contentDigest,
+      idempotencyKey,
+      tenantId: merchant.result.context.tenantId,
+      userId: session.user.id,
+    });
+    if (!result.ok) {
+      return context.json({ error: result.error }, result.status as ContentfulStatusCode);
+    }
+    return context.json(result, 202);
+  });
+
+  app.get("/platform/merchant/products/import/executions/:executionId", async (context) => {
+    const merchant = await getAuthorizedMerchantContext(context);
+    if (!merchant.ok) return merchant.response;
+    if (!options.getProductImportExecution) {
+      return context.json({ error: "product_import_queue_unavailable" }, 503);
+    }
+    const result = await options.getProductImportExecution({
+      executionId: context.req.param("executionId"),
+      tenantId: merchant.result.context.tenantId,
+    });
+    if (!result.ok) return context.json({ error: result.error }, result.status);
+    return context.json(result);
   });
 
   app.get("/platform/merchant/products/:productId", async (context) => {

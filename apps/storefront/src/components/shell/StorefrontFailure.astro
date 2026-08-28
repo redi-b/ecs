@@ -1,0 +1,61 @@
+---
+interface Props {
+  actionHref?: string;
+  actionLabel?: string;
+  description: string;
+  eyebrow: string;
+  title: string;
+}
+
+const { actionHref, actionLabel, description, eyebrow, title } = Astro.props;
+---
+
+<main class="failure-stage">
+  <div class="failure-grid" aria-hidden="true"></div>
+  <section class="failure-content">
+    <div class="failure-copy">
+      <p class="failure-eyebrow">{eyebrow}</p>
+      <h1>{title}</h1>
+      <p class="failure-description">{description}</p>
+      {actionHref && actionLabel ? <a href={actionHref}>{actionLabel}</a> : null}
+    </div>
+    <div class="failure-viewport" aria-hidden="true">
+      <div class="failure-bar"><i></i><i></i><i></i><span></span></div>
+      <div class="failure-canvas">
+        <b class="frame one"></b><b class="frame two"></b><b class="frame three"></b>
+        <em></em>
+      </div>
+      <div class="failure-status"><i></i> ECS STOREFRONT</div>
+    </div>
+  </section>
+</main>
+
+<style>
+  :global(*) { box-sizing: border-box; }
+  :global(body) { margin: 0; background: #f4f6f8; color: #13202c; }
+  .failure-stage { position:relative; isolation:isolate; min-height:100svh; overflow:hidden; padding:2rem 1.25rem; font-family:Outfit,ui-sans-serif,system-ui,sans-serif }
+  .failure-grid { position:absolute; inset:0; opacity:.52; background-image:linear-gradient(#dce3e9 1px,transparent 1px),linear-gradient(90deg,#dce3e9 1px,transparent 1px); background-size:3rem 3rem; mask-image:linear-gradient(to bottom,transparent,#000 18%,#000 82%,transparent) }
+  .failure-content { position:relative; z-index:1; display:grid; align-content:center; gap:3.5rem; width:100%; max-width:68rem; min-height:calc(100svh - 4rem); margin:auto }
+  .failure-copy { max-width:34rem }
+  .failure-eyebrow { margin:0; color:#0878b8; font-size:.72rem; font-weight:700; letter-spacing:.16em; text-transform:uppercase }
+  h1 { margin:.75rem 0 0; font-size:clamp(2.25rem,7vw,4.5rem); font-weight:650; letter-spacing:-.052em; line-height:1 }
+  .failure-description { max-width:32rem; margin:1.25rem 0 0; color:#637180; font-size:1rem; line-height:1.75 }
+  a { display:inline-flex; align-items:center; min-height:2.75rem; margin-top:1.75rem; border-radius:999px; background:#0878b8; color:white; padding:.65rem 1.15rem; font-size:.9rem; font-weight:650; text-decoration:none; transition:background 160ms ease,transform 160ms ease }
+  a:hover { background:#066698; transform:translateY(-1px) }
+  a:focus-visible { outline:3px solid color-mix(in srgb,#0878b8 35%,transparent); outline-offset:3px }
+  .failure-viewport { position:relative; overflow:hidden; min-height:20rem; border:1px solid #cad5df; border-radius:1.5rem; background:#fbfcfd; box-shadow:0 30px 80px -42px #0878b880; transform:rotate(1.5deg) }
+  .failure-bar { display:flex; align-items:center; gap:.4rem; height:2.75rem; padding:0 .85rem; border-bottom:1px solid #d9e0e6; background:#edf1f4 }
+  .failure-bar i { width:.42rem; height:.42rem; border-radius:50%; background:#aab5bf }
+  .failure-bar span { width:45%; height:.5rem; margin-left:auto; border-radius:999px; background:#d6dde3 }
+  .failure-canvas { position:absolute; inset:2.75rem 0 2.25rem; overflow:hidden }
+  .frame { position:absolute; border:1px solid #b9d7e8; border-radius:.85rem; background:#f7fafb }
+  .frame::after { content:""; position:absolute; left:1rem; top:1rem; width:42%; height:.45rem; border-radius:999px; background:#8fc8e5 }
+  .one { inset:14% 12% 44% }.two { inset:61% 54% 12% 12% }.three { inset:61% 12% 12% 51% }
+  .failure-canvas em { position:absolute; inset:-35% 0 auto; height:38%; background:linear-gradient(180deg,transparent,#1595d51a,transparent); animation:scan 3.8s cubic-bezier(.45,0,.25,1) infinite }
+  .failure-status { position:absolute; inset:auto 0 0; display:flex; align-items:center; gap:.5rem; height:2.25rem; padding:0 .9rem; border-top:1px solid #d9e0e6; color:#71808d; font-size:.62rem; font-weight:700; letter-spacing:.14em }
+  .failure-status i { width:.45rem; height:.45rem; border-radius:50%; background:#0878b8; box-shadow:0 0 0 .25rem #0878b821; animation:pulse 2.4s ease-in-out infinite }
+  @keyframes scan { 0%{translate:0 -20%} 62%,100%{translate:0 390%} } @keyframes pulse { 0%,100%{opacity:.45}50%{opacity:1} }
+  @media (min-width:56rem){ .failure-content{grid-template-columns:minmax(0,1fr) minmax(19rem,.72fr);align-items:center} }
+  @media (prefers-color-scheme:dark){ :global(body){background:#09131c;color:#e7edf2}.failure-grid{opacity:.25;background-image:linear-gradient(#223240 1px,transparent 1px),linear-gradient(90deg,#223240 1px,transparent 1px)}.failure-description{color:#94a4b3}.failure-viewport{border-color:#2a4052;background:#0d1b27;box-shadow:0 30px 80px -42px #25a9ee80}.failure-bar{border-color:#263a4a;background:#102330}.failure-bar i{background:#526777}.failure-bar span{background:#223746}.frame{border-color:#264b62;background:#10212d}.frame::after{background:#226b91}.failure-status{border-color:#263a4a;color:#8295a4} }
+  @media (prefers-reduced-motion:reduce){ *{animation-duration:1ms!important;animation-iteration-count:1!important} }
+</style>

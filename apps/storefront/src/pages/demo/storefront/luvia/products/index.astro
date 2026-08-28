@@ -1,0 +1,25 @@
+---
+import { luviaV1Defaults, luviaV1ThemeTokens } from "@ecs/storefront-templates";
+import {
+  luviaDemoCategories,
+  luviaDemoCollections,
+  luviaDemoProducts,
+} from "../../../../../lib/demo/luvia-fixture";
+import LuviaV1ProductList from "../../../../../templates/luvia/v1/ProductList.astro";
+---
+
+<LuviaV1ProductList
+  data={luviaV1Defaults}
+  themeTokens={luviaV1ThemeTokens}
+  tenantName="Luvia Beauty"
+  cartCount={2}
+  products={luviaDemoProducts}
+  collections={luviaDemoCollections}
+  categories={luviaDemoCategories}
+  totalCount={luviaDemoProducts.length}
+  offset={0}
+  limit={luviaDemoProducts.length}
+  hasPrev={false}
+  hasNext={false}
+  demoMode
+/>

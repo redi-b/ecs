@@ -1,10 +1,12 @@
 ---
 import StoreUnavailable from "../../components/shell/StoreUnavailable.astro";
-import { listStoreProducts, getStoreProductByHandle } from "../../lib/commerce/products";
+import { getStoreProductByHandle, listStoreProducts } from "../../lib/commerce/products";
 import { isStoreError } from "../../lib/commerce/result";
 import type { StoreProduct } from "../../lib/commerce/types";
 import { applyCatalogCache, CATALOG_CACHE_TTL } from "../../lib/http-cache";
 import { loadPageContext } from "../../lib/page-context";
+import { buildStorefrontSeo } from "../../lib/seo";
+import { buildProductStructuredData } from "../../lib/structured-data";
 import { getPrimaryColor, themeFromTokens } from "../../lib/theme";
 import { resolveRendererSlot } from "../../templates/registry";
 
@@ -31,6 +33,18 @@ if (productResult && isStoreError(productResult)) {
 
 const product: StoreProduct | null =
   productResult && !isStoreError(productResult) ? productResult.product : null;
+const seo = ctx.ok
+  ? buildStorefrontSeo({
+      description: product?.description,
+      imageUrl: product?.thumbnail,
+      noindex: !product,
+      path: `/products/${encodeURIComponent(handle)}`,
+      publicOrigin: ctx.publicOrigin,
+      tenantName: ctx.config.tenant.name,
+      title: product?.title ?? "Product not found",
+    })
+  : null;
+const structuredData = seo ? buildProductStructuredData({ product, seo }) : null;
 
 let relatedProducts: StoreProduct[] = [];
 if (ctx.ok && product?.collectionId) {
@@ -42,9 +56,7 @@ if (ctx.ok && product?.collectionId) {
     limit: 8,
   });
   if (!isStoreError(relatedResult)) {
-    relatedProducts = relatedResult.products
-      .filter((item) => item.id !== product.id)
-      .slice(0, 4);
+    relatedProducts = relatedResult.products.filter((item) => item.id !== product.id).slice(0, 4);
   }
 } else if (ctx.ok && product) {
   const relatedResult = await listStoreProducts({
@@ -54,9 +66,7 @@ if (ctx.ok && product?.collectionId) {
     limit: 8,
   });
   if (!isStoreError(relatedResult)) {
-    relatedProducts = relatedResult.products
-      .filter((item) => item.id !== product.id)
-      .slice(0, 4);
+    relatedProducts = relatedResult.products.filter((item) => item.id !== product.id).slice(0, 4);
   }
 }
 
@@ -90,6 +100,8 @@ if (ctx.ok && Product && product) {
       notice={Astro.url.searchParams.get("notice")}
       error={Astro.url.searchParams.get("error")}
       relatedProducts={relatedProducts}
+      seo={seo}
+      structuredData={structuredData}
     />
   )
 }

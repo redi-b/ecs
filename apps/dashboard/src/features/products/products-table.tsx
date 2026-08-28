@@ -3,15 +3,9 @@
 import type { MerchantProduct } from "@ecs/contracts";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-  useTransition,
-  type ReactNode,
-} from "react";
+import { type ReactNode, useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
+import { ConfirmDialog } from "@/components/app/confirm-dialog";
 import { DataTable } from "@/components/app/data-table";
 import {
   type DataTableFilterDefinition,
@@ -20,8 +14,8 @@ import {
 import { AppIcons } from "@/components/app/icons";
 import { ListResultsStatus } from "@/components/app/list-results-status";
 import { ListToolbarSearch } from "@/components/app/list-toolbar";
-import { ConfirmDialog } from "@/components/app/confirm-dialog";
 import { Button } from "@/components/ui/button";
+import { BulkInventoryDialog } from "@/features/products/bulk-inventory-dialog";
 import {
   filterProductsForTable,
   getProductTableCounts,
@@ -59,12 +53,13 @@ import {
   type ProductStatusValue,
   setUrlFilter,
 } from "@/features/products/products-table-helpers";
+import type { MessageKey } from "@/i18n/messages";
 import { useI18n } from "@/i18n/provider";
 
 async function copyToClipboard(
   value: string,
   label: string,
-  t: (key: any, values?: Record<string, string | number>) => string,
+  t: (key: MessageKey, values?: Record<string, string | number>) => string,
 ) {
   try {
     const copied = await copyTextToClipboard(value);
@@ -112,7 +107,11 @@ export function ProductsTable({
 
   const [deleteProductId, setDeleteProductId] = useState<string | null>(null);
   const [selectedProductIdsForDelete, setSelectedProductIdsForDelete] = useState<string[]>([]);
+  const [selectedProductsForInventory, setSelectedProductsForInventory] = useState<
+    MerchantProduct[]
+  >([]);
   const [showBatchDeleteDialog, setShowBatchDeleteDialog] = useState(false);
+  const [showBulkInventoryDialog, setShowBulkInventoryDialog] = useState(false);
 
   const deleteProductMutation = useMutation({
     mutationFn: async (productId: string) => {
@@ -265,19 +264,16 @@ export function ProductsTable({
     ],
   );
 
-  const setClientFilter = useCallback(
-    (key: "stock" | "media" | "variantCount", value: string) => {
-      if (key === "stock") setStock(value as ProductStockFilter);
-      if (key === "media") setMedia(value as ProductMediaFilter);
-      if (key === "variantCount") setVariantCount(value as ProductVariantCountFilter);
+  const setClientFilter = useCallback((key: "stock" | "media" | "variantCount", value: string) => {
+    if (key === "stock") setStock(value as ProductStockFilter);
+    if (key === "media") setMedia(value as ProductMediaFilter);
+    if (key === "variantCount") setVariantCount(value as ProductVariantCountFilter);
 
-      if (typeof window === "undefined") return;
-      const url = new URL(window.location.href);
-      setUrlFilter(url, key, value, "all");
-      window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}`);
-    },
-    [],
-  );
+    if (typeof window === "undefined") return;
+    const url = new URL(window.location.href);
+    setUrlFilter(url, key, value, "all");
+    window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}`);
+  }, []);
 
   // Server already applied q/status/collection/category — only refine the page locally.
   const filteredProducts = useMemo(
@@ -307,8 +303,7 @@ export function ProductsTable({
       variantCount,
     },
   });
-  const hasClientPageFilter =
-    stock !== "all" || media !== "all" || variantCount !== "all";
+  const hasClientPageFilter = stock !== "all" || media !== "all" || variantCount !== "all";
   const hasServerFilter =
     Boolean(initialQuery.trim()) ||
     initialStatus !== "all" ||
@@ -494,6 +489,19 @@ export function ProductsTable({
             >
               {t("table.actions.moveToDraft")}
             </Button>
+            {!tenantId ? (
+              <Button
+                onClick={() => {
+                  setSelectedProductsForInventory(selectedProducts);
+                  setShowBulkInventoryDialog(true);
+                }}
+                size="sm"
+                type="button"
+                variant="outline"
+              >
+                {t("products.stock.bulkAction")}
+              </Button>
+            ) : null}
             <Button
               onClick={() => {
                 setSelectedProductIdsForDelete(selectedProducts.map((p) => p.id));
@@ -510,6 +518,7 @@ export function ProductsTable({
         )}
         columns={columns}
         data={filteredProducts}
+        enableSorting={false}
         emptyIcon={<AppIcons.products className="size-5" aria-hidden />}
         emptyMessage={t("products.table.emptyMessage")}
         emptyTitle={t("products.table.emptyTitle")}
@@ -524,12 +533,20 @@ export function ProductsTable({
         footer={footer}
       />
 
+      <BulkInventoryDialog
+        onOpenChange={setShowBulkInventoryDialog}
+        onSaved={() => {
+          queryClient.invalidateQueries({ queryKey: ["products"] });
+          router.refresh();
+        }}
+        open={showBulkInventoryDialog}
+        products={selectedProductsForInventory}
+      />
+
       <ConfirmDialog
         cancelDisabled={deleteProductMutation.isPending}
         confirmDisabled={deleteProductMutation.isPending}
-        confirmLabel={
-          deleteProductMutation.isPending ? t("common.deleting") : t("common.delete")
-        }
+        confirmLabel={deleteProductMutation.isPending ? t("common.deleting") : t("common.delete")}
         description={t("products.detail.deleteDesc", {
           title: productToDelete?.title || t("products.detail.thisProduct"),
         })}

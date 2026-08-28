@@ -2,13 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 
-import { AppIcons, type AppIcon } from "@/components/app/icons";
-import {
-  SETTINGS_SECTION_IDS,
-  type SettingsSectionId,
-} from "@/features/settings/settings-nav";
-import { useI18n } from "@/i18n/provider";
+import { type AppIcon, AppIcons } from "@/components/app/icons";
+import { SETTINGS_SECTION_IDS, type SettingsSectionId } from "@/features/settings/settings-nav";
 import type { MessageKey } from "@/i18n/messages";
+import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 
 const SECTION_ICONS: Record<SettingsSectionId, AppIcon> = {
@@ -19,6 +16,7 @@ const SECTION_ICONS: Record<SettingsSectionId, AppIcon> = {
   payments: AppIcons.billing,
   fulfillment: AppIcons.orders,
   storefront: AppIcons.editor,
+  domains: AppIcons.global,
   account: AppIcons.user,
 };
 
@@ -74,8 +72,7 @@ export function SettingsSectionNav({
     const activeButton = el.querySelector<HTMLElement>(`[data-section="${active}"]`);
     if (!activeButton) return;
     // Scroll only the chip strip — scrollIntoView can jank the whole page on mobile.
-    const left =
-      activeButton.offsetLeft - (el.clientWidth - activeButton.offsetWidth) / 2;
+    const left = activeButton.offsetLeft - (el.clientWidth - activeButton.offsetWidth) / 2;
     el.scrollTo({ left: Math.max(0, left), behavior: "smooth" });
   }, [active]);
 

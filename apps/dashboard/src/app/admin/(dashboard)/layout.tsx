@@ -1,15 +1,19 @@
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
-
+import { ActivityDock } from "@/components/app/activity-dock";
+import { ActivityRegistryProvider } from "@/components/app/activity-registry";
 import { ActorProvider } from "@/components/app/actor-context";
 import { AppHeader } from "@/components/app/app-header";
 import { AppSidebar } from "@/components/app/app-sidebar";
+import { BackgroundTaskCenter } from "@/components/app/background-task-center";
 import { BreadcrumbLabelsProvider } from "@/components/app/breadcrumb-labels";
 import { DashboardAccessState } from "@/components/app/dashboard-access-state";
 import { OnboardingWarningToast } from "@/components/app/onboarding-warning-toast";
+import { SupportAccessBanner } from "@/components/app/support-access-banner";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { MediaUploadHost } from "@/features/media/media-upload-host";
 import { getTranslations } from "@/i18n/server";
 import {
   DASHBOARD_PATH_HEADER,
@@ -111,10 +115,18 @@ export default async function AdminDashboardLayout({ children }: { children: Rea
         <ActorProvider actor={access.access.actor}>
           <AppSidebar access={access.access} />
           <SidebarInset>
+            {access.access.actor.supportAccess ? (
+              <SupportAccessBanner expiresAt={access.access.actor.supportAccess.expiresAt} />
+            ) : null}
             <BreadcrumbLabelsProvider>
               <AppHeader />
               <OnboardingWarningToast />
               {children}
+              <ActivityRegistryProvider>
+                <BackgroundTaskCenter />
+                <MediaUploadHost />
+                <ActivityDock />
+              </ActivityRegistryProvider>
             </BreadcrumbLabelsProvider>
           </SidebarInset>
         </ActorProvider>

@@ -1,13 +1,25 @@
 import { loadServiceEnv } from "@ecs/config";
 import { createPlatformDb } from "@ecs/db";
-import { createJobsClient, startPlatformWorker, type JobHandler } from "@ecs/jobs";
+import { createJobsClient, type JobHandler, startPlatformWorker } from "@ecs/jobs";
 import { createLogger } from "@ecs/logger";
 import { createChapaPaymentService } from "./adapters/chapa/payment-service.js";
+import { resolveMedusaAdminToken } from "./adapters/medusa/admin-token.js";
+import { createMedusaOrderService } from "./adapters/medusa/order/service.js";
+import { createMedusaProductService } from "./adapters/medusa/product/service.js";
 import { loadPlatformApiEnvFiles } from "./config/env.js";
+import { createAnalyticsCommerceRollupHandler } from "./jobs/handlers/analytics-commerce-rollup.js";
 import { createBillingLifecycleHandler } from "./jobs/handlers/billing-lifecycle.js";
 import { createBillingPaymentReconcileHandler } from "./jobs/handlers/billing-payment-reconcile.js";
 import { createNotificationsDeliverHandler } from "./jobs/handlers/notifications-deliver.js";
+import {
+  createProductImportApplyHandler,
+  createProductImportApplyStore,
+} from "./jobs/handlers/product-import-apply.js";
 import { systemPingHandler } from "./jobs/handlers/system-ping.js";
+import {
+  DEFAULT_ANALYTICS_ROLLUP_INTERVAL_MS,
+  registerAnalyticsRepeatableJobs,
+} from "./jobs/schedule-analytics-jobs.js";
 import {
   parseBillingIntervalMs,
   registerBillingRepeatableJobs,
@@ -52,6 +64,29 @@ const platformDb = createPlatformDb({
   ),
 });
 
+const medusaInternalUrl = process.env.MEDUSA_INTERNAL_URL ?? "http://localhost:9000";
+const medusaAdminToken = await resolveMedusaAdminToken({
+  db: platformDb.db,
+  envToken: process.env.MEDUSA_ADMIN_API_TOKEN,
+  internalApiToken:
+    process.env.PLATFORM_INTERNAL_API_TOKEN ??
+    (process.env.NODE_ENV === "production" ? undefined : "development-platform-internal-token"),
+  logger,
+  medusaInternalUrl,
+});
+if (!medusaAdminToken.ok) {
+  logger.error({ error: medusaAdminToken.error }, "analytics rollup Medusa token unavailable");
+  process.exit(1);
+}
+const orderService = createMedusaOrderService({
+  adminApiToken: medusaAdminToken.token,
+  medusaInternalUrl,
+});
+const productService = createMedusaProductService({
+  adminApiToken: medusaAdminToken.token,
+  medusaInternalUrl,
+});
+
 const logProvider = (channel: string) =>
   createLogNotificationProvider(channel, {
     log: (fields, message) => {
@@ -92,10 +127,7 @@ if (isEmailDeliveryConfigured(process.env)) {
   logger.warn("RESEND_API_KEY/EMAIL_FROM not set; email deliveries use log provider");
 }
 
-const notificationProviders = createProviderRegistry([
-  emailProvider,
-  telegramProvider,
-]);
+const notificationProviders = createProviderRegistry([emailProvider, telegramProvider]);
 const notificationRenderer = createCodeNotificationRenderer();
 
 const jobsClient = createJobsClient({
@@ -149,6 +181,20 @@ const worker = startPlatformWorker({
       db: platformDb.db,
       verifyPayment: (txRef) => chapaPaymentService.verifyPayment(txRef),
     }) as JobHandler,
+    "analytics.commerce-rollup": createAnalyticsCommerceRollupHandler({
+      db: platformDb.db,
+      listOrders: (input) => orderService.listMerchantOrders(input),
+      listProducts: (input) => productService.listMerchantProducts(input),
+    }) as JobHandler,
+    "product-import.apply": createProductImportApplyHandler({
+      store: createProductImportApplyStore(platformDb.db),
+      commerce: {
+        createProduct: productService.createMerchantProduct,
+        findImportedProduct: productService.findImportedProduct,
+        updateProduct: productService.updateMerchantProduct,
+        updateVariantStock: productService.updateMerchantProductVariantStock,
+      },
+    }) as JobHandler,
   },
   logger,
 });
@@ -171,6 +217,28 @@ void registerBillingRepeatableJobs({
   );
 });
 
+const analyticsStartupController = new AbortController();
+
+void registerAnalyticsRepeatableJobs({
+  jobsClient,
+  isCommerceReady: async () => {
+    const response = await fetch(new URL("/health", medusaInternalUrl), {
+      signal: AbortSignal.timeout(1_000),
+    }).catch(() => null);
+    return response?.ok ?? false;
+  },
+  intervalMs: parseBillingIntervalMs(
+    process.env.ANALYTICS_ROLLUP_INTERVAL_MS,
+    DEFAULT_ANALYTICS_ROLLUP_INTERVAL_MS,
+  ),
+  signal: analyticsStartupController.signal,
+}).catch((error) => {
+  logger.warn(
+    { err: error instanceof Error ? error.message : String(error) },
+    "failed to register analytics BullMQ repeatable",
+  );
+});
+
 logger.info(
   {
     handlers: [
@@ -178,6 +246,7 @@ logger.info(
       "notifications.deliver",
       "billing.lifecycle",
       "billing.reconcile-payments",
+      "analytics.commerce-rollup",
     ],
     schedule: "bullmq_repeatable",
   },
@@ -186,6 +255,7 @@ logger.info(
 
 async function shutdown(signal: string) {
   logger.info({ signal }, "platform worker shutting down");
+  analyticsStartupController.abort();
   try {
     await jobsClient.close();
     await worker.close();

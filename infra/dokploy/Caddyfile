@@ -41,6 +41,19 @@
 		}
 	}
 
+	@superadmin host ops.{$BASE_DOMAIN}
+	handle @superadmin {
+		@next_static path /_next/static/*
+		handle @next_static {
+			import next_static_cache
+			reverse_proxy ecs-superadmin:3002
+		}
+
+		handle {
+			reverse_proxy ecs-superadmin:3002
+		}
+	}
+
 	# Public S3 API (path-style) + browser presigned PUT/GET → SeaweedFS.
 	# Critical: preserve original Host so AWS SigV4 matches the presigned URL.
 	@media host media.{$BASE_DOMAIN}

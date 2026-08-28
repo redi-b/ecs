@@ -162,6 +162,90 @@
       "when": 1787090290090,
       "tag": "0022_mature_hannibal_king",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1787657588355,
+      "tag": "0023_tan_sleepwalker",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1787660905415,
+      "tag": "0024_fancy_sersi",
+      "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1787661561032,
+      "tag": "0025_third_toad",
+      "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1787661722796,
+      "tag": "0026_serious_pestilence",
+      "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1787662994091,
+      "tag": "0027_condemned_ghost_rider",
+      "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1787663550042,
+      "tag": "0028_smiling_norman_osborn",
+      "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1787664784665,
+      "tag": "0029_grey_iron_lad",
+      "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1787666276971,
+      "tag": "0030_melted_giant_girl",
+      "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1787686707486,
+      "tag": "0031_giant_phil_sheldon",
+      "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1787687104025,
+      "tag": "0032_mysterious_captain_america",
+      "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1787815515235,
+      "tag": "0033_third_leader",
+      "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1787833114849,
+      "tag": "0034_military_juggernaut",
+      "breakpoints": true
     }
   ]
 }

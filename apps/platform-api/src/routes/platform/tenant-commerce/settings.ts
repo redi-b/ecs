@@ -98,6 +98,31 @@ export function registerPlatformTenantSettingsRoutes(
     });
   });
 
+  app.post("/platform/tenants/:tenantId/insights/refresh", async (context) => {
+    if (!options.requestInsightsRefresh) {
+      return context.json({ error: "insights_refresh_unavailable" }, 503);
+    }
+
+    const session = await options.getSession?.(context.req.raw.headers);
+    if (!session) {
+      return context.json({ error: "auth_required" }, 401);
+    }
+
+    const tenantId = context.req.param("tenantId");
+    const authorization = await options.authorizeDashboardForTenant?.({
+      tenantId,
+      userId: session.user.id,
+    });
+    if (!authorization?.ok) {
+      return context.json({ error: "dashboard_forbidden" }, 403);
+    }
+
+    const result = await options.requestInsightsRefresh({ tenantId });
+    context.header("Cache-Control", "private, no-store");
+    context.header("Retry-After", secondsUntil(result.retryAt).toString());
+    return context.json({ ok: true, ...result }, result.queued ? 202 : 200);
+  });
+
   app.post("/platform/tenants/:tenantId/settings", async (context) => {
     if (!options.updateTenantShopSettings) {
       return context.json({ error: "settings_unavailable" }, 503);
@@ -146,4 +171,9 @@ export function registerPlatformTenantSettingsRoutes(
       tenant: result.tenant,
     });
   });
+}
+
+function secondsUntil(value: string) {
+  const remaining = new Date(value).getTime() - Date.now();
+  return Math.max(1, Math.ceil(remaining / 1_000));
 }

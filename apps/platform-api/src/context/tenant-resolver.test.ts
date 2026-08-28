@@ -126,6 +126,7 @@ describe("resolveTenantFromHost", () => {
         tenantName: "Abebe Market",
         tenantHandle: "abebe",
         hostname: "abebe.lvh.me",
+        primaryHostname: "abebe.lvh.me",
         domainId: "domain_1",
         status: "active",
         medusaStoreId: "store_1",
@@ -141,5 +142,27 @@ describe("resolveTenantFromHost", () => {
         templateVersion: 1,
       },
     });
+  });
+
+  it("selects a different verified active primary domain for public URLs", async () => {
+    const result = await resolverFor({
+      ...activePublishedRecord,
+      primaryHostname: "Shop.Example.com.",
+      primaryDomainStatus: "active",
+      primaryDomainVerificationStatus: "verified",
+    });
+
+    assert.equal(result.ok && result.context.primaryHostname, "shop.example.com");
+  });
+
+  it("does not select an unverified primary domain for public URLs", async () => {
+    const result = await resolverFor({
+      ...activePublishedRecord,
+      primaryHostname: "pending.example.com",
+      primaryDomainStatus: "pending_verification",
+      primaryDomainVerificationStatus: "pending",
+    });
+
+    assert.equal(result.ok && result.context.primaryHostname, "abebe.lvh.me");
   });
 });

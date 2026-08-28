@@ -3,12 +3,13 @@
 import type * as React from "react";
 
 import { PaginationBar } from "@/components/app/pagination-bar";
-import type { DashboardSearchParams } from "@/lib/dashboard-tenant-context";
 import { useI18n } from "@/i18n/provider";
+import type { DashboardSearchParams } from "@/lib/dashboard-tenant-context";
 
 const TRANSIENT_STATUS_PARAMS = new Set(["categoryStatus", "collectionStatus", "productStatus"]);
 
 type ListSummaryProps = {
+  actions?: React.ReactNode;
   count: number;
   /**
    * Explicit secondary fact (wins over page/filter auto detail).
@@ -37,6 +38,7 @@ type PaginationControlsProps = {
  * Auto detail: page position when multi-page, or "Matching filters" when filtered.
  */
 export function ListSummary({
+  actions,
   count,
   detail,
   page,
@@ -89,8 +91,13 @@ export function ListSummary({
           </>
         )}
       </div>
-      {right ? (
-        <span className="min-w-0 truncate text-right text-muted-foreground">{right}</span>
+      {right || actions ? (
+        <div className="flex min-w-0 items-center justify-end gap-3">
+          {right ? (
+            <span className="min-w-0 truncate text-right text-muted-foreground">{right}</span>
+          ) : null}
+          {actions}
+        </div>
       ) : null}
     </div>
   );
@@ -145,11 +152,7 @@ export function PaginationControls({
   );
 }
 
-export function buildPageHref(
-  basePath: string,
-  searchParams: DashboardSearchParams,
-  page: number,
-) {
+export function buildPageHref(basePath: string, searchParams: DashboardSearchParams, page: number) {
   const params = new URLSearchParams();
 
   for (const [key, value] of Object.entries(searchParams ?? {})) {

@@ -1,0 +1,22 @@
+---
+import { luviaV1Defaults, luviaV1ThemeTokens } from "@ecs/storefront-templates";
+import { findLuviaDemoProduct, luviaDemoProducts } from "../../../../../lib/demo/luvia-fixture";
+import LuviaV1Product from "../../../../../templates/luvia/v1/Product.astro";
+
+const handle = Astro.params.handle ?? "";
+const product = findLuviaDemoProduct(handle);
+const relatedProducts = luviaDemoProducts
+  .filter((candidate) => candidate.handle !== handle)
+  .slice(0, 4);
+---
+
+<LuviaV1Product
+  data={luviaV1Defaults}
+  themeTokens={luviaV1ThemeTokens}
+  tenantName="Luvia Beauty"
+  cartCount={2}
+  product={product}
+  handle={handle}
+  relatedProducts={relatedProducts}
+  demoMode
+/>

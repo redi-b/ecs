@@ -68,7 +68,8 @@
    */
   --font-sans: var(--font-geist-sans), var(--font-ethiopic), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
-  --font-heading: var(--font-geist-sans), var(--font-ethiopic), ui-sans-serif, system-ui, sans-serif;
+  --font-heading:
+    var(--font-geist-sans), var(--font-ethiopic), ui-sans-serif, system-ui, sans-serif;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -247,7 +248,8 @@
    */
   html[lang="am"] {
     --font-sans: var(--font-ethiopic), var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
-    --font-heading: var(--font-ethiopic), var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+    --font-heading:
+      var(--font-ethiopic), var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
     /* Match Google Fonts preview weight a bit better than super-thin system defaults */
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -667,7 +669,8 @@
 html[lang="am"] .storefront-editor-runtime,
 html[lang="am"] .storefront-editor-runtime--am,
 .storefront-editor-runtime--am {
-  font-family: var(--font-ethiopic), var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif !important;
+  font-family:
+    var(--font-ethiopic), var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif !important;
 }
 
 /* Editor chrome (title, badges, toolbar labels). */
@@ -675,7 +678,8 @@ html[lang="am"] .storefront-editor-chrome,
 .storefront-editor-runtime--am .storefront-editor-chrome,
 html[lang="am"] .storefront-editor-chrome *,
 .storefront-editor-runtime--am .storefront-editor-chrome * {
-  font-family: var(--font-ethiopic), var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif !important;
+  font-family:
+    var(--font-ethiopic), var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif !important;
 }
 
 /* Sonner: unlayered so we beat runtime-injected library CSS. */
@@ -765,7 +769,11 @@ html[lang="am"] .storefront-editor-chrome *,
   width: min(34rem, 76%);
   aspect-ratio: 1;
   border-radius: 999px;
-  background: radial-gradient(circle, color-mix(in oklch, var(--preview-loader-accent) 13%, transparent), transparent 68%);
+  background: radial-gradient(
+    circle,
+    color-mix(in oklch, var(--preview-loader-accent) 13%, transparent),
+    transparent 68%
+  );
   filter: blur(12px);
   animation: preview-loader-breathe 3.2s ease-in-out infinite;
 }
@@ -799,33 +807,323 @@ html[lang="am"] .storefront-editor-chrome *,
   transform-origin: center bottom;
 }
 
-.storefront-preview-loader__sheet--back { transform: translate3d(16px,-20px,-46px) rotateX(55deg) rotateZ(-8deg); opacity:.32; animation:preview-loader-layer 2.6s ease-in-out infinite .28s }
-.storefront-preview-loader__sheet--middle { transform:translate3d(8px,-10px,-23px) rotateX(55deg) rotateZ(-8deg); opacity:.58; animation:preview-loader-layer 2.6s ease-in-out infinite .14s }
-.storefront-preview-loader__sheet--front { animation:preview-loader-layer 2.6s ease-in-out infinite }
+.storefront-preview-loader__sheet--back {
+  transform: translate3d(16px, -20px, -46px) rotateX(55deg) rotateZ(-8deg);
+  opacity: 0.32;
+  animation: preview-loader-layer 2.6s ease-in-out infinite 0.28s;
+}
+.storefront-preview-loader__sheet--middle {
+  transform: translate3d(8px, -10px, -23px) rotateX(55deg) rotateZ(-8deg);
+  opacity: 0.58;
+  animation: preview-loader-layer 2.6s ease-in-out infinite 0.14s;
+}
+.storefront-preview-loader__sheet--front {
+  animation: preview-loader-layer 2.6s ease-in-out infinite;
+}
 
-.storefront-preview-loader__nav { height:1.55rem; display:flex; align-items:center; gap:.3rem; padding:0 .65rem; border-bottom:1px solid color-mix(in oklch,var(--border) 75%,transparent) }
-.storefront-preview-loader__nav span { width:2.4rem; height:.42rem; margin-right:auto; border-radius:999px; background:var(--preview-loader-accent) }
-.storefront-preview-loader__nav i { width:.32rem; height:.32rem; border-radius:50%; background:color-mix(in oklch,var(--muted-foreground) 45%,transparent) }
-.storefront-preview-loader__hero { display:flex; flex-direction:column; gap:.35rem; padding:.8rem .7rem .55rem }
-.storefront-preview-loader__hero span { width:55%; height:.36rem; border-radius:999px; background:color-mix(in oklch,var(--foreground) 62%,transparent) }
-.storefront-preview-loader__hero span:nth-child(2) { width:38%; opacity:.4 }
-.storefront-preview-loader__hero b { width:2.8rem; height:.7rem; margin-top:.2rem; border-radius:999px; background:var(--preview-loader-accent) }
-.storefront-preview-loader__cards { display:grid; grid-template-columns:repeat(3,1fr); gap:.35rem; padding:0 .7rem }
-.storefront-preview-loader__cards i { height:2.8rem; border-radius:.42rem; background:color-mix(in oklch,var(--muted) 75%,var(--preview-loader-accent)); border:1px solid color-mix(in oklch,var(--border) 75%,transparent) }
-.storefront-preview-loader__scan { position:absolute; inset:-40% 0 auto; height:38%; background:linear-gradient(180deg,transparent,color-mix(in oklch,var(--preview-loader-accent) 13%,transparent),transparent); animation:preview-loader-scan 2s cubic-bezier(.45,0,.25,1) infinite }
-.storefront-preview-loader__shadow { position:absolute; inset:auto 8% -8% 8%; height:24%; border-radius:50%; background:color-mix(in oklch,var(--foreground) 15%,transparent); filter:blur(18px); transform:rotate(-7deg) }
-.storefront-preview-loader__cursor { position:absolute; right:-.7rem; bottom:.2rem; display:grid; width:2.35rem; height:2.35rem; place-items:center; border:1px solid color-mix(in oklch,var(--preview-loader-accent) 30%,var(--border)); border-radius:.8rem; background:var(--background); color:var(--preview-loader-accent); box-shadow:0 10px 28px color-mix(in oklch,var(--foreground) 14%,transparent); animation:preview-loader-cursor 2.6s cubic-bezier(.2,.8,.2,1) infinite }
-.storefront-preview-loader__cursor svg { width:1rem; height:1rem }
-.storefront-preview-loader__copy { text-align:center }
-.storefront-preview-loader__copy span { display:block; margin-bottom:.45rem; color:var(--preview-loader-accent); font-size:.65rem; font-weight:700; letter-spacing:.18em }
-.storefront-preview-loader__copy strong { display:block; font-size:.95rem; font-weight:600; letter-spacing:-.015em }
-.storefront-preview-loader__copy p { margin:.25rem 0 0; color:var(--muted-foreground); font-size:.75rem }
+.storefront-preview-loader__nav {
+  height: 1.55rem;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0 0.65rem;
+  border-bottom: 1px solid color-mix(in oklch, var(--border) 75%, transparent);
+}
+.storefront-preview-loader__nav span {
+  width: 2.4rem;
+  height: 0.42rem;
+  margin-right: auto;
+  border-radius: 999px;
+  background: var(--preview-loader-accent);
+}
+.storefront-preview-loader__nav i {
+  width: 0.32rem;
+  height: 0.32rem;
+  border-radius: 50%;
+  background: color-mix(in oklch, var(--muted-foreground) 45%, transparent);
+}
+.storefront-preview-loader__hero {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.8rem 0.7rem 0.55rem;
+}
+.storefront-preview-loader__hero span {
+  width: 55%;
+  height: 0.36rem;
+  border-radius: 999px;
+  background: color-mix(in oklch, var(--foreground) 62%, transparent);
+}
+.storefront-preview-loader__hero span:nth-child(2) {
+  width: 38%;
+  opacity: 0.4;
+}
+.storefront-preview-loader__hero b {
+  width: 2.8rem;
+  height: 0.7rem;
+  margin-top: 0.2rem;
+  border-radius: 999px;
+  background: var(--preview-loader-accent);
+}
+.storefront-preview-loader__cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.35rem;
+  padding: 0 0.7rem;
+}
+.storefront-preview-loader__cards i {
+  height: 2.8rem;
+  border-radius: 0.42rem;
+  background: color-mix(in oklch, var(--muted) 75%, var(--preview-loader-accent));
+  border: 1px solid color-mix(in oklch, var(--border) 75%, transparent);
+}
+.storefront-preview-loader__scan {
+  position: absolute;
+  inset: -40% 0 auto;
+  height: 38%;
+  background: linear-gradient(
+    180deg,
+    transparent,
+    color-mix(in oklch, var(--preview-loader-accent) 13%, transparent),
+    transparent
+  );
+  animation: preview-loader-scan 2s cubic-bezier(0.45, 0, 0.25, 1) infinite;
+}
+.storefront-preview-loader__shadow {
+  position: absolute;
+  inset: auto 8% -8% 8%;
+  height: 24%;
+  border-radius: 50%;
+  background: color-mix(in oklch, var(--foreground) 15%, transparent);
+  filter: blur(18px);
+  transform: rotate(-7deg);
+}
+.storefront-preview-loader__cursor {
+  position: absolute;
+  right: -0.7rem;
+  bottom: 0.2rem;
+  display: grid;
+  width: 2.35rem;
+  height: 2.35rem;
+  place-items: center;
+  border: 1px solid color-mix(in oklch, var(--preview-loader-accent) 30%, var(--border));
+  border-radius: 0.8rem;
+  background: var(--background);
+  color: var(--preview-loader-accent);
+  box-shadow: 0 10px 28px color-mix(in oklch, var(--foreground) 14%, transparent);
+  animation: preview-loader-cursor 2.6s cubic-bezier(0.2, 0.8, 0.2, 1) infinite;
+}
+.storefront-preview-loader__cursor svg {
+  width: 1rem;
+  height: 1rem;
+}
+.storefront-preview-loader__copy {
+  text-align: center;
+}
+.storefront-preview-loader__copy span {
+  display: block;
+  margin-bottom: 0.45rem;
+  color: var(--preview-loader-accent);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+}
+.storefront-preview-loader__copy strong {
+  display: block;
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+}
+.storefront-preview-loader__copy p {
+  margin: 0.25rem 0 0;
+  color: var(--muted-foreground);
+  font-size: 0.75rem;
+}
 
-@keyframes preview-loader-layer { 0%,100%{ translate:0 0 } 50%{ translate:0 -7px } }
-@keyframes preview-loader-scan { 0%{ translate:0 -15% } 70%,100%{ translate:0 390% } }
-@keyframes preview-loader-cursor { 0%,100%{ transform:translate3d(0,0,22px) rotate(-4deg) } 45%{ transform:translate3d(-42px,-28px,22px) rotate(3deg) } 65%{ transform:translate3d(-42px,-28px,22px) rotate(3deg) scale(.92) } }
-@keyframes preview-loader-breathe { 0%,100%{ transform:scale(.92); opacity:.65 } 50%{ transform:scale(1.08); opacity:1 } }
+@keyframes preview-loader-layer {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+  50% {
+    translate: 0 -7px;
+  }
+}
+@keyframes preview-loader-scan {
+  0% {
+    translate: 0 -15%;
+  }
+  70%,
+  100% {
+    translate: 0 390%;
+  }
+}
+@keyframes preview-loader-cursor {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 22px) rotate(-4deg);
+  }
+  45% {
+    transform: translate3d(-42px, -28px, 22px) rotate(3deg);
+  }
+  65% {
+    transform: translate3d(-42px, -28px, 22px) rotate(3deg) scale(0.92);
+  }
+}
+@keyframes preview-loader-breathe {
+  0%,
+  100% {
+    transform: scale(0.92);
+    opacity: 0.65;
+  }
+  50% {
+    transform: scale(1.08);
+    opacity: 1;
+  }
+}
 
 @media (prefers-reduced-motion: reduce) {
-  .storefront-preview-loader * { animation-duration:1ms !important; animation-iteration-count:1 !important }
+  .storefront-preview-loader * {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+
+/* Failure states echo the editor's assembling storefront, but resolve into a paused frame. */
+.failure-stage {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+}
+.failure-grid {
+  position: absolute;
+  inset: 0;
+  opacity: 0.42;
+  background-image:
+    linear-gradient(color-mix(in oklch, var(--border) 55%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in oklch, var(--border) 55%, transparent) 1px, transparent 1px);
+  background-size: 3rem 3rem;
+  mask-image: linear-gradient(to bottom, transparent, black 18%, black 82%, transparent);
+}
+.failure-viewport {
+  position: relative;
+  overflow: hidden;
+  min-height: 21rem;
+  border: 1px solid color-mix(in oklch, var(--primary) 24%, var(--border));
+  border-radius: 1.5rem;
+  background: color-mix(in oklch, var(--card) 94%, var(--primary));
+  box-shadow:
+    0 30px 80px -38px color-mix(in oklch, var(--primary) 38%, transparent),
+    inset 0 1px 0 color-mix(in oklch, white 9%, transparent);
+  transform: rotate(1.5deg);
+}
+.failure-browser-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  height: 2.75rem;
+  padding: 0 0.85rem;
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in oklch, var(--muted) 34%, transparent);
+}
+.failure-browser-bar span {
+  width: 0.42rem;
+  height: 0.42rem;
+  border-radius: 50%;
+  background: color-mix(in oklch, var(--muted-foreground) 35%, transparent);
+}
+.failure-browser-bar div {
+  width: 45%;
+  height: 0.5rem;
+  margin-left: auto;
+  border-radius: 999px;
+  background: color-mix(in oklch, var(--muted-foreground) 15%, transparent);
+}
+.failure-canvas {
+  position: absolute;
+  inset: 2.75rem 0 2.25rem;
+  overflow: hidden;
+}
+.failure-frame {
+  position: absolute;
+  border: 1px solid color-mix(in oklch, var(--primary) 31%, var(--border));
+  border-radius: 0.85rem;
+  background: color-mix(in oklch, var(--background) 70%, transparent);
+}
+.failure-frame-one {
+  inset: 14% 12% 44% 12%;
+}
+.failure-frame-two {
+  inset: 61% 54% 12% 12%;
+}
+.failure-frame-three {
+  inset: 61% 12% 12% 51%;
+}
+.failure-frame::after {
+  content: "";
+  position: absolute;
+  left: 1rem;
+  top: 1rem;
+  width: 42%;
+  height: 0.45rem;
+  border-radius: 999px;
+  background: color-mix(in oklch, var(--primary) 45%, transparent);
+}
+.failure-scan {
+  position: absolute;
+  inset: -35% 0 auto;
+  height: 38%;
+  background: linear-gradient(
+    180deg,
+    transparent,
+    color-mix(in oklch, var(--primary) 11%, transparent),
+    transparent
+  );
+  animation: failure-scan 3.8s cubic-bezier(0.45, 0, 0.25, 1) infinite;
+}
+.failure-status {
+  position: absolute;
+  inset: auto 0 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  height: 2.25rem;
+  padding: 0 0.9rem;
+  border-top: 1px solid var(--border);
+  color: var(--muted-foreground);
+  font-size: 0.65rem;
+  font-weight: 650;
+  letter-spacing: 0.14em;
+}
+.failure-status span {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  background: var(--primary);
+  box-shadow: 0 0 0 0.25rem color-mix(in oklch, var(--primary) 13%, transparent);
+  animation: failure-status 2.4s ease-in-out infinite;
+}
+@keyframes failure-scan {
+  0% {
+    translate: 0 -20%;
+  }
+  62%,
+  100% {
+    translate: 0 390%;
+  }
+}
+@keyframes failure-status {
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .failure-stage * {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+  }
 }

@@ -5,6 +5,7 @@ export type SupportHistoryResult = {
     auditLogs: {
       id: string;
       actorUserId: string | null;
+      actor: { id: string; name: string; email: string } | null;
       action: string;
       targetType: string;
       targetId: string | null;
@@ -17,6 +18,7 @@ export type SupportHistoryResult = {
 export type SupportNote = {
   id: string;
   operatorUserId: string;
+  operator: { id: string; name: string; email: string } | null;
   body: string;
   visibility: string;
   createdAt: string;

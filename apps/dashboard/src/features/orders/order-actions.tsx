@@ -21,18 +21,18 @@ import {
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
+  type BankOption,
+  MarkPaidDialog,
+  type MarkPaidSettlementPayload,
+  type ReceivingAccountOption,
+} from "@/features/orders/mark-paid-dialog";
+import {
   canMarkPaid,
   canRecheckPayment,
   getNextAction,
   getRemainingFinishSteps,
   type OrderNextActionType,
 } from "@/features/orders/order-domain";
-import {
-  MarkPaidDialog,
-  type MarkPaidSettlementPayload,
-  type ReceivingAccountOption,
-  type BankOption,
-} from "@/features/orders/mark-paid-dialog";
 import type { MessageKey } from "@/i18n/messages";
 import { useI18n } from "@/i18n/provider";
 
@@ -42,6 +42,8 @@ type PendingKind =
   | { kind: "mark_paid" }
   | { kind: "recheck" }
   | { kind: "cancel" };
+
+type SettlementAction = "finish" | "mark-paid";
 
 type OrderActionsProps = {
   action: string;
@@ -70,7 +72,10 @@ function mapActionError(message: string, t: Translate) {
 function nextActionCopy(type: OrderNextActionType, t: Translate) {
   switch (type) {
     case "mark_ready":
-      return { label: t("orders.actions.markReady"), description: t("orders.actions.markReadyDesc") };
+      return {
+        label: t("orders.actions.markReady"),
+        description: t("orders.actions.markReadyDesc"),
+      };
     case "mark_completed":
       return {
         label: t("orders.actions.markCompleted"),
@@ -78,7 +83,6 @@ function nextActionCopy(type: OrderNextActionType, t: Translate) {
       };
     case "mark_paid":
       return { label: t("orders.actions.markPaid"), description: t("orders.actions.markPaidDesc") };
-    case "none":
     default:
       return { label: t("orders.actions.allDone"), description: t("orders.actions.allDoneDesc") };
   }
@@ -128,6 +132,7 @@ export function OrderActions({ action, order, variant = "card" }: OrderActionsPr
   const [finishIncludePaid, setFinishIncludePaid] = useState(true);
   const [actionError, setActionError] = useState<string | null>(null);
   const [markPaidOpen, setMarkPaidOpen] = useState(false);
+  const [settlementAction, setSettlementAction] = useState<SettlementAction>("mark-paid");
   const [accounts, setAccounts] = useState<ReceivingAccountOption[]>([]);
   const [banks, setBanks] = useState<BankOption[]>([]);
 
@@ -167,6 +172,11 @@ export function OrderActions({ action, order, variant = "card" }: OrderActionsPr
     [order, finishIncludePaid],
   );
 
+  function openSettlementDialog(action: SettlementAction) {
+    setSettlementAction(action);
+    setMarkPaidOpen(true);
+  }
+
   const mutation = useMutation({
     mutationFn: async (kind: PendingKind) => {
       if (kind.kind === "next") {
@@ -192,7 +202,7 @@ export function OrderActions({ action, order, variant = "card" }: OrderActionsPr
           return t("orders.actions.toastCompleted");
         }
         if (kind.type === "mark_paid") {
-          setMarkPaidOpen(true);
+          openSettlementDialog("mark-paid");
           return "";
         }
         return t("orders.actions.toastDone");
@@ -201,14 +211,13 @@ export function OrderActions({ action, order, variant = "card" }: OrderActionsPr
       if (kind.kind === "finish") {
         await postOrderAction(action, {
           action: "finish",
-          markPaid: finishIncludePaid && canMarkPaid(order),
-          settlementMethod: "cash",
+          markPaid: false,
         });
         return t("orders.actions.toastFinished");
       }
 
       if (kind.kind === "mark_paid") {
-        setMarkPaidOpen(true);
+        openSettlementDialog("mark-paid");
         return "";
       }
 
@@ -237,6 +246,10 @@ export function OrderActions({ action, order, variant = "card" }: OrderActionsPr
 
   const markPaidMutation = useMutation({
     mutationFn: async (payload: MarkPaidSettlementPayload) => {
+      if (settlementAction === "finish") {
+        await postOrderAction(action, { action: "finish", markPaid: true, ...payload });
+        return t("orders.actions.toastFinished");
+      }
       await postOrderAction(action, { action: "mark-paid", ...payload });
       return t("orders.actions.toastPaid");
     },
@@ -283,7 +296,7 @@ export function OrderActions({ action, order, variant = "card" }: OrderActionsPr
       {showMarkPaid && next.type !== "mark_paid" ? (
         <Button
           disabled={mutation.isPending || markPaidMutation.isPending}
-          onClick={() => setMarkPaidOpen(true)}
+          onClick={() => openSettlementDialog("mark-paid")}
           size={variant === "card" ? "sm" : "default"}
           type="button"
           variant="outline"
@@ -352,7 +365,7 @@ export function OrderActions({ action, order, variant = "card" }: OrderActionsPr
             disabled={mutation.isPending || markPaidMutation.isPending}
             onClick={() => {
               if (next.type === "mark_paid") {
-                setMarkPaidOpen(true);
+                openSettlementDialog("mark-paid");
                 return;
               }
               setPending({ kind: "next", type: next.type });
@@ -433,13 +446,13 @@ export function OrderActions({ action, order, variant = "card" }: OrderActionsPr
                       ) : null}
                     </ul>
                     {canMarkPaid(order) ? (
-                      <label className="flex items-center gap-2 text-foreground">
+                      <div className="flex items-center gap-2 text-foreground">
                         <Checkbox
                           checked={finishIncludePaid}
                           onCheckedChange={(value) => setFinishIncludePaid(Boolean(value))}
                         />
                         {t("orders.actions.alsoMarkPaid")}
-                      </label>
+                      </div>
                     ) : null}
                   </>
                 ) : null}
@@ -454,13 +467,16 @@ export function OrderActions({ action, order, variant = "card" }: OrderActionsPr
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={mutation.isPending}>
-              {t("common.back")}
-            </AlertDialogCancel>
+            <AlertDialogCancel disabled={mutation.isPending}>{t("common.back")}</AlertDialogCancel>
             <AlertDialogAction
               disabled={mutation.isPending || !pending}
               onClick={(event) => {
                 event.preventDefault();
+                if (pending?.kind === "finish" && finishIncludePaid && canMarkPaid(order)) {
+                  setPending(null);
+                  openSettlementDialog("finish");
+                  return;
+                }
                 if (pending) mutation.mutate(pending);
               }}
               variant={pending?.kind === "cancel" ? "destructive" : "default"}

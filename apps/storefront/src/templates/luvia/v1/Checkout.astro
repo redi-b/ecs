@@ -1,15 +1,48 @@
 ---
-import type { StoreCart, StoreDeliveryOptions, StorePaymentOptions, StoreShippingOption } from "../../../lib/commerce/types";
 import type { StoreCustomer, StoreCustomerAddress } from "../../../lib/commerce/account";
-import { resolveStoreFulfillmentOptions } from "../../../lib/commerce/fulfillment";
 import { resolveStoreCartSummary } from "../../../lib/commerce/cart-summary";
+import { resolveStoreFulfillmentOptions } from "../../../lib/commerce/fulfillment";
+import type {
+  StoreCart,
+  StoreDeliveryOptions,
+  StorePaymentOptions,
+  StoreShippingOption,
+} from "../../../lib/commerce/types";
 import { formatMoney } from "../../../lib/money";
+import DiscountCode from "./components/DiscountCode.astro";
 import Layout from "./Layout.astro";
 import { parseLuviaData } from "./lib";
-import DiscountCode from "./components/DiscountCode.astro";
 
-interface Props { data: unknown; themeTokens?: unknown; tenantName: string; cartCount: number; cart: StoreCart | null; delivery: StoreDeliveryOptions | null; payment: StorePaymentOptions; shippingOptions: StoreShippingOption[]; shippingError?: string | null; error?: string | null; customer?: StoreCustomer | null; customerAddresses?: StoreCustomerAddress[]; }
-const { data, themeTokens, tenantName, cartCount, cart, delivery, payment, shippingOptions, shippingError, error, customer = null, customerAddresses = [] } = Astro.props;
+interface Props {
+  data: unknown;
+  themeTokens?: unknown;
+  tenantName: string;
+  cartCount: number;
+  cart: StoreCart | null;
+  delivery: StoreDeliveryOptions | null;
+  payment: StorePaymentOptions;
+  shippingOptions: StoreShippingOption[];
+  shippingError?: string | null;
+  error?: string | null;
+  customer?: StoreCustomer | null;
+  customerAddresses?: StoreCustomerAddress[];
+  demoMode?: boolean;
+}
+const {
+  data,
+  themeTokens,
+  tenantName,
+  cartCount,
+  cart,
+  delivery,
+  payment,
+  shippingOptions,
+  shippingError,
+  error,
+  customer = null,
+  customerAddresses = [],
+  demoMode = false,
+} = Astro.props;
 const template = parseLuviaData(data);
 const items = cart?.items ?? [];
 const deliveryEnabled = delivery?.deliveryEnabled === true;
@@ -17,17 +50,26 @@ const pickupEnabled = delivery?.pickupEnabled === true;
 const fulfillmentAvailable = deliveryEnabled || pickupEnabled;
 const phoneRequired = delivery?.phoneConfirmationRequired !== false;
 const defaultChoice = deliveryEnabled ? "delivery" : pickupEnabled ? "pickup" : "delivery";
-const { deliveryOptions, pickupOption, priceMismatch } = resolveStoreFulfillmentOptions(shippingOptions, delivery);
-const canSubmit = items.length > 0 && fulfillmentAvailable && !priceMismatch && (defaultChoice === "pickup" ? Boolean(pickupOption) : deliveryOptions.length > 0);
-const initialShippingAmount = defaultChoice === "pickup" ? (pickupOption?.amount ?? 0) : (deliveryOptions[0]?.amount ?? 0);
+const { deliveryOptions, pickupOption, priceMismatch } = resolveStoreFulfillmentOptions(
+  shippingOptions,
+  delivery,
+);
+const canSubmit =
+  items.length > 0 &&
+  fulfillmentAvailable &&
+  !priceMismatch &&
+  (defaultChoice === "pickup" ? Boolean(pickupOption) : deliveryOptions.length > 0);
+const initialShippingAmount =
+  defaultChoice === "pickup" ? (pickupOption?.amount ?? 0) : (deliveryOptions[0]?.amount ?? 0);
 const cartShippingAmount = cart?.shippingTotal ?? 0;
 const baseTotal = (cart?.total ?? cart?.itemTotal ?? 0) - cartShippingAmount;
 const summary = resolveStoreCartSummary(cart);
 const defaultPayment = payment.cod ? "cod" : payment.chapa ? "chapa" : null;
-const defaultAddress = customerAddresses.find((address) => address.isDefaultShipping) ?? customerAddresses[0] ?? null;
+const defaultAddress =
+  customerAddresses.find((address) => address.isDefaultShipping) ?? customerAddresses[0] ?? null;
 ---
 
-<Layout tenantName={tenantName} header={template.header} footer={template.footer} themeTokens={themeTokens} cartCount={cartCount} title="Checkout">
+<Layout tenantName={tenantName} header={template.header} footer={template.footer} themeTokens={themeTokens} cartCount={cartCount} demoMode={demoMode} title="Checkout">
   <main class="lv-checkout">
     <header class="lv-checkout__hero"><h1>CHECKOUT</h1><p>Complete your order — natural beauty, delivered with care.</p></header>
     {error && <p class="lv-checkout__error" role="alert">{error}</p>}

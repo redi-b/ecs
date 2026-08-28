@@ -28,6 +28,22 @@ test("POST /admin/onboarding/submit provisions a shop for the signed-in account"
 
   globalThis.fetch = async (input, init) => {
     const request = new Request(input, init);
+    if (new URL(request.url).pathname === "/platform/tenants/tenant_1/delivery") {
+      return Response.json({
+        delivery: {
+          currency: "ETB",
+          defaultDeliveryFee: "0",
+          deliveryEnabled: false,
+          landmarkRequired: false,
+          notesEnabled: true,
+          phoneConfirmationRequired: false,
+          pickupEnabled: false,
+          tenantId: "tenant_1",
+          updatedAt: "2026-07-06T08:00:01.000Z",
+          zones: [],
+        },
+      });
+    }
     forwardedRequest = {
       body: await request.json(),
       headers: request.headers,

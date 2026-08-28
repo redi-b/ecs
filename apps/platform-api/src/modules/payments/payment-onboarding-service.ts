@@ -2,11 +2,7 @@ import type { createPlatformDb } from "@ecs/db";
 import { auditLogs, paymentOnboarding } from "@ecs/db";
 import { and, asc, eq } from "drizzle-orm";
 
-import {
-  decryptSecret,
-  encryptSecret,
-  secretFingerprint,
-} from "../../lib/secret-box.js";
+import { decryptSecret, encryptSecret, secretFingerprint } from "../../lib/secret-box.js";
 import type {
   PaymentOnboarding,
   PaymentOnboardingListResult,
@@ -85,7 +81,10 @@ export function createPaymentOnboardingService(
         })
         .from(paymentOnboarding)
         .where(
-          and(eq(paymentOnboarding.tenantId, input.tenantId), eq(paymentOnboarding.provider, "chapa")),
+          and(
+            eq(paymentOnboarding.tenantId, input.tenantId),
+            eq(paymentOnboarding.provider, "chapa"),
+          ),
         )
         .limit(1);
 
@@ -183,16 +182,17 @@ export function createPaymentOnboardingService(
     },
 
     reviewPaymentOnboarding: async (input: {
-      notes?: string | null | undefined;
       operatorUserId: string;
+      platformPrincipalId: string;
       paymentOnboardingId: string;
       providerAccountRef?: string | null | undefined;
+      reason: string;
       status: string;
       tenantId: string;
     }): Promise<PaymentOnboardingReviewResult> => {
       const status = input.status.trim().toLowerCase();
 
-      if (!allowedReviewStatuses.has(status)) {
+      if (!allowedReviewStatuses.has(status) || input.reason.trim().length < 10) {
         return {
           ok: false,
           error: "payment_onboarding_status_invalid",
@@ -204,7 +204,7 @@ export function createPaymentOnboardingService(
         const [row] = await transaction
           .update(paymentOnboarding)
           .set({
-            notes: input.notes ?? null,
+            notes: input.reason.trim(),
             providerAccountRef: input.providerAccountRef ?? null,
             status,
           })
@@ -212,6 +212,7 @@ export function createPaymentOnboardingService(
             and(
               eq(paymentOnboarding.id, input.paymentOnboardingId),
               eq(paymentOnboarding.tenantId, input.tenantId),
+              eq(paymentOnboarding.status, "pending_review"),
             ),
           )
           .returning(selectPaymentOnboardingFields());
@@ -222,12 +223,14 @@ export function createPaymentOnboardingService(
 
         await transaction.insert(auditLogs).values({
           actorUserId: input.operatorUserId,
+          platformPrincipalId: input.platformPrincipalId,
           tenantId: input.tenantId,
           action: "payment_onboarding.reviewed",
           targetType: "payment_onboarding",
           targetId: row.id,
           metadata: {
             provider: row.provider,
+            reason: input.reason.trim(),
             status: row.status,
           },
         });
@@ -236,10 +239,20 @@ export function createPaymentOnboardingService(
       });
 
       if (!reviewed) {
+        const [existing] = await db
+          .select({ id: paymentOnboarding.id })
+          .from(paymentOnboarding)
+          .where(
+            and(
+              eq(paymentOnboarding.id, input.paymentOnboardingId),
+              eq(paymentOnboarding.tenantId, input.tenantId),
+            ),
+          )
+          .limit(1);
         return {
           ok: false,
-          error: "payment_onboarding_not_found",
-          status: 404,
+          error: existing ? "payment_onboarding_status_invalid" : "payment_onboarding_not_found",
+          status: existing ? 400 : 404,
         };
       }
 
@@ -270,7 +283,10 @@ export function createPaymentOnboardingService(
         })
         .from(paymentOnboarding)
         .where(
-          and(eq(paymentOnboarding.tenantId, input.tenantId), eq(paymentOnboarding.provider, "chapa")),
+          and(
+            eq(paymentOnboarding.tenantId, input.tenantId),
+            eq(paymentOnboarding.provider, "chapa"),
+          ),
         )
         .limit(1);
 
@@ -306,7 +322,10 @@ export function createPaymentOnboardingService(
         })
         .from(paymentOnboarding)
         .where(
-          and(eq(paymentOnboarding.tenantId, input.tenantId), eq(paymentOnboarding.provider, "chapa")),
+          and(
+            eq(paymentOnboarding.tenantId, input.tenantId),
+            eq(paymentOnboarding.provider, "chapa"),
+          ),
         )
         .limit(1);
       return Boolean(row?.secretKey?.trim() && row.onlineEnabled);
@@ -395,15 +414,15 @@ export function createPaymentOnboardingService(
       tenantId: string;
       onlineEnabled: boolean;
       userId?: string;
-    }): Promise<
-      | { ok: true }
-      | { ok: false; error: "merchant_chapa_not_configured" }
-    > => {
+    }): Promise<{ ok: true } | { ok: false; error: "merchant_chapa_not_configured" }> => {
       const [row] = await db
         .select({ id: paymentOnboarding.id, secretKey: paymentOnboarding.secretKey })
         .from(paymentOnboarding)
         .where(
-          and(eq(paymentOnboarding.tenantId, input.tenantId), eq(paymentOnboarding.provider, "chapa")),
+          and(
+            eq(paymentOnboarding.tenantId, input.tenantId),
+            eq(paymentOnboarding.provider, "chapa"),
+          ),
         )
         .limit(1);
 
@@ -438,7 +457,10 @@ export function createPaymentOnboardingService(
         .select({ id: paymentOnboarding.id })
         .from(paymentOnboarding)
         .where(
-          and(eq(paymentOnboarding.tenantId, input.tenantId), eq(paymentOnboarding.provider, "chapa")),
+          and(
+            eq(paymentOnboarding.tenantId, input.tenantId),
+            eq(paymentOnboarding.provider, "chapa"),
+          ),
         )
         .limit(1);
 

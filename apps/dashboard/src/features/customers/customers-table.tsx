@@ -2,14 +2,13 @@
 
 import type { ColumnDef } from "@tanstack/react-table";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState, useTransition, type ReactNode } from "react";
+import { type ReactNode, useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
-
-import Link from "@/components/app/link";
 import { DataTable } from "@/components/app/data-table";
 import { DataTableFilters } from "@/components/app/data-table-filters";
 import { DataTableHeader } from "@/components/app/data-table-header";
 import { AppIcons } from "@/components/app/icons";
+import Link from "@/components/app/link";
 import { ListResultsStatus } from "@/components/app/list-results-status";
 import { ListToolbarSearch } from "@/components/app/list-toolbar";
 import { RowActionsMenu } from "@/components/app/row-actions-menu";
@@ -17,18 +16,16 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { CustomerFormDialog } from "@/features/customers/customer-form-dialog";
-import { copyTextToClipboard } from "@/lib/clipboard";
-import type { MerchantCustomer } from "@/lib/merchant-customers";
-import { listEntityLinkClassName } from "@/lib/list-entity-link";
-import { dashboardRoutes } from "@/lib/routes";
 import type { MessageKey } from "@/i18n/messages";
 import { useI18n } from "@/i18n/provider";
+import { copyTextToClipboard } from "@/lib/clipboard";
+import { listEntityLinkClassName } from "@/lib/list-entity-link";
+import type { MerchantCustomer } from "@/lib/merchant-customers";
+import { dashboardRoutes } from "@/lib/routes";
 import { cn } from "@/lib/utils";
 
 function customerDisplayName(customer: MerchantCustomer) {
-  return (
-    [customer.firstName, customer.lastName].filter(Boolean).join(" ") || customer.email
-  );
+  return [customer.firstName, customer.lastName].filter(Boolean).join(" ") || customer.email;
 }
 
 type Translate = (key: MessageKey, values?: Record<string, string | number | Date>) => string;
@@ -88,7 +85,9 @@ export function CustomersTable({
         id: "select",
         header: ({ table }) => (
           <Checkbox
-            aria-label={t("table.actions.selectAllVisible", { entity: t("taxonomy.entity.customer.plural").toLowerCase() })}
+            aria-label={t("table.actions.selectAllVisible", {
+              entity: t("taxonomy.entity.customer.plural").toLowerCase(),
+            })}
             checked={
               table.getIsAllPageRowsSelected() ||
               (table.getIsSomePageRowsSelected() && "indeterminate")
@@ -109,7 +108,9 @@ export function CustomersTable({
       {
         id: "name",
         accessorFn: (customer) => customerDisplayName(customer),
-        header: ({ column }) => <DataTableHeader column={column} title={t("table.headers.customer")} />,
+        header: ({ column }) => (
+          <DataTableHeader column={column} title={t("table.headers.customer")} />
+        ),
         cell: ({ row }) => {
           return (
             <div className="min-w-0 px-1.5 py-1">
@@ -127,7 +128,9 @@ export function CustomersTable({
       },
       {
         accessorKey: "phone",
-        header: ({ column }) => <DataTableHeader column={column} title={t("customers.detail.phone")} />,
+        header: ({ column }) => (
+          <DataTableHeader column={column} title={t("customers.detail.phone")} />
+        ),
         cell: ({ row }) => (
           <span className="text-sm text-muted-foreground">{row.original.phone || "—"}</span>
         ),
@@ -135,7 +138,9 @@ export function CustomersTable({
       {
         id: "addresses",
         accessorFn: (customer) => customer.addresses.length,
-        header: ({ column }) => <DataTableHeader column={column} title={t("customers.detail.addresses")} />,
+        header: ({ column }) => (
+          <DataTableHeader column={column} title={t("customers.detail.addresses")} />
+        ),
         cell: ({ row }) => {
           const count = row.original.addresses.length;
           if (!count) {
@@ -147,7 +152,9 @@ export function CustomersTable({
           return (
             <div className="flex flex-wrap items-center gap-1.5">
               <span className="text-sm tabular-nums text-muted-foreground">
-                {count === 1 ? t("customers.table.addressCountOne") : t("customers.table.addressesCount", { count })}
+                {count === 1
+                  ? t("customers.table.addressCountOne")
+                  : t("customers.table.addressesCount", { count })}
               </span>
               {hasDefault ? (
                 <Badge className="font-normal" variant="outline">
@@ -160,7 +167,9 @@ export function CustomersTable({
       },
       {
         accessorKey: "createdAt",
-        header: ({ column }) => <DataTableHeader column={column} title={t("table.headers.joined")} />,
+        header: ({ column }) => (
+          <DataTableHeader column={column} title={t("table.headers.joined")} />
+        ),
         cell: ({ row }) => (
           <span className="text-sm text-muted-foreground">
             {new Intl.DateTimeFormat(locale, { dateStyle: "medium" }).format(
@@ -193,14 +202,16 @@ export function CustomersTable({
                 {
                   icon: AppIcons.copy,
                   label: t("table.actions.copyEmail"),
-                  onSelect: () => void copyToClipboard(customer.email, t("customers.detail.email"), t),
+                  onSelect: () =>
+                    void copyToClipboard(customer.email, t("customers.detail.email"), t),
                   type: "button",
                 },
                 {
                   disabled: !customer.phone,
                   icon: AppIcons.copy,
                   label: t("table.actions.copyPhone"),
-                  onSelect: () => void copyToClipboard(customer.phone ?? "", t("customers.detail.phone"), t),
+                  onSelect: () =>
+                    void copyToClipboard(customer.phone ?? "", t("customers.detail.phone"), t),
                   type: "button",
                 },
               ]}
@@ -258,6 +269,7 @@ export function CustomersTable({
         )}
         columns={columns}
         data={customers}
+        enableSorting={false}
         emptyIcon={<AppIcons.user className="size-5" aria-hidden />}
         emptyMessage={t("customers.table.emptyMessage")}
         emptyTitle={t("customers.table.emptyTitle")}

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Noto_Sans_Ethiopic } from "next/font/google";
 import { cookies } from "next/headers";
+import Script from "next/script";
 import { getLocale, getMessages } from "next-intl/server";
 import type { ReactNode } from "react";
 
@@ -82,10 +83,10 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
     >
       <head>
         {/* Cookie-first theme before paint — critical on first hit of a new shop host. */}
-        <script
-          // biome-ignore lint/security/noDangerouslySetInnerHtml: tiny blocking theme bootstrap
-          dangerouslySetInnerHTML={{ __html: getThemeBootstrapScript() }}
-        />
+        {/* biome-ignore lint/correctness/useUniqueElementIds: root bootstrap needs one stable document ID */}
+        <Script id="ecs-theme-bootstrap" strategy="beforeInteractive">
+          {getThemeBootstrapScript()}
+        </Script>
       </head>
       <body
         className={cn(

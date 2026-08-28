@@ -33,7 +33,7 @@
       "enterName": "Enter a {entity} {field}.",
       "createFailed": "{entity} could not be created",
       "missing": "Enter a {entity} name before continuing.",
-      "backend": "The commerce backend is temporarily unavailable.",
+      "backend": "Catalog changes are temporarily unavailable. Try again shortly.",
       "credentials": "Catalog changes are temporarily unavailable. Contact support.",
       "genericSave": "{entity} could not be saved. Try again."
     },
@@ -152,7 +152,7 @@
     "collectionNotFound": "Collection was not found.",
     "categorySaveFailed": "Category could not be saved. Try again.",
     "collectionSaveFailed": "Collection could not be saved. Try again.",
-    "backendUnavailable": "The commerce backend is temporarily unavailable.",
+    "backendUnavailable": "Catalog changes are temporarily unavailable. Try again shortly.",
     "credentials": "Catalog changes are temporarily unavailable. Contact support.",
     "products": "Products",
     "productsHelp": "Search and multi-select products to add. Membership saves immediately.",

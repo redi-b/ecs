@@ -1,5 +1,6 @@
 import { createChapaPaymentService } from "../../../adapters/chapa/payment-service.js";
 import { buildOrderCreatedPayloadFromComplete } from "../../../modules/notifications/order-payload.js";
+import type { PlatformAppOptions } from "../../../types/platform-app.js";
 
 type ChapaCheckoutInput = {
   cartId: string;
@@ -152,7 +153,9 @@ function getCartTotalAmount(cart: Record<string, unknown> | undefined) {
  * Does not use platform billing CHAPA_SECRET_KEY or Medusa global CHAPA_SECRET_KEY.
  */
 export async function initializeChapaCheckout(options: {
-  getMerchantChapaCredentials: (input: { tenantId: string }) => Promise<
+  getMerchantChapaCredentials: (input: {
+    tenantId: string;
+  }) => Promise<
     | { ok: true; secretKey: string; providerAccountRef: string | null }
     | { ok: false; error: "merchant_chapa_not_configured" }
   >;
@@ -210,9 +213,7 @@ export async function initializeChapaCheckout(options: {
 
   const currency =
     getStringValue(cart?.currency_code) ?? getStringValue(cart?.currencyCode) ?? "ETB";
-  const email =
-    getStringValue(input.customer?.email) ??
-    getStringValue(cart?.email);
+  const email = getStringValue(input.customer?.email) ?? getStringValue(cart?.email);
 
   if (!email) {
     return Response.json(
@@ -224,10 +225,11 @@ export async function initializeChapaCheckout(options: {
     );
   }
 
-  const txRef = `ecs_store_${input.cartId.replace(/[^a-zA-Z0-9]/g, "").slice(-12)}_${Date.now().toString(36)}`.slice(
-    0,
-    50,
-  );
+  const txRef =
+    `ecs_store_${input.cartId.replace(/[^a-zA-Z0-9]/g, "").slice(-12)}_${Date.now().toString(36)}`.slice(
+      0,
+      50,
+    );
 
   const chapa = createChapaPaymentService({
     secretKey: credentials.secretKey,
@@ -302,11 +304,7 @@ export async function completeChapaCheckout(options: {
     subjectType?: string | null;
     tenantId: string;
   }) => Promise<{ ok: boolean }>;
-  recordNotificationEvent?: (input: {
-    eventType: string;
-    payload?: unknown;
-    tenantId: string;
-  }) => Promise<unknown>;
+  recordNotificationEvent?: PlatformAppOptions["recordNotificationEvent"];
   request: Request;
   tenantId: string;
 }) {
@@ -398,6 +396,32 @@ export async function completeChapaCheckout(options: {
       },
       { status: 402 },
     );
+  }
+
+  const settlementRecordedAt = new Date().toISOString();
+  const settlementMetadataResponse = await options.medusaStoreFetch(
+    getMedusaStoreJsonRequest({
+      body: {
+        metadata: {
+          ...metadata,
+          payment_method: "chapa",
+          settlement_method: "chapa",
+          settlement_recorded_at: settlementRecordedAt,
+          settlement_reference: txRef,
+        },
+      },
+      medusaInternalUrl: options.medusaInternalUrl,
+      path: `/store/carts/${encodeURIComponent(cartId)}`,
+      publishableKey: options.medusaPublishableKeyId,
+    }),
+  );
+
+  if (!settlementMetadataResponse.ok) {
+    return new Response(settlementMetadataResponse.body, {
+      headers: settlementMetadataResponse.headers,
+      status: settlementMetadataResponse.status,
+      statusText: settlementMetadataResponse.statusText,
+    });
   }
 
   const paymentCollectionResponse = await options.medusaStoreFetch(

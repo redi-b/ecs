@@ -84,6 +84,22 @@ export type DemoShopDefinition = {
   };
 };
 
+export const DEMO_OPERATIONS = {
+  approver: {
+    email: "access-approver@ecs.local",
+    id: "d0000000-0000-4000-8000-000000000002",
+    name: "ECS Access Approver",
+  },
+  operator: {
+    email: "operations@ecs.local",
+    id: "d0000000-0000-4000-8000-000000000001",
+    name: "ECS Operations Demo",
+  },
+  principalId: "d0000000-0000-4000-8000-000000000101",
+} as const;
+
+export const DEMO_OPERATIONS_PASSWORD = process.env.SEED_OPERATIONS_PASSWORD ?? "operations1234";
+
 /** Cartesian product of option axes → variants (prices step by index). */
 function matrixProduct(
   title: string,

@@ -1,11 +1,12 @@
 ---
-import type { StoreCollection, StorefrontError, StoreProduct, StoreProductsResponse } from "../../../lib/commerce/types";
-import Layout from "./Layout.astro";
+import type {
+  StoreCollection,
+  StorefrontError,
+  StoreProduct,
+  StoreProductsResponse,
+} from "../../../lib/commerce/types";
+import type { StorefrontSeo } from "../../../lib/seo";
 import ActionButton from "./ActionButton.astro";
-import HeroProductSlide from "./HeroProductSlide.astro";
-import ProductCard from "./ProductCard.astro";
-import TemplateImage from "./TemplateImage.astro";
-import TrustBadge from "./TrustBadge.astro";
 import aboutImage from "./assets/about-feature-image.webp";
 import brandImage from "./assets/brand-statement-image.webp";
 import categoryImage from "./assets/categories-hero-image.webp";
@@ -14,18 +15,45 @@ import ctaImage from "./assets/cta-layer-image.webp";
 import heroBg from "./assets/hero-bg-alt-image.webp";
 import heroPortrait from "./assets/hero-portrait-image.webp";
 import scrollMark from "./assets/scroll-logomark.svg";
+import HeroProductSlide from "./HeroProductSlide.astro";
 import bagIcon from "./icons/bag-icon.svg";
 import chatIcon from "./icons/chat-icon.svg";
 import diagonalArrow from "./icons/diagonal-arrow-icon.svg";
 import sparkleIcon from "./icons/sparkle-icon.svg";
+import Layout from "./Layout.astro";
 import { parseLuviaData, storefrontAsset } from "./lib";
+import ProductCard from "./ProductCard.astro";
+import TemplateImage from "./TemplateImage.astro";
+import TrustBadge from "./TrustBadge.astro";
 
 interface Props {
-  data: unknown; productsResult: StoreProductsResponse | StorefrontError; collectionProducts?: StoreProduct[]; collections?: StoreCollection[];
-  tenantName: string; themeTokens: unknown; cartCount?: number; deferCartCount?: boolean;
+  data: unknown;
+  productsResult: StoreProductsResponse | StorefrontError;
+  collectionProducts?: StoreProduct[];
+  collections?: StoreCollection[];
+  tenantName: string;
+  themeTokens: unknown;
+  cartCount?: number;
+  deferCartCount?: boolean;
+  demoMode?: boolean;
   editorMode?: boolean;
+  seo?: StorefrontSeo;
+  structuredData?: Record<string, unknown> | Record<string, unknown>[] | null;
 }
-const { data, productsResult, collectionProducts = [], collections = [], tenantName, themeTokens, cartCount = 0, deferCartCount = false, editorMode = false } = Astro.props;
+const {
+  data,
+  productsResult,
+  collectionProducts = [],
+  collections = [],
+  tenantName,
+  themeTokens,
+  cartCount = 0,
+  deferCartCount = false,
+  demoMode = false,
+  editorMode = false,
+  seo,
+  structuredData,
+} = Astro.props;
 const template = parseLuviaData(data);
 const products = "products" in productsResult ? productsResult.products : [];
 const hasError = "message" in productsResult;
@@ -34,11 +62,22 @@ const portrait = storefrontAsset(template.home.hero.portraitAssetId, heroPortrai
 const pickProducts = (ids: string[], source: StoreProduct[], limit: number) => {
   if (!ids.length) return source.slice(0, limit);
   const byId = new Map(source.map((product) => [product.id, product]));
-  return ids.map((id) => byId.get(id)).filter((product): product is StoreProduct => Boolean(product)).slice(0, limit);
+  return ids
+    .map((id) => byId.get(id))
+    .filter((product): product is StoreProduct => Boolean(product))
+    .slice(0, limit);
 };
-const topPicks = pickProducts(template.home.featuredProducts.productIds, products, template.home.featuredProducts.limit);
+const topPicks = pickProducts(
+  template.home.featuredProducts.productIds,
+  products,
+  template.home.featuredProducts.limit,
+);
 const listingSource = collectionProducts.length ? collectionProducts : products;
-const listing = pickProducts(template.home.products.productIds, listingSource, template.home.products.limit);
+const listing = pickProducts(
+  template.home.products.productIds,
+  listingSource,
+  template.home.products.limit,
+);
 const legacyHeroId = template.home.hero.featuredProductId;
 const configuredHeroIds = template.home.hero.featuredProductIds.length
   ? template.home.hero.featuredProductIds
@@ -49,15 +88,19 @@ const heroProducts = pickProducts(configuredHeroIds, products, 6).length
   ? pickProducts(configuredHeroIds, products, 6)
   : products.slice(0, 3);
 const collectionById = new Map(collections.map((collection) => [collection.id, collection]));
-const categoryCollections = (template.home.categories.collectionIds.length
-  ? template.home.categories.collectionIds.map((id) => collectionById.get(id)).filter((item): item is StoreCollection => Boolean(item))
-  : collections
+const categoryCollections = (
+  template.home.categories.collectionIds.length
+    ? template.home.categories.collectionIds
+        .map((id) => collectionById.get(id))
+        .filter((item): item is StoreCollection => Boolean(item))
+    : collections
 ).slice(0, 4);
-const collectionHref = (collection: StoreCollection) => `/products?collection=${encodeURIComponent(collection.id)}`;
+const collectionHref = (collection: StoreCollection) =>
+  `/products?collection=${encodeURIComponent(collection.id)}`;
 const homeFilterCollections = collections.slice(0, 4);
 const marquee = ["PURE", "RADIANT", "ORGANIC", "POWERFUL", "LUMINOUS", "COSMETICS"];
 ---
-<Layout tenantName={tenantName} header={template.header} footer={template.footer} themeTokens={themeTokens} cartCount={cartCount} deferCartCount={deferCartCount} title="Complete Cosmetic Essentials" editorMode={editorMode}>
+<Layout tenantName={tenantName} header={template.header} footer={template.footer} themeTokens={themeTokens} cartCount={cartCount} deferCartCount={deferCartCount} demoMode={demoMode} title="Complete Cosmetic Essentials" editorMode={editorMode} seo={seo} structuredData={structuredData}>
   <main class="lv-home">
     {(editorMode || template.home.hero.enabled) && <section class="lv-hero" data-editor-section="home.hero" data-editor-visible-path="home.hero.enabled" data-editor-background-image-path="home.hero.imageAssetId" hidden={!template.home.hero.enabled}>
       <TemplateImage class="lv-hero__background" src={heroBackground} fallback={heroBg} alt="" widths={[480, 768, 1024, 1512, 2400]} sizes="100vw" loading="eager" fetchpriority="high" />

@@ -41,6 +41,7 @@ import type {
   TenantDomainCreateResult,
   TenantDomainListResult,
   TenantDomainPrimaryResult,
+  TenantDomainVerificationResult,
   TenantHandleAvailabilityResult,
   TenantInsightsSummaryResult,
   TenantListResult,
@@ -52,16 +53,24 @@ import type {
   TenantStatusUpdateResult,
 } from "../app.js";
 import { createPlatformApp } from "../app.js";
+import type { PlatformAppOptions } from "../types/platform-app.js";
 
 export type { MerchantOrderAction, NotificationEventType } from "../app.js";
 
 import type { TenantContext, TenantResolutionResult } from "../tenancy/tenant-resolver.js";
+
+function compactPlatformAppOptions(input: Record<string, unknown>): PlatformAppOptions {
+  return Object.fromEntries(
+    Object.entries(input).filter(([, value]) => value !== undefined),
+  ) as PlatformAppOptions;
+}
 
 export const resolvedTenantContext: TenantContext = {
   tenantId: "tenant_1",
   tenantName: "Abebe Market",
   tenantHandle: "abebe",
   hostname: "abebe.lvh.me",
+  primaryHostname: "abebe.lvh.me",
   domainId: "domain_1",
   status: "active",
   medusaStoreId: "store_1",
@@ -81,6 +90,9 @@ export function appWithResolution(
   result: TenantResolutionResult,
   options?: {
     createStorefrontInquiry?: import("../types/platform-app.js").PlatformAppOptions["createStorefrontInquiry"];
+    createReviewedProductImportArtifact?: import("../types/platform-app.js").PlatformAppOptions["createReviewedProductImportArtifact"];
+    requestProductImportApply?: import("../types/platform-app.js").PlatformAppOptions["requestProductImportApply"];
+    getProductImportExecution?: import("../types/platform-app.js").PlatformAppOptions["getProductImportExecution"];
     listStorefrontInquiries?: import("../types/platform-app.js").PlatformAppOptions["listStorefrontInquiries"];
     getStorefrontInquiry?: import("../types/platform-app.js").PlatformAppOptions["getStorefrontInquiry"];
     updateStorefrontInquiryStatus?: import("../types/platform-app.js").PlatformAppOptions["updateStorefrontInquiryStatus"];
@@ -99,11 +111,24 @@ export function appWithResolution(
           ok: false;
         }
     >;
+    authorizePlatformPermission?: import("../types/platform-app.js").PlatformAppOptions["authorizePlatformPermission"];
+    getPlatformPrincipalAccess?: import("../types/platform-app.js").PlatformAppOptions["getPlatformPrincipalAccess"];
+    getSuperadminOverview?: import("../types/platform-app.js").PlatformAppOptions["getSuperadminOverview"];
+    listSuperadminWork?: import("../types/platform-app.js").PlatformAppOptions["listSuperadminWork"];
+    listSuperadminAudit?: import("../types/platform-app.js").PlatformAppOptions["listSuperadminAudit"];
+    getSuperadminCommerceReview?: import("../types/platform-app.js").PlatformAppOptions["getSuperadminCommerceReview"];
+    listPlatformOperators?: import("../types/platform-app.js").PlatformAppOptions["listPlatformOperators"];
+    getPlatformHealth?: import("../types/platform-app.js").PlatformAppOptions["getPlatformHealth"];
+    recoverSuperadminWork?: import("../types/platform-app.js").PlatformAppOptions["recoverSuperadminWork"];
+    listSuperadminTenants?: import("../types/platform-app.js").PlatformAppOptions["listSuperadminTenants"];
+    getSuperadminTenant?: import("../types/platform-app.js").PlatformAppOptions["getSuperadminTenant"];
     resolveTenantForHost?: (host?: string) => Promise<TenantResolutionResult>;
     getPublishedStorefrontConfig?: (input: {
       publishedRevisionId: string;
       tenantId: string;
     }) => Promise<PublishedStorefrontConfigResult>;
+    getStorefrontSeoSettings?: import("../types/platform-app.js").PlatformAppOptions["getStorefrontSeoSettings"];
+    updateStorefrontSeoSettings?: import("../types/platform-app.js").PlatformAppOptions["updateStorefrontSeoSettings"];
     handleChapaPaymentCallback?: (input: {
       providerReference?: string | null | undefined;
       reportedStatus?: string | null | undefined;
@@ -172,9 +197,44 @@ export function appWithResolution(
       tenantId: string;
       userId: string;
     }) => Promise<TenantDomainCreateResult>;
+    createEntitlementOverride?: (input: {
+      expiresAt: Date | null;
+      key: "customDomains";
+      operatorUserId: string;
+      platformPrincipalId: string;
+      reason: string;
+      tenantId: string;
+      value: boolean;
+    }) => Promise<
+      | { ok: true; override: { id: string } }
+      | {
+          ok: false;
+          error: "entitlement_override_invalid" | "entitlement_override_not_found";
+          status: 400 | 404;
+        }
+    >;
+    getEntitlementSummary?: import("../types/platform-app.js").PlatformAppOptions["getEntitlementSummary"];
+    getSuperadminOperationalSummary?: import("../types/platform-app.js").PlatformAppOptions["getSuperadminOperationalSummary"];
+    getSuperadminDiagnostics?: import("../types/platform-app.js").PlatformAppOptions["getSuperadminDiagnostics"];
+    revokeEntitlementOverride?: (input: {
+      operatorUserId: string;
+      overrideId: string;
+      platformPrincipalId: string;
+      reason: string;
+      tenantId: string;
+    }) => Promise<
+      | { ok: true; override: { id: string } }
+      | {
+          ok: false;
+          error: "entitlement_override_invalid" | "entitlement_override_not_found";
+          status: 400 | 404;
+        }
+    >;
     getBillingStatus?: (input: { tenantId: string }) => Promise<BillingStatusResult>;
     getDeliverySettings?: (input: { tenantId: string }) => Promise<DeliverySettingsResult>;
-    getMerchantChapaCredentials?: (input: { tenantId: string }) => Promise<
+    getMerchantChapaCredentials?: (input: {
+      tenantId: string;
+    }) => Promise<
       | { ok: true; secretKey: string; providerAccountRef: string | null }
       | { ok: false; error: "merchant_chapa_not_configured" }
     >;
@@ -196,6 +256,7 @@ export function appWithResolution(
       operatorUserId: string;
       provider?: string | null | undefined;
       providerReference?: string | null | undefined;
+      reason: string;
       status: string;
       tenantId: string;
     }) => Promise<BillingInvoiceUpdateResult>;
@@ -244,6 +305,7 @@ export function appWithResolution(
     getTenantDashboardSummary?: (input: {
       tenantId: string;
     }) => Promise<TenantDashboardSummaryResult>;
+    requestInsightsRefresh?: import("../types/platform-app.js").PlatformAppOptions["requestInsightsRefresh"];
     getTenantReadiness?: (input: { tenantId: string }) => Promise<TenantReadinessResult>;
     getOnboardingState?: (input: { userId: string }) => Promise<PlatformOnboardingStateResult>;
     listTenantsForUser?: (input: {
@@ -264,6 +326,9 @@ export function appWithResolution(
       limit: number;
       tenantId: string;
     }) => Promise<SupportHistoryResult>;
+    listSupportAccessGrants?: import("../types/platform-app.js").PlatformAppOptions["listSupportAccessGrants"];
+    createSupportAccessGrant?: import("../types/platform-app.js").PlatformAppOptions["createSupportAccessGrant"];
+    revokeSupportAccessGrant?: import("../types/platform-app.js").PlatformAppOptions["revokeSupportAccessGrant"];
     getStorefrontDraft?: (input: { tenantId: string }) => Promise<StorefrontDraftResult>;
     storefrontPreviewSecret?: string;
     updateStorefrontDraft?: (input: {
@@ -276,13 +341,7 @@ export function appWithResolution(
       tenantId: string;
       userId: string;
     }) => Promise<StorefrontPublishResult>;
-    unpublishStorefront?: (input: {
-      tenantId: string;
-      userId: string;
-    }) => Promise<{
-      ok: true;
-      storefront: { tenantId: string; isPublished: false };
-    } | { ok: false; error: string }>;
+    unpublishStorefront?: import("../types/platform-app.js").PlatformAppOptions["unpublishStorefront"];
     createOperatorSupportNote?: (input: {
       body: string;
       operatorUserId: string;
@@ -297,14 +356,19 @@ export function appWithResolution(
     }) => Promise<TenantStatusUpdateResult>;
     listPaymentOnboarding?: (input: { tenantId: string }) => Promise<PaymentOnboardingListResult>;
     reviewPaymentOnboarding?: (input: {
-      notes?: string | null | undefined;
       operatorUserId: string;
       paymentOnboardingId: string;
       providerAccountRef?: string | null | undefined;
+      reason: string;
       status: string;
       tenantId: string;
     }) => Promise<PaymentOnboardingReviewResult>;
     listTenantDomains?: (input: { tenantId: string }) => Promise<TenantDomainListResult>;
+    verifyTenantDomainOwnership?: (input: {
+      domainId: string;
+      tenantId: string;
+      userId: string;
+    }) => Promise<TenantDomainVerificationResult>;
     listMerchantProducts?: (input: {
       limit: number;
       offset: number;
@@ -323,6 +387,7 @@ export function appWithResolution(
     listMerchantOrders?: (
       input: import("../types/merchant-order.js").MerchantOrderListQuery,
     ) => Promise<MerchantOrdersResult>;
+    recordMerchantDataExport?: import("../types/platform-app.js").PlatformAppOptions["recordMerchantDataExport"];
     listNotificationPreferences?: (input: {
       tenantId: string;
     }) => Promise<NotificationPreferenceListResult>;
@@ -439,74 +504,103 @@ export function appWithResolution(
     };
   };
 
-  return createPlatformApp({
-    createStorefrontInquiry: options?.createStorefrontInquiry,
-    listStorefrontInquiries: options?.listStorefrontInquiries,
-    getStorefrontInquiry: options?.getStorefrontInquiry,
-    updateStorefrontInquiryStatus: options?.updateStorefrontInquiryStatus,
-    storefrontPreviewSecret: options?.storefrontPreviewSecret,
-    authHandler: options?.authHandler,
-    authorizeDashboardForTenant: options?.authorizeDashboardForTenant,
-    checkTenantHandleAvailability: options?.checkTenantHandleAvailability,
-    createMerchantProduct: options?.createMerchantProduct,
-    createMerchantProductCategory: options?.createMerchantProductCategory,
-    createMerchantProductCollection: options?.createMerchantProductCollection,
-    createTenantDomain: options?.createTenantDomain,
-    createOperatorSupportNote: options?.createOperatorSupportNote,
-    createTenantShop: options?.createTenantShop,
-    getBillingStatus: options?.getBillingStatus,
-    getDeliverySettings: options?.getDeliverySettings,
-    getMerchantChapaCredentials: options?.getMerchantChapaCredentials,
-    isMerchantChapaConfigured: options?.isMerchantChapaConfigured,
-    handleChapaPaymentCallback: options?.handleChapaPaymentCallback,
-    getPublishedStorefrontConfig: options?.getPublishedStorefrontConfig,
-    getStorefrontDraft: options?.getStorefrontDraft,
-    getOperatorSupportHistory: options?.getOperatorSupportHistory,
-    getMerchantOrder: options?.getMerchantOrder,
-    getMerchantProduct: options?.getMerchantProduct,
-    getMerchantProductStock: options?.getMerchantProductStock,
-    getMerchantProductVariantStock: options?.getMerchantProductVariantStock,
-    getTenantForUser: options?.getTenantForUser,
-    updateTenantShopSettings: options?.updateTenantShopSettings,
-    getTenantCommerceContext: options?.getTenantCommerceContext,
-    getTenantDashboardSummary: options?.getTenantDashboardSummary ?? defaultDashboardSummary,
-    getTenantInsightsSummary: options?.getTenantInsightsSummary,
-    getTenantReadiness: options?.getTenantReadiness,
-    getOnboardingState: options?.getOnboardingState,
-    getTenantOnboarding: options?.getTenantOnboarding,
-    getSession: options?.getSession,
-    listMerchantProducts: options?.listMerchantProducts,
-    listMerchantProductCategories: options?.listMerchantProductCategories,
-    listMerchantProductCollections: options?.listMerchantProductCollections,
-    listMerchantOrders: options?.listMerchantOrders,
-    listNotificationPreferences: options?.listNotificationPreferences,
-    listTenantsForUser: options?.listTenantsForUser,
-    listTenantProvisioningAttempts: options?.listTenantProvisioningAttempts,
-    listPaymentOnboarding: options?.listPaymentOnboarding,
-    reviewPaymentOnboarding: options?.reviewPaymentOnboarding,
-    listTenantDomains: options?.listTenantDomains,
-    listStorefrontTemplates: options?.listStorefrontTemplates,
-    mutateMerchantOrder: options?.mutateMerchantOrder,
-    selectStorefrontTemplate: options?.selectStorefrontTemplate,
-    updateMerchantProduct: options?.updateMerchantProduct,
-    updateMerchantProductStock: options?.updateMerchantProductStock,
-    updateMerchantProductVariantStock: options?.updateMerchantProductVariantStock,
-    serviceName: "platform-api",
-    medusaInternalUrl: "http://medusa:9000",
-    platformPublicBaseUrl: "http://api.lvh.me",
-    ...(options?.medusaStoreFetch ? { medusaStoreFetch: options.medusaStoreFetch } : {}),
-    setTenantPrimaryDomain: options?.setTenantPrimaryDomain,
-    submitPaymentOnboarding: options?.submitPaymentOnboarding,
-    updateBillingInvoiceStatus: options?.updateBillingInvoiceStatus,
-    updateDeliverySettings: options?.updateDeliverySettings,
-    publishStorefrontDraft: options?.publishStorefrontDraft,
-    unpublishStorefront: options?.unpublishStorefront,
-    recordAnalyticsEvent: options?.recordAnalyticsEvent,
-    recordNotificationEvent: options?.recordNotificationEvent,
-    retryTenantShopProvisioningAttempt: options?.retryTenantShopProvisioningAttempt,
-    upsertNotificationPreference: options?.upsertNotificationPreference,
-    updateTenantStatus: options?.updateTenantStatus,
-    updateStorefrontDraft: options?.updateStorefrontDraft,
-    resolveTenantForHost: options?.resolveTenantForHost ?? (async () => result),
-  });
+  return createPlatformApp(
+    compactPlatformAppOptions({
+      createStorefrontInquiry: options?.createStorefrontInquiry,
+      createReviewedProductImportArtifact: options?.createReviewedProductImportArtifact,
+      requestProductImportApply: options?.requestProductImportApply,
+      getProductImportExecution: options?.getProductImportExecution,
+      listStorefrontInquiries: options?.listStorefrontInquiries,
+      getStorefrontInquiry: options?.getStorefrontInquiry,
+      updateStorefrontInquiryStatus: options?.updateStorefrontInquiryStatus,
+      storefrontPreviewSecret: options?.storefrontPreviewSecret,
+      authHandler: options?.authHandler,
+      authorizeDashboardForTenant: options?.authorizeDashboardForTenant,
+      authorizePlatformPermission: options?.authorizePlatformPermission,
+      getPlatformPrincipalAccess: options?.getPlatformPrincipalAccess,
+      getSuperadminOverview: options?.getSuperadminOverview,
+      listSuperadminWork: options?.listSuperadminWork,
+      listSuperadminAudit: options?.listSuperadminAudit,
+      getSuperadminCommerceReview: options?.getSuperadminCommerceReview,
+      listPlatformOperators: options?.listPlatformOperators,
+      getPlatformHealth: options?.getPlatformHealth,
+      recoverSuperadminWork: options?.recoverSuperadminWork,
+      getSuperadminTenant: options?.getSuperadminTenant,
+      getEntitlementSummary: options?.getEntitlementSummary,
+      getSuperadminOperationalSummary: options?.getSuperadminOperationalSummary,
+      getSuperadminDiagnostics: options?.getSuperadminDiagnostics,
+      listSuperadminTenants: options?.listSuperadminTenants,
+      checkTenantHandleAvailability: options?.checkTenantHandleAvailability,
+      createMerchantProduct: options?.createMerchantProduct,
+      createMerchantProductCategory: options?.createMerchantProductCategory,
+      createMerchantProductCollection: options?.createMerchantProductCollection,
+      createTenantDomain: options?.createTenantDomain,
+      createEntitlementOverride: options?.createEntitlementOverride,
+      createOperatorSupportNote: options?.createOperatorSupportNote,
+      createSupportAccessGrant: options?.createSupportAccessGrant,
+      createTenantShop: options?.createTenantShop,
+      getBillingStatus: options?.getBillingStatus,
+      getDeliverySettings: options?.getDeliverySettings,
+      getMerchantChapaCredentials: options?.getMerchantChapaCredentials,
+      isMerchantChapaConfigured: options?.isMerchantChapaConfigured,
+      handleChapaPaymentCallback: options?.handleChapaPaymentCallback,
+      getPublishedStorefrontConfig: options?.getPublishedStorefrontConfig,
+      getStorefrontDraft: options?.getStorefrontDraft,
+      getStorefrontSeoSettings: options?.getStorefrontSeoSettings,
+      getOperatorSupportHistory: options?.getOperatorSupportHistory,
+      listSupportAccessGrants: options?.listSupportAccessGrants,
+      getMerchantOrder: options?.getMerchantOrder,
+      getMerchantProduct: options?.getMerchantProduct,
+      getMerchantProductStock: options?.getMerchantProductStock,
+      getMerchantProductVariantStock: options?.getMerchantProductVariantStock,
+      getTenantForUser: options?.getTenantForUser,
+      updateTenantShopSettings: options?.updateTenantShopSettings,
+      getTenantCommerceContext: options?.getTenantCommerceContext,
+      getTenantDashboardSummary: options?.getTenantDashboardSummary ?? defaultDashboardSummary,
+      requestInsightsRefresh: options?.requestInsightsRefresh,
+      getTenantInsightsSummary: options?.getTenantInsightsSummary,
+      getTenantReadiness: options?.getTenantReadiness,
+      getOnboardingState: options?.getOnboardingState,
+      getTenantOnboarding: options?.getTenantOnboarding,
+      getSession: options?.getSession,
+      listMerchantProducts: options?.listMerchantProducts,
+      listMerchantProductCategories: options?.listMerchantProductCategories,
+      listMerchantProductCollections: options?.listMerchantProductCollections,
+      listMerchantOrders: options?.listMerchantOrders,
+      recordMerchantDataExport: options?.recordMerchantDataExport,
+      listNotificationPreferences: options?.listNotificationPreferences,
+      listTenantsForUser: options?.listTenantsForUser,
+      listTenantProvisioningAttempts: options?.listTenantProvisioningAttempts,
+      listPaymentOnboarding: options?.listPaymentOnboarding,
+      reviewPaymentOnboarding: options?.reviewPaymentOnboarding,
+      listTenantDomains: options?.listTenantDomains,
+      verifyTenantDomainOwnership: options?.verifyTenantDomainOwnership,
+      listStorefrontTemplates: options?.listStorefrontTemplates,
+      mutateMerchantOrder: options?.mutateMerchantOrder,
+      selectStorefrontTemplate: options?.selectStorefrontTemplate,
+      updateMerchantProduct: options?.updateMerchantProduct,
+      updateMerchantProductStock: options?.updateMerchantProductStock,
+      updateMerchantProductVariantStock: options?.updateMerchantProductVariantStock,
+      serviceName: "platform-api",
+      medusaInternalUrl: "http://medusa:9000",
+      platformPublicBaseUrl: "http://api.lvh.me",
+      ...(options?.medusaStoreFetch ? { medusaStoreFetch: options.medusaStoreFetch } : {}),
+      setTenantPrimaryDomain: options?.setTenantPrimaryDomain,
+      submitPaymentOnboarding: options?.submitPaymentOnboarding,
+      updateBillingInvoiceStatus: options?.updateBillingInvoiceStatus,
+      updateDeliverySettings: options?.updateDeliverySettings,
+      publishStorefrontDraft: options?.publishStorefrontDraft,
+      unpublishStorefront: options?.unpublishStorefront,
+      recordAnalyticsEvent: options?.recordAnalyticsEvent,
+      recordNotificationEvent: options?.recordNotificationEvent,
+      retryTenantShopProvisioningAttempt: options?.retryTenantShopProvisioningAttempt,
+      revokeEntitlementOverride: options?.revokeEntitlementOverride,
+      revokeSupportAccessGrant: options?.revokeSupportAccessGrant,
+      upsertNotificationPreference: options?.upsertNotificationPreference,
+      updateTenantStatus: options?.updateTenantStatus,
+      updateStorefrontDraft: options?.updateStorefrontDraft,
+      updateStorefrontSeoSettings: options?.updateStorefrontSeoSettings,
+      resolveTenantForHost: options?.resolveTenantForHost ?? (async () => result),
+    }),
+  );
 }

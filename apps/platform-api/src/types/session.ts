@@ -7,6 +7,9 @@ export type PlatformSessionUser = {
 };
 
 export type PlatformSession = {
+  session?: {
+    createdAt: Date | string;
+  };
   user: PlatformSessionUser;
 };
 
@@ -18,6 +21,10 @@ export type DashboardAuthorizationResult =
         email: string;
         name: string | null;
         role: DashboardActorRole;
+        supportAccess?: {
+          grantId: string;
+          expiresAt: string;
+        };
       };
     }
   | {

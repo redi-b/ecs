@@ -15,16 +15,25 @@ it("projects a registered storefront customer into the tenant customer group", a
   let authCalls = 0;
   const response = await handleCustomerAccountRequest({
     ...base,
-    ensureTenantCustomer: async (input) => { projected.push(input); return { ok: true }; },
+    ensureTenantCustomer: async (input) => {
+      projected.push(input);
+      return { ok: true };
+    },
     request: new Request("http://shop.test/store/customer-auth/register", {
-      body: JSON.stringify({ email: "person@example.com", firstName: "Liya", lastName: "Tadesse", password: "password1" }),
+      body: JSON.stringify({
+        email: "person@example.com",
+        firstName: "Liya",
+        lastName: "Tadesse",
+        password: "password1",
+      }),
       headers: { "content-type": "application/json" },
       method: "POST",
     }),
     medusaStoreFetch: async (request) => {
       const forwarded = request instanceof Request ? request : new Request(request);
       const path = new URL(forwarded.url).pathname;
-      if (path === "/auth/customer/emailpass/register") return Response.json({ token: "registration_token" });
+      if (path === "/auth/customer/emailpass/register")
+        return Response.json({ token: "registration_token" });
       if (path === "/store/customers") return Response.json({ customer: { id: "cus_1" } });
       authCalls += 1;
       return Response.json({ token: "session_token" });
@@ -32,7 +41,14 @@ it("projects a registered storefront customer into the tenant customer group", a
   });
   assert.equal(response?.status, 200);
   assert.equal(authCalls, 1);
-  assert.deepEqual(projected, [{ email: "person@example.com", firstName: "Liya", lastName: "Tadesse", tenantId: "tenant_shop" }]);
+  assert.deepEqual(projected, [
+    {
+      email: "person@example.com",
+      firstName: "Liya",
+      lastName: "Tadesse",
+      tenantId: "tenant_shop",
+    },
+  ]);
 });
 
 describe("storefront customer account boundary", () => {
@@ -65,15 +81,16 @@ describe("storefront customer account boundary", () => {
       request: new Request("http://shop.test/store/customer/orders", {
         headers: { authorization: "Bearer customer_token" },
       }),
-      medusaStoreFetch: async () => Response.json({
-        orders: [
-          { id: "order_here", sales_channel_id: "sc_shop" },
-          { id: "order_elsewhere", sales_channel_id: "sc_other" },
-        ],
-        count: 2,
-        limit: 20,
-        offset: 0,
-      }),
+      medusaStoreFetch: async () =>
+        Response.json({
+          orders: [
+            { id: "order_here", sales_channel_id: "sc_shop" },
+            { id: "order_elsewhere", sales_channel_id: "sc_other" },
+          ],
+          count: 2,
+          limit: 20,
+          offset: 0,
+        }),
     });
     assert.deepEqual(await response?.json(), {
       orders: [{ id: "order_here", sales_channel_id: "sc_shop" }],
@@ -87,7 +104,9 @@ describe("storefront customer account boundary", () => {
     const response = await handleCustomerAccountRequest({
       ...base,
       request: new Request("http://shop.test/store/customer/orders"),
-      medusaStoreFetch: async () => { throw new Error("must not run"); },
+      medusaStoreFetch: async () => {
+        throw new Error("must not run");
+      },
     });
     assert.equal(response?.status, 401);
   });
@@ -109,10 +128,11 @@ describe("storefront customer account boundary", () => {
 
     assert.equal(response?.status, 200);
     assert.ok(forwarded);
-    assert.equal(forwarded.method, "POST");
-    assert.equal(new URL(forwarded.url).pathname, "/store/customers/me");
-    assert.equal(forwarded.headers.get("authorization"), "Bearer customer_token");
-    assert.deepEqual(await forwarded.json(), {
+    const sent = forwarded as Request;
+    assert.equal(sent.method, "POST");
+    assert.equal(new URL(sent.url).pathname, "/store/customers/me");
+    assert.equal(sent.headers.get("authorization"), "Bearer customer_token");
+    assert.deepEqual(await sent.json(), {
       first_name: "Liya",
       last_name: "Tadesse",
       phone: "+251911000000",
@@ -134,9 +154,10 @@ describe("storefront customer account boundary", () => {
 
     assert.equal(response?.status, 200);
     assert.ok(forwarded);
-    assert.equal(new URL(forwarded.url).pathname, "/store/customers/me/addresses");
-    assert.equal(new URL(forwarded.url).search, "?limit=10&offset=2");
-    assert.equal(forwarded.headers.get("authorization"), "Bearer customer_token");
+    const sent = forwarded as Request;
+    assert.equal(new URL(sent.url).pathname, "/store/customers/me/addresses");
+    assert.equal(new URL(sent.url).search, "?limit=10&offset=2");
+    assert.equal(sent.headers.get("authorization"), "Bearer customer_token");
   });
 
   it("maps the bounded storefront address contract to Medusa", async () => {
@@ -165,9 +186,10 @@ describe("storefront customer account boundary", () => {
 
     assert.equal(response?.status, 200);
     assert.ok(forwarded);
-    assert.equal(new URL(forwarded.url).pathname, "/store/customers/me/addresses");
-    assert.equal(forwarded.method, "POST");
-    assert.deepEqual(await forwarded.json(), {
+    const sent = forwarded as Request;
+    assert.equal(new URL(sent.url).pathname, "/store/customers/me/addresses");
+    assert.equal(sent.method, "POST");
+    assert.deepEqual(await sent.json(), {
       address_name: "Home",
       first_name: "Liya",
       last_name: "Tadesse",
@@ -202,7 +224,11 @@ describe("storefront customer account boundary", () => {
       medusaStoreFetch: async (request) => {
         const captured = request instanceof Request ? request : new Request(request);
         forwarded.push(captured);
-        return Response.json({ addresses: [{ id: "ca_1", address_1: "Bole Road", city: "Addis Ababa", country_code: "et" }] });
+        return Response.json({
+          addresses: [
+            { id: "ca_1", address_1: "Bole Road", city: "Addis Ababa", country_code: "et" },
+          ],
+        });
       },
     });
 
@@ -216,7 +242,9 @@ describe("storefront customer account boundary", () => {
     const response = await handleCustomerAccountRequest({
       ...base,
       request: new Request("http://shop.test/store/customer/addresses"),
-      medusaStoreFetch: async () => { throw new Error("must not run"); },
+      medusaStoreFetch: async () => {
+        throw new Error("must not run");
+      },
     });
     assert.equal(response?.status, 401);
   });
@@ -288,19 +316,33 @@ describe("storefront customer account boundary", () => {
       medusaStoreFetch: async (request) => {
         const forwarded = request instanceof Request ? request : new Request(request);
         const path = new URL(forwarded.url).pathname;
-        const body = forwarded.method === "GET" ? null : await forwarded.clone().json().catch(() => null);
+        const body =
+          forwarded.method === "GET"
+            ? null
+            : await forwarded
+                .clone()
+                .json()
+                .catch(() => null);
         requests.push({ body, method: forwarded.method, path });
         if (path === "/store/customers/me") return Response.json({ customer: { id: "cus_1" } });
         if (path === "/store/carts/cart_remembered") {
-          return Response.json({ cart: { id: "cart_remembered", items: [
-            { id: "item_old", quantity: 2, variant_id: "variant_shared" },
-            { id: "item_missing", quantity: 1, variant_id: "variant_missing" },
-          ] } });
+          return Response.json({
+            cart: {
+              id: "cart_remembered",
+              items: [
+                { id: "item_old", quantity: 2, variant_id: "variant_shared" },
+                { id: "item_missing", quantity: 1, variant_id: "variant_missing" },
+              ],
+            },
+          });
         }
         if (path === "/store/carts/cart_browser") {
-          return Response.json({ cart: { id: "cart_browser", items: [
-            { id: "item_new", quantity: 1, variant_id: "variant_shared" },
-          ] } });
+          return Response.json({
+            cart: {
+              id: "cart_browser",
+              items: [{ id: "item_new", quantity: 1, variant_id: "variant_shared" }],
+            },
+          });
         }
         return Response.json({ cart: { id: "cart_browser" } });
       },
@@ -312,14 +354,17 @@ describe("storefront customer account boundary", () => {
     });
 
     assert.equal(response?.status, 200);
-    assert.deepEqual(requests.map(({ method, path }) => `${method} ${path}`), [
-      "GET /store/customers/me",
-      "GET /store/carts/cart_remembered",
-      "GET /store/carts/cart_browser",
-      "POST /store/carts/cart_browser/line-items/item_new",
-      "POST /store/carts/cart_browser/line-items",
-      "POST /store/carts/cart_browser/customer",
-    ]);
+    assert.deepEqual(
+      requests.map(({ method, path }) => `${method} ${path}`),
+      [
+        "GET /store/customers/me",
+        "GET /store/carts/cart_remembered",
+        "GET /store/carts/cart_browser",
+        "POST /store/carts/cart_browser/line-items/item_new",
+        "POST /store/carts/cart_browser/line-items",
+        "POST /store/carts/cart_browser/customer",
+      ],
+    );
     assert.deepEqual(requests[3]?.body, { quantity: 2 });
     assert.deepEqual(requests[4]?.body, { variant_id: "variant_missing", quantity: 1 });
     assert.deepEqual(update, {
@@ -342,9 +387,12 @@ describe("storefront customer account boundary", () => {
         const path = new URL(forwarded.url).pathname;
         if (path === "/store/customers/me") return Response.json({ customer: { id: "cus_1" } });
         if (path === "/store/carts/cart_remembered") {
-          return Response.json({ cart: { id: "cart_remembered", items: [
-            { id: "item_old", quantity: 1, variant_id: "variant_missing" },
-          ] } });
+          return Response.json({
+            cart: {
+              id: "cart_remembered",
+              items: [{ id: "item_old", quantity: 1, variant_id: "variant_missing" }],
+            },
+          });
         }
         if (path === "/store/carts/cart_browser") {
           return Response.json({ cart: { id: "cart_browser", items: [] } });
@@ -367,7 +415,9 @@ describe("storefront customer account boundary", () => {
     const response = await handleCustomerAccountRequest({
       ...base,
       request: new Request("http://shop.test/store/customer/commerce-state"),
-      medusaStoreFetch: async () => { throw new Error("must not run"); },
+      medusaStoreFetch: async () => {
+        throw new Error("must not run");
+      },
     });
     assert.equal(response?.status, 401);
   });
@@ -387,8 +437,9 @@ describe("storefront customer account boundary", () => {
 
     assert.equal(response?.status, 200);
     assert.ok(forwarded);
-    assert.equal(new URL(forwarded.url).pathname, "/store/orders/order_here");
-    assert.equal(forwarded.headers.get("authorization"), "Bearer customer_token");
+    const sent = forwarded as Request;
+    assert.equal(new URL(sent.url).pathname, "/store/orders/order_here");
+    assert.equal(sent.headers.get("authorization"), "Bearer customer_token");
     assert.deepEqual(await response?.json(), {
       order: { id: "order_here", sales_channel_id: "sc_shop" },
     });
@@ -400,9 +451,10 @@ describe("storefront customer account boundary", () => {
       request: new Request("http://shop.test/store/customer/orders/order_elsewhere", {
         headers: { authorization: "Bearer customer_token" },
       }),
-      medusaStoreFetch: async () => Response.json({
-        order: { id: "order_elsewhere", sales_channel_id: "sc_other" },
-      }),
+      medusaStoreFetch: async () =>
+        Response.json({
+          order: { id: "order_elsewhere", sales_channel_id: "sc_other" },
+        }),
     });
 
     assert.equal(response?.status, 404);

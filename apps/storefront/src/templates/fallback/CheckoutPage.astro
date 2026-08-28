@@ -82,6 +82,14 @@ const canPlaceOrder =
   }
 
   {
+    shippingError && (
+      <div class="sf-notice sf-notice-error" role="alert">
+        Delivery options could not be loaded. Please refresh and try again.
+      </div>
+    )
+  }
+
+  {
     items.length === 0 ? (
       <div class="sf-notice" role="status">
         <p>

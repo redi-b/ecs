@@ -2,7 +2,6 @@ import type { createPlatformDb } from "@ecs/db";
 import {
   auditLogs,
   domains,
-  invoices,
   plans,
   reservedHandles,
   storefrontConfigs,
@@ -14,7 +13,6 @@ import {
   tenantProvisioningAttempts,
   tenants,
 } from "@ecs/db";
-import { DEFAULT_PLAN_IDS } from "../billing/service.js";
 import { and, asc, count, desc, eq } from "drizzle-orm";
 import type {
   CommerceProvisioningInput,
@@ -24,6 +22,7 @@ import type {
   TenantProvisioningAttemptListResult,
   TenantShopProvisioningResult,
 } from "../../types/index.js";
+import { DEFAULT_PLAN_CATALOG, DEFAULT_PLANS } from "../billing/plan-catalog.js";
 
 type PlatformDb = ReturnType<typeof createPlatformDb>["db"];
 
@@ -486,36 +485,16 @@ export function createTenantShopProvisioningService(options: TenantShopProvision
           },
         });
 
-        // Ensure default plans exist, then attach a 14-day Starter trial.
-        await transaction
-          .insert(plans)
-          .values({
-            id: DEFAULT_PLAN_IDS.starter,
-            name: "Starter",
-            price: "0",
-            status: "active",
-            limits: { products: 100, staff: 2, storefrontEvents: 10_000 },
-            features: { analytics: true, managedCheckout: true, trial: true },
-          })
-          .onConflictDoNothing({ target: plans.id });
-
-        await transaction
-          .insert(plans)
-          .values({
-            id: DEFAULT_PLAN_IDS.growth,
-            name: "Growth",
-            price: "2499",
-            status: "active",
-            limits: { products: 2500, staff: 8, storefrontEvents: 100_000 },
-            features: { analytics: true, managedCheckout: true, localDelivery: true },
-          })
-          .onConflictDoNothing({ target: plans.id });
+        // Provisioning and billing reads use the same code-owned plan definitions.
+        for (const plan of DEFAULT_PLANS) {
+          await transaction.insert(plans).values(plan).onConflictDoNothing({ target: plans.id });
+        }
 
         // Free forever Starter — no trial expiry, no payment invoices.
         const freeStart = new Date();
         await transaction.insert(subscriptions).values({
           tenantId,
-          planId: DEFAULT_PLAN_IDS.starter,
+          planId: DEFAULT_PLAN_CATALOG.starter.id,
           status: "active",
           billingCycle: "monthly",
           currentPeriodStart: freeStart,

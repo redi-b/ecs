@@ -46,6 +46,23 @@ describe("getAuthenticatedDashboardRedirect", () => {
     assert.equal(redirect, "http://addis-pantry.lvh.me/admin");
   });
 
+  it("routes an existing Operations session away from merchant onboarding", async () => {
+    globalThis.fetch = async () =>
+      Response.json({
+        operator: { id: "operator_1", email: "operations@ecs.local", name: "ECS Operations" },
+        principalId: "principal_1",
+        permissions: ["platform.overview.read"],
+      });
+
+    const redirect = await getAuthenticatedDashboardRedirect({
+      cookieHeader: "better-auth.session_token=operator_session",
+      platformApiBaseUrl: "http://platform.local",
+      requestHost: "dashboard.lvh.me",
+    });
+
+    assert.equal(redirect, "http://ops.lvh.me");
+  });
+
   it("routes authenticated shop-host users to the shop dashboard", async () => {
     globalThis.fetch = async () =>
       Response.json({

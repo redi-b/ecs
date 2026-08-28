@@ -16,6 +16,7 @@ export function createDomainTenantLookup(db: PlatformDb) {
         hostname: domains.hostname,
         domainStatus: domains.status,
         verificationStatus: domains.verificationStatus,
+        primaryDomainId: tenants.primaryDomainId,
         tenantId: tenants.id,
         tenantName: tenants.name,
         tenantHandle: tenants.handle,
@@ -45,6 +46,25 @@ export function createDomainTenantLookup(db: PlatformDb) {
       .where(eq(domains.hostname, hostname))
       .limit(1);
 
-    return row;
+    if (!row) return undefined;
+
+    const [primaryDomain] = row.primaryDomainId
+      ? await db
+          .select({
+            hostname: domains.hostname,
+            status: domains.status,
+            verificationStatus: domains.verificationStatus,
+          })
+          .from(domains)
+          .where(and(eq(domains.id, row.primaryDomainId), eq(domains.tenantId, row.tenantId)))
+          .limit(1)
+      : [];
+
+    return {
+      ...row,
+      primaryHostname: primaryDomain?.hostname ?? null,
+      primaryDomainStatus: primaryDomain?.status ?? null,
+      primaryDomainVerificationStatus: primaryDomain?.verificationStatus ?? null,
+    };
   };
 }

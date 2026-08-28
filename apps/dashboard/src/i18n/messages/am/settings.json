@@ -30,6 +30,10 @@
       "label": "የመደብር ገጽ",
       "description": "ንድፍ እና የመስመር ላይ ሁኔታ"
     },
+    "domains": {
+      "label": "ዶሜይኖች",
+      "description": "የሱቅዎ አድራሻ"
+    },
     "account": {
       "label": "መለያ",
       "description": "መገለጫ፣ የይለፍ ቃል፣ የገቡ ቦታዎች"
@@ -38,6 +42,43 @@
       "label": "ክፍያዎች",
       "description": "ደንበኞች እንዴት እንደሚከፍሉ"
     }
+  },
+  "domains": {
+    "intro": "ከሱቅዎ ጋር የተገናኙ የድር አድራሻዎችን ይመልከቱ።",
+    "unavailableTitle": "ብጁ ዶሜይኖች ገና አይገኙም",
+    "unavailableDescription": "የECS ሱቅ አድራሻዎ እንደተከፈተ ይቆያል እና ማጋራት ይችላሉ።",
+    "unavailableNote": "የባለቤትነት ማረጋገጫና የደህንነት ሰርተፍኬት በአስተማማኝ ሁኔታ እስኪሰጥ ድረስ ብጁ ዶሜይን ማዋቀር አይገኝም።",
+    "ecsAddressDescription": "የECS ሱቅ አድራሻዎ",
+    "legacyCustomDescription": "ቀደም ሲል የተገናኘ ብጁ አድራሻ",
+    "notPrimary": "ተጨማሪ",
+    "openAddress": "አድራሻውን ክፈት",
+    "addTitle": "ብጁ ዶሜይን ያክሉ",
+    "addDescription": "መጀመሪያ የዶሜይኑን ስም ያክሉ፤ ከዚያ ECS በሚሰጠው DNS መዝገብ ባለቤትነትን ያረጋግጡ።",
+    "growthDescription": "ብጁ ዶሜይኖች በGrowth ዕቅድ ይገኛሉ። የECS ሱቅ አድራሻዎ እንደተለመደው ይሰራል።",
+    "growthRequired": "ብጁ ዶሜይን ከማከልዎ በፊት ወደ Growth ያሻሽሉ።",
+    "hostname": "የዶሜይን ስም",
+    "hostnameHint": "ደንበኞች የሚጠቀሙበትን ስም ያስገቡ፣ ለምሳሌ shop.example.com። https:// ወይም መንገድ አያክሉ።",
+    "hostnameInvalid": "እንደ shop.example.com ያለ ትክክለኛ ስም ያስገቡ።",
+    "add": "ዶሜይን ጨምር",
+    "adding": "በመጨመር ላይ…",
+    "created": "ዶሜይኑ ታክሏል። ቀጥሎ የDNS ባለቤትነትን ያረጋግጡ።",
+    "actionFailed": "የዶሜይኑን ተግባር ማጠናቀቅ አልተቻለም። ቅንብሩን አረጋግጠው ይሞክሩ።",
+    "waitingOwnership": "የDNS ባለቤትነት ማረጋገጫን በመጠበቅ ላይ።",
+    "waitingCertificate": "ባለቤትነት ተረጋግጧል። የደህንነት ሰርቲፊኬት ገና በመዘጋጀት ላይ ነው።",
+    "ready": "ባለቤትነት እና የደህንነት ሰርቲፊኬት ዝግጁ ናቸው።",
+    "primary": "ዋና",
+    "readyBadge": "ዝግጁ",
+    "setup": "ማዋቀር ያስፈልጋል",
+    "txtTitle": "ይህን TXT መዝገብ በDNS አቅራቢዎ ላይ ያክሉ",
+    "recordName": "የመዝገብ ስም",
+    "recordValue": "የመዝገብ ዋጋ",
+    "txtPropagation": "የDNS ለውጦች ለመታየት ጊዜ ሊወስዱ ይችላሉ። ይህ ዶሜይን ሙሉ በሙሉ ዝግጁ እስኪሆን የECS ሱቅ አድራሻዎን ይጠቀሙ።",
+    "checkDns": "DNS አረጋግጥ",
+    "ownershipVerified": "ባለቤትነት ተረጋግጧል። ቀጣዩ ደረጃ የሰርቲፊኬት ቅንብር ነው።",
+    "makePrimary": "ዋና አድርግ",
+    "primaryChanged": "ዋናው የሱቅ ዶሜይን ተቀይሯል።",
+    "copy": "ዋጋውን ቅዳ",
+    "copied": "ተቀድቷል።"
   },
   "status": {
     "settingsUpdated": "ማስተካከያዎች ተቀይረዋል።",
@@ -62,10 +103,10 @@
     "unlockTooltip": "መለያን ለመቀየር ክፈት"
   },
   "toast": {
-    "savingLabel": "{label} እየተቀየረ ነው…",
+    "savingLabel": "{label} በማስቀመጥ ላይ…",
     "savedLabel": "{label} ተቀይሯል",
     "saveFailedLabel": "{label} መቀየር አልተቻለም",
-    "updatingAddress": "የሱቅ አድራሻ እየተቀየረ ነው…",
+    "updatingAddress": "የሱቅ አድራሻ በማዘመን ላይ…",
     "savingShop": "የሱቅ ለውጦች እየተቀየሩ ነው…",
     "saveShopFailed": "የሱቅ ለውጦችን መቀየር አልተቻለም።",
     "addressUpdated": "የሱቅ አድራሻ ተቀይሯል። ወደ አዲሱ እያሸጋገርን ነው…",
@@ -199,7 +240,29 @@
     "publishChanges": "ለውጦችን አትም",
     "publishShopPending": "በማተም ላይ…",
     "publishShopSuccess": "ሱቁ እንደገና ክፍት ነው።",
-    "publishShopFailed": "ሱቁን ማተም አልተቻለም። እንደገና ይሞክሩ።"
+    "publishShopFailed": "ሱቁን ማተም አልተቻለም። እንደገና ይሞክሩ።",
+    "seoTitle": "ፍለጋ እና ማጋራት",
+    "seoDescription": "በፍለጋ ውጤቶችና በተጋሩ አገናኞች ላይ የሚታየውን ነባሪ ርዕስ፣ መግለጫ እና ምስል ያዘጋጁ። የምርት ገጾች የራሳቸውን ዝርዝር ይጠቀማሉ።",
+    "seoPageTitle": "የሱቅ ርዕስ",
+    "seoPageTitleHint": "እስከ 70 ፊደላት። ባዶ ከተዉት የሱቅዎ ስም ይጠቀማል።",
+    "seoTitleTooLong": "70 ፊደላት ወይም ከዚያ በታች ይጠቀሙ።",
+    "seoMetaDescription": "የሱቅ መግለጫ",
+    "seoMetaDescriptionHint": "የሚሸጡትን በግልጽ የሚያጠቃልል እስከ 160 ፊደላት ያለው ጽሑፍ።",
+    "seoDescriptionTooLong": "160 ፊደላት ወይም ከዚያ በታች ይጠቀሙ።",
+    "seoSocialImage": "የማጋሪያ ምስል",
+    "seoSocialImageHint": "ከሚዲያ ማከማቻዎ ምስል ይምረጡ። የሚመከረው መጠን፦ 1200 × 630።",
+    "seoChooseImage": "ምስል ምረጥ",
+    "seoChangeImage": "ምስል ቀይር",
+    "seoUploadImage": "ምስል ስቀል",
+    "seoUploadingImage": "በመስቀል ላይ…",
+    "seoImageUploaded": "ምስሉ ተሰቅሎ ተመርጧል።",
+    "seoImageUploadFailed": "ምስሉን መስቀል አልተቻለም። እንደገና ይሞክሩ።",
+    "seoPreviewFallback": "የሱቅዎ ስም",
+    "seoSave": "የፍለጋ ቅንብሮችን አስቀምጥ",
+    "seoSaving": "በማስቀመጥ ላይ…",
+    "seoSaved": "የፍለጋ እና ማጋሪያ ቅንብሮች ተቀምጠዋል።",
+    "seoSaveFailed": "የፍለጋ ቅንብሮችን ማስቀመጥ አልተቻለም። እንደገና ይሞክሩ።",
+    "seoImageUntrusted": "ከሚዲያ ማዕከልዎ ምስል ይምረጡ። የውጭ ምስል አገናኞች አይቀበሉም።"
   },
   "notifications": {
     "intro": "ትዕዛዝ፣ ክፍያ እና ሌሎች የሱቅ ክስተቶች ሲከሰቱ ማሳወቂያ ይቀበሉ።",
@@ -252,7 +315,7 @@
     "eventGroups": {
       "commerce": "ንግድ",
       "commerceDesc": "ከሱቅዎ የሚመጡ ትዕዛዞች፣ ክፍያዎች እና ክምችት።",
-      "system": "ስርዓት",
+      "system": "መለያ",
       "systemDesc": "የደንበኝነት እና የመለያ ማሳወቂያዎች።"
     },
     "events": {
@@ -369,7 +432,7 @@
     "passwordMin": "ቢያንስ 8 ፊደላት ወይም ቁጥሮች።",
     "signOutOthers": "ሌሎች ቦታዎችን አውጣ",
     "signOutOthersHint": "የይለፍ ቃሉ ከተቀየረ በኋላ ሌሎች ቦታዎች ይወጣሉ። እርስዎ እዚህ ይቆያሉ።",
-    "updating": "እየተቀየረ ነው…",
+    "updating": "በማዘመን ላይ…",
     "updatePassword": "የይለፍ ቃል ቀይር",
     "devicesTitle": "የገቡ ቦታዎች",
     "devicesHint": "ከየት መለያዎ እንደገባ ይመልከቱ። የማታውቁትን ያስወግዱ።",
@@ -413,14 +476,14 @@
     },
     "toast": {
       "nameMin": "ቢያንስ ሁለት ፊደል ያለው ስም ያስገቡ።",
-      "profileOrigin": "የመገለጫ ለውጥ በauth origin ቅንብር ታግዷል።",
+      "profileOrigin": "መገለጫዎን አሁን መቀየር አልተቻለም። ቆይተው ይሞክሩ።",
       "profileFailed": "መገለጫዎን መቀየር አልተቻለም።",
       "profileUpdated": "መገለጫ ተቀይሯል።",
       "passwordRequired": "የአሁኑን እና አዲሱን የይለፍ ቃል ያስገቡ።",
       "passwordMin": "አዲሱ የይለፍ ቃል ቢያንስ 8 ፊደላት ወይም ቁጥሮች መሆን አለበት።",
       "passwordMismatch": "አዲሱ የይለፍ ቃል እና ማረጋገጫው አይዛመዱም።",
       "passwordWrong": "የአሁኑ የይለፍ ቃል ልክ አይደለም።",
-      "passwordOrigin": "የይለፍ ቃል ለውጥ በauth origin ቅንብር ታግዷል።",
+      "passwordOrigin": "የይለፍ ቃልዎን አሁን መቀየር አልተቻለም። ቆይተው ይሞክሩ።",
       "passwordFailed": "የይለፍ ቃል መቀየር አልተቻለም።",
       "passwordUpdatedOthers": "የይለፍ ቃል ተቀይሯል። ሌሎች ቦታዎች ወጥተዋል።",
       "passwordUpdated": "የይለፍ ቃል ተቀይሯል።",
@@ -491,7 +554,7 @@
       "disconnectConfirm": "አቋርጥ"
     },
     "toast": {
-      "working": "እየተቀየረ ነው…",
+      "working": "በማዘመን ላይ…",
       "connected": "ኦንላይን ክፍያ ተያይዟል",
       "updated": "ቁልፉ ተቀይሯል",
       "tested": "ቁልፉ ተረጋግጧል",
@@ -526,7 +589,7 @@
       "defaultHint": "ትዕዛዝ ሲከፍሉ በቅድሚያ ይመረጣል።",
       "defaultBadge": "ነባሪ",
       "save": "ሂሳብ አስቀምጥ",
-      "saving": "እየተቀመጠ…",
+      "saving": "በማስቀመጥ ላይ…",
       "saved": "ተቀባይ ሂሳብ ተቀምጧል",
       "deleted": "ተቀባይ ሂሳብ ተወግዷል",
       "delete": "አስወግድ",

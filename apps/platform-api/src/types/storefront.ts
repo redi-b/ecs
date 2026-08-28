@@ -90,6 +90,16 @@ export type StorefrontUnpublishResult =
       error: "storefront_draft_not_found";
     };
 
+export type StorefrontSeoSettings = {
+  title: string | null;
+  description: string | null;
+  socialImageUrl: string | null;
+};
+
+export type StorefrontSeoSettingsResult =
+  | { ok: true; seo: StorefrontSeoSettings }
+  | { ok: false; error: "storefront_draft_not_found" };
+
 export type PublishedStorefrontConfigResult =
   | {
       ok: true;
@@ -101,6 +111,7 @@ export type PublishedStorefrontConfigResult =
         data: unknown;
         themeTokens: unknown;
         publishedAt: string | null;
+        seo?: StorefrontSeoSettings;
       };
     }
   | {

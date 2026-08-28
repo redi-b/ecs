@@ -1,22 +1,40 @@
 ---
-import type { StoreCart } from "../../../lib/commerce/types";
 import { resolveStoreCartSummary } from "../../../lib/commerce/cart-summary";
+import type { StoreCart } from "../../../lib/commerce/types";
 import { formatMoney } from "../../../lib/money";
-import Layout from "./Layout.astro";
+import DiscountCode from "./components/DiscountCode.astro";
 import cartIcon from "./icons/cart-icon.svg";
 import chevronIcon from "./icons/chevron-icon.svg";
+import Layout from "./Layout.astro";
 import { parseLuviaData } from "./lib";
-import DiscountCode from "./components/DiscountCode.astro";
 
-interface Props { data: unknown; themeTokens?: unknown; tenantName: string; cartCount: number; cart: StoreCart | null; error?: string | null; discountError?: string | null; }
-const { data, themeTokens, tenantName, cartCount, cart, error, discountError } = Astro.props;
+interface Props {
+  data: unknown;
+  themeTokens?: unknown;
+  tenantName: string;
+  cartCount: number;
+  cart: StoreCart | null;
+  error?: string | null;
+  discountError?: string | null;
+  demoMode?: boolean;
+}
+const {
+  data,
+  themeTokens,
+  tenantName,
+  cartCount,
+  cart,
+  error,
+  discountError,
+  demoMode = false,
+} = Astro.props;
 const template = parseLuviaData(data);
 const items = cart?.items ?? [];
 const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
 const summary = resolveStoreCartSummary(cart);
 ---
 
-<Layout tenantName={tenantName} header={template.header} footer={template.footer} themeTokens={themeTokens} cartCount={cartCount} title="Your Cart">
+<Layout tenantName={tenantName} header={template.header} footer={template.footer} themeTokens={themeTokens} cartCount={cartCount} demoMode={demoMode} title="Your Cart">
   <main class="lv-cart-page" data-cart-page>
     <nav class="lv-cart-page__breadcrumb" aria-label="Breadcrumb"><a href="/">Home</a><img src={chevronIcon.src} alt="" /><a href="/products">Shop</a><img src={chevronIcon.src} alt="" /><span>Cart</span></nav>
     <header class="lv-cart-page__heading"><div><span>Your selection</span><h1>Your Cart</h1><p data-page-item-count>{itemCount} item{itemCount === 1 ? "" : "s"} ready for checkout</p></div></header>

@@ -12,7 +12,7 @@
     "dev:apps:grouped": "node scripts/dev-apps.mjs --grouped",
     "dev:apps:split-medusa": "node scripts/dev-apps.mjs --split-medusa",
     "dev:grouped": "node scripts/dev.mjs --grouped",
-    "dev:infra": "docker compose -f infra/compose/docker-compose.yml up -d --wait --wait-timeout 90 postgres redis seaweedfs caddy",
+    "dev:infra": "docker compose -f infra/compose/docker-compose.yml up -d --wait --wait-timeout 90 postgres redis seaweedfs caddy && docker compose -f infra/compose/docker-compose.yml exec -T caddy caddy reload --config /etc/caddy/Caddyfile",
     "dev:down": "docker compose -f infra/compose/docker-compose.yml down",
     "dev:logs": "docker compose -f infra/compose/docker-compose.yml logs -f --tail=100",
     "dev:turbo": "turbo dev",
@@ -25,6 +25,7 @@
     "seed": "node scripts/seed.mjs",
     "seed:demo": "node scripts/seed-demo.mjs",
     "seed:demo:clean": "node scripts/seed-demo.mjs --clean",
+    "seed:operations": "pnpm --dir apps/platform-api seed:operations",
     "seed:unseed": "node scripts/seed-demo.mjs --clean",
     "seed:bank-logos": "pnpm --filter @ecs/platform-api seed:bank-logos",
 
@@ -37,7 +38,8 @@
 
     "smoke:commerce": "node scripts/smoke-commerce.mjs",
     "smoke:storefront": "node scripts/smoke-storefront-cod.mjs",
-    "verify:media-cors": "node scripts/verify-media-cors.mjs"
+    "verify:media-cors": "node scripts/verify-media-cors.mjs",
+    "validate:production-env": "node scripts/validate-production-env.mjs"
   },
   "devDependencies": {
     "@biomejs/biome": "2.2.4",

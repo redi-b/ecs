@@ -9,7 +9,7 @@
 import { spawn } from "node:child_process";
 
 import { blank, box, color, heading, info, kv, success } from "./lib/cli.mjs";
-import { fitWidth, formatDevLogLine, stripAnsi, wrapLine } from "./lib/dev-log.mjs";
+import { fitWidth, formatDevLogLine, wrapLine } from "./lib/dev-log.mjs";
 
 process.env.NODE_ENV = "development";
 // Children are piped (non-TTY). Emit JSON and recolor/format in this supervisor.
@@ -46,6 +46,12 @@ const services = [
     title: "Dashboard",
   },
   {
+    color: "gray",
+    command: "pnpm --filter @ecs/superadmin dev",
+    name: "ops",
+    title: "Superadmin",
+  },
+  {
     color: "blue",
     command: "pnpm --filter @ecs/storefront dev",
     name: "storefront",
@@ -53,9 +59,7 @@ const services = [
   },
   {
     color: "green",
-    command: splitMedusa
-      ? "pnpm --filter @ecs/medusa dev:server"
-      : "pnpm --filter @ecs/medusa dev",
+    command: splitMedusa ? "pnpm --filter @ecs/medusa dev:server" : "pnpm --filter @ecs/medusa dev",
     name: "medusa",
     title: splitMedusa ? "Medusa server" : "Medusa",
   },
@@ -82,6 +86,7 @@ box([
   "Local endpoints",
   "  API         http://api.lvh.me  (localhost:3000)",
   "  Dashboard   http://dashboard.lvh.me/admin",
+  "  Operations  http://ops.lvh.me",
   "  Storefront  http://<handle>.lvh.me",
   "  Medusa      http://localhost:9000",
 ]);
@@ -314,9 +319,7 @@ function buildGroupedFrame(states, now) {
   lines.push(fitWidth(color.bold("ECS development processes"), columns));
   lines.push(
     fitWidth(
-      color.dim(
-        `Live tail · ~${perService} lines/service · pretty JSON · Ctrl+C to stop`,
-      ),
+      color.dim(`Live tail · ~${perService} lines/service · pretty JSON · Ctrl+C to stop`),
       columns,
     ),
   );
@@ -366,7 +369,10 @@ function buildGroupedFrame(states, now) {
   const maxRows = (process.stdout.rows || 40) - 1;
   if (lines.length > maxRows) {
     return [
-      fitWidth(color.dim(`… ${lines.length - maxRows + 1} rows above (resize terminal for more)`), columns),
+      fitWidth(
+        color.dim(`… ${lines.length - maxRows + 1} rows above (resize terminal for more)`),
+        columns,
+      ),
       ...lines.slice(-(maxRows - 1)),
     ];
   }

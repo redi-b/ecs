@@ -1,7 +1,12 @@
 import type { Context, Hono } from "hono";
-import type { MerchantOrderAction, PlatformAppOptions, PlatformAppVariables } from "../../app.js";
+import type { ContentfulStatusCode } from "hono/utils/http-status";
 import { parseMerchantOrderListQuery } from "../../adapters/medusa/order/list-query.js";
-import { parseSettlementMethod, type OrderSettlementInput } from "../../lib/settlement.js";
+import type { MerchantOrderAction, PlatformAppOptions, PlatformAppVariables } from "../../app.js";
+import { type OrderSettlementInput, parseSettlementMethod } from "../../lib/settlement.js";
+import {
+  exportOrdersToCsv,
+  orderExportFilename,
+} from "../../modules/data-transfer/order-export.js";
 import {
   buildOrderCancelledPayload,
   buildPaymentPaidPayload,
@@ -11,7 +16,9 @@ import type { MerchantRouteHelpers } from "./context.js";
 
 function parseSettlementBody(body: Record<string, unknown>): OrderSettlementInput | null {
   const method = parseSettlementMethod(
-    body.settlementMethod ?? body.method ?? (body.settlement as { method?: unknown } | undefined)?.method,
+    body.settlementMethod ??
+      body.method ??
+      (body.settlement as { method?: unknown } | undefined)?.method,
   );
   if (!method) return null;
 
@@ -116,6 +123,62 @@ export function registerMerchantOrderRoutes(
     });
   });
 
+  app.get("/platform/merchant/orders/export.csv", async (context) => {
+    const session = await options.getSession?.(context.req.raw.headers);
+    if (!session) return context.json({ error: "auth_required" }, 401);
+
+    const host = getRequestHost(
+      context.req.header("x-forwarded-host") ?? context.req.header("host"),
+    );
+    const tenant = await options.resolveTenantForHost(host);
+    if (!tenant.ok) {
+      return context.json({ error: tenant.error }, storeErrorStatus[tenant.error]);
+    }
+
+    const authorization = await options.authorizeDashboardForTenant?.({
+      tenantId: tenant.context.tenantId,
+      userId: session.user.id,
+    });
+    if (!authorization?.ok) return context.json({ error: "dashboard_forbidden" }, 403);
+
+    const commerce = getResolvedCommerce(tenant.context);
+    if (!commerce.ok) return context.json({ error: commerce.error }, commerce.status);
+    if (!options.listMerchantOrders || !options.recordMerchantDataExport) {
+      return context.json({ error: "export_backend_unavailable" }, 503);
+    }
+
+    const result = await exportOrdersToCsv({
+      listOrders: options.listMerchantOrders,
+      salesChannelId: commerce.context.medusaSalesChannelId,
+    });
+    if (!result.ok) {
+      return context.json({ error: result.error }, result.status as ContentfulStatusCode);
+    }
+
+    try {
+      await options.recordMerchantDataExport({
+        actorUserId: session.user.id,
+        exportType: "orders",
+        rowCount: result.rowCount,
+        schemaVersion: result.schemaVersion,
+        tenantId: tenant.context.tenantId,
+      });
+    } catch {
+      return context.json({ error: "export_audit_unavailable" }, 503);
+    }
+
+    return new Response(result.csv, {
+      headers: {
+        "cache-control": "no-store",
+        "content-disposition": `attachment; filename="${orderExportFilename()}"`,
+        "content-type": "text/csv; charset=utf-8",
+        "x-ecs-export-schema": result.schemaVersion,
+        "x-ecs-export-orders": String(result.orderCount),
+        "x-ecs-export-rows": String(result.rowCount),
+      },
+    });
+  });
+
   app.get("/platform/merchant/orders/:orderId", async (context) => {
     const session = await options.getSession?.(context.req.raw.headers);
 
@@ -200,7 +263,7 @@ export function registerMerchantOrderRoutes(
 
     const body = (await context.req.json().catch(() => ({}))) as Record<string, unknown>;
     let settlement: OrderSettlementInput | undefined;
-    if (action === "mark-paid") {
+    if (action === "mark-paid" || (action === "finish" && body.markPaid === true)) {
       const parsed = parseSettlementBody(body);
       if (!parsed) {
         return context.json({ error: "settlement_method_required" }, 400);
@@ -315,14 +378,12 @@ export function registerMerchantOrderRoutes(
       return merchant.response;
     }
 
-    const body = (await context.req.json().catch(() => ({}))) as {
-      markPaid?: unknown;
-      settlementMethod?: unknown;
-    };
+    const body = (await context.req.json().catch(() => ({}))) as Record<string, unknown>;
     const markPaid = body.markPaid === true;
-    const finishSettlement = markPaid
-      ? parseSettlementBody(body as Record<string, unknown>) ?? { method: "cash" as const }
-      : undefined;
+    const finishSettlement = markPaid ? parseSettlementBody(body) : undefined;
+    if (markPaid && !finishSettlement) {
+      return context.json({ error: "settlement_method_required" }, 400);
+    }
 
     const commerce = getResolvedCommerce(merchant.result.context, {
       requireStockLocation: true,

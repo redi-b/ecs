@@ -88,8 +88,15 @@ describe("platform app merchant dashboard and orders", () => {
           days: 90,
           sampledOrderCount: 0,
         },
+        quality: {
+          lastSuccessfulAt: null,
+          rollupVersion: 1,
+          status: "missing",
+          timezone: "Africa/Addis_Ababa",
+          watermark: null,
+        },
         totals: {
-          revenue: 0,
+          revenue: null,
           orders: null,
           products: null,
           customers: null,
@@ -126,6 +133,11 @@ describe("platform app merchant dashboard and orders", () => {
           medusaEvents: 0,
         },
         topEvents: [],
+        funnel: [],
+        coverage: {
+          lastEventAt: null,
+          status: "no_data",
+        },
         unavailable: true,
       },
       billing: {
@@ -239,6 +251,77 @@ describe("platform app merchant dashboard and orders", () => {
         templateVersion: 1,
       },
     });
+  });
+
+  it("queues an Insights refresh only for an authorized tenant", async () => {
+    let refreshInput: { tenantId: string } | undefined;
+    const app = appWithResolution(
+      { ok: false, error: "shop_context_required" },
+      {
+        authorizeDashboardForTenant: async () => ({
+          ok: true,
+          actor: {
+            id: "user_1",
+            email: "owner@abebe.local",
+            name: "Abebe Owner",
+            role: "owner",
+          },
+        }),
+        getSession: async () => ({
+          user: { id: "user_1", email: "owner@abebe.local", name: "Abebe Owner" },
+        }),
+        requestInsightsRefresh: async (input) => {
+          refreshInput = input;
+          return {
+            jobId: "job_1",
+            queued: true,
+            requestedAt: "2026-08-26T10:07:00.000Z",
+            retryAt: "2026-08-26T10:15:00.000Z",
+            status: "queued",
+          };
+        },
+      },
+    );
+
+    const response = await app.request("/platform/tenants/tenant_1/insights/refresh", {
+      method: "POST",
+    });
+
+    assert.equal(response.status, 202);
+    assert.deepEqual(refreshInput, { tenantId: "tenant_1" });
+    assert.equal(response.headers.get("cache-control"), "private, no-store");
+    assert.deepEqual(await response.json(), {
+      ok: true,
+      jobId: "job_1",
+      queued: true,
+      requestedAt: "2026-08-26T10:07:00.000Z",
+      retryAt: "2026-08-26T10:15:00.000Z",
+      status: "queued",
+    });
+  });
+
+  it("denies an Insights refresh outside the merchant tenant", async () => {
+    let requested = false;
+    const app = appWithResolution(
+      { ok: false, error: "shop_context_required" },
+      {
+        authorizeDashboardForTenant: async () => ({ ok: false }),
+        getSession: async () => ({
+          user: { id: "user_1", email: "owner@abebe.local", name: "Abebe Owner" },
+        }),
+        requestInsightsRefresh: async () => {
+          requested = true;
+          throw new Error("must not run");
+        },
+      },
+    );
+
+    const response = await app.request("/platform/tenants/tenant_2/insights/refresh", {
+      method: "POST",
+    });
+
+    assert.equal(response.status, 403);
+    assert.equal(requested, false);
   });
 
   it("updates merchant shop settings for the resolved tenant", async () => {
@@ -890,6 +973,105 @@ describe("platform app merchant dashboard and orders", () => {
     });
   });
 
+  it("exports a tenant-scoped operational order CSV and records the audit event", async () => {
+    let auditInput:
+      | {
+          actorUserId: string;
+          exportType: "orders" | "customers";
+          rowCount: number;
+          schemaVersion: string;
+          tenantId: string;
+        }
+      | undefined;
+    const app = appWithResolution(
+      { ok: true, context: resolvedTenantContext },
+      {
+        authorizeDashboardForTenant: async () => ({
+          ok: true,
+          actor: { id: "user_1", email: "owner@abebe.local", name: "Abebe", role: "owner" },
+        }),
+        getSession: async () => ({
+          user: { id: "user_1", email: "owner@abebe.local", name: "Abebe" },
+        }),
+        listMerchantOrders: async (input) => ({
+          ok: true,
+          count: 1,
+          limit: input.limit,
+          offset: input.offset,
+          orders: [
+            {
+              id: "order_internal_1",
+              displayId: 1001,
+              customDisplayId: "SHOP-1001",
+              email: "private@example.com",
+              paymentReference: "private-reference",
+              status: "pending",
+              paymentStatus: "captured",
+              fulfillmentStatus: "not_fulfilled",
+              currencyCode: "etb",
+              total: 1250,
+              createdAt: "2026-01-01T00:00:00.000Z",
+              updatedAt: "2026-01-02T00:00:00.000Z",
+            },
+          ],
+        }),
+        recordMerchantDataExport: async (input) => {
+          auditInput = input;
+        },
+      },
+    );
+
+    const response = await app.request("/platform/merchant/orders/export.csv", {
+      headers: { Host: "abebe.lvh.me" },
+    });
+    const csv = await response.text();
+
+    assert.equal(response.status, 200);
+    assert.match(response.headers.get("content-type") ?? "", /text\/csv/);
+    assert.equal(response.headers.get("x-ecs-export-schema"), "ecs-orders-v1");
+    assert.match(csv, /SHOP-1001/);
+    assert.equal(csv.includes("private@example.com"), false);
+    assert.equal(csv.includes("private-reference"), false);
+    assert.deepEqual(auditInput, {
+      actorUserId: "user_1",
+      exportType: "orders",
+      rowCount: 1,
+      schemaVersion: "ecs-orders-v1",
+      tenantId: "tenant_1",
+    });
+  });
+
+  it("fails closed when order export audit recording is unavailable", async () => {
+    const app = appWithResolution(
+      { ok: true, context: resolvedTenantContext },
+      {
+        authorizeDashboardForTenant: async () => ({
+          ok: true,
+          actor: { id: "user_1", email: "owner@abebe.local", name: "Abebe", role: "owner" },
+        }),
+        getSession: async () => ({
+          user: { id: "user_1", email: "owner@abebe.local", name: "Abebe" },
+        }),
+        listMerchantOrders: async (input) => ({
+          ok: true,
+          count: 0,
+          limit: input.limit,
+          offset: input.offset,
+          orders: [],
+        }),
+        recordMerchantDataExport: async () => {
+          throw new Error("audit unavailable");
+        },
+      },
+    );
+
+    const response = await app.request("/platform/merchant/orders/export.csv", {
+      headers: { Host: "abebe.lvh.me" },
+    });
+    assert.equal(response.status, 503);
+    assert.deepEqual(await response.json(), { error: "export_audit_unavailable" });
+  });
+
   it("requires a platform session for merchant order access", async () => {
     const app = appWithResolution({
       ok: true,
@@ -1123,6 +1305,48 @@ describe("platform app merchant dashboard and orders", () => {
         updatedAt: "2026-01-02T00:00:00.000Z",
       },
     });
+  });
+
+  it("requires a settlement method when finishing and marking paid", async () => {
+    const app = appWithResolution(
+      {
+        ok: true,
+        context: resolvedTenantContext,
+      },
+      {
+        authorizeDashboardForTenant: async () => ({
+          ok: true,
+          actor: {
+            id: "user_1",
+            email: "owner@abebe.local",
+            name: "Abebe Owner",
+            role: "owner",
+          },
+        }),
+        getSession: async () => ({
+          user: {
+            id: "user_1",
+            email: "owner@abebe.local",
+            name: "Abebe Owner",
+          },
+        }),
+        mutateMerchantOrder: async () => {
+          throw new Error("finish mutation must not run without settlement");
+        },
+      },
+    );
+
+    const response = await app.request("/platform/merchant/orders/order_1/finish", {
+      body: JSON.stringify({ markPaid: true }),
+      headers: {
+        "content-type": "application/json",
+        Host: "abebe.lvh.me",
+      },
+      method: "POST",
+    });
+
+    assert.equal(response.status, 400);
+    assert.deepEqual(await response.json(), { error: "settlement_method_required" });
   });
 
   it("fulfills merchant orders from the resolved tenant stock location", async () => {

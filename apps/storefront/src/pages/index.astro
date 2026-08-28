@@ -1,7 +1,10 @@
 ---
-import { applyCatalogCache, CATALOG_CACHE_TTL } from "../lib/http-cache";
+import StorefrontFailure from "../components/shell/StorefrontFailure.astro";
 import { loadHomePageModel } from "../lib/home-page";
+import { applyCatalogCache, CATALOG_CACHE_TTL } from "../lib/http-cache";
 import { loadPageContext } from "../lib/page-context";
+import { buildStorefrontSeo } from "../lib/seo";
+import { buildStorefrontStructuredData } from "../lib/structured-data";
 import { getStorefrontRenderer } from "../templates/registry";
 
 const ctx = await loadPageContext(Astro.request, { skipCart: true });
@@ -9,14 +12,23 @@ const ctx = await loadPageContext(Astro.request, { skipCart: true });
 const homeModel = ctx.ok ? await loadHomePageModel(ctx) : null;
 
 const renderer = ctx.ok ? getStorefrontRenderer(ctx.config.storefront.templateKey) : undefined;
-const Home = renderer?.Home as
-  | ((props: Record<string, unknown>) => unknown)
-  | undefined;
+const Home = renderer?.Home as ((props: Record<string, unknown>) => unknown) | undefined;
+const seo = ctx.ok
+  ? buildStorefrontSeo({
+      path: "/",
+      publicOrigin: ctx.publicOrigin,
+      tenantName: ctx.config.storefront.seo.title ?? ctx.config.tenant.name,
+      description: ctx.config.storefront.seo.description,
+      imageUrl: ctx.config.storefront.seo.socialImageUrl,
+    })
+  : null;
+const structuredData =
+  ctx.ok && seo ? buildStorefrontStructuredData({ seo, tenantName: ctx.config.tenant.name }) : null;
 
 if (!ctx.ok) {
   Astro.response.status = ctx.status;
 } else if (!Home) {
-  Astro.response.status = 500;
+  Astro.response.status = 503;
 } else {
   // Public catalog HTML — cart badge deferred (Layout deferCartCount).
   applyCatalogCache(Astro.cache, {
@@ -33,14 +45,12 @@ if (!ctx.ok) {
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width" />
-    <title>{ctx.ok ? ctx.config.tenant.name : "Shop unavailable"}</title>
+    <title>{ctx.ok ? (ctx.config.storefront.seo.title ?? ctx.config.tenant.name) : "Shop unavailable"}</title>
   </head>
   <body>
     {
       !ctx.ok ? (
-        <main class="unavailable">
-          <h1>{ctx.message}</h1>
-        </main>
+        <StorefrontFailure actionHref="/" actionLabel="Try again" description={ctx.message} eyebrow="Shop paused" title="This shop is temporarily unavailable" />
       ) : Home ? (
         <Home
           data={ctx.config.storefront.data}
@@ -52,35 +62,12 @@ if (!ctx.ok) {
           platformApiBaseUrl={ctx.platformApiBaseUrl}
           requestHost={ctx.requestHost}
           deferCartCount={true}
+          seo={seo}
+          structuredData={structuredData}
         />
       ) : (
-        <main class="unavailable">
-          <h1>Please try again later.</h1>
-        </main>
+        <StorefrontFailure actionHref="/" actionLabel="Try again" description="The shop could not finish loading. Please try again shortly." eyebrow="Shop paused" title="This shop is temporarily unavailable" />
       )
     }
   </body>
 </html>
-
-<style>
-  :global(body) {
-    margin: 0;
-  }
-
-  .unavailable {
-    margin: 0 auto;
-    max-width: 36rem;
-    padding: 20vh 1.5rem 4rem;
-    font-family:
-      Outfit, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  }
-
-  h1 {
-    margin: 0;
-    color: #111827;
-    font-size: clamp(1.5rem, 4vw, 2rem);
-    font-weight: 600;
-    letter-spacing: -0.02em;
-    line-height: 1.25;
-  }
-</style>

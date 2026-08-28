@@ -19,12 +19,7 @@ import { DataTableBulkBar } from "@/components/app/data-table-bulk-bar";
 import { AppIcons } from "@/components/app/icons";
 import { ListTableSkeleton } from "@/components/app/list-table-skeleton";
 import { PaginationBar } from "@/components/app/pagination-bar";
-import {
-  Empty,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyTitle,
-} from "@/components/ui/empty";
+import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
 import {
   Table,
   TableBody,
@@ -48,6 +43,8 @@ type DataTableProps<TData> = {
   filteredEmptyTitle?: string;
   /** Rendered under the scroll region (e.g. server PaginationControls). Always visible. */
   footer?: React.ReactNode;
+  /** Disable client sorting when rows are only one page of a server-owned result set. */
+  enableSorting?: boolean;
   getRowId?: (row: TData) => string;
   globalFilter?: string;
   isFiltered?: boolean;
@@ -76,6 +73,7 @@ export function DataTable<TData>({
   filteredEmptyMessage,
   filteredEmptyTitle,
   footer,
+  enableSorting = true,
   getRowId,
   globalFilter,
   isFiltered = false,
@@ -109,6 +107,7 @@ export function DataTable<TData>({
   const table = useReactTable({
     columns,
     data,
+    enableSorting,
     getFilteredRowModel: getFilteredRowModel(),
     getCoreRowModel: getCoreRowModel(),
     ...(isPaginated ? { getPaginationRowModel: getPaginationRowModel() } : {}),
@@ -170,7 +169,7 @@ export function DataTable<TData>({
       el.removeEventListener("scroll", update);
       observer.disconnect();
     };
-  }, [rows.length, data.length, columns.length]);
+  }, []);
 
   const isEmpty = rows.length === 0;
   const shellClass = embedded
@@ -197,10 +196,7 @@ export function DataTable<TData>({
 
       {isLoading ? (
         <ListTableSkeleton
-          className={cn(
-            "mb-0 rounded-none border-0 shadow-none",
-            embedded && "rounded-none",
-          )}
+          className={cn("mb-0 rounded-none border-0 shadow-none", embedded && "rounded-none")}
           columns={Math.min(6, Math.max(3, columns.length))}
           embedded
           rows={pageSize && pageSize > 0 ? Math.min(pageSize, 8) : 7}

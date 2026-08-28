@@ -199,7 +199,7 @@
     "maxSpend": "ከፍተኛ ወጪ (ETB)",
     "usedCount": "{count} ጊዜ ተጠቅሟል።",
     "usedOfLimit": "ከ{limit} ውስጥ {count} ጊዜ ተጠቅሟል።",
-    "saving": "እየተቀየረ ነው…",
+    "saving": "በማስቀመጥ ላይ…",
     "saveChanges": "ለውጦቹን አስቀምጥ",
     "loadingProducts": "ምርቶች እየተጫኑ ነው…",
     "selectProducts": "ምርቶችን ይምረጡ…",

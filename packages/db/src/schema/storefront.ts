@@ -45,6 +45,7 @@ export const storefrontConfigs = pgTable(
     draftTemplateVersion: integer("draft_template_version"),
     draftData: jsonb("draft_data").notNull().default({}),
     draftThemeTokens: jsonb("draft_theme_tokens").notNull().default({}),
+    seoSettings: jsonb("seo_settings").notNull().default({}),
     publishedRevisionId: uuid("published_revision_id"),
     publishedAt: timestamp("published_at", { withTimezone: true }),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),

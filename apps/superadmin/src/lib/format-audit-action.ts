@@ -1,0 +1,35 @@
+const auditActionLabels: Record<string, string> = {
+  "billing.invoice_status_changed": "Invoice status changed",
+  "delivery.settings_updated": "Delivery settings changed",
+  "domain.created": "Storefront address added",
+  "domain.ownership_verified": "Storefront address verified",
+  "domain.primary_changed": "Primary storefront address changed",
+  "entitlement.override_created": "Plan exception added",
+  "entitlement.override_revoked": "Plan exception ended",
+  "notification.preference_upserted": "Notification preference changed",
+  "payment_credentials.cleared": "Payment credentials removed",
+  "payment_credentials.set": "Payment credentials changed",
+  "payment_onboarding.reviewed": "Payment setup reviewed",
+  "payment_onboarding.submitted": "Payment setup submitted",
+  "platform.demo_permissions_seeded": "Demo operator access prepared",
+  "platform.permissions_bootstrapped": "Operator access prepared",
+  "product_import.apply_requested": "Product import started",
+  "product_import.reviewed": "Product import reviewed",
+  "provisioning.recovery_requested": "Shop setup recovery started",
+  "provisioning.recovery_completed": "Shop setup recovered",
+  "provisioning.recovery_failed": "Shop setup recovery failed",
+  "shop.provisioned": "Shop setup completed",
+  "storefront.draft_updated": "Storefront draft changed",
+  "storefront.published": "Storefront published",
+  "storefront.seo_updated": "Storefront search preview changed",
+  "storefront.unpublished": "Storefront paused",
+  "support.access_granted": "Support access granted",
+  "support.access_revoked": "Support access revoked",
+  "support.note_created": "Internal support note added",
+  "tenant.settings_updated": "Merchant settings changed",
+  "tenant.status_changed": "Merchant status changed",
+};
+
+export function formatAuditAction(value: string) {
+  return auditActionLabels[value] ?? "Platform record changed";
+}

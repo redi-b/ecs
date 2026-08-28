@@ -1,7 +1,6 @@
 "use client";
 
 import type { MerchantDashboardSummary } from "@ecs/contracts";
-import Link from "@/components/app/link";
 import { useMemo, useState } from "react";
 import {
   Area,
@@ -16,12 +15,12 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import Link from "@/components/app/link";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { DateRangePicker } from "@/components/ui/date-range-picker";
 import {
   ChartContainer,
   ChartLegend,
@@ -29,6 +28,7 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
+import { DateRangePicker } from "@/components/ui/date-range-picker";
 import {
   Select,
   SelectContent,
@@ -37,17 +37,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { formatOrderReference } from "@/features/orders/order-domain";
+import { LaunchAssistant } from "@/features/overview/launch-assistant";
 import type { ChartMetric, MerchantOverviewProps } from "@/features/overview/overview-config";
 import { chartColorConfig } from "@/features/overview/overview-config";
-import {
-  filterSeriesByRange,
-  getPresetRange,
-  getSeriesBounds,
-  type OverviewRangePreset,
-} from "@/features/overview/overview-range";
-import { useI18n } from "@/i18n/provider";
-import type { MessageKey } from "@/i18n/messages";
-import { LaunchAssistant } from "@/features/overview/launch-assistant";
 import {
   ChartEmptyState,
   compactMoney,
@@ -61,14 +54,18 @@ import {
   StatusDonutChart,
   sampleNote,
 } from "@/features/overview/overview-helpers";
-import { formatOrderReference } from "@/features/orders/order-domain";
+import {
+  filterSeriesByRange,
+  getPresetRange,
+  getSeriesBounds,
+  type OverviewRangePreset,
+} from "@/features/overview/overview-range";
+import type { MessageKey } from "@/i18n/messages";
+import { useI18n } from "@/i18n/provider";
 import { dashboardRoutes } from "@/lib/routes";
 import { cn } from "@/lib/utils";
 
-function formatOverviewPaymentStatus(
-  paymentStatus: string,
-  t: (key: MessageKey) => string,
-) {
+function formatOverviewPaymentStatus(paymentStatus: string, t: (key: MessageKey) => string) {
   const value = paymentStatus.trim().toLowerCase();
   if (value.includes("captured") || value === "paid" || value.includes("refund")) {
     return t("overview.paymentStatus.paid");
@@ -113,8 +110,7 @@ function getBillingNotice(
     return null;
   }
 
-  const isFree =
-    billing.plan.isFree === true || Number(billing.plan.price) === 0;
+  const isFree = billing.plan.isFree === true || Number(billing.plan.price) === 0;
 
   const now = Date.now();
   const status = billing.subscription.status.toLowerCase();
@@ -199,7 +195,7 @@ function getBillingNotice(
   return null;
 }
 
-export function MerchantOverview({ summary }: MerchantOverviewProps) {
+export function MerchantOverview({ demoMode = false, summary }: MerchantOverviewProps) {
   const { t, locale } = useI18n();
   const [metric, setMetric] = useState<ChartMetric>("revenue");
   const [rangePreset, setRangePreset] = useState<OverviewRangePreset>("30d");
@@ -217,7 +213,10 @@ export function MerchantOverview({ summary }: MerchantOverviewProps) {
   );
   const averageOrderConfig = useMemo(
     () => ({
-      averageOrderValue: { label: t("overview.metrics.aov"), ...chartColorConfig.averageOrderValue },
+      averageOrderValue: {
+        label: t("overview.metrics.aov"),
+        ...chartColorConfig.averageOrderValue,
+      },
       orders: { label: t("overview.metrics.orders"), ...chartColorConfig.orders },
     }),
     [t],
@@ -232,24 +231,26 @@ export function MerchantOverview({ summary }: MerchantOverviewProps) {
   const series = operations?.series ?? [];
   const hasSeries = series.length > 0;
   const seriesBounds = getSeriesBounds(series);
-  const selectedRange = rangePreset === "custom"
-    ? {
-        start: customRange.start || seriesBounds?.start || "",
-        end: customRange.end || seriesBounds?.end || "",
-      }
-    : getPresetRange(series, rangePreset);
+  const selectedRange =
+    rangePreset === "custom"
+      ? {
+          start: customRange.start || seriesBounds?.start || "",
+          end: customRange.end || seriesBounds?.end || "",
+        }
+      : getPresetRange(series, rangePreset);
   const visibleSeries = selectedRange ? filterSeriesByRange(series, selectedRange) : series;
   const tradingRows = visibleSeries.map((row) => ({
     ...row,
     orderBars: row.orders,
     orderTrend: row.orders,
   }));
-  const rangeLabel = rangePreset === "custom" && selectedRange
-    ? t("overview.trading.customRangeLabel", {
-        end: formatReadableDate(selectedRange.end, locale),
-        start: formatReadableDate(selectedRange.start, locale),
-      })
-    : t(`overview.trading.range.${rangePreset}` as MessageKey);
+  const rangeLabel =
+    rangePreset === "custom" && selectedRange
+      ? t("overview.trading.customRangeLabel", {
+          end: formatReadableDate(selectedRange.end, locale),
+          start: formatReadableDate(selectedRange.start, locale),
+        })
+      : t(`overview.trading.range.${rangePreset}` as MessageKey);
   const currencyCode = operations?.totals.currencyCode?.toUpperCase() ?? "ETB";
   const metricLabel =
     metric === "revenue"
@@ -368,6 +369,19 @@ export function MerchantOverview({ summary }: MerchantOverviewProps) {
 
   return (
     <section className="flex flex-col gap-4" aria-label={t("overview.aria.section")}>
+      {operations?.quality.status === "stale" ? (
+        <Alert>
+          <AlertTitle>{t("overview.freshness.staleTitle")}</AlertTitle>
+          <AlertDescription>
+            {t("overview.freshness.staleDescription", {
+              date: operations.quality.lastSuccessfulAt
+                ? formatReadableDate(operations.quality.lastSuccessfulAt, locale)
+                : t("overview.helpers.unavailable"),
+            })}
+          </AlertDescription>
+        </Alert>
+      ) : null}
+
       {billingNotice ? (
         <Alert
           className={cn(
@@ -379,7 +393,12 @@ export function MerchantOverview({ summary }: MerchantOverviewProps) {
             <AlertTitle>{billingNotice.title}</AlertTitle>
             <AlertDescription>{billingNotice.description}</AlertDescription>
           </div>
-          <Button asChild className="shrink-0 self-start sm:self-center" size="sm" variant="outline">
+          <Button
+            asChild
+            className="shrink-0 self-start sm:self-center"
+            size="sm"
+            variant="outline"
+          >
             <Link href={dashboardRoutes.billing} prefetch={false}>
               {t("overview.billing.openBilling")}
             </Link>
@@ -801,8 +820,7 @@ export function MerchantOverview({ summary }: MerchantOverviewProps) {
               <CardTitle>{t("overview.mix.title")}</CardTitle>
               <CardDescription>{activeMix.description}</CardDescription>
             </div>
-            {activeMix.rows.length > 0 ||
-            mixViews.some((view) => view.rows.length > 0) ? (
+            {activeMix.rows.length > 0 || mixViews.some((view) => view.rows.length > 0) ? (
               <div className="col-start-2 row-span-2 row-start-1 self-start justify-self-end">
                 <Select value={mixView} onValueChange={(value) => setMixView(value as MixView)}>
                   <SelectTrigger
@@ -886,7 +904,7 @@ export function MerchantOverview({ summary }: MerchantOverviewProps) {
         </Card>
       </div>
 
-      <LaunchAssistant summary={summary} />
+      {demoMode ? null : <LaunchAssistant summary={summary} />}
     </section>
   );
 }

@@ -1,4 +1,14 @@
-import { jsonb, numeric, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import {
+  index,
+  integer,
+  jsonb,
+  numeric,
+  pgTable,
+  text,
+  timestamp,
+  uniqueIndex,
+  uuid,
+} from "drizzle-orm/pg-core";
 
 import { analyticsSource } from "./enums.js";
 import { tenants } from "./tenants.js";
@@ -30,15 +40,60 @@ export const analyticsEvents = pgTable(
   ],
 );
 
-export const dailyMetrics = pgTable("daily_metrics", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  tenantId: uuid("tenant_id")
-    .notNull()
-    .references(() => tenants.id),
-  date: text("date").notNull(),
-  metricKey: text("metric_key").notNull(),
-  dimensionKey: text("dimension_key"),
-  dimensionValue: text("dimension_value"),
-  value: numeric("value").notNull(),
-  computedAt: timestamp("computed_at", { withTimezone: true }).notNull().defaultNow(),
-});
+export const dailyMetrics = pgTable(
+  "daily_metrics",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id),
+    date: text("date").notNull(),
+    metricKey: text("metric_key").notNull(),
+    dimensionKey: text("dimension_key").notNull().default(""),
+    dimensionValue: text("dimension_value").notNull().default(""),
+    value: numeric("value").notNull(),
+    currencyCode: text("currency_code").notNull().default(""),
+    timezone: text("timezone").notNull().default("Africa/Addis_Ababa"),
+    rollupVersion: integer("rollup_version").notNull().default(1),
+    sourceWindowStart: timestamp("source_window_start", { withTimezone: true }),
+    sourceWindowEnd: timestamp("source_window_end", { withTimezone: true }),
+    computedAt: timestamp("computed_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("daily_metrics_logical_bucket_uidx").on(
+      table.tenantId,
+      table.date,
+      table.metricKey,
+      table.dimensionKey,
+      table.dimensionValue,
+      table.currencyCode,
+      table.rollupVersion,
+    ),
+    index("daily_metrics_tenant_date_idx").on(table.tenantId, table.date),
+  ],
+);
+
+export const metricRollupCheckpoints = pgTable(
+  "metric_rollup_checkpoints",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id),
+    rollupKey: text("rollup_key").notNull(),
+    rollupVersion: integer("rollup_version").notNull(),
+    timezone: text("timezone").notNull(),
+    watermark: timestamp("watermark", { withTimezone: true }).notNull(),
+    lastSuccessfulAt: timestamp("last_successful_at", { withTimezone: true }).notNull(),
+    metadata: jsonb("metadata").notNull().default({}),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("metric_rollup_checkpoints_tenant_key_version_uidx").on(
+      table.tenantId,
+      table.rollupKey,
+      table.rollupVersion,
+    ),
+  ],
+);

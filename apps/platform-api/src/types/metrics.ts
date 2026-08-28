@@ -12,6 +12,17 @@ export type DashboardMetricsResult = {
       paymentStatus: Array<{ count: number; label: string }>;
     };
     currencyCode: string;
+    customers: {
+      repeat: number | null;
+      unique: number | null;
+    };
+    quality: {
+      lastSuccessfulAt: string | null;
+      rollupVersion: number;
+      status: "fresh" | "missing" | "stale";
+      timezone: string;
+      watermark: string | null;
+    };
     products: number | null;
     series: Array<{
       customers: number;

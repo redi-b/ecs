@@ -4,11 +4,7 @@ import { after, describe, it } from "node:test";
 import { createPlatformDb, jobRuns } from "@ecs/db";
 import { eq } from "drizzle-orm";
 
-import {
-  createJobsClient,
-  enqueueWithQueue,
-  type JobsQueueLike,
-} from "./client.js";
+import { createJobsClient, enqueueWithQueue, type JobsQueueLike } from "./client.js";
 import { DEFAULT_BACKOFF_MS, DEFAULT_MAX_ATTEMPTS } from "./defaults.js";
 import { findJobRunById, insertJobRun } from "./runs.js";
 import type { PlatformDb } from "./types.js";
@@ -21,6 +17,11 @@ const dbHandle = createPlatformDb({ connectionString: databaseUrl });
 const db: PlatformDb = dbHandle.db;
 
 const createdIds: string[] = [];
+type RecordedQueueCall = {
+  name: Parameters<JobsQueueLike["add"]>[0];
+  data: Parameters<JobsQueueLike["add"]>[1];
+  opts: Parameters<JobsQueueLike["add"]>[2];
+};
 
 after(async () => {
   for (const id of createdIds) {
@@ -38,25 +39,9 @@ function createRecordingQueue(options?: {
   throwOnAdd?: Error;
   idFromJobRun?: boolean;
 }): JobsQueueLike & {
-  calls: Array<{
-    name: string;
-    data: { jobRunId: string; tenantId: string | null; payload: unknown };
-    opts: {
-      jobId: string;
-      attempts: number;
-      backoff: { type: "exponential"; delay: number };
-    };
-  }>;
+  calls: RecordedQueueCall[];
 } {
-  const calls: Array<{
-    name: string;
-    data: { jobRunId: string; tenantId: string | null; payload: unknown };
-    opts: {
-      jobId: string;
-      attempts: number;
-      backoff: { type: "exponential"; delay: number };
-    };
-  }> = [];
+  const calls: RecordedQueueCall[] = [];
 
   return {
     calls,
@@ -158,10 +143,7 @@ describe("enqueueWithQueue", () => {
     trackId(existing.id);
 
     // Simulate a terminal status so we prove reuse is not limited to queued.
-    await db
-      .update(jobRuns)
-      .set({ status: "completed" })
-      .where(eq(jobRuns.id, existing.id));
+    await db.update(jobRuns).set({ status: "completed" }).where(eq(jobRuns.id, existing.id));
 
     const queue = createRecordingQueue();
     const result = await enqueueWithQueue({
@@ -198,10 +180,7 @@ describe("enqueueWithQueue", () => {
     );
 
     // The insert happened before add; find the newest failed run for this name.
-    const rows = await db
-      .select()
-      .from(jobRuns)
-      .where(eq(jobRuns.name, "test.client.queue-fail"));
+    const rows = await db.select().from(jobRuns).where(eq(jobRuns.name, "test.client.queue-fail"));
 
     assert.ok(rows.length >= 1);
     const failed = rows[rows.length - 1]!;

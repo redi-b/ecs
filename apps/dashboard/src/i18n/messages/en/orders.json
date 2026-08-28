@@ -1,6 +1,11 @@
 {
   "title": "Orders",
   "description": "Review orders, payment status, and fulfillment progress.",
+  "export": {
+    "label": "Export orders",
+    "pending": "Preparing export…",
+    "failed": "Orders could not be exported. Try again."
+  },
   "error": {
     "loadTitle": "Orders could not be loaded"
   },
@@ -8,7 +13,7 @@
     "shellTitle": "Order details",
     "shellDescription": "Customer, payment, delivery, and fulfillment for this order.",
     "notFoundTitle": "Order not found",
-    "notFoundDesc": "This order could not be found for the selected merchant context.",
+    "notFoundDesc": "This order is not available for this shop.",
     "loadErrorTitle": "Order could not be loaded",
     "loadErrorDesc": "The dashboard could not load this order. Refresh the page or try again later.",
     "orderHeading": "Order {ref}",
@@ -157,7 +162,6 @@
     "lastName": "Last name",
     "phone": "Phone",
     "emailPlaceholder": "buyer@example.com",
-    "phonePlaceholder": "09…",
     "products": "Products",
     "productsDesc": "Select one or more options, then set quantities for this order.",
     "quantities": "Quantities",

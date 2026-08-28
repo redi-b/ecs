@@ -122,6 +122,7 @@ function mediaApp(
     context: {
       domainId: "domain_1",
       hostname: "shop.example.com",
+      primaryHostname: "shop.example.com",
       medusaPublishableKeyId: "pk_1",
       medusaRegionId: "region_1",
       medusaSalesChannelId: "channel_1",
@@ -150,7 +151,7 @@ function mediaApp(
     getSession: async () =>
       authenticated
         ? {
-            session: { expiresAt: new Date(Date.now() + 60_000), id: "session_1" },
+            session: { createdAt: new Date() },
             user: { email: "owner@example.com", id: "user_1", name: "Owner" },
           }
         : null,

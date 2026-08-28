@@ -1,19 +1,14 @@
 import { headers } from "next/headers";
-import Link from "@/components/app/link";
 import { redirect } from "next/navigation";
-
-import { SignInForm } from "@/components/app/sign-in-form";
 import { DashboardAccessState } from "@/components/app/dashboard-access-state";
+import Link from "@/components/app/link";
+import { SignInForm } from "@/components/app/sign-in-form";
 import { AuthShell } from "@/components/onboarding/auth-shell";
 import type { MessageKey } from "@/i18n/messages";
 import { getTranslations } from "@/i18n/server";
 import { getAuthenticatedDashboardRedirect } from "@/lib/dashboard-auth-redirect";
 import { isCentralDashboardHost } from "@/lib/dashboard-hosts";
-import {
-  getCentralDashboardUrl,
-  validateShopHost,
-  type ShopHostValidation,
-} from "@/lib/shop-host";
+import { getCentralDashboardUrl, type ShopHostValidation, validateShopHost } from "@/lib/shop-host";
 
 export default async function AdminSignInPage({
   searchParams,
@@ -82,7 +77,11 @@ export default async function AdminSignInPage({
       brandFooter={t("auth.brandFooter.signIn")}
       brandPoints={
         isCentralAccess
-          ? [t("auth.brandPoint.catalog"), t("auth.brandPoint.orders"), t("auth.brandPoint.storefront")]
+          ? [
+              t("auth.brandPoint.catalog"),
+              t("auth.brandPoint.orders"),
+              t("auth.brandPoint.storefront"),
+            ]
           : [t("auth.brandPoint.shopAccess"), t("auth.brandPoint.teamReady")]
       }
       brandTitle={
@@ -95,12 +94,8 @@ export default async function AdminSignInPage({
     >
       <div className="rounded-2xl border border-border/80 bg-card p-7 shadow-[0_1px_2px_color-mix(in_oklch,var(--foreground)_6%,transparent),0_12px_40px_-24px_color-mix(in_oklch,var(--foreground)_18%,transparent)] ring-1 ring-foreground/[0.03] sm:p-9">
         <div className="mb-7">
-          <p className="type-eyebrow">
-            {shopName ?? t("auth.merchantConsole")}
-          </p>
-          <h2 className="type-page-title mt-2.5 sm:text-[1.35rem]">
-            {t("auth.signIn")}
-          </h2>
+          <p className="type-eyebrow">{shopName ?? t("auth.merchantConsole")}</p>
+          <h2 className="type-page-title mt-2.5 sm:text-[1.35rem]">{t("auth.signIn")}</h2>
           <p className="type-meta mt-2">
             {isCentralAccess
               ? t("auth.centralDescription")
