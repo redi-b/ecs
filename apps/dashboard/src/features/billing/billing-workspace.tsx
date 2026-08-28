@@ -1,27 +1,21 @@
 "use client";
 
 import type { MerchantBillingStatus } from "@ecs/contracts";
-import Link from "@/components/app/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
-
 import { AppIcons } from "@/components/app/icons";
+import Link from "@/components/app/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Empty,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyTitle,
-} from "@/components/ui/empty";
-import { useI18n } from "@/i18n/provider";
+import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
 import type { MessageKey } from "@/i18n/messages";
-import { cn } from "@/lib/utils";
+import { useI18n } from "@/i18n/provider";
 import { getTenantScopedPath } from "@/lib/dashboard-tenant-context";
 import { mapPlatformErrorMessage } from "@/lib/platform-api/errors";
 import { dashboardRoutes } from "@/lib/routes";
+import { cn } from "@/lib/utils";
 
 type CatalogPlan = {
   id: string;
@@ -167,10 +161,7 @@ export function BillingWorkspace({
     periodEndMs != null && Number.isFinite(periodEndMs)
       ? (periodEndMs - Date.now()) / (24 * 60 * 60 * 1000)
       : null;
-  const inRenewalWindow =
-    !isCurrentFree &&
-    daysToPeriodEnd != null &&
-    daysToPeriodEnd <= 7;
+  const inRenewalWindow = !isCurrentFree && daysToPeriodEnd != null && daysToPeriodEnd <= 7;
 
   function returnToBillingUrl() {
     // Build with URLSearchParams only — never HTML-entity-encode (&amp;), which
@@ -185,8 +176,7 @@ export function BillingWorkspace({
   const scheduledPlanName = subscription.scheduledPlanName ?? null;
   const scheduledEffectiveAt = subscription.scheduledEffectiveAt ?? null;
   const hasScheduledDowngrade = Boolean(scheduledPlanId);
-  const selectedIsScheduledTarget =
-    Boolean(scheduledPlanId) && chosenPlan.id === scheduledPlanId;
+  const selectedIsScheduledTarget = Boolean(scheduledPlanId) && chosenPlan.id === scheduledPlanId;
   const periodStillActive =
     !isCurrentFree &&
     subscription.status !== "past_due" &&
@@ -287,7 +277,11 @@ export function BillingWorkspace({
     }
 
     // Renew current paid plan (lead window or past due).
-    if (selectedIsCurrent && !selectedIsFree && (inRenewalWindow || subscription.status === "past_due")) {
+    if (
+      selectedIsCurrent &&
+      !selectedIsFree &&
+      (inRenewalWindow || subscription.status === "past_due")
+    ) {
       runBillingAction({
         action: "upgrade",
         planId: chosenPlan.id,
@@ -420,6 +414,17 @@ export function BillingWorkspace({
           </p>
         ) : null}
       </section>
+
+      <Card className="border-border/80">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">{t("billing.entitlements.title")}</CardTitle>
+          <CardDescription>{t("billing.entitlements.description")}</CardDescription>
+        </CardHeader>
+        <CardContent className="flex items-center justify-between gap-4 text-sm">
+          <span>{t("billing.entitlements.customDomains")}</span>
+          <Badge variant="outline">{t("billing.entitlements.unavailable")}</Badge>
+        </CardContent>
+      </Card>
 
       {returnedFromPayment && openInvoice ? (
         <Card className="border-border">
@@ -722,7 +727,8 @@ function formatMoney(
 }
 
 function invoiceTitle(invoice: InvoiceRow, t: Translate) {
-  if (invoice.provider === "chapa" || invoice.status === "paid") return t("billing.invoice.planPayment");
+  if (invoice.provider === "chapa" || invoice.status === "paid")
+    return t("billing.invoice.planPayment");
   if (invoice.provider?.startsWith("plan:")) return t("billing.invoice.planUpgrade");
   if (invoice.status === "pending") return t("billing.invoice.open");
   return t("billing.invoice.generic");

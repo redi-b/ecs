@@ -19,7 +19,7 @@ const originalPrice = purchasableVariant?.originalPriceAmount ?? product.origina
 <article class="lv-product-card">
   <div class="lv-product-card__media">
     <a class="lv-product-card__media-link" href={href} aria-label={product.title ?? "View product"}>
-      {product.thumbnail ? <img src={product.thumbnail} alt={product.title ?? "Product"} loading={eager ? "eager" : "lazy"} /> : <span class="lv-product-card__empty">Image coming soon</span>}
+      {product.thumbnail ? <img src={product.thumbnail} alt={product.title ?? "Product"} width="900" height="900" loading={eager ? "eager" : "lazy"} decoding="async" /> : <span class="lv-product-card__empty">Image coming soon</span>}
     </a>
     {badge ? <span class:list={["lv-product-card__badge", `is-${badge.kind}`]}>{badge.kind === "promotion" ? <img src={starIcon.src} alt="" /> : null}{badge.label}</span> : null}
     <button class="lv-product-card__heart" type="button" data-wishlist-toggle data-wishlist-item={wishlistItem} aria-pressed="false" aria-label={`Save ${product.title ?? "product"} to wishlist`}><img src={wishlistIcon.src} alt="" /></button>

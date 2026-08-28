@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { type ReactNode, useCallback, useEffect, useState } from "react";
 
 import { AppIcons } from "@/components/app/icons";
 import { ListSummary } from "@/components/app/list-page-controls";
@@ -9,7 +9,10 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { MediaLibrary } from "@/features/media/media-library";
-import { MediaUploadComposer } from "@/features/media/media-upload-composer";
+import {
+  MEDIA_UPLOADED_EVENT,
+  OPEN_MEDIA_UPLOAD_EVENT,
+} from "@/features/media/media-upload-composer";
 import { useI18n } from "@/i18n/provider";
 import type { MediaAsset } from "@/lib/merchant-media";
 import { mapPlatformErrorMessage } from "@/lib/platform-api/errors";
@@ -72,6 +75,12 @@ export function MediaWorkspace({
     setRefreshing(false);
   }, [initialMimeType, initialQuery, page, pageSize]);
 
+  useEffect(() => {
+    const refreshLibrary = () => void refresh();
+    window.addEventListener(MEDIA_UPLOADED_EVENT, refreshLibrary);
+    return () => window.removeEventListener(MEDIA_UPLOADED_EVENT, refreshLibrary);
+  }, [refresh]);
+
   return (
     <PageShell
       actions={
@@ -94,7 +103,13 @@ export function MediaWorkspace({
               {refreshing ? t("common.refreshing") : t("media.refresh")}
             </TooltipContent>
           </Tooltip>
-          <MediaUploadComposer onUploaded={() => void refresh()} />
+          <Button
+            onClick={() => window.dispatchEvent(new Event(OPEN_MEDIA_UPLOAD_EVENT))}
+            type="button"
+          >
+            <AppIcons.upload data-icon="inline-start" />
+            {t("media.uploadNew")}
+          </Button>
         </>
       }
       description={t("media.shellDescription")}
@@ -102,7 +117,9 @@ export function MediaWorkspace({
     >
       <ListSummary
         count={totalCount}
-        filtered={Boolean(initialQuery.trim()) || (initialMimeType !== "all" && Boolean(initialMimeType))}
+        filtered={
+          Boolean(initialQuery.trim()) || (initialMimeType !== "all" && Boolean(initialMimeType))
+        }
         page={page}
         pageSize={pageSize}
       />

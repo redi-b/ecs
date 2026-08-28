@@ -1,7 +1,7 @@
 import {
   getAuthSessionCookieNames,
   getAuthSessionCookieNamesToClear,
-} from "@ecs/config";
+} from "@ecs/config/auth-cookies";
 
 const defaultSharedCookieDomain = ".lvh.me";
 

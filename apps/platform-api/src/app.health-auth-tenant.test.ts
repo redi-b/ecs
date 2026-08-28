@@ -683,6 +683,17 @@ describe("platform app health, auth, and tenant bootstrap", () => {
                   count: 7,
                 },
               ],
+              funnel: [
+                { count: 7, key: "storefront_visits" },
+                { count: 0, key: "product_views" },
+                { count: 0, key: "add_to_cart" },
+                { count: 0, key: "checkout_started" },
+                { count: 0, key: "orders_created" },
+              ],
+              coverage: {
+                lastEventAt: "2026-06-29T10:00:00.000Z",
+                status: "observed",
+              },
               recentEvents: [
                 {
                   id: "event_1",
@@ -730,6 +741,17 @@ describe("platform app health, auth, and tenant bootstrap", () => {
             count: 7,
           },
         ],
+        funnel: [
+          { count: 7, key: "storefront_visits" },
+          { count: 0, key: "product_views" },
+          { count: 0, key: "add_to_cart" },
+          { count: 0, key: "checkout_started" },
+          { count: 0, key: "orders_created" },
+        ],
+        coverage: {
+          lastEventAt: "2026-06-29T10:00:00.000Z",
+          status: "observed",
+        },
         recentEvents: [
           {
             id: "event_1",

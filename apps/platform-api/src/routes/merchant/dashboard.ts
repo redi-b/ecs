@@ -97,6 +97,22 @@ export function registerMerchantDashboardRoutes(
     );
   });
 
+  app.get("/platform/merchant/analytics/visits", async (context) => {
+    if (!options.getTenantInsightsSummary) {
+      return context.json({ error: "insights_unavailable" }, 503);
+    }
+    const merchant = await getAuthorizedMerchantContext(context);
+    if (!merchant.ok) return merchant.response;
+
+    const result = await options.getTenantInsightsSummary({
+      days: 30,
+      tenantId: merchant.result.context.tenantId,
+    });
+    const visits =
+      result.summary.funnel.find((stage) => stage.key === "storefront_visits")?.count ?? 0;
+    return context.json({ asOf: result.summary.range.to, days: 30, visits });
+  });
+
   app.get("/platform/merchant/host", async (context) => {
     const host = getRequestHost(
       context.req.header("x-forwarded-host") ?? context.req.header("host"),

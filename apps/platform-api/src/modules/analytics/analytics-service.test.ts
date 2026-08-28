@@ -143,6 +143,14 @@ describe("createAnalyticsInsightsService", () => {
       to: Date;
     }[] = [];
     const store: AnalyticsInsightsStore = {
+      countDistinctSessionsByEventType: async (input) => {
+        calls.push(input);
+        return [
+          { count: 3, eventType: "storefront.page_viewed" },
+          { count: 2, eventType: "storefront.product_viewed" },
+          { count: 1, eventType: "storefront.checkout_started" },
+        ];
+      },
       countEventsBySource: async (input) => {
         calls.push(input);
 
@@ -155,7 +163,12 @@ describe("createAnalyticsInsightsService", () => {
       countEventsByType: async (input) => {
         calls.push(input);
 
-        return [{ count: 7, eventType: "storefront.page_viewed" }];
+        return [
+          { count: 7, eventType: "storefront.page_viewed" },
+          { count: 4, eventType: "storefront.product_viewed" },
+          { count: 2, eventType: "storefront.checkout_started" },
+          { count: 1, eventType: "order.created" },
+        ];
       },
       listRecentEvents: async (input) => {
         calls.push(input);
@@ -175,6 +188,13 @@ describe("createAnalyticsInsightsService", () => {
             subjectType: null,
             tenantId: "tenant_1",
           },
+        ];
+      },
+      countDistinctProductSessions: async (input) => {
+        calls.push(input);
+        return [
+          { count: 2, eventType: "storefront.product_viewed", productId: "coffee-set" },
+          { count: 1, eventType: "storefront.add_to_cart_clicked", productId: "coffee-set" },
         ];
       },
     };
@@ -201,13 +221,24 @@ describe("createAnalyticsInsightsService", () => {
         },
         {
           from: "2026-06-23T00:00:00.000Z",
-          limit: 5,
+          limit: 50,
+          tenantId: "tenant_1",
+          to: "2026-06-30T00:00:00.000Z",
+        },
+        {
+          from: "2026-06-23T00:00:00.000Z",
           tenantId: "tenant_1",
           to: "2026-06-30T00:00:00.000Z",
         },
         {
           from: "2026-06-23T00:00:00.000Z",
           limit: 10,
+          tenantId: "tenant_1",
+          to: "2026-06-30T00:00:00.000Z",
+        },
+        {
+          from: "2026-06-23T00:00:00.000Z",
+          limit: 20,
           tenantId: "tenant_1",
           to: "2026-06-30T00:00:00.000Z",
         },
@@ -233,7 +264,31 @@ describe("createAnalyticsInsightsService", () => {
             eventType: "storefront.page_viewed",
             count: 7,
           },
+          { eventType: "storefront.product_viewed", count: 4 },
+          { eventType: "storefront.checkout_started", count: 2 },
+          { eventType: "order.created", count: 1 },
         ],
+        funnel: [
+          { count: 3, key: "storefront_visits" },
+          { count: 2, key: "product_views" },
+          { count: 0, key: "add_to_cart" },
+          { count: 1, key: "checkout_started" },
+          { count: 1, key: "orders_created" },
+        ],
+        storefront: {
+          addToCartVisits: 0,
+          checkoutVisits: 1,
+          contactVisits: 0,
+          pageViews: 7,
+          productViewVisits: 2,
+          searchVisits: 0,
+          visits: 3,
+        },
+        products: [{ addToCartVisits: 1, productId: "coffee-set", viewVisits: 2 }],
+        coverage: {
+          lastEventAt: "2026-06-29T10:00:00.000Z",
+          status: "observed",
+        },
         recentEvents: [
           {
             id: "event_1",

@@ -41,7 +41,10 @@ export const normalizeWishlistEntry = (value: unknown): WishlistEntry | null => 
     path: entry.path,
     title: typeof entry.title === "string" && entry.title.trim() ? entry.title : "Product",
     thumbnail: typeof entry.thumbnail === "string" ? entry.thumbnail : null,
-    priceAmount: typeof entry.priceAmount === "number" && Number.isFinite(entry.priceAmount) ? entry.priceAmount : null,
+    priceAmount:
+      typeof entry.priceAmount === "number" && Number.isFinite(entry.priceAmount)
+        ? entry.priceAmount
+        : null,
     currencyCode: typeof entry.currencyCode === "string" ? entry.currencyCode : null,
   };
 };
@@ -62,7 +65,8 @@ export const createWishlistStore = (storage: WishlistStorage, shopScope: string)
       .map(normalizeWishlistEntry)
       .filter((entry): entry is WishlistEntry => Boolean(entry));
     const unique = [...new Map(normalized.map((entry) => [entry.path, entry])).values()];
-    if (JSON.stringify(raw) !== JSON.stringify(unique)) storage.setItem(key, JSON.stringify(unique));
+    if (JSON.stringify(raw) !== JSON.stringify(unique))
+      storage.setItem(key, JSON.stringify(unique));
     return unique;
   };
   const write = (items: WishlistEntry[]) => {
@@ -77,9 +81,11 @@ export const createWishlistStore = (storage: WishlistStorage, shopScope: string)
     const entry = normalizeWishlistEntry(candidate);
     if (!entry) return read();
     const saved = read();
-    return write(saved.some((item) => item.path === entry.path)
-      ? saved.filter((item) => item.path !== entry.path)
-      : [...saved, entry]);
+    return write(
+      saved.some((item) => item.path === entry.path)
+        ? saved.filter((item) => item.path !== entry.path)
+        : [...saved, entry],
+    );
   };
   const remove = (path: string) => write(read().filter((item) => item.path !== path));
   const clear = () => {
@@ -129,13 +135,17 @@ export const initWishlistController = (options: WishlistControllerOptions = {}) 
       button.removeAttribute("aria-disabled");
       const active = !disabled && paths.has(entry.path);
       button.setAttribute("aria-pressed", String(active));
-      button.setAttribute("aria-label", active
-        ? `Remove ${entry.title} from wishlist`
-        : `Save ${entry.title} to wishlist`);
+      button.setAttribute(
+        "aria-label",
+        active ? `Remove ${entry.title} from wishlist` : `Save ${entry.title} to wishlist`,
+      );
     });
     documentRef.querySelectorAll<HTMLElement>("[data-wishlist-indicator]").forEach((indicator) => {
       indicator.toggleAttribute("data-active", !disabled && items.length > 0);
-      indicator.setAttribute("aria-label", items.length > 0 ? `Wishlist, ${items.length} saved` : "Wishlist");
+      indicator.setAttribute(
+        "aria-label",
+        items.length > 0 ? `Wishlist, ${items.length} saved` : "Wishlist",
+      );
     });
   };
   const setItems = (items: WishlistEntry[], persistGuest = false) => {
@@ -148,9 +158,11 @@ export const initWishlistController = (options: WishlistControllerOptions = {}) 
     return currentItems;
   };
   const announce = () => {
-    windowRef.dispatchEvent(new CustomEvent(WISHLIST_UPDATED_EVENT, {
-      detail: { items: currentItems, origin: "controller" },
-    }));
+    windowRef.dispatchEvent(
+      new CustomEvent(WISHLIST_UPDATED_EVENT, {
+        detail: { items: currentItems, origin: "controller" },
+      }),
+    );
   };
   const publish = (items: WishlistEntry[]) => {
     const saved = setItems(items, true);
@@ -167,7 +179,7 @@ export const initWishlistController = (options: WishlistControllerOptions = {}) 
         method: "PUT",
       });
       if (!response.ok || version !== persistVersion) return false;
-      const data = await response.json().catch(() => null) as { items?: unknown[] } | null;
+      const data = (await response.json().catch(() => null)) as { items?: unknown[] } | null;
       if (Array.isArray(data?.items)) {
         const normalized = data.items
           .map(normalizeWishlistEntry)
@@ -182,22 +194,31 @@ export const initWishlistController = (options: WishlistControllerOptions = {}) 
   const hydrateAccount = async () => {
     if (disabled || !fetcher) return false;
     try {
-      const response = await fetcher("/actions/account/wishlist", { headers: { accept: "application/json" } });
-      if (response.status === 401) {
+      const response = await fetcher("/actions/account/wishlist", {
+        headers: { accept: "application/json" },
+      });
+      const data = (await response.json().catch(() => null)) as {
+        authenticated?: boolean;
+        items?: unknown[];
+      } | null;
+      if (response.status === 401 || data?.authenticated === false) {
         authenticated = false;
         setItems(store.read(), true);
-        documentRef.querySelectorAll<HTMLElement>("[data-wishlist-account-copy]").forEach((node) => {
-          node.textContent = "Saved on this device";
-        });
+        documentRef
+          .querySelectorAll<HTMLElement>("[data-wishlist-account-copy]")
+          .forEach((node) => {
+            node.textContent = "Saved on this device";
+          });
         announce();
         return true;
       }
       if (!response.ok) return false;
-      const data = await response.json().catch(() => null) as { items?: unknown[] } | null;
       if (!Array.isArray(data?.items)) return false;
       authenticated = true;
       const local = store.read();
-      const remote = data.items.map(normalizeWishlistEntry).filter((item): item is WishlistEntry => Boolean(item));
+      const remote = data.items
+        .map(normalizeWishlistEntry)
+        .filter((item): item is WishlistEntry => Boolean(item));
       const merged = setItems([...remote, ...local]);
       announce();
       if (JSON.stringify(remote) !== JSON.stringify(merged)) await persist(merged);
@@ -213,9 +234,10 @@ export const initWishlistController = (options: WishlistControllerOptions = {}) 
     }
   };
   const onClick = (event: MouseEvent) => {
-    const target = event.target instanceof Element
-      ? event.target.closest<HTMLElement>("[data-wishlist-toggle]")
-      : null;
+    const target =
+      event.target instanceof Element
+        ? event.target.closest<HTMLElement>("[data-wishlist-toggle]")
+        : null;
     if (!target || disabled) return;
     event.preventDefault();
     event.stopPropagation();

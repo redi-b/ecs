@@ -177,6 +177,44 @@ describe("getMerchantOrder", () => {
 });
 
 describe("mutateMerchantOrder", () => {
+  it("forwards the merchant-selected settlement when finishing and marking paid", async () => {
+    let forwardedRequest: Request | undefined;
+    const result = await mutateMerchantOrder({
+      action: "finish",
+      markPaid: true,
+      orderId: "order_1",
+      platformApiBaseUrl: "http://platform.local",
+      settlement: {
+        settlementMethod: "telebirr",
+        reference: "TX-100",
+      },
+      fetcher: async (input, init) => {
+        forwardedRequest = new Request(input, init);
+        return Response.json({
+          order: {
+            id: "order_1",
+            displayId: 1001,
+            email: "customer@example.com",
+            status: "completed",
+            paymentStatus: "captured",
+            fulfillmentStatus: "delivered",
+            currencyCode: "etb",
+            total: 1250,
+            createdAt: "2026-01-01T00:00:00.000Z",
+            updatedAt: "2026-01-02T00:00:00.000Z",
+          },
+        });
+      },
+    });
+
+    assert.equal(result.ok, true);
+    assert.deepEqual(await forwardedRequest?.json(), {
+      markPaid: true,
+      settlementMethod: "telebirr",
+      reference: "TX-100",
+    });
+  });
+
   it("forwards fulfill actions through the selected tenant route", async () => {
     let forwardedRequest: Request | undefined;
     const result = await mutateMerchantOrder({

@@ -1,3 +1,4 @@
+import { resolveTxt as resolveDnsTxt } from "node:dns/promises";
 import { loadServiceEnv } from "@ecs/config";
 import { createPlatformDb, tenants } from "@ecs/db";
 import { createJobsClient } from "@ecs/jobs";
@@ -10,13 +11,13 @@ import {
 } from "./adapters/chapa/payment-service.js";
 import { resolveMedusaAdminToken } from "./adapters/medusa/admin-token.js";
 import { createMedusaCommerceProvisioningClient } from "./adapters/medusa/commerce-provisioning.js";
+import { createMedusaCustomerService } from "./adapters/medusa/customer-service.js";
+import { createMedusaManualOrderService } from "./adapters/medusa/manual-order-service.js";
+import { createMedusaPromotionService } from "./adapters/medusa/promotion-service.js";
 import {
   createMedusaEnsurePickupOptionClient,
   createMedusaShippingPriceClient,
 } from "./adapters/medusa/update-shipping-price.js";
-import { createMedusaCustomerService } from "./adapters/medusa/customer-service.js";
-import { createMedusaManualOrderService } from "./adapters/medusa/manual-order-service.js";
-import { createMedusaPromotionService } from "./adapters/medusa/promotion-service.js";
 import { createMediaStorageFromEnv } from "./adapters/storage/index.js";
 import { createPlatformApp } from "./app.js";
 import { loadPlatformApiEnvFiles } from "./config/env.js";
@@ -24,6 +25,10 @@ import { getSystemHosts } from "./config/hosts.js";
 import { createDashboardAuthorizationLookup } from "./context/dashboard-authorization.js";
 import { createDomainTenantLookup } from "./context/domain-tenant-lookup.js";
 import { createPlatformAuth, parseTrustedOrigins } from "./context/platform-auth.js";
+import {
+  createPlatformPermissionAuthorization,
+  createPlatformPrincipalAccessLookup,
+} from "./context/platform-authorization.js";
 import { resolveTenantFromHost } from "./context/tenant-resolver.js";
 import {
   createAnalyticsInsightsService,
@@ -32,15 +37,40 @@ import {
   createDrizzleAnalyticsInsightsStore,
 } from "./modules/analytics/analytics-service.js";
 import { createDashboardMetricsService } from "./modules/analytics/dashboard-metrics-service.js";
+import { createInsightsRefreshService } from "./modules/analytics/refresh-service.js";
 import { reconcileChapaBillingPayments } from "./modules/billing/reconcile-payments.js";
 import { createBillingService, isPlatformBillingTxRef } from "./modules/billing/service.js";
 import { createMedusaOrderService } from "./modules/commerce/order-management.js";
 import { createMedusaProductService } from "./modules/commerce/product-catalog.js";
+import { createDataExportAuditRecorder } from "./modules/data-transfer/export-audit.js";
+import { createProductImportArtifactService } from "./modules/data-transfer/product-import-artifact.js";
+import { createProductImportExecutionService } from "./modules/data-transfer/product-import-execution.js";
 import { createDeliverySettingsService } from "./modules/delivery/service.js";
 import { createDomainManagementService } from "./modules/domains/service.js";
+import { createEntitlementService } from "./modules/entitlements/service.js";
 import { createMediaService } from "./modules/media/index.js";
 import { isEmailDeliveryConfigured } from "./modules/notifications/providers/email-provider.js";
 import { createNotificationService } from "./modules/notifications/service.js";
+import { createTenantOnboardingService } from "./modules/onboarding/service.js";
+import { createPaymentOnboardingService } from "./modules/payments/payment-onboarding-service.js";
+import { createReceivingAccountsService } from "./modules/payments/receiving-accounts-service.js";
+import { wrapProductServiceWithStorefrontPurge } from "./modules/storefront/catalog-cache-invalidation.js";
+import { createCustomerCommerceService } from "./modules/storefront/customer-commerce-service.js";
+import { createStorefrontInquiryService } from "./modules/storefront/inquiry-service.js";
+import { createStorefrontTemplateService } from "./modules/storefront/template-service.js";
+import { createSuperadminCommerceReviewService } from "./modules/superadmin/commerce-review-service.js";
+import { createSuperadminConsoleReadService } from "./modules/superadmin/console-read-service.js";
+import {
+  createDependencyHealthService,
+  createHttpHealthCheck,
+} from "./modules/superadmin/dependency-health-service.js";
+import { createSuperadminDiagnosticsService } from "./modules/superadmin/diagnostics-service.js";
+import { createSuperadminOperationalSummaryService } from "./modules/superadmin/operational-summary-service.js";
+import { createSuperadminOverviewService } from "./modules/superadmin/overview-service.js";
+import { createSuperadminTenantProjectionService } from "./modules/superadmin/tenant-projection-service.js";
+import { createSuperadminWorkRecoveryService } from "./modules/superadmin/work-recovery-service.js";
+import { createSupportAccessService } from "./modules/support/access-service.js";
+import { createSupportService } from "./modules/support/service.js";
 import {
   handleTelegramCallbackQuery,
   resolveTelegramCallbackSecret,
@@ -55,14 +85,6 @@ import {
   type TelegramToolsDeps,
 } from "./modules/telegram/telegram-tools.js";
 import { ensureTelegramWebhookIfConfigured } from "./modules/telegram/telegram-webhook.js";
-import { createTenantOnboardingService } from "./modules/onboarding/service.js";
-import { createPaymentOnboardingService } from "./modules/payments/payment-onboarding-service.js";
-import { createReceivingAccountsService } from "./modules/payments/receiving-accounts-service.js";
-import { wrapProductServiceWithStorefrontPurge } from "./modules/storefront/catalog-cache-invalidation.js";
-import { createStorefrontTemplateService } from "./modules/storefront/template-service.js";
-import { createStorefrontInquiryService } from "./modules/storefront/inquiry-service.js";
-import { createCustomerCommerceService } from "./modules/storefront/customer-commerce-service.js";
-import { createSupportService } from "./modules/support/service.js";
 import {
   createTenantCommerceContextService,
   createTenantDashboardSummaryService,
@@ -74,12 +96,12 @@ import {
   createTenantListService,
   createTenantShopSettingsService,
 } from "./modules/tenants/list-service.js";
+import { createResolveTenantIdByMedusaSalesChannel } from "./modules/tenants/resolve-by-medusa-sales-channel.js";
 import {
   createTenantProvisioningAttemptListService,
   createTenantShopProvisioningRetryServiceFromDb,
   createTenantShopProvisioningService,
 } from "./modules/tenants/shop-provisioning.js";
-import { createResolveTenantIdByMedusaSalesChannel } from "./modules/tenants/resolve-by-medusa-sales-channel.js";
 import { createTenantStatusService } from "./modules/tenants/status-service.js";
 
 loadPlatformApiEnvFiles();
@@ -105,10 +127,16 @@ const platformDb = createPlatformDb({
 });
 const findDomainByHostname = createDomainTenantLookup(platformDb.db);
 const billingService = createBillingService(platformDb.db);
+const recordMerchantDataExport = createDataExportAuditRecorder(platformDb.db);
+const productImportArtifactService = createProductImportArtifactService(platformDb.db);
 const deliverySettingsService = createDeliverySettingsService(platformDb.db);
 const storefrontInquiryService = createStorefrontInquiryService(platformDb.db);
 const customerCommerceService = createCustomerCommerceService(platformDb.db);
-const domainManagementService = createDomainManagementService(platformDb.db);
+const entitlementService = createEntitlementService(platformDb.db);
+const domainManagementService = createDomainManagementService(platformDb.db, {
+  evaluateEntitlement: entitlementService.evaluate,
+  resolveTxt: resolveDnsTxt,
+});
 const mediaStorage = createMediaStorageFromEnv();
 if (mediaStorage.provider === "unconfigured") {
   logger.warn("Media storage is not configured; upload routes will return 503.");
@@ -131,6 +159,16 @@ const jobsClient = redisUrl
 if (!jobsClient) {
   logger.warn("REDIS_URL is not set; notification delivery jobs will not be enqueued.");
 }
+const requestInsightsRefresh = jobsClient
+  ? createInsightsRefreshService({
+      enqueueJob: (input) => jobsClient.enqueueJob(input),
+    })
+  : undefined;
+const productImportExecutionService = jobsClient
+  ? createProductImportExecutionService(platformDb.db, {
+      enqueue: (input) => jobsClient.enqueueJob(input),
+    })
+  : null;
 
 const notificationService = createNotificationService(platformDb.db, {
   ...(jobsClient
@@ -151,22 +189,21 @@ const telegramOperatorService = createTelegramOperatorService(platformDb.db, tel
 const telegramCallbackSecret = resolveTelegramCallbackSecret();
 /** Set after `orderService` is created. */
 const telegramOrderBridge: {
-  mutateMerchantOrder: null | ((input: {
-    action: "mark-paid" | "fulfill" | "cancel";
-    orderId: string;
-    salesChannelId: string;
-    settlement?: {
-      method: "cash" | "telebirr" | "cbe_birr" | "bank_transfer" | "chapa" | "other";
-      bankCode?: string | null;
-      bankName?: string | null;
-      reference?: string | null;
-    } | null;
-    source?: "telegram" | undefined;
-  }) => ReturnType<ReturnType<typeof createMedusaOrderService>["mutateMerchantOrder"]>);
-  getMerchantOrder: null | ((input: {
-    orderId: string;
-    salesChannelId: string;
-  }) => ReturnType<ReturnType<typeof createMedusaOrderService>["getMerchantOrder"]>);
+  mutateMerchantOrder:
+    | null
+    | ((input: {
+        action: "mark-paid" | "fulfill" | "cancel";
+        orderId: string;
+        salesChannelId: string;
+        settlement?: import("./lib/settlement.js").OrderSettlementInput | null | undefined;
+        source?: "telegram" | undefined;
+      }) => ReturnType<ReturnType<typeof createMedusaOrderService>["mutateMerchantOrder"]>);
+  getMerchantOrder:
+    | null
+    | ((input: {
+        orderId: string;
+        salesChannelId: string;
+      }) => ReturnType<ReturnType<typeof createMedusaOrderService>["getMerchantOrder"]>);
 } = { mutateMerchantOrder: null, getMerchantOrder: null };
 
 /** Filled after commerce services are ready. */
@@ -268,7 +305,9 @@ const emailDeliveryConfigured = isEmailDeliveryConfigured(process.env);
 if (emailDeliveryConfigured) {
   logger.info({ from: process.env.EMAIL_FROM?.trim() }, "Email delivery configured (Resend).");
 } else {
-  logger.warn("RESEND_API_KEY/EMAIL_FROM not set; email delivery stays unavailable in the dashboard.");
+  logger.warn(
+    "RESEND_API_KEY/EMAIL_FROM not set; email delivery stays unavailable in the dashboard.",
+  );
 }
 
 const notificationChannelAvailability = {
@@ -281,8 +320,14 @@ const analyticsInsightsService = createAnalyticsInsightsService(
 );
 const dashboardMetricsService = createDashboardMetricsService(platformDb.db);
 const authorizeDashboardForTenant = createDashboardAuthorizationLookup(platformDb.db);
+const authorizePlatformPermission = createPlatformPermissionAuthorization(platformDb.db);
+const getPlatformPrincipalAccess = createPlatformPrincipalAccessLookup(platformDb.db);
+const superadminTenantProjectionService = createSuperadminTenantProjectionService(platformDb.db);
+const getSuperadminOverview = createSuperadminOverviewService(platformDb.db);
+const getSuperadminDiagnostics = createSuperadminDiagnosticsService(platformDb.db);
 const storefrontTemplateService = createStorefrontTemplateService(platformDb.db);
 const supportService = createSupportService(platformDb.db);
+const supportAccessService = createSupportAccessService(platformDb.db);
 const tenantOnboardingService = createTenantOnboardingService(platformDb.db);
 const getTenantCommerceContext = createTenantCommerceContextService(platformDb.db);
 const getTenantDashboardSummary = createTenantDashboardSummaryService(platformDb.db);
@@ -293,11 +338,36 @@ const paymentOnboardingService = createPaymentOnboardingService(platformDb.db, {
   paymentsCredentialsEncryptionKey:
     process.env.PAYMENTS_CREDENTIALS_ENCRYPTION_KEY ?? process.env.CHAPA_SECRET_KEY,
 });
+const getSuperadminOperationalSummary = createSuperadminOperationalSummaryService({
+  getBillingStatus: billingService.getBillingStatus,
+  getTenantReadiness: tenantStatusService.getTenantReadiness,
+  listPaymentOnboarding: paymentOnboardingService.listPaymentOnboarding,
+  listTenantDomains: domainManagementService.listTenantDomains,
+});
+const getSuperadminCommerceReview = createSuperadminCommerceReviewService({
+  getBillingStatus: billingService.getBillingStatus,
+  listPaymentOnboarding: paymentOnboardingService.listPaymentOnboarding,
+});
 const receivingAccountsService = createReceivingAccountsService(platformDb.db, {
-  encryptionKey:
-    process.env.PAYMENTS_CREDENTIALS_ENCRYPTION_KEY ?? process.env.CHAPA_SECRET_KEY,
+  encryptionKey: process.env.PAYMENTS_CREDENTIALS_ENCRYPTION_KEY ?? process.env.CHAPA_SECRET_KEY,
 });
 const medusaInternalUrl = process.env.MEDUSA_INTERNAL_URL ?? "http://localhost:9000";
+const storefrontInternalBaseUrl =
+  process.env.STOREFRONT_INTERNAL_BASE_URL ?? "http://localhost:4321";
+const getDependencyHealth = createDependencyHealthService({
+  checks: {
+    commerce_backend: createHttpHealthCheck(new URL("/health", medusaInternalUrl).toString()),
+    storefront_runtime: createHttpHealthCheck(new URL("/", storefrontInternalBaseUrl).toString(), {
+      acceptAnyResponse: true,
+    }),
+    job_queue: jobsClient ? () => jobsClient.ping() : null,
+    media_storage:
+      mediaStorage.provider === "unconfigured" ? null : () => mediaStorage.checkHealth(),
+  },
+});
+const superadminConsoleReadService = createSuperadminConsoleReadService(platformDb.db, {
+  getDependencies: getDependencyHealth,
+});
 const platformInternalApiToken =
   process.env.PLATFORM_INTERNAL_API_TOKEN ??
   (process.env.NODE_ENV === "production" ? undefined : "development-platform-internal-token");
@@ -318,8 +388,9 @@ if (!medusaAdminTokenResult.ok) {
     process.exit(1);
   }
 }
-const medusaAdminApiToken =
-  medusaAdminTokenResult.ok ? medusaAdminTokenResult.token : (process.env.MEDUSA_ADMIN_API_TOKEN ?? "");
+const medusaAdminApiToken = medusaAdminTokenResult.ok
+  ? medusaAdminTokenResult.token
+  : (process.env.MEDUSA_ADMIN_API_TOKEN ?? "");
 if (medusaAdminTokenResult.ok) {
   logger.info(
     { source: medusaAdminTokenResult.source, fingerprint: medusaAdminApiToken.slice(-4) },
@@ -367,6 +438,10 @@ const createTenantShop = createTenantShopProvisioningService({
   platformBaseDomain,
   provisionCommerceResources,
   recordAnalyticsEvent: analyticsService.recordAnalyticsEvent,
+});
+const recoverSuperadminWork = createSuperadminWorkRecoveryService({
+  createTenantShop,
+  db: platformDb.db,
 });
 const retryTenantShopProvisioningAttempt = createTenantShopProvisioningRetryServiceFromDb({
   createTenantShop,
@@ -562,8 +637,7 @@ const auth = createPlatformAuth({
   // Brand cookies as ecs.* unless overridden (see @ecs/config getAuthCookiePrefix).
   cookiePrefix: process.env.BETTER_AUTH_COOKIE_PREFIX,
   db: platformDb.db,
-  secret:
-    process.env.BETTER_AUTH_SECRET ?? "development-ecs-auth-secret-change-before-production",
+  secret: process.env.BETTER_AUTH_SECRET ?? "development-ecs-auth-secret-change-before-production",
   trustedOrigins: parseTrustedOrigins(process.env.BETTER_AUTH_TRUSTED_ORIGINS) ?? [
     "http://api.lvh.me",
     "http://dashboard.lvh.me",
@@ -577,6 +651,13 @@ const auth = createPlatformAuth({
 });
 
 const app = createPlatformApp({
+  createReviewedProductImportArtifact: productImportArtifactService.createReviewedArtifact,
+  ...(productImportExecutionService
+    ? {
+        getProductImportExecution: productImportExecutionService.getExecution,
+        requestProductImportApply: productImportExecutionService.requestApply,
+      }
+    : {}),
   getCustomerCommerceState: customerCommerceService.getState,
   updateCustomerCommerceState: customerCommerceService.updateState,
   createStorefrontInquiry: storefrontInquiryService.createInquiry,
@@ -588,7 +669,23 @@ const app = createPlatformApp({
   createMerchantPromotion: promotionService.createPromotion,
   authHandler: auth.handler,
   authorizeDashboardForTenant,
+  authorizePlatformPermission,
+  getPlatformPrincipalAccess,
+  getSuperadminOverview,
+  getSuperadminCommerceReview,
+  listSuperadminWork: superadminConsoleReadService.listWork,
+  listSuperadminAudit: superadminConsoleReadService.listAudit,
+  listPlatformOperators: superadminConsoleReadService.listOperators,
+  getPlatformHealth: superadminConsoleReadService.getHealth,
+  recoverSuperadminWork,
+  getSuperadminTenant: superadminTenantProjectionService.get,
+  getSuperadminOperationalSummary,
+  getSuperadminDiagnostics,
+  getEntitlementSummary: entitlementService.getSummary,
+  listSuperadminTenants: superadminTenantProjectionService.list,
   createOperatorSupportNote: supportService.createOperatorSupportNote,
+  createSupportAccessGrant: supportAccessService.create,
+  createEntitlementOverride: entitlementService.createOverride,
   createMerchantProduct: productService.createMerchantProduct,
   createMerchantProductCategory: productService.createMerchantProductCategory,
   createMerchantProductCollection: productService.createMerchantProductCollection,
@@ -662,17 +759,15 @@ const app = createPlatformApp({
             txRef: prior.txRef,
             providerReference:
               (typeof verification?.data?.ref_id === "string" && verification.data.ref_id) ||
-              (typeof verification?.data?.reference === "string" &&
-                verification.data.reference) ||
+              (typeof verification?.data?.reference === "string" && verification.data.reference) ||
               prior.txRef,
           });
           const statusResult = await billingService.getBillingStatus({
             tenantId: input.tenantId,
           });
-          const paidInvoice =
-            statusResult.ok
-              ? statusResult.billing.invoices.find((inv) => inv.id === input.invoiceId)
-              : null;
+          const paidInvoice = statusResult.ok
+            ? statusResult.billing.invoices.find((inv) => inv.id === input.invoiceId)
+            : null;
           return {
             ok: true as const,
             // No new checkout — payment already captured; client should refresh.
@@ -755,6 +850,7 @@ const app = createPlatformApp({
     }
   },
   getDashboardMetrics: dashboardMetricsService,
+  requestInsightsRefresh,
   getDeliverySettings: deliverySettingsService.getDeliverySettings,
   getMerchantChapaCredentials: paymentOnboardingService.getMerchantChapaCredentials,
   isMerchantChapaConfigured: paymentOnboardingService.isMerchantChapaConfigured,
@@ -764,9 +860,11 @@ const app = createPlatformApp({
   clearMerchantChapaSecret: paymentOnboardingService.clearMerchantChapaSecret,
   handleChapaPaymentCallback: chapaPaymentService.handleChapaPaymentCallback,
   getOperatorSupportHistory: supportService.getOperatorSupportHistory,
+  listSupportAccessGrants: supportAccessService.list,
   getOnboardingState,
   getPublishedStorefrontConfig: storefrontTemplateService.getPublishedStorefrontConfig,
   getStorefrontDraft: storefrontTemplateService.getStorefrontDraft,
+  getStorefrontSeoSettings: storefrontTemplateService.getStorefrontSeoSettings,
   getTenantCommerceContext,
   getTenantDashboardSummary,
   getTenantForUser,
@@ -781,6 +879,7 @@ const app = createPlatformApp({
   getMerchantProductVariantStock: productService.getMerchantProductVariantStock,
   getSession: (headers) => auth.api.getSession({ headers }),
   listMerchantOrders: orderService.listMerchantOrders,
+  recordMerchantDataExport,
   listMerchantCustomers: customerService.listCustomers,
   listMerchantPromotions: promotionService.listPromotions,
   listMerchantCustomerGroups: customerService.listGroups,
@@ -833,6 +932,9 @@ const app = createPlatformApp({
   telegramWebhookSecret: telegramWebhookSecret || undefined,
   reviewPaymentOnboarding: paymentOnboardingService.reviewPaymentOnboarding,
   retryTenantShopProvisioningAttempt,
+  revokeEntitlementOverride: entitlementService.revokeOverride,
+  revokeSupportAccessGrant: supportAccessService.revoke,
+  verifyTenantDomainOwnership: domainManagementService.verifyTenantDomainOwnership,
   selectStorefrontTemplate: storefrontTemplateService.selectStorefrontTemplate,
   setTenantPrimaryDomain: domainManagementService.setTenantPrimaryDomain,
   submitPaymentOnboarding: paymentOnboardingService.submitPaymentOnboarding,
@@ -870,10 +972,7 @@ const app = createPlatformApp({
     });
 
     if (!result.ok) {
-      logger.warn(
-        { tenantId: input.tenantId, error: result.error },
-        "delivery_fee_sync_failed",
-      );
+      logger.warn({ tenantId: input.tenantId, error: result.error }, "delivery_fee_sync_failed");
       return { ok: false as const, error: "commerce_backend_unavailable" as const };
     }
 
@@ -883,10 +982,7 @@ const app = createPlatformApp({
       deliveryShippingOptionId: commerce.context.medusaShippingOptionId,
     });
     if (!pickup.ok) {
-      logger.warn(
-        { tenantId: input.tenantId, error: pickup.error },
-        "pickup_option_ensure_failed",
-      );
+      logger.warn({ tenantId: input.tenantId, error: pickup.error }, "pickup_option_ensure_failed");
       return { ok: false as const, error: "pickup_option_sync_failed" as const };
     }
 
@@ -907,6 +1003,7 @@ const app = createPlatformApp({
   updateMediaMetadata: mediaService.updateMetadata,
   upsertNotificationPreference: notificationService.upsertNotificationPreference,
   updateStorefrontDraft: storefrontTemplateService.updateStorefrontDraft,
+  updateStorefrontSeoSettings: storefrontTemplateService.updateStorefrontSeoSettings,
   updateTenantStatus: tenantStatusService.updateTenantStatus,
   serviceName: env.SERVICE_NAME,
   medusaInternalUrl,

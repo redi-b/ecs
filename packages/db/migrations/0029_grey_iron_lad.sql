@@ -1,0 +1,1 @@
+ALTER TABLE "entitlement_overrides" ALTER COLUMN "expires_at" SET NOT NULL;

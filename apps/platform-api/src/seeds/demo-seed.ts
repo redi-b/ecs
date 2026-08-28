@@ -23,13 +23,14 @@
  *   Prefer MEDIA_S3_INTERNAL_ENDPOINT (e.g. http://seaweedfs:8333 in Docker)
  *   for S3 API; MEDIA_S3_PUBLIC_BASE_URL still builds browser-facing URLs.
  */
-import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { loadServiceEnv } from "@ecs/config";
 import {
   accounts,
   analyticsEvents,
+  auditLogs,
   createPlatformDb,
   dailyMetrics,
   deliverySettings,
@@ -43,6 +44,8 @@ import {
   notificationPreferences,
   operatorNotes,
   paymentOnboarding,
+  platformPermissionGrants,
+  platformPrincipals,
   storefrontConfigs,
   storefrontRevisions,
   subscriptions,
@@ -59,17 +62,20 @@ import { and, eq, inArray } from "drizzle-orm";
 import { resolveMedusaAdminToken } from "../adapters/medusa/admin-token.js";
 import { createMedusaCommerceProvisioningClient } from "../adapters/medusa/commerce-provisioning.js";
 import { getPlatformApiServiceDir, loadPlatformApiEnvFiles } from "../config/env.js";
-import { DEFAULT_PLAN_IDS, createBillingService } from "../modules/billing/service.js";
+import { PLATFORM_PERMISSIONS } from "../context/platform-authorization.js";
+import { createBillingService, DEFAULT_PLAN_IDS } from "../modules/billing/service.js";
 import { createTenantShopProvisioningService } from "../modules/tenants/shop-provisioning.js";
 import {
+  DEMO_OPERATIONS,
+  DEMO_OPERATIONS_PASSWORD,
   DEMO_OWNER_PASSWORD,
   DEMO_SEED_MARKER,
-  LEGACY_DEMO_EMAILS,
-  LEGACY_DEMO_HANDLES,
   type DemoProduct,
   type DemoShopDefinition,
   demoImageUrl,
   demoShops,
+  LEGACY_DEMO_EMAILS,
+  LEGACY_DEMO_HANDLES,
 } from "./demo-shops.js";
 
 loadPlatformApiEnvFiles();
@@ -108,6 +114,7 @@ const cleanOnly =
   process.argv.includes("--clean") ||
   process.argv.includes("--unseed") ||
   process.argv.includes("--reverse");
+const operationsOnly = process.argv.includes("--operations-only");
 
 type CommerceResources = {
   fulfillmentSetId: string;
@@ -163,6 +170,19 @@ async function main() {
     return;
   }
 
+  if (operationsOnly) {
+    const operations = await seedOperationsDemo();
+    console.log(JSON.stringify({ seeded: { operations } }, null, 2));
+    console.info(`
+Local operations demo ready.
+
+  Operations: http://localhost:3002
+  Operator:   ${DEMO_OPERATIONS.operator.email}
+  Password:   ${DEMO_OPERATIONS_PASSWORD}
+`);
+    return;
+  }
+
   await ensureMedusaAdminTokenForSeed();
   if (!medusaAdminApiToken) {
     const message =
@@ -203,6 +223,8 @@ async function main() {
     results.push(result);
   }
 
+  const operations = await seedOperationsDemo();
+
   console.log(
     JSON.stringify(
       {
@@ -210,6 +232,7 @@ async function main() {
           service: env.SERVICE_NAME,
           idempotent: true,
           password: DEMO_OWNER_PASSWORD,
+          operations,
           shops: results,
         },
       },
@@ -225,12 +248,122 @@ Demo shops ready (safe to re-run).
   Owner:        owner@addistech.local
   Password:     ${DEMO_OWNER_PASSWORD}
 
+  Operations:   http://localhost:3002
+  Operator:     ${DEMO_OPERATIONS.operator.email}
+  Password:     ${DEMO_OPERATIONS_PASSWORD}
+
   Fashion shop: http://bole-style.${platformBaseDomain}/admin
   Owner:        owner@bole-style.local
   Password:     ${DEMO_OWNER_PASSWORD}
 
 Reverse demo data: pnpm seed:demo:clean   (or pnpm seed:unseed)
 `);
+}
+
+async function seedOperationsDemo() {
+  const passwordHash = await hashPassword(DEMO_OPERATIONS_PASSWORD);
+
+  for (const identity of [DEMO_OPERATIONS.operator, DEMO_OPERATIONS.approver]) {
+    await platformDb.db
+      .insert(users)
+      .values({
+        id: identity.id,
+        email: identity.email,
+        emailVerified: true,
+        image: null,
+        name: identity.name,
+        phone: null,
+        status: "active",
+      })
+      .onConflictDoUpdate({
+        target: users.id,
+        set: {
+          email: identity.email,
+          emailVerified: true,
+          name: identity.name,
+          status: "active",
+          updatedAt: new Date(),
+        },
+      });
+  }
+
+  await platformDb.db
+    .insert(accounts)
+    .values({
+      id: `${DEMO_OPERATIONS.operator.id}:credential`,
+      accountId: DEMO_OPERATIONS.operator.id,
+      providerId: "credential",
+      userId: DEMO_OPERATIONS.operator.id,
+      password: passwordHash,
+    })
+    .onConflictDoUpdate({
+      target: accounts.id,
+      set: { password: passwordHash, updatedAt: new Date() },
+    });
+
+  await platformDb.db.transaction(async (transaction) => {
+    await transaction
+      .insert(platformPrincipals)
+      .values({
+        id: DEMO_OPERATIONS.principalId,
+        userId: DEMO_OPERATIONS.operator.id,
+        status: "active",
+      })
+      .onConflictDoUpdate({
+        target: platformPrincipals.userId,
+        set: { status: "active", updatedAt: new Date() },
+      });
+
+    const [principal] = await transaction
+      .select({ id: platformPrincipals.id })
+      .from(platformPrincipals)
+      .where(eq(platformPrincipals.userId, DEMO_OPERATIONS.operator.id))
+      .limit(1);
+    if (!principal) throw new Error("Demo operations principal upsert returned no row");
+
+    for (const permission of PLATFORM_PERMISSIONS) {
+      await transaction
+        .insert(platformPermissionGrants)
+        .values({
+          principalId: principal.id,
+          permission,
+          grantedByUserId: DEMO_OPERATIONS.approver.id,
+        })
+        .onConflictDoUpdate({
+          target: [platformPermissionGrants.principalId, platformPermissionGrants.permission],
+          set: {
+            grantedByUserId: DEMO_OPERATIONS.approver.id,
+            expiresAt: null,
+            revokedAt: null,
+          },
+        });
+    }
+
+    await transaction
+      .delete(auditLogs)
+      .where(
+        and(
+          eq(auditLogs.platformPrincipalId, principal.id),
+          eq(auditLogs.action, "platform.demo_permissions_seeded"),
+        ),
+      );
+    await transaction.insert(auditLogs).values({
+      actorUserId: DEMO_OPERATIONS.approver.id,
+      platformPrincipalId: principal.id,
+      action: "platform.demo_permissions_seeded",
+      targetType: "platform_principal",
+      targetId: principal.id,
+      metadata: {
+        demo_seed: DEMO_SEED_MARKER,
+        permissions: PLATFORM_PERMISSIONS,
+      },
+    });
+  });
+
+  return {
+    email: DEMO_OPERATIONS.operator.email,
+    permissions: PLATFORM_PERMISSIONS.length,
+  };
 }
 
 async function seedShop(
@@ -1564,16 +1697,16 @@ async function seedAnalyticsEvents(tenantId: string, handle: string) {
 
   const now = new Date();
   const types = [
-    "storefront.page_view",
+    "storefront.page_viewed",
     "storefront.product_viewed",
     "storefront.collection_viewed",
-    "storefront.cart_created",
+    "storefront.add_to_cart_clicked",
     "storefront.checkout_started",
   ] as const;
 
   // Spread events across ~40 days with denser recent activity.
   const events = Array.from({ length: 90 }, (_, index) => {
-    const eventType = types[index % types.length]!;
+    const eventType = types[index % types.length] ?? "storefront.page_viewed";
     const daysAgo = Math.min(39, Math.floor((index * 0.45) % 40));
     const occurredAt = addDays(now, -daysAgo);
     occurredAt.setUTCHours(9 + (index % 10), (index * 7) % 60, index % 60, 0);
@@ -1626,6 +1759,19 @@ async function cleanAllDemoData() {
     ...LEGACY_DEMO_EMAILS,
   ];
   const tenantIds = demoShops.map((shop) => shop.ids.tenant);
+
+  await platformDb.db
+    .delete(auditLogs)
+    .where(eq(auditLogs.platformPrincipalId, DEMO_OPERATIONS.principalId));
+  await platformDb.db
+    .delete(platformPrincipals)
+    .where(eq(platformPrincipals.userId, DEMO_OPERATIONS.operator.id));
+  await platformDb.db
+    .delete(accounts)
+    .where(inArray(accounts.userId, [DEMO_OPERATIONS.operator.id, DEMO_OPERATIONS.approver.id]));
+  await platformDb.db
+    .delete(users)
+    .where(inArray(users.id, [DEMO_OPERATIONS.operator.id, DEMO_OPERATIONS.approver.id]));
 
   const existingTenants = await platformDb.db
     .select({

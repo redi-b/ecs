@@ -1,7 +1,6 @@
 import type {
   BillingStatus,
   DashboardMetricsResult,
-  MerchantOrder,
   PlatformAppOptions,
   TenantInsightsSummaryResult,
 } from "../../app.js";
@@ -13,6 +12,7 @@ type MerchantDashboardBase = {
     email: string;
     name: string | null;
     role: "owner" | "manager" | "staff" | "operator";
+    supportAccess?: { grantId: string; expiresAt: string };
   };
   commerce: {
     hasPublishableKey: boolean;
@@ -166,15 +166,12 @@ export function createMerchantDashboardSummary(
       ? await options.getDashboardMetrics({ days: 90, tenantId: input.tenantId })
       : null;
     const metricData = metrics?.ok ? metrics.metrics : null;
-    const useMetricOperations = Boolean(metricData?.series?.length);
+    const useMetricOperations = Boolean(metricData && metricData.quality.status !== "missing");
 
     // With metrics: only need a handful of recent orders for the list strip.
     // Without metrics: sample more for charts (still less than the old 90).
     const orderLimit = useMetricOperations ? 8 : 45;
-    const needProductSample =
-      !useMetricOperations ||
-      metricData?.products == null ||
-      metricData?.attention.draftProducts == null;
+    const needProductSample = metricData?.products == null;
 
     const [orders, products] = await Promise.all([
       input.commerce && options.listMerchantOrders
@@ -206,16 +203,6 @@ export function createMerchantDashboardSummary(
     }
 
     const orderRows = orders?.ok ? orders.orders : [];
-    const productRows = products?.ok ? products.products : [];
-    const customerOrderCounts = new Map<string, number>();
-
-    for (const order of orderRows) {
-      if (order.email) {
-        customerOrderCounts.set(order.email, (customerOrderCounts.get(order.email) ?? 0) + 1);
-      }
-    }
-
-    const customers = new Set(customerOrderCounts.keys());
     const currencyCode = orderRows.find((order) => order.currencyCode)?.currencyCode ?? null;
     const metricTotals = metricData ? getMetricTotals(metricData) : null;
 
@@ -225,53 +212,34 @@ export function createMerchantDashboardSummary(
         days: 90,
         sampledOrderCount: useMetricOperations ? (metricTotals?.orders ?? 0) : orderRows.length,
       },
+      quality: metricData?.quality ?? {
+        lastSuccessfulAt: null,
+        rollupVersion: 1,
+        status: "missing" as const,
+        timezone: "Africa/Addis_Ababa",
+        watermark: null,
+      },
       totals: {
-        revenue: useMetricOperations
-          ? (metricTotals?.revenue ?? null)
-          : orderRows.reduce((total, order) => total + Math.max(order.total ?? 0, 0), 0),
+        revenue: useMetricOperations ? (metricTotals?.revenue ?? null) : null,
         orders: useMetricOperations
           ? (metricTotals?.orders ?? null)
           : orders?.ok
             ? orders.count
             : null,
         products: metricData?.products ?? (products?.ok ? products.count : null),
-        customers: useMetricOperations
-          ? (metricTotals?.customers ?? null)
-          : orders?.ok
-            ? customers.size
-            : null,
-        currencyCode: useMetricOperations
-          ? (metricData?.currencyCode ?? null)
-          : currencyCode,
+        customers: null,
+        currencyCode: useMetricOperations ? (metricData?.currencyCode ?? null) : currencyCode,
       },
       attention: {
         unfulfilledOrders: useMetricOperations
           ? (metricData?.attention.unfulfilledOrders ?? null)
-          : orders?.ok
-            ? orderRows.filter((order) => isOpenFulfillmentStatus(order.fulfillmentStatus)).length
-            : null,
-        unpaidOrders: useMetricOperations
-          ? (metricData?.attention.unpaidOrders ?? null)
-          : orders?.ok
-            ? orderRows.filter((order) => isOpenPaymentStatus(order.paymentStatus)).length
-            : null,
-        draftProducts:
-          metricData?.attention.draftProducts != null
-            ? metricData.attention.draftProducts
-            : products?.ok
-              ? productRows.filter((product) => product.status === "draft").length
-              : null,
+          : null,
+        unpaidOrders: useMetricOperations ? (metricData?.attention.unpaidOrders ?? null) : null,
+        draftProducts: metricData?.attention.draftProducts ?? null,
       },
       customers: {
-        unique: useMetricOperations
-          ? (metricTotals?.customers ?? null)
-          : orders?.ok
-            ? customers.size
-            : null,
-        // Repeat customers need per-email counts; only honest from an order sample.
-        repeat: orders?.ok
-          ? [...customerOrderCounts.values()].filter((orderCount) => orderCount > 1).length
-          : null,
+        unique: useMetricOperations ? (metricData?.customers.unique ?? null) : null,
+        repeat: useMetricOperations ? (metricData?.customers.repeat ?? null) : null,
       },
       breakdowns: {
         orderStatus: useMetricOperations
@@ -284,7 +252,7 @@ export function createMerchantDashboardSummary(
           ? (metricData?.breakdowns.fulfillmentStatus ?? [])
           : buildStatusBreakdown(orderRows.map((order) => order.fulfillmentStatus)),
       },
-      series: useMetricOperations ? (metricData?.series ?? []) : buildOrderSeries(orderRows),
+      series: useMetricOperations ? (metricData?.series ?? []) : [],
       recentOrders: orderRows.slice(0, 5).map((order) => ({
         id: order.id,
         displayId: order.displayId,
@@ -302,12 +270,10 @@ export function createMerchantDashboardSummary(
   function getMetricTotals(metrics: DashboardMetricsResult["metrics"]) {
     return metrics.series.reduce(
       (total, row) => ({
-        customers: Math.max(total.customers, row.customers),
         orders: total.orders + row.orders,
         revenue: total.revenue + row.revenue,
       }),
       {
-        customers: 0,
         orders: 0,
         revenue: 0,
       },
@@ -345,6 +311,21 @@ export function createMerchantDashboardSummary(
           medusaEvents: 0,
         },
         topEvents: [],
+        funnel: [],
+        storefront: {
+          addToCartVisits: 0,
+          checkoutVisits: 0,
+          contactVisits: 0,
+          pageViews: 0,
+          productViewVisits: 0,
+          searchVisits: 0,
+          visits: 0,
+        },
+        products: [],
+        coverage: {
+          lastEventAt: null,
+          status: "no_data" as const,
+        },
         unavailable: true,
       };
     }
@@ -358,6 +339,10 @@ export function createMerchantDashboardSummary(
       range: result.summary.range,
       totals: result.summary.totals,
       topEvents: result.summary.topEvents,
+      funnel: result.summary.funnel,
+      storefront: result.summary.storefront,
+      products: result.summary.products,
+      coverage: result.summary.coverage,
       unavailable: false,
     };
   }
@@ -392,6 +377,7 @@ export function createMerchantDashboardSummary(
 
   function serializeBilling(billing: BillingStatus) {
     return {
+      entitlements: billing.entitlements,
       subscription: billing.subscription,
       plan: billing.plan,
       invoices: billing.invoices,
@@ -399,56 +385,6 @@ export function createMerchantDashboardSummary(
       catalog: billing.catalog ?? [],
       unavailable: false,
     };
-  }
-
-  function buildOrderSeries(orders: MerchantOrder[]) {
-    const buckets = new Map<
-      string,
-      {
-        customers: Set<string>;
-        orders: number;
-        revenue: number;
-      }
-    >();
-
-    for (const order of orders) {
-      if (!order.createdAt) {
-        continue;
-      }
-
-      const date = order.createdAt.slice(0, 10);
-      const bucket = buckets.get(date) ?? {
-        customers: new Set<string>(),
-        orders: 0,
-        revenue: 0,
-      };
-
-      bucket.orders += 1;
-      bucket.revenue += Math.max(order.total ?? 0, 0);
-
-      if (order.email) {
-        bucket.customers.add(order.email);
-      }
-
-      buckets.set(date, bucket);
-    }
-
-    return [...buckets.entries()]
-      .sort(([left], [right]) => left.localeCompare(right))
-      .map(([date, bucket]) => ({
-        date,
-        revenue: bucket.revenue,
-        orders: bucket.orders,
-        customers: bucket.customers.size,
-      }));
-  }
-
-  function isOpenFulfillmentStatus(status: string | null) {
-    return status !== "fulfilled" && status !== "delivered" && status !== "shipped";
-  }
-
-  function isOpenPaymentStatus(status: string | null) {
-    return status !== "captured" && status !== "paid";
   }
 
   return { getMerchantDashboardAccessPayload, getMerchantDashboardPayload };

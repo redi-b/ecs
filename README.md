@@ -9,7 +9,8 @@ ECS is a pnpm and TypeScript monorepo.
 | Workspace | Responsibility |
 | --- | --- |
 | `apps/platform-api` | Tenant management, authentication boundaries, billing, analytics, notifications, operator tools, and the public Store API facade |
-| `apps/dashboard` | Merchant and platform-operator dashboard |
+| `apps/dashboard` | Merchant dashboard and public merchant-dashboard preview |
+| `apps/superadmin` | Restricted standalone platform-operations console |
 | `apps/storefront` | Multi-tenant Astro storefront and storefront editor preview |
 | `apps/medusa` | Products, carts, orders, customers, inventory, payments, fulfillment, stores, and sales channels |
 | `packages/contracts` | Shared validation schemas and API types |
@@ -18,6 +19,9 @@ ECS is a pnpm and TypeScript monorepo.
 | `packages/jobs` | Shared background-job infrastructure |
 | `packages/logger` | Shared structured logging |
 | `packages/storefront-templates` | Template contracts, defaults, editor manifests, theme generation, and migrations |
+
+Public extension guidance is available in [docs](./docs/README.md), beginning with the
+[storefront template guide](./docs/storefront-templates/adding-a-template.md).
 
 Platform state is stored in `platform_db`, while commerce state is stored in `medusa_db`. Browser clients do not access Medusa directly. Storefront commerce requests pass through the tenant-aware `/store/*` facade in `platform-api`.
 
@@ -69,6 +73,7 @@ Development uses `lvh.me`, which resolves to localhost:
 
 - Platform API: `http://api.lvh.me`
 - Dashboard: `http://dashboard.lvh.me`
+- Operations: `http://ops.lvh.me`
 - Demo storefront: `http://bole-style.lvh.me`
 - Demo merchant dashboard: `http://bole-style.lvh.me/admin`
 
@@ -78,6 +83,20 @@ The demo seed creates local-only accounts for development:
 | --- | --- | --- |
 | Addis Tech Hub | `owner@addistech.local` | `password1234` |
 | Bole Style | `owner@bole-style.local` | `password1234` |
+
+The standalone operations console uses a separate platform identity; merchant accounts never receive
+platform access:
+
+| Console | Email | Password |
+| --- | --- | --- |
+| ECS Operations | `operations@ecs.local` | `operations1234` |
+
+Run `pnpm seed:operations` to create or refresh only this account without requiring Medusa. The full
+`pnpm seed:demo` command includes it as well. Set `SEED_OPERATIONS_PASSWORD` before either command to
+override the local password. The
+seed records grants under a separate, non-login `access-approver@ecs.local` identity so the demo keeps
+the same authorization and audit boundary as a deployed environment without requiring a manual local
+bootstrap.
 
 Do not use demo credentials outside a local development environment.
 

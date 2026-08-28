@@ -1,7 +1,7 @@
 {
   "continue": "ቀጥል",
   "back": "ተመለስ",
-  "save": "ቀይር",
+  "save": "አስቀምጥ",
   "cancel": "ይቅር",
   "notSet": "አልተዘጋጀም",
   "preview": "ቅድመ እይታ",
@@ -31,7 +31,7 @@
     "pageAria": "ገጽ {page}",
     "pageOf": "ገጽ {current} ከ {total}"
   },
-  "saving": "እየተቀየረ ነው…",
+  "saving": "በማስቀመጥ ላይ…",
   "loadingProducts": "ምርቶች በመጫን ላይ…",
   "selectProducts": "ምርቶችን ይምረጡ…",
   "productSelected": "1 ምርት ተመርጧል",
@@ -46,6 +46,16 @@
   "updating": "እያደሰ ነው…",
   "tryAgain": "እንደገና ሞክር",
   "loading": "በመጫን ላይ",
+  "errors": {
+    "notFoundTitle": "ገጹ አልተገኘም",
+    "notFoundEyebrow": "ከመንገድ ውጭ",
+    "notFoundDescription": "ይህ ገጽ ተዛውሮ ሊሆን ይችላል ወይም ለዚህ ሱቅ ላይገኝ ይችላል።",
+    "notFoundAction": "ወደ ዳሽቦርድ ተመለስ",
+    "unavailableTitle": "ዳሽቦርዱ ለጊዜው አይገኝም",
+    "unavailableEyebrow": "ግንኙነቱ ተቋርጧል",
+    "unavailableDescription": "የሱቅዎ መረጃ አልተቀየረም። ይህን ገጽ እንደገና ይክፈቱ።",
+    "retrying": "እንደገና በመሞከር ላይ…"
+  },
   "listStatus": {
     "onThisPageOne": "በዚህ ገጽ 1",
     "onThisPage": "በዚህ ገጽ {count}",

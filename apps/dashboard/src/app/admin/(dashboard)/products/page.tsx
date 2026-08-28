@@ -4,9 +4,8 @@ import { ListSummary, PaginationControls } from "@/components/app/list-page-cont
 import { PageShell } from "@/components/app/page-shell";
 import { RefreshButton } from "@/components/app/refresh-button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import type { MessageKey } from "@/i18n/messages";
-import { getTranslations } from "@/i18n/server";
 import { ProductCreateDialog } from "@/features/products/product-create-dialog";
+import { ProductDataActions } from "@/features/products/product-data-actions";
 import {
   parseProductMediaFilter,
   parseProductStatusFilter,
@@ -14,6 +13,8 @@ import {
   parseProductVariantCountFilter,
 } from "@/features/products/product-table-state";
 import { ProductsTable } from "@/features/products/products-table";
+import type { MessageKey } from "@/i18n/messages";
+import { getTranslations } from "@/i18n/server";
 import {
   type DashboardSearchParams,
   getSelectedTenantId,
@@ -64,10 +65,7 @@ export default async function MerchantProductsPage({ searchParams }: MerchantPro
     Boolean(listParams.q) ||
     statusFilter !== "all" ||
     collectionFilter !== "all" ||
-    categoryFilter !== "all" ||
-    mediaFilter !== "all" ||
-    stockFilter !== "all" ||
-    variantCountFilter !== "all";
+    categoryFilter !== "all";
 
   return (
     <PageShell
@@ -92,6 +90,13 @@ export default async function MerchantProductsPage({ searchParams }: MerchantPro
       {result.ok ? (
         <>
           <ListSummary
+            actions={
+              !tenantId ? (
+                <ProductDataActions
+                  exportHref={getTenantScopedPath(dashboardRoutes.productsExportAction, tenantId)}
+                />
+              ) : null
+            }
             count={result.products.count}
             filtered={listFiltered}
             page={listParams.page}

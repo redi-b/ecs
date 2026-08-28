@@ -6,8 +6,13 @@ export async function copyTextToClipboard(value: string) {
   }
 
   if (navigator.clipboard?.writeText) {
-    await navigator.clipboard.writeText(text);
-    return true;
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch {
+      // Clipboard access can be unavailable on local HTTP hosts or denied by
+      // browser permissions. Continue with the selection-based fallback.
+    }
   }
 
   const textarea = document.createElement("textarea");

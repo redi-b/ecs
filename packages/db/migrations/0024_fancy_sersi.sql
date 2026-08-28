@@ -1,0 +1,1 @@
+ALTER TABLE "storefront_configs" ADD COLUMN "seo_settings" jsonb DEFAULT '{}'::jsonb NOT NULL;

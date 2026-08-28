@@ -1,6 +1,10 @@
 ---
+import type { StorefrontSeo } from "../../lib/seo";
 import type { ShellTheme } from "../../lib/theme";
 import { shellStyle } from "../../lib/theme";
+import SeoHead from "./SeoHead.astro";
+import StorefrontAnalytics from "./StorefrontAnalytics.astro";
+import StructuredData from "./StructuredData.astro";
 
 interface NavItem {
   label: string;
@@ -21,6 +25,8 @@ interface Props {
   logoUrl?: string | null;
   /** Path for aria-current on nav */
   currentPath?: string;
+  seo?: StorefrontSeo;
+  structuredData?: Record<string, unknown> | Record<string, unknown>[] | null;
 }
 
 const {
@@ -36,6 +42,8 @@ const {
   footerLinks = [],
   logoUrl,
   currentPath,
+  seo,
+  structuredData,
 } = Astro.props;
 
 const pageTitle = title ? `${title} · ${tenantName}` : tenantName;
@@ -57,7 +65,10 @@ const mainLinks = links.filter((item) => !item.href.startsWith("/cart"));
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content={theme.primary ?? primaryColor ?? "#0f4c3a"} />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <title>{pageTitle}</title>
+    <SeoHead seo={seo} />
+    <StructuredData value={structuredData} />
     <link rel="stylesheet" href="/styles/commerce.css" />
   </head>
   <body style={style}>
@@ -132,6 +143,7 @@ const mainLinks = links.filter((item) => !item.href.startsWith("/cart"));
           )
         }
       </footer>
+      <StorefrontAnalytics />
     </div>
   </body>
 </html>

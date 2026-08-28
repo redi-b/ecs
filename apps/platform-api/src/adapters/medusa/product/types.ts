@@ -5,6 +5,7 @@ export type ProductWriteInput = {
   description?: string | null | undefined;
   handle?: string | null | undefined;
   imageUrls?: string[] | undefined;
+  metadata?: Record<string, unknown> | undefined;
   options?: ProductOptionInput[] | undefined;
   priceAmount?: number | undefined;
   regionId?: string | null | undefined;
@@ -24,8 +25,11 @@ export type ProductOptionInput = {
 
 export type ProductVariantWriteInput = {
   currencyCode: string;
+  /** Existing Medusa variant identity. Required when an import updates a variant in place. */
+  id?: string | null | undefined;
   optionValues: Record<string, string>;
-  priceAmount: number;
+  priceAmount?: number | undefined;
+  prices?: Array<{ amount: number; currencyCode: string }> | undefined;
   sku?: string | null | undefined;
   stockedQuantity?: number | undefined;
 };

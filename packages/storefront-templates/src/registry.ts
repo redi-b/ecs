@@ -1,8 +1,5 @@
 import { luviaV1Defaults, luviaV1ThemeTokens } from "./templates/luvia/v1/defaults";
-import {
-  luviaV1DataSchema,
-  luviaV1ThemeTokensSchema,
-} from "./templates/luvia/v1/schema";
+import { luviaV1DataSchema, luviaV1ThemeTokensSchema } from "./templates/luvia/v1/schema";
 
 export const storefrontTemplates = [
   {

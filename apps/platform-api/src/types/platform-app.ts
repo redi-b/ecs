@@ -1,3 +1,8 @@
+import type { SuperadminTenant } from "@ecs/contracts";
+import type {
+  PlatformAuthorizationResult,
+  PlatformPermission,
+} from "../context/platform-authorization.js";
 import type { TenantResolutionResult } from "../context/tenant-resolver.js";
 import type {
   AnalyticsEventRecordInput,
@@ -70,9 +75,11 @@ import type {
   StorefrontDraftResult,
   StorefrontDraftUpdateResult,
   StorefrontPublishResult,
-  StorefrontUnpublishResult,
+  StorefrontSeoSettings,
+  StorefrontSeoSettingsResult,
   StorefrontTemplateCatalogItem,
   StorefrontTemplateSelectionResult,
+  StorefrontUnpublishResult,
 } from "./storefront.js";
 import type { SupportHistoryResult, SupportNoteCreateResult } from "./support.js";
 import type {
@@ -83,6 +90,7 @@ import type {
   TenantDomainCreateResult,
   TenantDomainListResult,
   TenantDomainPrimaryResult,
+  TenantDomainVerificationResult,
   TenantHandleAvailabilityResult,
   TenantListResult,
   TenantOnboardingResult,
@@ -94,6 +102,30 @@ import type {
 } from "./tenant.js";
 
 export type PlatformAppOptions = {
+  createReviewedProductImportArtifact?: ReturnType<
+    typeof import("../modules/data-transfer/product-import-artifact.js").createProductImportArtifactService
+  >["createReviewedArtifact"];
+  requestProductImportApply?: ReturnType<
+    typeof import("../modules/data-transfer/product-import-execution.js").createProductImportExecutionService
+  >["requestApply"];
+  getProductImportExecution?: ReturnType<
+    typeof import("../modules/data-transfer/product-import-execution.js").createProductImportExecutionService
+  >["getExecution"];
+  createEntitlementOverride?: ReturnType<
+    typeof import("../modules/entitlements/service.js").createEntitlementService
+  >["createOverride"];
+  revokeEntitlementOverride?: ReturnType<
+    typeof import("../modules/entitlements/service.js").createEntitlementService
+  >["revokeOverride"];
+  getEntitlementSummary?: ReturnType<
+    typeof import("../modules/entitlements/service.js").createEntitlementService
+  >["getSummary"];
+  getSuperadminOperationalSummary?: ReturnType<
+    typeof import("../modules/superadmin/operational-summary-service.js").createSuperadminOperationalSummaryService
+  >;
+  getSuperadminDiagnostics?: ReturnType<
+    typeof import("../modules/superadmin/diagnostics-service.js").createSuperadminDiagnosticsService
+  >;
   getCustomerCommerceState?: ReturnType<
     typeof import("../modules/storefront/customer-commerce-service.js").createCustomerCommerceService
   >["getState"];
@@ -101,7 +133,9 @@ export type PlatformAppOptions = {
     typeof import("../modules/storefront/customer-commerce-service.js").createCustomerCommerceService
   >["updateState"];
   createStorefrontInquiry?:
-    | ((input: import("../modules/storefront/inquiry-service.js").StorefrontInquiryInput) => Promise<{
+    | ((
+        input: import("../modules/storefront/inquiry-service.js").StorefrontInquiryInput,
+      ) => Promise<{
         ok: true;
         inquiry: { id: string; createdAt: string };
       }>)
@@ -145,6 +179,51 @@ export type PlatformAppOptions = {
   authorizeDashboardForTenant?:
     | ((input: { tenantId: string; userId: string }) => Promise<DashboardAuthorizationResult>)
     | undefined;
+  authorizePlatformPermission?:
+    | ((input: {
+        permission: PlatformPermission;
+        userId: string;
+      }) => Promise<PlatformAuthorizationResult>)
+    | undefined;
+  getPlatformPrincipalAccess?: ReturnType<
+    typeof import("../context/platform-authorization.js").createPlatformPrincipalAccessLookup
+  >;
+  getSuperadminOverview?: ReturnType<
+    typeof import("../modules/superadmin/overview-service.js").createSuperadminOverviewService
+  >;
+  getSuperadminCommerceReview?: ReturnType<
+    typeof import("../modules/superadmin/commerce-review-service.js").createSuperadminCommerceReviewService
+  >;
+  listSuperadminWork?: ReturnType<
+    typeof import("../modules/superadmin/console-read-service.js").createSuperadminConsoleReadService
+  >["listWork"];
+  listSuperadminAudit?: ReturnType<
+    typeof import("../modules/superadmin/console-read-service.js").createSuperadminConsoleReadService
+  >["listAudit"];
+  listPlatformOperators?: ReturnType<
+    typeof import("../modules/superadmin/console-read-service.js").createSuperadminConsoleReadService
+  >["listOperators"];
+  getPlatformHealth?: ReturnType<
+    typeof import("../modules/superadmin/console-read-service.js").createSuperadminConsoleReadService
+  >["getHealth"];
+  recoverSuperadminWork?: ReturnType<
+    typeof import("../modules/superadmin/work-recovery-service.js").createSuperadminWorkRecoveryService
+  >;
+  listSuperadminTenants?:
+    | ((input: { limit: number; offset: number; query?: string | undefined }) => Promise<{
+        tenants: SuperadminTenant[];
+        count: number;
+        limit: number;
+        offset: number;
+      }>)
+    | undefined;
+  getSuperadminTenant?:
+    | ((input: {
+        tenantId: string;
+      }) => Promise<
+        { ok: true; tenant: SuperadminTenant } | { ok: false; error: "tenant_not_found" }
+      >)
+    | undefined;
   authHandler?: ((request: Request) => Promise<Response>) | undefined;
   getSession?: ((headers: Headers) => Promise<PlatformSession | null>) | undefined;
   handleChapaPaymentCallback?:
@@ -166,6 +245,16 @@ export type PlatformAppOptions = {
     | undefined;
   getStorefrontDraft?:
     | ((input: { tenantId: string }) => Promise<StorefrontDraftResult>)
+    | undefined;
+  getStorefrontSeoSettings?:
+    | ((input: { tenantId: string }) => Promise<StorefrontSeoSettingsResult>)
+    | undefined;
+  updateStorefrontSeoSettings?:
+    | ((input: {
+        seo: StorefrontSeoSettings;
+        tenantId: string;
+        userId: string;
+      }) => Promise<StorefrontSeoSettingsResult>)
     | undefined;
   updateStorefrontDraft?:
     | ((input: {
@@ -209,6 +298,15 @@ export type PlatformAppOptions = {
     | undefined;
   getDashboardMetrics?:
     | ((input: { days: number; tenantId: string }) => Promise<DashboardMetricsResult>)
+    | undefined;
+  requestInsightsRefresh?:
+    | ((input: { tenantId: string }) => Promise<{
+        jobId: string;
+        queued: boolean;
+        requestedAt: string;
+        retryAt: string;
+        status: string;
+      }>)
     | undefined;
   getDeliverySettings?:
     | ((input: { tenantId: string }) => Promise<DeliverySettingsResult>)
@@ -310,16 +408,28 @@ export type PlatformAppOptions = {
     | ((input: {
         body: string;
         operatorUserId: string;
+        platformPrincipalId: string;
         tenantId: string;
         visibility?: string | null | undefined;
       }) => Promise<SupportNoteCreateResult>)
     | undefined;
+  listSupportAccessGrants?: ReturnType<
+    typeof import("../modules/support/access-service.js").createSupportAccessService
+  >["list"];
+  createSupportAccessGrant?: ReturnType<
+    typeof import("../modules/support/access-service.js").createSupportAccessService
+  >["create"];
+  revokeSupportAccessGrant?: ReturnType<
+    typeof import("../modules/support/access-service.js").createSupportAccessService
+  >["revoke"];
   updateBillingInvoiceStatus?:
     | ((input: {
         invoiceId: string;
         operatorUserId: string;
+        platformPrincipalId: string;
         provider?: string | null | undefined;
         providerReference?: string | null | undefined;
+        reason: string;
         status: string;
         tenantId: string;
       }) => Promise<BillingInvoiceUpdateResult>)
@@ -327,6 +437,7 @@ export type PlatformAppOptions = {
   updateTenantStatus?:
     | ((input: {
         operatorUserId: string;
+        platformPrincipalId: string;
         reason?: string | null | undefined;
         status: string;
         tenantId: string;
@@ -432,9 +543,7 @@ export type PlatformAppOptions = {
         offset: number;
         salesChannelId: string;
         tenantId: string;
-      }) => Promise<
-        import("./merchant-product.js").MerchantProductsResult
-      >)
+      }) => Promise<import("./merchant-product.js").MerchantProductsResult>)
     | undefined;
   updateMerchantCollectionProducts?:
     | ((input: {
@@ -459,10 +568,7 @@ export type PlatformAppOptions = {
       >)
     | undefined;
   reorderMerchantProductCategories?:
-    | ((input: {
-        items: Array<{ categoryId: string; rank: number }>;
-        tenantId: string;
-      }) => Promise<
+    | ((input: { items: Array<{ categoryId: string; rank: number }>; tenantId: string }) => Promise<
         | { ok: true }
         | {
             ok: false;
@@ -525,6 +631,13 @@ export type PlatformAppOptions = {
   listTenantDomains?:
     | ((input: { tenantId: string }) => Promise<TenantDomainListResult>)
     | undefined;
+  verifyTenantDomainOwnership?:
+    | ((input: {
+        domainId: string;
+        tenantId: string;
+        userId: string;
+      }) => Promise<TenantDomainVerificationResult>)
+    | undefined;
   listPaymentOnboarding?:
     | ((input: { tenantId: string }) => Promise<PaymentOnboardingListResult>)
     | undefined;
@@ -539,10 +652,11 @@ export type PlatformAppOptions = {
     | undefined;
   reviewPaymentOnboarding?:
     | ((input: {
-        notes?: string | null | undefined;
         operatorUserId: string;
+        platformPrincipalId: string;
         paymentOnboardingId: string;
         providerAccountRef?: string | null | undefined;
+        reason: string;
         status: string;
         tenantId: string;
       }) => Promise<PaymentOnboardingReviewResult>)
@@ -621,7 +735,18 @@ export type PlatformAppOptions = {
       }) => Promise<MerchantProductStockUpdateResult>)
     | undefined;
   listMerchantOrders?:
-    | ((input: import("./merchant-order.js").MerchantOrderListQuery) => Promise<MerchantOrdersResult>)
+    | ((
+        input: import("./merchant-order.js").MerchantOrderListQuery,
+      ) => Promise<MerchantOrdersResult>)
+    | undefined;
+  recordMerchantDataExport?:
+    | ((input: {
+        actorUserId: string;
+        exportType: "orders" | "customers";
+        rowCount: number;
+        schemaVersion: string;
+        tenantId: string;
+      }) => Promise<void>)
     | undefined;
   getMerchantOrder?:
     | ((input: { orderId: string; salesChannelId: string }) => Promise<MerchantOrderDetailResult>)
@@ -681,16 +806,19 @@ export type PlatformAppOptions = {
         stockLocationId?: string | undefined;
         paymentReference?: string | null | undefined;
         source?: "dashboard" | "chapa_webhook" | "chapa_recheck" | "telegram" | undefined;
-        settlement?: {
-          method: "cash" | "telebirr" | "cbe_birr" | "bank_transfer" | "chapa" | "other";
-          bankCode?: string | null | undefined;
-          bankName?: string | null | undefined;
-          accountLast4?: string | null | undefined;
-          accountLabel?: string | null | undefined;
-          receivingAccountId?: string | null | undefined;
-          reference?: string | null | undefined;
-          note?: string | null | undefined;
-        } | null | undefined;
+        settlement?:
+          | {
+              method: "cash" | "telebirr" | "cbe_birr" | "bank_transfer" | "chapa" | "other";
+              bankCode?: string | null | undefined;
+              bankName?: string | null | undefined;
+              accountLast4?: string | null | undefined;
+              accountLabel?: string | null | undefined;
+              receivingAccountId?: string | null | undefined;
+              reference?: string | null | undefined;
+              note?: string | null | undefined;
+            }
+          | null
+          | undefined;
       }) => Promise<MerchantOrderActionResult>)
     | undefined;
   updateMerchantOrderSettlement?:
@@ -785,9 +913,11 @@ export type PlatformAppOptions = {
       >)
     | undefined;
   deleteMerchantReceivingAccount?:
-    | ((input: { tenantId: string; accountId: string }) => Promise<
-        | { ok: true; id: string; deleted: boolean }
-        | { ok: false; error: string; status: 404 | 503 }
+    | ((input: {
+        tenantId: string;
+        accountId: string;
+      }) => Promise<
+        { ok: true; id: string; deleted: boolean } | { ok: false; error: string; status: 404 | 503 }
       >)
     | undefined;
   listMerchantPaymentBanks?:
@@ -814,7 +944,9 @@ export type PlatformAppOptions = {
         salesChannelId: string;
         source?: "chapa_webhook" | "chapa_recheck" | undefined;
         txRef: string;
-      }) => Promise<MerchantOrderActionResult | { ok: false; error: "order_not_found"; status: 404 }>)
+      }) => Promise<
+        MerchantOrderActionResult | { ok: false; error: "order_not_found"; status: 404 }
+      >)
     | undefined;
   /**
    * Which delivery channels are configured on this deployment.
@@ -846,10 +978,7 @@ export type PlatformAppOptions = {
       }>)
     | undefined;
   countInAppNotificationUnread?:
-    | ((input: {
-        tenantId: string;
-        actorUserId?: string | null;
-      }) => Promise<{ count: number }>)
+    | ((input: { tenantId: string; actorUserId?: string | null }) => Promise<{ count: number }>)
     | undefined;
   markInAppNotificationRead?:
     | ((input: {
@@ -876,11 +1005,7 @@ export type PlatformAppOptions = {
     | ((salesChannelId: string) => Promise<string | null>)
     | undefined;
   sendTestNotification?:
-    | ((input: {
-        channel: string;
-        tenantId: string;
-        destinationId?: string;
-      }) => Promise<
+    | ((input: { channel: string; tenantId: string; destinationId?: string }) => Promise<
         | { ok: true; logId: string; jobEnqueued: boolean }
         | {
             ok: false;
@@ -942,11 +1067,7 @@ export type PlatformAppOptions = {
       }) => Promise<{ ok: true } | { ok: false; error: string; status: number }>)
     | undefined;
   setTelegramDestinationEnabled?:
-    | ((input: {
-        tenantId: string;
-        destinationId: string;
-        enabled: boolean;
-      }) => Promise<
+    | ((input: { tenantId: string; destinationId: string; enabled: boolean }) => Promise<
         | {
             ok: true;
             destination: {
@@ -965,10 +1086,7 @@ export type PlatformAppOptions = {
     | ((input: {
         tenantId: string;
         events: string[];
-      }) => Promise<
-        | { ok: true; events: string[] }
-        | { ok: false; error: string; status: number }
-      >)
+      }) => Promise<{ ok: true; events: string[] } | { ok: false; error: string; status: number }>)
     | undefined;
   listTelegramOperatorBindings?:
     | ((input: { tenantId: string }) => Promise<{
@@ -1023,11 +1141,7 @@ export type PlatformAppOptions = {
       }) => Promise<{ ok: true } | { ok: false; error: string; status: number }>)
     | undefined;
   setTelegramOperatorBindingEnabled?:
-    | ((input: {
-        tenantId: string;
-        bindingId: string;
-        enabled: boolean;
-      }) => Promise<
+    | ((input: { tenantId: string; bindingId: string; enabled: boolean }) => Promise<
         | {
             ok: true;
             binding: {
@@ -1043,10 +1157,7 @@ export type PlatformAppOptions = {
       >)
     | undefined;
   isTelegramOperatorChatForActions?:
-    | ((input: {
-        tenantId: string;
-        chatId: string;
-      }) => Promise<{ ok: true; allowed: boolean }>)
+    | ((input: { tenantId: string; chatId: string }) => Promise<{ ok: true; allowed: boolean }>)
     | undefined;
   handleTelegramWebhook?: ((update: unknown) => Promise<unknown>) | undefined;
   telegramWebhookSecret?: string | undefined;
@@ -1062,10 +1173,10 @@ export type PlatformAppOptions = {
     | undefined;
   selectStorefrontTemplate?:
     | ((input: {
-      tenantId: string;
-      templateKey: string;
-      mode?: "clean" | "resume";
-      userId: string;
+        tenantId: string;
+        templateKey: string;
+        mode?: "clean" | "resume";
+        userId: string;
       }) => Promise<StorefrontTemplateSelectionResult>)
     | undefined;
   updateMerchantProduct?:

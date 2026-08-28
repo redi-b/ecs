@@ -9,6 +9,9 @@ export type TenantDomainRecord = {
   hostname: string;
   domainStatus: DomainStatus | string;
   verificationStatus: DomainVerificationStatus | string;
+  primaryHostname?: string | null;
+  primaryDomainStatus?: DomainStatus | string | null;
+  primaryDomainVerificationStatus?: DomainVerificationStatus | string | null;
   tenantId: string;
   tenantName: string;
   tenantHandle: string;
@@ -31,6 +34,7 @@ export type TenantContext = {
   tenantName: string;
   tenantHandle: string;
   hostname: string;
+  primaryHostname: string;
   domainId: string;
   status: TenantStatus;
   medusaStoreId: string | null;
@@ -113,6 +117,12 @@ export async function resolveTenantFromHost(
       tenantName: record.tenantName,
       tenantHandle: record.tenantHandle,
       hostname,
+      primaryHostname:
+        record.primaryHostname &&
+        record.primaryDomainStatus === "active" &&
+        record.primaryDomainVerificationStatus === "verified"
+          ? normalizeHostname(record.primaryHostname)
+          : hostname,
       domainId: record.domainId,
       status: record.tenantStatus,
       medusaStoreId: record.medusaStoreId,

@@ -1,12 +1,13 @@
 ---
 import { customerFacingStoreError } from "../../lib/commerce/errors";
+import StorefrontFailure from "./StorefrontFailure.astro";
 
 interface Props {
   message: string;
   title?: string;
 }
 
-const { message } = Astro.props;
+const { message, title = "This shop is temporarily unavailable" } = Astro.props;
 const friendly = customerFacingStoreError(message);
 ---
 
@@ -15,13 +16,14 @@ const friendly = customerFacingStoreError(message);
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Shop unavailable</title>
-    <link rel="stylesheet" href="/styles/commerce.css" />
   </head>
   <body>
-    <main class="sf-main">
-      <div class="sf-notice">
-        <h1 class="sf-title" style="font-size:clamp(1.5rem,4vw,2rem);margin:0">{friendly}</h1>
-      </div>
-    </main>
+    <StorefrontFailure
+      actionHref="/"
+      actionLabel="Try again"
+      description={friendly}
+      eyebrow="Shop paused"
+      title={title}
+    />
   </body>
 </html>

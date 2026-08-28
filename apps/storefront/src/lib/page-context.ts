@@ -1,10 +1,10 @@
 import type { PublishedStorefrontConfig } from "@ecs/contracts";
-
-import { getCartIdFromRequest } from "./session/cart-cookie.js";
-import { getCustomerTokenFromRequest } from "./session/customer-cookie.js";
 import { getStoreCart } from "./commerce/cart.js";
 import type { StoreCart, StorefrontError } from "./commerce/types.js";
 import { getPlatformApiBaseUrl, getRequestHost } from "./env.js";
+import { getStorefrontPublicOrigin } from "./seo-origin.js";
+import { getCartIdFromRequest } from "./session/cart-cookie.js";
+import { getCustomerTokenFromRequest } from "./session/customer-cookie.js";
 import { getPublishedStorefrontConfig } from "./storefront-config.js";
 
 export type PageContext =
@@ -13,6 +13,7 @@ export type PageContext =
       config: PublishedStorefrontConfig;
       platformApiBaseUrl: string;
       requestHost: string | null;
+      publicOrigin: string;
       cartId: string | null;
       cart: StoreCart | null;
       cartCount: number;
@@ -54,6 +55,7 @@ export async function loadPageContext(
       config: configResult.config,
       platformApiBaseUrl,
       requestHost,
+      publicOrigin: getStorefrontPublicOrigin(configResult.config),
       cartId: null,
       cart: null,
       cartCount: 0,
@@ -69,9 +71,7 @@ export async function loadPageContext(
       cartId,
       platformApiBaseUrl,
       requestHost,
-      ...(customerToken
-        ? { headers: { authorization: `Bearer ${customerToken}` } }
-        : {}),
+      ...(customerToken ? { headers: { authorization: `Bearer ${customerToken}` } } : {}),
     });
     if (!isError(cartResult) && cartResult.cart.id) {
       cart = cartResult.cart;
@@ -85,6 +85,7 @@ export async function loadPageContext(
     config: configResult.config,
     platformApiBaseUrl,
     requestHost,
+    publicOrigin: getStorefrontPublicOrigin(configResult.config),
     cartId: cart?.id ?? null,
     cart,
     cartCount,

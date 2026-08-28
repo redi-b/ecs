@@ -1,6 +1,11 @@
 import type { Hono } from "hono";
+import type { ContentfulStatusCode } from "hono/utils/http-status";
 
 import type { PlatformAppOptions, PlatformAppVariables } from "../../../app.js";
+import {
+  exportProductsToCsv,
+  productExportFilename,
+} from "../../../modules/data-transfer/product-export.js";
 import {
   getOptionalBodyProductOptions,
   getOptionalBodyProductVariants,
@@ -64,6 +69,40 @@ export function registerPlatformTenantProductsRoutes(
       count: products.count,
       limit: products.limit,
       offset: products.offset,
+    });
+  });
+
+  app.get("/platform/tenants/:tenantId/products/export.csv", async (context) => {
+    if (!options.getTenantCommerceContext || !options.listMerchantProducts) {
+      return context.json({ error: "commerce_backend_unavailable" }, 503);
+    }
+
+    const session = await options.getSession?.(context.req.raw.headers);
+    if (!session) return context.json({ error: "auth_required" }, 401);
+
+    const commerce = await options.getTenantCommerceContext({
+      tenantId: context.req.param("tenantId"),
+      userId: session.user.id,
+    });
+    if (!commerce.ok) return context.json({ error: commerce.error }, commerce.status);
+
+    const result = await exportProductsToCsv({
+      listProducts: options.listMerchantProducts,
+      salesChannelId: commerce.context.medusaSalesChannelId,
+      stockLocationId: commerce.context.medusaStockLocationId,
+    });
+    if (!result.ok) {
+      return context.json({ error: result.error }, result.status as ContentfulStatusCode);
+    }
+
+    return new Response(result.csv, {
+      headers: {
+        "cache-control": "no-store",
+        "content-disposition": `attachment; filename="${productExportFilename()}"`,
+        "content-type": "text/csv; charset=utf-8",
+        "x-ecs-export-products": String(result.productCount),
+        "x-ecs-export-rows": String(result.rowCount),
+      },
     });
   });
 

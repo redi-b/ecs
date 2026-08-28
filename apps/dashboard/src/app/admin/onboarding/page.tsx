@@ -8,6 +8,7 @@ import { getTranslations } from "@/i18n/server";
 import { isCentralDashboardHost } from "@/lib/dashboard-hosts";
 import { mapPlatformErrorMessage } from "@/lib/platform-api/errors";
 import { getPlatformOnboardingState } from "@/lib/platform-onboarding";
+import { isPlatformOperatorSession } from "@/lib/platform-operator-session";
 import { getStorefrontTemplates } from "@/lib/storefront-templates";
 
 type OnboardingPageProps = {
@@ -38,6 +39,15 @@ export default async function OnboardingPage({ searchParams }: OnboardingPagePro
 
   if (!cookieHeader) {
     redirect("/admin/sign-in?next=%2Fadmin%2Fonboarding");
+  }
+
+  if (
+    await isPlatformOperatorSession({
+      cookieHeader,
+      platformApiBaseUrl,
+    })
+  ) {
+    redirect(process.env.SUPERADMIN_PUBLIC_BASE_URL ?? "http://ops.lvh.me");
   }
 
   const [templatesResult, onboardingResult] = await Promise.all([

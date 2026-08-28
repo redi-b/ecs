@@ -6,6 +6,7 @@ import { isStoreError } from "../../lib/commerce/result";
 import type { StoreCategory, StoreCollection, StoreProduct } from "../../lib/commerce/types";
 import { applyCatalogCache, CATALOG_CACHE_TTL } from "../../lib/http-cache";
 import { loadPageContext } from "../../lib/page-context";
+import { buildStorefrontSeo } from "../../lib/seo";
 import { getPrimaryColor, themeFromTokens } from "../../lib/theme";
 import { resolveRendererSlot } from "../../templates/registry";
 
@@ -54,9 +55,7 @@ const categoriesResult = ctx.ok
 const products: StoreProduct[] =
   productsResult && !isStoreError(productsResult) ? productsResult.products : [];
 const count =
-  productsResult && !isStoreError(productsResult)
-    ? (productsResult.count ?? products.length)
-    : 0;
+  productsResult && !isStoreError(productsResult) ? (productsResult.count ?? products.length) : 0;
 const errorMessage = productsResult && isStoreError(productsResult) ? productsResult.message : null;
 const collections: StoreCollection[] =
   collectionsResult && !isStoreError(collectionsResult) ? collectionsResult.collections : [];
@@ -121,6 +120,15 @@ if (ctx.ok && ProductList && !errorMessage) {
       totalCount={count}
       offset={offset}
       limit={limit}
+      seo={buildStorefrontSeo({
+        noindex: Boolean(q || collectionId || categoryId || order || offset),
+        path: "/products",
+        publicOrigin: ctx.publicOrigin,
+        tenantName: ctx.config.storefront.seo.title ?? ctx.config.tenant.name,
+        description: ctx.config.storefront.seo.description,
+        imageUrl: ctx.config.storefront.seo.socialImageUrl,
+        title: "Products",
+      })}
     />
   )
 }

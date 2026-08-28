@@ -62,7 +62,7 @@ import {
   getProductUrl,
   normalizeBaseUrl,
 } from "./urls.js";
-import { getNumber, getString, isMissingCommerceResourceResponse } from "./values.js";
+import { getNumber, getString, isMissingCommerceResourceResponse, isRecord } from "./values.js";
 import {
   getDeleteError,
   getProductWriteBody,
@@ -73,6 +73,9 @@ import {
   parseProductCollectionWriteResponse,
   parseProductWriteResponse,
 } from "./write.js";
+
+const PRODUCT_POST_FILTER_PAGE_SIZE = 100;
+export const MAX_PRODUCT_POST_FILTER_SCAN = 10_000;
 
 export function createMedusaProductService(options: {
   adminApiToken?: string | undefined;
@@ -328,9 +331,7 @@ export function createMedusaProductService(options: {
         return { ok: false, error: "commerce_backend_unavailable", status: 503 };
       }
       const data = await response.json().catch(() => undefined);
-      const products = Array.isArray(data?.products)
-        ? data.products.flatMap(normalizeProduct)
-        : [];
+      const products = Array.isArray(data?.products) ? data.products.flatMap(normalizeProduct) : [];
       return {
         ok: true,
         count: getNumber(data?.count) ?? products.length,
@@ -430,83 +431,93 @@ export function createMedusaProductService(options: {
         return missingCredentials();
       }
 
-      // Medusa cannot express “none” (no collection/category) as a positive filter.
-      // Fetch a larger window and post-filter when needed.
+      // Medusa cannot express “none” (no collection/category) or our normalized
+      // “unknown” status as a positive filter. Scan bounded pages so the count
+      // and requested slice describe the whole filtered catalog, not page one.
       const needsNoneFilter =
         input.collectionId === "none" || input.categoryId === "none" || input.status === "unknown";
+      const normalizedProducts = [] as ReturnType<typeof normalizeProduct>;
+      let sourceCount: number | null = null;
+      let scanOffset = needsNoneFilter ? 0 : input.offset;
+      let hasMorePages = true;
 
-      let response: Response;
+      while (hasMorePages) {
+        let response: Response;
+        try {
+          response = await fetcher(
+            getProductsUrl(options.medusaInternalUrl, {
+              limit: needsNoneFilter ? PRODUCT_POST_FILTER_PAGE_SIZE : input.limit,
+              offset: scanOffset,
+              salesChannelId: input.salesChannelId,
+              ...(input.q ? { q: input.q } : {}),
+              ...(input.status && input.status !== "unknown" ? { status: input.status } : {}),
+              ...(input.collectionId && input.collectionId !== "none"
+                ? { collectionId: input.collectionId }
+                : {}),
+              ...(input.categoryId && input.categoryId !== "none"
+                ? { categoryId: input.categoryId }
+                : {}),
+            }),
+            { headers: getAdminHeaders(options.adminApiToken) },
+          );
+        } catch {
+          return { ok: false, error: "commerce_backend_unavailable", status: 503 };
+        }
 
-      try {
-        response = await fetcher(
-          getProductsUrl(options.medusaInternalUrl, {
-            limit: needsNoneFilter ? Math.min(100, Math.max(input.limit, 50)) : input.limit,
-            offset: needsNoneFilter ? 0 : input.offset,
-            salesChannelId: input.salesChannelId,
-            ...(input.q ? { q: input.q } : {}),
-            ...(input.status && input.status !== "unknown" ? { status: input.status } : {}),
-            ...(input.collectionId && input.collectionId !== "none"
-              ? { collectionId: input.collectionId }
-              : {}),
-            ...(input.categoryId && input.categoryId !== "none"
-              ? { categoryId: input.categoryId }
-              : {}),
-          }),
-          {
-            headers: getAdminHeaders(options.adminApiToken),
-          },
-        );
-      } catch {
-        return {
-          ok: false,
-          error: "commerce_backend_unavailable",
-          status: 503,
-        };
+        if (response.status === 401) {
+          return { ok: false, error: "commerce_credentials_invalid", status: 401 };
+        }
+        if (response.status === 404 && (await isMissingCommerceResourceResponse(response))) {
+          return { ok: false, error: "commerce_resource_missing", status: 503 };
+        }
+        if (!response.ok) {
+          return { ok: false, error: "commerce_backend_unavailable", status: 503 };
+        }
+
+        const data = await response.json().catch(() => undefined);
+        const rawProducts = Array.isArray(data?.products) ? data.products : [];
+        normalizedProducts.push(...rawProducts.flatMap(normalizeProduct));
+        sourceCount ??= getNumber(data?.count) ?? null;
+
+        if (!needsNoneFilter) {
+          sourceCount ??= normalizedProducts.length;
+          hasMorePages = false;
+          continue;
+        }
+        if (sourceCount !== null && sourceCount > MAX_PRODUCT_POST_FILTER_SCAN) {
+          return { ok: false, error: "product_filter_too_large", status: 413 };
+        }
+        if (rawProducts.length === 0) {
+          hasMorePages = false;
+          continue;
+        }
+
+        scanOffset += rawProducts.length;
+        if (scanOffset > MAX_PRODUCT_POST_FILTER_SCAN) {
+          return { ok: false, error: "product_filter_too_large", status: 413 };
+        }
+        if (
+          (sourceCount !== null && scanOffset >= sourceCount) ||
+          (sourceCount === null && rawProducts.length < PRODUCT_POST_FILTER_PAGE_SIZE)
+        ) {
+          hasMorePages = false;
+        }
       }
 
-      if (response.status === 401) {
-        return {
-          ok: false,
-          error: "commerce_credentials_invalid",
-          status: 401,
-        };
-      }
-
-      if (response.status === 404 && (await isMissingCommerceResourceResponse(response))) {
-        return {
-          ok: false,
-          error: "commerce_resource_missing",
-          status: 503,
-        };
-      }
-
-      if (!response.ok) {
-        return {
-          ok: false,
-          error: "commerce_backend_unavailable",
-          status: 503,
-        };
-      }
-
-      const data = await response.json().catch(() => undefined);
-
-      let normalizedProducts = Array.isArray(data?.products)
-        ? data.products.flatMap(normalizeProduct)
-        : [];
+      let filteredProducts = normalizedProducts;
 
       if (input.collectionId === "none") {
-        normalizedProducts = normalizedProducts.filter(
+        filteredProducts = filteredProducts.filter(
           (product: (typeof normalizedProducts)[number]) => !product.collectionId,
         );
       }
       if (input.categoryId === "none") {
-        normalizedProducts = normalizedProducts.filter(
-          (product: (typeof normalizedProducts)[number]) =>
-            !(product.categoryIds ?? []).length,
+        filteredProducts = filteredProducts.filter(
+          (product: (typeof normalizedProducts)[number]) => !(product.categoryIds ?? []).length,
         );
       }
       if (input.status === "unknown") {
-        normalizedProducts = normalizedProducts.filter(
+        filteredProducts = filteredProducts.filter(
           (product: (typeof normalizedProducts)[number]) => {
             const status = product.status?.trim().toLowerCase();
             return status !== "published" && status !== "draft";
@@ -517,19 +528,17 @@ export function createMedusaProductService(options: {
       const products = input.stockLocationId?.trim()
         ? await hydrateProductsWithStock(fetcher, options, {
             products: needsNoneFilter
-              ? normalizedProducts.slice(input.offset, input.offset + input.limit)
-              : normalizedProducts,
+              ? filteredProducts.slice(input.offset, input.offset + input.limit)
+              : filteredProducts,
             stockLocationId: input.stockLocationId,
           })
         : needsNoneFilter
-          ? normalizedProducts.slice(input.offset, input.offset + input.limit)
-          : normalizedProducts;
+          ? filteredProducts.slice(input.offset, input.offset + input.limit)
+          : filteredProducts;
 
       return {
         ok: true,
-        count: needsNoneFilter
-          ? normalizedProducts.length
-          : (getNumber(data?.count) ?? products.length),
+        count: needsNoneFilter ? filteredProducts.length : (sourceCount ?? products.length),
         limit: input.limit,
         offset: input.offset,
         products,
@@ -685,6 +694,84 @@ export function createMedusaProductService(options: {
         count: collections.length,
         limit: getNumber(data?.limit) ?? input.limit,
         offset: getNumber(data?.offset) ?? input.offset,
+      };
+    },
+
+    findImportedProduct: async (input: {
+      executionId: string;
+      handle: string;
+      productKey: string;
+      salesChannelId: string;
+    }): Promise<
+      | {
+          ok: true;
+          product: { id: string; variantIdsBySku: Record<string, string> } | null;
+        }
+      | {
+          ok: false;
+          error:
+            | "commerce_backend_unavailable"
+            | "commerce_credentials_invalid"
+            | "commerce_credentials_missing"
+            | "product_conflict";
+          status: 401 | 409 | 503;
+        }
+    > => {
+      if (!options.adminApiToken?.trim()) return missingCredentials();
+      const url = getProductsUrl(options.medusaInternalUrl, {
+        limit: 20,
+        offset: 0,
+        q: input.handle,
+        salesChannelId: input.salesChannelId,
+      });
+      url.searchParams.set("fields", "id,handle,metadata,variants.id,variants.sku");
+      const response = await requestMedusa(fetcher, url, {
+        headers: getAdminHeaders(options.adminApiToken),
+      });
+      if (!response.ok) {
+        return mapMedusaHttpFailure(response, {
+          invalidError: "commerce_backend_unavailable",
+        }) as {
+          ok: false;
+          error:
+            | "commerce_backend_unavailable"
+            | "commerce_credentials_invalid"
+            | "commerce_credentials_missing";
+          status: 401 | 503;
+        };
+      }
+      const data = await response.json().catch(() => undefined);
+      const products: Record<string, unknown>[] = Array.isArray(data?.products)
+        ? (data.products as unknown[]).filter(isRecord)
+        : [];
+      const product = products.find(
+        (candidate) => getString(candidate.handle)?.toLowerCase() === input.handle.toLowerCase(),
+      );
+      if (!product) return { ok: true, product: null };
+      const metadata = isRecord(product.metadata) ? product.metadata : {};
+      if (
+        getString(metadata.ecs_import_execution_id) !== input.executionId ||
+        getString(metadata.ecs_import_product_key) !== input.productKey
+      ) {
+        return { ok: false, error: "product_conflict", status: 409 };
+      }
+      const id = getString(product.id);
+      if (!id) return { ok: false, error: "commerce_backend_unavailable", status: 503 };
+      const variants: Record<string, unknown>[] = Array.isArray(product.variants)
+        ? (product.variants as unknown[]).filter(isRecord)
+        : [];
+      return {
+        ok: true,
+        product: {
+          id,
+          variantIdsBySku: Object.fromEntries(
+            variants.flatMap((variant) => {
+              const sku = getString(variant.sku);
+              const variantId = getString(variant.id);
+              return sku && variantId ? [[sku.toLowerCase(), variantId] as const] : [];
+            }),
+          ),
+        },
       };
     },
 

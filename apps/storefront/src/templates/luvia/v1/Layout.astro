@@ -1,12 +1,16 @@
 ---
 import { contrastingInk, type LuviaV1Data } from "@ecs/storefront-templates";
+import SeoHead from "../../../components/shell/SeoHead.astro";
+import StorefrontAnalytics from "../../../components/shell/StorefrontAnalytics.astro";
+import StructuredData from "../../../components/shell/StructuredData.astro";
+import type { StorefrontSeo } from "../../../lib/seo";
 import ActionButton from "./ActionButton.astro";
 import logo from "./assets/luvia-logo.svg";
 import cartIcon from "./icons/cart-icon.svg";
+import chatIcon from "./icons/chat-icon.svg";
 import searchIcon from "./icons/search-icon.svg";
 import userIcon from "./icons/user-icon.svg";
 import wishlistIcon from "./icons/wishlist-icon.svg";
-import chatIcon from "./icons/chat-icon.svg";
 import { parseLuviaThemeTokens } from "./lib";
 
 interface Props {
@@ -15,12 +19,27 @@ interface Props {
   footer: LuviaV1Data["footer"];
   cartCount?: number;
   deferCartCount?: boolean;
+  demoMode?: boolean;
   title?: string;
   editorMode?: boolean;
   themeTokens?: unknown;
+  seo?: StorefrontSeo;
+  structuredData?: Record<string, unknown> | Record<string, unknown>[] | null;
 }
 
-const { tenantName, header, footer, cartCount = 0, deferCartCount = false, title, editorMode = false, themeTokens } = Astro.props;
+const {
+  tenantName,
+  header,
+  footer,
+  cartCount = 0,
+  deferCartCount = false,
+  demoMode = false,
+  title,
+  editorMode = false,
+  themeTokens,
+  seo,
+  structuredData,
+} = Astro.props;
 const logoUrl = header.logoAssetId ?? logo.src;
 const theme = parseLuviaThemeTokens(themeTokens);
 const themeStyle = [
@@ -33,7 +52,8 @@ const themeStyle = [
   "--lv-line:color-mix(in srgb, var(--lv-ink) 14%, var(--lv-bg))",
 ].join(";");
 const pathname = Astro.url.pathname;
-const isActiveLink = (href: string) => href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`);
+const isActiveLink = (href: string) =>
+  href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`);
 ---
 
 <!doctype html>
@@ -42,13 +62,18 @@ const isActiveLink = (href: string) => href === "/" ? pathname === "/" : pathnam
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content={theme.colors.background} />
+    {demoMode ? <meta name="robots" content="noindex, nofollow" /> : null}
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <title>{title ? `${title} · ${tenantName}` : tenantName}</title>
+    <SeoHead seo={seo} />
+    <StructuredData value={structuredData} />
     <link rel="preload" href="/fonts/Right-Grotesk-Medium.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" href="/fonts/GC-Molecule-Demo-Medium.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" href="/fonts/GC-Molecule-Demo-Regular.woff2" as="font" type="font/woff2" crossorigin />
   </head>
   <body
     class="lv-body"
+    data-demo-mode={demoMode ? "true" : undefined}
     data-editor-mode={editorMode ? "true" : undefined}
     data-editor-theme-vars={editorMode ? JSON.stringify({
       background: "--lv-bg",
@@ -60,6 +85,7 @@ const isActiveLink = (href: string) => href === "/" ? pathname === "/" : pathnam
     }) : undefined}
     style={themeStyle}
   >
+    {demoMode ? <div class="lv-demo-banner" role="status"><strong>Template preview</strong><nav aria-label="Preview pages"><a href="/demo/storefront/luvia">Home</a><a href="/demo/storefront/luvia/products">Shop</a><a href="/demo/storefront/luvia/products/radiance-serum">Product</a><a href="/demo/storefront/luvia/cart">Cart</a><a href="/demo/storefront/luvia/checkout">Checkout</a><a href="/demo/storefront/luvia/order-confirmation">Receipt</a></nav><span>Shopping actions are disabled</span></div> : null}
     <header class="lv-header">
       <a class="lv-logo" href="/" aria-label={`${tenantName} home`}><img src={logoUrl} alt={tenantName} data-editor-image-path="header.logoAssetId" /></a>
       <button class="lv-menu" type="button" aria-expanded="false" aria-controls="lv-navigation"><span></span><span></span><span></span><span class="sr-only">Menu</span></button>
@@ -99,11 +125,14 @@ const isActiveLink = (href: string) => href === "/" ? pathname === "/" : pathnam
       <div class="lv-cart-drawer__items" data-cart-items data-lenis-prevent></div>
       <footer data-cart-footer hidden><dl><div><dt>Subtotal</dt><dd data-cart-subtotal></dd></div><div><dt>Delivery</dt><dd>Calculated at checkout</dd></div><div><dt>Total</dt><dd data-cart-total></dd></div></dl><a class="lv-cart-checkout" href="/checkout">Checkout</a><a class="lv-cart-view" href="/cart">View cart and discounts</a><button type="button" data-cart-continue>Continue shopping</button></footer>
     </aside>
+    <StorefrontAnalytics disabled={demoMode || editorMode} />
     <script>
       import { loadAndSyncCartCount, setCartCount as syncCartCount } from "../../../lib/browser/cart-count";
       import { initWishlistController } from "../../../lib/browser/wishlist";
 
       const editorPreview = document.body.dataset.editorMode === "true";
+      const demoPreview = document.body.dataset.demoMode === "true";
+      const readOnlyPreview = editorPreview || demoPreview;
       const menu = document.querySelector<HTMLButtonElement>(".lv-menu");
       const nav = document.querySelector<HTMLElement>(".lv-nav");
       const headerBackdrop = document.querySelector<HTMLButtonElement>("[data-header-backdrop]");
@@ -167,7 +196,7 @@ const isActiveLink = (href: string) => href === "/" ? pathname === "/" : pathnam
       });
       window.matchMedia("(min-width: 761px)").addEventListener("change", (event) => { if (event.matches) setHeaderSurface(null); });
       const badge = document.querySelector<HTMLElement>("[data-cart-count]");
-      if (!editorPreview && badge?.hidden) void loadAndSyncCartCount();
+      if (!readOnlyPreview && badge?.hidden) void loadAndSyncCartCount();
 
       const trigger = document.querySelector<HTMLAnchorElement>("[data-cart-trigger]");
       const drawer = document.querySelector<HTMLElement>("[data-cart-drawer]");
@@ -228,10 +257,10 @@ const isActiveLink = (href: string) => href === "/" ? pathname === "/" : pathnam
         if (!drawer || !backdrop) return; setHeaderSurface(null); lastFocused = document.activeElement instanceof HTMLElement ? document.activeElement : trigger; drawer.hidden = false; backdrop.hidden = false; requestAnimationFrame(() => { drawer.dataset.open = ""; backdrop.dataset.open = ""; }); document.body.dataset.cartOpen = ""; syncPageScrollLock(); if (cart) renderCart(cart); else await loadCart(); closeButton?.focus();
       };
       const closeCart = () => { if (!drawer || !backdrop) return; delete drawer.dataset.open; delete backdrop.dataset.open; delete document.body.dataset.cartOpen; syncPageScrollLock(); setTimeout(() => { drawer.hidden = true; backdrop.hidden = true; }, 260); lastFocused?.focus(); };
-      trigger?.addEventListener("click", (event) => { if (editorPreview || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return; event.preventDefault(); void openCart(); });
+      trigger?.addEventListener("click", (event) => { if (readOnlyPreview || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return; event.preventDefault(); void openCart(); });
       closeButton?.addEventListener("click", closeCart); continueButton?.addEventListener("click", closeCart); backdrop?.addEventListener("click", closeCart);
       drawer?.addEventListener("click", async (event) => {
-        if (editorPreview) return;
+        if (readOnlyPreview) return;
         const target = event.target instanceof Element ? event.target : null; const item = target?.closest<HTMLElement>("[data-line-item-id]"); if (!item) return;
         const quantityButton = target?.closest<HTMLButtonElement>("[data-cart-quantity]"); const removeButton = target?.closest<HTMLButtonElement>("[data-cart-remove]"); if (!quantityButton && !removeButton) return;
         const body = new FormData(); body.set("lineItemId", item.dataset.lineItemId || ""); if (quantityButton) body.set("quantity", quantityButton.dataset.cartQuantity || "1");
@@ -240,13 +269,44 @@ const isActiveLink = (href: string) => href === "/" ? pathname === "/" : pathnam
         catch (cause) { delete item.dataset.updating; if (status) { status.textContent = cause instanceof Error ? cause.message : "Could not update your cart."; status.classList.add("is-error"); } }
       });
       drawer?.addEventListener("keydown", (event) => { if (event.key === "Escape") { event.preventDefault(); closeCart(); return; } if (event.key !== "Tab") return; const focusable = [...drawer.querySelectorAll<HTMLElement>('a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])')]; if (!focusable.length) return; const first = focusable[0]; const last = focusable.at(-1); if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); } else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); } });
-      window.addEventListener("ecs:cart-updated", ((event: CustomEvent) => { if (editorPreview) return; const detail = event.detail; if (detail?.count != null) setCartCount(detail.count); if (detail?.cart) { renderCart(detail.cart); if (detail.openDrawer === true && !drawer?.hasAttribute("data-open")) void openCart(detail.cart); } }) as EventListener);
+      window.addEventListener("ecs:cart-updated", ((event: CustomEvent) => { if (readOnlyPreview) return; const detail = event.detail; if (detail?.count != null) setCartCount(detail.count); if (detail?.cart) { renderCart(detail.cart); if (detail.openDrawer === true && !drawer?.hasAttribute("data-open")) void openCart(detail.cart); } }) as EventListener);
+
+      if (demoPreview) {
+        const containPreviewNavigation = (event: Event) => {
+          const anchor = event.target instanceof Element ? event.target.closest<HTMLAnchorElement>("a") : null;
+          if (!anchor) return;
+          const url = new URL(anchor.href, window.location.href);
+          if (url.origin !== window.location.origin) return;
+          event.preventDefault();
+          const internalDemoRoot = "/demo/storefront/luvia";
+          const demoRoot = window.location.pathname === "/luvia" || window.location.pathname.startsWith("/luvia/")
+            ? "/luvia"
+            : internalDemoRoot;
+          const route = url.pathname.startsWith(internalDemoRoot)
+            ? `${demoRoot}${url.pathname.slice(internalDemoRoot.length)}${url.search}`
+            : demoRoot === "/luvia" && (url.pathname === "/luvia" || url.pathname.startsWith("/luvia/"))
+              ? `${url.pathname}${url.search}`
+            : url.pathname === "/"
+            ? demoRoot
+            : url.pathname === "/products"
+              ? `${demoRoot}/products${url.search}`
+              : url.pathname.startsWith("/products/")
+                ? `${demoRoot}${url.pathname}`
+                : url.pathname === "/cart" || url.pathname === "/checkout"
+                  ? `${demoRoot}${url.pathname}`
+                  : null;
+          if (route) window.location.assign(route);
+        };
+        document.addEventListener("click", containPreviewNavigation, { capture: true });
+        document.addEventListener("auxclick", containPreviewNavigation, { capture: true });
+        document.addEventListener("submit", (event) => event.preventDefault(), { capture: true });
+      }
 
       document.addEventListener("submit", async (event) => {
         const form = event.target instanceof HTMLFormElement
           ? event.target.closest<HTMLFormElement>("[data-card-add-form]")
           : null;
-        if (!form || event.defaultPrevented || editorPreview) return;
+        if (!form || event.defaultPrevented || readOnlyPreview) return;
         event.preventDefault();
         const button = form.querySelector<HTMLButtonElement>('button[type="submit"]');
         const label = form.querySelector<HTMLElement>("[data-card-add-label]");
@@ -275,7 +335,7 @@ const isActiveLink = (href: string) => href === "/" ? pathname === "/" : pathnam
         }
       });
 
-      initWishlistController({ disabled: editorPreview });
+      initWishlistController({ disabled: readOnlyPreview });
     </script>
     <script>
       import { initLuviaMotion } from "./scripts/motion";
@@ -286,4 +346,64 @@ const isActiveLink = (href: string) => href === "/" ? pathname === "/" : pathnam
 
 <style is:global lang="scss">
   @use "./styles/layout.scss";
+  .lv-demo-banner {
+    position: fixed;
+    z-index: 999;
+    right: 1rem;
+    bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    max-width: calc(100vw - 2rem);
+    padding: 0.45rem 0.55rem 0.45rem 0.85rem;
+    border: 1px solid color-mix(in srgb, var(--lv-ink) 18%, transparent);
+    border-radius: 1rem;
+    background: color-mix(in srgb, var(--lv-bg) 94%, transparent);
+    box-shadow: 0 12px 32px color-mix(in srgb, var(--lv-ink) 16%, transparent);
+    color: var(--lv-ink);
+    font: 600 0.75rem/1.2 system-ui, sans-serif;
+    backdrop-filter: blur(14px);
+
+    nav {
+      display: flex;
+      gap: 0.15rem;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+
+    a {
+      min-height: 2rem;
+      padding: 0.5rem 0.65rem;
+      border-radius: 0.7rem;
+      color: inherit;
+      text-decoration: none;
+      transition: background 160ms ease;
+      white-space: nowrap;
+    }
+
+    a:hover,
+    a:focus-visible {
+      background: color-mix(in srgb, var(--lv-ink) 9%, transparent);
+    }
+
+    span {
+      color: color-mix(in srgb, var(--lv-ink) 62%, transparent);
+      white-space: nowrap;
+    }
+
+    @media (max-width: 760px) {
+      right: 0.65rem;
+      bottom: calc(0.65rem + env(safe-area-inset-bottom));
+      left: 0.65rem;
+
+      > strong,
+      > span {
+        display: none;
+      }
+
+      nav {
+        width: 100%;
+      }
+    }
+  }
 </style>

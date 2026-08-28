@@ -1,9 +1,158 @@
 {
   "title": "Insights",
-  "description": "Deeper reports for traffic, products, and customers.",
-  "empty": {
-    "title": "Audience insights are coming soon",
-    "description": "Use Overview for current sales and storefront signals.",
-    "cta": "Back to overview"
+  "description": "Review sales, storefront visits, and recorded shopping activity.",
+  "reports": {
+    "label": "Insight reports",
+    "overview": "Overview",
+    "sales": "Sales",
+    "storefront": "Storefront",
+    "products": "Products",
+    "customers": "Customers",
+    "descriptions": {
+      "overview": "Review sales, storefront visits, and recorded shopping activity.",
+      "sales": "See revenue, order value, payment, and delivery progress.",
+      "storefront": "Understand how people browse your shop before placing an order.",
+      "products": "See which products attract attention and cart interest.",
+      "customers": "Review new and returning customer activity."
+    },
+    "paymentStatus": "Payment status",
+    "fulfillmentStatus": "Delivery status",
+    "orderStatus": "Order status",
+    "productInterest": "Product interest",
+    "productInterestDescription": "Visits that viewed each product or tried adding it to the cart.",
+    "product": "Product",
+    "viewVisits": "Viewed in visits",
+    "addToCartVisits": "Added to cart in visits",
+    "noProductActivity": "Product activity will appear after people browse your product pages.",
+    "customersUnique": "Customers",
+    "customersReturning": "Returning customers",
+    "storefrontMetrics": {
+      "visits": "Storefront visits",
+      "pageViews": "Pages viewed",
+      "productViewVisits": "Visits that viewed a product",
+      "addToCartVisits": "Visits that added to cart",
+      "checkoutVisits": "Visits that started checkout",
+      "searchVisits": "Visits that searched"
+    },
+    "funnel": {
+      "storefront_visits": "Opened your storefront",
+      "product_views": "Viewed a product",
+      "add_to_cart": "Added to cart",
+      "checkout_started": "Started checkout",
+      "orders_created": "Placed orders"
+    }
+  },
+  "error": {
+    "title": "Your insights could not be loaded"
+  },
+  "unavailable": {
+    "title": "Insights are still being prepared",
+    "description": "Your shop can continue selling normally. Check again after shoppers have visited your storefront."
+  },
+  "period": {
+    "label": "Sales period",
+    "thirtyDays": "Last 30 days",
+    "ninetyDays": "Last 90 days"
+  },
+  "metrics": {
+    "revenue": "Revenue",
+    "orders": "Orders",
+    "averageOrder": "Average order",
+    "visits": "Storefront visits"
+  },
+  "visits": {
+    "refresh": "Check visitor count",
+    "updated": "Visitor count updated.",
+    "error": "Visitor count could not be updated. Try again."
+  },
+  "sales": {
+    "title": "Sales performance",
+    "description": "Revenue and placed orders for the selected period.",
+    "revenue": "Revenue",
+    "orders": "Orders",
+    "emptyTitle": "No sales trend yet",
+    "emptyDescription": "Sales activity will appear here after your first completed reporting update."
+  },
+  "freshness": {
+    "title": "Report status",
+    "description": "Your reports update automatically throughout the day.",
+    "current": "Your report is up to date",
+    "delayed": "Your report is taking longer than usual",
+    "preparing": "Your first report is being prepared",
+    "updated": "Last updated {date}",
+    "notYetUpdated": "No completed update yet"
+  },
+  "refresh": {
+    "reload": "Refresh displayed data",
+    "action": "Check for new data",
+    "requesting": "Checking…",
+    "working": "Requesting update…",
+    "requested": "Update requested",
+    "help": "Extra updates are limited to keep reports running smoothly.",
+    "queued": "Your report update has been queued.",
+    "alreadyQueued": "An update was requested recently. Your report shows the latest completed information.",
+    "availableAt": "You can request another update after {date}.",
+    "availableAtShort": "Available at {date}",
+    "error": "The update could not be requested. Please try again shortly."
+  },
+  "funnel": {
+    "title": "Shopping journey",
+    "description": "Distinct storefront sessions at each step, followed by placed orders.",
+    "storefrontVisits": "Opened your storefront",
+    "productViews": "Viewed a product",
+    "addToCart": "Tried adding to cart",
+    "checkoutStarted": "Started checkout",
+    "ordersCreated": "Placed an order",
+    "sessionsUnit": "visits",
+    "ordersUnit": "orders",
+    "fromPrevious": "{rate} continued",
+    "rateUnavailable": "Not enough activity yet",
+    "comparisonUnavailable": "Some activity is still syncing",
+    "noRecordedProgress": "No activity yet",
+    "emptyTitle": "No shopping activity yet",
+    "emptyDescription": "Visits and shopping actions will appear here as people use your storefront.",
+    "helpTitle": "About these numbers",
+    "disclaimer": "A visit starts when someone opens your shop and continues while they browse. If they leave for 30 minutes, their next return counts as a new visit. Orders are shown separately."
+  },
+  "highlights": {
+    "title": "Highlights",
+    "description": "A concise view of the selected sales period.",
+    "busiestDay": "Busiest order day",
+    "ordersOnDate": "{count} orders on {date}",
+    "noSales": "No placed orders in this period",
+    "returningCustomers": "Returning customers",
+    "notAvailable": "Not available yet"
+  },
+  "opportunity": {
+    "title": "What to focus on",
+    "description": "A practical next step based on the activity currently available.",
+    "noData": {
+      "title": "Bring your first visitors",
+      "description": "Share your storefront link with customers. Once visits arrive, this section will highlight where the shopping journey can improve."
+    },
+    "partialData": {
+      "title": "Recent activity is still syncing",
+      "description": "Check back shortly for complete journey comparisons."
+    },
+    "discovery": {
+      "title": "Help visitors find products",
+      "description": "Many visits are not reaching a product page yet. Clearer categories, featured products, and a stronger first screen may help."
+    },
+    "cart": {
+      "title": "Strengthen product pages",
+      "description": "Shoppers are viewing products but adding relatively few to cart. Review photos, descriptions, prices, and delivery information."
+    },
+    "checkout": {
+      "title": "Make checkout feel easier",
+      "description": "Some carts are not reaching checkout. Make delivery expectations and the next step clear before shoppers leave the cart."
+    },
+    "conversion": {
+      "title": "Build confidence at checkout",
+      "description": "Shoppers are starting checkout but fewer orders are being placed. Review payment availability, delivery details, and any checkout errors."
+    },
+    "growing": {
+      "title": "Keep building on what works",
+      "description": "The available journey looks healthy. Continue promoting strong products and watch the trend as more activity arrives."
+    }
   }
 }

@@ -1,3 +1,4 @@
+import { isDeepStrictEqual } from "node:util";
 import type { createPlatformDb } from "@ecs/db";
 import {
   auditLogs,
@@ -8,16 +9,15 @@ import {
   storefrontTemplateVersions,
   tenants,
 } from "@ecs/db";
-import {
-  storefrontTemplates as templateRegistry,
-} from "@ecs/storefront-templates";
-import { isDeepStrictEqual } from "node:util";
+import { storefrontTemplates as templateRegistry } from "@ecs/storefront-templates";
 import { and, asc, eq } from "drizzle-orm";
 import type {
   PublishedStorefrontConfigResult,
   StorefrontDraftResult,
   StorefrontDraftUpdateResult,
   StorefrontPublishResult,
+  StorefrontSeoSettings,
+  StorefrontSeoSettingsResult,
   StorefrontTemplateCatalogItem,
   StorefrontTemplateSelectionResult,
   StorefrontUnpublishResult,
@@ -28,16 +28,82 @@ type PlatformDb = ReturnType<typeof createPlatformDb>["db"];
 
 type StorefrontTemplateDefinition = (typeof templateRegistry)[number];
 
+export type StorefrontDraftTemplateDefinition = {
+  defaultData: unknown;
+  defaultThemeTokens: unknown;
+  schema: { safeParse(value: unknown): { success: boolean; data?: unknown } };
+  themeSchema: { safeParse(value: unknown): { success: boolean; data?: unknown } };
+};
+
+const EMPTY_SEO: StorefrontSeoSettings = {
+  title: null,
+  description: null,
+  socialImageUrl: null,
+};
+
+export function normalizeStorefrontSeoSettings(value: unknown): StorefrontSeoSettings {
+  if (!isPlainObject(value)) return { ...EMPTY_SEO };
+  return {
+    title: normalizeNullableText(value.title, 70),
+    description: normalizeNullableText(value.description, 160),
+    socialImageUrl: normalizeNullableText(value.socialImageUrl, 2_000),
+  };
+}
+
+function normalizeNullableText(value: unknown, maxLength: number) {
+  if (typeof value !== "string") return null;
+  const normalized = value.trim();
+  return normalized && normalized.length <= maxLength ? normalized : null;
+}
+
+export function isTrustedStorefrontSocialImage(
+  value: string | null,
+  publicBase: string | undefined,
+) {
+  if (!value) return true;
+  const base = publicBase?.trim();
+  if (!base) return false;
+  try {
+    const candidate = new URL(value);
+    const trusted = new URL(base);
+    const trustedPath = trusted.pathname.replace(/\/$/, "");
+    return (
+      candidate.protocol === trusted.protocol &&
+      candidate.origin === trusted.origin &&
+      (candidate.pathname === trustedPath || candidate.pathname.startsWith(`${trustedPath}/`))
+    );
+  } catch {
+    return false;
+  }
+}
+
 function getTemplate(templateKey: string): StorefrontTemplateDefinition | undefined {
   return templateRegistry.find((item) => item.templateKey === templateKey);
 }
 
-export function normalizeStorefrontDraftPayload(input: {
+type StorefrontDraftPayloadInput = {
   data: unknown;
   templateKey: string;
   themeTokens: unknown;
-}) {
-  const template = getTemplate(input.templateKey);
+};
+
+type ProductionNormalizedStorefrontDraft = {
+  data: StorefrontTemplateDefinition["schema"]["_output"];
+  themeTokens: StorefrontTemplateDefinition["themeSchema"]["_output"];
+};
+
+export function normalizeStorefrontDraftPayload(
+  input: StorefrontDraftPayloadInput,
+): ProductionNormalizedStorefrontDraft | undefined;
+export function normalizeStorefrontDraftPayload(
+  input: StorefrontDraftPayloadInput,
+  resolveTemplate: (templateKey: string) => StorefrontDraftTemplateDefinition | undefined,
+): { data: unknown; themeTokens: unknown } | undefined;
+export function normalizeStorefrontDraftPayload(
+  input: StorefrontDraftPayloadInput,
+  resolveTemplate: (templateKey: string) => StorefrontDraftTemplateDefinition | undefined = getTemplate,
+) {
+  const template = resolveTemplate(input.templateKey);
 
   if (!template) {
     return undefined;
@@ -102,9 +168,17 @@ export function resolveTemplateDraft(input: {
   saved?: { data: unknown; themeTokens: unknown } | null | undefined;
 }) {
   if (input.mode === "resume" && input.saved) {
-    return { data: input.saved.data, source: "saved" as const, themeTokens: input.saved.themeTokens };
+    return {
+      data: input.saved.data,
+      source: "saved" as const,
+      themeTokens: input.saved.themeTokens,
+    };
   }
-  return { data: input.defaultData, source: "clean" as const, themeTokens: input.defaultThemeTokens };
+  return {
+    data: input.defaultData,
+    source: "clean" as const,
+    themeTokens: input.defaultThemeTokens,
+  };
 }
 
 export function createStorefrontTemplateService(db: PlatformDb) {
@@ -184,8 +258,10 @@ export function createStorefrontTemplateService(db: PlatformDb) {
           data: storefrontRevisions.data,
           themeTokens: storefrontRevisions.themeTokens,
           publishedAt: storefrontRevisions.publishedAt,
+          seoSettings: storefrontConfigs.seoSettings,
         })
         .from(storefrontRevisions)
+        .innerJoin(storefrontConfigs, eq(storefrontConfigs.tenantId, storefrontRevisions.tenantId))
         .where(
           and(
             eq(storefrontRevisions.id, input.publishedRevisionId),
@@ -208,8 +284,56 @@ export function createStorefrontTemplateService(db: PlatformDb) {
           data: revision.data,
           themeTokens: revision.themeTokens,
           publishedAt: revision.publishedAt.toISOString(),
+          seo: normalizeStorefrontSeoSettings(revision.seoSettings),
         },
       };
+    },
+    getStorefrontSeoSettings: async (input: {
+      tenantId: string;
+    }): Promise<StorefrontSeoSettingsResult> => {
+      const [row] = await db
+        .select({ seo: storefrontConfigs.seoSettings })
+        .from(storefrontConfigs)
+        .where(eq(storefrontConfigs.tenantId, input.tenantId))
+        .limit(1);
+      return row
+        ? { ok: true, seo: normalizeStorefrontSeoSettings(row.seo) }
+        : { ok: false, error: "storefront_draft_not_found" };
+    },
+    updateStorefrontSeoSettings: async (input: {
+      seo: StorefrontSeoSettings;
+      tenantId: string;
+      userId: string;
+    }): Promise<StorefrontSeoSettingsResult> => {
+      const [updated] = await db.transaction(async (transaction) => {
+        const rows = await transaction
+          .update(storefrontConfigs)
+          .set({
+            seoSettings: input.seo,
+            updatedAt: new Date(),
+          })
+          .where(eq(storefrontConfigs.tenantId, input.tenantId))
+          .returning({
+            seo: storefrontConfigs.seoSettings,
+          });
+        if (!rows[0]) return [];
+        await transaction.insert(auditLogs).values({
+          actorUserId: input.userId,
+          tenantId: input.tenantId,
+          action: "storefront.seo_updated",
+          targetType: "storefront_config",
+          targetId: input.tenantId,
+          metadata: {
+            hasDescription: Boolean(input.seo.description),
+            hasSocialImage: Boolean(input.seo.socialImageUrl),
+            hasTitle: Boolean(input.seo.title),
+          },
+        });
+        return rows;
+      });
+      return updated
+        ? { ok: true, seo: normalizeStorefrontSeoSettings(updated.seo) }
+        : { ok: false, error: "storefront_draft_not_found" };
     },
     listStorefrontTemplates: async (): Promise<StorefrontTemplateCatalogItem[]> => {
       const rows = await db
@@ -311,7 +435,10 @@ export function createStorefrontTemplateService(db: PlatformDb) {
               updatedAt: new Date(),
             })
             .onConflictDoUpdate({
-              target: [storefrontTemplateDrafts.tenantId, storefrontTemplateDrafts.templateVersionId],
+              target: [
+                storefrontTemplateDrafts.tenantId,
+                storefrontTemplateDrafts.templateVersionId,
+              ],
               set: {
                 data: normalizedDraft.data,
                 themeTokens: normalizedDraft.themeTokens,
@@ -597,10 +724,12 @@ export function createStorefrontTemplateService(db: PlatformDb) {
           const [currentVersion] = await transaction
             .select({ id: storefrontTemplateVersions.id })
             .from(storefrontTemplateVersions)
-            .where(and(
-              eq(storefrontTemplateVersions.templateId, current.templateId),
-              eq(storefrontTemplateVersions.version, current.templateVersion),
-            ))
+            .where(
+              and(
+                eq(storefrontTemplateVersions.templateId, current.templateId),
+                eq(storefrontTemplateVersions.version, current.templateVersion),
+              ),
+            )
             .limit(1);
           if (currentVersion) {
             await transaction
@@ -613,19 +742,31 @@ export function createStorefrontTemplateService(db: PlatformDb) {
                 updatedAt: new Date(),
               })
               .onConflictDoUpdate({
-                target: [storefrontTemplateDrafts.tenantId, storefrontTemplateDrafts.templateVersionId],
-                set: { data: current.data, themeTokens: current.themeTokens, updatedAt: new Date() },
+                target: [
+                  storefrontTemplateDrafts.tenantId,
+                  storefrontTemplateDrafts.templateVersionId,
+                ],
+                set: {
+                  data: current.data,
+                  themeTokens: current.themeTokens,
+                  updatedAt: new Date(),
+                },
               });
           }
         }
 
         const [saved] = await transaction
-          .select({ data: storefrontTemplateDrafts.data, themeTokens: storefrontTemplateDrafts.themeTokens })
+          .select({
+            data: storefrontTemplateDrafts.data,
+            themeTokens: storefrontTemplateDrafts.themeTokens,
+          })
           .from(storefrontTemplateDrafts)
-          .where(and(
-            eq(storefrontTemplateDrafts.tenantId, tenant.id),
-            eq(storefrontTemplateDrafts.templateVersionId, template.versionId),
-          ))
+          .where(
+            and(
+              eq(storefrontTemplateDrafts.tenantId, tenant.id),
+              eq(storefrontTemplateDrafts.templateVersionId, template.versionId),
+            ),
+          )
           .limit(1);
         const next = resolveTemplateDraft({
           defaultData: template.defaultData,

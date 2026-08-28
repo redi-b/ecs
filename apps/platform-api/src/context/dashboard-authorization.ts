@@ -1,6 +1,6 @@
 import type { createPlatformDb } from "@ecs/db";
-import { tenantMemberships, users } from "@ecs/db";
-import { and, eq } from "drizzle-orm";
+import { platformPrincipals, tenantMemberships, tenantSupportAccessGrants, users } from "@ecs/db";
+import { and, eq, gt, isNull } from "drizzle-orm";
 
 import type { DashboardAuthorizationResult } from "../types/index.js";
 
@@ -31,7 +31,46 @@ export function createDashboardAuthorizationLookup(db: PlatformDb) {
       .limit(1);
 
     if (!row) {
-      return { ok: false };
+      const [support] = await db
+        .select({
+          grantId: tenantSupportAccessGrants.id,
+          expiresAt: tenantSupportAccessGrants.expiresAt,
+          id: users.id,
+          email: users.email,
+          name: users.name,
+        })
+        .from(tenantSupportAccessGrants)
+        .innerJoin(
+          platformPrincipals,
+          eq(tenantSupportAccessGrants.platformPrincipalId, platformPrincipals.id),
+        )
+        .innerJoin(users, eq(tenantSupportAccessGrants.operatorUserId, users.id))
+        .where(
+          and(
+            eq(tenantSupportAccessGrants.tenantId, input.tenantId),
+            eq(tenantSupportAccessGrants.operatorUserId, input.userId),
+            eq(platformPrincipals.userId, input.userId),
+            eq(platformPrincipals.status, "active"),
+            eq(users.status, "active"),
+            isNull(tenantSupportAccessGrants.revokedAt),
+            gt(tenantSupportAccessGrants.expiresAt, new Date()),
+          ),
+        )
+        .limit(1);
+      if (!support) return { ok: false };
+      return {
+        ok: true,
+        actor: {
+          id: support.id,
+          email: support.email,
+          name: support.name,
+          role: "operator" as const,
+          supportAccess: {
+            grantId: support.grantId,
+            expiresAt: support.expiresAt.toISOString(),
+          },
+        },
+      };
     }
 
     return {

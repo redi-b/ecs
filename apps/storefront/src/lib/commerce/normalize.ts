@@ -1,3 +1,4 @@
+import { normalizeStorefrontMediaUrl } from "../media-url.js";
 import { getBoolean, getNumber, getString, isRecord } from "./http.js";
 import type {
   CompletedOrder,
@@ -26,9 +27,10 @@ function getCalculatedPrice(variant: Record<string, unknown>) {
   const amount = calculatedAmount ?? originalAmount ?? getNumber(calculated.amount) ?? null;
   const hasDiscount = amount != null && originalAmount != null && originalAmount > amount;
   const discountAmount = hasDiscount ? originalAmount - amount : null;
-  const discountPercentage = hasDiscount && originalAmount > 0
-    ? Math.round((discountAmount! / originalAmount) * 100)
-    : null;
+  const discountPercentage =
+    hasDiscount && discountAmount != null && originalAmount > 0
+      ? Math.round((discountAmount / originalAmount) * 100)
+      : null;
 
   const currency =
     getString(calculated.currency_code) ?? getString(calculated.currencyCode) ?? null;
@@ -73,10 +75,7 @@ function normalizeOptionValues(
   return values;
 }
 
-function normalizeVariant(
-  value: unknown,
-  productOptions: unknown[],
-): StoreProductVariant | null {
+function normalizeVariant(value: unknown, productOptions: unknown[]): StoreProductVariant | null {
   if (!isRecord(value)) return null;
   const id = getString(value.id);
   if (!id) return null;
@@ -162,7 +161,8 @@ export function normalizeProduct(value: unknown): StoreProduct {
   if (Array.isArray(value.images)) {
     for (const image of value.images) {
       const url = isRecord(image) ? getString(image.url) : getString(image);
-      if (url) images.push(url);
+      const trustedUrl = normalizeStorefrontMediaUrl(url);
+      if (trustedUrl) images.push(trustedUrl);
     }
   }
 
@@ -175,7 +175,7 @@ export function normalizeProduct(value: unknown): StoreProduct {
     if (id) categoryIds.push(id);
   }
 
-  const thumbnail = getString(value.thumbnail) ?? images[0] ?? null;
+  const thumbnail = normalizeStorefrontMediaUrl(getString(value.thumbnail)) ?? images[0] ?? null;
   const priced = variants.find((v) => v.priceAmount != null) ?? variants[0];
 
   return {
@@ -216,10 +216,9 @@ function normalizeCartItem(value: unknown): StoreCartItem | null {
     quantity: getNumber(value.quantity) ?? 0,
     unitPrice: getNumber(value.unit_price) ?? getNumber(value.unitPrice) ?? null,
     total: getNumber(value.total) ?? getNumber(value.subtotal) ?? null,
-    thumbnail:
-      getString(value.thumbnail) ??
-      getString(product?.thumbnail) ??
-      (isRecord(product?.images) ? null : null),
+    thumbnail: normalizeStorefrontMediaUrl(
+      getString(value.thumbnail) ?? getString(product?.thumbnail),
+    ),
     variantId: getString(value.variant_id) ?? getString(variant?.id),
     productHandle: getString(product?.handle) ?? getString(value.product_handle),
     variantTitle: getString(value.variant_title) ?? getString(variant?.title),

@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 
 import type { createPlatformDb } from "@ecs/db";
 import { analyticsEvents, type analyticsSource } from "@ecs/db";
-import { and, count, desc, eq, gte, lte } from "drizzle-orm";
+import { and, count, countDistinct, desc, eq, gte, inArray, isNotNull, lte } from "drizzle-orm";
 
 type AnalyticsSource = (typeof analyticsSource.enumValues)[number];
 type PlatformDb = ReturnType<typeof createPlatformDb>["db"];
@@ -97,7 +97,34 @@ export type TenantInsightsSummaryResult = {
       eventType: string;
       count: number;
     }[];
+    funnel: Array<{
+      count: number;
+      key:
+        | "storefront_visits"
+        | "product_views"
+        | "add_to_cart"
+        | "checkout_started"
+        | "orders_created";
+    }>;
+    coverage: {
+      lastEventAt: string | null;
+      status: "no_data" | "observed";
+    };
     recentEvents: TenantInsightsSummaryEvent[];
+    storefront?: {
+      addToCartVisits: number;
+      checkoutVisits: number;
+      contactVisits: number;
+      pageViews: number;
+      productViewVisits: number;
+      searchVisits: number;
+      visits: number;
+    };
+    products?: Array<{
+      addToCartVisits: number;
+      productId: string;
+      viewVisits: number;
+    }>;
   };
 };
 
@@ -113,12 +140,23 @@ export type AnalyticsInsightsStore = {
     tenantId: string;
     to: Date;
   }) => Promise<{ count: number; eventType: string }[]>;
+  countDistinctSessionsByEventType: (input: {
+    from: Date;
+    tenantId: string;
+    to: Date;
+  }) => Promise<{ count: number; eventType: string }[]>;
   listRecentEvents: (input: {
     from: Date;
     limit: number;
     tenantId: string;
     to: Date;
   }) => Promise<AnalyticsEventStoreRow[]>;
+  countDistinctProductSessions?: (input: {
+    from: Date;
+    limit: number;
+    tenantId: string;
+    to: Date;
+  }) => Promise<Array<{ count: number; eventType: string; productId: string }>>;
 };
 
 const allowedSources = new Set<AnalyticsSource>(["medusa", "platform", "storefront"]);
@@ -131,6 +169,14 @@ const allowedStorefrontEvents = new Set([
   "storefront.checkout_started",
   "storefront.contact_clicked",
 ]);
+
+const funnelEvents = [
+  { key: "storefront_visits", eventTypes: ["storefront.page_viewed"] },
+  { key: "product_views", eventTypes: ["storefront.product_viewed"] },
+  { key: "add_to_cart", eventTypes: ["storefront.add_to_cart_clicked"] },
+  { key: "checkout_started", eventTypes: ["storefront.checkout_started"] },
+  { key: "orders_created", eventTypes: ["order.created"] },
+] as const;
 
 function normalizeOptionalText(value: string | null | undefined) {
   const normalized = value?.trim();
@@ -283,24 +329,36 @@ export function createAnalyticsInsightsService(
     }): Promise<TenantInsightsSummaryResult> => {
       const to = now();
       const from = new Date(to.getTime() - input.days * 24 * 60 * 60 * 1000);
-      const sourceCounts = await store.countEventsBySource({
-        from,
-        tenantId: input.tenantId,
-        to,
-      });
-      const topEvents = await store.countEventsByType({
-        from,
-        limit: 5,
-        tenantId: input.tenantId,
-        to,
-      });
-      const recentEvents = await store.listRecentEvents({
-        from,
-        limit: 10,
-        tenantId: input.tenantId,
-        to,
-      });
+      const [sourceCounts, eventCounts, sessionCounts, recentEvents, productCounts] =
+        await Promise.all([
+          store.countEventsBySource({ from, tenantId: input.tenantId, to }),
+          store.countEventsByType({ from, limit: 50, tenantId: input.tenantId, to }),
+          store.countDistinctSessionsByEventType({ from, tenantId: input.tenantId, to }),
+          store.listRecentEvents({ from, limit: 10, tenantId: input.tenantId, to }),
+          store.countDistinctProductSessions?.({
+            from,
+            limit: 20,
+            tenantId: input.tenantId,
+            to,
+          }) ?? Promise.resolve([]),
+        ]);
       const totalsBySource = new Map(sourceCounts.map((row) => [row.source, row.count]));
+      const countsByType = new Map(eventCounts.map((row) => [row.eventType, row.count]));
+      const sessionsByType = new Map(sessionCounts.map((row) => [row.eventType, row.count]));
+      const products = new Map<
+        string,
+        { addToCartVisits: number; productId: string; viewVisits: number }
+      >();
+      for (const row of productCounts) {
+        const product = products.get(row.productId) ?? {
+          addToCartVisits: 0,
+          productId: row.productId,
+          viewVisits: 0,
+        };
+        if (row.eventType === "storefront.product_viewed") product.viewVisits = row.count;
+        if (row.eventType === "storefront.add_to_cart_clicked") product.addToCartVisits = row.count;
+        products.set(row.productId, product);
+      }
 
       return {
         ok: true,
@@ -317,7 +375,34 @@ export function createAnalyticsInsightsService(
             platformEvents: totalsBySource.get("platform") ?? 0,
             storefrontEvents: totalsBySource.get("storefront") ?? 0,
           },
-          topEvents,
+          topEvents: eventCounts.slice(0, 5),
+          funnel: funnelEvents.map((stage) => ({
+            count: stage.eventTypes.reduce(
+              (total, eventType) =>
+                total +
+                (stage.key === "orders_created"
+                  ? (countsByType.get(eventType) ?? 0)
+                  : (sessionsByType.get(eventType) ?? 0)),
+              0,
+            ),
+            key: stage.key,
+          })),
+          storefront: {
+            addToCartVisits: sessionsByType.get("storefront.add_to_cart_clicked") ?? 0,
+            checkoutVisits: sessionsByType.get("storefront.checkout_started") ?? 0,
+            contactVisits: sessionsByType.get("storefront.contact_clicked") ?? 0,
+            pageViews: countsByType.get("storefront.page_viewed") ?? 0,
+            productViewVisits: sessionsByType.get("storefront.product_viewed") ?? 0,
+            searchVisits: sessionsByType.get("storefront.search_submitted") ?? 0,
+            visits: sessionsByType.get("storefront.page_viewed") ?? 0,
+          },
+          products: [...products.values()]
+            .sort((left, right) => right.viewVisits - left.viewVisits)
+            .slice(0, 10),
+          coverage: {
+            lastEventAt: recentEvents[0]?.occurredAt.toISOString() ?? null,
+            status: sourceCounts.some((row) => row.count > 0) ? "observed" : "no_data",
+          },
           recentEvents: recentEvents.map((event) => ({
             id: event.id,
             eventType: event.eventType,
@@ -439,6 +524,26 @@ export function createDrizzleAnalyticsInsightsStore(db: PlatformDb): AnalyticsIn
         .orderBy(desc(eventCount))
         .limit(input.limit);
     },
+    countDistinctSessionsByEventType: async (input) => {
+      const sessionCount = countDistinct(analyticsEvents.sessionIdHash);
+
+      return db
+        .select({
+          eventType: analyticsEvents.eventType,
+          count: sessionCount,
+        })
+        .from(analyticsEvents)
+        .where(
+          and(
+            eq(analyticsEvents.tenantId, input.tenantId),
+            eq(analyticsEvents.source, "storefront"),
+            isNotNull(analyticsEvents.sessionIdHash),
+            gte(analyticsEvents.occurredAt, input.from),
+            lte(analyticsEvents.occurredAt, input.to),
+          ),
+        )
+        .groupBy(analyticsEvents.eventType);
+    },
     listRecentEvents: async (input) => {
       const rows = await db
         .select()
@@ -454,6 +559,41 @@ export function createDrizzleAnalyticsInsightsStore(db: PlatformDb): AnalyticsIn
         .limit(input.limit);
 
       return rows.map(serializeAnalyticsEventRow);
+    },
+    countDistinctProductSessions: async (input) => {
+      const sessionCount = countDistinct(analyticsEvents.sessionIdHash);
+      return db
+        .select({
+          count: sessionCount,
+          eventType: analyticsEvents.eventType,
+          productId: analyticsEvents.subjectId,
+        })
+        .from(analyticsEvents)
+        .where(
+          and(
+            eq(analyticsEvents.tenantId, input.tenantId),
+            eq(analyticsEvents.source, "storefront"),
+            eq(analyticsEvents.subjectType, "product"),
+            inArray(analyticsEvents.eventType, [
+              "storefront.product_viewed",
+              "storefront.add_to_cart_clicked",
+            ]),
+            isNotNull(analyticsEvents.subjectId),
+            isNotNull(analyticsEvents.sessionIdHash),
+            gte(analyticsEvents.occurredAt, input.from),
+            lte(analyticsEvents.occurredAt, input.to),
+          ),
+        )
+        .groupBy(analyticsEvents.subjectId, analyticsEvents.eventType)
+        .orderBy(desc(sessionCount))
+        .limit(input.limit)
+        .then((rows) =>
+          rows.flatMap((row) =>
+            row.productId
+              ? [{ count: row.count, eventType: row.eventType, productId: row.productId }]
+              : [],
+          ),
+        );
     },
   };
 }

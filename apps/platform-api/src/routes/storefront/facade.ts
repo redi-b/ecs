@@ -9,9 +9,9 @@ import {
   isAllowedStoreFacadeRoute,
   storeErrorStatus,
 } from "../shared.js";
-import { handleCustomerAccountRequest } from "./customer-account.js";
 import { completeChapaCheckout, initializeChapaCheckout } from "./checkout/chapa.js";
 import { completeCodCheckout } from "./checkout/cod.js";
+import { handleCustomerAccountRequest } from "./customer-account.js";
 
 type StoreForwardRequestResult =
   | {
@@ -38,7 +38,10 @@ const inquirySchema = z
   })
   .superRefine((value, context) => {
     if (!value.customerEmail && !value.customerPhone) {
-      context.addIssue({ code: "custom", message: "An email address or phone number is required." });
+      context.addIssue({
+        code: "custom",
+        message: "An email address or phone number is required.",
+      });
     }
   });
 
@@ -49,7 +52,8 @@ function consumeInquiryRateLimit(key: string, now = Date.now()) {
     for (const [windowKey, window] of inquiryWindows) {
       if (window.resetAt <= now) inquiryWindows.delete(windowKey);
     }
-    if (inquiryWindows.size > 10_000) inquiryWindows.delete(inquiryWindows.keys().next().value ?? "");
+    if (inquiryWindows.size > 10_000)
+      inquiryWindows.delete(inquiryWindows.keys().next().value ?? "");
   }
   const current = inquiryWindows.get(key);
   if (!current || current.resetAt <= now) {
@@ -106,18 +110,20 @@ async function createStorefrontInquiry(options: {
   });
 
   if (options.recordNotificationEvent) {
-    await options.recordNotificationEvent({
-      eventType: "storefront.inquiry_created",
-      tenantId: options.tenantId,
-      payload: {
-        inquiryId: result.inquiry.id,
-        type: parsed.data.type,
-        customerName: parsed.data.customerName,
-        customerEmail: parsed.data.customerEmail || null,
-        customerPhone: parsed.data.customerPhone || null,
-        subject: parsed.data.subject,
-      },
-    }).catch(() => undefined);
+    await options
+      .recordNotificationEvent({
+        eventType: "storefront.inquiry_created",
+        tenantId: options.tenantId,
+        payload: {
+          inquiryId: result.inquiry.id,
+          type: parsed.data.type,
+          customerName: parsed.data.customerName,
+          customerEmail: parsed.data.customerEmail || null,
+          customerPhone: parsed.data.customerPhone || null,
+          subject: parsed.data.subject,
+        },
+      })
+      .catch(() => undefined);
   }
 
   return Response.json({ inquiry: result.inquiry }, { status: 201 });
@@ -397,8 +403,12 @@ export function registerStoreFacadeRoutes(
           medusaInternalUrl: options.medusaInternalUrl,
           medusaPublishableKeyId: result.context.medusaPublishableKeyId,
           medusaStoreFetch,
-          recordAnalyticsEvent: options.recordAnalyticsEvent,
-          recordNotificationEvent: options.recordNotificationEvent,
+          ...(options.recordAnalyticsEvent
+            ? { recordAnalyticsEvent: options.recordAnalyticsEvent }
+            : {}),
+          ...(options.recordNotificationEvent
+            ? { recordNotificationEvent: options.recordNotificationEvent }
+            : {}),
           request: context.req.raw,
           tenantId: result.context.tenantId,
         });
@@ -447,13 +457,15 @@ export function registerStoreFacadeRoutes(
       }
 
       try {
+        const recordAnalyticsEvent = options.recordAnalyticsEvent;
+        const recordNotificationEvent = options.recordNotificationEvent;
         return await completeChapaCheckout({
           getMerchantChapaCredentials: options.getMerchantChapaCredentials,
           medusaInternalUrl: options.medusaInternalUrl,
           medusaPublishableKeyId: result.context.medusaPublishableKeyId,
           medusaStoreFetch,
-          recordAnalyticsEvent: options.recordAnalyticsEvent,
-          recordNotificationEvent: options.recordNotificationEvent,
+          ...(recordAnalyticsEvent ? { recordAnalyticsEvent } : {}),
+          ...(recordNotificationEvent ? { recordNotificationEvent } : {}),
           request: context.req.raw,
           tenantId: result.context.tenantId,
         });
@@ -502,7 +514,7 @@ export function registerStoreFacadeRoutes(
         if (!scoped.ok) {
           return context.json({ error: "not_found" }, 404);
         }
-        return context.json(scoped.body, medusaResponse.status);
+        return Response.json(scoped.body, { status: medusaResponse.status });
       }
 
       const responseHeaders = new Headers(medusaResponse.headers);

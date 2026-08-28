@@ -8,15 +8,13 @@ import type {
   BillingStatus,
   BillingStatusResult,
 } from "../../types/index.js";
+import { createEntitlementService } from "../entitlements/service.js";
+import { DEFAULT_PLAN_CATALOG, DEFAULT_PLAN_IDS, DEFAULT_PLANS } from "./plan-catalog.js";
+
+export { DEFAULT_PLAN_IDS } from "./plan-catalog.js";
 
 type PlatformDb = ReturnType<typeof createPlatformDb>["db"];
-const allowedInvoiceStatuses = new Set(["pending", "paid", "cancelled", "void"]);
-
-/** Stable UUIDs so ensureDefaultPlans is idempotent across runs. */
-export const DEFAULT_PLAN_IDS = {
-  starter: "a1000000-0000-4000-8000-000000000001",
-  growth: "a1000000-0000-4000-8000-000000000002",
-} as const;
+const allowedOperatorInvoiceStatuses = new Set(["paid", "cancelled", "void"]);
 
 /** Platform-billing Chapa tx_ref prefix (commerce order refs must never use this). */
 export const BILLING_CHAPA_TX_PREFIX = "ecs_bill_";
@@ -80,9 +78,7 @@ function serializeInvoice(invoice: {
     dueAt: serializeDate(invoice.dueAt),
     paidAt: serializeDate(invoice.paidAt),
     provider: invoice.provider?.trim() ? invoice.provider.trim() : null,
-    providerReference: invoice.providerReference?.trim()
-      ? invoice.providerReference.trim()
-      : null,
+    providerReference: invoice.providerReference?.trim() ? invoice.providerReference.trim() : null,
     createdAt: invoice.createdAt.toISOString(),
   };
 }
@@ -116,52 +112,55 @@ function isFreePlanPrice(price: string) {
   return planPriceNumber(price) === 0;
 }
 
+export function planBillingLifecycle(input: {
+  currentPeriodEnd: Date | null;
+  manualPaymentState: string;
+  now: Date;
+  status: string;
+}) {
+  const scheduledPlanId = parseScheduledDowngradePlanId(input.manualPaymentState);
+  const periodEnded =
+    input.currentPeriodEnd != null && input.currentPeriodEnd.getTime() <= input.now.getTime();
+  if (scheduledPlanId) {
+    return {
+      createRenewalInvoice: false,
+      markPastDue: false,
+      scheduledPlanId,
+      applyScheduledDowngrade: periodEnded,
+    };
+  }
+  const renewalWindowStart = input.currentPeriodEnd
+    ? input.currentPeriodEnd.getTime() - BILLING_RENEWAL_LEAD_DAYS * MS_PER_DAY
+    : null;
+  return {
+    applyScheduledDowngrade: false,
+    createRenewalInvoice: renewalWindowStart != null && input.now.getTime() >= renewalWindowStart,
+    markPastDue: periodEnded && (input.status === "active" || input.status === "trialing"),
+    scheduledPlanId: null,
+  };
+}
+
 export function createBillingService(db: PlatformDb) {
+  const entitlementService = createEntitlementService(db);
   const self = () => createBillingService(db);
 
   return {
     ensureDefaultPlans: async () => {
-      await db
-        .insert(plans)
-        .values({
-          id: DEFAULT_PLAN_IDS.starter,
-          name: "Starter",
-          price: "0",
-          status: "active",
-          limits: { products: 100, staff: 2, storefrontEvents: 10_000 },
-          features: { analytics: true, managedCheckout: true, freeForever: true },
-        })
-        .onConflictDoUpdate({
-          target: plans.id,
-          set: {
-            features: { analytics: true, managedCheckout: true, freeForever: true },
-            limits: { products: 100, staff: 2, storefrontEvents: 10_000 },
-            name: "Starter",
-            price: "0",
-            status: "active",
-          },
-        });
-
-      await db
-        .insert(plans)
-        .values({
-          id: DEFAULT_PLAN_IDS.growth,
-          name: "Growth",
-          price: "2499",
-          status: "active",
-          limits: { products: 2500, staff: 8, storefrontEvents: 100_000 },
-          features: { analytics: true, managedCheckout: true, localDelivery: true },
-        })
-        .onConflictDoUpdate({
-          target: plans.id,
-          set: {
-            features: { analytics: true, managedCheckout: true, localDelivery: true },
-            limits: { products: 2500, staff: 8, storefrontEvents: 100_000 },
-            name: "Growth",
-            price: "2499",
-            status: "active",
-          },
-        });
+      for (const plan of DEFAULT_PLANS) {
+        await db
+          .insert(plans)
+          .values(plan)
+          .onConflictDoUpdate({
+            target: plans.id,
+            set: {
+              features: plan.features,
+              limits: plan.limits,
+              name: plan.name,
+              price: plan.price,
+              status: plan.status,
+            },
+          });
+      }
     },
 
     /**
@@ -202,16 +201,26 @@ export function createBillingService(db: PlatformDb) {
         .insert(subscriptions)
         .values({
           tenantId: input.tenantId,
-          planId: DEFAULT_PLAN_IDS.starter,
+          planId: DEFAULT_PLAN_CATALOG.starter.id,
           status: "active",
           billingCycle: "monthly",
           currentPeriodStart: now,
           currentPeriodEnd: null,
           manualPaymentState: "none",
         })
+        .onConflictDoNothing({ target: subscriptions.tenantId })
         .returning({ id: subscriptions.id });
 
-      return { created: true as const, subscriptionId: subscription?.id ?? null };
+      if (subscription) {
+        return { created: true as const, subscriptionId: subscription.id };
+      }
+
+      const [concurrent] = await db
+        .select({ id: subscriptions.id })
+        .from(subscriptions)
+        .where(eq(subscriptions.tenantId, input.tenantId))
+        .limit(1);
+      return { created: false as const, subscriptionId: concurrent?.id ?? null };
     },
 
     /** @deprecated Prefer ensureFreeSubscription — kept for call sites. */
@@ -271,33 +280,32 @@ export function createBillingService(db: PlatformDb) {
         return { renewed: false, pastDue: false, downgraded: false };
       }
 
-      const now = new Date();
-      const scheduledPlanId = parseScheduledDowngradePlanId(row.manualPaymentState);
-      const periodEnded =
-        row.currentPeriodEnd != null && row.currentPeriodEnd.getTime() <= now.getTime();
+      const lifecycle = planBillingLifecycle({
+        currentPeriodEnd: row.currentPeriodEnd,
+        manualPaymentState: row.manualPaymentState,
+        now: new Date(),
+        status: row.status,
+      });
 
       // Scheduled free switch at period end (no refund for unused paid days).
-      if (scheduledPlanId && periodEnded) {
+      if (lifecycle.scheduledPlanId && lifecycle.applyScheduledDowngrade) {
         const applied = await self().applyScheduledDowngrade({
           tenantId: input.tenantId,
           subscriptionId: row.subscriptionId,
-          planId: scheduledPlanId,
+          planId: lifecycle.scheduledPlanId,
         });
         return { renewed: false, pastDue: false, downgraded: applied };
       }
 
       // While a free switch is scheduled, do not create renewal invoices or force past_due.
-      if (scheduledPlanId) {
+      if (lifecycle.scheduledPlanId) {
         return { renewed: false, pastDue: false, downgraded: false };
       }
 
       let pastDue = false;
       let renewed = false;
 
-      if (
-        periodEnded &&
-        (row.status === "active" || row.status === "trialing")
-      ) {
+      if (lifecycle.markPastDue) {
         await db
           .update(subscriptions)
           .set({ status: "past_due" })
@@ -305,19 +313,14 @@ export function createBillingService(db: PlatformDb) {
         pastDue = true;
       }
 
-      const periodEnd = row.currentPeriodEnd;
-      if (periodEnd) {
-        const leadEnd = new Date(periodEnd.getTime() - BILLING_RENEWAL_LEAD_DAYS * MS_PER_DAY);
-        const inWindow = now.getTime() >= leadEnd.getTime();
-        if (inWindow) {
-          const invoiceResult = await self().ensurePendingPlanInvoice({
-            tenantId: input.tenantId,
-            subscriptionId: row.subscriptionId,
-            planId: row.planId,
-            planPrice: row.planPrice,
-          });
-          renewed = invoiceResult.created;
-        }
+      if (lifecycle.createRenewalInvoice) {
+        const invoiceResult = await self().ensurePendingPlanInvoice({
+          tenantId: input.tenantId,
+          subscriptionId: row.subscriptionId,
+          planId: row.planId,
+          planPrice: row.planPrice,
+        });
+        renewed = invoiceResult.created;
       }
 
       return { renewed, pastDue, downgraded: false };
@@ -736,7 +739,6 @@ export function createBillingService(db: PlatformDb) {
       },
       tenantId: string,
     ): Promise<BillingStatusResult> => {
-
       const invoiceRows = await db
         .select(selectInvoiceFields())
         .from(invoices)
@@ -764,10 +766,12 @@ export function createBillingService(db: PlatformDb) {
       const clientPaymentState = scheduledPlanId
         ? "scheduled_downgrade"
         : subscription.manualPaymentState || "none";
+      const entitlements = await entitlementService.evaluateAll({ tenantId });
 
       return {
         ok: true,
         billing: {
+          entitlements,
           subscription: {
             id: subscription.subscriptionId,
             status: subscription.status,
@@ -1009,11 +1013,7 @@ export function createBillingService(db: PlatformDb) {
         .where(and(eq(invoices.tenantId, input.tenantId), eq(invoices.status, "pending")));
 
       return rows
-        .filter(
-          (row) =>
-            row.providerReference &&
-            isPlatformBillingTxRef(row.providerReference),
-        )
+        .filter((row) => row.providerReference && isPlatformBillingTxRef(row.providerReference))
         .map((row) => ({
           invoiceId: row.id,
           tenantId: row.tenantId,
@@ -1039,11 +1039,7 @@ export function createBillingService(db: PlatformDb) {
         .limit(limit);
 
       return rows
-        .filter(
-          (row) =>
-            row.providerReference &&
-            isPlatformBillingTxRef(row.providerReference),
-        )
+        .filter((row) => row.providerReference && isPlatformBillingTxRef(row.providerReference))
         .map((row) => ({
           invoiceId: row.id,
           tenantId: row.tenantId,
@@ -1070,10 +1066,7 @@ export function createBillingService(db: PlatformDb) {
         })
         .from(invoices)
         .where(
-          and(
-            eq(invoices.tenantId, input.tenantId),
-            eq(invoices.providerReference, input.txRef),
-          ),
+          and(eq(invoices.tenantId, input.tenantId), eq(invoices.providerReference, input.txRef)),
         )
         .limit(1);
 
@@ -1089,8 +1082,9 @@ export function createBillingService(db: PlatformDb) {
         return { ok: false, error: "billing_invoice_not_payable" };
       }
 
-      const planIdFromProvider =
-        invoice.provider?.startsWith("plan:") ? invoice.provider.slice("plan:".length) : null;
+      const planIdFromProvider = invoice.provider?.startsWith("plan:")
+        ? invoice.provider.slice("plan:".length)
+        : null;
 
       await db.transaction(async (transaction) => {
         await transaction
@@ -1152,14 +1146,20 @@ export function createBillingService(db: PlatformDb) {
     updateBillingInvoiceStatus: async (input: {
       invoiceId: string;
       operatorUserId: string;
+      platformPrincipalId: string;
       provider?: string | null | undefined;
       providerReference?: string | null | undefined;
+      reason: string;
       status: string;
       tenantId: string;
     }): Promise<BillingInvoiceUpdateResult> => {
       const status = input.status.trim().toLowerCase();
 
-      if (!allowedInvoiceStatuses.has(status)) {
+      if (
+        !allowedOperatorInvoiceStatuses.has(status) ||
+        input.reason.trim().length < 10 ||
+        (status === "paid" && (!input.provider?.trim() || !input.providerReference?.trim()))
+      ) {
         return {
           ok: false,
           error: "billing_invoice_status_invalid",
@@ -1176,7 +1176,13 @@ export function createBillingService(db: PlatformDb) {
             providerReference: input.providerReference ?? null,
             status,
           })
-          .where(and(eq(invoices.id, input.invoiceId), eq(invoices.tenantId, input.tenantId)))
+          .where(
+            and(
+              eq(invoices.id, input.invoiceId),
+              eq(invoices.tenantId, input.tenantId),
+              eq(invoices.status, "pending"),
+            ),
+          )
           .returning({
             ...selectInvoiceFields(),
             subscriptionId: invoices.subscriptionId,
@@ -1225,12 +1231,14 @@ export function createBillingService(db: PlatformDb) {
 
         await transaction.insert(auditLogs).values({
           actorUserId: input.operatorUserId,
+          platformPrincipalId: input.platformPrincipalId,
           tenantId: input.tenantId,
           action: "billing.invoice_status_changed",
           targetType: "invoice",
           targetId: row.id,
           metadata: {
             provider: row.provider,
+            reason: input.reason.trim(),
             status: row.status,
           },
         });
@@ -1239,10 +1247,15 @@ export function createBillingService(db: PlatformDb) {
       });
 
       if (!invoice) {
+        const [existing] = await db
+          .select({ id: invoices.id })
+          .from(invoices)
+          .where(and(eq(invoices.id, input.invoiceId), eq(invoices.tenantId, input.tenantId)))
+          .limit(1);
         return {
           ok: false,
-          error: "billing_invoice_not_found",
-          status: 404,
+          error: existing ? "billing_invoice_status_invalid" : "billing_invoice_not_found",
+          status: existing ? 400 : 404,
         };
       }
 

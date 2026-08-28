@@ -29,6 +29,14 @@
     "theFreePlan": "the free plan",
     "scheduledChange": "Changes to {name} on {date}. No refund for remaining days. You can cancel before then."
   },
+  "entitlements": {
+    "title": "Included with your plan",
+    "description": "See what is currently available for this shop.",
+    "customDomains": "Custom domain",
+    "included": "Included",
+    "upgradeRequired": "Growth required",
+    "unavailable": "Not available yet"
+  },
   "plans": {
     "starter": {
       "tagline": "Everything you need to run your shop online.",

@@ -3,6 +3,7 @@ export const dashboardRoutes = {
   products: "/admin/products",
   productCreateAction: "/admin/products/actions/create",
   productListAction: "/admin/products/actions/list",
+  productsExportAction: "/admin/products/actions/export",
   productCategories: "/admin/products/categories",
   productCategoriesListAction: "/admin/products/categories/actions/list",
   productCategoriesNew: "/admin/products/categories/new",
@@ -24,6 +25,11 @@ export const dashboardRoutes = {
   productDeleteAction: (productId: string) =>
     `/admin/products/actions/${encodeURIComponent(productId)}/delete`,
   productsBatchDeleteAction: "/admin/products/actions/batch-delete",
+  productsBatchInventoryAction: "/admin/products/actions/batch-inventory",
+  productsImportDryRunAction: "/admin/products/actions/import-dry-run",
+  productsImportApplyAction: "/admin/products/actions/import-apply",
+  productImportExecutionAction: (executionId: string) =>
+    `/admin/products/actions/import-executions/${encodeURIComponent(executionId)}`,
   productCategoryDeleteAction: (categoryId: string) =>
     `/admin/products/categories/actions/${encodeURIComponent(categoryId)}/delete`,
   productCategoryUpdateAction: (categoryId: string) =>
@@ -38,6 +44,7 @@ export const dashboardRoutes = {
     `/admin/products/collections/actions/${encodeURIComponent(collectionId)}/products`,
   productCollectionsBatchDeleteAction: "/admin/products/collections/actions/batch-delete",
   orders: "/admin/orders",
+  ordersExportAction: "/admin/orders/actions/export",
   inquiries: "/admin/inquiries",
   inquiryAction: (inquiryId: string) => `/admin/inquiries/actions/${encodeURIComponent(inquiryId)}`,
   orderCreateAction: "/admin/orders/actions/create",

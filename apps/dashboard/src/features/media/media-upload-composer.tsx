@@ -21,11 +21,7 @@ import { cn } from "@/lib/utils";
 import { filenameToAlt, formatBytes, getImageDimensions } from "./media-helpers";
 import { MediaPreviewLightbox } from "./media-lightbox";
 import { createMediaUploadId } from "./media-upload-id";
-import {
-  mapUppyFileToQueueView,
-  MediaUploadQueue,
-  type QueueFileView,
-} from "./media-upload-queue";
+import { MediaUploadQueue, mapUppyFileToQueueView, type QueueFileView } from "./media-upload-queue";
 import { MediaUrlImportField } from "./media-url-import-field";
 
 type UploadMeta = { assetId?: string };
@@ -33,7 +29,16 @@ const allowedTypes = ["image/avif", "image/gif", "image/jpeg", "image/png", "ima
 
 type CompletionState = "idle" | "processing" | "done" | "failed";
 
-export function MediaUploadComposer({ onUploaded }: { onUploaded: () => void }) {
+export const OPEN_MEDIA_UPLOAD_EVENT = "ecs:media-upload-open";
+export const MEDIA_UPLOADED_EVENT = "ecs:media-uploaded";
+
+export function MediaUploadComposer({
+  onUploaded,
+  showTrigger = true,
+}: {
+  onUploaded: () => void;
+  showTrigger?: boolean;
+}) {
   const { t } = useI18n();
   const inputRef = useRef<HTMLInputElement>(null);
   const previewUrls = useRef(new Map<string, string>());
@@ -43,7 +48,6 @@ export function MediaUploadComposer({ onUploaded }: { onUploaded: () => void }) 
   const [revision, setRevision] = useState(0);
   const [uploading, setUploading] = useState(false);
   const [queueOpen, setQueueOpen] = useState(false);
-  const [queueCollapsed, setQueueCollapsed] = useState(false);
   const [dragging, setDragging] = useState(false);
   const [previewIndex, setPreviewIndex] = useState<number | null>(null);
   const dragDepth = useRef(0);
@@ -52,6 +56,12 @@ export function MediaUploadComposer({ onUploaded }: { onUploaded: () => void }) 
   useEffect(() => {
     onUploadedRef.current = onUploaded;
   }, [onUploaded]);
+
+  useEffect(() => {
+    const openComposer = () => setOpen(true);
+    window.addEventListener(OPEN_MEDIA_UPLOAD_EVENT, openComposer);
+    return () => window.removeEventListener(OPEN_MEDIA_UPLOAD_EVENT, openComposer);
+  }, []);
 
   const [uppy] = useState(() =>
     new Uppy<UploadMeta, Record<string, never>>({
@@ -211,7 +221,6 @@ export function MediaUploadComposer({ onUploaded }: { onUploaded: () => void }) 
     setPreviewIndex(null);
     setOpen(false);
     setQueueOpen(true);
-    setQueueCollapsed(false);
     setUploading(true);
     toast.message(t("media.uploadStarted"));
 
@@ -287,7 +296,6 @@ export function MediaUploadComposer({ onUploaded }: { onUploaded: () => void }) 
     }
     bump();
     setUploading(true);
-    setQueueCollapsed(false);
 
     const result = await uppy.upload();
     let completed = 0;
@@ -317,10 +325,12 @@ export function MediaUploadComposer({ onUploaded }: { onUploaded: () => void }) 
 
   return (
     <>
-      <Button onClick={() => setOpen(true)} type="button">
-        <AppIcons.upload data-icon="inline-start" />
-        {t("media.uploadNew")}
-      </Button>
+      {showTrigger ? (
+        <Button onClick={() => setOpen(true)} type="button">
+          <AppIcons.upload data-icon="inline-start" />
+          {t("media.uploadNew")}
+        </Button>
+      ) : null}
       <input
         accept={allowedTypes.join(",")}
         className="sr-only"
@@ -395,7 +405,9 @@ export function MediaUploadComposer({ onUploaded }: { onUploaded: () => void }) 
                   </span>
                   <div>
                     <p className="text-sm font-medium">{t("media.dropZoneHint")}</p>
-                    <p className="mt-1 text-xs text-muted-foreground">{t("media.supportedFormats")}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {t("media.supportedFormats")}
+                    </p>
                   </div>
                   <span className="inline-flex items-center rounded-full border bg-background px-3 py-1 text-xs font-medium">
                     {t("media.browseFiles")}
@@ -490,47 +502,45 @@ export function MediaUploadComposer({ onUploaded }: { onUploaded: () => void }) 
               </div>
 
               <aside className="hidden flex-col gap-4 border-t bg-muted/15 p-4 sm:p-5 lg:flex lg:border-t-0 lg:border-l lg:min-h-full">
-              <div>
-                <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-                  {t("media.readyCount", { count: stagedFiles.length })}
-                </p>
-                <p className="mt-2 text-2xl font-semibold tracking-tight">
-                  {stagedFiles.length}
-                  <span className="ml-2 text-sm font-normal text-muted-foreground">
-                    {stagedFiles.length === 1
-                      ? t("media.imageSingular")
-                      : t("media.imagePlural")}
-                  </span>
-                </p>
-              </div>
-              <div className="space-y-2 rounded-xl border bg-background/80 p-3 text-sm">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-muted-foreground">{t("media.size")}</span>
-                  <span className="font-medium">{formatBytes(totalBytes)}</span>
+                <div>
+                  <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                    {t("media.readyCount", { count: stagedFiles.length })}
+                  </p>
+                  <p className="mt-2 text-2xl font-semibold tracking-tight">
+                    {stagedFiles.length}
+                    <span className="ml-2 text-sm font-normal text-muted-foreground">
+                      {stagedFiles.length === 1 ? t("media.imageSingular") : t("media.imagePlural")}
+                    </span>
+                  </p>
                 </div>
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-muted-foreground">{t("media.type")}</span>
-                  <Badge variant="outline">{t("media.imagesLabel")}</Badge>
+                <div className="space-y-2 rounded-xl border bg-background/80 p-3 text-sm">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-muted-foreground">{t("media.size")}</span>
+                    <span className="font-medium">{formatBytes(totalBytes)}</span>
+                  </div>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-muted-foreground">{t("media.type")}</span>
+                    <Badge variant="outline">{t("media.imagesLabel")}</Badge>
+                  </div>
                 </div>
-              </div>
-              <div className="mt-auto flex flex-col gap-2">
-                {stagedFiles.length ? (
-                  <Button
-                    onClick={() => {
-                      for (const file of stagedFiles) uppy.removeFile(file.id);
-                    }}
-                    type="button"
-                    variant="ghost"
-                  >
-                    {t("media.clearQueue")}
+                <div className="mt-auto flex flex-col gap-2">
+                  {stagedFiles.length ? (
+                    <Button
+                      onClick={() => {
+                        for (const file of stagedFiles) uppy.removeFile(file.id);
+                      }}
+                      type="button"
+                      variant="ghost"
+                    >
+                      {t("media.clearQueue")}
+                    </Button>
+                  ) : null}
+                  <Button onClick={() => inputRef.current?.click()} type="button" variant="outline">
+                    <AppIcons.image data-icon="inline-start" />
+                    {t("media.addMore")}
                   </Button>
-                ) : null}
-                <Button onClick={() => inputRef.current?.click()} type="button" variant="outline">
-                  <AppIcons.image data-icon="inline-start" />
-                  {t("media.addMore")}
-                </Button>
-              </div>
-            </aside>
+                </div>
+              </aside>
             </div>
           </div>
 
@@ -569,10 +579,8 @@ export function MediaUploadComposer({ onUploaded }: { onUploaded: () => void }) 
       </Dialog>
 
       <MediaUploadQueue
-        collapsed={queueCollapsed}
         files={queueFiles}
         onClearFinished={clearFinished}
-        onCollapseChange={setQueueCollapsed}
         onDismiss={dismissQueue}
         onRemove={(fileId) => uppy.removeFile(fileId)}
         onRetryFailed={() => void retryFailed()}

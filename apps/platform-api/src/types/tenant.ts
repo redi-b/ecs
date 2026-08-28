@@ -292,6 +292,11 @@ export type TenantDomain = {
   isPrimary: boolean;
   verificationStatus: string;
   sslStatus: string;
+  verificationChallenge?: {
+    recordName: string;
+    recordValue: string;
+    expiresAt: string;
+  } | null;
 };
 
 export type TenantDomainListResult = {
@@ -306,8 +311,12 @@ export type TenantDomainCreateResult =
     }
   | {
       ok: false;
-      error: "domain_invalid" | "domain_unavailable";
-      status: 400 | 409;
+      error:
+        | "custom_domains_unavailable"
+        | "domain_invalid"
+        | "domain_unavailable"
+        | "entitlement_required";
+      status: 400 | 403 | 409 | 503;
     };
 
 export type TenantDomainPrimaryResult =
@@ -318,6 +327,14 @@ export type TenantDomainPrimaryResult =
   | {
       ok: false;
       error: "domain_not_found" | "domain_not_verified";
+      status: 404 | 409;
+    };
+
+export type TenantDomainVerificationResult =
+  | { ok: true; domain: TenantDomain }
+  | {
+      ok: false;
+      error: "domain_not_found" | "domain_verification_expired" | "domain_verification_pending";
       status: 404 | 409;
     };
 

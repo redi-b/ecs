@@ -35,7 +35,7 @@ x-platform-environment: &platform-environment
   BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?set BETTER_AUTH_SECRET}
   BETTER_AUTH_COOKIE_DOMAIN: .${BASE_DOMAIN}
   BETTER_AUTH_COOKIE_PREFIX: ${BETTER_AUTH_COOKIE_PREFIX:-ecs}
-  BETTER_AUTH_TRUSTED_ORIGINS: https://dashboard.${BASE_DOMAIN},https://*.${BASE_DOMAIN}
+  BETTER_AUTH_TRUSTED_ORIGINS: https://dashboard.${BASE_DOMAIN},https://ops.${BASE_DOMAIN},https://*.${BASE_DOMAIN}
   MEDIA_STORAGE_PROVIDER: s3
   # Public S3 endpoint for browser presigned uploads (Caddy/Traefik → seaweedfs:8333).
   MEDIA_S3_ENDPOINT: ${MEDIA_S3_ENDPOINT:-https://media.${BASE_DOMAIN}}
@@ -278,6 +278,36 @@ services:
         aliases:
           - ecs-dashboard
 
+  superadmin:
+    <<: *app-defaults
+    image: ${IMAGE_PREFIX:?set IMAGE_PREFIX}/superadmin:${IMAGE_TAG:-main}
+    pull_policy: always
+    environment:
+      NODE_ENV: production
+      PORT: "3002"
+      PLATFORM_API_BASE_URL: http://platform-api:3000
+      SUPERADMIN_PUBLIC_BASE_URL: https://ops.${BASE_DOMAIN}
+      # Separate from the merchant session; Superadmin translates it server-side for Platform.
+      SUPERADMIN_AUTH_COOKIE_PREFIX: ${SUPERADMIN_AUTH_COOKIE_PREFIX:-ecs-ops}
+      # Retained only to clear any historical parent-domain operations cookies during migration.
+      SUPERADMIN_AUTH_COOKIE_DOMAIN: .${BASE_DOMAIN}
+      BETTER_AUTH_COOKIE_PREFIX: ${BETTER_AUTH_COOKIE_PREFIX:-ecs}
+    expose:
+      - "3002"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3002/sign-in',{headers:{host:'ops.${BASE_DOMAIN}'}}).then(r=>{if(r.status>=500)throw Error(r.status)}).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+    depends_on:
+      platform-api:
+        condition: service_healthy
+    networks:
+      default:
+        aliases:
+          - ecs-superadmin
+
   storefront:
     <<: *app-defaults
     image: ${IMAGE_PREFIX:?set IMAGE_PREFIX}/storefront:${IMAGE_TAG:-main}
@@ -344,17 +374,18 @@ services:
       - traefik.http.middlewares.ecs-caddy-https-redirect.redirectscheme.scheme=https
       - traefik.http.middlewares.ecs-caddy-https-redirect.redirectscheme.permanent=true
       # Catch-all HTTPS for tenant shop hosts (and any one-level subdomain).
-      # tls.certresolver issues a normal (non-wildcard) LE cert per hostname on first use
-      # via HTTP-01 — no DNS-01 wildcard cert required.
+      # This regex router reaches all one-level shop hosts, but it cannot derive a
+      # concrete ACME hostname. Production requires an explicit *.BASE_DOMAIN
+      # certificate issued through a DNS-01 resolver; HTTP-01 cannot issue it.
       - traefik.http.routers.ecs-caddy-https.rule=HostRegexp(`{subdomain:[a-z0-9-]+}.${BASE_DOMAIN}`)
       - traefik.http.routers.ecs-caddy-https.ruleSyntax=v2
       - traefik.http.routers.ecs-caddy-https.entrypoints=websecure
       - traefik.http.routers.ecs-caddy-https.priority=10
       - traefik.http.routers.ecs-caddy-https.tls=true
-      - traefik.http.routers.ecs-caddy-https.tls.certresolver=letsencrypt
       - traefik.http.routers.ecs-caddy-https.service=ecs-caddy
-      # Explicit hosts keep stable certs + higher priority than the catch-all.
-      - traefik.http.routers.ecs-caddy-demo-certs.rule=Host(`dashboard.${BASE_DOMAIN}`) || Host(`api.${BASE_DOMAIN}`) || Host(`shop.${BASE_DOMAIN}`) || Host(`media.${BASE_DOMAIN}`)
+      # Explicit platform and approved beta hosts receive normal HTTP-01 certs.
+      # Keep beta hosts bounded here; arbitrary managed shops require wildcard DNS-01.
+      - traefik.http.routers.ecs-caddy-demo-certs.rule=Host(`dashboard.${BASE_DOMAIN}`) || Host(`ops.${BASE_DOMAIN}`) || Host(`api.${BASE_DOMAIN}`) || Host(`shop.${BASE_DOMAIN}`) || Host(`media.${BASE_DOMAIN}`) || Host(`addistech.${BASE_DOMAIN}`) || Host(`bole-style.${BASE_DOMAIN}`)
       - traefik.http.routers.ecs-caddy-demo-certs.entrypoints=websecure
       - traefik.http.routers.ecs-caddy-demo-certs.priority=100
       - traefik.http.routers.ecs-caddy-demo-certs.tls=true
@@ -369,6 +400,8 @@ services:
       - no-new-privileges:true
     depends_on:
       dashboard:
+        condition: service_healthy
+      superadmin:
         condition: service_healthy
       storefront:
         condition: service_healthy

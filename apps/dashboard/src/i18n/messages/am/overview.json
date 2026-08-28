@@ -4,6 +4,12 @@
   "error": {
     "loadTitle": "አጠቃላይ እይታን መጫን አልተቻለም"
   },
+  "freshness": {
+    "missingTitle": "የሽያጭ ሪፖርት ገና አልተሰራም",
+    "missingDescription": "የመጀመሪያው የተሟላ የንግድ ማጠቃለያ እስኪሰራ ድረስ የገቢ እና የደንበኛ መለኪያዎች አይታዩም። የቅርብ ጊዜ ትዕዛዞች ከታች ይታያሉ።",
+    "staleTitle": "የሽያጭ ሪፖርቱ ዘግይቷል",
+    "staleDescription": "የመጨረሻው የተሟላ ማጠቃለያ {date} ተጠናቋል። መለኪያዎቹ ይታያሉ፣ ግን የቅርብ ጊዜ ለውጦችን ላያካትቱ ይችላሉ።"
+  },
   "aria": {
     "section": "አጠቃላይ እይታ",
     "chartMetric": "ምን እንደሚታይ",
@@ -51,7 +57,7 @@
     "draftProductsHint": "በሱቅ አይታዩም",
     "waitingOnYou": "እርስዎን እየጠበቁ",
     "allOrders": "ሁሉም ትዕዛዞች",
-    "unpaid": "Unpaid",
+    "unpaid": "ያልተከፈለ",
     "unfulfilled": "ያልተላኩ"
   },
   "trading": {
@@ -115,9 +121,9 @@
     "noEmail": "ኢሜይል የለም"
   },
   "paymentStatus": {
-    "paid": "Paid",
+    "paid": "የተከፈለ",
     "failed": "አልተሳካም",
-    "unpaid": "Unpaid"
+    "unpaid": "ያልተከፈለ"
   },
   "readiness": {
     "shopTitle": "የሱቅ ዝግጁነት",
@@ -137,6 +143,14 @@
     "unavailable": "—",
     "noSalesYet": "ገና ሽያጭ የለም",
     "recordsReviewed": "{count} ትዕዛዞች"
+  },
+  "demo": {
+    "eyebrow": "ንግድዎ በአጭሩ",
+    "greeting": "እንደምን አደሩ፣ ሜሮን",
+    "description": "ሽያጭ፣ ትዕዛዞች፣ ደንበኞች እና ትኩረት የሚፈልጉ ሥራዎችን ከአንድ ቦታ ይከታተሉ።",
+    "previewLabel": "የነጋዴ ዳሽቦርድ ማሳያ",
+    "readOnly": "ለማየት ብቻ",
+    "notice": "ይህ ለማየት ብቻ የተዘጋጀ ማሳያ ነው። የራስዎን ሱቅ ለማስተዳደር ይመዝገቡ።"
   },
   "launch": {
     "title": "የጀማሪ ረዳት",

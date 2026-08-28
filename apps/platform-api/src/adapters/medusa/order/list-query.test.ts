@@ -12,6 +12,7 @@ const sample: MerchantOrder = {
   paymentStatus: "not_paid",
   fulfillmentStatus: "not_fulfilled",
   currencyCode: "etb",
+  createdAt: "2026-08-25T08:00:00.000Z",
   total: 100,
   delivery: {
     choice: "pickup",
@@ -20,7 +21,10 @@ const sample: MerchantOrder = {
     landmark: "Bole",
     notes: null,
   },
-  items: [{ id: "li_1", title: "Yirgacheffe", quantity: 1, unitPrice: 100, total: 100, thumbnail: null }],
+  items: [
+    { id: "li_1", title: "Yirgacheffe", quantity: 1, unitPrice: 100, total: 100, thumbnail: null },
+  ],
+  updatedAt: "2026-08-25T08:00:00.000Z",
 };
 
 describe("formatMerchantOrderCode", () => {

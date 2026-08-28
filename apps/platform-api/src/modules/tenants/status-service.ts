@@ -6,7 +6,7 @@ import {
   tenantProvisioningAttempts,
   tenants,
 } from "@ecs/db";
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 
 import type {
   TenantProvisioningAttemptSummary,
@@ -204,6 +204,7 @@ export function createTenantStatusService(db: PlatformDb) {
     },
     updateTenantStatus: async (input: {
       operatorUserId: string;
+      platformPrincipalId: string;
       reason?: string | null | undefined;
       status: string;
       tenantId: string;
@@ -225,7 +226,12 @@ export function createTenantStatusService(db: PlatformDb) {
             status: status as TenantStatus,
             updatedAt: new Date(),
           })
-          .where(eq(tenants.id, input.tenantId))
+          .where(
+            and(
+              eq(tenants.id, input.tenantId),
+              eq(tenants.status, status === "active" ? "suspended" : "active"),
+            ),
+          )
           .returning({
             id: tenants.id,
             name: tenants.name,
@@ -239,6 +245,7 @@ export function createTenantStatusService(db: PlatformDb) {
 
         await transaction.insert(auditLogs).values({
           actorUserId: input.operatorUserId,
+          platformPrincipalId: input.platformPrincipalId,
           tenantId: input.tenantId,
           action: "tenant.status_changed",
           targetType: "tenant",
@@ -253,10 +260,15 @@ export function createTenantStatusService(db: PlatformDb) {
       });
 
       if (!tenant) {
+        const [existing] = await db
+          .select({ id: tenants.id })
+          .from(tenants)
+          .where(eq(tenants.id, input.tenantId))
+          .limit(1);
         return {
           ok: false,
-          error: "tenant_not_found",
-          status: 404,
+          error: existing ? "tenant_status_invalid" : "tenant_not_found",
+          status: existing ? 400 : 404,
         };
       }
 

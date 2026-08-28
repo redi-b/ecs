@@ -1,0 +1,6 @@
+---
+import StorefrontFailure from "../components/shell/StorefrontFailure.astro";
+
+Astro.response.status = 500;
+---
+<html lang="en"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><meta name="robots" content="noindex" /><title>Shop temporarily unavailable</title></head><body><StorefrontFailure actionHref="/" actionLabel="Try again" description="The shop could not finish loading. Your cart is unchanged, so it is safe to try again." eyebrow="Shop paused" title="Something interrupted this page" /></body></html>

@@ -202,6 +202,67 @@ test("POST /admin/session routes central dashboard sign-in to the user's primary
   assert.equal(response.headers.get("location"), "http://addis-pantry.lvh.me/admin");
   assert.deepEqual(requestedUrls, [
     "http://platform.test/platform/auth/sign-in/email",
+    "http://platform.test/platform/operator/session",
     "http://platform.test/platform/onboarding/state",
+  ]);
+});
+
+test("POST /admin/session keeps Operations accounts out of merchant onboarding", async () => {
+  process.env.PLATFORM_API_BASE_URL = "http://platform.test";
+  const requestedUrls: string[] = [];
+
+  globalThis.fetch = async (input, init) => {
+    const request = new Request(input, init);
+    requestedUrls.push(request.url);
+
+    if (request.url === "http://platform.test/platform/auth/sign-in/email") {
+      return new Response(JSON.stringify({ user: { id: "operator_1" } }), {
+        headers: {
+          "content-type": "application/json",
+          "set-cookie": "better-auth.session_token=operator_session; HttpOnly; SameSite=Lax",
+        },
+        status: 200,
+      });
+    }
+
+    if (request.url === "http://platform.test/platform/operator/session") {
+      assert.equal(request.headers.get("cookie"), "better-auth.session_token=operator_session");
+      return Response.json({
+        operator: { id: "operator_1", email: "operations@ecs.local", name: "ECS Operations" },
+        principalId: "principal_1",
+        permissions: ["platform.overview.read"],
+      });
+    }
+
+    assert.equal(request.url, "http://platform.test/platform/auth/sign-out");
+    return Response.json({ success: true });
+  };
+
+  const body = new FormData();
+  body.set("email", "operations@ecs.local");
+  body.set("password", "password1234");
+  body.set("next", "/admin");
+
+  const response = await POST(
+    new Request("http://dashboard.lvh.me/admin/session", {
+      body,
+      headers: {
+        "x-forwarded-host": "dashboard.lvh.me",
+        "x-forwarded-proto": "http",
+      },
+      method: "POST",
+    }),
+  );
+
+  assert.equal(response.status, 303);
+  assert.equal(
+    response.headers.get("location"),
+    "http://dashboard.lvh.me/admin/sign-in?error=invalid_credentials&next=%2Fadmin",
+  );
+  assert.equal(response.headers.get("set-cookie"), null);
+  assert.deepEqual(requestedUrls, [
+    "http://platform.test/platform/auth/sign-in/email",
+    "http://platform.test/platform/operator/session",
+    "http://platform.test/platform/auth/sign-out",
   ]);
 });

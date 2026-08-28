@@ -1,0 +1,7 @@
+---
+import { luviaV1Defaults, luviaV1ThemeTokens } from "@ecs/storefront-templates";
+import { luviaDemoCart } from "../../../../lib/demo/luvia-fixture";
+import LuviaV1Cart from "../../../../templates/luvia/v1/Cart.astro";
+---
+
+<LuviaV1Cart data={luviaV1Defaults} themeTokens={luviaV1ThemeTokens} tenantName="Luvia Beauty" cartCount={2} cart={luviaDemoCart} demoMode />

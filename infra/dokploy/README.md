@@ -39,26 +39,31 @@ The wildcard record does not cover the bare `ecs.example.com` host. Add that rec
 
 Wildcard **DNS** and wildcard **TLS** are separate concerns.
 
-**TLS (current approach — option 1, on-demand per host):**
+**TLS (current deployed limitation):**
 
 | Hosts | Certificate |
 |-------|-------------|
-| `dashboard`, `api`, `shop`, `media` | Explicit Traefik router + Let's Encrypt HTTP-01 (priority 100) |
-| Any other `{shop}.${BASE_DOMAIN}` | Catch-all router + **same** `letsencrypt` resolver — Traefik requests a **normal (non-wildcard)** cert for that hostname on first HTTPS visit |
+| `dashboard`, `api`, `shop`, `media`, and explicitly approved beta shops | Explicit Traefik router + Let's Encrypt HTTP-01 (priority 100) |
+| Any other `{shop}.${BASE_DOMAIN}` | Catch-all router reaches ECS, but a regex-only host rule cannot supply a concrete ACME domain and Traefik serves its default certificate |
 
-You do **not** need a manual `*.BASE_DOMAIN` certificate for shop storefronts. Requirements:
+Wildcard DNS routes shop traffic but does not provide wildcard TLS. Before relying on managed shop hosts, configure a DNS-01 resolver in Dokploy's static Traefik configuration and request one `*.BASE_DOMAIN` certificate explicitly from the catch-all router. DNS-01 requires API access to the authoritative DNS provider; the default HTTP-01 resolver cannot issue wildcard certificates.
+
+Requirements:
 
 1. DNS: `*.${BASE_DOMAIN}` A/AAAA (or CNAME) pointing at the Traefik entry (same as today).
-2. Port **80** publicly reachable so ACME HTTP-01 can succeed (challenge path is not redirected to HTTPS).
-3. Traefik cert resolver name **`letsencrypt`** (Dokploy default) with HTTP challenge on the `web` entrypoint.
+2. A Traefik DNS-01 certificate resolver backed by narrowly scoped authoritative-DNS credentials.
+3. Router TLS domains containing `*.${BASE_DOMAIN}` (and `${BASE_DOMAIN}` separately only when the apex is used).
+4. Persistent, backed-up ACME storage and a staging issuance test before using Let's Encrypt production.
+
+Use a DNS provider credential restricted to editing DNS for the ECS zone. Do not keep a cPanel account API token in Traefik: cPanel account tokens are full-access tokens rather than DNS-scoped credentials. The cPanel ACME provider is acceptable only for a controlled one-time proof followed by immediate token revocation, not unattended production renewal.
+
+For the temporary staging environment only, known beta shops may be added as explicit `Host(...)` entries on `ecs-caddy-demo-certs`. They then use the existing HTTP-01 resolver without DNS API credentials. This is an allowlist, not dynamic provisioning, and must not be represented as the production shop-domain design.
 
 **Caveats:**
 
-- First HTTPS hit to a new shop may take a few seconds while Let's Encrypt issues the cert; rare temporary TLS errors on that first request are expected.
-- Let's Encrypt rate limits apply (roughly 50 new certs per registered domain per week). Burst-creating many shops can hit the limit.
+- A `HostRegexp` catch-all plus HTTP-01 does **not** issue a certificate for each matched hostname. It serves Traefik's default certificate unless a matching certificate already exists.
+- A single wildcard certificate avoids per-shop cold issuance and the registered-domain issuance limit caused by creating one certificate per tenant.
 - Caddy only speaks **HTTP** internally; public TLS terminates at Traefik.
-
-Optional later upgrade: DNS-01 **wildcard** cert if you prefer one cert for all shops (not required with this setup).
 
 ## Dokploy configuration
 
@@ -66,10 +71,24 @@ Optional later upgrade: DNS-01 **wildcard** cert if you prefer one cert for all 
 2. Copy the values from `infra/dokploy/.env.example` into the Dokploy environment editor and replace every placeholder.
 3. Configure GHCR credentials in Dokploy if the packages are private.
 4. Point wildcard DNS (`*.${BASE_DOMAIN}`) at the host / Traefik that fronts this stack. Do **not** create conflicting per-shop domain entries in Dokploy’s Domains UI for the same hosts (they duplicate routers). Traefik labels on `caddy` own routing + LE certs.
-5. Confirm Dokploy/Traefik has cert resolver **`letsencrypt`** with **HTTP-01** on entrypoint `web` (standard Dokploy setup).
+5. Confirm Dokploy/Traefik has the DNS-01 wildcard resolver described above. The standard `letsencrypt` HTTP-01 resolver remains suitable only for explicit concrete hosts.
 6. Deploy with `IMAGE_TAG=main` after the GitHub Actions workflow has published the images.
 
-After deploy, open `https://<any-new-shop>.${BASE_DOMAIN}` once; the cert should become valid without importing a wildcard PEM.
+Before the first production deploy, copy `.env.example` to a private local file, replace every
+placeholder, and run the repository preflight:
+
+```sh
+pnpm validate:production-env -- /absolute/path/to/production.env
+```
+
+The preflight rejects weak/placeholder/reused secrets, mismatched database credentials, shared
+Platform/Medusa databases, malformed public media origins, and half-configured notification
+providers. A mutable `IMAGE_TAG=main` produces a warning; use the published `sha-<git-sha>` tag for
+rollback-safe releases.
+
+For backup, restore, rollback, and post-deploy gates, follow [`OPERATIONS.md`](./OPERATIONS.md).
+
+After deploy, verify that a never-before-used `https://<new-shop>.${BASE_DOMAIN}` hostname is immediately covered by the wildcard certificate. It must not require a first-visit issuance attempt.
 
 Use URL-safe database passwords or percent-encode reserved characters in both database URLs. The two database URLs must use the same credentials configured for the Postgres service.
 

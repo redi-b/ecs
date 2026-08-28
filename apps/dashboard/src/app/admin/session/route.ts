@@ -3,11 +3,9 @@ import { NextResponse } from "next/server";
 
 import { getSharedAuthCookie } from "@/lib/auth-cookies";
 import { isCentralDashboardHost } from "@/lib/dashboard-hosts";
+import { isPlatformOperatorSession } from "@/lib/platform-operator-session";
 import { requestWantsJson } from "@/lib/request-wants-json";
-import {
-  sessionCanAccessShopHost,
-  validateShopHost,
-} from "@/lib/shop-host";
+import { sessionCanAccessShopHost, validateShopHost } from "@/lib/shop-host";
 
 export async function POST(request: Request) {
   const wantsJson = requestWantsJson(request);
@@ -51,10 +49,26 @@ export async function POST(request: Request) {
     );
   }
 
+  const cookieHeader = getCookieHeader(authResult.cookies);
+
+  // Operations identities have their own console and must never fall through to
+  // merchant onboarding. Shop-host sign-in remains available when a scoped
+  // support grant authorizes that specific merchant.
+  if (
+    isCentralDashboardHost(forwardedHost) &&
+    cookieHeader &&
+    (await isPlatformOperatorSession({
+      cookieHeader,
+      platformApiBaseUrl: getPlatformBaseUrl(),
+    }))
+  ) {
+    await revokePlatformSession({ cookieHeader, forwardedHost, forwardedProto });
+    return failSignIn(request, nextPath, "invalid_credentials", wantsJson);
+  }
+
   // Shop hosts: credentials alone are not enough — user must be a member of *this* shop.
   // Do not set session cookies if membership fails; revoke the server session immediately.
   if (!isCentralDashboardHost(forwardedHost)) {
-    const cookieHeader = getCookieHeader(authResult.cookies);
     const allowed = await sessionCanAccessShopHost({
       cookieHeader,
       forwardedHost,

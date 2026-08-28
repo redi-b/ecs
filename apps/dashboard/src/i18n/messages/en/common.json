@@ -46,6 +46,16 @@
   "updating": "Updating…",
   "tryAgain": "Try again",
   "loading": "Loading",
+  "errors": {
+    "notFoundTitle": "Page not found",
+    "notFoundEyebrow": "Off the map",
+    "notFoundDescription": "This page may have moved or may not be available for this shop.",
+    "notFoundAction": "Return to dashboard",
+    "unavailableTitle": "Dashboard temporarily unavailable",
+    "unavailableEyebrow": "Connection paused",
+    "unavailableDescription": "Your shop data is unchanged. Try opening this page again.",
+    "retrying": "Trying again…"
+  },
   "listStatus": {
     "onThisPageOne": "1 on this page",
     "onThisPage": "{count} on this page",

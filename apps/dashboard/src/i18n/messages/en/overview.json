@@ -4,6 +4,12 @@
   "error": {
     "loadTitle": "Overview could not be loaded"
   },
+  "freshness": {
+    "missingTitle": "Your sales summary is getting ready",
+    "missingDescription": "Recent orders are available below. Revenue and customer totals will appear here shortly.",
+    "staleTitle": "Sales reporting is delayed",
+    "staleDescription": "The last complete rollup finished {date}. Values remain visible but may not include recent changes."
+  },
   "aria": {
     "section": "Merchant overview",
     "chartMetric": "Chart metric",
@@ -22,7 +28,7 @@
     "noSalesYet": "No sales data yet",
     "catalogCount": "Catalog count",
     "repeatCount": "{count} repeat",
-    "analyticsUnavailable": "Analytics unavailable",
+    "analyticsUnavailable": "Getting ready",
     "last30Days": "Last 30 days",
     "metricView": "{label} view"
   },
@@ -138,6 +144,14 @@
     "noSalesYet": "No sales data yet",
     "recordsReviewed": "{count} records reviewed"
   },
+  "demo": {
+    "eyebrow": "Your business at a glance",
+    "greeting": "Good morning, Meron",
+    "description": "Follow sales, orders, customers, and the work that needs your attention from one place.",
+    "previewLabel": "Merchant dashboard preview",
+    "readOnly": "Read-only preview",
+    "notice": "This is a read-only preview. Sign up to manage your own shop."
+  },
   "launch": {
     "title": "Launch Assistant",
     "titleReady": "Shop is ready",
@@ -164,7 +178,7 @@
     "shopProfileMissing": "Add shop name and address",
     "salesSetup": "Sales setup",
     "salesSetupDesc": "Store and sales channel still provisioning",
-    "salesSetupReady": "Commerce backend ready",
+    "salesSetupReady": "Sales setup ready",
     "catalog": "Add products",
     "catalogDesc": "{count} products in catalog",
     "catalogEmpty": "Add at least one product customers can buy",

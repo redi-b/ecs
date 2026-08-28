@@ -1,3 +1,5 @@
+import type { EntitlementDecisionContract, EntitlementKey } from "@ecs/contracts";
+
 export type BillingInvoice = {
   id: string;
   amount: string;
@@ -28,6 +30,7 @@ export type BillingCatalogPlan = {
 };
 
 export type BillingStatus = {
+  entitlements?: Record<EntitlementKey, EntitlementDecisionContract>;
   subscription: {
     id: string;
     status: string;

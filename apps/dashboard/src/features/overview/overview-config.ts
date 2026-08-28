@@ -4,6 +4,7 @@ import type { MerchantDashboardSummary } from "@ecs/contracts";
 import type { ChartConfig } from "@/components/ui/chart";
 
 export type MerchantOverviewProps = {
+  demoMode?: boolean;
   summary: MerchantDashboardSummary;
 };
 

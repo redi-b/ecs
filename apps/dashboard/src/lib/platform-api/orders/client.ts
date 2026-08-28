@@ -51,13 +51,15 @@ export type MerchantOrderResult =
 
 export type MerchantOrderActionResult = MerchantOrderResult;
 
-export async function getMerchantOrders(options: {
-  cookieHeader?: string | null | undefined;
-  fetcher?: typeof fetch;
-  platformApiBaseUrl: string;
-  requestHost?: string | null | undefined;
-  tenantId?: string | null | undefined;
-} & MerchantOrderListParams): Promise<MerchantOrdersResult> {
+export async function getMerchantOrders(
+  options: {
+    cookieHeader?: string | null | undefined;
+    fetcher?: typeof fetch;
+    platformApiBaseUrl: string;
+    requestHost?: string | null | undefined;
+    tenantId?: string | null | undefined;
+  } & MerchantOrderListParams,
+): Promise<MerchantOrdersResult> {
   const fetcher = options.fetcher ?? fetch;
   const response = await fetcher(getOrdersUrl(options), {
     cache: "no-store",
@@ -183,7 +185,9 @@ export async function mutateMerchantOrder(options: {
   const body: Record<string, unknown> = {};
   if (options.action === "finish" && options.markPaid) {
     body.markPaid = true;
-    body.settlementMethod = options.settlement?.settlementMethod ?? "cash";
+    if (options.settlement) {
+      Object.assign(body, options.settlement);
+    }
   }
   if (options.action === "deliver" && options.fulfillmentId) {
     body.fulfillmentId = options.fulfillmentId;

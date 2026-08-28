@@ -1,5 +1,6 @@
 import {
   DeleteObjectCommand,
+  HeadBucketCommand,
   HeadObjectCommand,
   PutObjectCommand,
   S3Client,
@@ -52,6 +53,9 @@ export function createS3StorageAdapter(options: S3StorageOptions): StorageAdapte
 
   return {
     bucket: options.bucket,
+    async checkHealth() {
+      await opsClient.send(new HeadBucketCommand({ Bucket: options.bucket }));
+    },
     provider: "s3",
     async createUpload(input) {
       // Do not put ContentLength on the command — signing it forces the browser to

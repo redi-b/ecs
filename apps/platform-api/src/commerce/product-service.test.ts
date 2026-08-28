@@ -848,6 +848,151 @@ describe("createMedusaProductService", () => {
     assert.equal(forwardedRequests[2]?.method, "POST");
   });
 
+  it("preserves existing variant identities in product update payloads", async () => {
+    const forwardedRequests: Request[] = [];
+    const service = createMedusaProductService({
+      adminApiToken: "medusa_token",
+      medusaInternalUrl: "http://medusa:9000",
+      fetcher: async (input, init) => {
+        const request = new Request(input, init);
+        forwardedRequests.push(request);
+
+        if (request.method === "POST") {
+          return Response.json({
+            product: {
+              id: "prod_1",
+              title: "Updated coffee",
+              handle: "coffee",
+              status: "published",
+              thumbnail: null,
+              variants: [],
+              created_at: "2026-01-01T00:00:00.000Z",
+              updated_at: "2026-01-02T00:00:00.000Z",
+            },
+          });
+        }
+
+        return Response.json({
+          product: {
+            id: "prod_1",
+            sales_channels: [{ id: "sc_1" }],
+          },
+        });
+      },
+    });
+
+    const result = await service.updateMerchantProduct({
+      productId: "prod_1",
+      salesChannelId: "sc_1",
+      priceAmount: 250,
+      metadata: {
+        ecs_import_execution_id: "execution_1",
+        ecs_import_product_key: "update:prod_1",
+      },
+      options: [{ title: "Size", values: ["250g"] }],
+      variants: [
+        {
+          id: "variant_1",
+          currencyCode: "etb",
+          optionValues: { Size: "250g" },
+          prices: [
+            { amount: 250, currencyCode: "etb" },
+            { amount: 2, currencyCode: "usd" },
+          ],
+          sku: "COFFEE-250",
+        },
+      ],
+    });
+
+    assert.equal(result.ok, true);
+    assert.equal(forwardedRequests.length, 2);
+    assert.deepEqual(await forwardedRequests[1]?.json(), {
+      metadata: {
+        ecs_import_execution_id: "execution_1",
+        ecs_import_product_key: "update:prod_1",
+      },
+      options: [{ title: "Size", values: ["250g"] }],
+      variants: [
+        {
+          id: "variant_1",
+          title: "250g",
+          sku: "COFFEE-250",
+          manage_inventory: true,
+          options: { Size: "250g" },
+          prices: [
+            { amount: 250, currency_code: "etb" },
+            { amount: 2, currency_code: "usd" },
+          ],
+        },
+      ],
+    });
+  });
+
+  it("reconciles only an exact import-owned product identity", async () => {
+    let forwardedRequest: Request | undefined;
+    const service = createMedusaProductService({
+      adminApiToken: "medusa_token",
+      medusaInternalUrl: "http://medusa:9000",
+      fetcher: async (input, init) => {
+        forwardedRequest = new Request(input, init);
+        return Response.json({
+          products: [
+            {
+              id: "prod_imported",
+              handle: "buna",
+              metadata: {
+                ecs_import_execution_id: "execution_1",
+                ecs_import_product_key: "create:buna",
+              },
+              variants: [{ id: "variant_1", sku: "BUNA-1" }],
+            },
+          ],
+        });
+      },
+    });
+
+    const result = await service.findImportedProduct({
+      executionId: "execution_1",
+      handle: "buna",
+      productKey: "create:buna",
+      salesChannelId: "sc_1",
+    });
+
+    assert.deepEqual(result, {
+      ok: true,
+      product: {
+        id: "prod_imported",
+        variantIdsBySku: { "buna-1": "variant_1" },
+      },
+    });
+    assert.ok(forwardedRequest);
+    const url = new URL(forwardedRequest.url);
+    assert.equal(url.searchParams.get("q"), "buna");
+    assert.equal(url.searchParams.get("sales_channel_id[]"), "sc_1");
+    assert.equal(url.searchParams.get("fields"), "id,handle,metadata,variants.id,variants.sku");
+  });
+
+  it("rejects an unrelated product that already owns an import handle", async () => {
+    const service = createMedusaProductService({
+      adminApiToken: "medusa_token",
+      medusaInternalUrl: "http://medusa:9000",
+      fetcher: async () =>
+        Response.json({
+          products: [{ id: "prod_other", handle: "buna", metadata: {} }],
+        }),
+    });
+
+    assert.deepEqual(
+      await service.findImportedProduct({
+        executionId: "execution_1",
+        handle: "buna",
+        productKey: "create:buna",
+        salesChannelId: "sc_1",
+      }),
+      { ok: false, error: "product_conflict", status: 409 },
+    );
+  });
+
   it("lists products through the Medusa Admin API scoped by sales channel", async () => {
     let forwardedRequest: Request | undefined;
     const service = createMedusaProductService({
@@ -940,6 +1085,78 @@ describe("createMedusaProductService", () => {
       limit: 5,
       offset: 10,
     });
+  });
+
+  it("paginates post-filtered product catalogs beyond the first 100 rows", async () => {
+    const offsets: number[] = [];
+    const source = Array.from({ length: 150 }, (_, index) => ({
+      id: `prod_${index}`,
+      title: `Product ${index}`,
+      handle: `product-${index}`,
+      status: index === 149 ? "archived" : "published",
+      collection_id: null,
+      categories: [],
+      variants: [],
+      created_at: "2026-01-01T00:00:00.000Z",
+      updated_at: "2026-01-02T00:00:00.000Z",
+    }));
+    const service = createMedusaProductService({
+      adminApiToken: "medusa_token",
+      medusaInternalUrl: "http://medusa:9000",
+      fetcher: async (input) => {
+        const url = new URL(String(input));
+        const offset = Number(url.searchParams.get("offset"));
+        const limit = Number(url.searchParams.get("limit"));
+        offsets.push(offset);
+        return Response.json({
+          products: source.slice(offset, offset + limit),
+          count: source.length,
+          limit,
+          offset,
+        });
+      },
+    });
+
+    const result = await service.listMerchantProducts({
+      categoryId: "none",
+      limit: 10,
+      offset: 120,
+      salesChannelId: "sc_1",
+    });
+
+    assert.deepEqual(offsets, [0, 100]);
+    assert.equal(result.ok, true);
+    assert.equal(result.ok ? result.count : null, 150);
+    assert.deepEqual(
+      result.ok ? result.products.map((product) => product.id) : [],
+      Array.from({ length: 10 }, (_, index) => `prod_${120 + index}`),
+    );
+  });
+
+  it("fails explicitly when a post-filter scan exceeds its synchronous ceiling", async () => {
+    let calls = 0;
+    const service = createMedusaProductService({
+      adminApiToken: "medusa_token",
+      medusaInternalUrl: "http://medusa:9000",
+      fetcher: async () => {
+        calls += 1;
+        return Response.json({ products: [], count: 10_001, limit: 100, offset: 0 });
+      },
+    });
+
+    const result = await service.listMerchantProducts({
+      limit: 20,
+      offset: 0,
+      salesChannelId: "sc_1",
+      status: "unknown",
+    });
+
+    assert.deepEqual(result, {
+      ok: false,
+      error: "product_filter_too_large",
+      status: 413,
+    });
+    assert.equal(calls, 1);
   });
 
   it("hydrates product list variants with stock at the merchant location", async () => {
@@ -1664,6 +1881,7 @@ describe("createMedusaProductService", () => {
         isActive: true,
         isInternal: false,
         parentCategoryId: null,
+        rank: null,
         createdAt: "2026-01-01T00:00:00.000Z",
         updatedAt: "2026-01-02T00:00:00.000Z",
       },
@@ -1720,7 +1938,7 @@ describe("createMedusaProductService", () => {
     const url = new URL(forwardedRequest.url);
     assert.equal(
       url.href,
-      "http://medusa:9000/admin/product-categories?limit=5&offset=10&order=-created_at&fields=id%2Cname%2Chandle%2Cis_active%2Cis_internal%2Cparent_category_id%2Cmetadata%2Ccreated_at%2Cupdated_at",
+      "http://medusa:9000/admin/product-categories?limit=5&offset=10&order=rank&fields=id%2Cname%2Chandle%2Cis_active%2Cis_internal%2Cparent_category_id%2Crank%2Cmetadata%2Ccreated_at%2Cupdated_at",
     );
     assert.deepEqual(result, {
       ok: true,
@@ -1732,6 +1950,7 @@ describe("createMedusaProductService", () => {
           isActive: true,
           isInternal: false,
           parentCategoryId: null,
+          rank: null,
           createdAt: "2026-01-01T00:00:00.000Z",
           updatedAt: "2026-01-02T00:00:00.000Z",
         },

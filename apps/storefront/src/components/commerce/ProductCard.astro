@@ -15,7 +15,7 @@ const title = product.title ?? "Product";
   <a class="sf-card" href={href}>
     {
       product.thumbnail ? (
-        <img class="sf-card-media" src={product.thumbnail} alt="" loading="lazy" />
+        <img class="sf-card-media" src={product.thumbnail} alt="" width="900" height="900" loading="lazy" decoding="async" />
       ) : (
         <div class="sf-card-media-placeholder" aria-hidden="true" />
       )

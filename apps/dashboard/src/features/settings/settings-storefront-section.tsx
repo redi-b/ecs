@@ -2,17 +2,17 @@
 
 import type {
   MerchantDashboardAccess,
+  StorefrontSeoSettings,
   StorefrontTemplateCatalogItem,
 } from "@ecs/contracts";
-import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
-
+import { ConfirmDialog } from "@/components/app/confirm-dialog";
 import { AppIcons } from "@/components/app/icons";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { ConfirmDialog } from "@/components/app/confirm-dialog";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   getSelectedTemplateName,
@@ -26,6 +26,7 @@ import {
   ShopLiveStatusBadge,
   StorefrontTemplateOption,
 } from "@/features/settings/settings-sections";
+import { StorefrontSeoSettingsForm } from "@/features/settings/storefront-seo-settings-form";
 import { useI18n } from "@/i18n/provider";
 import { dashboardRoutes } from "@/lib/routes";
 import { cn } from "@/lib/utils";
@@ -33,7 +34,9 @@ import { cn } from "@/lib/utils";
 export function StorefrontSection({
   storefrontTemplates,
   summary,
+  seo,
 }: {
+  seo: StorefrontSeoSettings;
   storefrontTemplates: StorefrontTemplateCatalogItem[];
   summary: MerchantDashboardAccess;
 }) {
@@ -91,7 +94,9 @@ export function StorefrontSection({
       } | null;
 
       if (!response.ok || !data?.ok) {
-        toast.error(data?.message?.replaceAll("_", " ") || t("settings.storefront.pauseShopFailed"));
+        toast.error(
+          data?.message?.replaceAll("_", " ") || t("settings.storefront.pauseShopFailed"),
+        );
         return;
       }
 
@@ -144,12 +149,12 @@ export function StorefrontSection({
   const designName =
     storefrontTemplates.find((item) => item.version.templateKey === activeKey)?.name ??
     getSelectedTemplateName(storefrontTemplates, summary, notSelected);
-  const selectedVersion = storefrontTemplates.find(
-    (item) => item.version.templateKey === activeKey,
-  )?.version.version;
-  const versionLabel = selectedVersion ?? summary.storefront.templateVersion
-    ? `v${selectedVersion ?? summary.storefront.templateVersion}`
-    : notSelected;
+  const selectedVersion = storefrontTemplates.find((item) => item.version.templateKey === activeKey)
+    ?.version.version;
+  const versionLabel =
+    (selectedVersion ?? summary.storefront.templateVersion)
+      ? `v${selectedVersion ?? summary.storefront.templateVersion}`
+      : notSelected;
 
   return (
     <SettingsSectionBody>
@@ -207,8 +212,8 @@ export function StorefrontSection({
                   hasPendingTemplateChange
                     ? "settings.storefront.draftDesign"
                     : "settings.storefront.selectedDesign",
-                )}:{" "}
-                <span className="font-medium text-foreground">{designName}</span>
+                )}
+                : <span className="font-medium text-foreground">{designName}</span>
               </span>
               <span>
                 {t("settings.storefront.version")}:{" "}
@@ -308,6 +313,8 @@ export function StorefrontSection({
           </Alert>
         )}
       </SettingsPanel>
+
+      <StorefrontSeoSettingsForm initialSeo={seo} tenantId={summary.tenant.id} />
     </SettingsSectionBody>
   );
 }

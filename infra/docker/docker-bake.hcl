@@ -11,7 +11,7 @@ variable "GIT_SHA" {
 }
 
 group "default" {
-  targets = ["platform-api", "medusa", "dashboard", "storefront"]
+  targets = ["platform-api", "medusa", "dashboard", "superadmin", "storefront"]
 }
 
 target "common" {
@@ -49,6 +49,15 @@ target "dashboard" {
   tags = [
     "${IMAGE_PREFIX}/dashboard:${IMAGE_TAG}",
     "${IMAGE_PREFIX}/dashboard:sha-${GIT_SHA}",
+  ]
+}
+
+target "superadmin" {
+  inherits = ["common"]
+  target   = "superadmin"
+  tags = [
+    "${IMAGE_PREFIX}/superadmin:${IMAGE_TAG}",
+    "${IMAGE_PREFIX}/superadmin:sha-${GIT_SHA}",
   ]
 }
 

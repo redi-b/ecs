@@ -5,23 +5,24 @@
  * Missing optional slots fall back to `templates/fallback/*`.
  */
 import type { StorefrontTemplateKey } from "@ecs/storefront-templates";
-import LuviaV1Home from "./luvia/v1/Home.astro";
-import LuviaV1ProductList from "./luvia/v1/ProductList.astro";
-import LuviaV1Product from "./luvia/v1/Product.astro";
-import LuviaV1Cart from "./luvia/v1/Cart.astro";
-import LuviaV1Checkout from "./luvia/v1/Checkout.astro";
-import LuviaV1Contact from "./luvia/v1/Contact.astro";
-import LuviaV1OrderConfirm from "./luvia/v1/OrderConfirm.astro";
-import LuviaV1About from "./luvia/v1/About.astro";
-import LuviaV1RequestItem from "./luvia/v1/RequestItem.astro";
-import LuviaV1Wishlist from "./luvia/v1/Wishlist.astro";
-import LuviaV1Account from "./luvia/v1/Account.astro";
-import LuviaV1AccountOrder from "./luvia/v1/AccountOrder.astro";
 import FallbackCartPage from "./fallback/CartPage.astro";
 import FallbackCheckoutPage from "./fallback/CheckoutPage.astro";
 import FallbackOrderConfirmPage from "./fallback/OrderConfirmPage.astro";
 import FallbackProductListPage from "./fallback/ProductListPage.astro";
 import FallbackProductPage from "./fallback/ProductPage.astro";
+import LuviaV1About from "./luvia/v1/About.astro";
+import LuviaV1Account from "./luvia/v1/Account.astro";
+import LuviaV1AccountOrder from "./luvia/v1/AccountOrder.astro";
+import LuviaV1Cart from "./luvia/v1/Cart.astro";
+import LuviaV1Checkout from "./luvia/v1/Checkout.astro";
+import LuviaV1Contact from "./luvia/v1/Contact.astro";
+import LuviaV1Home from "./luvia/v1/Home.astro";
+import LuviaV1OrderConfirm from "./luvia/v1/OrderConfirm.astro";
+import LuviaV1Product from "./luvia/v1/Product.astro";
+import LuviaV1ProductList from "./luvia/v1/ProductList.astro";
+import LuviaV1RequestItem from "./luvia/v1/RequestItem.astro";
+import LuviaV1Wishlist from "./luvia/v1/Wishlist.astro";
+import { resolveStorefrontTemplateKey } from "./template-key.js";
 import type { StorefrontPageComponent, StorefrontRenderer } from "./types.js";
 
 const fallbacks = {
@@ -50,7 +51,7 @@ export const storefrontRenderers = {
 } satisfies Record<StorefrontTemplateKey, StorefrontRenderer>;
 
 export function getStorefrontRenderer(templateKey: string): StorefrontRenderer | undefined {
-  return storefrontRenderers[templateKey as StorefrontTemplateKey];
+  return storefrontRenderers[resolveStorefrontTemplateKey(templateKey) as StorefrontTemplateKey];
 }
 
 export function resolveRendererSlot<K extends keyof typeof fallbacks>(
