@@ -5,6 +5,16 @@ import { describe, it } from "node:test";
 const root = new URL("../../", import.meta.url);
 
 describe("dashboard demo runtime boundaries", () => {
+  it("passes only serializable product-detail route data across the server boundary", async () => {
+    const source = await readFile(
+      new URL("features/demo/dashboard-demo-sections.tsx", root),
+      "utf8",
+    );
+
+    assert.match(source, /productDetailHrefBase="\/demo\/products"/);
+    assert.doesNotMatch(source, /productDetailHref=\{/);
+  });
+
   it("provides tooltip context for the production sidebar used by the demo", async () => {
     const source = await readFile(new URL("dashboard-demo-shell.tsx", import.meta.url), "utf8");
     assert.match(source, /<TooltipProvider>/);

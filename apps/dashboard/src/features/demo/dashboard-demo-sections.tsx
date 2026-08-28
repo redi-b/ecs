@@ -69,8 +69,8 @@ export async function DemoProducts() {
       <ProductsTable
         pageSize={20}
         products={demoProducts}
+        productDetailHrefBase="/demo/products"
         readOnly
-        productDetailHref={(product) => `/demo/products/${product.id}`}
         totalCount={demoProducts.length}
       />
     </PageShell>

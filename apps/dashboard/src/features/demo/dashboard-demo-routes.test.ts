@@ -12,6 +12,16 @@ test("the demo keeps every primary dashboard capability visible", () => {
   );
   assert.equal(demoRoutes.find((route) => route.id === "editor")?.href, "/demo/editor");
   assert.equal(demoRoutes.find((route) => route.id === "customers")?.disabled, true);
+  const products = demoRoutes.find((route) => route.id === "products");
+  assert.deepEqual(
+    products?.children?.map((route) => route.id),
+    ["products-list", "product-categories", "product-collections"],
+  );
+  assert.notEqual(products?.children?.find((route) => route.id === "products-list")?.disabled, true);
+  assert.equal(
+    products?.children?.find((route) => route.id === "product-categories")?.disabled,
+    true,
+  );
 });
 
 test("demo insight reports stay inside the public preview route family", () => {
