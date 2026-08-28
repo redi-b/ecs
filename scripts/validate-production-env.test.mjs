@@ -8,6 +8,8 @@ const validEnvironment = () => ({
   IMAGE_PREFIX: "ghcr.io/acme/ecs",
   IMAGE_TAG: "sha-0123456789abcdef0123456789abcdef01234567",
   BASE_DOMAIN: "ecs.acme.test",
+  SUPERADMIN_PUBLIC_BASE_URL: "https://ops.ecs.acme.test",
+  STOREFRONT_DEMO_HOST: "demo.ecs.acme.test",
   POSTGRES_PASSWORD: secret("postgres"),
   PLATFORM_DATABASE_URL: `postgres://ecs:${secret("postgres")}@postgres:5432/platform_db`,
   MEDUSA_DATABASE_URL: `postgres://ecs:${secret("postgres")}@postgres:5432/medusa_db`,
@@ -47,4 +49,14 @@ test("warns when the deployment uses a mutable image tag", () => {
   const { errors, warnings } = validateProductionEnvironment(environment);
   assert.deepEqual(errors, []);
   assert.equal(warnings.length, 1);
+});
+
+test("rejects operations and demo hosts outside the platform domain", () => {
+  const environment = validEnvironment();
+  environment.SUPERADMIN_PUBLIC_BASE_URL = "https://ops.other.test/path";
+  environment.STOREFRONT_DEMO_HOST = "preview.other.test";
+
+  const { errors } = validateProductionEnvironment(environment);
+  assert.ok(errors.some((error) => error.includes("SUPERADMIN_PUBLIC_BASE_URL must be")));
+  assert.ok(errors.some((error) => error.includes("STOREFRONT_DEMO_HOST must be")));
 });

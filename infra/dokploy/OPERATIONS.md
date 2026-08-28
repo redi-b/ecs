@@ -20,6 +20,26 @@ backup locations, and incident details outside the repository.
 
 Do not run demo seeds in production. Do not continue a release after either migration job fails.
 
+## Public host configuration
+
+Keep these public host values in the Dokploy environment and under the same delegated base domain:
+
+```dotenv
+BASE_DOMAIN=ecs.example.et
+SUPERADMIN_PUBLIC_BASE_URL=https://ops.ecs.example.et
+STOREFRONT_DEMO_HOST=demo.ecs.example.et
+SUPERADMIN_AUTH_COOKIE_PREFIX=ecs-ops
+```
+
+Replace the example domain with the deployment's real base domain. The production validator rejects
+an Operations URL or demo host that drifts outside it. Compose also derives the same `ops` and `demo`
+hosts from `BASE_DOMAIN`, so the Dashboard can direct operators to the correct console and the
+Storefront can resolve branded template demos at runtime. Keep the Operations cookie prefix distinct
+from the merchant prefix.
+
+DNS and TLS must cover `dashboard`, `ops`, `api`, `shop`, `media`, `demo`, and the managed shop
+wildcard under the base domain before those public routes are accepted for testing.
+
 ## Initial operator access
 
 Platform authority is never inferred from merchant membership. Bootstrap the first operator only

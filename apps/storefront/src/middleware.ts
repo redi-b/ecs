@@ -1,17 +1,18 @@
 import { defineMiddleware } from "astro:middleware";
-
+import { isStorefrontDemoPath, resolveBrandedStorefrontDemoPath } from "./lib/demo-routes.js";
 import { getPrimaryDomainRedirect } from "./lib/domain-redirect.js";
 import {
-  isStorefrontDemoPath,
-  resolveBrandedStorefrontDemoPath,
-} from "./lib/demo-routes.js";
-import { getPlatformApiBaseUrl, getRequestHost } from "./lib/env.js";
+  getPlatformApiBaseUrl,
+  getRequestHost,
+  getStorefrontBaseDomain,
+  getStorefrontDemoHost,
+} from "./lib/env.js";
 import { isPrivateStorefrontPath } from "./lib/seo-routes.js";
 import { getPublishedStorefrontConfig } from "./lib/storefront-config.js";
 
 export const onRequest = defineMiddleware(async (context, next) => {
   const brandedDemoPath = resolveBrandedStorefrontDemoPath({
-    demoHost: import.meta.env.STOREFRONT_DEMO_HOST,
+    demoHost: getStorefrontDemoHost(import.meta.env.STOREFRONT_DEMO_HOST),
     hostname: context.url.hostname,
     pathname: context.url.pathname,
   });
@@ -29,10 +30,10 @@ export const onRequest = defineMiddleware(async (context, next) => {
     return response;
   }
 
-  const platformBaseDomain =
-    import.meta.env.STOREFRONT_BASE_DOMAIN ??
-    import.meta.env.STOREFRONT_PUBLIC_BASE_DOMAIN ??
-    "lvh.me";
+  const platformBaseDomain = getStorefrontBaseDomain({
+    buildBaseDomain: import.meta.env.STOREFRONT_BASE_DOMAIN,
+    buildPublicBaseDomain: import.meta.env.STOREFRONT_PUBLIC_BASE_DOMAIN,
+  });
   const host = context.url.hostname.toLowerCase();
   const isManagedHost =
     host === platformBaseDomain.toLowerCase() ||

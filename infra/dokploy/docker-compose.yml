@@ -256,6 +256,8 @@ services:
       PORT: "3001"
       PLATFORM_API_BASE_URL: http://platform-api:3000
       DASHBOARD_PUBLIC_BASE_URL: https://dashboard.${BASE_DOMAIN}
+      SUPERADMIN_PUBLIC_BASE_URL: ${SUPERADMIN_PUBLIC_BASE_URL:-https://ops.${BASE_DOMAIN}}
+      STOREFRONT_DEMO_HOST: ${STOREFRONT_DEMO_HOST:-demo.${BASE_DOMAIN}}
       DASHBOARD_AUTH_COOKIE_DOMAIN: .${BASE_DOMAIN}
       # Must match platform-api BETTER_AUTH_COOKIE_PREFIX (session clear / current session).
       BETTER_AUTH_COOKIE_PREFIX: ${BETTER_AUTH_COOKIE_PREFIX:-ecs}
@@ -286,7 +288,7 @@ services:
       NODE_ENV: production
       PORT: "3002"
       PLATFORM_API_BASE_URL: http://platform-api:3000
-      SUPERADMIN_PUBLIC_BASE_URL: https://ops.${BASE_DOMAIN}
+      SUPERADMIN_PUBLIC_BASE_URL: ${SUPERADMIN_PUBLIC_BASE_URL:-https://ops.${BASE_DOMAIN}}
       # Separate from the merchant session; Superadmin translates it server-side for Platform.
       SUPERADMIN_AUTH_COOKIE_PREFIX: ${SUPERADMIN_AUTH_COOKIE_PREFIX:-ecs-ops}
       # Retained only to clear any historical parent-domain operations cookies during migration.
@@ -321,6 +323,7 @@ services:
       STOREFRONT_CACHE_PREFIX: ${STOREFRONT_CACHE_PREFIX:-ecs:sf:cache}
       STOREFRONT_CACHE_PURGE_SECRET: ${STOREFRONT_CACHE_PURGE_SECRET:?set STOREFRONT_CACHE_PURGE_SECRET}
       STOREFRONT_PUBLIC_BASE_DOMAIN: ${BASE_DOMAIN}
+      STOREFRONT_DEMO_HOST: ${STOREFRONT_DEMO_HOST:-demo.${BASE_DOMAIN}}
       STOREFRONT_EDITOR_ORIGIN: https://dashboard.${BASE_DOMAIN}
     tmpfs:
       - /tmp:size=64m,mode=1777
