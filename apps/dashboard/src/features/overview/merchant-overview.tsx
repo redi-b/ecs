@@ -1,7 +1,7 @@
 "use client";
 
 import type { MerchantDashboardSummary } from "@ecs/contracts";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   Area,
   Bar,
@@ -201,6 +201,10 @@ export function MerchantOverview({ demoMode = false, summary }: MerchantOverview
   const [rangePreset, setRangePreset] = useState<OverviewRangePreset>("30d");
   const [customRange, setCustomRange] = useState({ start: "", end: "" });
   const [mixView, setMixView] = useState<MixView>("payment");
+  const previewHref = useCallback(
+    (href: string) => (demoMode ? getDemoOverviewHref(href) : href),
+    [demoMode],
+  );
 
   const tradingChartConfig = useMemo(
     () => ({
@@ -286,23 +290,23 @@ export function MerchantOverview({ demoMode = false, summary }: MerchantOverview
       {
         label: t("overview.attention.unfulfilledOrders"),
         value: operations?.attention.unfulfilledOrders,
-        href: dashboardRoutes.orders,
+        href: previewHref(dashboardRoutes.orders),
         hint: t("overview.attention.unfulfilledHint"),
       },
       {
         label: t("overview.attention.awaitingPayment"),
         value: operations?.attention.unpaidOrders,
-        href: dashboardRoutes.orders,
+        href: previewHref(dashboardRoutes.orders),
         hint: t("overview.attention.awaitingPaymentHint"),
       },
       {
         label: t("overview.attention.draftProducts"),
         value: operations?.attention.draftProducts,
-        href: dashboardRoutes.products,
+        href: previewHref(dashboardRoutes.products),
         hint: t("overview.attention.draftProductsHint"),
       },
     ],
-    [operations, t],
+    [operations, previewHref, t],
   );
 
   const waitingOrders = useMemo(() => {
@@ -399,7 +403,7 @@ export function MerchantOverview({ demoMode = false, summary }: MerchantOverview
             size="sm"
             variant="outline"
           >
-            <Link href={dashboardRoutes.billing} prefetch={false}>
+            <Link href={previewHref(dashboardRoutes.billing)} prefetch={false}>
               {t("overview.billing.openBilling")}
             </Link>
           </Button>
@@ -452,7 +456,7 @@ export function MerchantOverview({ demoMode = false, summary }: MerchantOverview
                   <p className="type-eyebrow">{t("overview.attention.waitingOnYou")}</p>
                   <Link
                     className="text-xs text-muted-foreground hover:text-foreground"
-                    href={dashboardRoutes.orders}
+                    href={previewHref(dashboardRoutes.orders)}
                     prefetch={false}
                   >
                     {t("overview.attention.allOrders")}
@@ -462,7 +466,7 @@ export function MerchantOverview({ demoMode = false, summary }: MerchantOverview
                   {waitingOrders.map((order) => (
                     <Link
                       className="flex items-center justify-between gap-3 rounded-lg border bg-background px-3 py-2 text-sm transition-colors hover:bg-muted/50"
-                      href={dashboardRoutes.orderDetail(order.id)}
+                      href={previewHref(dashboardRoutes.orderDetail(order.id))}
                       key={order.id}
                       prefetch={false}
                     >
@@ -507,25 +511,25 @@ export function MerchantOverview({ demoMode = false, summary }: MerchantOverview
       {/* Commerce KPIs only — storefront analytics stay out of the ops strip */}
       <div className="grid gap-2.5 sm:grid-cols-2 xl:grid-cols-4">
         <MetricCard
-          href={dashboardRoutes.orders}
+          href={previewHref(dashboardRoutes.orders)}
           label={t("overview.metrics.revenue")}
           note={operations?.range.label ?? t("overview.metrics.noSalesYet")}
           value={formatMoney(operations?.totals.revenue, currencyCode, locale)}
         />
         <MetricCard
-          href={dashboardRoutes.orders}
+          href={previewHref(dashboardRoutes.orders)}
           label={t("overview.metrics.orders")}
           note={sampleNote(operations?.range.sampledOrderCount, t, locale)}
           value={formatNumber(operations?.totals.orders, locale)}
         />
         <MetricCard
-          href={dashboardRoutes.products}
+          href={previewHref(dashboardRoutes.products)}
           label={t("overview.metrics.products")}
           note={t("overview.metrics.catalogCount")}
           value={formatNumber(operations?.totals.products, locale)}
         />
         <MetricCard
-          href={dashboardRoutes.customers}
+          href={previewHref(dashboardRoutes.customers)}
           label={t("overview.metrics.customers")}
           note={t("overview.metrics.repeatCount", {
             count: formatNumber(operations?.customers.repeat, locale),
@@ -696,7 +700,7 @@ export function MerchantOverview({ demoMode = false, summary }: MerchantOverview
           ) : (
             <ChartEmptyState
               className="min-h-72"
-              ctaHref={`${dashboardRoutes.orders}?create=order`}
+              ctaHref={previewHref(`${dashboardRoutes.orders}?create=order`)}
               ctaLabel={t("overview.trading.emptyCta")}
               description={t("overview.trading.empty")}
               title={t("overview.trading.emptyTitle")}
@@ -863,7 +867,7 @@ export function MerchantOverview({ demoMode = false, summary }: MerchantOverview
                 {operations?.recentOrders.map((order) => (
                   <Link
                     className="flex items-center justify-between gap-3 rounded-lg px-2 py-2 text-sm transition-colors hover:bg-muted/50"
-                    href={dashboardRoutes.orderDetail(order.id)}
+                    href={previewHref(dashboardRoutes.orderDetail(order.id))}
                     key={order.id}
                     prefetch={false}
                   >
@@ -887,7 +891,7 @@ export function MerchantOverview({ demoMode = false, summary }: MerchantOverview
             ) : (
               <ChartEmptyState
                 className="min-h-40 border-0 bg-transparent py-6"
-                ctaHref={`${dashboardRoutes.orders}?create=order`}
+                ctaHref={previewHref(`${dashboardRoutes.orders}?create=order`)}
                 ctaLabel={t("overview.trading.emptyCta")}
                 description={t("overview.recent.empty")}
                 title={t("overview.recent.emptyTitle")}
@@ -895,7 +899,7 @@ export function MerchantOverview({ demoMode = false, summary }: MerchantOverview
             )}
             {(operations?.recentOrders.length ?? 0) > 0 ? (
               <Button asChild className="mt-auto w-full" size="sm" variant="outline">
-                <Link href={dashboardRoutes.orders} prefetch={false}>
+                <Link href={previewHref(dashboardRoutes.orders)} prefetch={false}>
                   {t("overview.recent.viewAll")}
                 </Link>
               </Button>
@@ -907,4 +911,11 @@ export function MerchantOverview({ demoMode = false, summary }: MerchantOverview
       {demoMode ? null : <LaunchAssistant summary={summary} />}
     </section>
   );
+}
+
+function getDemoOverviewHref(href: string) {
+  if (href.startsWith(dashboardRoutes.products)) return "/demo/products";
+  if (href.startsWith(dashboardRoutes.orders)) return "/demo/orders";
+  if (href.startsWith(dashboardRoutes.insights)) return "/demo/insights";
+  return "/demo";
 }

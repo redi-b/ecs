@@ -120,6 +120,7 @@ export function getProductColumns(
   onDelete: (productId: string) => void,
   onStatusChange: (productIds: string[], status: ProductStatusValue) => void,
   t: Translate,
+  productDetailHref?: (product: MerchantProduct) => string,
 ): ColumnDef<MerchantProduct>[] {
   const categoryById = new Map(categories.map((category) => [category.id, category]));
   const collectionById = new Map(collections.map((collection) => [collection.id, collection]));
@@ -155,7 +156,11 @@ export function getProductColumns(
         <DataTableHeader column={column} title={t("products.table.product")} />
       ),
       cell: ({ row }) => (
-        <ProductIdentityCell product={row.original} tenantId={tenantId ?? undefined} />
+        <ProductIdentityCell
+          {...(productDetailHref ? { href: productDetailHref(row.original) } : {})}
+          product={row.original}
+          tenantId={tenantId ?? undefined}
+        />
       ),
     },
     {
@@ -168,9 +173,7 @@ export function getProductColumns(
     {
       id: "price",
       accessorFn: (product) => getProductPriceSortValue(product),
-      header: ({ column }) => (
-        <DataTableHeader column={column} title={t("products.table.price")} />
-      ),
+      header: ({ column }) => <DataTableHeader column={column} title={t("products.table.price")} />,
       cell: ({ row }) => (
         <span className="text-muted-foreground">
           {formatProductPriceRange(row.original, t("products.detail.noPrice"))}
@@ -316,13 +319,7 @@ export function getProductColumns(
   ];
 }
 
-export function ProductStockSummary({
-  product,
-  t,
-}: {
-  product: MerchantProduct;
-  t?: Translate;
-}) {
+export function ProductStockSummary({ product, t }: { product: MerchantProduct; t?: Translate }) {
   const variants = product.variants ?? [];
   const stocks = variants.map((variant) => variant.stock).filter(isProductStock);
 
@@ -471,11 +468,7 @@ export function getDeletionErrorMessage(error: unknown, resourceName: string) {
   return `Failed to delete ${resourceName.toLowerCase()}. Try again.`;
 }
 
-export function getStatusLoadingMessage(
-  count: number,
-  status: ProductStatusValue,
-  t?: Translate,
-) {
+export function getStatusLoadingMessage(count: number, status: ProductStatusValue, t?: Translate) {
   if (t) {
     return status === "published"
       ? t("products.table.publishing", { count })
@@ -487,11 +480,7 @@ export function getStatusLoadingMessage(
     : `Moving ${count} ${productLabel} to draft...`;
 }
 
-export function getStatusSuccessMessage(
-  count: number,
-  status: ProductStatusValue,
-  t?: Translate,
-) {
+export function getStatusSuccessMessage(count: number, status: ProductStatusValue, t?: Translate) {
   if (t) {
     return status === "published"
       ? t("products.table.published", { count })

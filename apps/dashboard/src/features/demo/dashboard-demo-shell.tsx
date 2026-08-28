@@ -10,6 +10,7 @@ import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { dashboardDemoFixture } from "@/features/demo/dashboard-demo-fixture";
 import { DemoInteractionBoundary } from "@/features/demo/demo-interaction-boundary";
+import { DemoPreviewBanner } from "@/features/demo/demo-preview-banner";
 
 export function DashboardDemoShell({ children }: { children: ReactNode }) {
   return (
@@ -20,7 +21,8 @@ export function DashboardDemoShell({ children }: { children: ReactNode }) {
             <AppSidebar access={dashboardDemoFixture} demoMode />
             <SidebarInset>
               <BreadcrumbLabelsProvider>
-                <AppHeader />
+                <AppHeader demoMode />
+                <DemoPreviewBanner />
                 {children}
               </BreadcrumbLabelsProvider>
             </SidebarInset>

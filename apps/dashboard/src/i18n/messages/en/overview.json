@@ -150,7 +150,12 @@
     "description": "Follow sales, orders, customers, and the work that needs your attention from one place.",
     "previewLabel": "Merchant dashboard preview",
     "readOnly": "Read-only preview",
-    "notice": "This is a read-only preview. Sign up to manage your own shop."
+    "notice": "This is a read-only preview. Sign up to manage your own shop.",
+    "scopeNotice": "Explore sample shop data. Some setup and account tools are shown but are only available after you create a shop.",
+    "createShop": "Create your shop",
+    "actionNotice": "This action is available after you create your shop. The preview does not save changes.",
+    "sampleCurrent": "The sample data is already up to date.",
+    "fullDashboard": "Available in the full dashboard"
   },
   "launch": {
     "title": "Launch Assistant",

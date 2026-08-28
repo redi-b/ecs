@@ -28,13 +28,21 @@ import { dashboardRoutes } from "@/lib/routes";
 import { cn } from "@/lib/utils";
 
 export function OrderIdentityCell({
+  href: hrefOverride,
   order,
   tenantId,
 }: {
+  href?: string | null;
   order: MerchantOrder;
   tenantId?: string;
 }) {
-  const href = getTenantScopedPath(dashboardRoutes.orderDetail(order.id), tenantId);
+  const href =
+    hrefOverride === null
+      ? null
+      : (hrefOverride ?? getTenantScopedPath(dashboardRoutes.orderDetail(order.id), tenantId));
+  if (!href) {
+    return <span className="font-medium tabular-nums">{formatOrderReference(order)}</span>;
+  }
   return (
     <Link className={cn(listEntityLinkClassName, "tabular-nums")} href={href} prefetch={false}>
       {formatOrderReference(order)}
@@ -90,9 +98,7 @@ export function OrderCustomerCell({ order }: { order: MerchantOrder }) {
 
 export function OrderItemsCell({ order }: { order: MerchantOrder }) {
   const { t } = useI18n();
-  return (
-    <p className="max-w-[14rem] truncate text-sm">{getOrderItemsSummary(order, t)}</p>
-  );
+  return <p className="max-w-[14rem] truncate text-sm">{getOrderItemsSummary(order, t)}</p>;
 }
 
 export function OrderMoneyCell({ order }: { order: MerchantOrder }) {
@@ -154,9 +160,5 @@ export function OrderProgressBadge({ order }: { order: MerchantOrder }) {
 export function OrderDeliveryCell({ order }: { order: MerchantOrder }) {
   const { t } = useI18n();
   const label = getDeliveryLabel(order);
-  return (
-    <span className="text-sm text-muted-foreground">
-      {getDeliveryDisplayLabel(label, t)}
-    </span>
-  );
+  return <span className="text-sm text-muted-foreground">{getDeliveryDisplayLabel(label, t)}</span>;
 }

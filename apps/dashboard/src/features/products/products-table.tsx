@@ -40,6 +40,7 @@ type ProductsTableProps = {
   initialVariantCount?: ProductVariantCountFilter | undefined;
   pageSize: number;
   products: MerchantProduct[];
+  productDetailHref?: ((product: MerchantProduct) => string) | undefined;
   readOnly?: boolean | undefined;
   tenantId?: string | undefined;
   totalCount: number;
@@ -85,6 +86,7 @@ export function ProductsTable({
   initialVariantCount = "all",
   pageSize,
   products,
+  productDetailHref,
   readOnly = false,
   tenantId,
   totalCount,
@@ -217,9 +219,10 @@ export function ProductsTable({
       (id) => setDeleteProductId(id),
       handleStatusChange,
       t,
+      productDetailHref,
     );
     return readOnly ? resolved.filter((column) => column.id !== "actions") : resolved;
-  }, [categories, collections, handleStatusChange, readOnly, t, tenantId]);
+  }, [categories, collections, handleStatusChange, productDetailHref, readOnly, t, tenantId]);
 
   const pushServerFilters = useCallback(
     (
