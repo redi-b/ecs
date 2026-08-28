@@ -9,6 +9,22 @@ describe("dashboard demo runtime boundaries", () => {
     const source = await readFile(new URL("dashboard-demo-shell.tsx", import.meta.url), "utf8");
     assert.match(source, /<TooltipProvider>/);
     assert.match(source, /<SidebarProvider>/);
+    assert.match(source, /<AppSidebar access=\{dashboardDemoFixture\} demoMode \/>/);
+    assert.match(source, /<AppHeader \/>/);
+    assert.doesNotMatch(source, /<Sidebar collapsible=/);
+  });
+
+  it("composes preview pages from production page and table components", async () => {
+    const overview = await readFile(new URL("app/demo/page.tsx", root), "utf8");
+    const sections = await readFile(
+      new URL("features/demo/dashboard-demo-sections.tsx", root),
+      "utf8",
+    );
+    assert.match(overview, /<PageShell/);
+    assert.match(overview, /<MerchantOverview demoMode/);
+    assert.match(sections, /<ProductsTable/);
+    assert.match(sections, /<OrdersTable/);
+    assert.match(sections, /<InsightsWorkspace/);
   });
 
   it("uses Next Script for the pre-paint theme bootstrap", async () => {

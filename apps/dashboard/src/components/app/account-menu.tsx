@@ -1,11 +1,10 @@
 "use client";
 
 import type { MerchantDashboardSummary } from "@ecs/contracts";
-import Link from "@/components/app/link";
 import { useState } from "react";
-
 import { useActorOrFallback } from "@/components/app/actor-context";
 import { AppIcons } from "@/components/app/icons";
+import Link from "@/components/app/link";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -26,7 +25,13 @@ import { useI18n } from "@/i18n/provider";
 import { dashboardRoutes } from "@/lib/routes";
 import { cn } from "@/lib/utils";
 
-export function AccountMenu({ actor }: { actor: MerchantDashboardSummary["actor"] }) {
+export function AccountMenu({
+  actor,
+  demoMode = false,
+}: {
+  actor: MerchantDashboardSummary["actor"];
+  demoMode?: boolean;
+}) {
   const { t } = useI18n();
   const { isMobile, setOpenMobile, state } = useSidebar();
   const { actor: liveActor } = useActorOrFallback(actor);
@@ -45,6 +50,7 @@ export function AccountMenu({ actor }: { actor: MerchantDashboardSummary["actor"
   }
 
   async function signOut() {
+    if (demoMode) return;
     if (isSigningOut) return;
     setIsSigningOut(true);
     setMenuOpen(false);
@@ -131,18 +137,14 @@ export function AccountMenu({ actor }: { actor: MerchantDashboardSummary["actor"
             <DropdownMenuSeparator className="my-1" />
             <DropdownMenuItem
               className="py-1.5"
-              disabled={isSigningOut}
+              disabled={demoMode || isSigningOut}
               onSelect={(event) => {
                 event.preventDefault();
                 void signOut();
               }}
               variant="destructive"
             >
-              {isSigningOut ? (
-                <AppIcons.loader className="animate-spin" />
-              ) : (
-                <AppIcons.logout />
-              )}
+              {isSigningOut ? <AppIcons.loader className="animate-spin" /> : <AppIcons.logout />}
               {isSigningOut ? t("account.signingOut") : t("account.signOut")}
             </DropdownMenuItem>
           </DropdownMenuContent>
