@@ -40,6 +40,7 @@ type ProductsTableProps = {
   initialVariantCount?: ProductVariantCountFilter | undefined;
   pageSize: number;
   products: MerchantProduct[];
+  readOnly?: boolean | undefined;
   tenantId?: string | undefined;
   totalCount: number;
 };
@@ -84,13 +85,14 @@ export function ProductsTable({
   initialVariantCount = "all",
   pageSize,
   products,
+  readOnly = false,
   tenantId,
   totalCount,
 }: ProductsTableProps) {
   const { t } = useI18n();
   const router = useRouter();
   const queryClient = useQueryClient();
-  const taxonomy = useProductTaxonomy({ tenantId });
+  const taxonomy = useProductTaxonomy({ enabled: !readOnly, tenantId });
   const categories = taxonomy.categories;
   const collections = taxonomy.collections;
   const [pending, startTransition] = useTransition();
@@ -207,18 +209,17 @@ export function ProductsTable({
     [t, updateProductStatus],
   );
 
-  const columns = useMemo(
-    () =>
-      getProductColumns(
-        tenantId,
-        categories,
-        collections,
-        (id) => setDeleteProductId(id),
-        handleStatusChange,
-        t,
-      ),
-    [categories, collections, handleStatusChange, t, tenantId],
-  );
+  const columns = useMemo(() => {
+    const resolved = getProductColumns(
+      tenantId,
+      categories,
+      collections,
+      (id) => setDeleteProductId(id),
+      handleStatusChange,
+      t,
+    );
+    return readOnly ? resolved.filter((column) => column.id !== "actions") : resolved;
+  }, [categories, collections, handleStatusChange, readOnly, t, tenantId]);
 
   const pushServerFilters = useCallback(
     (
@@ -461,35 +462,39 @@ export function ProductsTable({
               <AppIcons.copy data-icon="inline-start" />
               {t("table.actions.copyIds")}
             </Button>
-            <Button
-              disabled={isStatusUpdatePending}
-              onClick={() =>
-                handleStatusChange(
-                  selectedProducts.map((product) => product.id),
-                  "published",
-                )
-              }
-              size="sm"
-              type="button"
-              variant="outline"
-            >
-              {t("table.actions.publish")}
-            </Button>
-            <Button
-              disabled={isStatusUpdatePending}
-              onClick={() =>
-                handleStatusChange(
-                  selectedProducts.map((product) => product.id),
-                  "draft",
-                )
-              }
-              size="sm"
-              type="button"
-              variant="outline"
-            >
-              {t("table.actions.moveToDraft")}
-            </Button>
-            {!tenantId ? (
+            {!readOnly ? (
+              <>
+                <Button
+                  disabled={isStatusUpdatePending}
+                  onClick={() =>
+                    handleStatusChange(
+                      selectedProducts.map((product) => product.id),
+                      "published",
+                    )
+                  }
+                  size="sm"
+                  type="button"
+                  variant="outline"
+                >
+                  {t("table.actions.publish")}
+                </Button>
+                <Button
+                  disabled={isStatusUpdatePending}
+                  onClick={() =>
+                    handleStatusChange(
+                      selectedProducts.map((product) => product.id),
+                      "draft",
+                    )
+                  }
+                  size="sm"
+                  type="button"
+                  variant="outline"
+                >
+                  {t("table.actions.moveToDraft")}
+                </Button>
+              </>
+            ) : null}
+            {!readOnly && !tenantId ? (
               <Button
                 onClick={() => {
                   setSelectedProductsForInventory(selectedProducts);
@@ -502,18 +507,20 @@ export function ProductsTable({
                 {t("products.stock.bulkAction")}
               </Button>
             ) : null}
-            <Button
-              onClick={() => {
-                setSelectedProductIdsForDelete(selectedProducts.map((p) => p.id));
-                setShowBatchDeleteDialog(true);
-              }}
-              size="sm"
-              type="button"
-              variant="destructive-outline"
-            >
-              <AppIcons.trash data-icon="inline-start" />
-              Delete
-            </Button>
+            {!readOnly ? (
+              <Button
+                onClick={() => {
+                  setSelectedProductIdsForDelete(selectedProducts.map((p) => p.id));
+                  setShowBatchDeleteDialog(true);
+                }}
+                size="sm"
+                type="button"
+                variant="destructive-outline"
+              >
+                <AppIcons.trash data-icon="inline-start" />
+                Delete
+              </Button>
+            ) : null}
           </>
         )}
         columns={columns}

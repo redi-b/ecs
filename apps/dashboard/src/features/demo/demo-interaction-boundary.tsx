@@ -1,6 +1,6 @@
 "use client";
 
-import { type MouseEvent, type ReactNode, useState } from "react";
+import { type FormEvent, type MouseEvent, type ReactNode, useState } from "react";
 
 type DemoInteractionBoundaryProps = {
   children: ReactNode;
@@ -25,8 +25,20 @@ export function DemoInteractionBoundary({ children, notice }: DemoInteractionBou
     window.requestAnimationFrame(() => setAnnouncement(notice));
   }
 
+  function containSubmit(event: FormEvent<HTMLDivElement>) {
+    event.preventDefault();
+    event.stopPropagation();
+    setAnnouncement("");
+    window.requestAnimationFrame(() => setAnnouncement(notice));
+  }
+
   return (
-    <div onAuxClickCapture={containNavigation} onClickCapture={containNavigation}>
+    <div
+      className="contents"
+      onAuxClickCapture={containNavigation}
+      onClickCapture={containNavigation}
+      onSubmitCapture={containSubmit}
+    >
       {children}
       <output aria-live="polite" className="sr-only">
         {announcement}

@@ -44,6 +44,7 @@ type OrdersTableProps = {
   footer?: ReactNode;
   orders: MerchantOrder[];
   pageSize: number;
+  readOnly?: boolean | undefined;
   tenantId?: string | undefined;
   totalCount: number;
 };
@@ -193,6 +194,7 @@ export function OrdersTable({
   footer,
   orders,
   pageSize: _pageSize,
+  readOnly = false,
   tenantId,
   totalCount,
 }: OrdersTableProps) {
@@ -203,7 +205,10 @@ export function OrdersTable({
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [searchValue, setSearchValue] = useState(filters.q);
-  const columns = useMemo(() => getOrderColumns(t, tenantId), [t, tenantId]);
+  const columns = useMemo(() => {
+    const resolved = getOrderColumns(t, tenantId);
+    return readOnly ? resolved.filter((column) => column.id !== "actions") : resolved;
+  }, [readOnly, t, tenantId]);
 
   const pushFilters = useCallback(
     (next: Partial<OrderListFilterState>) => {

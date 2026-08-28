@@ -1,13 +1,10 @@
 "use client";
 
 import type { MerchantDashboardSummary } from "@ecs/contracts";
-import Link from "@/components/app/link";
 import { usePathname } from "next/navigation";
-
 import { AccountMenu } from "@/components/app/account-menu";
 import { AppIcons } from "@/components/app/icons";
-import type { MessageKey } from "@/i18n/messages";
-import { useI18n } from "@/i18n/provider";
+import Link from "@/components/app/link";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   DropdownMenu,
@@ -35,6 +32,8 @@ import {
   SidebarSeparator,
   useSidebar,
 } from "@/components/ui/sidebar";
+import type { MessageKey } from "@/i18n/messages";
+import { useI18n } from "@/i18n/provider";
 import { type AppRoute, appRouteSections, getAppRoutesBySection } from "@/lib/navigation";
 import { dashboardRoutes } from "@/lib/routes";
 
@@ -167,12 +166,22 @@ function NavRouteItem({ pathname, route }: { pathname: string; route: AppRoute }
   return (
     <SidebarMenuItem>
       {route.disabled ? (
-        <SidebarMenuButton className="rounded-lg" disabled isActive={false} tooltip={localizedTitle}>
+        <SidebarMenuButton
+          className="rounded-lg"
+          disabled
+          isActive={false}
+          tooltip={localizedTitle}
+        >
           <Icon />
           <span>{localizedTitle}</span>
         </SidebarMenuButton>
       ) : (
-        <SidebarMenuButton asChild className="rounded-lg" isActive={active} tooltip={localizedTitle}>
+        <SidebarMenuButton
+          asChild
+          className="rounded-lg"
+          isActive={active}
+          tooltip={localizedTitle}
+        >
           <Link href={route.href} onClick={closeMobileSidebar} prefetch={false}>
             <Icon />
             <span>{localizedTitle}</span>
@@ -185,8 +194,10 @@ function NavRouteItem({ pathname, route }: { pathname: string; route: AppRoute }
 
 export function AppSidebar({
   access,
+  demoMode = false,
 }: {
   access: Pick<MerchantDashboardSummary, "actor" | "tenant">;
+  demoMode?: boolean;
 }) {
   const pathname = usePathname();
   const closeMobileSidebar = useCloseMobileSidebar();
@@ -210,12 +221,7 @@ export function AppSidebar({
       <SidebarHeader className="flex h-14 shrink-0 flex-row items-center border-b border-sidebar-border p-0 px-3 group-data-[collapsible=icon]:px-2">
         <SidebarMenu className="w-full">
           <SidebarMenuItem>
-            <SidebarMenuButton
-              asChild
-              className="h-10 rounded-xl"
-              size="lg"
-              tooltip={shopName}
-            >
+            <SidebarMenuButton asChild className="h-10 rounded-xl" size="lg" tooltip={shopName}>
               <Link href={dashboardRoutes.overview} onClick={closeMobileSidebar} prefetch={false}>
                 <span className="grid size-8 shrink-0 place-items-center rounded-full bg-primary text-sm font-semibold text-primary-foreground shadow-[inset_0_1px_0_color-mix(in_oklch,white_22%,transparent)]">
                   {shopInitial}
@@ -236,7 +242,16 @@ export function AppSidebar({
 
       <SidebarContent className="gap-0 py-2">
         {visibleSections.map((section, index) => {
-          const routes = getAppRoutesBySection(section.id);
+          const routes = getAppRoutesBySection(section.id)
+            .filter((route) => !demoMode || DEMO_ROUTE_HREFS[route.id])
+            .map((route) => {
+              if (!demoMode) return route;
+              const { children: _children, ...demoRoute } = route;
+              return {
+                ...demoRoute,
+                href: DEMO_ROUTE_HREFS[route.id] as AppRoute["href"],
+              };
+            });
 
           return (
             <div className="flex flex-col" key={section.id}>
@@ -261,9 +276,16 @@ export function AppSidebar({
       </SidebarContent>
 
       <SidebarFooter className="border-t border-sidebar-border px-2 py-2 group-data-[collapsible=icon]:p-2">
-        <AccountMenu actor={access.actor} />
+        <AccountMenu actor={access.actor} demoMode={demoMode} />
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>
   );
 }
+
+const DEMO_ROUTE_HREFS: Record<string, string> = {
+  overview: "/demo",
+  products: "/demo/products",
+  orders: "/demo/orders",
+  insights: "/demo/insights",
+};
