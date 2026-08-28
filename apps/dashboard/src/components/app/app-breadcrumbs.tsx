@@ -14,6 +14,10 @@ import {
 } from "@/components/ui/breadcrumb";
 import type { MessageKey } from "@/i18n/messages";
 import { useI18n } from "@/i18n/provider";
+import {
+  getDashboardPathFromDemo,
+  getDemoPathFromDashboard,
+} from "@/features/demo/dashboard-demo-routes";
 import { type DashboardBreadcrumb, getDashboardBreadcrumbTrail } from "@/lib/dashboard-breadcrumbs";
 import { dashboardRoutes } from "@/lib/routes";
 
@@ -56,12 +60,12 @@ function localizeBreadcrumbTitle(
 
 export function AppBreadcrumbs() {
   const pathname = usePathname();
-  const demoPathname = getDemoDashboardPath(pathname);
+  const demoPathname = getDashboardPathFromDemo(pathname);
   const { t } = useI18n();
   const labels = useBreadcrumbLabels();
   const trail = getDashboardBreadcrumbTrail(demoPathname ?? pathname, labels).map((crumb) => ({
     ...crumb,
-    href: demoPathname ? getDemoHref(crumb.href) : crumb.href,
+    href: demoPathname ? getDemoPathFromDashboard(crumb.href) : crumb.href,
     title: localizeBreadcrumbTitle(crumb, labels, t),
   }));
   const currentRoute = trail.at(-1);
@@ -97,22 +101,4 @@ export function AppBreadcrumbs() {
       </BreadcrumbList>
     </Breadcrumb>
   );
-}
-
-function getDemoDashboardPath(pathname: string) {
-  if (pathname === "/demo") return dashboardRoutes.overview;
-  if (pathname.startsWith("/demo/products")) return dashboardRoutes.products;
-  if (pathname.startsWith("/demo/orders")) return dashboardRoutes.orders;
-  if (pathname.startsWith("/demo/storefront")) return dashboardRoutes.editor;
-  if (pathname.startsWith("/demo/insights")) return dashboardRoutes.insights;
-  return null;
-}
-
-function getDemoHref(href: string) {
-  if (href === dashboardRoutes.overview) return "/demo";
-  if (href.startsWith(dashboardRoutes.products)) return "/demo/products";
-  if (href.startsWith(dashboardRoutes.orders)) return "/demo/orders";
-  if (href.startsWith(dashboardRoutes.editor)) return "/demo/storefront";
-  if (href.startsWith(dashboardRoutes.insights)) return "/demo/insights";
-  return "/demo";
 }
