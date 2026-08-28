@@ -32,6 +32,7 @@ import {
   SidebarSeparator,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { getDemoSidebarRoute } from "@/features/demo/dashboard-demo-routes";
 import type { MessageKey } from "@/i18n/messages";
 import { useI18n } from "@/i18n/provider";
 import { type AppRoute, appRouteSections, getAppRoutesBySection } from "@/lib/navigation";
@@ -97,6 +98,9 @@ function NavRouteItem({ pathname, route }: { pathname: string; route: AppRoute }
   const collapsed = state === "collapsed" && !isMobile;
 
   const localizedTitle = t(getRouteLocalizationKey(route.id)) || route.title;
+  const tooltip = route.disabled
+    ? `${localizedTitle} · ${t("overview.demo.fullDashboard")}`
+    : localizedTitle;
 
   if (route.children?.length) {
     // Icon rail hides collapsible subtrees — open nested links in a flyout instead.
@@ -166,12 +170,7 @@ function NavRouteItem({ pathname, route }: { pathname: string; route: AppRoute }
   return (
     <SidebarMenuItem>
       {route.disabled ? (
-        <SidebarMenuButton
-          className="rounded-lg"
-          disabled
-          isActive={false}
-          tooltip={localizedTitle}
-        >
+        <SidebarMenuButton className="rounded-lg" disabled isActive={false} tooltip={tooltip}>
           <Icon />
           <span>{localizedTitle}</span>
         </SidebarMenuButton>
@@ -222,7 +221,11 @@ export function AppSidebar({
         <SidebarMenu className="w-full">
           <SidebarMenuItem>
             <SidebarMenuButton asChild className="h-10 rounded-xl" size="lg" tooltip={shopName}>
-              <Link href={dashboardRoutes.overview} onClick={closeMobileSidebar} prefetch={false}>
+              <Link
+                href={demoMode ? "/demo" : dashboardRoutes.overview}
+                onClick={closeMobileSidebar}
+                prefetch={false}
+              >
                 <span className="grid size-8 shrink-0 place-items-center rounded-full bg-primary text-sm font-semibold text-primary-foreground shadow-[inset_0_1px_0_color-mix(in_oklch,white_22%,transparent)]">
                   {shopInitial}
                 </span>
@@ -242,16 +245,9 @@ export function AppSidebar({
 
       <SidebarContent className="gap-0 py-2">
         {visibleSections.map((section, index) => {
-          const routes = getAppRoutesBySection(section.id)
-            .filter((route) => !demoMode || DEMO_ROUTE_HREFS[route.id])
-            .map((route) => {
-              if (!demoMode) return route;
-              const { children: _children, ...demoRoute } = route;
-              return {
-                ...demoRoute,
-                href: DEMO_ROUTE_HREFS[route.id] as AppRoute["href"],
-              };
-            });
+          const routes = getAppRoutesBySection(section.id).map((route) =>
+            demoMode ? getDemoSidebarRoute(route) : route,
+          );
 
           return (
             <div className="flex flex-col" key={section.id}>
@@ -282,10 +278,3 @@ export function AppSidebar({
     </Sidebar>
   );
 }
-
-const DEMO_ROUTE_HREFS: Record<string, string> = {
-  overview: "/demo",
-  products: "/demo/products",
-  orders: "/demo/orders",
-  insights: "/demo/insights",
-};

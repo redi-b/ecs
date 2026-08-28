@@ -121,17 +121,39 @@ export function AccountMenu({
             </DropdownMenuLabel>
             <DropdownMenuSeparator className="my-1" />
             <DropdownMenuGroup>
-              <DropdownMenuItem asChild className="py-1.5">
-                <Link href={dashboardRoutes.settings} onClick={closeMobileSidebar} prefetch={false}>
-                  <AppIcons.settings />
-                  {t("account.settings")}
-                </Link>
+              <DropdownMenuItem asChild={!demoMode} className="py-1.5" disabled={demoMode}>
+                {demoMode ? (
+                  <span>
+                    <AppIcons.settings />
+                    {t("account.settings")}
+                  </span>
+                ) : (
+                  <Link
+                    href={dashboardRoutes.settings}
+                    onClick={closeMobileSidebar}
+                    prefetch={false}
+                  >
+                    <AppIcons.settings />
+                    {t("account.settings")}
+                  </Link>
+                )}
               </DropdownMenuItem>
-              <DropdownMenuItem asChild className="py-1.5">
-                <Link href={dashboardRoutes.billing} onClick={closeMobileSidebar} prefetch={false}>
-                  <AppIcons.billing />
-                  {t("account.billing")}
-                </Link>
+              <DropdownMenuItem asChild={!demoMode} className="py-1.5" disabled={demoMode}>
+                {demoMode ? (
+                  <span>
+                    <AppIcons.billing />
+                    {t("account.billing")}
+                  </span>
+                ) : (
+                  <Link
+                    href={dashboardRoutes.billing}
+                    onClick={closeMobileSidebar}
+                    prefetch={false}
+                  >
+                    <AppIcons.billing />
+                    {t("account.billing")}
+                  </Link>
+                )}
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator className="my-1" />

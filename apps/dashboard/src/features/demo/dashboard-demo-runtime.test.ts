@@ -10,7 +10,8 @@ describe("dashboard demo runtime boundaries", () => {
     assert.match(source, /<TooltipProvider>/);
     assert.match(source, /<SidebarProvider>/);
     assert.match(source, /<AppSidebar access=\{dashboardDemoFixture\} demoMode \/>/);
-    assert.match(source, /<AppHeader \/>/);
+    assert.match(source, /<AppHeader demoMode \/>/);
+    assert.match(source, /<DemoPreviewBanner \/>/);
     assert.doesNotMatch(source, /<Sidebar collapsible=/);
   });
 

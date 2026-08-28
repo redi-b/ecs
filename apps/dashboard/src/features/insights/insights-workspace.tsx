@@ -15,7 +15,7 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { useI18n } from "@/i18n/provider";
 
-type InsightsWorkspaceProps = { summary: MerchantDashboardSummary };
+type InsightsWorkspaceProps = { demoMode?: boolean; summary: MerchantDashboardSummary };
 type SalesPeriod = "30" | "90";
 
 const funnelKeys = {
@@ -26,7 +26,7 @@ const funnelKeys = {
   orders_created: "insights.funnel.ordersCreated",
 } as const;
 
-export function InsightsWorkspace({ summary }: InsightsWorkspaceProps) {
+export function InsightsWorkspace({ demoMode = false, summary }: InsightsWorkspaceProps) {
   const { locale, t } = useI18n();
   const revenueGradientId = useId();
   const [period, setPeriod] = useState<SalesPeriod>("30");
@@ -93,7 +93,7 @@ export function InsightsWorkspace({ summary }: InsightsWorkspaceProps) {
           label={t("insights.metrics.averageOrder")}
           value={formatMoney(averageOrder, currency, locale)}
         />
-        <StorefrontVisitsMetric initialValue={funnel[0]?.count ?? null} />
+        <StorefrontVisitsMetric demoMode={demoMode} initialValue={funnel[0]?.count ?? null} />
       </section>
 
       <Card className="overflow-hidden">
@@ -265,13 +265,23 @@ function JourneyStages({
   );
 }
 
-function StorefrontVisitsMetric({ initialValue }: { initialValue: number | null }) {
+function StorefrontVisitsMetric({
+  demoMode,
+  initialValue,
+}: {
+  demoMode: boolean;
+  initialValue: number | null;
+}) {
   const { formatNumber, t } = useI18n();
   const router = useRouter();
   const [value, setValue] = useState(initialValue);
   const [pending, setPending] = useState(false);
 
   async function refresh() {
+    if (demoMode) {
+      toast.success(t("overview.demo.sampleCurrent"));
+      return;
+    }
     setPending(true);
     const response = await fetch("/admin/insights/actions/visits", {
       cache: "no-store",

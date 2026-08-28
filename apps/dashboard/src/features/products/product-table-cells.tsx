@@ -1,9 +1,8 @@
 "use client";
 
 import type { MerchantProduct } from "@ecs/contracts";
-import Link from "@/components/app/link";
-
 import { AppIcons } from "@/components/app/icons";
+import Link from "@/components/app/link";
 import { Badge } from "@/components/ui/badge";
 import {
   getProductMediaCount,
@@ -17,14 +16,17 @@ import { dashboardRoutes } from "@/lib/routes";
 import { cn } from "@/lib/utils";
 
 export function ProductIdentityCell({
+  href: hrefOverride,
   product,
   tenantId,
 }: {
+  href?: string;
   product: MerchantProduct;
   tenantId?: string | undefined;
 }) {
   const { t } = useI18n();
-  const href = getTenantScopedPath(dashboardRoutes.productDetail(product.id), tenantId);
+  const href =
+    hrefOverride ?? getTenantScopedPath(dashboardRoutes.productDetail(product.id), tenantId);
 
   return (
     <div className="flex w-64 max-w-64 items-center gap-3">
@@ -104,10 +106,7 @@ export function formatProductDate(value: string | null) {
   }).format(new Date(value));
 }
 
-export function formatProductPriceRange(
-  product: MerchantProduct,
-  noPriceLabel = "No price",
-) {
+export function formatProductPriceRange(product: MerchantProduct, noPriceLabel = "No price") {
   const prices = product.variants
     ?.flatMap((variant) => variant.prices)
     .filter((variantPrice) => typeof variantPrice.amount === "number" && variantPrice.currencyCode);

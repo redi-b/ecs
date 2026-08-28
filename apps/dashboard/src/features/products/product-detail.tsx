@@ -6,10 +6,10 @@ import type {
   MerchantProductCollection,
 } from "@ecs/contracts";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import Link from "@/components/app/link";
 import { useRouter } from "next/navigation";
 import { type ReactNode, useMemo, useState } from "react";
 import { toast } from "sonner";
+import { ConfirmDialog } from "@/components/app/confirm-dialog";
 
 import {
   DetailField,
@@ -19,7 +19,7 @@ import {
   DetailSection,
 } from "@/components/app/detail-surface";
 import { AppIcons } from "@/components/app/icons";
-import { ConfirmDialog } from "@/components/app/confirm-dialog";
+import Link from "@/components/app/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { MediaPreviewLightbox } from "@/features/media/media-lightbox";
@@ -29,27 +29,31 @@ import {
   ProductOrganizationEditButton,
 } from "@/features/products/product-edit-dialog";
 import { useProductTaxonomy } from "@/features/products/use-product-taxonomy";
+import { useI18n } from "@/i18n/provider";
 import { getTenantScopedPath } from "@/lib/dashboard-tenant-context";
 import { dashboardRoutes } from "@/lib/routes";
-import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 
 type ProductDetailProps = {
   action: string;
   product: MerchantProduct;
+  readOnly?: boolean;
   tenantId?: string | undefined;
 };
 
-export function ProductDetail({ action, product, tenantId }: ProductDetailProps) {
+export function ProductDetail({ action, product, readOnly = false, tenantId }: ProductDetailProps) {
   const { t } = useI18n();
-  const taxonomy = useProductTaxonomy({ tenantId });
+  const taxonomy = useProductTaxonomy({ enabled: !readOnly, tenantId });
   const categories = taxonomy.categories;
   const collections = taxonomy.collections;
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [descriptionExpanded, setDescriptionExpanded] = useState(false);
 
   const images = useMemo(
-    () => (product.images ?? []).filter((image): image is typeof image & { url: string } => Boolean(image.url)),
+    () =>
+      (product.images ?? []).filter((image): image is typeof image & { url: string } =>
+        Boolean(image.url),
+      ),
     [product.images],
   );
 
@@ -67,7 +71,9 @@ export function ProductDetail({ action, product, tenantId }: ProductDetailProps)
         id: image.id || image.url,
         publicUrl: image.url,
         subtitle:
-          product.thumbnail && product.thumbnail === image.url ? t("products.detail.coverImage") : image.url,
+          product.thumbnail && product.thumbnail === image.url
+            ? t("products.detail.coverImage")
+            : image.url,
       })),
     [images, product.thumbnail, product.title, t],
   );
@@ -105,11 +111,13 @@ export function ProductDetail({ action, product, tenantId }: ProductDetailProps)
               <div className="min-w-0 space-y-2">
                 <div className="flex flex-wrap items-center gap-2">
                   <ProductStatusBadge status={product.status} />
-                  <ProductDetailsEditButton
-                    action={action}
-                    product={product}
-                    triggerVariant="button"
-                  />
+                  {readOnly ? null : (
+                    <ProductDetailsEditButton
+                      action={action}
+                      product={product}
+                      triggerVariant="button"
+                    />
+                  )}
                 </div>
                 <p className="type-meta break-all">
                   {product.handle ? `/${product.handle}` : product.id}
@@ -156,7 +164,7 @@ export function ProductDetail({ action, product, tenantId }: ProductDetailProps)
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(15.5rem,18rem)] lg:items-start">
         <div className="flex min-w-0 flex-col gap-4">
           <DetailSection
-            action={<ProductMediaEditButton action={action} product={product} />}
+            action={readOnly ? null : <ProductMediaEditButton action={action} product={product} />}
             meta={t("products.detail.imagesCount", { count: images.length })}
             title={t("products.detail.images")}
           >
@@ -219,12 +227,14 @@ export function ProductDetail({ action, product, tenantId }: ProductDetailProps)
         <aside className="flex flex-col gap-4 lg:sticky lg:top-20">
           <DetailSection
             action={
-              <ProductOrganizationEditButton
-                action={action}
-                categories={categories}
-                collections={collections}
-                product={product}
-              />
+              readOnly ? null : (
+                <ProductOrganizationEditButton
+                  action={action}
+                  categories={categories}
+                  collections={collections}
+                  product={product}
+                />
+              )
             }
             title={t("products.detail.organization")}
           >
@@ -279,9 +289,7 @@ function ProductOptionsSummary({ product }: { product: MerchantProduct }) {
     return (
       <div className="rounded-lg bg-muted/25 px-4 py-3 text-sm ring-1 ring-foreground/[0.06]">
         <div className="font-medium">{t("products.detail.simpleProduct")}</div>
-        <div className="mt-1 text-muted-foreground">
-          {t("products.detail.simpleProductHelp")}
-        </div>
+        <div className="mt-1 text-muted-foreground">{t("products.detail.simpleProductHelp")}</div>
       </div>
     );
   }
@@ -361,7 +369,11 @@ function ProductThumbnail({
     return (
       <div className="size-16 shrink-0 overflow-hidden rounded-xl ring-1 ring-border/60 bg-muted sm:size-[4.5rem]">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img alt={title ?? t("products.detail.productImage")} className="size-full object-cover" src={src} />
+        <img
+          alt={title ?? t("products.detail.productImage")}
+          className="size-full object-cover"
+          src={src}
+        />
       </div>
     );
   }
@@ -401,11 +413,7 @@ function ProductStatusBadge({ status }: { status: string | null }) {
         ? t("products.detail.statusDraft")
         : t("products.detail.statusUnknown");
 
-  return (
-    <Badge variant={variant}>
-      {label}
-    </Badge>
-  );
+  return <Badge variant={variant}>{label}</Badge>;
 }
 
 function CollectionValue({
@@ -436,8 +444,8 @@ function CategoryValue({
   categories: Array<{ category: MerchantProductCategory | undefined; id: string }>;
   tenantId?: string | undefined;
 }) {
+  const { t } = useI18n();
   if (!categories.length) {
-    const { t } = useI18n();
     return <span className="text-muted-foreground">{t("products.filter.category.none")}</span>;
   }
 

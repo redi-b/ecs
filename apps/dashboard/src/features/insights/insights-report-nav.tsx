@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
+import { getDemoInsightsHref } from "@/features/demo/dashboard-demo-routes";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 
@@ -13,7 +14,7 @@ const reports = [
   ["customers", "/admin/insights/customers"],
 ] as const;
 
-export function InsightsReportNav() {
+export function InsightsReportNav({ demoMode = false }: { demoMode?: boolean }) {
   const { t } = useI18n();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -23,8 +24,12 @@ export function InsightsReportNav() {
     <nav aria-label={t("insights.reports.label")} className="overflow-x-auto border-b">
       <div className="flex min-w-max gap-1">
         {reports.map(([id, path]) => {
-          const active = pathname === path;
-          const href = tenantId ? `${path}?tenantId=${encodeURIComponent(tenantId)}` : path;
+          const resolvedPath = demoMode ? getDemoInsightsHref(id) : path;
+          const active = pathname === resolvedPath;
+          const href =
+            tenantId && !demoMode
+              ? `${resolvedPath}?tenantId=${encodeURIComponent(tenantId)}`
+              : resolvedPath;
           return (
             <Link
               aria-current={active ? "page" : undefined}

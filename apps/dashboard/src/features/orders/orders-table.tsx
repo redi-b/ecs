@@ -64,7 +64,11 @@ async function copyToClipboard(value: string, label: string, t: Translate) {
   }
 }
 
-function getOrderColumns(t: Translate, tenantId?: string): ColumnDef<MerchantOrder>[] {
+function getOrderColumns(
+  t: Translate,
+  tenantId?: string,
+  readOnly = false,
+): ColumnDef<MerchantOrder>[] {
   return [
     {
       id: "select",
@@ -97,7 +101,11 @@ function getOrderColumns(t: Translate, tenantId?: string): ColumnDef<MerchantOrd
       accessorFn: (order) => formatOrderReference(order),
       header: ({ column }) => <DataTableHeader column={column} title={t("table.headers.order")} />,
       cell: ({ row }) => (
-        <OrderIdentityCell order={row.original} {...(tenantId ? { tenantId } : {})} />
+        <OrderIdentityCell
+          {...(readOnly ? { href: null } : {})}
+          order={row.original}
+          {...(tenantId ? { tenantId } : {})}
+        />
       ),
     },
     {
@@ -206,7 +214,7 @@ export function OrdersTable({
   const [pending, startTransition] = useTransition();
   const [searchValue, setSearchValue] = useState(filters.q);
   const columns = useMemo(() => {
-    const resolved = getOrderColumns(t, tenantId);
+    const resolved = getOrderColumns(t, tenantId, readOnly);
     return readOnly ? resolved.filter((column) => column.id !== "actions") : resolved;
   }, [readOnly, t, tenantId]);
 
