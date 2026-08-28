@@ -39,8 +39,8 @@ import { type AppRoute, appRouteSections, getAppRoutesBySection } from "@/lib/na
 import { dashboardRoutes } from "@/lib/routes";
 
 function isRouteActive(pathname: string, route: AppRoute) {
-  if (route.href === dashboardRoutes.overview) {
-    return pathname === dashboardRoutes.overview;
+  if (route.id === "overview") {
+    return pathname === route.href;
   }
 
   return pathname === route.href || pathname.startsWith(`${route.href}/`);
@@ -125,10 +125,18 @@ function NavRouteItem({ pathname, route }: { pathname: string; route: AppRoute }
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
               {route.children.map((child) => (
-                <DropdownMenuItem asChild key={child.id}>
-                  <Link href={child.href} onClick={closeMobileSidebar} prefetch={false}>
-                    {t(getRouteLocalizationKey(child.id)) || child.title}
-                  </Link>
+                <DropdownMenuItem
+                  asChild={!child.disabled}
+                  disabled={Boolean(child.disabled)}
+                  key={child.id}
+                >
+                  {child.disabled ? (
+                    <span>{t(getRouteLocalizationKey(child.id)) || child.title}</span>
+                  ) : (
+                    <Link href={child.href} onClick={closeMobileSidebar} prefetch={false}>
+                      {t(getRouteLocalizationKey(child.id)) || child.title}
+                    </Link>
+                  )}
                 </DropdownMenuItem>
               ))}
             </DropdownMenuContent>
@@ -153,10 +161,19 @@ function NavRouteItem({ pathname, route }: { pathname: string; route: AppRoute }
             <SidebarMenuSub>
               {route.children.map((child) => (
                 <SidebarMenuSubItem key={child.id}>
-                  <SidebarMenuSubButton asChild isActive={isChildRouteActive(pathname, child)}>
-                    <Link href={child.href} onClick={closeMobileSidebar} prefetch={false}>
-                      {t(getRouteLocalizationKey(child.id)) || child.title}
-                    </Link>
+                  <SidebarMenuSubButton
+                    asChild={!child.disabled}
+                    isActive={!child.disabled && isChildRouteActive(pathname, child)}
+                  >
+                    {child.disabled ? (
+                      <span aria-disabled="true" className="cursor-not-allowed opacity-50">
+                        {t(getRouteLocalizationKey(child.id)) || child.title}
+                      </span>
+                    ) : (
+                      <Link href={child.href} onClick={closeMobileSidebar} prefetch={false}>
+                        {t(getRouteLocalizationKey(child.id)) || child.title}
+                      </Link>
+                    )}
                   </SidebarMenuSubButton>
                 </SidebarMenuSubItem>
               ))}
