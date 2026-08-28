@@ -137,6 +137,24 @@ export function validateProductionEnvironment(environment) {
   }
 
   if (validHostname(baseDomain)) {
+    const operationsUrl = parseUrl(
+      errors,
+      "SUPERADMIN_PUBLIC_BASE_URL",
+      environment.SUPERADMIN_PUBLIC_BASE_URL ?? "",
+      ["https:"],
+    );
+    expect(
+      errors,
+      operationsUrl?.href === `https://ops.${baseDomain}/`,
+      `SUPERADMIN_PUBLIC_BASE_URL must be https://ops.${baseDomain}`,
+    );
+    const demoHost = environment.STOREFRONT_DEMO_HOST ?? "";
+    expect(errors, validHostname(demoHost), "STOREFRONT_DEMO_HOST must be a valid hostname");
+    expect(
+      errors,
+      demoHost === `demo.${baseDomain}`,
+      `STOREFRONT_DEMO_HOST must be demo.${baseDomain}`,
+    );
     const expected = {
       MEDIA_S3_ENDPOINT: `https://media.${baseDomain}`,
       MEDIA_S3_CORS_ALLOW_ORIGIN: `https://dashboard.${baseDomain}`,
