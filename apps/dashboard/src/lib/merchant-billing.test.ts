@@ -7,6 +7,7 @@ const billingPayload = {
   billing: {
     subscription: {
       id: "sub_1",
+      planVersionId: "plan_version_growth_1",
       status: "active",
       billingCycle: "monthly",
       manualPaymentState: "paid",
@@ -30,6 +31,8 @@ const billingPayload = {
         price: "0",
         isFree: true,
         isCurrent: false,
+        limits: {},
+        features: {},
       },
       {
         id: "plan_growth",
@@ -37,6 +40,8 @@ const billingPayload = {
         price: "2499",
         isFree: false,
         isCurrent: true,
+        limits: {},
+        features: {},
       },
     ],
   },
@@ -56,10 +61,7 @@ describe("getMerchantBillingStatus", () => {
     });
 
     assert.equal(result.ok, true);
-    assert.equal(
-      forwardedRequest?.url,
-      "http://platform.local/platform/tenants/tenant_1/billing",
-    );
+    assert.equal(forwardedRequest?.url, "http://platform.local/platform/tenants/tenant_1/billing");
     assert.equal(forwardedRequest?.headers.get("cookie"), "better-auth.session_token=session_1");
     if (result.ok) {
       assert.equal(result.billing.plan?.name, "Growth");

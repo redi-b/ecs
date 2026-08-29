@@ -18,7 +18,9 @@ import { dashboardRoutes } from "@/lib/routes";
 import { cn } from "@/lib/utils";
 
 type CatalogPlan = {
+  features: unknown;
   id: string;
+  limits: unknown;
   name: string;
   price: string;
   isFree: boolean;
@@ -29,9 +31,21 @@ type InvoiceRow = MerchantBillingStatus["invoices"][number];
 
 type Translate = (key: MessageKey, values?: Record<string, string | number | Date>) => string;
 
+function getProductLimit(value: unknown): number | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const products = Reflect.get(value, "products");
+  return typeof products === "number" && Number.isSafeInteger(products) && products >= 0
+    ? products
+    : null;
+}
+
+function getBooleanFeature(value: unknown, key: string): boolean {
+  return Boolean(value && typeof value === "object" && Reflect.get(value, key) === true);
+}
+
 /**
- * Merchant-facing plan copy keys. Not raw DB limits (those are not enforced yet).
- * Unknown future plans fall back to name + price only.
+ * Merchant-facing plan copy for stable positioning. Enforced capabilities and
+ * limits are rendered from the published plan version, not this copy.
  */
 function planCopy(name: string, t: Translate) {
   if (name === "Starter") {
@@ -90,6 +104,8 @@ export function BillingWorkspace({
       price: billing.plan.price,
       isFree: billing.plan.isFree === true || Number(billing.plan.price) === 0,
       isCurrent: true,
+      limits: billing.plan.limits,
+      features: billing.plan.features,
     };
     const others = (billing.availablePaidPlans ?? []).map((plan) => ({
       id: plan.id,
@@ -97,6 +113,8 @@ export function BillingWorkspace({
       price: plan.price,
       isFree: Number(plan.price) === 0,
       isCurrent: false,
+      limits: plan.limits,
+      features: plan.features,
     }));
     return [current, ...others];
   }, [billing]);
@@ -147,6 +165,8 @@ export function BillingWorkspace({
   const activePlan = currentPlan;
   const chosenPlan = selectedPlan;
   const subscription = billing.subscription;
+  const customDomainsIncluded = billing.entitlements?.customDomains?.allowed === true;
+  const activeProductLimit = getProductLimit(activePlan.limits);
 
   const openInvoice = invoices.find((invoice) => invoice.status === "pending") ?? null;
   const history = invoices.filter((invoice) => invoice.id !== openInvoice?.id);
@@ -420,9 +440,23 @@ export function BillingWorkspace({
           <CardTitle className="text-base">{t("billing.entitlements.title")}</CardTitle>
           <CardDescription>{t("billing.entitlements.description")}</CardDescription>
         </CardHeader>
-        <CardContent className="flex items-center justify-between gap-4 text-sm">
-          <span>{t("billing.entitlements.customDomains")}</span>
-          <Badge variant="outline">{t("billing.entitlements.unavailable")}</Badge>
+        <CardContent className="flex flex-col gap-3 text-sm">
+          <div className="flex items-center justify-between gap-4">
+            <span>{t("billing.entitlements.products")}</span>
+            <Badge variant="outline">
+              {activeProductLimit == null
+                ? t("billing.entitlements.unlimited")
+                : t("billing.entitlements.upToProducts", { count: activeProductLimit })}
+            </Badge>
+          </div>
+          <div className="flex items-center justify-between gap-4">
+            <span>{t("billing.entitlements.customDomains")}</span>
+            <Badge variant="outline">
+              {customDomainsIncluded
+                ? t("billing.entitlements.included")
+                : t("billing.entitlements.notIncluded")}
+            </Badge>
+          </div>
         </CardContent>
       </Card>
 
@@ -503,6 +537,8 @@ export function BillingWorkspace({
         >
           {catalog.map((plan) => {
             const copy = planCopy(plan.name, t);
+            const productLimit = getProductLimit(plan.limits);
+            const includesCustomDomains = getBooleanFeature(plan.features, "customDomains");
             const selected = plan.id === chosenPlan.id;
             return (
               <button
@@ -547,6 +583,22 @@ export function BillingWorkspace({
                     ))}
                   </ul>
                 ) : null}
+                <ul className="mt-3 flex flex-col gap-1.5 border-t border-border/70 pt-3">
+                  <li className="flex items-start gap-2 text-sm text-muted-foreground">
+                    <AppIcons.check className="mt-0.5 size-3.5 shrink-0 text-primary" />
+                    <span>
+                      {productLimit == null
+                        ? t("billing.entitlements.unlimitedProducts")
+                        : t("billing.entitlements.upToProducts", { count: productLimit })}
+                    </span>
+                  </li>
+                  {includesCustomDomains ? (
+                    <li className="flex items-start gap-2 text-sm text-muted-foreground">
+                      <AppIcons.check className="mt-0.5 size-3.5 shrink-0 text-primary" />
+                      <span>{t("billing.entitlements.customDomains")}</span>
+                    </li>
+                  ) : null}
+                </ul>
               </button>
             );
           })}

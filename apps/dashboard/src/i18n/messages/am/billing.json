@@ -33,7 +33,12 @@
     "title": "በዕቅድዎ ውስጥ የተካተቱ",
     "description": "ለዚህ ሱቅ አሁን የሚገኙትን ይመልከቱ።",
     "customDomains": "ብጁ ዶሜይን",
+    "products": "ምርቶች",
     "included": "ተካትቷል",
+    "notIncluded": "አልተካተተም",
+    "unlimited": "የተወሰነ ገደብ የለም",
+    "unlimitedProducts": "የተወሰነ የምርት ገደብ የለም",
+    "upToProducts": "እስከ {count} ምርቶች",
     "upgradeRequired": "Growth ያስፈልጋል",
     "unavailable": "ገና አይገኝም"
   },

@@ -33,7 +33,12 @@
     "title": "Included with your plan",
     "description": "See what is currently available for this shop.",
     "customDomains": "Custom domain",
+    "products": "Products",
     "included": "Included",
+    "notIncluded": "Not included",
+    "unlimited": "No set limit",
+    "unlimitedProducts": "No set product limit",
+    "upToProducts": "Up to {count} products",
     "upgradeRequired": "Growth required",
     "unavailable": "Not available yet"
   },
