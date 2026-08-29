@@ -9,3 +9,10 @@ planning notes, release evidence, and incident details are intentionally kept ou
 
 The template guide is for designers and developers delivering a production-ready storefront for
 the ECS template catalogue.
+
+## Operations
+
+- [Billing and plans](./billing-and-plans.md)
+
+The billing guide explains the supported plan workflow, merchant-facing behavior, and the safety
+boundaries operators must preserve.
