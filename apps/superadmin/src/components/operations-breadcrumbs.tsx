@@ -19,6 +19,7 @@ const labels: Record<string, string> = {
   health: "Health",
   merchants: "Merchants",
   operators: "Operators",
+  plans: "Plans",
   work: "Work",
 };
 

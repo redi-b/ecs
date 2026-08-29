@@ -12,9 +12,11 @@ import { CommerceReviewWorkspace } from "@/features/superadmin/commerce-review-w
 import { OperationalDiagnostics } from "@/features/superadmin/operational-diagnostics";
 import { SupportAccessControl } from "@/features/superadmin/support-access-control";
 import { SupportWorkspace } from "@/features/superadmin/support-workspace";
+import { SubscriptionPlanControl } from "@/features/superadmin/subscription-plan-control";
 import { TenantStatusControl } from "@/features/superadmin/tenant-status-control";
 import { getOpsAccess } from "@/lib/ops-access";
 import { getSuperadminCommerceReview } from "@/lib/platform-api/superadmin/commerce-review";
+import { getOperatorPlanCatalog } from "@/lib/platform-api/superadmin/billing";
 import { getSuperadminDiagnostics } from "@/lib/platform-api/superadmin/diagnostics";
 import { getSuperadminOperationalSummary } from "@/lib/platform-api/superadmin/operations";
 import { getSuperadminSupportHistory } from "@/lib/platform-api/superadmin/support";
@@ -43,7 +45,11 @@ const workspaceTabs = [
     label: "Access",
     permissions: ["tenants.support.access.read"],
   },
-  { id: "controls", label: "Controls", permissions: ["tenants.status.update"] },
+  {
+    id: "controls",
+    label: "Controls",
+    permissions: ["tenants.status.update", "billing.subscriptions.update"],
+  },
 ] as const;
 export default async function MerchantWorkspacePage({
   params,
@@ -92,10 +98,17 @@ export default async function MerchantWorkspacePage({
       ? await getSuperadminDiagnostics(common)
       : null;
   const commerceReview =
-    activeTab === "commerce" &&
+    (activeTab === "commerce" ||
+      (activeTab === "controls" && access.permissions.includes("billing.subscriptions.update"))) &&
     (access.permissions.includes("billing.invoices.read") ||
       access.permissions.includes("payments.onboarding.read"))
       ? await getSuperadminCommerceReview(common)
+      : null;
+  const planCatalog =
+    activeTab === "controls" &&
+    access.permissions.includes("billing.subscriptions.update") &&
+    access.permissions.includes("billing.plans.read")
+      ? await getOperatorPlanCatalog(common)
       : null;
   const support =
     activeTab === "support" && access.permissions.includes("tenants.support.read")
@@ -244,6 +257,17 @@ export default async function MerchantWorkspacePage({
 
       {activeTab === "controls" ? (
         <div className="space-y-5">
+          {access.permissions.includes("billing.subscriptions.update") &&
+          planCatalog?.ok &&
+          commerceReview?.ok &&
+          commerceReview.review.billing ? (
+            <SubscriptionPlanControl
+              catalog={planCatalog.data}
+              currentPlanName={commerceReview.review.billing.planName}
+              currentPlanVersionId={commerceReview.review.billing.planVersionId}
+              tenantId={tenantId}
+            />
+          ) : null}
           {access.permissions.includes("tenants.status.update") ? (
             tenant.status === "active" || tenant.status === "suspended" ? (
               <TenantStatusControl status={tenant.status} tenantId={tenantId} />

@@ -7,6 +7,7 @@ import {
   ClipboardList,
   FileClock,
   LayoutDashboard,
+  Layers3,
   LogOut,
   ShieldCheck,
   UsersRound,
@@ -68,6 +69,13 @@ const navigation = [
     label: "Work",
     permission: "platform.work.read",
     shortcut: "W",
+  },
+  {
+    href: "/plans",
+    icon: Layers3,
+    label: "Plans",
+    permission: "billing.plans.read",
+    shortcut: "B",
   },
   {
     href: "/health",
