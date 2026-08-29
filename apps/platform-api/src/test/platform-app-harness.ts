@@ -122,6 +122,10 @@ export function appWithResolution(
     recoverSuperadminWork?: import("../types/platform-app.js").PlatformAppOptions["recoverSuperadminWork"];
     listSuperadminTenants?: import("../types/platform-app.js").PlatformAppOptions["listSuperadminTenants"];
     getSuperadminTenant?: import("../types/platform-app.js").PlatformAppOptions["getSuperadminTenant"];
+    getPlanAdministrationCatalog?: import("../types/platform-app.js").PlatformAppOptions["getPlanAdministrationCatalog"];
+    savePlanDraft?: import("../types/platform-app.js").PlatformAppOptions["savePlanDraft"];
+    publishPlanDraft?: import("../types/platform-app.js").PlatformAppOptions["publishPlanDraft"];
+    migrateSubscriptionPlanVersion?: import("../types/platform-app.js").PlatformAppOptions["migrateSubscriptionPlanVersion"];
     resolveTenantForHost?: (host?: string) => Promise<TenantResolutionResult>;
     getPublishedStorefrontConfig?: (input: {
       publishedRevisionId: string;
@@ -526,6 +530,10 @@ export function appWithResolution(
       getPlatformHealth: options?.getPlatformHealth,
       recoverSuperadminWork: options?.recoverSuperadminWork,
       getSuperadminTenant: options?.getSuperadminTenant,
+      getPlanAdministrationCatalog: options?.getPlanAdministrationCatalog,
+      savePlanDraft: options?.savePlanDraft,
+      publishPlanDraft: options?.publishPlanDraft,
+      migrateSubscriptionPlanVersion: options?.migrateSubscriptionPlanVersion,
       getEntitlementSummary: options?.getEntitlementSummary,
       getSuperadminOperationalSummary: options?.getSuperadminOperationalSummary,
       getSuperadminDiagnostics: options?.getSuperadminDiagnostics,

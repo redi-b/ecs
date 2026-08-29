@@ -1,8 +1,14 @@
 import type { createPlatformDb } from "@ecs/db";
-import { auditLogs, entitlementOverrides, plans, subscriptions } from "@ecs/db";
+import { auditLogs, entitlementOverrides, plans, planVersions, subscriptions } from "@ecs/db";
+import { decideCapability } from "@ecs/billing";
 import { and, desc, eq, inArray, isNull } from "drizzle-orm";
 
-import { ENTITLEMENT_KEYS, type EntitlementKey, parsePlanEntitlements } from "./catalog.js";
+import {
+  ENTITLEMENT_CATALOG,
+  ENTITLEMENT_KEYS,
+  type EntitlementKey,
+  parsePlanEntitlements,
+} from "./catalog.js";
 
 export type { EntitlementKey, PlanEntitlements } from "./catalog.js";
 export { ENTITLEMENT_CATALOG, ENTITLEMENT_KEYS, isEntitlementKey } from "./catalog.js";
@@ -48,8 +54,16 @@ export function resolveEntitlement(input: {
     input.subscriptionStatus === "active" || input.subscriptionStatus === "trialing";
 
   if (!subscriptionAllowsAccess) {
+    const coreDecision = decideCapability({
+      capability: input.key,
+      definition: ENTITLEMENT_CATALOG[input.key],
+      reserved: 0,
+      status: input.subscriptionStatus,
+      used: 0,
+      value: false,
+    });
     return {
-      allowed: false,
+      allowed: coreDecision.allowed,
       key: input.key,
       source: input.subscriptionStatus ? "subscription" : "missing",
       subscriptionStatus: input.subscriptionStatus,
@@ -74,9 +88,17 @@ export function resolveEntitlement(input: {
   }
 
   const features = parsePlanEntitlements(input.planFeatures);
+  const coreDecision = decideCapability({
+    capability: input.key,
+    definition: ENTITLEMENT_CATALOG[input.key],
+    reserved: 0,
+    status: input.subscriptionStatus,
+    used: 0,
+    value: features[input.key],
+  });
 
   return {
-    allowed: features[input.key] === true,
+    allowed: coreDecision.allowed,
     key: input.key,
     source: "plan",
     subscriptionStatus: input.subscriptionStatus,
@@ -112,10 +134,12 @@ export function createEntitlementService(db: PlatformDb) {
     const [subscription] = await db
       .select({
         planFeatures: plans.features,
+        planVersionFeatures: planVersions.features,
         subscriptionStatus: subscriptions.status,
       })
       .from(subscriptions)
       .innerJoin(plans, eq(plans.id, subscriptions.planId))
+      .leftJoin(planVersions, eq(planVersions.id, subscriptions.planVersionId))
       .where(eq(subscriptions.tenantId, input.tenantId))
       .limit(1);
 
@@ -139,7 +163,7 @@ export function createEntitlementService(db: PlatformDb) {
       key: input.key,
       now: input.now ?? new Date(),
       overrides,
-      planFeatures: subscription?.planFeatures,
+      planFeatures: subscription?.planVersionFeatures ?? subscription?.planFeatures,
       subscriptionStatus: subscription?.subscriptionStatus ?? null,
     });
   };
@@ -265,10 +289,12 @@ export function createEntitlementService(db: PlatformDb) {
       const [subscription] = await db
         .select({
           planFeatures: plans.features,
+          planVersionFeatures: planVersions.features,
           subscriptionStatus: subscriptions.status,
         })
         .from(subscriptions)
         .innerJoin(plans, eq(plans.id, subscriptions.planId))
+        .leftJoin(planVersions, eq(planVersions.id, subscriptions.planVersionId))
         .where(eq(subscriptions.tenantId, input.tenantId))
         .limit(1);
       const overrides = await db
@@ -291,7 +317,7 @@ export function createEntitlementService(db: PlatformDb) {
       return resolveEntitlements({
         now: input.now ?? new Date(),
         overrides,
-        planFeatures: subscription?.planFeatures,
+        planFeatures: subscription?.planVersionFeatures ?? subscription?.planFeatures,
         subscriptionStatus: subscription?.subscriptionStatus ?? null,
       });
     },

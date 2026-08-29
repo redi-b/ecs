@@ -192,4 +192,23 @@ describe("createCodeNotificationRenderer", () => {
     assert.match(result.body, /Product request/);
     assert.match(result.body, /Open Inquiries in your dashboard/);
   });
+
+  it("renders renewal reminders in simple merchant-facing language", async () => {
+    const result = await renderer.render({
+      channel: "telegram",
+      eventType: "billing.invoice_ready",
+      tenantId: "tenant-1",
+      recipient: "123",
+      payload: {
+        amount: "1000",
+        currencyCode: "ETB",
+        daysRemaining: 3,
+        planName: "Growth",
+      },
+    });
+
+    assert.match(result.body, /due in 3 days/i);
+    assert.match(result.body, /ETB 1,000/);
+    assert.doesNotMatch(result.body, /invoice_ready|worker|lifecycle/i);
+  });
 });

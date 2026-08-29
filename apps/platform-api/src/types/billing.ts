@@ -33,6 +33,7 @@ export type BillingStatus = {
   entitlements?: Record<EntitlementKey, EntitlementDecisionContract>;
   subscription: {
     id: string;
+    planVersionId: string | null;
     status: string;
     billingCycle: string;
     manualPaymentState: string;

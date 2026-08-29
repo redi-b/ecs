@@ -1,0 +1,1 @@
+ALTER TABLE "subscriptions" ALTER COLUMN "plan_version_id" SET NOT NULL;

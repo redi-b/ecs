@@ -138,6 +138,96 @@ export function registerPlatformOperatorRoutes(
     );
   });
 
+  app.get("/platform/operator/billing/plans", async (context) => {
+    if (!options.getPlanAdministrationCatalog) {
+      return context.json({ error: "billing_plans_unavailable" }, 503);
+    }
+    const access = await getPlatformAccess(options, context.req.raw.headers, "billing.plans.read");
+    if (!access.ok) return context.json({ error: access.error }, access.status);
+    return context.json(await options.getPlanAdministrationCatalog());
+  });
+
+  app.put("/platform/operator/billing/plans/:planId/draft", async (context) => {
+    if (!options.savePlanDraft) {
+      return context.json({ error: "billing_plans_unavailable" }, 503);
+    }
+    const access = await getPlatformAccess(
+      options,
+      context.req.raw.headers,
+      "billing.plans.update",
+    );
+    if (!access.ok) return context.json({ error: access.error }, access.status);
+    const body = await getJsonBody(context.req.raw);
+    const record = body && typeof body === "object" ? (body as Record<string, unknown>) : {};
+    const result = await options.savePlanDraft({
+      actorUserId: access.session.user.id,
+      platformPrincipalId: access.authorization.principal.id,
+      planId: context.req.param("planId"),
+      reason: getRequiredBodyString(body, "reason") ?? "",
+      draft: {
+        billingInterval:
+          record.billingInterval === "day" ||
+          record.billingInterval === "week" ||
+          record.billingInterval === "year"
+            ? record.billingInterval
+            : "month",
+        currency: getRequiredBodyString(body, "currency") ?? "",
+        features: record.features,
+        limits: record.limits,
+        name: getRequiredBodyString(body, "name") ?? "",
+        price: getRequiredBodyString(body, "price") ?? "",
+      },
+    });
+    return result.ok
+      ? context.json({ draft: result.draft })
+      : context.json({ error: result.error }, result.status);
+  });
+
+  app.post("/platform/operator/billing/plans/:planId/publish", async (context) => {
+    if (!options.publishPlanDraft) {
+      return context.json({ error: "billing_plans_unavailable" }, 503);
+    }
+    const access = await getPlatformAccess(
+      options,
+      context.req.raw.headers,
+      "billing.plans.update",
+    );
+    if (!access.ok) return context.json({ error: access.error }, access.status);
+    const body = await getJsonBody(context.req.raw);
+    const result = await options.publishPlanDraft({
+      actorUserId: access.session.user.id,
+      platformPrincipalId: access.authorization.principal.id,
+      planId: context.req.param("planId"),
+      reason: getRequiredBodyString(body, "reason") ?? "",
+    });
+    return result.ok
+      ? context.json({ publication: result.publication })
+      : context.json({ error: result.error }, result.status);
+  });
+
+  app.post("/platform/operator/tenants/:tenantId/billing/plan-version", async (context) => {
+    if (!options.migrateSubscriptionPlanVersion) {
+      return context.json({ error: "billing_plans_unavailable" }, 503);
+    }
+    const access = await getPlatformAccess(
+      options,
+      context.req.raw.headers,
+      "billing.subscriptions.update",
+    );
+    if (!access.ok) return context.json({ error: access.error }, access.status);
+    const body = await getJsonBody(context.req.raw);
+    const result = await options.migrateSubscriptionPlanVersion({
+      actorUserId: access.session.user.id,
+      platformPrincipalId: access.authorization.principal.id,
+      planVersionId: getRequiredBodyString(body, "planVersionId") ?? "",
+      reason: getRequiredBodyString(body, "reason") ?? "",
+      tenantId: context.req.param("tenantId"),
+    });
+    return result.ok
+      ? context.json({ subscriptionId: result.subscriptionId })
+      : context.json({ error: result.error }, result.status);
+  });
+
   app.get("/platform/operator/tenants/:tenantId/operations", async (context) => {
     if (!options.getSuperadminOperationalSummary) {
       return context.json({ error: "operator_summary_unavailable" }, 503);

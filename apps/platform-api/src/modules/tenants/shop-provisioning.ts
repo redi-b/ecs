@@ -2,7 +2,7 @@ import type { createPlatformDb } from "@ecs/db";
 import {
   auditLogs,
   domains,
-  plans,
+  planVersions,
   reservedHandles,
   storefrontConfigs,
   storefrontTemplates,
@@ -22,7 +22,8 @@ import type {
   TenantProvisioningAttemptListResult,
   TenantShopProvisioningResult,
 } from "../../types/index.js";
-import { DEFAULT_PLAN_CATALOG, DEFAULT_PLANS } from "../billing/plan-catalog.js";
+import { DEFAULT_PLAN_CATALOG } from "../billing/plan-catalog.js";
+import { createBillingService } from "../billing/service.js";
 
 type PlatformDb = ReturnType<typeof createPlatformDb>["db"];
 
@@ -390,6 +391,7 @@ export function createTenantShopProvisioningService(options: TenantShopProvision
       ownerUserId,
       tenantId,
     }) => {
+      await createBillingService(options.db).ensureDefaultPlans();
       const tenant = await options.db.transaction(async (transaction) => {
         const [createdTenant] = await transaction
           .insert(tenants)
@@ -485,16 +487,23 @@ export function createTenantShopProvisioningService(options: TenantShopProvision
           },
         });
 
-        // Provisioning and billing reads use the same code-owned plan definitions.
-        for (const plan of DEFAULT_PLANS) {
-          await transaction.insert(plans).values(plan).onConflictDoNothing({ target: plans.id });
-        }
+        const [starterVersion] = await transaction
+          .select({ id: planVersions.id })
+          .from(planVersions)
+          .where(eq(planVersions.planId, DEFAULT_PLAN_CATALOG.starter.id))
+          .orderBy(desc(planVersions.version))
+          .limit(1);
+        const starterVersionRow = requireRow(
+          starterVersion,
+          "Starter plan version is unavailable.",
+        );
 
         // Free forever Starter — no trial expiry, no payment invoices.
         const freeStart = new Date();
         await transaction.insert(subscriptions).values({
           tenantId,
           planId: DEFAULT_PLAN_CATALOG.starter.id,
+          planVersionId: starterVersionRow.id,
           status: "active",
           billingCycle: "monthly",
           currentPeriodStart: freeStart,

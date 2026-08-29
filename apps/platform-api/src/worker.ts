@@ -10,6 +10,7 @@ import { loadPlatformApiEnvFiles } from "./config/env.js";
 import { createAnalyticsCommerceRollupHandler } from "./jobs/handlers/analytics-commerce-rollup.js";
 import { createBillingLifecycleHandler } from "./jobs/handlers/billing-lifecycle.js";
 import { createBillingPaymentReconcileHandler } from "./jobs/handlers/billing-payment-reconcile.js";
+import { createProductCapacityWriter } from "./modules/billing/product-capacity.js";
 import { createNotificationsDeliverHandler } from "./jobs/handlers/notifications-deliver.js";
 import {
   createProductImportApplyHandler,
@@ -33,6 +34,7 @@ import { createProviderRegistry } from "./modules/notifications/providers/regist
 import { createTelegramNotificationProvider } from "./modules/notifications/providers/telegram-provider.js";
 import { createCodeNotificationRenderer } from "./modules/notifications/renderer.js";
 import { createNotificationService } from "./modules/notifications/service.js";
+import { createResolveTenantIdByMedusaSalesChannel } from "./modules/tenants/resolve-by-medusa-sales-channel.js";
 import { resolveTelegramCallbackSecret } from "./modules/telegram/telegram-actions.js";
 import { createTelegramOperatorService } from "./modules/telegram/telegram-operator.js";
 
@@ -85,6 +87,13 @@ const orderService = createMedusaOrderService({
 const productService = createMedusaProductService({
   adminApiToken: medusaAdminToken.token,
   medusaInternalUrl,
+});
+const resolveTenantIdBySalesChannel = createResolveTenantIdByMedusaSalesChannel(platformDb.db);
+const createCapacityLimitedProduct = createProductCapacityWriter({
+  createProduct: productService.createMerchantProduct,
+  db: platformDb.db,
+  listProducts: productService.listMerchantProducts,
+  resolveTenantId: resolveTenantIdBySalesChannel,
 });
 
 const logProvider = (channel: string) =>
@@ -189,7 +198,7 @@ const worker = startPlatformWorker({
     "product-import.apply": createProductImportApplyHandler({
       store: createProductImportApplyStore(platformDb.db),
       commerce: {
-        createProduct: productService.createMerchantProduct,
+        createProduct: createCapacityLimitedProduct,
         findImportedProduct: productService.findImportedProduct,
         updateProduct: productService.updateMerchantProduct,
         updateVariantStock: productService.updateMerchantProductVariantStock,

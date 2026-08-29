@@ -19,6 +19,7 @@ export function createSuperadminCommerceReviewService(options: {
       billing: billingResult?.ok
         ? {
             planName: billingResult.billing.plan.name,
+            planVersionId: billingResult.billing.subscription.planVersionId,
             subscriptionStatus: billingResult.billing.subscription.status,
             billingCycle: billingResult.billing.subscription.billingCycle,
             currentPeriodEnd: billingResult.billing.subscription.currentPeriodEnd,

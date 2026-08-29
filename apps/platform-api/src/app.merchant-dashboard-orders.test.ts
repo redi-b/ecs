@@ -134,6 +134,16 @@ describe("platform app merchant dashboard and orders", () => {
         },
         topEvents: [],
         funnel: [],
+        storefront: {
+          visits: 0,
+          pageViews: 0,
+          productViewVisits: 0,
+          addToCartVisits: 0,
+          checkoutVisits: 0,
+          searchVisits: 0,
+          contactVisits: 0,
+        },
+        products: [],
         coverage: {
           lastEventAt: null,
           status: "no_data",

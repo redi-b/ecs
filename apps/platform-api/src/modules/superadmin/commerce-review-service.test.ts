@@ -19,6 +19,7 @@ describe("superadmin commerce review", () => {
           },
           subscription: {
             id: "subscription_1",
+            planVersionId: "plan_version_1",
             status: "active",
             billingCycle: "monthly",
             manualPaymentState: "pending",
@@ -64,6 +65,7 @@ describe("superadmin commerce review", () => {
     });
 
     assert.equal(result.billing?.planName, "Growth");
+    assert.equal(result.billing?.planVersionId, "plan_version_1");
     assert.equal(result.billing?.invoices[0]?.id, "invoice_1");
     assert.deepEqual(result.paymentOnboarding?.[0]?.requiredDocuments, ["business_license"]);
     assert.equal(JSON.stringify(result).includes("secret"), false);

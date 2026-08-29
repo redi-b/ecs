@@ -579,6 +579,7 @@ export const merchantBillingStatusSchema = z.object({
   subscription: z
     .object({
       id: z.string().min(1),
+      planVersionId: z.string().min(1).nullable(),
       status: z.string().min(1),
       billingCycle: z.string().min(1),
       manualPaymentState: z.string().min(1),
@@ -640,6 +641,8 @@ export const merchantBillingStatusSchema = z.object({
         price: z.string().min(1),
         isFree: z.boolean(),
         isCurrent: z.boolean(),
+        limits: z.unknown(),
+        features: z.unknown(),
       }),
     )
     .optional(),
@@ -656,6 +659,48 @@ export const merchantBillingResponseSchema = z.object({
 
 export type MerchantBillingStatus = z.infer<typeof merchantBillingStatusSchema>;
 export type MerchantDashboardBilling = z.infer<typeof merchantDashboardBillingSchema>;
+
+const operatorPlanVersionSummarySchema = z.object({
+  id: z.string().min(1),
+  version: z.number().int().positive(),
+  name: z.string().min(1),
+  price: z.string().min(1),
+  currency: z.string().min(1),
+  billingInterval: z.string().min(1),
+  publishedAt: z.string().min(1),
+});
+
+export const operatorPlanCatalogSchema = z.object({
+  plans: z.array(
+    z.object({
+      id: z.string().min(1),
+      name: z.string().min(1),
+      price: z.string().min(1),
+      status: z.string().min(1),
+      features: z.unknown(),
+      limits: z.unknown(),
+      subscriptionCount: z.number().int().nonnegative(),
+      latestVersion: operatorPlanVersionSummarySchema
+        .extend({ features: z.unknown(), limits: z.unknown() })
+        .nullable(),
+      versions: z.array(operatorPlanVersionSummarySchema),
+      draft: z
+        .object({
+          id: z.string().min(1),
+          revision: z.number().int().positive(),
+          name: z.string().min(1),
+          price: z.string().min(1),
+          currency: z.string().min(1),
+          billingInterval: z.string().min(1),
+          features: z.unknown(),
+          limits: z.unknown(),
+          updatedAt: z.string().min(1),
+        })
+        .nullable(),
+    }),
+  ),
+});
+export type OperatorPlanCatalog = z.infer<typeof operatorPlanCatalogSchema>;
 export type MerchantBillingResponse = z.infer<typeof merchantBillingResponseSchema>;
 
 export const tenantDomainSchema = z.object({
@@ -736,6 +781,7 @@ export const superadminCommerceReviewSchema = z.object({
   billing: z
     .object({
       planName: z.string().min(1),
+      planVersionId: z.string().min(1).nullable(),
       subscriptionStatus: z.string().min(1),
       billingCycle: z.string().min(1),
       currentPeriodEnd: z.string().min(1).nullable(),
