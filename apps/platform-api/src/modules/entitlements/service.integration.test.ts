@@ -2,7 +2,14 @@ import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { after, before, describe, it } from "node:test";
 
-import { createPlatformDb, entitlementOverrides, plans, subscriptions, tenants } from "@ecs/db";
+import {
+  createPlatformDb,
+  entitlementOverrides,
+  plans,
+  planVersions,
+  subscriptions,
+  tenants,
+} from "@ecs/db";
 import { eq, sql } from "drizzle-orm";
 
 import { createEntitlementService } from "./service.js";
@@ -12,6 +19,7 @@ const connectionString = process.env.PLATFORM_AUTH_INTEGRATION_DATABASE_URL;
 describe("entitlement service with PostgreSQL", { skip: !connectionString }, () => {
   const tenantId = randomUUID();
   const planId = randomUUID();
+  const planVersionId = randomUUID();
   const overrideId = randomUUID();
   const database = createPlatformDb({ connectionString: connectionString ?? "" });
 
@@ -27,9 +35,19 @@ describe("entitlement service with PostgreSQL", { skip: !connectionString }, () 
       price: "2499",
       features: { customDomains: true },
     });
+    await database.db.insert(planVersions).values({
+      id: planVersionId,
+      planId,
+      version: 1,
+      fingerprint: `integration-${planVersionId}`,
+      name: "Integration Growth",
+      price: "2499",
+      features: { customDomains: true },
+    });
     await database.db.insert(subscriptions).values({
       tenantId,
       planId,
+      planVersionId,
       status: "active",
       manualPaymentState: "paid",
     });
@@ -40,6 +58,7 @@ describe("entitlement service with PostgreSQL", { skip: !connectionString }, () 
       .delete(entitlementOverrides)
       .where(eq(entitlementOverrides.tenantId, tenantId));
     await database.db.delete(subscriptions).where(eq(subscriptions.tenantId, tenantId));
+    await database.db.delete(planVersions).where(eq(planVersions.planId, planId));
     await database.db.delete(plans).where(eq(plans.id, planId));
     await database.db.delete(tenants).where(eq(tenants.id, tenantId));
     await database.pool.end();
@@ -79,6 +98,16 @@ describe("entitlement service with PostgreSQL", { skip: !connectionString }, () 
       (await service.evaluate({ key: "customDomains", tenantId })).source,
       "subscription",
     );
+  });
+
+  it("keeps the pinned plan version when the latest-plan projection changes", async () => {
+    const service = createEntitlementService(database.db);
+    await database.db
+      .update(plans)
+      .set({ features: { customDomains: false } })
+      .where(eq(plans.id, planId));
+
+    assert.equal((await service.evaluate({ key: "customDomains", tenantId })).allowed, true);
   });
 
   it("rejects a permanent override at the database boundary", async () => {

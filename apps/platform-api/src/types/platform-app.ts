@@ -120,6 +120,18 @@ export type PlatformAppOptions = {
   getEntitlementSummary?: ReturnType<
     typeof import("../modules/entitlements/service.js").createEntitlementService
   >["getSummary"];
+  getPlanAdministrationCatalog?: ReturnType<
+    typeof import("../modules/billing/plan-administration.js").createPlanAdministrationService
+  >["getCatalog"];
+  savePlanDraft?: ReturnType<
+    typeof import("../modules/billing/plan-administration.js").createPlanAdministrationService
+  >["saveDraft"];
+  publishPlanDraft?: ReturnType<
+    typeof import("../modules/billing/plan-administration.js").createPlanAdministrationService
+  >["publishDraft"];
+  migrateSubscriptionPlanVersion?: ReturnType<
+    typeof import("../modules/billing/plan-administration.js").createPlanAdministrationService
+  >["migrateSubscriptionNow"];
   getSuperadminOperationalSummary?: ReturnType<
     typeof import("../modules/superadmin/operational-summary-service.js").createSuperadminOperationalSummaryService
   >;

@@ -2,6 +2,7 @@ import type { createPlatformDb } from "@ecs/db";
 import type { JobHandler } from "@ecs/jobs";
 
 import { createBillingService } from "../../modules/billing/service.js";
+import { createBillingOutbox } from "../../modules/billing/outbox.js";
 import type { NotificationEventType } from "../../types/index.js";
 
 type PlatformDb = ReturnType<typeof createPlatformDb>["db"];
@@ -21,27 +22,21 @@ export function createBillingLifecycleHandler(options: {
   }) => Promise<unknown>;
 }): JobHandler {
   const billing = createBillingService(options.db);
+  const outbox = options.recordNotificationEvent
+    ? createBillingOutbox(options.db, options.recordNotificationEvent)
+    : null;
 
   return async () => {
     const result = await billing.runBillingLifecycle();
-
-    if (options.recordNotificationEvent) {
-      for (const item of result.notifications ?? []) {
-        void options
-          .recordNotificationEvent({
-            tenantId: item.tenantId,
-            eventType: item.eventType,
-            payload: item.payload,
-          })
-          .catch(() => undefined);
-      }
-    }
+    const delivery = outbox ? await outbox.processDue() : null;
 
     return {
       ok: true as const,
       scanned: result.scanned,
       renewed: result.renewed,
       pastDue: result.pastDue,
+      reminders: result.reminders,
+      outbox: delivery,
     };
   };
 }

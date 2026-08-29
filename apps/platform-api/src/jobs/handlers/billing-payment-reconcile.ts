@@ -2,6 +2,7 @@ import type { createPlatformDb } from "@ecs/db";
 import type { JobHandler } from "@ecs/jobs";
 
 import { reconcileChapaBillingPayments } from "../../modules/billing/reconcile-payments.js";
+import { createBillingProviderEventInbox } from "../../modules/billing/provider-event-inbox.js";
 import { createBillingService } from "../../modules/billing/service.js";
 
 type PlatformDb = ReturnType<typeof createPlatformDb>["db"];
@@ -28,19 +29,34 @@ export function createBillingPaymentReconcileHandler(options: {
   limit?: number;
 }): JobHandler {
   const billing = createBillingService(options.db);
+  const inbox = createBillingProviderEventInbox(
+    options.db,
+    billing.completeChapaInvoicePayment,
+  );
   const limit = options.limit ?? 100;
 
   return async () => {
+    const inboxResult = await inbox.processDue({ limit });
     const items = await billing.listAllPendingChapaInvoiceTxRefs({ limit });
     const result = await reconcileChapaBillingPayments({
       items,
       verifyPayment: options.verifyPayment,
-      completePayment: (input) => billing.completeChapaInvoicePayment(input),
+      completePayment: async (input) => {
+        const processed = await inbox.recordAndProcessVerifiedPayment(input);
+        if (processed.kind === "failed") {
+          return { ok: false as const, error: "billing_provider_event_processing_failed" };
+        }
+        return {
+          ok: true as const,
+          applied: processed.kind === "completed" && processed.applied,
+        };
+      },
     });
 
     return {
       ok: true as const,
       ...result,
+      inbox: inboxResult,
       scanned: items.length,
     };
   };

@@ -194,6 +194,9 @@ importers:
       '@aws-sdk/s3-request-presigner':
         specifier: ^3.1085.0
         version: 3.1085.0
+      '@ecs/billing':
+        specifier: workspace:*
+        version: link:../../packages/billing
       '@ecs/config':
         specifier: workspace:*
         version: link:../../packages/config
@@ -352,6 +355,15 @@ importers:
         version: 4.22.4
       typescript:
         specifier: ^5.9.3
+        version: 5.9.3
+
+  packages/billing:
+    devDependencies:
+      tsx:
+        specifier: ^4.20.0
+        version: 4.22.4
+      typescript:
+        specifier: ^5.9.0
         version: 5.9.3
 
   packages/config:

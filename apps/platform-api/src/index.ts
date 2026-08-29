@@ -39,7 +39,10 @@ import {
 import { createDashboardMetricsService } from "./modules/analytics/dashboard-metrics-service.js";
 import { createInsightsRefreshService } from "./modules/analytics/refresh-service.js";
 import { reconcileChapaBillingPayments } from "./modules/billing/reconcile-payments.js";
+import { createPlanAdministrationService } from "./modules/billing/plan-administration.js";
+import { createProductCapacityWriter } from "./modules/billing/product-capacity.js";
 import { createBillingService, isPlatformBillingTxRef } from "./modules/billing/service.js";
+import { createBillingProviderEventInbox } from "./modules/billing/provider-event-inbox.js";
 import { createMedusaOrderService } from "./modules/commerce/order-management.js";
 import { createMedusaProductService } from "./modules/commerce/product-catalog.js";
 import { createDataExportAuditRecorder } from "./modules/data-transfer/export-audit.js";
@@ -127,6 +130,11 @@ const platformDb = createPlatformDb({
 });
 const findDomainByHostname = createDomainTenantLookup(platformDb.db);
 const billingService = createBillingService(platformDb.db);
+const planAdministrationService = createPlanAdministrationService(platformDb.db);
+const billingProviderEventInbox = createBillingProviderEventInbox(
+  platformDb.db,
+  billingService.completeChapaInvoicePayment,
+);
 const recordMerchantDataExport = createDataExportAuditRecorder(platformDb.db);
 const productImportArtifactService = createProductImportArtifactService(platformDb.db);
 const deliverySettingsService = createDeliverySettingsService(platformDb.db);
@@ -482,6 +490,12 @@ const productService = wrapProductServiceWithStorefrontPurge(
     logger,
   },
 );
+const createCapacityLimitedProduct = createProductCapacityWriter({
+  createProduct: productService.createMerchantProduct,
+  db: platformDb.db,
+  listProducts: productService.listMerchantProducts,
+  resolveTenantId: resolveTenantIdByMedusaSalesChannelId,
+});
 if (telegramBotToken) {
   telegramToolsBridge.deps = {
     db: platformDb.db,
@@ -542,7 +556,7 @@ const chapaPaymentService = createChapaPaymentService({
   onVerifiedSuccess: async ({ providerReference, tenantId, txRef }) => {
     // Platform subscription invoices use ecs_bill_* tx_refs (never Medusa order refs).
     if (isPlatformBillingTxRef(txRef)) {
-      await billingService.completeChapaInvoicePayment({
+      await billingProviderEventInbox.recordAndProcessVerifiedPayment({
         providerReference: providerReference ?? null,
         tenantId,
         txRef,
@@ -686,7 +700,7 @@ const app = createPlatformApp({
   createOperatorSupportNote: supportService.createOperatorSupportNote,
   createSupportAccessGrant: supportAccessService.create,
   createEntitlementOverride: entitlementService.createOverride,
-  createMerchantProduct: productService.createMerchantProduct,
+  createMerchantProduct: createCapacityLimitedProduct,
   createMerchantProductCategory: productService.createMerchantProductCategory,
   createMerchantProductCollection: productService.createMerchantProductCollection,
   createMediaUpload: mediaService.createUpload,
@@ -859,6 +873,10 @@ const app = createPlatformApp({
   setMerchantChapaOnlineEnabled: paymentOnboardingService.setMerchantChapaOnlineEnabled,
   clearMerchantChapaSecret: paymentOnboardingService.clearMerchantChapaSecret,
   handleChapaPaymentCallback: chapaPaymentService.handleChapaPaymentCallback,
+  getPlanAdministrationCatalog: planAdministrationService.getCatalog,
+  savePlanDraft: planAdministrationService.saveDraft,
+  publishPlanDraft: planAdministrationService.publishDraft,
+  migrateSubscriptionPlanVersion: planAdministrationService.migrateSubscriptionNow,
   getOperatorSupportHistory: supportService.getOperatorSupportHistory,
   listSupportAccessGrants: supportAccessService.list,
   getOnboardingState,

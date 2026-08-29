@@ -53,7 +53,9 @@ export type ProductImportApplyStore = {
 };
 
 export type ProductImportApplyCommerce = {
-  createProduct(input: ProductWriteInput): Promise<MerchantProductWriteResult>;
+  createProduct(
+    input: ProductWriteInput & { capacityIdempotencyKey: string; tenantId: string },
+  ): Promise<MerchantProductWriteResult>;
   findImportedProduct(input: {
     executionId: string;
     handle: string;
@@ -304,9 +306,11 @@ export function createProductImportApplyHandler(options: {
           productId = reconciled.product.id;
           idsBySku = reconciled.product.variantIdsBySku;
         } else {
-          const created = await options.commerce.createProduct(
-            productInput(context, write, outcome.productKey),
-          );
+          const created = await options.commerce.createProduct({
+            ...productInput(context, write, outcome.productKey),
+            capacityIdempotencyKey: `product-import:${executionId}:${outcome.productKey}`,
+            tenantId,
+          });
           if (!created.ok) {
             if (isTransient(created)) throw new Error(created.error);
             await options.store.markFailed({

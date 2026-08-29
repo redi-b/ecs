@@ -603,15 +603,18 @@ export function createCodeNotificationRenderer(): NotificationRenderer {
 
         case "billing.invoice_ready": {
           const planName = pickScalar(asRecord(input.payload), "planName") ?? "your plan";
+          const daysRemaining = pickScalar(asRecord(input.payload), "daysRemaining");
           const amount =
             formatMoneyAmount(
               pickScalar(asRecord(input.payload), "amount"),
               pickScalar(asRecord(input.payload), "currencyCode", "currency"),
             ) ?? pickScalar(asRecord(input.payload), "amount");
           return finish(
-            "Invoice ready",
+            daysRemaining ? "Payment reminder" : "Invoice ready",
             composeMessage(
-              `A renewal invoice is ready for ${planName}.`,
+              daysRemaining
+                ? `Payment for ${planName} is due in ${daysRemaining} ${daysRemaining === "1" ? "day" : "days"}.`
+                : `A renewal invoice is ready for ${planName}.`,
               cleanDetails([
                 { label: "Plan", value: planName },
                 amount ? { label: "Amount", value: amount } : { label: "", value: "" },

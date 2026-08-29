@@ -17,6 +17,7 @@
     "sourceMap": true,
     "baseUrl": ".",
     "paths": {
+      "@ecs/billing": ["packages/billing/src/index.ts"],
       "@ecs/config": ["packages/config/src/index.ts"],
       "@ecs/contracts": ["packages/contracts/src/index.ts"],
       "@ecs/db": ["packages/db/src/index.ts"],

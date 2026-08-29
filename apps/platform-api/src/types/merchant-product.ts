@@ -74,6 +74,7 @@ export type MerchantProductWriteResult =
         | "commerce_credentials_invalid"
         | "commerce_credentials_missing"
         | "product_conflict"
+        | "product_limit_reached"
         | "product_write_invalid"
         | "product_not_found";
       status: 400 | 401 | 404 | 409 | 422 | 503;
