@@ -29,6 +29,7 @@ import {
   getCategoryDisplayName,
   slugifyTaxonomyHandle,
 } from "@/features/catalog-taxonomy/taxonomy-table-state";
+import { MediaImageReferenceControl } from "@/features/media/media-image-reference-control";
 import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes-guard";
 import type { MessageKey } from "@/i18n/messages";
 import { useI18n } from "@/i18n/provider";
@@ -101,6 +102,7 @@ function TaxonomyCreateDialogInner({
   const open = isControlled ? openProp : uncontrolledOpen;
   const [displayName, setDisplayName] = useState("");
   const [handle, setHandle] = useState("");
+  const [mediaUrl, setMediaUrl] = useState("");
   const [isHandleLocked, setIsHandleLocked] = useState(true);
   const [parentCategoryId, setParentCategoryId] = useState<string>("__root__");
   const [isVisible, setIsVisible] = useState(true);
@@ -132,6 +134,7 @@ function TaxonomyCreateDialogInner({
   function resetForm() {
     setDisplayName("");
     setHandle("");
+    setMediaUrl("");
     setIsHandleLocked(true);
     setParentCategoryId("__root__");
     setIsVisible(true);
@@ -142,6 +145,7 @@ function TaxonomyCreateDialogInner({
     open &&
     (displayName.trim().length > 0 ||
       handle.trim().length > 0 ||
+      mediaUrl.length > 0 ||
       parentCategoryId !== "__root__" ||
       !isVisible);
   const { leaveDialogOpen, requestLeave, confirmLeave, cancelLeave } =
@@ -186,6 +190,7 @@ function TaxonomyCreateDialogInner({
     const payload: Record<string, string | null> = {
       [nameKey]: trimmedName,
       handle: handle.trim() || null,
+      mediaUrl: mediaUrl || null,
     };
 
     if (entityLabel === "category") {
@@ -236,199 +241,197 @@ function TaxonomyCreateDialogInner({
 
   return (
     <>
-    <Dialog
-      onOpenChange={(nextOpen) => {
-        if (nextOpen) {
-          setOpen(true);
-          return;
-        }
-        requestClose();
-      }}
-      open={open}
-    >
-      {showTrigger ? (
-        <DialogTrigger asChild>
-          <Button type="button">
-            {entityLabel === "category" ? (
-              <AppIcons.tree data-icon="inline-start" />
-            ) : (
-              <AppIcons.folder data-icon="inline-start" />
-            )}
-            {triggerLabel}
-          </Button>
-        </DialogTrigger>
-      ) : null}
-      <DialogContent
-        className="z-[60] gap-0 overflow-visible p-0 sm:max-w-lg"
-        overlayClassName="z-[60]"
+      <Dialog
+        onOpenChange={(nextOpen) => {
+          if (nextOpen) {
+            setOpen(true);
+            return;
+          }
+          requestClose();
+        }}
+        open={open}
       >
-        <DialogHeader className="gap-1.5 border-b px-4 py-4 text-left sm:px-5">
-          <DialogTitle>
-            {t("taxonomy.create.title", { entity: localizedEntity })}
-          </DialogTitle>
-          <DialogDescription>
-            {entityLabel === "category"
-              ? t("taxonomy.create.category.desc")
-              : t("taxonomy.create.collection.desc")}
-          </DialogDescription>
-        </DialogHeader>
-        <form
-          className="flex flex-col"
-          onSubmit={(event) => {
-            // Nested inside product composer (and other host forms). Stop bubble so
-            // the parent form does not submit with incomplete product values.
-            event.preventDefault();
-            event.stopPropagation();
-            void submitTaxonomy();
-          }}
+        {showTrigger ? (
+          <DialogTrigger asChild>
+            <Button type="button">
+              {entityLabel === "category" ? (
+                <AppIcons.tree data-icon="inline-start" />
+              ) : (
+                <AppIcons.folder data-icon="inline-start" />
+              )}
+              {triggerLabel}
+            </Button>
+          </DialogTrigger>
+        ) : null}
+        <DialogContent
+          className="z-[60] gap-0 overflow-visible p-0 sm:max-w-lg"
+          overlayClassName="z-[60]"
         >
-          <div className="grid gap-4 p-4 sm:p-5">
-            {error ? (
-              <Alert variant="destructive">
-                <AlertTitle>
-                  {t("taxonomy.create.error.createFailed", {
-                    entity: capitalize(localizedEntity),
-                  })}
-                </AlertTitle>
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            ) : null}
-            <Field>
-              <FieldLabel htmlFor={`taxonomy-${entityLabel}-name`}>{nameLabel}</FieldLabel>
-              <Input
-                autoComplete="off"
-                id={`taxonomy-${entityLabel}-name`}
-                onChange={(event) => updateDisplayName(event.target.value)}
-                placeholder={namePlaceholder}
-                required
-                value={displayName}
-              />
-            </Field>
-
-            <Field>
-              <FieldLabel htmlFor={`taxonomy-${entityLabel}-handle`}>
-                {t("taxonomy.create.handle")}
-              </FieldLabel>
-              <InputGroup className="pr-1">
-                <InputGroupInput
-                  id={`taxonomy-${entityLabel}-handle`}
-                  onChange={(event) => setHandle(slugifyTaxonomyHandle(event.target.value))}
-                  placeholder={slugifyTaxonomyHandle(namePlaceholder)}
-                  readOnly={isHandleLocked}
-                  value={handle}
-                />
-                <InputGroupAddon align="inline-end" className="gap-1 py-0 pr-0">
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        aria-label={
-                          isHandleLocked
-                            ? t("taxonomy.create.unlockHandle")
-                            : t("taxonomy.create.lockHandle")
-                        }
-                        className="rounded-full"
-                        onClick={() => setIsHandleLocked((current) => !current)}
-                        size="icon-sm"
-                        type="button"
-                        variant="ghost"
-                      >
-                        <HandleLockIcon data-icon="inline-start" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent side="top" sideOffset={6}>
-                      {isHandleLocked
-                        ? t("taxonomy.create.unlockHandle")
-                        : t("taxonomy.create.lockHandle")}
-                    </TooltipContent>
-                  </Tooltip>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        aria-label={t("taxonomy.create.regenerateHandle", {
-                          entity: localizedEntity,
-                        })}
-                        className="rounded-full"
-                        onClick={regenerateHandle}
-                        size="icon-sm"
-                        type="button"
-                        variant="ghost"
-                      >
-                        <AppIcons.refresh data-icon="inline-start" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent side="top" sideOffset={6}>
-                      {t("taxonomy.create.regenerateFrom", {
-                        field: nameLabel.toLowerCase(),
-                      })}
-                    </TooltipContent>
-                  </Tooltip>
-                </InputGroupAddon>
-              </InputGroup>
-              <FieldDescription>
-                {isHandleLocked
-                  ? t("taxonomy.create.handleFollows", {
-                      entity: localizedEntity,
-                      field: nameLabel.toLowerCase(),
-                    })
-                  : t("taxonomy.create.handleCustom", { entity: localizedEntity })}
-              </FieldDescription>
-            </Field>
-
-            {entityLabel === "category" ? (
+          <DialogHeader className="gap-1.5 border-b px-4 py-4 text-left sm:px-5">
+            <DialogTitle>{t("taxonomy.create.title", { entity: localizedEntity })}</DialogTitle>
+            <DialogDescription>
+              {entityLabel === "category"
+                ? t("taxonomy.create.category.desc")
+                : t("taxonomy.create.collection.desc")}
+            </DialogDescription>
+          </DialogHeader>
+          <form
+            className="flex flex-col"
+            onSubmit={(event) => {
+              // Nested inside product composer (and other host forms). Stop bubble so
+              // the parent form does not submit with incomplete product values.
+              event.preventDefault();
+              event.stopPropagation();
+              void submitTaxonomy();
+            }}
+          >
+            <div className="grid gap-4 p-4 sm:p-5">
+              {error ? (
+                <Alert variant="destructive">
+                  <AlertTitle>
+                    {t("taxonomy.create.error.createFailed", {
+                      entity: capitalize(localizedEntity),
+                    })}
+                  </AlertTitle>
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              ) : null}
               <Field>
-                <FieldLabel>{t("taxonomy.create.parentCategory")}</FieldLabel>
-                <ParentCategoryCombobox
-                  onChange={setParentCategoryId}
-                  options={sortedParents}
-                  rootLabel={t("taxonomy.create.rootCategory")}
-                  searchPlaceholder={t("taxonomy.create.searchParent")}
-                  value={parentCategoryId}
+                <FieldLabel htmlFor={`taxonomy-${entityLabel}-name`}>{nameLabel}</FieldLabel>
+                <Input
+                  autoComplete="off"
+                  id={`taxonomy-${entityLabel}-name`}
+                  onChange={(event) => updateDisplayName(event.target.value)}
+                  placeholder={namePlaceholder}
+                  required
+                  value={displayName}
                 />
-                <FieldDescription>{t("taxonomy.create.parentDesc")}</FieldDescription>
               </Field>
-            ) : null}
 
-            <Field className="flex flex-row items-center justify-between gap-4 rounded-xl border px-3.5 py-3">
-              <div className="min-w-0 space-y-1">
-                <FieldLabel className="text-sm" htmlFor={`taxonomy-${entityLabel}-visible`}>
-                  {t("taxonomy.create.visibleLabel")}
+              <Field>
+                <FieldLabel htmlFor={`taxonomy-${entityLabel}-handle`}>
+                  {t("taxonomy.create.handle")}
                 </FieldLabel>
-                <FieldDescription className="text-xs">
-                  {t("taxonomy.create.visibleDesc", {
-                    entityPlural: localizedEntityPlural,
-                  })}
+                <InputGroup className="pr-1">
+                  <InputGroupInput
+                    id={`taxonomy-${entityLabel}-handle`}
+                    onChange={(event) => setHandle(slugifyTaxonomyHandle(event.target.value))}
+                    placeholder={slugifyTaxonomyHandle(namePlaceholder)}
+                    readOnly={isHandleLocked}
+                    value={handle}
+                  />
+                  <InputGroupAddon align="inline-end" className="gap-1 py-0 pr-0">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          aria-label={
+                            isHandleLocked
+                              ? t("taxonomy.create.unlockHandle")
+                              : t("taxonomy.create.lockHandle")
+                          }
+                          className="rounded-full"
+                          onClick={() => setIsHandleLocked((current) => !current)}
+                          size="icon-sm"
+                          type="button"
+                          variant="ghost"
+                        >
+                          <HandleLockIcon data-icon="inline-start" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" sideOffset={6}>
+                        {isHandleLocked
+                          ? t("taxonomy.create.unlockHandle")
+                          : t("taxonomy.create.lockHandle")}
+                      </TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          aria-label={t("taxonomy.create.regenerateHandle", {
+                            entity: localizedEntity,
+                          })}
+                          className="rounded-full"
+                          onClick={regenerateHandle}
+                          size="icon-sm"
+                          type="button"
+                          variant="ghost"
+                        >
+                          <AppIcons.refresh data-icon="inline-start" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" sideOffset={6}>
+                        {t("taxonomy.create.regenerateFrom", {
+                          field: nameLabel.toLowerCase(),
+                        })}
+                      </TooltipContent>
+                    </Tooltip>
+                  </InputGroupAddon>
+                </InputGroup>
+                <FieldDescription>
+                  {isHandleLocked
+                    ? t("taxonomy.create.handleFollows", {
+                        entity: localizedEntity,
+                        field: nameLabel.toLowerCase(),
+                      })
+                    : t("taxonomy.create.handleCustom", { entity: localizedEntity })}
                 </FieldDescription>
-              </div>
-              <Switch
-                checked={isVisible}
-                id={`taxonomy-${entityLabel}-visible`}
-                onCheckedChange={setIsVisible}
-              />
-            </Field>
-          </div>
-          <DialogFooter className="mx-0 mb-0 rounded-none border-t bg-muted/50 p-4 sm:justify-end">
-            <Button
-              disabled={isSaving}
-              onClick={requestClose}
-              type="button"
-              variant="outline"
-            >
-              {t("common.cancel")}
-            </Button>
-            <Button disabled={isSaving} type="submit">
-              {isSaving
-                ? t("taxonomy.create.creating")
-                : t("taxonomy.create.createBtn", { entity: localizedEntity })}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
-    <UnsavedChangesDialog
-      onLeave={confirmLeave}
-      onStay={cancelLeave}
-      open={leaveDialogOpen}
-    />
+              </Field>
+
+              <Field>
+                <MediaImageReferenceControl
+                  label={t("taxonomy.form.mediaLabel")}
+                  onChange={(value) => setMediaUrl(value ?? "")}
+                  value={mediaUrl}
+                />
+                <FieldDescription>{t("taxonomy.form.mediaDescription")}</FieldDescription>
+              </Field>
+
+              {entityLabel === "category" ? (
+                <Field>
+                  <FieldLabel>{t("taxonomy.create.parentCategory")}</FieldLabel>
+                  <ParentCategoryCombobox
+                    onChange={setParentCategoryId}
+                    options={sortedParents}
+                    rootLabel={t("taxonomy.create.rootCategory")}
+                    searchPlaceholder={t("taxonomy.create.searchParent")}
+                    value={parentCategoryId}
+                  />
+                  <FieldDescription>{t("taxonomy.create.parentDesc")}</FieldDescription>
+                </Field>
+              ) : null}
+
+              <Field className="flex flex-row items-center justify-between gap-4 rounded-xl border px-3.5 py-3">
+                <div className="min-w-0 space-y-1">
+                  <FieldLabel className="text-sm" htmlFor={`taxonomy-${entityLabel}-visible`}>
+                    {t("taxonomy.create.visibleLabel")}
+                  </FieldLabel>
+                  <FieldDescription className="text-xs">
+                    {t("taxonomy.create.visibleDesc", {
+                      entityPlural: localizedEntityPlural,
+                    })}
+                  </FieldDescription>
+                </div>
+                <Switch
+                  checked={isVisible}
+                  id={`taxonomy-${entityLabel}-visible`}
+                  onCheckedChange={setIsVisible}
+                />
+              </Field>
+            </div>
+            <DialogFooter className="mx-0 mb-0 rounded-none border-t bg-muted/50 p-4 sm:justify-end">
+              <Button disabled={isSaving} onClick={requestClose} type="button" variant="outline">
+                {t("common.cancel")}
+              </Button>
+              <Button disabled={isSaving} type="submit">
+                {isSaving
+                  ? t("taxonomy.create.creating")
+                  : t("taxonomy.create.createBtn", { entity: localizedEntity })}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+      <UnsavedChangesDialog onLeave={confirmLeave} onStay={cancelLeave} open={leaveDialogOpen} />
     </>
   );
 }

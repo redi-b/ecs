@@ -82,6 +82,9 @@ export function registerPlatformTenantCatalogRoutes(
     const category = await options.createMerchantProductCategory({
       name,
       handle: getOptionalBodyString(body, "handle"),
+      ...(getOptionalBodyString(body, "mediaUrl")
+        ? { mediaUrl: getOptionalBodyString(body, "mediaUrl") }
+        : {}),
       tenantId: commerce.context.tenantId,
       ...(getOptionalBodyString(body, "parentCategoryId")
         ? { parentCategoryId: getOptionalBodyString(body, "parentCategoryId") }
@@ -164,7 +167,8 @@ export function registerPlatformTenantCatalogRoutes(
     const name = getRequiredBodyString(body, "name");
     if (!name) return context.json({ error: "missing_name" }, 400);
 
-    const rankRaw = body && typeof body === "object" ? (body as { rank?: unknown }).rank : undefined;
+    const rankRaw =
+      body && typeof body === "object" ? (body as { rank?: unknown }).rank : undefined;
     const rank =
       typeof rankRaw === "number" && Number.isFinite(rankRaw)
         ? Math.max(0, Math.floor(rankRaw))
@@ -175,6 +179,7 @@ export function registerPlatformTenantCatalogRoutes(
     const result = await options.updateMerchantProductCategory({
       categoryId: context.req.param("categoryId"),
       handle: getOptionalBodyString(body, "handle"),
+      mediaUrl: getOptionalBodyString(body, "mediaUrl"),
       name,
       parentCategoryId: getOptionalBodyString(body, "parentCategoryId"),
       ...(rank === undefined ? {} : { rank }),
@@ -182,9 +187,7 @@ export function registerPlatformTenantCatalogRoutes(
       visibility: getOptionalBodyString(body, "visibility") === "hidden" ? "hidden" : "public",
     });
 
-    return result.ok
-      ? context.json(result)
-      : context.json({ error: result.error }, result.status);
+    return result.ok ? context.json(result) : context.json({ error: result.error }, result.status);
   });
 
   app.get("/platform/tenants/:tenantId/product-collections", async (context) => {
@@ -256,6 +259,9 @@ export function registerPlatformTenantCatalogRoutes(
     const collection = await options.createMerchantProductCollection({
       title,
       handle: getOptionalBodyString(body, "handle"),
+      ...(getOptionalBodyString(body, "mediaUrl")
+        ? { mediaUrl: getOptionalBodyString(body, "mediaUrl") }
+        : {}),
       tenantId: commerce.context.tenantId,
     });
 
@@ -346,9 +352,7 @@ export function registerPlatformTenantCatalogRoutes(
       visibility: getOptionalBodyString(body, "visibility") === "hidden" ? "hidden" : "public",
     });
 
-    return result.ok
-      ? context.json(result)
-      : context.json({ error: result.error }, result.status);
+    return result.ok ? context.json(result) : context.json({ error: result.error }, result.status);
   });
 
   app.get(

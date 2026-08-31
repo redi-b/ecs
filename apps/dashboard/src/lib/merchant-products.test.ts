@@ -110,6 +110,7 @@ describe("getMerchantProducts", () => {
       tenantId: "tenant_1",
       name: "Coffee",
       handle: "coffee",
+      mediaUrl: "https://cdn.example.com/categories/coffee.jpg",
       fetcher: async (input, init) => {
         forwardedRequest = new Request(input, init);
 
@@ -134,6 +135,7 @@ describe("getMerchantProducts", () => {
     assert.deepEqual(await forwardedRequest?.json(), {
       name: "Coffee",
       handle: "coffee",
+      mediaUrl: "https://cdn.example.com/categories/coffee.jpg",
     });
   });
 
@@ -201,6 +203,7 @@ describe("getMerchantProducts", () => {
       tenantId: "tenant_1",
       title: "Featured",
       handle: "featured",
+      mediaUrl: "https://cdn.example.com/collections/featured.jpg",
       fetcher: async (input, init) => {
         forwardedRequest = new Request(input, init);
 
@@ -225,6 +228,7 @@ describe("getMerchantProducts", () => {
     assert.deepEqual(await forwardedRequest?.json(), {
       title: "Featured",
       handle: "featured",
+      mediaUrl: "https://cdn.example.com/collections/featured.jpg",
     });
   });
 

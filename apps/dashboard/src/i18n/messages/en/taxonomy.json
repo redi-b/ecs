@@ -113,7 +113,9 @@
     "regenerateHandle": "Regenerate {entity} handle",
     "regenerateFrom": "Regenerate from {label}",
     "handleFollows": "The {entity} handle follows the {label} automatically.",
-    "handleUnlocked": "Handle editing is unlocked for a custom {entity} slug."
+    "handleUnlocked": "Handle editing is unlocked for a custom {entity} slug.",
+    "mediaLabel": "Storefront image",
+    "mediaDescription": "Shown in storefront category and collection cards when the template supports it."
   },
   "edit": {
     "categoryTitle": "Edit category",

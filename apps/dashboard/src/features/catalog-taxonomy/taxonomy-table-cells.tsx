@@ -2,6 +2,7 @@
 
 import type { MerchantProductCategory, MerchantProductCollection } from "@ecs/contracts";
 
+import { AppIcons } from "@/components/app/icons";
 import {
   formatTaxonomyDate,
   getCategoryDisplayName,
@@ -17,21 +18,36 @@ type TaxonomyIdentityCellProps = {
   onOpen?: (() => void) | undefined;
 };
 
-export function TaxonomyIdentityCell({ entity: _entity, label, onOpen }: TaxonomyIdentityCellProps) {
-  // Handle lives in its own table column — keep the name cell name-only.
-  void _entity;
+export function TaxonomyIdentityCell({ entity, label, onOpen }: TaxonomyIdentityCellProps) {
+  const identity = (
+    <>
+      <span className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-md border bg-muted">
+        {entity.mediaUrl ? (
+          <span
+            aria-hidden
+            className="size-full bg-cover bg-center"
+            style={{ backgroundImage: `url(${JSON.stringify(entity.mediaUrl)})` }}
+          />
+        ) : (
+          <AppIcons.image aria-hidden className="size-4 text-muted-foreground" />
+        )}
+      </span>
+      <span className="truncate">{label}</span>
+    </>
+  );
+
   return (
     <div className="min-w-48">
       {onOpen ? (
         <button
-          className={cn(listEntityActionClassName, "truncate")}
+          className={cn(listEntityActionClassName, "flex w-full items-center gap-3 text-left")}
           onClick={onOpen}
           type="button"
         >
-          {label}
+          {identity}
         </button>
       ) : (
-        <div className="font-medium text-card-foreground">{label}</div>
+        <div className="flex items-center gap-3 font-medium text-card-foreground">{identity}</div>
       )}
     </div>
   );
@@ -86,9 +102,7 @@ export function CategoryParentCell({
 }) {
   const { t } = useI18n();
   if (!parentCategoryId) {
-    return (
-      <span className="text-muted-foreground">{t("taxonomy.edit.rootCategory")}</span>
-    );
+    return <span className="text-muted-foreground">{t("taxonomy.edit.rootCategory")}</span>;
   }
 
   if (parentCategory) {
