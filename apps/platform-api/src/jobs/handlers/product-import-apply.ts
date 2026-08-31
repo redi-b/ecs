@@ -100,7 +100,17 @@ function optionsForWrite(write: ProductImportWrite) {
       values.set(title, entries);
     }
   }
-  return [...values.entries()].map(([title, entries]) => ({ title, values: [...entries] }));
+  return [...values.entries()].map(([title, entries]) => ({
+    title,
+    values: [...entries].map((label) => {
+      const presentation = write.optionPresentations?.find(
+        (candidate) =>
+          candidate.optionTitle.toLocaleLowerCase() === title.toLocaleLowerCase() &&
+          candidate.valueLabel.toLocaleLowerCase() === label.toLocaleLowerCase(),
+      );
+      return presentation ? { label, swatch: presentation.swatch } : label;
+    }),
+  }));
 }
 
 function productInput(

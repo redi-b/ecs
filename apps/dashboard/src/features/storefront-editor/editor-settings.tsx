@@ -47,7 +47,7 @@ import {
   type EditorData,
   type StorefrontPageProps,
 } from "./editor-state";
-import { ThemeBrandSection, FontSelect, PremiumColorPicker } from "./editor-theme";
+import { ThemeBrandSection, FontSelect, ColorPickerField } from "./editor-theme";
 import { updateStorefrontProp } from "./editor-utils";
 
 export {
@@ -440,7 +440,7 @@ export function StorefrontSettingControl({
 
   if (field.kind === "color") {
     return (
-      <PremiumColorPicker
+      <ColorPickerField
         label={field.label}
         onChange={(next) => update(next)}
         value={stringValue || "#000000"}

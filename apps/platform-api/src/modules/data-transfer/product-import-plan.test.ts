@@ -24,6 +24,20 @@ const existing: MerchantProduct = {
   ],
   createdAt: "2026-08-25T00:00:00.000Z",
   updatedAt: "2026-08-25T00:00:00.000Z",
+  options: [
+    {
+      id: "opt_size",
+      title: "Size",
+      values: [
+        {
+          id: "optval_250",
+          label: "250g",
+          swatch: { kind: "color", source: "explicit", value: "#4a2c1b" },
+        },
+        { id: "optval_500", label: "500g" },
+      ],
+    },
+  ],
   variants: [
     {
       id: "var_1",
@@ -76,6 +90,13 @@ describe("product import grouped write plan", () => {
       description: "Roasted in Addis Ababa",
       handle: "buna",
       imageUrls: ["https://cdn.example/detail.jpg"],
+      optionPresentations: [
+        {
+          optionTitle: "Size",
+          valueLabel: "250g",
+          swatch: { kind: "color", value: "#4a2c1b" },
+        },
+      ],
       productId: "prod_1",
       sourceRows: [2, 3],
       status: "published",

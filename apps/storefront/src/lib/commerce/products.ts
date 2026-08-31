@@ -11,6 +11,7 @@ const PRODUCT_FIELDS = [
   "+variants.sku",
   "*options",
   "*options.values",
+  "+options.values.metadata",
   "*images",
   "*collection",
   "*categories",

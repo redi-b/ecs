@@ -158,7 +158,7 @@ export function validatePriceAmount(value: string, t: Translate) {
 
 export function getProductOptionsPayload(values: ProductFormValues) {
   if (!values.hasVariants) {
-    return [{ title: "Default", values: ["Default"] }];
+    return [{ title: "Default", values: [{ label: "Default" }] }];
   }
 
   const options = normalizeProductOptions(values.options);
@@ -221,8 +221,15 @@ export function getVariantOverrideMap(values: ProductFormValues["variantOverride
 export function normalizeProductOptions(options: ProductOptionDraft[]) {
   return options
     .map((option) => ({
+      ...(option.id ? { id: option.id } : {}),
       title: option.title.trim(),
-      values: [...new Set(option.values.map((value) => value.trim()).filter(Boolean))],
+      values: option.values
+        .map((value) => ({
+          ...(value.id ? { id: value.id } : {}),
+          label: value.label.trim(),
+          ...(value.swatch !== undefined ? { swatch: value.swatch } : {}),
+        }))
+        .filter((value) => value.label),
     }))
     .filter((option) => option.title && option.values.length);
 }
@@ -357,6 +364,22 @@ export function getFirstVariantPrice(product: MerchantProduct | undefined) {
 export function getInitialProductOptions(
   product: MerchantProduct | undefined,
 ): ProductOptionDraft[] {
+  if (product?.options?.length) {
+    return product.options
+      .filter((option) => option.title !== "Default")
+      .map((option) => ({
+        ...(option.id ? { id: option.id } : {}),
+        title: option.title,
+        values: option.values.map((value) => ({
+          ...(value.id ? { id: value.id } : {}),
+          label: value.label,
+          ...(value.swatch
+            ? { swatch: { kind: "color" as const, value: value.swatch.value } }
+            : {}),
+        })),
+      }));
+  }
+
   const options = new Map<string, Set<string>>();
 
   for (const variant of product?.variants ?? []) {
@@ -373,7 +396,7 @@ export function getInitialProductOptions(
 
   return Array.from(options, ([title, values]) => ({
     title,
-    values: Array.from(values),
+    values: Array.from(values, (label) => ({ label })),
   }));
 }
 

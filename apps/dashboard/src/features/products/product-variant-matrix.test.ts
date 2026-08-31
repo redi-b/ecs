@@ -13,8 +13,8 @@ describe("product variant matrix", () => {
         skuPrefix: "TEE",
       },
       options: [
-        { title: "Size", values: ["S", "M"] },
-        { title: "Color", values: ["Black", "White"] },
+        { title: "Size", values: [{ label: "S" }, { label: "M" }] },
+        { title: "Color", values: [{ label: "Black" }, { label: "White" }] },
       ],
       overrides: new Map(),
     });
@@ -44,8 +44,8 @@ describe("product variant matrix", () => {
         skuPrefix: "TEE",
       },
       options: [
-        { title: "Size", values: ["S", "M"] },
-        { title: "Color", values: ["Black"] },
+        { title: "Size", values: [{ label: "S" }, { label: "M" }] },
+        { title: "Color", values: [{ label: "Black" }] },
       ],
       overrides: new Map([
         [

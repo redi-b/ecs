@@ -33,6 +33,7 @@ export type StoreProductOption = {
   id: string;
   title: string;
   values: string[];
+  swatches?: Record<string, string>;
 };
 
 export type StoreProduct = {

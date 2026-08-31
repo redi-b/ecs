@@ -191,3 +191,30 @@ test("normalizeProduct maps calculated prices and variants", () => {
   assert.equal(product.variants[0]?.inStock, true);
   assert.equal(product.variants[0]?.optionValues[0]?.value, "M");
 });
+
+test("normalizeProduct exposes only valid explicit option-value swatches", () => {
+  const product = normalizeProduct({
+    id: "prod_colors",
+    options: [
+      {
+        id: "opt_color",
+        title: "Color",
+        values: [
+          {
+            id: "optval_custom",
+            value: "Custom finish",
+            metadata: {
+              ecs_option_value_presentation: {
+                version: 1,
+                swatch: { kind: "color", value: "#A1B2C3" },
+              },
+            },
+          },
+        ],
+      },
+    ],
+    variants: [],
+  });
+
+  assert.deepEqual(product.options[0]?.swatches, { "Custom finish": "#a1b2c3" });
+});

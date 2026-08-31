@@ -36,7 +36,12 @@ export const isColorOptionTitle = (title: string): boolean => COLOR_OPTION_TITLE
  * Resolves only truthful, order-independent swatches. Unknown merchandising
  * names deliberately return null so the UI can retain a readable text option.
  */
-export const resolveColorSwatch = (value: string): string | null => {
+export const resolveColorSwatch = (value: string, explicitSwatch?: string | null): string | null => {
+  const normalizedExplicit = explicitSwatch?.trim().toLowerCase();
+  if (normalizedExplicit && /^#[\da-f]{6}$/.test(normalizedExplicit)) {
+    return normalizedExplicit;
+  }
+
   const normalized = value.trim().toLowerCase();
   const embeddedHex = normalized.match(/(?:^|\s)(#[\da-f]{3,4}|#[\da-f]{6}|#[\da-f]{8})(?:\s|$)/i)?.[1];
   if (embeddedHex) return embeddedHex;

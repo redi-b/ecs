@@ -8,9 +8,26 @@ export type MerchantProduct = {
   status: string | null;
   thumbnail: string | null;
   images?: MerchantProductImage[];
+  options?: MerchantProductOption[];
   variants?: MerchantProductVariant[];
   createdAt: string | null;
   updatedAt: string | null;
+};
+
+export type MerchantProductOption = {
+  id: string | null;
+  title: string;
+  values: MerchantProductOptionValue[];
+};
+
+export type MerchantProductOptionValue = {
+  id: string | null;
+  label: string;
+  swatch?: {
+    kind: "color";
+    value: string;
+    source: "explicit";
+  };
 };
 
 export type MerchantProductImage = {

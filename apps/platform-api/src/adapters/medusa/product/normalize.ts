@@ -4,6 +4,7 @@ import type {
   MerchantProductCollection,
   MerchantProductStock,
 } from "../../../types/index.js";
+import { PRODUCT_OPTION_VALUE_PRESENTATION_METADATA_KEY } from "@ecs/contracts";
 import { getBoolean, getNumber, getString, isRecord } from "./values.js";
 
 export function normalizeProduct(value: unknown): MerchantProduct[] {
@@ -18,6 +19,7 @@ export function normalizeProduct(value: unknown): MerchantProduct[] {
   }
 
   const images = getProductImages(value.images);
+  const options = getProductOptions(value.options);
 
   return [
     {
@@ -30,11 +32,55 @@ export function normalizeProduct(value: unknown): MerchantProduct[] {
       status: getString(value.status),
       thumbnail: getString(value.thumbnail),
       ...(images.length === 0 ? {} : { images }),
+      ...(options === undefined ? {} : { options }),
       variants: getProductVariants(value.variants),
       createdAt: getString(value.created_at),
       updatedAt: getString(value.updated_at),
     },
   ];
+}
+
+export function getProductOptions(value: unknown) {
+  if (!Array.isArray(value)) return undefined;
+
+  return value.flatMap((option) => {
+    if (!isRecord(option)) return [];
+    const title = getString(option.title);
+    if (!title) return [];
+
+    return [
+      {
+        id: getString(option.id),
+        title,
+        values: Array.isArray(option.values)
+          ? option.values.flatMap((optionValue) => {
+              if (!isRecord(optionValue)) return [];
+              const label = getString(optionValue.value);
+              if (!label) return [];
+              const swatch = getExplicitColorSwatch(optionValue.metadata);
+              return [
+                {
+                  id: getString(optionValue.id),
+                  label,
+                  ...(swatch ? { swatch } : {}),
+                },
+              ];
+            })
+          : [],
+      },
+    ];
+  });
+}
+
+function getExplicitColorSwatch(metadata: unknown) {
+  if (!isRecord(metadata)) return undefined;
+  const presentation = metadata[PRODUCT_OPTION_VALUE_PRESENTATION_METADATA_KEY];
+  if (!isRecord(presentation) || presentation.version !== 1) return undefined;
+  const swatch = presentation.swatch;
+  if (!isRecord(swatch) || swatch.kind !== "color") return undefined;
+  const value = getString(swatch.value)?.toLowerCase();
+  if (!value || !/^#[0-9a-f]{6}$/.test(value)) return undefined;
+  return { kind: "color" as const, value, source: "explicit" as const };
 }
 
 export function getProductCategoryIds(value: unknown) {

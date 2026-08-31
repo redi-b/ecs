@@ -505,7 +505,20 @@ export type PlatformAppOptions = {
         description?: string | null | undefined;
         handle?: string | null | undefined;
         imageUrls?: string[] | undefined;
-        options?: Array<{ title: string; values: string[] }> | undefined;
+        options?:
+          | Array<{
+              id?: string | undefined;
+              title: string;
+              values: Array<
+                | string
+                | {
+                    id?: string | undefined;
+                    label: string;
+                    swatch?: { kind: "color"; value: string } | null | undefined;
+                  }
+              >;
+            }>
+          | undefined;
         priceAmount?: number | undefined;
         regionId?: string | null | undefined;
         salesChannelId: string;
@@ -1195,14 +1208,40 @@ export type PlatformAppOptions = {
     | ((input: {
         categoryIds?: string[] | undefined;
         collectionId?: string | null | undefined;
+        currencyCode?: string | null | undefined;
         description?: string | null | undefined;
         handle?: string | null | undefined;
         imageUrls?: string[] | undefined;
+        options?:
+          | Array<{
+              id?: string | undefined;
+              title: string;
+              values: Array<
+                | string
+                | {
+                    id?: string | undefined;
+                    label: string;
+                    swatch?: { kind: "color"; value: string } | null | undefined;
+                  }
+              >;
+            }>
+          | undefined;
+        priceAmount?: number | undefined;
         productId: string;
+        regionId?: string | null | undefined;
         salesChannelId: string;
         status?: string | null | undefined;
         thumbnail?: string | null | undefined;
         title?: string | null | undefined;
+        variants?:
+          | Array<{
+              currencyCode: string;
+              optionValues: Record<string, string>;
+              priceAmount: number;
+              sku?: string | null | undefined;
+              stockedQuantity?: number | undefined;
+            }>
+          | undefined;
       }) => Promise<MerchantProductWriteResult>)
     | undefined;
   deleteMerchantProduct?:

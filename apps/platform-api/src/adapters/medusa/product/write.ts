@@ -5,16 +5,22 @@ import type {
   MerchantProductCollectionWriteResult,
   MerchantProductWriteResult,
 } from "../../../types/index.js";
+import { PRODUCT_OPTION_VALUE_PRESENTATIONS_ADDITIONAL_DATA_KEY } from "@ecs/contracts";
 import { mapMedusaHttpFailure } from "../map-medusa-failure.js";
 import {
   normalizeProduct,
   normalizeProductCategory,
   normalizeProductCollection,
 } from "./normalize.js";
-import type { ProductOptionInput, ProductVariantWriteInput, ProductWriteInput } from "./types.js";
+import type {
+  ProductOptionInput,
+  ProductUpdateInput,
+  ProductVariantWriteInput,
+  ProductWriteInput,
+} from "./types.js";
 import { getBoolean, getString } from "./values.js";
 
-export function getProductWriteBody(input: ProductWriteInput) {
+export function getProductWriteBody(input: ProductWriteInput | ProductUpdateInput) {
   const body = Object.fromEntries(
     [
       ["title", input.title],
@@ -39,25 +45,42 @@ export function getProductWriteBody(input: ProductWriteInput) {
     body.metadata = input.metadata;
   }
 
-  if (input.priceAmount !== undefined) {
-    const productOptions = getProductOptionsForWrite(input.options);
-    const productVariants = getProductVariantsForWrite(input.variants);
+  const optionValuePresentations = getOptionValuePresentationsForWrite(input.options);
+  if (optionValuePresentations.length) {
+    body.additional_data = {
+      [PRODUCT_OPTION_VALUE_PRESENTATIONS_ADDITIONAL_DATA_KEY]: {
+        version: 1,
+        values: optionValuePresentations,
+      },
+    };
+  }
 
+  const hasExplicitOptions = input.options !== undefined;
+  const isUpdate = "productId" in input;
+  const productOptions = getProductOptionsForWrite(input.options);
+  const productVariants = getProductVariantsForWrite(input.variants);
+
+  if (hasExplicitOptions || (input.priceAmount !== undefined && !isUpdate)) {
     body.options = productOptions;
-    body.variants = productVariants.length
-      ? productVariants.map((variant) => getProductVariantWriteBody(variant, input.regionId))
-      : getProductVariantCombinations(productOptions).map((combination) =>
-          getProductVariantWriteBody(
-            {
-              optionValues: Object.fromEntries(
-                combination.map((option) => [option.title, option.value]),
-              ),
-              priceAmount: input.priceAmount ?? 0,
-              currencyCode: input.currencyCode?.trim().toLowerCase() || "etb",
-            },
-            input.regionId,
+  }
+
+  if (productVariants.length) {
+    body.variants = productVariants.map((variant) =>
+      getProductVariantWriteBody(variant, input.regionId),
+    );
+  } else if (input.priceAmount !== undefined && !isUpdate) {
+    body.variants = getProductVariantCombinations(productOptions).map((combination) =>
+      getProductVariantWriteBody(
+        {
+          optionValues: Object.fromEntries(
+            combination.map((option) => [option.title, option.value]),
           ),
-        );
+          priceAmount: input.priceAmount ?? 0,
+          currencyCode: input.currencyCode?.trim().toLowerCase() || "etb",
+        },
+        input.regionId,
+      ),
+    );
   }
 
   return body;
@@ -66,8 +89,11 @@ export function getProductWriteBody(input: ProductWriteInput) {
 export function getProductOptionsForWrite(options: ProductOptionInput[] | undefined) {
   const normalized = (options ?? [])
     .map((option) => ({
+      ...(option.id?.trim() ? { id: option.id.trim() } : {}),
       title: option.title.trim(),
-      values: [...new Set(option.values.map((value) => value.trim()).filter(Boolean))],
+      values: [
+        ...new Set(option.values.map(getOptionValueLabel).filter(Boolean)),
+      ],
     }))
     .filter((option) => option.title && option.values.length);
 
@@ -79,6 +105,33 @@ export function getProductOptionsForWrite(options: ProductOptionInput[] | undefi
           values: ["Default"],
         },
       ];
+}
+
+export function getOptionValuePresentationsForWrite(options: ProductOptionInput[] | undefined) {
+  return (options ?? []).flatMap((option) =>
+    option.values.flatMap((value) => {
+      if (typeof value === "string") return [];
+      if (value.swatch === undefined) return [];
+      return [
+        {
+          ...(option.id?.trim() ? { optionId: option.id.trim() } : {}),
+          optionTitle: option.title.trim(),
+          ...(value.id?.trim() ? { valueId: value.id.trim() } : {}),
+          valueLabel: value.label.trim(),
+          swatch: value.swatch
+            ? {
+                kind: "color" as const,
+                value: value.swatch.value.toLowerCase(),
+              }
+            : null,
+        },
+      ];
+    }),
+  );
+}
+
+function getOptionValueLabel(value: ProductOptionInput["values"][number]) {
+  return (typeof value === "string" ? value : value.label).trim();
 }
 
 export function getProductVariantsForWrite(variants: ProductVariantWriteInput[] | undefined) {
@@ -132,7 +185,9 @@ export function getProductVariantWriteBody(
   };
 }
 
-export function getProductVariantCombinations(options: ProductOptionInput[]) {
+export function getProductVariantCombinations(
+  options: Array<{ title: string; values: string[] }>,
+) {
   return options.reduce<Array<Array<{ title: string; value: string }>>>(
     (combinations, option) =>
       combinations.flatMap((combination) =>

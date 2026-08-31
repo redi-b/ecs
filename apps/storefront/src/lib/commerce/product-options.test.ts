@@ -9,6 +9,7 @@ test("recognizes color option axes in either spelling", () => {
 });
 
 test("resolves explicit and recognized swatches without depending on option order", () => {
+  assert.equal(resolveColorSwatch("Bespoke", "#AABBCC"), "#aabbcc");
   assert.equal(resolveColorSwatch("#7c3aed"), "#7c3aed");
   assert.equal(resolveColorSwatch("Ocean Navy"), "#24364f");
   assert.equal(resolveColorSwatch("Sage / Natural"), "#89957e");

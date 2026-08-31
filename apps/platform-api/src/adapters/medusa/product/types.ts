@@ -19,9 +19,22 @@ export type ProductWriteInput = {
 };
 
 export type ProductOptionInput = {
+  id?: string | undefined;
   title: string;
-  values: string[];
+  values: ProductOptionValueInput[];
 };
+
+export type ProductOptionValueInput = {
+  id?: string | undefined;
+  label: string;
+  swatch?:
+    | {
+        kind: "color";
+        value: string;
+      }
+    | null
+    | undefined;
+} | string;
 
 export type ProductVariantWriteInput = {
   currencyCode: string;

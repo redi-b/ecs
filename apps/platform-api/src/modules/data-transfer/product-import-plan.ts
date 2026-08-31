@@ -3,6 +3,7 @@ import type { MerchantProduct } from "@ecs/contracts";
 import { PRODUCT_CSV_HEADERS } from "./product-export.js";
 import {
   dryRunProductImport,
+  normalizeProductImportCsvRows,
   type ProductImportIssue,
   parseProductImportCsv,
 } from "./product-import-dry-run.js";
@@ -24,6 +25,11 @@ export type ProductImportWrite = {
   description: string | null;
   handle: string;
   imageUrls: string[];
+  optionPresentations?: Array<{
+    optionTitle: string;
+    valueLabel: string;
+    swatch: { kind: "color"; value: string };
+  }>;
   productId: string | null;
   sourceRows: number[];
   status: string | null;
@@ -62,6 +68,9 @@ function productFields(cells: string[]): ProductFields {
     description: cell(cells, "description") || null,
     handle: cell(cells, "product_handle"),
     imageUrls: json<string[]>(cell(cells, "image_urls_json")),
+    optionPresentations: json<NonNullable<ProductImportWrite["optionPresentations"]>>(
+      cell(cells, "option_presentations_json"),
+    ),
     status: cell(cells, "status") || null,
     thumbnail: cell(cells, "thumbnail_url") || null,
     title: cell(cells, "product_title"),
@@ -84,7 +93,7 @@ export function buildProductImportWritePlan(input: {
   const dryRun = dryRunProductImport(input);
   if (dryRun.issues.length > 0) return { ok: false, issues: dryRun.issues };
 
-  const rows = parseProductImportCsv(input.csv).slice(1);
+  const rows = normalizeProductImportCsvRows(parseProductImportCsv(input.csv)).slice(1);
   const groups = new Map<
     string,
     { fields: ProductFields; rows: string[][]; sourceRows: number[] }
