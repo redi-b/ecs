@@ -10,6 +10,7 @@ export async function POST(
   return withMerchantAction(request, async (context) => {
     const body = (await request.json().catch(() => ({}))) as {
       handle?: unknown;
+      mediaUrl?: unknown;
       seoDescription?: unknown;
       seoTitle?: unknown;
       title?: unknown;
@@ -25,6 +26,7 @@ export async function POST(
       collectionId,
       cookieHeader: context.cookieHeader,
       handle: typeof body.handle === "string" && body.handle.trim() ? body.handle.trim() : null,
+      mediaUrl: typeof body.mediaUrl === "string" ? body.mediaUrl.trim() || null : null,
       platformApiBaseUrl: context.platformApiBaseUrl,
       requestHost: context.requestHost,
       seoDescription:

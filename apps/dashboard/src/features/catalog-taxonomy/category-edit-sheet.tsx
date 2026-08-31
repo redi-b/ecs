@@ -30,6 +30,7 @@ import {
   getCategoryDisplayName,
   slugifyTaxonomyHandle,
 } from "@/features/catalog-taxonomy/taxonomy-table-state";
+import { MediaImageReferenceControl } from "@/features/media/media-image-reference-control";
 import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes-guard";
 import type { MessageKey } from "@/i18n/messages";
 import { useI18n } from "@/i18n/provider";
@@ -64,6 +65,7 @@ export function CategoryEditSheet({
   const [isVisible, setIsVisible] = useState(true);
   const [seoTitle, setSeoTitle] = useState("");
   const [seoDescription, setSeoDescription] = useState("");
+  const [mediaUrl, setMediaUrl] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const HandleLockIcon = isHandleLocked ? AppIcons.lock : AppIcons.lockUnlock;
@@ -87,6 +89,7 @@ export function CategoryEditSheet({
     setIsVisible(category.visibility !== "hidden");
     setSeoTitle(category.seoTitle ?? "");
     setSeoDescription(category.seoDescription ?? "");
+    setMediaUrl(category.mediaUrl ?? "");
     setError(null);
   }, [category, open]);
 
@@ -99,7 +102,8 @@ export function CategoryEditSheet({
       rank !== String(category.rank ?? 0) ||
       isVisible !== (category.visibility !== "hidden") ||
       seoTitle !== (category.seoTitle ?? "") ||
-      seoDescription !== (category.seoDescription ?? "")
+      seoDescription !== (category.seoDescription ?? "") ||
+      mediaUrl !== (category.mediaUrl ?? "")
     );
   }, [
     category,
@@ -111,6 +115,7 @@ export function CategoryEditSheet({
     isVisible,
     seoTitle,
     seoDescription,
+    mediaUrl,
   ]);
 
   const { leaveDialogOpen, requestLeave, confirmLeave, cancelLeave } =
@@ -144,6 +149,7 @@ export function CategoryEditSheet({
         visibility: isVisible ? "public" : "hidden",
         seoTitle: seoTitle.trim() || null,
         seoDescription: seoDescription.trim() || null,
+        mediaUrl: mediaUrl.trim() || null,
       }),
       headers: {
         accept: "application/json",
@@ -289,6 +295,17 @@ export function CategoryEditSheet({
                 id="category-edit-visible"
                 onCheckedChange={setIsVisible}
               />
+            </Field>
+
+            <Field>
+              <MediaImageReferenceControl
+                label="Category image"
+                onChange={(value) => setMediaUrl(value ?? "")}
+                value={mediaUrl}
+              />
+              <FieldDescription>
+                Used by storefront category cards and other visual category links.
+              </FieldDescription>
             </Field>
 
             <div className="space-y-4 rounded-xl border p-4">

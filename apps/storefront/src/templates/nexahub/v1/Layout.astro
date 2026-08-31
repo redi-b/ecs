@@ -1,0 +1,124 @@
+---
+import { contrastingInk, type NexahubV1Data } from "@ecs/storefront-templates";
+import SeoHead from "../../../components/shell/SeoHead.astro";
+import StorefrontAnalytics from "../../../components/shell/StorefrontAnalytics.astro";
+import StructuredData from "../../../components/shell/StructuredData.astro";
+import type { StorefrontSeo } from "../../../lib/seo";
+import type { StoreCollection } from "../../../lib/commerce/types";
+import { listStoreCollections } from "../../../lib/commerce/catalog";
+import { getPlatformApiBaseUrl, getRequestHost } from "../../../lib/env";
+import Button from "./Button.astro";
+import logo from "./assets/nexahub-logo.svg";
+import cartIcon from "./icons/shopping-cart-icon.svg?raw";
+import profileIcon from "./icons/profile-icon.svg?raw";
+import SaveIcon from "./SaveIcon.astro";
+import searchIcon from "./icons/search-icon.svg?raw";
+import chevronIcon from "./icons/chevron-down-icon.svg?raw";
+import facebookIcon from "./icons/facebook-icon.svg?raw";
+import instagramIcon from "./icons/instagram-icon.svg?raw";
+import linkedinIcon from "./icons/linkedin-icon.svg?raw";
+import tiktokIcon from "./icons/tiktok-icon.svg?raw";
+import { parseNexahubThemeTokens } from "./lib";
+import "./styles/main.scss";
+import "./styles/components/_header.scss";
+import "./styles/components/_footer.scss";
+import "./styles/components/_cart-drawer.scss";
+import "./styles/responsive.scss";
+
+interface Props {
+  tenantName: string;
+  header: NexahubV1Data["header"];
+  footer: NexahubV1Data["footer"];
+  cartCount?: number;
+  deferCartCount?: boolean;
+  demoMode?: boolean;
+  editorMode?: boolean;
+  themeTokens?: unknown;
+  seo?: StorefrontSeo;
+  structuredData?: Record<string, unknown> | Record<string, unknown>[] | null;
+  navigationCollections?: StoreCollection[];
+  renderPath?: string;
+}
+const { tenantName, header, footer, cartCount = 0, deferCartCount = false, demoMode = false, editorMode = false, themeTokens, seo, structuredData, navigationCollections: suppliedNavigationCollections, renderPath } = Astro.props;
+const collectionsResult = suppliedNavigationCollections === undefined && !demoMode
+  ? await listStoreCollections({ platformApiBaseUrl: getPlatformApiBaseUrl(), requestHost: getRequestHost(Astro.request), limit: 8 })
+  : null;
+const navigationCollections = suppliedNavigationCollections ?? (collectionsResult && "collections" in collectionsResult ? collectionsResult.collections : []);
+const theme = parseNexahubThemeTokens(themeTokens);
+const logoUrl = header.logoAssetId ?? logo.src;
+const themeStyle = [`--nexa-bg:${theme.colors.background}`, `--nexa-ink:${theme.colors.foreground}`, `--nexa-primary:${theme.colors.primary}`, `--nexa-muted:${theme.colors.muted}`, `--nexa-accent:${theme.colors.accent}`, `--nexa-on-primary:${contrastingInk(theme.colors.primary)}`].join(";");
+// The signed editor is served from `/preview`, but it must retain the visual
+// route state of the page it renders. Never let the transport route choose a
+// different header treatment or active navigation item.
+const pathname = renderPath ?? Astro.url.pathname;
+const active = (href: string) => href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`);
+const productNav = header.navigation.find((item) => item.href === "/products");
+const primaryNav = header.navigation.filter((item) => item.href !== "/products");
+const productLinks = [{ label: "All Products", href: "/products" }, ...navigationCollections.slice(0, 8).map((item) => ({ label: item.title ?? "Collection", href: `/products?collection=${encodeURIComponent(item.id)}` }))];
+const socialIcons = [facebookIcon, instagramIcon, tiktokIcon, linkedinIcon];
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>{seo?.title ?? `${tenantName} | Technology Store`}</title>
+    <SeoHead seo={seo} />
+    <link rel="preload" href="/fonts/nexahub/Space-Grotesk-Medium.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/nexahub/DM-Mono-Regular.woff2" as="font" type="font/woff2" crossorigin />
+  </head>
+  <body class="nexa-body" style={themeStyle} data-editor-mode={editorMode ? "true" : undefined} data-demo-mode={demoMode ? "true" : undefined} data-editor-theme-vars={editorMode ? JSON.stringify({ primary: "--nexa-primary", background: "--nexa-bg", foreground: "--nexa-ink", muted: "--nexa-muted", accent: "--nexa-accent", onPrimary: "--nexa-on-primary" }) : undefined}>
+    <StructuredData value={structuredData} />
+    <a class="nexa-skip" href="#main-content">Skip to content</a>
+    <div class="nexa-sr-only" role="status" aria-live="polite" aria-atomic="true" data-nexa-live></div>
+    <div class="nexa-toast" role="status" aria-live="polite" aria-atomic="true" data-nexa-toast hidden></div>
+    <header class:list={["site-header", pathname === "/" ? "site-header--default" : "site-header--light"]}>
+      <div class="site-header__inner">
+        <div class="site-header__left">
+          <a href="/" class="site-header__brand" aria-label={`${tenantName} home`}><img src={logoUrl} alt={tenantName} data-editor-image-path="header.logoAssetId" /></a>
+          <nav class="site-header__nav" id="nexa-navigation" aria-label="Primary navigation" data-editor-links-path="header.navigation">
+            {primaryNav.slice(0, 1).map((item) => <a class="site-header__link type-body-s-400" href={item.href} aria-current={active(item.href) ? "page" : undefined} data-editor-link-target={header.navigation.indexOf(item)}><span data-editor-link-label>{item.label}</span></a>)}
+            {productNav && <div class="site-header__nav-item site-header__nav-item--dropdown"><button type="button" class="site-header__link site-header__link--dropdown type-body-s-400" aria-expanded="false" aria-controls="nexa-products-menu" data-header-dropdown-btn data-editor-link-target={header.navigation.indexOf(productNav)}><span data-editor-link-label>{productNav.label}</span><Fragment set:html={chevronIcon} /></button><div class="site-header__dropdown" id="nexa-products-menu" data-header-dropdown-menu>{productLinks.map((item) => <a href={item.href} class="site-header__dropdown-item type-body-s-400">{item.label}</a>)}</div></div>}
+            {primaryNav.slice(1).map((item) => <a class="site-header__link type-body-s-400" href={item.href} aria-current={active(item.href) ? "page" : undefined} data-editor-link-target={header.navigation.indexOf(item)}><span data-editor-link-label>{item.label}</span></a>)}
+          </nav>
+        </div>
+        <button class="site-header__toggle" type="button" aria-expanded="false" aria-controls="nexa-navigation" aria-label="Open navigation"><span></span><span></span></button>
+        <div class="site-header__right">
+          <form class="site-header__search" action="/products" method="get" role="search"><Fragment set:html={searchIcon} /><label class="nexa-sr-only" for="nexa-search">Search products</label><input id="nexa-search" name="q" type="search" placeholder="SEARCH PRODUCTS" class="site-header__search-input type-body-s-400" /></form>
+          <a class="site-header__icon" href="/wishlist" aria-label="Wishlist" data-wishlist-indicator><SaveIcon /></a>
+          <button class="site-header__icon" type="button" aria-label={`Shopping cart with ${cartCount} items`} data-cart-open><Fragment set:html={cartIcon} /><span data-cart-count aria-live="polite" hidden={deferCartCount || cartCount === 0}>{cartCount}</span></button>
+          <a class="site-header__icon" href="/account" aria-label="Account"><Fragment set:html={profileIcon} /></a>
+          <Button text="Shop Now" href="/products" size="small" variant="secondary" />
+        </div>
+      </div>
+    </header>
+    <button class="site-header__backdrop" type="button" aria-label="Close navigation" tabindex="-1" data-header-backdrop></button>
+    {demoMode && <aside class="nexa-demo" role="status"><strong>Template preview</strong><nav aria-label="Preview pages"><a href="/demo/storefront/nexahub">Home</a><a href="/demo/storefront/nexahub/products">Products</a><a href="/demo/storefront/nexahub/products/portable-workstation">Product</a><a href="/demo/storefront/nexahub/cart">Cart</a><a href="/demo/storefront/nexahub/checkout">Checkout</a><a href="/demo/storefront/nexahub/order-confirmation">Receipt</a></nav><span>Shopping actions are disabled</span></aside>}
+    <slot />
+    <footer class="site-footer"><div class="site-footer__layers"><div class="site-footer__layer site-footer__layer--1"></div><div class="site-footer__layer site-footer__layer--2"></div></div><div class="site-footer__inner">
+      <div class="site-footer__col site-footer__col--about"><a href="/" class="site-footer__logo" aria-label={`${tenantName} home`}><img src={logoUrl} alt={tenantName} data-editor-image-path="header.logoAssetId" /></a><p class="site-footer__text type-body-s-400" data-editor-path="footer.blurb" contenteditable={editorMode ? "plaintext-only" : undefined}>{footer.blurb}</p><small class="site-footer__copyright type-body-xs-400">© {new Date().getFullYear()} {tenantName}. All rights reserved.</small>{(editorMode || footer.credit.enabled) && <small class="nexa-credit" data-editor-section="footer.credit" data-editor-visible-path="footer.credit.enabled" hidden={!footer.credit.enabled}>Storefront design by ECS</small>}</div>
+      <div class="site-footer__col site-footer__col--boxed"><h3 class="site-footer__heading type-body-s-500">Quick Links</h3><ul class="site-footer__nav" data-editor-links-path="footer.quickLinks">{footer.quickLinks.map((item, index) => <li><a href={item.href} class="type-body-s-400" data-editor-path={`footer.quickLinks.${index}.label`} contenteditable={editorMode ? "plaintext-only" : undefined}>{item.label}</a></li>)}</ul></div>
+      <div class="site-footer__col site-footer__col--boxed"><h3 class="site-footer__heading type-body-s-500">Products</h3><ul class="site-footer__nav">{productLinks.map((item) => <li><a href={item.href} class="type-body-s-400">{item.label}</a></li>)}</ul></div>
+      <div class="site-footer__col site-footer__col--contact"><h3 class="site-footer__heading type-body-s-500">Contacts</h3><address class="site-footer__contact-info">{footer.address && <p data-editor-path="footer.address" contenteditable={editorMode ? "plaintext-only" : undefined}>{footer.address}</p>}{footer.email && <p><a href={`mailto:${footer.email}`} data-editor-path="footer.email" contenteditable={editorMode ? "plaintext-only" : undefined}>{footer.email}</a></p>}{footer.phone && <p><a href={`tel:${footer.phone.replace(/\s/g, "")}`} data-editor-path="footer.phone" contenteditable={editorMode ? "plaintext-only" : undefined}>{footer.phone}</a></p>}</address><div class="site-footer__social" data-editor-links-path="footer.socialLinks">{footer.socialLinks.map((item, index) => <a href={item.href} aria-label={item.label} target="_blank" rel="noopener noreferrer" data-editor-link-target={index}><Fragment set:html={socialIcons[index % socialIcons.length]} /><span class="nexa-sr-only" data-editor-link-label data-editor-path={`footer.socialLinks.${index}.label`} contenteditable={editorMode ? "plaintext-only" : undefined}>{item.label}</span></a>)}</div></div>
+    </div></footer>
+    <div class="cart-drawer-overlay" data-cart-overlay aria-hidden="true"><div class="cart-drawer-container" data-cart-modal role="dialog" aria-modal="true" aria-labelledby="nexa-cart-title"><button class="cart-drawer-close" type="button" aria-label="Close cart" data-cart-close>×</button><aside class="cart-drawer"><div class="cart-drawer__header"><h2 id="nexa-cart-title" class="type-heading-4">YOUR CART</h2><span class="cart-drawer__badge type-body-xs-500" data-cart-drawer-count>00 ITEMS</span></div><div class="cart-drawer__status" data-cart-status aria-live="polite"></div><div class="cart-drawer__items" data-cart-items></div><div class="cart-drawer__summary" data-cart-footer hidden><div class="cart-drawer__total-row"><span class="type-body-l">TOTAL</span><strong class="type-heading-6" data-cart-total></strong></div><a class="btn btn--primary btn--large btn--full-width" href="/checkout">Proceed to Checkout</a><a class="cart-drawer__view" href="/cart">View cart and discounts</a></div></aside></div></div>
+    <StorefrontAnalytics disabled={demoMode || editorMode} />
+    <script is:inline>
+      if (document.body.dataset.demoMode === 'true') {
+        const prefix = '/demo/storefront/nexahub';
+        document.addEventListener('submit', (event) => { event.preventDefault(); });
+        document.addEventListener('click', (event) => { const link = event.target instanceof Element ? event.target.closest('a[href]') : null; if (!(link instanceof HTMLAnchorElement)) return; const path = link.getAttribute('href') || ''; if (path === '/') link.href = prefix; else if (path === '/products' || path.startsWith('/products/')) link.href = `${prefix}${path}`; else if (['/cart','/checkout'].includes(path)) link.href = `${prefix}${path}`; else if (path.startsWith('/account') || path === '/wishlist' || path === '/contact' || path === '/request-item') event.preventDefault(); });
+      }
+    </script>
+    <script>
+      import { gsap } from "gsap";
+      import { initNexahubStorefront } from "./client";
+      initNexahubStorefront();
+      const body = document.body;
+      const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      if (!reduceMotion && body.dataset.editorMode !== "true" && body.dataset.demoMode !== "true") {
+        const targets = Array.from(document.querySelectorAll("main > section, main > .container > *, main.container > *")).slice(0, 18);
+        gsap.from(targets, { autoAlpha: 0, y: 18, duration: 0.55, stagger: 0.045, ease: "power2.out", clearProps: "opacity,visibility,transform" });
+      }
+    </script>
+  </body>
+</html>

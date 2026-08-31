@@ -1,0 +1,64 @@
+---
+import Button from "./Button.astro"; import Layout from "./Layout.astro"; import { parseNexahubData } from "./lib"; import "./styles/pages/secondary.scss";
+interface Props { data:unknown; themeTokens?:unknown; tenantName:string; deferCartCount?:boolean; }
+const {data,themeTokens,tenantName,deferCartCount=false}=Astro.props; const template=parseNexahubData(data); const {email,phone,address,socialLinks}=template.footer; const sent=Astro.url.searchParams.get("sent")==="1"; const submitError=Astro.url.searchParams.get("error");
+---
+<Layout tenantName={tenantName} header={template.header} footer={template.footer} themeTokens={themeTokens} deferCartCount={deferCartCount}>
+<main class="nexa-secondary" id="main-content">
+<div class="container nexa-secondary__frame">
+<header class="nexa-secondary__hero">
+<span>Customer channel / 01</span>
+<div>
+<h1>Contact</h1>
+<p>Questions about products, availability, or an order.</p>
+</div>
+</header>
+<div class="nexa-secondary__split">
+<aside class="nexa-info-panel">
+<header class="nexa-panel-head">
+<h2>Contact information</h2>
+<span>{tenantName}</span>
+</header>
+<ul class="nexa-info-list">{address&&<li>
+<small>Address</small>
+<span>{address}</span>
+</li>}{email&&<li>
+<small>Email</small>
+<a href={`mailto:${email}`}>{email}</a>
+</li>}{phone&&<li>
+<small>Phone</small>
+<a href={`tel:${phone}`}>{phone}</a>
+</li>}{socialLinks.map((social)=>
+<li>
+<small>Social</small>
+<a href={social.href} rel="noreferrer" target="_blank">{social.label}</a>
+</li>)}{!address&&!email&&!phone&&!socialLinks.length&&<li>
+<span>Contact details have not been configured yet.</span>
+</li>}</ul>
+</aside>
+<section class="nexa-form-panel">
+<header class="nexa-panel-head">
+<h2>Send a message</h2>
+<span>Secure inquiry</span>
+</header>
+<form class="nexa-inquiry-form" action="/actions/inquiries" method="post" data-inquiry-form>
+<input type="hidden" name="type" value="contact"/>
+<label class="nexa-honeypot" aria-hidden="true">Website<input name="website" tabindex="-1" autocomplete="off"/>
+</label>
+<label class="is-wide">Full name *<input name="fullName" required autocomplete="name"/>
+</label>
+<label>Email *<input name="email" type="email" required autocomplete="email"/>
+</label>
+<label>WhatsApp (optional)<input name="whatsapp" type="tel" autocomplete="tel" inputmode="tel"/>
+</label>
+<label class="is-wide">Message *<textarea name="message" required>
+</textarea>
+</label>
+<Button text="Send Message" type="submit" fullWidth />
+<p class:list={["nexa-inquiry-status",sent&&"is-success",submitError&&"is-error"]} role="status" aria-live="polite" data-inquiry-status>{sent?"Message received. The shop can now follow up.":submitError}</p>
+</form>
+</section>
+</div>
+</div>
+</main>
+</Layout>

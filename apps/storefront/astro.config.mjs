@@ -44,6 +44,14 @@ export default defineConfig({
     ],
   },
   vite: {
+    css: {
+      preprocessorOptions: {
+        scss: {
+          loadPaths: [new URL("./src/templates/nexahub/v1/styles", import.meta.url).pathname],
+          additionalData: '@use "abstracts" as *;\n',
+        },
+      },
+    },
     server: {
       allowedHosts: [".lvh.me", "localhost"],
     },

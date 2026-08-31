@@ -1,0 +1,4 @@
+---
+import { nexahubV1Defaults,nexahubV1ThemeTokens } from "@ecs/storefront-templates";import { nexahubDemoCart } from "../../../../lib/demo/nexahub-fixture";import Cart from "../../../../templates/nexahub/v1/Cart.astro";
+---
+<Cart data={nexahubV1Defaults} themeTokens={nexahubV1ThemeTokens} tenantName="NexaHub Technology" cartCount={2} cart={nexahubDemoCart} demoMode/>

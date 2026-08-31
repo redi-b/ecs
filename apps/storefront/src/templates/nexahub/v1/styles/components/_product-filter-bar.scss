@@ -1,0 +1,125 @@
+.product-filter-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  max-width: 1400px;
+  min-height: 46px;
+  padding: 6px;
+  background: $clr-surface-200;
+  border-radius: 4px;
+  box-sizing: border-box;
+  position: relative;
+  z-index: 30;
+  overflow: visible;
+
+  &__filters {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  &__item {
+    position: relative;
+    flex: 0 0 auto;
+    width: fit-content;
+
+    &--sort {
+      margin-left: auto;
+    }
+  }
+
+  &__btn,
+  &__sort {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 22px;
+    width: fit-content;
+    height: 34px;
+    padding: 6px 14px;
+    background: $clr-surface-0;
+    border: 0;
+    border-radius: 2px;
+    color: $clr-neutral-900;
+    white-space: nowrap;
+    cursor: pointer;
+    box-sizing: border-box;
+    transition: background-color 0.2s ease, color 0.2s ease;
+
+    span {
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    svg {
+      flex-shrink: 0;
+      color: currentColor;
+      transition: transform var(--nexa-motion-base) var(--nexa-ease-out);
+    }
+
+    &[aria-expanded="true"] svg { transform: rotate(180deg); }
+
+    &:hover {
+      background: $clr-surface-50;
+      color: $clr-primary-500;
+    }
+  }
+
+  &__dropdown {
+    display: flex;
+    flex-direction: column;
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    min-width: 190px;
+    background: $clr-surface-0;
+    border: 1px solid $clr-neutral-100;
+    border-radius: 3px;
+    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.08);
+    z-index: 200;
+    overflow: hidden;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transform: translateY(-6px) scale(0.985);
+    transform-origin: top center;
+    transition: opacity var(--nexa-motion-fast) var(--nexa-ease-out), transform var(--nexa-motion-base) var(--nexa-ease-out), visibility var(--nexa-motion-base);
+
+    &--right {
+      left: auto;
+      right: 0;
+    }
+
+    &.is-open {
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  &__dropdown-opt {
+    display: block;
+    width: 100%;
+    padding: 9px 14px;
+    text-align: left;
+    background: $clr-surface-0;
+    border: 0;
+    border-bottom: 1px solid $clr-surface-200;
+    color: $clr-neutral-700;
+    cursor: pointer;
+    transition: background-color 0.15s ease, color 0.15s ease;
+
+    &:last-child {
+      border-bottom: 0;
+    }
+
+    &:hover {
+      background: $clr-primary-50;
+      color: $clr-primary-800;
+    }
+  }
+}

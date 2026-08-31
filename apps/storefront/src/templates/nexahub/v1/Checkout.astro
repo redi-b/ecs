@@ -1,0 +1,88 @@
+---
+import type { StoreCustomer, StoreCustomerAddress } from "../../../lib/commerce/account";
+import { resolveStoreCartSummary } from "../../../lib/commerce/cart-summary";
+import { resolveStoreFulfillmentOptions } from "../../../lib/commerce/fulfillment";
+import type { StoreCart, StoreDeliveryOptions, StorePaymentOptions, StoreShippingOption } from "../../../lib/commerce/types";
+import { formatMoney } from "../../../lib/money";
+import Button from "./Button.astro";
+import arrowIcon from "./icons/arrow-up-right.svg?raw";
+import Layout from "./Layout.astro";
+import { parseNexahubData } from "./lib";
+import "./styles/pages/commerce.scss";
+
+interface Props {
+  data: unknown; themeTokens?: unknown; tenantName: string; cartCount: number;
+  cart: StoreCart | null; delivery: StoreDeliveryOptions | null; payment: StorePaymentOptions;
+  shippingOptions: StoreShippingOption[]; shippingError?: string | null; error?: string | null;
+  customer?: StoreCustomer | null; customerAddresses?: StoreCustomerAddress[]; demoMode?: boolean;
+}
+const { data, themeTokens, tenantName, cartCount, cart, delivery, payment, shippingOptions, shippingError, error, customer = null, customerAddresses = [], demoMode = false } = Astro.props;
+const template = parseNexahubData(data);
+const items = cart?.items ?? [];
+const deliveryEnabled = delivery?.deliveryEnabled === true;
+const pickupEnabled = delivery?.pickupEnabled === true;
+const fulfillmentAvailable = deliveryEnabled || pickupEnabled;
+const phoneRequired = delivery?.phoneConfirmationRequired !== false;
+const defaultChoice = deliveryEnabled ? "delivery" : pickupEnabled ? "pickup" : "delivery";
+const { deliveryOptions, pickupOption, priceMismatch } = resolveStoreFulfillmentOptions(shippingOptions, delivery);
+const canSubmit = items.length > 0 && fulfillmentAvailable && !priceMismatch && (defaultChoice === "pickup" ? Boolean(pickupOption) : deliveryOptions.length > 0);
+const initialShippingAmount = defaultChoice === "pickup" ? (pickupOption?.amount ?? 0) : (deliveryOptions[0]?.amount ?? 0);
+const baseTotal = (cart?.total ?? cart?.itemTotal ?? 0) - (cart?.shippingTotal ?? 0);
+const summary = resolveStoreCartSummary(cart);
+const defaultPayment = payment.cod ? "cod" : payment.chapa ? "chapa" : null;
+const defaultAddress = customerAddresses.find((address) => address.isDefaultShipping) ?? customerAddresses[0] ?? null;
+---
+
+<Layout tenantName={tenantName} header={template.header} footer={template.footer} themeTokens={themeTokens} cartCount={cartCount} demoMode={demoMode}>
+  <main class="nexa-commerce nexa-checkout" id="main-content">
+    <div class="container nexa-commerce__frame">
+      <nav class="nexa-breadcrumb" aria-label="Breadcrumb"><a href="/cart">Cart</a><span>/</span><span aria-current="page">Checkout</span></nav>
+      <header class="nexa-commerce__heading"><span class="nexa-kicker">Secure order</span><div><h1>Checkout</h1><p>Delivery, payment, and contact details.</p></div></header>
+      {error && <div class="nexa-notice nexa-notice--error" role="alert"><strong>Checkout could not continue</strong><p>{error}</p></div>}
+      {shippingError && <div class="nexa-notice nexa-notice--error" role="alert"><strong>Delivery options unavailable</strong><p>Refresh and try again.</p></div>}
+      {priceMismatch && <div class="nexa-notice nexa-notice--error" role="alert"><strong>Delivery pricing is being updated</strong><p>Please refresh shortly or contact the shop.</p></div>}
+      {!items.length ? <section class="nexa-empty"><span class="nexa-empty__index">00</span><h2>Your cart is empty</h2><p>Add a product before entering checkout.</p><Button text="Browse products" href="/products" /></section> : <div class="nexa-commerce__split">
+        <section class="nexa-checkout-form-panel">
+          <header class="nexa-panel-head"><h2>Customer and fulfillment</h2><span>Required fields *</span></header>
+          <form class="nexa-checkout-form" method="post" action={defaultPayment === "chapa" ? "/actions/checkout/chapa" : "/actions/checkout/cod"} data-checkout-form>
+            {!fulfillmentAvailable && <div class="nexa-notice" role="status"><strong>Orders are temporarily unavailable.</strong><p>This shop has not enabled delivery or pickup.</p></div>}
+            <fieldset class="nexa-fieldset"><legend>01 / Contact</legend><div class="nexa-field-grid"><label><span>First name *</span><input name="firstName" value={defaultAddress?.firstName || customer?.firstName} required autocomplete="given-name" /></label><label><span>Last name *</span><input name="lastName" value={defaultAddress?.lastName || customer?.lastName} required autocomplete="family-name" /></label><label><span>Phone {phoneRequired ? "*" : ""}</span><input name="phone" value={defaultAddress?.phone || customer?.phone} required={phoneRequired} autocomplete="tel" inputmode="tel" /></label><label><span>Email <small data-email-requirement>{defaultPayment === "chapa" ? "(required for Chapa)" : "(optional)"}</small></span><input name="email" value={customer?.email} type="email" required={defaultPayment === "chapa"} autocomplete="email" /></label></div>{customer ? <p class="nexa-account-note">Signed in as <strong>{customer.email}</strong></p> : <p class="nexa-account-note">Want saved addresses and order history? <a href="/account?mode=register">Create an account</a>.</p>}</fieldset>
+
+            <fieldset class="nexa-fieldset" data-delivery-choice><legend>02 / Fulfillment</legend><div class="nexa-choice-grid">{deliveryEnabled && <label class="nexa-choice"><input type="radio" name="deliveryChoice" value="delivery" checked={defaultChoice === "delivery"} /><span><strong>Delivery</strong><small>Send the order to your address.</small></span></label>}{pickupEnabled && <label class="nexa-choice"><input type="radio" name="deliveryChoice" value="pickup" checked={defaultChoice === "pickup"} /><span><strong>Pickup</strong><small>Collect it from the shop.</small></span></label>}</div></fieldset>
+
+            <section class="nexa-fieldset" data-delivery-field><h3>Delivery address</h3>{customerAddresses.length > 0 && <fieldset class="nexa-saved-addresses" data-saved-addresses><legend>Saved addresses</legend><div class="nexa-choice-grid">{customerAddresses.map((address) => <label class="nexa-choice"><input type="radio" name="savedAddressId" value={address.id} checked={address.id === defaultAddress?.id} data-address={JSON.stringify(address)} /><span><strong>{address.addressName || `${address.firstName} ${address.lastName}`}</strong><small>{address.address1}, {address.city}</small></span></label>)}<label class="nexa-choice"><input type="radio" name="savedAddressId" value="" checked={!defaultAddress} /><span><strong>Different address</strong><small>Enter details below.</small></span></label></div></fieldset>}<div class="nexa-field-grid"><label><span>City *</span><input name="city" value={defaultAddress?.city || "Addis Ababa"} required={defaultChoice === "delivery"} autocomplete="address-level2" /></label><label><span>Street address *</span><input name="address1" value={defaultAddress?.address1} required={defaultChoice === "delivery"} autocomplete="street-address" /></label>{(delivery?.landmarkRequired || delivery?.notesEnabled !== false) && <label class="is-wide"><span>Landmark {delivery?.landmarkRequired ? "*" : "(optional)"}</span><input name="landmark" required={Boolean(delivery?.landmarkRequired) && defaultChoice === "delivery"} data-landmark-required={delivery?.landmarkRequired ? "true" : "false"} /></label>}</div>{customer && <div class="nexa-save-address" data-save-address hidden={Boolean(defaultAddress)}><label><input type="checkbox" name="saveAddress" value="true" data-save-address-toggle /> Save this address</label><label><span>Address label</span><input name="addressName" value="Home" /></label></div>}</section>
+
+            <fieldset class="nexa-fieldset" data-delivery-option><legend>03 / Delivery option</legend><div class="nexa-choice-grid">{deliveryOptions.map((option, index) => <label class="nexa-choice"><input type="radio" name="shippingOptionId" value={option.id} data-amount={option.amount ?? 0} checked={index === 0} required={defaultChoice === "delivery"} /><span><strong>{option.name?.trim() || "Standard delivery"}</strong><small>{option.amount === 0 ? "Free" : formatMoney(option.amount, option.currencyCode ?? cart?.currencyCode)}</small></span></label>)}</div></fieldset><div data-pickup-option hidden>{pickupOption && <input type="hidden" name="shippingOptionId" value={pickupOption.id} disabled={defaultChoice !== "pickup"} />}</div>
+            {delivery?.notesEnabled !== false && <label class="nexa-textarea"><span>Order notes (optional)</span><textarea name="notes" rows="3"></textarea></label>}
+            <fieldset class="nexa-fieldset" data-payment-choice><legend>04 / Payment</legend><div class="nexa-choice-grid">{payment.cod && <label class="nexa-choice"><input type="radio" name="paymentMethod" value="cod" checked={defaultPayment === "cod"} /><span><strong>Pay on delivery</strong><small>Pay when the order arrives.</small></span></label>}{payment.chapa && <label class="nexa-choice"><input type="radio" name="paymentMethod" value="chapa" checked={defaultPayment === "chapa"} /><span><strong>Chapa</strong><small>Secure online payment.</small></span></label>}</div>{!defaultPayment && <p>No payment method is available.</p>}</fieldset>
+            <button class="nexa-primary-action" type="submit" data-place-order disabled={!canSubmit || !defaultPayment}><span data-place-order-label>{defaultPayment === "chapa" ? "Continue to secure payment" : "Place order"}</span><span class="nexa-primary-action__icon" aria-hidden="true" set:html={arrowIcon}></span></button>
+          </form>
+        </section>
+
+        <aside class="nexa-summary nexa-checkout-summary" aria-label="Order summary" data-currency={cart?.currencyCode ?? "ETB"} data-base-total={baseTotal}>
+          <header class="nexa-panel-head"><h2>Order summary</h2><span>{summary.itemCount} items</span></header>
+          <ol class="nexa-summary-items">{items.map((item) => <li><div>{item.thumbnail && <img src={item.thumbnail} alt="" />}</div><p><strong>{item.title ?? "Product"}</strong><small>{item.variantTitle}{item.quantity > 1 ? ` × ${item.quantity}` : ""}</small></p><b>{formatMoney(item.total ?? item.unitPrice, cart?.currencyCode)}</b></li>)}</ol>
+          <div class="nexa-discount" data-discount-code><label for="nexa-checkout-code">Promotion code</label><form method="post" action="/actions/cart/promotion" data-cart-promotion-form><input type="hidden" name="intent" value="apply" /><input id="nexa-checkout-code" name="code" autocomplete="off" required /><button type="submit">Apply</button></form><p class="nexa-live" data-discount-status aria-live="polite"></p></div>
+          <dl class="nexa-totals"><div><dt>Subtotal</dt><dd data-summary-subtotal>{formatMoney(summary.subtotal, cart?.currencyCode)}</dd></div><div data-summary-discount hidden={!summary.savingsTotal}><dt>Discount</dt><dd data-summary-discount-value>−{formatMoney(summary.savingsTotal, cart?.currencyCode)}</dd></div><div><dt>Delivery</dt><dd data-summary-delivery>{initialShippingAmount === 0 ? "Free" : formatMoney(initialShippingAmount, cart?.currencyCode)}</dd></div><div class="nexa-totals__total"><dt>Estimated total</dt><dd data-summary-total>{formatMoney(baseTotal + initialShippingAmount, cart?.currencyCode)}</dd></div></dl>
+        </aside>
+      </div>}
+    </div>
+  </main>
+</Layout>
+
+<script is:inline>
+  (() => {
+    const form = document.querySelector('[data-checkout-form]'); if (!(form instanceof HTMLFormElement)) return;
+    const selected = (name) => form.querySelector(`input[name="${name}"]:checked`)?.value;
+    const setValue = (name, value) => { const field = form.elements.namedItem(name); if (field instanceof HTMLInputElement) field.value = String(value || ''); };
+    document.querySelector('[data-saved-addresses]')?.addEventListener('change', (event) => { const field = event.target; if (!(field instanceof HTMLInputElement) || field.name !== 'savedAddressId') return; let address = null; try { address = field.dataset.address ? JSON.parse(field.dataset.address) : null; } catch {} if (address) Object.entries({ firstName: address.firstName, lastName: address.lastName, phone: address.phone, address1: address.address1, city: address.city }).forEach(([name, value]) => setValue(name, value)); });
+    const summary = document.querySelector('[data-base-total]'); const money = (amount) => new Intl.NumberFormat('en-ET', { style: 'currency', currency: summary?.dataset.currency || 'ETB' }).format(amount);
+    const syncSummary = () => { const shipping = form.querySelector('input[name="shippingOptionId"]:checked'); const amount = selected('deliveryChoice') === 'pickup' ? 0 : Number(shipping?.dataset.amount || 0); const deliveryNode = document.querySelector('[data-summary-delivery]'); const totalNode = document.querySelector('[data-summary-total]'); if (deliveryNode) deliveryNode.textContent = amount ? money(amount) : 'Free'; if (totalNode) totalNode.textContent = money(Number(summary?.dataset.baseTotal || 0) + amount); };
+    const syncFulfillment = () => { const delivery = selected('deliveryChoice') === 'delivery'; document.querySelectorAll('[data-delivery-field]').forEach((node) => { node.hidden = !delivery; node.querySelectorAll('input,textarea,select').forEach((field) => field.disabled = !delivery); }); const deliveryOptions = document.querySelector('[data-delivery-option]'); const pickup = document.querySelector('[data-pickup-option]'); if (deliveryOptions) { deliveryOptions.hidden = !delivery; deliveryOptions.querySelectorAll('input').forEach((field) => { field.disabled = !delivery; field.required = delivery; }); } if (pickup) { pickup.hidden = delivery; pickup.querySelectorAll('input').forEach((field) => field.disabled = delivery); } syncSummary(); };
+    form.querySelector('[data-delivery-choice]')?.addEventListener('change', syncFulfillment); form.querySelector('[data-delivery-option]')?.addEventListener('change', syncSummary);
+    const syncPayment = () => { const chapa = selected('paymentMethod') === 'chapa'; form.action = chapa ? '/actions/checkout/chapa' : '/actions/checkout/cod'; const email = form.elements.namedItem('email'); if (email instanceof HTMLInputElement) email.required = chapa; const note = form.querySelector('[data-email-requirement]'); if (note) note.textContent = chapa ? '(required for Chapa)' : '(optional)'; const label = form.querySelector('[data-place-order-label]'); if (label) label.textContent = chapa ? 'Continue to secure payment' : 'Place order'; };
+    form.querySelector('[data-payment-choice]')?.addEventListener('change', syncPayment); syncFulfillment(); syncPayment();
+    document.querySelector('[data-cart-promotion-form]')?.addEventListener('submit', async (event) => { event.preventDefault(); const promotionForm = event.currentTarget; if (!(promotionForm instanceof HTMLFormElement)) return; const status = document.querySelector('[data-discount-status]'); const button = event.submitter; if (button instanceof HTMLButtonElement) { button.disabled = true; button.dataset.busy = 'true'; button.setAttribute('aria-busy', 'true'); } promotionForm.setAttribute('aria-busy', 'true'); try { const response = await fetch(promotionForm.action, { method: 'POST', body: new FormData(promotionForm), credentials: 'same-origin', headers: { Accept: 'application/json' } }); const result = await response.json(); if (!response.ok || !result.ok) throw new Error(result.message || 'Could not apply this code.'); if (status) status.textContent = 'Discount applied. Totals will be confirmed when you place the order.'; window.dispatchEvent(new CustomEvent('ecs:cart-updated', { detail: { ...result, openDrawer: false } })); } catch (cause) { if (status) { status.textContent = cause instanceof Error ? cause.message : 'Could not apply this code.'; status.classList.add('is-error'); } } finally { promotionForm.removeAttribute('aria-busy'); if (button instanceof HTMLButtonElement) { button.disabled = false; delete button.dataset.busy; button.removeAttribute('aria-busy'); } } });
+    form.addEventListener('submit', (event) => { const button = event.submitter; if (button instanceof HTMLButtonElement) { button.disabled = true; const label = button.querySelector('[data-place-order-label]'); if (label) label.textContent = selected('paymentMethod') === 'chapa' ? 'Opening secure payment…' : 'Placing order…'; } });
+  })();
+</script>

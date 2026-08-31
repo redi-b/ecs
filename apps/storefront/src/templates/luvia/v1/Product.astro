@@ -1,5 +1,6 @@
 ---
 import { resolveProductBadge } from "../../../lib/commerce/merchandising";
+import { isColorOptionTitle, resolveColorSwatch } from "../../../lib/commerce/product-options";
 import type { StoreProduct, StoreProductVariant } from "../../../lib/commerce/types";
 import { formatMoney } from "../../../lib/money";
 import type { StorefrontSeo } from "../../../lib/seo";
@@ -109,7 +110,9 @@ const wishlistItem = product
           <input type="hidden" name="variantId" value={defaultVariant?.id ?? ""} data-variant-id />
           <input type="hidden" name="returnTo" value={`/products/${encodeURIComponent(handle)}`} />
           <input type="hidden" name="quantity" value="1" />
-          {optionAxes.map((axis) => <fieldset data-option-axis={axis.title}><legend>Select {axis.title}</legend><div>{axis.values.map((value) => { const selected = defaultVariant?.optionValues.some((option) => option.optionTitle === axis.title && option.value === value); return <button type="button" data-option-title={axis.title} data-option-value={value} aria-pressed={selected ? "true" : "false"}>{value}</button>; })}</div></fieldset>)}
+          {optionAxes.map((axis) => <fieldset data-option-axis={axis.title}><legend>Select {axis.title}</legend><div>{axis.values.map((value) => { const selected = defaultVariant?.optionValues.some((option) => option.optionTitle === axis.title && option.value === value); const swatch = isColorOptionTitle(axis.title) ? resolveColorSwatch(value) : null; return swatch
+            ? <button class="lv-product-swatch" type="button" data-option-title={axis.title} data-option-value={value} aria-pressed={selected ? "true" : "false"} aria-label={`Select ${value}`} title={value}><span style={`background-color:${swatch}`} aria-hidden="true"></span></button>
+            : <button type="button" data-option-title={axis.title} data-option-value={value} aria-pressed={selected ? "true" : "false"}>{value}</button>; })}</div></fieldset>)}
           <div class="lv-product-cart-row"><button class="lv-product-add" type="submit" data-add-button disabled={!defaultVariant?.inStock}><span data-add-label>{defaultVariant?.inStock ? "Add to Cart" : "Out of stock"}</span><span class="lv-product-spinner" aria-hidden="true"></span></button><button class="lv-product-wishlist" type="button" data-wishlist-toggle data-wishlist-item={wishlistItem} aria-pressed="false" aria-label="Add to wishlist"><img src={wishlistIcon.src} alt="" /></button></div>
           <p class="lv-product-feedback" data-add-feedback aria-live="polite"></p>
         </form>

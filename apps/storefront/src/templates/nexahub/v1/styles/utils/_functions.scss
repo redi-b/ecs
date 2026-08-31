@@ -1,0 +1,36 @@
+@use "sass:math";
+
+@function to-rem($value, $root) {
+  @if math.unit($value) == "px" {
+    $root-unitless: $root;
+
+    @if math.unit($root) == "px" {
+      $root-unitless: math.div($root, 1px);
+    }
+
+    @return math.div(math.div($value, 1px), $root-unitless) * 1rem;
+  }
+
+  @return $value;
+}
+
+@function fluid($min-value, $max-value, $min-width: 375px, $max-width: 1440px, $pixels-per-rem: 16) {
+  @if $min-value == $max-value {
+    @error "Fluid error: Min and Max are equal (#{$min-value}).";
+  }
+
+  $min-rem: to-rem($min-value, $pixels-per-rem);
+  $max-rem: to-rem($max-value, $pixels-per-rem);
+  $min-w-rem: to-rem($min-width, $pixels-per-rem);
+  $max-w-rem: to-rem($max-width, $pixels-per-rem);
+
+  $slope: math.div($max-rem - $min-rem, $max-w-rem - $min-w-rem);
+  $y-intercept: $min-rem - ($min-w-rem * $slope);
+  $slope-vw: $slope * 100;
+
+  @return clamp(#{$min-rem}, #{$y-intercept} + #{$slope-vw}vw, #{$max-rem});
+}
+
+@function responsiveclamp($min-value, $max-value, $min-width: 375px, $max-width: 1440px, $pixels-per-rem: 16) {
+  @return fluid($min-value, $max-value, $min-width, $max-width, $pixels-per-rem);
+}

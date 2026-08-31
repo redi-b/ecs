@@ -13,10 +13,10 @@ import type {
 import type { LastOrderCookie } from "../session/cart-cookie";
 
 export const luviaDemoCollections: StoreCollection[] = [
-  { id: "demo-cleansers", title: "Cleansers", handle: "cleansers" },
-  { id: "demo-serums", title: "Serums", handle: "serums" },
-  { id: "demo-moisturisers", title: "Moisturisers", handle: "moisturisers" },
-  { id: "demo-body", title: "Body care", handle: "body-care" },
+  { id: "demo-cleansers", title: "Cleansers", handle: "cleansers", mediaUrl: heroPortrait.src },
+  { id: "demo-serums", title: "Serums", handle: "serums", mediaUrl: categoryPreview.src },
+  { id: "demo-moisturisers", title: "Moisturisers", handle: "moisturisers", mediaUrl: aboutImage.src },
+  { id: "demo-body", title: "Body care", handle: "body-care", mediaUrl: brandImage.src },
 ];
 
 export const luviaDemoCategories: StoreCategory[] = luviaDemoCollections.map((collection) => ({
@@ -24,6 +24,7 @@ export const luviaDemoCategories: StoreCategory[] = luviaDemoCollections.map((co
   name: collection.title,
   handle: collection.handle,
   parentCategoryId: null,
+  mediaUrl: collection.mediaUrl,
 }));
 
 const productSeeds = [

@@ -3,6 +3,7 @@ import StoreShell from "../../components/shell/StoreShell.astro";
 import { completeChapaStoreCheckout } from "../../lib/commerce/checkout";
 import { isStoreError } from "../../lib/commerce/result";
 import { loadPageContext } from "../../lib/page-context";
+import { getStorefrontRenderer } from "../../templates/registry";
 import {
   appendSetCookies,
   cartIdClearCookie,
@@ -73,9 +74,16 @@ const tenantName = ctx.ok ? ctx.config.tenant.name : "Store";
 const cartCount = ctx.ok ? ctx.cartCount : 0;
 const showError = Boolean(error);
 const redirectLabel = orderId ? `Redirecting... ${orderId}` : "Redirecting...";
+const PaymentReturn = ctx.ok
+  ? getStorefrontRenderer(ctx.config.storefront.templateKey)?.PaymentReturn
+  : null;
 ---
 
-{storeAvailable && (
+{storeAvailable && PaymentReturn && (
+  <PaymentReturn data={ctx.config.storefront.data} themeTokens={ctx.config.storefront.themeTokens} tenantName={tenantName} cartCount={cartCount} error={error} redirectLabel={redirectLabel} />
+)}
+
+{storeAvailable && !PaymentReturn && (
   <StoreShell tenantName={tenantName} cartCount={cartCount} title="Payment">
     <h1 class="sf-title">Payment return</h1>
     {showError && (

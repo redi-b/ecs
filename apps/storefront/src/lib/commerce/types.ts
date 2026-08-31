@@ -58,6 +58,7 @@ export type StoreCollection = {
   id: string;
   title: string | null;
   handle: string | null;
+  mediaUrl: string | null;
 };
 
 export type StoreCategory = {
@@ -65,6 +66,7 @@ export type StoreCategory = {
   name: string | null;
   handle: string | null;
   parentCategoryId: string | null;
+  mediaUrl: string | null;
 };
 
 export type StoreProductsResponse = {

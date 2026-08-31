@@ -1,0 +1,33 @@
+---
+import type { StoreProduct } from "../../../lib/commerce/types";
+import { resolveProductBadge } from "../../../lib/commerce/merchandising";
+import { formatMoney } from "../../../lib/money";
+import addToCartIcon from "./icons/add-to-cart-icon.svg?raw";
+import SaveIcon from "./SaveIcon.astro";
+import "./styles/components/_product-card.scss";
+
+interface Props { product: StoreProduct; eager?: boolean; }
+const { product, eager = false } = Astro.props;
+const href = product.handle ? `/products/${encodeURIComponent(product.handle)}` : "/products";
+const variant = product.variants.find((item) => item.inStock) ?? product.variants[0];
+const badge = resolveProductBadge(product, variant);
+const wishlistItem = JSON.stringify({ path: href, title: product.title ?? "Product", thumbnail: product.thumbnail, priceAmount: product.priceAmount, currencyCode: product.currencyCode });
+---
+<article class="product-card">
+  <h3 class="product-card__name type-heading-5"><a href={href}>{product.title ?? "Product"}</a></h3>
+  <div class="product-card__image-box">
+    <a href={href} class="product-card__image img-wrapper" aria-label={`View ${product.title ?? "product"}`}>
+      {product.thumbnail ? <img src={product.thumbnail} alt={product.title ?? "Product"} width="720" height="720" loading={eager ? "eager" : "lazy"} decoding="async" class="contain" /> : <span class="nexa-image-empty">Image coming soon</span>}
+    </a>
+    <button class="product-card__save" type="button" data-wishlist-toggle data-wishlist-item={wishlistItem} aria-pressed="false" aria-label={`Save ${product.title ?? "product"}`}><SaveIcon /></button>
+    {variant ? <form class="product-card__actions" action="/actions/cart/add" method="post" data-card-add-form>
+      <input type="hidden" name="variantId" value={variant.id} /><input type="hidden" name="quantity" value="1" />
+      <button class="product-card__add-btn" type="submit" disabled={!variant.inStock} aria-label={variant.inStock ? `Add ${product.title ?? "product"} to cart` : `${product.title ?? "Product"} is out of stock`}><span data-card-add-label>{variant.inStock ? "Add to Cart" : "Out of stock"}</span></button>
+      <button class="product-card__cart" type="submit" disabled={!variant.inStock} aria-label={variant.inStock ? `Add ${product.title ?? "product"} to cart` : `${product.title ?? "Product"} is out of stock`}><Fragment set:html={addToCartIcon} /></button>
+    </form> : null}
+  </div>
+  <div class="product-card__footer">
+    <div class="product-card__price-group"><span class="product-card__label type-body-xs-500">Starting at</span><strong class="product-card__price type-heading-6">{formatMoney(product.priceAmount, product.currencyCode)}</strong></div>
+    {badge ? <span class="product-card__discount type-body-xs-500">{badge.label}</span> : null}
+  </div>
+</article>

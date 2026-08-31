@@ -1,0 +1,33 @@
+---
+import Layout from "./Layout.astro";
+import { parseNexahubData } from "./lib";
+import "./styles/pages/about.scss";
+
+interface Props {
+  data: unknown;
+  themeTokens?: unknown;
+  tenantName: string;
+  deferCartCount?: boolean;
+}
+
+const { data, themeTokens, tenantName, deferCartCount = false } = Astro.props;
+const template = parseNexahubData(data);
+---
+
+<Layout tenantName={tenantName} header={template.header} footer={template.footer} themeTokens={themeTokens} deferCartCount={deferCartCount}>
+  <main class="about-page" id="main-content">
+    <section class="about-section container">
+      <header class="about-section__hero">
+        <p class="about-section__eyebrow">About the store</p>
+        <h1 class="about-section__title">Technology selected for real life.</h1>
+        <p class="about-section__copy">{tenantName} brings useful products, clear information, and practical support together in one place.</p>
+      </header>
+      <div class="about-section__principles">
+        <article><span>01</span><h2>Thoughtful selection</h2><p>Products are presented with the details you need to compare them confidently.</p></article>
+        <article><span>02</span><h2>Clear service</h2><p>Availability, delivery choices, and prices stay visible throughout the shopping journey.</p></article>
+        <article><span>03</span><h2>Practical support</h2><p>Questions before or after an order have a direct path to the store team.</p></article>
+      </div>
+      <aside class="about-section__statement"><span>What to expect</span><p>A focused catalog, straightforward checkout, and help when you need it.</p><a href="/products">Explore products <b aria-hidden="true">↗</b></a></aside>
+    </section>
+  </main>
+</Layout>

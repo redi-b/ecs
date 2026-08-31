@@ -113,9 +113,11 @@ export function StorefrontCollectionPicker({
 }
 
 export function StorefrontProductsPicker({
+  maxSelection,
   onChange,
   value,
 }: {
+  maxSelection?: number | undefined;
   onChange: (value: string[]) => void;
   value: string[];
 }) {
@@ -213,6 +215,7 @@ export function StorefrontProductsPicker({
         description={t("editor.merchandising.featuredProductsDescription")}
         items={items}
         loading={loading}
+        {...(maxSelection === undefined ? {} : { maxSelection })}
         onConfirm={onChange}
         onOpenChange={setOpen}
         open={open}
@@ -226,9 +229,11 @@ export function StorefrontProductsPicker({
 }
 
 export function StorefrontCollectionsPicker({
+  maxSelection,
   onChange,
   value,
 }: {
+  maxSelection?: number | undefined;
   onChange: (value: string[]) => void;
   value: string[];
 }) {
@@ -248,9 +253,14 @@ export function StorefrontCollectionsPicker({
         setOptions(
           Array.isArray(collections)
             ? collections
-                .map((row: { handle?: string | null; id?: string; title?: string | null }) =>
+                .map((row: { handle?: string | null; id?: string; mediaUrl?: string | null; title?: string | null }) =>
                   row?.id
-                    ? { id: String(row.id), title: String(row.title ?? row.id), handle: row.handle ?? null }
+                    ? {
+                        id: String(row.id),
+                        title: String(row.title ?? row.id),
+                        handle: row.handle ?? null,
+                        thumbnailUrl: row.mediaUrl ?? null,
+                      }
                     : null,
                 )
                 .filter(Boolean) as CatalogOption[]
@@ -274,7 +284,7 @@ export function StorefrontCollectionsPicker({
         id: collection.id,
         title: collection.title,
         subtitle: collection.handle ? `/${collection.handle}` : null,
-        thumbnailUrl: null,
+        thumbnailUrl: collection.thumbnailUrl ?? null,
         searchText: [collection.title, collection.handle, collection.id].filter(Boolean).join(" "),
       })),
     [options],
@@ -298,7 +308,7 @@ export function StorefrontCollectionsPicker({
       </div>
       <p className="text-xs leading-relaxed text-muted-foreground">
         {value.length === 0
-          ? "The first four catalog collections are shown until you choose specific ones."
+          ? "Catalog collections are shown until you choose specific ones."
           : `${value.length} collection${value.length === 1 ? "" : "s"} selected.`}
       </p>
       <ProductCatalogPickerDialog
@@ -309,6 +319,7 @@ export function StorefrontCollectionsPicker({
         emptyTitle="No collections found"
         items={items}
         loading={loading}
+        {...(maxSelection === undefined ? {} : { maxSelection })}
         onConfirm={onChange}
         onOpenChange={setOpen}
         open={open}

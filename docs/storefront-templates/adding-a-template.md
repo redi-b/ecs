@@ -44,6 +44,15 @@ Defaults must parse through their schemas without repair. Prefer explicit object
 arrays. Do not place business records, API identifiers, credentials, or environment-specific URLs in
 template defaults.
 
+Theme colors are semantic runtime inputs, not documentation-only metadata. A merchant-selected
+brand color must drive every branded control and state through the template's CSS variables. If the
+reference design includes a light/dark brand ramp, derive that ramp from `primary`, the generated
+`accent`, `background`, and `foreground` roles with `color-mix()` or the shared palette resolver;
+do not leave the reference hex values in Sass variables, SVG backgrounds, component hover states,
+or page-specific overrides. Decorative neutral and semantic status colors may remain contract-owned
+when they are not brand roles. Verify the authored default and at least one substantially different
+brand color across the entire journey.
+
 Every editor field needs a stable data path, unique form property, audience-facing label, and one of
 the supported field kinds:
 
@@ -123,6 +132,31 @@ The iframe editor connects manifest paths to rendered elements. Mark editable te
 the established `data-editor-*` attributes used by the existing template. Sections that merchants
 can hide must render in editor mode even when disabled, while remaining hidden in the live shop.
 
+The editor preview is the production Astro renderer in an authenticated draft execution mode. Do
+not create a React preview twin or handwritten editor-only copy of a template component. When the
+editor needs reusable option markup (for example product or collection cards), render the same
+Astro component used by the live section. The preview transport route (`/preview`) is not the
+logical storefront route: pass the rendered page path into layout/navigation decisions so Home is
+still styled and marked active as `/`, Products as `/products`, and so on.
+
+Editable elements that own icons, spans, prices, or other structured children must expose a
+dedicated `data-editor-text-target`. The preview bridge may update that text target, but must never
+replace the outer component contents. Keep editor picker limits aligned with the schema's bounded
+arrays by declaring the same `maxItems` in the manifest.
+
+Draft and live content intentionally come from different revisions: the iframe renders the current
+draft, while the public storefront renders the published revision. `Publish` must first save the
+current editor state, publish that exact normalized draft, invalidate the tenant cache, and leave
+the editor's published snapshot equal to the saved snapshot. Treat any difference after a
+successful publish and reload as a contract failure, not an acceptable preview variation.
+
+The dashboard owns preview viewport simulation. Do not move template breakpoints merely to make a
+narrow editor column resemble desktop. A desktop preview must render at a declared desktop layout
+width and scale to fit the editor canvas; mobile review must use an explicit mobile viewport.
+Page-specific styles and shared child-component styles must not override the final mobile contract.
+Load responsive overrides after page styles (or use an explicit cascade-layer order), and test for
+document-level horizontal overflow—not only whether individual components declare media queries.
+
 Verify each manifest field against all of the following:
 
 1. its path exists in the schema and defaults;
@@ -130,6 +164,11 @@ Verify each manifest field against all of the following:
 3. the preview reflects the saved value;
 4. publishing preserves the value; and
 5. the live storefront renders the published value after cache invalidation.
+
+Add a renderer-parity regression test for logical route state, structured editable children, shared
+component reuse, and every manifest collection limit. A source-level assertion is useful as a
+guardrail, but the release review must also compare the saved draft preview with the newly published
+storefront at the same viewport.
 
 Editor labels and help text are merchant-facing product copy. Explain the choice the merchant is
 making; do not mention schemas, server checks, subscription enforcement, or implementation details.
@@ -196,6 +235,7 @@ Then complete a browser review at minimum for:
 - keyboard-only navigation;
 - reduced motion;
 - merchant editor draft, save, publish, and live rendering; and
+- editor and live rendering at the same declared viewport, including logical route/header state;
 - the fixture-only public preview.
 
 The automated commerce-journey test confirms that every selectable template resolves the required

@@ -23,6 +23,7 @@ export type StorefrontRenderer = {
   Product?: StorefrontPageComponent;
   Cart?: StorefrontPageComponent;
   Checkout?: StorefrontPageComponent;
+  PaymentReturn?: StorefrontPageComponent;
   OrderConfirm?: StorefrontPageComponent;
   Contact?: StorefrontPageComponent;
   About?: StorefrontPageComponent;
@@ -30,6 +31,7 @@ export type StorefrontRenderer = {
   Wishlist?: StorefrontPageComponent;
   Account?: StorefrontPageComponent;
   AccountOrder?: StorefrontPageComponent;
+  SystemState?: StorefrontPageComponent;
 };
 
 export type StorefrontRendererMap = Record<string, StorefrontRenderer>;

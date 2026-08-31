@@ -10,8 +10,57 @@ import {
   updateEditorLinkValue,
 } from "./editor-state.js";
 import type { EditorData } from "./editor-state.js";
+import {
+  nexahubV1DataSchema,
+  nexahubV1Defaults,
+  nexahubV1ThemeTokens,
+  nexahubV1ThemeTokensSchema,
+} from "@ecs/storefront-templates";
 
 describe("storefront editor state", () => {
+  it("round-trips NexaHub through the generic manifest without Luvia field assumptions", () => {
+    const draft = {
+      data: structuredClone(nexahubV1Defaults),
+      templateKey: "nexahub@1",
+      templateVersion: 1,
+      tenantId: "tenant_nexahub",
+      themeTokens: structuredClone(nexahubV1ThemeTokens),
+      updatedAt: "2026-08-30T00:00:00.000Z",
+    };
+    const editorData = buildEditorData(draft);
+    const props = editorData.content[0]?.props;
+
+    assert.equal(props?.nexahubHeroTitle, nexahubV1Defaults.home.hero.title);
+    assert.equal(props?.primaryColor, nexahubV1ThemeTokens.colors.primary);
+    assert.equal(props?.heroTitle, undefined);
+
+    const edited: EditorData = {
+      ...editorData,
+      content: editorData.content.map((item) => ({
+        ...item,
+        props: {
+          ...item.props,
+          nexahubHeroTitle: "A precise new headline",
+          nexahubProductIds: ["prod_keyboard", "prod_laptop"],
+          primaryColor: "#2457c5",
+        },
+      })),
+    };
+    const payload = buildDraftPayload({
+      data: draft.data,
+      editorData: edited,
+      templateKey: draft.templateKey,
+      tenantId: draft.tenantId,
+      themeTokens: draft.themeTokens,
+    });
+    const parsedData = nexahubV1DataSchema.parse(payload.data);
+    const parsedTheme = nexahubV1ThemeTokensSchema.parse(payload.themeTokens);
+
+    assert.equal(parsedData.home.hero.title, "A precise new headline");
+    assert.deepEqual(parsedData.home.bestSellers.productIds, ["prod_keyboard", "prod_laptop"]);
+    assert.equal(parsedTheme.colors.primary, "#2457c5");
+    assert.equal(parsedTheme.typography.headingFont, "Space Grotesk");
+  });
   it("builds editable page data from the draft and writes edits back to the draft payload", () => {
     const draft = {
       data: {

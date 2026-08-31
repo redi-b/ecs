@@ -21,8 +21,11 @@ export async function syncStorefrontTemplateRegistry(db: PlatformDatabase) {
         sortOrder,
       })
       .onConflictDoUpdate({
-        target: storefrontTemplateRows.slug,
+        // Registry UUIDs are immutable. Slugs and display metadata may be renamed,
+        // so targeting the mutable slug cannot reconcile an existing stable row.
+        target: storefrontTemplateRows.id,
         set: {
+          slug: template.slug,
           name: template.name,
           description: template.description,
           status,
@@ -53,10 +56,13 @@ export async function syncStorefrontTemplateRegistry(db: PlatformDatabase) {
         status,
       })
       .onConflictDoUpdate({
-        target: storefrontTemplateVersions.templateKey,
+        // Version UUIDs are immutable for the same reason; template keys can be
+        // renamed while preserving drafts and revisions that reference this row.
+        target: storefrontTemplateVersions.id,
         set: {
           templateId: templateRow.id,
           version: template.version,
+          templateKey: template.templateKey,
           schema: z.toJSONSchema(template.schema),
           defaultData: template.defaultData,
           defaultThemeTokens: template.defaultThemeTokens,

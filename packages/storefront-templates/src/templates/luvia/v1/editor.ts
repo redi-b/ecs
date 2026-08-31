@@ -4,6 +4,7 @@ export const luviaV1EditorSchema = {
   templateKey: "luvia@1",
   templateVersion: 1,
   previewMode: "iframe",
+  previewPages: [{ id: "home", label: "Home" }],
   theme: {
     allowSurfaceMode: false,
     editableColors: ["primary", "foreground", "muted", "accent"],
@@ -27,7 +28,7 @@ export const luviaV1EditorSchema = {
         { path: "home.hero.subtitle", prop: "heroSubtitle", label: "Description", kind: "textarea" },
         { path: "home.hero.imageAssetId", prop: "heroImageAssetId", label: "Background", kind: "image" },
         { path: "home.hero.portraitAssetId", prop: "heroPortraitAssetId", label: "Portrait", kind: "image" },
-        { path: "home.hero.featuredProductIds", prop: "heroFeaturedProductIds", label: "Featured product carousel", kind: "products", deprecatedPaths: ["home.hero.featuredProductId"], helpText: "Choose up to six products. An empty selection uses the newest catalog products." },
+        { path: "home.hero.featuredProductIds", prop: "heroFeaturedProductIds", label: "Featured product carousel", kind: "products", maxItems: 6, deprecatedPaths: ["home.hero.featuredProductId"], helpText: "Choose up to six products. An empty selection uses the newest catalog products." },
         { path: "home.hero.primaryCtaLabel", prop: "heroCtaLabel", label: "Button label", kind: "text" },
         { path: "home.hero.primaryCtaHref", prop: "heroCtaHref", label: "Button link", kind: "link" },
         { path: "home.hero.trustLabels.0", prop: "heroTrustLabelOne", label: "First trust label", kind: "text" },
@@ -41,7 +42,7 @@ export const luviaV1EditorSchema = {
       fields: [
         { path: "home.featuredProducts.enabled", prop: "topPicksEnabled", label: "Show section", kind: "boolean" },
         { path: "home.featuredProducts.title", prop: "topPicksTitle", label: "Section title", kind: "text" },
-        { path: "home.featuredProducts.productIds", prop: "topPickIds", label: "Products", kind: "products" },
+        { path: "home.featuredProducts.productIds", prop: "topPickIds", label: "Products", kind: "products", maxItems: 48 },
       ],
     },
     {
@@ -112,7 +113,7 @@ export const luviaV1EditorSchema = {
       fields: [
         { path: "home.products.enabled", prop: "productsEnabled", label: "Show section", kind: "boolean" },
         { path: "home.products.title", prop: "productsTitle", label: "Section title", kind: "text" },
-        { path: "home.products.productIds", prop: "productIds", label: "Products", kind: "products" },
+        { path: "home.products.productIds", prop: "productIds", label: "Products", kind: "products", maxItems: 48 },
       ],
     },
     {

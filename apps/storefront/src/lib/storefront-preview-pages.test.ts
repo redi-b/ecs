@@ -7,6 +7,7 @@ describe("storefront preview page descriptors", () => {
   it("defaults to home and rejects undeclared page ids", () => {
     assert.equal(parseStorefrontPreviewPageId(null), "home");
     assert.equal(parseStorefrontPreviewPageId("home"), "home");
+    assert.equal(parseStorefrontPreviewPageId("products"), "products");
     assert.equal(parseStorefrontPreviewPageId("checkout"), null);
   });
 });

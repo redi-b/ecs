@@ -1,0 +1,12 @@
+---
+import Button from "./Button.astro";
+import Layout from "./Layout.astro";
+import { parseNexahubData } from "./lib";
+import "./styles/pages/commerce.scss";
+interface Props { data: unknown; themeTokens?: unknown; tenantName: string; cartCount: number; error?: string | null; redirectLabel?: string; }
+const { data, themeTokens, tenantName, cartCount, error, redirectLabel = "Verifying payment…" } = Astro.props;
+const template = parseNexahubData(data);
+---
+<Layout tenantName={tenantName} header={template.header} footer={template.footer} themeTokens={themeTokens} cartCount={cartCount}>
+  <main class="nexa-commerce" id="main-content"><div class="container nexa-commerce__frame"><nav class="nexa-breadcrumb" aria-label="Breadcrumb"><a href="/checkout">Checkout</a><span>/</span><span aria-current="page">Payment return</span></nav><header class="nexa-commerce__heading"><span class="nexa-kicker">Payment channel</span><div><h1>{error ? "Payment needs attention" : "Verifying payment"}</h1><p>{error ? "Your cart is still available." : redirectLabel}</p></div></header>{error ? <section class="nexa-empty" role="alert"><span class="nexa-empty__index">!</span><h2>We could not finish verification</h2><p>{error}</p><div class="nexa-receipt__actions"><Button text="Back to checkout" href="/checkout" /><Button text="Return to cart" href="/cart" variant="dark" /></div></section> : <div class="nexa-notice" role="status" aria-live="polite"><strong>{redirectLabel}</strong><p>Keep this page open while the secure return completes.</p></div>}</div></main>
+</Layout>

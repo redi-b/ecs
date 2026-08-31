@@ -1,0 +1,302 @@
+// ==========================================
+// Cart Drawer & Overlay Styles
+// ==========================================
+
+.cart-drawer-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  z-index: 999;
+  display: flex;
+  justify-content: flex-end;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 260ms var(--nexa-ease-out), visibility 0s linear 320ms;
+  box-sizing: border-box;
+
+  &.is-visible {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transition-delay: 0s;
+
+  }
+}
+
+.cart-drawer-container {
+  position: relative;
+  height: 100dvh;
+  max-width: 521px;
+  width: 100%;
+  overflow: hidden;
+  background: $clr-surface-100;
+  box-shadow: -8px 0 24px rgba(0, 0, 0, 0.2);
+  transform: translate3d(102%, 0, 0);
+  transition: transform 320ms cubic-bezier(.22, .75, .25, 1);
+  will-change: transform;
+  box-sizing: border-box;
+
+  &.is-open { transform: translate3d(0, 0, 0); }
+}
+
+.cart-drawer-close {
+  position: absolute;
+  top: 14px;
+  right: 18px;
+  z-index: 10;
+  font-size: 28px;
+  background: transparent;
+  border: 0;
+  color: $clr-neutral-900;
+  cursor: pointer;
+  line-height: 1;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+
+  &:hover {
+    background-color: $clr-surface-200;
+  }
+}
+
+.cart-drawer {
+  width: 100%;
+  height: 100%;
+  padding: 0 34px;
+  background: $clr-surface-100;
+  border-radius: 4px;
+  color: $clr-neutral-900;
+  box-sizing: border-box;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+    padding: 47px 0 12px;
+    border-bottom: 1px solid $clr-neutral-200;
+
+    h2 {
+      margin: 0;
+      color: $clr-neutral-900;
+    }
+  }
+
+  &__badge {
+    padding: 4px 8px;
+    background: $clr-primary-100;
+    color: $clr-primary-500;
+    border-radius: 2px;
+  }
+
+  &__items {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    min-height: 0;
+    margin: 18px -8px 0 0;
+    padding: 0 8px 18px 0;
+    flex: 1;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+  }
+
+  &__status {
+    flex-shrink: 0;
+    min-height: 1.25rem;
+    margin-top: 12px;
+    color: $clr-neutral-900-alpha-60;
+  }
+
+  &__items[aria-busy="true"]::before {
+    content: "";
+    display: block;
+    width: 100%;
+    height: 4px;
+    border-radius: 2px;
+    background: linear-gradient(90deg, transparent, $clr-primary-300, transparent);
+    background-size: 200% 100%;
+    animation: nexa-cart-scan 1s linear infinite;
+  }
+
+  &__skeleton {
+    display: grid;
+    grid-template-columns: 108px 1fr;
+    grid-template-rows: 24px 16px;
+    gap: 12px 18px;
+    min-height: 102px;
+
+    span {
+      overflow: hidden;
+      border-radius: 2px;
+      background: $clr-surface-200;
+      position: relative;
+
+      &::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        transform: translateX(-100%);
+        background: linear-gradient(90deg, transparent, rgba($clr-surface-0, 0.72), transparent);
+        animation: nexa-skeleton-pass 1.15s var(--nexa-ease-out) infinite;
+      }
+    }
+
+    span:first-child { grid-row: 1 / 3; }
+    span:last-child { width: 58%; }
+  }
+
+  &__empty {
+    display: grid;
+    place-items: center;
+    align-content: center;
+    gap: 12px;
+    min-height: 320px;
+    text-align: center;
+
+    h3, p { margin: 0; }
+  }
+
+  &__item {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid $clr-neutral-200;
+    transition: opacity var(--nexa-motion-base) var(--nexa-ease-out), transform var(--nexa-motion-base) var(--nexa-ease-out);
+
+    &[aria-busy="true"] {
+      opacity: 0.55;
+      transform: translateX(4px);
+    }
+  }
+
+  &__image {
+    width: 108px;
+    height: 102px;
+    flex-shrink: 0;
+    border-radius: 2px;
+    overflow: hidden;
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+  }
+
+  &__details {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    flex: 1;
+    min-height: 102px;
+    min-width: 0;
+    padding-block: 4px;
+  }
+
+  &__info {
+    h3 {
+      margin: 0;
+      color: $clr-neutral-600;
+    }
+
+    p {
+      margin: 4px 0 0;
+      color: $clr-neutral-900-alpha-60;
+    }
+  }
+
+  &__variant {
+    display: block;
+    margin-top: 3px;
+    color: $clr-neutral-900-alpha-60;
+  }
+
+  &__actions {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-top: 8px;
+  }
+
+  &__remove {
+    border: 0;
+    background: transparent;
+    color: $clr-neutral-900-alpha-60;
+    cursor: pointer;
+    padding: 0;
+    transition: color 0.2s ease;
+
+    &:hover {
+      color: $clr-neutral-900;
+    }
+  }
+
+  &__quantity {
+    display: grid;
+    grid-template-columns: 32px 34px 32px;
+    min-height: 32px;
+    border: 1px solid $clr-neutral-200;
+
+    button, span {
+      display: grid;
+      place-items: center;
+      border: 0;
+      background: transparent;
+    }
+
+    button { cursor: pointer; transition: background-color .2s ease; }
+    button:hover:not(:disabled) { background: $clr-surface-200; }
+  }
+
+  &__summary {
+    flex-shrink: 0;
+    margin: 0 -34px;
+    padding: 18px 34px max(24px, env(safe-area-inset-bottom));
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    border-top: 1px solid $clr-neutral-200;
+    background: $clr-surface-100;
+    box-shadow: 0 -12px 24px rgba(0, 0, 0, 0.04);
+  }
+
+  &__total-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    span {
+      color: $clr-neutral-900;
+    }
+
+    strong {
+      color: $clr-neutral-800;
+    }
+  }
+
+  &__view {
+    color: $clr-neutral-900;
+    text-align: center;
+    text-decoration: underline;
+    text-underline-offset: 4px;
+  }
+}
+
+@keyframes nexa-cart-scan {
+  to { background-position: -200% 0; }
+}
+
+@keyframes nexa-skeleton-pass {
+  to { transform: translateX(100%); }
+}
