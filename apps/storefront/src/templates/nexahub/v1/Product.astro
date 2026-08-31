@@ -1,0 +1,98 @@
+---
+import { resolveProductBadge } from "../../../lib/commerce/merchandising";
+import { isColorOptionTitle, resolveColorSwatch } from "../../../lib/commerce/product-options";
+import type { StoreProduct, StoreProductVariant } from "../../../lib/commerce/types";
+import { formatMoney } from "../../../lib/money";
+import type { StorefrontSeo } from "../../../lib/seo";
+import Layout from "./Layout.astro";
+import ProductCard from "./ProductCard.astro";
+import SaveIcon from "./SaveIcon.astro";
+import { parseNexahubData } from "./lib";
+import "./styles/pages/product-details.scss";
+import "./styles/responsive.scss";
+
+interface Props {
+  data: unknown;
+  themeTokens?: unknown;
+  tenantName: string;
+  cartCount?: number;
+  deferCartCount?: boolean;
+  product: StoreProduct | null;
+  handle: string;
+  notice?: string | null;
+  error?: string | null;
+  relatedProducts?: StoreProduct[];
+  seo?: StorefrontSeo;
+  structuredData?: Record<string, unknown> | Record<string, unknown>[] | null;
+  demoMode?: boolean;
+}
+const { data, themeTokens, tenantName, cartCount = 0, deferCartCount = false, product, handle, notice, error, relatedProducts = [], seo, structuredData, demoMode = false } = Astro.props;
+const template = parseNexahubData(data);
+const defaultVariant: StoreProductVariant | null = product?.variants.find((variant) => variant.inStock) ?? product?.variants[0] ?? null;
+const axes = product?.options?.length ? product.options : (() => { const map = new Map<string, Set<string>>(); for (const variant of product?.variants ?? []) for (const option of variant.optionValues) { if (!map.has(option.optionTitle)) map.set(option.optionTitle, new Set()); map.get(option.optionTitle)?.add(option.value); } return [...map].map(([title, values], index) => ({ id: `axis-${index}`, title, values: [...values] })); })();
+const gallery = product ? [...new Set([...(product.images ?? []), ...(product.thumbnail ? [product.thumbnail] : [])])] : [];
+const badge = product ? resolveProductBadge(product, defaultVariant) : null;
+const currentPrice = formatMoney(defaultVariant?.priceAmount ?? product?.priceAmount, defaultVariant?.currencyCode ?? product?.currencyCode);
+const variants = (product?.variants ?? []).map((variant) => ({ id: variant.id, inStock: variant.inStock, priceAmount: variant.priceAmount, originalPriceAmount: variant.originalPriceAmount, discountPercentage: variant.discountPercentage, currencyCode: variant.currencyCode, sku: variant.sku, optionValues: Object.fromEntries(variant.optionValues.map((option) => [option.optionTitle, option.value])) }));
+const wishlistItem = product ? JSON.stringify({ path: `/products/${encodeURIComponent(handle)}`, title: product.title ?? "Product", thumbnail: product.thumbnail, priceAmount: product.priceAmount, currencyCode: product.currencyCode }) : undefined;
+const selectedSummary = defaultVariant?.optionValues.map((option) => option.value).join(" · ") || defaultVariant?.title || "Select available options";
+---
+<Layout tenantName={tenantName} header={template.header} footer={template.footer} themeTokens={themeTokens} cartCount={cartCount} deferCartCount={deferCartCount} demoMode={demoMode} seo={seo} structuredData={structuredData}>
+  {!product ? <main id="main-content" class="nexa-product-missing"><h1>Product not found</h1><p>This product is unavailable or no longer exists.</p><a href="/products">Back to products</a></main> : <main id="main-content" data-product-detail>
+    <nav class="product-breadcrumb" aria-label="Breadcrumb"><div class="container product-breadcrumb__wrapper"><a href="/">Home</a><span>/</span><a href="/products">Shop</a>{product.collectionTitle ? <><span>/</span><span>{product.collectionTitle}</span></> : null}<span>/</span><span aria-current="page">{product.title}</span></div></nav>
+    {(notice === "added" || error) ? <p class="nexa-product-notice" role={error ? "alert" : "status"}>{error ?? "Added to cart."}</p> : null}
+    <section class="product-main"><div class="container product-main__wrapper">
+      <div class="product-gallery"><div class="product-gallery__main-box"><button class="product-gallery__save" type="button" data-wishlist-toggle data-wishlist-item={wishlistItem} aria-pressed="false" aria-label={`Save ${product.title ?? "product"}`}><SaveIcon /></button><div class="product-gallery__main-slider" data-gallery-main>{gallery[0] ? <img src={gallery[0]} alt={product.title ?? "Product"} width="1000" height="1000" decoding="async" class="contain" /> : <span class="nexa-image-empty">Image coming soon</span>}</div></div>{gallery.length > 1 ? <div class="product-gallery__thumbs-box" aria-label="Product images">{gallery.map((src, index) => <button type="button" class:list={{ "is-active": index === 0 }} data-gallery-thumb={src} aria-current={index === 0 ? "true" : undefined} aria-label={`View image ${index + 1}`}><img src={src} alt="" width="160" height="160" loading="lazy" /></button>)}</div> : null}</div>
+      <div class="product-info" data-product-config-card>
+        <div class="product-info__header"><div class="product-info__header-left"><span class="product-info__price" data-product-price>{currentPrice}</span><span class="product-info__stock-badge" data-product-stock>{defaultVariant?.inStock ? "IN STOCK" : "OUT OF STOCK"}</span></div>{badge ? <div class="product-info__header-right"><span class="product-info__discount" data-product-badge>{badge.label}</span></div> : null}</div>
+        <form class="product-info__form" method="post" action="/actions/cart/add" data-add-form>
+          <input type="hidden" name="variantId" value={defaultVariant?.id ?? ""} data-variant-id /><input type="hidden" name="returnTo" value={`/products/${encodeURIComponent(handle)}`} /><input type="hidden" name="quantity" value="1" data-quantity />
+          <div class="product-info__scrollable">
+            <div class="product-info__desc-box" id="product-description"><h1 class="product-info__title">{product.title}</h1><p class="product-info__desc" data-product-description>{product.description ?? "Product details are being prepared."}</p><button class="product-info__desc-toggle" type="button" data-description-toggle aria-expanded="false" aria-controls="product-description" hidden>Show more</button></div>
+            <div class="product-info__configs-box">{axes.map((axis) => {
+              const colorAxis = isColorOptionTitle(axis.title);
+              return <fieldset class="product-info__config-group" data-option-axis={axis.title}><legend class="product-info__config-label">{axis.title}</legend><div class={colorAxis ? "product-info__color-swatches" : "product-info__config-options"}>{axis.values.map((value) => { const selected = defaultVariant?.optionValues.some((option) => option.optionTitle === axis.title && option.value === value); const swatch = colorAxis ? resolveColorSwatch(value) : null; return swatch
+                ? <button type="button" class:list={["product-info__color-btn", { "is-selected": selected }]} data-option-title={axis.title} data-option-value={value} aria-pressed={selected ? "true" : "false"} aria-label={`Select ${value}`} title={value}><span style={`background-color:${swatch}`} aria-hidden="true"></span></button>
+                : <button type="button" class:list={["product-info__config-btn", { "is-selected": selected }]} data-option-title={axis.title} data-option-value={value} aria-pressed={selected ? "true" : "false"}>{value}</button>; })}</div></fieldset>;
+            })}</div>
+          </div>
+          <div class="product-info__footer"><span class="product-info__summary" data-config-summary>SELECTED: {selectedSummary}</span><div class="product-info__actions-row"><div class="nexa-quantity"><button type="button" data-qty-minus aria-label="Decrease quantity">−</button><output data-qty-output>01</output><button type="button" data-qty-plus aria-label="Increase quantity">+</button></div><button class="btn btn--primary btn--large product-info__add" type="submit" disabled={!defaultVariant?.inStock}><span data-add-label>{defaultVariant?.inStock ? "Add to Cart" : "Out of stock"}</span></button></div></div>
+        </form>
+      </div>
+    </div></section>
+    {relatedProducts.length ? <section class="similar-products" aria-labelledby="nexa-related-title"><div class="container similar-products__wrapper"><header class="similar-products__header"><div class="similar-products__header-left"><div class="similar-products__eyebrow"><span class="similar-products__bar similar-products__bar--sm"></span><span class="similar-products__bar similar-products__bar--md"></span><span class="similar-products__badge">Similar products</span></div><h2 id="nexa-related-title" class="similar-products__title">You Might Also Like These Products</h2></div></header><div class="similar-products__grid">{relatedProducts.map((item) => <ProductCard product={item} />)}</div></div></section> : null}
+    <script is:inline type="application/json" id="nexahub-product-variants" set:html={JSON.stringify(variants)} />
+  </main>}
+</Layout>
+<style>
+  .nexa-product-missing { min-height: 60vh; display: grid; place-content: center; justify-items: start; gap: 1rem; padding: 2rem; }
+  .nexa-product-notice { margin: 1rem auto; width: min(100% - 2rem, 1400px); padding: 1rem; border: 1px solid currentColor; }
+  .product-gallery__main-slider { height: 100%; display: grid; place-items: center; overflow: hidden; }
+  .product-gallery__main-slider img { width: 100%; height: 100%; object-fit: cover; transition: opacity var(--nexa-motion-fast) var(--nexa-ease-out), transform var(--nexa-motion-slow) var(--nexa-ease-out); }
+  .product-gallery__thumbs-box { display: flex; gap: .75rem; overflow-x: auto; overflow-y: hidden; overscroll-behavior-inline: contain; padding-block: .75rem .5rem; scrollbar-width: thin; }
+  .product-gallery__thumbs-box button { flex: 0 0 92px; height: 65px; border: 1px solid #cacbd1; background: #fff; cursor: pointer; transition: border-color var(--nexa-motion-fast) var(--nexa-ease-out), transform var(--nexa-motion-fast) var(--nexa-ease-out); }
+  .product-gallery__thumbs-box button:hover { transform: translateY(-2px); border-color: var(--nexa-primary); }
+  .product-gallery__thumbs-box button.is-active { border-color: var(--nexa-primary); }
+  .product-gallery__thumbs-box img { width: 100%; height: 100%; object-fit: cover; }
+  .nexa-quantity { display: grid; grid-template-columns: 48px 48px 48px; align-items: center; border: 1px solid #cacbd1; }
+  .nexa-quantity button, .nexa-quantity output { min-height: 48px; display: grid; place-items: center; background: transparent; border: 0; }
+  .product-info__form { display: contents; }
+  .product-info__config-group { min-width: 0; margin: 0; padding: 0; border: 0; }
+  .product-info__config-label { padding: 0; }
+  .product-info__add { flex: 1; justify-content: center; }
+  .similar-products { margin-block: 64px 80px; padding: 0; }
+  @media (max-width: 900px) { .product-info { height: auto; min-height: 0; overflow: hidden; } .product-info__scrollable { flex: 0 0 auto; overflow: visible; } .product-gallery, .product-gallery__thumbs-box { overflow-y: hidden; } .nexa-quantity { grid-template-columns: 48px minmax(0, 1fr) 48px; width: 100%; } .similar-products__grid { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; } .similar-products__grid > * { flex: 0 0 min(78vw, 320px); scroll-snap-align: start; } }
+</style>
+<script is:inline>
+  const root = document.querySelector('[data-product-detail]');
+  if (root) {
+    const variants = JSON.parse(document.getElementById('nexahub-product-variants')?.textContent || '[]');
+    const selected = {};
+    root.querySelectorAll('[data-option-axis]').forEach((axis) => { const active = axis.querySelector('[aria-pressed="true"]'); if (active) selected[active.dataset.optionTitle] = active.dataset.optionValue; });
+    const sync = () => { const variant = variants.find((item) => Object.entries(selected).every(([key, value]) => item.optionValues[key] === value)); const input = root.querySelector('[data-variant-id]'); const submit = root.querySelector('[data-add-form] button[type="submit"]'); const summary = root.querySelector('[data-config-summary]'); if (summary) summary.textContent = `SELECTED: ${Object.values(selected).join(' · ')}`; if (!variant) { if (input) input.value = ''; if (submit) submit.disabled = true; return; } if (input) input.value = variant.id; if (submit) submit.disabled = !variant.inStock; const price = root.querySelector('[data-product-price]'); if (price && variant.priceAmount != null) price.textContent = new Intl.NumberFormat(undefined, { style: 'currency', currency: (variant.currencyCode || 'ETB').toUpperCase() }).format(variant.priceAmount); const stock = root.querySelector('[data-product-stock]'); if (stock) stock.textContent = variant.inStock ? 'IN STOCK' : 'OUT OF STOCK'; };
+    root.querySelectorAll('[data-option-value]').forEach((button) => button.addEventListener('click', () => { selected[button.dataset.optionTitle] = button.dataset.optionValue; root.querySelectorAll(`[data-option-title="${CSS.escape(button.dataset.optionTitle)}"]`).forEach((item) => { const on = item === button; item.setAttribute('aria-pressed', String(on)); item.classList.toggle('is-selected', on); }); sync(); }));
+    let quantity = 1; const quantityInput = root.querySelector('[data-quantity]'); const output = root.querySelector('[data-qty-output]'); const setQuantity = (next) => { quantity = Math.max(1, Math.min(99, next)); if (quantityInput) quantityInput.value = String(quantity); if (output) output.textContent = String(quantity).padStart(2, '0'); }; root.querySelector('[data-qty-minus]')?.addEventListener('click', () => setQuantity(quantity - 1)); root.querySelector('[data-qty-plus]')?.addEventListener('click', () => setQuantity(quantity + 1));
+    const description = root.querySelector('[data-product-description]'); const descriptionToggle = root.querySelector('[data-description-toggle]'); if (description && descriptionToggle) { const measureDescription = () => { const expanded = description.classList.contains('is-expanded'); description.classList.remove('is-collapsible', 'is-expanded'); const lineHeight = Number.parseFloat(getComputedStyle(description).lineHeight) || 21; const long = description.scrollHeight > lineHeight * 5 + 1; description.classList.toggle('is-collapsible', long); description.classList.toggle('is-expanded', long && expanded); descriptionToggle.hidden = !long; descriptionToggle.setAttribute('aria-expanded', String(long && expanded)); descriptionToggle.textContent = long && expanded ? 'Show less' : 'Show more'; }; descriptionToggle.addEventListener('click', () => { const expanded = description.classList.toggle('is-expanded'); descriptionToggle.setAttribute('aria-expanded', String(expanded)); descriptionToggle.textContent = expanded ? 'Show less' : 'Show more'; }); measureDescription(); if ('ResizeObserver' in window && description.parentElement) { let descriptionWidth = description.parentElement.clientWidth; new ResizeObserver(([entry]) => { const width = Math.round(entry.contentRect.width); if (width === descriptionWidth) return; descriptionWidth = width; measureDescription(); }).observe(description.parentElement); } }
+    root.querySelectorAll('[data-gallery-thumb]').forEach((button) => button.addEventListener('click', () => { const image = root.querySelector('[data-gallery-main] img'); if (image) image.src = button.dataset.galleryThumb; root.querySelectorAll('[data-gallery-thumb]').forEach((item) => { const on = item === button; item.classList.toggle('is-active', on); item.setAttribute('aria-current', on ? 'true' : 'false'); }); }));
+  }
+</script>

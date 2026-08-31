@@ -4,6 +4,7 @@ import {
   loadStorefrontPreviewPage,
 } from "../lib/storefront-preview-pages";
 import { parseStorefrontPreviewPageId } from "../lib/storefront-preview-page-contract";
+import { getStorefrontEditorManifest } from "@ecs/storefront-templates";
 
 const token = Astro.url.searchParams.get("token")?.trim() ?? "";
 const pageId = parseStorefrontPreviewPageId(Astro.url.searchParams.get("page"));
@@ -14,6 +15,8 @@ const editorOrigins = [Astro.url.origin, configuredEditorOrigin].filter(
 const ctx = token
   ? await loadPageContext(Astro.request, { previewToken: token, skipCart: true })
   : { ok: false as const, status: 400, message: "Preview token is required." };
+const editorManifest = ctx.ok ? getStorefrontEditorManifest(ctx.config.storefront.templateKey) : undefined;
+const previewBindings = Object.fromEntries((editorManifest?.sections ?? []).flatMap((section) => section.fields).filter((field) => field.preview).map((field) => [field.path, field.preview]));
 const previewPage = ctx.ok && pageId ? await loadStorefrontPreviewPage(ctx, pageId) : null;
 const PreviewComponent = previewPage?.component;
 
@@ -39,7 +42,7 @@ function resolveConfiguredEditorOrigin() {
   <head><meta charset="utf-8" /><meta name="viewport" content="width=device-width" /><meta name="robots" content="noindex,nofollow" /><title>Storefront preview</title></head>
   <body>
     {!ctx.ok ? <main><h1>{ctx.message}</h1></main> : !pageId ? <main><h1>This page is not editable.</h1></main> : !PreviewComponent ? <main><h1>Preview is unavailable.</h1></main> : <PreviewComponent {...previewPage?.props} data={ctx.config.storefront.data} tenantName={ctx.config.tenant.name} themeTokens={ctx.config.storefront.themeTokens} platformApiBaseUrl={ctx.platformApiBaseUrl} requestHost={ctx.requestHost} deferCartCount={true} editorMode={true} />}
-    {ctx.ok && PreviewComponent ? <script is:inline define:vars={{ editorOrigins }}>
+    {ctx.ok && PreviewComponent ? <script is:inline define:vars={{ editorOrigins, previewBindings }}>
       const allowedParentOrigins = new Set(editorOrigins);
       let activeParentOrigin = null;
       const fieldNodes = () => document.querySelectorAll('[data-editor-path]');
@@ -178,11 +181,24 @@ function resolveConfiguredEditorOrigin() {
           const path = node.getAttribute('data-editor-links-path');
           const links = path ? fields[path] : null;
           if (!Array.isArray(links)) return;
+          const binding = path ? previewBindings[path] : null;
           // A field-change is echoed back immediately by the editor. Replacing this
           // list while one of its links is being edited would destroy the active
           // contenteditable node (and its caret) after every keystroke.
           const activeElement = document.activeElement;
           if (activeElement instanceof HTMLElement && activeElement.isContentEditable && node.contains(activeElement)) return;
+          if (binding?.strategy === 'preserve-structure') {
+            links.forEach((item, index) => {
+              if (!item || typeof item !== 'object' || typeof item.label !== 'string' || typeof item.href !== 'string') return;
+              const target = node.querySelector(`[data-editor-link-target="${index}"]`);
+              if (!(target instanceof HTMLElement)) return;
+              target.dataset.previewHref = item.href;
+              target.setAttribute('aria-label', item.label);
+              const label = target.querySelector('[data-editor-link-label]');
+              if (label) label.textContent = item.label;
+            });
+            return;
+          }
           const fragment = document.createDocumentFragment();
           links.forEach((item, index) => {
             if (!item || typeof item !== 'object' || typeof item.label !== 'string' || typeof item.href !== 'string') return;
@@ -192,7 +208,14 @@ function resolveConfiguredEditorOrigin() {
             link.dataset.editorPath = `${path}.${index}.label`;
             link.contentEditable = 'plaintext-only';
             link.setAttribute('tabindex', '-1');
-            fragment.append(link);
+            if (binding?.strategy === 'list-items') {
+              link.className = 'type-body-s-400';
+              const itemNode = document.createElement('li');
+              itemNode.append(link);
+              fragment.append(itemNode);
+            } else {
+              fragment.append(link);
+            }
           });
           node.replaceChildren(fragment);
         });
@@ -201,40 +224,46 @@ function resolveConfiguredEditorOrigin() {
           const productId = path && typeof fields[path] === 'string' ? fields[path] : '';
           const option = productId
             ? document.querySelector(`template[data-editor-product-option="${CSS.escape(productId)}"]`)
-            : document.querySelector('template[data-editor-product-option]');
+            : node.hasAttribute('data-editor-preserve-empty') ? null : document.querySelector('template[data-editor-product-option]');
           if (option instanceof HTMLTemplateElement) node.replaceChildren(option.content.cloneNode(true));
+          else if (!productId && node.hasAttribute('data-editor-preserve-empty')) node.replaceChildren();
         });
         document.querySelectorAll('[data-editor-products-path]').forEach((node) => {
           const path = node.getAttribute('data-editor-products-path');
           const requestedIds = path && Array.isArray(fields[path]) ? fields[path] : [];
-          const ids = requestedIds.length
+          const ids = requestedIds.length || node.hasAttribute('data-editor-preserve-empty')
             ? requestedIds
             : Array.from(document.querySelectorAll('template[data-editor-product-option]')).slice(0, 3).map((option) => option.getAttribute('data-editor-product-option'));
           const track = node.querySelector('[data-promo-track]');
-          if (!track) return;
+          const target = track || node;
           const fragment = document.createDocumentFragment();
           ids.slice(0, 6).forEach((id) => {
             if (typeof id !== 'string') return;
             const option = document.querySelector(`template[data-editor-product-option="${CSS.escape(id)}"]`);
             if (option instanceof HTMLTemplateElement) fragment.append(option.content.cloneNode(true));
           });
-          track.replaceChildren(fragment);
+          target.replaceChildren(fragment);
           node.dispatchEvent(new CustomEvent('ecs:hero-carousel-updated'));
         });
         document.querySelectorAll('[data-editor-collections-path]').forEach((node) => {
           const path = node.getAttribute('data-editor-collections-path');
+          const binding = path ? previewBindings[path] : null;
+          const variants = binding?.strategy === 'variant-options' && Array.isArray(binding.variants) ? binding.variants : [];
           const requestedIds = path && Array.isArray(fields[path]) ? fields[path] : [];
-          const ids = requestedIds.length
+          const fallbackAttribute = variants.length ? `data-editor-collection-option-${variants[0]}` : 'data-editor-collection-option';
+          const ids = requestedIds.length || node.hasAttribute('data-editor-preserve-empty')
             ? requestedIds
-            : Array.from(document.querySelectorAll('template[data-editor-collection-option]')).slice(0, 4).map((option) => option.getAttribute('data-editor-collection-option'));
+            : Array.from(document.querySelectorAll(`template[${fallbackAttribute}]`)).slice(0, 6).map((option) => option.getAttribute(fallbackAttribute));
           const fragment = document.createDocumentFragment();
-          ids.slice(0, 4).forEach((id, index) => {
+          ids.slice(0, 6).forEach((id, index) => {
             if (typeof id !== 'string') return;
-            const option = document.querySelector(`template[data-editor-collection-option="${CSS.escape(id)}"]`);
+            const variant = variants[Math.min(index, variants.length - 1)] || '';
+            const selector = variant
+              ? `template[data-editor-collection-option-${variant}="${CSS.escape(id)}"]`
+              : `template[data-editor-collection-option="${CSS.escape(id)}"]`;
+            const option = document.querySelector(selector);
             if (!(option instanceof HTMLTemplateElement)) return;
             const content = option.content.cloneNode(true);
-            const label = content.querySelector('span');
-            if (label) label.textContent = `${index + 1}/ ${label.textContent}`;
             fragment.append(content);
           });
           node.replaceChildren(fragment);
@@ -260,6 +289,7 @@ function resolveConfiguredEditorOrigin() {
   :global([data-editor-empty-label]:empty)::before{content:attr(data-editor-empty-label)}
   :global([data-editor-path]),:global([data-editor-section]),:global([data-editor-image-path]),:global([data-editor-background-image-path]),:global([data-editor-links-path]),:global([data-editor-product-path]),:global([data-editor-products-path]),:global([data-editor-collections-path]){outline:1px solid rgb(22 135 255 / 0);outline-offset:2px;box-shadow:0 0 0 3px rgb(22 135 255 / 0);transition:outline-offset .16s ease,box-shadow .16s ease,background-color .16s ease}
   :global([data-editor-path]:focus),:global([data-editor-path]:focus-visible){outline-color:color-mix(in srgb,#1687ff 88%,transparent)!important}
+  :global([data-editor-selected="true"] [data-editor-path]:focus),:global([data-editor-selected="true"] [data-editor-path]:focus-visible),:global(.btn [contenteditable]),:global(.btn [contenteditable]:focus),:global(.btn [contenteditable]:focus-visible){outline:0!important;outline-offset:0!important;box-shadow:none!important;border-color:transparent!important}
   :global(html[data-editor-hints="on"] [data-editor-section]){outline:1px dashed color-mix(in srgb,#1687ff 22%,transparent);outline-offset:2px}
   :global(html[data-editor-hints="on"] [data-editor-path]){outline:1px solid color-mix(in srgb,#1687ff 34%,transparent);outline-offset:2px}
   :global(html[data-editor-hints="on"] [data-editor-image-path]),:global(html[data-editor-hints="on"] [data-editor-background-image-path]){outline-color:color-mix(in srgb,#1687ff 34%,transparent)}

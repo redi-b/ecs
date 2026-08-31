@@ -1,0 +1,86 @@
+.nexa-commerce { min-height: 70vh; padding: clamp(2rem, 5vw, 5rem) 0 clamp(5rem, 10vw, 9rem); background: var(--nexa-bg); }
+.nexa-commerce__frame { display: grid; gap: clamp(2rem, 3.5vw, 3.5rem); }
+.nexa-breadcrumb { display: flex; gap: .65rem; align-items: center; font: 400 .72rem/1.2 "DM Mono", monospace; text-transform: uppercase; }
+.nexa-commerce__heading { display: grid; grid-template-columns: minmax(9rem, 1fr) 3fr; align-items: end; border-block: 1px solid color-mix(in srgb, var(--nexa-ink) 28%, transparent); padding: 1rem 0; }
+.nexa-commerce__heading h1 { margin: 0; font: 500 clamp(3.4rem, 8vw, 8.5rem)/.86 "Space Grotesk", sans-serif; letter-spacing: -.065em; text-transform: uppercase; }
+.nexa-commerce__heading p, .nexa-kicker { font: 400 .72rem/1.4 "DM Mono", monospace; text-transform: uppercase; }
+.nexa-commerce__split { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(21rem, .8fr); gap: clamp(1rem, 2.25vw, 2rem); align-items: start; }
+.nexa-lines, .nexa-summary { border: 1px solid color-mix(in srgb, var(--nexa-ink) 25%, transparent); background: color-mix(in srgb, var(--nexa-bg) 94%, white); }
+.nexa-panel-head { min-height: 4rem; display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: 1rem 1.25rem; border-bottom: 1px solid color-mix(in srgb, var(--nexa-ink) 25%, transparent); text-transform: uppercase; font: 500 .75rem/1.2 "DM Mono", monospace; }
+.nexa-panel-head h2 { margin: 0; font: inherit; }
+.nexa-line { display: grid; grid-template-columns: 2.2rem 8rem minmax(0,1fr) auto; gap: 1rem; align-items: center; padding: 1rem; border-bottom: 1px solid color-mix(in srgb, var(--nexa-ink) 16%, transparent); }
+.nexa-line__index { align-self: start; font: 400 .68rem/1.2 "DM Mono", monospace; color: color-mix(in srgb, var(--nexa-ink) 58%, transparent); }
+.nexa-line__media { aspect-ratio: 1; display: grid; place-items: center; overflow: hidden; background: var(--nexa-muted); font-size: .7rem; }
+.nexa-line__media img { width: 100%; height: 100%; object-fit: cover; }
+.nexa-line__copy { display: grid; gap: .35rem; }
+.nexa-line__copy > a { font: 500 1.2rem/1.15 "Space Grotesk", sans-serif; }
+.nexa-line__copy span, .nexa-line__copy small, .nexa-summary small { font: 400 .7rem/1.4 "DM Mono", monospace; color: color-mix(in srgb, var(--nexa-ink) 65%, transparent); }
+.nexa-line__controls { display: grid; justify-items: end; gap: .65rem; }
+.nexa-stepper { display: grid; grid-template-columns: 2.6rem 2.6rem 2.6rem; min-height: 2.65rem; border: 1px solid color-mix(in srgb, var(--nexa-ink) 28%, transparent); }
+.nexa-stepper form, .nexa-stepper button { display: contents; }
+.nexa-stepper button, .nexa-stepper span { display: grid; place-items: center; min-width: 44px; min-height: 44px; border: 0; background: transparent; }
+.nexa-stepper button svg { width: 14px; height: 14px; }
+.nexa-stepper button[data-busy="true"] svg { display: none; }
+.nexa-stepper span { border-inline: 1px solid color-mix(in srgb, var(--nexa-ink) 20%, transparent); font-family: "DM Mono", monospace; }
+.nexa-text-action, .nexa-back-link { border: 0; background: none; padding: .4rem 0; text-decoration: underline; font: 400 .7rem/1.2 "DM Mono", monospace; text-transform: uppercase; }
+.nexa-back-link { display: inline-flex; gap: .5rem; margin: 1rem; min-height: 44px; align-items: center; }
+.nexa-back-link__icon { display: inline-flex; width: 14px; height: 14px; transform: rotate(180deg); }
+.nexa-back-link__icon svg { width: 100%; height: 100%; }
+.nexa-summary { position: sticky; top: 1rem; display: grid; gap: 1.25rem; padding-bottom: 1.25rem; box-shadow: 0 24px 70px color-mix(in srgb, var(--nexa-ink) 8%, transparent); }
+.nexa-summary > :not(.nexa-panel-head) { margin-inline: 1rem; }
+.nexa-discount { display: grid; gap: .6rem; font: 400 .7rem/1.3 "DM Mono", monospace; text-transform: uppercase; }
+.nexa-discount form { display: grid; grid-template-columns: 1fr auto; }
+.nexa-discount input, .nexa-discount button { min-height: 44px; border: 1px solid color-mix(in srgb, var(--nexa-ink) 30%, transparent); background: transparent; padding: 0 .75rem; font: inherit; }
+.nexa-discount button { margin-left: -1px; }
+.nexa-totals { display: grid; gap: .75rem; margin-block: 0; }
+.nexa-totals > div { display: flex; justify-content: space-between; gap: 1rem; font: 400 .75rem/1.3 "DM Mono", monospace; }
+.nexa-totals dd { margin: 0; }
+.nexa-totals__total { border-top: 1px solid color-mix(in srgb, var(--nexa-ink) 25%, transparent); padding-top: 1rem; font-size: .9rem !important; font-weight: 500 !important; }
+.nexa-primary-action { min-height: 58px; display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 6px 6px 6px 1.25rem; border: 0; background: var(--nexa-primary); color: var(--nexa-on-primary); font: 500 .75rem/1.2 "DM Mono", monospace; text-transform: uppercase; cursor: pointer; transition: filter var(--nexa-motion-fast) var(--nexa-ease-out), transform var(--nexa-motion-fast) var(--nexa-ease-out), box-shadow var(--nexa-motion-base) var(--nexa-ease-out); }
+.nexa-primary-action:hover:not(:disabled) { filter: brightness(.92); transform: translateY(-1px); box-shadow: 0 12px 28px color-mix(in srgb, var(--nexa-primary) 22%, transparent); }
+.nexa-primary-action:disabled { cursor: not-allowed; opacity: .5; }
+.nexa-primary-action__icon { width: 46px; min-height: 46px; display: grid; place-items: center; background: var(--nexa-bg); color: var(--nexa-primary); }
+.nexa-primary-action__icon svg { width: 16px; height: 16px; }
+.nexa-empty { min-height: 24rem; display: grid; justify-items: start; align-content: center; gap: 1rem; border: 1px solid color-mix(in srgb, var(--nexa-ink) 25%, transparent); padding: clamp(2rem, 7vw, 7rem); }
+.nexa-empty__index { font: 400 .7rem/1 "DM Mono", monospace; }
+.nexa-empty h2 { margin: 0; font: 500 clamp(2.4rem, 6vw, 6rem)/.95 "Space Grotesk", sans-serif; text-transform: uppercase; letter-spacing: -.04em; }
+.nexa-notice { padding: 1rem; border: 1px solid var(--nexa-ink); }
+.nexa-notice--error { border-color: #a12b2b; color: #7c1717; }
+.nexa-live { min-height: 1em; margin: 0; font: 400 .7rem/1.3 "DM Mono", monospace; }
+.nexa-live.is-error { color: #a12b2b; }
+@media (max-width: 900px) { .nexa-commerce__heading { grid-template-columns: 1fr; gap: 1rem; } .nexa-commerce__split { grid-template-columns: 1fr; } .nexa-summary { position: static; } .nexa-checkout-summary { grid-row: 1; } .nexa-checkout-form-panel { grid-row: 2; } }
+@media (max-width: 640px) { .nexa-line { grid-template-columns: 1.6rem 5.5rem 1fr; align-items: start; } .nexa-line__controls { grid-column: 2 / -1; grid-template-columns: auto 1fr auto; align-items: center; justify-items: start; width: 100%; } .nexa-line__controls strong { justify-self: center; } }
+.nexa-checkout .nexa-commerce__frame { gap: clamp(2.5rem, 5vw, 5rem); }
+.nexa-checkout .nexa-commerce__heading { padding-block: clamp(1.5rem, 3vw, 2.5rem); }
+.nexa-checkout .nexa-commerce__heading > div { display: grid; gap: .7rem; }
+.nexa-checkout .nexa-commerce__heading p { margin: 0; }
+.nexa-checkout-form-panel { overflow: hidden; border: 1px solid color-mix(in srgb, var(--nexa-ink) 22%, transparent); border-radius: 4px; background: color-mix(in srgb, var(--nexa-bg) 94%, white); box-shadow: 0 24px 70px color-mix(in srgb, var(--nexa-ink) 7%, transparent); }
+.nexa-checkout-form { display: grid; gap: 0; }
+.nexa-fieldset { min-width: 0; margin: 0; padding: clamp(1.5rem, 3vw, 2.5rem); border: 0; border-bottom: 1px solid color-mix(in srgb, var(--nexa-ink) 14%, transparent); }
+.nexa-fieldset > legend, .nexa-fieldset > h3 { width: auto; margin: 0 0 1.5rem; padding: .4rem .6rem; background: color-mix(in srgb, var(--nexa-ink) 7%, transparent); font: 500 .7rem/1.2 "DM Mono", monospace; text-transform: uppercase; }
+.nexa-field-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 1.25rem; }
+.nexa-field-grid label, .nexa-textarea { display: grid; gap: .45rem; font: 400 .7rem/1.3 "DM Mono", monospace; text-transform: uppercase; }
+.nexa-field-grid .is-wide { grid-column: 1 / -1; }
+.nexa-field-grid input, .nexa-textarea textarea, .nexa-save-address input { width: 100%; min-height: 54px; border: 1px solid color-mix(in srgb, var(--nexa-ink) 24%, transparent); border-radius: 2px; background: var(--nexa-bg); padding: .9rem; color: inherit; outline: 2px solid transparent; outline-offset: 0; transition: border-color var(--nexa-motion-fast) var(--nexa-ease-out), outline-color var(--nexa-motion-fast) var(--nexa-ease-out), outline-offset var(--nexa-motion-fast) var(--nexa-ease-out), background-color var(--nexa-motion-fast) var(--nexa-ease-out); }
+.nexa-field-grid input:focus, .nexa-textarea textarea:focus, .nexa-save-address input:focus { border-color: var(--nexa-primary); outline-color: color-mix(in srgb, var(--nexa-primary) 20%, transparent); outline-offset: 2px; background: var(--nexa-bg); }
+.nexa-textarea { padding: clamp(1.5rem, 3vw, 2.5rem); border-bottom: 1px solid color-mix(in srgb, var(--nexa-ink) 14%, transparent); }
+.nexa-choice-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: .75rem; }
+.nexa-choice { position: relative; display: grid; grid-template-columns: auto 1fr; gap: .9rem; align-items: start; min-height: 92px; border: 1px solid color-mix(in srgb, var(--nexa-ink) 20%, transparent); border-radius: 3px; padding: 1.25rem; background: var(--nexa-bg); cursor: pointer; transition: border-color var(--nexa-motion-fast) var(--nexa-ease-out), background-color var(--nexa-motion-fast) var(--nexa-ease-out), box-shadow var(--nexa-motion-base) var(--nexa-ease-out), transform var(--nexa-motion-fast) var(--nexa-ease-out); }
+.nexa-choice:hover { border-color: color-mix(in srgb, var(--nexa-primary) 55%, var(--nexa-ink)); transform: translateY(-1px); }
+.nexa-choice:has(input:checked) { border-color: var(--nexa-primary); background: color-mix(in srgb, var(--nexa-primary) 6%, var(--nexa-bg)); box-shadow: inset 4px 0 0 var(--nexa-primary); }
+.nexa-choice input { margin-top: .15rem; accent-color: var(--nexa-primary); }
+.nexa-choice span { display: grid; gap: .3rem; }
+.nexa-choice strong { font: 500 .82rem/1.2 "DM Mono", monospace; text-transform: uppercase; }
+.nexa-choice small, .nexa-account-note { font: 400 .7rem/1.4 "DM Mono", monospace; }
+.nexa-saved-addresses { border: 0; padding: 0 0 1rem; }
+.nexa-saved-addresses legend { margin-bottom: .75rem; font: 400 .7rem/1.2 "DM Mono", monospace; text-transform: uppercase; }
+.nexa-save-address { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem; font: 400 .7rem/1.3 "DM Mono", monospace; }
+.nexa-checkout-form > .nexa-primary-action { margin: clamp(1.5rem, 3vw, 2.5rem); width: calc(100% - clamp(3rem, 6vw, 5rem)); }
+.nexa-checkout-summary { border-radius: 4px; overflow: hidden; }
+.nexa-summary-items { display: grid; gap: 0; list-style: none; padding: 0; margin-block: 0; }
+.nexa-summary-items li { display: grid; grid-template-columns: 3.5rem 1fr auto; gap: .75rem; align-items: center; padding-block: .75rem; border-bottom: 1px solid color-mix(in srgb, var(--nexa-ink) 14%, transparent); }
+.nexa-summary-items img { width: 3.5rem; aspect-ratio: 1; object-fit: contain; background: var(--nexa-muted); }
+.nexa-summary-items p { display: grid; gap: .2rem; margin: 0; }
+.nexa-summary-items strong { font: 500 .8rem/1.2 "Space Grotesk", sans-serif; }
+.nexa-summary-items small, .nexa-summary-items b { font: 400 .67rem/1.3 "DM Mono", monospace; }
+@media (max-width: 640px) { .nexa-field-grid, .nexa-choice-grid, .nexa-save-address { grid-template-columns: 1fr; } }

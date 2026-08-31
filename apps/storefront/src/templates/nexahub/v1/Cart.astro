@@ -1,0 +1,77 @@
+---
+import { resolveStoreCartSummary } from "../../../lib/commerce/cart-summary";
+import type { StoreCart } from "../../../lib/commerce/types";
+import { formatMoney } from "../../../lib/money";
+import arrowIcon from "./icons/arrow-up-right.svg?raw";
+import arrowRightIcon from "./icons/arrow-right-icon.svg?raw";
+import minusIcon from "./icons/minus-icon.svg?raw";
+import plusIcon from "./icons/plus-icon.svg?raw";
+import Button from "./Button.astro";
+import Layout from "./Layout.astro";
+import { parseNexahubData } from "./lib";
+import "./styles/pages/commerce.scss";
+
+interface Props {
+  data: unknown;
+  themeTokens?: unknown;
+  tenantName: string;
+  cartCount: number;
+  cart: StoreCart | null;
+  error?: string | null;
+  discountError?: string | null;
+  demoMode?: boolean;
+}
+const { data, themeTokens, tenantName, cartCount, cart, error, discountError, demoMode = false } = Astro.props;
+const template = parseNexahubData(data);
+const items = cart?.items ?? [];
+const itemCount = items.reduce((total, item) => total + item.quantity, 0);
+const summary = resolveStoreCartSummary(cart);
+---
+
+<Layout tenantName={tenantName} header={template.header} footer={template.footer} themeTokens={themeTokens} cartCount={cartCount} demoMode={demoMode}>
+  <main class="nexa-commerce" id="main-content" data-cart-page>
+    <div class="container nexa-commerce__frame">
+      <nav class="nexa-breadcrumb" aria-label="Breadcrumb"><a href="/">Home</a><span>/</span><span aria-current="page">Cart</span></nav>
+      <header class="nexa-commerce__heading"><span class="nexa-kicker">Order workspace</span><div><h1>Your cart</h1><p data-page-item-count>{itemCount} item{itemCount === 1 ? "" : "s"} ready for checkout</p></div></header>
+      {error && <div class="nexa-notice nexa-notice--error" role="alert"><strong>Cart unavailable</strong><p>{error}</p></div>}
+      <p class="nexa-live" data-cart-page-status aria-live="polite"></p>
+
+      {!items.length ? <section class="nexa-empty" data-cart-page-empty><span class="nexa-empty__index">00</span><h2>Your cart is empty</h2><p>Choose a product to begin an order.</p><Button text="Browse products" href="/products" /></section> : <div class="nexa-commerce__split" data-cart-page-layout>
+        <section class="nexa-lines" aria-label="Cart items" data-cart-page-lines>
+          <header class="nexa-panel-head"><span>Items</span><span>Qty / total</span></header>
+          {items.map((item, index) => <article class="nexa-line" data-cart-line={item.id}>
+            <span class="nexa-line__index">{String(index + 1).padStart(2, "0")}</span>
+            <a class="nexa-line__media" href={item.productHandle ? `/products/${encodeURIComponent(item.productHandle)}` : "/products"}>{item.thumbnail ? <img src={item.thumbnail} alt="" /> : <span>No image</span>}</a>
+            <div class="nexa-line__copy"><a href={item.productHandle ? `/products/${encodeURIComponent(item.productHandle)}` : "/products"}>{item.title ?? "Product"}</a>{item.variantTitle && <span>{item.variantTitle}</span>}<small>{formatMoney(item.unitPrice, cart?.currencyCode)} each</small></div>
+            <div class="nexa-line__controls"><div class="nexa-stepper" aria-label={`Quantity for ${item.title ?? "product"}`}><form method="post" action="/actions/cart/update" data-cart-page-form><input type="hidden" name="lineItemId" value={item.id} /><input type="hidden" name="quantity" value={Math.max(1, item.quantity - 1)} /><button type="submit" aria-label="Decrease quantity" disabled={item.quantity <= 1}><Fragment set:html={minusIcon} /></button></form><span data-line-quantity>{item.quantity}</span><form method="post" action="/actions/cart/update" data-cart-page-form><input type="hidden" name="lineItemId" value={item.id} /><input type="hidden" name="quantity" value={item.quantity + 1} /><button type="submit" aria-label="Increase quantity"><Fragment set:html={plusIcon} /></button></form></div><strong data-line-total>{formatMoney(item.total ?? item.unitPrice, cart?.currencyCode)}</strong><form method="post" action="/actions/cart/remove" data-cart-page-form><input type="hidden" name="lineItemId" value={item.id} /><button class="nexa-text-action" type="submit">Remove</button></form></div>
+          </article>)}
+          <a class="nexa-back-link" href="/products"><span class="nexa-back-link__icon" aria-hidden="true"><Fragment set:html={arrowRightIcon} /></span>Continue shopping</a>
+        </section>
+
+        <aside class="nexa-summary" aria-label="Order summary">
+          <header class="nexa-panel-head"><h2>Summary</h2><span data-summary-count>{itemCount} item{itemCount === 1 ? "" : "s"}</span></header>
+          <div class="nexa-discount" data-discount-code><label for="nexa-cart-code">Promotion code</label><form method="post" action="/actions/cart/promotion" data-cart-promotion-form><input type="hidden" name="intent" value="apply" /><input id="nexa-cart-code" name="code" autocomplete="off" placeholder="ENTER CODE" required /><button type="submit">Apply</button></form><div data-applied-promotions>{summary.appliedCodes.map((promotion) => <form method="post" action="/actions/cart/promotion" data-cart-promotion-form><input type="hidden" name="intent" value="remove" /><input type="hidden" name="code" value={promotion.code ?? ""} /><span>{promotion.code} applied</span><button type="submit" aria-label={`Remove discount ${promotion.code}`}>Remove</button></form>)}</div><p class:list={["nexa-live", { "is-error": discountError }]} data-discount-status aria-live="polite">{discountError}</p></div>
+          <dl class="nexa-totals"><div><dt>Subtotal</dt><dd data-summary-subtotal>{formatMoney(summary.subtotal, cart?.currencyCode)}</dd></div><div data-summary-discount hidden={!summary.savingsTotal}><dt>Discount</dt><dd data-summary-discount-value>−{formatMoney(summary.savingsTotal, cart?.currencyCode)}</dd></div><div><dt>Delivery</dt><dd data-summary-shipping>{summary.shippingTotal && summary.shippingTotal > 0 ? formatMoney(summary.shippingTotal, cart?.currencyCode) : "At checkout"}</dd></div>{summary.taxTotal != null && summary.taxTotal > 0 && <div><dt>Tax</dt><dd>{formatMoney(summary.taxTotal, cart?.currencyCode)}</dd></div>}<div class="nexa-totals__total"><dt>Total</dt><dd data-summary-total>{formatMoney(summary.total, cart?.currencyCode)}</dd></div></dl>
+          <a class="nexa-primary-action" href="/checkout">Proceed to checkout <span class="nexa-primary-action__icon" aria-hidden="true"><Fragment set:html={arrowIcon} /></span></a><small>Delivery and payment are confirmed in the next step.</small>
+        </aside>
+      </div>}
+    </div>
+  </main>
+</Layout>
+
+<script is:inline>
+  (() => {
+    const root = document.querySelector('[data-cart-page]'); if (!root) return;
+    const status = root.querySelector('[data-cart-page-status]');
+    const money = (amount, currency) => { try { return new Intl.NumberFormat(undefined, { style: 'currency', currency: String(currency || 'ETB').toUpperCase() }).format(Number(amount || 0)); } catch { return String(amount ?? ''); } };
+    const sync = (result) => {
+      const cart = result.cart; const items = Array.isArray(cart.items) ? cart.items : []; const count = items.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
+      root.querySelectorAll('[data-cart-line]').forEach((line) => { const item = items.find((candidate) => candidate.id === line.dataset.cartLine); if (!item) { line.remove(); return; } const quantity = line.querySelector('[data-line-quantity]'); const total = line.querySelector('[data-line-total]'); if (quantity) quantity.textContent = String(item.quantity); if (total) total.textContent = money(item.total ?? item.unitPrice, cart.currencyCode); const forms = [...line.querySelectorAll('form[action="/actions/cart/update"]')]; const down = forms[0]?.querySelector('input[name="quantity"]'); const up = forms[1]?.querySelector('input[name="quantity"]'); if (down) down.value = String(Math.max(1, item.quantity - 1)); if (up) up.value = String(item.quantity + 1); const downButton = forms[0]?.querySelector('button'); if (downButton) downButton.disabled = item.quantity <= 1; });
+      root.querySelectorAll('[data-page-item-count],[data-summary-count]').forEach((node) => node.textContent = `${count} item${count === 1 ? '' : 's'}${node.hasAttribute('data-page-item-count') ? ' ready for checkout' : ''}`);
+      const savings = Math.max(0, Number(cart.discountTotal ?? 0) || Number(cart.itemDiscountTotal || 0) + Number(cart.shippingDiscountTotal || 0)); const subtotal = root.querySelector('[data-summary-subtotal]'); const total = root.querySelector('[data-summary-total]'); const discount = root.querySelector('[data-summary-discount]'); const discountValue = root.querySelector('[data-summary-discount-value]'); if (subtotal) subtotal.textContent = money(cart.subtotal ?? cart.itemSubtotal ?? cart.itemTotal, cart.currencyCode); if (total) total.textContent = money(cart.total ?? cart.itemTotal, cart.currencyCode); if (discount) discount.hidden = savings <= 0; if (discountValue) discountValue.textContent = `−${money(savings, cart.currencyCode)}`;
+      if (!items.length) window.location.reload();
+      window.dispatchEvent(new CustomEvent('ecs:cart-updated', { detail: { ...result, openDrawer: false } }));
+    };
+    root.addEventListener('submit', async (event) => { const form = event.target; if (!(form instanceof HTMLFormElement) || !form.matches('[data-cart-page-form],[data-cart-promotion-form]')) return; event.preventDefault(); const feedback = form.matches('[data-cart-promotion-form]') ? root.querySelector('[data-discount-status]') : status; const button = event.submitter; const wasDisabled = button instanceof HTMLButtonElement ? button.disabled : false; if (button instanceof HTMLButtonElement) { button.disabled = true; button.dataset.busy = 'true'; button.setAttribute('aria-busy', 'true'); } form.setAttribute('aria-busy', 'true'); if (feedback) { feedback.classList.remove('is-error'); feedback.textContent = 'Updating…'; } try { const response = await fetch(form.action, { method: 'POST', body: new FormData(form), credentials: 'same-origin', headers: { Accept: 'application/json' } }); const result = await response.json(); if (!response.ok || !result.ok) throw new Error(result.message || 'Could not update your cart.'); sync(result); if (feedback) feedback.textContent = ''; } catch (cause) { if (feedback) { feedback.textContent = cause instanceof Error ? cause.message : 'Could not update your cart.'; feedback.classList.add('is-error'); } } finally { form.removeAttribute('aria-busy'); if (button instanceof HTMLButtonElement) { button.disabled = wasDisabled; delete button.dataset.busy; button.removeAttribute('aria-busy'); } } });
+  })();
+</script>

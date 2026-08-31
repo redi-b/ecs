@@ -1,0 +1,109 @@
+---
+import Layout from "./Layout.astro";
+import { parseNexahubData } from "./lib";
+import "./styles/pages/secondary.scss";
+
+interface Props { data: unknown; themeTokens?: unknown; tenantName: string; deferCartCount?: boolean; }
+const { data, themeTokens, tenantName, deferCartCount = false } = Astro.props;
+const template = parseNexahubData(data);
+---
+<Layout tenantName={tenantName} header={template.header} footer={template.footer} themeTokens={themeTokens} deferCartCount={deferCartCount}>
+  <main class="nexa-secondary nexa-wishlist-page" id="main-content" data-wishlist-page>
+    <div class="container nexa-secondary__frame">
+      <header class="nexa-wishlist-hero">
+        <div>
+          <span>Saved items</span>
+          <h1>Your wishlist</h1>
+          <p>Keep the products you love close while you decide.</p>
+        </div>
+        <strong data-wishlist-count aria-live="polite">— ITEMS</strong>
+      </header>
+      <section class="nexa-wishlist" data-wishlist-content aria-live="polite" aria-busy="true">
+        <div class="nexa-wishlist__loading" role="status"><span aria-hidden="true"></span><strong>Loading your wishlist</strong></div>
+      </section>
+    </div>
+  </main>
+</Layout>
+<script>
+  import { WISHLIST_REQUEST_EVENT, WISHLIST_UPDATED_EVENT, type WishlistEntry } from "../../../lib/browser/wishlist";
+
+  (() => {
+    const content = document.querySelector<HTMLElement>("[data-wishlist-content]");
+    const count = document.querySelector<HTMLElement>("[data-wishlist-count]");
+    if (!content) return;
+    let items: WishlistEntry[] = [];
+    const money = (amount: number | null, currency: string | null) => {
+      if (typeof amount !== "number") return "";
+      try { return new Intl.NumberFormat(undefined, { style: "currency", currency: (currency || "ETB").toUpperCase() }).format(amount); }
+      catch { return String(amount); }
+    };
+    const render = () => {
+      content.replaceChildren();
+      if (count) count.textContent = `${String(items.length).padStart(2, "0")} ${items.length === 1 ? "ITEM" : "ITEMS"}`;
+      if (!items.length) {
+        const empty = document.createElement("div");
+        empty.className = "nexa-wishlist-empty";
+        empty.innerHTML = '<span aria-hidden="true">◇</span><h2>Your wishlist is empty</h2><p>Save a product and it will be waiting for you here.</p><a class="nexa-primary-action" href="/products">Browse products ↗</a>';
+        content.append(empty);
+        return;
+      }
+      const grid = document.createElement("div");
+      grid.className = "nexa-wishlist__grid";
+      items.forEach((item) => {
+        const card = document.createElement("article");
+        card.className = "nexa-wishlist-card";
+        const media = document.createElement("a");
+        media.className = "nexa-wishlist-card__media";
+        media.href = item.path;
+        media.setAttribute("aria-label", `View ${item.title}`);
+        if (item.thumbnail) {
+          const image = document.createElement("img");
+          image.src = item.thumbnail;
+          image.alt = item.title;
+          media.append(image);
+        }
+        const body = document.createElement("div");
+        body.className = "nexa-wishlist-card__body";
+        const title = document.createElement("a");
+        title.href = item.path;
+        title.textContent = item.title;
+        const price = document.createElement("span");
+        price.textContent = money(item.priceAmount, item.currencyCode);
+        body.append(title);
+        if (price.textContent) body.append(price);
+        const actions = document.createElement("div");
+        actions.className = "nexa-wishlist-card__actions";
+        const view = document.createElement("a");
+        view.href = item.path;
+        view.textContent = "View product ↗";
+        const remove = document.createElement("button");
+        remove.type = "button";
+        remove.textContent = "Remove";
+        remove.setAttribute("aria-label", `Remove ${item.title} from wishlist`);
+        remove.addEventListener("click", () => window.dispatchEvent(new CustomEvent(WISHLIST_UPDATED_EVENT, { detail: { items: items.filter(saved => saved.path !== item.path), origin: "page" } })));
+        actions.append(view, remove);
+        card.append(media, body, actions);
+        grid.append(card);
+      });
+      content.append(grid);
+    };
+    window.addEventListener(WISHLIST_UPDATED_EVENT, (event) => {
+      const next = (event as CustomEvent<{ items?: WishlistEntry[] }>).detail?.items;
+      if (!Array.isArray(next)) return;
+      items = next;
+      content.setAttribute("aria-busy", "false");
+      render();
+    });
+    window.dispatchEvent(new CustomEvent(WISHLIST_REQUEST_EVENT));
+  })();
+</script>
+<style is:global>
+  .nexa-wishlist-page .nexa-secondary__frame{padding-top:clamp(7rem,12vw,10rem)}
+  .nexa-wishlist-hero{display:flex;justify-content:space-between;align-items:end;gap:2rem;padding-bottom:clamp(2rem,5vw,4.5rem);border-bottom:1px solid color-mix(in srgb,var(--nexa-ink) 20%,transparent)}
+  .nexa-wishlist-hero>div{display:grid;gap:1rem}.nexa-wishlist-hero span,.nexa-wishlist-hero strong{font:400 .7rem/1.2 "DM Mono",monospace;text-transform:uppercase}.nexa-wishlist-hero h1{margin:0;font:500 clamp(3rem,8vw,7.5rem)/.88 "Space Grotesk",sans-serif;letter-spacing:-.055em}.nexa-wishlist-hero p{max-width:34rem;margin:0;font:400 clamp(1rem,1.5vw,1.25rem)/1.45 "Space Grotesk",sans-serif}
+  .nexa-wishlist{padding-block:clamp(2rem,5vw,5rem)}.nexa-wishlist__loading{display:flex;align-items:center;gap:.75rem;min-height:18rem;justify-content:center;font:400 .72rem/1.2 "DM Mono",monospace;text-transform:uppercase}.nexa-wishlist__loading span{width:16px;height:16px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:nexa-spin 700ms linear infinite}
+  .nexa-wishlist__grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-items:start;gap:1px;background:color-mix(in srgb,var(--nexa-ink) 18%,transparent);border:1px solid color-mix(in srgb,var(--nexa-ink) 18%,transparent)}
+  .nexa-wishlist-card{display:flex;min-width:0;flex-direction:column;background:var(--nexa-bg);padding:clamp(.75rem,1.5vw,1.25rem)}.nexa-wishlist-card__media{aspect-ratio:1;display:grid;place-items:center;background:var(--nexa-muted);overflow:hidden}.nexa-wishlist-card__media img{width:100%;height:100%;object-fit:contain;transition:transform var(--nexa-motion-slow) var(--nexa-ease-out)}.nexa-wishlist-card:hover .nexa-wishlist-card__media img{transform:scale(1.025)}.nexa-wishlist-card__body{display:grid;gap:.45rem;padding:1.15rem 0;min-height:6.25rem}.nexa-wishlist-card__body a{font:500 clamp(1.1rem,1.7vw,1.45rem)/1.15 "Space Grotesk",sans-serif}.nexa-wishlist-card__body span,.nexa-wishlist-card__actions{font:400 .7rem/1.3 "DM Mono",monospace;text-transform:uppercase}.nexa-wishlist-card__actions{display:flex;justify-content:space-between;align-items:center;gap:1rem;margin-top:auto;padding-top:.8rem;border-top:1px solid color-mix(in srgb,var(--nexa-ink) 14%,transparent)}.nexa-wishlist-card__actions a,.nexa-wishlist-card__actions button{min-height:44px;display:inline-flex;align-items:center;border:0;background:transparent;padding:0;color:inherit;text-decoration:underline;text-underline-offset:3px}.nexa-wishlist-card__actions button{opacity:.65}
+  .nexa-wishlist-empty{min-height:26rem;display:grid;place-items:center;align-content:center;gap:1rem;text-align:center;border:1px solid color-mix(in srgb,var(--nexa-ink) 18%,transparent)}.nexa-wishlist-empty>span{font-size:3rem;color:var(--nexa-primary)}.nexa-wishlist-empty h2{margin:0;font:500 clamp(2rem,4vw,3.5rem)/1 "Space Grotesk",sans-serif}.nexa-wishlist-empty p{margin:0 0 .5rem;font:400 1rem/1.4 "Space Grotesk",sans-serif}
+  @media(max-width:800px){.nexa-wishlist__grid{grid-template-columns:repeat(2,1fr)}}@media(max-width:560px){.nexa-wishlist-hero{align-items:start;flex-direction:column}.nexa-wishlist__grid{grid-template-columns:1fr}}
+</style>

@@ -1,0 +1,99 @@
+@use './utils/functions' as *;
+
+// The reference design was authored with a blue ramp, but production colors
+// are semantic. Every branded shade follows the merchant-selected primary and
+// the generated accent/surface tokens instead of preserving that fixture blue.
+$clr-primary-50: color-mix(in srgb, var(--nexa-primary) 7%, var(--nexa-bg));
+$clr-primary-100: color-mix(in srgb, var(--nexa-primary) 13%, var(--nexa-bg));
+$clr-primary-200: color-mix(in srgb, var(--nexa-primary) 22%, var(--nexa-bg));
+$clr-primary-300: var(--nexa-accent);
+$clr-primary-300-alpha-50: color-mix(in srgb, var(--nexa-accent) 50%, transparent);
+$clr-primary-400: color-mix(in srgb, var(--nexa-primary) 58%, var(--nexa-accent));
+$clr-primary-500-alpha-40: color-mix(in srgb, var(--nexa-primary) 40%, transparent);
+$clr-primary-500: var(--nexa-primary);
+$clr-primary-500-alpha-80: color-mix(in srgb, var(--nexa-primary) 80%, transparent);
+$clr-primary-600: color-mix(in srgb, var(--nexa-primary) 84%, var(--nexa-ink));
+$clr-primary-700: color-mix(in srgb, var(--nexa-primary) 68%, var(--nexa-ink));
+$clr-primary-800: color-mix(in srgb, var(--nexa-primary) 50%, var(--nexa-ink));
+$clr-neutral-100: #DCDDE5FF;
+$clr-neutral-200: #CACBD1FF;
+$clr-neutral-300-alpha-38: #B1B1B161;
+$clr-neutral-300: #AAAAB0FF;
+$clr-neutral-400: #9B9B9EFF;
+$clr-neutral-600: #4C4D5EFF;
+$clr-neutral-700: #393A43FF;
+$clr-neutral-800: #38394CFF;
+$clr-neutral-900-alpha-60: #26273299;
+$clr-neutral-900-alpha-77: #323334C4;
+$clr-neutral-900: #262732FF;
+$clr-surface-0: #FFFFFFFF;
+$clr-surface-50: #FAFAFCFF;
+$clr-surface-100: #F8F8FCFF;
+$clr-surface-200: #F0F0F6FF;
+$clr-surface-300: #EFEFF2FF;
+
+$ff-header: 'Space Grotesk', sans-serif;
+$ff-body: 'DM Mono', monospace;
+$fw-regular: 400;
+$fw-medium: 500;
+$fw-bold: 700;
+
+$fs-heading-1: responsiveclamp(72px, 112px);
+$lh-heading-1: responsiveclamp(78px, 115px);
+$ls-heading-1: -6%;
+
+$fs-heading-2: responsiveclamp(40px, 52px);
+$lh-heading-2: responsiveclamp(44px, 56px);
+$ls-heading-2: -5%;
+
+$fs-heading-3: responsiveclamp(32px, 38px);
+$lh-heading-3: responsiveclamp(36px, 43px);
+$ls-heading-3: -6%;
+
+$fs-heading-4: responsiveclamp(28px, 32px);
+$lh-heading-4: 100%;
+$ls-heading-4: -6%;
+
+$fs-heading-5: responsiveclamp(22px, 26px);
+$lh-heading-5: normal;
+$ls-heading-5: -5%;
+
+$fs-heading-6: responsiveclamp(20px, 24px);
+$lh-heading-6: normal;
+$ls-heading-6: -5%;
+
+$fs-style-7: responsiveclamp(20px, 24px);
+$lh-style-7: normal;
+$ls-style-7: -5%;
+
+$fs-body-xxl: responsiveclamp(18px, 22px);
+$lh-body-xxl: normal;
+$ls-body-xxl: -5%;
+
+$fs-body-xl: responsiveclamp(18px, 20px);
+$lh-body-xl: normal;
+$ls-body-xl: 0%;
+
+$fs-body-l: responsiveclamp(16px, 18px);
+$lh-body-l: normal;
+$ls-body-l: -4%;
+
+$fs-body: responsiveclamp(14px, 16px);
+$lh-body: normal;
+$ls-body: -4%;
+
+$fs-body-s-400: responsiveclamp(13px, 14px);
+$lh-body-s-400: responsiveclamp(19px, 21px);
+$ls-body-s-400: -2%;
+
+$fs-body-s-500: responsiveclamp(13px, 14px);
+$lh-body-s-500: responsiveclamp(19px, 21px);
+$ls-body-s-500: -2%;
+
+$fs-body-xs-400: 12px;
+$lh-body-xs-400: normal;
+$ls-body-xs-400: -4%;
+
+$fs-body-xs-500: 12px;
+$lh-body-xs-500: normal;
+$ls-body-xs-500: -4%;

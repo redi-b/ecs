@@ -34,10 +34,12 @@ export async function listStoreCollections(
         if (!isRecord(row)) return null;
         const id = getString(row.id);
         if (!id) return null;
+        const metadata = isRecord(row.metadata) ? row.metadata : {};
         return {
           id,
           title: getString(row.title),
           handle: getString(row.handle),
+          mediaUrl: getString(metadata.media_url) ?? getString(row.media_url),
         };
       })
       .filter((row): row is StoreCollection => Boolean(row)),
@@ -73,12 +75,14 @@ export async function listStoreCategories(
         if (!isRecord(row)) return null;
         const id = getString(row.id);
         if (!id) return null;
+        const metadata = isRecord(row.metadata) ? row.metadata : {};
         return {
           id,
           name: getString(row.name),
           handle: getString(row.handle),
           parentCategoryId:
             getString(row.parent_category_id) ?? getString(row.parentCategoryId),
+          mediaUrl: getString(metadata.media_url) ?? getString(row.media_url),
         };
       })
       .filter((row): row is StoreCategory => Boolean(row)),

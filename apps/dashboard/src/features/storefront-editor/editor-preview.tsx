@@ -21,6 +21,7 @@ export function TemplatePreview({
   props,
   templateKey,
   previewUrl,
+  previewPage = "home",
   isFullscreen = false,
   onSelectPath,
   onSelectionInteractionChange,
@@ -31,6 +32,7 @@ export function TemplatePreview({
   storefrontName: string;
   templateKey: string;
   previewUrl?: string | undefined;
+  previewPage?: string;
   isFullscreen?: boolean;
   onSelectPath?: (path: string) => void;
   onSelectionInteractionChange?: (active: boolean) => void;
@@ -40,7 +42,7 @@ export function TemplatePreview({
   const manifest = getStorefrontEditorManifest(templateKey);
 
   if (manifest?.previewMode === "iframe" && previewUrl) {
-    return <StorefrontIframePreview isFullscreen={isFullscreen} onSelectPath={onSelectPath} onSelectionInteractionChange={onSelectionInteractionChange} previewUrl={previewUrl} props={props} selectedPath={selectedPath} showEditHints={showEditHints} templateKey={templateKey} />;
+    return <StorefrontIframePreview isFullscreen={isFullscreen} onSelectPath={onSelectPath} onSelectionInteractionChange={onSelectionInteractionChange} previewUrl={withPreviewPage(previewUrl, previewPage)} props={props} selectedPath={selectedPath} showEditHints={showEditHints} templateKey={templateKey} />;
   }
 
   if (manifest?.previewMode === "iframe") {
@@ -48,6 +50,12 @@ export function TemplatePreview({
   }
 
   return <UnsupportedTemplatePreview templateKey={templateKey} />;
+}
+
+function withPreviewPage(previewUrl: string, previewPage: string) {
+  const url = new URL(previewUrl);
+  url.searchParams.set("page", previewPage);
+  return url.toString();
 }
 
 function UnavailableIframePreview({ templateKey }: { templateKey: string }) {
@@ -84,11 +92,13 @@ function StorefrontIframePreview({
   selectedPath?: string | null | undefined;
   showEditHints: boolean;
 }) {
+  const previewFrameRef = useRef<HTMLDivElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const connectedOriginRef = useRef<string | null>(null);
   const [previewState, setPreviewState] = useState<"loading" | "ready" | "failed">("loading");
   const [iframeDocumentLoaded, setIframeDocumentLoaded] = useState(false);
   const [attempt, setAttempt] = useState(0);
+  const [frameSize, setFrameSize] = useState({ height: 0, width: 0 });
   const isLoaded = previewState === "ready";
   const data = useStorefrontEditor((api) => api.appState.data);
   const dispatch = useStorefrontEditor((api) => api.dispatch);
@@ -123,6 +133,32 @@ function StorefrontIframePreview({
     () => manifest?.sections.flatMap((section) => section.fields).find((field) => field.path === selectedPath),
     [manifest, selectedPath],
   );
+
+  useEffect(() => {
+    const frame = previewFrameRef.current;
+    if (!frame) return;
+
+    const updateSize = () => {
+      const bounds = frame.getBoundingClientRect();
+      setFrameSize({ height: bounds.height, width: bounds.width });
+    };
+    updateSize();
+    const observer = new ResizeObserver(updateSize);
+    observer.observe(frame);
+    return () => observer.disconnect();
+  }, []);
+
+  const desktopPreviewWidth = 1440;
+  const scalesDesktopToFit = !isFullscreen && frameSize.width >= 768 && frameSize.width < desktopPreviewWidth;
+  const previewScale = scalesDesktopToFit ? frameSize.width / desktopPreviewWidth : 1;
+  const iframeStyle = scalesDesktopToFit
+    ? {
+        height: frameSize.height ? `${frameSize.height / previewScale}px` : "100%",
+        transform: `scale(${previewScale})`,
+        transformOrigin: "top left",
+        width: `${desktopPreviewWidth}px`,
+      }
+    : undefined;
 
   useEffect(() => {
     connectedOriginRef.current = null;
@@ -205,7 +241,7 @@ function StorefrontIframePreview({
   }, [data, dispatch, fields, manifest, onSelectPath, postConnected, resolvedTheme, selectedPath, showEditHints]);
 
   return (
-    <div className="relative h-full min-h-0 w-full bg-background">
+    <div ref={previewFrameRef} className="relative h-full min-h-0 w-full overflow-hidden bg-background" data-preview-viewport={scalesDesktopToFit ? "desktop-scaled" : "responsive"}>
       <iframe
         className={cn("block h-full min-h-0 w-full border-0 bg-background transition-opacity duration-500", isLoaded ? "opacity-100" : "opacity-0")}
         onLoad={() => {
@@ -220,6 +256,7 @@ function StorefrontIframePreview({
         referrerPolicy="no-referrer"
         sandbox="allow-scripts allow-same-origin"
         src={previewUrl}
+        style={iframeStyle}
         title="Storefront preview"
       />
       {isLoaded && selectedField?.kind === "image" ? (

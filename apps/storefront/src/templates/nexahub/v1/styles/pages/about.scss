@@ -1,0 +1,61 @@
+.about-page {
+  min-height: 100vh;
+  padding-top: 70px;
+}
+
+.about-section {
+  display: grid;
+  gap: clamp(3rem, 7vw, 7rem);
+  padding-block: clamp(72px, 8.33vw, 120px);
+
+  &__hero { display: grid; grid-template-columns: minmax(8rem, .55fr) minmax(0, 2fr); align-items: end; gap: 1rem 2rem; padding-block: 1.5rem; border-block: 1px solid $clr-neutral-300; }
+
+  &__eyebrow {
+    margin: 0;
+    color: $clr-neutral-600;
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  &__title {
+    max-width: 13ch;
+    margin: 0;
+    font-size: clamp(48px, 7vw, 108px);
+    line-height: .88;
+    letter-spacing: -.065em;
+    text-transform: uppercase;
+  }
+
+  &__copy {
+    max-width: 40rem;
+    grid-column: 2;
+    max-width: 46rem;
+    margin: 1rem 0 0;
+    color: $clr-neutral-700;
+    font-size: clamp(17px, 1.39vw, 20px);
+  }
+
+  &__principles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border: 1px solid $clr-neutral-300; }
+  &__principles article { min-height: 18rem; padding: clamp(1.25rem, 3vw, 2.5rem); border-right: 1px solid $clr-neutral-300; display: flex; flex-direction: column; }
+  &__principles article:last-child { border-right: 0; }
+  &__principles span { font-family: $ff-body; font-size: .75rem; color: $clr-neutral-400; }
+  &__principles h2 { margin: auto 0 .75rem; font: $fw-medium clamp(1.75rem, 3vw, 2.7rem)/.95 $ff-header; letter-spacing: -.05em; }
+  &__principles p { margin: 0; font-family: $ff-body; line-height: 1.6; }
+  &__statement { display: grid; grid-template-columns: .55fr 1.5fr auto; align-items: end; gap: 2rem; padding: clamp(1.5rem, 4vw, 4rem); background: $clr-neutral-900; color: $clr-surface-0; }
+  &__statement > span { font: .75rem/1.2 $ff-body; text-transform: uppercase; }
+  &__statement p { margin: 0; max-width: 22ch; font: $fw-medium clamp(2rem, 4vw, 4rem)/.95 $ff-header; letter-spacing: -.05em; }
+  &__statement a { min-height: 52px; display: inline-flex; align-items: center; gap: 2rem; padding: 0 1rem; background: $clr-primary-500; color: $clr-surface-0; text-decoration: none; text-transform: uppercase; font-family: $ff-body; }
+}
+
+@media (max-width: 767px) {
+  .about-page { padding-top: 0; }
+  .about-section { padding-top: 2rem; gap: 3rem; }
+  .about-section__hero { grid-template-columns: 1fr; }
+  .about-section__copy { grid-column: 1; }
+  .about-section__principles { grid-template-columns: 1fr; }
+  .about-section__principles article { min-height: 13rem; border-right: 0; border-bottom: 1px solid $clr-neutral-300; }
+  .about-section__principles article:last-child { border-bottom: 0; }
+  .about-section__statement { grid-template-columns: 1fr; align-items: start; }
+}

@@ -1,0 +1,42 @@
+---
+import type { StoreCollection } from "../../../lib/commerce/types";
+import Button from "./Button.astro";
+import arrowUpRightIcon from "./icons/arrow-up-right.svg?raw";
+
+interface Props {
+  collection: StoreCollection;
+  image: string | null;
+  variant: "featured" | "standard";
+}
+
+const { collection, image, variant } = Astro.props;
+const title = collection.title ?? "Collection";
+const href = `/products?collection=${encodeURIComponent(collection.id)}`;
+---
+{variant === "featured" ? (
+  <article class="catalogue-section__card catalogue-section__card--featured">
+    <div class="catalogue-section__card-bg img-wrapper">
+      {image ? <img src={image} alt="" class="cover" loading="lazy" /> : <span class="catalogue-section__image-placeholder" aria-hidden="true"></span>}
+    </div>
+    <a href={href} class="catalogue-section__corner-btn" aria-label={`Explore ${title}`}>
+      <span aria-hidden="true" set:html={arrowUpRightIcon}></span>
+    </a>
+    <div class="catalogue-section__overlay-box">
+      <div class="catalogue-section__overlay-info">
+        <h3 class="type-heading-4">{title}</h3>
+        <p class="type-body-xs-500">EXPLORE THIS COLLECTION OF THOUGHTFULLY SELECTED PRODUCTS.</p>
+      </div>
+      <Button text="Explore More" href={href} variant="secondary" size="small" />
+    </div>
+  </article>
+) : (
+  <article class="catalogue-section__card catalogue-section__card--standard">
+    <div class="catalogue-section__card-top">
+      <h3 class="type-heading-5">{title}</h3>
+      <Button text="Explore More" href={href} variant="neutral" size="small" />
+    </div>
+    <div class="catalogue-section__card-image img-wrapper">
+      {image ? <img src={image} alt="" class="cover" loading="lazy" /> : <span class="catalogue-section__image-placeholder" aria-hidden="true"></span>}
+    </div>
+  </article>
+)}

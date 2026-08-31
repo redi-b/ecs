@@ -4,4 +4,7 @@ export * from "./registry";
 export * from "./templates/luvia/v1/defaults";
 export * from "./templates/luvia/v1/editor";
 export * from "./templates/luvia/v1/schema";
+export * from "./templates/nexahub/v1/defaults";
+export * from "./templates/nexahub/v1/editor";
+export * from "./templates/nexahub/v1/schema";
 export * from "./theme/palette";

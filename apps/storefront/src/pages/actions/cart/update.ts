@@ -2,6 +2,7 @@ import type { APIRoute } from "astro";
 
 import { updateStoreCartLineItem } from "../../../lib/commerce/cart.js";
 import { cartJson, cartJsonError } from "../../../lib/commerce/cart-json.js";
+import { customerFacingStoreError } from "../../../lib/commerce/errors.js";
 import { isStoreError } from "../../../lib/commerce/result.js";
 import { loadPageContext } from "../../../lib/page-context.js";
 import { getCustomerTokenFromRequest } from "../../../lib/session/customer-cookie.js";
@@ -36,10 +37,11 @@ export const POST: APIRoute = async ({ request }) => {
   });
 
   if (isStoreError(result)) {
-    if (wantsJson) return cartJsonError("Could not update your cart. Please try again.");
+    const message = customerFacingStoreError(result.message) || "Could not update your cart. Please try again.";
+    if (wantsJson) return cartJsonError(message);
     return redirect(
       "/cart?error=" +
-        encodeURIComponent("Could not update your cart. Please try again."),
+        encodeURIComponent(message),
     );
   }
 

@@ -1,0 +1,5 @@
+---
+import { nexahubV1Defaults,nexahubV1ThemeTokens } from "@ecs/storefront-templates";import { nexahubDemoCollections,nexahubDemoProducts } from "../../../lib/demo/nexahub-fixture";import Home from "../../../templates/nexahub/v1/Home.astro";
+const data=structuredClone(nexahubV1Defaults);data.home.categories.collectionIds=nexahubDemoCollections.map((item)=>item.id);data.home.bestSellers.productIds=nexahubDemoProducts.slice(0,4).map((item)=>item.id);data.home.featuredItem.productId=nexahubDemoProducts[3]?.id;
+---
+<Home data={data} themeTokens={nexahubV1ThemeTokens} tenantName="NexaHub Technology" productsResult={{products:nexahubDemoProducts,count:nexahubDemoProducts.length,limit:nexahubDemoProducts.length,offset:0}} collections={nexahubDemoCollections} cartCount={0} demoMode/>

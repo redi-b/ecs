@@ -10,6 +10,20 @@ import FallbackCheckoutPage from "./fallback/CheckoutPage.astro";
 import FallbackOrderConfirmPage from "./fallback/OrderConfirmPage.astro";
 import FallbackProductListPage from "./fallback/ProductListPage.astro";
 import FallbackProductPage from "./fallback/ProductPage.astro";
+import NexahubV1Home from "./nexahub/v1/Home.astro";
+import NexahubV1Cart from "./nexahub/v1/Cart.astro";
+import NexahubV1Checkout from "./nexahub/v1/Checkout.astro";
+import NexahubV1OrderConfirm from "./nexahub/v1/OrderConfirm.astro";
+import NexahubV1PaymentReturn from "./nexahub/v1/PaymentReturn.astro";
+import NexahubV1About from "./nexahub/v1/About.astro";
+import NexahubV1Contact from "./nexahub/v1/Contact.astro";
+import NexahubV1RequestItem from "./nexahub/v1/RequestItem.astro";
+import NexahubV1Wishlist from "./nexahub/v1/Wishlist.astro";
+import NexahubV1Account from "./nexahub/v1/Account.astro";
+import NexahubV1AccountOrder from "./nexahub/v1/AccountOrder.astro";
+import NexahubV1SystemState from "./nexahub/v1/SystemState.astro";
+import NexahubV1Product from "./nexahub/v1/Product.astro";
+import NexahubV1ProductList from "./nexahub/v1/ProductList.astro";
 import LuviaV1About from "./luvia/v1/About.astro";
 import LuviaV1Account from "./luvia/v1/Account.astro";
 import LuviaV1AccountOrder from "./luvia/v1/AccountOrder.astro";
@@ -47,6 +61,22 @@ export const storefrontRenderers = {
     Wishlist: LuviaV1Wishlist,
     Account: LuviaV1Account,
     AccountOrder: LuviaV1AccountOrder,
+  },
+  "nexahub@1": {
+    Home: NexahubV1Home,
+    ProductList: NexahubV1ProductList,
+    Product: NexahubV1Product,
+    Cart: NexahubV1Cart,
+    Checkout: NexahubV1Checkout,
+    PaymentReturn: NexahubV1PaymentReturn,
+    OrderConfirm: NexahubV1OrderConfirm,
+    About: NexahubV1About,
+    Contact: NexahubV1Contact,
+    RequestItem: NexahubV1RequestItem,
+    Wishlist: NexahubV1Wishlist,
+    Account: NexahubV1Account,
+    AccountOrder: NexahubV1AccountOrder,
+    SystemState: NexahubV1SystemState,
   },
 } satisfies Record<StorefrontTemplateKey, StorefrontRenderer>;
 

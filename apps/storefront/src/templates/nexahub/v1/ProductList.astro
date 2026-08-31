@@ -1,0 +1,40 @@
+---
+import type { StoreCategory, StoreCollection, StoreProduct } from "../../../lib/commerce/types";
+import type { StorefrontSeo } from "../../../lib/seo";
+import Button from "./Button.astro";
+import Layout from "./Layout.astro";
+import ProductCard from "./ProductCard.astro";
+import ProductFilterBar from "./ProductFilterBar.astro";
+import heroTexture from "./assets/product-listing-hero-texture.webp";
+import { parseNexahubData } from "./lib";
+import "./styles/pages/products.scss";
+import "./styles/responsive.scss";
+
+interface Props {
+  data: unknown; themeTokens?: unknown; tenantName: string; cartCount?: number; deferCartCount?: boolean;
+  products: StoreProduct[]; errorMessage?: string | null; hasPrev: boolean; hasNext: boolean; prevHref?: string; nextHref?: string;
+  collections?: StoreCollection[]; categories?: StoreCategory[];
+  filters?: { q?: string; collectionId?: string; categoryId?: string; order?: string };
+  totalCount?: number; offset?: number; limit?: number; seo?: StorefrontSeo; demoMode?: boolean; editorMode?: boolean;
+}
+const { data, themeTokens, tenantName, cartCount = 0, deferCartCount = false, products, errorMessage, hasPrev, hasNext, prevHref, nextHref, collections = [], categories = [], filters = {}, totalCount = products.length, offset = 0, limit = 24, seo, demoMode = false, editorMode = false } = Astro.props;
+const template = parseNexahubData(data);
+const activeCollection = collections.find((item) => item.id === filters.collectionId);
+const activeCategory = categories.find((item) => item.id === filters.categoryId);
+const hasFilters = Boolean(filters.q || filters.collectionId || filters.categoryId || filters.order);
+const totalPages = Math.max(1, Math.ceil(totalCount / limit));
+const currentPage = Math.min(totalPages, Math.floor(offset / limit) + 1);
+const pageWindow = Array.from({ length: totalPages }, (_, index) => index + 1).filter((page) => page === 1 || page === totalPages || Math.abs(page - currentPage) <= 1);
+function pageHref(page: number) { const params = new URLSearchParams(); if (filters.q) params.set("q", filters.q); if (filters.collectionId) params.set("collection", filters.collectionId); if (filters.categoryId) params.set("category", filters.categoryId); if (filters.order) params.set("order", filters.order); const nextOffset = (page - 1) * limit; if (nextOffset) params.set("offset", String(nextOffset)); return params.size ? `/products?${params}` : "/products"; }
+const title = filters.q ? `Results for “${filters.q}”` : activeCollection?.title ?? activeCategory?.name ?? template.listing.title;
+---
+<Layout tenantName={tenantName} header={template.header} footer={template.footer} navigationCollections={collections} themeTokens={themeTokens} cartCount={cartCount} deferCartCount={deferCartCount} demoMode={demoMode} editorMode={editorMode} seo={seo} renderPath={editorMode ? "/products" : undefined}>
+  <main id="main-content">
+    <section class="products-hero" data-editor-section="listing"><div class="container products-hero__wrapper"><div class="products-hero__card"><div class="products-hero__texture" aria-hidden="true"><img src={heroTexture.src} alt="" class="cover" /></div><div class="products-hero__content"><nav class="products-hero__breadcrumb" aria-label="Breadcrumb"><a href="/">Home</a><span class="products-hero__breadcrumb-divider">/</span><span>Shop</span></nav><div class="products-hero__eyebrow"><span class="products-hero__bar products-hero__bar--sm"></span><span class="products-hero__bar products-hero__bar--md"></span><span class="products-hero__badge" data-editor-path="listing.eyebrow" contenteditable={editorMode ? "plaintext-only" : undefined}>{template.listing.eyebrow}</span></div><h1 class="products-hero__title" data-editor-path={!hasFilters ? "listing.title" : undefined} contenteditable={editorMode && !hasFilters ? "plaintext-only" : undefined}>{title}</h1></div></div></div></section>
+    <section class="products-catalog" id="catalog"><div class="container products-catalog__wrapper"><ProductFilterBar collections={collections} categories={categories} values={filters} />
+      {hasFilters && <div class="products-catalog__summary"><span>SHOWING {products.length} OF {totalCount} PRODUCTS</span><a href="/products">CLEAR FILTERS</a></div>}
+      {errorMessage ? <div class="nexa-list-state" role="alert"><h2>Products could not be loaded</h2><p>{errorMessage}</p><a href="/products">Try again</a></div> : products.length ? <div class="products-catalog__grid">{products.map((product, index) => <ProductCard product={product} eager={index < 4} />)}</div> : <div class="nexa-list-state"><h2>{filters.q ? `No results for “${filters.q}”` : "No products available yet"}</h2><p>{hasFilters ? "Try removing a filter or using a broader search." : "Check back soon for new products."}</p>{hasFilters ? <Button text="Clear all filters" href="/products" /> : <Button text="Return home" href="/" />}</div>}
+    </div></section>
+    {(hasPrev || hasNext) && <nav class="products-pagination" aria-label="Pagination Navigation"><div class="container products-pagination__wrapper">{hasPrev ? <a href={prevHref} class="products-pagination__btn" rel="prev">Prev</a> : <span class="products-pagination__btn products-pagination__btn--disabled">Prev</span>}<div class="products-pagination__numbers">{pageWindow.map((page) => <a href={pageHref(page)} class:list={["products-pagination__num", page === currentPage && "products-pagination__num--active"]} aria-current={page === currentPage ? "page" : undefined}>{page}</a>)}</div>{hasNext ? <a href={nextHref} class="products-pagination__btn" rel="next">Next</a> : <span class="products-pagination__btn products-pagination__btn--disabled">Next</span>}</div></nav>}
+  </main>
+</Layout>

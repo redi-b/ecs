@@ -37,9 +37,9 @@ function text(form: FormData, key: string) {
 }
 
 function contactPayload(form: FormData) {
-  const customerName = text(form, "fullName");
+  const customerName = text(form, "fullName") || text(form, "name");
   const customerEmail = text(form, "email");
-  const customerPhone = text(form, "whatsapp");
+  const customerPhone = text(form, "whatsapp") || text(form, "phone");
   const message = text(form, "message");
   return {
     type: "contact",

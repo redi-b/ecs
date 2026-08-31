@@ -1,0 +1,55 @@
+---
+import { formatMoney } from "../../../lib/money";
+import { formatOrderReference } from "../../../lib/order-reference";
+import type { LastOrderCookie } from "../../../lib/session/cart-cookie";
+import Button from "./Button.astro";
+import Layout from "./Layout.astro";
+import { parseNexahubData } from "./lib";
+import "./styles/pages/commerce.scss";
+
+interface Props { data: unknown; themeTokens?: unknown; tenantName: string; cartCount: number; orderId: string; lastOrder: LastOrderCookie | null; hasCustomerSession?: boolean; demoMode?: boolean; }
+const { data, themeTokens, tenantName, cartCount, orderId, lastOrder, hasCustomerSession = false, demoMode = false } = Astro.props;
+const template = parseNexahubData(data);
+const verified = Boolean(lastOrder && lastOrder.id === orderId);
+const reference = formatOrderReference(orderId);
+---
+
+<Layout tenantName={tenantName} header={template.header} footer={template.footer} themeTokens={themeTokens} cartCount={cartCount} demoMode={demoMode}>
+  <main class="nexa-commerce nexa-confirm" id="main-content">
+    <div class="container nexa-commerce__frame">
+      <nav class="nexa-breadcrumb" aria-label="Breadcrumb"><a href="/">Home</a><span>/</span><span aria-current="page">Order received</span></nav>
+      <header class="nexa-commerce__heading"><span class="nexa-kicker">Transmission complete</span><div><h1>Order received</h1><p>Keep the reference below for support and tracking.</p></div></header>
+      <div class="nexa-receipt">
+        <section class="nexa-receipt__main">
+          <div class="nexa-receipt__status"><span aria-hidden="true">✓</span><div><strong>{verified ? "Confirmed" : "Order placed"}</strong><small>{verified ? "The order details were verified on this device." : "Your order was submitted successfully."}</small></div></div>
+          <div class="nexa-receipt__reference"><span>Order reference</span><strong>{reference}</strong><button type="button" data-copy-order data-order-id={reference}>Copy reference</button></div>
+          {verified && lastOrder?.total != null && <dl class="nexa-receipt__facts"><div><dt>Total</dt><dd>{formatMoney(lastOrder.total, lastOrder.currencyCode)}</dd></div><div><dt>Status</dt><dd>Received</dd></div><div><dt>Shop</dt><dd>{tenantName}</dd></div></dl>}
+          <p class="nexa-live" data-copy-status aria-live="polite">The shop may contact you using the checkout details.{hasCustomerSession ? " This order also appears in your account." : " Save this reference for future support."}</p>
+          <div class="nexa-receipt__actions"><Button text="Continue shopping" href="/products" />{hasCustomerSession && <Button text="View order history" href="/account" variant="dark" />}<Button text="Return home" href="/" variant="neutral" /></div>
+        </section>
+        <aside class="nexa-receipt__timeline"><header class="nexa-panel-head"><h2>What happens next</h2><span>03 steps</span></header><ol><li><span>01</span><div><strong>Review</strong><small>The shop verifies availability and fulfillment details.</small></div></li><li><span>02</span><div><strong>Prepare</strong><small>Your items are packed for delivery or pickup.</small></div></li><li><span>03</span><div><strong>Stay reachable</strong><small>The shop may contact you with an update.</small></div></li></ol></aside>
+      </div>
+    </div>
+  </main>
+</Layout>
+
+<script is:inline>
+  document.querySelector('[data-copy-order]')?.addEventListener('click', async (event) => { const button = event.currentTarget; if (!(button instanceof HTMLButtonElement)) return; const value = button.dataset.orderId || ''; const status = document.querySelector('[data-copy-status]'); try { await navigator.clipboard.writeText(value); button.textContent = 'Copied'; if (status) status.textContent = 'Order reference copied.'; window.setTimeout(() => button.textContent = 'Copy reference', 1600); } catch { if (status) status.textContent = `Copy and keep this reference: ${value}`; } });
+</script>
+
+<style>
+  .nexa-receipt { display: grid; grid-template-columns: minmax(0,1.4fr) minmax(18rem,.6fr); gap: clamp(1rem,3vw,3rem); align-items: start; }
+  .nexa-receipt__main, .nexa-receipt__timeline { border: 1px solid color-mix(in srgb,var(--nexa-ink) 25%,transparent); }
+  .nexa-receipt__main { display: grid; gap: 2rem; padding: clamp(1.5rem,4vw,4rem); }
+  .nexa-receipt__status { display: flex; gap: 1rem; align-items: center; }
+  .nexa-receipt__status > span { width: 3rem; height: 3rem; display: grid; place-items: center; background: var(--nexa-primary); color: var(--nexa-on-primary); }
+  .nexa-receipt__status div { display: grid; gap: .25rem; } .nexa-receipt__status strong { font: 500 1.4rem/1.1 "Space Grotesk",sans-serif; text-transform: uppercase; } .nexa-receipt__status small { font: 400 .7rem/1.4 "DM Mono",monospace; }
+  .nexa-receipt__reference { display: grid; gap: .75rem; border-block: 1px solid color-mix(in srgb,var(--nexa-ink) 20%,transparent); padding-block: 1.5rem; }
+  .nexa-receipt__reference span, .nexa-receipt__reference button { font: 400 .7rem/1.2 "DM Mono",monospace; text-transform: uppercase; }
+  .nexa-receipt__reference strong { overflow-wrap: anywhere; font: 500 clamp(2rem,6vw,5rem)/.95 "Space Grotesk",sans-serif; letter-spacing: -.04em; }
+  .nexa-receipt__reference button { justify-self: start; min-height: 44px; border: 1px solid currentColor; background: transparent; padding: 0 1rem; }
+  .nexa-receipt__facts { display: grid; grid-template-columns: repeat(3,1fr); margin: 0; } .nexa-receipt__facts div { display: grid; gap: .5rem; padding: 1rem; border: 1px solid color-mix(in srgb,var(--nexa-ink) 18%,transparent); margin-right: -1px; } .nexa-receipt__facts dt,.nexa-receipt__facts dd { margin: 0; font: 400 .7rem/1.3 "DM Mono",monospace; } .nexa-receipt__facts dt { text-transform: uppercase; opacity: .65; }
+  .nexa-receipt__actions { display: flex; flex-wrap: wrap; gap: .5rem; }
+  .nexa-receipt__timeline ol { list-style: none; margin: 0; padding: 0 1rem 1rem; } .nexa-receipt__timeline li { display: grid; grid-template-columns: 2rem 1fr; gap: 1rem; padding: 1.25rem 0; border-bottom: 1px solid color-mix(in srgb,var(--nexa-ink) 15%,transparent); } .nexa-receipt__timeline li > span,.nexa-receipt__timeline small { font: 400 .68rem/1.4 "DM Mono",monospace; } .nexa-receipt__timeline li div { display: grid; gap: .3rem; } .nexa-receipt__timeline strong { font: 500 .85rem/1.2 "Space Grotesk",sans-serif; text-transform: uppercase; }
+  @media(max-width:800px){.nexa-receipt{grid-template-columns:1fr}.nexa-receipt__facts{grid-template-columns:1fr}.nexa-receipt__facts div{margin:0 0 -1px}}
+</style>

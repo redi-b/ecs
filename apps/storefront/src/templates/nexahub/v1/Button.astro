@@ -1,0 +1,27 @@
+---
+import arrowIcon from "./icons/arrow-up-right.svg?raw";
+import "./styles/components/_button.scss";
+
+interface Props {
+  text: string;
+  href?: string;
+  variant?: "primary" | "dark" | "secondary" | "neutral";
+  size?: "large" | "small";
+  fullWidth?: boolean;
+  class?: string;
+  icon?: boolean;
+  type?: "button" | "submit" | "reset";
+  disabled?: boolean;
+  editorPath?: string;
+  editorRelatedPaths?: string[];
+  editorMode?: boolean;
+}
+
+const { text, href, variant = "primary", size = "large", fullWidth = false, class: className, icon = true, type = "submit", disabled = false, editorPath, editorRelatedPaths, editorMode = false } = Astro.props;
+const classes = ["btn", `btn--${variant}`, `btn--${size}`, size === "large" ? "type-body-l" : "type-body-s-400", icon && "btn--with-icon", fullWidth && "btn--full-width", className].filter(Boolean);
+const Element = href ? "a" : "button";
+---
+<Element href={href} type={href ? undefined : type} disabled={href ? undefined : disabled} class:list={classes} data-editor-path={editorPath} data-editor-related-paths={editorRelatedPaths?.length ? editorRelatedPaths.join(" ") : undefined}>
+  <span class="btn__text" data-editor-text-target contenteditable={editorMode && editorPath ? "plaintext-only" : undefined}>{text}</span>
+  {icon && <span class="btn__icon" aria-hidden="true" set:html={arrowIcon}></span>}
+</Element>

@@ -32,6 +32,9 @@
 .lv-product-buy fieldset button { min-height: 48px; padding: 0 16px; border: 1px solid var(--lv-line); border-radius: 999px; background: color-mix(in srgb,var(--lv-soft) 82%,var(--lv-bg)); color: var(--lv-ink); cursor: pointer; }
 .lv-product-buy fieldset button[aria-pressed="true"] { border-color: var(--lv-ink); background: var(--lv-ink); color: white; }
 .lv-product-buy fieldset button:disabled { cursor: not-allowed; opacity: .38; text-decoration: line-through; }
+.lv-product-buy fieldset .lv-product-swatch { width: 48px; min-width: 48px; padding: 4px; border-radius: 50%; background: transparent; }
+.lv-product-buy fieldset .lv-product-swatch > span { width: 34px; height: 34px; display: block; border-radius: 50%; box-shadow: inset 0 0 0 1px rgba(0,0,0,.1); }
+.lv-product-buy fieldset .lv-product-swatch[aria-pressed="true"] { border-color: var(--lv-green); background: var(--lv-accent); box-shadow: inset 0 0 0 2px var(--lv-bg); }
 .lv-product-cart-row { display: flex; gap: 7px; }
 .lv-product-add { position: relative; height: 52px; flex: 1; border: 0; border-radius: 999px; background: var(--lv-green); color: var(--lv-on-primary); font-size: 18px; font-weight: 500; cursor: pointer; transition: transform 160ms ease, opacity 160ms ease; }
 .lv-product-add:hover:not(:disabled) { transform: translateY(-1px); }

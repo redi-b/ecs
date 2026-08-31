@@ -1,0 +1,352 @@
+---
+import type { StoreCategory, StoreCollection, StoreProduct, StoreProductsResponse, StorefrontError } from "../../../lib/commerce/types";
+import type { StorefrontSeo } from "../../../lib/seo";
+import Button from "./Button.astro";
+import CollectionCard from "./CollectionCard.astro";
+import Layout from "./Layout.astro";
+import ProductCard from "./ProductCard.astro";
+import ProductFilterBar from "./ProductFilterBar.astro";
+import { resolveProductBadge } from "../../../lib/commerce/merchandising";
+import { formatMoney } from "../../../lib/money";
+import arrowRightIcon from "./icons/arrow-right-icon.svg?raw";
+import arrowUpRightIcon from "./icons/arrow-up-right.svg?raw";
+import featuredFallback from "./assets/featured-item-promo.webp";
+import qualityFallback from "./assets/product-quality-phone-promo.webp";
+import contactFallback from "./assets/contact-store-interior.webp";
+import heroFallback from "./assets/tech-workspace-hero.webp";
+import { nexahubAsset, parseNexahubData } from "./lib";
+import "./styles/pages/index.scss";
+import "./styles/responsive.scss";
+
+interface Props {
+  data: unknown;
+  productsResult: StoreProductsResponse | StorefrontError;
+  collections?: StoreCollection[];
+  categories?: StoreCategory[];
+  tenantName: string;
+  themeTokens: unknown;
+  cartCount?: number;
+  deferCartCount?: boolean;
+  demoMode?: boolean;
+  editorMode?: boolean;
+  seo?: StorefrontSeo;
+  structuredData?: Record<string, unknown> | Record<string, unknown>[] | null;
+}
+const { data, productsResult, collections = [], categories = [], tenantName, themeTokens, cartCount = 0, deferCartCount = false, demoMode = false, editorMode = false, seo, structuredData } = Astro.props;
+const template = parseNexahubData(data);
+const products = "products" in productsResult ? productsResult.products : [];
+const productById = new Map(products.map((product) => [product.id, product]));
+const configuredFeatured = template.home.featuredItem.productIds.length
+  ? template.home.featuredItem.productIds.map((id) => productById.get(id)).filter((item): item is StoreProduct => Boolean(item))
+  : template.home.featuredItem.productId
+    ? [productById.get(template.home.featuredItem.productId)].filter((item): item is StoreProduct => Boolean(item))
+    : [];
+const featuredProducts = [...configuredFeatured, ...products]
+  .filter((item): item is StoreProduct => Boolean(item))
+  .filter((item, index, items) => items.findIndex((candidate) => candidate.id === item.id) === index)
+  .slice(0, 5);
+const selectedProducts = (template.home.bestSellers.productIds.length
+  ? template.home.bestSellers.productIds.map((id) => productById.get(id)).filter((item): item is StoreProduct => Boolean(item))
+  : products).slice(0, template.home.bestSellers.limit);
+const collectionById = new Map(collections.map((collection) => [collection.id, collection]));
+const selectedCollections = (template.home.categories.collectionIds.length
+  ? template.home.categories.collectionIds.map((id) => collectionById.get(id)).filter((item): item is StoreCollection => Boolean(item))
+  : collections).slice(0, 6);
+const collectionProductImage = new Map<string, string>();
+for (const product of products) {
+  if (product.collectionId && product.thumbnail && !collectionProductImage.has(product.collectionId)) {
+    collectionProductImage.set(product.collectionId, product.thumbnail);
+  }
+}
+const collectionImage = (collection: StoreCollection) =>
+  nexahubAsset(collection.mediaUrl ?? collectionProductImage.get(collection.id), "") || null;
+const hasCatalogError = "message" in productsResult;
+if (/catalog product|publish this feature/i.test(template.home.featuredItem.body)) {
+  template.home.featuredItem.body = "A focused look at one of the latest products available from this store.";
+}
+---
+<Layout tenantName={tenantName} header={template.header} footer={template.footer} navigationCollections={collections} themeTokens={themeTokens} cartCount={cartCount} deferCartCount={deferCartCount} demoMode={demoMode} editorMode={editorMode} seo={seo} structuredData={structuredData} renderPath={editorMode || demoMode ? "/" : undefined}>
+  <main id="main-content">
+    {(editorMode || template.home.hero.enabled) && <section class="hero-section" data-editor-section="home.hero" data-editor-visible-path="home.hero.enabled" hidden={!template.home.hero.enabled}>
+      <img class="hero-section__background" src={nexahubAsset(template.home.hero.imageAssetId, heroFallback.src)} alt="" data-editor-image-path="home.hero.imageAssetId" />
+      <div class="container hero-section__wrapper">
+<div class="hero-section__content">
+<div class="hero-section__top">
+<div class="hero-section__eyebrow">
+<span class="hero-section__bar hero-section__bar--sm">
+</span>
+<span class="hero-section__bar hero-section__bar--md">
+</span>
+<span class="hero-section__badge type-body-xs-500" data-editor-path="home.hero.eyebrow" contenteditable={editorMode ? "plaintext-only" : undefined}>{template.home.hero.eyebrow}</span>
+</div>
+<h1 class="hero-section__title type-heading-1" data-editor-path="home.hero.title"><span data-editor-text-target contenteditable={editorMode ? "plaintext-only" : undefined}>{template.home.hero.title}</span></h1>
+</div>
+<div class="hero-section__bottom">
+<p class="hero-section__desc type-body-s-400" data-editor-path="home.hero.body" contenteditable={editorMode ? "plaintext-only" : undefined}>{template.home.hero.body}</p>
+<div class="hero-section__actions">
+<Button text={template.home.hero.primaryCtaLabel} href={template.home.hero.primaryCtaHref} editorPath="home.hero.primaryCtaLabel" editorRelatedPaths={["home.hero.primaryCtaHref"]} editorMode={editorMode} />
+<Button text="Contact Us" href="#contact" variant="dark" />
+</div>
+</div>
+</div>
+        {template.home.featuredItem.enabled && featuredProducts.length > 0 && <aside class="hero-section__featured-card" aria-label="Featured Products" data-editor-section="home.featuredItem" data-editor-visible-path="home.featuredItem.enabled" data-featured-carousel>
+          <div class="hero-section__featured-viewport" data-featured-viewport>
+<div class="hero-section__featured-track">{featuredProducts.map((product, index) => {
+            const variant = product?.variants.find((item) => item.inStock) ?? product?.variants[0];
+            const badge = product ? resolveProductBadge(product, variant) : null;
+            const href = product?.handle ? `/products/${encodeURIComponent(product.handle)}` : "/products";
+            return <article class="hero-section__featured-slide">
+<div class="hero-section__featured-image-box">
+<div class="hero-section__featured-image img-wrapper">
+<img src={nexahubAsset(index === 0 ? template.home.featuredItem.imageAssetId : undefined, product?.thumbnail ?? featuredFallback.src)} alt={product?.title ?? "Featured product"} class="cover" data-editor-image-path={index === 0 ? "home.featuredItem.imageAssetId" : undefined} />
+</div>
+<div class="hero-section__featured-badge">
+<span class="hero-section__featured-bar hero-section__featured-bar--sm">
+</span>
+<span class="hero-section__featured-bar hero-section__featured-bar--md">
+</span>
+<span class="hero-section__featured-tag type-body-xs-500" data-editor-path={index === 0 ? "home.featuredItem.eyebrow" : undefined} contenteditable={editorMode && index === 0 ? "plaintext-only" : undefined}>{index === 0 ? template.home.featuredItem.eyebrow : "FEATURED PRODUCTS"}</span>
+</div>
+</div>
+<div class="hero-section__featured-meta">
+<span class="hero-section__featured-price type-body">{formatMoney(product?.priceAmount ?? null, product?.currencyCode ?? null)}</span>{badge && <span class="hero-section__featured-discount type-body-xs-500">{badge.label}</span>}</div>
+<h2 class="hero-section__featured-title type-heading-5">{product?.title ?? template.home.featuredItem.title}</h2>
+<div class="hero-section__featured-footer">
+<a href={href} class="hero-section__featured-link type-body-s-500">
+<span>VIEW DETAILS</span>
+<span class="hero-section__featured-link-icon" aria-hidden="true" set:html={arrowUpRightIcon}>
+</span>
+</a>
+</div>
+</article>;
+          })}</div>
+</div>
+          <div class="hero-section__featured-dots">{featuredProducts.map((product, index) => <button type="button" class:list={["hero-section__dot", index === 0 && "hero-section__dot--active"]} aria-label={`Show ${product.title ?? `featured product ${index + 1}`}`} aria-current={index === 0 ? "true" : undefined} data-featured-dot={index}>
+</button>)}</div>
+        </aside>}
+      </div>
+    </section>}
+
+    {(editorMode || template.home.categories.enabled) && selectedCollections.length > 0 && <section class="catalogue-section" id="catalogue" data-editor-section="home.categories" data-editor-visible-path="home.categories.enabled" hidden={!template.home.categories.enabled}>
+      <div class="container catalogue-section__wrapper">
+        <header class="catalogue-section__header">
+<div class="catalogue-section__eyebrow">
+<span class="catalogue-section__bar catalogue-section__bar--sm">
+</span>
+<span class="catalogue-section__bar catalogue-section__bar--md">
+</span>
+<span class="catalogue-section__badge type-body-xs-500" data-editor-path="home.categories.eyebrow" contenteditable={editorMode ? "plaintext-only" : undefined}>{template.home.categories.eyebrow}</span>
+</div>
+<h2 class="catalogue-section__title type-heading-2" data-editor-path="home.categories.title" contenteditable={editorMode ? "plaintext-only" : undefined}>{template.home.categories.title}</h2>
+</header>
+        <div class="catalogue-section__grid" data-editor-collections-path="home.categories.collectionIds">{selectedCollections.map((collection, index) => {
+          const image = collectionImage(collection);
+          return <CollectionCard collection={collection} image={image} variant={index === 0 ? "featured" : "standard"} />;
+        })}</div>
+        <footer class="catalogue-section__footer">
+<Button text="All Products" href="/products" />
+<div class="catalogue-section__arrows">
+<button type="button" class="catalogue-section__arrow" aria-label="Previous category" data-cat-prev disabled>
+<span class="catalogue-section__arrow-icon catalogue-section__arrow-icon--previous" set:html={arrowRightIcon}>
+</span>
+</button>
+<button type="button" class="catalogue-section__arrow" aria-label="Next category" data-cat-next disabled={selectedCollections.length <= 3}>
+<span class="catalogue-section__arrow-icon" set:html={arrowRightIcon}>
+</span>
+</button>
+</div>
+</footer>
+      </div>
+    </section>}
+
+    {(editorMode || template.home.bestSellers.enabled) && <section class="products-section" id="products" data-editor-section="home.bestSellers" data-editor-visible-path="home.bestSellers.enabled" hidden={!template.home.bestSellers.enabled}>
+<div class="container products-section__wrapper">
+<header class="products-section__header">
+<div class="products-section__header-left">
+<div class="products-section__eyebrow">
+<span class="products-section__bar products-section__bar--sm">
+</span>
+<span class="products-section__bar products-section__bar--md">
+</span>
+<span class="products-section__badge type-body-xs-500">PRODUCTS CATALOGUE</span>
+</div>
+<h2 class="products-section__title type-heading-2" data-editor-path="home.bestSellers.title" contenteditable={editorMode ? "plaintext-only" : undefined}>{template.home.bestSellers.title}</h2>
+</div>
+<div class="products-section__header-right">
+<span class="products-section__count type-body-s-500">{selectedProducts.length} PRODUCTS LISTED</span>
+<Button text="All Products" href="/products" />
+</div>
+</header>
+<ProductFilterBar collections={collections} categories={categories} />{hasCatalogError ? <p class="nexa-state">Products could not be loaded. Please try again.</p> : selectedProducts.length ? <div class="products-section__grid" data-editor-products-path="home.bestSellers.productIds">{selectedProducts.map((product, index) => <ProductCard product={product} eager={index < 4} />)}</div> : null}<footer class="products-section__footer">
+<span class="products-section__pagination-info type-body-xs-500">SHOWING {selectedProducts.length} PRODUCTS</span>
+<Button text="Browse Full Catalog" href="/products" />
+</footer>
+</div>
+</section>}
+
+    {(editorMode || template.home.quality.enabled) && <section class="benefits-section" id="about" data-editor-section="home.quality" data-editor-visible-path="home.quality.enabled" hidden={!template.home.quality.enabled}>
+      <div class="benefits-section__grid-lines" aria-hidden="true">
+<div class="container benefits-section__grid-lines-inner">
+<div class="benefits-section__line-v benefits-section__line-v--1">
+</div>
+<div class="benefits-section__line-v benefits-section__line-v--2">
+</div>
+<div class="benefits-section__line-v benefits-section__line-v--3">
+</div>
+</div>
+</div>
+<div class="benefits-section__gradient-overlay" aria-hidden="true">
+</div>
+      <div class="container benefits-section__wrapper">
+<div class="benefits-section__header">
+<div class="benefits-section__header-top">
+<div class="benefits-section__eyebrow">
+<span class="benefits-section__bar benefits-section__bar--sm">
+</span>
+<span class="benefits-section__bar benefits-section__bar--md">
+</span>
+<span class="benefits-section__badge type-body-xs-500" data-editor-path="home.quality.eyebrow" contenteditable={editorMode ? "plaintext-only" : undefined}>{template.home.quality.eyebrow}</span>
+</div>
+<h2 class="benefits-section__title" data-editor-path="home.quality.title" contenteditable={editorMode ? "plaintext-only" : undefined}>{template.home.quality.title}</h2>
+</div>
+<div class="benefits-section__header-columns">
+<div class="benefits-section__header-col-spacer" aria-hidden="true">
+</div>
+<div class="benefits-section__header-col">
+<p class="type-body-s-400" data-editor-path="home.quality.body" contenteditable={editorMode ? "plaintext-only" : undefined}>{template.home.quality.body}</p>
+</div>
+<div class="benefits-section__header-col">
+<p class="type-body-s-400">CLEAR PRODUCT INFORMATION AND PRACTICAL SUPPORT HELP YOU CHOOSE THE RIGHT TECHNOLOGY WITH CONFIDENCE.</p>
+</div>
+</div>
+</div>
+        <div class="benefits-section__divider" aria-hidden="true">
+</div>
+<div class="benefits-section__faq-row">
+<div class="benefits-section__cta-card">
+<div class="benefits-section__cta-texture" aria-hidden="true">
+<img src={qualityFallback.src} alt="" class="cover" loading="lazy" />
+</div>
+<div class="benefits-section__cta-content">
+<p class="benefits-section__cta-text">We provide the highest quality technology products for your daily convinience.</p>
+<Button text="Contact Us" href="#contact" variant="secondary" />
+</div>
+</div>
+<div class="benefits-section__main-card">
+<div class="benefits-section__accordion" data-accordion-group>
+          <div class="benefits-section__acc-item is-open" data-acc-item>
+<button type="button" class="benefits-section__acc-btn" data-acc-trigger aria-expanded="true">
+<span class="benefits-section__acc-heading">
+<span class="benefits-section__acc-num">[1]</span>
+<span class="benefits-section__acc-title">PREMIUM QUALITY PRODUCTS</span>
+</span>
+<span class="benefits-section__acc-icon" aria-hidden="true">−</span>
+</button>
+<div class="benefits-section__acc-content" data-acc-panel>
+<p class="type-body-s-400">EXPLORE DURABLE TECH DEVICES DESIGNED TO FIT YOUR ROUTINE. FIND THE IDEAL GADGETS THAT BOOST YOUR DAILY LIFE AND ENHANCE YOUR PRODUCTIVITY.</p>
+</div>
+</div>
+          <div class="benefits-section__acc-item" data-acc-item>
+<button type="button" class="benefits-section__acc-btn" data-acc-trigger aria-expanded="false">
+<span class="benefits-section__acc-heading">
+<span class="benefits-section__acc-num">[2]</span>
+<span class="benefits-section__acc-title">1 YEAR WARRANTY PERIOD</span>
+</span>
+<span class="benefits-section__acc-icon" aria-hidden="true">+</span>
+</button>
+<div class="benefits-section__acc-content" data-acc-panel>
+<p class="type-body-s-400">ALL DEVICES ARE BACKED BY COMPREHENSIVE WARRANTIES DIRECTLY SUPPORTED BY CERTIFIED REPAIR CENTERS AND PARTNER MANUFACTURERS.</p>
+</div>
+</div>
+          <div class="benefits-section__acc-item" data-acc-item>
+<button type="button" class="benefits-section__acc-btn" data-acc-trigger aria-expanded="false">
+<span class="benefits-section__acc-heading">
+<span class="benefits-section__acc-num">[3]</span>
+<span class="benefits-section__acc-title">FREE DELIVERY</span>
+</span>
+<span class="benefits-section__acc-icon" aria-hidden="true">+</span>
+</button>
+<div class="benefits-section__acc-content" data-acc-panel>
+<p class="type-body-s-400">EXPEDITED AND SECURE COURIER SHIPPING ACROSS ADDIS ABABA AND MAJOR REGIONAL CITIES WITH REAL-TIME TRACKING.</p>
+</div>
+</div>
+          <div class="benefits-section__acc-item" data-acc-item>
+<button type="button" class="benefits-section__acc-btn" data-acc-trigger aria-expanded="false">
+<span class="benefits-section__acc-heading">
+<span class="benefits-section__acc-num">[4]</span>
+<span class="benefits-section__acc-title">24/7 CUSTOMER SUPPORT</span>
+</span>
+<span class="benefits-section__acc-icon" aria-hidden="true">+</span>
+</button>
+<div class="benefits-section__acc-content" data-acc-panel>
+<p class="type-body-s-400">OUR SUPPORT TEAM IS AVAILABLE AROUND THE CLOCK TO HELP WITH PRODUCT QUESTIONS, ORDERS, AND AFTER-SALES SERVICE.</p>
+</div>
+</div>
+        </div>
+<div class="benefits-section__promo-image img-wrapper">
+<img src={nexahubAsset(template.home.quality.imageAssetId, qualityFallback.src)} alt="Technology products selected for quality" class="cover" loading="lazy" data-editor-image-path="home.quality.imageAssetId" />
+</div>
+</div>
+</div>
+</div>
+    </section>}
+
+    {(editorMode || template.home.contact.enabled) && <section class="contact-section" id="contact" data-editor-section="home.contact" data-editor-visible-path="home.contact.enabled" hidden={!template.home.contact.enabled}>
+<div class="container contact-section__wrapper">
+<div class="contact-section__card">
+<div class="contact-section__form-box">
+<div class="contact-section__eyebrow">
+<span class="contact-section__bar contact-section__bar--sm">
+</span>
+<span class="contact-section__bar contact-section__bar--md">
+</span>
+<span class="contact-section__badge type-body-xs-500" data-editor-path="home.contact.eyebrow" contenteditable={editorMode ? "plaintext-only" : undefined}>{template.home.contact.eyebrow}</span>
+</div>
+<h2 class="contact-section__title type-heading-3" data-editor-path="home.contact.title" contenteditable={editorMode ? "plaintext-only" : undefined}>{template.home.contact.title}</h2>
+<p data-editor-path="home.contact.body" contenteditable={editorMode ? "plaintext-only" : undefined}>{template.home.contact.body}</p>
+<form class="contact-section__form" action="/actions/inquiries" method="post" data-inquiry-form>
+<input type="hidden" name="type" value="contact" />
+<input type="hidden" name="subject" value="Storefront contact request" />
+<div class="contact-section__row">
+<input type="text" name="name" required placeholder="Full Name*" class="contact-section__input type-body-s-400" />
+<input type="tel" name="phone" placeholder="Phone Number" class="contact-section__input type-body-s-400" />
+</div>
+<input type="email" name="email" required placeholder="Email Address*" class="contact-section__input type-body-s-400" />
+<textarea name="message" rows="4" required placeholder="Message*" class="contact-section__textarea type-body-s-400">
+</textarea>
+<Button text={template.home.contact.ctaLabel} editorPath="home.contact.ctaLabel" editorRelatedPaths={["home.contact.ctaHref"]} editorMode={editorMode} />
+</form>
+<p data-inquiry-status aria-live="polite">
+</p>
+</div>
+<div class="contact-section__image img-wrapper">
+<img src={nexahubAsset(template.home.contact.imageAssetId, contactFallback.src)} alt="Store interior" class="cover" loading="lazy" data-editor-image-path="home.contact.imageAssetId" />
+</div>
+</div>
+</div>
+</section>}
+    {editorMode && products.map((product) => <template data-editor-product-option={product.id}>
+<ProductCard product={product} />
+</template>)}
+    {editorMode && collections.map((collection) => <>
+<template data-editor-collection-option-featured={collection.id}>
+<CollectionCard collection={collection} image={collectionImage(collection)} variant="featured" />
+</template>
+<template data-editor-collection-option-standard={collection.id}>
+<CollectionCard collection={collection} image={collectionImage(collection)} variant="standard" />
+</template>
+</>)}
+  </main>
+</Layout>
+
+<style>
+  :global(.nexa-body) { background: var(--nexa-bg); color: var(--nexa-ink); overflow-x: clip; }
+  :global(.nexa-body .btn--primary), :global(.nexa-body .product-card__discount) { background: var(--nexa-primary); color: var(--nexa-on-primary); }
+  :global(.nexa-body a:focus-visible), :global(.nexa-body button:focus-visible), :global(.nexa-body input:focus-visible) { outline: 2px solid var(--nexa-primary); outline-offset: 3px; }
+  :global(.nexa-skip) { position: fixed; z-index: 9999; top: .5rem; left: .5rem; transform: translateY(-200%); background: var(--nexa-ink); color: var(--nexa-bg); padding: .75rem 1rem; }
+  :global(.nexa-skip:focus) { transform: none; }
+  :global(.nexa-sr-only) { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  :global(.nexa-state), :global(.nexa-editor-state) { padding: 2rem; border: 1px solid color-mix(in srgb, var(--nexa-ink) 18%, transparent); }
+  :global(.nexa-image-empty) { display: grid; min-height: 15rem; place-items: center; }
+  @media (prefers-reduced-motion: reduce) { :global(*) { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; } }
+</style>

@@ -46,4 +46,17 @@ Full commerce surface inspired by Medusa starter patterns:
 3. Register `"name@1"` in `registry.ts`
 4. Add its editor manifest, then sync templates to the platform database
 
+The dashboard iframe must render these same Astro components. Editor mode may add stable
+`data-editor-*` markers and disable mutations, but it must not introduce a second visual renderer.
+Pass the logical public route to shared layouts because the iframe transport URL is `/preview`.
+Reuse production child components for editor option templates, and put
+`data-editor-text-target` on the text child of editable controls that also contain icons or other
+markup. Desktop preview sizing belongs to dashboard viewport simulation, not template breakpoint
+changes.
+
+Reference palette hex values may be used only as defaults. Component Sass, inline SVG backgrounds,
+focus/hover states, and derived light/dark shades must consume the runtime semantic color variables.
+Load the shared responsive contract after page-specific styles so mobile rules win the cascade, and
+verify that the rendered document never becomes wider than the mobile viewport.
+
 Do **not** call Medusa from templates. Use `lib/commerce` and page props only.

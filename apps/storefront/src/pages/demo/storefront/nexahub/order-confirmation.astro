@@ -1,0 +1,4 @@
+---
+import { nexahubV1Defaults,nexahubV1ThemeTokens } from "@ecs/storefront-templates";import { nexahubDemoOrder } from "../../../../lib/demo/nexahub-fixture";import OrderConfirm from "../../../../templates/nexahub/v1/OrderConfirm.astro";
+---
+<OrderConfirm data={nexahubV1Defaults} themeTokens={nexahubV1ThemeTokens} tenantName="NexaHub Technology" cartCount={0} orderId={nexahubDemoOrder.id} lastOrder={nexahubDemoOrder} demoMode/>

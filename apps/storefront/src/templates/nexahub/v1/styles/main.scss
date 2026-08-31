@@ -1,0 +1,186 @@
+@use "reset";
+@use "typography";
+
+.nexa-demo {
+  position: sticky;
+  z-index: 90;
+  top: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: .5rem 1rem;
+  padding: .6rem 1rem;
+  background: var(--nexa-primary);
+  color: var(--nexa-on-primary);
+  font: 500 .68rem/1.2 "DM Mono", monospace;
+  text-transform: uppercase;
+
+  nav { display: flex; flex-wrap: wrap; gap: .75rem; }
+  a { color: inherit; text-decoration: underline; text-underline-offset: 3px; }
+}
+
+body {
+  background: $clr-surface-100;
+}
+
+#page-wrapper {
+  min-height: 100vh;
+}
+
+.container {
+  width: min(100% - 2rem, 1400px);
+  margin-inline: auto;
+}
+
+.img-wrapper {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+
+  img {
+    width: 100%;
+    height: 100%;
+
+    &.cover {
+      object-fit: cover;
+    }
+
+    &.contain {
+      object-fit: contain;
+    }
+  }
+}
+
+body.no-scroll {
+  position: fixed;
+  inset-inline: 0;
+  width: 100%;
+  height: 100dvh;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+[data-text-anim],
+[data-fade-in] {
+  visibility: hidden;
+}
+
+:root {
+  --nexa-motion-fast: 140ms;
+  --nexa-motion-base: 220ms;
+  --nexa-motion-slow: 300ms;
+  --nexa-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+:where(a, button, input, select, textarea, summary):focus-visible {
+  outline: 2px solid var(--nexa-primary);
+  outline-offset: 3px;
+  transition: outline-color var(--nexa-motion-fast) var(--nexa-ease-out), outline-offset var(--nexa-motion-fast) var(--nexa-ease-out), box-shadow var(--nexa-motion-fast) var(--nexa-ease-out), border-color var(--nexa-motion-fast) var(--nexa-ease-out);
+}
+
+.nexa-toast {
+  position: fixed;
+  top: max(1rem, env(safe-area-inset-top));
+  right: max(1rem, env(safe-area-inset-right));
+  z-index: 100;
+  width: min(26rem, calc(100vw - 2rem));
+  padding: .875rem 1rem;
+  border: 1px solid var(--nexa-ink);
+  background: var(--nexa-bg);
+  color: var(--nexa-ink);
+  box-shadow: 8px 8px 0 color-mix(in srgb, var(--nexa-ink) 18%, transparent);
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: opacity var(--nexa-motion-base) var(--nexa-ease-out), transform var(--nexa-motion-base) var(--nexa-ease-out);
+}
+
+.nexa-toast[data-tone="error"] { border-left: 4px solid var(--nexa-primary); }
+.nexa-toast.is-visible { opacity: 1; transform: translateY(0); }
+
+button[data-busy="true"] {
+  position: relative;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  pointer-events: none;
+  cursor: wait;
+}
+
+button[data-busy="true"]::before {
+  content: "";
+  width: 12px;
+  height: 12px;
+  flex: 0 0 12px;
+  border: 1.5px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: nexa-spin 700ms linear infinite;
+}
+
+:where(.cart-drawer__quantity, .nexa-stepper, .nexa-quantity) button[data-busy="true"] {
+  gap: 0;
+  font-size: 0;
+}
+
+.nexa-save-icon,
+.nexa-save-icon svg {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.nexa-save-icon__filled { display: none !important; }
+
+:where([data-wishlist-toggle][aria-pressed="true"], [data-wishlist-indicator][data-active]) {
+  .nexa-save-icon__outline { display: none; }
+  .nexa-save-icon__filled { display: block !important; }
+}
+
+button[data-busy="true"] > svg,
+button[data-busy="true"] > .btn__icon {
+  opacity: 0.35;
+}
+
+[data-wishlist-toggle] {
+  transition: color var(--nexa-motion-fast) var(--nexa-ease-out), transform var(--nexa-motion-base) var(--nexa-ease-out), background-color var(--nexa-motion-fast) var(--nexa-ease-out);
+}
+
+[data-wishlist-toggle][aria-pressed="true"] {
+  color: var(--nexa-primary);
+  transform: scale(1.08);
+}
+
+@keyframes nexa-spin {
+  to { transform: rotate(1turn); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+.mask-lines,
+.mask-words,
+.mask-chars {
+  display: inline-block;
+  overflow: hidden;
+  position: relative;
+}
+
+.og-char {
+  display: inline-block;
+  position: relative;
+}
+
+.duplicate-char {
+  display: inline-block;
+  position: absolute;
+  inset: 0;
+  transform: translateY(100%);
+}

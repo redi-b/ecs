@@ -1,0 +1,77 @@
+@use './variables' as *;
+
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300;1,400;1,500&family=Space+Grotesk:wght@300..700&display=swap');
+
+@mixin type-token($font-family, $font-weight, $font-size, $line-height, $letter-spacing, $text-transform: none) {
+  font-family: $font-family;
+  font-weight: $font-weight;
+  font-size: $font-size;
+  line-height: $line-height;
+  letter-spacing: $letter-spacing;
+  text-transform: $text-transform;
+}
+
+body {
+  @include type-token($ff-body, $fw-regular, $fs-body, $lh-body, $ls-body, none);
+  color: $clr-neutral-900;
+}
+
+.type-heading-1 {
+  @include type-token($ff-header, $fw-medium, $fs-heading-1, $lh-heading-1, $ls-heading-1, uppercase);
+}
+
+.type-heading-2 {
+  @include type-token($ff-header, $fw-medium, $fs-heading-2, $lh-heading-2, $ls-heading-2);
+}
+
+.type-heading-3 {
+  @include type-token($ff-header, $fw-medium, $fs-heading-3, $lh-heading-3, $ls-heading-3, capitalize);
+}
+
+.type-heading-4 {
+  @include type-token($ff-header, $fw-medium, $fs-heading-4, $lh-heading-4, $ls-heading-4, capitalize);
+}
+
+.type-heading-5 {
+  @include type-token($ff-header, $fw-medium, $fs-heading-5, $lh-heading-5, $ls-heading-5);
+}
+
+.type-heading-6 {
+  @include type-token($ff-body, $fw-medium, $fs-heading-6, $lh-heading-6, $ls-heading-6);
+}
+
+.type-style-7 {
+  @include type-token($ff-body, $fw-medium, $fs-style-7, $lh-style-7, $ls-style-7);
+}
+
+.type-body-xxl {
+  @include type-token($ff-header, $fw-regular, $fs-body-xxl, $lh-body-xxl, $ls-body-xxl);
+}
+
+.type-body-xl {
+  @include type-token($ff-header, $fw-bold, $fs-body-xl, $lh-body-xl, $ls-body-xl);
+}
+
+.type-body-l {
+  @include type-token($ff-body, $fw-regular, $fs-body-l, $lh-body-l, $ls-body-l, uppercase);
+}
+
+.type-body {
+  @include type-token($ff-body, $fw-medium, $fs-body, $lh-body, $ls-body, uppercase);
+}
+
+.type-body-s-400 {
+  @include type-token($ff-body, $fw-regular, $fs-body-s-400, $lh-body-s-400, $ls-body-s-400, uppercase);
+}
+
+.type-body-s-500 {
+  @include type-token($ff-body, $fw-medium, $fs-body-s-500, $lh-body-s-500, $ls-body-s-500, uppercase);
+}
+
+.type-body-xs-400 {
+  @include type-token($ff-body, $fw-regular, $fs-body-xs-400, $lh-body-xs-400, $ls-body-xs-400, uppercase);
+}
+
+.type-body-xs-500 {
+  @include type-token($ff-body, $fw-medium, $fs-body-xs-500, $lh-body-xs-500, $ls-body-xs-500, uppercase);
+}

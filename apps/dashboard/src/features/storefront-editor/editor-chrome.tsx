@@ -1,5 +1,7 @@
 "use client";
 
+import { getStorefrontEditorManifest } from "@ecs/storefront-templates";
+
 import {
   RiArrowGoBackLine,
   RiArrowGoForwardLine,
@@ -310,6 +312,9 @@ export function StorefrontEditorShell({
   const props = getStorefrontPageProps(data);
   const [mobilePanel, setMobilePanel] = useState<EditorMobilePanel>("preview");
   const [selectedPath, setSelectedPath] = useState<string | null>(null);
+  const manifest = getStorefrontEditorManifest(editorMeta.templateKey);
+  const previewPages = manifest?.previewPages ?? [{ id: "home", label: "Home" }];
+  const [previewPage, setPreviewPage] = useState(previewPages[0]?.id ?? "home");
   const [selectionInteractionActive, setSelectionInteractionActive] = useState(false);
 
   useEffect(() => {
@@ -416,9 +421,16 @@ export function StorefrontEditorShell({
           )}
         >
           <div className={cn("mx-auto h-full min-h-0 w-full overflow-hidden rounded-2xl border border-border/80 bg-background shadow-sm", isFullscreen ? "max-w-none" : "max-w-6xl")}>
+            <div className="flex h-full min-h-0 flex-col">
+            {previewPages.length > 1 ? <div className="shrink-0 border-b border-border/80 bg-muted/15 p-2"><SegmentedControl ariaLabel="Preview page" onChange={(page) => { setPreviewPage(page); setSelectedPath(null); }} options={previewPages.map((page) => ({ id: page.id, label: page.label }))} size="sm" value={previewPage} /></div> : null}
+            <div className="min-h-0 flex-1">
             <TemplatePreview
               isFullscreen={isFullscreen}
-              onSelectPath={(path) => setSelectedPath(path || null)}
+              onSelectPath={(path) => {
+                setSelectedPath(path || null);
+                const sectionPage = manifest?.sections.find((section) => section.fields.some((field) => path === field.path || path.startsWith(`${field.path}.`)))?.previewPage;
+                if (sectionPage) setPreviewPage(sectionPage);
+              }}
               onSelectionInteractionChange={setSelectionInteractionActive}
               props={props}
               selectedPath={selectedPath}
@@ -426,7 +438,10 @@ export function StorefrontEditorShell({
               storefrontName={editorMeta.storefrontName}
               templateKey={editorMeta.templateKey}
               previewUrl={editorMeta.previewUrl}
+              previewPage={previewPage}
             />
+            </div>
+            </div>
           </div>
         </div>
         <aside
@@ -451,7 +466,12 @@ export function StorefrontEditorShell({
               </Button>
             </div>
           </div>
-          <StorefrontSettingsPanel onSelectPath={setSelectedPath} selectedPath={selectedPath} templateKey={editorMeta.templateKey} />
+          <StorefrontSettingsPanel onSelectPath={(path) => {
+            setSelectedPath(path);
+            if (!path) return;
+            const sectionPage = manifest?.sections.find((section) => section.fields.some((field) => path === field.path || path.startsWith(`${field.path}.`)))?.previewPage;
+            if (sectionPage) setPreviewPage(sectionPage);
+          }} selectedPath={selectedPath} templateKey={editorMeta.templateKey} />
         </aside>
       </div>
     </div>

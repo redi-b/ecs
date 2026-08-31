@@ -32,6 +32,7 @@ import {
   ProductCatalogPickerTrigger,
   type ProductCatalogPickItem,
 } from "@/features/products/product-catalog-picker-dialog";
+import { MediaImageReferenceControl } from "@/features/media/media-image-reference-control";
 import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes-guard";
 import type { MessageKey } from "@/i18n/messages";
 import { useI18n } from "@/i18n/provider";
@@ -69,6 +70,7 @@ export function CollectionEditSheet({
   const [isVisible, setIsVisible] = useState(true);
   const [seoTitle, setSeoTitle] = useState("");
   const [seoDescription, setSeoDescription] = useState("");
+  const [mediaUrl, setMediaUrl] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [members, setMembers] = useState<MemberProduct[]>([]);
@@ -91,6 +93,7 @@ export function CollectionEditSheet({
     setIsVisible(collection.visibility !== "hidden");
     setSeoTitle(collection.seoTitle ?? "");
     setSeoDescription(collection.seoDescription ?? "");
+    setMediaUrl(collection.mediaUrl ?? "");
     setError(null);
     setPendingAddIds([]);
     void loadMembership(collection.id);
@@ -103,9 +106,10 @@ export function CollectionEditSheet({
       handle !== (collection.handle ?? "") ||
       isVisible !== (collection.visibility !== "hidden") ||
       seoTitle !== (collection.seoTitle ?? "") ||
-      seoDescription !== (collection.seoDescription ?? "")
+      seoDescription !== (collection.seoDescription ?? "") ||
+      mediaUrl !== (collection.mediaUrl ?? "")
     );
-  }, [collection, open, title, handle, isVisible, seoTitle, seoDescription]);
+  }, [collection, open, title, handle, isVisible, seoTitle, seoDescription, mediaUrl]);
 
   const { leaveDialogOpen, requestLeave, confirmLeave, cancelLeave } =
     useUnsavedChangesGuard(isDirty);
@@ -225,6 +229,7 @@ export function CollectionEditSheet({
         visibility: isVisible ? "public" : "hidden",
         seoTitle: seoTitle.trim() || null,
         seoDescription: seoDescription.trim() || null,
+        mediaUrl: mediaUrl.trim() || null,
       }),
       headers: {
         accept: "application/json",
@@ -343,6 +348,17 @@ export function CollectionEditSheet({
                 id="collection-edit-visible"
                 onCheckedChange={setIsVisible}
               />
+            </Field>
+
+            <Field>
+              <MediaImageReferenceControl
+                label="Collection image"
+                onChange={(value) => setMediaUrl(value ?? "")}
+                value={mediaUrl}
+              />
+              <FieldDescription>
+                Used by storefront collection cards and other visual collection links.
+              </FieldDescription>
             </Field>
 
             <div className="space-y-3 rounded-xl border p-4">

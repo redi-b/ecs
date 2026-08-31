@@ -1,0 +1,214 @@
+---
+import type { CustomerAccountView } from "../../../lib/commerce/account"; import { formatMoney } from "../../../lib/money"; import { formatOrderReference } from "../../../lib/order-reference"; import Layout from "./Layout.astro"; import { parseNexahubData } from "./lib"; import "./styles/pages/secondary.scss";
+interface Props { data:unknown; themeTokens?:unknown; tenantName:string; deferCartCount?:boolean; account?:CustomerAccountView|null; error?:string|null; success?:string|null; initialMode?:"login"|"register"; }
+const {data,themeTokens,tenantName,deferCartCount=false,account=null,error=null,success=null,initialMode="login"}=Astro.props; const template=parseNexahubData(data); const date=(value:string|null)=>{if(!value)return"Date unavailable";const parsed=new Date(value);return Number.isNaN(parsed.getTime())?"Date unavailable":new Intl.DateTimeFormat("en",{dateStyle:"medium"}).format(parsed)};
+---
+<Layout tenantName={tenantName} header={template.header} footer={template.footer} themeTokens={themeTokens} deferCartCount={deferCartCount}>
+<main class="nexa-secondary nexa-account" id="main-content">
+<div class="container nexa-secondary__frame">{account?<>
+<header class="nexa-secondary__hero">
+<span>My account</span>
+<div>
+<h1>Welcome back, {account.customer.firstName||"friend"}</h1>
+<p>{account.customer.email}</p>
+</div>
+</header>
+<div class="nexa-account__toolbar">
+<nav aria-label="Account sections" role="tablist">
+<a href="#order-history" role="tab" aria-selected="true" data-account-view="orders">Orders / {account.orderCount}</a>
+<a href="#saved-addresses" role="tab" aria-selected="false" data-account-view="addresses">Addresses / {account.addresses.length}</a>
+<a href="#profile-details" role="tab" aria-selected="false" data-account-view="profile">Profile</a>
+</nav>
+<form action="/actions/account/logout" method="post">
+<button type="submit">Sign out</button>
+</form>
+</div>{error&&<div class="nexa-notice nexa-notice--error" role="alert">{error}</div>}{success&&<div class="nexa-notice" role="status">{success}</div>}
+<section class="nexa-data-panel" id="order-history" data-account-panel="orders">
+<header class="nexa-panel-head">
+<h2>Order history</h2>
+<span>{account.orderCount} {account.orderCount===1?"order":"orders"}</span>
+</header>{account.orders.length ? (<>
+<ol class="nexa-account__orders">{account.orders.map((order,index)=>
+<li>
+<a href={`/account/orders/${encodeURIComponent(order.id)}`}>
+<span>{String(account.orderOffset+index+1).padStart(2,"0")}</span>
+<div>
+<strong>Order {formatOrderReference(order.id,order.customDisplayId)}</strong>
+<small>{date(order.createdAt)}</small>
+</div>
+<div>
+<strong>{order.total==null?"Total unavailable":formatMoney(order.total,order.currencyCode)}</strong>
+<small>{order.itemCount} items / {order.status.replaceAll("_"," ")}</small>
+</div>
+<b aria-hidden="true">↗</b>
+</a>
+</li>)}</ol>{account.orderCount > account.orderLimit ? <nav class="nexa-pagination" aria-label="Order history pages">{account.orderOffset > 0 ? <a href={`/account?page=${Math.max(1,account.orderOffset/account.orderLimit)}`}>Previous</a> : null}<span>Page {Math.floor(account.orderOffset/account.orderLimit)+1} of {Math.ceil(account.orderCount/account.orderLimit)}</span>{account.orderOffset + account.orderLimit < account.orderCount ? <a href={`/account?page=${account.orderOffset/account.orderLimit+2}`}>Next</a> : null}</nav> : null}</>) : <div class="nexa-empty">
+<span class="nexa-empty__index">00</span>
+<h2>No orders yet</h2>
+<p>Your first completed order will appear here.</p>
+<a class="nexa-primary-action" href="/products">Browse products ↗</a>
+</div>}</section>
+<section class="nexa-data-panel" id="saved-addresses" data-account-panel="addresses" hidden>
+<header class="nexa-panel-head">
+<h2>Saved addresses</h2>
+<span>{account.addresses.length} {account.addresses.length===1?"address":"addresses"}</span>
+</header>
+<div class="nexa-account__addresses">{account.addresses.map((address,index)=>
+<article>
+<button type="button" data-address-toggle aria-expanded="false">
+<span>{String(index+1).padStart(2,"0")}</span>
+<div>
+<strong>{address.addressName||`${address.firstName} ${address.lastName}`}</strong>
+<small>{address.address1}, {address.city}</small>
+</div>
+<b>{address.isDefaultShipping?"Default / edit":"Edit"}</b>
+</button>
+<form class="nexa-account-form" action="/actions/account/address" method="post" hidden>
+<input type="hidden" name="addressId" value={address.id}/>
+<label>Label<input name="addressName" value={address.addressName}/>
+</label>
+<label>Phone<input name="phone" value={address.phone}/>
+</label>
+<label>First name<input name="firstName" value={address.firstName} required/>
+</label>
+<label>Last name<input name="lastName" value={address.lastName} required/>
+</label>
+<label class="is-wide">Street address<input name="address1" value={address.address1} required/>
+</label>
+<label>City<input name="city" value={address.city} required/>
+</label>
+<label>Area / region<input name="province" value={address.province}/>
+</label>
+<label class="is-wide">
+<span>
+<input type="checkbox" name="isDefaultShipping" checked={address.isDefaultShipping}/> Use first at checkout</span>
+</label>
+<button type="submit" name="intent" value="save">Save changes</button>
+<button class="is-danger" type="submit" name="intent" value="delete">Remove address</button>
+</form>
+</article>)}<article>
+<button type="button" data-address-toggle aria-expanded="false">
+<span>+</span>
+<div>
+<strong>Add an address</strong>
+<small>Save delivery details for checkout.</small>
+</div>
+<b>Open</b>
+</button>
+<form class="nexa-account-form" action="/actions/account/address" method="post" hidden>
+<label>Label<input name="addressName" placeholder="Home"/>
+</label>
+<label>Phone<input name="phone" value={account.customer.phone}/>
+</label>
+<label>First name<input name="firstName" value={account.customer.firstName} required/>
+</label>
+<label>Last name<input name="lastName" value={account.customer.lastName} required/>
+</label>
+<label class="is-wide">Street address<input name="address1" required/>
+</label>
+<label>City<input name="city" value="Addis Ababa" required/>
+</label>
+<label>Area / region<input name="province"/>
+</label>
+<label class="is-wide">
+<span>
+<input type="checkbox" name="isDefaultShipping" checked={account.addresses.length===0}/> Use first at checkout</span>
+</label>
+<button type="submit" name="intent" value="save">Save address</button>
+</form>
+</article>
+</div>
+</section>
+<section class="nexa-data-panel" id="profile-details" data-account-panel="profile" hidden>
+<header class="nexa-panel-head">
+<h2>Profile details</h2>
+<span>Your details</span>
+</header>
+<form class="nexa-account-form" action="/actions/account/profile" method="post">
+<label>First name<input name="firstName" value={account.customer.firstName} required autocomplete="given-name"/>
+</label>
+<label>Last name<input name="lastName" value={account.customer.lastName} required autocomplete="family-name"/>
+</label>
+<label class="is-wide">Email<input value={account.customer.email} readonly autocomplete="email"/>
+</label>
+<label class="is-wide">Phone<input name="phone" value={account.customer.phone} autocomplete="tel"/>
+</label>
+<button type="submit">Save profile</button>
+</form>
+</section>
+</>:<>
+<header class="nexa-secondary__hero">
+<span>Welcome back</span>
+<div>
+<h1>Your account</h1>
+<p>Sign in to view your orders, manage delivery details, and check out faster.</p>
+</div>
+</header>
+<div class="nexa-secondary__split">
+<aside class="nexa-info-panel">
+<header class="nexa-panel-head">
+<h2>Shop your way</h2>
+<span>Account optional</span>
+</header>
+<ul class="nexa-info-list">
+<li>
+<small>Browse</small>
+<a href="/products">Continue shopping ↗</a>
+</li>
+<li>
+<small>Need help?</small>
+<a href="/contact">Contact the shop ↗</a>
+</li>
+<li>
+<small>New here?</small>
+<span>Create an account to save delivery details and view orders.</span>
+</li>
+</ul>
+</aside>
+<section class="nexa-form-panel" data-account-auth>
+<header class="nexa-panel-head">
+<h2>{initialMode==="register"?"Create account":"Sign in"}</h2>
+<nav role="tablist">
+<a href="/account" role="tab" aria-selected={initialMode==="login"} data-account-mode="login">Sign in</a> / <a href="/account?mode=register" role="tab" aria-selected={initialMode==="register"} data-account-mode="register">Register</a>
+</nav>
+</header>{error&&<div class="nexa-notice nexa-notice--error" role="alert">{error}</div>}<section data-auth-panel="login" hidden={initialMode!=="login"}>
+<form class="nexa-account-form" action="/actions/account/login" method="post">
+<label class="is-wide">Email<input name="email" type="email" required autocomplete="email"/>
+</label>
+<label class="is-wide">Password<input name="password" type="password" minlength="8" required autocomplete="current-password"/>
+</label>
+<button type="submit">Sign in</button>
+</form>
+</section>
+<section data-auth-panel="register" hidden={initialMode!=="register"}>
+<form class="nexa-account-form" action="/actions/account/register" method="post">
+<label>First name<input name="firstName" required autocomplete="given-name"/>
+</label>
+<label>Last name<input name="lastName" required autocomplete="family-name"/>
+</label>
+<label class="is-wide">Email<input name="email" type="email" required autocomplete="email"/>
+</label>
+<label class="is-wide">Password<input name="password" type="password" minlength="8" required autocomplete="new-password"/>
+</label>
+<button type="submit">Create account</button>
+</form>
+</section>
+</section>
+</div>
+</>}</div>
+</main>
+</Layout>
+<script>
+  document.querySelectorAll<HTMLElement>('[data-account-view]').forEach(tab=>tab.addEventListener('click',event=>{event.preventDefault();const view=tab.dataset.accountView;document.querySelectorAll<HTMLElement>('[data-account-view]').forEach(item=>item.setAttribute('aria-selected',String(item.dataset.accountView===view)));document.querySelectorAll<HTMLElement>('[data-account-panel]').forEach(panel=>panel.hidden=panel.dataset.accountPanel!==view);history.replaceState(null,'',view==='addresses'?'#saved-addresses':view==='profile'?'#profile-details':'#order-history');}));
+  if(location.hash==='#saved-addresses')document.querySelector<HTMLElement>('[data-account-view="addresses"]')?.click();else if(location.hash==='#profile-details')document.querySelector<HTMLElement>('[data-account-view="profile"]')?.click();
+  document.querySelectorAll<HTMLButtonElement>('[data-address-toggle]').forEach(button=>button.addEventListener('click',()=>{const form=button.parentElement?.querySelector<HTMLFormElement>('form');if(!form)return;const open=button.getAttribute('aria-expanded')==='true';button.setAttribute('aria-expanded',String(!open));form.hidden=open;if(!open)form.querySelector<HTMLInputElement>('input:not([type=hidden])')?.focus();}));
+  const auth=document.querySelector<HTMLElement>('[data-account-auth]');auth?.querySelectorAll<HTMLAnchorElement>('[data-account-mode]').forEach(tab=>tab.addEventListener('click',event=>{event.preventDefault();const mode=tab.dataset.accountMode||'login';auth.querySelectorAll<HTMLElement>('[data-auth-panel]').forEach(panel=>panel.hidden=panel.dataset.authPanel!==mode);auth.querySelectorAll<HTMLElement>('[data-account-mode]').forEach(item=>item.setAttribute('aria-selected',String(item.dataset.accountMode===mode)));history.replaceState(null,'',mode==='register'?'/account?mode=register':'/account');}));
+</script>
+<style>
+  .nexa-account .nexa-secondary__hero h1{max-width:12ch;font-size:clamp(3rem,7vw,7rem)}.nexa-account .nexa-secondary__hero p{max-width:42rem}.nexa-account .nexa-secondary__split{align-items:stretch}.nexa-account .nexa-info-panel,.nexa-account .nexa-form-panel,.nexa-account .nexa-data-panel{background:color-mix(in srgb,var(--nexa-bg) 94%,var(--nexa-muted));box-shadow:0 18px 50px color-mix(in srgb,var(--nexa-ink) 7%,transparent)}
+  .nexa-account__toolbar{display:flex;justify-content:space-between;gap:1rem;border:1px solid color-mix(in srgb,var(--nexa-ink) 25%,transparent);padding:.65rem}.nexa-account__toolbar nav{display:flex;flex-wrap:wrap;gap:.5rem}.nexa-account__toolbar a,.nexa-account__toolbar button{min-height:44px;display:inline-flex;align-items:center;border:0;background:transparent;padding:0 .75rem;font:400 .7rem/1.2 "DM Mono",monospace;text-transform:uppercase}.nexa-account__toolbar [aria-selected=true]{background:var(--nexa-ink);color:var(--nexa-bg)}
+  .nexa-account__orders{list-style:none;padding:0;margin:0}.nexa-account__orders li+li{border-top:1px solid color-mix(in srgb,var(--nexa-ink) 15%,transparent)}.nexa-account__orders a{display:grid;grid-template-columns:2rem 1fr 1fr auto;gap:1rem;align-items:center;min-height:88px;padding:1rem}.nexa-account__orders div{display:grid;gap:.25rem}.nexa-account__orders strong{font:500 .9rem/1.2 "Space Grotesk",sans-serif}.nexa-account__orders span,.nexa-account__orders small{font:400 .68rem/1.3 "DM Mono",monospace}.nexa-pagination{display:flex;justify-content:space-between;gap:1rem;padding:1rem;border-top:1px solid color-mix(in srgb,var(--nexa-ink) 15%,transparent);font:400 .7rem/1.2 "DM Mono",monospace}
+  .nexa-account__addresses article+article{border-top:1px solid color-mix(in srgb,var(--nexa-ink) 15%,transparent)}.nexa-account__addresses>article>button{width:100%;display:grid;grid-template-columns:2rem 1fr auto;gap:1rem;text-align:left;align-items:center;min-height:80px;border:0;background:transparent;padding:1rem}.nexa-account__addresses button div{display:grid;gap:.25rem}.nexa-account__addresses button strong{font:500 .9rem/1.2 "Space Grotesk",sans-serif}.nexa-account__addresses button span,.nexa-account__addresses button small,.nexa-account__addresses button b{font:400 .68rem/1.3 "DM Mono",monospace}.nexa-account-form .is-danger{background:#7c1717}
+  .nexa-form-panel .nexa-panel-head nav{font:400 .68rem/1.2 "DM Mono",monospace}.nexa-form-panel .nexa-panel-head [aria-selected=true]{font-weight:700;text-decoration:underline}
+  @media(max-width:650px){.nexa-account__toolbar{align-items:stretch;flex-direction:column}.nexa-account__orders a{grid-template-columns:1.5rem 1fr auto}.nexa-account__orders a>div:nth-of-type(2){grid-column:2/-1}}
+</style>

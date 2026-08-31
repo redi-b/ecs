@@ -133,6 +133,13 @@ export function mergeStorefrontTemplateDefaults(defaultValue: unknown, value: un
       return cloneJson(defaultValue);
     }
 
+    // Empty default arrays are open collections (for example selected product
+    // and collection IDs). Merging each entry against `{}` turns scalar IDs
+    // into empty objects and makes an otherwise valid draft fail its schema.
+    if (defaultValue.length === 0) {
+      return cloneJson(value);
+    }
+
     return value.map((item, index) =>
       mergeStorefrontTemplateDefaults(defaultValue[index] ?? {}, item),
     );
