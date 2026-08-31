@@ -23,6 +23,7 @@ export async function POST(request: Request) {
     const result = await createMerchantProductCollection({
       cookieHeader: context.cookieHeader,
       handle: collection.handle,
+      mediaUrl: collection.mediaUrl,
       platformApiBaseUrl: context.platformApiBaseUrl,
       requestHost: context.requestHost,
       tenantId: context.tenantId,
@@ -61,12 +62,15 @@ async function getCollectionInput(request: Request) {
   if (request.headers.get("content-type")?.includes("application/json")) {
     const body = (await request.json().catch(() => ({}))) as {
       handle?: unknown;
+      mediaUrl?: unknown;
       title?: unknown;
       visibility?: unknown;
     };
 
     return {
       handle: typeof body.handle === "string" && body.handle.trim() ? body.handle.trim() : null,
+      mediaUrl:
+        typeof body.mediaUrl === "string" && body.mediaUrl.trim() ? body.mediaUrl.trim() : null,
       title: typeof body.title === "string" && body.title.trim() ? body.title.trim() : null,
       visibility: body.visibility === "hidden" ? ("hidden" as const) : ("public" as const),
     };
@@ -75,6 +79,7 @@ async function getCollectionInput(request: Request) {
   const form = await getTaxonomyFormInput(await request.formData());
   return {
     handle: form.handle,
+    mediaUrl: form.mediaUrl,
     title: form.title ?? form.name,
     visibility: "public" as const,
   };

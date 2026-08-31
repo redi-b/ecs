@@ -23,6 +23,7 @@ export async function POST(request: Request) {
     const result = await createMerchantProductCategory({
       cookieHeader: context.cookieHeader,
       handle: category.handle,
+      mediaUrl: category.mediaUrl,
       name: category.name,
       parentCategoryId: category.parentCategoryId,
       platformApiBaseUrl: context.platformApiBaseUrl,
@@ -62,6 +63,7 @@ async function getCategoryInput(request: Request) {
   if (request.headers.get("content-type")?.includes("application/json")) {
     const body = (await request.json().catch(() => ({}))) as {
       handle?: unknown;
+      mediaUrl?: unknown;
       name?: unknown;
       parentCategoryId?: unknown;
       visibility?: unknown;
@@ -69,6 +71,8 @@ async function getCategoryInput(request: Request) {
 
     return {
       handle: typeof body.handle === "string" && body.handle.trim() ? body.handle.trim() : null,
+      mediaUrl:
+        typeof body.mediaUrl === "string" && body.mediaUrl.trim() ? body.mediaUrl.trim() : null,
       name: typeof body.name === "string" && body.name.trim() ? body.name.trim() : null,
       parentCategoryId:
         typeof body.parentCategoryId === "string" && body.parentCategoryId.trim()

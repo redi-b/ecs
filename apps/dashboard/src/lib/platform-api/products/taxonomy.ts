@@ -1,3 +1,4 @@
+import { merchantProductsSchema, platformErrorSchema } from "@ecs/contracts";
 import { normalizeBaseUrl } from "@/lib/platform-api/client";
 import {
   fetchProductResource,
@@ -9,7 +10,6 @@ import {
   parseProductCollectionsResponse,
   sendTaxonomyMutation,
 } from "./shared";
-import { merchantProductsSchema, platformErrorSchema } from "@ecs/contracts";
 import type {
   MerchantBatchDeleteActionResult,
   MerchantDeleteActionResult,
@@ -19,12 +19,13 @@ import type {
   MerchantProductCollectionsResult,
   MerchantProductsResult,
 } from "./types";
-import { getProductHeaders, getProductResourceMutationUrl, getProductResourceUrl } from "./urls";
+import { getProductHeaders } from "./urls";
 
 export async function createMerchantProductCategory(options: {
   cookieHeader?: string | null | undefined;
   fetcher?: typeof fetch;
   handle?: string | null | undefined;
+  mediaUrl?: string | null | undefined;
   name: string;
   parentCategoryId?: string | null | undefined;
   platformApiBaseUrl: string;
@@ -36,6 +37,7 @@ export async function createMerchantProductCategory(options: {
     body: {
       name: options.name,
       handle: options.handle,
+      ...(options.mediaUrl !== undefined ? { mediaUrl: options.mediaUrl } : {}),
       ...(options.parentCategoryId ? { parentCategoryId: options.parentCategoryId } : {}),
       ...(options.visibility ? { visibility: options.visibility } : {}),
     },
@@ -54,6 +56,7 @@ export async function createMerchantProductCollection(options: {
   cookieHeader?: string | null | undefined;
   fetcher?: typeof fetch;
   handle?: string | null | undefined;
+  mediaUrl?: string | null | undefined;
   platformApiBaseUrl: string;
   requestHost?: string | null | undefined;
   tenantId?: string | null | undefined;
@@ -64,6 +67,7 @@ export async function createMerchantProductCollection(options: {
     body: {
       title: options.title,
       handle: options.handle,
+      ...(options.mediaUrl !== undefined ? { mediaUrl: options.mediaUrl } : {}),
       ...(options.visibility ? { visibility: options.visibility } : {}),
     },
     cookieHeader: options.cookieHeader,

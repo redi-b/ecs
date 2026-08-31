@@ -1,7 +1,7 @@
 "use client";
 
 import { useId, useMemo, useState } from "react";
- 
+
 import { AppIcons } from "@/components/app/icons";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { slugifyTaxonomyHandle } from "@/features/catalog-taxonomy/taxonomy-table-state";
+import { MediaImageReferenceControl } from "@/features/media/media-image-reference-control";
 import type { MessageKey } from "@/i18n/messages";
 import { useI18n } from "@/i18n/provider";
 
@@ -33,6 +34,7 @@ export function TaxonomyForm({
   const { t } = useI18n();
   const [displayName, setDisplayName] = useState("");
   const [handle, setHandle] = useState("");
+  const [mediaUrl, setMediaUrl] = useState("");
   const [isHandleLocked, setIsHandleLocked] = useState(true);
   const formId = useId();
   const generatedHandle = useMemo(() => slugifyTaxonomyHandle(displayName), [displayName]);
@@ -109,7 +111,9 @@ export function TaxonomyForm({
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button
-                        aria-label={t("taxonomy.form.regenerateHandle", { entity: localizedEntity })}
+                        aria-label={t("taxonomy.form.regenerateHandle", {
+                          entity: localizedEntity,
+                        })}
                         className="rounded-full"
                         onClick={regenerateHandle}
                         size="icon-sm"
@@ -127,9 +131,22 @@ export function TaxonomyForm({
               </InputGroup>
               <FieldDescription>
                 {isHandleLocked
-                  ? t("taxonomy.form.handleFollows", { entity: localizedEntity, label: nameLabel.toLowerCase() })
+                  ? t("taxonomy.form.handleFollows", {
+                      entity: localizedEntity,
+                      label: nameLabel.toLowerCase(),
+                    })
                   : t("taxonomy.form.handleUnlocked", { entity: localizedEntity })}
               </FieldDescription>
+            </Field>
+
+            <Field>
+              <input name="mediaUrl" type="hidden" value={mediaUrl} />
+              <MediaImageReferenceControl
+                label={t("taxonomy.form.mediaLabel")}
+                onChange={(value) => setMediaUrl(value ?? "")}
+                value={mediaUrl}
+              />
+              <FieldDescription>{t("taxonomy.form.mediaDescription")}</FieldDescription>
             </Field>
 
             <div className="flex justify-end">

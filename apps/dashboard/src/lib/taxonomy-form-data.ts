@@ -1,5 +1,6 @@
 export type TaxonomyFormInput = {
   handle: string | null;
+  mediaUrl: string | null;
   name: string | null;
   title: string | null;
 };
@@ -7,6 +8,7 @@ export type TaxonomyFormInput = {
 export function getTaxonomyFormInput(formData: FormData): TaxonomyFormInput {
   return {
     handle: getOptionalString(formData, "handle"),
+    mediaUrl: getOptionalString(formData, "mediaUrl"),
     name: getOptionalString(formData, "name"),
     title: getOptionalString(formData, "title"),
   };

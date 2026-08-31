@@ -113,7 +113,9 @@
     "regenerateHandle": "የ{entity} መለያን እንደገና ፍጠር",
     "regenerateFrom": "ከ{label} ላይ እንደገና ፍጠር",
     "handleFollows": "የ{entity} መለያው ከ{label} ጋር አብሮ በራሱ ይፈጠራል።",
-    "handleUnlocked": "የ{entity} መለያ ለብቻ ማስተካከል ተፈቅዷል።"
+    "handleUnlocked": "የ{entity} መለያ ለብቻ ማስተካከል ተፈቅዷል።",
+    "mediaLabel": "የመደብር ምስል",
+    "mediaDescription": "ቴምፕሌቱ ሲደግፈው በመደብር የምድብና የስብስብ ካርዶች ላይ ይታያል።"
   },
   "edit": {
     "categoryTitle": "ምድብ አስተካክል",
