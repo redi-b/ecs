@@ -30,3 +30,20 @@ test("Luvia static editorial images use the responsive Astro image boundary", as
   assert.match(adapter, /components\/media\/TemplateAsset\.astro/);
   assert.ok(styles.every((source) => !/url\([^)]*\.(?:png|jpe?g|webp)/i.test(source)));
 });
+
+test("production templates use an accessible visual state when product media is absent", async () => {
+  const templateFiles = [
+    "ProductCard.astro",
+    "Product.astro",
+    "HeroProductSlide.astro",
+    "Cart.astro",
+    "../../nexahub/v1/ProductCard.astro",
+    "../../nexahub/v1/Product.astro",
+  ];
+  const sources = await Promise.all(
+    templateFiles.map((file) => readFile(new URL(file, templateRoot), "utf8")),
+  );
+
+  assert.ok(sources.every((source) => !/images? coming soon/i.test(source)));
+  assert.ok(sources.every((source) => source.includes("ProductMediaPlaceholder")));
+});

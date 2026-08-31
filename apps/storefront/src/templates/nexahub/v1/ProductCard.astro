@@ -2,6 +2,7 @@
 import type { StoreProduct } from "../../../lib/commerce/types";
 import { resolveProductBadge } from "../../../lib/commerce/merchandising";
 import { formatMoney } from "../../../lib/money";
+import ProductMediaPlaceholder from "../../../components/media/ProductMediaPlaceholder.astro";
 import addToCartIcon from "./icons/add-to-cart-icon.svg?raw";
 import SaveIcon from "./SaveIcon.astro";
 import "./styles/components/_product-card.scss";
@@ -17,7 +18,7 @@ const wishlistItem = JSON.stringify({ path: href, title: product.title ?? "Produ
   <h3 class="product-card__name type-heading-5"><a href={href}>{product.title ?? "Product"}</a></h3>
   <div class="product-card__image-box">
     <a href={href} class="product-card__image img-wrapper" aria-label={`View ${product.title ?? "product"}`}>
-      {product.thumbnail ? <img src={product.thumbnail} alt={product.title ?? "Product"} width="720" height="720" loading={eager ? "eager" : "lazy"} decoding="async" class="contain" /> : <span class="nexa-image-empty">Image coming soon</span>}
+      {product.thumbnail ? <img src={product.thumbnail} alt={product.title ?? "Product"} width="720" height="720" loading={eager ? "eager" : "lazy"} decoding="async" class="contain" /> : <ProductMediaPlaceholder label={`No image available for ${product.title ?? "this product"}`} />}
     </a>
     <button class="product-card__save" type="button" data-wishlist-toggle data-wishlist-item={wishlistItem} aria-pressed="false" aria-label={`Save ${product.title ?? "product"}`}><SaveIcon /></button>
     {variant ? <form class="product-card__actions" action="/actions/cart/add" method="post" data-card-add-form>

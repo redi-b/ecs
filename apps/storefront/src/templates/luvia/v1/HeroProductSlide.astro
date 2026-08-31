@@ -2,6 +2,7 @@
 import type { StoreProduct } from "../../../lib/commerce/types";
 import { resolveProductBadge } from "../../../lib/commerce/merchandising";
 import { formatMoney } from "../../../lib/money";
+import ProductMediaPlaceholder from "../../../components/media/ProductMediaPlaceholder.astro";
 import ActionButton from "./ActionButton.astro";
 import bagIcon from "./icons/bag-icon.svg";
 import wishlistIcon from "./icons/wishlist-icon.svg";
@@ -15,7 +16,7 @@ const wishlistItem = JSON.stringify({ path: href, title: product.title ?? "Produ
 ---
 <section class="lv-promo__slide" data-promo-slide aria-hidden={active ? "false" : "true"}>
   <div class="lv-promo__media">
-    {product.thumbnail ? <img src={product.thumbnail} alt={product.title ?? "Featured product"} /> : <span>Image coming soon</span>}
+    {product.thumbnail ? <img src={product.thumbnail} alt={product.title ?? "Featured product"} /> : <ProductMediaPlaceholder label={`No image available for ${product.title ?? "this product"}`} />}
     {badge ? <small>{badge.label}</small> : null}
     <button type="button" data-wishlist-toggle data-wishlist-item={wishlistItem} aria-pressed="false" aria-label={`Save ${product.title ?? "product"} to wishlist`}><img src={wishlistIcon.src} alt="" /></button>
   </div>

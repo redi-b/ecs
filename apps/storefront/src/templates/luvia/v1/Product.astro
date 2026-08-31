@@ -4,6 +4,7 @@ import { isColorOptionTitle, resolveColorSwatch } from "../../../lib/commerce/pr
 import type { StoreProduct, StoreProductVariant } from "../../../lib/commerce/types";
 import { formatMoney } from "../../../lib/money";
 import type { StorefrontSeo } from "../../../lib/seo";
+import ProductMediaPlaceholder from "../../../components/media/ProductMediaPlaceholder.astro";
 import caretIcon from "./icons/chevron-icon.svg";
 import starIcon from "./icons/star-icon.svg";
 import wishlistIcon from "./icons/wishlist-icon.svg";
@@ -101,7 +102,7 @@ const wishlistItem = product
     <section class="lv-product-detail">
       <div class="lv-product-gallery">
         {gallery.length > 1 && <div class="lv-product-gallery__thumbs" aria-label="Product images">{gallery.map((src, index) => <button type="button" data-gallery-thumb={src} aria-current={index === 0 ? "true" : undefined} aria-label={`View image ${index + 1}`}><img src={src} alt="" width="900" height="900" loading="lazy" decoding="async" /></button>)}</div>}
-        <div class="lv-product-gallery__main" data-gallery-main>{gallery[0] ? <img src={gallery[0]} alt={product.title ?? "Product"} width="900" height="900" decoding="async" /> : <span>Product image coming soon</span>}<span class:list={["lv-product-gallery__badge", badge ? `is-${badge.kind}` : null]} data-product-badge hidden={!badge}><img src={starIcon.src} alt="" data-product-badge-icon hidden={badge?.kind !== "promotion"} /><span>{badge?.label ?? ""}</span></span></div>
+        <div class="lv-product-gallery__main" data-gallery-main>{gallery[0] ? <img src={gallery[0]} alt={product.title ?? "Product"} width="900" height="900" decoding="async" /> : <ProductMediaPlaceholder label={`No image available for ${product.title ?? "this product"}`} />}<span class:list={["lv-product-gallery__badge", badge ? `is-${badge.kind}` : null]} data-product-badge hidden={!badge}><img src={starIcon.src} alt="" data-product-badge-icon hidden={badge?.kind !== "promotion"} /><span>{badge?.label ?? ""}</span></span></div>
       </div>
 
       <div class="lv-product-buy">
