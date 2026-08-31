@@ -28,3 +28,10 @@ test("storefront receives the branded demo host at runtime", () => {
     /STOREFRONT_DEMO_HOST: \$\{STOREFRONT_DEMO_HOST:-demo\.\$\{BASE_DOMAIN\}\}/,
   );
 });
+
+test("storefront receives the trusted public media base at runtime", () => {
+  assert.match(
+    serviceBlock("storefront", "caddy"),
+    /MEDIA_S3_PUBLIC_BASE_URL: \$\{MEDIA_S3_PUBLIC_BASE_URL:-https:\/\/media\.\$\{BASE_DOMAIN\}\/\$\{MEDIA_S3_BUCKET:-ecs-media\}\}/,
+  );
+});

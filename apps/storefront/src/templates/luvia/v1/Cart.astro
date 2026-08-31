@@ -2,6 +2,7 @@
 import { resolveStoreCartSummary } from "../../../lib/commerce/cart-summary";
 import type { StoreCart } from "../../../lib/commerce/types";
 import { formatMoney } from "../../../lib/money";
+import ProductMediaPlaceholder from "../../../components/media/ProductMediaPlaceholder.astro";
 import DiscountCode from "./components/DiscountCode.astro";
 import cartIcon from "./icons/cart-icon.svg";
 import chevronIcon from "./icons/chevron-icon.svg";
@@ -44,7 +45,7 @@ const summary = resolveStoreCartSummary(cart);
     {items.length === 0 ? <section class="lv-cart-page__empty" data-cart-page-empty><span><img src={cartIcon.src} alt="" /></span><h2>Your cart is empty</h2><p>Explore the collection and add something you love.</p><a href="/products">Browse products</a></section> : <div class="lv-cart-page__layout" data-cart-page-layout>
       <section class="lv-cart-lines" aria-label="Cart items" data-cart-page-lines>
         {items.map((item) => <article class="lv-cart-line" data-cart-line={item.id}>
-          <a class="lv-cart-line__media" href={item.productHandle ? `/products/${encodeURIComponent(item.productHandle)}` : "/products"}>{item.thumbnail ? <img src={item.thumbnail} alt="" /> : <span>Image coming soon</span>}</a>
+          <a class="lv-cart-line__media" href={item.productHandle ? `/products/${encodeURIComponent(item.productHandle)}` : "/products"}>{item.thumbnail ? <img src={item.thumbnail} alt="" /> : <ProductMediaPlaceholder label={`No image available for ${item.title || "this product"}`} />}</a>
           <div class="lv-cart-line__copy"><a href={item.productHandle ? `/products/${encodeURIComponent(item.productHandle)}` : "/products"}>{item.title ?? "Product"}</a>{item.variantTitle && <span>{item.variantTitle}</span>}<small>{formatMoney(item.unitPrice, cart?.currencyCode)} each</small></div>
           <div class="lv-cart-line__quantity" aria-label={`Quantity for ${item.title ?? "product"}`}>
             <form method="post" action="/actions/cart/update" data-cart-page-form><input type="hidden" name="lineItemId" value={item.id} /><input type="hidden" name="quantity" value={Math.max(1, item.quantity - 1)} /><button type="submit" aria-label="Decrease quantity" disabled={item.quantity <= 1}>−</button></form>

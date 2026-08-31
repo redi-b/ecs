@@ -325,6 +325,7 @@ services:
       STOREFRONT_PUBLIC_BASE_DOMAIN: ${BASE_DOMAIN}
       STOREFRONT_DEMO_HOST: ${STOREFRONT_DEMO_HOST:-demo.${BASE_DOMAIN}}
       STOREFRONT_EDITOR_ORIGIN: https://dashboard.${BASE_DOMAIN}
+      MEDIA_S3_PUBLIC_BASE_URL: ${MEDIA_S3_PUBLIC_BASE_URL:-https://media.${BASE_DOMAIN}/${MEDIA_S3_BUCKET:-ecs-media}}
     tmpfs:
       - /tmp:size=64m,mode=1777
       - /app/.astro:size=16m,mode=1777
