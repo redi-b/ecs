@@ -15,6 +15,13 @@ function write() {
     description: null,
     handle: "buna",
     imageUrls: [],
+    optionPresentations: [
+      {
+        optionTitle: "Size",
+        valueLabel: "250g",
+        swatch: { kind: "color" as const, value: "#4a2c1b" },
+      },
+    ],
     productId: null,
     sourceRows: [2],
     status: "draft",
@@ -135,6 +142,14 @@ describe("product import apply handler", () => {
       ecs_import_execution_id: "execution_1",
       ecs_import_product_key: "create:buna",
     });
+    assert.deepEqual(createInput?.options, [
+      {
+        title: "Size",
+        values: [
+          { label: "250g", swatch: { kind: "color", value: "#4a2c1b" } },
+        ],
+      },
+    ]);
   });
 
   it("leaves the outcome pending and rethrows transient commerce failures", async () => {

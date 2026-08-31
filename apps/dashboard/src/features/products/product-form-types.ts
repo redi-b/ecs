@@ -95,7 +95,19 @@ export function createProductPayloadSchema(t: Translate) {
         z.object({
           title: z.string().trim().min(1, t("products.validation.optionNameRequired")),
           values: z
-            .array(z.string().trim().min(1))
+            .array(
+              z.object({
+                id: z.string().trim().min(1).optional(),
+                label: z.string().trim().min(1),
+                swatch: z
+                  .object({
+                    kind: z.literal("color"),
+                    value: z.string().regex(/^#[0-9a-f]{6}$/i),
+                  })
+                  .nullable()
+                  .optional(),
+              }),
+            )
             .min(1, t("products.validation.optionValueRequired")),
         }),
       )

@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import type { MerchantProduct } from "@ecs/contracts";
-import { buildProductCsv } from "./product-export.js";
-import { dryRunProductImport } from "./product-import-dry-run.js";
+import { buildProductCsv, PRODUCT_CSV_HEADERS } from "./product-export.js";
+import { dryRunProductImport, parseProductImportCsv } from "./product-import-dry-run.js";
 
 const existing: MerchantProduct = {
   id: "prod_1",
@@ -40,6 +40,23 @@ describe("product import dry run", () => {
       sku: "BUNA-1",
       variantId: "var_1",
     });
+  });
+
+  it("accepts the exact v1 export shape and upgrades it without presentations", () => {
+    const presentationIndex = PRODUCT_CSV_HEADERS.indexOf("option_presentations_json");
+    const rows = parseProductImportCsv(buildProductCsv([existing]).csv).map((row, index) => {
+      const legacy = [...row];
+      legacy.splice(presentationIndex, 1);
+      if (index > 0) legacy[0] = "ecs-products-v1";
+      return legacy;
+    });
+    const csv = `${rows
+      .map((row) => row.map((cell) => `"${cell.replaceAll('"', '""')}"`).join(","))
+      .join("\r\n")}\r\n`;
+
+    const result = dryRunProductImport({ csv, existingProducts: [existing] });
+    assert.deepEqual(result.issues, []);
+    assert.equal(result.summary.updates, 1);
   });
 
   it("blocks unknown IDs, duplicate SKUs, malformed JSON, and invalid quantities", () => {

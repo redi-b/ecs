@@ -132,7 +132,7 @@ describe("platform app merchant and tenant catalog", () => {
             contentDigest: "a".repeat(64),
             expiresAt: "2026-08-25T00:30:00.000Z",
             id: "artifact_1",
-            schemaVersion: "ecs-products-v1",
+            schemaVersion: "ecs-products-v2",
             status: "reviewed",
             summary: { blocked: 0, creates: 0, products: 1, rows: 1, updates: 1 },
           };

@@ -193,6 +193,45 @@ export const merchantProductVariantWriteSchema = z.object({
   stockedQuantity: z.number().int().nonnegative().optional(),
 });
 
+export const PRODUCT_OPTION_VALUE_PRESENTATION_METADATA_KEY =
+  "ecs_option_value_presentation" as const;
+
+export const PRODUCT_OPTION_VALUE_PRESENTATIONS_ADDITIONAL_DATA_KEY =
+  "ecs_product_option_value_presentations" as const;
+
+export const productColorSwatchSchema = z.object({
+  kind: z.literal("color"),
+  value: z.string().regex(/^#[0-9a-fA-F]{6}$/),
+});
+
+export const productOptionValueWriteSchema = z.union([
+  z.string().trim().min(1),
+  z.object({
+    id: z.string().trim().min(1).optional(),
+    label: z.string().trim().min(1),
+    swatch: productColorSwatchSchema.nullable().optional(),
+  }),
+]);
+
+export const merchantProductOptionWriteSchema = z.object({
+  id: z.string().trim().min(1).optional(),
+  title: z.string().trim().min(1),
+  values: z.array(productOptionValueWriteSchema).min(1),
+});
+
+export const productOptionValuePresentationWriteSchema = z.object({
+  optionId: z.string().trim().min(1).optional(),
+  optionTitle: z.string().trim().min(1),
+  valueId: z.string().trim().min(1).optional(),
+  valueLabel: z.string().trim().min(1),
+  swatch: productColorSwatchSchema.nullable(),
+});
+
+export const productOptionValuePresentationsAdditionalDataSchema = z.object({
+  version: z.literal(1),
+  values: z.array(productOptionValuePresentationWriteSchema),
+});
+
 export const merchantProductWriteSchema = z.object({
   categoryIds: z.array(z.string().min(1)).optional(),
   collectionId: z.string().min(1).nullable().optional(),
@@ -201,12 +240,7 @@ export const merchantProductWriteSchema = z.object({
   handle: z.string().min(1).nullable().optional(),
   imageUrls: z.array(z.string().min(1)).optional(),
   options: z
-    .array(
-      z.object({
-        title: z.string().min(1),
-        values: z.array(z.string().min(1)).min(1),
-      }),
-    )
+    .array(merchantProductOptionWriteSchema)
     .optional(),
   priceAmount: z.number().nonnegative().optional(),
   status: z.string().min(1).nullable().optional(),
@@ -229,6 +263,25 @@ export const merchantProductStockSchema = z.object({
   availableQuantity: z.number().nullable(),
 });
 
+export const productOptionValuePresentationSchema = z.object({
+  label: z.string().min(1),
+  swatch: productColorSwatchSchema
+    .extend({
+      source: z.enum(["explicit", "inferred"]),
+    })
+    .optional(),
+});
+
+export const merchantProductOptionValueSchema = productOptionValuePresentationSchema.extend({
+  id: z.string().min(1).nullable(),
+});
+
+export const merchantProductOptionSchema = z.object({
+  id: z.string().min(1).nullable(),
+  title: z.string().min(1),
+  values: z.array(merchantProductOptionValueSchema),
+});
+
 export const merchantProductSchema = z.object({
   id: z.string().min(1),
   categoryIds: z.array(z.string().min(1)).optional(),
@@ -249,6 +302,7 @@ export const merchantProductSchema = z.object({
       }),
     )
     .optional(),
+  options: z.array(merchantProductOptionSchema).optional(),
   variants: z
     .array(
       z.object({
@@ -344,6 +398,26 @@ export const merchantProductCollectionsSchema = z.object({
 });
 
 export type MerchantProduct = z.infer<typeof merchantProductSchema>;
+
+export type MerchantProductOption = z.infer<typeof merchantProductOptionSchema>;
+
+export type MerchantProductOptionValue = z.infer<typeof merchantProductOptionValueSchema>;
+
+export type ProductColorSwatch = z.infer<typeof productColorSwatchSchema>;
+
+export type ProductOptionValuePresentation = z.infer<
+  typeof productOptionValuePresentationSchema
+>;
+
+export type ProductOptionValuePresentationWrite = z.infer<
+  typeof productOptionValuePresentationWriteSchema
+>;
+
+export type ProductOptionValuePresentationsAdditionalData = z.infer<
+  typeof productOptionValuePresentationsAdditionalDataSchema
+>;
+
+export type ProductOptionValueWrite = z.infer<typeof productOptionValueWriteSchema>;
 
 export type MerchantProductCategories = z.infer<typeof merchantProductCategoriesSchema>;
 

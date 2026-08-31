@@ -19,6 +19,7 @@ import type {
   VariantMatrixRow,
 } from "@/features/products/product-variant-matrix";
 import { useI18n } from "@/i18n/provider";
+import { ColorPickerField } from "@/features/storefront-editor/editor-theme";
 
 export function SimpleProductStockPreview({ values }: { values: ProductFormValues }) {
   const { t } = useI18n();
@@ -80,7 +81,9 @@ export function ProductReviewSummary({ values }: { values: ProductFormValues }) 
             value={
               values.hasVariants && normalizedOptions.length
                 ? normalizedOptions
-                    .map((option) => `${option.title}: ${option.values.join(", ")}`)
+                    .map((option) =>
+                      `${option.title}: ${option.values.map((value) => value.label).join(", ")}`,
+                    )
                     .join(" | ")
                 : t("products.formReview.noShopperOptions")
             }
@@ -149,12 +152,22 @@ export function ProductOptionsBuilder({
 
     updateOption(index, {
       ...option,
-      values: [...new Set([...option.values, ...values])],
+      values: [
+        ...option.values,
+        ...values
+          .filter(
+            (label) =>
+              !option.values.some(
+                (value) => value.label.toLocaleLowerCase() === label.toLocaleLowerCase(),
+              ),
+          )
+          .map((label) => ({ label })),
+      ],
     });
     setDraftValues((current) => ({ ...current, [index]: "" }));
   }
 
-  function removeValue(index: number, value: string) {
+  function removeValue(index: number, valueIndex: number) {
     const option = options[index];
 
     if (!option) {
@@ -163,7 +176,20 @@ export function ProductOptionsBuilder({
 
     updateOption(index, {
       ...option,
-      values: option.values.filter((currentValue) => currentValue !== value),
+      values: option.values.filter((_, index) => index !== valueIndex),
+    });
+  }
+
+  function updateValueSwatch(index: number, valueIndex: number, color: string) {
+    const option = options[index];
+    if (!option) return;
+    updateOption(index, {
+      ...option,
+      values: option.values.map((value, index) =>
+        index === valueIndex
+          ? { ...value, swatch: { kind: "color" as const, value: color.toLowerCase() } }
+          : value,
+      ),
     });
   }
 
@@ -216,13 +242,30 @@ export function ProductOptionsBuilder({
                 <Field>
                   <FieldLabel>{t("products.formReview.values")}</FieldLabel>
                   <div className="flex max-h-36 min-h-10 flex-wrap items-center gap-2 overflow-y-auto overscroll-contain rounded-lg border bg-muted/20 px-2 py-2">
-                    {option.values.map((value) => (
-                      <Badge className="gap-1 rounded-md px-2 py-1" key={value} variant="secondary">
-                        {value}
+                    {option.values.map((value, valueIndex) => (
+                      <Badge
+                        className="gap-1 rounded-md px-1.5 py-1"
+                        key={value.id ?? `${value.label}-${valueIndex}`}
+                        variant="secondary"
+                      >
+                        {isColorOptionTitle(option.title) ? (
+                          <span className="size-3 rounded-full border" style={{ backgroundColor: value.swatch?.value ?? "transparent" }} />
+                        ) : null}
+                        {value.label}
+                        {isColorOptionTitle(option.title) ? (
+                          <div className="ml-1 w-6">
+                            <ColorPickerField
+                              label={value.label}
+                              onChange={(color) => updateValueSwatch(index, valueIndex, color)}
+                              swatchOnly
+                              value={value.swatch?.value ?? "#808080"}
+                            />
+                          </div>
+                        ) : null}
                         <button
-                          aria-label={t("products.formReview.removeValueAria", { value })}
+                          aria-label={t("products.formReview.removeValueAria", { value: value.label })}
                           className="ml-1 rounded-sm text-muted-foreground hover:text-foreground"
-                          onClick={() => removeValue(index, value)}
+                          onClick={() => removeValue(index, valueIndex)}
                           type="button"
                         >
                           <AppIcons.close className="size-3" />
@@ -303,6 +346,10 @@ export function ProductOptionsBuilder({
       )}
     </div>
   );
+}
+
+function isColorOptionTitle(title: string) {
+  return /^(colou?r)$/i.test(title.trim());
 }
 
 export function VariantMatrixTable({

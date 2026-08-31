@@ -1,6 +1,13 @@
 export type ProductOptionDraft = {
+  id?: string | undefined;
   title: string;
-  values: string[];
+  values: ProductOptionValueDraft[];
+};
+
+export type ProductOptionValueDraft = {
+  id?: string | undefined;
+  label: string;
+  swatch?: { kind: "color"; value: string } | null | undefined;
 };
 
 export type VariantDefaults = {
@@ -40,7 +47,7 @@ export function buildVariantMatrix(input: {
   const options = input.options
     .map((option) => ({
       title: option.title.trim(),
-      values: option.values.map((value) => value.trim()).filter(Boolean),
+      values: option.values.map((value) => value.label.trim()).filter(Boolean),
     }))
     .filter((option) => option.title && option.values.length);
 

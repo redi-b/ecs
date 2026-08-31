@@ -31,7 +31,7 @@ describe("product CSV export", () => {
     assert.match(result.csv, /ቡና/);
     assert.match(result.csv, /'=HYPERLINK/);
     assert.match(result.csv, /'\+251/);
-    assert.match(result.csv, /ecs-products-v1/);
+    assert.match(result.csv, /ecs-products-v2/);
   });
 
   it("paginates through the tenant-scoped catalog", async () => {

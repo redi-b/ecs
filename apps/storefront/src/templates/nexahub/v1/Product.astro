@@ -1,7 +1,7 @@
 ---
 import { resolveProductBadge } from "../../../lib/commerce/merchandising";
 import { isColorOptionTitle, resolveColorSwatch } from "../../../lib/commerce/product-options";
-import type { StoreProduct, StoreProductVariant } from "../../../lib/commerce/types";
+import type { StoreProduct, StoreProductOption, StoreProductVariant } from "../../../lib/commerce/types";
 import { formatMoney } from "../../../lib/money";
 import type { StorefrontSeo } from "../../../lib/seo";
 import ProductMediaPlaceholder from "../../../components/media/ProductMediaPlaceholder.astro";
@@ -30,7 +30,7 @@ interface Props {
 const { data, themeTokens, tenantName, cartCount = 0, deferCartCount = false, product, handle, notice, error, relatedProducts = [], seo, structuredData, demoMode = false } = Astro.props;
 const template = parseNexahubData(data);
 const defaultVariant: StoreProductVariant | null = product?.variants.find((variant) => variant.inStock) ?? product?.variants[0] ?? null;
-const axes = product?.options?.length ? product.options : (() => { const map = new Map<string, Set<string>>(); for (const variant of product?.variants ?? []) for (const option of variant.optionValues) { if (!map.has(option.optionTitle)) map.set(option.optionTitle, new Set()); map.get(option.optionTitle)?.add(option.value); } return [...map].map(([title, values], index) => ({ id: `axis-${index}`, title, values: [...values] })); })();
+const axes: StoreProductOption[] = product?.options?.length ? product.options : (() => { const map = new Map<string, Set<string>>(); for (const variant of product?.variants ?? []) for (const option of variant.optionValues) { if (!map.has(option.optionTitle)) map.set(option.optionTitle, new Set()); map.get(option.optionTitle)?.add(option.value); } return [...map].map(([title, values], index) => ({ id: `axis-${index}`, title, values: [...values] })); })();
 const gallery = product ? [...new Set([...(product.images ?? []), ...(product.thumbnail ? [product.thumbnail] : [])])] : [];
 const badge = product ? resolveProductBadge(product, defaultVariant) : null;
 const currentPrice = formatMoney(defaultVariant?.priceAmount ?? product?.priceAmount, defaultVariant?.currencyCode ?? product?.currencyCode);
@@ -52,7 +52,7 @@ const selectedSummary = defaultVariant?.optionValues.map((option) => option.valu
             <div class="product-info__desc-box" id="product-description"><h1 class="product-info__title">{product.title}</h1><p class="product-info__desc" data-product-description>{product.description ?? "Product details are being prepared."}</p><button class="product-info__desc-toggle" type="button" data-description-toggle aria-expanded="false" aria-controls="product-description" hidden>Show more</button></div>
             <div class="product-info__configs-box">{axes.map((axis) => {
               const colorAxis = isColorOptionTitle(axis.title);
-              return <fieldset class="product-info__config-group" data-option-axis={axis.title}><legend class="product-info__config-label">{axis.title}</legend><div class={colorAxis ? "product-info__color-swatches" : "product-info__config-options"}>{axis.values.map((value) => { const selected = defaultVariant?.optionValues.some((option) => option.optionTitle === axis.title && option.value === value); const swatch = colorAxis ? resolveColorSwatch(value) : null; return swatch
+              return <fieldset class="product-info__config-group" data-option-axis={axis.title}><legend class="product-info__config-label">{axis.title}</legend><div class={colorAxis ? "product-info__color-swatches" : "product-info__config-options"}>{axis.values.map((value) => { const selected = defaultVariant?.optionValues.some((option) => option.optionTitle === axis.title && option.value === value); const swatch = colorAxis ? resolveColorSwatch(value, axis.swatches?.[value]) : null; return swatch
                 ? <button type="button" class:list={["product-info__color-btn", { "is-selected": selected }]} data-option-title={axis.title} data-option-value={value} aria-pressed={selected ? "true" : "false"} aria-label={`Select ${value}`} title={value}><span style={`background-color:${swatch}`} aria-hidden="true"></span></button>
                 : <button type="button" class:list={["product-info__config-btn", { "is-selected": selected }]} data-option-title={axis.title} data-option-value={value} aria-pressed={selected ? "true" : "false"}>{value}</button>; })}</div></fieldset>;
             })}</div>

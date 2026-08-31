@@ -52,6 +52,7 @@ const PRODUCT_CSV_HEADERS = [
   "variant_title",
   "sku",
   "option_values_json",
+  "option_presentations_json",
   "prices_json",
   "stocked_quantity",
   "reserved_quantity",
@@ -65,7 +66,7 @@ const PRODUCT_CSV_HEADERS = [
 const SAMPLE_PRODUCT_CSV = [
   PRODUCT_CSV_HEADERS,
   [
-    "ecs-products-v1",
+    "ecs-products-v2",
     "",
     "ethiopian-coffee",
     "Ethiopian Coffee",
@@ -76,6 +77,7 @@ const SAMPLE_PRODUCT_CSV = [
     "",
     "250 g",
     "COFFEE-250",
+    "[]",
     "[]",
     '[{"amount":450,"currencyCode":"etb"}]',
     "25",

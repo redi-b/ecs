@@ -7,7 +7,7 @@ import {
   RiRefreshLine,
   RiResetLeftLine,
 } from "@remixicon/react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { HexColorPicker } from "react-colorful";
 
 import { SearchableCombobox } from "@/components/app/searchable-combobox";
@@ -41,6 +41,19 @@ import { themePalettePageProps, themeResetPageProps } from "./editor-state";
 import { isHexColor, updateStorefrontProp, updateStorefrontProps } from "./editor-utils";
 
 type ColorFormat = "hex" | "rgb" | "hsl";
+
+const COMMON_COLOR_PRESETS = [
+  { label: "Black", value: "#111111" },
+  { label: "White", value: "#ffffff" },
+  { label: "Gray", value: "#6b7280" },
+  { label: "Red", value: "#dc2626" },
+  { label: "Orange", value: "#ea580c" },
+  { label: "Yellow", value: "#eab308" },
+  { label: "Green", value: "#16a34a" },
+  { label: "Blue", value: "#2563eb" },
+  { label: "Purple", value: "#9333ea" },
+  { label: "Pink", value: "#db2777" },
+] as const;
 
 type PaletteKey = "primary" | "background" | "foreground" | "muted" | "accent";
 
@@ -263,7 +276,7 @@ export function ThemeBrandSection({
               const label = t(field.labelKey);
               return (
                 <div className="flex min-w-0 flex-col items-center gap-1.5" key={field.key}>
-                  <PremiumColorPicker
+                  <ColorPickerField
                     label={label}
                     onChange={(next) => onPaletteColorChange(field.prop, next)}
                     swatchOnly
@@ -388,42 +401,65 @@ function ChannelField({
   );
 }
 
-export function PremiumColorPicker({
+export function ColorPickerField({
   label,
   onChange,
+  onCommit,
   value,
   swatchOnly = false,
 }: {
   label: string;
   onChange: (value: string) => void;
+  onCommit?: ((value: string) => void) | undefined;
   value: string;
   /** Compact trigger for palette grids */
   swatchOnly?: boolean;
 }) {
-  const color = isHexColor(value) ? normalizeHex(value) : "#000000";
+  const normalizedValue = isHexColor(value) ? normalizeHex(value) : "#000000";
+  const [color, setColor] = useState(normalizedValue);
   const [format, setFormat] = useState<ColorFormat>("hex");
   const [hexDraft, setHexDraft] = useState(color.toUpperCase());
+  const interactingRef = useRef(false);
+  const colorRef = useRef(color);
+
+  useEffect(() => {
+    if (interactingRef.current) return;
+    colorRef.current = normalizedValue;
+    setColor(normalizedValue);
+    setHexDraft(normalizedValue.toUpperCase());
+  }, [normalizedValue]);
+
+  function updateColor(next: string, commit = false) {
+    const normalized = normalizeHex(next, color).toLowerCase();
+    colorRef.current = normalized;
+    setColor(normalized);
+    setHexDraft(normalized.toUpperCase());
+    onChange(normalized);
+    if (commit) onCommit?.(normalized);
+  }
 
   const rgb = hexToRgb(color) ?? { r: 0, g: 0, b: 0 };
   const hsl = hexToHsl(color) ?? { h: 0, s: 0, l: 0 };
 
   function applyRgb(next: Partial<{ r: number; g: number; b: number }>) {
-    onChange(
+    updateColor(
       rgbToHex(
         clampByte(next.r ?? rgb.r),
         clampByte(next.g ?? rgb.g),
         clampByte(next.b ?? rgb.b),
       ),
+      true,
     );
   }
 
   function applyHsl(next: Partial<{ h: number; s: number; l: number }>) {
-    onChange(
+    updateColor(
       hslToHex(
         clampHue(next.h ?? hsl.h),
         clampPercent(next.s ?? hsl.s),
         clampPercent(next.l ?? hsl.l),
       ),
+      true,
     );
   }
 
@@ -435,8 +471,7 @@ export function PremiumColorPicker({
     }
     const next = normalizeHex(trimmed.startsWith("#") ? trimmed : `#${trimmed}`, color);
     if (isHexColor(next)) {
-      onChange(next);
-      setHexDraft(next.toUpperCase());
+      updateColor(next, true);
     } else {
       setHexDraft(color.toUpperCase());
     }
@@ -499,11 +534,29 @@ export function PremiumColorPicker({
           <HexColorPicker
             className="!h-48 !w-full [&_.react-colorful__saturation]:rounded-lg [&_.react-colorful__hue]:mt-2.5 [&_.react-colorful__hue]:h-3 [&_.react-colorful__hue]:rounded-full"
             color={color}
-            onChange={(next) => {
-              onChange(next);
-              setHexDraft(normalizeHex(next).toUpperCase());
+            onChange={(next) => updateColor(next)}
+            onPointerDown={() => {
+              interactingRef.current = true;
+            }}
+            onPointerUp={() => {
+              interactingRef.current = false;
+              onCommit?.(colorRef.current);
             }}
           />
+
+          <div className="grid grid-cols-10 gap-1.5" role="group" aria-label="Common colors">
+            {COMMON_COLOR_PRESETS.map((preset) => (
+              <button
+                aria-label={preset.label}
+                className="aspect-square rounded-full border shadow-xs transition-transform hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                key={preset.value}
+                onClick={() => updateColor(preset.value, true)}
+                style={{ backgroundColor: preset.value }}
+                title={preset.label}
+                type="button"
+              />
+            ))}
+          </div>
 
           {format === "hex" ? (
             <div className="flex flex-col gap-1">

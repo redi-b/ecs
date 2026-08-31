@@ -1,6 +1,10 @@
 import type { MerchantProduct } from "@ecs/contracts";
 import type { ListProductsForExport } from "./product-export.js";
-import { PRODUCT_CSV_HEADERS, PRODUCT_CSV_SCHEMA_VERSION } from "./product-export.js";
+import {
+  LEGACY_PRODUCT_CSV_HEADERS,
+  PRODUCT_CSV_HEADERS,
+  PRODUCT_CSV_SCHEMA_VERSION,
+} from "./product-export.js";
 
 export const MAX_PRODUCT_IMPORT_BYTES = 2 * 1024 * 1024;
 export const MAX_PRODUCT_IMPORT_ROWS = 10_000;
@@ -89,6 +93,23 @@ export function parseProductImportCsv(text: string): string[][] {
   return rows;
 }
 
+/** Upgrades the exact v1 shape in memory; malformed or modified headers remain untouched. */
+export function normalizeProductImportCsvRows(rows: string[][]): string[][] {
+  const headers = rows[0] ?? [];
+  const isLegacy =
+    headers.length === LEGACY_PRODUCT_CSV_HEADERS.length &&
+    LEGACY_PRODUCT_CSV_HEADERS.every((header, index) => headers[index] === header);
+  if (!isLegacy) return rows;
+
+  const presentationIndex = PRODUCT_CSV_HEADERS.indexOf("option_presentations_json");
+  return rows.map((row, index) => {
+    const upgraded = [...row];
+    upgraded.splice(presentationIndex, 0, index === 0 ? "option_presentations_json" : "[]");
+    if (index > 0 && upgraded[0] === "ecs-products-v1") upgraded[0] = PRODUCT_CSV_SCHEMA_VERSION;
+    return upgraded;
+  });
+}
+
 function parseJsonArray(value: string, code: string, row: number, issues: ProductImportIssue[]) {
   try {
     const parsed = JSON.parse(value || "[]");
@@ -111,7 +132,7 @@ export function dryRunProductImport(input: {
   const issues: ProductImportIssue[] = [];
   let rows: string[][];
   try {
-    rows = parseProductImportCsv(input.csv);
+    rows = normalizeProductImportCsvRows(parseProductImportCsv(input.csv));
   } catch (error) {
     return {
       issues: [{ code: "invalid_csv", message: String((error as Error).message), row: 1 }],
@@ -135,7 +156,7 @@ export function dryRunProductImport(input: {
       issues: [
         {
           code: "invalid_product_csv_headers",
-          message: "Use the ecs-products-v1 template without changing its columns.",
+          message: `Use the ${PRODUCT_CSV_SCHEMA_VERSION} template without changing its columns.`,
           row: 1,
         },
       ],
@@ -280,6 +301,36 @@ export function dryRunProductImport(input: {
       issues.push({
         code: "invalid_option_values",
         message: "Every option value needs optionTitle and value strings.",
+        row,
+      });
+    }
+    const optionPresentations = parseJsonArray(
+      value("option_presentations_json"),
+      "invalid_option_presentations",
+      row,
+      issues,
+    );
+    if (
+      optionPresentations?.some((presentation) => {
+        if (typeof presentation !== "object" || presentation === null) return true;
+        const candidate = presentation as {
+          optionTitle?: unknown;
+          valueLabel?: unknown;
+          swatch?: { kind?: unknown; value?: unknown };
+        };
+        return (
+          typeof candidate.optionTitle !== "string" ||
+          typeof candidate.valueLabel !== "string" ||
+          candidate.swatch?.kind !== "color" ||
+          typeof candidate.swatch.value !== "string" ||
+          !/^#[0-9a-f]{6}$/i.test(candidate.swatch.value)
+        );
+      })
+    ) {
+      issues.push({
+        code: "invalid_option_presentations",
+        message:
+          "Every option presentation needs optionTitle, valueLabel, and a #RRGGBB color swatch.",
         row,
       });
     }

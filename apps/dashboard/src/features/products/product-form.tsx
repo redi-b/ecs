@@ -124,7 +124,7 @@ export function ProductForm({
     onSubmit: async ({ value }) => {
       try {
         setActionError(null);
-        const payload = getProductPayload(value, { includeOptions: !product }, t);
+        const payload = getProductPayload(value, { includeOptions: true }, t);
 
         await submitMutation.mutateAsync(payload);
       } catch (error) {

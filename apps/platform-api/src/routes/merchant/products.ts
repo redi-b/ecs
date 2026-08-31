@@ -663,6 +663,7 @@ export function registerMerchantProductRoutes(
     }
 
     const body = await getJsonBody(context.req.raw);
+    const productOptions = getOptionalBodyProductOptions(body);
     const product = await options.updateMerchantProduct({
       productId: context.req.param("productId"),
       title: getOptionalBodyString(body, "title"),
@@ -671,6 +672,7 @@ export function registerMerchantProductRoutes(
       collectionId: getOptionalBodyString(body, "collectionId"),
       categoryIds: getOptionalBodyStringArray(body, "categoryIds"),
       imageUrls: getOptionalBodyStringArray(body, "imageUrls"),
+      ...(productOptions ? { options: productOptions } : {}),
       status: getOptionalBodyString(body, "status"),
       thumbnail: getOptionalBodyString(body, "thumbnail"),
       salesChannelId: commerce.context.medusaSalesChannelId,

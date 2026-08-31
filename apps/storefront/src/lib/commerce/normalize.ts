@@ -134,6 +134,7 @@ export function normalizeProduct(value: unknown): StoreProduct {
       const id = getString(option.id) ?? "";
       const title = getString(option.title) ?? getString(option.name) ?? "Option";
       const values: string[] = [];
+      const swatches: Record<string, string> = {};
       if (Array.isArray(option.values)) {
         for (const entry of option.values) {
           const v =
@@ -143,6 +144,10 @@ export function normalizeProduct(value: unknown): StoreProduct {
                 ? (getString(entry.value) ?? getString(entry.name) ?? "")
                 : "";
           if (v && !values.includes(v)) values.push(v);
+          if (v && isRecord(entry)) {
+            const swatch = getExplicitOptionValueSwatch(entry.metadata);
+            if (swatch) swatches[v] = swatch;
+          }
         }
       }
       // Fall back to values present on variants.
@@ -153,7 +158,14 @@ export function normalizeProduct(value: unknown): StoreProduct {
           }
         }
       }
-      return id || title ? { id: id || title, title, values } : null;
+      return id || title
+        ? {
+            id: id || title,
+            title,
+            values,
+            ...(Object.keys(swatches).length ? { swatches } : {}),
+          }
+        : null;
     })
     .filter((option): option is NonNullable<typeof option> => Boolean(option));
 
@@ -196,6 +208,16 @@ export function normalizeProduct(value: unknown): StoreProduct {
     discountPercentage: priced?.discountPercentage ?? null,
     currencyCode: priced?.currencyCode ?? null,
   };
+}
+
+function getExplicitOptionValueSwatch(metadata: unknown) {
+  if (!isRecord(metadata)) return null;
+  const presentation = metadata.ecs_option_value_presentation;
+  if (!isRecord(presentation) || presentation.version !== 1) return null;
+  const swatch = presentation.swatch;
+  if (!isRecord(swatch) || swatch.kind !== "color") return null;
+  const value = getString(swatch.value)?.toLowerCase() ?? "";
+  return /^#[0-9a-f]{6}$/.test(value) ? value : null;
 }
 
 function normalizeCartItem(value: unknown): StoreCartItem | null {

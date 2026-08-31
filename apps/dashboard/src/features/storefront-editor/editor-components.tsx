@@ -39,6 +39,6 @@ export {
   updateStorefrontProps,
 } from "./editor-utils";
 
-export { FontSelect, PremiumColorPicker, ThemeBrandSection } from "./editor-theme";
+export { ColorPickerField, FontSelect, ThemeBrandSection } from "./editor-theme";
 
 export { StorefrontCollectionPicker, StorefrontProductsPicker } from "./editor-merchandising";
