@@ -1,10 +1,11 @@
+import type { ProductTypes } from "@medusajs/framework/types";
+
 import {
   PRODUCT_OPTION_VALUE_PRESENTATION_METADATA_KEY,
   PRODUCT_OPTION_VALUE_PRESENTATIONS_ADDITIONAL_DATA_KEY,
-  productOptionValuePresentationsAdditionalDataSchema,
   type ProductOptionValuePresentationWrite,
-} from "@ecs/contracts";
-import type { ProductTypes } from "@medusajs/framework/types";
+  productOptionValuePresentationsAdditionalDataSchema,
+} from "./product-option-value-presentation-contract";
 
 type ProductWithOptions = Pick<ProductTypes.ProductDTO, "id"> & {
   options?: ProductTypes.ProductOptionDTO[] | null;

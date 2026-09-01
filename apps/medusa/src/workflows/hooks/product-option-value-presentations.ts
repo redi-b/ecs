@@ -1,15 +1,12 @@
-import { StepResponse } from "@medusajs/framework/workflows-sdk";
 import { Modules } from "@medusajs/framework/utils";
-import {
-  createProductsWorkflow,
-  updateProductsWorkflow,
-} from "@medusajs/medusa/core-flows";
+import { StepResponse } from "@medusajs/framework/workflows-sdk";
+import { createProductsWorkflow, updateProductsWorkflow } from "@medusajs/medusa/core-flows";
 
 import {
   buildOptionValuePresentationMutations,
-  readOptionValuePresentationPayload,
   type OptionValuePresentationMutation,
-} from "../../lib/product-option-value-presentations.js";
+  readOptionValuePresentationPayload,
+} from "../../lib/product-option-value-presentations";
 
 type CompensationData = Array<Pick<OptionValuePresentationMutation, "id" | "previousMetadata">>;
 
