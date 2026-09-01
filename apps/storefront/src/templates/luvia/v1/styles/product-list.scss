@@ -76,7 +76,7 @@
 .lv-product-card__badge { position: absolute; z-index: 1; top: 12px; left: 12px; padding: 6px 8px; display: inline-flex; align-items: center; gap: 4px; border-radius: 999px; background: var(--lv-accent); color: var(--lv-ink); font-size: 12px; }
 .lv-product-card__badge img { width: 12px; height: 12px; }
 .lv-product-card__heart { position: absolute; z-index: 1; top: 12px; right: 12px; width: 30px; height: 30px; padding: 0; display: grid; place-items: center; border: 1px solid transparent; border-radius: 50%; background: white; cursor: pointer; }
-.lv-product-card__heart img { width: 15px; height: 15px; }
+.lv-product-card__heart img { width: 15px; height: 13px; object-fit: contain; }
 .lv-product-card__heart[aria-pressed="true"] { border-color: var(--lv-green); background: var(--lv-accent); }
 .lv-product-card__cta { position: absolute; z-index: 2; left: 50%; bottom: 0; margin: 0; opacity: 0; visibility: hidden; transform: translate(-50%, 20px); transition: opacity 220ms ease, transform 220ms ease, visibility 220ms ease; }
 .lv-product-card:hover .lv-product-card__cta, .lv-product-card:focus-within .lv-product-card__cta { opacity: 1; visibility: visible; transform: translate(-50%, -16px); }

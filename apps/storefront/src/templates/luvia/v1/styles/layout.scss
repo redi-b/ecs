@@ -36,7 +36,7 @@ img { display: block; max-width: 100%; }
 
 .lv-header { position: absolute; z-index: 20; top: 26px; left: 50%; width: calc(100% - 120px); height: 64px; padding: 6px 10px; display: flex; align-items: center; gap: 24px; transform: translateX(-50%); border-radius: 999px; background: color-mix(in srgb,var(--lv-bg) 94%,white); box-shadow: 0 0 26px color-mix(in srgb,var(--lv-green) 22%,transparent); }
 .lv-logo { width: 82px; flex: none; }
-.lv-logo img { width: 100%; height: 44px; object-fit: contain; }
+.lv-logo img { width: 100%; height: 44px; object-fit: contain; object-position: center; }
 .lv-nav { display: flex; align-items: center; gap: 24px; }
 .lv-nav__customer { display: none; }
 .lv-nav a { color: color-mix(in srgb,var(--lv-ink) 78%,var(--lv-bg)); text-decoration: none; font-size: 16px; white-space: nowrap; }
@@ -48,7 +48,7 @@ img { display: block; max-width: 100%; }
 .lv-search input { min-width: 0; width: 100%; height: 100%; padding: 0 16px; border: 0; outline: 0; background: transparent; color: var(--lv-ink); font-size: 15px; }
 .lv-search button, .lv-action { width: 42px; height: 42px; padding: 0; display: grid; place-items: center; flex: none; border: 1px solid var(--lv-accent); border-radius: 50%; background: var(--lv-bg); }
 .lv-search button { margin-right: 3px; border: 0; }
-.lv-search img, .lv-action img { width: 18px; height: 18px; }
+.lv-search img, .lv-action img { width: 18px; height: 18px; object-fit: contain; }
 .lv-action { position: relative; color: var(--lv-ink); }
 .lv-action--wishlist::after { content: ""; position: absolute; top: 1px; right: 1px; width: 8px; height: 8px; border: 2px solid var(--lv-bg); border-radius: 50%; background: var(--lv-green); opacity: 0; transform: scale(.65); transition: opacity 160ms ease, transform 160ms ease; }
 .lv-action--wishlist[data-active]::after { opacity: 1; transform: scale(1); }
@@ -70,7 +70,7 @@ img { display: block; max-width: 100%; }
 .lv-footer__links { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
 .lv-footer__intro { justify-content: space-between; }
 .lv-footer__intro p { max-width: 260px; }
-.lv-footer__intro img { width: 80px; margin-top: 20px; }
+.lv-footer__intro img { width: 80px; height: 41px; margin-top: 20px; object-fit: contain; object-position: left center; }
 .lv-footer small { position: absolute; right: 28px; bottom: 26px; }
 .lv-inquiry { width: calc(100% - 120px); height: 76px; margin: 0 auto; padding: 0 28px; display: flex; align-items: center; justify-content: space-between; border-radius: 20px 20px 0 0; background: var(--lv-soft); }
 .lv-inquiry p { margin: 0; font: 400 36px/1 "GC Molecule Demo", Arial, sans-serif; }
