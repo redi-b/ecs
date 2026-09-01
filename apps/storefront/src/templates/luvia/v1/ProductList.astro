@@ -1,5 +1,6 @@
 ---
 import type { StoreCategory, StoreCollection, StoreProduct } from "../../../lib/commerce/types";
+import { taxonomyHandle } from "../../../lib/commerce/taxonomy-links";
 import type { StorefrontSeo } from "../../../lib/seo";
 import heroBackground from "./assets/products-hero-background-image.webp";
 import chevronIcon from "./icons/chevron-icon.svg";
@@ -53,8 +54,8 @@ const {
 } = Astro.props;
 
 const template = parseLuviaData(data);
-const activeCollection = collections.find((item) => item.id === filters.collectionId);
-const activeCategory = categories.find((item) => item.id === filters.categoryId);
+const activeCollection = collections.find((item) => taxonomyHandle(item) === filters.collectionId);
+const activeCategory = categories.find((item) => taxonomyHandle(item) === filters.categoryId);
 const hasActiveFilters = Boolean(
   filters.q || filters.collectionId || filters.categoryId || filters.order,
 );
@@ -108,12 +109,12 @@ const pageWindow = Array.from({ length: totalPages }, (_, index) => index + 1).f
           <div class="lv-catalog-filter__controls">
             {filters.collectionId && <input type="hidden" name="collection" value={filters.collectionId} />}
             <label class="lv-catalog-filter__search"><span class="sr-only">Search products</span><input name="q" type="search" value={filters.q ?? ""} placeholder="Search products" /></label>
-            {collections.slice(0, 3).map((collection) => <a class:list={["lv-filter-pill", { "is-active": filters.collectionId === collection.id }]} href={productsHref(0, { collectionId: collection.id })}>{collection.title ?? "Collection"}</a>)}
+            {collections.flatMap((collection) => { const handle = taxonomyHandle(collection); return handle ? [<a class:list={["lv-filter-pill", { "is-active": filters.collectionId === handle }]} href={productsHref(0, { collectionId: handle })}>{collection.title ?? "Collection"}</a>] : []; }).slice(0, 3)}
             {categories.length > 0 && <details class="lv-filter-menu">
               <summary><span>Category</span><strong data-filter-value>{categoryLabel}</strong></summary>
               <div role="radiogroup" aria-label="Product category">
                 <label><input type="radio" name="category" value="" checked={!filters.categoryId} /><span>All categories</span></label>
-                {categories.map((category) => <label><input type="radio" name="category" value={category.id} checked={filters.categoryId === category.id} /><span>{category.name ?? "Category"}</span></label>)}
+                {categories.flatMap((category) => { const handle = taxonomyHandle(category); return handle ? [<label><input type="radio" name="category" value={handle} checked={filters.categoryId === handle} /><span>{category.name ?? "Category"}</span></label>] : []; })}
               </div>
             </details>}
             <details class="lv-filter-menu lv-filter-menu--sort">

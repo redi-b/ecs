@@ -81,10 +81,20 @@ function isStorefrontError(
   return "ok" in value && value.ok === false;
 }
 
-export function buildTenantSitemap(publicOrigin: string, productHandles: string[]) {
+export function buildTenantSitemap(
+  publicOrigin: string,
+  productHandles: string[],
+  taxonomy: { collectionHandles?: string[]; categoryHandles?: string[] } = {},
+) {
   const paths = [
     ...publicRoutes,
     ...productHandles.map((handle) => `/products/${encodeURIComponent(handle)}`),
+    ...(taxonomy.collectionHandles ?? []).map(
+      (handle) => `/products?collection=${encodeURIComponent(handle)}`,
+    ),
+    ...(taxonomy.categoryHandles ?? []).map(
+      (handle) => `/products?category=${encodeURIComponent(handle)}`,
+    ),
   ];
   const urls = [...new Set(paths)].map((path) => {
     const location = new URL(path, `${publicOrigin}/`).toString();

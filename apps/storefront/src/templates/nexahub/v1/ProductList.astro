@@ -1,5 +1,6 @@
 ---
 import type { StoreCategory, StoreCollection, StoreProduct } from "../../../lib/commerce/types";
+import { taxonomyHandle } from "../../../lib/commerce/taxonomy-links";
 import type { StorefrontSeo } from "../../../lib/seo";
 import Button from "./Button.astro";
 import Layout from "./Layout.astro";
@@ -19,8 +20,8 @@ interface Props {
 }
 const { data, themeTokens, tenantName, cartCount = 0, deferCartCount = false, products, errorMessage, hasPrev, hasNext, prevHref, nextHref, collections = [], categories = [], filters = {}, totalCount = products.length, offset = 0, limit = 24, seo, demoMode = false, editorMode = false } = Astro.props;
 const template = parseNexahubData(data);
-const activeCollection = collections.find((item) => item.id === filters.collectionId);
-const activeCategory = categories.find((item) => item.id === filters.categoryId);
+const activeCollection = collections.find((item) => taxonomyHandle(item) === filters.collectionId);
+const activeCategory = categories.find((item) => taxonomyHandle(item) === filters.categoryId);
 const hasFilters = Boolean(filters.q || filters.collectionId || filters.categoryId || filters.order);
 const totalPages = Math.max(1, Math.ceil(totalCount / limit));
 const currentPage = Math.min(totalPages, Math.floor(offset / limit) + 1);

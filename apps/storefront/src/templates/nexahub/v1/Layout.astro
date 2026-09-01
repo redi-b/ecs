@@ -5,6 +5,7 @@ import StorefrontAnalytics from "../../../components/shell/StorefrontAnalytics.a
 import StructuredData from "../../../components/shell/StructuredData.astro";
 import type { StorefrontSeo } from "../../../lib/seo";
 import type { StoreCollection } from "../../../lib/commerce/types";
+import { collectionProductsHref } from "../../../lib/commerce/taxonomy-links";
 import { listStoreCollections } from "../../../lib/commerce/catalog";
 import { getPlatformApiBaseUrl, getRequestHost } from "../../../lib/env";
 import Button from "./Button.astro";
@@ -54,7 +55,7 @@ const pathname = renderPath ?? Astro.url.pathname;
 const active = (href: string) => href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`);
 const productNav = header.navigation.find((item) => item.href === "/products");
 const primaryNav = header.navigation.filter((item) => item.href !== "/products");
-const productLinks = [{ label: "All Products", href: "/products" }, ...navigationCollections.slice(0, 8).map((item) => ({ label: item.title ?? "Collection", href: `/products?collection=${encodeURIComponent(item.id)}` }))];
+const productLinks = [{ label: "All Products", href: "/products" }, ...navigationCollections.filter((item) => item.handle?.trim()).slice(0, 8).map((item) => ({ label: item.title ?? "Collection", href: collectionProductsHref(item) }))];
 const socialIcons = [facebookIcon, instagramIcon, tiktokIcon, linkedinIcon];
 ---
 <!doctype html>
