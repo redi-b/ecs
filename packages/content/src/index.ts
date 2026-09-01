@@ -3,6 +3,7 @@ import sanitizeHtml from "sanitize-html";
 const PRODUCT_DESCRIPTION_TAGS = [
   "p",
   "br",
+  "h1",
   "h2",
   "h3",
   "ul",
@@ -13,6 +14,7 @@ const PRODUCT_DESCRIPTION_TAGS = [
   "s",
   "blockquote",
   "a",
+  "img",
 ] as const;
 
 /**
@@ -25,9 +27,12 @@ export function sanitizeProductDescription(value: string | null | undefined): st
   if (!source) return null;
 
   const sanitized = sanitizeHtml(source, {
-    allowedAttributes: { a: ["href"] },
+    allowedAttributes: {
+      a: ["href"],
+      img: ["src", "alt", "title"],
+    },
     allowedSchemes: ["http", "https", "mailto"],
-    allowedSchemesAppliedToAttributes: ["href"],
+    allowedSchemesAppliedToAttributes: ["href", "src"],
     allowedTags: [...PRODUCT_DESCRIPTION_TAGS],
     allowProtocolRelative: false,
     disallowedTagsMode: "discard",
@@ -46,7 +51,11 @@ export function productDescriptionToText(value: string | null | undefined): stri
     allowedAttributes: {},
     allowedTags: [],
     textFilter: (chunk, tagName) =>
-      tagName === "p" || tagName === "li" || tagName === "h2" || tagName === "h3"
+      tagName === "p" ||
+      tagName === "li" ||
+      tagName === "h1" ||
+      tagName === "h2" ||
+      tagName === "h3"
         ? ` ${chunk}`
         : chunk,
   });

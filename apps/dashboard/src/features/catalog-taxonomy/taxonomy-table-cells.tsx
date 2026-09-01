@@ -21,7 +21,7 @@ type TaxonomyIdentityCellProps = {
 export function TaxonomyIdentityCell({ entity, label, onOpen }: TaxonomyIdentityCellProps) {
   const identity = (
     <>
-      <span className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-md border bg-muted">
+      <span className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-full border bg-muted">
         {entity.mediaUrl ? (
           <span
             aria-hidden

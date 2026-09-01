@@ -23,6 +23,7 @@
     "@tanstack/react-form": "^1.33.0",
     "@tanstack/react-query": "^5.80.0",
     "@tanstack/react-table": "^8.21.0",
+    "@tiptap/core": "^3.30.6",
     "@tiptap/pm": "^3.30.6",
     "@tiptap/react": "^3.30.6",
     "@tiptap/starter-kit": "^3.30.6",

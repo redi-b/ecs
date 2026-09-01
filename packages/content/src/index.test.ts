@@ -13,6 +13,15 @@ describe("product rich text", () => {
     );
   });
 
+  it("keeps headings and safe media while stripping unsafe image sources", () => {
+    assert.equal(
+      sanitizeProductDescription(
+        '<h1>Materials</h1><img src="https://cdn.example.com/detail.webp" alt="Detail" title="Close-up"><img src="javascript:alert(1)" onerror="alert(1)">',
+      ),
+      '<h1>Materials</h1><img src="https://cdn.example.com/detail.webp" alt="Detail" title="Close-up" /><img />',
+    );
+  });
+
   it("removes scripts, event handlers, and unsafe links", () => {
     assert.equal(
       sanitizeProductDescription(

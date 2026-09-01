@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { AppIcons } from "@/components/app/icons";
+import { SearchableCombobox } from "@/components/app/searchable-combobox";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
@@ -21,11 +22,47 @@ import type {
 import { useI18n } from "@/i18n/provider";
 import { ColorPickerField } from "@/features/storefront-editor/editor-theme";
 
+const COMMON_PRODUCT_COLORS = [
+  ["Black", "#111111"],
+  ["White", "#ffffff"],
+  ["Gray", "#6b7280"],
+  ["Silver", "#c0c0c0"],
+  ["Red", "#dc2626"],
+  ["Burgundy", "#7f1d1d"],
+  ["Orange", "#ea580c"],
+  ["Yellow", "#eab308"],
+  ["Gold", "#d4af37"],
+  ["Green", "#16a34a"],
+  ["Olive", "#808000"],
+  ["Teal", "#0f766e"],
+  ["Blue", "#2563eb"],
+  ["Navy", "#1e3a8a"],
+  ["Purple", "#9333ea"],
+  ["Lavender", "#a78bfa"],
+  ["Pink", "#db2777"],
+  ["Rose", "#e11d48"],
+  ["Brown", "#78350f"],
+  ["Tan", "#d2b48c"],
+  ["Beige", "#e7dcc8"],
+  ["Ivory", "#fffff0"],
+  ["Cream", "#fffdd0"],
+  ["Clear", "#f8fafc"],
+] as const;
+
+const COMMON_PRODUCT_COLOR_OPTIONS = COMMON_PRODUCT_COLORS.map(([label, value]) => ({
+  label,
+  value,
+  keywords: `${label} ${value}`,
+}));
+
 export function SimpleProductStockPreview({ values }: { values: ProductFormValues }) {
   const { t } = useI18n();
   return (
     <div className="grid gap-3 md:grid-cols-3">
-      <VariantMatrixMetric label={t("products.formReview.productType")} value={t("products.formReview.simpleProduct")} />
+      <VariantMatrixMetric
+        label={t("products.formReview.productType")}
+        value={t("products.formReview.simpleProduct")}
+      />
       <VariantMatrixMetric
         label={t("products.formReview.price")}
         value={formatEtbAmount(values.priceAmount, t)}
@@ -53,36 +90,59 @@ export function ProductReviewSummary({ values }: { values: ProductFormValues }) 
       <div className="grid gap-3 md:grid-cols-4">
         <VariantMatrixMetric
           label={t("products.formReview.productType")}
-          value={values.hasVariants ? t("products.formReview.variantProduct") : t("products.formReview.simpleProduct")}
+          value={
+            values.hasVariants
+              ? t("products.formReview.variantProduct")
+              : t("products.formReview.simpleProduct")
+          }
         />
-        <VariantMatrixMetric label={t("products.formReview.sellableRows")} value={String(rows.length)} />
+        <VariantMatrixMetric
+          label={t("products.formReview.sellableRows")}
+          value={String(rows.length)}
+        />
         <VariantMatrixMetric
           label={t("products.formReview.price")}
           value={minPrice === maxPrice ? `ETB ${minPrice}` : `ETB ${minPrice} to ${maxPrice}`}
         />
-        <VariantMatrixMetric label={t("products.formReview.initialStock")} value={String(totalStock)} />
+        <VariantMatrixMetric
+          label={t("products.formReview.initialStock")}
+          value={String(totalStock)}
+        />
       </div>
 
       <div className="rounded-2xl border bg-background p-4">
         <h3 className="text-sm font-medium">{t("products.formReview.whatWillBeSaved")}</h3>
         <div className="mt-3 grid gap-3 text-sm md:grid-cols-2">
-          <ReviewLine label={t("products.formReview.title")} value={values.title.trim() || t("products.formReview.untitledProduct")} />
+          <ReviewLine
+            label={t("products.formReview.title")}
+            value={values.title.trim() || t("products.formReview.untitledProduct")}
+          />
           <ReviewLine
             label={t("products.formReview.status")}
-            value={values.status === "published" ? t("products.formReview.published") : t("products.formReview.draft")}
+            value={
+              values.status === "published"
+                ? t("products.formReview.published")
+                : t("products.formReview.draft")
+            }
           />
           <ReviewLine
             label={t("products.formReview.handle")}
-            value={values.handle.trim() ? `/${values.handle.trim()}` : t("products.formReview.noHandle")}
+            value={
+              values.handle.trim() ? `/${values.handle.trim()}` : t("products.formReview.noHandle")
+            }
           />
-          <ReviewLine label={t("products.formReview.skuPrefix")} value={values.skuPrefix.trim() || t("products.formReview.noSkuPrefix")} />
+          <ReviewLine
+            label={t("products.formReview.skuPrefix")}
+            value={values.skuPrefix.trim() || t("products.formReview.noSkuPrefix")}
+          />
           <ReviewLine
             label={t("products.formReview.options")}
             value={
               values.hasVariants && normalizedOptions.length
                 ? normalizedOptions
-                    .map((option) =>
-                      `${option.title}: ${option.values.map((value) => value.label).join(", ")}`,
+                    .map(
+                      (option) =>
+                        `${option.title}: ${option.values.map((value) => value.label).join(", ")}`,
                     )
                     .join(" | ")
                 : t("products.formReview.noShopperOptions")
@@ -193,6 +253,18 @@ export function ProductOptionsBuilder({
     });
   }
 
+  function addCommonColor(index: number, color: string) {
+    const option = options[index];
+    const preset = COMMON_PRODUCT_COLORS.find(([, value]) => value === color);
+    if (!option || !preset) return;
+    const [label, value] = preset;
+    if (option.values.some((item) => item.label.toLowerCase() === label.toLowerCase())) return;
+    updateOption(index, {
+      ...option,
+      values: [...option.values, { label, swatch: { kind: "color", value } }],
+    });
+  }
+
   const presetOptions = [
     t("products.formReview.placeholderSize"),
     t("products.formReview.placeholderColor"),
@@ -204,9 +276,7 @@ export function ProductOptionsBuilder({
       <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
         <div className="max-w-2xl">
           <h3 className="text-sm font-medium">{t("products.formReview.optionsTitle")}</h3>
-          <p className="text-sm text-muted-foreground">
-            {t("products.formReview.optionsDesc")}
-          </p>
+          <p className="text-sm text-muted-foreground">{t("products.formReview.optionsDesc")}</p>
         </div>
         <Button onClick={() => addOption()} size="sm" type="button" variant="outline">
           {t("products.formReview.addOption")}
@@ -249,7 +319,10 @@ export function ProductOptionsBuilder({
                         variant="secondary"
                       >
                         {isColorOptionTitle(option.title) ? (
-                          <span className="size-3 rounded-full border" style={{ backgroundColor: value.swatch?.value ?? "transparent" }} />
+                          <span
+                            className="size-3 rounded-full border"
+                            style={{ backgroundColor: value.swatch?.value ?? "transparent" }}
+                          />
                         ) : null}
                         {value.label}
                         {isColorOptionTitle(option.title) ? (
@@ -263,7 +336,9 @@ export function ProductOptionsBuilder({
                           </div>
                         ) : null}
                         <button
-                          aria-label={t("products.formReview.removeValueAria", { value: value.label })}
+                          aria-label={t("products.formReview.removeValueAria", {
+                            value: value.label,
+                          })}
                           className="ml-1 rounded-sm text-muted-foreground hover:text-foreground"
                           onClick={() => removeValue(index, valueIndex)}
                           type="button"
@@ -305,6 +380,29 @@ export function ProductOptionsBuilder({
                       value={draftValues[index] ?? ""}
                     />
                   </div>
+                  {isColorOptionTitle(option.title) ? (
+                    <SearchableCombobox
+                      className="w-full"
+                      emptyLabel="No common colors found"
+                      onChange={(color) => addCommonColor(index, color)}
+                      options={COMMON_PRODUCT_COLOR_OPTIONS}
+                      placeholder="Choose a common color"
+                      renderItem={(item) => (
+                        <span className="flex min-w-0 items-center gap-2.5">
+                          <span
+                            className="size-5 shrink-0 rounded-full border shadow-xs"
+                            style={{ backgroundColor: item.value }}
+                          />
+                          <span className="min-w-0 flex-1 truncate">{item.label}</span>
+                          <span className="font-mono text-xs text-muted-foreground uppercase">
+                            {item.value}
+                          </span>
+                        </span>
+                      )}
+                      searchPlaceholder="Search common colors…"
+                      value=""
+                    />
+                  ) : null}
                   <FieldDescription>{t("products.formReview.valuesHelp")}</FieldDescription>
                 </Field>
 
@@ -379,16 +477,17 @@ export function VariantMatrixTable({
     <div className="flex flex-col gap-4">
       <div className="grid gap-3 md:grid-cols-3">
         <VariantMatrixMetric label={t("products.formReview.options")} value={String(rows.length)} />
-        <VariantMatrixMetric label={t("products.formReview.totalStocked")} value={String(totalStock)} />
+        <VariantMatrixMetric
+          label={t("products.formReview.totalStocked")}
+          value={String(totalStock)}
+        />
         <VariantMatrixMetric label={t("products.formReview.priceRange")} value={priceSummary} />
       </div>
 
       <div className="overflow-hidden rounded-2xl border bg-background">
         <div className="flex flex-col gap-1 border-b bg-muted/30 px-4 py-3">
           <h3 className="text-sm font-medium">{t("products.formReview.matrixTitle")}</h3>
-          <p className="text-sm text-muted-foreground">
-            {t("products.formReview.matrixDesc")}
-          </p>
+          <p className="text-sm text-muted-foreground">{t("products.formReview.matrixDesc")}</p>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[56rem] text-sm">

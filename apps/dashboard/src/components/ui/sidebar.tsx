@@ -90,6 +90,14 @@ function SidebarProvider({
   // Adds a keyboard shortcut to toggle the sidebar.
   React.useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
+      const target = event.target;
+      const isEditableTarget =
+        target instanceof HTMLElement &&
+        (target.isContentEditable ||
+          target.closest('[contenteditable="true"], input, textarea, select') !== null);
+
+      if (isEditableTarget) return;
+
       if (event.key === SIDEBAR_KEYBOARD_SHORTCUT && (event.metaKey || event.ctrlKey)) {
         event.preventDefault();
         toggleSidebar();
@@ -99,7 +107,6 @@ function SidebarProvider({
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [toggleSidebar]);
-
 
   // This makes it easier to style the sidebar with Tailwind classes.
   const state = open ? "expanded" : "collapsed";
