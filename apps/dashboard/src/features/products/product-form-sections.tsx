@@ -2,12 +2,12 @@
 
 import { useState } from "react";
 import { AppIcons } from "@/components/app/icons";
-import { SearchableCombobox } from "@/components/app/searchable-combobox";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   formatEtbAmount,
   getVariantRows,
@@ -19,8 +19,8 @@ import type {
   ProductOptionDraft,
   VariantMatrixRow,
 } from "@/features/products/product-variant-matrix";
-import { useI18n } from "@/i18n/provider";
 import { ColorPickerField } from "@/features/storefront-editor/editor-theme";
+import { useI18n } from "@/i18n/provider";
 
 const COMMON_PRODUCT_COLORS = [
   ["Black", "#111111"],
@@ -54,6 +54,171 @@ const COMMON_PRODUCT_COLOR_OPTIONS = COMMON_PRODUCT_COLORS.map(([label, value]) 
   value,
   keywords: `${label} ${value}`,
 }));
+
+function ProductColorPopover({
+  label,
+  onSave,
+  value,
+}: {
+  label?: string;
+  onSave: (label: string, value: string) => void;
+  value?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const [step, setStep] = useState<"browse" | "custom">("browse");
+  const [query, setQuery] = useState("");
+  const [customLabel, setCustomLabel] = useState(label ?? "");
+  const [customValue, setCustomValue] = useState(value ?? "#808080");
+  const filtered = COMMON_PRODUCT_COLOR_OPTIONS.filter((item) =>
+    item.keywords.toLowerCase().includes(query.trim().toLowerCase()),
+  );
+
+  function close() {
+    setOpen(false);
+    setQuery("");
+    setStep("browse");
+  }
+
+  return (
+    <Popover
+      onOpenChange={(next) => {
+        setOpen(next);
+        if (next) {
+          setCustomLabel(label ?? "");
+          setCustomValue(value ?? "#808080");
+        } else {
+          setQuery("");
+          setStep("browse");
+        }
+      }}
+      open={open}
+    >
+      <PopoverTrigger asChild>
+        {label ? (
+          <button
+            className="inline-flex min-h-7 items-center gap-2 rounded-full px-2 text-xs font-medium hover:bg-accent"
+            type="button"
+          >
+            <span
+              className="size-3.5 rounded-full border shadow-xs"
+              style={{ backgroundColor: value ?? "transparent" }}
+            />
+            {label}
+          </button>
+        ) : (
+          <Button className="rounded-full" size="sm" type="button" variant="outline">
+            Add color
+          </Button>
+        )}
+      </PopoverTrigger>
+      <PopoverContent
+        align="start"
+        className="w-80 p-0"
+        onKeyDown={(event) => event.stopPropagation()}
+      >
+        {step === "browse" ? (
+          <div className="flex flex-col">
+            <div className="border-b p-3">
+              <div className="text-sm font-medium">Choose a color</div>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                Select a common color or create an exact custom swatch.
+              </p>
+            </div>
+            <div className="p-2">
+              <Input
+                autoFocus
+                onChange={(event) => setQuery(event.currentTarget.value)}
+                placeholder="Search colors…"
+                value={query}
+              />
+            </div>
+            <div className="max-h-64 overflow-y-auto overscroll-contain p-2 pt-0">
+              <button
+                className="mb-1 flex w-full items-center gap-3 rounded-lg border border-dashed px-3 py-2 text-left hover:bg-accent"
+                onClick={() => setStep("custom")}
+                type="button"
+              >
+                <span className="grid size-7 place-items-center rounded-full border bg-[conic-gradient(red,yellow,lime,aqua,blue,magenta,red)]" />
+                <span>
+                  <strong className="block text-sm">Custom color</strong>
+                  <small className="text-xs text-muted-foreground">
+                    Choose a precise color and label
+                  </small>
+                </span>
+              </button>
+              {filtered.length ? (
+                filtered.map((item) => (
+                  <button
+                    className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left hover:bg-accent"
+                    key={item.value}
+                    onClick={() => {
+                      onSave(item.label, item.value);
+                      close();
+                    }}
+                    type="button"
+                  >
+                    <span
+                      className="size-6 rounded-full border shadow-xs"
+                      style={{ backgroundColor: item.value }}
+                    />
+                    <span className="flex-1 text-sm">{item.label}</span>
+                    <span className="font-mono text-xs text-muted-foreground uppercase">
+                      {item.value}
+                    </span>
+                  </button>
+                ))
+              ) : (
+                <p className="px-3 py-4 text-sm text-muted-foreground">
+                  No preset matches. Choose Custom color above.
+                </p>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-3 p-3">
+            <div className="relative flex h-8 items-center border-b border-border/60 px-1">
+              <button
+                aria-label="Back to common colors"
+                className="absolute left-1 z-10 grid size-7 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                onClick={() => setStep("browse")}
+                type="button"
+              >
+                <AppIcons.arrowLeft className="size-3.5" />
+              </button>
+              <p className="w-full truncate px-9 text-center text-xs font-medium">Custom color</p>
+            </div>
+            <Field>
+              <FieldLabel>Label</FieldLabel>
+              <Input
+                autoFocus
+                onChange={(event) => setCustomLabel(event.currentTarget.value)}
+                placeholder="e.g. Ocean blue"
+                value={customLabel}
+              />
+            </Field>
+            <ColorPickerField label="Swatch" onChange={setCustomValue} value={customValue} />
+            <div className="flex justify-end gap-2">
+              <Button onClick={close} size="sm" type="button" variant="ghost">
+                Cancel
+              </Button>
+              <Button
+                disabled={!customLabel.trim()}
+                onClick={() => {
+                  onSave(customLabel.trim(), customValue);
+                  close();
+                }}
+                size="sm"
+                type="button"
+              >
+                {label ? "Save color" : "Add color"}
+              </Button>
+            </div>
+          </div>
+        )}
+      </PopoverContent>
+    </Popover>
+  );
+}
 
 export function SimpleProductStockPreview({ values }: { values: ProductFormValues }) {
   const { t } = useI18n();
@@ -240,28 +405,26 @@ export function ProductOptionsBuilder({
     });
   }
 
-  function updateValueSwatch(index: number, valueIndex: number, color: string) {
+  function updateColorValue(index: number, valueIndex: number, label: string, color: string) {
     const option = options[index];
     if (!option) return;
     updateOption(index, {
       ...option,
       values: option.values.map((value, index) =>
         index === valueIndex
-          ? { ...value, swatch: { kind: "color" as const, value: color.toLowerCase() } }
+          ? { ...value, label, swatch: { kind: "color" as const, value: color.toLowerCase() } }
           : value,
       ),
     });
   }
 
-  function addCommonColor(index: number, color: string) {
+  function addColorValue(index: number, label: string, color: string) {
     const option = options[index];
-    const preset = COMMON_PRODUCT_COLORS.find(([, value]) => value === color);
-    if (!option || !preset) return;
-    const [label, value] = preset;
+    if (!option) return;
     if (option.values.some((item) => item.label.toLowerCase() === label.toLowerCase())) return;
     updateOption(index, {
       ...option,
-      values: [...option.values, { label, swatch: { kind: "color", value } }],
+      values: [...option.values, { label, swatch: { kind: "color", value: color.toLowerCase() } }],
     });
   }
 
@@ -311,98 +474,76 @@ export function ProductOptionsBuilder({
 
                 <Field>
                   <FieldLabel>{t("products.formReview.values")}</FieldLabel>
-                  <div className="flex max-h-36 min-h-10 flex-wrap items-center gap-2 overflow-y-auto overscroll-contain rounded-lg border bg-muted/20 px-2 py-2">
+                  <div className="flex max-h-36 min-h-11 flex-wrap items-center gap-2 overflow-y-auto overscroll-contain rounded-full border bg-muted/20 px-2 py-1.5">
                     {option.values.map((value, valueIndex) => (
-                      <Badge
-                        className="gap-1 rounded-md px-1.5 py-1"
+                      <span
+                        className="inline-flex h-8 items-center rounded-full bg-secondary text-xs font-medium text-secondary-foreground"
                         key={value.id ?? `${value.label}-${valueIndex}`}
-                        variant="secondary"
                       >
                         {isColorOptionTitle(option.title) ? (
-                          <span
-                            className="size-3 rounded-full border"
-                            style={{ backgroundColor: value.swatch?.value ?? "transparent" }}
+                          <ProductColorPopover
+                            label={value.label}
+                            onSave={(label, color) =>
+                              updateColorValue(index, valueIndex, label, color)
+                            }
+                            value={value.swatch?.value ?? "#808080"}
                           />
-                        ) : null}
-                        {value.label}
-                        {isColorOptionTitle(option.title) ? (
-                          <div className="ml-1 w-6">
-                            <ColorPickerField
-                              label={value.label}
-                              onChange={(color) => updateValueSwatch(index, valueIndex, color)}
-                              swatchOnly
-                              value={value.swatch?.value ?? "#808080"}
-                            />
-                          </div>
-                        ) : null}
+                        ) : (
+                          <span className="px-2">{value.label}</span>
+                        )}
                         <button
                           aria-label={t("products.formReview.removeValueAria", {
                             value: value.label,
                           })}
-                          className="ml-1 rounded-sm text-muted-foreground hover:text-foreground"
+                          className="mr-1 grid size-6 shrink-0 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-background hover:text-foreground"
                           onClick={() => removeValue(index, valueIndex)}
                           type="button"
                         >
                           <AppIcons.close className="size-3" />
                         </button>
-                      </Badge>
+                      </span>
                     ))}
-                    <input
-                      aria-label={t("products.formReview.addValueAria", {
-                        option: option.title || t("products.formReview.optionFallback"),
-                      })}
-                      className="min-w-32 flex-1 bg-transparent px-1 py-1 text-sm outline-none placeholder:text-muted-foreground"
-                      onChange={(event) =>
-                        setDraftValues((current) => ({
-                          ...current,
-                          [index]: event.target.value,
-                        }))
-                      }
-                      onKeyDown={(event) => {
-                        if (event.key === "Enter" || event.key === ",") {
-                          event.preventDefault();
-                          addValues(index, draftValues[index] ?? "");
+                    {!isColorOptionTitle(option.title) ? (
+                      <input
+                        aria-label={t("products.formReview.addValueAria", {
+                          option: option.title || t("products.formReview.optionFallback"),
+                        })}
+                        className="min-w-32 flex-1 bg-transparent px-1 py-1 text-sm outline-none placeholder:text-muted-foreground"
+                        onChange={(event) =>
+                          setDraftValues((current) => ({
+                            ...current,
+                            [index]: event.target.value,
+                          }))
                         }
-                      }}
-                      onPaste={(event) => {
-                        const pastedText = event.clipboardData.getData("text");
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter" || event.key === ",") {
+                            event.preventDefault();
+                            addValues(index, draftValues[index] ?? "");
+                          }
+                        }}
+                        onPaste={(event) => {
+                          const pastedText = event.clipboardData.getData("text");
 
-                        if (/[\n,]/.test(pastedText)) {
-                          event.preventDefault();
-                          addValues(index, pastedText);
+                          if (/[\n,]/.test(pastedText)) {
+                            event.preventDefault();
+                            addValues(index, pastedText);
+                          }
+                        }}
+                        placeholder={
+                          option.values.length
+                            ? t("products.formReview.addAnotherValue")
+                            : option.title.trim()
+                              ? `Add ${option.title.toLowerCase()} values`
+                              : t("products.formReview.valuePlaceholder")
                         }
-                      }}
-                      placeholder={
-                        option.values.length
-                          ? t("products.formReview.addAnotherValue")
-                          : t("products.formReview.valuePlaceholder")
-                      }
-                      value={draftValues[index] ?? ""}
-                    />
+                        value={draftValues[index] ?? ""}
+                      />
+                    ) : (
+                      <ProductColorPopover
+                        onSave={(label, color) => addColorValue(index, label, color)}
+                      />
+                    )}
                   </div>
-                  {isColorOptionTitle(option.title) ? (
-                    <SearchableCombobox
-                      className="w-full"
-                      emptyLabel="No common colors found"
-                      onChange={(color) => addCommonColor(index, color)}
-                      options={COMMON_PRODUCT_COLOR_OPTIONS}
-                      placeholder="Choose a common color"
-                      renderItem={(item) => (
-                        <span className="flex min-w-0 items-center gap-2.5">
-                          <span
-                            className="size-5 shrink-0 rounded-full border shadow-xs"
-                            style={{ backgroundColor: item.value }}
-                          />
-                          <span className="min-w-0 flex-1 truncate">{item.label}</span>
-                          <span className="font-mono text-xs text-muted-foreground uppercase">
-                            {item.value}
-                          </span>
-                        </span>
-                      )}
-                      searchPlaceholder="Search common colors…"
-                      value=""
-                    />
-                  ) : null}
                   <FieldDescription>{t("products.formReview.valuesHelp")}</FieldDescription>
                 </Field>
 

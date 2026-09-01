@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import {
   type DataTableFilterDefinition,
@@ -51,6 +51,10 @@ type MediaLibraryDialogProps = {
   triggerVariant?: "default" | "outline" | "secondary" | "ghost" | undefined;
   triggerSize?: "default" | "sm" | "xs" | "lg" | undefined;
   triggerContent?: ReactNode;
+  /** Controls the dialog externally when the trigger lives in another overlay. */
+  open?: boolean | undefined;
+  /** Hide the built-in trigger when another component owns the opening action. */
+  showTrigger?: boolean | undefined;
   onOpenChange?: ((open: boolean) => void) | undefined;
 };
 
@@ -63,11 +67,14 @@ export function MediaLibraryDialog({
   triggerVariant = "outline",
   triggerSize = "sm",
   triggerContent,
+  open: controlledOpen,
+  showTrigger = true,
   onOpenChange,
 }: MediaLibraryDialogProps) {
   const { t } = useI18n();
   const isMultiple = selectionMode === "multiple";
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = controlledOpen ?? internalOpen;
   const [assets, setAssets] = useState<MediaAsset[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState(false);
@@ -77,7 +84,7 @@ export function MediaLibraryDialog({
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
   function setDialogOpen(nextOpen: boolean) {
-    setOpen(nextOpen);
+    if (controlledOpen === undefined) setInternalOpen(nextOpen);
     onOpenChange?.(nextOpen);
   }
 
@@ -174,20 +181,22 @@ export function MediaLibraryDialog({
 
   return (
     <>
-      <Button
-        className={triggerClassName}
-        onClick={() => setDialogOpen(true)}
-        size={triggerSize}
-        type="button"
-        variant={triggerVariant}
-      >
-        {triggerContent ?? (
-          <>
-            <AppIcons.image data-icon="inline-start" />
-            {triggerLabel ?? t("media.chooseLibrary")}
-          </>
-        )}
-      </Button>
+      {showTrigger ? (
+        <Button
+          className={triggerClassName}
+          onClick={() => setDialogOpen(true)}
+          size={triggerSize}
+          type="button"
+          variant={triggerVariant}
+        >
+          {triggerContent ?? (
+            <>
+              <AppIcons.image data-icon="inline-start" />
+              {triggerLabel ?? t("media.chooseLibrary")}
+            </>
+          )}
+        </Button>
+      ) : null}
       <Dialog onOpenChange={setDialogOpen} open={open}>
         <DialogContent
           className="z-[80] flex max-h-[min(90vh,48rem)] w-full flex-col gap-0 overflow-hidden p-0 sm:max-w-4xl"
@@ -247,15 +256,17 @@ export function MediaLibraryDialog({
             <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain rounded-2xl border bg-card/60">
               {loading ? (
                 <div className="grid grid-cols-2 gap-3 p-3 sm:grid-cols-3 md:grid-cols-4">
-                  {Array.from({ length: 8 }).map((_, index) => (
-                    <div className="overflow-hidden rounded-xl border" key={index}>
-                      <Skeleton className="aspect-[4/3] w-full rounded-none" />
-                      <div className="space-y-2 border-t p-3">
-                        <Skeleton className="h-3 w-3/4" />
-                        <Skeleton className="h-3 w-1/2" />
+                  {Array.from({ length: 8 }, (_, index) => `media-skeleton-${index + 1}`).map(
+                    (key) => (
+                      <div className="overflow-hidden rounded-xl border" key={key}>
+                        <Skeleton className="aspect-[4/3] w-full rounded-none" />
+                        <div className="space-y-2 border-t p-3">
+                          <Skeleton className="h-3 w-3/4" />
+                          <Skeleton className="h-3 w-1/2" />
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ),
+                  )}
                 </div>
               ) : loadError ? (
                 <Empty className="min-h-64 border-0">
