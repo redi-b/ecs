@@ -1,7 +1,38 @@
 ---
-import type { CustomerAccountView } from "../../../lib/commerce/account"; import { formatMoney } from "../../../lib/money"; import { formatOrderReference } from "../../../lib/order-reference"; import Layout from "./Layout.astro"; import { parseNexahubData } from "./lib"; import "./styles/pages/secondary.scss";
-interface Props { data:unknown; themeTokens?:unknown; tenantName:string; deferCartCount?:boolean; account?:CustomerAccountView|null; error?:string|null; success?:string|null; initialMode?:"login"|"register"; }
-const {data,themeTokens,tenantName,deferCartCount=false,account=null,error=null,success=null,initialMode="login"}=Astro.props; const template=parseNexahubData(data); const date=(value:string|null)=>{if(!value)return"Date unavailable";const parsed=new Date(value);return Number.isNaN(parsed.getTime())?"Date unavailable":new Intl.DateTimeFormat("en",{dateStyle:"medium"}).format(parsed)};
+import type { CustomerAccountView } from "../../../lib/commerce/account";
+import { formatMoney } from "../../../lib/money";
+import { formatOrderReference } from "../../../lib/order-reference";
+import Layout from "./Layout.astro";
+import { parseNexahubData } from "./lib";
+import "./styles/pages/secondary.scss";
+interface Props {
+  data: unknown;
+  themeTokens?: unknown;
+  tenantName: string;
+  deferCartCount?: boolean;
+  account?: CustomerAccountView | null;
+  error?: string | null;
+  success?: string | null;
+  initialMode?: "login" | "register";
+}
+const {
+  data,
+  themeTokens,
+  tenantName,
+  deferCartCount = false,
+  account = null,
+  error = null,
+  success = null,
+  initialMode = "login",
+} = Astro.props;
+const template = parseNexahubData(data);
+const date = (value: string | null) => {
+  if (!value) return "Date unavailable";
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime())
+    ? "Date unavailable"
+    : new Intl.DateTimeFormat("en", { dateStyle: "medium" }).format(parsed);
+};
 ---
 <Layout tenantName={tenantName} header={template.header} footer={template.footer} themeTokens={themeTokens} deferCartCount={deferCartCount}>
 <main class="nexa-secondary nexa-account" id="main-content">
@@ -45,8 +76,8 @@ const {data,themeTokens,tenantName,deferCartCount=false,account=null,error=null,
 </li>)}</ol>{account.orderCount > account.orderLimit ? <nav class="nexa-pagination" aria-label="Order history pages">{account.orderOffset > 0 ? <a href={`/account?page=${Math.max(1,account.orderOffset/account.orderLimit)}`}>Previous</a> : null}<span>Page {Math.floor(account.orderOffset/account.orderLimit)+1} of {Math.ceil(account.orderCount/account.orderLimit)}</span>{account.orderOffset + account.orderLimit < account.orderCount ? <a href={`/account?page=${account.orderOffset/account.orderLimit+2}`}>Next</a> : null}</nav> : null}</>) : <div class="nexa-empty">
 <span class="nexa-empty__index">00</span>
 <h2>No orders yet</h2>
-<p>Your first completed order will appear here.</p>
-<a class="nexa-primary-action" href="/products">Browse products ↗</a>
+<p>When you place an order, you will be able to follow its progress here.</p>
+<a class="nexa-primary-action" href="/products">Explore products <span class="nexa-primary-action__icon" aria-hidden="true">↗</span></a>
 </div>}</section>
 <section class="nexa-data-panel" id="saved-addresses" data-account-panel="addresses" hidden>
 <header class="nexa-panel-head">
@@ -61,7 +92,7 @@ const {data,themeTokens,tenantName,deferCartCount=false,account=null,error=null,
 <strong>{address.addressName||`${address.firstName} ${address.lastName}`}</strong>
 <small>{address.address1}, {address.city}</small>
 </div>
-<b>{address.isDefaultShipping?"Default / edit":"Edit"}</b>
+<b>{address.isDefaultShipping?"Default · Edit":"Edit"}</b>
 </button>
 <form class="nexa-account-form" action="/actions/account/address" method="post" hidden>
 <input type="hidden" name="addressId" value={address.id}/>
@@ -91,7 +122,7 @@ const {data,themeTokens,tenantName,deferCartCount=false,account=null,error=null,
 <span>+</span>
 <div>
 <strong>Add an address</strong>
-<small>Save delivery details for checkout.</small>
+<small>Make your next checkout faster.</small>
 </div>
 <b>Open</b>
 </button>
@@ -122,7 +153,7 @@ const {data,themeTokens,tenantName,deferCartCount=false,account=null,error=null,
 <section class="nexa-data-panel" id="profile-details" data-account-panel="profile" hidden>
 <header class="nexa-panel-head">
 <h2>Profile details</h2>
-<span>Your details</span>
+<span>Contact details</span>
 </header>
 <form class="nexa-account-form" action="/actions/account/profile" method="post">
 <label>First name<input name="firstName" value={account.customer.firstName} required autocomplete="given-name"/>
@@ -138,17 +169,17 @@ const {data,themeTokens,tenantName,deferCartCount=false,account=null,error=null,
 </section>
 </>:<>
 <header class="nexa-secondary__hero">
-<span>Welcome back</span>
+<span>Your orders, addresses, and details</span>
 <div>
-<h1>Your account</h1>
-<p>Sign in to view your orders, manage delivery details, and check out faster.</p>
+<h1>Welcome back</h1>
+<p>Sign in to follow your orders, reuse saved addresses, and move through checkout faster.</p>
 </div>
 </header>
 <div class="nexa-secondary__split">
 <aside class="nexa-info-panel">
 <header class="nexa-panel-head">
 <h2>Shop your way</h2>
-<span>Account optional</span>
+<span>Shop with or without an account</span>
 </header>
 <ul class="nexa-info-list">
 <li>
@@ -161,7 +192,7 @@ const {data,themeTokens,tenantName,deferCartCount=false,account=null,error=null,
 </li>
 <li>
 <small>New here?</small>
-<span>Create an account to save delivery details and view orders.</span>
+<span>Save addresses, follow every order, and spend less time at checkout.</span>
 </li>
 </ul>
 </aside>
@@ -199,16 +230,27 @@ const {data,themeTokens,tenantName,deferCartCount=false,account=null,error=null,
 </main>
 </Layout>
 <script>
-  document.querySelectorAll<HTMLElement>('[data-account-view]').forEach(tab=>tab.addEventListener('click',event=>{event.preventDefault();const view=tab.dataset.accountView;document.querySelectorAll<HTMLElement>('[data-account-view]').forEach(item=>item.setAttribute('aria-selected',String(item.dataset.accountView===view)));document.querySelectorAll<HTMLElement>('[data-account-panel]').forEach(panel=>panel.hidden=panel.dataset.accountPanel!==view);history.replaceState(null,'',view==='addresses'?'#saved-addresses':view==='profile'?'#profile-details':'#order-history');}));
+  const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  async function swapPanel(current: HTMLElement | null, next: HTMLElement | null) {
+    if (!next || current === next) return;
+    if (current && !current.hidden && !reducedMotion) {
+      await current.animate([{ opacity: 1, transform: 'translateY(0)' }, { opacity: 0, transform: 'translateY(-8px)' }], { duration: 140, easing: 'ease-out' }).finished.catch(() => undefined);
+    }
+    if (current) current.hidden = true;
+    next.hidden = false;
+    if (!reducedMotion) next.animate([{ opacity: 0, transform: 'translateY(10px)' }, { opacity: 1, transform: 'translateY(0)' }], { duration: 220, easing: 'cubic-bezier(.22,.75,.25,1)' });
+  }
+  document.querySelectorAll<HTMLElement>('[data-account-view]').forEach(tab=>tab.addEventListener('click',event=>{event.preventDefault();const view=tab.dataset.accountView;const current=document.querySelector<HTMLElement>('[data-account-panel]:not([hidden])');const next=document.querySelector<HTMLElement>(`[data-account-panel="${view}"]`);document.querySelectorAll<HTMLElement>('[data-account-view]').forEach(item=>item.setAttribute('aria-selected',String(item.dataset.accountView===view)));void swapPanel(current,next);history.replaceState(null,'',view==='addresses'?'#saved-addresses':view==='profile'?'#profile-details':'#order-history');}));
   if(location.hash==='#saved-addresses')document.querySelector<HTMLElement>('[data-account-view="addresses"]')?.click();else if(location.hash==='#profile-details')document.querySelector<HTMLElement>('[data-account-view="profile"]')?.click();
-  document.querySelectorAll<HTMLButtonElement>('[data-address-toggle]').forEach(button=>button.addEventListener('click',()=>{const form=button.parentElement?.querySelector<HTMLFormElement>('form');if(!form)return;const open=button.getAttribute('aria-expanded')==='true';button.setAttribute('aria-expanded',String(!open));form.hidden=open;if(!open)form.querySelector<HTMLInputElement>('input:not([type=hidden])')?.focus();}));
-  const auth=document.querySelector<HTMLElement>('[data-account-auth]');auth?.querySelectorAll<HTMLAnchorElement>('[data-account-mode]').forEach(tab=>tab.addEventListener('click',event=>{event.preventDefault();const mode=tab.dataset.accountMode||'login';auth.querySelectorAll<HTMLElement>('[data-auth-panel]').forEach(panel=>panel.hidden=panel.dataset.authPanel!==mode);auth.querySelectorAll<HTMLElement>('[data-account-mode]').forEach(item=>item.setAttribute('aria-selected',String(item.dataset.accountMode===mode)));history.replaceState(null,'',mode==='register'?'/account?mode=register':'/account');}));
+  document.querySelectorAll<HTMLButtonElement>('[data-address-toggle]').forEach(button=>button.addEventListener('click',async()=>{const form=button.parentElement?.querySelector<HTMLFormElement>('form');if(!form)return;const open=button.getAttribute('aria-expanded')==='true';button.setAttribute('aria-expanded',String(!open));if(open){if(!reducedMotion)await form.animate([{opacity:1,transform:'translateY(0)'},{opacity:0,transform:'translateY(-8px)'}],{duration:150,easing:'ease-out'}).finished.catch(()=>undefined);form.hidden=true;}else{form.hidden=false;if(!reducedMotion)form.animate([{opacity:0,transform:'translateY(-8px)'},{opacity:1,transform:'translateY(0)'}],{duration:220,easing:'cubic-bezier(.22,.75,.25,1)'});form.querySelector<HTMLInputElement>('input:not([type=hidden])')?.focus();}}));
+  const auth=document.querySelector<HTMLElement>('[data-account-auth]');auth?.querySelectorAll<HTMLAnchorElement>('[data-account-mode]').forEach(tab=>tab.addEventListener('click',event=>{event.preventDefault();const mode=tab.dataset.accountMode||'login';const current=auth.querySelector<HTMLElement>('[data-auth-panel]:not([hidden])');const next=auth.querySelector<HTMLElement>(`[data-auth-panel="${mode}"]`);auth.querySelectorAll<HTMLElement>('[data-account-mode]').forEach(item=>item.setAttribute('aria-selected',String(item.dataset.accountMode===mode)));void swapPanel(current,next);history.replaceState(null,'',mode==='register'?'/account?mode=register':'/account');}));
 </script>
 <style>
   .nexa-account .nexa-secondary__hero h1{max-width:12ch;font-size:clamp(3rem,7vw,7rem)}.nexa-account .nexa-secondary__hero p{max-width:42rem}.nexa-account .nexa-secondary__split{align-items:stretch}.nexa-account .nexa-info-panel,.nexa-account .nexa-form-panel,.nexa-account .nexa-data-panel{background:color-mix(in srgb,var(--nexa-bg) 94%,var(--nexa-muted));box-shadow:0 18px 50px color-mix(in srgb,var(--nexa-ink) 7%,transparent)}
-  .nexa-account__toolbar{display:flex;justify-content:space-between;gap:1rem;border:1px solid color-mix(in srgb,var(--nexa-ink) 25%,transparent);padding:.65rem}.nexa-account__toolbar nav{display:flex;flex-wrap:wrap;gap:.5rem}.nexa-account__toolbar a,.nexa-account__toolbar button{min-height:44px;display:inline-flex;align-items:center;border:0;background:transparent;padding:0 .75rem;font:400 .7rem/1.2 "DM Mono",monospace;text-transform:uppercase}.nexa-account__toolbar [aria-selected=true]{background:var(--nexa-ink);color:var(--nexa-bg)}
-  .nexa-account__orders{list-style:none;padding:0;margin:0}.nexa-account__orders li+li{border-top:1px solid color-mix(in srgb,var(--nexa-ink) 15%,transparent)}.nexa-account__orders a{display:grid;grid-template-columns:2rem 1fr 1fr auto;gap:1rem;align-items:center;min-height:88px;padding:1rem}.nexa-account__orders div{display:grid;gap:.25rem}.nexa-account__orders strong{font:500 .9rem/1.2 "Space Grotesk",sans-serif}.nexa-account__orders span,.nexa-account__orders small{font:400 .68rem/1.3 "DM Mono",monospace}.nexa-pagination{display:flex;justify-content:space-between;gap:1rem;padding:1rem;border-top:1px solid color-mix(in srgb,var(--nexa-ink) 15%,transparent);font:400 .7rem/1.2 "DM Mono",monospace}
-  .nexa-account__addresses article+article{border-top:1px solid color-mix(in srgb,var(--nexa-ink) 15%,transparent)}.nexa-account__addresses>article>button{width:100%;display:grid;grid-template-columns:2rem 1fr auto;gap:1rem;text-align:left;align-items:center;min-height:80px;border:0;background:transparent;padding:1rem}.nexa-account__addresses button div{display:grid;gap:.25rem}.nexa-account__addresses button strong{font:500 .9rem/1.2 "Space Grotesk",sans-serif}.nexa-account__addresses button span,.nexa-account__addresses button small,.nexa-account__addresses button b{font:400 .68rem/1.3 "DM Mono",monospace}.nexa-account-form .is-danger{background:#7c1717}
+  .nexa-account__toolbar{display:flex;justify-content:space-between;gap:1rem;border:1px solid color-mix(in srgb,var(--nexa-ink) 25%,transparent);border-radius:4px;padding:.65rem}.nexa-account__toolbar nav{display:flex;flex-wrap:wrap;gap:.5rem}.nexa-account__toolbar a,.nexa-account__toolbar button{min-height:44px;display:inline-flex;align-items:center;border:0;background:transparent;padding:0 .75rem;font:400 .7rem/1.2 "DM Mono",monospace;text-transform:uppercase;transition:background-color var(--nexa-motion-fast) var(--nexa-ease-out),color var(--nexa-motion-fast) var(--nexa-ease-out),transform var(--nexa-motion-fast) var(--nexa-ease-out)}.nexa-account__toolbar a:hover,.nexa-account__toolbar button:hover{background:color-mix(in srgb,var(--nexa-ink) 7%,transparent)}.nexa-account__toolbar [aria-selected=true]{background:var(--nexa-ink);color:var(--nexa-bg)}
+  .nexa-account__orders{list-style:none;padding:0;margin:0}.nexa-account__orders li+li{border-top:1px solid color-mix(in srgb,var(--nexa-ink) 15%,transparent)}.nexa-account__orders a{display:grid;grid-template-columns:2rem 1fr 1fr auto;gap:1rem;align-items:center;min-height:88px;padding:1rem;transition:background-color var(--nexa-motion-fast) var(--nexa-ease-out),transform var(--nexa-motion-fast) var(--nexa-ease-out)}.nexa-account__orders a:hover{background:color-mix(in srgb,var(--nexa-primary) 6%,transparent);transform:translateX(2px)}.nexa-account__orders div{display:grid;gap:.25rem}.nexa-account__orders strong{font:500 .9rem/1.2 "Space Grotesk",sans-serif}.nexa-account__orders span,.nexa-account__orders small{font:400 .68rem/1.3 "DM Mono",monospace}.nexa-pagination{display:flex;justify-content:space-between;gap:1rem;padding:1rem;border-top:1px solid color-mix(in srgb,var(--nexa-ink) 15%,transparent);font:400 .7rem/1.2 "DM Mono",monospace}
+  .nexa-account__addresses article+article{border-top:1px solid color-mix(in srgb,var(--nexa-ink) 15%,transparent)}.nexa-account__addresses>article>button{width:100%;display:grid;grid-template-columns:2rem 1fr auto;gap:1rem;text-align:left;align-items:center;min-height:80px;border:0;background:transparent;padding:1rem;transition:background-color var(--nexa-motion-fast) var(--nexa-ease-out),color var(--nexa-motion-fast) var(--nexa-ease-out)}.nexa-account__addresses>article>button:hover{background:color-mix(in srgb,var(--nexa-primary) 6%,transparent)}.nexa-account__addresses button div{display:grid;gap:.25rem}.nexa-account__addresses button strong{font:500 .9rem/1.2 "Space Grotesk",sans-serif}.nexa-account__addresses button span,.nexa-account__addresses button small,.nexa-account__addresses button b{font:400 .68rem/1.3 "DM Mono",monospace}.nexa-account-form .is-danger{background:#7c1717}
+  .nexa-account-form label:has(input[type=checkbox]){grid-column:auto;align-self:center}.nexa-account-form label:has(input[type=checkbox])>span{display:inline-flex;align-items:center;gap:.65rem;width:fit-content;min-height:44px}.nexa-account-form input[type=checkbox]{width:18px;height:18px;min-height:0;margin:0;accent-color:var(--nexa-primary);outline-offset:3px}
   .nexa-form-panel .nexa-panel-head nav{font:400 .68rem/1.2 "DM Mono",monospace}.nexa-form-panel .nexa-panel-head [aria-selected=true]{font-weight:700;text-decoration:underline}
   @media(max-width:650px){.nexa-account__toolbar{align-items:stretch;flex-direction:column}.nexa-account__orders a{grid-template-columns:1.5rem 1fr auto}.nexa-account__orders a>div:nth-of-type(2){grid-column:2/-1}}
 </style>

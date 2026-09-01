@@ -146,8 +146,8 @@ test("NexaHub binds editable content while live rendering uses safe catalog fall
 
   assert.match(button, /editorRelatedPaths\.join\(" "\)/);
   assert.doesNotMatch(button, /JSON\.stringify\(editorRelatedPaths\)/);
-  assert.match(home, /: products\)\.slice/);
-  assert.match(home, /: collections\)\.slice/);
+  assert.match(home, /: products\s*\)\.slice/);
+  assert.match(home, /: collections\s*\)\.slice/);
   assert.match(home, /nexahubAsset\(collection\.mediaUrl \?\? collectionProductImage\.get/);
   assert.doesNotMatch(home, /categoryImages|laptopCategory|smartphoneCategory|peripheralCategory/);
   assert.doesNotMatch(home, /Choose a catalog product to publish|Selected products will appear here/i);

@@ -48,6 +48,32 @@ export const nexahubV1DataSchema = z.object({
       eyebrow: z.string().min(1),
       title: z.string().min(1),
       body: z.string().min(1),
+      accordion1Title: z.string().min(1).default("Premium quality products"),
+      accordion1Body: z
+        .string()
+        .min(1)
+        .default("Explore durable technology selected to support work, play, and everyday life."),
+      accordion2Title: z.string().min(1).default("Warranty support"),
+      accordion2Body: z
+        .string()
+        .min(1)
+        .default(
+          "See the warranty coverage available for your chosen products and get help when you need it.",
+        ),
+      accordion3Title: z.string().min(1).default("Convenient delivery"),
+      accordion3Body: z
+        .string()
+        .min(1)
+        .default(
+          "Choose from the delivery and pickup options available for your order at checkout.",
+        ),
+      accordion4Title: z.string().min(1).default("Customer support"),
+      accordion4Body: z
+        .string()
+        .min(1)
+        .default(
+          "Contact the shop for help with product questions, orders, and after-sales support.",
+        ),
       imageAssetId: z.string().min(1).optional(),
     }),
     contact: z.object({

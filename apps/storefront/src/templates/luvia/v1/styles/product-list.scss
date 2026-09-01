@@ -8,7 +8,7 @@
 .lv-shop-hero nav img { width: 5px; filter: brightness(0) invert(1); }
 .lv-shop-hero h1 { margin: 0; font-family: var(--lv-font-hero); font-size: clamp(44px,6.75vw,102px); font-weight: 500; line-height: clamp(44px,6.62vw,100px); letter-spacing: -.04em; text-align: center; text-shadow: 0 4px 7px rgba(203,243,207,.42); }
 .lv-shop-products { position: relative; z-index: 2; width: calc(100% - 120px); max-width: 1392px; margin: -103px auto 0; }
-.lv-catalog-filter { padding: 22px 18px 18px; border: 1px solid var(--lv-accent); border-radius: 20px; background: var(--lv-bg); box-shadow: 1px 4px 33px color-mix(in srgb, var(--lv-ink) 9%, transparent); }
+.lv-catalog-filter { position: relative; z-index: 20; overflow: visible; padding: 22px 18px 18px; border: 1px solid var(--lv-accent); border-radius: 20px; background: var(--lv-bg); box-shadow: 1px 4px 33px color-mix(in srgb, var(--lv-ink) 9%, transparent); }
 .lv-catalog-filter header { min-height: 45px; display: flex; align-items: center; justify-content: space-between; }
 .lv-catalog-filter h2 { margin: 0; font: 400 32px/1 "GC Molecule Demo", Arial, sans-serif; letter-spacing: -.03em; }
 .lv-filter-toggle { display: none; }
@@ -22,7 +22,7 @@
 .lv-filter-pill:hover { border-color: color-mix(in srgb,var(--lv-green) 48%,var(--lv-bg)); background: color-mix(in srgb,var(--lv-soft) 72%,var(--lv-bg)); }
 .lv-filter-pill.is-active { border-color: color-mix(in srgb,var(--lv-green) 40%,var(--lv-bg)); background: var(--lv-soft); }
 .lv-filter-menu { position: relative; flex: none; color: color-mix(in srgb,var(--lv-ink) 78%,var(--lv-bg)); }
-.lv-filter-menu[open] { z-index: 25; }
+.lv-filter-menu[open] { z-index: 60; }
 .lv-filter-menu--sort { margin-left: auto; }
 .lv-filter-menu summary { min-height: 45px; padding: 0 13px; display: flex; align-items: center; gap: 7px; border: 1px solid transparent; border-radius: 999px; cursor: pointer; list-style: none; transition: border-color 180ms ease, background-color 180ms ease, box-shadow 180ms ease; }
 .lv-filter-menu summary::-webkit-details-marker { display: none; }
@@ -33,7 +33,7 @@
 .lv-filter-menu[open] summary::after { transform: translateY(2px) rotate(225deg); }
 .lv-filter-menu summary > span { color: color-mix(in srgb,var(--lv-ink) 56%,var(--lv-bg)); font-size: 12px; }
 .lv-filter-menu summary > strong { max-width: 132px; overflow: hidden; font-size: 14px; font-weight: 500; text-overflow: ellipsis; white-space: nowrap; }
-.lv-filter-menu > div { position: absolute; z-index: 8; top: calc(100% + 8px); left: 0; width: max-content; min-width: 210px; max-height: 280px; padding: 7px; overflow-y: auto; border: 1px solid var(--lv-line); border-radius: 15px; background: var(--lv-bg); box-shadow: 0 18px 48px rgba(23,58,27,.16); }
+.lv-filter-menu > div { position: absolute; z-index: 61; top: calc(100% + 8px); left: 0; width: max-content; min-width: 210px; max-height: 280px; padding: 7px; overflow-y: auto; border: 1px solid var(--lv-line); border-radius: 15px; background: var(--lv-bg); box-shadow: 0 18px 48px rgba(23,58,27,.16); }
 .lv-filter-menu--sort > div { right: 0; left: auto; }
 .lv-filter-menu label { min-height: 42px; padding: 0 10px; display: flex; align-items: center; gap: 10px; border-radius: 10px; cursor: pointer; font-size: 14px; }
 .lv-filter-menu label:hover { background: var(--lv-soft); }
@@ -114,10 +114,10 @@
   .lv-catalog-filter__search input { height: 48px; background: white; }
   .lv-filter-pill { min-height: 48px; justify-content: center; overflow: hidden; text-overflow: ellipsis; }
   .lv-filter-menu { min-width: 0; }
-  .lv-filter-menu[open] { z-index: 30; }
+  .lv-filter-menu[open] { z-index: 60; }
   .lv-filter-menu summary { min-height: 48px; padding: 0 12px; justify-content: space-between; border-color: var(--lv-line); background: white; }
   .lv-filter-menu summary > strong { max-width: 92px; }
-  .lv-filter-menu > div, .lv-filter-menu--sort > div { right: 0; left: 0; width: auto; min-width: 0; z-index: 35; box-shadow: 0 18px 48px rgba(15,49,18,.22); }
+  .lv-filter-menu > div, .lv-filter-menu--sort > div { right: 0; left: 0; width: auto; min-width: 0; z-index: 61; box-shadow: 0 18px 48px rgba(15,49,18,.22); }
   .lv-filter-apply { min-height: 48px; grid-column: 1 / -1; margin-top: 4px; }
   .lv-catalog-filter__active { align-items: flex-start; }
   .lv-catalog-filter__active > div { min-width: 0; }
