@@ -47,6 +47,8 @@ test("NexaHub PDP submits shared cart actions and resolves authoritative variant
     "data-wishlist-toggle",
   ]) assert.ok(source.includes(marker), `PDP is missing ${marker}`);
   assert.equal(/Br\.\s*184|20% OFF|Storm Grey|16GB|512GB/i.test(source), false, "PDP must not contain reference mock commerce facts");
+  assert.ok(source.includes("sanitizeProductDescription"), "PDP must sanitize merchant rich text defensively");
+  assert.ok(source.includes("set:html={descriptionHtml}"), "PDP must render the sanitized rich description as markup");
 });
 
 test("NexaHub cart owns the shared mutation contract and truthful states", () => {

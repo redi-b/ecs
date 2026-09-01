@@ -1,3 +1,5 @@
+import { sanitizeProductDescription } from "@ecs/content";
+import { PRODUCT_OPTION_VALUE_PRESENTATIONS_ADDITIONAL_DATA_KEY } from "@ecs/contracts";
 import type {
   MerchantBatchDeleteResult,
   MerchantDeleteResult,
@@ -5,7 +7,6 @@ import type {
   MerchantProductCollectionWriteResult,
   MerchantProductWriteResult,
 } from "../../../types/index.js";
-import { PRODUCT_OPTION_VALUE_PRESENTATIONS_ADDITIONAL_DATA_KEY } from "@ecs/contracts";
 import { mapMedusaHttpFailure } from "../map-medusa-failure.js";
 import {
   normalizeProduct,
@@ -21,10 +22,13 @@ import type {
 import { getBoolean, getString } from "./values.js";
 
 export function getProductWriteBody(input: ProductWriteInput | ProductUpdateInput) {
-  const body = Object.fromEntries(
+  const body: Record<string, unknown> = Object.fromEntries(
     [
       ["title", input.title],
-      ["description", input.description],
+      [
+        "description",
+        input.description === undefined ? undefined : sanitizeProductDescription(input.description),
+      ],
       ["handle", input.handle],
       ["collection_id", input.collectionId],
       ["shipping_profile_id", input.shippingProfileId],
@@ -32,6 +36,10 @@ export function getProductWriteBody(input: ProductWriteInput | ProductUpdateInpu
       ["thumbnail", input.thumbnail],
     ].filter(([, value]) => typeof value === "string" && value.trim()),
   );
+
+  if (input.description === null) {
+    body.description = null;
+  }
 
   if (input.categoryIds?.length) {
     body.categories = input.categoryIds.map((id) => ({ id }));
@@ -91,9 +99,7 @@ export function getProductOptionsForWrite(options: ProductOptionInput[] | undefi
     .map((option) => ({
       ...(option.id?.trim() ? { id: option.id.trim() } : {}),
       title: option.title.trim(),
-      values: [
-        ...new Set(option.values.map(getOptionValueLabel).filter(Boolean)),
-      ],
+      values: [...new Set(option.values.map(getOptionValueLabel).filter(Boolean))],
     }))
     .filter((option) => option.title && option.values.length);
 
@@ -185,9 +191,7 @@ export function getProductVariantWriteBody(
   };
 }
 
-export function getProductVariantCombinations(
-  options: Array<{ title: string; values: string[] }>,
-) {
+export function getProductVariantCombinations(options: Array<{ title: string; values: string[] }>) {
   return options.reduce<Array<Array<{ title: string; value: string }>>>(
     (combinations, option) =>
       combinations.flatMap((combination) =>

@@ -3,6 +3,28 @@ import test from "node:test";
 
 import { getProductWriteBody } from "./write.js";
 
+test("sanitizes rich product descriptions at the Medusa write boundary", () => {
+  const body = getProductWriteBody({
+    description:
+      '<h2>Details</h2><p onclick="alert(1)"><strong>Useful</strong><script>alert(1)</script></p>',
+    salesChannelId: "sc_1",
+    title: "Safe product",
+  });
+
+  assert.equal(body.description, "<h2>Details</h2><p><strong>Useful</strong></p>");
+});
+
+test("preserves an explicit null when clearing a product description", () => {
+  const body = getProductWriteBody({
+    description: null,
+    productId: "prod_1",
+    salesChannelId: "sc_1",
+    title: "Safe product",
+  });
+
+  assert.equal(body.description, null);
+});
+
 test("writes native option labels and namespaced presentation additional data", () => {
   const body = getProductWriteBody({
     salesChannelId: "sc_1",

@@ -1,10 +1,15 @@
 ---
+import { sanitizeProductDescription } from "@ecs/content";
+import ProductMediaPlaceholder from "../../../components/media/ProductMediaPlaceholder.astro";
 import { resolveProductBadge } from "../../../lib/commerce/merchandising";
 import { isColorOptionTitle, resolveColorSwatch } from "../../../lib/commerce/product-options";
-import type { StoreProduct, StoreProductOption, StoreProductVariant } from "../../../lib/commerce/types";
+import type {
+  StoreProduct,
+  StoreProductOption,
+  StoreProductVariant,
+} from "../../../lib/commerce/types";
 import { formatMoney } from "../../../lib/money";
 import type { StorefrontSeo } from "../../../lib/seo";
-import ProductMediaPlaceholder from "../../../components/media/ProductMediaPlaceholder.astro";
 import caretIcon from "./icons/chevron-icon.svg";
 import starIcon from "./icons/star-icon.svg";
 import wishlistIcon from "./icons/wishlist-icon.svg";
@@ -46,6 +51,9 @@ const {
 const template = parseLuviaData(data);
 const defaultVariant: StoreProductVariant | null =
   product?.variants.find((variant) => variant.inStock) ?? product?.variants[0] ?? null;
+const descriptionHtml =
+  sanitizeProductDescription(product?.description) ??
+  "<p>Thoughtfully selected for your daily beauty and self-care routine.</p>";
 const optionAxes: StoreProductOption[] = product?.options?.length
   ? product.options
   : (() => {
@@ -119,7 +127,7 @@ const wishlistItem = product
         </form>
 
         <div class="lv-product-accordions">
-          <details open><summary>Product Description <img src={caretIcon.src} alt="" /></summary><div>{product.description ? <p>{product.description}</p> : <p>Thoughtfully selected for your daily beauty and self-care routine.</p>}</div></details>
+          <details open><summary>Product Description <img src={caretIcon.src} alt="" /></summary><div class="lv-rich-text" set:html={descriptionHtml} /></details>
           <details><summary>Delivery Details <img src={caretIcon.src} alt="" /></summary><div><p>Delivery and pickup options, timing, and any applicable fees are shown during checkout for your address.</p></div></details>
         </div>
       </div>

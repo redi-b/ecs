@@ -15,6 +15,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import {
   Select,
   SelectContent,
@@ -32,7 +33,6 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { Textarea } from "@/components/ui/textarea";
 import { MediaUploadField } from "@/features/media/media-upload-field";
 import {
   CategoryPicker,
@@ -142,7 +142,9 @@ export function ProductDetailsEditButton({
             <SelectGroup>
               {PRODUCT_STATUS_OPTIONS.map((status) => (
                 <SelectItem key={status} value={status}>
-                  {status === "published" ? t("products.filter.status.published") : t("products.filter.status.draft")}
+                  {status === "published"
+                    ? t("products.filter.status.published")
+                    : t("products.filter.status.draft")}
                 </SelectItem>
               ))}
             </SelectGroup>
@@ -150,13 +152,13 @@ export function ProductDetailsEditButton({
         </Select>
       </Field>
       <Field>
-        <FieldLabel htmlFor={`${detailsId}-description`}>{t("products.edit.description")}</FieldLabel>
-        <Textarea
+        <FieldLabel htmlFor={`${detailsId}-description`}>
+          {t("products.edit.description")}
+        </FieldLabel>
+        <RichTextEditor
+          aria-label={t("products.edit.description")}
           id={`${detailsId}-description`}
-          onChange={(event) =>
-            setValues((current) => ({ ...current, description: event.target.value }))
-          }
-          rows={6}
+          onChange={(description) => setValues((current) => ({ ...current, description }))}
           value={values.description}
         />
       </Field>
@@ -295,8 +297,9 @@ function ProductEditSheet({
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
-  const { leaveDialogOpen, requestLeave, confirmLeave, cancelLeave } =
-    useUnsavedChangesGuard(dirty && open);
+  const { leaveDialogOpen, requestLeave, confirmLeave, cancelLeave } = useUnsavedChangesGuard(
+    dirty && open,
+  );
 
   function requestClose() {
     requestLeave(() => setOpen(false));
@@ -340,74 +343,70 @@ function ProductEditSheet({
 
   return (
     <>
-    <Sheet
-      onOpenChange={(nextOpen) => {
-        if (nextOpen) {
-          onOpen();
-          setError(null);
-          setDirty(false);
-          setOpen(true);
-          return;
-        }
-        requestClose();
-      }}
-      open={open}
-    >
-      {triggerVariant === "button" ? (
-        <Button onClick={() => setOpen(true)} size="sm" type="button" variant="outline">
-          <AppIcons.edit data-icon="inline-start" />
-          {triggerLabel}
-        </Button>
-      ) : (
-        <Button
-          aria-label={triggerLabel}
-          onClick={() => setOpen(true)}
-          size="sm"
-          type="button"
-          variant="ghost"
-        >
-          <AppIcons.edit data-icon="inline-start" />
-          <span className="text-xs font-medium">{t("common.edit")}</span>
-        </Button>
-      )}
-      <SheetContent className={cn("w-full sm:max-w-md", contentClassName)}>
-        <SheetHeader>
-          <SheetTitle>{title}</SheetTitle>
-          <SheetDescription>{description}</SheetDescription>
-        </SheetHeader>
-        <form
-          className="flex min-h-0 flex-1 flex-col"
-          onChange={() => setDirty(true)}
-          onSubmit={(event) => {
-            event.preventDefault();
-            void submitEdit();
-          }}
-        >
-          <SheetBody className="flex flex-col gap-5">
-            {error ? (
-              <Alert variant="destructive">
-                <AlertTitle>{t("products.edit.toastError")}</AlertTitle>
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            ) : null}
-            <div className="grid gap-4">{children}</div>
-          </SheetBody>
-          <SheetFooter>
-            <Button disabled={isSaving} type="button" variant="outline" onClick={requestClose}>
-              {t("common.cancel")}
-            </Button>
-            <Button disabled={isSaving} type="submit">
-              {isSaving ? t("products.edit.saving") : t("products.edit.saveChanges")}
-            </Button>
-          </SheetFooter>
-        </form>
-      </SheetContent>
-    </Sheet>
-    <UnsavedChangesDialog
-      onLeave={confirmLeave}
-      onStay={cancelLeave}
-      open={leaveDialogOpen}
-    />
+      <Sheet
+        onOpenChange={(nextOpen) => {
+          if (nextOpen) {
+            onOpen();
+            setError(null);
+            setDirty(false);
+            setOpen(true);
+            return;
+          }
+          requestClose();
+        }}
+        open={open}
+      >
+        {triggerVariant === "button" ? (
+          <Button onClick={() => setOpen(true)} size="sm" type="button" variant="outline">
+            <AppIcons.edit data-icon="inline-start" />
+            {triggerLabel}
+          </Button>
+        ) : (
+          <Button
+            aria-label={triggerLabel}
+            onClick={() => setOpen(true)}
+            size="sm"
+            type="button"
+            variant="ghost"
+          >
+            <AppIcons.edit data-icon="inline-start" />
+            <span className="text-xs font-medium">{t("common.edit")}</span>
+          </Button>
+        )}
+        <SheetContent className={cn("w-full sm:max-w-md", contentClassName)}>
+          <SheetHeader>
+            <SheetTitle>{title}</SheetTitle>
+            <SheetDescription>{description}</SheetDescription>
+          </SheetHeader>
+          <form
+            className="flex min-h-0 flex-1 flex-col"
+            onChange={() => setDirty(true)}
+            onSubmit={(event) => {
+              event.preventDefault();
+              void submitEdit();
+            }}
+          >
+            <SheetBody className="flex flex-col gap-5">
+              {error ? (
+                <Alert variant="destructive">
+                  <AlertTitle>{t("products.edit.toastError")}</AlertTitle>
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              ) : null}
+              <div className="grid gap-4">{children}</div>
+            </SheetBody>
+            <SheetFooter>
+              <Button disabled={isSaving} type="button" variant="outline" onClick={requestClose}>
+                {t("common.cancel")}
+              </Button>
+              <Button disabled={isSaving} type="submit">
+                {isSaving ? t("products.edit.saving") : t("products.edit.saveChanges")}
+              </Button>
+            </SheetFooter>
+          </form>
+        </SheetContent>
+      </Sheet>
+      <UnsavedChangesDialog onLeave={confirmLeave} onStay={cancelLeave} open={leaveDialogOpen} />
     </>
   );
 }

@@ -44,6 +44,17 @@ describe("commerce structured data", () => {
     assert.doesNotMatch(serialized, /<\/script>/);
     assert.match(serialized, /\\u003c\/script\\u003e/);
   });
+
+  it("projects rich product descriptions to plain text", () => {
+    const data = buildProductStructuredData({
+      product: product({
+        description: "<p>Built for <strong>daily work</strong>.</p><ul><li>Fast</li><li>Quiet</li></ul>",
+      }),
+      seo,
+    });
+
+    assert.equal(data?.description, "Built for daily work. Fast Quiet");
+  });
 });
 
 function product(overrides: Partial<StoreProduct> = {}): StoreProduct {
