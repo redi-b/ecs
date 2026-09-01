@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import type { ReactNode } from "react";
 
 import {
   type DataTableFilterDefinition,
@@ -49,6 +50,7 @@ type MediaLibraryDialogProps = {
   triggerLabel?: string | undefined;
   triggerVariant?: "default" | "outline" | "secondary" | "ghost" | undefined;
   triggerSize?: "default" | "sm" | "xs" | "lg" | undefined;
+  triggerContent?: ReactNode;
   onOpenChange?: ((open: boolean) => void) | undefined;
 };
 
@@ -60,6 +62,7 @@ export function MediaLibraryDialog({
   triggerLabel,
   triggerVariant = "outline",
   triggerSize = "sm",
+  triggerContent,
   onOpenChange,
 }: MediaLibraryDialogProps) {
   const { t } = useI18n();
@@ -178,11 +181,18 @@ export function MediaLibraryDialog({
         type="button"
         variant={triggerVariant}
       >
-        <AppIcons.image data-icon="inline-start" />
-        {triggerLabel ?? t("media.chooseLibrary")}
+        {triggerContent ?? (
+          <>
+            <AppIcons.image data-icon="inline-start" />
+            {triggerLabel ?? t("media.chooseLibrary")}
+          </>
+        )}
       </Button>
       <Dialog onOpenChange={setDialogOpen} open={open}>
-        <DialogContent className="flex max-h-[min(90vh,48rem)] w-full flex-col gap-0 overflow-hidden p-0 sm:max-w-4xl">
+        <DialogContent
+          className="z-[80] flex max-h-[min(90vh,48rem)] w-full flex-col gap-0 overflow-hidden p-0 sm:max-w-4xl"
+          overlayClassName="z-[75]"
+        >
           <DialogHeader className="shrink-0 gap-1.5 border-b px-4 py-4 text-left sm:px-5">
             <DialogTitle>{t("media.chooseLibrary")}</DialogTitle>
             <DialogDescription>
@@ -223,9 +233,7 @@ export function MediaLibraryDialog({
                       return;
                     }
                     const next = readyAssets.map((asset) => asset.id);
-                    setSelectedIds(
-                      maxSelection ? next.slice(0, maxSelection) : next,
-                    );
+                    setSelectedIds(maxSelection ? next.slice(0, maxSelection) : next);
                   }}
                   size="xs"
                   type="button"
@@ -341,9 +349,7 @@ export function MediaLibraryDialog({
                       <AppIcons.image />
                     </EmptyMedia>
                     <EmptyTitle>
-                      {query || type !== "all"
-                        ? t("media.filteredEmpty")
-                        : t("media.libraryEmpty")}
+                      {query || type !== "all" ? t("media.filteredEmpty") : t("media.libraryEmpty")}
                     </EmptyTitle>
                     <EmptyDescription>
                       {query || type !== "all"
@@ -379,9 +385,7 @@ export function MediaLibraryDialog({
                 </div>
               ) : (
                 <p className="text-xs text-muted-foreground">
-                  {isMultiple
-                    ? t("media.pickerSelectHintMultiple")
-                    : t("media.pickerSelectHint")}
+                  {isMultiple ? t("media.pickerSelectHintMultiple") : t("media.pickerSelectHint")}
                 </p>
               )}
             </div>

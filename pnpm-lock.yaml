@@ -66,6 +66,9 @@ importers:
       '@tanstack/react-table':
         specifier: ^8.21.0
         version: 8.21.3(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      '@tiptap/core':
+        specifier: ^3.30.6
+        version: 3.30.6(@tiptap/pm@3.30.6)
       '@tiptap/pm':
         specifier: ^3.30.6
         version: 3.30.6

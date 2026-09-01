@@ -510,7 +510,7 @@ export function ColorPickerField({
       <PopoverContent
         align="start"
         avoidCollisions
-        className="w-80 p-3.5"
+        className="w-[min(20rem,calc(100vw-2rem))] max-w-[calc(100vw-2rem)] p-3.5"
         collisionPadding={20}
         side="bottom"
         sideOffset={8}
