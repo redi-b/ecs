@@ -1,6 +1,12 @@
 ---
 import StorefrontFailure from "../components/shell/StorefrontFailure.astro";
+import { loadPageContext } from "../lib/page-context";
+import { storefrontState } from "../lib/storefront-state";
+import { getStorefrontRenderer } from "../templates/registry";
 
 Astro.response.status = 500;
+const ctx = await loadPageContext(Astro.request).catch(() => null);
+const SystemState = ctx?.ok ? getStorefrontRenderer(ctx.config.storefront.templateKey)?.SystemState : null;
+const state = storefrontState({ status: 500 });
 ---
-<html lang="en"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><meta name="robots" content="noindex" /><title>Shop temporarily unavailable</title></head><body><StorefrontFailure actionHref="/" actionLabel="Try again" description="The shop could not finish loading. Your cart is unchanged, so it is safe to try again." eyebrow="Shop paused" title="Something interrupted this page" /></body></html>
+{ctx?.ok && SystemState ? <SystemState data={ctx.config.storefront.data} themeTokens={ctx.config.storefront.themeTokens} tenantName={ctx.config.tenant.name} cartCount={ctx.cartCount} {...state} /> : <html lang="en"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><meta name="robots" content="noindex" /><title>Shop unavailable</title></head><body><StorefrontFailure {...state} /></body></html>}

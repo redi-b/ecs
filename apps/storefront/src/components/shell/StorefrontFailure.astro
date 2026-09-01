@@ -1,23 +1,28 @@
 ---
+import OfflineStateEnhancer from "./OfflineStateEnhancer.astro";
+
 interface Props {
   actionHref?: string;
   actionLabel?: string;
   description: string;
   eyebrow: string;
   title: string;
+  code?: string;
+  recoveryLabel?: string;
+  statusLabel?: string;
 }
 
-const { actionHref, actionLabel, description, eyebrow, title } = Astro.props;
+const { actionHref, actionLabel, description, eyebrow, title, code } = Astro.props;
 ---
 
-<main class="failure-stage">
+<main class="failure-stage" data-storefront-state>
   <div class="failure-grid" aria-hidden="true"></div>
   <section class="failure-content">
     <div class="failure-copy">
-      <p class="failure-eyebrow">{eyebrow}</p>
-      <h1>{title}</h1>
-      <p class="failure-description">{description}</p>
-      {actionHref && actionLabel ? <a href={actionHref}>{actionLabel}</a> : null}
+      <p class="failure-eyebrow" data-state-copy data-offline-copy="Connection status / Offline">{eyebrow}{code ? ` / ${code}` : ""}</p>
+      <h1 data-state-copy data-offline-copy="You are offline">{title}</h1>
+      <p class="failure-description" data-state-copy data-offline-copy="Reconnect to the internet, then try loading this shop again.">{description}</p>
+      {actionHref && actionLabel ? <a href={actionHref} data-state-copy data-offline-copy="Try again">{actionLabel}</a> : null}
     </div>
     <div class="failure-viewport" aria-hidden="true">
       <div class="failure-bar"><i></i><i></i><i></i><span></span></div>
@@ -29,6 +34,7 @@ const { actionHref, actionLabel, description, eyebrow, title } = Astro.props;
     </div>
   </section>
 </main>
+<OfflineStateEnhancer />
 
 <style>
   :global(*) { box-sizing: border-box; }

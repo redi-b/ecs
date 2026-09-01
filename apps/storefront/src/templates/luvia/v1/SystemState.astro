@@ -1,0 +1,47 @@
+---
+import ActionButton from "./ActionButton.astro";
+import OfflineStateEnhancer from "../../../components/shell/OfflineStateEnhancer.astro";
+import Layout from "./Layout.astro";
+import { parseLuviaData } from "./lib";
+
+interface Props {
+  data: unknown;
+  themeTokens?: unknown;
+  tenantName: string;
+  cartCount?: number;
+  eyebrow: string;
+  title: string;
+  description: string;
+  actionHref?: string;
+  actionLabel?: string;
+  code?: string;
+  statusLabel?: string;
+  recoveryLabel?: string;
+}
+
+const { data, themeTokens, tenantName, cartCount = 0, eyebrow, title, description, actionHref, actionLabel, code, statusLabel = "Unavailable", recoveryLabel = "Try again" } = Astro.props;
+const template = parseLuviaData(data);
+---
+<Layout tenantName={tenantName} header={template.header} footer={template.footer} themeTokens={themeTokens} cartCount={cartCount} seo={{ canonicalUrl: Astro.url.href, description, noindex: true, title: `${title} · ${tenantName}` }}>
+  <main class="lv-system" id="main-content" data-storefront-state>
+    <div class="lv-system__copy">
+      <p data-state-copy data-offline-copy="Connection status / Offline">{eyebrow}{code ? ` / ${code}` : ""}</p>
+      <h1 data-state-copy data-offline-copy="You are offline">{title}</h1>
+      <div class="lv-system__description" data-state-copy data-offline-copy="Reconnect to the internet, then try loading this shop again.">{description}</div>
+      {actionHref && actionLabel ? <ActionButton href={actionHref} tone="primary">{actionLabel}</ActionButton> : null}
+    </div>
+    <dl class="lv-system__status" aria-label="Storefront status">
+      <div><dt>Status</dt><dd data-state-copy data-offline-copy="Offline">{statusLabel}</dd></div>
+      <div><dt>Page</dt><dd>{code ?? "Store"}</dd></div>
+      <div><dt>Recovery</dt><dd data-state-copy data-offline-copy="Reconnect">{recoveryLabel}</dd></div>
+    </dl>
+  </main>
+  <OfflineStateEnhancer />
+</Layout>
+<style>
+  .lv-system{display:grid;gap:clamp(2rem,7vw,6rem);min-height:clamp(34rem,72svh,52rem);padding:clamp(5rem,11vw,10rem) clamp(1rem,6vw,6rem);align-content:center;background:var(--lv-bg);color:var(--lv-ink)}
+  .lv-system__copy{max-width:52rem}.lv-system__copy>p{margin:0 0 1rem;font:600 .72rem/1.3 var(--lv-mono,monospace);letter-spacing:.12em;text-transform:uppercase;color:var(--lv-green)}
+  h1{max-width:12ch;margin:0;font-size:clamp(3rem,9vw,8rem);line-height:.9;letter-spacing:-.055em}.lv-system__description{max-width:54ch;margin:1.5rem 0 2rem;line-height:1.7;color:color-mix(in srgb,var(--lv-ink) 68%,transparent)}
+  .lv-system__status{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));margin:0;border-block:1px solid var(--lv-line)}.lv-system__status div{display:grid;gap:.5rem;padding:1.25rem 0}.lv-system__status div+div{padding-inline-start:1.25rem;border-inline-start:1px solid var(--lv-line)}dt{font-size:.7rem;text-transform:uppercase;opacity:.58}dd{margin:0;overflow-wrap:anywhere;font-weight:600}
+  @media(max-width:42rem){.lv-system__status{grid-template-columns:1fr}.lv-system__status div+div{padding-inline-start:0;border-inline-start:0;border-block-start:1px solid var(--lv-line)}}
+</style>

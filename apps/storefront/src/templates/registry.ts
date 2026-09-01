@@ -35,6 +35,7 @@ import LuviaV1OrderConfirm from "./luvia/v1/OrderConfirm.astro";
 import LuviaV1Product from "./luvia/v1/Product.astro";
 import LuviaV1ProductList from "./luvia/v1/ProductList.astro";
 import LuviaV1RequestItem from "./luvia/v1/RequestItem.astro";
+import LuviaV1SystemState from "./luvia/v1/SystemState.astro";
 import LuviaV1Wishlist from "./luvia/v1/Wishlist.astro";
 import { resolveStorefrontTemplateKey } from "./template-key.js";
 import type { StorefrontPageComponent, StorefrontRenderer } from "./types.js";
@@ -61,6 +62,7 @@ export const storefrontRenderers = {
     Wishlist: LuviaV1Wishlist,
     Account: LuviaV1Account,
     AccountOrder: LuviaV1AccountOrder,
+    SystemState: LuviaV1SystemState,
   },
   "nexahub@1": {
     Home: NexahubV1Home,

@@ -41,6 +41,7 @@ describe("dashboard demo runtime boundaries", () => {
   it("keeps not-found recovery inside the public preview", async () => {
     const source = await readFile(new URL("app/demo/not-found.tsx", root), "utf8");
     assert.match(source, /actionHref="\/demo"/);
+    assert.match(source, /code="404"/);
     assert.doesNotMatch(source, /actionHref="\/admin"/);
   });
 
