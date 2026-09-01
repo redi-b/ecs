@@ -277,14 +277,14 @@ export function DataTable<TData>({
           <div
             aria-hidden
             className={cn(
-              "pointer-events-none absolute inset-y-0 left-12 z-10 w-6 bg-linear-to-r from-card to-transparent transition-opacity",
+              "pointer-events-none absolute inset-y-0 left-12 z-10 w-px bg-border transition-opacity",
               canScrollLeft ? "opacity-100" : "opacity-0",
             )}
           />
           <div
             aria-hidden
             className={cn(
-              "pointer-events-none absolute inset-y-0 right-14 z-10 w-6 bg-linear-to-l from-card to-transparent transition-opacity",
+              "pointer-events-none absolute inset-y-0 right-14 z-10 w-px bg-border transition-opacity",
               canScrollRight ? "opacity-100" : "opacity-0",
             )}
           />

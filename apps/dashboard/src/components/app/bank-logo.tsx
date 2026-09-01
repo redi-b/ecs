@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
 import { Landmark } from "lucide-react";
+import { useState } from "react";
 
 import { cn } from "@/lib/utils";
 
@@ -34,7 +34,7 @@ export function BankLogo({ src, name, className, size = "md" }: BankLogoProps) {
       <span
         aria-hidden
         className={cn(
-          "inline-flex shrink-0 items-center justify-center border border-border/70 bg-gradient-to-br from-muted to-muted/60 text-muted-foreground shadow-sm",
+          "inline-flex shrink-0 items-center justify-center border border-border/70 bg-muted text-muted-foreground",
           sizeClass[size],
           className,
         )}

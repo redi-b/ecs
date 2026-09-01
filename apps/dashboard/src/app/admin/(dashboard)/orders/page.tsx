@@ -65,7 +65,6 @@ export default async function MerchantOrdersPage({ searchParams }: MerchantOrder
           <ManualOrderCreateDialog />
         </>
       }
-      description={t("orders.description")}
       title={t("orders.title")}
     >
       {result.ok ? (

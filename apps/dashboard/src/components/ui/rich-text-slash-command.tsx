@@ -18,8 +18,9 @@ import {
   Quote,
   SeparatorHorizontal,
 } from "lucide-react";
-import { forwardRef, useImperativeHandle, useState } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
 
+import { applyNestedOverlaySession, type NestedOverlaySession } from "@/lib/nested-overlay";
 import { cn } from "@/lib/utils";
 
 type SlashCommandItem = {
@@ -101,7 +102,14 @@ const SlashCommandList = forwardRef<
   SuggestionProps<SlashCommandItem, SlashCommandItem>
 >(function SlashCommandList({ command, items }, ref) {
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const listRef = useRef<HTMLDivElement>(null);
   const activeIndex = Math.min(selectedIndex, Math.max(items.length - 1, 0));
+
+  useEffect(() => {
+    listRef.current
+      ?.querySelector<HTMLElement>(`[data-command-index="${activeIndex}"]`)
+      ?.scrollIntoView({ block: "nearest" });
+  }, [activeIndex]);
 
   const select = (index: number) => {
     const item = items[index];
@@ -127,6 +135,8 @@ const SlashCommandList = forwardRef<
     <div
       aria-label="Insert a block"
       className="max-h-80 w-72 overflow-y-auto overscroll-contain rounded-xl border bg-popover p-1 text-popover-foreground shadow-lg"
+      data-rich-text-suggestion=""
+      ref={listRef}
       role="listbox"
     >
       <div className="px-2 py-1.5 text-xs text-muted-foreground">Insert a block</div>
@@ -135,9 +145,10 @@ const SlashCommandList = forwardRef<
           <button
             aria-selected={index === activeIndex}
             className={cn(
-              "flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left",
+              "flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left transition-colors",
               index === activeIndex && "bg-accent text-accent-foreground",
             )}
+            data-command-index={index}
             key={item.title}
             onClick={() => select(index)}
             onMouseDown={(event) => event.preventDefault()}
@@ -162,6 +173,7 @@ const SlashCommandList = forwardRef<
 
 const suggestion: Omit<SuggestionOptions<SlashCommandItem, SlashCommandItem>, "editor"> = {
   char: "/",
+  container: "[data-rich-text-suggestion-host]",
   placement: "bottom-start",
   offset: { mainAxis: 8 },
   startOfLine: false,
@@ -174,23 +186,40 @@ const suggestion: Omit<SuggestionOptions<SlashCommandItem, SlashCommandItem>, "e
   render: () => {
     let component: ReactRenderer<SlashCommandListRef> | null = null;
     let unmount: (() => void) | null = null;
+    let host: HTMLElement | null = null;
+    let overlaySession: NestedOverlaySession = { isOpen: false, layerId: null };
     return {
       onStart: (props) => {
+        host =
+          props.editor.view.dom.closest<HTMLElement>(
+            "[data-slot='dialog-content'], [data-slot='sheet-content']",
+          ) ?? props.editor.view.dom.closest<HTMLElement>("[data-rich-text-editor-root]");
+        host?.setAttribute("data-rich-text-suggestion-host", "");
         component = new ReactRenderer(SlashCommandList, { props, editor: props.editor });
-        // The product composer is a modal. Tiptap mounts suggestions under document.body,
-        // so the renderer needs to join the application's overlay layer explicitly.
+        component.element.dataset.richTextSuggestion = "";
+        component.element.style.pointerEvents = "auto";
         component.element.style.zIndex = "120";
+        overlaySession = applyNestedOverlaySession(true, overlaySession);
         unmount = props.mount(component.element);
       },
       onUpdate: (props) => component?.updateProps(props),
       onKeyDown: (props) => {
-        if (props.event.key === "Escape") return true;
+        if (props.event.key === "Escape") {
+          props.event.preventDefault();
+          props.event.stopPropagation();
+          // Tiptap dispatches the suggestion exit immediately after this hook.
+          // Dispatching another exit here creates a re-entrant plugin update.
+          return true;
+        }
         return component?.ref?.onKeyDown(props) ?? false;
       },
       onExit: () => {
+        overlaySession = applyNestedOverlaySession(false, overlaySession);
         unmount?.();
         component?.destroy();
+        host?.removeAttribute("data-rich-text-suggestion-host");
         component = null;
+        host = null;
         unmount = null;
       },
     };

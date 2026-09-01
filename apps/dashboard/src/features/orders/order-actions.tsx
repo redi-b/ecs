@@ -349,7 +349,7 @@ export function OrderActions({ action, order, variant = "card" }: OrderActionsPr
           {variant === "card" ? (
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0 space-y-1.5">
-                <p className="type-eyebrow text-primary">{t("orders.actions.next")}</p>
+                <p className="text-xs font-medium text-primary">{t("orders.actions.next")}</p>
                 <p className="text-base font-semibold leading-snug tracking-tight">
                   {nextCopy.label}
                 </p>

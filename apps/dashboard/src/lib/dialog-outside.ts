@@ -16,6 +16,7 @@ const FLOATING_UI_SELECTOR = [
   "[data-slot='combobox-content']",
   "[data-slot='combobox-list']",
   "[data-slot='combobox-item']",
+  "[data-rich-text-suggestion]",
   "[data-datetime-picker]",
   "[data-slot='data-table-bulk-bar']",
   "[data-radix-select-content]",

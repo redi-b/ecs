@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useId, useState, type ReactNode } from "react";
+import { type ReactNode, useEffect, useId, useState } from "react";
 import { toast } from "sonner";
 
 import { AppIcons } from "@/components/app/icons";
@@ -68,8 +68,9 @@ export function CustomerFormDialog({
     }
   }, [open, customer?.id]);
 
-  const { leaveDialogOpen, requestLeave, confirmLeave, cancelLeave } =
-    useUnsavedChangesGuard(dirty && open);
+  const { leaveDialogOpen, requestLeave, confirmLeave, cancelLeave } = useUnsavedChangesGuard(
+    dirty && open,
+  );
 
   function setOpen(next: boolean) {
     if (!isControlled) setUncontrolledOpen(next);
@@ -238,11 +239,7 @@ export function CustomerFormDialog({
   );
 
   const leave = (
-    <UnsavedChangesDialog
-      onLeave={confirmLeave}
-      onStay={cancelLeave}
-      open={leaveDialogOpen}
-    />
+    <UnsavedChangesDialog onLeave={confirmLeave} onStay={cancelLeave} open={leaveDialogOpen} />
   );
 
   if (isEdit) {
@@ -256,7 +253,9 @@ export function CustomerFormDialog({
           open={open}
         >
           {trigger !== undefined ? (
-            trigger ? <SheetTrigger asChild>{trigger}</SheetTrigger> : null
+            trigger ? (
+              <SheetTrigger asChild>{trigger}</SheetTrigger>
+            ) : null
           ) : (
             <SheetTrigger asChild>
               <Button type="button" variant="outline">
@@ -268,7 +267,9 @@ export function CustomerFormDialog({
           <SheetContent className="w-full sm:max-w-md" side="right">
             <SheetHeader className="px-5 py-4 text-left">
               <SheetTitle>{title}</SheetTitle>
-              <SheetDescription>{t("customers.detail.formDesc")}</SheetDescription>
+              <SheetDescription className="sr-only">
+                {t("customers.detail.formDesc")}
+              </SheetDescription>
             </SheetHeader>
             {form}
           </SheetContent>
@@ -302,7 +303,9 @@ export function CustomerFormDialog({
         <DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-lg">
           <DialogHeader className="gap-1.5 border-b px-4 py-4 text-left sm:px-5">
             <DialogTitle>{title}</DialogTitle>
-            <DialogDescription>{t("customers.detail.formDesc")}</DialogDescription>
+            <DialogDescription className="sr-only">
+              {t("customers.detail.formDesc")}
+            </DialogDescription>
           </DialogHeader>
           {form}
         </DialogContent>

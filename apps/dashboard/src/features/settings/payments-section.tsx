@@ -1,16 +1,14 @@
 "use client";
 
-import Link from "@/components/app/link";
 import { useCallback, useEffect, useId, useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
-
 import { BankLogo } from "@/components/app/bank-logo";
 import { ConfirmDialog } from "@/components/app/confirm-dialog";
-import { AppIcons } from "@/components/app/icons";
 import { HelpTip } from "@/components/app/help-tip";
+import { AppIcons } from "@/components/app/icons";
+import Link from "@/components/app/link";
 import { SearchableCombobox } from "@/components/app/searchable-combobox";
 import { UnsavedChangesDialog } from "@/components/app/unsaved-changes-dialog";
-import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes-guard";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,12 +20,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  Field,
-  FieldContent,
-  FieldDescription,
-  FieldLabel,
-} from "@/components/ui/field";
+import { Field, FieldContent, FieldDescription, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import {
   InputGroup,
@@ -36,12 +29,10 @@ import {
   InputGroupInput,
 } from "@/components/ui/input-group";
 import { Switch } from "@/components/ui/switch";
-import {
-  SectionIntro,
-  SettingsSectionBody,
-} from "@/features/settings/settings-sections";
-import { useI18n } from "@/i18n/provider";
+import { SectionIntro, SettingsSectionBody } from "@/features/settings/settings-sections";
+import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes-guard";
 import type { MessageKey } from "@/i18n/messages";
+import { useI18n } from "@/i18n/provider";
 import { mapPlatformErrorMessage } from "@/lib/platform-api/errors";
 import type {
   MerchantChapaStatus,
@@ -189,10 +180,7 @@ export function PaymentsSection({
 
   return (
     <SettingsSectionBody>
-      <SectionIntro
-        description={t("settings.payments.intro")}
-        title={t("settings.sections.payments.label")}
-      />
+      <SectionIntro title={t("settings.sections.payments.label")} />
 
       {/* Cash on delivery — compact: action lives in the header */}
       <Card size="sm">
@@ -372,7 +360,9 @@ export function PaymentsSection({
             </div>
 
             <Field>
-              <FieldLabel htmlFor={secretId}>{t("settings.payments.online.secretLabel")}</FieldLabel>
+              <FieldLabel htmlFor={secretId}>
+                {t("settings.payments.online.secretLabel")}
+              </FieldLabel>
               <FieldContent>
                 <InputGroup>
                   <InputGroupInput
@@ -487,11 +477,7 @@ export function PaymentsSection({
 
       <ReceivingAccountsCard />
 
-      <UnsavedChangesDialog
-        onLeave={confirmLeave}
-        onStay={cancelLeave}
-        open={leaveDialogOpen}
-      />
+      <UnsavedChangesDialog onLeave={confirmLeave} onStay={cancelLeave} open={leaveDialogOpen} />
     </SettingsSectionBody>
   );
 }
@@ -560,10 +546,7 @@ function ReceivingAccountsCard() {
     [banks],
   );
 
-  const bankByCode = useMemo(
-    () => new Map(banks.map((bank) => [bank.code, bank])),
-    [banks],
-  );
+  const bankByCode = useMemo(() => new Map(banks.map((bank) => [bank.code, bank])), [banks]);
 
   const editingAccount = editingId
     ? (accounts.find((account) => account.id === editingId) ?? null)
@@ -840,7 +823,9 @@ function ReceivingAccountsCard() {
                 ? t("settings.payments.receiving.dialogEditTitle")
                 : t("settings.payments.receiving.dialogAddTitle")}
             </DialogTitle>
-            <DialogDescription>{t("settings.payments.receiving.dialogDescription")}</DialogDescription>
+            <DialogDescription>
+              {t("settings.payments.receiving.dialogDescription")}
+            </DialogDescription>
           </DialogHeader>
 
           <div className="flex max-h-[min(70dvh,32rem)] flex-col gap-4 overflow-y-auto p-4 sm:p-5">
@@ -852,7 +837,9 @@ function ReceivingAccountsCard() {
                 autoFocus
                 disabled={isPending}
                 id={`${formIds}-label`}
-                onChange={(event) => setForm((current) => ({ ...current, label: event.target.value }))}
+                onChange={(event) =>
+                  setForm((current) => ({ ...current, label: event.target.value }))
+                }
                 placeholder={t("settings.payments.receiving.labelPlaceholder")}
                 value={form.label}
               />
@@ -957,11 +944,7 @@ function ReceivingAccountsCard() {
         </DialogContent>
       </Dialog>
 
-      <UnsavedChangesDialog
-        onLeave={confirmLeave}
-        onStay={cancelLeave}
-        open={leaveDialogOpen}
-      />
+      <UnsavedChangesDialog onLeave={confirmLeave} onStay={cancelLeave} open={leaveDialogOpen} />
 
       <ConfirmDialog
         cancelDisabled={isPending}

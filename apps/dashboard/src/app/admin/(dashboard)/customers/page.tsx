@@ -42,7 +42,6 @@ export default async function CustomersPage({ searchParams }: CustomersPageProps
           <CustomerFormDialog />
         </>
       }
-      description={t("customers.description")}
       title={t("customers.title")}
     >
       {result.ok ? (

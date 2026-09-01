@@ -345,7 +345,7 @@ export function MediaUploadField({
           void queueFiles(Array.from(event.dataTransfer.files));
         }}
       >
-        <span className="grid size-12 place-items-center rounded-2xl border bg-background text-muted-foreground shadow-sm">
+        <span className="grid size-10 place-items-center rounded-xl border bg-background text-muted-foreground">
           <AppIcons.upload className="size-5" />
         </span>
         <div className="flex max-w-md flex-col gap-1">
@@ -365,19 +365,14 @@ export function MediaUploadField({
           <MediaLibraryDialog
             onSelect={(assets) => {
               addUrls(
-                assets
-                  .map((asset) => asset.publicUrl)
-                  .filter((url): url is string => Boolean(url)),
+                assets.map((asset) => asset.publicUrl).filter((url): url is string => Boolean(url)),
               );
             }}
             selectionMode="multiple"
           />
         </div>
         <div className="w-full max-w-md min-w-0 text-left">
-          <MediaUrlImportField
-            onImported={(file) => void queueFiles([file])}
-            size="sm"
-          />
+          <MediaUrlImportField onImported={(file) => void queueFiles([file])} size="sm" />
         </div>
         <input
           accept="image/avif,image/gif,image/jpeg,image/png,image/webp"
@@ -402,9 +397,7 @@ export function MediaUploadField({
                 </Badge>
               ) : null}
               {pending.length ? (
-                <Badge variant="info">
-                  {t("media.uploadingCount", { count: pending.length })}
-                </Badge>
+                <Badge variant="info">{t("media.uploadingCount", { count: pending.length })}</Badge>
               ) : null}
               <span>{t("media.coverHint")}</span>
             </div>
@@ -489,21 +482,24 @@ function UploadedImage({
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition }}
     >
-      <button className="relative block w-full bg-muted text-left" onClick={onPreview} type="button">
+      <button
+        className="relative block w-full bg-muted text-left"
+        onClick={onPreview}
+        type="button"
+      >
         {/* biome-ignore lint/performance/noImgElement: Media URLs are runtime object-storage assets. */}
         <img
           alt=""
           className="aspect-square w-full object-cover transition-transform duration-200 ease-out group-hover:scale-[1.02]"
           src={url}
         />
-        <span className="pointer-events-none absolute inset-0 bg-linear-to-t from-black/45 via-transparent to-transparent opacity-80" />
         {isCover ? (
           <span className="absolute top-1.5 left-1.5 inline-flex items-center gap-1 rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-medium text-primary-foreground shadow-sm">
             <AppIcons.starFill className="size-2.5" />
             {t("media.cover")}
           </span>
         ) : null}
-        <span className="absolute right-1.5 bottom-1.5 rounded-full border border-white/20 bg-black/45 p-1 text-white opacity-0 transition-opacity duration-200 ease-out group-hover:opacity-100">
+        <span className="absolute right-1.5 bottom-1.5 rounded-full border border-white/20 bg-black/70 p-1 text-white opacity-0 transition-opacity duration-200 ease-out group-hover:opacity-100">
           <AppIcons.expand className="size-3" />
         </span>
       </button>

@@ -20,10 +20,7 @@ export default async function MerchantProductCollectionCreatePage({
   const t = await getTranslations();
 
   return (
-    <PageShell
-      description={t("collections.create.shellDescription")}
-      title={t("collections.create.shellTitle")}
-    >
+    <PageShell title={t("collections.create.shellTitle")}>
       <TaxonomyForm
         action={getTenantScopedPath(dashboardRoutes.productCollectionCreateAction, tenantId)}
         entityLabel="collection"

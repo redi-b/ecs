@@ -687,190 +687,209 @@ export function RichTextEditor({
 
   return (
     <TooltipProvider>
-      <div
-        className={cn(
-          "overflow-hidden rounded-xl border bg-background focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/20",
-          className,
-        )}
-      >
-        <div className="flex items-center justify-between gap-2 border-b bg-muted/30 p-1.5">
-          <SegmentedControl
-            ariaLabel="Description mode"
-            className="w-52"
-            fullWidth={false}
-            onChange={setMode}
-            options={[
-              {
-                id: "edit",
-                label: (
-                  <>
-                    <Pencil aria-hidden className="size-3.5" />
-                    Edit
-                  </>
-                ),
-              },
-              {
-                id: "preview",
-                label: (
-                  <>
-                    <Eye aria-hidden className="size-3.5" />
-                    Preview
-                  </>
-                ),
-              },
-            ]}
-            size="sm"
-            value={mode}
-          />
-          <span className="hidden text-xs text-muted-foreground sm:inline">Rich description</span>
-        </div>
-
-        {mode === "edit" ? (
-          <>
-            <div
-              aria-label="Text formatting"
-              className="flex items-center gap-0.5 border-b bg-muted/15 p-1"
-              role="toolbar"
-            >
-              {inlineControls.map((control) => (
-                <ToolbarButton control={control} key={control.label} />
-              ))}
-              <div className="hidden min-w-0 items-center gap-0.5 lg:flex lg:flex-wrap">
-                <span aria-hidden className="mx-1 h-5 w-px bg-border" />
-                {headingControls.map((control) => (
-                  <ToolbarButton control={control} key={control.label} />
-                ))}
-                <span aria-hidden className="mx-1 h-5 w-px bg-border" />
-                {blockControls.map((control) => (
-                  <ToolbarButton control={control} key={control.label} />
-                ))}
-                <span aria-hidden className="mx-1 h-5 w-px bg-border" />
-              </div>
-              <LinkControl editor={editor} shortcut={`${primaryShortcut} K`} />
-              <ImageControl
-                compactImages={compactImages}
-                editor={editor}
-                onCompactImagesChange={setCompactImages}
-              />
-              <div className="hidden min-w-0 items-center gap-0.5 lg:flex lg:flex-wrap">
-                <span aria-hidden className="mx-1 h-5 w-px bg-border" />
-                {documentControls.map((control) => (
-                  <ToolbarButton control={control} key={control.label} />
-                ))}
-                <span aria-hidden className="mx-1 h-5 w-px bg-border" />
-                {historyControls.map((control) => (
-                  <ToolbarButton control={control} key={control.label} />
-                ))}
-              </div>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    aria-label="More formatting options"
-                    className="ml-auto lg:hidden"
-                    size="icon-sm"
-                    type="button"
-                    variant="ghost"
-                  >
-                    <Menu aria-hidden />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuLabel>Text style</DropdownMenuLabel>
-                  <DropdownMenuGroup>
-                    {headingControls.map((control) => (
-                      <DropdownMenuItem
-                        key={control.label}
-                        onSelect={control.run}
-                        {...(control.disabled === undefined ? {} : { disabled: control.disabled })}
-                      >
-                        <control.icon aria-hidden />
-                        <span>{control.label}</span>
-                        {control.shortcut ? (
-                          <DropdownMenuShortcut>{control.shortcut}</DropdownMenuShortcut>
-                        ) : null}
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuGroup>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuLabel>Blocks</DropdownMenuLabel>
-                  <DropdownMenuGroup>
-                    {blockControls.map((control) => (
-                      <DropdownMenuItem key={control.label} onSelect={control.run}>
-                        <control.icon aria-hidden />
-                        <span>{control.label}</span>
-                        {control.shortcut ? (
-                          <DropdownMenuShortcut>{control.shortcut}</DropdownMenuShortcut>
-                        ) : null}
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuGroup>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuLabel>Document</DropdownMenuLabel>
-                  <DropdownMenuGroup>
-                    {documentControls.map((control) => (
-                      <DropdownMenuItem key={control.label} onSelect={control.run}>
-                        <control.icon aria-hidden />
-                        <span>{control.label}</span>
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuGroup>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuLabel>History</DropdownMenuLabel>
-                  <DropdownMenuGroup>
-                    {historyControls.map((control) => (
-                      <DropdownMenuItem
-                        key={control.label}
-                        onSelect={control.run}
-                        {...(control.disabled === undefined ? {} : { disabled: control.disabled })}
-                      >
-                        <control.icon aria-hidden />
-                        <span>{control.label}</span>
-                        {control.shortcut ? (
-                          <DropdownMenuShortcut>{control.shortcut}</DropdownMenuShortcut>
-                        ) : null}
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuGroup>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-            <div
-              className={cn(
-                "relative",
-                compactImages &&
-                  "[&_.tiptap_img]:!my-2 [&_.tiptap_img]:!max-h-36 [&_.tiptap_img]:!max-w-56 [&_.tiptap_img]:cursor-pointer",
-              )}
-            >
-              {editor.isActive("horizontalRule") ? (
-                <div className="absolute top-2 right-2 z-10">
-                  <Button
-                    onClick={() => editor.chain().focus().deleteSelection().run()}
-                    size="sm"
-                    type="button"
-                    variant="secondary"
-                  >
-                    <Trash2 data-icon="inline-start" />
-                    Remove divider
-                  </Button>
-                </div>
-              ) : null}
-              {editor.isEmpty && placeholder ? (
-                <span className="pointer-events-none absolute top-3 left-4 text-sm text-muted-foreground">
-                  {placeholder}
-                </span>
-              ) : null}
-              <EditorContent editor={editor} />
-            </div>
-          </>
-        ) : (
-          <div className="min-h-52 px-4 py-4">
-            {editor.isEmpty ? (
-              <p className="text-sm text-muted-foreground">Nothing to preview yet.</p>
-            ) : (
-              <EditorContent editor={editor} />
-            )}
+      <div className="relative" data-rich-text-editor-root="">
+        <div
+          className={cn(
+            "@container/rich-editor overflow-hidden rounded-xl border bg-background focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/20",
+            className,
+          )}
+        >
+          <div className="flex items-center justify-between gap-2 border-b bg-muted/30 p-1.5">
+            <SegmentedControl
+              ariaLabel="Description mode"
+              className="w-52"
+              fullWidth={false}
+              onChange={setMode}
+              options={[
+                {
+                  id: "edit",
+                  label: (
+                    <>
+                      <Pencil aria-hidden className="size-3.5" />
+                      Edit
+                    </>
+                  ),
+                },
+                {
+                  id: "preview",
+                  label: (
+                    <>
+                      <Eye aria-hidden className="size-3.5" />
+                      Preview
+                    </>
+                  ),
+                },
+              ]}
+              size="sm"
+              value={mode}
+            />
+            <span className="hidden text-xs text-muted-foreground @md/rich-editor:inline">
+              Rich description
+            </span>
           </div>
-        )}
+
+          {mode === "edit" ? (
+            <>
+              <div
+                aria-label="Text formatting"
+                className="flex items-center gap-0.5 border-b bg-muted/15 p-1"
+                role="toolbar"
+              >
+                {inlineControls.map((control) => (
+                  <ToolbarButton control={control} key={control.label} />
+                ))}
+                <div className="hidden min-w-0 items-center gap-0.5 @2xl/rich-editor:flex">
+                  <span aria-hidden className="mx-1 h-5 w-px bg-border" />
+                  {headingControls.map((control) => (
+                    <ToolbarButton control={control} key={control.label} />
+                  ))}
+                  <span aria-hidden className="mx-1 h-5 w-px bg-border" />
+                  {blockControls.map((control) => (
+                    <ToolbarButton control={control} key={control.label} />
+                  ))}
+                  <span aria-hidden className="mx-1 h-5 w-px bg-border" />
+                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      aria-label="Text style"
+                      aria-pressed={headingControls.some((control) => control.active)}
+                      className="@2xl/rich-editor:hidden"
+                      size="icon-sm"
+                      type="button"
+                      variant={
+                        headingControls.some((control) => control.active) ? "secondary" : "ghost"
+                      }
+                    >
+                      <Pilcrow aria-hidden />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="w-52">
+                    <DropdownMenuLabel>Text style</DropdownMenuLabel>
+                    <DropdownMenuGroup>
+                      {headingControls.map((control) => (
+                        <DropdownMenuItem key={control.label} onSelect={control.run}>
+                          <control.icon aria-hidden />
+                          <span>{control.label}</span>
+                          {control.shortcut ? (
+                            <DropdownMenuShortcut>{control.shortcut}</DropdownMenuShortcut>
+                          ) : null}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuGroup>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                <LinkControl editor={editor} shortcut={`${primaryShortcut} K`} />
+                <ImageControl
+                  compactImages={compactImages}
+                  editor={editor}
+                  onCompactImagesChange={setCompactImages}
+                />
+                <div className="hidden min-w-0 items-center gap-0.5 @2xl/rich-editor:flex">
+                  <span aria-hidden className="mx-1 h-5 w-px bg-border" />
+                  {documentControls.map((control) => (
+                    <ToolbarButton control={control} key={control.label} />
+                  ))}
+                  <span aria-hidden className="mx-1 h-5 w-px bg-border" />
+                  {historyControls.map((control) => (
+                    <ToolbarButton control={control} key={control.label} />
+                  ))}
+                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      aria-label="More formatting options"
+                      className="ml-auto @2xl/rich-editor:hidden"
+                      size="icon-sm"
+                      type="button"
+                      variant="ghost"
+                    >
+                      <Menu aria-hidden />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuLabel>Blocks</DropdownMenuLabel>
+                    <DropdownMenuGroup>
+                      {blockControls.map((control) => (
+                        <DropdownMenuItem key={control.label} onSelect={control.run}>
+                          <control.icon aria-hidden />
+                          <span>{control.label}</span>
+                          {control.shortcut ? (
+                            <DropdownMenuShortcut>{control.shortcut}</DropdownMenuShortcut>
+                          ) : null}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuGroup>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuLabel>Document</DropdownMenuLabel>
+                    <DropdownMenuGroup>
+                      {documentControls.map((control) => (
+                        <DropdownMenuItem key={control.label} onSelect={control.run}>
+                          <control.icon aria-hidden />
+                          <span>{control.label}</span>
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuGroup>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuLabel>History</DropdownMenuLabel>
+                    <DropdownMenuGroup>
+                      {historyControls.map((control) => (
+                        <DropdownMenuItem
+                          key={control.label}
+                          onSelect={control.run}
+                          {...(control.disabled === undefined
+                            ? {}
+                            : { disabled: control.disabled })}
+                        >
+                          <control.icon aria-hidden />
+                          <span>{control.label}</span>
+                          {control.shortcut ? (
+                            <DropdownMenuShortcut>{control.shortcut}</DropdownMenuShortcut>
+                          ) : null}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuGroup>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+              <div
+                className={cn(
+                  "relative",
+                  compactImages &&
+                    "[&_.tiptap_img]:!my-2 [&_.tiptap_img]:!max-h-36 [&_.tiptap_img]:!max-w-56 [&_.tiptap_img]:cursor-pointer",
+                )}
+              >
+                {editor.isActive("horizontalRule") ? (
+                  <div className="absolute top-2 right-2 z-10">
+                    <Button
+                      onClick={() => editor.chain().focus().deleteSelection().run()}
+                      size="sm"
+                      type="button"
+                      variant="secondary"
+                    >
+                      <Trash2 data-icon="inline-start" />
+                      Remove divider
+                    </Button>
+                  </div>
+                ) : null}
+                {editor.isEmpty && placeholder ? (
+                  <span className="pointer-events-none absolute top-3 left-4 text-sm text-muted-foreground">
+                    {placeholder}
+                  </span>
+                ) : null}
+                <EditorContent editor={editor} />
+              </div>
+            </>
+          ) : (
+            <div className="min-h-52 px-4 py-4">
+              {editor.isEmpty ? (
+                <p className="text-sm text-muted-foreground">Nothing to preview yet.</p>
+              ) : (
+                <EditorContent editor={editor} />
+              )}
+            </div>
+          )}
+        </div>
       </div>
     </TooltipProvider>
   );

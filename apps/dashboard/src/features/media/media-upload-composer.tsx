@@ -382,7 +382,9 @@ export function MediaUploadComposer({
         >
           <DialogHeader className="shrink-0 gap-1.5 border-b px-4 py-4 text-left sm:px-5">
             <DialogTitle className="text-xl">{t("media.uploadComposerTitle")}</DialogTitle>
-            <DialogDescription>{t("media.uploadComposerDescription")}</DialogDescription>
+            <DialogDescription className="sr-only">
+              {t("media.uploadComposerDescription")}
+            </DialogDescription>
           </DialogHeader>
 
           {/*
@@ -400,7 +402,7 @@ export function MediaUploadComposer({
                   onClick={() => inputRef.current?.click()}
                   type="button"
                 >
-                  <span className="grid size-12 place-items-center rounded-2xl border bg-background shadow-sm transition-transform duration-200 ease-out group-hover:scale-[1.02]">
+                  <span className="grid size-10 place-items-center rounded-xl border bg-background transition-colors duration-200 ease-out group-hover:border-primary/30">
                     <AppIcons.upload className="size-5 text-muted-foreground" />
                   </span>
                   <div>
@@ -409,9 +411,6 @@ export function MediaUploadComposer({
                       {t("media.supportedFormats")}
                     </p>
                   </div>
-                  <span className="inline-flex items-center rounded-full border bg-background px-3 py-1 text-xs font-medium">
-                    {t("media.browseFiles")}
-                  </span>
                 </button>
 
                 <div className="min-w-0 shrink-0 rounded-2xl border bg-card/60 p-3 sm:p-3.5">
@@ -503,7 +502,7 @@ export function MediaUploadComposer({
 
               <aside className="hidden flex-col gap-4 border-t bg-muted/15 p-4 sm:p-5 lg:flex lg:border-t-0 lg:border-l lg:min-h-full">
                 <div>
-                  <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                  <p className="text-xs font-medium text-muted-foreground">
                     {t("media.readyCount", { count: stagedFiles.length })}
                   </p>
                   <p className="mt-2 text-2xl font-semibold tracking-tight">
@@ -552,10 +551,7 @@ export function MediaUploadComposer({
             className="flex shrink-0 flex-col gap-3 border-t bg-muted/50 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:flex-row sm:items-center sm:justify-between sm:p-4 sm:pb-4"
             data-slot="dialog-footer"
           >
-            <p className="hidden text-xs text-muted-foreground sm:block">
-              {t("media.readyCount", { count: stagedFiles.length })}
-              {totalBytes ? ` · ${formatBytes(totalBytes)}` : ""}
-            </p>
+            <span aria-hidden className="hidden sm:block" />
             <div className={dialogFooterActionsClassName}>
               <Button
                 disabled={uploading}

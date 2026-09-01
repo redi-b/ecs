@@ -139,7 +139,7 @@ export function ProductDetail({ action, product, readOnly = false, tenantId }: P
 
           {/* Description lives in the hero so the page isn’t card-after-card of prose. */}
           <div className="border-t border-border/60 pt-4">
-            <p className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
+            <p className="text-xs font-medium text-muted-foreground">
               {t("products.detail.description")}
             </p>
             <p className="mt-1.5 max-w-3xl whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">
@@ -196,13 +196,12 @@ export function ProductDetail({ action, product, readOnly = false, tenantId }: P
                           className="aspect-square w-full object-cover transition-transform duration-200 ease-out group-hover:scale-[1.02]"
                           src={image.url}
                         />
-                        <span className="pointer-events-none absolute inset-0 bg-linear-to-t from-black/35 via-transparent to-transparent opacity-0 transition-opacity duration-200 group-hover:opacity-100" />
                         {isCover ? (
                           <span className="absolute top-2 left-2 rounded-full bg-primary px-2 py-0.5 text-[10px] font-medium text-primary-foreground shadow-sm">
                             {t("products.detail.cover")}
                           </span>
                         ) : null}
-                        <span className="absolute right-2 bottom-2 rounded-full border border-white/20 bg-black/45 p-1.5 text-white opacity-0 shadow-sm transition-opacity duration-200 group-hover:opacity-100">
+                        <span className="absolute right-2 bottom-2 rounded-full border border-white/20 bg-black/70 p-1.5 text-white opacity-0 transition-opacity duration-200 group-hover:opacity-100">
                           <AppIcons.expand className="size-3.5" />
                         </span>
                       </button>
@@ -407,7 +406,7 @@ function ProductThumbnail({
         src={src}
       />
       <span className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/0 text-white opacity-0 transition-all duration-200 group-hover:bg-black/25 group-hover:opacity-100">
-        <AppIcons.expand className="size-4 drop-shadow" />
+        <AppIcons.expand className="size-4" />
       </span>
     </button>
   );

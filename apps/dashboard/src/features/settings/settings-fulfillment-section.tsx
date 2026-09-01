@@ -49,10 +49,7 @@ export function FulfillmentSection({
   const { t } = useI18n();
   return (
     <SettingsSectionBody>
-      <SectionIntro
-        description={t("settings.fulfillment.intro")}
-        title={t("settings.sections.fulfillment.label")}
-      />
+      <SectionIntro title={t("settings.sections.fulfillment.label")} />
       <SettingsPanel
         description={t("settings.fulfillment.checkoutDescription")}
         title={t("settings.fulfillment.checkoutTitle")}
@@ -168,9 +165,7 @@ export function FulfillmentSection({
         ) : (
           <Alert>
             <AlertTitle>{t("settings.fulfillment.unavailableTitle")}</AlertTitle>
-            <AlertDescription>
-              {t("settings.fulfillment.unavailableDescription")}
-            </AlertDescription>
+            <AlertDescription>{t("settings.fulfillment.unavailableDescription")}</AlertDescription>
           </Alert>
         )}
       </SettingsPanel>

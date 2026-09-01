@@ -24,10 +24,6 @@ function sectionLabelKey(id: SettingsSectionId): MessageKey {
   return `settings.sections.${id}.label` as MessageKey;
 }
 
-function sectionDescriptionKey(id: SettingsSectionId): MessageKey {
-  return `settings.sections.${id}.description` as MessageKey;
-}
-
 /**
  * Settings section switcher.
  * Mobile: sticky full-viewport chip strip (horizontal scroll inside the bar).
@@ -96,7 +92,7 @@ export function SettingsSectionNav({
         <div
           aria-hidden
           className={cn(
-            "pointer-events-none absolute inset-y-0 left-0 z-10 flex w-8 items-center justify-start bg-linear-to-r from-background via-background/90 to-transparent pl-0.5 transition-opacity lg:hidden",
+            "pointer-events-none absolute inset-y-0 left-0 z-10 flex w-8 items-center justify-start bg-background pl-0.5 transition-opacity lg:hidden",
             canScrollLeft ? "opacity-100" : "opacity-0",
           )}
         >
@@ -105,7 +101,7 @@ export function SettingsSectionNav({
         <div
           aria-hidden
           className={cn(
-            "pointer-events-none absolute inset-y-0 right-0 z-10 flex w-8 items-center justify-end bg-linear-to-l from-background via-background/90 to-transparent pr-0.5 transition-opacity lg:hidden",
+            "pointer-events-none absolute inset-y-0 right-0 z-10 flex w-8 items-center justify-end bg-background pr-0.5 transition-opacity lg:hidden",
             canScrollRight ? "opacity-100" : "opacity-0",
           )}
         >
@@ -127,10 +123,10 @@ export function SettingsSectionNav({
                 <button
                   className={cn(
                     "flex w-full items-center gap-2 rounded-full border px-3 py-2 text-left transition-colors",
-                    "lg:items-start lg:gap-2.5 lg:rounded-lg lg:border-transparent lg:px-2.5 lg:py-2",
+                    "lg:gap-2.5 lg:rounded-lg lg:border-transparent lg:px-2.5 lg:py-2",
                     "outline-none focus-visible:ring-2 focus-visible:ring-ring/40",
                     isActive
-                      ? "border-primary/25 bg-primary/10 text-foreground shadow-sm lg:border-transparent lg:bg-primary/10 lg:shadow-none"
+                      ? "border-primary/25 bg-primary/10 text-foreground lg:border-transparent lg:bg-primary/10"
                       : "border-transparent bg-muted/40 text-muted-foreground hover:bg-muted/70 hover:text-foreground lg:bg-transparent lg:hover:bg-muted/45",
                   )}
                   data-section={id}
@@ -151,9 +147,6 @@ export function SettingsSectionNav({
                       )}
                     >
                       {t(sectionLabelKey(id))}
-                    </span>
-                    <span className="mt-0.5 hidden text-xs leading-snug text-muted-foreground lg:line-clamp-2 lg:block">
-                      {t(sectionDescriptionKey(id))}
                     </span>
                   </span>
                 </button>

@@ -49,16 +49,7 @@ export default async function SignUpPage({ searchParams }: SignUpPageProps) {
     : null;
 
   return (
-    <AuthShell
-      brandDescription={t("auth.signupBrandDescription")}
-      brandFooter={t("auth.brandFooter.signUp")}
-      brandPoints={[
-        t("auth.brandPoint.minutes"),
-        t("auth.brandPoint.catalog"),
-        t("auth.brandPoint.storefront"),
-      ]}
-      brandTitle={t("auth.signupBrandTitle")}
-    >
+    <AuthShell>
       <AccountSignUpForm
         defaultValues={{
           email: resolvedSearchParams.email,

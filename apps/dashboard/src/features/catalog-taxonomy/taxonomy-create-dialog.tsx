@@ -269,7 +269,7 @@ function TaxonomyCreateDialogInner({
         >
           <DialogHeader className="gap-1.5 border-b px-4 py-4 text-left sm:px-5">
             <DialogTitle>{t("taxonomy.create.title", { entity: localizedEntity })}</DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="sr-only">
               {entityLabel === "category"
                 ? t("taxonomy.create.category.desc")
                 : t("taxonomy.create.collection.desc")}
@@ -377,14 +377,11 @@ function TaxonomyCreateDialogInner({
                 </FieldDescription>
               </Field>
 
-              <Field>
-                <MediaImageReferenceControl
-                  label={t("taxonomy.form.mediaLabel")}
-                  onChange={(value) => setMediaUrl(value ?? "")}
-                  value={mediaUrl}
-                />
-                <FieldDescription>{t("taxonomy.form.mediaDescription")}</FieldDescription>
-              </Field>
+              <MediaImageReferenceControl
+                label={t("taxonomy.form.mediaLabel")}
+                onChange={(value) => setMediaUrl(value ?? "")}
+                value={mediaUrl}
+              />
 
               {entityLabel === "category" ? (
                 <Field>
@@ -396,7 +393,6 @@ function TaxonomyCreateDialogInner({
                     searchPlaceholder={t("taxonomy.create.searchParent")}
                     value={parentCategoryId}
                   />
-                  <FieldDescription>{t("taxonomy.create.parentDesc")}</FieldDescription>
                 </Field>
               ) : null}
 

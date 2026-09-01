@@ -17,18 +17,13 @@ export function DomainsSection({ initialDomains }: { initialDomains: TenantDomai
 
   return (
     <SettingsSectionBody>
-      <SectionIntro
-        description={t("settings.domains.intro")}
-        title={t("settings.sections.domains.label")}
-      />
+      <SectionIntro title={t("settings.sections.domains.label")} />
 
       <SettingsPanel
         description={t("settings.domains.unavailableDescription")}
         title={t("settings.domains.unavailableTitle")}
       >
-        <p className="text-sm text-muted-foreground">
-          {t("settings.domains.unavailableNote")}
-        </p>
+        <p className="text-sm text-muted-foreground">{t("settings.domains.unavailableNote")}</p>
       </SettingsPanel>
 
       <div className="space-y-3">

@@ -61,7 +61,8 @@ export function DialogStepRail({
         <ol className="mx-auto flex w-full max-w-lg items-center justify-center">
           {steps.map((step, index) => {
             const status = getStatus(step, index);
-            const isCurrent = step.id === currentId || status === "current" || index === currentIndex;
+            const isCurrent =
+              step.id === currentId || status === "current" || index === currentIndex;
             const isComplete = status === "complete";
             const isLast = index === steps.length - 1;
             const muted = status === "locked" || status === "reachable";
@@ -82,11 +83,7 @@ export function DialogStepRail({
                   onClick={() => onSelect(step.id)}
                   type="button"
                 >
-                  <StepMarker
-                    index={index}
-                    size="sm"
-                    status={isCurrent ? "current" : status}
-                  />
+                  <StepMarker index={index} size="sm" status={isCurrent ? "current" : status} />
                   <span className="whitespace-nowrap text-xs font-medium sm:text-sm">
                     {step.shortLabel ?? step.label}
                   </span>
@@ -143,10 +140,7 @@ export function DialogStepRail({
                 onClick={() => onSelect(step.id)}
                 type="button"
               >
-                <StepMarker
-                  index={index}
-                  status={isCurrent ? "current" : status}
-                />
+                <StepMarker index={index} status={isCurrent ? "current" : status} />
                 <span className="max-w-full truncate sm:hidden">
                   {step.shortLabel ?? step.label}
                 </span>
@@ -180,12 +174,8 @@ function StepMarker({
         "relative flex shrink-0 items-center justify-center rounded-full bg-card font-semibold tabular-nums transition-[transform,background-color,box-shadow,color] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]",
         size === "sm" ? "size-6 text-[10px]" : "size-5 text-[10px] sm:size-6 sm:text-[11px]",
         complete && "bg-primary text-primary-foreground",
-        current &&
-          "z-[1] scale-105 bg-primary text-primary-foreground shadow-[0_0_0_3px_color-mix(in_oklch,var(--primary)_16%,transparent)]",
-        !complete &&
-          !current &&
-          !locked &&
-          "text-muted-foreground ring-1 ring-border",
+        current && "z-[1] bg-primary text-primary-foreground",
+        !complete && !current && !locked && "text-muted-foreground ring-1 ring-border",
         locked && "text-muted-foreground/80 ring-1 ring-border/80",
       )}
     >
@@ -223,9 +213,7 @@ export function DialogStepPanel({
  * Forward jumps beyond this should still be attempted — caller validates path.
  */
 export function getHighestReachableIndex(completedIndexes: number[], currentIndex: number) {
-  const maxCompleted = completedIndexes.length
-    ? Math.max(...completedIndexes)
-    : -1;
+  const maxCompleted = completedIndexes.length ? Math.max(...completedIndexes) : -1;
   return Math.max(currentIndex, maxCompleted + 1);
 }
 

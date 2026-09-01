@@ -112,7 +112,6 @@ export function MediaWorkspace({
           </Button>
         </>
       }
-      description={t("media.shellDescription")}
       title={t("media.shellTitle")}
     >
       <ListSummary

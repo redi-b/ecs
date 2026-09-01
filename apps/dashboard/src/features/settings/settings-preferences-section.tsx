@@ -1,12 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import {
-  Field,
-  FieldContent,
-  FieldDescription,
-  FieldTitle,
-} from "@/components/ui/field";
+import { Field, FieldContent, FieldDescription, FieldTitle } from "@/components/ui/field";
 import { Switch } from "@/components/ui/switch";
 import {
   SectionIntro,
@@ -28,16 +23,16 @@ export function PreferencesSection({
   const { t } = useI18n();
   return (
     <SettingsSectionBody>
-      <SectionIntro
-        description={t("settings.preferences.intro")}
-        title={t("settings.sections.preferences.label")}
-      />
+      <SectionIntro title={t("settings.sections.preferences.label")} />
       <div className="grid items-start gap-4 lg:grid-cols-2">
         <SettingsPanel
           description={t("settings.preferences.dashboardDescription")}
           title={t("settings.preferences.dashboardTitle")}
         >
-          <Field className="rounded-lg border border-border/70 bg-muted/15 p-3" orientation="horizontal">
+          <Field
+            className="rounded-lg border border-border/70 bg-muted/15 p-3"
+            orientation="horizontal"
+          >
             <FieldContent>
               <FieldTitle>{t("settings.preferences.launchTitle")}</FieldTitle>
               <FieldDescription>{t("settings.preferences.launchDescription")}</FieldDescription>

@@ -1,6 +1,8 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import type * as React from "react";
+import { useTransition } from "react";
 
 import { PaginationBar } from "@/components/app/pagination-bar";
 import { useI18n } from "@/i18n/provider";
@@ -70,7 +72,7 @@ export function ListSummary({
   const right = detail !== undefined ? detail : autoDetail;
 
   return (
-    <div className="flex w-full items-center justify-between gap-3 rounded-2xl border border-border/80 bg-card/90 px-4 py-2.5 text-sm shadow-[0_1px_2px_color-mix(in_oklch,var(--foreground)_3%,transparent)]">
+    <div className="flex w-full flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-card px-3 py-2.5 text-sm sm:gap-3 sm:px-4">
       <div className="flex min-w-0 items-baseline gap-2">
         {filtered && count === 0 ? (
           <span className="font-medium text-muted-foreground">
@@ -92,7 +94,7 @@ export function ListSummary({
         )}
       </div>
       {right || actions ? (
-        <div className="flex min-w-0 items-center justify-end gap-3">
+        <div className="flex min-w-0 flex-1 flex-wrap items-center justify-end gap-2 sm:gap-3">
           {right ? (
             <span className="min-w-0 truncate text-right text-muted-foreground">{right}</span>
           ) : null}
@@ -112,6 +114,8 @@ export function PaginationControls({
   className,
 }: PaginationControlsProps) {
   const { t, formatNumber } = useI18n();
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
 
   // Nothing to page through — empty table panel already covers this state.
   if (count === 0) {
@@ -126,6 +130,12 @@ export function PaginationControls({
   // Build hrefs on the client so Server Components never pass a function prop.
   function getPageHref(nextPage: number) {
     return buildPageHref(basePath, searchParams, nextPage);
+  }
+
+  function changePage(nextPage: number) {
+    startTransition(() => {
+      router.replace(getPageHref(nextPage), { scroll: false });
+    });
   }
 
   // Single page: ListSummary already owns the total — don't restate "1–N of N".
@@ -145,6 +155,8 @@ export function PaginationControls({
     <PaginationBar
       {...(className ? { className } : {})}
       getPageHref={getPageHref}
+      isPending={isPending}
+      onPageChange={changePage}
       page={safePage}
       {...(rangeSummary ? { summary: rangeSummary } : {})}
       totalPages={totalPages}

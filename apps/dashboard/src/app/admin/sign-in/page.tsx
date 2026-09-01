@@ -66,43 +66,11 @@ export default async function AdminSignInPage({
     shopHost.ok && shopHost.tenant?.name?.trim() ? shopHost.tenant.name.trim() : null;
 
   return (
-    <AuthShell
-      brandDescription={
-        isCentralAccess
-          ? t("auth.centralBrandDescription")
-          : shopName
-            ? t("auth.shopBrandDescriptionNamed", { shopName })
-            : t("auth.shopBrandDescription")
-      }
-      brandFooter={t("auth.brandFooter.signIn")}
-      brandPoints={
-        isCentralAccess
-          ? [
-              t("auth.brandPoint.catalog"),
-              t("auth.brandPoint.orders"),
-              t("auth.brandPoint.storefront"),
-            ]
-          : [t("auth.brandPoint.shopAccess"), t("auth.brandPoint.teamReady")]
-      }
-      brandTitle={
-        isCentralAccess
-          ? t("auth.centralBrandTitle")
-          : shopName
-            ? t("auth.shopBrandTitleNamed", { shopName })
-            : t("auth.shopBrandTitle")
-      }
-    >
-      <div className="rounded-2xl border border-border/80 bg-card p-7 shadow-[0_1px_2px_color-mix(in_oklch,var(--foreground)_6%,transparent),0_12px_40px_-24px_color-mix(in_oklch,var(--foreground)_18%,transparent)] ring-1 ring-foreground/[0.03] sm:p-9">
-        <div className="mb-7">
-          <p className="type-eyebrow">{shopName ?? t("auth.merchantConsole")}</p>
-          <h2 className="type-page-title mt-2.5 sm:text-[1.35rem]">{t("auth.signIn")}</h2>
-          <p className="type-meta mt-2">
-            {isCentralAccess
-              ? t("auth.centralDescription")
-              : shopName
-                ? t("auth.shopDescriptionNamed", { shopName })
-                : t("auth.shopDescription")}
-          </p>
+    <AuthShell>
+      <div className="rounded-xl border border-border bg-card p-6 sm:p-8">
+        <div className="mb-6">
+          <h1 className="type-page-title sm:text-[1.35rem]">{t("auth.signIn")}</h1>
+          {shopName ? <p className="type-meta mt-1.5">{shopName}</p> : null}
         </div>
         <SignInForm errorMessage={errorMessage} nextPath={nextPath} />
         {isCentralAccess ? (

@@ -60,6 +60,19 @@
     "unpaid": "Unpaid",
     "unfulfilled": "Unfulfilled"
   },
+  "storefrontActivity": {
+    "title": "Storefront activity",
+    "range": "Last {count} days",
+    "visits": "Visits",
+    "productViews": "Product views",
+    "addedToCart": "Added to cart",
+    "checkouts": "Checkout starts",
+    "emptyTitle": "No storefront activity yet",
+    "emptyDescription": "Visits and shopping activity will appear here when customers use your storefront.",
+    "unavailableTitle": "Storefront activity is unavailable",
+    "unavailableDescription": "Activity reporting could not be loaded right now.",
+    "viewInsights": "View insights"
+  },
   "trading": {
     "title": "Trading activity",
     "description": "Revenue, orders, and customers from available commerce records.",

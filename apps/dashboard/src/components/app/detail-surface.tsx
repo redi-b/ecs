@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 
 import { HelpTip } from "@/components/app/help-tip";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,7 +24,9 @@ export function DetailHero({ children, actions, className }: DetailHeroProps) {
       <div className="px-(--card-spacing) py-0.5">
         {actions ? (
           <div className="grid gap-4 sm:gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,21rem)] lg:items-stretch lg:gap-8">
-            <div className="flex min-w-0 flex-col justify-center gap-4 py-1 sm:gap-5">{children}</div>
+            <div className="flex min-w-0 flex-col justify-center gap-4 py-1 sm:gap-5">
+              {children}
+            </div>
             {/* Stacked on mobile with a top rule; side rail on large screens. */}
             <div className="flex min-w-0 flex-col border-t border-border/60 pt-4 lg:border-t-0 lg:border-l lg:pt-0 lg:pl-7">
               {actions}
@@ -51,9 +53,7 @@ export function DetailHeroStat({
   if (value == null || value === "" || value === "—") return null;
   return (
     <div className={cn("min-w-0 space-y-1", className)}>
-      <p className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
-        {label}
-      </p>
+      <p className="text-xs font-medium text-muted-foreground">{label}</p>
       <div className="text-sm font-medium leading-snug text-foreground break-words">{value}</div>
     </div>
   );
@@ -134,9 +134,7 @@ export function DetailFieldGrid({
   children: ReactNode;
   className?: string;
 }) {
-  return (
-    <div className={cn("grid gap-x-6 gap-y-3 sm:grid-cols-2", className)}>{children}</div>
-  );
+  return <div className={cn("grid gap-x-6 gap-y-3 sm:grid-cols-2", className)}>{children}</div>;
 }
 
 export function DetailMetric({
@@ -176,9 +174,7 @@ export function DetailActivityList({
   empty?: ReactNode;
 }) {
   if (items.length === 0) {
-    return empty ? (
-      <p className="text-sm text-muted-foreground">{empty}</p>
-    ) : null;
+    return empty ? <p className="text-sm text-muted-foreground">{empty}</p> : null;
   }
 
   // Long timelines stay scannable without blowing the sidebar column height.
@@ -201,9 +197,7 @@ export function DetailActivityList({
                 aria-hidden
                 className="mt-[0.4rem] size-2 shrink-0 rounded-full bg-primary ring-[3px] ring-card"
               />
-              {!isLast ? (
-                <span aria-hidden className="mt-1 w-px flex-1 bg-border" />
-              ) : null}
+              {!isLast ? <span aria-hidden className="mt-1 w-px flex-1 bg-border" /> : null}
             </div>
             <div
               className={cn(
@@ -223,9 +217,7 @@ export function DetailActivityList({
   );
 }
 
-function resolveFillThrough(
-  steps: Array<{ done: boolean; current?: boolean; muted?: boolean }>,
-) {
+function resolveFillThrough(steps: Array<{ done: boolean; current?: boolean; muted?: boolean }>) {
   const currentIndex = steps.findIndex((step) => step.current);
   if (currentIndex >= 0) return currentIndex;
   return Math.max(
@@ -294,7 +286,7 @@ export function DetailStepTrack({
                   step.muted && "bg-muted text-muted-foreground ring-1 ring-border",
                   complete && "bg-primary text-primary-foreground shadow-sm",
                   current &&
-                    "scale-105 bg-primary text-primary-foreground shadow-[0_0_0_4px_color-mix(in_oklch,var(--primary)_18%,transparent)] motion-safe:animate-dialog-step-in",
+                    "bg-primary text-primary-foreground motion-safe:animate-dialog-step-in",
                   !complete &&
                     !current &&
                     !step.muted &&

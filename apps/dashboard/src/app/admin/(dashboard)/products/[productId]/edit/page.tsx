@@ -47,13 +47,7 @@ export default async function MerchantProductEditPage({
   const requestHost = requestHeaders.get("host");
   // Edit still needs taxonomy for the form; use request-memoized loaders.
   const [productResult, categoriesResult, collectionsResult] = await Promise.all([
-    getMerchantProductCached(
-      platformApiBaseUrl,
-      cookieHeader,
-      requestHost,
-      tenantId,
-      productId,
-    ),
+    getMerchantProductCached(platformApiBaseUrl, cookieHeader, requestHost, tenantId, productId),
     getMerchantProductCategoriesCached(
       platformApiBaseUrl,
       cookieHeader,
@@ -87,11 +81,7 @@ export default async function MerchantProductEditPage({
   const optionErrors = referenceDataErrors.filter((error) => error.state.kind === "error");
 
   return (
-    <PageShell
-      actions={<RefreshButton />}
-      description={t("products.detail.shellDescription")}
-      title={t("products.composer.editTitle")}
-    >
+    <PageShell actions={<RefreshButton />} title={t("products.composer.editTitle")}>
       {setupError ? (
         <ListSetupState state={setupError} />
       ) : productResult.ok ? (
@@ -141,32 +131,18 @@ function getReferenceDataError(
   };
 }
 
-function ReferenceDataAlert({
-  errors,
-  t,
-}: {
-  errors: ReferenceDataError[];
-  t: Translate;
-}) {
+function ReferenceDataAlert({ errors, t }: { errors: ReferenceDataError[]; t: Translate }) {
   const labels = errors.map((error) => error.label).join(` ${t("common.and")} `);
 
   return (
     <Alert variant="destructive">
       <AlertTitle>{t("products.detail.optionsLoadErrorTitle")}</AlertTitle>
-      <AlertDescription>
-        {t("products.detail.optionsLoadErrorDesc", { labels })}
-      </AlertDescription>
+      <AlertDescription>{t("products.detail.optionsLoadErrorDesc", { labels })}</AlertDescription>
     </Alert>
   );
 }
 
-function ProductLoadAlert({
-  state,
-  t,
-}: {
-  state: ListErrorState | null;
-  t: Translate;
-}) {
+function ProductLoadAlert({ state, t }: { state: ListErrorState | null; t: Translate }) {
   return (
     <Alert variant="destructive">
       <AlertTitle>{t("products.detail.loadErrorTitle")}</AlertTitle>

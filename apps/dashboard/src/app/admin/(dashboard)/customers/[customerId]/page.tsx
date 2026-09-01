@@ -6,10 +6,7 @@ import { ListSetupState } from "@/components/app/list-error-state";
 import { PageShell } from "@/components/app/page-shell";
 import { RefreshButton } from "@/components/app/refresh-button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import {
-  CustomerDetail,
-  CustomerDetailPageActions,
-} from "@/features/customers/customer-detail";
+import { CustomerDetail, CustomerDetailPageActions } from "@/features/customers/customer-detail";
 import { getTranslations } from "@/i18n/server";
 import { getListErrorState } from "@/lib/list-error-state";
 import { getMerchantCustomer } from "@/lib/merchant-customers";
@@ -35,11 +32,7 @@ export default async function CustomerDetailPage({
     }
     const errorState = getListErrorState("customers", result.message);
     return (
-      <PageShell
-        actions={<RefreshButton />}
-        description={t("customers.detail.shellDescription")}
-        title={t("customers.title")}
-      >
+      <PageShell actions={<RefreshButton />} title={t("customers.title")}>
         {errorState.kind === "setup" || errorState.kind === "service" ? (
           <ListSetupState state={errorState} />
         ) : (
@@ -53,8 +46,7 @@ export default async function CustomerDetailPage({
   }
 
   const customer = result.customer;
-  const name =
-    [customer.firstName, customer.lastName].filter(Boolean).join(" ") || customer.email;
+  const name = [customer.firstName, customer.lastName].filter(Boolean).join(" ") || customer.email;
   const ordersResult = await getMerchantOrders({
     ...requestContext,
     customerId: customer.id,
@@ -65,11 +57,7 @@ export default async function CustomerDetailPage({
   const customerOrdersCount = ordersResult.ok ? ordersResult.orders.count : 0;
 
   return (
-    <PageShell
-      actions={<CustomerDetailPageActions customer={customer} />}
-      description={t("customers.detail.shellDescription")}
-      title={name}
-    >
+    <PageShell actions={<CustomerDetailPageActions customer={customer} />} title={name}>
       <DashboardBreadcrumbLabel label={name} labelKey="customer-details" />
       <CustomerDetail
         customer={customer}

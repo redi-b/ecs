@@ -5,12 +5,7 @@ import type { MerchantDashboardAccess } from "@ecs/contracts";
 import { AppIcons } from "@/components/app/icons";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import {
-  Field,
-  FieldDescription,
-  FieldGroup,
-  FieldLabel,
-} from "@/components/ui/field";
+import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import {
   InputGroup,
@@ -72,10 +67,7 @@ export function ShopSection({
 
   return (
     <SettingsSectionBody>
-      <SectionIntro
-        description={t("settings.shop.intro")}
-        title={t("settings.sections.shop.label")}
-      />
+      <SectionIntro title={t("settings.sections.shop.label")} />
       <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_17.5rem]">
         <SettingsPanel
           description={t("settings.shop.detailsDescription")}
@@ -91,7 +83,7 @@ export function ShopSection({
               <div className="flex items-center justify-between gap-2">
                 <FieldLabel htmlFor={handleId}>{t("settings.shop.handle")}</FieldLabel>
                 {!handleUnlocked ? (
-                  <span className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
+                  <span className="text-xs font-medium text-muted-foreground">
                     {t("settings.handle.locked")}
                   </span>
                 ) : null}
@@ -203,9 +195,7 @@ function HandleStatus({ availability }: { availability: HandleAvailability }) {
     );
   }
   if (availability.status === "unavailable" || availability.status === "invalid") {
-    return (
-      <span className="text-xs font-medium text-destructive">{availability.message}</span>
-    );
+    return <span className="text-xs font-medium text-destructive">{availability.message}</span>;
   }
   if (availability.status === "current") {
     return <span className="text-xs text-muted-foreground">{t("settings.handle.current")}</span>;

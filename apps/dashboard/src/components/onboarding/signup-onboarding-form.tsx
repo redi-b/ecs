@@ -4,11 +4,6 @@ import type { StorefrontTemplateCatalogItem } from "@ecs/contracts";
 import { useEffect, useId, useMemo, useState } from "react";
 
 import { AppIcons } from "@/components/app/icons";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
 import {
   CategoryCombobox,
   HandleStatus,
@@ -18,13 +13,18 @@ import {
 } from "@/components/onboarding/onboarding-form-parts";
 import {
   getHandleReason,
+  type HandleState,
   mapOnboardingError,
   ONBOARDING_DRAFT_KEY,
   parseCategories,
   serializeCategories,
   slugify,
-  type HandleState,
 } from "@/components/onboarding/onboarding-helpers";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
 import { useI18n } from "@/i18n/provider";
 import { getStorefrontHostname } from "@/lib/storefront-hosts";
 import { cn } from "@/lib/utils";
@@ -261,10 +261,7 @@ export function ShopOnboardingForm({
     if (data.deliveryPrefsApplied === false || data.warning === "delivery_prefs_not_applied") {
       // Shop exists; surface that fulfillment prefs still need Settings → Fulfillment.
       try {
-        window.sessionStorage.setItem(
-          "ecs:onboarding-warning",
-          "delivery_prefs_not_applied",
-        );
+        window.sessionStorage.setItem("ecs:onboarding-warning", "delivery_prefs_not_applied");
       } catch {
         // ignore storage failures
       }
@@ -354,9 +351,7 @@ export function ShopOnboardingForm({
                     className={cn(
                       "mt-0.5 grid size-7 shrink-0 place-items-center rounded-full text-xs font-semibold transition-colors",
                       (complete || active) && "bg-primary text-primary-foreground",
-                      !active &&
-                        !complete &&
-                        "bg-muted text-muted-foreground ring-1 ring-border",
+                      !active && !complete && "bg-muted text-muted-foreground ring-1 ring-border",
                     )}
                   >
                     {complete ? <AppIcons.check className="size-3.5" /> : index + 1}
@@ -393,7 +388,7 @@ export function ShopOnboardingForm({
           <div className="border-b px-4 py-5 sm:px-8 sm:py-7">
             <div className="flex flex-wrap items-start justify-between gap-3 sm:gap-4">
               <div className="min-w-0 max-w-xl">
-                <p className="text-xs font-semibold tracking-[0.06em] text-muted-foreground uppercase">
+                <p className="text-xs font-medium text-muted-foreground">
                   {t("onboarding.stepOf", {
                     current: String(step + 1),
                     total: String(steps.length),
@@ -434,7 +429,9 @@ export function ShopOnboardingForm({
             >
               <div className={cn(step === 0 ? "grid gap-6" : "hidden")}>
                 <Field>
-                  <FieldLabel htmlFor={`${fieldId}-shopName`}>{t("onboarding.shopName")}</FieldLabel>
+                  <FieldLabel htmlFor={`${fieldId}-shopName`}>
+                    {t("onboarding.shopName")}
+                  </FieldLabel>
                   <Input
                     autoComplete="organization"
                     autoFocus={step === 0}
@@ -446,20 +443,19 @@ export function ShopOnboardingForm({
                     required
                     value={shopName}
                   />
-                  <FieldDescription>{t("onboarding.shopNameHelp")}</FieldDescription>
                 </Field>
 
                 <Field data-invalid={handleState.status === "unavailable" ? true : undefined}>
                   <FieldLabel htmlFor={`${fieldId}-handle`}>
                     {t("onboarding.shopAddress")}
                   </FieldLabel>
-                  <div className="overflow-hidden rounded-full border border-input bg-background transition-colors focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/25">
+                  <div className="overflow-hidden rounded-[1.75rem] border border-input bg-background transition-colors focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/25">
                     <div className="flex items-stretch">
-                      <span className="hidden items-center border-r bg-muted/40 px-3.5 text-sm text-muted-foreground sm:flex">
+                      <span className="hidden items-center border-r bg-muted/40 px-4 text-sm text-muted-foreground sm:flex">
                         https://
                       </span>
                       <Input
-                        className="h-11 rounded-none border-0 bg-transparent px-3.5 shadow-none focus-visible:ring-0"
+                        className="h-12 rounded-none border-0 bg-transparent px-4 shadow-none focus-visible:ring-0"
                         id={`${fieldId}-handle`}
                         name="handle"
                         onChange={(event) => {
@@ -471,7 +467,7 @@ export function ShopOnboardingForm({
                         value={handle}
                       />
                     </div>
-                    <div className="flex items-center justify-between gap-3 border-t bg-muted/20 px-3.5 py-2.5 text-xs sm:text-sm">
+                    <div className="flex min-h-11 items-center justify-between gap-4 border-t bg-muted/20 px-4 py-2.5 text-xs sm:text-sm">
                       <span className="min-w-0 truncate font-medium tabular-nums text-foreground/90">
                         {previewHostname}
                       </span>
@@ -585,9 +581,6 @@ export function ShopOnboardingForm({
                       <p className="text-sm font-semibold tracking-tight">
                         {t("onboarding.reviewTitle")}
                       </p>
-                      <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
-                        {t("onboarding.reviewDescription")}
-                      </p>
                     </div>
                     <Badge variant="secondary">{t("onboarding.ready")}</Badge>
                   </div>
@@ -653,7 +646,6 @@ export function ShopOnboardingForm({
                   {t("onboarding.recoverableDescription")}
                 </p>
               </div>
-
             </form>
 
             <div className="mt-6 flex flex-col gap-3 border-t pt-5 sm:mt-7 sm:pt-6">

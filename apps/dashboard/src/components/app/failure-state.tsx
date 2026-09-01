@@ -1,7 +1,6 @@
 "use client";
 
 import { ArrowLeftIcon, RefreshCwIcon } from "lucide-react";
-import type { ReactNode } from "react";
 import { useTransition } from "react";
 
 import Link from "@/components/app/link";
@@ -30,11 +29,10 @@ export function FailureState({
   const [pending, startTransition] = useTransition();
 
   return (
-    <main className="failure-stage min-h-dvh bg-background px-5 py-8 text-foreground sm:px-8">
-      <div aria-hidden className="failure-grid" />
-      <section className="relative z-10 mx-auto grid min-h-[calc(100dvh-4rem)] w-full max-w-5xl content-center gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(19rem,0.72fr)] lg:items-center">
-        <div className="max-w-xl">
-          <p className="type-eyebrow text-primary">
+    <main className="min-h-dvh bg-background px-5 py-8 text-foreground sm:px-8">
+      <section className="mx-auto flex min-h-[calc(100dvh-4rem)] w-full max-w-xl items-center">
+        <div>
+          <p className="text-sm font-medium text-primary">
             {eyebrow}
             {code ? ` / ${code}` : ""}
           </p>
@@ -64,30 +62,7 @@ export function FailureState({
             ) : null}
           </div>
         </div>
-        <FailureViewport />
       </section>
     </main>
-  );
-}
-
-function FailureViewport(): ReactNode {
-  return (
-    <div aria-hidden className="failure-viewport">
-      <div className="failure-browser-bar">
-        <span />
-        <span />
-        <span />
-        <div />
-      </div>
-      <div className="failure-canvas">
-        <div className="failure-frame failure-frame-one" />
-        <div className="failure-frame failure-frame-two" />
-        <div className="failure-frame failure-frame-three" />
-        <div className="failure-scan" />
-      </div>
-      <div className="failure-status">
-        <span /> ECS
-      </div>
-    </div>
   );
 }

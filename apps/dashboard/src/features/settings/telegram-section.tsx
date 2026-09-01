@@ -2,10 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-import {
-  SectionIntro,
-  SettingsSectionBody,
-} from "@/features/settings/settings-sections";
+import { SectionIntro, SettingsSectionBody } from "@/features/settings/settings-sections";
 import { TelegramShopToolsPanel } from "@/features/settings/telegram-shop-tools-panel";
 import { useI18n } from "@/i18n/provider";
 
@@ -38,10 +35,7 @@ export function TelegramSection({ tenantId }: { tenantId: string }) {
 
   return (
     <SettingsSectionBody>
-      <SectionIntro
-        description={t("settings.telegram.intro")}
-        title={t("settings.sections.telegram.label")}
-      />
+      <SectionIntro title={t("settings.sections.telegram.label")} />
       <TelegramShopToolsPanel available={available} tenantId={tenantId} />
     </SettingsSectionBody>
   );

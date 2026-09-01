@@ -2,9 +2,9 @@
 
 import type { ColumnDef } from "@tanstack/react-table";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState, useTransition, type ReactNode } from "react";
+import { type ReactNode, useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
-
+import { ConfirmDialog } from "@/components/app/confirm-dialog";
 import { DataTable } from "@/components/app/data-table";
 import { DataTableBulkBar } from "@/components/app/data-table-bulk-bar";
 import {
@@ -16,16 +16,10 @@ import { AppIcons } from "@/components/app/icons";
 import { ListResultsStatus } from "@/components/app/list-results-status";
 import { ListToolbarSearch, ListViewToggle } from "@/components/app/list-toolbar";
 import { RowActionsMenu } from "@/components/app/row-actions-menu";
-import { ConfirmDialog } from "@/components/app/confirm-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Empty,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyTitle,
-} from "@/components/ui/empty";
+import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useI18n } from "@/i18n/provider";
 import { copyTextToClipboard } from "@/lib/clipboard";
@@ -282,9 +276,7 @@ export function MediaLibrary({
       if (deleted && failed) {
         throw new Error(t("media.batchDeletePartial", { deleted, failed }));
       }
-      throw new Error(
-        targets.length === 1 ? t("media.inUseError") : t("media.deleteError"),
-      );
+      throw new Error(targets.length === 1 ? t("media.inUseError") : t("media.deleteError"));
     })();
 
     toast.promise(deletePromise, {
@@ -294,8 +286,7 @@ export function MediaLibrary({
           : t("media.deletingMany", { count: targets.length }),
       success: ({ deleted }) =>
         targets.length === 1 ? t("media.deleted") : t("media.batchDeleted", { count: deleted }),
-      error: (error) =>
-        error instanceof Error ? error.message : t("media.deleteError"),
+      error: (error) => (error instanceof Error ? error.message : t("media.deleteError")),
     });
   }
 
@@ -546,11 +537,7 @@ export function MediaLibrary({
               <Checkbox
                 aria-label={t("media.selectAll")}
                 checked={
-                  allPageSelected
-                    ? true
-                    : selectedAssets.length > 0
-                      ? "indeterminate"
-                      : false
+                  allPageSelected ? true : selectedAssets.length > 0 ? "indeterminate" : false
                 }
                 onCheckedChange={(checked) => toggleSelectPage(checked === true)}
               />
@@ -590,13 +577,11 @@ export function MediaLibrary({
                         aria-label={t("media.selectAsset", { name: asset.displayName })}
                         checked={selected}
                         className="border-background bg-background/90 shadow-sm"
-                        onCheckedChange={(checked) =>
-                          toggleSelected(asset.id, checked === true)
-                        }
+                        onCheckedChange={(checked) => toggleSelected(asset.id, checked === true)}
                         onClick={(event) => event.stopPropagation()}
                       />
                     </div>
-                    <span className="pointer-events-none absolute top-2 right-2 z-10 rounded-full border border-white/15 bg-black/50 px-2 py-0.5 text-[10px] font-medium tracking-wide text-white uppercase backdrop-blur-sm">
+                    <span className="pointer-events-none absolute top-2 right-2 z-10 rounded-full border border-white/15 bg-black/70 px-2 py-0.5 text-[10px] font-medium text-white">
                       {formatMimeLabel(asset.mimeType)}
                     </span>
                     <button
@@ -610,8 +595,8 @@ export function MediaLibrary({
                         className="aspect-[4/3] w-full object-cover transition-transform duration-200 ease-out group-hover:scale-[1.015]"
                         src={asset.publicUrl ?? ""}
                       />
-                      <span className="pointer-events-none absolute inset-0 flex items-end justify-end bg-linear-to-t from-black/40 via-transparent to-transparent p-2 opacity-0 transition-opacity duration-200 ease-out group-hover:opacity-100">
-                        <span className="rounded-full border border-white/20 bg-black/45 p-1.5 text-white">
+                      <span className="pointer-events-none absolute inset-0 flex items-end justify-end p-2 opacity-0 transition-opacity duration-200 ease-out group-hover:opacity-100">
+                        <span className="rounded-full border border-white/20 bg-black/70 p-1.5 text-white">
                           <AppIcons.expand className="size-3.5" />
                         </span>
                       </span>
@@ -637,7 +622,9 @@ export function MediaLibrary({
               summaryLabel={t("media.selectedSummary")}
             />
             {footer ? (
-              <div className="shrink-0 border-t border-border/80 bg-muted/10 px-3 py-2">{footer}</div>
+              <div className="shrink-0 border-t border-border/80 bg-muted/10 px-3 py-2">
+                {footer}
+              </div>
             ) : null}
           </>
         ) : (
@@ -696,9 +683,7 @@ export function MediaLibrary({
         confirmDisabled={!deleteTargets.length}
         confirmLabel={t("media.delete")}
         description={
-          isBulkDelete
-            ? t("media.deleteSelectedDescription")
-            : t("media.deleteConfirmDescription")
+          isBulkDelete ? t("media.deleteSelectedDescription") : t("media.deleteConfirmDescription")
         }
         eyebrow={t("common.confirm.deleteEyebrow")}
         icon="trash"
@@ -748,12 +733,7 @@ function AssetName({ asset, onOpen }: { asset: MediaAsset; onOpen?: () => void }
 
 function MediaGridSkeleton({ count = 8 }: { count?: number }) {
   return (
-    <div
-      aria-busy="true"
-      aria-live="polite"
-      className="flex min-w-0 flex-col"
-      role="status"
-    >
+    <div aria-busy="true" aria-live="polite" className="flex min-w-0 flex-col" role="status">
       <div className="flex items-center gap-3 border-b border-border/80 bg-[var(--table-sticky-header)] px-4 py-2.5">
         <Skeleton className="size-4 shrink-0 rounded-[4px]" />
         <Skeleton className="h-2.5 w-20 shrink-0" />

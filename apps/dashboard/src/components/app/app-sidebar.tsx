@@ -271,7 +271,7 @@ export function AppSidebar({
               {index > 0 ? <SidebarSeparator className="my-2" /> : null}
               <SidebarGroup className="px-3 py-0 group-data-[collapsible=icon]:px-2">
                 {section.label ? (
-                  <SidebarGroupLabel className="text-[0.65rem] font-semibold tracking-[0.08em] text-muted-foreground/90 uppercase">
+                  <SidebarGroupLabel className="text-xs font-medium text-muted-foreground/90">
                     {t(`nav.section.${section.id}` as MessageKey) || section.label}
                   </SidebarGroupLabel>
                 ) : null}

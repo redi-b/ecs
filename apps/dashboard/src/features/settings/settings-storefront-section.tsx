@@ -158,10 +158,7 @@ export function StorefrontSection({
 
   return (
     <SettingsSectionBody>
-      <SectionIntro
-        description={t("settings.storefront.intro")}
-        title={t("settings.sections.storefront.label")}
-      />
+      <SectionIntro title={t("settings.sections.storefront.label")} />
 
       <Card
         className={cn(

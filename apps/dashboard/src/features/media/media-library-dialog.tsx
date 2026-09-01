@@ -204,7 +204,7 @@ export function MediaLibraryDialog({
         >
           <DialogHeader className="shrink-0 gap-1.5 border-b px-4 py-4 text-left sm:px-5">
             <DialogTitle>{t("media.chooseLibrary")}</DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="sr-only">
               {isMultiple
                 ? t("media.chooseLibraryDescriptionMultiple")
                 : t("media.chooseLibraryDescription")}

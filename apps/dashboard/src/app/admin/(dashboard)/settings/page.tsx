@@ -68,7 +68,6 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
     <PageShell
       // overflow-x-hidden on PageShell breaks position:sticky for the section nav.
       className="overflow-x-visible"
-      description={t("settings.description")}
       title={t("settings.title")}
     >
       {!result.ok ? (
