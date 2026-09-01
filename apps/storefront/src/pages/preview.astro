@@ -94,6 +94,14 @@ function resolveConfiguredEditorOrigin() {
       });
       document.querySelectorAll('form[action]').forEach((form) => form.removeAttribute('action'));
       document.querySelectorAll('a,button,input,select,textarea').forEach((control) => control.setAttribute('tabindex', '-1'));
+      document.querySelectorAll('[data-editor-image-path]').forEach((node) => {
+        if (node instanceof HTMLImageElement) node.dataset.editorOriginalSrc = node.getAttribute('src') || '';
+      });
+      document.querySelectorAll('[data-editor-background-image-path]').forEach((node) => {
+        if (node instanceof HTMLElement) {
+          node.dataset.editorOriginalBackgroundImage = node.style.getPropertyValue('--hero-bg');
+        }
+      });
 
       const inertControlFor = (element) => {
         const control = element?.closest('a,button,input,select,textarea');
@@ -171,11 +179,22 @@ function resolveConfiguredEditorOrigin() {
         });
         document.querySelectorAll('[data-editor-image-path]').forEach((node) => {
           const path = node.getAttribute('data-editor-image-path');
-          if (node instanceof HTMLImageElement && path && typeof fields[path] === 'string') node.src = fields[path];
+          if (!(node instanceof HTMLImageElement) || !path) return;
+          const value = typeof fields[path] === 'string' ? fields[path].trim() : '';
+          const nextSource = value || node.dataset.editorOriginalSrc || '';
+          if (nextSource) node.src = nextSource;
+          else node.removeAttribute('src');
         });
         document.querySelectorAll('[data-editor-background-image-path]').forEach((node) => {
           const path = node.getAttribute('data-editor-background-image-path');
-          if (node instanceof HTMLElement && path && typeof fields[path] === 'string') node.style.setProperty('--hero-bg', `url(${fields[path]})`);
+          if (!(node instanceof HTMLElement) || !path) return;
+          const value = typeof fields[path] === 'string' ? fields[path].trim() : '';
+          if (value) node.style.setProperty('--hero-bg', `url(${value})`);
+          else {
+            const original = node.dataset.editorOriginalBackgroundImage || '';
+            if (original) node.style.setProperty('--hero-bg', original);
+            else node.style.removeProperty('--hero-bg');
+          }
         });
         document.querySelectorAll('[data-editor-links-path]').forEach((node) => {
           const path = node.getAttribute('data-editor-links-path');
