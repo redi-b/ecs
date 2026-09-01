@@ -2,7 +2,12 @@
 import type { StoreCustomer, StoreCustomerAddress } from "../../../lib/commerce/account";
 import { resolveStoreCartSummary } from "../../../lib/commerce/cart-summary";
 import { resolveStoreFulfillmentOptions } from "../../../lib/commerce/fulfillment";
-import type { StoreCart, StoreDeliveryOptions, StorePaymentOptions, StoreShippingOption } from "../../../lib/commerce/types";
+import type {
+  StoreCart,
+  StoreDeliveryOptions,
+  StorePaymentOptions,
+  StoreShippingOption,
+} from "../../../lib/commerce/types";
 import { formatMoney } from "../../../lib/money";
 import Button from "./Button.astro";
 import arrowIcon from "./icons/arrow-up-right.svg?raw";
@@ -11,12 +16,35 @@ import { parseNexahubData } from "./lib";
 import "./styles/pages/commerce.scss";
 
 interface Props {
-  data: unknown; themeTokens?: unknown; tenantName: string; cartCount: number;
-  cart: StoreCart | null; delivery: StoreDeliveryOptions | null; payment: StorePaymentOptions;
-  shippingOptions: StoreShippingOption[]; shippingError?: string | null; error?: string | null;
-  customer?: StoreCustomer | null; customerAddresses?: StoreCustomerAddress[]; demoMode?: boolean;
+  data: unknown;
+  themeTokens?: unknown;
+  tenantName: string;
+  cartCount: number;
+  cart: StoreCart | null;
+  delivery: StoreDeliveryOptions | null;
+  payment: StorePaymentOptions;
+  shippingOptions: StoreShippingOption[];
+  shippingError?: string | null;
+  error?: string | null;
+  customer?: StoreCustomer | null;
+  customerAddresses?: StoreCustomerAddress[];
+  demoMode?: boolean;
 }
-const { data, themeTokens, tenantName, cartCount, cart, delivery, payment, shippingOptions, shippingError, error, customer = null, customerAddresses = [], demoMode = false } = Astro.props;
+const {
+  data,
+  themeTokens,
+  tenantName,
+  cartCount,
+  cart,
+  delivery,
+  payment,
+  shippingOptions,
+  shippingError,
+  error,
+  customer = null,
+  customerAddresses = [],
+  demoMode = false,
+} = Astro.props;
 const template = parseNexahubData(data);
 const items = cart?.items ?? [];
 const deliveryEnabled = delivery?.deliveryEnabled === true;
@@ -24,13 +52,22 @@ const pickupEnabled = delivery?.pickupEnabled === true;
 const fulfillmentAvailable = deliveryEnabled || pickupEnabled;
 const phoneRequired = delivery?.phoneConfirmationRequired !== false;
 const defaultChoice = deliveryEnabled ? "delivery" : pickupEnabled ? "pickup" : "delivery";
-const { deliveryOptions, pickupOption, priceMismatch } = resolveStoreFulfillmentOptions(shippingOptions, delivery);
-const canSubmit = items.length > 0 && fulfillmentAvailable && !priceMismatch && (defaultChoice === "pickup" ? Boolean(pickupOption) : deliveryOptions.length > 0);
-const initialShippingAmount = defaultChoice === "pickup" ? (pickupOption?.amount ?? 0) : (deliveryOptions[0]?.amount ?? 0);
+const { deliveryOptions, pickupOption, priceMismatch } = resolveStoreFulfillmentOptions(
+  shippingOptions,
+  delivery,
+);
+const canSubmit =
+  items.length > 0 &&
+  fulfillmentAvailable &&
+  !priceMismatch &&
+  (defaultChoice === "pickup" ? Boolean(pickupOption) : deliveryOptions.length > 0);
+const initialShippingAmount =
+  defaultChoice === "pickup" ? (pickupOption?.amount ?? 0) : (deliveryOptions[0]?.amount ?? 0);
 const baseTotal = (cart?.total ?? cart?.itemTotal ?? 0) - (cart?.shippingTotal ?? 0);
 const summary = resolveStoreCartSummary(cart);
 const defaultPayment = payment.cod ? "cod" : payment.chapa ? "chapa" : null;
-const defaultAddress = customerAddresses.find((address) => address.isDefaultShipping) ?? customerAddresses[0] ?? null;
+const defaultAddress =
+  customerAddresses.find((address) => address.isDefaultShipping) ?? customerAddresses[0] ?? null;
 ---
 
 <Layout tenantName={tenantName} header={template.header} footer={template.footer} themeTokens={themeTokens} cartCount={cartCount} demoMode={demoMode}>
@@ -62,7 +99,7 @@ const defaultAddress = customerAddresses.find((address) => address.isDefaultShip
         <aside class="nexa-summary nexa-checkout-summary" aria-label="Order summary" data-currency={cart?.currencyCode ?? "ETB"} data-base-total={baseTotal}>
           <header class="nexa-panel-head"><h2>Order summary</h2><span>{summary.itemCount} items</span></header>
           <ol class="nexa-summary-items">{items.map((item) => <li><div>{item.thumbnail && <img src={item.thumbnail} alt="" />}</div><p><strong>{item.title ?? "Product"}</strong><small>{item.variantTitle}{item.quantity > 1 ? ` × ${item.quantity}` : ""}</small></p><b>{formatMoney(item.total ?? item.unitPrice, cart?.currencyCode)}</b></li>)}</ol>
-          <div class="nexa-discount" data-discount-code><label for="nexa-checkout-code">Promotion code</label><form method="post" action="/actions/cart/promotion" data-cart-promotion-form><input type="hidden" name="intent" value="apply" /><input id="nexa-checkout-code" name="code" autocomplete="off" required /><button type="submit">Apply</button></form><p class="nexa-live" data-discount-status aria-live="polite"></p></div>
+          <div class="nexa-discount" data-discount-code><label for="nexa-checkout-code">Promotion code</label><form method="post" action="/actions/cart/promotion" data-cart-promotion-form><input type="hidden" name="intent" value="apply" /><input id="nexa-checkout-code" name="code" autocomplete="off" autocapitalize="characters" spellcheck="false" required /><button type="submit">Apply</button></form><p class="nexa-live" data-discount-status aria-live="polite"></p></div>
           <dl class="nexa-totals"><div><dt>Subtotal</dt><dd data-summary-subtotal>{formatMoney(summary.subtotal, cart?.currencyCode)}</dd></div><div data-summary-discount hidden={!summary.savingsTotal}><dt>Discount</dt><dd data-summary-discount-value>−{formatMoney(summary.savingsTotal, cart?.currencyCode)}</dd></div><div><dt>Delivery</dt><dd data-summary-delivery>{initialShippingAmount === 0 ? "Free" : formatMoney(initialShippingAmount, cart?.currencyCode)}</dd></div><div class="nexa-totals__total"><dt>Estimated total</dt><dd data-summary-total>{formatMoney(baseTotal + initialShippingAmount, cart?.currencyCode)}</dd></div></dl>
         </aside>
       </div>}
@@ -82,7 +119,9 @@ const defaultAddress = customerAddresses.find((address) => address.isDefaultShip
     form.querySelector('[data-delivery-choice]')?.addEventListener('change', syncFulfillment); form.querySelector('[data-delivery-option]')?.addEventListener('change', syncSummary);
     const syncPayment = () => { const chapa = selected('paymentMethod') === 'chapa'; form.action = chapa ? '/actions/checkout/chapa' : '/actions/checkout/cod'; const email = form.elements.namedItem('email'); if (email instanceof HTMLInputElement) email.required = chapa; const note = form.querySelector('[data-email-requirement]'); if (note) note.textContent = chapa ? '(required for Chapa)' : '(optional)'; const label = form.querySelector('[data-place-order-label]'); if (label) label.textContent = chapa ? 'Continue to secure payment' : 'Place order'; };
     form.querySelector('[data-payment-choice]')?.addEventListener('change', syncPayment); syncFulfillment(); syncPayment();
-    document.querySelector('[data-cart-promotion-form]')?.addEventListener('submit', async (event) => { event.preventDefault(); const promotionForm = event.currentTarget; if (!(promotionForm instanceof HTMLFormElement)) return; const status = document.querySelector('[data-discount-status]'); const button = event.submitter; if (button instanceof HTMLButtonElement) { button.disabled = true; button.dataset.busy = 'true'; button.setAttribute('aria-busy', 'true'); } promotionForm.setAttribute('aria-busy', 'true'); try { const response = await fetch(promotionForm.action, { method: 'POST', body: new FormData(promotionForm), credentials: 'same-origin', headers: { Accept: 'application/json' } }); const result = await response.json(); if (!response.ok || !result.ok) throw new Error(result.message || 'Could not apply this code.'); if (status) status.textContent = 'Discount applied. Totals will be confirmed when you place the order.'; window.dispatchEvent(new CustomEvent('ecs:cart-updated', { detail: { ...result, openDrawer: false } })); } catch (cause) { if (status) { status.textContent = cause instanceof Error ? cause.message : 'Could not apply this code.'; status.classList.add('is-error'); } } finally { promotionForm.removeAttribute('aria-busy'); if (button instanceof HTMLButtonElement) { button.disabled = false; delete button.dataset.busy; button.removeAttribute('aria-busy'); } } });
+    const promotionCode = document.querySelector('#nexa-checkout-code');
+    if (promotionCode instanceof HTMLInputElement) promotionCode.addEventListener('input', () => { const start = promotionCode.selectionStart; const end = promotionCode.selectionEnd; promotionCode.value = promotionCode.value.toLocaleUpperCase(); if (start !== null && end !== null) promotionCode.setSelectionRange(start, end); });
+    document.querySelector('[data-cart-promotion-form]')?.addEventListener('submit', async (event) => { event.preventDefault(); const promotionForm = event.currentTarget; if (!(promotionForm instanceof HTMLFormElement)) return; const status = document.querySelector('[data-discount-status]'); const button = event.submitter; status?.classList.remove('is-error'); if (button instanceof HTMLButtonElement) { button.disabled = true; button.dataset.busy = 'true'; button.setAttribute('aria-busy', 'true'); } promotionForm.setAttribute('aria-busy', 'true'); try { const response = await fetch(promotionForm.action, { method: 'POST', body: new FormData(promotionForm), credentials: 'same-origin', headers: { Accept: 'application/json' } }); const result = await response.json(); if (!response.ok || !result.ok) throw new Error(result.message || 'Could not apply this code.'); if (status) status.textContent = 'Code applied. Your savings are shown in the order summary.'; window.dispatchEvent(new CustomEvent('ecs:cart-updated', { detail: { ...result, openDrawer: false } })); } catch (cause) { if (status) { status.textContent = cause instanceof Error ? cause.message : 'Could not apply this code.'; status.classList.add('is-error'); } } finally { promotionForm.removeAttribute('aria-busy'); if (button instanceof HTMLButtonElement) { button.disabled = false; delete button.dataset.busy; button.removeAttribute('aria-busy'); } } });
     form.addEventListener('submit', (event) => { const button = event.submitter; if (button instanceof HTMLButtonElement) { button.disabled = true; const label = button.querySelector('[data-place-order-label]'); if (label) label.textContent = selected('paymentMethod') === 'chapa' ? 'Opening secure payment…' : 'Placing order…'; } });
   })();
 </script>

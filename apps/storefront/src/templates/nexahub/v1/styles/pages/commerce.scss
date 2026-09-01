@@ -1,6 +1,8 @@
 .nexa-commerce { min-height: 70vh; padding: clamp(2rem, 5vw, 5rem) 0 clamp(5rem, 10vw, 9rem); background: var(--nexa-bg); }
 .nexa-commerce__frame { display: grid; gap: clamp(2rem, 3.5vw, 3.5rem); }
 .nexa-breadcrumb { display: flex; gap: .65rem; align-items: center; font: 400 .72rem/1.2 "DM Mono", monospace; text-transform: uppercase; }
+.nexa-breadcrumb a { text-decoration:underline; text-decoration-thickness:1px; text-underline-offset:4px; transition:color var(--nexa-motion-fast) var(--nexa-ease-out),text-decoration-thickness var(--nexa-motion-fast) var(--nexa-ease-out); }
+.nexa-breadcrumb a:hover { color:var(--nexa-primary); text-decoration-thickness:2px; }
 .nexa-commerce__heading { display: grid; grid-template-columns: minmax(9rem, 1fr) 3fr; align-items: end; border-block: 1px solid color-mix(in srgb, var(--nexa-ink) 28%, transparent); padding: 1rem 0; }
 .nexa-commerce__heading h1 { margin: 0; font: 500 clamp(3.4rem, 8vw, 8.5rem)/.86 "Space Grotesk", sans-serif; letter-spacing: -.065em; text-transform: uppercase; }
 .nexa-commerce__heading p, .nexa-kicker { font: 400 .72rem/1.4 "DM Mono", monospace; text-transform: uppercase; }
@@ -18,11 +20,15 @@
 .nexa-line__controls { display: grid; justify-items: end; gap: .65rem; }
 .nexa-stepper { display: grid; grid-template-columns: 2.6rem 2.6rem 2.6rem; min-height: 2.65rem; border: 1px solid color-mix(in srgb, var(--nexa-ink) 28%, transparent); }
 .nexa-stepper form, .nexa-stepper button { display: contents; }
-.nexa-stepper button, .nexa-stepper span { display: grid; place-items: center; min-width: 44px; min-height: 44px; border: 0; background: transparent; }
+.nexa-stepper button, .nexa-stepper span { display: grid; place-items: center; min-width: 44px; min-height: 44px; border: 0; background: transparent; transition:background-color var(--nexa-motion-fast) var(--nexa-ease-out),color var(--nexa-motion-fast) var(--nexa-ease-out),opacity var(--nexa-motion-fast) var(--nexa-ease-out); }
+.nexa-stepper button:hover:not(:disabled) { background:color-mix(in srgb,var(--nexa-primary) 10%,transparent); color:var(--nexa-primary); }
+.nexa-stepper button:disabled { cursor:not-allowed; opacity:.45; }
 .nexa-stepper button svg { width: 14px; height: 14px; }
 .nexa-stepper button[data-busy="true"] svg { display: none; }
 .nexa-stepper span { border-inline: 1px solid color-mix(in srgb, var(--nexa-ink) 20%, transparent); font-family: "DM Mono", monospace; }
-.nexa-text-action, .nexa-back-link { border: 0; background: none; padding: .4rem 0; text-decoration: underline; font: 400 .7rem/1.2 "DM Mono", monospace; text-transform: uppercase; }
+.nexa-text-action, .nexa-back-link { border: 0; background: none; padding: .4rem 0; text-decoration: underline; text-underline-offset:4px; font: 400 .7rem/1.2 "DM Mono", monospace; text-transform: uppercase; transition:color var(--nexa-motion-fast) var(--nexa-ease-out),transform var(--nexa-motion-fast) var(--nexa-ease-out); }
+.nexa-text-action:hover, .nexa-back-link:hover { color:var(--nexa-primary); }
+.nexa-back-link:hover { transform:translateX(-2px); }
 .nexa-back-link { display: inline-flex; gap: .5rem; margin: 1rem; min-height: 44px; align-items: center; }
 .nexa-back-link__icon { display: inline-flex; width: 14px; height: 14px; transform: rotate(180deg); }
 .nexa-back-link__icon svg { width: 100%; height: 100%; }
@@ -30,8 +36,11 @@
 .nexa-summary > :not(.nexa-panel-head) { margin-inline: 1rem; }
 .nexa-discount { display: grid; gap: .6rem; font: 400 .7rem/1.3 "DM Mono", monospace; text-transform: uppercase; }
 .nexa-discount form { display: grid; grid-template-columns: 1fr auto; }
-.nexa-discount input, .nexa-discount button { min-height: 44px; border: 1px solid color-mix(in srgb, var(--nexa-ink) 30%, transparent); background: transparent; padding: 0 .75rem; font: inherit; }
+.nexa-discount input, .nexa-discount button { min-height: 44px; border: 1px solid color-mix(in srgb, var(--nexa-ink) 30%, transparent); outline:2px solid transparent; outline-offset:0; background: transparent; padding: 0 .75rem; font: inherit; transition:border-color var(--nexa-motion-fast) var(--nexa-ease-out),outline-color var(--nexa-motion-fast) var(--nexa-ease-out),outline-offset var(--nexa-motion-fast) var(--nexa-ease-out),background-color var(--nexa-motion-fast) var(--nexa-ease-out),color var(--nexa-motion-fast) var(--nexa-ease-out); }
+.nexa-discount input { text-transform:uppercase; letter-spacing:.04em; }
+.nexa-discount input:focus { border-color:var(--nexa-primary); outline-color:color-mix(in srgb,var(--nexa-primary) 20%,transparent); outline-offset:2px; }
 .nexa-discount button { margin-left: -1px; }
+.nexa-discount button:hover:not(:disabled) { background:var(--nexa-ink); color:var(--nexa-bg); }
 .nexa-totals { display: grid; gap: .75rem; margin-block: 0; }
 .nexa-totals > div { display: flex; justify-content: space-between; gap: 1rem; font: 400 .75rem/1.3 "DM Mono", monospace; }
 .nexa-totals dd { margin: 0; }
@@ -46,6 +55,8 @@
 .nexa-empty h2 { margin: 0; font: 500 clamp(2.4rem, 6vw, 6rem)/.95 "Space Grotesk", sans-serif; text-transform: uppercase; letter-spacing: -.04em; }
 .nexa-notice { padding: 1rem; border: 1px solid var(--nexa-ink); }
 .nexa-notice--error { border-color: #a12b2b; color: #7c1717; }
+.nexa-notice--processing { display:flex; gap:.8rem; align-items:center; }
+.nexa-status-spinner { width:1rem; height:1rem; flex:0 0 auto; border:2px solid color-mix(in srgb,var(--nexa-primary) 24%,transparent); border-top-color:var(--nexa-primary); border-radius:50%; animation:nexa-status-spin .75s linear infinite; }
 .nexa-live { min-height: 1em; margin: 0; font: 400 .7rem/1.3 "DM Mono", monospace; }
 .nexa-live.is-error { color: #a12b2b; }
 @media (max-width: 900px) { .nexa-commerce__heading { grid-template-columns: 1fr; gap: 1rem; } .nexa-commerce__split { grid-template-columns: 1fr; } .nexa-summary { position: static; } .nexa-checkout-summary { grid-row: 1; } .nexa-checkout-form-panel { grid-row: 2; } }
@@ -84,3 +95,5 @@
 .nexa-summary-items strong { font: 500 .8rem/1.2 "Space Grotesk", sans-serif; }
 .nexa-summary-items small, .nexa-summary-items b { font: 400 .67rem/1.3 "DM Mono", monospace; }
 @media (max-width: 640px) { .nexa-field-grid, .nexa-choice-grid, .nexa-save-address { grid-template-columns: 1fr; } }
+@keyframes nexa-status-spin { to { transform:rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .nexa-status-spinner { animation-duration:1.5s; } }

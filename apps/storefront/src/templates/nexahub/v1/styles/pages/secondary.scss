@@ -6,7 +6,7 @@
 .nexa-secondary__hero h1 { margin: 0; font: 500 clamp(3.5rem,9vw,9rem)/.85 "Space Grotesk",sans-serif; letter-spacing: -.065em; text-transform: uppercase; }
 .nexa-secondary__hero p,.nexa-secondary__hero > span { font: 400 .72rem/1.5 "DM Mono",monospace; text-transform: uppercase; }
 .nexa-secondary__split { display: grid; grid-template-columns: minmax(18rem,.7fr) minmax(0,1.3fr); gap: clamp(1rem,3vw,3rem); align-items: start; }
-.nexa-info-panel,.nexa-form-panel,.nexa-data-panel { border: 1px solid color-mix(in srgb,var(--nexa-ink) 25%,transparent); }
+.nexa-info-panel,.nexa-form-panel,.nexa-data-panel { overflow: hidden; border: 1px solid color-mix(in srgb,var(--nexa-ink) 25%,transparent); border-radius: 4px; background: color-mix(in srgb,var(--nexa-bg) 96%,white); box-shadow: 0 20px 60px color-mix(in srgb,var(--nexa-ink) 5%,transparent); }
 .nexa-info-list { list-style:none; padding: 0; margin: 0; }
 .nexa-info-list li { display:grid; gap:.35rem; padding:1rem; border-bottom:1px solid color-mix(in srgb,var(--nexa-ink) 15%,transparent); }
 .nexa-info-list small,.nexa-info-list span,.nexa-info-list a { font:400 .72rem/1.45 "DM Mono",monospace; }
@@ -16,10 +16,13 @@
 .nexa-inquiry-form,.nexa-account-form { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:1rem; padding:1.25rem; }
 .nexa-inquiry-form label,.nexa-account-form label { display:grid; gap:.45rem; font:400 .7rem/1.3 "DM Mono",monospace; text-transform:uppercase; }
 .nexa-inquiry-form .is-wide,.nexa-account-form .is-wide { grid-column:1/-1; }
-.nexa-inquiry-form input,.nexa-inquiry-form textarea,.nexa-account-form input { width:100%; min-height:48px; border:1px solid color-mix(in srgb,var(--nexa-ink) 28%,transparent); background:transparent; color:inherit; padding:.75rem; font:400 .82rem/1.4 "DM Mono",monospace; }
+.nexa-inquiry-form input,.nexa-inquiry-form textarea,.nexa-account-form input { width:100%; min-height:48px; border:1px solid color-mix(in srgb,var(--nexa-ink) 28%,transparent); border-radius:2px; outline:2px solid transparent; outline-offset:0; background:transparent; color:inherit; padding:.75rem; font:400 .82rem/1.4 "DM Mono",monospace; transition:border-color var(--nexa-motion-fast) var(--nexa-ease-out),outline-color var(--nexa-motion-fast) var(--nexa-ease-out),outline-offset var(--nexa-motion-fast) var(--nexa-ease-out),background-color var(--nexa-motion-fast) var(--nexa-ease-out); }
+.nexa-inquiry-form input:focus,.nexa-inquiry-form textarea:focus,.nexa-account-form input:focus { border-color:var(--nexa-primary); outline-color:color-mix(in srgb,var(--nexa-primary) 20%,transparent); outline-offset:2px; background:var(--nexa-bg); }
 .nexa-inquiry-form textarea { min-height:9rem; resize:vertical; }
 .nexa-inquiry-form > button,.nexa-inquiry-form > .btn,.nexa-account-form > button { grid-column:1/-1; min-height:52px; }
-.nexa-account-form > button { border:0; background:var(--nexa-primary); color:var(--nexa-on-primary); padding:0 1rem; font:500 .75rem/1.2 "DM Mono",monospace; text-transform:uppercase; }
+.nexa-account-form > button { border:0; background:var(--nexa-primary); color:var(--nexa-on-primary); padding:0 1rem; font:500 .75rem/1.2 "DM Mono",monospace; text-transform:uppercase; transition:filter var(--nexa-motion-fast) var(--nexa-ease-out),transform var(--nexa-motion-fast) var(--nexa-ease-out),opacity var(--nexa-motion-fast) var(--nexa-ease-out); }
+.nexa-account-form > button:hover:not(:disabled) { filter:brightness(.92); transform:translateY(-1px); }
+.nexa-account-form > button:disabled { cursor:not-allowed; opacity:.55; }
 .nexa-honeypot { position:absolute!important; left:-9999px!important; }
 .nexa-inquiry-status { grid-column:1/-1; min-height:1.2em; margin:0; font:400 .7rem/1.3 "DM Mono",monospace; }
 .nexa-inquiry-status.is-error { color:#a12b2b; }.nexa-inquiry-status.is-success{color:#176b3a}

@@ -1,7 +1,38 @@
 ---
-import OfflineStateEnhancer from "../../../components/shell/OfflineStateEnhancer.astro"; import Button from "./Button.astro"; import Layout from "./Layout.astro"; import { parseNexahubData } from "./lib"; import "./styles/pages/commerce.scss";
-interface Props { data:unknown; themeTokens?:unknown; tenantName:string; cartCount?:number; eyebrow:string; title:string; description:string; actionHref?:string; actionLabel?:string; code?:string; statusLabel?:string; recoveryLabel?:string; }
-const {data,themeTokens,tenantName,cartCount=0,eyebrow,title,description,actionHref,actionLabel,code,statusLabel="Unavailable",recoveryLabel="Try again"}=Astro.props;const template=parseNexahubData(data);
+import OfflineStateEnhancer from "../../../components/shell/OfflineStateEnhancer.astro";
+import Button from "./Button.astro";
+import Layout from "./Layout.astro";
+import { parseNexahubData } from "./lib";
+import "./styles/pages/commerce.scss";
+interface Props {
+  data: unknown;
+  themeTokens?: unknown;
+  tenantName: string;
+  cartCount?: number;
+  eyebrow: string;
+  title: string;
+  description: string;
+  actionHref?: string;
+  actionLabel?: string;
+  code?: string;
+  statusLabel?: string;
+  recoveryLabel?: string;
+}
+const {
+  data,
+  themeTokens,
+  tenantName,
+  cartCount = 0,
+  eyebrow,
+  title,
+  description,
+  actionHref,
+  actionLabel,
+  code,
+  statusLabel = "Unavailable",
+  recoveryLabel = "Try again",
+} = Astro.props;
+const template = parseNexahubData(data);
 ---
-<Layout tenantName={tenantName} header={template.header} footer={template.footer} themeTokens={themeTokens} cartCount={cartCount} seo={{ canonicalUrl: Astro.url.href, description, noindex: true, title: `${title} · ${tenantName}` }}><main class="nexa-commerce" id="main-content" data-storefront-state><div class="container nexa-commerce__frame"><header class="nexa-commerce__heading"><span class="nexa-kicker" data-state-copy data-offline-copy="Connection status / Offline">{eyebrow}{code ? ` / ${code}` : ""}</span><div><h1 data-state-copy data-offline-copy="You are offline">{title}</h1><p data-state-copy data-offline-copy="Reconnect to the internet, then try loading this shop again.">{description}</p></div></header><section class="nexa-system-grid" aria-label="Storefront status"><div><span>STATUS</span><strong data-state-copy data-offline-copy="Offline">{statusLabel}</strong></div><div><span>PAGE</span><strong>{code ?? "STORE"}</strong></div><div><span>RECOVERY</span><strong data-state-copy data-offline-copy="Reconnect">{recoveryLabel}</strong></div></section>{actionHref&&actionLabel&&<div><Button text={actionLabel} href={actionHref}/></div>}</div></main><OfflineStateEnhancer /></Layout>
+<Layout tenantName={tenantName} header={template.header} footer={template.footer} themeTokens={themeTokens} cartCount={cartCount} seo={{ canonicalUrl: Astro.url.href, description, noindex: true, title: `${title} · ${tenantName}` }}><main class="nexa-commerce" id="main-content" data-storefront-state><div class="container nexa-commerce__frame"><header class="nexa-commerce__heading"><span class="nexa-kicker" data-state-copy data-offline-copy="Connection status">{eyebrow}{code ? ` / ${code}` : ""}</span><div><h1 data-state-copy data-offline-copy="You are offline">{title}</h1><p data-state-copy data-offline-copy="Reconnect to the internet, then try loading this shop again.">{description}</p></div></header><section class="nexa-system-grid" aria-label="What happened and what to do next"><div><span>Current status</span><strong data-state-copy data-offline-copy="Offline">{statusLabel}</strong></div><div><span>Reference</span><strong>{code ?? "Store"}</strong></div><div><span>What to do next</span><strong data-state-copy data-offline-copy="Reconnect and try again">{recoveryLabel}</strong></div></section>{actionHref&&actionLabel&&<div><Button text={actionLabel} href={actionHref}/></div>}</div></main><OfflineStateEnhancer /></Layout>
 <style>.nexa-system-grid{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid color-mix(in srgb,var(--nexa-ink) 25%,transparent)}.nexa-system-grid div{display:grid;gap:.5rem;padding:clamp(1rem,3vw,3rem)}.nexa-system-grid div+div{border-left:1px solid color-mix(in srgb,var(--nexa-ink) 20%,transparent)}.nexa-system-grid span,.nexa-system-grid strong{font:400 .7rem/1.3 "DM Mono",monospace}.nexa-system-grid span{opacity:.6}.nexa-system-grid strong{font-weight:500;overflow-wrap:anywhere}@media(max-width:600px){.nexa-system-grid{grid-template-columns:1fr}.nexa-system-grid div+div{border-left:0;border-top:1px solid color-mix(in srgb,var(--nexa-ink) 20%,transparent)}}</style>
