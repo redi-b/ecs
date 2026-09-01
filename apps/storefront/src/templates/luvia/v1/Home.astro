@@ -5,6 +5,7 @@ import type {
   StoreProduct,
   StoreProductsResponse,
 } from "../../../lib/commerce/types";
+import { collectionProductsHref } from "../../../lib/commerce/taxonomy-links";
 import type { StorefrontSeo } from "../../../lib/seo";
 import ActionButton from "./ActionButton.astro";
 import aboutImage from "./assets/about-feature-image.webp";
@@ -95,8 +96,7 @@ const categoryCollections = (
         .filter((item): item is StoreCollection => Boolean(item))
     : collections
 ).slice(0, 4);
-const collectionHref = (collection: StoreCollection) =>
-  `/products?collection=${encodeURIComponent(collection.id)}`;
+const collectionHref = collectionProductsHref;
 const homeFilterCollections = collections.slice(0, 4);
 const marquee = ["PURE", "RADIANT", "ORGANIC", "POWERFUL", "LUMINOUS", "COSMETICS"];
 ---

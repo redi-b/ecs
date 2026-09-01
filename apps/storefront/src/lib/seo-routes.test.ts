@@ -45,6 +45,16 @@ describe("tenant SEO routes", () => {
     assert.doesNotMatch(sitemap, /shop-b/);
   });
 
+  it("includes canonical handle-based taxonomy URLs", () => {
+    const sitemap = buildTenantSitemap("https://shop-a.example", [], {
+      collectionHandles: ["gift picks"],
+      categoryHandles: ["skin-care"],
+    });
+    assert.match(sitemap, /products\?collection=gift%20picks/);
+    assert.match(sitemap, /products\?category=skin-care/);
+    assert.doesNotMatch(sitemap, /pcol_|pcat_/);
+  });
+
   it("fails without returning partial handles when a later source page fails", async () => {
     const result = await loadSitemapProductHandles(async ({ limit, offset }) =>
       offset === 0

@@ -1,5 +1,6 @@
 ---
 import type { StoreCollection } from "../../../lib/commerce/types";
+import { collectionProductsHref } from "../../../lib/commerce/taxonomy-links";
 import Button from "./Button.astro";
 import arrowUpRightIcon from "./icons/arrow-up-right.svg?raw";
 
@@ -11,7 +12,7 @@ interface Props {
 
 const { collection, image, variant } = Astro.props;
 const title = collection.title ?? "Collection";
-const href = `/products?collection=${encodeURIComponent(collection.id)}`;
+const href = collectionProductsHref(collection);
 ---
 {variant === "featured" ? (
   <article class="catalogue-section__card catalogue-section__card--featured">

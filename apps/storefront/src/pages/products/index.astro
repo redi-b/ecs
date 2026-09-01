@@ -1,6 +1,7 @@
 ---
 import StoreUnavailable from "../../components/shell/StoreUnavailable.astro";
 import { listStoreCategories, listStoreCollections } from "../../lib/commerce/catalog";
+import { resolveTaxonomySelection, taxonomyHandle } from "../../lib/commerce/taxonomy-links";
 import { listStoreProducts } from "../../lib/commerce/products";
 import { isStoreError } from "../../lib/commerce/result";
 import type { StoreCategory, StoreCollection, StoreProduct } from "../../lib/commerce/types";
@@ -18,11 +19,49 @@ if (!ctx.ok) {
 const limit = 24;
 const offset = Math.max(0, Number(Astro.url.searchParams.get("offset") ?? "0") || 0);
 const q = Astro.url.searchParams.get("q")?.trim() || "";
-const collectionId = Astro.url.searchParams.get("collection")?.trim() || "";
-const categoryId = Astro.url.searchParams.get("category")?.trim() || "";
+const collectionValue = Astro.url.searchParams.get("collection")?.trim() || "";
+const categoryValue = Astro.url.searchParams.get("category")?.trim() || "";
 const order = Astro.url.searchParams.get("order")?.trim() || "";
 
-const productsResult = ctx.ok
+const [collectionsResult, categoriesResult] = ctx.ok
+  ? await Promise.all([listStoreCollections({
+      platformApiBaseUrl: ctx.platformApiBaseUrl,
+      requestHost: ctx.requestHost,
+      limit: 50,
+    }), listStoreCategories({
+      platformApiBaseUrl: ctx.platformApiBaseUrl,
+      requestHost: ctx.requestHost,
+      limit: 100,
+    })])
+  : [null, null];
+
+const collections: StoreCollection[] =
+  collectionsResult && !isStoreError(collectionsResult) ? collectionsResult.collections : [];
+const categories: StoreCategory[] =
+  categoriesResult && !isStoreError(categoriesResult) ? categoriesResult.categories : [];
+const collectionSelection = resolveTaxonomySelection(collections, collectionValue);
+const categorySelection = resolveTaxonomySelection(categories, categoryValue);
+
+const legacyCollectionHandle = collectionSelection.item && taxonomyHandle(collectionSelection.item);
+const legacyCategoryHandle = categorySelection.item && taxonomyHandle(categorySelection.item);
+if (
+  ctx.ok &&
+  ((collectionSelection.legacyId && legacyCollectionHandle) ||
+    (categorySelection.legacyId && legacyCategoryHandle))
+) {
+  const params = new URLSearchParams(Astro.url.searchParams);
+  if (legacyCollectionHandle) params.set("collection", legacyCollectionHandle);
+  if (legacyCategoryHandle) params.set("category", legacyCategoryHandle);
+  return Astro.redirect(`/products?${params.toString()}`, 308);
+}
+
+const invalidTaxonomy = Boolean(
+  (collectionValue && (!collectionSelection.item || (collectionSelection.legacyId && !legacyCollectionHandle))) ||
+  (categoryValue && (!categorySelection.item || (categorySelection.legacyId && !legacyCategoryHandle))),
+);
+if (ctx.ok && invalidTaxonomy) Astro.response.status = 404;
+
+const productsResult = ctx.ok && !invalidTaxonomy
   ? await listStoreProducts({
       platformApiBaseUrl: ctx.platformApiBaseUrl,
       requestHost: ctx.requestHost,
@@ -30,37 +69,18 @@ const productsResult = ctx.ok
       limit,
       offset,
       q: q || null,
-      collectionId: collectionId || null,
-      categoryId: categoryId || null,
+      collectionId: collectionSelection.item?.id ?? null,
+      categoryId: categorySelection.item?.id ?? null,
       order: order || null,
     })
   : null;
-
-const collectionsResult = ctx.ok
-  ? await listStoreCollections({
-      platformApiBaseUrl: ctx.platformApiBaseUrl,
-      requestHost: ctx.requestHost,
-      limit: 50,
-    })
-  : null;
-
-const categoriesResult = ctx.ok
-  ? await listStoreCategories({
-      platformApiBaseUrl: ctx.platformApiBaseUrl,
-      requestHost: ctx.requestHost,
-      limit: 100,
-    })
-  : null;
-
 const products: StoreProduct[] =
   productsResult && !isStoreError(productsResult) ? productsResult.products : [];
 const count =
   productsResult && !isStoreError(productsResult) ? (productsResult.count ?? products.length) : 0;
-const errorMessage = productsResult && isStoreError(productsResult) ? productsResult.message : null;
-const collections: StoreCollection[] =
-  collectionsResult && !isStoreError(collectionsResult) ? collectionsResult.collections : [];
-const categories: StoreCategory[] =
-  categoriesResult && !isStoreError(categoriesResult) ? categoriesResult.categories : [];
+const errorMessage = invalidTaxonomy
+  ? "This collection or category does not exist."
+  : productsResult && isStoreError(productsResult) ? productsResult.message : null;
 
 const hasPrev = offset > 0;
 const hasNext = offset + limit < count;
@@ -68,8 +88,8 @@ const hasNext = offset + limit < count;
 function productsHref(nextOffset: number) {
   const params = new URLSearchParams();
   if (q) params.set("q", q);
-  if (collectionId) params.set("collection", collectionId);
-  if (categoryId) params.set("category", categoryId);
+  if (collectionValue) params.set("collection", collectionValue);
+  if (categoryValue) params.set("category", categoryValue);
   if (order) params.set("order", order);
   if (nextOffset > 0) params.set("offset", String(nextOffset));
   const qs = params.toString();
@@ -113,21 +133,27 @@ if (ctx.ok && ProductList && !errorMessage) {
       categories={categories}
       filters={{
         q: q || undefined,
-        collectionId: collectionId || undefined,
-        categoryId: categoryId || undefined,
+        collectionId: collectionValue || undefined,
+        categoryId: categoryValue || undefined,
         order: order || undefined,
       }}
       totalCount={count}
       offset={offset}
       limit={limit}
       seo={buildStorefrontSeo({
-        noindex: Boolean(q || collectionId || categoryId || order || offset),
-        path: "/products",
+        noindex: Boolean(
+          q || order || offset || invalidTaxonomy || (collectionValue && categoryValue),
+        ),
+        path: collectionValue
+          ? `/products?collection=${encodeURIComponent(collectionValue)}`
+          : categoryValue
+            ? `/products?category=${encodeURIComponent(categoryValue)}`
+            : "/products",
         publicOrigin: ctx.publicOrigin,
         tenantName: ctx.config.storefront.seo.title ?? ctx.config.tenant.name,
         description: ctx.config.storefront.seo.description,
         imageUrl: ctx.config.storefront.seo.socialImageUrl,
-        title: "Products",
+        title: collectionSelection.item?.title ?? categorySelection.item?.name ?? "Products",
       })}
     />
   )
