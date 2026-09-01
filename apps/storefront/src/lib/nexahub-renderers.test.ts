@@ -113,6 +113,18 @@ test("NexaHub renderer map has no borrowed fallback presentation", () => {
   assert.ok(state.includes("noindex: true"));
 });
 
+test("every production template owns safe system states", () => {
+  const registry = read("templates/registry.ts");
+  const notFound = read("pages/404.astro");
+  const unexpected = read("pages/500.astro");
+  const offline = read("components/shell/OfflineStateEnhancer.astro");
+  assert.match(registry, /SystemState:\s*LuviaV1SystemState/);
+  assert.match(registry, /SystemState:\s*NexahubV1SystemState/);
+  assert.ok(notFound.includes('status: 404') && notFound.includes('noindex'));
+  assert.ok(unexpected.includes('status: 500') && unexpected.includes('.catch(() => null)'));
+  assert.ok(offline.includes('navigator.onLine') && offline.includes('addEventListener("online"'));
+});
+
 test("NexaHub binds editable content while live rendering uses safe catalog fallbacks", () => {
   const home = read("templates/nexahub/v1/Home.astro");
   const layout = read("templates/nexahub/v1/Layout.astro");

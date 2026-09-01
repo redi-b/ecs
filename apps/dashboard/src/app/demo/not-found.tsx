@@ -8,6 +8,7 @@ export default async function DemoNotFound() {
     <FailureState
       actionHref="/demo"
       actionLabel={t("common.errors.notFoundAction")}
+      code="404"
       description={t("common.errors.notFoundDescription")}
       eyebrow={t("common.errors.notFoundEyebrow")}
       title={t("common.errors.notFoundTitle")}

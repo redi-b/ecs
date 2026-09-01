@@ -11,6 +11,7 @@ import { Spinner } from "@/components/ui/spinner";
 export function FailureState({
   actionHref,
   actionLabel,
+  code,
   description,
   eyebrow,
   onRetry,
@@ -19,6 +20,7 @@ export function FailureState({
 }: {
   actionHref?: string;
   actionLabel: string;
+  code?: string;
   description: string;
   eyebrow: string;
   onRetry?: () => void;
@@ -32,7 +34,10 @@ export function FailureState({
       <div aria-hidden className="failure-grid" />
       <section className="relative z-10 mx-auto grid min-h-[calc(100dvh-4rem)] w-full max-w-5xl content-center gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(19rem,0.72fr)] lg:items-center">
         <div className="max-w-xl">
-          <p className="type-eyebrow text-primary">{eyebrow}</p>
+          <p className="type-eyebrow text-primary">
+            {eyebrow}
+            {code ? ` / ${code}` : ""}
+          </p>
           <h1 className="mt-3 text-balance text-3xl font-semibold tracking-[-0.035em] sm:text-5xl">
             {title}
           </h1>
