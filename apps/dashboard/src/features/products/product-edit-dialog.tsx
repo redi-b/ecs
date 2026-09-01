@@ -376,7 +376,7 @@ function ProductEditSheet({
         <SheetContent className={cn("w-full sm:max-w-md", contentClassName)}>
           <SheetHeader>
             <SheetTitle>{title}</SheetTitle>
-            <SheetDescription>{description}</SheetDescription>
+            <SheetDescription className="sr-only">{description}</SheetDescription>
           </SheetHeader>
           <form
             className="flex min-h-0 flex-1 flex-col"

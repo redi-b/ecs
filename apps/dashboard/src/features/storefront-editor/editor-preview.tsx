@@ -10,11 +10,11 @@ import {
   POPOVER_MOTION_CLASSNAME,
   useStorefrontEditor,
 } from "@/features/storefront-editor/editor-config";
-import { cn } from "@/lib/utils";
 import { isMixedContentPreviewUrl } from "@/lib/storefront-preview-url";
+import { cn } from "@/lib/utils";
 
 import { EditorImageSourceActions } from "./editor-settings";
-import { isPreviewImageUrl, updateEditorLinkValue, type StorefrontPageProps } from "./editor-state";
+import { isPreviewImageUrl, type StorefrontPageProps, updateEditorLinkValue } from "./editor-state";
 import { updateStorefrontProp } from "./editor-utils";
 
 export function TemplatePreview({
@@ -42,7 +42,18 @@ export function TemplatePreview({
   const manifest = getStorefrontEditorManifest(templateKey);
 
   if (manifest?.previewMode === "iframe" && previewUrl) {
-    return <StorefrontIframePreview isFullscreen={isFullscreen} onSelectPath={onSelectPath} onSelectionInteractionChange={onSelectionInteractionChange} previewUrl={withPreviewPage(previewUrl, previewPage)} props={props} selectedPath={selectedPath} showEditHints={showEditHints} templateKey={templateKey} />;
+    return (
+      <StorefrontIframePreview
+        isFullscreen={isFullscreen}
+        onSelectPath={onSelectPath}
+        onSelectionInteractionChange={onSelectionInteractionChange}
+        previewUrl={withPreviewPage(previewUrl, previewPage)}
+        props={props}
+        selectedPath={selectedPath}
+        showEditHints={showEditHints}
+        templateKey={templateKey}
+      />
+    );
   }
 
   if (manifest?.previewMode === "iframe") {
@@ -106,21 +117,31 @@ function StorefrontIframePreview({
   const fields = useMemo(() => {
     const values: Record<string, unknown> = {};
     for (const section of manifest?.sections ?? []) {
-      for (const field of section.fields) values[field.path] = props[field.prop as keyof StorefrontPageProps];
+      for (const field of section.fields)
+        values[field.path] = props[field.prop as keyof StorefrontPageProps];
     }
     // Firefox cannot structured-clone URL instances. The manifest payload is a
     // JSON contract, so normalize it before it crosses the iframe boundary.
     return JSON.parse(JSON.stringify(values)) as Record<string, unknown>;
   }, [manifest, props]);
-  const resolvedTheme = useMemo(() => ({
-    accent: props.accentColor,
-    background: props.backgroundColor,
-    foreground: props.foregroundColor,
-    muted: props.mutedColor,
-    onAccent: props.accentColor ? contrastingInk(props.accentColor) : undefined,
-    onPrimary: props.primaryColor ? contrastingInk(props.primaryColor) : undefined,
-    primary: props.primaryColor,
-  }), [props.accentColor, props.backgroundColor, props.foregroundColor, props.mutedColor, props.primaryColor]);
+  const resolvedTheme = useMemo(
+    () => ({
+      accent: props.accentColor,
+      background: props.backgroundColor,
+      foreground: props.foregroundColor,
+      muted: props.mutedColor,
+      onAccent: props.accentColor ? contrastingInk(props.accentColor) : undefined,
+      onPrimary: props.primaryColor ? contrastingInk(props.primaryColor) : undefined,
+      primary: props.primaryColor,
+    }),
+    [
+      props.accentColor,
+      props.backgroundColor,
+      props.foregroundColor,
+      props.mutedColor,
+      props.primaryColor,
+    ],
+  );
   const postConnected = useCallback((message: Record<string, unknown>) => {
     const origin = connectedOriginRef.current;
     if (!origin) return;
@@ -130,7 +151,10 @@ function StorefrontIframePreview({
     iframeRef.current?.contentWindow?.postMessage({ type: "ecs:editor:connect" }, "*");
   }, []);
   const selectedField = useMemo(
-    () => manifest?.sections.flatMap((section) => section.fields).find((field) => field.path === selectedPath),
+    () =>
+      manifest?.sections
+        .flatMap((section) => section.fields)
+        .find((field) => field.path === selectedPath),
     [manifest, selectedPath],
   );
 
@@ -149,7 +173,8 @@ function StorefrontIframePreview({
   }, []);
 
   const desktopPreviewWidth = 1440;
-  const scalesDesktopToFit = !isFullscreen && frameSize.width >= 768 && frameSize.width < desktopPreviewWidth;
+  const scalesDesktopToFit =
+    !isFullscreen && frameSize.width >= 768 && frameSize.width < desktopPreviewWidth;
   const previewScale = scalesDesktopToFit ? frameSize.width / desktopPreviewWidth : 1;
   const iframeStyle = scalesDesktopToFit
     ? {
@@ -214,16 +239,23 @@ function StorefrontIframePreview({
         const field = manifest?.sections
           .flatMap((section) => section.fields)
           .find((field) => field.path === path || path.startsWith(`${field.path}.`));
-        onSelectPath?.(field && path.startsWith(`${field.path}.`) ? path : field?.path ?? path);
+        onSelectPath?.(field && path.startsWith(`${field.path}.`) ? path : (field?.path ?? path));
         return;
       }
       if (event.data.type !== "ecs:preview:field-change") return;
       const path = typeof event.data.path === "string" ? event.data.path : "";
-      const field = manifest?.sections.flatMap((section) => section.fields).find((item) => item.path === path || path.startsWith(`${item.path}.`));
+      const field = manifest?.sections
+        .flatMap((section) => section.fields)
+        .find((item) => item.path === path || path.startsWith(`${item.path}.`));
       if (!field) return;
       if (field.kind === "links" && path !== field.path) {
         const current = props[field.prop as keyof StorefrontPageProps];
-        const next = updateEditorLinkValue(current, field.path, path, typeof event.data.value === "string" ? event.data.value : "");
+        const next = updateEditorLinkValue(
+          current,
+          field.path,
+          path,
+          typeof event.data.value === "string" ? event.data.value : "",
+        );
         if (!next) return;
         updateStorefrontProp(data, dispatch, field.prop as keyof StorefrontPageProps, next);
         return;
@@ -238,12 +270,29 @@ function StorefrontIframePreview({
     }
     window.addEventListener("message", onMessage);
     return () => window.removeEventListener("message", onMessage);
-  }, [data, dispatch, fields, manifest, onSelectPath, postConnected, resolvedTheme, selectedPath, showEditHints]);
+  }, [
+    data,
+    dispatch,
+    fields,
+    manifest,
+    onSelectPath,
+    postConnected,
+    resolvedTheme,
+    selectedPath,
+    showEditHints,
+  ]);
 
   return (
-    <div ref={previewFrameRef} className="relative h-full min-h-0 w-full overflow-hidden bg-background" data-preview-viewport={scalesDesktopToFit ? "desktop-scaled" : "responsive"}>
+    <div
+      ref={previewFrameRef}
+      className="relative h-full min-h-0 w-full overflow-hidden bg-background"
+      data-preview-viewport={scalesDesktopToFit ? "desktop-scaled" : "responsive"}
+    >
       <iframe
-        className={cn("block h-full min-h-0 w-full border-0 bg-background transition-opacity duration-500", isLoaded ? "opacity-100" : "opacity-0")}
+        className={cn(
+          "block h-full min-h-0 w-full border-0 bg-background transition-opacity duration-500",
+          isLoaded ? "opacity-100" : "opacity-0",
+        )}
         onLoad={() => {
           connectedOriginRef.current = null;
           setIframeDocumentLoaded(true);
@@ -260,8 +309,14 @@ function StorefrontIframePreview({
         title="Storefront preview"
       />
       {isLoaded && selectedField?.kind === "image" ? (
-        <div className="absolute right-3 top-3 z-10 w-[min(22rem,calc(100%-1.5rem))] rounded-xl border border-border/80 bg-background/95 p-3 shadow-xl backdrop-blur-md" data-editor-selection-control onPointerDown={(event) => event.stopPropagation()}>
-          <div className="mb-2 text-xs font-medium text-muted-foreground">Edit {selectedField.label}</div>
+        <div
+          className="absolute right-3 top-3 z-10 w-[min(22rem,calc(100%-1.5rem))] rounded-xl border border-border/80 bg-background/95 p-3 shadow-xl backdrop-blur-md"
+          data-editor-selection-control
+          onPointerDown={(event) => event.stopPropagation()}
+        >
+          <div className="mb-2 text-xs font-medium text-muted-foreground">
+            Edit {selectedField.label}
+          </div>
           <EditorImageSourceActions
             onPickerOpenChange={onSelectionInteractionChange}
             onPicked={(value) =>
@@ -275,13 +330,22 @@ function StorefrontIframePreview({
           />
         </div>
       ) : null}
-      <div aria-live="polite" aria-label={previewState === "failed" ? "Storefront preview failed to load" : "Preparing storefront preview"} className={cn("storefront-preview-loader absolute inset-0 grid place-items-center overflow-hidden bg-background transition-opacity duration-300", isLoaded ? "pointer-events-none opacity-0" : "opacity-100")} role={previewState === "failed" ? "alert" : "status"}>
+      <div
+        aria-live="polite"
+        className={cn(
+          "storefront-preview-loader absolute inset-0 grid place-items-center overflow-hidden bg-background transition-opacity duration-300",
+          isLoaded ? "pointer-events-none opacity-0" : "opacity-100",
+        )}
+        role={previewState === "failed" ? "alert" : "status"}
+      >
         {previewState === "failed" ? (
           <div className="mx-auto flex max-w-md flex-col items-center px-6 text-center">
             <div className="grid size-12 place-items-center rounded-full border border-border bg-card text-foreground shadow-sm">
               <RiRefreshLine className="size-5" aria-hidden />
             </div>
-            <strong className="mt-4 text-base font-semibold">The storefront preview did not respond</strong>
+            <strong className="mt-4 text-base font-semibold">
+              The storefront preview did not respond
+            </strong>
             <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
               The storefront may be restarting or unable to render this draft. Retry here, or open
               the preview separately to inspect the storefront error.
@@ -309,28 +373,13 @@ function StorefrontIframePreview({
             </div>
           </div>
         ) : (
-          <>
-        <div className="storefront-preview-loader__halo" />
-        <div className="storefront-preview-loader__content">
-          <div className="storefront-preview-loader__scene" aria-hidden>
-            <div className="storefront-preview-loader__shadow" />
-            <div className="storefront-preview-loader__sheet storefront-preview-loader__sheet--back" />
-            <div className="storefront-preview-loader__sheet storefront-preview-loader__sheet--middle" />
-            <div className="storefront-preview-loader__sheet storefront-preview-loader__sheet--front">
-              <div className="storefront-preview-loader__nav"><span /><i /><i /><i /></div>
-              <div className="storefront-preview-loader__hero"><span /><span /><b /></div>
-              <div className="storefront-preview-loader__cards"><i /><i /><i /></div>
-              <div className="storefront-preview-loader__scan" />
-            </div>
-            <div className="storefront-preview-loader__cursor"><RiEditLine /></div>
+          <div className="flex items-center gap-3 text-sm text-muted-foreground">
+            <span
+              aria-hidden
+              className="size-4 animate-spin rounded-full border-2 border-muted-foreground/25 border-t-foreground"
+            />
+            <span>Loading preview</span>
           </div>
-          <div className="storefront-preview-loader__copy">
-            <span>STOREFRONT PREVIEW</span>
-            <strong>Preparing your storefront</strong>
-            <p>Bringing your latest changes into view</p>
-          </div>
-        </div>
-          </>
         )}
       </div>
     </div>

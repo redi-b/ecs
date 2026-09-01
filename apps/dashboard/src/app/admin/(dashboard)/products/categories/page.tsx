@@ -64,7 +64,6 @@ export default async function MerchantProductCategoriesPage({
           />
         </>
       }
-      description={t("categories.description")}
       title={t("categories.title")}
     >
       {categoryNotice ? (

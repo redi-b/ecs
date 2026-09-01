@@ -1,10 +1,15 @@
 "use client";
 
 import type { MerchantDashboardSummary } from "@ecs/contracts";
-import Link from "@/components/app/link";
 import { Cell, Pie, PieChart } from "recharts";
-import { Badge } from "@/components/ui/badge";
+import Link from "@/components/app/link";
 import { Button } from "@/components/ui/button";
+import {
+  type ChartConfig,
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+} from "@/components/ui/chart";
 import {
   Empty,
   EmptyContent,
@@ -13,15 +18,9 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
-import {
-  type ChartConfig,
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-} from "@/components/ui/chart";
 import { statusRingColors } from "@/features/overview/overview-config";
-import { useI18n } from "@/i18n/provider";
 import type { MessageKey } from "@/i18n/messages";
+import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 
 /** Dense ops KPI tile: whole surface is the link, no nested card chrome. */
@@ -35,7 +34,7 @@ export function MetricCard({
   className?: string;
   href: string;
   label: string;
-  note: string;
+  note?: string;
   value: string;
 }) {
   return (
@@ -53,7 +52,7 @@ export function MetricCard({
       <span className="font-mono text-xl font-semibold tracking-tight tabular-nums sm:text-2xl">
         {value}
       </span>
-      <span className="truncate text-xs text-muted-foreground">{note}</span>
+      {note ? <span className="truncate text-xs text-muted-foreground">{note}</span> : null}
     </Link>
   );
 }
@@ -150,7 +149,10 @@ export function StatusDonutChart({
 
   return (
     <div className={cn("grid gap-4 sm:grid-cols-[7.5rem_1fr] sm:items-center", className)}>
-      <ChartContainer className="mx-auto aspect-square h-36 w-36 sm:h-auto sm:w-full" config={config}>
+      <ChartContainer
+        className="mx-auto aspect-square h-36 w-36 sm:h-auto sm:w-full"
+        config={config}
+      >
         <PieChart>
           <ChartTooltip content={<ChartTooltipContent hideLabel />} />
           <Pie data={chartRows} dataKey="count" nameKey="label" innerRadius={38} outerRadius={58}>
@@ -195,56 +197,6 @@ export function StatusDonutChart({
     </div>
   );
 }
-export function ReadinessBlock({ summary }: { summary: MerchantDashboardSummary }) {
-  const { t } = useI18n();
-  const hasProfile = Boolean(
-    summary.tenant.name.trim() && summary.tenant.handle.trim() && summary.domain.hostname.trim(),
-  );
-  const productCount = summary.operations?.totals.products ?? 0;
-  const hasCatalog = productCount > 0;
-  const hasDesign = Boolean(summary.storefront.templateKey ?? summary.storefront.templateId);
-
-  return (
-    <div className="flex flex-col gap-3">
-      <div className="flex items-center justify-between gap-3">
-        <div className="min-w-0">
-          <p className="truncate text-sm font-medium">{summary.tenant.name}</p>
-          <p className="truncate text-xs text-muted-foreground">
-            /{summary.tenant.handle} · {summary.domain.hostname}
-          </p>
-        </div>
-        <Badge className="shrink-0 capitalize" variant="secondary">
-          {summary.tenant.status}
-        </Badge>
-      </div>
-      <div className="grid gap-1.5">
-        <ReadinessRow label={t("overview.readiness.shopProfile")} ready={hasProfile} />
-        <ReadinessRow label={t("overview.readiness.catalog")} ready={hasCatalog} />
-        <ReadinessRow label={t("overview.readiness.storefrontDesign")} ready={hasDesign} />
-        <ReadinessRow
-          label={t("overview.readiness.publishedStorefront")}
-          ready={summary.storefront.isPublished}
-        />
-      </div>
-    </div>
-  );
-}
-
-export function ReadinessRow({ label, ready }: { label: string; ready: boolean }) {
-  const { t } = useI18n();
-  return (
-    <div className="flex items-center justify-between gap-3 text-sm">
-      <span className="text-muted-foreground">{label}</span>
-      <Badge
-        className={cn(!ready && "text-muted-foreground")}
-        variant={ready ? "default" : "outline"}
-      >
-        {ready ? t("overview.readiness.ready") : t("overview.readiness.missing")}
-      </Badge>
-    </div>
-  );
-}
-
 export function DetailRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between gap-3 text-sm">
@@ -258,11 +210,7 @@ export function formatNumber(value: number | null | undefined, locale = "en") {
   return typeof value === "number" ? value.toLocaleString(locale) : "—";
 }
 
-export function formatMoney(
-  value: number | null | undefined,
-  currencyCode: string,
-  locale = "en",
-) {
+export function formatMoney(value: number | null | undefined, currencyCode: string, locale = "en") {
   if (typeof value !== "number") {
     return "—";
   }
@@ -284,7 +232,9 @@ export function compactMoney(value: number, currencyCode: string, locale = "en")
 }
 
 export function formatShortDate(value: string, locale = "en") {
-  return new Intl.DateTimeFormat(locale, { month: "short", day: "numeric" }).format(new Date(value));
+  return new Intl.DateTimeFormat(locale, { month: "short", day: "numeric" }).format(
+    new Date(value),
+  );
 }
 
 export function formatReadableDate(value: string, locale = "en") {

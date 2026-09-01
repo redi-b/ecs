@@ -1,22 +1,17 @@
-import { RiLayoutMasonryLine } from "@remixicon/react";
 import {
   getStorefrontEditorManifest,
   getStorefrontTemplateDefinition,
 } from "@ecs/storefront-templates";
+import { RiLayoutMasonryLine } from "@remixicon/react";
 import { headers } from "next/headers";
 import Link from "@/components/app/link";
 
 import { PageShell } from "@/components/app/page-shell";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { getTranslations } from "@/i18n/server";
-import {
-  Empty,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyTitle,
-} from "@/components/ui/empty";
+import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
 import { StorefrontVisualEditor } from "@/features/storefront-editor/storefront-visual-editor";
+import { getTranslations } from "@/i18n/server";
 import { type DashboardSearchParams, getSelectedTenantId } from "@/lib/dashboard-tenant-context";
 import { getMerchantDashboardAccessShell } from "@/lib/merchant-dashboard";
 import { mapPlatformErrorMessage } from "@/lib/platform-api/errors";
@@ -25,8 +20,8 @@ import {
   resolvePublicStorefrontProtocol,
 } from "@/lib/storefront-preview-url";
 import {
-  getStorefrontDraft,
   createStorefrontPreviewSession,
+  getStorefrontDraft,
   publishStorefrontDraft,
   unpublishStorefront,
   updateStorefrontDraft,
@@ -85,7 +80,6 @@ export default async function StorefrontEditorPage({ searchParams }: StorefrontE
   return (
     <PageShell
       className="gap-0 p-2 sm:p-4 md:p-6 lg:p-8"
-      description={t("editor.description")}
       hideHeader
       title={t("editor.title")}
       viewportWorkspace
@@ -121,14 +115,13 @@ export default async function StorefrontEditorPage({ searchParams }: StorefrontE
               access.access.domain.hostname,
               storefrontProtocol,
             ),
-            previewUrl:
-              previewSession?.ok
-                ? buildStorefrontPreviewUrl({
-                    hostname: access.access.domain.hostname,
-                    protocol: storefrontProtocol,
-                    token: previewSession.token,
-                  })
-                : undefined,
+            previewUrl: previewSession?.ok
+              ? buildStorefrontPreviewUrl({
+                  hostname: access.access.domain.hostname,
+                  protocol: storefrontProtocol,
+                  token: previewSession.token,
+                })
+              : undefined,
             settingsUrl: "/admin/settings?tab=storefront",
             storefrontName: access.access.tenant.name,
             templateKey: draft.draft.templateKey,

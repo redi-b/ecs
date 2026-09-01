@@ -3,9 +3,14 @@
 import { useRouter } from "next/navigation";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-
-import Link from "@/components/app/link";
+import {
+  DialogStepPanel,
+  DialogStepRail,
+  getDialogStepStatus,
+} from "@/components/app/dialog-step-rail";
 import { AppIcons } from "@/components/app/icons";
+import Link from "@/components/app/link";
+import { SearchableCombobox } from "@/components/app/searchable-combobox";
 import { UnsavedChangesDialog } from "@/components/app/unsaved-changes-dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -18,7 +23,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes-guard";
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
@@ -28,31 +32,25 @@ import {
   ProductCatalogPickerTrigger,
   type ProductCatalogPickProduct,
 } from "@/features/products/product-catalog-picker-dialog";
+import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes-guard";
 import { useI18n } from "@/i18n/provider";
 import { mapPlatformErrorMessage } from "@/lib/platform-api/errors";
 import { dashboardRoutes } from "@/lib/routes";
 import { useCreateQueryOpen } from "@/lib/use-create-query-open";
-import {
-  DialogStepPanel,
-  DialogStepRail,
-  getDialogStepStatus,
-} from "@/components/app/dialog-step-rail";
 import { cn } from "@/lib/utils";
-
 import {
-  addressFormFromSaved,
-  emptyAddress,
-  formatCustomerAddressLabel,
-  formatPrice,
-  MANUAL_ADDRESS_NEW,
   type AddressForm,
+  addressFormFromSaved,
   type CatalogVariant,
   type CustomerAddressOption,
   type CustomerOption,
+  emptyAddress,
+  formatCustomerAddressLabel,
+  formatPrice,
   type LineItem,
+  MANUAL_ADDRESS_NEW,
 } from "./manual-order-model";
 import { CreateOrderTriggerButton, CustomerPicker } from "./manual-order-parts";
-import { SearchableCombobox } from "@/components/app/searchable-combobox";
 
 export function ManualOrderCreateDialog() {
   return (
@@ -145,9 +143,7 @@ function ManualOrderCreateDialogInner() {
         (product.variants ?? []).map((variant) => {
           const price = variant.prices?.[0];
           const priceLabel =
-            price?.amount != null
-              ? formatPrice(price.amount, price.currencyCode ?? "etb")
-              : null;
+            price?.amount != null ? formatPrice(price.amount, price.currencyCode ?? "etb") : null;
           const productTitle = product.title ?? t("orders.create.productFallback");
           const variantTitle = variant.title ?? t("orders.create.defaultOption");
           const options: Record<string, string> = {};
@@ -376,8 +372,9 @@ function ManualOrderCreateDialogInner() {
     savedAddressId,
   ]);
 
-  const { leaveDialogOpen, requestLeave, confirmLeave, cancelLeave } =
-    useUnsavedChangesGuard(isDirty && open);
+  const { leaveDialogOpen, requestLeave, confirmLeave, cancelLeave } = useUnsavedChangesGuard(
+    isDirty && open,
+  );
 
   function requestClose() {
     requestLeave(() => {
@@ -629,7 +626,10 @@ function ManualOrderCreateDialogInner() {
 
     toast.success(
       data.order?.id
-        ? `Order ${String(data.order.id).replace(/^order_/i, "").slice(-6).toUpperCase()} created.`
+        ? `Order ${String(data.order.id)
+            .replace(/^order_/i, "")
+            .slice(-6)
+            .toUpperCase()} created.`
         : t("orders.create.toastCreated"),
     );
     setOpen(false);
@@ -646,430 +646,430 @@ function ManualOrderCreateDialogInner() {
 
   return (
     <>
-    <Dialog
-      onOpenChange={(next) => {
-        if (!next) requestClose();
-        else setOpen(true);
-      }}
-      open={open}
-    >
-      <DialogTrigger asChild>
-        <Button type="button">
-          <AppIcons.orders data-icon="inline-start" />
-          {t("orders.create.trigger")}
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="flex max-h-[min(92dvh,44rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl">
-        <DialogHeader className="shrink-0 gap-1.5 border-b border-border/70 px-4 py-4 text-left sm:px-5">
-          <DialogTitle>{t("orders.create.title")}</DialogTitle>
-          <DialogDescription>{t("orders.create.description")}</DialogDescription>
-        </DialogHeader>
-        <DialogStepRail
-          ariaLabel={t("orders.create.stepsAria")}
-          className="shrink-0"
-          currentId={orderSteps[step]?.id ?? "customer"}
-          getStatus={(_s, index) =>
-            getDialogStepStatus({
-              index,
-              currentIndex: step,
-              completedIndexes: completedStepIndexes,
-            })
-          }
-          onSelect={(id) => {
-            const index = orderSteps.findIndex((s) => s.id === id);
-            if (index >= 0) goToStep(index);
-          }}
-          steps={orderSteps}
-          variant="compact"
-        />
+      <Dialog
+        onOpenChange={(next) => {
+          if (!next) requestClose();
+          else setOpen(true);
+        }}
+        open={open}
+      >
+        <DialogTrigger asChild>
+          <Button type="button">
+            <AppIcons.orders data-icon="inline-start" />
+            {t("orders.create.trigger")}
+          </Button>
+        </DialogTrigger>
+        <DialogContent className="flex max-h-[min(92dvh,44rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl">
+          <DialogHeader className="shrink-0 gap-1.5 border-b border-border/70 px-4 py-4 text-left sm:px-5">
+            <DialogTitle>{t("orders.create.title")}</DialogTitle>
+            <DialogDescription className="sr-only">
+              {t("orders.create.description")}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogStepRail
+            ariaLabel={t("orders.create.stepsAria")}
+            className="shrink-0"
+            currentId={orderSteps[step]?.id ?? "customer"}
+            getStatus={(_s, index) =>
+              getDialogStepStatus({
+                index,
+                currentIndex: step,
+                completedIndexes: completedStepIndexes,
+              })
+            }
+            onSelect={(id) => {
+              const index = orderSteps.findIndex((s) => s.id === id);
+              if (index >= 0) goToStep(index);
+            }}
+            steps={orderSteps}
+            variant="compact"
+          />
 
-        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4 sm:p-5">
-          {error ? (
-            <Alert className="mb-4" variant="destructive">
-              <AlertTitle>{t("orders.create.notCreatedTitle")}</AlertTitle>
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          ) : null}
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4 sm:p-5">
+            {error ? (
+              <Alert className="mb-4" variant="destructive">
+                <AlertTitle>{t("orders.create.notCreatedTitle")}</AlertTitle>
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            ) : null}
 
-          <DialogStepPanel stepKey={step}>
-          {step === 0 ? (
-            <div className="space-y-5">
-              <section className="grid gap-2 sm:grid-cols-2">
-                <button
-                  className={cn(
-                    "rounded-xl border px-3.5 py-3 text-left transition-colors",
-                    customerMode === "existing"
-                      ? "border-primary bg-primary/5"
-                      : "hover:border-border hover:bg-muted/40",
-                  )}
-                  onClick={() => setCustomerMode("existing")}
-                  type="button"
-                >
-                  <p className="text-sm font-medium">{t("orders.create.existingCustomer")}</p>
-                  <p className="mt-0.5 text-xs text-muted-foreground">
-                    {t("orders.create.existingCustomerDesc")}
-                  </p>
-                </button>
-                <button
-                  className={cn(
-                    "rounded-xl border px-3.5 py-3 text-left transition-colors",
-                    customerMode === "new"
-                      ? "border-primary bg-primary/5"
-                      : "hover:border-border hover:bg-muted/40",
-                  )}
-                  onClick={switchToNewCustomer}
-                  type="button"
-                >
-                  <p className="text-sm font-medium">{t("orders.create.newCustomer")}</p>
-                  <p className="mt-0.5 text-xs text-muted-foreground">
-                    {t("orders.create.newCustomerDesc")}
-                  </p>
-                </button>
-              </section>
+            <DialogStepPanel stepKey={step}>
+              {step === 0 ? (
+                <div className="space-y-5">
+                  <section className="grid gap-2 sm:grid-cols-2">
+                    <button
+                      className={cn(
+                        "rounded-xl border px-3.5 py-3 text-left transition-colors",
+                        customerMode === "existing"
+                          ? "border-primary bg-primary/5"
+                          : "hover:border-border hover:bg-muted/40",
+                      )}
+                      onClick={() => setCustomerMode("existing")}
+                      type="button"
+                    >
+                      <p className="text-sm font-medium">{t("orders.create.existingCustomer")}</p>
+                      <p className="mt-0.5 text-xs text-muted-foreground">
+                        {t("orders.create.existingCustomerDesc")}
+                      </p>
+                    </button>
+                    <button
+                      className={cn(
+                        "rounded-xl border px-3.5 py-3 text-left transition-colors",
+                        customerMode === "new"
+                          ? "border-primary bg-primary/5"
+                          : "hover:border-border hover:bg-muted/40",
+                      )}
+                      onClick={switchToNewCustomer}
+                      type="button"
+                    >
+                      <p className="text-sm font-medium">{t("orders.create.newCustomer")}</p>
+                      <p className="mt-0.5 text-xs text-muted-foreground">
+                        {t("orders.create.newCustomerDesc")}
+                      </p>
+                    </button>
+                  </section>
 
-              {customerMode === "existing" ? (
-                <Field>
-                  <FieldLabel>{t("orders.create.customer")}</FieldLabel>
-                  <CustomerPicker
-                    catalog={customers}
-                    loading={catalogLoading}
-                    onChange={selectExistingCustomer}
-                    selectedId={customerId}
-                    selectedLabel={selectedCustomer?.label ?? null}
-                  />
-                  <FieldDescription>
-                    {t("orders.create.customerNotFound")}
-                  </FieldDescription>
-                </Field>
-              ) : (
-                <section className="grid gap-4 sm:grid-cols-2">
-                  <Field className="sm:col-span-2">
-                    <FieldLabel htmlFor="mo-email">{t("orders.create.email")}</FieldLabel>
-                    <Input
-                      autoComplete="email"
-                      id="mo-email"
-                      onChange={(event) => setCustomerEmail(event.target.value)}
-                      placeholder={t("orders.create.emailPlaceholder")}
-                      type="email"
-                      value={customerEmail}
-                    />
-                    <FieldDescription>
-                      {t("orders.create.emailDesc")}
-                    </FieldDescription>
-                  </Field>
-                  <Field>
-                    <FieldLabel htmlFor="mo-cf">{t("orders.create.firstName")}</FieldLabel>
-                    <Input
-                      id="mo-cf"
-                      onChange={(event) => setCustomerFirstName(event.target.value)}
-                      value={customerFirstName}
-                    />
-                  </Field>
-                  <Field>
-                    <FieldLabel htmlFor="mo-cl">{t("orders.create.lastName")}</FieldLabel>
-                    <Input
-                      id="mo-cl"
-                      onChange={(event) => setCustomerLastName(event.target.value)}
-                      value={customerLastName}
-                    />
-                  </Field>
-                  <Field className="sm:col-span-2">
-                    <FieldLabel htmlFor="mo-cp">{t("orders.create.phone")}</FieldLabel>
-                    <Input
-                      id="mo-cp"
-                      onChange={(event) => setCustomerPhone(event.target.value)}
-                      placeholder={t("orders.create.phonePlaceholder")}
-                      value={customerPhone}
-                    />
-                  </Field>
-                </section>
-              )}
-            </div>
-          ) : null}
-
-          {step === 1 ? (
-            <div className="space-y-5">
-              <section className="space-y-3">
-                <div>
-                  <p className="text-sm font-medium">{t("orders.create.products")}</p>
-                  <p className="mt-0.5 text-xs text-muted-foreground">
-                    {t("orders.create.productsDesc")}
-                  </p>
-                </div>
-                <ProductCatalogPickerTrigger
-                  disabled={catalogLoading && variants.length === 0}
-                  loading={catalogLoading}
-                  onClick={() => setProductPickerOpen(true)}
-                  selectedCount={lines.length}
-                />
-                <ProductCatalogPickerDialog
-                  description={t("orders.create.productsDesc")}
-                  hasMore={catalogHasMore}
-                  loading={catalogLoading}
-                  loadingMore={catalogLoadingMore}
-                  onConfirm={setSelectedVariantIds}
-                  onLoadMore={() => void loadProductCatalog(catalogOffset, true)}
-                  onOpenChange={setProductPickerOpen}
-                  open={productPickerOpen}
-                  products={productPickerCatalog}
-                  searchPlaceholder={t("orders.create.searchProducts")}
-                  selectedIds={lines.map((line) => line.variantId)}
-                  selectionMode="multiple"
-                  selectionTarget="variant"
-                  title={t("orders.create.products")}
-                />
-              </section>
-
-              {lines.length > 0 ? (
-                <section className="space-y-2 border-t pt-5">
-                  <p className="text-sm font-medium">{t("orders.create.quantities")}</p>
-                  <ul className="space-y-2">
-                    {lines.map((line) => {
-                      const variant = variantById.get(line.variantId);
-                      return (
-                        <li
-                          className="grid gap-2 rounded-xl border px-3 py-2.5 sm:grid-cols-[minmax(0,1fr)_6rem_auto] sm:items-center"
-                          key={line.variantId}
-                        >
-                          <div className="min-w-0">
-                            <p className="truncate text-sm font-medium">
-                              {variant?.label ?? line.variantId}
-                            </p>
-                            <p className="truncate text-xs text-muted-foreground">
-                              {[
-                                variant?.sku
-                                  ? t("products.catalogPicker.skuLabel", { sku: variant.sku })
-                                  : null,
-                                variant?.priceLabel,
-                              ]
-                                .filter(Boolean)
-                                .join(" · ") || t("orders.create.optionFallback")}
-                            </p>
-                          </div>
-                          <Input
-                            aria-label={t("orders.create.quantityFor", { name: variant?.label ?? t("orders.create.optionFallback") })}
-                            max={
-                              typeof variant?.availableQuantity === "number"
-                                ? Math.max(variant.availableQuantity, 1)
-                                : undefined
-                            }
-                            min={1}
-                            onChange={(event) =>
-                              setLineQuantity(line.variantId, event.target.value)
-                            }
-                            type="number"
-                            value={String(line.quantity)}
-                          />
-                          <Button
-                            aria-label={t("orders.create.removeItem")}
-                            onClick={() => removeLine(line.variantId)}
-                            size="icon-sm"
-                            type="button"
-                            variant="ghost"
-                          >
-                            <AppIcons.trash className="size-4" />
-                          </Button>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </section>
-              ) : null}
-            </div>
-          ) : null}
-
-          {step === 2 ? (
-            <div className="space-y-5">
-              <section className="grid gap-4 sm:grid-cols-2">
-                <div className="sm:col-span-2">
-                  <p className="text-sm font-medium">{t("orders.create.review")}</p>
-                  <p className="mt-0.5 text-xs text-muted-foreground">
-                    {t("orders.create.reviewDesc")}
-                  </p>
-                </div>
-                <div className="rounded-xl border px-3.5 py-3 sm:col-span-2">
-                  <dl className="space-y-1.5 text-sm">
-                    <div className="flex justify-between gap-3">
-                      <dt className="text-muted-foreground">{t("orders.create.customer")}</dt>
-                      <dd className="truncate font-medium">{customerEmail || "—"}</dd>
-                    </div>
-                    <div className="flex justify-between gap-3">
-                      <dt className="text-muted-foreground">{t("orders.create.items")}</dt>
-                      <dd className="font-medium">
-                        {t("orders.create.itemsSummary", { units: lines.reduce((sum, line) => sum + line.quantity, 0), lines: lines.length })}
-                      </dd>
-                    </div>
-                    <div className="flex justify-between gap-3">
-                      <dt className="text-muted-foreground">{t("orders.create.payment")}</dt>
-                      <dd className="font-medium">{t("orders.create.cash")}</dd>
-                    </div>
-                  </dl>
-                </div>
-              </section>
-
-              <section className="grid gap-4 border-t pt-5 sm:grid-cols-2">
-                <div className="flex items-start justify-between gap-3 sm:col-span-2">
-                  <div>
-                    <p className="text-sm font-medium">{t("orders.create.deliveryAddress")}</p>
-                    <p className="mt-0.5 text-xs text-muted-foreground">
-                      {t("orders.create.deliveryAddressDesc")}
-                    </p>
-                  </div>
-                  <Button
-                    onClick={() => setIncludeAddress((value) => !value)}
-                    size="sm"
-                    type="button"
-                    variant="outline"
-                  >
-                    {includeAddress ? t("orders.create.included") : t("orders.create.skipped")}
-                  </Button>
-                </div>
-
-                {includeAddress ? (
-                  <>
-                    {customerMode === "existing" && savedAddresses.length > 0 ? (
+                  {customerMode === "existing" ? (
+                    <Field>
+                      <FieldLabel>{t("orders.create.customer")}</FieldLabel>
+                      <CustomerPicker
+                        catalog={customers}
+                        loading={catalogLoading}
+                        onChange={selectExistingCustomer}
+                        selectedId={customerId}
+                        selectedLabel={selectedCustomer?.label ?? null}
+                      />
+                      <FieldDescription>{t("orders.create.customerNotFound")}</FieldDescription>
+                    </Field>
+                  ) : (
+                    <section className="grid gap-4 sm:grid-cols-2">
                       <Field className="sm:col-span-2">
-                        <FieldLabel>{t("orders.create.savedAddress")}</FieldLabel>
-                        <SearchableCombobox
-                          emptyLabel={t("orders.create.noSavedAddresses")}
-                          onChange={selectSavedAddress}
-                          options={[
-                            ...savedAddresses.map((row) => ({
-                              value: row.id,
-                              label: row.isDefault
-                                ? t("orders.create.savedAddressDefault", { label: row.label })
-                                : row.label,
-                              keywords: [row.address1, row.city, row.province, row.phone]
-                                .filter(Boolean)
-                                .join(" "),
-                            })),
-                            {
-                              value: MANUAL_ADDRESS_NEW,
-                              label: t("orders.create.enterNewAddress"),
-                              keywords: "new custom other",
-                            },
-                          ]}
-                          placeholder={t("orders.create.selectSavedAddress")}
-                          searchPlaceholder={t("orders.create.searchSavedAddress")}
-                          value={savedAddressId}
+                        <FieldLabel htmlFor="mo-email">{t("orders.create.email")}</FieldLabel>
+                        <Input
+                          autoComplete="email"
+                          id="mo-email"
+                          onChange={(event) => setCustomerEmail(event.target.value)}
+                          placeholder={t("orders.create.emailPlaceholder")}
+                          type="email"
+                          value={customerEmail}
                         />
-                        <FieldDescription>{t("orders.create.savedAddressHint")}</FieldDescription>
+                        <FieldDescription>{t("orders.create.emailDesc")}</FieldDescription>
                       </Field>
+                      <Field>
+                        <FieldLabel htmlFor="mo-cf">{t("orders.create.firstName")}</FieldLabel>
+                        <Input
+                          id="mo-cf"
+                          onChange={(event) => setCustomerFirstName(event.target.value)}
+                          value={customerFirstName}
+                        />
+                      </Field>
+                      <Field>
+                        <FieldLabel htmlFor="mo-cl">{t("orders.create.lastName")}</FieldLabel>
+                        <Input
+                          id="mo-cl"
+                          onChange={(event) => setCustomerLastName(event.target.value)}
+                          value={customerLastName}
+                        />
+                      </Field>
+                      <Field className="sm:col-span-2">
+                        <FieldLabel htmlFor="mo-cp">{t("orders.create.phone")}</FieldLabel>
+                        <Input
+                          id="mo-cp"
+                          onChange={(event) => setCustomerPhone(event.target.value)}
+                          placeholder={t("orders.create.phonePlaceholder")}
+                          value={customerPhone}
+                        />
+                      </Field>
+                    </section>
+                  )}
+                </div>
+              ) : null}
+
+              {step === 1 ? (
+                <div className="space-y-5">
+                  <section className="space-y-3">
+                    <div>
+                      <p className="text-sm font-medium">{t("orders.create.products")}</p>
+                      <p className="mt-0.5 text-xs text-muted-foreground">
+                        {t("orders.create.productsDesc")}
+                      </p>
+                    </div>
+                    <ProductCatalogPickerTrigger
+                      disabled={catalogLoading && variants.length === 0}
+                      loading={catalogLoading}
+                      onClick={() => setProductPickerOpen(true)}
+                      selectedCount={lines.length}
+                    />
+                    <ProductCatalogPickerDialog
+                      description={t("orders.create.productsDesc")}
+                      hasMore={catalogHasMore}
+                      loading={catalogLoading}
+                      loadingMore={catalogLoadingMore}
+                      onConfirm={setSelectedVariantIds}
+                      onLoadMore={() => void loadProductCatalog(catalogOffset, true)}
+                      onOpenChange={setProductPickerOpen}
+                      open={productPickerOpen}
+                      products={productPickerCatalog}
+                      searchPlaceholder={t("orders.create.searchProducts")}
+                      selectedIds={lines.map((line) => line.variantId)}
+                      selectionMode="multiple"
+                      selectionTarget="variant"
+                      title={t("orders.create.products")}
+                    />
+                  </section>
+
+                  {lines.length > 0 ? (
+                    <section className="space-y-2 border-t pt-5">
+                      <p className="text-sm font-medium">{t("orders.create.quantities")}</p>
+                      <ul className="space-y-2">
+                        {lines.map((line) => {
+                          const variant = variantById.get(line.variantId);
+                          return (
+                            <li
+                              className="grid gap-2 rounded-xl border px-3 py-2.5 sm:grid-cols-[minmax(0,1fr)_6rem_auto] sm:items-center"
+                              key={line.variantId}
+                            >
+                              <div className="min-w-0">
+                                <p className="truncate text-sm font-medium">
+                                  {variant?.label ?? line.variantId}
+                                </p>
+                                <p className="truncate text-xs text-muted-foreground">
+                                  {[
+                                    variant?.sku
+                                      ? t("products.catalogPicker.skuLabel", { sku: variant.sku })
+                                      : null,
+                                    variant?.priceLabel,
+                                  ]
+                                    .filter(Boolean)
+                                    .join(" · ") || t("orders.create.optionFallback")}
+                                </p>
+                              </div>
+                              <Input
+                                aria-label={t("orders.create.quantityFor", {
+                                  name: variant?.label ?? t("orders.create.optionFallback"),
+                                })}
+                                max={
+                                  typeof variant?.availableQuantity === "number"
+                                    ? Math.max(variant.availableQuantity, 1)
+                                    : undefined
+                                }
+                                min={1}
+                                onChange={(event) =>
+                                  setLineQuantity(line.variantId, event.target.value)
+                                }
+                                type="number"
+                                value={String(line.quantity)}
+                              />
+                              <Button
+                                aria-label={t("orders.create.removeItem")}
+                                onClick={() => removeLine(line.variantId)}
+                                size="icon-sm"
+                                type="button"
+                                variant="ghost"
+                              >
+                                <AppIcons.trash className="size-4" />
+                              </Button>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </section>
+                  ) : null}
+                </div>
+              ) : null}
+
+              {step === 2 ? (
+                <div className="space-y-5">
+                  <section className="grid gap-4 sm:grid-cols-2">
+                    <div className="sm:col-span-2">
+                      <p className="text-sm font-medium">{t("orders.create.review")}</p>
+                      <p className="mt-0.5 text-xs text-muted-foreground">
+                        {t("orders.create.reviewDesc")}
+                      </p>
+                    </div>
+                    <div className="rounded-xl border px-3.5 py-3 sm:col-span-2">
+                      <dl className="space-y-1.5 text-sm">
+                        <div className="flex justify-between gap-3">
+                          <dt className="text-muted-foreground">{t("orders.create.customer")}</dt>
+                          <dd className="truncate font-medium">{customerEmail || "—"}</dd>
+                        </div>
+                        <div className="flex justify-between gap-3">
+                          <dt className="text-muted-foreground">{t("orders.create.items")}</dt>
+                          <dd className="font-medium">
+                            {t("orders.create.itemsSummary", {
+                              units: lines.reduce((sum, line) => sum + line.quantity, 0),
+                              lines: lines.length,
+                            })}
+                          </dd>
+                        </div>
+                        <div className="flex justify-between gap-3">
+                          <dt className="text-muted-foreground">{t("orders.create.payment")}</dt>
+                          <dd className="font-medium">{t("orders.create.cash")}</dd>
+                        </div>
+                      </dl>
+                    </div>
+                  </section>
+
+                  <section className="grid gap-4 border-t pt-5 sm:grid-cols-2">
+                    <div className="flex items-start justify-between gap-3 sm:col-span-2">
+                      <div>
+                        <p className="text-sm font-medium">{t("orders.create.deliveryAddress")}</p>
+                        <p className="mt-0.5 text-xs text-muted-foreground">
+                          {t("orders.create.deliveryAddressDesc")}
+                        </p>
+                      </div>
+                      <Button
+                        onClick={() => setIncludeAddress((value) => !value)}
+                        size="sm"
+                        type="button"
+                        variant="outline"
+                      >
+                        {includeAddress ? t("orders.create.included") : t("orders.create.skipped")}
+                      </Button>
+                    </div>
+
+                    {includeAddress ? (
+                      <>
+                        {customerMode === "existing" && savedAddresses.length > 0 ? (
+                          <Field className="sm:col-span-2">
+                            <FieldLabel>{t("orders.create.savedAddress")}</FieldLabel>
+                            <SearchableCombobox
+                              emptyLabel={t("orders.create.noSavedAddresses")}
+                              onChange={selectSavedAddress}
+                              options={[
+                                ...savedAddresses.map((row) => ({
+                                  value: row.id,
+                                  label: row.isDefault
+                                    ? t("orders.create.savedAddressDefault", { label: row.label })
+                                    : row.label,
+                                  keywords: [row.address1, row.city, row.province, row.phone]
+                                    .filter(Boolean)
+                                    .join(" "),
+                                })),
+                                {
+                                  value: MANUAL_ADDRESS_NEW,
+                                  label: t("orders.create.enterNewAddress"),
+                                  keywords: "new custom other",
+                                },
+                              ]}
+                              placeholder={t("orders.create.selectSavedAddress")}
+                              searchPlaceholder={t("orders.create.searchSavedAddress")}
+                              value={savedAddressId}
+                            />
+                            <FieldDescription>
+                              {t("orders.create.savedAddressHint")}
+                            </FieldDescription>
+                          </Field>
+                        ) : null}
+
+                        <Field>
+                          <FieldLabel htmlFor="mo-af">{t("orders.create.firstName")}</FieldLabel>
+                          <Input
+                            id="mo-af"
+                            onChange={(event) => patchAddress("firstName", event.target.value)}
+                            value={address.firstName}
+                          />
+                        </Field>
+                        <Field>
+                          <FieldLabel htmlFor="mo-al">{t("orders.create.lastName")}</FieldLabel>
+                          <Input
+                            id="mo-al"
+                            onChange={(event) => patchAddress("lastName", event.target.value)}
+                            value={address.lastName}
+                          />
+                        </Field>
+                        <Field className="sm:col-span-2">
+                          <FieldLabel htmlFor="mo-a1">{t("orders.create.address")}</FieldLabel>
+                          <Input
+                            id="mo-a1"
+                            onChange={(event) => patchAddress("address1", event.target.value)}
+                            placeholder={t("orders.create.addressPlaceholder")}
+                            value={address.address1}
+                          />
+                        </Field>
+                        <Field>
+                          <FieldLabel htmlFor="mo-city">{t("orders.create.city")}</FieldLabel>
+                          <Input
+                            id="mo-city"
+                            onChange={(event) => patchAddress("city", event.target.value)}
+                            placeholder={t("orders.create.cityPlaceholder")}
+                            value={address.city}
+                          />
+                        </Field>
+                        <Field>
+                          <FieldLabel htmlFor="mo-zone">{t("orders.create.region")}</FieldLabel>
+                          <Input
+                            id="mo-zone"
+                            onChange={(event) => patchAddress("province", event.target.value)}
+                            placeholder={t("orders.create.regionPlaceholder")}
+                            value={address.province}
+                          />
+                        </Field>
+                        <Field className="sm:col-span-2">
+                          <FieldLabel htmlFor="mo-ph">{t("orders.create.phone")}</FieldLabel>
+                          <Input
+                            id="mo-ph"
+                            onChange={(event) => patchAddress("phone", event.target.value)}
+                            placeholder={t("orders.create.phonePlaceholder")}
+                            value={address.phone}
+                          />
+                        </Field>
+                      </>
                     ) : null}
+                  </section>
 
+                  <section className="border-t pt-5">
                     <Field>
-                      <FieldLabel htmlFor="mo-af">{t("orders.create.firstName")}</FieldLabel>
-                      <Input
-                        id="mo-af"
-                        onChange={(event) => patchAddress("firstName", event.target.value)}
-                        value={address.firstName}
+                      <FieldLabel htmlFor="mo-note">{t("orders.create.internalNote")}</FieldLabel>
+                      <Textarea
+                        id="mo-note"
+                        onChange={(event) => setNote(event.target.value)}
+                        placeholder={t("orders.create.notePlaceholder")}
+                        rows={2}
+                        value={note}
                       />
                     </Field>
-                    <Field>
-                      <FieldLabel htmlFor="mo-al">{t("orders.create.lastName")}</FieldLabel>
-                      <Input
-                        id="mo-al"
-                        onChange={(event) => patchAddress("lastName", event.target.value)}
-                        value={address.lastName}
-                      />
-                    </Field>
-                    <Field className="sm:col-span-2">
-                      <FieldLabel htmlFor="mo-a1">{t("orders.create.address")}</FieldLabel>
-                      <Input
-                        id="mo-a1"
-                        onChange={(event) => patchAddress("address1", event.target.value)}
-                        placeholder={t("orders.create.addressPlaceholder")}
-                        value={address.address1}
-                      />
-                    </Field>
-                    <Field>
-                      <FieldLabel htmlFor="mo-city">{t("orders.create.city")}</FieldLabel>
-                      <Input
-                        id="mo-city"
-                        onChange={(event) => patchAddress("city", event.target.value)}
-                        placeholder={t("orders.create.cityPlaceholder")}
-                        value={address.city}
-                      />
-                    </Field>
-                    <Field>
-                      <FieldLabel htmlFor="mo-zone">{t("orders.create.region")}</FieldLabel>
-                      <Input
-                        id="mo-zone"
-                        onChange={(event) => patchAddress("province", event.target.value)}
-                        placeholder={t("orders.create.regionPlaceholder")}
-                        value={address.province}
-                      />
-                    </Field>
-                    <Field className="sm:col-span-2">
-                      <FieldLabel htmlFor="mo-ph">{t("orders.create.phone")}</FieldLabel>
-                      <Input
-                        id="mo-ph"
-                        onChange={(event) => patchAddress("phone", event.target.value)}
-                        placeholder={t("orders.create.phonePlaceholder")}
-                        value={address.phone}
-                      />
-                    </Field>
-                  </>
-                ) : null}
-              </section>
+                  </section>
+                </div>
+              ) : null}
+            </DialogStepPanel>
+          </div>
 
-              <section className="border-t pt-5">
-                <Field>
-                  <FieldLabel htmlFor="mo-note">{t("orders.create.internalNote")}</FieldLabel>
-                  <Textarea
-                    id="mo-note"
-                    onChange={(event) => setNote(event.target.value)}
-                    placeholder={t("orders.create.notePlaceholder")}
-                    rows={2}
-                    value={note}
-                  />
-                </Field>
-              </section>
-            </div>
-          ) : null}
-          </DialogStepPanel>
-        </div>
-
-        {/* p-0 dialogs: no negative footer margins (avoids weird bottom corner clip). */}
-        <DialogFooter className="m-0 shrink-0 rounded-b-xl border-t border-border/70 bg-muted/40 p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
-          {step > 0 ? (
-            <Button onClick={() => goToStep(step - 1)} type="button" variant="outline">
-              {t("common.back")}
-            </Button>
-          ) : (
-            <Button onClick={() => requestClose()} type="button" variant="outline">
-              {t("common.cancel")}
-            </Button>
-          )}
-          {step < 2 ? (
-            <Button
-              disabled={
-                (step === 0 && !canContinueFromCustomer()) ||
-                (step === 1 && !canContinueFromItems())
-              }
-              onClick={() => goToStep(step + 1)}
-              type="button"
-            >
-              {t("common.continue")}
-            </Button>
-          ) : (
-            <Button
-              disabled={saving || !canContinueFromCustomer() || !canContinueFromItems()}
-              onClick={() => void create()}
-              type="button"
-            >
-              {saving ? t("orders.create.creating") : t("orders.create.trigger")}
-            </Button>
-          )}
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-    <UnsavedChangesDialog
-      onLeave={confirmLeave}
-      onStay={cancelLeave}
-      open={leaveDialogOpen}
-    />
+          {/* p-0 dialogs: no negative footer margins (avoids weird bottom corner clip). */}
+          <DialogFooter className="m-0 shrink-0 rounded-b-xl border-t border-border/70 bg-muted/40 p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+            {step > 0 ? (
+              <Button onClick={() => goToStep(step - 1)} type="button" variant="outline">
+                {t("common.back")}
+              </Button>
+            ) : (
+              <Button onClick={() => requestClose()} type="button" variant="outline">
+                {t("common.cancel")}
+              </Button>
+            )}
+            {step < 2 ? (
+              <Button
+                disabled={
+                  (step === 0 && !canContinueFromCustomer()) ||
+                  (step === 1 && !canContinueFromItems())
+                }
+                onClick={() => goToStep(step + 1)}
+                type="button"
+              >
+                {t("common.continue")}
+              </Button>
+            ) : (
+              <Button
+                disabled={saving || !canContinueFromCustomer() || !canContinueFromItems()}
+                onClick={() => void create()}
+                type="button"
+              >
+                {saving ? t("orders.create.creating") : t("orders.create.trigger")}
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <UnsavedChangesDialog onLeave={confirmLeave} onStay={cancelLeave} open={leaveDialogOpen} />
     </>
   );
 }
-

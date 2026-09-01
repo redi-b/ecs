@@ -402,10 +402,7 @@ export function ProductForm({
                   <DialogStepPanel stepKey={activeStep}>
                     {activeStep === "details" ? (
                       <section className="flex flex-col gap-5">
-                        <ComposerSection
-                          description={t("products.composer.basicsDesc")}
-                          title={t("products.composer.basicsTitle")}
-                        />
+                        <ComposerSection title={t("products.composer.basicsTitle")} />
 
                         <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
                           <form.Field
@@ -545,10 +542,7 @@ export function ProductForm({
 
                         <Separator />
 
-                        <ComposerSection
-                          description={t("products.composer.mediaDesc")}
-                          title={t("products.composer.mediaTitle")}
-                        />
+                        <ComposerSection title={t("products.composer.mediaTitle")} />
 
                         <form.Subscribe
                           selector={(state) =>
@@ -571,10 +565,7 @@ export function ProductForm({
 
                     {activeStep === "organize" ? (
                       <section className="flex flex-col gap-5">
-                        <ComposerSection
-                          description={t("products.composer.organizeDesc")}
-                          title={t("products.composer.organizeTitle")}
-                        />
+                        <ComposerSection title={t("products.composer.organizeTitle")} />
 
                         <div className="grid gap-4 md:grid-cols-2">
                           <form.Field name="status">
@@ -653,10 +644,7 @@ export function ProductForm({
 
                     {activeStep === "variants" ? (
                       <section className="flex flex-col gap-5">
-                        <ComposerSection
-                          description={t("products.composer.pricingDesc")}
-                          title={t("products.composer.pricingTitle")}
-                        />
+                        <ComposerSection title={t("products.composer.pricingTitle")} />
 
                         <div className="rounded-2xl border bg-background p-4">
                           <div className="mb-4 flex flex-col gap-1">
@@ -840,10 +828,7 @@ export function ProductForm({
 
                     {activeStep === "review" ? (
                       <section className="flex flex-col gap-5">
-                        <ComposerSection
-                          description={t("products.composer.reviewDesc")}
-                          title={t("products.composer.reviewTitle")}
-                        />
+                        <ComposerSection title={t("products.composer.reviewTitle")} />
                         <form.Subscribe selector={(state) => state.values}>
                           {(values) => <ProductReviewSummary values={values} />}
                         </form.Subscribe>

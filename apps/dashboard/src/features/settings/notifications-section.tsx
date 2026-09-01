@@ -20,22 +20,19 @@ import {
   buildNotificationEventsPayload,
   defaultNotificationEvents,
   isValidNotificationEmail,
-  normalizeNotificationEvents,
   NotificationAlertsSwitch,
   NotificationChannelHeader,
   NotificationChannelUnavailable,
   NotificationEventPicker,
   NotificationStatusBadge,
+  normalizeNotificationEvents,
   sameNotificationEvents,
 } from "@/features/settings/notification-channel-ui";
-import {
-  SectionIntro,
-  SettingsSectionBody,
-} from "@/features/settings/settings-sections";
+import { SectionIntro, SettingsSectionBody } from "@/features/settings/settings-sections";
 import { TelegramConnectPanel } from "@/features/settings/telegram-connect-panel";
 import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes-guard";
-import type { NotificationPreference } from "@/lib/merchant-notifications";
 import { useI18n } from "@/i18n/provider";
+import type { NotificationPreference } from "@/lib/merchant-notifications";
 import { mapPlatformErrorMessage } from "@/lib/platform-api/errors";
 import { cn } from "@/lib/utils";
 
@@ -84,8 +81,7 @@ export function NotificationsSection({ tenantId }: { tenantId: string }) {
   const targetDirty = emailInput.trim() !== saved.target.trim();
   const eventsDirty = !sameNotificationEvents(eventsDraft, saved.events);
   const notificationsDirty = targetDirty || eventsDirty;
-  const { leaveDialogOpen, confirmLeave, cancelLeave } =
-    useUnsavedChangesGuard(notificationsDirty);
+  const { leaveDialogOpen, confirmLeave, cancelLeave } = useUnsavedChangesGuard(notificationsDirty);
   const status = !emailAvailable
     ? "not_set_up"
     : !hasEmail
@@ -94,9 +90,7 @@ export function NotificationsSection({ tenantId }: { tenantId: string }) {
         ? "active"
         : "paused";
   const mailtoHref =
-    hasEmail && isValidNotificationEmail(saved.target)
-      ? `mailto:${saved.target.trim()}`
-      : null;
+    hasEmail && isValidNotificationEmail(saved.target) ? `mailto:${saved.target.trim()}` : null;
 
   const applyState = useCallback((next: EmailState) => {
     setSaved(next);
@@ -315,10 +309,7 @@ export function NotificationsSection({ tenantId }: { tenantId: string }) {
   if (loading) {
     return (
       <SettingsSectionBody>
-        <SectionIntro
-          description={t("settings.notifications.intro")}
-          title={t("settings.sections.notifications.label")}
-        />
+        <SectionIntro title={t("settings.sections.notifications.label")} />
         <Card size="sm">
           <NotificationChannelHeader
             description={t("settings.notifications.loadingTelegram")}
@@ -348,10 +339,7 @@ export function NotificationsSection({ tenantId }: { tenantId: string }) {
   if (loadError) {
     return (
       <SettingsSectionBody>
-        <SectionIntro
-          description={t("settings.notifications.intro")}
-          title={t("settings.sections.notifications.label")}
-        />
+        <SectionIntro title={t("settings.sections.notifications.label")} />
         <Alert variant="destructive">
           <AlertTitle>{t("settings.notifications.loadErrorTitle")}</AlertTitle>
           <AlertDescription className="flex flex-col gap-3">
@@ -376,10 +364,7 @@ export function NotificationsSection({ tenantId }: { tenantId: string }) {
 
   return (
     <SettingsSectionBody>
-      <SectionIntro
-        description={t("settings.notifications.intro")}
-        title={t("settings.sections.notifications.label")}
-      />
+      <SectionIntro title={t("settings.sections.notifications.label")} />
 
       <TelegramConnectPanel available={telegramAvailable} tenantId={tenantId} />
 
@@ -403,7 +388,9 @@ export function NotificationsSection({ tenantId }: { tenantId: string }) {
           ) : (
             <>
               <Field>
-                <FieldLabel htmlFor={emailFieldId}>{t("settings.notifications.emailAddress")}</FieldLabel>
+                <FieldLabel htmlFor={emailFieldId}>
+                  {t("settings.notifications.emailAddress")}
+                </FieldLabel>
                 <InputGroup>
                   <InputGroupInput
                     autoComplete="email"
@@ -521,11 +508,7 @@ export function NotificationsSection({ tenantId }: { tenantId: string }) {
         </CardContent>
       </Card>
 
-      <UnsavedChangesDialog
-        onLeave={confirmLeave}
-        onStay={cancelLeave}
-        open={leaveDialogOpen}
-      />
+      <UnsavedChangesDialog onLeave={confirmLeave} onStay={cancelLeave} open={leaveDialogOpen} />
     </SettingsSectionBody>
   );
 }

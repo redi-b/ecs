@@ -13,8 +13,6 @@ import { AppIcons } from "@/components/app/icons";
 import { UnsavedChangesDialog } from "@/components/app/unsaved-changes-dialog";
 import { Button } from "@/components/ui/button";
 import { DateTimePicker } from "@/components/ui/datetime-picker";
-import { useCreateQueryOpen } from "@/lib/use-create-query-open";
-import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes-guard";
 import {
   Dialog,
   DialogContent,
@@ -40,8 +38,10 @@ import {
   ProductCatalogPickerTrigger,
   type ProductCatalogPickItem,
 } from "@/features/products/product-catalog-picker-dialog";
+import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes-guard";
 import { useI18n } from "@/i18n/provider";
 import { readPlatformErrorMessage } from "@/lib/platform-api/errors";
+import { useCreateQueryOpen } from "@/lib/use-create-query-open";
 import { cn } from "@/lib/utils";
 
 type OfferKind =
@@ -70,7 +70,22 @@ const offerOptionIds: OfferKind[] = [
 
 const offerOptionMessageKeys: Record<
   OfferKind,
-  { title: "offerOptions.percentageOrder.title" | "offerOptions.fixedOrder.title" | "offerOptions.percentageItems.title" | "offerOptions.fixedItems.title" | "offerOptions.buyget.title" | "offerOptions.freeShipping.title"; desc: "offerOptions.percentageOrder.desc" | "offerOptions.fixedOrder.desc" | "offerOptions.percentageItems.desc" | "offerOptions.fixedItems.desc" | "offerOptions.buyget.desc" | "offerOptions.freeShipping.desc" }
+  {
+    title:
+      | "offerOptions.percentageOrder.title"
+      | "offerOptions.fixedOrder.title"
+      | "offerOptions.percentageItems.title"
+      | "offerOptions.fixedItems.title"
+      | "offerOptions.buyget.title"
+      | "offerOptions.freeShipping.title";
+    desc:
+      | "offerOptions.percentageOrder.desc"
+      | "offerOptions.fixedOrder.desc"
+      | "offerOptions.percentageItems.desc"
+      | "offerOptions.fixedItems.desc"
+      | "offerOptions.buyget.desc"
+      | "offerOptions.freeShipping.desc";
+  }
 > = {
   percentage_order: {
     title: "offerOptions.percentageOrder.title",
@@ -322,8 +337,7 @@ function PromotionCreateDialogInner() {
       body: JSON.stringify({
         allocation:
           derived.targetType === "items" || form.offerKind === "buyget" ? form.allocation : null,
-        applyToQuantity:
-          form.offerKind === "buyget" ? Number(form.applyToQuantity) || null : null,
+        applyToQuantity: form.offerKind === "buyget" ? Number(form.applyToQuantity) || null : null,
         buyMinQuantity: form.offerKind === "buyget" ? Number(form.buyMinQuantity) || null : null,
         buyProductIds:
           form.offerKind === "buyget"
@@ -379,427 +393,444 @@ function PromotionCreateDialogInner() {
 
   return (
     <>
-    <Dialog
-      onOpenChange={(next) => {
-        if (next) {
-          setOpen(true);
-          return;
-        }
-        requestClose();
-      }}
-      open={open}
-    >
-      <DialogTrigger asChild>
-        <Button type="button">
-          <AppIcons.tag data-icon="inline-start" />
-          {t("promotions.create.trigger")}
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="flex max-h-[min(92dvh,44rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl">
-        <DialogHeader className="shrink-0 gap-1.5 border-b border-border/80 px-4 py-4 text-left sm:px-5">
-          <DialogTitle className="font-medium tracking-tight">
-            {t("promotions.create.trigger")}
-          </DialogTitle>
-          <DialogDescription>
-            {t("promotions.create.dialogDescription")}
-          </DialogDescription>
-        </DialogHeader>
-        <DialogStepRail
-          ariaLabel={t("promotions.create.stepsAria")}
-          className="shrink-0"
-          currentId={promoSteps[step]?.id ?? "type"}
-          getStatus={(_s, index) =>
-            getDialogStepStatus({
-              index,
-              currentIndex: step,
-              completedIndexes: completedStepIndexes,
-            })
+      <Dialog
+        onOpenChange={(next) => {
+          if (next) {
+            setOpen(true);
+            return;
           }
-          onSelect={(id) => {
-            const index = promoSteps.findIndex((s) => s.id === id);
-            if (index >= 0) goToStep(index);
-          }}
-          steps={promoSteps}
-          variant="compact"
-        />
+          requestClose();
+        }}
+        open={open}
+      >
+        <DialogTrigger asChild>
+          <Button type="button">
+            <AppIcons.tag data-icon="inline-start" />
+            {t("promotions.create.trigger")}
+          </Button>
+        </DialogTrigger>
+        <DialogContent className="flex max-h-[min(92dvh,44rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl">
+          <DialogHeader className="shrink-0 gap-1.5 border-b border-border/80 px-4 py-4 text-left sm:px-5">
+            <DialogTitle className="font-medium tracking-tight">
+              {t("promotions.create.trigger")}
+            </DialogTitle>
+            <DialogDescription className="sr-only">
+              {t("promotions.create.dialogDescription")}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogStepRail
+            ariaLabel={t("promotions.create.stepsAria")}
+            className="shrink-0"
+            currentId={promoSteps[step]?.id ?? "type"}
+            getStatus={(_s, index) =>
+              getDialogStepStatus({
+                index,
+                currentIndex: step,
+                completedIndexes: completedStepIndexes,
+              })
+            }
+            onSelect={(id) => {
+              const index = promoSteps.findIndex((s) => s.id === id);
+              if (index >= 0) goToStep(index);
+            }}
+            steps={promoSteps}
+            variant="compact"
+          />
 
-        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4 sm:p-5">
-          <DialogStepPanel stepKey={step}>
-          {step === 0 ? (
-            <div className="grid gap-2">
-              {offerOptionIds.map((optionId) => {
-                const option = {
-                  id: optionId,
-                  title: t(offerOptionMessageKeys[optionId].title),
-                  description: t(offerOptionMessageKeys[optionId].desc),
-                };
-                const selected = form.offerKind === option.id;
-                return (
-                  <button
-                    className={cn(
-                      "rounded-2xl border border-border/80 px-3.5 py-3 text-left transition-colors",
-                      selected
-                        ? "border-primary/50 bg-primary/5 shadow-sm ring-1 ring-primary/15"
-                        : "bg-card hover:border-border hover:bg-muted/30",
-                    )}
-                    key={option.id}
-                    onClick={() => setForm({ ...form, offerKind: option.id })}
-                    type="button"
-                  >
-                    <p className="text-sm font-medium tracking-tight">{option.title}</p>
-                    <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
-                      {option.description}
-                    </p>
-                  </button>
-                );
-              })}
-            </div>
-          ) : null}
-
-          {step === 1 ? (
-            <div className="space-y-5">
-              <section className="grid gap-4 sm:grid-cols-2">
-                <div className="sm:col-span-2">
-                  <p className="text-sm font-medium">{t("promotions.create.basics")}</p>
-                  <p className="mt-0.5 text-xs text-muted-foreground">
-                    {t("promotions.create.basicsDesc")}
-                  </p>
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4 sm:p-5">
+            <DialogStepPanel stepKey={step}>
+              {step === 0 ? (
+                <div className="grid gap-2">
+                  {offerOptionIds.map((optionId) => {
+                    const option = {
+                      id: optionId,
+                      title: t(offerOptionMessageKeys[optionId].title),
+                      description: t(offerOptionMessageKeys[optionId].desc),
+                    };
+                    const selected = form.offerKind === option.id;
+                    return (
+                      <button
+                        className={cn(
+                          "rounded-2xl border border-border/80 px-3.5 py-3 text-left transition-colors",
+                          selected
+                            ? "border-primary/50 bg-primary/5 shadow-sm ring-1 ring-primary/15"
+                            : "bg-card hover:border-border hover:bg-muted/30",
+                        )}
+                        key={option.id}
+                        onClick={() => setForm({ ...form, offerKind: option.id })}
+                        type="button"
+                      >
+                        <p className="text-sm font-medium tracking-tight">{option.title}</p>
+                        <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
+                          {option.description}
+                        </p>
+                      </button>
+                    );
+                  })}
                 </div>
-                <Field className="sm:col-span-2">
-                  <FieldLabel>{t("promotions.create.codeLabel")}</FieldLabel>
-                  <Input
-                    onChange={(event) =>
-                      setForm({ ...form, code: event.target.value.toUpperCase().replace(/\s+/g, "") })
-                    }
-                    placeholder="WELCOME10"
-                    required
-                    value={form.code}
-                  />
-                  <FieldDescription>
-                    {t("promotions.create.codeDesc")}
-                  </FieldDescription>
-                </Field>
-                <Field>
-                  <FieldLabel>{t("promotions.create.status")}</FieldLabel>
-                  <Select
-                    onValueChange={(value: "active" | "inactive" | "draft") =>
-                      setForm({ ...form, status: value })
-                    }
-                    value={form.status}
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectGroup>
-                        <SelectItem value="active">{t("promotions.create.statusActive")}</SelectItem>
-                        <SelectItem value="draft">{t("promotions.create.statusDraft")}</SelectItem>
-                        <SelectItem value="inactive">{t("promotions.create.statusInactive")}</SelectItem>
-                      </SelectGroup>
-                    </SelectContent>
-                  </Select>
-                </Field>
-                <Field>
-                  <FieldLabel>{t("promotions.create.usageLimit")}</FieldLabel>
-                  <Input
-                    min="1"
-                    onChange={(event) => setForm({ ...form, usageLimit: event.target.value })}
-                    placeholder={t("promotions.create.unlimited")}
-                    type="number"
-                    value={form.usageLimit}
-                  />
-                  <FieldDescription>{t("promotions.create.usageLimitDesc")}</FieldDescription>
-                </Field>
-                <Field className="flex flex-row items-center justify-between gap-4 rounded-xl border px-3.5 py-3 sm:col-span-2">
-                  <div className="min-w-0 space-y-1">
-                    <FieldLabel className="text-sm" htmlFor="promo-automatic">
-                      {t("promotions.create.autoLabel")}
-                    </FieldLabel>
-                    <FieldDescription className="text-xs">
-                      {t("promotions.create.autoDesc")}
-                    </FieldDescription>
-                  </div>
-                  <Switch
-                    checked={form.isAutomatic}
-                    id="promo-automatic"
-                    onCheckedChange={(isAutomatic) => setForm({ ...form, isAutomatic })}
-                  />
-                </Field>
-                {form.offerKind !== "buyget" && form.offerKind !== "free_shipping" ? (
-                  <Field className="flex flex-row items-center justify-between gap-4 rounded-xl border px-3.5 py-3 sm:col-span-2">
-                    <div className="min-w-0 space-y-1">
-                      <FieldLabel className="text-sm" htmlFor="promo-tax">
-                        {t("promotions.create.taxLabel")}
-                      </FieldLabel>
-                      <FieldDescription className="text-xs">
-                        {t("promotions.create.taxDesc")}
-                      </FieldDescription>
-                    </div>
-                    <Switch
-                      checked={form.isTaxInclusive}
-                      id="promo-tax"
-                      onCheckedChange={(isTaxInclusive) => setForm({ ...form, isTaxInclusive })}
-                    />
-                  </Field>
-                ) : null}
-              </section>
+              ) : null}
 
-              {form.offerKind !== "free_shipping" && form.offerKind !== "buyget" ? (
-                <section className="grid gap-4 border-t pt-5 sm:grid-cols-2">
-                  <div className="sm:col-span-2">
-                    <p className="text-sm font-medium">{t("promotions.create.valueTitle")}</p>
-                  </div>
-                  <Field>
-                    <FieldLabel>
-                      {derived.method === "percentage" ? t("promotions.create.percentOff") : t("promotions.create.amountOff")}
-                    </FieldLabel>
-                    <Input
-                      min="0.01"
-                      onChange={(event) => setForm({ ...form, value: event.target.value })}
-                      placeholder={derived.method === "percentage" ? "10" : "50"}
-                      required
-                      step="0.01"
-                      type="number"
-                      value={form.value}
-                    />
-                  </Field>
-                  {derived.targetType === "items" ? (
-                    <>
+              {step === 1 ? (
+                <div className="space-y-5">
+                  <section className="grid gap-4 sm:grid-cols-2">
+                    <div className="sm:col-span-2">
+                      <p className="text-sm font-medium">{t("promotions.create.basics")}</p>
+                      <p className="mt-0.5 text-xs text-muted-foreground">
+                        {t("promotions.create.basicsDesc")}
+                      </p>
+                    </div>
+                    <Field className="sm:col-span-2">
+                      <FieldLabel>{t("promotions.create.codeLabel")}</FieldLabel>
+                      <Input
+                        onChange={(event) =>
+                          setForm({
+                            ...form,
+                            code: event.target.value.toUpperCase().replace(/\s+/g, ""),
+                          })
+                        }
+                        placeholder="WELCOME10"
+                        required
+                        value={form.code}
+                      />
+                      <FieldDescription>{t("promotions.create.codeDesc")}</FieldDescription>
+                    </Field>
+                    <Field>
+                      <FieldLabel>{t("promotions.create.status")}</FieldLabel>
+                      <Select
+                        onValueChange={(value: "active" | "inactive" | "draft") =>
+                          setForm({ ...form, status: value })
+                        }
+                        value={form.status}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectGroup>
+                            <SelectItem value="active">
+                              {t("promotions.create.statusActive")}
+                            </SelectItem>
+                            <SelectItem value="draft">
+                              {t("promotions.create.statusDraft")}
+                            </SelectItem>
+                            <SelectItem value="inactive">
+                              {t("promotions.create.statusInactive")}
+                            </SelectItem>
+                          </SelectGroup>
+                        </SelectContent>
+                      </Select>
+                    </Field>
+                    <Field>
+                      <FieldLabel>{t("promotions.create.usageLimit")}</FieldLabel>
+                      <Input
+                        min="1"
+                        onChange={(event) => setForm({ ...form, usageLimit: event.target.value })}
+                        placeholder={t("promotions.create.unlimited")}
+                        type="number"
+                        value={form.usageLimit}
+                      />
+                      <FieldDescription>{t("promotions.create.usageLimitDesc")}</FieldDescription>
+                    </Field>
+                    <Field className="flex flex-row items-center justify-between gap-4 rounded-xl border px-3.5 py-3 sm:col-span-2">
+                      <div className="min-w-0 space-y-1">
+                        <FieldLabel className="text-sm" htmlFor="promo-automatic">
+                          {t("promotions.create.autoLabel")}
+                        </FieldLabel>
+                        <FieldDescription className="text-xs">
+                          {t("promotions.create.autoDesc")}
+                        </FieldDescription>
+                      </div>
+                      <Switch
+                        checked={form.isAutomatic}
+                        id="promo-automatic"
+                        onCheckedChange={(isAutomatic) => setForm({ ...form, isAutomatic })}
+                      />
+                    </Field>
+                    {form.offerKind !== "buyget" && form.offerKind !== "free_shipping" ? (
+                      <Field className="flex flex-row items-center justify-between gap-4 rounded-xl border px-3.5 py-3 sm:col-span-2">
+                        <div className="min-w-0 space-y-1">
+                          <FieldLabel className="text-sm" htmlFor="promo-tax">
+                            {t("promotions.create.taxLabel")}
+                          </FieldLabel>
+                          <FieldDescription className="text-xs">
+                            {t("promotions.create.taxDesc")}
+                          </FieldDescription>
+                        </div>
+                        <Switch
+                          checked={form.isTaxInclusive}
+                          id="promo-tax"
+                          onCheckedChange={(isTaxInclusive) => setForm({ ...form, isTaxInclusive })}
+                        />
+                      </Field>
+                    ) : null}
+                  </section>
+
+                  {form.offerKind !== "free_shipping" && form.offerKind !== "buyget" ? (
+                    <section className="grid gap-4 border-t pt-5 sm:grid-cols-2">
+                      <div className="sm:col-span-2">
+                        <p className="text-sm font-medium">{t("promotions.create.valueTitle")}</p>
+                      </div>
                       <Field>
-                        <FieldLabel>{t("promotions.create.maxQty")}</FieldLabel>
+                        <FieldLabel>
+                          {derived.method === "percentage"
+                            ? t("promotions.create.percentOff")
+                            : t("promotions.create.amountOff")}
+                        </FieldLabel>
+                        <Input
+                          min="0.01"
+                          onChange={(event) => setForm({ ...form, value: event.target.value })}
+                          placeholder={derived.method === "percentage" ? "10" : "50"}
+                          required
+                          step="0.01"
+                          type="number"
+                          value={form.value}
+                        />
+                      </Field>
+                      {derived.targetType === "items" ? (
+                        <>
+                          <Field>
+                            <FieldLabel>{t("promotions.create.maxQty")}</FieldLabel>
+                            <Input
+                              min="1"
+                              onChange={(event) =>
+                                setForm({ ...form, maxQuantity: event.target.value })
+                              }
+                              placeholder={t("promotions.create.noMax")}
+                              type="number"
+                              value={form.maxQuantity}
+                            />
+                            <FieldDescription>{t("promotions.create.maxQtyDesc")}</FieldDescription>
+                          </Field>
+                          <Field>
+                            <FieldLabel>{t("promotions.create.allocation")}</FieldLabel>
+                            <Select
+                              onValueChange={(value: "each" | "across") =>
+                                setForm({ ...form, allocation: value })
+                              }
+                              value={form.allocation}
+                            >
+                              <SelectTrigger className="w-full">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectGroup>
+                                  <SelectItem value="each">
+                                    {t("promotions.create.allocEach")}
+                                  </SelectItem>
+                                  <SelectItem value="across">
+                                    {t("promotions.create.allocAcross")}
+                                  </SelectItem>
+                                </SelectGroup>
+                              </SelectContent>
+                            </Select>
+                            <FieldDescription>{t("promotions.create.allocDesc")}</FieldDescription>
+                          </Field>
+                        </>
+                      ) : null}
+                    </section>
+                  ) : null}
+
+                  {form.offerKind === "buyget" ? (
+                    <section className="grid gap-4 border-t pt-5 sm:grid-cols-2">
+                      <div className="sm:col-span-2">
+                        <p className="text-sm font-medium">{t("offerOptions.buyget.title")}</p>
+                        <p className="mt-0.5 text-xs text-muted-foreground">
+                          {t("promotions.create.buyGetDesc")}
+                        </p>
+                      </div>
+                      <Field>
+                        <FieldLabel>{t("promotions.create.buyQty")}</FieldLabel>
                         <Input
                           min="1"
-                          onChange={(event) => setForm({ ...form, maxQuantity: event.target.value })}
-                          placeholder={t("promotions.create.noMax")}
+                          onChange={(event) =>
+                            setForm({ ...form, buyMinQuantity: event.target.value })
+                          }
                           type="number"
-                          value={form.maxQuantity}
+                          value={form.buyMinQuantity}
                         />
-                        <FieldDescription>
-                          {t("promotions.create.maxQtyDesc")}
-                        </FieldDescription>
                       </Field>
                       <Field>
-                        <FieldLabel>{t("promotions.create.allocation")}</FieldLabel>
-                        <Select
-                          onValueChange={(value: "each" | "across") =>
-                            setForm({ ...form, allocation: value })
+                        <FieldLabel>{t("promotions.create.getQty")}</FieldLabel>
+                        <Input
+                          min="1"
+                          onChange={(event) =>
+                            setForm({ ...form, applyToQuantity: event.target.value })
                           }
-                          value={form.allocation}
-                        >
-                          <SelectTrigger className="w-full">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectGroup>
-                              <SelectItem value="each">{t("promotions.create.allocEach")}</SelectItem>
-                              <SelectItem value="across">{t("promotions.create.allocAcross")}</SelectItem>
-                            </SelectGroup>
-                          </SelectContent>
-                        </Select>
-                        <FieldDescription>
-                          {t("promotions.create.allocDesc")}
-                        </FieldDescription>
+                          type="number"
+                          value={form.applyToQuantity}
+                        />
                       </Field>
-                    </>
+                    </section>
                   ) : null}
-                </section>
-              ) : null}
 
-              {form.offerKind === "buyget" ? (
-                <section className="grid gap-4 border-t pt-5 sm:grid-cols-2">
-                  <div className="sm:col-span-2">
-                    <p className="text-sm font-medium">{t("offerOptions.buyget.title")}</p>
-                    <p className="mt-0.5 text-xs text-muted-foreground">
-                      {t("promotions.create.buyGetDesc")}
-                    </p>
-                  </div>
-                  <Field>
-                    <FieldLabel>{t("promotions.create.buyQty")}</FieldLabel>
-                    <Input
-                      min="1"
-                      onChange={(event) => setForm({ ...form, buyMinQuantity: event.target.value })}
-                      type="number"
-                      value={form.buyMinQuantity}
-                    />
-                  </Field>
-                  <Field>
-                    <FieldLabel>{t("promotions.create.getQty")}</FieldLabel>
-                    <Input
-                      min="1"
-                      onChange={(event) => setForm({ ...form, applyToQuantity: event.target.value })}
-                      type="number"
-                      value={form.applyToQuantity}
-                    />
-                  </Field>
-                </section>
-              ) : null}
-
-              {needsProducts ? (
-                <section className="space-y-3 border-t pt-5">
-                  <div>
-                    <p className="text-sm font-medium">
-                      {form.offerKind === "buyget"
-                        ? t("promotions.create.prodTitleCount")
-                        : t("promotions.create.prodTitleApply")}
-                    </p>
-                    <p className="mt-0.5 text-xs text-muted-foreground">
-                      {t("promotions.create.prodDescCommon")}
-                      {form.offerKind === "buyget"
-                        ? t("promotions.create.prodDescBuyGet")
-                        : ""}
-                    </p>
-                  </div>
-                  <ProductMultiPicker
-                    catalog={catalog}
-                    loading={catalogLoading}
-                    onChange={(productIds) => setForm({ ...form, productIds })}
-                    selectedIds={form.productIds}
-                  />
-                  {form.offerKind === "buyget" ? (
-                    <div className="space-y-2">
-                      <p className="text-sm font-medium">{t("promotions.create.freeProdTitle")}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {t("promotions.create.freeProdDesc")}
-                      </p>
+                  {needsProducts ? (
+                    <section className="space-y-3 border-t pt-5">
+                      <div>
+                        <p className="text-sm font-medium">
+                          {form.offerKind === "buyget"
+                            ? t("promotions.create.prodTitleCount")
+                            : t("promotions.create.prodTitleApply")}
+                        </p>
+                        <p className="mt-0.5 text-xs text-muted-foreground">
+                          {t("promotions.create.prodDescCommon")}
+                          {form.offerKind === "buyget" ? t("promotions.create.prodDescBuyGet") : ""}
+                        </p>
+                      </div>
                       <ProductMultiPicker
                         catalog={catalog}
                         loading={catalogLoading}
-                        onChange={(buyProductIds) => setForm({ ...form, buyProductIds })}
-                        selectedIds={form.buyProductIds}
+                        onChange={(productIds) => setForm({ ...form, productIds })}
+                        selectedIds={form.productIds}
                       />
-                    </div>
+                      {form.offerKind === "buyget" ? (
+                        <div className="space-y-2">
+                          <p className="text-sm font-medium">
+                            {t("promotions.create.freeProdTitle")}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {t("promotions.create.freeProdDesc")}
+                          </p>
+                          <ProductMultiPicker
+                            catalog={catalog}
+                            loading={catalogLoading}
+                            onChange={(buyProductIds) => setForm({ ...form, buyProductIds })}
+                            selectedIds={form.buyProductIds}
+                          />
+                        </div>
+                      ) : null}
+                    </section>
                   ) : null}
-                </section>
+                </div>
               ) : null}
-            </div>
-          ) : null}
 
-          {step === 2 ? (
-            <div className="space-y-5">
-              <section className="grid gap-4 sm:grid-cols-2">
-                <div className="sm:col-span-2">
-                  <p className="text-sm font-medium">{t("promotions.create.scheduleTitle")}</p>
-                  <p className="mt-0.5 text-xs text-muted-foreground">
-                    {t("promotions.create.schedDesc")}
-                  </p>
+              {step === 2 ? (
+                <div className="space-y-5">
+                  <section className="grid gap-4 sm:grid-cols-2">
+                    <div className="sm:col-span-2">
+                      <p className="text-sm font-medium">{t("promotions.create.scheduleTitle")}</p>
+                      <p className="mt-0.5 text-xs text-muted-foreground">
+                        {t("promotions.create.schedDesc")}
+                      </p>
+                    </div>
+                    <Field className="sm:col-span-2">
+                      <FieldLabel>{t("promotions.create.campName")}</FieldLabel>
+                      <Input
+                        onChange={(event) => setForm({ ...form, campaignName: event.target.value })}
+                        placeholder={form.code || t("promotions.create.campaignPlaceholder")}
+                        value={form.campaignName}
+                      />
+                      <FieldDescription>{t("promotions.create.campNameDesc")}</FieldDescription>
+                    </Field>
+                    <Field>
+                      <FieldLabel>{t("promotions.create.startsLabel")}</FieldLabel>
+                      <DateTimePicker
+                        onChange={(startsAt) => setForm({ ...form, startsAt })}
+                        placeholder={t("promotions.create.optionalStart")}
+                        value={form.startsAt}
+                      />
+                    </Field>
+                    <Field>
+                      <FieldLabel>{t("promotions.create.endsLabel")}</FieldLabel>
+                      <DateTimePicker
+                        onChange={(endsAt) => setForm({ ...form, endsAt })}
+                        placeholder={t("promotions.create.optionalEnd")}
+                        value={form.endsAt}
+                      />
+                    </Field>
+                  </section>
+
+                  <section className="grid gap-4 border-t pt-5 sm:grid-cols-2">
+                    <div className="sm:col-span-2">
+                      <p className="text-sm font-medium">{t("promotions.create.budgetTitle")}</p>
+                      <p className="mt-0.5 text-xs text-muted-foreground">
+                        {t("promotions.create.budgetDesc")}
+                      </p>
+                    </div>
+                    <Field>
+                      <FieldLabel>{t("promotions.create.budgetType")}</FieldLabel>
+                      <Select
+                        onValueChange={(value: "none" | "usage" | "spend") =>
+                          setForm({ ...form, campaignBudgetType: value })
+                        }
+                        value={form.campaignBudgetType}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectGroup>
+                            <SelectItem value="none">
+                              {t("promotions.create.budgetNone")}
+                            </SelectItem>
+                            <SelectItem value="usage">
+                              {t("promotions.create.budgetUsage")}
+                            </SelectItem>
+                            <SelectItem
+                              disabled={
+                                form.offerKind === "buyget" || form.offerKind === "free_shipping"
+                              }
+                              value="spend"
+                            >
+                              {t("promotions.create.budgetSpend")}
+                            </SelectItem>
+                          </SelectGroup>
+                        </SelectContent>
+                      </Select>
+                    </Field>
+                    {form.campaignBudgetType !== "none" ? (
+                      <Field>
+                        <FieldLabel>
+                          {form.campaignBudgetType === "usage"
+                            ? t("promotions.create.maxUses")
+                            : t("promotions.create.maxSpend")}
+                        </FieldLabel>
+                        <Input
+                          min="1"
+                          onChange={(event) =>
+                            setForm({ ...form, campaignBudgetLimit: event.target.value })
+                          }
+                          type="number"
+                          value={form.campaignBudgetLimit}
+                        />
+                      </Field>
+                    ) : null}
+                  </section>
                 </div>
-                <Field className="sm:col-span-2">
-                  <FieldLabel>{t("promotions.create.campName")}</FieldLabel>
-                  <Input
-                    onChange={(event) => setForm({ ...form, campaignName: event.target.value })}
-                    placeholder={form.code || t("promotions.create.campaignPlaceholder")}
-                    value={form.campaignName}
-                  />
-                  <FieldDescription>
-                    {t("promotions.create.campNameDesc")}
-                  </FieldDescription>
-                </Field>
-                <Field>
-                  <FieldLabel>{t("promotions.create.startsLabel")}</FieldLabel>
-                  <DateTimePicker
-                    onChange={(startsAt) => setForm({ ...form, startsAt })}
-                    placeholder={t("promotions.create.optionalStart")}
-                    value={form.startsAt}
-                  />
-                </Field>
-                <Field>
-                  <FieldLabel>{t("promotions.create.endsLabel")}</FieldLabel>
-                  <DateTimePicker
-                    onChange={(endsAt) => setForm({ ...form, endsAt })}
-                    placeholder={t("promotions.create.optionalEnd")}
-                    value={form.endsAt}
-                  />
-                </Field>
-              </section>
+              ) : null}
+            </DialogStepPanel>
+          </div>
 
-              <section className="grid gap-4 border-t pt-5 sm:grid-cols-2">
-                <div className="sm:col-span-2">
-                  <p className="text-sm font-medium">{t("promotions.create.budgetTitle")}</p>
-                  <p className="mt-0.5 text-xs text-muted-foreground">
-                    {t("promotions.create.budgetDesc")}
-                  </p>
-                </div>
-                <Field>
-                  <FieldLabel>{t("promotions.create.budgetType")}</FieldLabel>
-                  <Select
-                    onValueChange={(value: "none" | "usage" | "spend") =>
-                      setForm({ ...form, campaignBudgetType: value })
-                    }
-                    value={form.campaignBudgetType}
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectGroup>
-                        <SelectItem value="none">{t("promotions.create.budgetNone")}</SelectItem>
-                        <SelectItem value="usage">{t("promotions.create.budgetUsage")}</SelectItem>
-                        <SelectItem
-                          disabled={form.offerKind === "buyget" || form.offerKind === "free_shipping"}
-                          value="spend"
-                        >
-                          {t("promotions.create.budgetSpend")}
-                        </SelectItem>
-                      </SelectGroup>
-                    </SelectContent>
-                  </Select>
-                </Field>
-                {form.campaignBudgetType !== "none" ? (
-                  <Field>
-                    <FieldLabel>
-                      {form.campaignBudgetType === "usage" ? t("promotions.create.maxUses") : t("promotions.create.maxSpend")}
-                    </FieldLabel>
-                    <Input
-                      min="1"
-                      onChange={(event) =>
-                        setForm({ ...form, campaignBudgetLimit: event.target.value })
-                      }
-                      type="number"
-                      value={form.campaignBudgetLimit}
-                    />
-                  </Field>
-                ) : null}
-              </section>
-            </div>
-          ) : null}
-          </DialogStepPanel>
-        </div>
-
-        <DialogFooter className="m-0 shrink-0 rounded-b-xl border-t border-border/70 bg-muted/40 p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
-          {step > 0 ? (
-            <Button onClick={() => goToStep(step - 1)} type="button" variant="outline">
-              {t("common.back")}
-            </Button>
-          ) : (
-            <Button onClick={() => setOpen(false)} type="button" variant="outline">
-              {t("common.cancel")}
-            </Button>
-          )}
-          {step < 2 ? (
-            <Button
-              disabled={step === 1 && !canContinueFromDetails()}
-              onClick={() => goToStep(step + 1)}
-              type="button"
-            >
-              {t("common.continue")}
-            </Button>
-          ) : (
-            <Button
-              disabled={saving || !canContinueFromDetails()}
-              onClick={() => void create()}
-              type="button"
-            >
-              {saving ? t("promotions.create.creating") : t("promotions.create.trigger")}
-            </Button>
-          )}
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-    <UnsavedChangesDialog
-      onLeave={confirmLeave}
-      onStay={cancelLeave}
-      open={leaveDialogOpen}
-    />
+          <DialogFooter className="m-0 shrink-0 rounded-b-xl border-t border-border/70 bg-muted/40 p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+            {step > 0 ? (
+              <Button onClick={() => goToStep(step - 1)} type="button" variant="outline">
+                {t("common.back")}
+              </Button>
+            ) : (
+              <Button onClick={() => setOpen(false)} type="button" variant="outline">
+                {t("common.cancel")}
+              </Button>
+            )}
+            {step < 2 ? (
+              <Button
+                disabled={step === 1 && !canContinueFromDetails()}
+                onClick={() => goToStep(step + 1)}
+                type="button"
+              >
+                {t("common.continue")}
+              </Button>
+            ) : (
+              <Button
+                disabled={saving || !canContinueFromDetails()}
+                onClick={() => void create()}
+                type="button"
+              >
+                {saving ? t("promotions.create.creating") : t("promotions.create.trigger")}
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <UnsavedChangesDialog onLeave={confirmLeave} onStay={cancelLeave} open={leaveDialogOpen} />
     </>
   );
 }

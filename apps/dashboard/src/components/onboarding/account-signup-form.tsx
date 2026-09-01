@@ -1,9 +1,8 @@
 "use client";
 
-import Link from "@/components/app/link";
 import { useId, useState } from "react";
-
 import { AppIcons } from "@/components/app/icons";
+import Link from "@/components/app/link";
 import { Button } from "@/components/ui/button";
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
 import {
@@ -67,17 +66,11 @@ export function AccountSignUpForm({
   }
 
   return (
-    <div className="rounded-2xl border border-border bg-card p-7 shadow-sm sm:p-9">
-      <div className="mb-7">
-        <p className="text-xs font-semibold tracking-[0.06em] text-muted-foreground uppercase">
-          {t("auth.merchantConsole")}
-        </p>
-        <h2 className="mt-2.5 text-xl font-semibold tracking-tight sm:text-[1.35rem]">
+    <div className="rounded-xl border border-border bg-card p-6 sm:p-8">
+      <div className="mb-6">
+        <h1 className="text-xl font-semibold tracking-tight sm:text-[1.35rem]">
           {t("auth.createAccountTitle")}
-        </h2>
-        <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-          {t("auth.createAccountDescription")}
-        </p>
+        </h1>
       </div>
 
       <form className="flex flex-col gap-5" onSubmit={(event) => void onSubmit(event)}>
@@ -97,7 +90,6 @@ export function AccountSignUpForm({
               value={ownerName}
             />
           </InputGroup>
-          <FieldDescription>{t("auth.ownerNameHelp")}</FieldDescription>
         </Field>
         <Field>
           <FieldLabel htmlFor={`${fieldId}-email`}>{t("auth.workEmail")}</FieldLabel>

@@ -7,13 +7,13 @@ import { RefreshButton } from "@/components/app/refresh-button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ProductDeleteButton, ProductDetail } from "@/features/products/product-detail";
 import { ProductStockPanel } from "@/features/products/product-stock-panel";
+import { getTranslations } from "@/i18n/server";
 import {
   type DashboardSearchParams,
   getSelectedTenantId,
   getTenantScopedPath,
 } from "@/lib/dashboard-tenant-context";
 import { getListErrorState, type ListErrorState } from "@/lib/list-error-state";
-import { getTranslations } from "@/i18n/server";
 import { getMerchantProduct, getMerchantProductStock } from "@/lib/merchant-products";
 import { dashboardRoutes } from "@/lib/routes";
 
@@ -65,16 +65,13 @@ export default async function MerchantProductDetailPage({
           {productResult.ok ? (
             <ProductDeleteButton
               productId={productResult.product.id}
-              productTitle={
-                productResult.product.title ?? t("products.detail.thisProduct")
-              }
+              productTitle={productResult.product.title ?? t("products.detail.thisProduct")}
               tenantId={tenantId}
             />
           ) : null}
           <RefreshButton />
         </div>
       }
-      description={t("products.detail.shellDescription")}
       title={
         productResult.ok
           ? (productResult.product.title ?? t("products.detail.shellTitle"))

@@ -50,7 +50,6 @@ export default async function PromotionsPage({ searchParams }: PromotionsPagePro
           <PromotionCreateDialog />
         </>
       }
-      description={t("promotions.description")}
       title={t("promotions.title")}
     >
       {result.ok ? (

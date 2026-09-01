@@ -20,7 +20,7 @@ import Link from "@/components/app/link";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   ChartContainer,
   ChartLegend,
@@ -50,9 +50,7 @@ import {
   formatShortDate,
   getDemandRhythmRows,
   MetricCard,
-  ReadinessBlock,
   StatusDonutChart,
-  sampleNote,
 } from "@/features/overview/overview-helpers";
 import {
   filterSeriesByRange,
@@ -232,6 +230,12 @@ export function MerchantOverview({ demoMode = false, summary }: MerchantOverview
     [t],
   );
   const operations = summary.operations;
+  const analytics = summary.analytics;
+  const storefrontActivity = analytics?.storefront;
+  const hasStorefrontActivity =
+    analytics?.unavailable !== true &&
+    analytics?.coverage.status === "observed" &&
+    storefrontActivity != null;
   const series = operations?.series ?? [];
   const hasSeries = series.length > 0;
   const seriesBounds = getSeriesBounds(series);
@@ -410,12 +414,11 @@ export function MerchantOverview({ demoMode = false, summary }: MerchantOverview
         </Alert>
       ) : null}
 
-      {/* Operator first: queues + readiness, then quieter KPIs */}
+      {/* Operator first: work queues and a compact view of customer activity. */}
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1.35fr)_minmax(280px,0.75fr)] xl:items-stretch">
         <Card className="flex h-full flex-col" size="sm">
           <CardHeader className="shrink-0 border-b pb-3">
             <CardTitle>{t("overview.attention.title")}</CardTitle>
-            <CardDescription>{t("overview.attention.description")}</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-1 flex-col gap-3 pt-3">
             <div className="grid gap-2 sm:grid-cols-3">
@@ -453,7 +456,9 @@ export function MerchantOverview({ demoMode = false, summary }: MerchantOverview
             {waitingOrders.length > 0 ? (
               <div className="flex flex-col gap-2">
                 <div className="flex items-center justify-between gap-2">
-                  <p className="type-eyebrow">{t("overview.attention.waitingOnYou")}</p>
+                  <p className="text-xs font-medium text-muted-foreground">
+                    {t("overview.attention.waitingOnYou")}
+                  </p>
                   <Link
                     className="text-xs text-muted-foreground hover:text-foreground"
                     href={previewHref(dashboardRoutes.orders)}
@@ -499,11 +504,61 @@ export function MerchantOverview({ demoMode = false, summary }: MerchantOverview
 
         <Card className="flex h-full flex-col" size="sm">
           <CardHeader className="shrink-0 border-b pb-3">
-            <CardTitle>{t("overview.readiness.shopTitle")}</CardTitle>
-            <CardDescription>{t("overview.readiness.shopDescription")}</CardDescription>
+            <CardTitle>{t("overview.storefrontActivity.title")}</CardTitle>
+            <span className="col-start-2 row-start-1 self-start justify-self-end text-xs text-muted-foreground">
+              {analytics
+                ? t("overview.storefrontActivity.range", { count: analytics.range.days })
+                : null}
+            </span>
           </CardHeader>
-          <CardContent className="flex flex-1 flex-col justify-center pt-3">
-            <ReadinessBlock summary={summary} />
+          <CardContent className="flex flex-1 flex-col pt-3">
+            {hasStorefrontActivity ? (
+              <div className="grid flex-1 grid-cols-2 gap-px overflow-hidden rounded-lg border bg-border">
+                {[
+                  {
+                    label: t("overview.storefrontActivity.visits"),
+                    value: storefrontActivity.visits,
+                  },
+                  {
+                    label: t("overview.storefrontActivity.productViews"),
+                    value: storefrontActivity.productViewVisits,
+                  },
+                  {
+                    label: t("overview.storefrontActivity.addedToCart"),
+                    value: storefrontActivity.addToCartVisits,
+                  },
+                  {
+                    label: t("overview.storefrontActivity.checkouts"),
+                    value: storefrontActivity.checkoutVisits,
+                  },
+                ].map((item) => (
+                  <div className="flex min-w-0 flex-col gap-1 bg-card px-3 py-3" key={item.label}>
+                    <span className="truncate text-xs text-muted-foreground">{item.label}</span>
+                    <span className="font-mono text-xl font-semibold tabular-nums">
+                      {formatNumber(item.value, locale)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-1 flex-col justify-center rounded-lg border border-dashed px-4 py-5">
+                <p className="text-sm font-medium">
+                  {analytics?.unavailable
+                    ? t("overview.storefrontActivity.unavailableTitle")
+                    : t("overview.storefrontActivity.emptyTitle")}
+                </p>
+                <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                  {analytics?.unavailable
+                    ? t("overview.storefrontActivity.unavailableDescription")
+                    : t("overview.storefrontActivity.emptyDescription")}
+                </p>
+              </div>
+            )}
+            <Button asChild className="mt-3 w-full" size="sm" variant="outline">
+              <Link href={previewHref(dashboardRoutes.insights)} prefetch={false}>
+                {t("overview.storefrontActivity.viewInsights")}
+              </Link>
+            </Button>
           </CardContent>
         </Card>
       </div>
@@ -519,13 +574,11 @@ export function MerchantOverview({ demoMode = false, summary }: MerchantOverview
         <MetricCard
           href={previewHref(dashboardRoutes.orders)}
           label={t("overview.metrics.orders")}
-          note={sampleNote(operations?.range.sampledOrderCount, t, locale)}
           value={formatNumber(operations?.totals.orders, locale)}
         />
         <MetricCard
           href={previewHref(dashboardRoutes.products)}
           label={t("overview.metrics.products")}
-          note={t("overview.metrics.catalogCount")}
           value={formatNumber(operations?.totals.products, locale)}
         />
         <MetricCard
@@ -540,10 +593,7 @@ export function MerchantOverview({ demoMode = false, summary }: MerchantOverview
 
       <Card className="flex min-h-0 flex-col overflow-hidden">
         <CardHeader className="shrink-0 border-b">
-          <div>
-            <CardTitle>{t("overview.trading.title")}</CardTitle>
-            <CardDescription>{t("overview.trading.description")}</CardDescription>
-          </div>
+          <CardTitle>{t("overview.trading.title")}</CardTitle>
           {hasSeries ? (
             <div className="col-start-2 row-span-2 row-start-1 flex flex-wrap justify-end gap-2 self-start justify-self-end">
               <Select
@@ -720,7 +770,6 @@ export function MerchantOverview({ demoMode = false, summary }: MerchantOverview
         <Card className="flex min-h-[22rem] flex-col overflow-hidden">
           <CardHeader className="pb-2">
             <CardTitle>{t("overview.basket.title")}</CardTitle>
-            <CardDescription>{t("overview.basket.description")}</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-1 flex-col overflow-hidden">
             {averageOrderRows.length > 0 ? (
@@ -785,7 +834,6 @@ export function MerchantOverview({ demoMode = false, summary }: MerchantOverview
         <Card className="flex min-h-[22rem] flex-col overflow-hidden">
           <CardHeader className="pb-2">
             <CardTitle>{t("overview.demand.title")}</CardTitle>
-            <CardDescription>{t("overview.demand.description")}</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-1 flex-col">
             {demandRhythmRows.length > 0 ? (
@@ -820,10 +868,7 @@ export function MerchantOverview({ demoMode = false, summary }: MerchantOverview
       <div className="grid gap-4 lg:grid-cols-2 lg:items-stretch">
         <Card className="flex flex-col">
           <CardHeader className="border-b pb-3">
-            <div>
-              <CardTitle>{t("overview.mix.title")}</CardTitle>
-              <CardDescription>{activeMix.description}</CardDescription>
-            </div>
+            <CardTitle>{t("overview.mix.title")}</CardTitle>
             {activeMix.rows.length > 0 || mixViews.some((view) => view.rows.length > 0) ? (
               <div className="col-start-2 row-span-2 row-start-1 self-start justify-self-end">
                 <Select value={mixView} onValueChange={(value) => setMixView(value as MixView)}>
@@ -859,7 +904,6 @@ export function MerchantOverview({ demoMode = false, summary }: MerchantOverview
         <Card className="flex flex-col">
           <CardHeader className="border-b pb-3">
             <CardTitle>{t("overview.recent.title")}</CardTitle>
-            <CardDescription>{t("overview.recent.description")}</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-1 flex-col gap-1 pt-3">
             {(operations?.recentOrders.length ?? 0) > 0 ? (

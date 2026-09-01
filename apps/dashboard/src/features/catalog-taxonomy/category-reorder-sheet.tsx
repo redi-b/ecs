@@ -1,6 +1,5 @@
 "use client";
 
-import type { MerchantProductCategory } from "@ecs/contracts";
 import {
   closestCenter,
   DndContext,
@@ -18,9 +17,10 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import type { MerchantProductCategory } from "@ecs/contracts";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { AppIcons } from "@/components/app/icons";
@@ -142,70 +142,61 @@ export function CategoryReorderSheet({
 
   return (
     <>
-    <Sheet
-      onOpenChange={(next) => {
-        if (!next) requestClose();
-        else onOpenChange(true);
-      }}
-      open={open}
-    >
-      <SheetContent className="w-full sm:max-w-lg" side="right">
-        <SheetHeader className="px-5 py-4 text-left">
-          <SheetTitle>{t("taxonomy.reorder.title")}</SheetTitle>
-          <SheetDescription>{t("taxonomy.reorder.description")}</SheetDescription>
-        </SheetHeader>
+      <Sheet
+        onOpenChange={(next) => {
+          if (!next) requestClose();
+          else onOpenChange(true);
+        }}
+        open={open}
+      >
+        <SheetContent className="w-full sm:max-w-lg" side="right">
+          <SheetHeader className="px-5 py-4 text-left">
+            <SheetTitle>{t("taxonomy.reorder.title")}</SheetTitle>
+            <SheetDescription>{t("taxonomy.reorder.description")}</SheetDescription>
+          </SheetHeader>
 
-        <SheetBody className="space-y-6 px-5 py-5">
-          {groups.length === 0 ? (
-            <p className="text-sm text-muted-foreground">{t("taxonomy.reorder.empty")}</p>
-          ) : null}
-          {groups.map((group) => (
-            <section className="space-y-2" key={group.parentId ?? "__root__"}>
-              <div>
-                <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-                  {group.parentLabel}
-                </p>
-                <p className="mt-0.5 text-xs text-muted-foreground">
-                  {group.items.length === 1
-                    ? t("taxonomy.reorder.countOne")
-                    : t("taxonomy.reorder.count", { count: group.items.length })}
-                </p>
-              </div>
-              <DndContext
-                collisionDetection={closestCenter}
-                onDragEnd={(event) => onDragEnd(group.parentId, event)}
-                sensors={sensors}
-              >
-                <SortableContext
-                  items={group.items.map((item) => item.id)}
-                  strategy={verticalListSortingStrategy}
+          <SheetBody className="flex flex-col gap-6 px-5 py-5">
+            {groups.length === 0 ? (
+              <p className="text-sm text-muted-foreground">{t("taxonomy.reorder.empty")}</p>
+            ) : null}
+            {groups.map((group) => (
+              <section className="flex flex-col gap-2" key={group.parentId ?? "__root__"}>
+                <p className="text-sm font-medium text-muted-foreground">{group.parentLabel}</p>
+                <DndContext
+                  collisionDetection={closestCenter}
+                  onDragEnd={(event) => onDragEnd(group.parentId, event)}
+                  sensors={sensors}
                 >
-                  <ul className="space-y-1.5">
-                    {group.items.map((item, index) => (
-                      <SortableCategoryRow category={item} index={index} key={item.id} />
-                    ))}
-                  </ul>
-                </SortableContext>
-              </DndContext>
-            </section>
-          ))}
-        </SheetBody>
+                  <SortableContext
+                    items={group.items.map((item) => item.id)}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    <ul className="space-y-1.5">
+                      {group.items.map((item, index) => (
+                        <SortableCategoryRow category={item} index={index} key={item.id} />
+                      ))}
+                    </ul>
+                  </SortableContext>
+                </DndContext>
+              </section>
+            ))}
+          </SheetBody>
 
-        <SheetFooter className="flex-row justify-end gap-2 px-5 py-4">
-          <Button disabled={isSaving} onClick={requestClose} type="button" variant="outline">
-            {t("common.cancel")}
-          </Button>
-          <Button disabled={isSaving || groups.length === 0} onClick={() => void saveOrder()} type="button">
-            {isSaving ? t("taxonomy.reorder.saving") : t("taxonomy.reorder.saveOrder")}
-          </Button>
-        </SheetFooter>
-      </SheetContent>
-    </Sheet>
-    <UnsavedChangesDialog
-      onLeave={confirmLeave}
-      onStay={cancelLeave}
-      open={leaveDialogOpen}
-    />
+          <SheetFooter className="flex-row justify-end gap-2 px-5 py-4">
+            <Button disabled={isSaving} onClick={requestClose} type="button" variant="outline">
+              {t("common.cancel")}
+            </Button>
+            <Button
+              disabled={isSaving || groups.length === 0}
+              onClick={() => void saveOrder()}
+              type="button"
+            >
+              {isSaving ? t("taxonomy.reorder.saving") : t("taxonomy.reorder.saveOrder")}
+            </Button>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
+      <UnsavedChangesDialog onLeave={confirmLeave} onStay={cancelLeave} open={leaveDialogOpen} />
     </>
   );
 }
@@ -260,10 +251,7 @@ function SortableCategoryRow({
   );
 }
 
-function buildSiblingGroups(
-  categories: MerchantProductCategory[],
-  t: Translate,
-): SiblingGroup[] {
+function buildSiblingGroups(categories: MerchantProductCategory[], t: Translate): SiblingGroup[] {
   const byId = new Map(categories.map((category) => [category.id, category]));
   const buckets = new Map<string, MerchantProductCategory[]>();
 

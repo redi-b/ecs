@@ -60,6 +60,19 @@
     "unpaid": "ያልተከፈለ",
     "unfulfilled": "ያልተላኩ"
   },
+  "storefrontActivity": {
+    "title": "የመደብር እንቅስቃሴ",
+    "range": "ያለፉት {count} ቀናት",
+    "visits": "ጉብኝቶች",
+    "productViews": "የምርት እይታዎች",
+    "addedToCart": "ወደ ጋሪ የተጨመሩ",
+    "checkouts": "የክፍያ ገጽ መክፈቶች",
+    "emptyTitle": "ገና የመደብር እንቅስቃሴ የለም",
+    "emptyDescription": "ደንበኞች መደብሩን ሲጠቀሙ ጉብኝትና የግዢ እንቅስቃሴ እዚህ ይታያል።",
+    "unavailableTitle": "የመደብር እንቅስቃሴ አልተገኘም",
+    "unavailableDescription": "የእንቅስቃሴ ሪፖርት አሁን መጫን አልተቻለም።",
+    "viewInsights": "ዝርዝር ሪፖርት"
+  },
   "trading": {
     "title": "ሽያጭ እንዴት እያደገ ነው",
     "description": "ገቢ፣ ትዕዛዞች እና ደንበኞች በጊዜ።",

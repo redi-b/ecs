@@ -395,9 +395,7 @@ export function BillingWorkspace({
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-8">
       {/* Current plan — single source of truth, one status */}
       <section className="flex flex-col gap-1">
-        <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-          {t("billing.plan.current")}
-        </p>
+        <p className="text-xs font-medium text-muted-foreground">{t("billing.plan.current")}</p>
         <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
           <h2 className="text-2xl font-medium tracking-tight">{activePlan.name}</h2>
           <Badge variant="secondary">
@@ -438,7 +436,6 @@ export function BillingWorkspace({
       <Card className="border-border/80">
         <CardHeader className="pb-3">
           <CardTitle className="text-base">{t("billing.entitlements.title")}</CardTitle>
-          <CardDescription>{t("billing.entitlements.description")}</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-3 text-sm">
           <div className="flex items-center justify-between gap-4">
@@ -660,9 +657,6 @@ export function BillingWorkspace({
         <section className="flex flex-col gap-3">
           <div>
             <h3 className="text-base font-semibold">{t("billing.payment.historyTitle")}</h3>
-            <p className="text-sm text-muted-foreground">
-              {t("billing.payment.historyDescription")}
-            </p>
           </div>
           <ul
             className={cn(

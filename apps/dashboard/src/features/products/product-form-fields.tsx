@@ -22,13 +22,8 @@ import { cn } from "@/lib/utils";
 
 export const NO_COLLECTION_VALUE = "__none";
 
-export function ComposerSection({ description, title }: { description: string; title: string }) {
-  return (
-    <div className="flex flex-col gap-1">
-      <h2 className="text-lg font-semibold tracking-normal">{title}</h2>
-      <p className="max-w-2xl text-sm text-muted-foreground">{description}</p>
-    </div>
-  );
+export function ComposerSection({ title }: { title: string }) {
+  return <h2 className="text-lg font-semibold tracking-normal">{title}</h2>;
 }
 
 export function StepDot({ status }: { status: "active" | "complete" | "idle" }) {
@@ -242,9 +237,7 @@ export function CategoryPicker({
                 className="min-w-0 flex-1 truncate"
                 style={{ paddingLeft: `${depth * 0.85}rem` }}
               >
-                {depth > 0 ? (
-                  <span className="mr-1.5 text-muted-foreground/50">└</span>
-                ) : null}
+                {depth > 0 ? <span className="mr-1.5 text-muted-foreground/50">└</span> : null}
                 {item.label}
               </span>
               {item.description ? (
@@ -303,10 +296,7 @@ export function hasFieldError(field: {
   return field.state.meta.isTouched && field.state.meta.errors.length > 0;
 }
 
-function getCollectionLabel(
-  collection: MerchantProductCollection,
-  untitledFallback: string,
-) {
+function getCollectionLabel(collection: MerchantProductCollection, untitledFallback: string) {
   return collection.title ?? collection.handle ?? untitledFallback;
 }
 

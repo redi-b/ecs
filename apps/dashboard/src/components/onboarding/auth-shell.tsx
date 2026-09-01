@@ -7,10 +7,9 @@ import { getTranslations } from "@/i18n/server";
 import { cn } from "@/lib/utils";
 
 type AuthShellProps = {
-  brandDescription: string;
-  brandFooter?: string;
+  brandDescription?: string;
   brandPoints?: string[];
-  brandTitle: string;
+  brandTitle?: string;
   children: ReactNode;
   className?: string;
   /** Narrow centered form (auth) vs wider setup layout (onboarding). */
@@ -20,7 +19,6 @@ type AuthShellProps = {
 
 export async function AuthShell({
   brandDescription,
-  brandFooter,
   brandPoints = [],
   brandTitle,
   children,
@@ -29,10 +27,8 @@ export async function AuthShell({
   toolbar,
 }: AuthShellProps) {
   const t = await getTranslations();
-  const footer = brandFooter ?? t("auth.brandFooter.label");
-
   const tools = (
-    <div className="flex shrink-0 items-center gap-0.5 rounded-full border border-border/80 bg-card/90 p-0.5 shadow-sm backdrop-blur-sm sm:gap-1 sm:p-1">
+    <div className="flex shrink-0 items-center gap-0.5 rounded-full border border-border/80 bg-card p-0.5 sm:gap-1 sm:p-1">
       {toolbar}
       <LanguageSwitcher />
       <ThemeToggle />
@@ -40,68 +36,34 @@ export async function AuthShell({
   );
 
   return (
-    <div className={cn("relative min-h-screen bg-background text-foreground", className)}>
-      {/* Soft brand wash on the left half only (desktop). No glass blobs. */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 overflow-hidden"
-      >
-        <div className="absolute inset-y-0 left-0 hidden w-1/2 bg-[radial-gradient(120%_80%_at_0%_0%,color-mix(in_oklch,var(--primary)_12%,transparent),transparent_55%)] lg:block" />
-        <div className="absolute inset-x-0 top-0 h-40 bg-[radial-gradient(80%_100%_at_50%_0%,color-mix(in_oklch,var(--primary)_8%,transparent),transparent_70%)] lg:hidden" />
-      </div>
-
-      <div className="fixed top-4 right-4 z-50 hidden sm:block">{tools}</div>
-
+    <div className={cn("min-h-screen bg-background text-foreground", className)}>
       {layout === "auth" ? (
-        <div className="relative grid min-h-screen w-full lg:grid-cols-2">
-          <aside className="flex flex-col border-b border-border/80 px-5 py-7 sm:px-10 sm:py-8 lg:min-h-screen lg:border-r lg:border-b-0 lg:px-12 lg:py-12 xl:px-16">
-            <div className="mx-auto flex w-full max-w-md flex-1 flex-col">
-              <div className="flex shrink-0 items-center justify-between gap-3">
-                <div className="flex min-w-0 items-center gap-2.5">
-                  <BrandMark tagline={t("auth.brandTagline")} />
-                </div>
-                <div className="sm:hidden">{tools}</div>
-              </div>
-
-              <div className="mt-6 flex flex-1 flex-col justify-center sm:mt-10 lg:mt-0">
-                <BrandCopy
-                  brandDescription={brandDescription}
-                  brandPoints={brandPoints}
-                  brandTitle={brandTitle}
-                  compactOnMobile
-                  eyebrow={t("auth.merchantConsole")}
-                  titleClassName="text-2xl sm:text-3xl sm:text-[2.1rem] sm:leading-[1.15]"
-                />
-              </div>
-
-              {footer ? (
-                <p className="mt-8 hidden shrink-0 text-xs leading-relaxed text-muted-foreground sm:mt-10 sm:block lg:mt-0">
-                  {footer}
-                </p>
-              ) : null}
+        <div className="mx-auto flex min-h-screen w-full max-w-md flex-col px-4 py-5 sm:max-w-lg sm:px-8 sm:py-8">
+          <header className="flex items-center justify-between gap-4">
+            <div className="flex min-w-0 items-center gap-2.5">
+              <BrandMark tagline={t("auth.brandTagline")} />
             </div>
-          </aside>
-
-          <div className="flex min-h-full items-start justify-center px-4 py-8 sm:items-center sm:px-10 sm:py-12 lg:px-12 lg:py-14">
-            <div className="w-full max-w-md">{children}</div>
+            {tools}
+          </header>
+          <div className="flex flex-1 py-6 sm:py-10">
+            <div className="my-auto w-full max-w-md">{children}</div>
           </div>
         </div>
       ) : (
-        <div className="relative mx-auto flex min-h-screen w-full max-w-6xl flex-col">
+        <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col">
           <aside className="flex flex-col border-b border-border/80 px-4 py-6 sm:px-10 sm:py-10 lg:px-14 lg:py-12 lg:pb-10">
             <div className="flex shrink-0 items-center justify-between gap-3">
               <div className="flex min-w-0 items-center gap-2.5">
                 <BrandMark tagline={t("auth.brandTagline")} />
               </div>
-              <div className="sm:hidden">{tools}</div>
+              <div>{tools}</div>
             </div>
             <div className="mt-6 max-w-2xl sm:mt-10">
               <BrandCopy
-                brandDescription={brandDescription}
+                brandDescription={brandDescription ?? ""}
                 brandPoints={brandPoints}
-                brandTitle={brandTitle}
+                brandTitle={brandTitle ?? ""}
                 compactOnMobile
-                eyebrow={t("auth.merchantConsole")}
                 titleClassName="text-xl sm:text-2xl sm:text-3xl"
               />
             </div>
@@ -120,7 +82,7 @@ function BrandMark({ tagline }: { tagline: string }) {
     <>
       <span
         aria-hidden
-        className="grid size-9 place-items-center rounded-[0.7rem] bg-primary text-sm font-bold tracking-tight text-primary-foreground shadow-[inset_0_1px_0_color-mix(in_oklch,white_22%,transparent),0_1px_2px_color-mix(in_oklch,var(--foreground)_10%,transparent)]"
+        className="grid size-9 place-items-center rounded-[0.7rem] bg-primary text-sm font-bold tracking-tight text-primary-foreground"
       >
         E
       </span>
@@ -137,20 +99,17 @@ function BrandCopy({
   brandPoints,
   brandTitle,
   compactOnMobile = false,
-  eyebrow,
   titleClassName,
 }: {
   brandDescription: string;
   brandPoints: string[];
   brandTitle: string;
   compactOnMobile?: boolean;
-  eyebrow: string;
   titleClassName: string;
 }) {
   return (
     <>
-      <p className="type-eyebrow text-primary/90">{eyebrow}</p>
-      <h1 className={cn("mt-2 font-heading font-semibold tracking-tight text-balance sm:mt-3", titleClassName)}>
+      <h1 className={cn("font-heading font-semibold tracking-tight text-pretty", titleClassName)}>
         {brandTitle}
       </h1>
       <p

@@ -5,9 +5,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-
-import Link from "@/components/app/link";
 import { AppIcons } from "@/components/app/icons";
+import Link from "@/components/app/link";
 import { UnsavedChangesDialog } from "@/components/app/unsaved-changes-dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -27,12 +26,12 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { slugifyTaxonomyHandle } from "@/features/catalog-taxonomy/taxonomy-table-state";
+import { MediaImageReferenceControl } from "@/features/media/media-image-reference-control";
 import {
   ProductCatalogPickerDialog,
   ProductCatalogPickerTrigger,
   type ProductCatalogPickItem,
 } from "@/features/products/product-catalog-picker-dialog";
-import { MediaImageReferenceControl } from "@/features/media/media-image-reference-control";
 import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes-guard";
 import type { MessageKey } from "@/i18n/messages";
 import { useI18n } from "@/i18n/provider";
@@ -254,239 +253,219 @@ export function CollectionEditSheet({
 
   return (
     <>
-    <Sheet
-      onOpenChange={(next) => {
-        if (!next) requestClose();
-        else onOpenChange(true);
-      }}
-      open={open}
-    >
-      <SheetContent className="w-full sm:max-w-md" side="right">
-        <SheetHeader className="px-5 py-4 text-left">
-          <SheetTitle>{t("taxonomy.edit.collectionTitle")}</SheetTitle>
-          <SheetDescription>{t("taxonomy.edit.collectionDesc")}</SheetDescription>
-        </SheetHeader>
+      <Sheet
+        onOpenChange={(next) => {
+          if (!next) requestClose();
+          else onOpenChange(true);
+        }}
+        open={open}
+      >
+        <SheetContent className="w-full sm:max-w-md" side="right">
+          <SheetHeader className="px-5 py-4 text-left">
+            <SheetTitle>{t("taxonomy.edit.collectionTitle")}</SheetTitle>
+            <SheetDescription className="sr-only">
+              {t("taxonomy.edit.collectionDesc")}
+            </SheetDescription>
+          </SheetHeader>
 
-        <form
-          className="flex min-h-0 flex-1 flex-col"
-          onSubmit={(event) => {
-            event.preventDefault();
-            void submit();
-          }}
-        >
-          <SheetBody className="grid content-start gap-5 px-5 py-5">
-            {error ? (
-              <Alert variant="destructive">
-                <AlertTitle>{t("taxonomy.edit.updateFailedCollection")}</AlertTitle>
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            ) : null}
+          <form
+            className="flex min-h-0 flex-1 flex-col"
+            onSubmit={(event) => {
+              event.preventDefault();
+              void submit();
+            }}
+          >
+            <SheetBody className="grid content-start gap-5 px-5 py-5">
+              {error ? (
+                <Alert variant="destructive">
+                  <AlertTitle>{t("taxonomy.edit.updateFailedCollection")}</AlertTitle>
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              ) : null}
 
-            <Field>
-              <FieldLabel htmlFor="collection-edit-title">{t("taxonomy.edit.title")}</FieldLabel>
-              <Input
-                autoComplete="off"
-                id="collection-edit-title"
-                onChange={(event) => {
-                  const next = event.target.value;
-                  setTitle(next);
-                  if (isHandleLocked) setHandle(slugifyTaxonomyHandle(next));
-                }}
-                required
-                value={title}
-              />
-            </Field>
-
-            <Field>
-              <FieldLabel htmlFor="collection-edit-handle">{t("taxonomy.edit.handle")}</FieldLabel>
-              <InputGroup className="pr-1">
-                <InputGroupInput
-                  id="collection-edit-handle"
-                  onChange={(event) => setHandle(slugifyTaxonomyHandle(event.target.value))}
-                  readOnly={isHandleLocked}
-                  value={handle}
+              <Field>
+                <FieldLabel htmlFor="collection-edit-title">{t("taxonomy.edit.title")}</FieldLabel>
+                <Input
+                  autoComplete="off"
+                  id="collection-edit-title"
+                  onChange={(event) => {
+                    const next = event.target.value;
+                    setTitle(next);
+                    if (isHandleLocked) setHandle(slugifyTaxonomyHandle(next));
+                  }}
+                  required
+                  value={title}
                 />
-                <InputGroupAddon align="inline-end" className="gap-1 py-0 pr-0">
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        aria-label={
-                          isHandleLocked
-                            ? t("taxonomy.form.unlockHandle")
-                            : t("taxonomy.form.lockHandle")
-                        }
-                        className="rounded-full"
-                        onClick={() => setIsHandleLocked((value) => !value)}
-                        size="icon-sm"
-                        type="button"
-                        variant="ghost"
-                      >
-                        <HandleLockIcon data-icon="inline-start" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent side="top" sideOffset={6}>
-                      {isHandleLocked
-                        ? t("taxonomy.form.unlockHandle")
-                        : t("taxonomy.form.lockHandle")}
-                    </TooltipContent>
-                  </Tooltip>
-                </InputGroupAddon>
-              </InputGroup>
-            </Field>
+              </Field>
 
-            <Field className="flex flex-row items-center justify-between gap-4 rounded-xl border px-3.5 py-3">
-              <div className="min-w-0 space-y-1">
-                <FieldLabel className="text-sm" htmlFor="collection-edit-visible">
-                  {t("taxonomy.edit.visibleLabel")}
+              <Field>
+                <FieldLabel htmlFor="collection-edit-handle">
+                  {t("taxonomy.edit.handle")}
                 </FieldLabel>
-                <FieldDescription className="text-xs">
-                  {t("taxonomy.edit.visibleCollectionDesc")}
-                </FieldDescription>
-              </div>
-              <Switch
-                checked={isVisible}
-                id="collection-edit-visible"
-                onCheckedChange={setIsVisible}
-              />
-            </Field>
+                <InputGroup className="pr-1">
+                  <InputGroupInput
+                    id="collection-edit-handle"
+                    onChange={(event) => setHandle(slugifyTaxonomyHandle(event.target.value))}
+                    readOnly={isHandleLocked}
+                    value={handle}
+                  />
+                  <InputGroupAddon align="inline-end" className="gap-1 py-0 pr-0">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          aria-label={
+                            isHandleLocked
+                              ? t("taxonomy.form.unlockHandle")
+                              : t("taxonomy.form.lockHandle")
+                          }
+                          className="rounded-full"
+                          onClick={() => setIsHandleLocked((value) => !value)}
+                          size="icon-sm"
+                          type="button"
+                          variant="ghost"
+                        >
+                          <HandleLockIcon data-icon="inline-start" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" sideOffset={6}>
+                        {isHandleLocked
+                          ? t("taxonomy.form.unlockHandle")
+                          : t("taxonomy.form.lockHandle")}
+                      </TooltipContent>
+                    </Tooltip>
+                  </InputGroupAddon>
+                </InputGroup>
+              </Field>
 
-            <Field>
+              <Field className="flex flex-row items-center justify-between gap-4 rounded-xl border px-3.5 py-3">
+                <div className="min-w-0 space-y-1">
+                  <FieldLabel className="text-sm" htmlFor="collection-edit-visible">
+                    {t("taxonomy.edit.visibleLabel")}
+                  </FieldLabel>
+                  <FieldDescription className="text-xs">
+                    {t("taxonomy.edit.visibleCollectionDesc")}
+                  </FieldDescription>
+                </div>
+                <Switch
+                  checked={isVisible}
+                  id="collection-edit-visible"
+                  onCheckedChange={setIsVisible}
+                />
+              </Field>
+
               <MediaImageReferenceControl
-                label="Collection image"
+                label={t("taxonomy.form.mediaLabel")}
                 onChange={(value) => setMediaUrl(value ?? "")}
                 value={mediaUrl}
               />
-              <FieldDescription>
-                Used by storefront collection cards and other visual collection links.
-              </FieldDescription>
-            </Field>
 
-            <div className="space-y-3 rounded-xl border p-4">
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="text-sm font-medium">{t("taxonomy.edit.products")}</p>
-                  <p className="mt-0.5 text-xs text-muted-foreground">
-                    {t("taxonomy.edit.productsHelp")}
+              <div className="space-y-3 rounded-xl border p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <p className="min-w-0 text-sm font-medium">{t("taxonomy.edit.products")}</p>
+                  {members.length > 0 ? (
+                    <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-xs tabular-nums text-muted-foreground">
+                      {members.length}
+                    </span>
+                  ) : null}
+                </div>
+
+                <CollectionProductAddPicker
+                  candidates={addCandidates}
+                  disabled={membershipBusy || membersLoading}
+                  loading={membersLoading}
+                  onAdd={(ids) => void mutateMembership({ add: ids })}
+                  onPendingChange={setPendingAddIds}
+                  pendingIds={pendingAddIds}
+                />
+
+                {membersLoading ? (
+                  <p className="text-xs text-muted-foreground">
+                    {t("taxonomy.edit.loadingMembers")}
                   </p>
-                </div>
-                {members.length > 0 ? (
-                  <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-xs tabular-nums text-muted-foreground">
-                    {members.length}
-                  </span>
-                ) : null}
-              </div>
-
-              <CollectionProductAddPicker
-                candidates={addCandidates}
-                disabled={membershipBusy || membersLoading}
-                loading={membersLoading}
-                onAdd={(ids) => void mutateMembership({ add: ids })}
-                onPendingChange={setPendingAddIds}
-                pendingIds={pendingAddIds}
-              />
-
-              {membersLoading ? (
-                <p className="text-xs text-muted-foreground">
-                  {t("taxonomy.edit.loadingMembers")}
-                </p>
-              ) : members.length === 0 ? (
-                <div className="rounded-lg border border-dashed px-3 py-4 text-center text-xs text-muted-foreground">
-                  <p>{t("taxonomy.edit.noProductsYet")}</p>
-                  <Link
-                    className="mt-2 inline-block font-medium text-primary hover:underline"
-                    href={`${dashboardRoutes.products}?create=product`}
-                    prefetch={false}
-                  >
-                    {t("taxonomy.edit.createProduct")}
-                  </Link>
-                </div>
-              ) : (
-                <ul className="max-h-48 divide-y overflow-y-auto rounded-lg border">
-                  {members.map((product) => (
-                    <li className="flex items-center gap-2 px-3 py-2.5" key={product.id}>
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-medium">
-                          {product.title ?? t("taxonomy.edit.untitledProduct")}
-                        </p>
-                        {product.handle ? (
-                          <p className="truncate text-xs text-muted-foreground">
-                            /{product.handle}
+                ) : members.length === 0 ? (
+                  <div className="rounded-lg border border-dashed px-3 py-4 text-center text-xs text-muted-foreground">
+                    <p>{t("taxonomy.edit.noProductsYet")}</p>
+                    <Link
+                      className="mt-2 inline-block font-medium text-primary hover:underline"
+                      href={`${dashboardRoutes.products}?create=product`}
+                      prefetch={false}
+                    >
+                      {t("taxonomy.edit.createProduct")}
+                    </Link>
+                  </div>
+                ) : (
+                  <ul className="max-h-48 divide-y overflow-y-auto rounded-lg border">
+                    {members.map((product) => (
+                      <li className="flex items-center gap-2 px-3 py-2.5" key={product.id}>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-medium">
+                            {product.title ?? t("taxonomy.edit.untitledProduct")}
                           </p>
-                        ) : null}
-                      </div>
-                      <Button
-                        aria-label={t("taxonomy.edit.removeProductAria", {
-                          name: product.title ?? t("taxonomy.edit.productFallback"),
-                        })}
-                        disabled={membershipBusy}
-                        onClick={() => void mutateMembership({ remove: [product.id] })}
-                        size="icon-sm"
-                        type="button"
-                        variant="ghost"
-                      >
-                        <AppIcons.trash data-icon="inline-start" />
-                      </Button>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-
-            <div className="space-y-4 rounded-xl border p-4">
-              <div>
-                <p className="text-sm font-medium">{t("taxonomy.edit.seo")}</p>
-                <p className="mt-0.5 text-xs text-muted-foreground">
-                  {t("taxonomy.edit.seoCollectionHelp")}
-                </p>
+                          {product.handle ? (
+                            <p className="truncate text-xs text-muted-foreground">
+                              /{product.handle}
+                            </p>
+                          ) : null}
+                        </div>
+                        <Button
+                          aria-label={t("taxonomy.edit.removeProductAria", {
+                            name: product.title ?? t("taxonomy.edit.productFallback"),
+                          })}
+                          disabled={membershipBusy}
+                          onClick={() => void mutateMembership({ remove: [product.id] })}
+                          size="icon-sm"
+                          type="button"
+                          variant="ghost"
+                        >
+                          <AppIcons.trash data-icon="inline-start" />
+                        </Button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
-              <Field>
-                <FieldLabel htmlFor="collection-edit-seo-title">
-                  {t("taxonomy.edit.seoTitle")}
-                </FieldLabel>
-                <Input
-                  id="collection-edit-seo-title"
-                  maxLength={120}
-                  onChange={(event) => setSeoTitle(event.target.value)}
-                  placeholder={t("taxonomy.edit.seoTitleCollectionPlaceholder")}
-                  value={seoTitle}
-                />
-              </Field>
-              <Field>
-                <FieldLabel htmlFor="collection-edit-seo-description">
-                  {t("taxonomy.edit.seoDescription")}
-                </FieldLabel>
-                <Textarea
-                  id="collection-edit-seo-description"
-                  maxLength={320}
-                  onChange={(event) => setSeoDescription(event.target.value)}
-                  placeholder={t("taxonomy.edit.seoDescCollectionPlaceholder")}
-                  value={seoDescription}
-                />
-              </Field>
-            </div>
-          </SheetBody>
 
-          <SheetFooter className="flex-row justify-end gap-2 px-5 py-4">
-            <Button
-              disabled={isSaving}
-              onClick={requestClose}
-              type="button"
-              variant="outline"
-            >
-              {t("common.cancel")}
-            </Button>
-            <Button disabled={isSaving} type="submit">
-              {isSaving ? t("taxonomy.edit.saving") : t("taxonomy.edit.saveChanges")}
-            </Button>
-          </SheetFooter>
-        </form>
-      </SheetContent>
-    </Sheet>
-    <UnsavedChangesDialog
-      onLeave={confirmLeave}
-      onStay={cancelLeave}
-      open={leaveDialogOpen}
-    />
+              <div className="space-y-4 rounded-xl border p-4">
+                <p className="text-sm font-medium">{t("taxonomy.edit.seo")}</p>
+                <Field>
+                  <FieldLabel htmlFor="collection-edit-seo-title">
+                    {t("taxonomy.edit.seoTitle")}
+                  </FieldLabel>
+                  <Input
+                    id="collection-edit-seo-title"
+                    maxLength={120}
+                    onChange={(event) => setSeoTitle(event.target.value)}
+                    placeholder={t("taxonomy.edit.seoTitleCollectionPlaceholder")}
+                    value={seoTitle}
+                  />
+                </Field>
+                <Field>
+                  <FieldLabel htmlFor="collection-edit-seo-description">
+                    {t("taxonomy.edit.seoDescription")}
+                  </FieldLabel>
+                  <Textarea
+                    id="collection-edit-seo-description"
+                    maxLength={320}
+                    onChange={(event) => setSeoDescription(event.target.value)}
+                    placeholder={t("taxonomy.edit.seoDescCollectionPlaceholder")}
+                    value={seoDescription}
+                  />
+                </Field>
+              </div>
+            </SheetBody>
+
+            <SheetFooter className="flex-row justify-end gap-2 px-5 py-4">
+              <Button disabled={isSaving} onClick={requestClose} type="button" variant="outline">
+                {t("common.cancel")}
+              </Button>
+              <Button disabled={isSaving} type="submit">
+                {isSaving ? t("taxonomy.edit.saving") : t("taxonomy.edit.saveChanges")}
+              </Button>
+            </SheetFooter>
+          </form>
+        </SheetContent>
+      </Sheet>
+      <UnsavedChangesDialog onLeave={confirmLeave} onStay={cancelLeave} open={leaveDialogOpen} />
     </>
   );
 }

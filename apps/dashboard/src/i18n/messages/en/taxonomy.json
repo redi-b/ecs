@@ -114,7 +114,7 @@
     "regenerateFrom": "Regenerate from {label}",
     "handleFollows": "The {entity} handle follows the {label} automatically.",
     "handleUnlocked": "Handle editing is unlocked for a custom {entity} slug.",
-    "mediaLabel": "Storefront image",
+    "mediaLabel": "Image",
     "mediaDescription": "Shown in storefront category and collection cards when the template supports it."
   },
   "edit": {
@@ -181,7 +181,7 @@
   },
   "reorder": {
     "title": "Reorder categories",
-    "description": "Drag categories under the same parent. The top of each list is first in the store (0, then 1, then 2…).",
+    "description": "Drag categories to change their order within each group.",
     "saveFailed": "Could not save category order.",
     "saved": "Category order saved.",
     "saving": "Saving…",

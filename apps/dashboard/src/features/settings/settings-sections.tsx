@@ -3,24 +3,33 @@
 import type { StorefrontTemplateCatalogItem } from "@ecs/contracts";
 import { CheckIcon, ExternalLinkIcon, Loader2Icon } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState, useTransition, type ReactNode } from "react";
+import { type ReactNode, useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { useI18n } from "@/i18n/provider";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { isStorefrontTemplateSelected } from "@/features/settings/settings-helpers";
+import { useI18n } from "@/i18n/provider";
 import { dashboardRoutes } from "@/lib/routes";
 import { cn } from "@/lib/utils";
 
 /** Section page title + quiet intro — matches order/product detail hierarchy. */
-export function SectionIntro({ description, title }: { description: string; title: string }) {
+export function SectionIntro({ description, title }: { description?: string; title: string }) {
   return (
     <div className="space-y-1">
       <h2 className="type-section-title text-balance">{title}</h2>
-      <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">{description}</p>
+      {description ? (
+        <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">{description}</p>
+      ) : null}
     </div>
   );
 }
@@ -34,7 +43,9 @@ export function SettingsSectionBody({
   className?: string;
 }) {
   return (
-    <div className={cn("flex flex-col gap-4 sm:gap-5 motion-safe:animate-dialog-step-in", className)}>
+    <div
+      className={cn("flex flex-col gap-4 sm:gap-5 motion-safe:animate-dialog-step-in", className)}
+    >
       {children}
     </div>
   );
@@ -75,7 +86,9 @@ export function SettingsPanel({
         </div>
         {action ? <div className="flex shrink-0 items-center gap-1.5">{action}</div> : null}
       </CardHeader>
-      <CardContent className={cn("space-y-3 pt-3 text-sm", contentClassName)}>{children}</CardContent>
+      <CardContent className={cn("space-y-3 pt-3 text-sm", contentClassName)}>
+        {children}
+      </CardContent>
     </Card>
   );
 }
@@ -109,10 +122,7 @@ export function SettingsLinkRow({ label, value }: { label: string; value: string
 export function ShopLiveStatusBadge({ live }: { live: boolean }) {
   const { t } = useI18n();
   return (
-    <Badge
-      variant={live ? "success" : "warning"}
-      className="gap-1.5 px-2.5 py-0.5 font-semibold"
-    >
+    <Badge variant={live ? "success" : "warning"} className="gap-1.5 px-2.5 py-0.5 font-semibold">
       <span className="size-1.5 rounded-full bg-current opacity-80" aria-hidden />
       {live ? t("settings.storefront.live") : t("settings.storefront.paused")}
     </Badge>
@@ -172,7 +182,11 @@ export function StorefrontTemplateOption({
       }
 
       setChoiceOpen(false);
-      toast.success(data.selection?.draft?.source === "saved" ? t("settings.storefront.savedDraftRestored") : t("settings.status.templateSelected"));
+      toast.success(
+        data.selection?.draft?.source === "saved"
+          ? t("settings.storefront.savedDraftRestored")
+          : t("settings.status.templateSelected"),
+      );
       onSelected?.(
         template.version.templateKey,
         data.selection?.draft?.hasUnpublishedChanges ?? true,
@@ -188,10 +202,10 @@ export function StorefrontTemplateOption({
   return (
     <div
       className={cn(
-        "flex items-center gap-4 rounded-xl border bg-card p-3.5 shadow-sm transition-[border-color,box-shadow] duration-200",
+        "flex items-center gap-4 rounded-xl border bg-card p-3.5 transition-colors duration-200",
         selected
           ? "border-primary/40 ring-1 ring-primary/15"
-          : "border-border hover:border-primary/30 hover:shadow-md",
+          : "border-border hover:border-primary/30",
       )}
     >
       <div
@@ -199,7 +213,7 @@ export function StorefrontTemplateOption({
         className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg border"
         style={{
           borderColor: "color-mix(in srgb, currentColor 8%, transparent)",
-          background: `linear-gradient(145deg, ${palette.bg} 0%, ${palette.muted} 55%, ${palette.primary} 140%)`,
+          backgroundColor: palette.bg,
         }}
       >
         <div
@@ -271,24 +285,54 @@ export function StorefrontTemplateOption({
         )}
       </div>
       <span className="sr-only">{t("settings.storefront.preview", { name: template.name })}</span>
-      <Dialog open={hasSavedDraft && choiceOpen} onOpenChange={(open) => !pending && setChoiceOpen(open)}>
+      <Dialog
+        open={hasSavedDraft && choiceOpen}
+        onOpenChange={(open) => !pending && setChoiceOpen(open)}
+      >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>{t("settings.storefront.switchTitle", { name: template.name })}</DialogTitle>
+            <DialogTitle>
+              {t("settings.storefront.switchTitle", { name: template.name })}
+            </DialogTitle>
             <DialogDescription>{t("settings.storefront.switchDescription")}</DialogDescription>
           </DialogHeader>
           <div className="grid gap-3 py-2">
-            <button className="rounded-xl border border-primary/35 bg-primary/[0.04] p-4 text-left transition-colors hover:bg-primary/[0.07] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" disabled={pending} onClick={() => void selectTemplate("resume")} type="button">
-              <span className="block text-sm font-semibold">{t("settings.storefront.continueDraft")}</span>
-              <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">{t("settings.storefront.continueDraftDescription")}</span>
+            <button
+              className="rounded-xl border border-primary/35 bg-primary/[0.04] p-4 text-left transition-colors hover:bg-primary/[0.07] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              disabled={pending}
+              onClick={() => void selectTemplate("resume")}
+              type="button"
+            >
+              <span className="block text-sm font-semibold">
+                {t("settings.storefront.continueDraft")}
+              </span>
+              <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">
+                {t("settings.storefront.continueDraftDescription")}
+              </span>
             </button>
-            <button className="rounded-xl border p-4 text-left transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" disabled={pending} onClick={() => void selectTemplate("clean")} type="button">
-              <span className="block text-sm font-semibold">{t("settings.storefront.startClean")}</span>
-              <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">{t("settings.storefront.startCleanDescription")}</span>
+            <button
+              className="rounded-xl border p-4 text-left transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              disabled={pending}
+              onClick={() => void selectTemplate("clean")}
+              type="button"
+            >
+              <span className="block text-sm font-semibold">
+                {t("settings.storefront.startClean")}
+              </span>
+              <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">
+                {t("settings.storefront.startCleanDescription")}
+              </span>
             </button>
           </div>
           <DialogFooter>
-            <Button disabled={pending} onClick={() => setChoiceOpen(false)} type="button" variant="outline">{t("common.cancel")}</Button>
+            <Button
+              disabled={pending}
+              onClick={() => setChoiceOpen(false)}
+              type="button"
+              variant="outline"
+            >
+              {t("common.cancel")}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

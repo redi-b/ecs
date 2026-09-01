@@ -21,6 +21,7 @@ type ConfirmIcon = "warning" | "trash" | "question" | "logout";
 type ConfirmDialogProps = {
   title: ReactNode;
   description: ReactNode;
+  /** @deprecated Context labels are no longer rendered in confirmation dialogs. */
   eyebrow?: string;
   cancelLabel?: string;
   confirmLabel: ReactNode;
@@ -45,7 +46,6 @@ const ICONS = {
 export function ConfirmDialog({
   title,
   description,
-  eyebrow,
   cancelLabel,
   confirmLabel,
   onConfirm,
@@ -90,11 +90,6 @@ export function ConfirmDialog({
               <Icon className="size-5" aria-hidden />
             </div>
             <div className="flex min-w-0 flex-1 flex-col gap-1 pt-0.5">
-              {eyebrow ? (
-                <p className="text-[11px] font-medium tracking-[0.06em] text-muted-foreground uppercase">
-                  {eyebrow}
-                </p>
-              ) : null}
               <AlertDialogTitle className="text-[1.05rem] font-medium leading-snug tracking-tight text-foreground">
                 {title}
               </AlertDialogTitle>

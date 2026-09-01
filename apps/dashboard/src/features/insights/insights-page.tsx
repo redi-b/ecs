@@ -35,7 +35,6 @@ export async function InsightsPage({
   return (
     <PageShell
       actions={result.ok ? <InsightsHeaderActions summary={result.summary} /> : null}
-      description={t(`insights.reports.descriptions.${report}`)}
       title={report === "overview" ? t("insights.title") : t(`insights.reports.${report}`)}
     >
       <InsightsReportNav />

@@ -6,12 +6,7 @@ import { ListSetupState } from "@/components/app/list-error-state";
 import { PageShell } from "@/components/app/page-shell";
 import { RefreshButton } from "@/components/app/refresh-button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import {
-  Empty,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyTitle,
-} from "@/components/ui/empty";
+import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
 import { OrderDetail } from "@/features/orders/order-detail";
 import { formatOrderReference } from "@/features/orders/order-domain";
 import { getTranslations } from "@/i18n/server";
@@ -56,8 +51,7 @@ export default async function MerchantOrderDetailPage({
           await getMerchantCustomer(
             {
               cookieHeader: cookieStore.toString(),
-              platformApiBaseUrl:
-                process.env.PLATFORM_API_BASE_URL ?? "http://localhost:3000",
+              platformApiBaseUrl: process.env.PLATFORM_API_BASE_URL ?? "http://localhost:3000",
               requestHost: requestHeaders.get("host"),
             },
             result.order.customerId,
@@ -68,7 +62,6 @@ export default async function MerchantOrderDetailPage({
   return (
     <PageShell
       actions={<RefreshButton />}
-      description={t("orders.detail.shellDescription")}
       title={
         result.ok
           ? `${t("table.headers.order")} ${formatOrderReference(result.order)}`

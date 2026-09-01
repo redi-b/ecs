@@ -26,8 +26,7 @@ export default async function BillingPage({ searchParams }: BillingPageProps) {
   const t = await getTranslations();
   const requestHeaders = await headers();
   const cookieHeader = (await cookies()).toString();
-  const requestHost =
-    requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host");
+  const requestHost = requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host");
   const platformApiBaseUrl = getPlatformApiBaseUrl(
     process.env.PLATFORM_API_BASE_URL ?? "http://localhost:3000",
   );
@@ -64,7 +63,7 @@ export default async function BillingPage({ searchParams }: BillingPageProps) {
 
   if (!access.ok) {
     return (
-      <PageShell description={t("billing.description")} title={t("billing.title")}>
+      <PageShell title={t("billing.title")}>
         <Alert variant="destructive">
           <AlertTitle>{t("billing.error.loadTitle")}</AlertTitle>
           <AlertDescription>{mapPlatformErrorMessage(access.message)}</AlertDescription>
@@ -104,7 +103,7 @@ export default async function BillingPage({ searchParams }: BillingPageProps) {
   });
 
   return (
-    <PageShell description={t("billing.description")} title={t("billing.title")}>
+    <PageShell title={t("billing.title")}>
       {!result.ok ? (
         <Alert variant="destructive">
           <AlertTitle>{t("billing.error.loadTitle")}</AlertTitle>

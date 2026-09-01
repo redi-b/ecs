@@ -1,14 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useId, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useId, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { useActorOrFallback } from "@/components/app/actor-context";
 import { ConfirmDialog } from "@/components/app/confirm-dialog";
 import { AppIcons } from "@/components/app/icons";
 import { UnsavedChangesDialog } from "@/components/app/unsaved-changes-dialog";
-import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes-guard";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -20,13 +19,11 @@ import {
   formatDateTime,
   formatSessionIp,
   getInitials,
-  parseUserAgent,
   PasswordField,
+  parseUserAgent,
 } from "@/features/settings/account-security-parts";
-import {
-  SectionIntro,
-  SettingsSectionBody,
-} from "@/features/settings/settings-sections";
+import { SectionIntro, SettingsSectionBody } from "@/features/settings/settings-sections";
+import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes-guard";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 
@@ -42,7 +39,6 @@ type AccountSession = {
   updatedAt: string;
   userAgent: string | null;
 };
-
 
 export function AccountSecurityPanel({
   email,
@@ -280,10 +276,7 @@ export function AccountSecurityPanel({
 
   return (
     <SettingsSectionBody>
-      <SectionIntro
-        description={t("settings.accountSecurity.intro")}
-        title={t("settings.accountSecurity.title")}
-      />
+      <SectionIntro title={t("settings.accountSecurity.title")} />
 
       <section className="overflow-hidden rounded-xl bg-card ring-1 ring-foreground/[0.08] shadow-[0_1px_2px_color-mix(in_oklch,var(--foreground)_4%,transparent)]">
         <div className="flex items-center gap-3.5 border-b border-border/60 bg-muted/20 px-4 py-3.5 sm:px-4">
@@ -291,7 +284,9 @@ export function AccountSecurityPanel({
             {initials}
           </div>
           <div className="min-w-0">
-            <p className="truncate text-sm font-semibold">{name.trim() || t("settings.accountSecurity.addName")}</p>
+            <p className="truncate text-sm font-semibold">
+              {name.trim() || t("settings.accountSecurity.addName")}
+            </p>
             <p className="truncate text-xs text-muted-foreground">{email}</p>
           </div>
         </div>
@@ -322,7 +317,9 @@ export function AccountSecurityPanel({
 
       <section className="overflow-hidden rounded-xl bg-card ring-1 ring-foreground/[0.08] shadow-[0_1px_2px_color-mix(in_oklch,var(--foreground)_4%,transparent)]">
         <div className="border-b border-border/60 px-4 py-2.5 sm:px-4">
-          <h3 className="text-sm font-medium tracking-tight">{t("settings.accountSecurity.password")}</h3>
+          <h3 className="text-sm font-medium tracking-tight">
+            {t("settings.accountSecurity.password")}
+          </h3>
           <p className="mt-0.5 text-xs text-muted-foreground">
             {t("settings.accountSecurity.passwordHint", { email })}
           </p>
@@ -377,7 +374,9 @@ export function AccountSecurityPanel({
               size="sm"
               type="button"
             >
-              {savingPassword ? t("settings.accountSecurity.updating") : t("settings.accountSecurity.updatePassword")}
+              {savingPassword
+                ? t("settings.accountSecurity.updating")
+                : t("settings.accountSecurity.updatePassword")}
             </Button>
           </div>
         </div>
@@ -386,7 +385,9 @@ export function AccountSecurityPanel({
       <section className="overflow-hidden rounded-xl bg-card ring-1 ring-foreground/[0.08] shadow-[0_1px_2px_color-mix(in_oklch,var(--foreground)_4%,transparent)]">
         <div className="flex flex-col gap-3 border-b border-border/60 px-4 py-2.5 sm:flex-row sm:items-start sm:justify-between sm:px-4">
           <div className="min-w-0">
-            <h3 className="text-sm font-medium tracking-tight">{t("settings.accountSecurity.devicesTitle")}</h3>
+            <h3 className="text-sm font-medium tracking-tight">
+              {t("settings.accountSecurity.devicesTitle")}
+            </h3>
             <p className="mt-0.5 text-xs text-muted-foreground">
               {t("settings.accountSecurity.devicesHint")}
             </p>
@@ -408,7 +409,11 @@ export function AccountSecurityPanel({
               <TooltipTrigger asChild>
                 <Button
                   aria-busy={loadingSessions}
-                  aria-label={loadingSessions ? t("settings.accountSecurity.refreshingSessions") : t("settings.accountSecurity.refreshSessions")}
+                  aria-label={
+                    loadingSessions
+                      ? t("settings.accountSecurity.refreshingSessions")
+                      : t("settings.accountSecurity.refreshSessions")
+                  }
                   className="rounded-full"
                   disabled={loadingSessions}
                   onClick={() => void loadSessions()}
@@ -420,7 +425,9 @@ export function AccountSecurityPanel({
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
-                {loadingSessions ? t("settings.accountSecurity.refreshing") : t("settings.accountSecurity.refreshSessions")}
+                {loadingSessions
+                  ? t("settings.accountSecurity.refreshing")
+                  : t("settings.accountSecurity.refreshSessions")}
               </TooltipContent>
             </Tooltip>
           </div>
@@ -433,16 +440,19 @@ export function AccountSecurityPanel({
             </Alert>
           ) : null}
           {loadingSessions ? (
-            <p className="px-1 py-3 text-sm text-muted-foreground">{t("settings.accountSecurity.loadingSessions")}</p>
+            <p className="px-1 py-3 text-sm text-muted-foreground">
+              {t("settings.accountSecurity.loadingSessions")}
+            </p>
           ) : sessions.length === 0 ? (
-            <p className="px-1 py-3 text-sm text-muted-foreground">{t("settings.accountSecurity.noSessions")}</p>
+            <p className="px-1 py-3 text-sm text-muted-foreground">
+              {t("settings.accountSecurity.noSessions")}
+            </p>
           ) : (
             <>
               <ul className="flex flex-col gap-3">
                 {sessions.slice(0, sessionsVisible).map((session) => {
                   const resolvedUa =
-                    session.userAgent ||
-                    (session.isCurrent ? browserUserAgent : null);
+                    session.userAgent || (session.isCurrent ? browserUserAgent : null);
                   const info = parseUserAgent(resolvedUa, t);
                   const ipLabel = formatSessionIp(session.ipAddress, t);
                   return (
@@ -462,7 +472,9 @@ export function AccountSecurityPanel({
                             <div className="flex flex-wrap items-center gap-2">
                               <p className="text-sm font-semibold">{info.deviceLabel}</p>
                               {session.isCurrent ? (
-                                <Badge variant="secondary">{t("settings.accountSecurity.thisDevice")}</Badge>
+                                <Badge variant="secondary">
+                                  {t("settings.accountSecurity.thisDevice")}
+                                </Badge>
                               ) : null}
                             </div>
                             <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-muted-foreground">
@@ -529,9 +541,7 @@ export function AccountSecurityPanel({
                 <div className="pt-1">
                   <Button
                     className="w-full rounded-full sm:w-auto"
-                    onClick={() =>
-                      setSessionsVisible((count) => count + SESSIONS_PAGE_SIZE)
-                    }
+                    onClick={() => setSessionsVisible((count) => count + SESSIONS_PAGE_SIZE)}
                     size="sm"
                     type="button"
                     variant="outline"
@@ -563,13 +573,12 @@ export function AccountSecurityPanel({
         description={
           pendingRevoke
             ? t("settings.accountSecurity.signOutDesc", {
-                device: `${parseUserAgent(
-                  pendingRevoke.userAgent ||
-                    (pendingRevoke.isCurrent ? browserUserAgent : null),
-                  t,
-                ).deviceLabel}${
-                  pendingRevoke.ipAddress ? ` (${pendingRevoke.ipAddress})` : ""
-                }`,
+                device: `${
+                  parseUserAgent(
+                    pendingRevoke.userAgent || (pendingRevoke.isCurrent ? browserUserAgent : null),
+                    t,
+                  ).deviceLabel
+                }${pendingRevoke.ipAddress ? ` (${pendingRevoke.ipAddress})` : ""}`,
               })
             : t("settings.accountSecurity.signOutDescGeneric")
         }
@@ -608,11 +617,7 @@ export function AccountSecurityPanel({
         tone="destructive"
       />
 
-      <UnsavedChangesDialog
-        onLeave={confirmLeave}
-        onStay={cancelLeave}
-        open={leaveDialogOpen}
-      />
+      <UnsavedChangesDialog onLeave={confirmLeave} onStay={cancelLeave} open={leaveDialogOpen} />
     </SettingsSectionBody>
   );
 }

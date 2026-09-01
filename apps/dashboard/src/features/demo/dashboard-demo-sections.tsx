@@ -52,7 +52,6 @@ export async function DemoProducts() {
           </DemoActionButton>
         </>
       }
-      description={t("products.description")}
       title={t("products.title")}
     >
       <ListSummary
@@ -89,7 +88,6 @@ export async function DemoOrders() {
           </DemoActionButton>
         </>
       }
-      description={t("orders.description")}
       title={t("orders.title")}
     >
       <ListSummary count={demoOrders.length} filtered={false} page={1} pageSize={20} />
@@ -130,7 +128,7 @@ export async function DemoStorefront() {
   const demoHost = process.env.STOREFRONT_DEMO_HOST?.trim() || "demo.lvh.me";
   const demoProtocol = process.env.NODE_ENV === "production" ? "https" : "http";
   return (
-    <PageShell description={t("editor.description")} title={t("editor.title")}>
+    <PageShell title={t("editor.title")}>
       <div className="rounded-2xl border border-border/80 bg-card p-6">
         <p className="font-medium">Luvia</p>
         <p className="mt-1 text-sm text-muted-foreground">

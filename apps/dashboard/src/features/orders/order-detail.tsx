@@ -1,6 +1,4 @@
 import type { MerchantOrder } from "@ecs/contracts";
-import Link from "@/components/app/link";
-
 import {
   DetailActivityList,
   DetailField,
@@ -10,6 +8,8 @@ import {
   DetailSection,
   DetailStepTrack,
 } from "@/components/app/detail-surface";
+import Link from "@/components/app/link";
+import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -18,9 +18,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 import { OrderActions } from "@/features/orders/order-actions";
-import { OrderPaymentCell } from "@/features/orders/order-table-cells";
 import {
   formatOrderDateTime,
   formatOrderMoney,
@@ -36,6 +34,7 @@ import {
   getPaymentLabel,
   getPaymentStatusLabel,
 } from "@/features/orders/order-domain";
+import { OrderPaymentCell } from "@/features/orders/order-table-cells";
 import type { MessageKey } from "@/i18n/messages";
 import { getTranslations } from "@/i18n/server";
 import { getTenantScopedPath } from "@/lib/dashboard-tenant-context";
@@ -52,10 +51,7 @@ type OrderDetailProps = {
 
 type Translate = (key: MessageKey, values?: Record<string, string | number | Date>) => string;
 
-function settlementMethodLabel(
-  method: string,
-  t: Translate,
-): string {
+function settlementMethodLabel(method: string, t: Translate): string {
   switch (method) {
     case "cash":
       return t("orders.settlement.cash");
@@ -202,7 +198,7 @@ export async function OrderDetail({
           </div>
 
           <div className="space-y-2 border-t border-border/60 pt-4">
-            <p className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
+            <p className="text-xs font-medium text-muted-foreground">
               {t("orders.detail.fulfillmentTrack")}
             </p>
             <DetailStepTrack steps={steps} />
@@ -464,10 +460,7 @@ export async function OrderDetail({
               />
               <DetailField label={t("orders.detail.address")} value={addressLine || null} />
               <DetailField label={t("orders.detail.landmark")} value={order.delivery?.landmark} />
-              <DetailField
-                label={t("orders.detail.customerNotes")}
-                value={order.delivery?.notes}
-              />
+              <DetailField label={t("orders.detail.customerNotes")} value={order.delivery?.notes} />
             </DetailFieldGrid>
           </DetailSection>
 

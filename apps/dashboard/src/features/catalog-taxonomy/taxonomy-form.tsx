@@ -139,15 +139,14 @@ export function TaxonomyForm({
               </FieldDescription>
             </Field>
 
-            <Field>
+            <div>
               <input name="mediaUrl" type="hidden" value={mediaUrl} />
               <MediaImageReferenceControl
                 label={t("taxonomy.form.mediaLabel")}
                 onChange={(value) => setMediaUrl(value ?? "")}
                 value={mediaUrl}
               />
-              <FieldDescription>{t("taxonomy.form.mediaDescription")}</FieldDescription>
-            </Field>
+            </div>
 
             <div className="flex justify-end">
               <Button type="submit">{submitLabel}</Button>

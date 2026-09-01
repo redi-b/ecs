@@ -4,7 +4,7 @@ import { useId, useState } from "react";
 
 import { AppIcons } from "@/components/app/icons";
 import { Button } from "@/components/ui/button";
-import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
+import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import {
   InputGroup,
   InputGroupAddon,
@@ -113,7 +113,6 @@ export function SignInForm({
               </InputGroupButton>
             </InputGroupAddon>
           </InputGroup>
-          <FieldDescription>{t("auth.passwordHelp")}</FieldDescription>
         </Field>
         {errorMessage ? (
           <Field data-invalid>
@@ -123,7 +122,7 @@ export function SignInForm({
       </FieldGroup>
       <Button
         aria-busy={isSubmitting}
-        className="mt-1 h-11 w-full rounded-full text-sm font-semibold shadow-[0_1px_0_color-mix(in_oklch,white_18%,transparent)_inset]"
+        className="mt-1 h-11 w-full rounded-full text-sm font-semibold"
         disabled={isSubmitting}
         type="submit"
       >

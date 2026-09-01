@@ -20,10 +20,7 @@ export default async function MerchantProductCategoryCreatePage({
   const t = await getTranslations();
 
   return (
-    <PageShell
-      description={t("categories.create.shellDescription")}
-      title={t("categories.create.shellTitle")}
-    >
+    <PageShell title={t("categories.create.shellTitle")}>
       <TaxonomyForm
         action={getTenantScopedPath(dashboardRoutes.productCategoryCreateAction, tenantId)}
         entityLabel="category"

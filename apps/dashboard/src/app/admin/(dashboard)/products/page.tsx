@@ -78,7 +78,6 @@ export default async function MerchantProductsPage({ searchParams }: MerchantPro
           />
         </>
       }
-      description={t("products.description")}
       title={t("products.title")}
     >
       {productNotice ? (

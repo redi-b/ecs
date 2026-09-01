@@ -1,9 +1,8 @@
 "use client";
 
-import Link from "@/components/app/link";
 import type { ReactNode } from "react";
-
 import { AppIcons } from "@/components/app/icons";
+import Link from "@/components/app/link";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 
@@ -36,6 +35,7 @@ type PaginationBarProps = {
   totalPages: number;
   onPageChange?: ((page: number) => void) | undefined;
   getPageHref?: ((page: number) => string) | undefined;
+  isPending?: boolean;
   summary?: ReactNode;
 };
 
@@ -48,6 +48,7 @@ export function PaginationBar({
   totalPages,
   onPageChange,
   getPageHref,
+  isPending = false,
   summary,
 }: PaginationBarProps) {
   const { t, formatNumber } = useI18n();
@@ -58,7 +59,7 @@ export function PaginationBar({
   const canNext = current < total;
 
   function go(next: number) {
-    if (next < 1 || next > total) return;
+    if (isPending || next < 1 || next > total) return;
     onPageChange?.(next);
   }
 
@@ -69,7 +70,8 @@ export function PaginationBar({
         className,
       )}
     >
-      <p className="text-sm text-muted-foreground">
+      <p aria-live="polite" className="flex items-center gap-2 text-sm text-muted-foreground">
+        {isPending ? <AppIcons.loader aria-hidden className="size-3.5 animate-spin" /> : null}
         {summary ?? (
           <span>
             {t("common.pagination.pageOf", {
@@ -92,6 +94,7 @@ export function PaginationBar({
           disabled={!canPrev}
           href={canPrev ? getPageHref?.(current - 1) : undefined}
           onClick={canPrev ? () => go(current - 1) : undefined}
+          pending={isPending}
         >
           <AppIcons.arrowLeft className="size-4" />
         </PageControl>
@@ -103,7 +106,7 @@ export function PaginationBar({
                 <span
                   aria-hidden
                   className="grid size-8 place-items-center text-xs text-muted-foreground"
-                  key={`ellipsis-${index}`}
+                  key={`ellipsis-${String(items[index - 1])}-${String(items[index + 1])}`}
                 >
                   …
                 </span>
@@ -118,7 +121,6 @@ export function PaginationBar({
               return (
                 <span
                   aria-current="page"
-                  aria-label={label}
                   className={cn(
                     controlClass,
                     "bg-primary text-primary-foreground shadow-sm ring-1 ring-primary/20",
@@ -127,6 +129,24 @@ export function PaginationBar({
                 >
                   {formatNumber(item)}
                 </span>
+              );
+            }
+
+            if (onPageChange) {
+              return (
+                <button
+                  aria-label={label}
+                  className={cn(
+                    controlClass,
+                    "text-muted-foreground hover:bg-background hover:text-foreground",
+                  )}
+                  disabled={isPending}
+                  key={item}
+                  onClick={() => go(item)}
+                  type="button"
+                >
+                  {formatNumber(item)}
+                </button>
               );
             }
 
@@ -168,6 +188,7 @@ export function PaginationBar({
           disabled={!canNext}
           href={canNext ? getPageHref?.(current + 1) : undefined}
           onClick={canNext ? () => go(current + 1) : undefined}
+          pending={isPending}
         >
           <AppIcons.arrowRight className="size-4" />
         </PageControl>
@@ -182,14 +203,16 @@ function PageControl({
   disabled,
   href,
   onClick,
+  pending = false,
 }: {
   ariaLabel: string;
   children: ReactNode;
   disabled: boolean;
   href?: string | undefined;
   onClick?: (() => void) | undefined;
+  pending?: boolean;
 }) {
-  if (!disabled && href) {
+  if (!disabled && !pending && href && !onClick) {
     return (
       <Link
         aria-label={ariaLabel}
@@ -211,7 +234,7 @@ function PageControl({
         controlClass,
         "border bg-background text-muted-foreground hover:bg-muted hover:text-foreground",
       )}
-      disabled={disabled}
+      disabled={disabled || pending}
       onClick={onClick}
       type="button"
     >

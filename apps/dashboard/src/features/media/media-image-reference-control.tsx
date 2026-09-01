@@ -40,9 +40,6 @@ export function MediaImageReferenceControl({
         </div>
         <div className="min-w-0 flex-1">
           <div className="text-sm font-medium">{label}</div>
-          <div className="text-xs text-pretty text-muted-foreground">
-            {value ? t("editor.media.referenceSet") : t("editor.media.uploadOrChoose")}
-          </div>
         </div>
         {value ? (
           <Button
