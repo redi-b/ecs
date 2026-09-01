@@ -1,3 +1,4 @@
+import { productDescriptionToText } from "@ecs/content";
 import type { StoreProduct } from "./commerce/types.js";
 import type { StorefrontSeo } from "./seo.js";
 
@@ -24,7 +25,7 @@ export function buildProductStructuredData(input: {
     "@context": "https://schema.org",
     "@type": "Product",
     name: product.title.trim(),
-    description: product.description?.trim() || undefined,
+    description: productDescriptionToText(product.description) || undefined,
     image: seo.imageUrl ? [seo.imageUrl] : undefined,
     sku: selectedVariant?.sku?.trim() || undefined,
     offers: hasOffer

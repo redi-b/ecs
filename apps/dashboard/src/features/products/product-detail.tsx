@@ -1,5 +1,6 @@
 "use client";
 
+import { productDescriptionToText } from "@ecs/content";
 import type {
   MerchantProduct,
   MerchantProductCategory,
@@ -90,7 +91,7 @@ export function ProductDetail({ action, product, readOnly = false, tenantId }: P
     setLightboxIndex(index >= 0 ? index : 0);
   }
 
-  const description = product.description?.trim() ?? "";
+  const description = productDescriptionToText(product.description);
   const descriptionLong = description.length > DESCRIPTION_PREVIEW_CHARS;
   const descriptionText =
     !descriptionLong || descriptionExpanded
@@ -497,10 +498,7 @@ function TaxonomyLink({
   if (readOnly) return <span className={className}>{children}</span>;
 
   return (
-    <Link
-      className={cn(className, "hover:bg-primary/10 hover:text-primary")}
-      href={href}
-    >
+    <Link className={cn(className, "hover:bg-primary/10 hover:text-primary")} href={href}>
       {children}
     </Link>
   );

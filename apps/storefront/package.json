@@ -11,6 +11,7 @@
     "preview": "ASTRO_TELEMETRY_DISABLED=1 astro preview --host 0.0.0.0 --port 4321"
   },
   "dependencies": {
+    "@ecs/content": "workspace:*",
     "@astrojs/check": "^0.9.9",
     "@astrojs/node": "^11.0.2",
     "@ecs/contracts": "workspace:*",

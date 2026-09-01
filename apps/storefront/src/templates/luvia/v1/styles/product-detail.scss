@@ -58,6 +58,12 @@
 .lv-product-accordions details[open] summary img { transform: rotate(-90deg); }
 .lv-product-accordions details > div { padding-top: 15px; color: color-mix(in srgb,var(--lv-ink) 62%,var(--lv-bg)); font-size: 14px; line-height: 1.45; }
 .lv-product-accordions details p { margin: 0; }
+.lv-rich-text > * + * { margin-top: 10px; }
+.lv-rich-text :is(ul,ol) { margin: 8px 0 0; padding-left: 22px; }
+.lv-rich-text ul { list-style: disc; }
+.lv-rich-text ol { list-style: decimal; }
+.lv-rich-text blockquote { margin: 10px 0 0; padding-left: 12px; border-left: 2px solid var(--lv-green); }
+.lv-rich-text a { color: var(--lv-green); text-underline-offset: 3px; }
 .lv-related { width: calc(100% - 120px); max-width: 1392px; margin: 92px auto 0; }
 .lv-related header { margin-bottom: 28px; display: flex; align-items: center; justify-content: space-between; }
 .lv-related h2 { margin: 0; font: 400 38px/1 "GC Molecule Demo", Arial, sans-serif; letter-spacing: -.03em; }

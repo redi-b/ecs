@@ -1,4 +1,5 @@
 ---
+import { sanitizeProductDescription } from "@ecs/content";
 import StoreShell from "../../components/shell/StoreShell.astro";
 import type { StoreProduct, StoreProductVariant } from "../../lib/commerce/types";
 import { formatMoney } from "../../lib/money";
@@ -41,6 +42,7 @@ const defaultVariant: StoreProductVariant | null =
   product?.variants.find((variant: StoreProductVariant) => variant.inStock) ??
   product?.variants[0] ??
   null;
+const descriptionHtml = sanitizeProductDescription(product?.description);
 ---
 
 {
@@ -110,7 +112,7 @@ const defaultVariant: StoreProductVariant | null =
               )}
             </p>
           </div>
-          {product.description && <p class="sf-lede" style="margin-bottom:0">{product.description}</p>}
+          {descriptionHtml && <div class="sf-lede sf-rich-text" style="margin-bottom:0" set:html={descriptionHtml} />}
 
           <form method="post" action="/actions/cart/add" class="sf-stack" style="margin-top:0.5rem">
             {product.variants.length > 1 ? (

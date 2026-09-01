@@ -7,6 +7,11 @@ import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import type { z } from "zod";
+import {
+  DialogStepPanel,
+  DialogStepRail,
+  getDialogStepStatus,
+} from "@/components/app/dialog-step-rail";
 import { AppIcons } from "@/components/app/icons";
 import { UnsavedChangesDialog } from "@/components/app/unsaved-changes-dialog";
 import { Badge } from "@/components/ui/badge";
@@ -21,6 +26,7 @@ import {
 import { Field, FieldDescription, FieldLabel, FieldLegend, FieldSet } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
+import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import {
   Select,
   SelectContent,
@@ -31,14 +37,8 @@ import {
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
-import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { MediaUploadField } from "@/features/media/media-upload-field";
-import {
-  DialogStepPanel,
-  DialogStepRail,
-  getDialogStepStatus,
-} from "@/components/app/dialog-step-rail";
 import {
   CategoryPicker,
   CollectionPicker,
@@ -54,9 +54,9 @@ import {
 } from "@/features/products/product-form-sections";
 import {
   getDefaultSkuPrefix,
-  getMediaUrls,
   getErrorMessage,
   getFirstInvalidFieldForStep,
+  getMediaUrls,
   getProductDefaultValues,
   getProductMutationError,
   getProductPayload,
@@ -168,15 +168,16 @@ export function ProductForm({
           method: "POST",
         },
       );
-      if (!mediaResponse.ok)
-        toast.warning(t("products.composer.mediaSyncWarn"));
+      if (!mediaResponse.ok) toast.warning(t("products.composer.mediaSyncWarn"));
 
       return data.product;
     },
     onSuccess: async (savedProduct) => {
       await queryClient.invalidateQueries({ queryKey: ["products"] });
       await queryClient.invalidateQueries({ queryKey: ["product", savedProduct.id] });
-      toast.success(product ? t("products.composer.toastUpdated") : t("products.composer.toastCreated"));
+      toast.success(
+        product ? t("products.composer.toastUpdated") : t("products.composer.toastCreated"),
+      );
       if (onClose) {
         onClose();
       } else {
@@ -188,8 +189,9 @@ export function ProductForm({
   const HandleLockIcon = isHandleLocked ? AppIcons.lock : AppIcons.lockUnlock;
   const formIsDirty = useStore(form.store, (state) => state.isDirty);
   const isDirty = formIsDirty && !submitMutation.isSuccess;
-  const { leaveDialogOpen, requestLeave, confirmLeave, cancelLeave } =
-    useUnsavedChangesGuard(isDirty && open);
+  const { leaveDialogOpen, requestLeave, confirmLeave, cancelLeave } = useUnsavedChangesGuard(
+    isDirty && open,
+  );
 
   function closeComposer() {
     requestLeave(() => {
@@ -345,7 +347,9 @@ export function ProductForm({
                   <form.Subscribe selector={(state) => state.values.status}>
                     {(status) => (
                       <Badge variant={status === "published" ? "default" : "secondary"}>
-                        {status === "published" ? t("products.composer.published") : t("products.composer.draft")}
+                        {status === "published"
+                          ? t("products.composer.published")
+                          : t("products.composer.draft")}
                       </Badge>
                     )}
                   </form.Subscribe>
@@ -375,7 +379,9 @@ export function ProductForm({
                 <form.Subscribe selector={(state) => state.values.status}>
                   {(status) => (
                     <Badge variant={status === "published" ? "default" : "secondary"}>
-                      {status === "published" ? t("products.composer.published") : t("products.composer.draft")}
+                      {status === "published"
+                        ? t("products.composer.published")
+                        : t("products.composer.draft")}
                     </Badge>
                   )}
                 </form.Subscribe>
@@ -394,286 +400,322 @@ export function ProductForm({
                 <div className="mx-auto flex min-h-full w-full max-w-4xl flex-col gap-6 px-4 py-6 sm:gap-8 sm:px-5 sm:py-10 md:px-8">
                   {notice}
                   <DialogStepPanel stepKey={activeStep}>
-                  {activeStep === "details" ? (
-                    <section className="flex flex-col gap-5">
-                      <ComposerSection
-                        description={t("products.composer.basicsDesc")}
-                        title={t("products.composer.basicsTitle")}
-                      />
+                    {activeStep === "details" ? (
+                      <section className="flex flex-col gap-5">
+                        <ComposerSection
+                          description={t("products.composer.basicsDesc")}
+                          title={t("products.composer.basicsTitle")}
+                        />
 
-                      <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-                        <form.Field
-                          name="title"
-                          validators={{
-                            onBlur: ({ value }) => validateTitle(value, t),
-                            onSubmit: ({ value }) => validateTitle(value, t),
-                          }}
-                        >
-                          {(field) => (
-                            <Field data-invalid={hasFieldError(field)}>
-                              <FieldLabel htmlFor={field.name}>
-                                {t("products.composer.fieldTitle")}
-                              </FieldLabel>
-                              <Input
-                                aria-invalid={hasFieldError(field)}
-                                id={field.name}
-                                name={field.name}
-                                onBlur={field.handleBlur}
-                                onChange={(event) => updateTitle(event.target.value)}
-                                placeholder={t("products.composer.titlePlaceholder")}
-                                value={field.state.value}
-                              />
-                              <FieldError
-                                errors={field.state.meta.errors}
-                                touched={field.state.meta.isTouched}
-                              />
-                            </Field>
-                          )}
-                        </form.Field>
-
-                        <form.Field name="handle">
-                          {(field) => (
-                            <Field>
-                              <FieldLabel htmlFor={field.name}>
-                                {t("products.composer.fieldHandle")}
-                              </FieldLabel>
-                              <InputGroup className="pr-1">
-                                <InputGroupInput
-                                  id={field.name}
-                                  name={field.name}
-                                  onBlur={field.handleBlur}
-                                  onChange={(event) => {
-                                    const nextHandle = slugifyProductHandle(event.target.value);
-                                    const currentSkuPrefix = form.state.values.skuPrefix.trim();
-                                    const shouldUpdateSkuPrefix =
-                                      !product &&
-                                      (!currentSkuPrefix ||
-                                        currentSkuPrefix ===
-                                          getDefaultSkuPrefix(field.state.value) ||
-                                        currentSkuPrefix ===
-                                          getDefaultSkuPrefix(form.state.values.title));
-
-                                    field.handleChange(nextHandle);
-
-                                    if (shouldUpdateSkuPrefix) {
-                                      form.setFieldValue(
-                                        "skuPrefix",
-                                        getDefaultSkuPrefix(nextHandle),
-                                      );
-                                    }
-                                  }}
-                                  placeholder={t("products.composer.handlePlaceholder")}
-                                  readOnly={isHandleLocked}
-                                  value={field.state.value}
-                                />
-                                <InputGroupAddon align="inline-end" className="gap-1 py-0 pr-0">
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <Button
-                                        aria-label={
-                                          isHandleLocked
-                                            ? t("products.composer.unlockHandle")
-                                            : t("products.composer.lockHandle")
-                                        }
-                                        className="rounded-full"
-                                        onClick={() => setIsHandleLocked((current) => !current)}
-                                        size="icon-sm"
-                                        type="button"
-                                        variant="ghost"
-                                      >
-                                        <HandleLockIcon data-icon="inline-start" />
-                                      </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent side="top" sideOffset={6}>
-                                      {isHandleLocked
-                                        ? t("products.composer.unlockHandle")
-                                        : t("products.composer.lockHandle")}
-                                    </TooltipContent>
-                                  </Tooltip>
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <Button
-                                        aria-label={t("products.composer.regenerateHandle")}
-                                        className="rounded-full"
-                                        onClick={regenerateHandle}
-                                        size="icon-sm"
-                                        type="button"
-                                        variant="ghost"
-                                      >
-                                        <AppIcons.refresh data-icon="inline-start" />
-                                      </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent side="top" sideOffset={6}>
-                                      {t("products.composer.regenerateFromTitle")}
-                                    </TooltipContent>
-                                  </Tooltip>
-                                </InputGroupAddon>
-                              </InputGroup>
-                              <FieldDescription>
-                                {isHandleLocked
-                                  ? t("products.composer.autoHandle")
-                                  : t("products.composer.customHandle")}
-                              </FieldDescription>
-                            </Field>
-                          )}
-                        </form.Field>
-                      </div>
-
-                      <form.Field name="description">
-                        {(field) => (
-                          <Field>
-                            <FieldLabel htmlFor={field.name}>
-                              {t("products.composer.fieldDescription")}
-                            </FieldLabel>
-                            <Textarea
-                              className="min-h-28"
-                              id={field.name}
-                              name={field.name}
-                              onBlur={field.handleBlur}
-                              onChange={(event) => field.handleChange(event.target.value)}
-                              placeholder={t("products.composer.descriptionPlaceholder")}
-                              value={field.state.value}
-                            />
-                          </Field>
-                        )}
-                      </form.Field>
-
-                      <Separator />
-
-                      <ComposerSection
-                        description={t("products.composer.mediaDesc")}
-                        title={t("products.composer.mediaTitle")}
-                      />
-
-                      <form.Subscribe
-                        selector={(state) =>
-                          [state.values.thumbnail, state.values.imageUrls] as const
-                        }
-                      >
-                        {([thumbnail, imageUrls]) => (
-                          <MediaUploadField
-                            imageUrls={getMediaUrls(thumbnail, imageUrls)}
-                            onImageUrlsChange={(urls) =>
-                              form.setFieldValue("imageUrls", urls.join("\n"))
-                            }
-                            onThumbnailChange={(url) => form.setFieldValue("thumbnail", url)}
-                            thumbnail={thumbnail}
-                          />
-                        )}
-                      </form.Subscribe>
-                    </section>
-                  ) : null}
-
-                  {activeStep === "organize" ? (
-                    <section className="flex flex-col gap-5">
-                      <ComposerSection
-                        description={t("products.composer.organizeDesc")}
-                        title={t("products.composer.organizeTitle")}
-                      />
-
-                      <div className="grid gap-4 md:grid-cols-2">
-                        <form.Field name="status">
-                          {(field) => (
-                            <Field>
-                              <FieldLabel htmlFor={field.name}>
-                                {t("products.composer.fieldStatus")}
-                              </FieldLabel>
-                              <Select
-                                onValueChange={(value) =>
-                                  field.handleChange(value === "published" ? "published" : "draft")
-                                }
-                                value={field.state.value}
-                              >
-                                <SelectTrigger className="w-full" id={field.name}>
-                                  <SelectValue placeholder={t("products.composer.selectStatus")} />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectGroup>
-                                    <SelectItem value="draft">
-                                      {t("products.composer.draft")}
-                                    </SelectItem>
-                                    <SelectItem value="published">
-                                      {t("products.composer.published")}
-                                    </SelectItem>
-                                  </SelectGroup>
-                                </SelectContent>
-                              </Select>
-                            </Field>
-                          )}
-                        </form.Field>
-
-                        <form.Field name="collectionId">
-                          {(field) => (
-                            <Field>
-                              <FieldLabel>{t("products.composer.fieldCollection")}</FieldLabel>
-                              <CollectionPicker
-                                collections={collections}
-                                onChange={field.handleChange}
-                                selectedCollection={collections.find(
-                                  (collection) => collection.id === field.state.value,
-                                )}
-                                value={field.state.value}
-                              />
-                            </Field>
-                          )}
-                        </form.Field>
-                      </div>
-
-                      <form.Field name="categoryIds">
-                        {(field) => (
-                          <FieldSet>
-                            <FieldLegend variant="label">
-                              {t("products.composer.fieldCategories")}
-                            </FieldLegend>
-                            <FieldDescription>
-                              {t("products.composer.categoriesHelp")}
-                            </FieldDescription>
-                            <CategoryPicker
-                              categories={categories}
-                              onChange={field.handleChange}
-                              selectedCategories={categories.filter((category) =>
-                                field.state.value.includes(category.id),
-                              )}
-                              value={field.state.value}
-                            />
-                          </FieldSet>
-                        )}
-                      </form.Field>
-                    </section>
-                  ) : null}
-
-                  {activeStep === "variants" ? (
-                    <section className="flex flex-col gap-5">
-                      <ComposerSection
-                        description={t("products.composer.pricingDesc")}
-                        title={t("products.composer.pricingTitle")}
-                      />
-
-                      <div className="rounded-2xl border bg-background p-4">
-                        <div className="mb-4 flex flex-col gap-1">
-                          <h3 className="text-sm font-medium">
-                            {t("products.composer.defaultSellingTitle")}
-                          </h3>
-                          <p className="text-sm text-muted-foreground">
-                            {t("products.composer.defaultSellingDesc")}
-                          </p>
-                        </div>
-                        <div className="grid gap-4 md:grid-cols-4">
+                        <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
                           <form.Field
-                            name="priceAmount"
+                            name="title"
                             validators={{
-                              onBlur: ({ value }) => validatePriceAmount(value, t),
-                              onSubmit: ({ value }) => validatePriceAmount(value, t),
+                              onBlur: ({ value }) => validateTitle(value, t),
+                              onSubmit: ({ value }) => validateTitle(value, t),
                             }}
                           >
                             {(field) => (
                               <Field data-invalid={hasFieldError(field)}>
                                 <FieldLabel htmlFor={field.name}>
-                                  {t("products.composer.fieldPrice")}
+                                  {t("products.composer.fieldTitle")}
                                 </FieldLabel>
-                                <InputGroup>
-                                  <InputGroupAddon>ETB</InputGroupAddon>
+                                <Input
+                                  aria-invalid={hasFieldError(field)}
+                                  id={field.name}
+                                  name={field.name}
+                                  onBlur={field.handleBlur}
+                                  onChange={(event) => updateTitle(event.target.value)}
+                                  placeholder={t("products.composer.titlePlaceholder")}
+                                  value={field.state.value}
+                                />
+                                <FieldError
+                                  errors={field.state.meta.errors}
+                                  touched={field.state.meta.isTouched}
+                                />
+                              </Field>
+                            )}
+                          </form.Field>
+
+                          <form.Field name="handle">
+                            {(field) => (
+                              <Field>
+                                <FieldLabel htmlFor={field.name}>
+                                  {t("products.composer.fieldHandle")}
+                                </FieldLabel>
+                                <InputGroup className="pr-1">
                                   <InputGroupInput
+                                    id={field.name}
+                                    name={field.name}
+                                    onBlur={field.handleBlur}
+                                    onChange={(event) => {
+                                      const nextHandle = slugifyProductHandle(event.target.value);
+                                      const currentSkuPrefix = form.state.values.skuPrefix.trim();
+                                      const shouldUpdateSkuPrefix =
+                                        !product &&
+                                        (!currentSkuPrefix ||
+                                          currentSkuPrefix ===
+                                            getDefaultSkuPrefix(field.state.value) ||
+                                          currentSkuPrefix ===
+                                            getDefaultSkuPrefix(form.state.values.title));
+
+                                      field.handleChange(nextHandle);
+
+                                      if (shouldUpdateSkuPrefix) {
+                                        form.setFieldValue(
+                                          "skuPrefix",
+                                          getDefaultSkuPrefix(nextHandle),
+                                        );
+                                      }
+                                    }}
+                                    placeholder={t("products.composer.handlePlaceholder")}
+                                    readOnly={isHandleLocked}
+                                    value={field.state.value}
+                                  />
+                                  <InputGroupAddon align="inline-end" className="gap-1 py-0 pr-0">
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <Button
+                                          aria-label={
+                                            isHandleLocked
+                                              ? t("products.composer.unlockHandle")
+                                              : t("products.composer.lockHandle")
+                                          }
+                                          className="rounded-full"
+                                          onClick={() => setIsHandleLocked((current) => !current)}
+                                          size="icon-sm"
+                                          type="button"
+                                          variant="ghost"
+                                        >
+                                          <HandleLockIcon data-icon="inline-start" />
+                                        </Button>
+                                      </TooltipTrigger>
+                                      <TooltipContent side="top" sideOffset={6}>
+                                        {isHandleLocked
+                                          ? t("products.composer.unlockHandle")
+                                          : t("products.composer.lockHandle")}
+                                      </TooltipContent>
+                                    </Tooltip>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <Button
+                                          aria-label={t("products.composer.regenerateHandle")}
+                                          className="rounded-full"
+                                          onClick={regenerateHandle}
+                                          size="icon-sm"
+                                          type="button"
+                                          variant="ghost"
+                                        >
+                                          <AppIcons.refresh data-icon="inline-start" />
+                                        </Button>
+                                      </TooltipTrigger>
+                                      <TooltipContent side="top" sideOffset={6}>
+                                        {t("products.composer.regenerateFromTitle")}
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </InputGroupAddon>
+                                </InputGroup>
+                                <FieldDescription>
+                                  {isHandleLocked
+                                    ? t("products.composer.autoHandle")
+                                    : t("products.composer.customHandle")}
+                                </FieldDescription>
+                              </Field>
+                            )}
+                          </form.Field>
+                        </div>
+
+                        <form.Field name="description">
+                          {(field) => (
+                            <Field>
+                              <FieldLabel htmlFor={field.name}>
+                                {t("products.composer.fieldDescription")}
+                              </FieldLabel>
+                              <RichTextEditor
+                                aria-label={t("products.composer.fieldDescription")}
+                                id={field.name}
+                                onBlur={field.handleBlur}
+                                onChange={field.handleChange}
+                                placeholder={t("products.composer.descriptionPlaceholder")}
+                                value={field.state.value}
+                              />
+                            </Field>
+                          )}
+                        </form.Field>
+
+                        <Separator />
+
+                        <ComposerSection
+                          description={t("products.composer.mediaDesc")}
+                          title={t("products.composer.mediaTitle")}
+                        />
+
+                        <form.Subscribe
+                          selector={(state) =>
+                            [state.values.thumbnail, state.values.imageUrls] as const
+                          }
+                        >
+                          {([thumbnail, imageUrls]) => (
+                            <MediaUploadField
+                              imageUrls={getMediaUrls(thumbnail, imageUrls)}
+                              onImageUrlsChange={(urls) =>
+                                form.setFieldValue("imageUrls", urls.join("\n"))
+                              }
+                              onThumbnailChange={(url) => form.setFieldValue("thumbnail", url)}
+                              thumbnail={thumbnail}
+                            />
+                          )}
+                        </form.Subscribe>
+                      </section>
+                    ) : null}
+
+                    {activeStep === "organize" ? (
+                      <section className="flex flex-col gap-5">
+                        <ComposerSection
+                          description={t("products.composer.organizeDesc")}
+                          title={t("products.composer.organizeTitle")}
+                        />
+
+                        <div className="grid gap-4 md:grid-cols-2">
+                          <form.Field name="status">
+                            {(field) => (
+                              <Field>
+                                <FieldLabel htmlFor={field.name}>
+                                  {t("products.composer.fieldStatus")}
+                                </FieldLabel>
+                                <Select
+                                  onValueChange={(value) =>
+                                    field.handleChange(
+                                      value === "published" ? "published" : "draft",
+                                    )
+                                  }
+                                  value={field.state.value}
+                                >
+                                  <SelectTrigger className="w-full" id={field.name}>
+                                    <SelectValue
+                                      placeholder={t("products.composer.selectStatus")}
+                                    />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectGroup>
+                                      <SelectItem value="draft">
+                                        {t("products.composer.draft")}
+                                      </SelectItem>
+                                      <SelectItem value="published">
+                                        {t("products.composer.published")}
+                                      </SelectItem>
+                                    </SelectGroup>
+                                  </SelectContent>
+                                </Select>
+                              </Field>
+                            )}
+                          </form.Field>
+
+                          <form.Field name="collectionId">
+                            {(field) => (
+                              <Field>
+                                <FieldLabel>{t("products.composer.fieldCollection")}</FieldLabel>
+                                <CollectionPicker
+                                  collections={collections}
+                                  onChange={field.handleChange}
+                                  selectedCollection={collections.find(
+                                    (collection) => collection.id === field.state.value,
+                                  )}
+                                  value={field.state.value}
+                                />
+                              </Field>
+                            )}
+                          </form.Field>
+                        </div>
+
+                        <form.Field name="categoryIds">
+                          {(field) => (
+                            <FieldSet>
+                              <FieldLegend variant="label">
+                                {t("products.composer.fieldCategories")}
+                              </FieldLegend>
+                              <FieldDescription>
+                                {t("products.composer.categoriesHelp")}
+                              </FieldDescription>
+                              <CategoryPicker
+                                categories={categories}
+                                onChange={field.handleChange}
+                                selectedCategories={categories.filter((category) =>
+                                  field.state.value.includes(category.id),
+                                )}
+                                value={field.state.value}
+                              />
+                            </FieldSet>
+                          )}
+                        </form.Field>
+                      </section>
+                    ) : null}
+
+                    {activeStep === "variants" ? (
+                      <section className="flex flex-col gap-5">
+                        <ComposerSection
+                          description={t("products.composer.pricingDesc")}
+                          title={t("products.composer.pricingTitle")}
+                        />
+
+                        <div className="rounded-2xl border bg-background p-4">
+                          <div className="mb-4 flex flex-col gap-1">
+                            <h3 className="text-sm font-medium">
+                              {t("products.composer.defaultSellingTitle")}
+                            </h3>
+                            <p className="text-sm text-muted-foreground">
+                              {t("products.composer.defaultSellingDesc")}
+                            </p>
+                          </div>
+                          <div className="grid gap-4 md:grid-cols-4">
+                            <form.Field
+                              name="priceAmount"
+                              validators={{
+                                onBlur: ({ value }) => validatePriceAmount(value, t),
+                                onSubmit: ({ value }) => validatePriceAmount(value, t),
+                              }}
+                            >
+                              {(field) => (
+                                <Field data-invalid={hasFieldError(field)}>
+                                  <FieldLabel htmlFor={field.name}>
+                                    {t("products.composer.fieldPrice")}
+                                  </FieldLabel>
+                                  <InputGroup>
+                                    <InputGroupAddon>ETB</InputGroupAddon>
+                                    <InputGroupInput
+                                      aria-invalid={hasFieldError(field)}
+                                      id={field.name}
+                                      inputMode="numeric"
+                                      min="0"
+                                      name={field.name}
+                                      onBlur={field.handleBlur}
+                                      onChange={(event) => field.handleChange(event.target.value)}
+                                      placeholder="0"
+                                      type="text"
+                                      value={field.state.value}
+                                    />
+                                  </InputGroup>
+                                  <FieldError
+                                    errors={field.state.meta.errors}
+                                    touched={field.state.meta.isTouched}
+                                  />
+                                </Field>
+                              )}
+                            </form.Field>
+
+                            <form.Field
+                              name="initialStock"
+                              validators={{
+                                onBlur: ({ value }) => validateInitialStock(value, t),
+                                onSubmit: ({ value }) => validateInitialStock(value, t),
+                              }}
+                            >
+                              {(field) => (
+                                <Field data-invalid={hasFieldError(field)}>
+                                  <FieldLabel htmlFor={field.name}>
+                                    {t("products.composer.fieldStocked")}
+                                  </FieldLabel>
+                                  <Input
                                     aria-invalid={hasFieldError(field)}
                                     id={field.name}
                                     inputMode="numeric"
@@ -685,161 +727,128 @@ export function ProductForm({
                                     type="text"
                                     value={field.state.value}
                                   />
-                                </InputGroup>
-                                <FieldError
-                                  errors={field.state.meta.errors}
-                                  touched={field.state.meta.isTouched}
-                                />
-                              </Field>
-                            )}
-                          </form.Field>
+                                  <FieldError
+                                    errors={field.state.meta.errors}
+                                    touched={field.state.meta.isTouched}
+                                  />
+                                </Field>
+                              )}
+                            </form.Field>
 
-                          <form.Field
-                            name="initialStock"
-                            validators={{
-                              onBlur: ({ value }) => validateInitialStock(value, t),
-                              onSubmit: ({ value }) => validateInitialStock(value, t),
-                            }}
-                          >
-                            {(field) => (
-                              <Field data-invalid={hasFieldError(field)}>
-                                <FieldLabel htmlFor={field.name}>
-                                  {t("products.composer.fieldStocked")}
-                                </FieldLabel>
-                                <Input
-                                  aria-invalid={hasFieldError(field)}
-                                  id={field.name}
-                                  inputMode="numeric"
-                                  min="0"
-                                  name={field.name}
-                                  onBlur={field.handleBlur}
-                                  onChange={(event) => field.handleChange(event.target.value)}
-                                  placeholder="0"
-                                  type="text"
-                                  value={field.state.value}
-                                />
-                                <FieldError
-                                  errors={field.state.meta.errors}
-                                  touched={field.state.meta.isTouched}
-                                />
-                              </Field>
-                            )}
-                          </form.Field>
+                            <form.Field name="skuPrefix">
+                              {(field) => (
+                                <Field>
+                                  <FieldLabel htmlFor={field.name}>
+                                    {t("products.composer.fieldSkuPrefix")}
+                                  </FieldLabel>
+                                  <Input
+                                    id={field.name}
+                                    name={field.name}
+                                    onBlur={field.handleBlur}
+                                    onChange={(event) => field.handleChange(event.target.value)}
+                                    placeholder="TEE"
+                                    value={field.state.value}
+                                  />
+                                </Field>
+                              )}
+                            </form.Field>
 
-                          <form.Field name="skuPrefix">
-                            {(field) => (
-                              <Field>
-                                <FieldLabel htmlFor={field.name}>
-                                  {t("products.composer.fieldSkuPrefix")}
-                                </FieldLabel>
-                                <Input
-                                  id={field.name}
-                                  name={field.name}
-                                  onBlur={field.handleBlur}
-                                  onChange={(event) => field.handleChange(event.target.value)}
-                                  placeholder="TEE"
-                                  value={field.state.value}
-                                />
-                              </Field>
-                            )}
-                          </form.Field>
-
-                          <form.Field name="currencyCode">
-                            {(field) => (
-                              <Field data-disabled>
-                                <FieldLabel htmlFor={field.name}>
-                                  {t("products.composer.fieldCurrency")}
-                                </FieldLabel>
-                                <Input
-                                  id={field.name}
-                                  name={field.name}
-                                  readOnly
-                                  value={field.state.value.toUpperCase()}
-                                />
-                                <FieldDescription>
-                                  {t("products.composer.currencyHelp")}
-                                </FieldDescription>
-                              </Field>
-                            )}
-                          </form.Field>
+                            <form.Field name="currencyCode">
+                              {(field) => (
+                                <Field data-disabled>
+                                  <FieldLabel htmlFor={field.name}>
+                                    {t("products.composer.fieldCurrency")}
+                                  </FieldLabel>
+                                  <Input
+                                    id={field.name}
+                                    name={field.name}
+                                    readOnly
+                                    value={field.state.value.toUpperCase()}
+                                  />
+                                  <FieldDescription>
+                                    {t("products.composer.currencyHelp")}
+                                  </FieldDescription>
+                                </Field>
+                              )}
+                            </form.Field>
+                          </div>
                         </div>
-                      </div>
 
-                      {!product ? (
-                        <form.Field name="hasVariants">
-                          {(field) => (
-                            <div className="flex items-start justify-between gap-4 rounded-2xl border bg-muted/20 p-4">
-                              <div className="max-w-2xl">
-                                <h3 className="text-sm font-medium">
-                                  {t("products.composer.hasVariantsTitle")}
-                                </h3>
-                                <p className="mt-1 text-sm text-muted-foreground">
-                                  {t("products.composer.hasVariantsDesc")}
-                                </p>
+                        {!product ? (
+                          <form.Field name="hasVariants">
+                            {(field) => (
+                              <div className="flex items-start justify-between gap-4 rounded-2xl border bg-muted/20 p-4">
+                                <div className="max-w-2xl">
+                                  <h3 className="text-sm font-medium">
+                                    {t("products.composer.hasVariantsTitle")}
+                                  </h3>
+                                  <p className="mt-1 text-sm text-muted-foreground">
+                                    {t("products.composer.hasVariantsDesc")}
+                                  </p>
+                                </div>
+                                <Switch
+                                  aria-label={t("products.composer.enableVariantsAria")}
+                                  checked={field.state.value}
+                                  onCheckedChange={(checked) => {
+                                    field.handleChange(checked);
+                                    if (!checked) {
+                                      form.setFieldValue("variantOverrides", {});
+                                    }
+                                  }}
+                                />
                               </div>
-                              <Switch
-                                aria-label={t("products.composer.enableVariantsAria")}
-                                checked={field.state.value}
-                                onCheckedChange={(checked) => {
-                                  field.handleChange(checked);
-                                  if (!checked) {
-                                    form.setFieldValue("variantOverrides", {});
-                                  }
-                                }}
-                              />
-                            </div>
-                          )}
-                        </form.Field>
-                      ) : null}
+                            )}
+                          </form.Field>
+                        ) : null}
 
-                      <form.Subscribe selector={(state) => state.values}>
-                        {(values) =>
-                          values.hasVariants ? (
-                            <>
-                              {!product ? (
-                                <form.Field name="options">
-                                  {(field) => (
-                                    <ProductOptionsBuilder
-                                      onChange={field.handleChange}
-                                      options={field.state.value}
-                                    />
-                                  )}
-                                </form.Field>
-                              ) : null}
+                        <form.Subscribe selector={(state) => state.values}>
+                          {(values) =>
+                            values.hasVariants ? (
+                              <>
+                                {!product ? (
+                                  <form.Field name="options">
+                                    {(field) => (
+                                      <ProductOptionsBuilder
+                                        onChange={field.handleChange}
+                                        options={field.state.value}
+                                      />
+                                    )}
+                                  </form.Field>
+                                ) : null}
 
-                              <VariantMatrixTable
-                                onOverrideChange={(key, override) => {
-                                  form.setFieldValue("variantOverrides", {
-                                    ...values.variantOverrides,
-                                    [key]: {
-                                      ...values.variantOverrides[key],
-                                      ...override,
-                                    },
-                                  });
-                                }}
-                                rows={getVariantRows(values)}
-                                values={values.variantOverrides}
-                              />
-                            </>
-                          ) : (
-                            <SimpleProductStockPreview values={values} />
-                          )
-                        }
-                      </form.Subscribe>
-                    </section>
-                  ) : null}
+                                <VariantMatrixTable
+                                  onOverrideChange={(key, override) => {
+                                    form.setFieldValue("variantOverrides", {
+                                      ...values.variantOverrides,
+                                      [key]: {
+                                        ...values.variantOverrides[key],
+                                        ...override,
+                                      },
+                                    });
+                                  }}
+                                  rows={getVariantRows(values)}
+                                  values={values.variantOverrides}
+                                />
+                              </>
+                            ) : (
+                              <SimpleProductStockPreview values={values} />
+                            )
+                          }
+                        </form.Subscribe>
+                      </section>
+                    ) : null}
 
-                  {activeStep === "review" ? (
-                    <section className="flex flex-col gap-5">
-                      <ComposerSection
-                        description={t("products.composer.reviewDesc")}
-                        title={t("products.composer.reviewTitle")}
-                      />
-                      <form.Subscribe selector={(state) => state.values}>
-                        {(values) => <ProductReviewSummary values={values} />}
-                      </form.Subscribe>
-                    </section>
-                  ) : null}
+                    {activeStep === "review" ? (
+                      <section className="flex flex-col gap-5">
+                        <ComposerSection
+                          description={t("products.composer.reviewDesc")}
+                          title={t("products.composer.reviewTitle")}
+                        />
+                        <form.Subscribe selector={(state) => state.values}>
+                          {(values) => <ProductReviewSummary values={values} />}
+                        </form.Subscribe>
+                      </section>
+                    ) : null}
                   </DialogStepPanel>
                 </div>
               </div>
@@ -854,7 +863,9 @@ export function ProductForm({
                       </p>
                     ) : (
                       <p className="text-xs text-muted-foreground sm:text-sm">
-                        {isDirty ? t("products.composer.unsavedChanges") : t("products.composer.noUnsavedChanges")}
+                        {isDirty
+                          ? t("products.composer.unsavedChanges")
+                          : t("products.composer.noUnsavedChanges")}
                       </p>
                     )
                   }
@@ -869,11 +880,7 @@ export function ProductForm({
                       {t("common.back")}
                     </Button>
                   )}
-                  <Button
-                    disabled={submitMutation.isPending}
-                    onClick={nextStep}
-                    type="button"
-                  >
+                  <Button disabled={submitMutation.isPending} onClick={nextStep} type="button">
                     {submitMutation.isPending
                       ? t("products.composer.saving")
                       : activeStep === "review"
@@ -887,11 +894,7 @@ export function ProductForm({
         </DialogContent>
       </Dialog>
 
-      <UnsavedChangesDialog
-        onLeave={confirmLeave}
-        onStay={cancelLeave}
-        open={leaveDialogOpen}
-      />
+      <UnsavedChangesDialog onLeave={confirmLeave} onStay={cancelLeave} open={leaveDialogOpen} />
     </>
   );
 }
