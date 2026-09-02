@@ -14,7 +14,9 @@ COPY apps/medusa/package.json apps/medusa/package.json
 COPY apps/platform-api/package.json apps/platform-api/package.json
 COPY apps/storefront/package.json apps/storefront/package.json
 COPY apps/superadmin/package.json apps/superadmin/package.json
+COPY packages/billing/package.json packages/billing/package.json
 COPY packages/config/package.json packages/config/package.json
+COPY packages/content/package.json packages/content/package.json
 COPY packages/contracts/package.json packages/contracts/package.json
 COPY packages/db/package.json packages/db/package.json
 COPY packages/jobs/package.json packages/jobs/package.json
