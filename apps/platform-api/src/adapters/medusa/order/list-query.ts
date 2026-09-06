@@ -1,5 +1,4 @@
 import { formatPublicOrderReference } from "@ecs/contracts";
-
 import type {
   MerchantOrder,
   MerchantOrderCreatedPreset,
@@ -9,6 +8,7 @@ import type {
   MerchantOrderPaymentFilter,
   MerchantOrderProgressFilter,
 } from "../../../types/index.js";
+import { getOrderAttentionReasons } from "./attention.js";
 
 const PROGRESS_VALUES = new Set<MerchantOrderProgressFilter>([
   "new",
@@ -21,7 +21,11 @@ const PROGRESS_VALUES = new Set<MerchantOrderProgressFilter>([
 const PAYMENT_VALUES = new Set<MerchantOrderPaymentFilter>(["unpaid", "paid", "failed"]);
 const METHOD_VALUES = new Set<MerchantOrderMethodFilter>(["cod", "chapa"]);
 const DELIVERY_VALUES = new Set<MerchantOrderDeliveryFilter>(["delivery", "pickup"]);
-const CREATED_VALUES = new Set<MerchantOrderCreatedPreset>(["today", "last_7_days", "last_30_days"]);
+const CREATED_VALUES = new Set<MerchantOrderCreatedPreset>([
+  "today",
+  "last_7_days",
+  "last_30_days",
+]);
 
 function normalizeKey(value: string | null | undefined) {
   return value?.trim().toLowerCase() ?? "";
@@ -166,10 +170,7 @@ export function orderMatchesPaymentStatus(
   return unpaid || (!paid && !failed);
 }
 
-export function orderMatchesPaymentMethod(
-  order: MerchantOrder,
-  method: MerchantOrderMethodFilter,
-) {
+export function orderMatchesPaymentMethod(order: MerchantOrder, method: MerchantOrderMethodFilter) {
   const value = order.paymentMethod ?? "unknown";
   return value === method;
 }
@@ -234,11 +235,14 @@ export function orderMatchesQuery(order: MerchantOrder, q: string) {
  * are applied after normalize.
  */
 export function needsPostFilter(input: MerchantOrderListQuery) {
-  return Boolean(input.paymentMethod || input.delivery || input.progress || input.q);
+  return Boolean(
+    input.attentionOnly || input.paymentMethod || input.delivery || input.progress || input.q,
+  );
 }
 
 export function applyOrderListPostFilters(orders: MerchantOrder[], input: MerchantOrderListQuery) {
   return orders.filter((order) => {
+    if (input.attentionOnly && getOrderAttentionReasons(order).length === 0) return false;
     if (input.customerId && order.customerId !== input.customerId) return false;
     if (input.progress && !orderMatchesProgress(order, input.progress)) return false;
     if (input.paymentStatus && !orderMatchesPaymentStatus(order, input.paymentStatus)) return false;

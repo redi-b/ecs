@@ -386,7 +386,9 @@ export function appWithResolution(
       tenantId: string;
       userId: string;
     }) => Promise<TenantDomainVerificationResult>;
+    getDashboardMetrics?: import("../types/platform-app.js").PlatformAppOptions["getDashboardMetrics"];
     listMerchantProducts?: (input: {
+      status?: string | undefined;
       limit: number;
       offset: number;
       salesChannelId: string;
@@ -605,6 +607,7 @@ export function appWithResolution(
       updateTenantShopSettings: options?.updateTenantShopSettings,
       getTenantCommerceContext: options?.getTenantCommerceContext,
       getTenantDashboardSummary: options?.getTenantDashboardSummary ?? defaultDashboardSummary,
+      getDashboardMetrics: options?.getDashboardMetrics,
       requestInsightsRefresh: options?.requestInsightsRefresh,
       getTenantInsightsSummary: options?.getTenantInsightsSummary,
       getTenantReadiness: options?.getTenantReadiness,

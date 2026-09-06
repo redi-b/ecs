@@ -8,6 +8,142 @@ import {
 } from "./test/platform-app-harness.js";
 
 describe("platform app merchant dashboard and orders", () => {
+  it("reads the current draft count after publishing instead of the reporting snapshot", async () => {
+    let draftCount = 1;
+    let catalogUnavailable = false;
+    const app = appWithResolution(
+      { ok: true, context: resolvedTenantContext },
+      {
+        authorizeDashboardForTenant: async () => ({
+          ok: true,
+          actor: { id: "user_1", email: "owner@abebe.local", name: "Owner", role: "owner" },
+        }),
+        getSession: async () => ({
+          user: { id: "user_1", email: "owner@abebe.local", name: "Owner" },
+        }),
+        getDashboardMetrics: async () => ({
+          ok: true,
+          metrics: {
+            attention: { draftProducts: 1, unfulfilledOrders: 0, unpaidOrders: 0 },
+            breakdowns: { fulfillmentStatus: [], orderStatus: [], paymentStatus: [] },
+            currencyCode: "etb",
+            customers: { repeat: 0, unique: 0 },
+            products: 1,
+            series: [],
+            quality: {
+              lastSuccessfulAt: null,
+              rollupVersion: 1,
+              status: "stale",
+              timezone: "Africa/Addis_Ababa",
+              watermark: null,
+            },
+          },
+        }),
+        listMerchantProducts: async (input) => {
+          assert.equal(input.salesChannelId, "channel_1");
+          assert.equal(input.status, "draft");
+          if (catalogUnavailable) {
+            return { ok: false, error: "commerce_backend_unavailable", status: 503 };
+          }
+          return {
+            ok: true,
+            products: [],
+            count: draftCount,
+            limit: input.limit,
+            offset: input.offset,
+          };
+        },
+      },
+    );
+    const readCount = async () => {
+      const response = await app.request("/platform/merchant/dashboard", {
+        headers: { Host: "abebe.lvh.me" },
+      });
+      assert.equal(response.status, 200);
+      return (await response.json()).operations.attention.draftProducts;
+    };
+    assert.equal(await readCount(), 1);
+    draftCount = 0;
+    assert.equal(await readCount(), 0);
+    catalogUnavailable = true;
+    assert.equal(
+      await readCount(),
+      null,
+      "Never present a stale count as current when the catalog is unavailable",
+    );
+  });
+  it("loads the attention queue separately and preserves order product context", async () => {
+    let queueRequested = false;
+    const app = appWithResolution(
+      { ok: true, context: resolvedTenantContext },
+      {
+        authorizeDashboardForTenant: async () => ({
+          ok: true,
+          actor: { id: "user_1", email: "owner@abebe.local", name: "Owner", role: "owner" },
+        }),
+        getSession: async () => ({
+          user: { id: "user_1", email: "owner@abebe.local", name: "Owner" },
+        }),
+        listMerchantOrders: async (input) => {
+          assert.equal(input.salesChannelId, "channel_1");
+          if (!input.attentionOnly)
+            return { ok: true, orders: [], count: 0, limit: input.limit, offset: 0 };
+          queueRequested = true;
+          assert.equal(input.limit, 12);
+          return {
+            ok: true,
+            count: 1,
+            limit: input.limit,
+            offset: 0,
+            orders: [
+              {
+                id: "order_waiting",
+                customDisplayId: "SHOP-123",
+                displayId: 1,
+                email: "customer@example.com",
+                status: "pending",
+                paymentStatus: "captured",
+                fulfillmentStatus: "not_fulfilled",
+                currencyCode: "etb",
+                total: 250,
+                createdAt: "2026-01-01T00:00:00.000Z",
+                updatedAt: null,
+                items: [
+                  {
+                    id: "item_1",
+                    title: "Shirt",
+                    productTitle: "Cotton shirt",
+                    thumbnail: "https://example.com/shirt.jpg",
+                    quantity: 2,
+                    unitPrice: 125,
+                    total: 250,
+                  },
+                ],
+              },
+            ],
+          };
+        },
+      },
+    );
+    const response = await app.request("/platform/merchant/dashboard", {
+      headers: { Host: "abebe.lvh.me" },
+    });
+    assert.equal(response.status, 200);
+    assert.equal(queueRequested, true);
+    const body = await response.json();
+    assert.deepEqual(body.operations.recentOrders, []);
+    assert.equal(body.operations.waitingOrders[0].customDisplayId, "SHOP-123");
+    assert.deepEqual(body.operations.waitingOrders[0].reasons, ["fulfillment"]);
+    assert.equal(body.operations.waitingOrders[0].productCount, 1);
+    assert.deepEqual(body.operations.waitingOrders[0].products, [
+      {
+        id: "item_1",
+        title: "Cotton shirt",
+        thumbnail: "https://example.com/shirt.jpg",
+        quantity: 2,
+      },
+    ]);
+  });
   it("returns a merchant dashboard summary for the resolved shop host", async () => {
     let authorizationInput: { tenantId: string; userId: string } | undefined;
     const app = appWithResolution(
@@ -118,6 +254,7 @@ describe("platform app merchant dashboard and orders", () => {
         },
         series: [],
         recentOrders: [],
+        waitingOrders: null,
         unavailable: ["orders", "products"],
       },
       analytics: {

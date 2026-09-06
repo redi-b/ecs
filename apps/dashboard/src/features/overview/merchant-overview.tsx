@@ -18,7 +18,6 @@ import {
 import Link from "@/components/app/link";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -58,6 +57,7 @@ import {
   getSeriesBounds,
   type OverviewRangePreset,
 } from "@/features/overview/overview-range";
+import { WaitingOrders } from "@/features/overview/waiting-orders";
 import type { MessageKey } from "@/i18n/messages";
 import { useI18n } from "@/i18n/provider";
 import { dashboardRoutes } from "@/lib/routes";
@@ -72,18 +72,6 @@ function formatOverviewPaymentStatus(paymentStatus: string, t: (key: MessageKey)
     return t("overview.paymentStatus.failed");
   }
   return t("overview.paymentStatus.unpaid");
-}
-
-function isOpenPaymentStatus(status: string | null | undefined) {
-  if (!status) return false;
-  const value = status.trim().toLowerCase();
-  return value !== "captured" && value !== "paid" && !value.includes("refund");
-}
-
-function isOpenFulfillmentStatus(status: string | null | undefined) {
-  if (!status) return true;
-  const value = status.trim().toLowerCase();
-  return value !== "fulfilled" && value !== "delivered" && value !== "shipped";
 }
 
 type MixView = "payment" | "fulfillment" | "lifecycle" | "customers";
@@ -294,45 +282,24 @@ export function MerchantOverview({ demoMode = false, summary }: MerchantOverview
       {
         label: t("overview.attention.unfulfilledOrders"),
         value: operations?.attention.unfulfilledOrders,
-        href: previewHref(dashboardRoutes.orders),
+        href: previewHref(`${dashboardRoutes.orders}?progress=new`),
         hint: t("overview.attention.unfulfilledHint"),
       },
       {
         label: t("overview.attention.awaitingPayment"),
         value: operations?.attention.unpaidOrders,
-        href: previewHref(dashboardRoutes.orders),
+        href: previewHref(`${dashboardRoutes.orders}?payment=unpaid`),
         hint: t("overview.attention.awaitingPaymentHint"),
       },
       {
         label: t("overview.attention.draftProducts"),
         value: operations?.attention.draftProducts,
-        href: previewHref(dashboardRoutes.products),
+        href: previewHref(`${dashboardRoutes.products}?status=draft`),
         hint: t("overview.attention.draftProductsHint"),
       },
     ],
     [operations, previewHref, t],
   );
-
-  const waitingOrders = useMemo(() => {
-    const rows = operations?.recentOrders ?? [];
-    return rows
-      .map((order) => {
-        const needsPayment = isOpenPaymentStatus(order.paymentStatus);
-        const needsFulfillment = isOpenFulfillmentStatus(order.fulfillmentStatus);
-        if (!needsPayment && !needsFulfillment) {
-          return null;
-        }
-        return {
-          ...order,
-          reasons: [
-            needsPayment ? t("overview.attention.unpaid") : null,
-            needsFulfillment ? t("overview.attention.unfulfilled") : null,
-          ].filter((reason): reason is string => Boolean(reason)),
-        };
-      })
-      .filter((order): order is NonNullable<typeof order> => order != null)
-      .slice(0, 2);
-  }, [operations?.recentOrders, t]);
 
   const mixViews: Array<{
     id: MixView;
@@ -415,12 +382,12 @@ export function MerchantOverview({ demoMode = false, summary }: MerchantOverview
       ) : null}
 
       {/* Operator first: work queues and a compact view of customer activity. */}
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.35fr)_minmax(280px,0.75fr)] xl:items-stretch">
-        <Card className="flex h-full flex-col" size="sm">
+      <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1.35fr)_minmax(280px,0.75fr)] xl:items-stretch">
+        <Card className="flex flex-col" size="sm">
           <CardHeader className="shrink-0 border-b pb-3">
             <CardTitle>{t("overview.attention.title")}</CardTitle>
           </CardHeader>
-          <CardContent className="flex flex-1 flex-col gap-3 pt-3">
+          <CardContent className="flex flex-1 flex-col gap-2.5 pt-3">
             <div className="grid gap-2 sm:grid-cols-3">
               {attentionItems.map((item) => {
                 const count = typeof item.value === "number" ? item.value : null;
@@ -429,8 +396,8 @@ export function MerchantOverview({ demoMode = false, summary }: MerchantOverview
                 return (
                   <Link
                     className={cn(
-                      "flex flex-col gap-1 rounded-lg border px-3 py-2.5 text-sm transition-colors hover:bg-muted/50",
-                      hot ? "border-primary/25 bg-primary/5" : "bg-background",
+                      "flex flex-col gap-1 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-muted/70 focus-visible:outline-2 focus-visible:outline-ring",
+                      hot ? "bg-primary/7" : "bg-muted/45",
                     )}
                     href={item.href}
                     key={item.label}
@@ -453,56 +420,15 @@ export function MerchantOverview({ demoMode = false, summary }: MerchantOverview
               })}
             </div>
 
-            {waitingOrders.length > 0 ? (
-              <div className="flex flex-col gap-2">
-                <div className="flex items-center justify-between gap-2">
-                  <p className="text-xs font-medium text-muted-foreground">
-                    {t("overview.attention.waitingOnYou")}
-                  </p>
-                  <Link
-                    className="text-xs text-muted-foreground hover:text-foreground"
-                    href={previewHref(dashboardRoutes.orders)}
-                    prefetch={false}
-                  >
-                    {t("overview.attention.allOrders")}
-                  </Link>
-                </div>
-                <div className="flex flex-col gap-1">
-                  {waitingOrders.map((order) => (
-                    <Link
-                      className="flex items-center justify-between gap-3 rounded-lg border bg-background px-3 py-2 text-sm transition-colors hover:bg-muted/50"
-                      href={previewHref(dashboardRoutes.orderDetail(order.id))}
-                      key={order.id}
-                      prefetch={false}
-                    >
-                      <span className="min-w-0">
-                        <span className="block truncate font-medium">
-                          {formatOrderReference({ id: order.id })}
-                        </span>
-                        <span className="mt-0.5 flex flex-wrap items-center gap-1">
-                          {order.reasons.map((reason) => (
-                            <Badge
-                              className="px-1.5 py-0 text-[10px] font-normal"
-                              key={reason}
-                              variant="secondary"
-                            >
-                              {reason}
-                            </Badge>
-                          ))}
-                        </span>
-                      </span>
-                      <span className="shrink-0 font-mono text-xs tabular-nums">
-                        {formatMoney(order.total, order.currencyCode ?? currencyCode, locale)}
-                      </span>
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            ) : null}
+            <WaitingOrders
+              orders={operations?.waitingOrders}
+              currencyCode={currencyCode}
+              href={previewHref}
+            />
           </CardContent>
         </Card>
 
-        <Card className="flex h-full flex-col" size="sm">
+        <Card className="flex flex-col" size="sm">
           <CardHeader className="shrink-0 border-b pb-3">
             <CardTitle>{t("overview.storefrontActivity.title")}</CardTitle>
             <span className="col-start-2 row-start-1 self-start justify-self-end text-xs text-muted-foreground">
@@ -511,9 +437,9 @@ export function MerchantOverview({ demoMode = false, summary }: MerchantOverview
                 : null}
             </span>
           </CardHeader>
-          <CardContent className="flex flex-1 flex-col pt-3">
+          <CardContent className="flex flex-1 flex-col justify-center gap-3 pt-3">
             {hasStorefrontActivity ? (
-              <div className="grid flex-1 grid-cols-2 gap-px overflow-hidden rounded-lg border bg-border">
+              <div className="grid grid-cols-2 gap-px overflow-hidden rounded-lg border bg-border">
                 {[
                   {
                     label: t("overview.storefrontActivity.visits"),
@@ -554,7 +480,7 @@ export function MerchantOverview({ demoMode = false, summary }: MerchantOverview
                 </p>
               </div>
             )}
-            <Button asChild className="mt-3 w-full" size="sm" variant="outline">
+            <Button asChild className="w-full" size="sm" variant="outline">
               <Link href={previewHref(dashboardRoutes.insights)} prefetch={false}>
                 {t("overview.storefrontActivity.viewInsights")}
               </Link>

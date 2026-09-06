@@ -1,3 +1,4 @@
+import { getOrderAttentionReasons } from "../../adapters/medusa/order/attention.js";
 import type {
   BillingStatus,
   DashboardMetricsResult,
@@ -173,7 +174,7 @@ export function createMerchantDashboardSummary(
     const orderLimit = useMetricOperations ? 8 : 45;
     const needProductSample = metricData?.products == null;
 
-    const [orders, products] = await Promise.all([
+    const [orders, products, waiting, drafts] = await Promise.all([
       input.commerce && options.listMerchantOrders
         ? options.listMerchantOrders({
             limit: orderLimit,
@@ -185,6 +186,22 @@ export function createMerchantDashboardSummary(
         ? options.listMerchantProducts({
             limit: 5,
             offset: 0,
+            salesChannelId: input.commerce.medusaSalesChannelId,
+          })
+        : Promise.resolve(null),
+      input.commerce && options.listMerchantOrders
+        ? options.listMerchantOrders({
+            limit: 12,
+            offset: 0,
+            attentionOnly: true,
+            salesChannelId: input.commerce.medusaSalesChannelId,
+          })
+        : Promise.resolve(null),
+      input.commerce && options.listMerchantProducts
+        ? options.listMerchantProducts({
+            limit: 1,
+            offset: 0,
+            status: "draft",
             salesChannelId: input.commerce.medusaSalesChannelId,
           })
         : Promise.resolve(null),
@@ -235,7 +252,8 @@ export function createMerchantDashboardSummary(
           ? (metricData?.attention.unfulfilledOrders ?? null)
           : null,
         unpaidOrders: useMetricOperations ? (metricData?.attention.unpaidOrders ?? null) : null,
-        draftProducts: metricData?.attention.draftProducts ?? null,
+        // Action counts must reflect current catalog state, not the daily reporting snapshot.
+        draftProducts: drafts?.ok ? drafts.count : null,
       },
       customers: {
         unique: useMetricOperations ? (metricData?.customers.unique ?? null) : null,
@@ -253,6 +271,30 @@ export function createMerchantDashboardSummary(
           : buildStatusBreakdown(orderRows.map((order) => order.fulfillmentStatus)),
       },
       series: useMetricOperations ? (metricData?.series ?? []) : [],
+      waitingOrders: waiting?.ok
+        ? waiting.orders.map((order) => ({
+            id: order.id,
+            customDisplayId: order.customDisplayId ?? null,
+            customerName:
+              order.delivery?.customerName ||
+              [order.shippingAddress?.firstName, order.shippingAddress?.lastName]
+                .filter(Boolean)
+                .join(" ") ||
+              null,
+            email: order.email,
+            total: order.total,
+            currencyCode: order.currencyCode,
+            createdAt: order.createdAt,
+            reasons: getOrderAttentionReasons(order),
+            productCount: order.items?.length ?? 0,
+            products: (order.items ?? []).slice(0, 3).map((item) => ({
+              id: item.id,
+              title: item.productTitle || item.title,
+              thumbnail: item.thumbnail,
+              quantity: item.quantity,
+            })),
+          }))
+        : null,
       recentOrders: orderRows.slice(0, 5).map((order) => ({
         id: order.id,
         displayId: order.displayId,

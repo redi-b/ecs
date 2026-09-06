@@ -7,8 +7,8 @@
   "freshness": {
     "missingTitle": "Your sales summary is getting ready",
     "missingDescription": "Recent orders are available below. Revenue and customer totals will appear here shortly.",
-    "staleTitle": "Sales reporting is delayed",
-    "staleDescription": "The last complete rollup finished {date}. Values remain visible but may not include recent changes."
+    "staleTitle": "Some totals may be out of date",
+    "staleDescription": "Sales totals were last updated {date}. Recent orders and product changes may not be included yet."
   },
   "aria": {
     "section": "Merchant overview",
@@ -47,6 +47,10 @@
     "periodEndingDesc": "Your paid period ends {date}. Open Billing to renew."
   },
   "attention": {
+    "orderItems": "Order items",
+    "moreProducts": "+{count} more",
+    "emptyQueue": "No orders waiting on you.",
+    "queueUnavailable": "Couldn't load pending orders.",
     "title": "Needs attention",
     "description": "Queues and work waiting on you.",
     "unfulfilledOrders": "Unfulfilled orders",

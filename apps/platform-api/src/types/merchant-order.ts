@@ -29,12 +29,7 @@ export type MerchantOrderSettlement = {
 };
 
 /** Merchant-facing progress (not Medusa jargon). */
-export type MerchantOrderProgressFilter =
-  | "new"
-  | "ready"
-  | "completed"
-  | "canceled"
-  | "open";
+export type MerchantOrderProgressFilter = "new" | "ready" | "completed" | "canceled" | "open";
 
 export type MerchantOrderPaymentFilter = "unpaid" | "paid" | "failed";
 
@@ -45,6 +40,8 @@ export type MerchantOrderDeliveryFilter = "delivery" | "pickup";
 export type MerchantOrderCreatedPreset = "today" | "last_7_days" | "last_30_days";
 
 export type MerchantOrderListQuery = {
+  /** Internal dashboard queue; filtered before pagination. */
+  attentionOnly?: boolean;
   created?: MerchantOrderCreatedPreset | undefined;
   createdFrom?: string | undefined;
   createdTo?: string | undefined;
