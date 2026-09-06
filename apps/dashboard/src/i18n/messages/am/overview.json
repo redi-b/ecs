@@ -7,8 +7,8 @@
   "freshness": {
     "missingTitle": "የሽያጭ ሪፖርት ገና አልተሰራም",
     "missingDescription": "የመጀመሪያው የተሟላ የንግድ ማጠቃለያ እስኪሰራ ድረስ የገቢ እና የደንበኛ መለኪያዎች አይታዩም። የቅርብ ጊዜ ትዕዛዞች ከታች ይታያሉ።",
-    "staleTitle": "የሽያጭ ሪፖርቱ ዘግይቷል",
-    "staleDescription": "የመጨረሻው የተሟላ ማጠቃለያ {date} ተጠናቋል። መለኪያዎቹ ይታያሉ፣ ግን የቅርብ ጊዜ ለውጦችን ላያካትቱ ይችላሉ።"
+    "staleTitle": "አንዳንድ ድምሮች ወቅታዊ ላይሆኑ ይችላሉ",
+    "staleDescription": "የሽያጭ ድምሮች ለመጨረሻ ጊዜ የዘመኑት {date} ነው። የቅርብ ጊዜ ትዕዛዞች እና የምርት ለውጦች ገና ላይካተቱ ይችላሉ።"
   },
   "aria": {
     "section": "አጠቃላይ እይታ",
@@ -47,6 +47,10 @@
     "periodEndingDesc": "የተከፈለ ጊዜዎ በ{date} ያበቃል። ለማደስ ክፍያን ይክፈቱ።"
   },
   "attention": {
+    "orderItems": "የትዕዛዝ እቃዎች",
+    "moreProducts": "+{count} ተጨማሪ",
+    "emptyQueue": "እርስዎን የሚጠብቁ ትዕዛዞች የሉም።",
+    "queueUnavailable": "የሚጠብቁ ትዕዛዞችን መጫን አልተቻለም።",
     "title": "ያልተጠናቀቁ",
     "description": "እርስዎ ማድረግ ያለብዎት።",
     "unfulfilledOrders": "ያልተላኩ ትዕዛዞች",

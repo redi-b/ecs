@@ -239,9 +239,7 @@ export const merchantProductWriteSchema = z.object({
   description: z.string().min(1).nullable().optional(),
   handle: z.string().min(1).nullable().optional(),
   imageUrls: z.array(z.string().min(1)).optional(),
-  options: z
-    .array(merchantProductOptionWriteSchema)
-    .optional(),
+  options: z.array(merchantProductOptionWriteSchema).optional(),
   priceAmount: z.number().nonnegative().optional(),
   status: z.string().min(1).nullable().optional(),
   thumbnail: z.string().min(1).nullable().optional(),
@@ -405,9 +403,7 @@ export type MerchantProductOptionValue = z.infer<typeof merchantProductOptionVal
 
 export type ProductColorSwatch = z.infer<typeof productColorSwatchSchema>;
 
-export type ProductOptionValuePresentation = z.infer<
-  typeof productOptionValuePresentationSchema
->;
+export type ProductOptionValuePresentation = z.infer<typeof productOptionValuePresentationSchema>;
 
 export type ProductOptionValuePresentationWrite = z.infer<
   typeof productOptionValuePresentationWriteSchema
@@ -1273,6 +1269,30 @@ export const merchantDashboardSummarySchema = z.object({
           customers: z.number().int().nonnegative(),
         }),
       ),
+      waitingOrders: z
+        .array(
+          z.object({
+            id: z.string().min(1),
+            customDisplayId: z.string().nullable(),
+            customerName: z.string().nullable(),
+            email: z.string().nullable(),
+            total: z.number().nullable(),
+            currencyCode: z.string().nullable(),
+            createdAt: z.string().nullable(),
+            reasons: z.array(z.enum(["fulfillment", "payment"])),
+            productCount: z.number().int().nonnegative(),
+            products: z.array(
+              z.object({
+                id: z.string(),
+                title: z.string().nullable(),
+                thumbnail: z.string().nullable(),
+                quantity: z.number().nullable(),
+              }),
+            ),
+          }),
+        )
+        .nullable()
+        .optional(),
       recentOrders: z.array(
         z.object({
           id: z.string().min(1),

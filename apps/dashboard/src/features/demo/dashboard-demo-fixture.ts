@@ -96,6 +96,35 @@ const fixture = {
       orders,
       customers,
     })),
+    waitingOrders: [
+      {
+        id: "order_01DEMO1047",
+        customDisplayId: null,
+        customerName: "Hana",
+        email: "hana@example.com",
+        total: 1940,
+        currencyCode: "ETB",
+        createdAt: "2026-08-26T07:46:00.000Z",
+        reasons: ["fulfillment"],
+        productCount: 2,
+        products: [
+          { id: "demo_item_1", title: "Cotton shirt", thumbnail: null, quantity: 1 },
+          { id: "demo_item_2", title: "Canvas tote", thumbnail: null, quantity: 1 },
+        ],
+      },
+      {
+        id: "order_01DEMO1046",
+        customDisplayId: null,
+        customerName: "Betelhem",
+        email: "betelhem@example.com",
+        total: 3420,
+        currencyCode: "ETB",
+        createdAt: "2026-08-25T16:22:00.000Z",
+        reasons: ["fulfillment", "payment"],
+        productCount: 1,
+        products: [{ id: "demo_item_3", title: "Everyday sneakers", thumbnail: null, quantity: 1 }],
+      },
+    ],
     recentOrders: [
       {
         id: "order_01DEMO1048",
