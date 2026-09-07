@@ -428,6 +428,7 @@
     "fieldCategories": "Categories",
     "handlePlaceholder": "coffee-beans",
     "regenerateFromTitle": "Regenerate from title",
+    "useSuggestedHandle": "Use /{handle}",
     "categoriesHelp": "Select all categories that apply.",
     "defaultSellingTitle": "Default selling settings",
     "defaultSellingDesc": "These values apply to the product. When variants are enabled, they become the defaults for every generated row.",

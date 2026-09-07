@@ -262,21 +262,33 @@ export function formatEtbAmount(value: string, t: Translate) {
 
 export class ProductMutationError extends Error {
   step: ComposerStep["id"] | null;
+  code: string | null;
 
-  constructor(message: string, step: ComposerStep["id"] | null = null) {
+  constructor(message: string, step: ComposerStep["id"] | null = null, code: string | null = null) {
     super(message);
     this.name = "ProductMutationError";
     this.step = step;
+    this.code = code;
   }
 }
 
-export function getProductMutationError(
-  error: string | undefined,
-  status: number,
-  t: Translate,
-) {
+export function suggestAvailableProductHandle(handle: string) {
+  const normalized = slugifyProductHandle(handle) || "product";
+  const numbered = normalized.match(/^(.*?)-(\d+)$/);
+
+  if (!numbered) return `${normalized}-2`;
+
+  const base = numbered[1] || "product";
+  return `${base}-${Number.parseInt(numbered[2] ?? "1", 10) + 1}`;
+}
+
+export function getProductMutationError(error: string | undefined, status: number, t: Translate) {
   if (error === "product_conflict" || status === 409) {
-    return new ProductMutationError(t("products.validation.handleConflict"), "details");
+    return new ProductMutationError(
+      t("products.validation.handleConflict"),
+      "details",
+      "product_conflict",
+    );
   }
 
   if (error === "product_write_invalid" || status === 400 || status === 422) {
