@@ -5,13 +5,13 @@ import { useMemo } from "react";
 
 import { AppIcons } from "@/components/app/icons";
 import { MultiSearchableCombobox } from "@/components/app/searchable-combobox";
-import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
 import {
   BUSINESS_CATEGORY_OPTIONS,
   getTemplateTags,
   type HandleState,
 } from "@/components/onboarding/onboarding-helpers";
+import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 
@@ -54,20 +54,6 @@ export function CategoryCombobox({
       values={values}
     />
   );
-}
-
-function parseCategories(value: string | undefined) {
-  if (!value?.trim()) return [] as string[];
-  return value
-    .split(",")
-    .map((part) => part.trim())
-    .filter(Boolean);
-}
-
-/** Keep backend as a single string field (max ~80 in contracts). */
-function serializeCategories(values: string[]) {
-  const joined = values.map((value) => value.trim()).filter(Boolean).join(", ");
-  return joined.slice(0, 80);
 }
 
 export function HandleStatus({ status }: { status: HandleState["status"] }) {
@@ -137,12 +123,15 @@ export function PreferenceToggle({
 export function TemplateOption({
   checked,
   onSelect,
+  recommended = false,
   template,
 }: {
   checked: boolean;
   onSelect: () => void;
+  recommended?: boolean;
   template: StorefrontTemplateCatalogItem;
 }) {
+  const { t } = useI18n();
   const tags = getTemplateTags(template);
 
   return (
@@ -163,7 +152,14 @@ export function TemplateOption({
       <div className="flex min-w-0 flex-1 flex-col justify-center gap-1 py-0.5">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <p className="text-sm font-semibold tracking-tight">{template.name}</p>
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="text-sm font-semibold tracking-tight">{template.name}</p>
+              {recommended ? (
+                <Badge className="font-normal" variant="secondary">
+                  {t("onboarding.recommended")}
+                </Badge>
+              ) : null}
+            </div>
             <p className="mt-1.5 line-clamp-2 text-xs leading-relaxed text-muted-foreground sm:text-[0.8125rem]">
               {template.description}
             </p>
