@@ -1,3 +1,4 @@
+import { mapMedusaHttpFailure } from "../map-medusa-failure.js";
 import { getAdminHeaders, requestMedusa } from "./medusa-http.js";
 import { belongsToTenant } from "./normalize.js";
 import {
@@ -66,9 +67,15 @@ export async function productExistsInSalesChannel(
     },
   );
 
-  if (!response.ok) {
-    return false;
-  }
+  if (!response.ok)
+    return mapMedusaHttpFailure(response) as {
+      ok: false;
+      error:
+        | "commerce_backend_error"
+        | "commerce_backend_unavailable"
+        | "commerce_credentials_invalid";
+      status: 401 | 502 | 503;
+    };
 
   const data = await response.json().catch(() => undefined);
 
@@ -86,8 +93,11 @@ export async function categoryBelongsToTenantById(
   | boolean
   | {
       ok: false;
-      error: "commerce_credentials_invalid" | "commerce_backend_unavailable";
-      status: 401 | 503;
+      error:
+        | "commerce_credentials_invalid"
+        | "commerce_backend_error"
+        | "commerce_backend_unavailable";
+      status: 401 | 502 | 503;
     }
 > {
   const url = new URL(
@@ -112,13 +122,11 @@ export async function categoryBelongsToTenantById(
     return false;
   }
 
-  if (!response.ok) {
-    return {
-      ok: false,
-      error: "commerce_backend_unavailable",
-      status: 503,
-    };
-  }
+  if (!response.ok)
+    return mapMedusaHttpFailure(response) as Exclude<
+      Awaited<ReturnType<typeof categoryBelongsToTenantById>>,
+      boolean
+    >;
 
   const data = await response.json().catch(() => undefined);
   return belongsToTenant(data?.product_category, tenantId);
@@ -133,8 +141,11 @@ export async function collectionBelongsToTenantById(
   | boolean
   | {
       ok: false;
-      error: "commerce_credentials_invalid" | "commerce_backend_unavailable";
-      status: 401 | 503;
+      error:
+        | "commerce_credentials_invalid"
+        | "commerce_backend_error"
+        | "commerce_backend_unavailable";
+      status: 401 | 502 | 503;
     }
 > {
   const url = new URL(
@@ -159,13 +170,11 @@ export async function collectionBelongsToTenantById(
     return false;
   }
 
-  if (!response.ok) {
-    return {
-      ok: false,
-      error: "commerce_backend_unavailable",
-      status: 503,
-    };
-  }
+  if (!response.ok)
+    return mapMedusaHttpFailure(response) as Exclude<
+      Awaited<ReturnType<typeof collectionBelongsToTenantById>>,
+      boolean
+    >;
 
   const data = await response.json().catch(() => undefined);
   return belongsToTenant(data?.collection, tenantId);
@@ -180,8 +189,11 @@ export async function filterProductIdsBySalesChannel(
   | string[]
   | {
       ok: false;
-      error: "commerce_credentials_invalid" | "commerce_backend_unavailable";
-      status: 401 | 503;
+      error:
+        | "commerce_credentials_invalid"
+        | "commerce_backend_error"
+        | "commerce_backend_unavailable";
+      status: 401 | 502 | 503;
     }
 > {
   if (productIds.length === 0) {
@@ -209,13 +221,11 @@ export async function filterProductIdsBySalesChannel(
     };
   }
 
-  if (!response.ok) {
-    return {
-      ok: false,
-      error: "commerce_backend_unavailable",
-      status: 503,
-    };
-  }
+  if (!response.ok)
+    return mapMedusaHttpFailure(response) as Exclude<
+      Awaited<ReturnType<typeof filterProductIdsBySalesChannel>>,
+      string[]
+    >;
 
   const data = await response.json().catch(() => undefined);
   if (!data || !Array.isArray(data.products)) {

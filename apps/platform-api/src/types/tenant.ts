@@ -373,6 +373,7 @@ export type TenantShopProvisioningResult =
       ok: false;
       error:
         | "commerce_backend_unavailable"
+        | "commerce_backend_error"
         | "handle_invalid"
         | "handle_reserved"
         | "handle_unavailable"
@@ -380,5 +381,5 @@ export type TenantShopProvisioningResult =
         | "provisioning_attempt_not_retryable"
         | "template_unavailable"
         | "storefront_template_unavailable";
-      status: 400 | 404 | 409 | 503;
+      status: 400 | 404 | 409 | 502 | 503;
     };

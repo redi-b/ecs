@@ -1,10 +1,19 @@
 export type UpdateTenantShippingPriceResult =
   | { ok: true }
-  | { ok: false; error: "commerce_backend_unavailable" | "invalid_shipping_price_update" };
+  | {
+      ok: false;
+      error:
+        | "commerce_backend_error"
+        | "commerce_backend_unavailable"
+        | "invalid_shipping_price_update";
+    };
 
 export type EnsurePickupOptionResult =
   | { ok: true; pickupOptionId: string; created: boolean }
-  | { ok: false; error: "commerce_backend_unavailable" | "invalid_ensure_pickup" };
+  | {
+      ok: false;
+      error: "commerce_backend_error" | "commerce_backend_unavailable" | "invalid_ensure_pickup";
+    };
 
 type MedusaFulfillmentOptionClientOptions = {
   fetch?: typeof fetch;
@@ -16,9 +25,7 @@ type MedusaFulfillmentOptionClientOptions = {
  * Updates the flat-rate amount on a tenant's Medusa shipping option so checkout
  * charges match Settings → Fulfillment → default delivery fee.
  */
-export function createMedusaShippingPriceClient(
-  options: MedusaFulfillmentOptionClientOptions,
-) {
+export function createMedusaShippingPriceClient(options: MedusaFulfillmentOptionClientOptions) {
   const medusaInternalUrl = options.medusaInternalUrl.replace(/\/$/, "");
   const fetchImplementation = options.fetch ?? fetch;
 
@@ -58,7 +65,11 @@ export function createMedusaShippingPriceClient(
       );
 
       if (!response.ok) {
-        return { ok: false, error: "commerce_backend_unavailable" };
+        return {
+          ok: false,
+          error:
+            response.status === 503 ? "commerce_backend_unavailable" : "commerce_backend_error",
+        };
       }
 
       return { ok: true };
@@ -103,7 +114,11 @@ export function createMedusaEnsurePickupOptionClient(
       );
 
       if (!response.ok) {
-        return { ok: false, error: "commerce_backend_unavailable" };
+        return {
+          ok: false,
+          error:
+            response.status === 503 ? "commerce_backend_unavailable" : "commerce_backend_error",
+        };
       }
 
       const data = (await response.json().catch(() => null)) as {

@@ -1,4 +1,8 @@
-import { defineMiddlewares, validateAndTransformQuery } from "@medusajs/framework/http";
+import {
+  defineMiddlewares,
+  maybeApplyLinkFilter,
+  validateAndTransformQuery,
+} from "@medusajs/framework/http";
 import { z } from "@medusajs/framework/zod";
 import { listProductQueryConfig } from "@medusajs/medusa/api/admin/products/query-config";
 import { productMediaQuerySchema } from "../lib/product-media-query";
@@ -31,7 +35,16 @@ export default defineMiddlewares({
     {
       method: "GET",
       matcher: "/admin/platform-products",
-      middlewares: [validateAndTransformQuery(productMediaQuerySchema, listProductQueryConfig)],
+      middlewares: [
+        validateAndTransformQuery(productMediaQuerySchema, listProductQueryConfig),
+        // This route always uses graph, so resolve the cross-module link even
+        // when the native product endpoint's optional index engine is enabled.
+        maybeApplyLinkFilter({
+          entryPoint: "product_sales_channel",
+          resourceId: "product_id",
+          filterableField: "sales_channel_id",
+        }),
+      ],
     },
     {
       method: "GET",

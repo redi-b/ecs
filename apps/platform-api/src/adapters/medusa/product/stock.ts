@@ -65,13 +65,8 @@ export async function getProductInventoryContext(
     };
   }
 
-  if (!response.ok) {
-    return {
-      ok: false,
-      error: "commerce_backend_unavailable",
-      status: 503,
-    };
-  }
+  if (!response.ok)
+    return mapMedusaHttpFailure(response) as Extract<MerchantProductStockResult, { ok: false }>;
 
   const data = await response.json().catch(() => undefined);
 
@@ -146,13 +141,8 @@ export async function getProductVariantInventoryContext(
     };
   }
 
-  if (!response.ok) {
-    return {
-      ok: false,
-      error: "commerce_backend_unavailable",
-      status: 503,
-    };
-  }
+  if (!response.ok)
+    return mapMedusaHttpFailure(response) as Extract<MerchantProductStockResult, { ok: false }>;
 
   const data = await response.json().catch(() => undefined);
 
@@ -209,13 +199,8 @@ export async function getInventoryItemStock(
     };
   }
 
-  if (!response.ok) {
-    return {
-      ok: false,
-      error: "commerce_backend_unavailable",
-      status: 503,
-    };
-  }
+  if (!response.ok)
+    return mapMedusaHttpFailure(response) as Extract<MerchantProductStockResult, { ok: false }>;
 
   const data = await response.json().catch(() => undefined);
   const stock = normalizeProductStock({

@@ -6,15 +6,13 @@ import type {
   MerchantOrderListQuery,
   MerchantOrdersResult,
 } from "../../../types/index.js";
+import { mapMedusaHttpFailure, mapMedusaServerFailure } from "../map-medusa-failure.js";
 import {
   deliverMerchantOrderFulfillment,
   fulfillMerchantOrder,
   getMerchantOrderForAction,
 } from "./actions.js";
-import {
-  applyOrderListPostFilters,
-  needsPostFilter,
-} from "./list-query.js";
+import { applyOrderListPostFilters, needsPostFilter } from "./list-query.js";
 import { getAdminHeaders, missingCredentials, requestMedusa } from "./medusa-http.js";
 import { normalizeOrder } from "./normalize.js";
 import {
@@ -36,17 +34,16 @@ export function createMedusaOrderService(options: {
 }) {
   const fetcher = options.fetcher ?? fetch;
 
-  async function fetchOrderPage(
-    input: MerchantOrderListQuery,
-  ): Promise<
+  async function fetchOrderPage(input: MerchantOrderListQuery): Promise<
     | { ok: true; orders: MerchantOrder[]; count: number; limit: number; offset: number }
     | {
         ok: false;
         error:
           | "commerce_backend_unavailable"
+          | "commerce_backend_error"
           | "commerce_credentials_invalid"
           | "commerce_credentials_missing";
-        status: 401 | 503;
+        status: 401 | 502 | 503;
       }
   > {
     if (!options.adminApiToken?.trim()) {
@@ -65,13 +62,8 @@ export function createMedusaOrderService(options: {
       };
     }
 
-    if (!response.ok) {
-      return {
-        ok: false,
-        error: "commerce_backend_unavailable",
-        status: 503,
-      };
-    }
+    if (!response.ok)
+      return mapMedusaHttpFailure(response) as Extract<MerchantOrdersResult, { ok: false }>;
 
     const data = await response.json().catch(() => undefined);
     const orders = Array.isArray(data?.orders)
@@ -116,13 +108,8 @@ export function createMedusaOrderService(options: {
         };
       }
 
-      if (!response.ok) {
-        return {
-          ok: false,
-          error: "commerce_backend_unavailable",
-          status: 503,
-        };
-      }
+      if (!response.ok)
+        return mapMedusaHttpFailure(response) as Extract<MerchantOrderDetailResult, { ok: false }>;
 
       const data = await response.json().catch(() => undefined);
       const order = normalizeOrder(data?.order, input.salesChannelId)[0];
@@ -169,7 +156,9 @@ export function createMedusaOrderService(options: {
       salesChannelId: string;
       source?: "chapa_webhook" | "chapa_recheck" | undefined;
       txRef: string;
-    }): Promise<MerchantOrderActionResult | { ok: false; error: "order_not_found"; status: 404 }> => {
+    }): Promise<
+      MerchantOrderActionResult | { ok: false; error: "order_not_found"; status: 404 }
+    > => {
       if (!options.adminApiToken?.trim()) {
         return missingCredentials();
       }
@@ -295,6 +284,9 @@ export function createMedusaOrderService(options: {
       }
 
       if (!response.ok) {
+        const serverFailure = mapMedusaServerFailure(response);
+        if (serverFailure)
+          return serverFailure as Extract<MerchantOrderActionResult, { ok: false }>;
         // Validation / state conflicts are merchant-recoverable, not outages.
         if (response.status === 400 || response.status === 422 || response.status === 409) {
           return {
@@ -310,11 +302,7 @@ export function createMedusaOrderService(options: {
             status: 400,
           };
         }
-        return {
-          ok: false,
-          error: "commerce_backend_unavailable",
-          status: 503,
-        };
+        return mapMedusaHttpFailure(response) as Extract<MerchantOrderActionResult, { ok: false }>;
       }
 
       // complete/cancel responses often omit sales_channel_id / nested fields.

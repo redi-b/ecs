@@ -7,6 +7,8 @@ export const productMediaQuerySchema = AdminGetProductsParams.and(
     category_missing: z.literal("true").optional(),
     collection_missing: z.literal("true").optional(),
     sales_channel_id: z.array(z.string().trim().min(1)).length(1),
+    // Price lists are another cross-module filter, outside this endpoint's contract.
+    price_list_id: z.never().optional(),
     limit: z.coerce.number().int().min(1).max(100).optional(),
     offset: z.coerce.number().int().min(0).max(10_000).optional(),
   }),

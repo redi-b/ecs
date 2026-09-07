@@ -48,7 +48,7 @@ export type ManualOrderResult =
   | {
       ok: false;
       error: string;
-      status: 400 | 401 | 404 | 503;
+      status: 400 | 401 | 404 | 502 | 503;
     };
 
 /**
@@ -60,9 +60,15 @@ export function createMedusaManualOrderService(options: Options) {
   const base = options.medusaInternalUrl.replace(/\/$/, "");
   const headers = () => getAdminHeaders(options.adminApiToken ?? "");
 
-  function unavailable(error = "commerce_backend_unavailable"): ManualOrderResult {
+  function unavailable(
+    error = "commerce_backend_unavailable",
+    response?: Response,
+  ): ManualOrderResult {
     if (!options.adminApiToken?.trim()) {
       return { error: "commerce_credentials_invalid", ok: false, status: 401 };
+    }
+    if (response?.status && response.status >= 500 && response.status !== 503) {
+      return { error: "commerce_backend_error", ok: false, status: 502 };
     }
     return { error, ok: false, status: 503 };
   }
@@ -146,7 +152,7 @@ export function createMedusaManualOrderService(options: Options) {
       if (created.status === 404) {
         return { error: "draft_order_unavailable", ok: false, status: 503 };
       }
-      return unavailable();
+      return unavailable("commerce_backend_unavailable", created);
     }
 
     const createdBody = (await created.json().catch(() => ({}))) as {
@@ -186,7 +192,7 @@ export function createMedusaManualOrderService(options: Options) {
       ) {
         return { error: "manual_order_convert_failed", ok: false, status: 400 };
       }
-      return unavailable("manual_order_convert_failed");
+      return unavailable("manual_order_convert_failed", converted ?? undefined);
     }
 
     const orderBody = (await converted.json().catch(() => ({}))) as {

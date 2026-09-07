@@ -295,7 +295,7 @@ export function createTenantShopProvisioner(options: TenantShopProvisionerOption
       return {
         ok: false,
         error: commerceResources.error,
-        status: 503,
+        status: commerceResources.error === "commerce_backend_error" ? 502 : 503,
       };
     }
 
