@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import { useI18n } from "@/i18n/provider";
 
 import { MediaLibraryDialog } from "./media-library-dialog";
-import { MediaUrlImportField } from "./media-url-import-field";
 import { uploadMediaFile } from "./upload-media-file";
 
 function isImagePreviewUrl(value: string) {
@@ -93,54 +92,36 @@ export function MediaImageSourceActions({
   }
 
   return (
-    <div className="flex min-w-0 flex-col gap-2">
-      <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap">
-        <input
-          accept="image/avif,image/gif,image/jpeg,image/png,image/webp"
-          className="sr-only"
-          onChange={(event) => void handleFiles(event.target.files)}
-          ref={inputRef}
-          type="file"
-        />
-        <Button
-          className="w-full min-w-0 justify-center sm:w-auto"
-          disabled={uploading}
-          onClick={() => inputRef.current?.click()}
-          size="sm"
-          type="button"
-          variant="outline"
-        >
-          <RiImageLine data-icon="inline-start" />
-          {uploading ? t("editor.media.uploading") : t("editor.media.uploadImage")}
-        </Button>
-        <MediaLibraryDialog
-          onOpenChange={onPickerOpenChange}
-          onSelect={(assets) => {
-            const url = assets[0]?.publicUrl?.trim();
-            if (url) onPicked(url);
-          }}
-          selectionMode="single"
-          triggerClassName="w-full min-w-0 sm:w-auto"
-          triggerLabel={t("editor.media.chooseLibrary")}
-          triggerSize="sm"
-          triggerVariant="outline"
-        />
-      </div>
-      <MediaUrlImportField
-        className="min-w-0"
+    <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap">
+      <input
+        accept="image/avif,image/gif,image/jpeg,image/png,image/webp"
+        className="sr-only"
+        onChange={(event) => void handleFiles(event.target.files)}
+        ref={inputRef}
+        type="file"
+      />
+      <Button
+        className="w-full min-w-0 justify-center sm:w-auto"
         disabled={uploading}
-        onImported={(file) => {
-          void (async () => {
-            try {
-              const publicUrl = await uploadMediaFile(file);
-              onPicked(publicUrl);
-              toast.success(t("editor.toast.imageImported"));
-            } catch {
-              toast.error(t("editor.toast.imageImportFailed"));
-            }
-          })();
-        }}
+        onClick={() => inputRef.current?.click()}
         size="sm"
+        type="button"
+        variant="outline"
+      >
+        <RiImageLine data-icon="inline-start" />
+        {uploading ? t("editor.media.uploading") : t("editor.media.uploadImage")}
+      </Button>
+      <MediaLibraryDialog
+        onOpenChange={onPickerOpenChange}
+        onSelect={(assets) => {
+          const url = assets[0]?.publicUrl?.trim();
+          if (url) onPicked(url);
+        }}
+        selectionMode="single"
+        triggerClassName="w-full min-w-0 sm:w-auto"
+        triggerLabel={t("editor.media.chooseLibrary")}
+        triggerSize="sm"
+        triggerVariant="outline"
       />
     </div>
   );
