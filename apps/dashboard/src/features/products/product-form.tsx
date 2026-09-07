@@ -65,6 +65,7 @@ import {
   isInitialHandleLocked,
   ProductMutationError,
   slugifyProductHandle,
+  suggestAvailableProductHandle,
   validateInitialStock,
   validatePriceAmount,
   validateTitle,
@@ -93,6 +94,7 @@ export function ProductForm({
   const [completedSteps, setCompletedSteps] = useState<ComposerStep["id"][]>([]);
   const [isHandleLocked, setIsHandleLocked] = useState(isInitialHandleLocked(product));
   const [actionError, setActionError] = useState<string | null>(null);
+  const [suggestedHandle, setSuggestedHandle] = useState<string | null>(null);
   const defaultValues = useMemo(() => getProductDefaultValues(product), [product]);
   const steps = useMemo<ComposerStep[]>(
     () => [
@@ -124,6 +126,7 @@ export function ProductForm({
     onSubmit: async ({ value }) => {
       try {
         setActionError(null);
+        setSuggestedHandle(null);
         const payload = getProductPayload(value, { includeOptions: true }, t);
 
         await submitMutation.mutateAsync(payload);
@@ -132,6 +135,10 @@ export function ProductForm({
 
         if (error instanceof ProductMutationError && error.step) {
           setActiveStep(error.step);
+        }
+
+        if (error instanceof ProductMutationError && error.code === "product_conflict") {
+          setSuggestedHandle(suggestAvailableProductHandle(form.state.values.handle));
         }
 
         setActionError(message);
@@ -842,10 +849,29 @@ export function ProductForm({
                 <form.Subscribe selector={(state) => state.isDirty}>
                   {(isDirty) =>
                     actionError ? (
-                      <p className="flex items-center gap-2 text-sm font-medium text-destructive">
-                        <AppIcons.error data-icon="inline-start" />
-                        {actionError}
-                      </p>
+                      <div className="flex flex-wrap items-center gap-2 text-sm font-medium text-destructive">
+                        <p className="flex items-center gap-2">
+                          <AppIcons.error data-icon="inline-start" />
+                          {actionError}
+                        </p>
+                        {suggestedHandle ? (
+                          <Button
+                            onClick={() => {
+                              form.setFieldValue("handle", suggestedHandle);
+                              setIsHandleLocked(false);
+                              setActionError(null);
+                              setSuggestedHandle(null);
+                            }}
+                            size="sm"
+                            type="button"
+                            variant="outline"
+                          >
+                            {t("products.composer.useSuggestedHandle", {
+                              handle: suggestedHandle,
+                            })}
+                          </Button>
+                        ) : null}
+                      </div>
                     ) : (
                       <p className="text-xs text-muted-foreground sm:text-sm">
                         {isDirty
