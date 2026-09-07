@@ -22,7 +22,6 @@ import { filenameToAlt, formatBytes, getImageDimensions } from "./media-helpers"
 import { MediaPreviewLightbox } from "./media-lightbox";
 import { createMediaUploadId } from "./media-upload-id";
 import { MediaUploadQueue, mapUppyFileToQueueView, type QueueFileView } from "./media-upload-queue";
-import { MediaUrlImportField } from "./media-url-import-field";
 
 type UploadMeta = { assetId?: string };
 const allowedTypes = ["image/avif", "image/gif", "image/jpeg", "image/png", "image/webp"];
@@ -412,17 +411,6 @@ export function MediaUploadComposer({
                     </p>
                   </div>
                 </button>
-
-                <div className="min-w-0 shrink-0 rounded-2xl border bg-card/60 p-3 sm:p-3.5">
-                  <p className="mb-2 text-xs font-medium text-muted-foreground">
-                    {t("media.importUrlSection")}
-                  </p>
-                  <MediaUrlImportField
-                    disabled={uploading}
-                    onImported={(file) => addFiles([file])}
-                    size="sm"
-                  />
-                </div>
 
                 {/* Compact summary on mobile (desktop uses the right aside). */}
                 <div className="flex shrink-0 items-center justify-between gap-2 rounded-xl border bg-muted/20 px-3 py-2.5 text-xs sm:text-sm lg:hidden">

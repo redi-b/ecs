@@ -138,11 +138,6 @@ describe("i18n message catalogs", () => {
       t("taxonomy.entity.category.plural"),
       englishLeaves["taxonomy.entity.category.plural"],
     );
-    // ICU unescapes '' → ' in rendered output
-    assert.equal(
-      t("media.importUrlHint"),
-      normalizeForPlaceholders(englishLeaves["media.importUrlHint"] ?? ""),
-    );
     assert.equal(t("onboarding.stepOf", { current: 1, total: 3 }), "Step 1 of 3");
   });
 });
