@@ -192,6 +192,9 @@ test("NexaHub ports the reference listing controls and featured carousel structu
   for (const marker of ["product-filter-bar__btn", "product-filter-bar__dropdown", "data-filter-option"]) assert.ok(filters.includes(marker));
   for (const marker of ["data-featured-carousel", "hero-section__featured-meta", "hero-section__featured-dots"]) assert.ok(home.includes(marker));
   assert.ok(client.includes('from "embla-carousel"'));
+  assert.match(client, /prefers-reduced-motion: reduce/);
+  assert.match(client, /pointerenter.*stopAutoplay/);
+  assert.match(client, /visibilitychange/);
 });
 
 test("NexaHub keeps reference controls visible and uses the reference carousel icons", () => {
@@ -203,6 +206,7 @@ test("NexaHub keeps reference controls visible and uses the reference carousel i
   assert.match(home, /arrow-right-icon\.svg\?raw/);
   assert.doesNotMatch(home, />←<|>→</, "category controls must use the reference SVG, not text glyphs");
   assert.match(headerStyles, /\[data-cart-count\]\s*\{[\s\S]*?position:\s*absolute/);
+  assert.match(read("templates/nexahub/v1/styles/components/_button.scss"), /&--full-width[\s\S]*?&\.btn--with-icon[\s\S]*?justify-content:\s*space-between/);
 });
 
 test("NexaHub never invents featured commerce and preserves reference secondary-page geometry", () => {

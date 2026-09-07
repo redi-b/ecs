@@ -118,6 +118,10 @@
   &--full-width {
     width: 100%;
     justify-content: center;
+
+    &.btn--with-icon {
+      justify-content: space-between;
+    }
   }
 
   &:disabled {

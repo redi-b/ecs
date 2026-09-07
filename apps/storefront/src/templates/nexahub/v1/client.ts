@@ -91,9 +91,20 @@ export function initNexahubStorefront() {
     if (!viewport) return;
     const carousel = EmblaCarousel(viewport, { align: "start", loop: root.querySelectorAll(".hero-section__featured-slide").length > 1 });
     const dots = [...root.querySelectorAll<HTMLButtonElement>("[data-featured-dot]")];
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    let autoplayTimer: number | undefined;
+    const stopAutoplay = () => { if (autoplayTimer !== undefined) window.clearInterval(autoplayTimer); autoplayTimer = undefined; };
+    const startAutoplay = () => { stopAutoplay(); if (dots.length < 2 || reducedMotion.matches || document.hidden) return; autoplayTimer = window.setInterval(() => carousel.scrollNext(), 6000); };
     const syncDots = () => dots.forEach((dot, index) => { const active = index === carousel.selectedScrollSnap(); dot.classList.toggle("hero-section__dot--active", active); dot.setAttribute("aria-current", active ? "true" : "false"); });
-    dots.forEach((dot, index) => dot.addEventListener("click", () => carousel.scrollTo(index)));
+    dots.forEach((dot, index) => dot.addEventListener("click", () => { carousel.scrollTo(index); startAutoplay(); }));
+    root.addEventListener("pointerenter", stopAutoplay);
+    root.addEventListener("pointerleave", startAutoplay);
+    root.addEventListener("focusin", stopAutoplay);
+    root.addEventListener("focusout", (event) => { const nextTarget = event.relatedTarget; if (!(nextTarget instanceof Node) || !root.contains(nextTarget)) startAutoplay(); });
+    document.addEventListener("visibilitychange", () => document.hidden ? stopAutoplay() : startAutoplay());
+    reducedMotion.addEventListener("change", startAutoplay);
     carousel.on("select", syncDots); syncDots();
+    startAutoplay();
   });
 
   document.querySelectorAll<HTMLElement>(".catalogue-section").forEach((root) => {

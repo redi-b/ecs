@@ -8,19 +8,40 @@ function mountHeroCarousel(root: HTMLElement) {
   if (!viewport || !dots) return;
 
   let embla: EmblaCarouselType | undefined;
+  let autoplayTimer: number | undefined;
+  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+
+  const stopAutoplay = () => {
+    if (autoplayTimer !== undefined) window.clearInterval(autoplayTimer);
+    autoplayTimer = undefined;
+  };
+
+  const startAutoplay = () => {
+    stopAutoplay();
+    if (!embla || embla.scrollSnapList().length < 2 || reducedMotion.matches || document.hidden) {
+      return;
+    }
+    autoplayTimer = window.setInterval(() => {
+      if (!embla) return;
+      if (embla.canScrollNext()) embla.scrollNext();
+      else embla.scrollTo(0);
+    }, 6000);
+  };
 
   const render = () => {
     if (!embla) return;
     const selected = embla.selectedScrollSnap();
     const snaps = embla.scrollSnapList();
-    dots.replaceChildren(...snaps.map((_, index) => {
-      const dot = document.createElement("button");
-      dot.type = "button";
-      dot.dataset.promoDot = String(index);
-      dot.setAttribute("aria-label", `Show featured product ${index + 1}`);
-      if (index === selected) dot.setAttribute("aria-current", "true");
-      return dot;
-    }));
+    dots.replaceChildren(
+      ...snaps.map((_, index) => {
+        const dot = document.createElement("button");
+        dot.type = "button";
+        dot.dataset.promoDot = String(index);
+        dot.setAttribute("aria-label", `Show featured product ${index + 1}`);
+        if (index === selected) dot.setAttribute("aria-current", "true");
+        return dot;
+      }),
+    );
     dots.hidden = snaps.length < 2;
     root.querySelectorAll<HTMLElement>("[data-promo-slide]").forEach((slide, index) => {
       slide.setAttribute("aria-hidden", String(index !== selected));
@@ -37,23 +58,40 @@ function mountHeroCarousel(root: HTMLElement) {
   embla.on("init", render).on("reInit", render).on("select", render);
 
   dots.addEventListener("click", (event) => {
-    const target = event.target instanceof Element
-      ? event.target.closest<HTMLButtonElement>("[data-promo-dot]")
-      : null;
+    const target =
+      event.target instanceof Element
+        ? event.target.closest<HTMLButtonElement>("[data-promo-dot]")
+        : null;
     if (!target) return;
     const index = Number.parseInt(target.dataset.promoDot ?? "", 10);
-    if (Number.isInteger(index)) embla?.scrollTo(index);
+    if (Number.isInteger(index)) {
+      embla?.scrollTo(index);
+      startAutoplay();
+    }
   });
+
+  root.addEventListener("pointerenter", stopAutoplay);
+  root.addEventListener("pointerleave", startAutoplay);
+  root.addEventListener("focusin", stopAutoplay);
+  root.addEventListener("focusout", (event) => {
+    const nextTarget = event.relatedTarget;
+    if (!(nextTarget instanceof Node) || !root.contains(nextTarget)) startAutoplay();
+  });
+  document.addEventListener("visibilitychange", () =>
+    document.hidden ? stopAutoplay() : startAutoplay(),
+  );
+  reducedMotion.addEventListener("change", startAutoplay);
 
   root.addEventListener(CAROUSEL_UPDATED_EVENT, () => {
     embla?.reInit();
     embla?.scrollTo(0, true);
     render();
+    startAutoplay();
   });
   render();
+  startAutoplay();
 }
 
 export function initHeroCarousels() {
   document.querySelectorAll<HTMLElement>("[data-promo-carousel]").forEach(mountHeroCarousel);
 }
-
