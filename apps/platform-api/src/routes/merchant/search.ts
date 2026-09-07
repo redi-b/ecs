@@ -1,3 +1,4 @@
+import { formatPublicOrderReference } from "@ecs/contracts";
 import type { PlatformAppOptions } from "../../app.js";
 import { getPaginationValue } from "../shared.js";
 import type { MerchantRouteApp, MerchantRouteHelpers } from "./context.js";
@@ -20,6 +21,34 @@ type SearchHit = {
   description: string | null;
   status: string | null;
 };
+
+export function formatOrderSearchStatus(
+  value: string | null | undefined,
+  kind: "order" | "payment" | "fulfillment",
+) {
+  const status = value?.trim().toLowerCase() ?? "";
+  if (kind === "payment") {
+    if (["not_paid", "unpaid", "awaiting", "pending"].includes(status)) return "Not paid yet";
+    if (["captured", "paid"].includes(status)) return "Paid";
+    if (status.includes("refund")) return "Refunded";
+  }
+  if (kind === "fulfillment") {
+    if (["not_fulfilled", "unfulfilled"].includes(status)) return "To prepare";
+    if (status === "partially_fulfilled") return "Partly prepared";
+    if (status === "fulfilled") return "Prepared";
+    if (status.includes("deliver")) return "Delivered";
+    if (status.includes("ship")) return "Shipped";
+  }
+  if (kind === "order") {
+    if (["pending", "requires_action"].includes(status)) return "Open";
+    if (status === "completed") return "Completed";
+    if (["canceled", "cancelled"].includes(status)) return "Canceled";
+    if (status === "archived") return "Archived";
+  }
+  return status
+    ? status.replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toUpperCase())
+    : "";
+}
 
 /**
  * Aggregated search for the dashboard command center.
@@ -86,9 +115,12 @@ export function registerMerchantSearchRoutes(
           .then((result) => {
             if (!result.ok) return [] as SearchHit[];
             return result.orders.map((order) => {
-              const display =
-                order.displayId != null ? `#${order.displayId}` : order.id.slice(0, 8);
-              const secondary = [order.email, order.paymentStatus, order.fulfillmentStatus]
+              const display = formatPublicOrderReference(order.id, order.customDisplayId);
+              const secondary = [
+                order.email,
+                formatOrderSearchStatus(order.paymentStatus, "payment"),
+                formatOrderSearchStatus(order.fulfillmentStatus, "fulfillment"),
+              ]
                 .filter(Boolean)
                 .join(" · ");
               return {
@@ -96,7 +128,7 @@ export function registerMerchantSearchRoutes(
                 type: "order",
                 label: display,
                 description: secondary || null,
-                status: order.status,
+                status: formatOrderSearchStatus(order.status, "order") || null,
               };
             });
           })
@@ -116,10 +148,7 @@ export function registerMerchantSearchRoutes(
           .then((result) => {
             if (!result.ok) return [] as SearchHit[];
             return result.customers.map((customer) => {
-              const name = [customer.firstName, customer.lastName]
-                .filter(Boolean)
-                .join(" ")
-                .trim();
+              const name = [customer.firstName, customer.lastName].filter(Boolean).join(" ").trim();
               return {
                 id: customer.id,
                 type: "customer",
@@ -218,8 +247,7 @@ export function registerMerchantSearchRoutes(
               id: promo.id,
               type: "promotion",
               label: promo.code?.trim() || promo.id,
-              description:
-                [promo.method, promo.status].filter(Boolean).join(" · ") || null,
+              description: [promo.method, promo.status].filter(Boolean).join(" · ") || null,
               status: promo.status ?? null,
             }));
           })
