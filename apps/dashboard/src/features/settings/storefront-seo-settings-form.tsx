@@ -17,16 +17,18 @@ import { useI18n } from "@/i18n/provider";
 export function StorefrontSeoSettingsForm({
   initialSeo,
   tenantId,
+  tenantName,
 }: {
   initialSeo: StorefrontSeoSettings;
   tenantId: string;
+  tenantName: string;
 }) {
   const { t } = useI18n();
   const uploadInputRef = useRef<HTMLInputElement>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
   const form = useForm({
     defaultValues: {
-      title: initialSeo.title ?? "",
+      title: initialSeo.title ?? tenantName,
       description: initialSeo.description ?? "",
       socialImageUrl: initialSeo.socialImageUrl ?? "",
     },

@@ -311,7 +311,11 @@ export function StorefrontSection({
         )}
       </SettingsPanel>
 
-      <StorefrontSeoSettingsForm initialSeo={seo} tenantId={summary.tenant.id} />
+      <StorefrontSeoSettingsForm
+        initialSeo={seo}
+        tenantId={summary.tenant.id}
+        tenantName={summary.tenant.name}
+      />
     </SettingsSectionBody>
   );
 }
