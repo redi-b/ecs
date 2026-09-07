@@ -254,10 +254,6 @@ export function CategoryPicker({
         values={value}
       />
 
-      {value.length === 0 ? (
-        <FieldDescription>{t("products.formPicker.noCategoriesSelected")}</FieldDescription>
-      ) : null}
-
       <TaxonomyCreateDialog
         action={createAction}
         entityLabel="category"
