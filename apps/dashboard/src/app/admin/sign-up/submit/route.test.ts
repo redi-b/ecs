@@ -47,6 +47,7 @@ test("POST /admin/sign-up/submit creates an account and redirects to onboarding"
   body.set("ownerName", "Mahi Bekele");
   body.set("email", " MAHI@EXAMPLE.COM ");
   body.set("password", "password1234");
+  body.set("confirmPassword", "password1234");
 
   const response = await POST(
     new Request("http://dashboard.lvh.me/admin/sign-up/submit", {
@@ -89,6 +90,7 @@ test("POST /admin/sign-up/submit redirects back when platform auth does not retu
   body.set("ownerName", "Mahi Bekele");
   body.set("email", "mahi@example.com");
   body.set("password", "password1234");
+  body.set("confirmPassword", "password1234");
 
   const response = await POST(
     new Request("http://dashboard.lvh.me/admin/sign-up/submit", {
@@ -102,4 +104,33 @@ test("POST /admin/sign-up/submit redirects back when platform auth does not retu
     response.headers.get("location"),
     "http://dashboard.lvh.me/admin/sign-up?error=auth_session_missing&ownerName=Mahi+Bekele&email=mahi%40example.com",
   );
+});
+
+test("POST /admin/sign-up/submit rejects mismatched passwords before account creation", async () => {
+  process.env.PLATFORM_API_BASE_URL = "http://platform.test";
+  let requestedUpstream = false;
+  globalThis.fetch = async () => {
+    requestedUpstream = true;
+    return new Response(null, { status: 500 });
+  };
+
+  const response = await POST(
+    new Request("http://dashboard.lvh.me/admin/sign-up/submit", {
+      body: JSON.stringify({
+        confirmPassword: "different-password",
+        email: "mahi@example.com",
+        ownerName: "Mahi Bekele",
+        password: "password1234",
+      }),
+      headers: {
+        accept: "application/json",
+        "content-type": "application/json",
+      },
+      method: "POST",
+    }),
+  );
+
+  assert.equal(response.status, 400);
+  assert.deepEqual(await response.json(), { error: "password_mismatch", ok: false });
+  assert.equal(requestedUpstream, false);
 });

@@ -29,6 +29,7 @@ export function AccountSignUpForm({
   const [ownerName, setOwnerName] = useState(defaultValues.ownerName ?? "");
   const [email, setEmail] = useState(defaultValues.email ?? "");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [errorMessage, setErrorMessage] = useState(initialErrorMessage);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -37,12 +38,16 @@ export function AccountSignUpForm({
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (isSubmitting) return;
+    if (password !== confirmPassword) {
+      setErrorMessage(t("signup.error.passwordMismatch"));
+      return;
+    }
 
     setIsSubmitting(true);
     setErrorMessage(null);
 
     const response = await fetch("/admin/sign-up/submit", {
-      body: JSON.stringify({ email, ownerName, password }),
+      body: JSON.stringify({ confirmPassword, email, ownerName, password }),
       headers: {
         accept: "application/json",
         "content-type": "application/json",
@@ -136,6 +141,25 @@ export function AccountSignUpForm({
           </InputGroup>
           <FieldDescription>{t("auth.passwordMinimum")}</FieldDescription>
         </Field>
+        <Field>
+          <FieldLabel htmlFor={`${fieldId}-confirmPassword`}>
+            {t("auth.confirmPassword")}
+          </FieldLabel>
+          <InputGroup className="h-11 bg-background px-1 transition-colors hover:border-ring/50 focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/25">
+            <InputGroupInput
+              autoComplete="new-password"
+              className="px-3 text-sm"
+              disabled={isSubmitting}
+              id={`${fieldId}-confirmPassword`}
+              minLength={8}
+              name="confirmPassword"
+              onChange={(event) => setConfirmPassword(event.target.value)}
+              required
+              type={isPasswordVisible ? "text" : "password"}
+              value={confirmPassword}
+            />
+          </InputGroup>
+        </Field>
         {errorMessage ? (
           <Field data-invalid>
             <FieldError>{errorMessage}</FieldError>
@@ -183,6 +207,8 @@ function mapSignupError(code: string | undefined, t: (key: MessageKey) => string
       return t("signup.error.required");
     case "password_too_short":
       return t("signup.error.passwordShort");
+    case "password_mismatch":
+      return t("signup.error.passwordMismatch");
     default:
       return t("signup.error.failed");
   }

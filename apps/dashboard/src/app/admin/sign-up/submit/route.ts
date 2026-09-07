@@ -19,13 +19,18 @@ export async function POST(request: Request) {
   const ownerName = payload.ownerName;
   const email = payload.email?.toLowerCase() ?? null;
   const password = payload.password;
+  const confirmPassword = payload.confirmPassword;
 
-  if (!ownerName || !email || !password) {
+  if (!ownerName || !email || !password || !confirmPassword) {
     return failSignUp(request, "missing_required_fields", payload, wantsJson);
   }
 
   if (password.length < 8) {
     return failSignUp(request, "password_too_short", payload, wantsJson);
+  }
+
+  if (password !== confirmPassword) {
+    return failSignUp(request, "password_mismatch", payload, wantsJson);
   }
 
   const signUpResult = await signUpWithPlatformAuth({
@@ -68,14 +73,17 @@ async function readSignUpPayload(request: Request) {
       email?: unknown;
       ownerName?: unknown;
       password?: unknown;
+      confirmPassword?: unknown;
     } | null;
     return {
       email: typeof body?.email === "string" && body.email.trim() ? body.email.trim() : null,
       ownerName:
-        typeof body?.ownerName === "string" && body.ownerName.trim()
-          ? body.ownerName.trim()
-          : null,
+        typeof body?.ownerName === "string" && body.ownerName.trim() ? body.ownerName.trim() : null,
       password: typeof body?.password === "string" && body.password ? body.password : null,
+      confirmPassword:
+        typeof body?.confirmPassword === "string" && body.confirmPassword
+          ? body.confirmPassword
+          : null,
     };
   }
 
@@ -84,6 +92,7 @@ async function readSignUpPayload(request: Request) {
     email: getRequiredString(formData, "email"),
     ownerName: getRequiredString(formData, "ownerName"),
     password: getRequiredString(formData, "password"),
+    confirmPassword: getRequiredString(formData, "confirmPassword"),
   };
 }
 
@@ -97,7 +106,9 @@ function failSignUp(
     const status =
       error === "email_already_exists"
         ? 409
-        : error === "password_too_short" || error === "missing_required_fields"
+        : error === "password_too_short" ||
+            error === "password_mismatch" ||
+            error === "missing_required_fields"
           ? 400
           : 503;
     return NextResponse.json({ error, ok: false as const }, { status });
