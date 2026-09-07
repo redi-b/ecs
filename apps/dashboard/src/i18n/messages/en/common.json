@@ -40,6 +40,7 @@
   "searchProducts": "Search products…",
   "noMatchingProducts": "No matching products.",
   "toggleTheme": "Toggle theme",
+  "toggleSidebar": "Toggle navigation",
   "themeToLight": "Switch to light mode",
   "themeToDark": "Switch to dark mode",
   "clearSelection": "Clear selection",

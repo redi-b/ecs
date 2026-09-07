@@ -1,7 +1,7 @@
 "use client";
 
+import { RiSidebarFoldLine } from "@remixicon/react";
 import { cva, type VariantProps } from "class-variance-authority";
-import { PanelLeftIcon } from "lucide-react";
 import { Slot } from "radix-ui";
 import * as React from "react";
 import { Button } from "@/components/ui/button";
@@ -249,7 +249,12 @@ function Sidebar({
   );
 }
 
-function SidebarTrigger({ className, onClick, ...props }: React.ComponentProps<typeof Button>) {
+function SidebarTrigger({
+  className,
+  onClick,
+  "aria-label": ariaLabel = "Toggle sidebar",
+  ...props
+}: React.ComponentProps<typeof Button>) {
   const { toggleSidebar } = useSidebar();
 
   return (
@@ -258,6 +263,7 @@ function SidebarTrigger({ className, onClick, ...props }: React.ComponentProps<t
       data-slot="sidebar-trigger"
       variant="ghost"
       size="icon-sm"
+      aria-label={ariaLabel}
       className={cn(className)}
       onClick={(event) => {
         onClick?.(event);
@@ -265,8 +271,8 @@ function SidebarTrigger({ className, onClick, ...props }: React.ComponentProps<t
       }}
       {...props}
     >
-      <PanelLeftIcon />
-      <span className="sr-only">Toggle Sidebar</span>
+      <RiSidebarFoldLine aria-hidden="true" />
+      <span className="sr-only">{ariaLabel}</span>
     </Button>
   );
 }
