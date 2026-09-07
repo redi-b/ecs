@@ -133,6 +133,9 @@
     "optionsLoadErrorDesc": "{labels} መጫን አልተቻለም። አሁንም መደበኛ ምርት መፍጠር እና በኋላ ላይ አማራጮችን ማከል ይችላሉ።"
   },
   "filter": {
+    "taxonomyError": "ምድቦችን እና ስብስቦችን መጫን አልተቻለም።",
+    "categoriesError": "ምድቦችን መጫን አልተቻለም።",
+    "collectionsError": "ስብስቦችን መጫን አልተቻለም።",
     "status": {
       "label": "ሁኔታ",
       "all": "ሁሉም ሁኔታዎች",
@@ -140,25 +143,11 @@
       "draft": "በዝግጅት ላይ",
       "unknown": "ሁኔታ አልታወቀም"
     },
-    "stock": {
-      "label": "ክምችት",
-      "all": "ሁሉም ክምችት",
-      "in_stock": "በክምችት አለ",
-      "out_of_stock": "ክምችት አልቋል",
-      "not_tracked": "አይከታተልም"
-    },
     "media": {
       "label": "ሚዲያ",
       "all": "ሁሉም ሚዲያ",
       "with_media": "ሚዲያ ያለው",
       "without_media": "ሚዲያ የሌለው"
-    },
-    "variants": {
-      "label": "አማራጮች",
-      "all": "ሁሉም የአማራጭ ብዛት",
-      "no_variants": "አማራጭ የለውም",
-      "single_variant": "አንድ አማራጭ",
-      "multi_variant": "ብዙ አማራጮች"
     },
     "collection": {
       "label": "ስብስብ",

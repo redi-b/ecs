@@ -148,6 +148,11 @@ export function registerMerchantOrderRoutes(
     }
 
     const result = await exportOrdersToCsv({
+      filters: parseMerchantOrderListQuery(context.req.query(), {
+        limit: 100,
+        offset: 0,
+        salesChannelId: commerce.context.medusaSalesChannelId,
+      }),
       listOrders: options.listMerchantOrders,
       salesChannelId: commerce.context.medusaSalesChannelId,
     });

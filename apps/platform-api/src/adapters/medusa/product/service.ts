@@ -52,14 +52,13 @@ import type {
 import {
   getInventoryItemLevelsUrl,
   getProductCategoriesBaseUrl,
-  getProductCategoriesUrl,
   getProductCollectionsBaseUrl,
-  getProductCollectionsUrl,
   getProductDetailUrl,
   getProductOwnershipUrl,
   getProductsBaseUrl,
   getProductsUrl,
   getProductUrl,
+  getTenantTaxonomyUrl,
   normalizeBaseUrl,
 } from "./urls.js";
 import { getNumber, getString, isMissingCommerceResourceResponse, isRecord } from "./values.js";
@@ -73,9 +72,6 @@ import {
   parseProductCollectionWriteResponse,
   parseProductWriteResponse,
 } from "./write.js";
-
-const PRODUCT_POST_FILTER_PAGE_SIZE = 100;
-export const MAX_PRODUCT_POST_FILTER_SCAN = 10_000;
 
 export function createMedusaProductService(options: {
   adminApiToken?: string | undefined;
@@ -418,6 +414,7 @@ export function createMedusaProductService(options: {
     },
 
     listMerchantProducts: async (input: {
+      media?: "with_media" | "without_media" | undefined;
       categoryId?: string | undefined;
       collectionId?: string | undefined;
       limit: number;
@@ -431,118 +428,29 @@ export function createMedusaProductService(options: {
         return missingCredentials();
       }
 
-      // Medusa cannot express “none” (no collection/category) or our normalized
-      // “unknown” status as a positive filter. Scan bounded pages so the count
-      // and requested slice describe the whole filtered catalog, not page one.
-      const needsNoneFilter =
-        input.collectionId === "none" || input.categoryId === "none" || input.status === "unknown";
-      const normalizedProducts = [] as ReturnType<typeof normalizeProduct>;
-      let sourceCount: number | null = null;
-      let scanOffset = needsNoneFilter ? 0 : input.offset;
-      let hasMorePages = true;
-
-      while (hasMorePages) {
-        let response: Response;
-        try {
-          response = await fetcher(
-            getProductsUrl(options.medusaInternalUrl, {
-              limit: needsNoneFilter ? PRODUCT_POST_FILTER_PAGE_SIZE : input.limit,
-              offset: scanOffset,
-              salesChannelId: input.salesChannelId,
-              ...(input.q ? { q: input.q } : {}),
-              ...(input.status && input.status !== "unknown" ? { status: input.status } : {}),
-              ...(input.collectionId && input.collectionId !== "none"
-                ? { collectionId: input.collectionId }
-                : {}),
-              ...(input.categoryId && input.categoryId !== "none"
-                ? { categoryId: input.categoryId }
-                : {}),
-            }),
-            { headers: getAdminHeaders(options.adminApiToken) },
-          );
-        } catch {
-          return { ok: false, error: "commerce_backend_unavailable", status: 503 };
-        }
-
-        if (response.status === 401) {
-          return { ok: false, error: "commerce_credentials_invalid", status: 401 };
-        }
-        if (response.status === 404 && (await isMissingCommerceResourceResponse(response))) {
-          return { ok: false, error: "commerce_resource_missing", status: 503 };
-        }
-        if (!response.ok) {
-          return { ok: false, error: "commerce_backend_unavailable", status: 503 };
-        }
-
-        const data = await response.json().catch(() => undefined);
-        const rawProducts = Array.isArray(data?.products) ? data.products : [];
-        normalizedProducts.push(...rawProducts.flatMap(normalizeProduct));
-        sourceCount ??= getNumber(data?.count) ?? null;
-
-        if (!needsNoneFilter) {
-          sourceCount ??= normalizedProducts.length;
-          hasMorePages = false;
-          continue;
-        }
-        if (sourceCount !== null && sourceCount > MAX_PRODUCT_POST_FILTER_SCAN) {
-          return { ok: false, error: "product_filter_too_large", status: 413 };
-        }
-        if (rawProducts.length === 0) {
-          hasMorePages = false;
-          continue;
-        }
-
-        scanOffset += rawProducts.length;
-        if (scanOffset > MAX_PRODUCT_POST_FILTER_SCAN) {
-          return { ok: false, error: "product_filter_too_large", status: 413 };
-        }
-        if (
-          (sourceCount !== null && scanOffset >= sourceCount) ||
-          (sourceCount === null && rawProducts.length < PRODUCT_POST_FILTER_PAGE_SIZE)
-        ) {
-          hasMorePages = false;
-        }
-      }
-
-      let filteredProducts = normalizedProducts;
-
-      if (input.collectionId === "none") {
-        filteredProducts = filteredProducts.filter(
-          (product: (typeof normalizedProducts)[number]) => !product.collectionId,
-        );
-      }
-      if (input.categoryId === "none") {
-        filteredProducts = filteredProducts.filter(
-          (product: (typeof normalizedProducts)[number]) => !(product.categoryIds ?? []).length,
-        );
-      }
-      if (input.status === "unknown") {
-        filteredProducts = filteredProducts.filter(
-          (product: (typeof normalizedProducts)[number]) => {
-            const status = product.status?.trim().toLowerCase();
-            return status !== "published" && status !== "draft";
-          },
-        );
-      }
-
+      const response = await requestMedusa(
+        fetcher,
+        getProductsUrl(options.medusaInternalUrl, input),
+        { headers: getAdminHeaders(options.adminApiToken) },
+      );
+      if (response.status === 401)
+        return { ok: false, error: "commerce_credentials_invalid", status: 401 };
+      if (response.status === 404 && (await isMissingCommerceResourceResponse(response)))
+        return { ok: false, error: "commerce_resource_missing", status: 503 };
+      if (!response.ok) return { ok: false, error: "commerce_backend_unavailable", status: 503 };
+      const data = await response.json().catch(() => undefined);
+      if (!Array.isArray(data?.products) || !Number.isSafeInteger(data.count) || data.count < 0)
+        return { ok: false, error: "commerce_backend_unavailable", status: 503 };
+      const normalizedProducts = data.products.flatMap(normalizeProduct);
+      if (normalizedProducts.length !== data.products.length)
+        return { ok: false, error: "commerce_backend_unavailable", status: 503 };
       const products = input.stockLocationId?.trim()
         ? await hydrateProductsWithStock(fetcher, options, {
-            products: needsNoneFilter
-              ? filteredProducts.slice(input.offset, input.offset + input.limit)
-              : filteredProducts,
+            products: normalizedProducts,
             stockLocationId: input.stockLocationId,
           })
-        : needsNoneFilter
-          ? filteredProducts.slice(input.offset, input.offset + input.limit)
-          : filteredProducts;
-
-      return {
-        ok: true,
-        count: needsNoneFilter ? filteredProducts.length : (sourceCount ?? products.length),
-        limit: input.limit,
-        offset: input.offset,
-        products,
-      };
+        : normalizedProducts;
+      return { ok: true, count: data.count, limit: input.limit, offset: input.offset, products };
     },
 
     getMerchantProduct: async (input: {
@@ -598,6 +506,8 @@ export function createMedusaProductService(options: {
     },
 
     listMerchantProductCategories: async (input: {
+      visibility?: string | undefined;
+      parentId?: string | undefined;
       limit: number;
       offset: number;
       q?: string | undefined;
@@ -609,7 +519,7 @@ export function createMedusaProductService(options: {
 
       const response = await requestMedusa(
         fetcher,
-        getProductCategoriesUrl(options.medusaInternalUrl, input),
+        getTenantTaxonomyUrl(options.medusaInternalUrl, "categories", input),
         {
           headers: getAdminHeaders(options.adminApiToken),
         },
@@ -638,16 +548,24 @@ export function createMedusaProductService(options: {
             .flatMap(normalizeProductCategory)
         : [];
 
+      if (
+        !Array.isArray(data?.product_categories) ||
+        data.product_categories.length !== categories.length
+      ) {
+        return { ok: false, error: "commerce_backend_unavailable", status: 503 };
+      }
+
       return {
         ok: true,
         categories,
-        count: categories.length,
+        count: getNumber(data?.count) ?? categories.length,
         limit: getNumber(data?.limit) ?? input.limit,
         offset: getNumber(data?.offset) ?? input.offset,
       };
     },
 
     listMerchantProductCollections: async (input: {
+      visibility?: string | undefined;
       limit: number;
       offset: number;
       q?: string | undefined;
@@ -659,7 +577,7 @@ export function createMedusaProductService(options: {
 
       const response = await requestMedusa(
         fetcher,
-        getProductCollectionsUrl(options.medusaInternalUrl, input),
+        getTenantTaxonomyUrl(options.medusaInternalUrl, "collections", input),
         {
           headers: getAdminHeaders(options.adminApiToken),
         },
@@ -688,10 +606,14 @@ export function createMedusaProductService(options: {
             .flatMap(normalizeProductCollection)
         : [];
 
+      if (!Array.isArray(data?.collections) || data.collections.length !== collections.length) {
+        return { ok: false, error: "commerce_backend_unavailable", status: 503 };
+      }
+
       return {
         ok: true,
         collections,
-        count: collections.length,
+        count: getNumber(data?.count) ?? collections.length,
         limit: getNumber(data?.limit) ?? input.limit,
         offset: getNumber(data?.offset) ?? input.offset,
       };

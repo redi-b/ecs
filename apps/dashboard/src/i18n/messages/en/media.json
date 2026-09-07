@@ -21,6 +21,7 @@
   "ready": "Ready",
   "failed": "Upload failed",
   "retry": "Retry",
+  "selectPage": "Select this page",
   "remove": "Remove image",
   "cover": "Cover",
   "makeCover": "Make cover",

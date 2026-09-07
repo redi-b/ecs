@@ -5,6 +5,7 @@ import { PageShell } from "@/components/app/page-shell";
 import { RefreshButton } from "@/components/app/refresh-button";
 import { InquiryInbox } from "@/features/inquiries/inquiry-inbox";
 import { type DashboardSearchParams, getSelectedTenantId } from "@/lib/dashboard-tenant-context";
+import { listDateRangeToTimestamps, parseListDateRange } from "@/lib/list-date-range";
 import { getStorefrontInquiries } from "@/lib/platform-api/inquiries/client";
 import { dashboardRoutes } from "@/lib/routes";
 import { parseListSearchParams } from "@/lib/url-state";
@@ -21,7 +22,12 @@ export default async function InquiriesPage({
   const q = typeof params.q === "string" ? params.q : undefined;
   const status = typeof params.status === "string" ? params.status : undefined;
   const type = typeof params.type === "string" ? params.type : undefined;
+  const range = parseListDateRange(
+    typeof params.createdFrom === "string" ? params.createdFrom : undefined,
+    typeof params.createdTo === "string" ? params.createdTo : undefined,
+  );
   const result = await getStorefrontInquiries({
+    ...(range ? listDateRangeToTimestamps(range) : {}),
     cookieHeader: requestHeaders.get("cookie"),
     platformApiBaseUrl: process.env.PLATFORM_API_BASE_URL ?? "http://localhost:3000",
     requestHost: requestHeaders.get("host"),
@@ -39,7 +45,7 @@ export default async function InquiriesPage({
         <>
           <ListSummary
             count={result.count}
-            filtered={Boolean(q || status || type)}
+            filtered={Boolean(q || status || type || range)}
             page={list.page}
             pageSize={result.limit}
           />

@@ -28,6 +28,21 @@ export default async function PromotionsPage({ searchParams }: PromotionsPagePro
     statusRaw === "active" || statusRaw === "inactive" || statusRaw === "draft"
       ? statusRaw
       : undefined;
+  const apply = getPromotionFilter(resolvedSearchParams.apply, ["code", "automatic"] as const);
+  const schedule = getPromotionFilter(resolvedSearchParams.schedule, [
+    "scheduled",
+    "current",
+    "expired",
+    "unscheduled",
+  ] as const);
+  const offer = getPromotionFilter(resolvedSearchParams.offer, [
+    "order",
+    "products",
+    "free_shipping",
+    "buyget",
+    "percentage",
+    "fixed",
+  ] as const);
   const t = await getTranslations();
   const offset = (listParams.page - 1) * listParams.pageSize;
   const requestHeaders = await headers();
@@ -39,6 +54,9 @@ export default async function PromotionsPage({ searchParams }: PromotionsPagePro
     requestHost: requestHeaders.get("host"),
     ...(listParams.q ? { query: listParams.q } : {}),
     ...(status ? { status } : {}),
+    ...(apply ? { apply } : {}),
+    ...(schedule ? { schedule } : {}),
+    ...(offer ? { offer } : {}),
   });
   const errorState = result.ok ? null : getListErrorState("promotions", result.message);
 
@@ -56,7 +74,13 @@ export default async function PromotionsPage({ searchParams }: PromotionsPagePro
         <>
           <ListSummary
             count={result.promotions.count}
-            filtered={Boolean(listParams.q) || Boolean(status)}
+            filtered={
+              Boolean(listParams.q) ||
+              Boolean(status) ||
+              Boolean(apply) ||
+              Boolean(offer) ||
+              Boolean(schedule)
+            }
             page={listParams.page}
             pageSize={listParams.pageSize}
           />
@@ -71,6 +95,9 @@ export default async function PromotionsPage({ searchParams }: PromotionsPagePro
               />
             }
             initialQuery={listParams.q}
+            initialApply={apply ?? "all"}
+            initialSchedule={schedule ?? "all"}
+            initialOffer={offer ?? "all"}
             initialStatus={status ?? "all"}
             promotions={result.promotions.promotions}
             totalCount={result.promotions.count}
@@ -88,4 +115,12 @@ export default async function PromotionsPage({ searchParams }: PromotionsPagePro
       )}
     </PageShell>
   );
+}
+
+function getPromotionFilter<const T extends readonly string[]>(
+  value: string | string[] | undefined,
+  values: T,
+) {
+  const candidate = Array.isArray(value) ? value[0] : value;
+  return values.includes(candidate as T[number]) ? (candidate as T[number]) : undefined;
 }

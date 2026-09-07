@@ -2,15 +2,12 @@
 
 import type { ColumnDef } from "@tanstack/react-table";
 import { useRouter } from "next/navigation";
-import { type ReactNode, useCallback, useEffect, useMemo, useState, useTransition } from "react";
+import { type ReactNode, useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/app/confirm-dialog";
 import { DataTable } from "@/components/app/data-table";
 import { DataTableBulkBar } from "@/components/app/data-table-bulk-bar";
-import {
-  type DataTableFilterDefinition,
-  DataTableFilters,
-} from "@/components/app/data-table-filters";
+import { DataTableFilters } from "@/components/app/data-table-filters";
 import { DataTableHeader } from "@/components/app/data-table-header";
 import { AppIcons } from "@/components/app/icons";
 import { ListResultsStatus } from "@/components/app/list-results-status";
@@ -26,11 +23,10 @@ import { copyTextToClipboard } from "@/lib/clipboard";
 import type { MediaAsset } from "@/lib/merchant-media";
 import { cn } from "@/lib/utils";
 import { MediaEditSheet } from "./media-edit-sheet";
+import { MediaSortControl, mediaFilterDefinitions } from "./media-filter-controls";
 import {
-  filterAndSortMediaAssets,
   formatBytes,
   formatMimeLabel,
-  hasActiveMediaFilters,
   type MediaOrientationFilter,
   type MediaSizeFilter,
   type MediaSort,
@@ -44,7 +40,10 @@ export function MediaLibrary({
   assets,
   footer,
   initialMimeType = "all",
+  initialOrientation = "all",
   initialQuery = "",
+  initialSize = "all",
+  initialSort = "newest",
   onChanged,
   pageCount,
   totalCount,
@@ -52,7 +51,10 @@ export function MediaLibrary({
   assets: MediaAsset[];
   footer?: ReactNode;
   initialMimeType?: string | undefined;
+  initialOrientation?: MediaOrientationFilter | undefined;
   initialQuery?: string | undefined;
+  initialSize?: MediaSizeFilter | undefined;
+  initialSort?: MediaSort | undefined;
   onChanged: () => void;
   pageCount: number;
   totalCount: number;
@@ -61,23 +63,43 @@ export function MediaLibrary({
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [searchValue, setSearchValue] = useState(initialQuery);
-  // Size / orientation / sort refine the current page. Type + search are server-side.
-  const [size, setSize] = useState<MediaSizeFilter>("all");
-  const [orientation, setOrientation] = useState<MediaOrientationFilter>("all");
-  const [sort, setSort] = useState<MediaSort>("newest");
+  const size = initialSize;
+  const orientation = initialOrientation;
+  const sort = initialSort;
   const [view, setView] = useState<MediaView>("grid");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [editing, setEditing] = useState<MediaAsset | null>(null);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<MediaAsset | null>(null);
   const [bulkDeleteTargets, setBulkDeleteTargets] = useState<MediaAsset[]>([]);
+  const pageIdentity = JSON.stringify([
+    assets.map((asset) => asset.id),
+    initialQuery,
+    initialMimeType,
+    orientation,
+    size,
+    sort,
+  ]);
+  const previousPageIdentity = useRef(pageIdentity);
+  useEffect(() => {
+    if (previousPageIdentity.current === pageIdentity) return;
+    previousPageIdentity.current = pageIdentity;
+    setSelectedIds((current) => (current.size ? new Set() : current));
+    setLightboxIndex(null);
+  }, [pageIdentity]);
 
   useEffect(() => {
     setSearchValue(initialQuery);
   }, [initialQuery]);
 
   const pushServerFilters = useCallback(
-    (next: { q?: string; mimeType?: string }) => {
+    (next: {
+      q?: string;
+      mimeType?: string;
+      orientation?: MediaOrientationFilter;
+      size?: MediaSizeFilter;
+      sort?: MediaSort;
+    }) => {
       const url = new URL(window.location.href);
       const q = next.q !== undefined ? next.q : initialQuery;
       const mimeType = next.mimeType !== undefined ? next.mimeType : initialMimeType;
@@ -85,105 +107,40 @@ export function MediaLibrary({
       else url.searchParams.delete("q");
       if (mimeType && mimeType !== "all") url.searchParams.set("mimeType", mimeType);
       else url.searchParams.delete("mimeType");
+      setUrlMediaFilter(url, "orientation", next.orientation ?? orientation, "all");
+      setUrlMediaFilter(url, "size", next.size ?? size, "all");
+      setUrlMediaFilter(url, "sort", next.sort ?? sort, "newest");
       url.searchParams.delete("page");
       startTransition(() => {
         router.push(`${url.pathname}?${url.searchParams.toString()}`);
       });
     },
-    [initialMimeType, initialQuery, router],
+    [initialMimeType, initialQuery, orientation, router, size, sort],
   );
 
-  const filtered = useMemo(
-    () =>
-      filterAndSortMediaAssets(assets, {
-        orientation,
-        query: "",
-        size,
-        sort,
-        type: "all",
-      }),
-    [assets, orientation, size, sort],
-  );
+  const filtered = assets;
 
   const hasServerFilter =
-    Boolean(initialQuery.trim()) || (initialMimeType !== "all" && Boolean(initialMimeType));
-  const hasClientPageFilter = hasActiveMediaFilters({
-    orientation,
-    query: "",
-    size,
-    sort,
-    type: "all",
-  });
-  const isFiltered = hasServerFilter || hasClientPageFilter;
+    Boolean(initialQuery.trim()) ||
+    (initialMimeType !== "all" && Boolean(initialMimeType)) ||
+    orientation !== "all" ||
+    size !== "all";
+  const hasClientPageFilter = false;
+  const isFiltered =
+    hasServerFilter || orientation !== "all" || size !== "all" || sort !== "newest";
   const allPageSelected =
     filtered.length > 0 && filtered.every((asset) => selectedIds.has(asset.id));
   const selectedAssets = filtered.filter((asset) => selectedIds.has(asset.id));
 
-  const filters: DataTableFilterDefinition[] = [
-    {
-      defaultValue: "all",
-      id: "type",
-      label: t("media.type"),
-      onChange: (value) => pushServerFilters({ mimeType: value }),
-      options: [
-        { label: t("media.allTypes"), value: "all" },
-        { label: "JPEG", value: "image/jpeg" },
-        { label: "PNG", value: "image/png" },
-        { label: "WebP", value: "image/webp" },
-        { label: "AVIF", value: "image/avif" },
-        { label: "GIF", value: "image/gif" },
-      ],
-      value: initialMimeType || "all",
-    },
-    {
-      defaultValue: "all",
-      id: "size",
-      label: t("media.fileSize"),
-      onChange: (value) => setSize(value as MediaSizeFilter),
-      options: [
-        { label: t("media.allSizes"), value: "all" },
-        { label: t("media.sizeSmall"), value: "small" },
-        { label: t("media.sizeMedium"), value: "medium" },
-        { label: t("media.sizeLarge"), value: "large" },
-      ],
-      value: size,
-    },
-    {
-      defaultValue: "all",
-      id: "orientation",
-      label: t("media.orientation"),
-      onChange: (value) => setOrientation(value as MediaOrientationFilter),
-      options: [
-        { label: t("media.allOrientations"), value: "all" },
-        { label: t("media.landscape"), value: "landscape" },
-        { label: t("media.portrait"), value: "portrait" },
-        { label: t("media.square"), value: "square" },
-      ],
-      value: orientation,
-    },
-    {
-      defaultValue: "newest",
-      id: "sort",
-      label: t("media.sort"),
-      onChange: (value) => setSort(value as MediaSort),
-      options: [
-        { label: t("media.sortNewest"), value: "newest" },
-        { label: t("media.sortOldest"), value: "oldest" },
-        { label: t("media.sortNameAsc"), value: "name_asc" },
-        { label: t("media.sortNameDesc"), value: "name_desc" },
-        { label: t("media.sortLargest"), value: "largest" },
-        { label: t("media.sortSmallest"), value: "smallest" },
-      ],
-      value: sort,
-    },
-  ];
+  const filters = mediaFilterDefinitions(
+    t,
+    { mimeType: initialMimeType || "all", orientation, size },
+    pushServerFilters,
+  );
 
   function clearFilters() {
     setSearchValue("");
-    setSize("all");
-    setOrientation("all");
-    setSort("newest");
-    pushServerFilters({ q: "", mimeType: "all" });
+    pushServerFilters({ q: "", mimeType: "all", orientation: "all", size: "all", sort: "newest" });
   }
 
   function toggleSelected(assetId: string, selected: boolean) {
@@ -466,6 +423,7 @@ export function MediaLibrary({
           placeholder={t("media.searchPlaceholder")}
           value={searchValue}
         />
+        <MediaSortControl value={sort} onChange={(sort) => pushServerFilters({ sort })} />
       </DataTableFilters>
       <ListResultsStatus
         filteredPageCount={filtered.length}
@@ -511,6 +469,7 @@ export function MediaLibrary({
 
         {view === "list" ? (
           <DataTable
+            enableSorting={false}
             bulkActions={bulkActions}
             columns={columns}
             data={filtered}
@@ -762,4 +721,14 @@ function MediaGridSkeleton({ count = 8 }: { count?: number }) {
       </div>
     </div>
   );
+}
+
+function setUrlMediaFilter(
+  url: URL,
+  key: "orientation" | "size" | "sort",
+  value: string,
+  defaultValue: string,
+) {
+  if (value === defaultValue) url.searchParams.delete(key);
+  else url.searchParams.set(key, value);
 }

@@ -65,7 +65,7 @@ function parseEnum<T extends string>(value: string | undefined, allowed: Set<T>)
   return allowed.has(normalized) ? normalized : undefined;
 }
 
-/** Expand created preset into ISO from/to (UTC day bounds for today). */
+/** Calendar-day presets use the supported merchant timezone, Africa/Addis_Ababa. */
 export function resolveCreatedRange(
   input: Pick<MerchantOrderListQuery, "created" | "createdFrom" | "createdTo">,
   now = new Date(),
@@ -82,14 +82,11 @@ export function resolveCreatedRange(
   }
 
   const end = now.toISOString();
-  if (input.created === "today") {
-    const start = new Date(now);
-    start.setUTCHours(0, 0, 0, 0);
-    return { createdFrom: start.toISOString(), createdTo: end };
-  }
-
-  const days = input.created === "last_7_days" ? 7 : 30;
-  const start = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+  const offset = 3 * 60 * 60 * 1000;
+  const day = 24 * 60 * 60 * 1000;
+  const localDayStart = Math.floor((now.getTime() + offset) / day) * day - offset;
+  const days = input.created === "today" ? 1 : input.created === "last_7_days" ? 7 : 30;
+  const start = new Date(localDayStart - (days - 1) * day);
   return { createdFrom: start.toISOString(), createdTo: end };
 }
 

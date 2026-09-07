@@ -133,6 +133,7 @@ export function CollectionPicker({
       <TaxonomyCreateDialog
         action={createAction}
         entityLabel="collection"
+        tenantId={tenantId}
         nameKey="title"
         nameLabel={t("taxonomy.create.titleLabel")}
         namePlaceholder={t("taxonomy.create.titlePlaceholder")}
@@ -260,6 +261,7 @@ export function CategoryPicker({
       <TaxonomyCreateDialog
         action={createAction}
         entityLabel="category"
+        tenantId={tenantId}
         nameKey="name"
         nameLabel={t("taxonomy.create.nameLabel")}
         namePlaceholder={t("taxonomy.create.namePlaceholder")}

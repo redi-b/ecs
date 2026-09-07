@@ -1,8 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-
-import { createMedusaProductService } from "./product-service.js";
 import { getProductsUrl, PRODUCT_LIST_FIELDS } from "../adapters/medusa/product/urls.js";
+import { createMedusaProductService } from "./product-service.js";
 
 describe("createMedusaProductService", () => {
   it("creates a product in the resolved tenant sales channel", async () => {
@@ -1048,10 +1047,7 @@ describe("createMedusaProductService", () => {
     assert.equal(url.searchParams.get("offset"), "10");
     assert.equal(url.searchParams.get("order"), "-created_at");
     assert.equal(url.searchParams.get("sales_channel_id[]"), "sc_1");
-    assert.equal(
-      url.searchParams.get("fields"),
-      PRODUCT_LIST_FIELDS,
-    );
+    assert.equal(url.searchParams.get("fields"), PRODUCT_LIST_FIELDS);
     assert.deepEqual(result, {
       ok: true,
       products: [
@@ -1088,7 +1084,7 @@ describe("createMedusaProductService", () => {
     });
   });
 
-  it("paginates post-filtered product catalogs beyond the first 100 rows", async () => {
+  it("paginates missing-category results directly in Medusa", async () => {
     const offsets: number[] = [];
     const source = Array.from({ length: 150 }, (_, index) => ({
       id: `prod_${index}`,
@@ -1106,6 +1102,8 @@ describe("createMedusaProductService", () => {
       medusaInternalUrl: "http://medusa:9000",
       fetcher: async (input) => {
         const url = new URL(String(input));
+        assert.equal(url.pathname, "/admin/platform-products");
+        assert.equal(url.searchParams.get("category_missing"), "true");
         const offset = Number(url.searchParams.get("offset"));
         const limit = Number(url.searchParams.get("limit"));
         offsets.push(offset);
@@ -1125,7 +1123,7 @@ describe("createMedusaProductService", () => {
       salesChannelId: "sc_1",
     });
 
-    assert.deepEqual(offsets, [0, 100]);
+    assert.deepEqual(offsets, [120]);
     assert.equal(result.ok, true);
     assert.equal(result.ok ? result.count : null, 150);
     assert.deepEqual(
@@ -1134,7 +1132,7 @@ describe("createMedusaProductService", () => {
     );
   });
 
-  it("fails explicitly when a post-filter scan exceeds its synchronous ceiling", async () => {
+  it("accepts large filtered totals without scanning the catalog", async () => {
     let calls = 0;
     const service = createMedusaProductService({
       adminApiToken: "medusa_token",
@@ -1153,9 +1151,11 @@ describe("createMedusaProductService", () => {
     });
 
     assert.deepEqual(result, {
-      ok: false,
-      error: "product_filter_too_large",
-      status: 413,
+      ok: true,
+      products: [],
+      count: 10_001,
+      limit: 20,
+      offset: 0,
     });
     assert.equal(calls, 1);
   });
@@ -1916,15 +1916,8 @@ describe("createMedusaProductService", () => {
               created_at: "2026-01-01T00:00:00.000Z",
               updated_at: "2026-01-02T00:00:00.000Z",
             },
-            {
-              id: "pcat_2",
-              name: "Other",
-              metadata: {
-                platform_tenant_id: "tenant_2",
-              },
-            },
           ],
-          count: 2,
+          count: 11,
           limit: 5,
           offset: 10,
         });
@@ -1943,7 +1936,7 @@ describe("createMedusaProductService", () => {
     const url = new URL(forwardedRequest.url);
     assert.equal(
       url.href,
-      "http://medusa:9000/admin/product-categories?limit=5&offset=10&order=rank&fields=id%2Cname%2Chandle%2Cis_active%2Cis_internal%2Cparent_category_id%2Crank%2Cmetadata%2Ccreated_at%2Cupdated_at",
+      "http://medusa:9000/admin/platform-taxonomy?tenant_id=tenant_1&kind=categories&limit=5&offset=10",
     );
     assert.deepEqual(result, {
       ok: true,
@@ -1960,7 +1953,7 @@ describe("createMedusaProductService", () => {
           updatedAt: "2026-01-02T00:00:00.000Z",
         },
       ],
-      count: 1,
+      count: 11,
       limit: 5,
       offset: 10,
     });
@@ -2035,15 +2028,8 @@ describe("createMedusaProductService", () => {
               created_at: "2026-01-01T00:00:00.000Z",
               updated_at: "2026-01-02T00:00:00.000Z",
             },
-            {
-              id: "pcol_2",
-              title: "Other",
-              metadata: {
-                platform_tenant_id: "tenant_2",
-              },
-            },
           ],
-          count: 2,
+          count: 11,
           limit: 5,
           offset: 10,
         });
@@ -2062,7 +2048,7 @@ describe("createMedusaProductService", () => {
     const url = new URL(forwardedRequest.url);
     assert.equal(
       url.href,
-      "http://medusa:9000/admin/collections?limit=5&offset=10&order=-created_at&fields=id%2Ctitle%2Chandle%2Cmetadata%2Ccreated_at%2Cupdated_at",
+      "http://medusa:9000/admin/platform-taxonomy?tenant_id=tenant_1&kind=collections&limit=5&offset=10",
     );
     assert.deepEqual(result, {
       ok: true,
@@ -2075,9 +2061,72 @@ describe("createMedusaProductService", () => {
           updatedAt: "2026-01-02T00:00:00.000Z",
         },
       ],
-      count: 1,
+      count: 11,
       limit: 5,
       offset: 10,
+    });
+  });
+
+  it("forwards image filters and pagination together with native catalog filters", async () => {
+    for (const media of ["with_media", "without_media"] as const) {
+      const service = createMedusaProductService({
+        adminApiToken: "medusa_token",
+        medusaInternalUrl: "http://medusa:9000",
+        fetcher: async (input) => {
+          const url = new URL(String(input));
+          assert.equal(url.pathname, "/admin/platform-products");
+          assert.equal(url.searchParams.get("media"), media);
+          assert.equal(url.searchParams.get("sales_channel_id[]"), "sc_1");
+          assert.equal(url.searchParams.get("status[]"), "published");
+          assert.equal(url.searchParams.get("category_id[]"), "cat_1");
+          assert.equal(url.searchParams.get("collection_id[]"), "col_1");
+          assert.equal(url.searchParams.get("q"), "coffee");
+          assert.equal(url.searchParams.get("offset"), "20");
+          assert.equal(url.searchParams.get("limit"), "10");
+          return Response.json({ products: [], count: 20, offset: 20, limit: 10 });
+        },
+      });
+      const result = await service.listMerchantProducts({
+        media,
+        salesChannelId: "sc_1",
+        status: "published",
+        categoryId: "cat_1",
+        collectionId: "col_1",
+        q: "coffee",
+        offset: 20,
+        limit: 10,
+      });
+      assert.deepEqual(result, { ok: true, products: [], count: 20, offset: 20, limit: 10 });
+    }
+  });
+
+  it("rejects taxonomy responses containing another tenant's records", async () => {
+    const service = createMedusaProductService({
+      adminApiToken: "medusa_token",
+      medusaInternalUrl: "http://medusa:9000",
+      fetcher: async () =>
+        Response.json({
+          product_categories: [
+            { id: "foreign_category", metadata: { platform_tenant_id: "tenant_other" } },
+          ],
+          collections: [
+            { id: "foreign_collection", metadata: { platform_tenant_id: "tenant_other" } },
+          ],
+          count: 1,
+          limit: 100,
+          offset: 0,
+        }),
+    });
+    const input = { tenantId: "tenant_1", limit: 100, offset: 0 };
+    assert.deepEqual(await service.listMerchantProductCategories(input), {
+      ok: false,
+      error: "commerce_backend_unavailable",
+      status: 503,
+    });
+    assert.deepEqual(await service.listMerchantProductCollections(input), {
+      ok: false,
+      error: "commerce_backend_unavailable",
+      status: 503,
     });
   });
 

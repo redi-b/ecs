@@ -38,7 +38,15 @@ describe("product CSV export", () => {
     const calls: number[] = [];
     const result = await exportProductsToCsv({
       salesChannelId: "sc_1",
-      listProducts: async ({ offset, limit, salesChannelId }) => {
+      filters: { q: "coffee", status: "draft", categoryId: "none", media: "without_media" },
+      listProducts: async ({ offset, limit, salesChannelId, ...filters }) => {
+        assert.deepEqual(filters, {
+          stockLocationId: undefined,
+          q: "coffee",
+          status: "draft",
+          categoryId: "none",
+          media: "without_media",
+        });
         calls.push(offset);
         assert.equal(limit, 100);
         assert.equal(salesChannelId, "sc_1");
@@ -59,6 +67,20 @@ describe("product CSV export", () => {
     if (!result.ok) return;
     assert.equal(result.productCount, 101);
     assert.deepEqual(calls, [0, 100]);
+  });
+
+  it("does not silently export an incomplete result", async () => {
+    const result = await exportProductsToCsv({
+      salesChannelId: "one",
+      listProducts: async ({ limit, offset }) => ({
+        ok: true,
+        products: [],
+        count: 1,
+        limit,
+        offset,
+      }),
+    });
+    assert.deepEqual(result, { ok: false, error: "export_results_changed", status: 409 });
   });
 
   it("uses a second-precise UTC timestamp in filenames", () => {

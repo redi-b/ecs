@@ -23,6 +23,14 @@
     "customerCode": "ደንበኛው ይህን ኮድ ያስገባል"
   },
   "filter": {
+    "schedule": {
+      "label": "መርሐግብር",
+      "all": "ሁሉም መርሐግብሮች",
+      "scheduled": "በኋላ የሚጀምር",
+      "current": "በተያዘው ጊዜ ውስጥ",
+      "expired": "ያበቃ",
+      "unscheduled": "ቀን ያልተያዘለት"
+    },
     "status": {
       "all": "ሁሉም ሁኔታዎች",
       "active": "በስራ ላይ",

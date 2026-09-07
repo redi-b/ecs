@@ -1,9 +1,7 @@
 import type { MerchantProduct } from "@ecs/contracts";
 
 export type ProductStatusFilter = "all" | "published" | "draft" | "unknown";
-export type ProductStockFilter = "all" | "in_stock" | "out_of_stock" | "not_tracked";
 export type ProductMediaFilter = "all" | "with_media" | "without_media";
-export type ProductVariantCountFilter = "all" | "no_variants" | "single_variant" | "multi_variant";
 
 export type ProductTableFilterInput = {
   categoryId?: string | undefined;
@@ -11,8 +9,6 @@ export type ProductTableFilterInput = {
   media?: ProductMediaFilter | undefined;
   query: string;
   status: ProductStatusFilter;
-  stock?: ProductStockFilter | undefined;
-  variantCount?: ProductVariantCountFilter | undefined;
 };
 
 export type ProductThumbnail =
@@ -34,9 +30,7 @@ export function filterProductsForTable(
   return products.filter((product) => {
     const status = normalizeProductStatus(product.status);
     const matchesStatus = input.status === "all" || status === input.status;
-    const matchesStock = productMatchesStock(product, input.stock ?? "all");
     const matchesMedia = productMatchesMedia(product, input.media ?? "all");
-    const matchesVariantCount = productMatchesVariantCount(product, input.variantCount ?? "all");
     const matchesCollection =
       !input.collectionId ||
       input.collectionId === "all" ||
@@ -51,15 +45,7 @@ export function filterProductsForTable(
         : (product.categoryIds ?? []).includes(input.categoryId));
     const matchesQuery = !query || getProductSearchText(product).includes(query);
 
-    return (
-      matchesStatus &&
-      matchesStock &&
-      matchesMedia &&
-      matchesVariantCount &&
-      matchesCollection &&
-      matchesCategory &&
-      matchesQuery
-    );
+    return matchesStatus && matchesMedia && matchesCollection && matchesCategory && matchesQuery;
   });
 }
 
@@ -102,40 +88,12 @@ export function parseProductStatusFilter(value: string | string[] | null | undef
   return "all";
 }
 
-export function parseProductStockFilter(
-  value: string | string[] | null | undefined,
-): ProductStockFilter {
-  const normalized = (Array.isArray(value) ? value[0] : value)?.trim().toLowerCase();
-
-  if (normalized === "in_stock" || normalized === "out_of_stock" || normalized === "not_tracked") {
-    return normalized;
-  }
-
-  return "all";
-}
-
 export function parseProductMediaFilter(
   value: string | string[] | null | undefined,
 ): ProductMediaFilter {
   const normalized = (Array.isArray(value) ? value[0] : value)?.trim().toLowerCase();
 
   if (normalized === "with_media" || normalized === "without_media") {
-    return normalized;
-  }
-
-  return "all";
-}
-
-export function parseProductVariantCountFilter(
-  value: string | string[] | null | undefined,
-): ProductVariantCountFilter {
-  const normalized = (Array.isArray(value) ? value[0] : value)?.trim().toLowerCase();
-
-  if (
-    normalized === "no_variants" ||
-    normalized === "single_variant" ||
-    normalized === "multi_variant"
-  ) {
     return normalized;
   }
 
@@ -209,35 +167,10 @@ export function getProductTableCounts(input: {
     hasActiveFilter:
       filters.query.trim().length > 0 ||
       filters.status !== "all" ||
-      (filters.stock ?? "all") !== "all" ||
       (filters.media ?? "all") !== "all" ||
-      (filters.variantCount ?? "all") !== "all" ||
       Boolean(filters.collectionId && filters.collectionId !== "all") ||
       Boolean(filters.categoryId && filters.categoryId !== "all"),
   };
-}
-
-function productMatchesStock(product: MerchantProduct, stockFilter: ProductStockFilter) {
-  if (stockFilter === "all") {
-    return true;
-  }
-
-  const stocks = (product.variants ?? []).map((variant) => variant.stock).filter(Boolean);
-
-  if (stockFilter === "not_tracked") {
-    return stocks.length === 0;
-  }
-
-  if (stocks.length === 0) {
-    return false;
-  }
-
-  const availableQuantity = stocks.reduce(
-    (total, stock) => total + (stock?.availableQuantity ?? stock?.stockedQuantity ?? 0),
-    0,
-  );
-
-  return stockFilter === "in_stock" ? availableQuantity > 0 : availableQuantity <= 0;
 }
 
 function productMatchesMedia(product: MerchantProduct, mediaFilter: ProductMediaFilter) {
@@ -248,25 +181,4 @@ function productMatchesMedia(product: MerchantProduct, mediaFilter: ProductMedia
   const hasMedia = getProductMediaCount(product) > 0;
 
   return mediaFilter === "with_media" ? hasMedia : !hasMedia;
-}
-
-function productMatchesVariantCount(
-  product: MerchantProduct,
-  variantCountFilter: ProductVariantCountFilter,
-) {
-  if (variantCountFilter === "all") {
-    return true;
-  }
-
-  const variantCount = product.variants?.length ?? 0;
-
-  if (variantCountFilter === "no_variants") {
-    return variantCount === 0;
-  }
-
-  if (variantCountFilter === "single_variant") {
-    return variantCount === 1;
-  }
-
-  return variantCount > 1;
 }

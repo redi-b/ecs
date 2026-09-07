@@ -96,6 +96,18 @@ export function DataTable<TData>({
     pageSize: pageSize ?? (data.length || 1),
   });
   const isPaginated = typeof pageSize === "number" && pageSize > 0;
+  const selectionScope = JSON.stringify([
+    data.map((row, index) => getRowId?.(row) ?? index),
+    globalFilter,
+    isLoading,
+  ]);
+  const previousSelectionScope = useRef(selectionScope);
+  useEffect(() => {
+    if (previousSelectionScope.current === selectionScope) return;
+    previousSelectionScope.current = selectionScope;
+    // Selection is page-scoped. A filter/page change must not retain hidden IDs.
+    setRowSelection((current) => (Object.keys(current).length ? {} : current));
+  }, [selectionScope]);
 
   useEffect(() => {
     if (!isPaginated || typeof pageSize !== "number") return;
@@ -130,7 +142,7 @@ export function DataTable<TData>({
   });
 
   const rows = table.getRowModel().rows;
-  const selectedRows = table.getFilteredSelectedRowModel().rows;
+  const selectedRows = isLoading ? [] : table.getFilteredSelectedRowModel().rows;
   const emptyStateMessage =
     isFiltered && rows.length === 0 ? (filteredEmptyMessage ?? emptyMessage) : emptyMessage;
   const emptyStateTitle =

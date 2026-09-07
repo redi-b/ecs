@@ -43,9 +43,29 @@ export function registerMerchantPromotionRoutes(
       statusParam === "active" || statusParam === "inactive" || statusParam === "draft"
         ? statusParam
         : undefined;
+    const apply = parsePromotionFilter(context.req.query("apply"), ["code", "automatic"] as const);
+    const schedule = parsePromotionFilter(context.req.query("schedule"), [
+      "scheduled",
+      "current",
+      "expired",
+      "unscheduled",
+    ] as const);
+    if (!schedule.ok) return context.json({ error: "invalid_promotion_filter" }, 400);
+    const offer = parsePromotionFilter(context.req.query("offer"), [
+      "order",
+      "products",
+      "free_shipping",
+      "buyget",
+      "percentage",
+      "fixed",
+    ] as const);
+    if (!apply.ok || !offer.ok) return context.json({ error: "invalid_promotion_filter" }, 400);
     const result = await options.listMerchantPromotions({
+      ...(schedule.value ? { schedule: schedule.value } : {}),
+      ...(apply.value ? { apply: apply.value } : {}),
       limit: getPaginationValue(context.req.query("limit"), 20, 100),
       offset: getPaginationValue(context.req.query("offset"), 0, 100_000),
+      ...(offer.value ? { offer: offer.value } : {}),
       ...(context.req.query("q")?.trim() ? { query: context.req.query("q")?.trim() } : {}),
       ...(status ? { status } : {}),
       tenantId: merchant.result.context.tenantId,
@@ -98,6 +118,16 @@ export function registerMerchantPromotionRoutes(
       ? context.json(result)
       : context.json({ error: result.error }, commerceErrorStatus(result.status));
   });
+}
+
+function parsePromotionFilter<const T extends readonly string[]>(
+  value: string | undefined,
+  values: T,
+) {
+  if (!value?.trim() || value === "all") return { ok: true as const, value: undefined };
+  return values.includes(value as T[number])
+    ? { ok: true as const, value: value as T[number] }
+    : { ok: false as const, value: undefined };
 }
 
 function toPromotionInput(data: z.infer<typeof promotionSchema>) {

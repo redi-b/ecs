@@ -1,5 +1,6 @@
 import { formatPublicOrderReference, type MerchantOrder } from "@ecs/contracts";
 import type { MessageKey } from "@/i18n/messages";
+import { parseListDateRange } from "../../lib/list-date-range";
 
 type Translate = (key: MessageKey, values?: Record<string, string | number | Date>) => string;
 
@@ -8,11 +9,7 @@ export type OrderPaymentLabel = "unpaid" | "paid" | "failed";
 export type OrderMethodLabel = "cod" | "chapa" | "unknown";
 export type OrderDeliveryLabel = "delivery" | "pickup" | "unknown";
 
-export type OrderNextActionType =
-  | "mark_ready"
-  | "mark_completed"
-  | "mark_paid"
-  | "none";
+export type OrderNextActionType = "mark_ready" | "mark_completed" | "mark_paid" | "none";
 
 export type OrderNextAction = {
   type: OrderNextActionType;
@@ -55,9 +52,7 @@ export function getDisplayOrderEmail(email: string | null | undefined): string |
  * Shop-facing order code from Medusa id (last 6 chars after stripping `order_`).
  * Keep in sync with platform-api `formatMerchantOrderCode` / list search.
  */
-export function formatOrderReference(
-  order: Pick<MerchantOrder, "id" | "customDisplayId">,
-) {
+export function formatOrderReference(order: Pick<MerchantOrder, "id" | "customDisplayId">) {
   return formatPublicOrderReference(order.id, order.customDisplayId);
 }
 
@@ -207,11 +202,7 @@ export function getOrderCustomerName(order: MerchantOrder, t?: Translate) {
 }
 
 export function getOrderCustomerPhone(order: MerchantOrder) {
-  return (
-    order.delivery?.customerPhone?.trim() ||
-    order.shippingAddress?.phone?.trim() ||
-    null
-  );
+  return order.delivery?.customerPhone?.trim() || order.shippingAddress?.phone?.trim() || null;
 }
 
 export function formatOrderMoney(amount: number | null | undefined, currencyCode?: string | null) {
@@ -265,9 +256,7 @@ export function formatOrderRelativeTime(value: string | null | undefined, now = 
 export function getOrderItemsSummary(order: MerchantOrder, t?: Translate) {
   const items = order.items ?? [];
   const count =
-    order.itemCount ??
-    items.reduce((sum, item) => sum + (item.quantity ?? 0), 0) ??
-    items.length;
+    order.itemCount ?? items.reduce((sum, item) => sum + (item.quantity ?? 0), 0) ?? items.length;
 
   if (!count) return t ? t("orders.labels.noItems") : "No items";
   if (items.length === 0) {
@@ -353,7 +342,11 @@ export function getRemainingFinishSteps(
     steps.push({ id: "completed", label: "Mark completed (customer has the order)" });
   }
 
-  if (options?.includeMarkPaid && payment === "unpaid" && (method === "cod" || method === "unknown")) {
+  if (
+    options?.includeMarkPaid &&
+    payment === "unpaid" &&
+    (method === "cod" || method === "unknown")
+  ) {
     steps.push({ id: "paid", label: "Mark as paid (cash received)" });
   }
 
@@ -379,6 +372,8 @@ export function isOrderOpen(order: MerchantOrder) {
 
 /** URL filter parsers for server-backed list params. */
 export type OrderListFilterState = {
+  createdFrom?: string;
+  createdTo?: string;
   created: "all" | "today" | "last_7_days" | "last_30_days";
   delivery: "all" | "delivery" | "pickup";
   method: "all" | "cod" | "chapa";
@@ -395,24 +390,22 @@ export function parseOrderListFilters(
     return Array.isArray(value) ? value[0] : value;
   };
 
+  const range = parseListDateRange(one("createdFrom"), one("createdTo"));
+
   return {
+    ...(range ? { createdFrom: range.start, createdTo: range.end } : {}),
     q: one("q")?.trim() ?? "",
-    progress: parseEnum(one("progress"), [
+    progress: parseEnum(
+      one("progress"),
+      ["all", "new", "ready", "completed", "canceled", "open"] as const,
       "all",
-      "new",
-      "ready",
-      "completed",
-      "canceled",
-      "open",
-    ] as const, "all"),
+    ),
     payment: parseEnum(one("payment"), ["all", "unpaid", "paid", "failed"] as const, "all"),
     method: parseEnum(one("method"), ["all", "cod", "chapa"] as const, "all"),
     delivery: parseEnum(one("delivery"), ["all", "delivery", "pickup"] as const, "all"),
-    created: parseEnum(
-      one("created"),
-      ["all", "today", "last_7_days", "last_30_days"] as const,
-      "all",
-    ),
+    created: range
+      ? "all"
+      : parseEnum(one("created"), ["all", "today", "last_7_days", "last_30_days"] as const, "all"),
   };
 }
 
@@ -433,6 +426,32 @@ export function orderListFiltersToQuery(filters: OrderListFilterState): Record<s
   if (filters.payment !== "all") out.payment = filters.payment;
   if (filters.method !== "all") out.method = filters.method;
   if (filters.delivery !== "all") out.delivery = filters.delivery;
-  if (filters.created !== "all") out.created = filters.created;
+  const range = parseListDateRange(filters.createdFrom, filters.createdTo);
+  if (range) {
+    out.createdFrom = range.start;
+    out.createdTo = range.end;
+  } else if (filters.created !== "all") out.created = filters.created;
   return out;
+}
+
+export function orderListFiltersToSearchParams(
+  filters: OrderListFilterState,
+  current: URLSearchParams,
+) {
+  const next = new URLSearchParams(current);
+  for (const key of [
+    "q",
+    "progress",
+    "payment",
+    "method",
+    "delivery",
+    "created",
+    "createdFrom",
+    "createdTo",
+    "page",
+  ]) {
+    next.delete(key);
+  }
+  for (const [key, value] of Object.entries(orderListFiltersToQuery(filters))) next.set(key, value);
+  return next;
 }

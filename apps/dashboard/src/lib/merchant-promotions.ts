@@ -32,7 +32,10 @@ export type MerchantPromotion = z.infer<typeof promotionSchema>;
 export async function getMerchantPromotions(
   context: PlatformRequestContext & {
     limit?: number;
+    schedule?: "scheduled" | "current" | "expired" | "unscheduled";
     offset?: number;
+    apply?: "code" | "automatic";
+    offer?: "order" | "products" | "free_shipping" | "buyget" | "percentage" | "fixed";
     query?: string;
     status?: "active" | "inactive" | "draft" | undefined;
   },
@@ -43,6 +46,9 @@ export async function getMerchantPromotions(
   });
   if (context.query) search.set("q", context.query);
   if (context.status) search.set("status", context.status);
+  if (context.schedule) search.set("schedule", context.schedule);
+  if (context.apply) search.set("apply", context.apply);
+  if (context.offer) search.set("offer", context.offer);
   const response = await platformFetch(`/platform/merchant/promotions?${search}`, context);
   const data = await response.json().catch(() => null);
   const parsed = z

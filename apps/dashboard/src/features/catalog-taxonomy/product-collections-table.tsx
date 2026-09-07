@@ -4,8 +4,9 @@ import type { MerchantProductCollection } from "@ecs/contracts";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState, useTransition, type ReactNode } from "react";
+import { type ReactNode, useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
+import { ConfirmDialog } from "@/components/app/confirm-dialog";
 import { DataTable } from "@/components/app/data-table";
 import {
   type DataTableFilterDefinition,
@@ -16,7 +17,6 @@ import { AppIcons } from "@/components/app/icons";
 import { ListResultsStatus } from "@/components/app/list-results-status";
 import { ListToolbarSearch } from "@/components/app/list-toolbar";
 import { RowActionsMenu } from "@/components/app/row-actions-menu";
-import { ConfirmDialog } from "@/components/app/confirm-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -27,20 +27,20 @@ import {
   TaxonomyHandleCell,
 } from "@/features/catalog-taxonomy/taxonomy-table-cells";
 import {
-  filterCollectionsForTable,
   getCollectionDisplayName,
   getTaxonomyTableCounts,
   type TaxonomyVisibilityFilter,
 } from "@/features/catalog-taxonomy/taxonomy-table-state";
+import { useI18n } from "@/i18n/provider";
 import { copyTextToClipboard } from "@/lib/clipboard";
 import { getTenantScopedPath } from "@/lib/dashboard-tenant-context";
 import { dashboardRoutes } from "@/lib/routes";
-import { useI18n } from "@/i18n/provider";
 
 type ProductCollectionsTableProps = {
   collections: MerchantProductCollection[];
   footer?: ReactNode;
   initialQuery?: string | undefined;
+  initialVisibility?: TaxonomyVisibilityFilter | undefined;
   pageSize: number;
   totalCount: number;
   tenantId?: string | undefined;
@@ -75,7 +75,9 @@ function getCollectionColumns(
       id: "select",
       header: ({ table }) => (
         <Checkbox
-          aria-label={t("taxonomy.table.selectAllAria", { entityPlural: t("taxonomy.entity.collection.plural") })}
+          aria-label={t("taxonomy.table.selectAllAria", {
+            entityPlural: t("taxonomy.entity.collection.plural"),
+          })}
           checked={
             table.getIsAllPageRowsSelected() ||
             (table.getIsSomePageRowsSelected() && "indeterminate")
@@ -96,20 +98,26 @@ function getCollectionColumns(
     {
       id: "title",
       accessorFn: (collection) => getCollectionDisplayName(collection),
-      header: ({ column }) => <DataTableHeader column={column} title={t("taxonomy.table.collection")} />,
+      header: ({ column }) => (
+        <DataTableHeader column={column} title={t("taxonomy.table.collection")} />
+      ),
       cell: ({ row }) => (
         <CollectionIdentityCell collection={row.original} onOpen={() => onEdit(row.original)} />
       ),
     },
     {
       accessorKey: "handle",
-      header: ({ column }) => <DataTableHeader column={column} title={t("taxonomy.table.handle")} />,
+      header: ({ column }) => (
+        <DataTableHeader column={column} title={t("taxonomy.table.handle")} />
+      ),
       cell: ({ row }) => <TaxonomyHandleCell handle={row.original.handle} />,
     },
     {
       id: "visibility",
       accessorFn: (collection) => collection.visibility ?? "public",
-      header: ({ column }) => <DataTableHeader column={column} title={t("taxonomy.table.visibility.label")} />,
+      header: ({ column }) => (
+        <DataTableHeader column={column} title={t("taxonomy.table.visibility.label")} />
+      ),
       cell: ({ row }) => {
         const hidden = row.original.visibility === "hidden";
         return (
@@ -121,7 +129,9 @@ function getCollectionColumns(
     },
     {
       accessorKey: "updatedAt",
-      header: ({ column }) => <DataTableHeader column={column} title={t("taxonomy.table.updated")} />,
+      header: ({ column }) => (
+        <DataTableHeader column={column} title={t("taxonomy.table.updated")} />
+      ),
       cell: ({ row }) => <TaxonomyDateCell value={row.original.updatedAt} />,
     },
     {
@@ -134,27 +144,41 @@ function getCollectionColumns(
             actions={[
               {
                 icon: AppIcons.edit,
-                label: t("taxonomy.table.actions.edit", { entity: t("taxonomy.entity.collection.label") }),
+                label: t("taxonomy.table.actions.edit", {
+                  entity: t("taxonomy.entity.collection.label"),
+                }),
                 onSelect: () => onEdit(collection),
                 type: "button",
               },
               {
                 icon: AppIcons.copy,
-                label: t("taxonomy.table.actions.copyId", { entity: t("taxonomy.entity.collection.label") }),
-                onSelect: () => copyToClipboard(collection.id, t("taxonomy.table.actions.copyId", { entity: t("taxonomy.entity.collection.label") }), t),
+                label: t("taxonomy.table.actions.copyId", {
+                  entity: t("taxonomy.entity.collection.label"),
+                }),
+                onSelect: () =>
+                  copyToClipboard(
+                    collection.id,
+                    t("taxonomy.table.actions.copyId", {
+                      entity: t("taxonomy.entity.collection.label"),
+                    }),
+                    t,
+                  ),
                 type: "button",
               },
               {
                 disabled: !collection.handle,
                 icon: AppIcons.copy,
                 label: t("taxonomy.table.actions.copyHandle"),
-                onSelect: () => copyToClipboard(collection.handle ?? "", t("taxonomy.table.handle"), t),
+                onSelect: () =>
+                  copyToClipboard(collection.handle ?? "", t("taxonomy.table.handle"), t),
                 type: "button",
               },
               { id: "danger", type: "separator" },
               {
                 icon: AppIcons.trash,
-                label: t("taxonomy.table.actions.delete", { entity: t("taxonomy.entity.collection.label") }),
+                label: t("taxonomy.table.actions.delete", {
+                  entity: t("taxonomy.entity.collection.label"),
+                }),
                 onSelect: () => onDelete(collection.id),
                 type: "button",
                 variant: "destructive",
@@ -173,7 +197,10 @@ function getCollectionColumns(
 function getDeletionErrorMessage(
   error: unknown,
   resource: string,
-  t: (key: import("@/i18n/messages").MessageKey, values?: Record<string, string | number | Date>) => string,
+  t: (
+    key: import("@/i18n/messages").MessageKey,
+    values?: Record<string, string | number | Date>,
+  ) => string,
 ) {
   const code = error instanceof Error ? error.message : String(error);
   if (code === "commerce_backend_unavailable") {
@@ -196,16 +223,17 @@ export function ProductCollectionsTable({
   collections,
   footer,
   initialQuery = "",
+  initialVisibility = "all",
   pageSize,
   totalCount,
   tenantId,
 }: ProductCollectionsTableProps) {
-  const { t, locale } = useI18n();
+  const { t } = useI18n();
   const router = useRouter();
   const queryClient = useQueryClient();
   const [pending, startTransition] = useTransition();
   const [searchValue, setSearchValue] = useState(initialQuery);
-  const [visibility, setVisibility] = useState<TaxonomyVisibilityFilter>("all");
+  const visibility = initialVisibility;
   void pageSize;
 
   useEffect(() => {
@@ -213,16 +241,18 @@ export function ProductCollectionsTable({
   }, [initialQuery]);
 
   const pushQuery = useCallback(
-    (q: string) => {
+    (q: string, nextVisibility = visibility) => {
       const url = new URL(window.location.href);
       if (q.trim()) url.searchParams.set("q", q.trim());
       else url.searchParams.delete("q");
+      if (nextVisibility === "all") url.searchParams.delete("visibility");
+      else url.searchParams.set("visibility", nextVisibility);
       url.searchParams.delete("page");
       startTransition(() => {
         router.push(`${url.pathname}?${url.searchParams.toString()}`);
       });
     },
-    [router],
+    [router, visibility],
   );
 
   const [deleteCollectionId, setDeleteCollectionId] = useState<string | null>(null);
@@ -258,15 +288,16 @@ export function ProductCollectionsTable({
       return collectionId;
     },
     onSuccess: () => {
-      toast.success(t("taxonomy.create.success", { entity: t("taxonomy.entity.collection.label") }));
+      toast.success(
+        t("taxonomy.create.success", { entity: t("taxonomy.entity.collection.label") }),
+      );
       queryClient.invalidateQueries({ queryKey: ["product-collections"] });
+      queryClient.invalidateQueries({ queryKey: ["product-taxonomy"] });
       setDeleteCollectionId(null);
       router.refresh();
     },
     onError: (error) => {
-      toast.error(
-        getDeletionErrorMessage(error, t("taxonomy.entity.collection.label"), t),
-      );
+      toast.error(getDeletionErrorMessage(error, t("taxonomy.entity.collection.label"), t));
     },
   });
 
@@ -288,23 +319,21 @@ export function ProductCollectionsTable({
       return collectionIds;
     },
     onSuccess: () => {
-      toast.success(t("taxonomy.create.success", { entity: t("taxonomy.entity.collection.plural") }));
+      toast.success(
+        t("taxonomy.create.success", { entity: t("taxonomy.entity.collection.plural") }),
+      );
       queryClient.invalidateQueries({ queryKey: ["product-collections"] });
+      queryClient.invalidateQueries({ queryKey: ["product-taxonomy"] });
       setSelectedCollectionIdsForDelete([]);
       setShowBatchDeleteDialog(false);
       router.refresh();
     },
     onError: (error) => {
-      toast.error(
-        getDeletionErrorMessage(error, t("taxonomy.entity.collection.plural"), t),
-      );
+      toast.error(getDeletionErrorMessage(error, t("taxonomy.entity.collection.plural"), t));
     },
   });
 
-  const filteredCollections = useMemo(
-    () => filterCollectionsForTable(collections, { query: "", visibility }),
-    [collections, visibility],
-  );
+  const filteredCollections = collections;
   const counts = getTaxonomyTableCounts({
     filteredCount: filteredCollections.length,
     pageCount: collections.length,
@@ -312,8 +341,8 @@ export function ProductCollectionsTable({
     totalCount,
     visibility,
   });
-  const hasServerFilter = Boolean(initialQuery.trim());
-  const hasClientPageFilter = visibility !== "all";
+  const hasServerFilter = Boolean(initialQuery.trim()) || visibility !== "all";
+  const hasClientPageFilter = false;
 
   const filters: DataTableFilterDefinition[] = [
     {
@@ -321,7 +350,7 @@ export function ProductCollectionsTable({
       label: t("taxonomy.table.visibility.label"),
       defaultValue: "all",
       value: visibility,
-      onChange: (value) => setVisibility(value as TaxonomyVisibilityFilter),
+      onChange: (value) => pushQuery(initialQuery, value as TaxonomyVisibilityFilter),
       options: [
         { label: t("taxonomy.table.visibility.all"), value: "all" },
         { label: t("taxonomy.table.visibility.public"), value: "public" },
@@ -335,9 +364,8 @@ export function ProductCollectionsTable({
       <DataTableFilters
         filters={filters}
         onClearAll={() => {
-          setVisibility("all");
           setSearchValue("");
-          pushQuery("");
+          pushQuery("", "all");
         }}
       >
         <ListToolbarSearch
@@ -375,6 +403,7 @@ export function ProductCollectionsTable({
         tenantId={tenantId}
       />
       <DataTable
+        enableSorting={false}
         bulkActions={(selectedCollections) => (
           <div className="flex items-center gap-2">
             <Button

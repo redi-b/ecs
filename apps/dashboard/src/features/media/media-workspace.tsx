@@ -1,6 +1,6 @@
 "use client";
 
-import { type ReactNode, useCallback, useEffect, useState } from "react";
+import { type ReactNode, useCallback, useEffect, useRef, useState } from "react";
 
 import { AppIcons } from "@/components/app/icons";
 import { ListSummary } from "@/components/app/list-page-controls";
@@ -8,7 +8,13 @@ import { PageShell } from "@/components/app/page-shell";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import type {
+  MediaOrientationFilter,
+  MediaSizeFilter,
+  MediaSort,
+} from "@/features/media/media-helpers";
 import { MediaLibrary } from "@/features/media/media-library";
+import { fetchMediaPickerPage } from "@/features/media/media-picker-query";
 import {
   MEDIA_UPLOADED_EVENT,
   OPEN_MEDIA_UPLOAD_EVENT,
@@ -22,7 +28,10 @@ export function MediaWorkspace({
   initialAssets,
   initialError,
   initialMimeType = "all",
+  initialOrientation = "all",
   initialQuery = "",
+  initialSize = "all",
+  initialSort = "newest",
   page,
   pageSize,
   totalCount: initialTotalCount,
@@ -31,7 +40,10 @@ export function MediaWorkspace({
   initialAssets: MediaAsset[];
   initialError?: string | undefined;
   initialMimeType?: string | undefined;
+  initialOrientation?: MediaOrientationFilter | undefined;
   initialQuery?: string | undefined;
+  initialSize?: MediaSizeFilter | undefined;
+  initialSort?: MediaSort | undefined;
   page: number;
   pageSize: number;
   totalCount: number;
@@ -41,14 +53,20 @@ export function MediaWorkspace({
   const [totalCount, setTotalCount] = useState(initialTotalCount);
   const [refreshing, setRefreshing] = useState(false);
   const [loadError, setLoadError] = useState(Boolean(initialError));
+  const refreshController = useRef<AbortController | null>(null);
 
   useEffect(() => {
+    refreshController.current?.abort();
+    setRefreshing(false);
     setAssets(initialAssets);
     setTotalCount(initialTotalCount);
     setLoadError(Boolean(initialError));
   }, [initialAssets, initialError, initialTotalCount]);
 
   const refresh = useCallback(async () => {
+    refreshController.current?.abort();
+    const controller = new AbortController();
+    refreshController.current = controller;
     setRefreshing(true);
     const offset = (page - 1) * pageSize;
     const params = new URLSearchParams({
@@ -59,26 +77,29 @@ export function MediaWorkspace({
     if (initialMimeType && initialMimeType !== "all") {
       params.set("mimeType", initialMimeType);
     }
-    const response = await fetch(`/admin/media/assets?${params}`);
-    const data = (await response.json().catch(() => null)) as {
-      assets?: MediaAsset[];
-      count?: number;
-    } | null;
-
-    if (response.ok && data?.assets) {
+    if (initialOrientation !== "all") params.set("orientation", initialOrientation);
+    if (initialSize !== "all") params.set("size", initialSize);
+    if (initialSort !== "newest") params.set("sort", initialSort);
+    try {
+      const data = await fetchMediaPickerPage(params, controller.signal);
+      if (controller.signal.aborted) return;
       setAssets(data.assets);
-      if (typeof data.count === "number") setTotalCount(data.count);
+      setTotalCount(data.count);
       setLoadError(false);
-    } else {
-      setLoadError(true);
+    } catch {
+      if (!controller.signal.aborted) setLoadError(true);
+    } finally {
+      if (!controller.signal.aborted) setRefreshing(false);
     }
-    setRefreshing(false);
-  }, [initialMimeType, initialQuery, page, pageSize]);
+  }, [initialMimeType, initialOrientation, initialQuery, initialSize, initialSort, page, pageSize]);
 
   useEffect(() => {
     const refreshLibrary = () => void refresh();
     window.addEventListener(MEDIA_UPLOADED_EVENT, refreshLibrary);
-    return () => window.removeEventListener(MEDIA_UPLOADED_EVENT, refreshLibrary);
+    return () => {
+      window.removeEventListener(MEDIA_UPLOADED_EVENT, refreshLibrary);
+      refreshController.current?.abort();
+    };
   }, [refresh]);
 
   return (
@@ -117,12 +138,16 @@ export function MediaWorkspace({
       <ListSummary
         count={totalCount}
         filtered={
-          Boolean(initialQuery.trim()) || (initialMimeType !== "all" && Boolean(initialMimeType))
+          Boolean(initialQuery.trim()) ||
+          (initialMimeType !== "all" && Boolean(initialMimeType)) ||
+          initialOrientation !== "all" ||
+          initialSize !== "all" ||
+          initialSort !== "newest"
         }
         page={page}
         pageSize={pageSize}
       />
-      {loadError || initialError ? (
+      {loadError ? (
         <Alert variant="destructive">
           <AlertTitle>{t("media.libraryLoadError")}</AlertTitle>
           <AlertDescription>
@@ -137,7 +162,10 @@ export function MediaWorkspace({
         assets={assets}
         footer={children}
         initialMimeType={initialMimeType}
+        initialOrientation={initialOrientation}
         initialQuery={initialQuery}
+        initialSize={initialSize}
+        initialSort={initialSort}
         onChanged={() => void refresh()}
         pageCount={assets.length}
         totalCount={totalCount}

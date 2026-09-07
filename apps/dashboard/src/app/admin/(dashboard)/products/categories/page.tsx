@@ -27,7 +27,17 @@ export default async function MerchantProductCategoriesPage({
 }: MerchantProductCategoriesPageProps) {
   const resolvedSearchParams = (await searchParams) ?? {};
   const listParams = parseListSearchParams(resolvedSearchParams);
+  const visibility =
+    resolvedSearchParams.visibility === "hidden"
+      ? "hidden"
+      : resolvedSearchParams.visibility === "public"
+        ? "public"
+        : "all";
   const tenantId = getSelectedTenantId(resolvedSearchParams);
+  const parentId =
+    typeof resolvedSearchParams.parentId === "string" && resolvedSearchParams.parentId.trim()
+      ? resolvedSearchParams.parentId.trim()
+      : "all";
   const t = await getTranslations();
   const requestHeaders = await headers();
   const offset = (listParams.page - 1) * listParams.pageSize;
@@ -37,6 +47,8 @@ export default async function MerchantProductCategoriesPage({
   );
   const categoryNotice = getCategoryNotice(resolvedSearchParams.categoryStatus, t);
   const result = await getMerchantProductCategories({
+    parentId,
+    visibility,
     cookieHeader: requestHeaders.get("cookie"),
     limit: listParams.pageSize,
     offset,
@@ -53,6 +65,7 @@ export default async function MerchantProductCategoriesPage({
         <>
           <RefreshButton />
           <TaxonomyCreateDialog
+            tenantId={tenantId}
             action={createCategoryAction}
             entityLabel="category"
             nameKey="name"
@@ -76,11 +89,13 @@ export default async function MerchantProductCategoriesPage({
         <>
           <ListSummary
             count={result.count}
-            filtered={Boolean(listParams.q)}
+            filtered={Boolean(listParams.q) || visibility !== "all" || parentId !== "all"}
             page={listParams.page}
             pageSize={result.limit}
           />
           <ProductCategoriesTable
+            initialParentId={parentId}
+            initialVisibility={visibility}
             categories={result.categories}
             footer={
               <PaginationControls

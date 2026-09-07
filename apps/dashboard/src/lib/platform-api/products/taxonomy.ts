@@ -335,6 +335,8 @@ export async function updateMerchantProductCollection(options: {
 }
 
 export async function getMerchantProductCategories(options: {
+  visibility?: string | undefined;
+  parentId?: string | undefined;
   cookieHeader?: string | null | undefined;
   fetcher?: typeof fetch;
   limit?: number | undefined;
@@ -353,6 +355,7 @@ export async function getMerchantProductCategories(options: {
 }
 
 export async function getMerchantProductCollections(options: {
+  visibility?: string | undefined;
   cookieHeader?: string | null | undefined;
   fetcher?: typeof fetch;
   limit?: number | undefined;

@@ -248,6 +248,7 @@ export function CollectionEditSheet({
     toast.success(t("taxonomy.edit.collectionUpdated"));
     onOpenChange(false);
     await queryClient.invalidateQueries({ queryKey: ["product-collections"] });
+    await queryClient.invalidateQueries({ queryKey: ["product-taxonomy"] });
     router.refresh();
   }
 

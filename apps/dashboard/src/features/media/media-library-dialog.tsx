@@ -1,12 +1,10 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
 import type { ReactNode } from "react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
-import {
-  type DataTableFilterDefinition,
-  DataTableFilters,
-} from "@/components/app/data-table-filters";
+import { DataTableFilters } from "@/components/app/data-table-filters";
 import { AppIcons } from "@/components/app/icons";
 import { ListToolbarSearch } from "@/components/app/list-toolbar";
 import { Badge } from "@/components/ui/badge";
@@ -30,12 +28,14 @@ import { useI18n } from "@/i18n/provider";
 import type { MediaAsset } from "@/lib/merchant-media";
 import { cn } from "@/lib/utils";
 import {
-  filterAndSortMediaAssets,
-  formatBytes,
-  formatMimeLabel,
-  mediaAssetDimensionsLabel,
-} from "./media-helpers";
+  type MediaFilterValues,
+  MediaSortControl,
+  mediaFilterDefinitions,
+} from "./media-filter-controls";
+import type { MediaSort } from "./media-helpers";
+import { formatBytes, formatMimeLabel, mediaAssetDimensionsLabel } from "./media-helpers";
 import { MediaLightbox } from "./media-lightbox";
+import { fetchMediaPickerPage, toggleMediaSelection } from "./media-picker-query";
 
 export type MediaLibrarySelectionMode = "single" | "multiple";
 
@@ -75,12 +75,16 @@ export function MediaLibraryDialog({
   const isMultiple = selectionMode === "multiple";
   const [internalOpen, setInternalOpen] = useState(false);
   const open = controlledOpen ?? internalOpen;
-  const [assets, setAssets] = useState<MediaAsset[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [loadError, setLoadError] = useState(false);
   const [query, setQuery] = useState("");
-  const [type, setType] = useState("all");
-  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [values, setValues] = useState<MediaFilterValues>({
+    mimeType: "all",
+    orientation: "all",
+    size: "all",
+  });
+  const [sort, setSort] = useState<MediaSort>("newest");
+  const [page, setPage] = useState(0);
+  const [selectedAssets, setSelectedAssets] = useState<MediaAsset[]>([]);
+  const selectedIds = selectedAssets.map((asset) => asset.id);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
   function setDialogOpen(nextOpen: boolean) {
@@ -88,91 +92,52 @@ export function MediaLibraryDialog({
     onOpenChange?.(nextOpen);
   }
 
-  useEffect(() => {
-    if (!open) return;
-    const controller = new AbortController();
-    setLoading(true);
-    setLoadError(false);
-    const params = new URLSearchParams({ limit: "100", offset: "0" });
-    if (query.trim()) params.set("q", query.trim());
-    if (type !== "all") params.set("mimeType", type);
-    void fetch(`/admin/media/assets?${params}`, { signal: controller.signal })
-      .then(async (response) => {
-        const data = (await response.json().catch(() => null)) as { assets?: MediaAsset[] } | null;
-        if (!response.ok) throw new Error("load_failed");
-        setAssets(data?.assets ?? []);
-        setLoadError(false);
-      })
-      .catch((error: unknown) => {
-        if (error instanceof DOMException && error.name === "AbortError") return;
-        setLoadError(true);
-        setAssets([]);
-      })
-      .finally(() => setLoading(false));
-    return () => controller.abort();
-  }, [open, query, type]);
+  const params = new URLSearchParams({
+    limit: "24",
+    offset: String(page * 24),
+    sort,
+    publicOnly: "true",
+  });
+  if (query) params.set("q", query);
+  params.set("mimeType", values.mimeType === "all" ? "image/" : values.mimeType);
+  if (values.orientation !== "all") params.set("orientation", values.orientation);
+  if (values.size !== "all") params.set("size", values.size);
+  const mediaQuery = useQuery({
+    queryKey: ["media-picker", params.toString()],
+    enabled: open,
+    queryFn: ({ signal }) => fetchMediaPickerPage(params, signal),
+    retry: 1,
+  });
+  const loading = mediaQuery.isPending;
+  const loadError = mediaQuery.isError;
+  const readyAssets = mediaQuery.data?.assets ?? [];
+  const count = mediaQuery.data?.count ?? 0;
 
   useEffect(() => {
     if (!open) {
       setQuery("");
-      setType("all");
-      setSelectedIds([]);
+      setValues({ mimeType: "all", orientation: "all", size: "all" });
+      setSort("newest");
+      setPage(0);
+      setSelectedAssets([]);
       setLightboxIndex(null);
     }
   }, [open]);
 
-  const readyAssets = useMemo(
-    () =>
-      filterAndSortMediaAssets(assets, {
-        orientation: "all",
-        query: "",
-        size: "all",
-        sort: "newest",
-        type: "all",
-      }).filter((asset) => Boolean(asset.publicUrl)),
-    [assets],
-  );
+  function changeFilters(next: Partial<MediaFilterValues>) {
+    setValues((current) => ({ ...current, ...next }));
+    setPage(0);
+    setLightboxIndex(null);
+  }
+  const filters = mediaFilterDefinitions(t, values, changeFilters);
 
-  const selectedAssets = useMemo(
-    () =>
-      selectedIds
-        .map((id) => readyAssets.find((asset) => asset.id === id))
-        .filter((asset): asset is MediaAsset => Boolean(asset)),
-    [readyAssets, selectedIds],
-  );
-
-  const filters: DataTableFilterDefinition[] = [
-    {
-      defaultValue: "all",
-      id: "type",
-      label: t("media.type"),
-      onChange: setType,
-      options: [
-        { label: t("media.allTypes"), value: "all" },
-        { label: "JPEG", value: "image/jpeg" },
-        { label: "PNG", value: "image/png" },
-        { label: "WebP", value: "image/webp" },
-        { label: "AVIF", value: "image/avif" },
-        { label: "GIF", value: "image/gif" },
-      ],
-      value: type,
-    },
-  ];
-
-  function toggleSelected(assetId: string) {
-    setSelectedIds((current) => {
-      if (isMultiple) {
-        if (current.includes(assetId)) return current.filter((id) => id !== assetId);
-        if (maxSelection && current.length >= maxSelection) return current;
-        return [...current, assetId];
-      }
-      return current[0] === assetId ? [] : [assetId];
-    });
+  function toggleSelected(asset: MediaAsset) {
+    setSelectedAssets((current) => toggleMediaSelection(current, asset, isMultiple, maxSelection));
   }
 
   function confirmSelection(assetsToUse: MediaAsset[]) {
     if (!assetsToUse.length) return;
-    onSelect(isMultiple ? assetsToUse : assetsToUse.slice(0, 1));
+    onSelect(isMultiple ? assetsToUse.slice(0, maxSelection) : assetsToUse.slice(0, 1));
     setDialogOpen(false);
   }
 
@@ -216,15 +181,27 @@ export function MediaLibraryDialog({
               filters={filters}
               onClearAll={() => {
                 setQuery("");
-                setType("all");
+                changeFilters({ mimeType: "all", orientation: "all", size: "all" });
               }}
             >
               <ListToolbarSearch
                 clearLabel={t("common.clearSearch")}
                 label={t("media.search")}
-                onChange={setQuery}
+                onChange={(value) => {
+                  setQuery(value);
+                  setPage(0);
+                  setLightboxIndex(null);
+                }}
                 placeholder={t("media.searchPlaceholder")}
                 value={query}
+              />
+              <MediaSortControl
+                value={sort}
+                onChange={(value) => {
+                  setSort(value);
+                  setPage(0);
+                  setLightboxIndex(null);
+                }}
               />
             </DataTableFilters>
 
@@ -232,23 +209,34 @@ export function MediaLibraryDialog({
               <p className="text-sm text-muted-foreground">
                 {loading
                   ? t("media.pickerLoading")
-                  : t("media.pickerCount", { count: readyAssets.length })}
+                  : t("media.pageCountSummary", { pageCount: readyAssets.length, total: count })}
               </p>
               {isMultiple && readyAssets.length > 0 ? (
                 <Button
                   onClick={() => {
                     if (allVisibleSelected) {
-                      setSelectedIds([]);
+                      setSelectedAssets((current) =>
+                        current.filter(
+                          (asset) => !readyAssets.some((visible) => visible.id === asset.id),
+                        ),
+                      );
                       return;
                     }
-                    const next = readyAssets.map((asset) => asset.id);
-                    setSelectedIds(maxSelection ? next.slice(0, maxSelection) : next);
+                    setSelectedAssets((current) =>
+                      readyAssets.reduce(
+                        (selected, asset) =>
+                          selected.some((item) => item.id === asset.id)
+                            ? selected
+                            : toggleMediaSelection(selected, asset, true, maxSelection),
+                        current,
+                      ),
+                    );
                   }}
                   size="xs"
                   type="button"
                   variant="ghost"
                 >
-                  {allVisibleSelected ? t("media.clearSelection") : t("media.selectAll")}
+                  {allVisibleSelected ? t("media.clearSelection") : t("media.selectPage")}
                 </Button>
               ) : null}
             </div>
@@ -276,6 +264,13 @@ export function MediaLibraryDialog({
                     </EmptyMedia>
                     <EmptyTitle>{t("media.libraryLoadError")}</EmptyTitle>
                     <EmptyDescription>{t("media.libraryLoadErrorDescription")}</EmptyDescription>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => void mediaQuery.refetch()}
+                    >
+                      {t("media.retry")}
+                    </Button>
                   </EmptyHeader>
                 </Empty>
               ) : readyAssets.length ? (
@@ -295,7 +290,9 @@ export function MediaLibraryDialog({
                       >
                         <button
                           className="relative block w-full bg-muted text-left"
-                          onClick={() => toggleSelected(asset.id)}
+                          aria-pressed={isSelected}
+                          aria-label={asset.displayName}
+                          onClick={() => toggleSelected(asset)}
                           onDoubleClick={() => {
                             if (isMultiple) {
                               const next = selectedAssets.some((item) => item.id === asset.id)
@@ -360,16 +357,56 @@ export function MediaLibraryDialog({
                       <AppIcons.image />
                     </EmptyMedia>
                     <EmptyTitle>
-                      {query || type !== "all" ? t("media.filteredEmpty") : t("media.libraryEmpty")}
+                      {query ||
+                      values.mimeType !== "all" ||
+                      values.orientation !== "all" ||
+                      values.size !== "all"
+                        ? t("media.filteredEmpty")
+                        : t("media.libraryEmpty")}
                     </EmptyTitle>
                     <EmptyDescription>
-                      {query || type !== "all"
+                      {query ||
+                      values.mimeType !== "all" ||
+                      values.orientation !== "all" ||
+                      values.size !== "all"
                         ? t("media.filteredEmptyDescription")
                         : t("media.pickerEmptyDescription")}
                     </EmptyDescription>
                   </EmptyHeader>
                 </Empty>
               )}
+            </div>
+            <div className="flex items-center justify-between gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                type="button"
+                disabled={loading || page === 0}
+                onClick={() => {
+                  setPage((current) => Math.max(0, current - 1));
+                  setLightboxIndex(null);
+                }}
+              >
+                {t("common.pagination.previous")}
+              </Button>
+              <span className="text-xs text-muted-foreground">
+                {t("common.pagination.pageOf", {
+                  current: page + 1,
+                  total: Math.max(1, Math.ceil(count / 24)),
+                })}
+              </span>
+              <Button
+                size="sm"
+                variant="outline"
+                type="button"
+                disabled={loading || (page + 1) * 24 >= count}
+                onClick={() => {
+                  setPage((current) => current + 1);
+                  setLightboxIndex(null);
+                }}
+              >
+                {t("common.pagination.next")}
+              </Button>
             </div>
           </div>
 

@@ -93,4 +93,11 @@ describe("getListErrorState", () => {
       title: "Products could not be loaded",
     });
   });
+  it("does not describe an upstream processing failure as an unavailable service", () => {
+    const state = getListErrorState("promotions", "commerce_backend_error");
+    assert.equal(state.kind, "error");
+    assert.equal(state.title, "Promotions could not be loaded");
+    assert.ok(!state.description.includes("commerce_backend_error"));
+    assert.ok(!state.description.includes("unavailable"));
+  });
 });

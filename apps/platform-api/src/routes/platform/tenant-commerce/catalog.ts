@@ -1,6 +1,6 @@
 import type { Hono } from "hono";
-
 import type { PlatformAppOptions, PlatformAppVariables } from "../../../app.js";
+import { taxonomyListFiltersSchema } from "../../../commerce/taxonomy-list-filters.js";
 import {
   getJsonBody,
   getOptionalBodyString,
@@ -33,7 +33,10 @@ export function registerPlatformTenantCatalogRoutes(
       return context.json({ error: commerce.error }, commerce.status);
     }
 
+    const filters = taxonomyListFiltersSchema.safeParse(context.req.query());
+    if (!filters.success) return context.json({ error: "invalid_taxonomy_filter" }, 400);
     const categories = await options.listMerchantProductCategories({
+      ...filters.data,
       limit: getPaginationValue(context.req.query("limit"), 20, 100),
       offset: getPaginationValue(context.req.query("offset"), 0, 10_000),
       tenantId: commerce.context.tenantId,
@@ -210,7 +213,11 @@ export function registerPlatformTenantCatalogRoutes(
       return context.json({ error: commerce.error }, commerce.status);
     }
 
+    const filters = taxonomyListFiltersSchema.safeParse(context.req.query());
+    if (!filters.success || filters.data.parentId)
+      return context.json({ error: "invalid_taxonomy_filter" }, 400);
     const collections = await options.listMerchantProductCollections({
+      ...filters.data,
       limit: getPaginationValue(context.req.query("limit"), 20, 100),
       offset: getPaginationValue(context.req.query("offset"), 0, 10_000),
       tenantId: commerce.context.tenantId,

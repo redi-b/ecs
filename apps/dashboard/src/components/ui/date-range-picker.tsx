@@ -7,11 +7,19 @@ import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { format, fromDateValue, toDateValue } from "@/components/ui/date-utils";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 
 export type DateRangeValue = { start: string; end: string };
 
-type DateRangePickerLabels = {
+export type DateRangePickerLabels = {
   apply: string;
   available: string;
   cancel: string;
@@ -40,6 +48,11 @@ export function DateRangePicker({
   max,
   min,
   onChange,
+  onClear,
+  open: controlledOpen,
+  onOpenChange,
+  onCloseAutoFocus,
+  presets,
   placeholder = "Select dates",
   value,
 }: {
@@ -49,12 +62,27 @@ export function DateRangePicker({
   max?: string;
   min?: string;
   onChange: (value: DateRangeValue) => void;
+  onClear?: () => void;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  onCloseAutoFocus?: (event: Event) => void;
+  presets?: {
+    label: string;
+    value: string;
+    options: { label: string; value: string }[];
+    onChange: (value: string) => void;
+  };
   placeholder?: string;
   value: DateRangeValue;
 }) {
   const minDate = useMemo(() => fromDateValue(min ?? ""), [min]);
   const maxDate = useMemo(() => fromDateValue(max ?? ""), [max]);
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = controlledOpen ?? internalOpen;
+  function setOpen(next: boolean) {
+    setInternalOpen(next);
+    onOpenChange?.(next);
+  }
   const [activeEndpoint, setActiveEndpoint] = useState<"start" | "end">("start");
   const [draft, setDraft] = useState<DateRangeValue>(value);
   const draftStart = useMemo(() => fromDateValue(draft.start), [draft.start]);
@@ -65,10 +93,10 @@ export function DateRangePicker({
 
   useEffect(() => {
     if (!open) return;
-    setDraft(value);
+    setDraft({ start: value.start, end: value.end });
     setActiveEndpoint("start");
     setMonth(selectedStart ?? maxDate ?? new Date());
-  }, [maxDate, open, selectedStart, value]);
+  }, [maxDate, open, selectedStart, value.start, value.end]);
 
   function pick(date: Date) {
     const picked = toDateValue(date);
@@ -121,12 +149,36 @@ export function DateRangePicker({
         </Button>
       </PopoverTrigger>
       <PopoverContent
+        onCloseAutoFocus={onCloseAutoFocus}
         align="end"
-        className="w-[min(22rem,var(--radix-popover-content-available-width,calc(100vw-1.5rem)))] overflow-hidden rounded-2xl border bg-popover p-0 shadow-lg ring-1 ring-foreground/5"
+        className="max-h-[var(--radix-popover-content-available-height)] w-[min(22rem,var(--radix-popover-content-available-width,calc(100vw-1.5rem)))] overflow-y-auto rounded-2xl border bg-popover p-0 shadow-lg ring-1 ring-foreground/5"
         collisionPadding={16}
-        onOpenAutoFocus={(event) => event.preventDefault()}
         sideOffset={6}
       >
+        {presets ? (
+          <div className="border-b p-3">
+            <Select
+              value={presets.value}
+              onValueChange={(next) => {
+                presets.onChange(next);
+                setOpen(false);
+              }}
+            >
+              <SelectTrigger aria-label={presets.label} className="w-full">
+                <SelectValue placeholder={presets.label} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  {presets.options.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+          </div>
+        ) : null}
         <div className="border-b bg-muted/25 p-3">
           <div className="grid grid-cols-2 gap-2">
             <EndpointButton
@@ -144,9 +196,12 @@ export function DateRangePicker({
           </div>
           <div className="mt-2 flex items-center justify-between gap-3 px-1 text-xs text-muted-foreground">
             <span>{activeEndpoint === "start" ? labels.chooseStart : labels.chooseEnd}</span>
-            <span className="shrink-0">
-              {labels.available}: {minDate ? format(minDate, "PP") : "—"} – {maxDate ? format(maxDate, "PP") : "—"}
-            </span>
+            {minDate || maxDate ? (
+              <span>
+                {labels.available}: {minDate ? format(minDate, "PP") : "—"} –{" "}
+                {maxDate ? format(maxDate, "PP") : "—"}
+              </span>
+            ) : null}
           </div>
         </div>
         <div className="p-3">
@@ -161,7 +216,13 @@ export function DateRangePicker({
         </div>
         <div className="flex items-center justify-between gap-2 border-t bg-muted/15 p-3">
           <Button
-            onClick={() => setDraft({ start: "", end: "" })}
+            onClick={() => {
+              setDraft({ start: "", end: "" });
+              if (onClear) {
+                onClear();
+                setOpen(false);
+              }
+            }}
             size="sm"
             type="button"
             variant="ghost"
@@ -207,7 +268,9 @@ function EndpointButton({
       className={cn(
         "rounded-xl border px-3 py-2 text-left transition-colors outline-none",
         "hover:border-foreground/20 focus-visible:ring-2 focus-visible:ring-ring/50",
-        active ? "border-primary bg-background ring-2 ring-primary/15" : "border-border bg-background/70",
+        active
+          ? "border-primary bg-background ring-2 ring-primary/15"
+          : "border-border bg-background/70",
       )}
       onClick={onClick}
       type="button"

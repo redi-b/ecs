@@ -82,11 +82,24 @@ export function registerMerchantMediaRoutes(
 
     const limit = parseBoundedInteger(context.req.query("limit"), 20, 1, 100);
     const offset = parseBoundedInteger(context.req.query("offset"), 0, 0, 100_000);
+    const orientation = parseMediaOrientation(context.req.query("orientation"));
+    const size = parseMediaSize(context.req.query("size"));
+    const sort = parseMediaSort(context.req.query("sort"));
+    const publicOnly = context.req.query("publicOnly");
+    if (publicOnly !== undefined && publicOnly !== "true" && publicOnly !== "false")
+      return context.json({ error: "invalid_media_filter" }, 400);
+    if (!orientation.ok || !size.ok || !sort.ok) {
+      return context.json({ error: "invalid_media_filter" }, 400);
+    }
     const result = await options.listMediaAssets({
+      ...(publicOnly === "true" ? { publicOnly: true } : {}),
       limit,
       mimeType: context.req.query("mimeType")?.trim() || undefined,
       offset,
+      ...(orientation.value ? { orientation: orientation.value } : {}),
       query: context.req.query("q")?.trim() || undefined,
+      ...(size.value ? { size: size.value } : {}),
+      ...(sort.value ? { sort: sort.value } : {}),
       tenantId: merchant.result.context.tenantId,
     });
     return context.json(result);
@@ -150,4 +163,30 @@ function parseBoundedInteger(
 ) {
   const parsed = Number.parseInt(value ?? "", 10);
   return Number.isFinite(parsed) ? Math.min(max, Math.max(min, parsed)) : fallback;
+}
+
+function parseEnumFilter<const T extends readonly string[]>(value: string | undefined, values: T) {
+  if (!value?.trim() || value === "all") return { ok: true as const, value: undefined };
+  return values.includes(value as T[number])
+    ? { ok: true as const, value: value as T[number] }
+    : { ok: false as const, value: undefined };
+}
+
+function parseMediaOrientation(value: string | undefined) {
+  return parseEnumFilter(value, ["landscape", "portrait", "square"] as const);
+}
+
+function parseMediaSize(value: string | undefined) {
+  return parseEnumFilter(value, ["small", "medium", "large"] as const);
+}
+
+function parseMediaSort(value: string | undefined) {
+  return parseEnumFilter(value, [
+    "newest",
+    "oldest",
+    "name_asc",
+    "name_desc",
+    "largest",
+    "smallest",
+  ] as const);
 }

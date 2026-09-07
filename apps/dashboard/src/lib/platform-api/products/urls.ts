@@ -3,6 +3,7 @@ import { createPlatformHeaders, normalizeBaseUrl } from "@/lib/platform-api/clie
 export function getProductsUrl(options: {
   categoryId?: string | undefined;
   collectionId?: string | undefined;
+  media?: string | undefined;
   limit?: number | undefined;
   offset?: number | undefined;
   platformApiBaseUrl: string;
@@ -32,6 +33,7 @@ export function getProductsUrl(options: {
   if (options.collectionId?.trim() && options.collectionId !== "all") {
     url.searchParams.set("collectionId", options.collectionId.trim());
   }
+  if (options.media && options.media !== "all") url.searchParams.set("media", options.media);
   if (options.categoryId?.trim() && options.categoryId !== "all") {
     url.searchParams.set("categoryId", options.categoryId.trim());
   }
@@ -40,6 +42,8 @@ export function getProductsUrl(options: {
 }
 
 export function getProductResourceUrl(options: {
+  visibility?: string | undefined;
+  parentId?: string | undefined;
   limit?: number | undefined;
   offset?: number | undefined;
   platformApiBaseUrl: string;
@@ -51,6 +55,10 @@ export function getProductResourceUrl(options: {
     ? `/platform/tenants/${encodeURIComponent(options.tenantId.trim())}/${options.resource}`
     : `/platform/merchant/${options.resource}`;
   const url = new URL(path, normalizeBaseUrl(options.platformApiBaseUrl));
+  if (options.visibility && options.visibility !== "all")
+    url.searchParams.set("visibility", options.visibility);
+  if (options.parentId && options.parentId !== "all")
+    url.searchParams.set("parentId", options.parentId);
 
   url.searchParams.set("limit", String(options.limit ?? 100));
   url.searchParams.set("offset", String(options.offset ?? 0));

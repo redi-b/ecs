@@ -42,11 +42,24 @@ export function createMedusaCustomerService(options: Options) {
       : { error: "commerce_backend_unavailable", ok: false, status: 503 };
 
   async function tenantGroup(tenantId: string) {
-    const response = await fetcher(`${base}/admin/customer-groups?limit=100`, {
-      headers: headers(),
-    }).catch(() => null);
+    const response = await fetcher(
+      `${base}/admin/platform-customer-group?tenant_id=${encodeURIComponent(tenantId)}`,
+      {
+        headers: headers(),
+      },
+    ).catch(() => null);
     if (!response?.ok) return null;
     const data = await response.json().catch(() => ({}));
+    if (
+      !Array.isArray(data.customer_groups) ||
+      data.count !== data.customer_groups.length ||
+      data.customer_groups.length > 1 ||
+      data.customer_groups.some(
+        (group: { id?: unknown; metadata?: { tenant_id?: string } }) =>
+          typeof group?.id !== "string" || !group.id || group?.metadata?.tenant_id !== tenantId,
+      )
+    )
+      return null;
     const existing = (Array.isArray(data.customer_groups) ? data.customer_groups : []).find(
       (group: { metadata?: { tenant_id?: string }; id?: string }) =>
         group?.metadata?.tenant_id === tenantId,
@@ -279,10 +292,7 @@ export function createMedusaCustomerService(options: Options) {
     // Optionally refresh profile when linking into a new shop (never for walk-in placeholders).
     const emailKey = email;
     const walkIn = emailKey.startsWith("walk-in@") || emailKey.endsWith(".local");
-    if (
-      !walkIn &&
-      (input.firstName || input.lastName || input.phone || input.companyName)
-    ) {
+    if (!walkIn && (input.firstName || input.lastName || input.phone || input.companyName)) {
       await fetcher(`${base}/admin/customers/${encodeURIComponent(existing.id)}`, {
         body: JSON.stringify(toPayload(input)),
         headers: headers(),
@@ -318,10 +328,7 @@ export function createMedusaCustomerService(options: Options) {
     if (existing?.groups.some((item) => item.id === group.id)) {
       // Do not overwrite walk-in (or existing) profile with the latest sale's phone/name.
       // Real-email sales may soft-update name/phone when provided.
-      if (
-        !isWalkIn &&
-        (input.firstName?.trim() || input.lastName?.trim() || input.phone?.trim())
-      ) {
+      if (!isWalkIn && (input.firstName?.trim() || input.lastName?.trim() || input.phone?.trim())) {
         await fetcher(`${base}/admin/customers/${encodeURIComponent(existing.id)}`, {
           body: JSON.stringify(toPayload(input)),
           headers: headers(),
@@ -467,9 +474,7 @@ function toAddressPayload(input: MerchantCustomerAddressInput) {
   return {
     ...(input.address1 !== undefined ? { address_1: input.address1?.trim() || null } : {}),
     ...(input.address2 !== undefined ? { address_2: input.address2?.trim() || null } : {}),
-    ...(input.addressName !== undefined
-      ? { address_name: input.addressName?.trim() || null }
-      : {}),
+    ...(input.addressName !== undefined ? { address_name: input.addressName?.trim() || null } : {}),
     ...(input.city !== undefined ? { city: input.city?.trim() || null } : {}),
     ...(input.company !== undefined ? { company: input.company?.trim() || null } : {}),
     country_code: input.countryCode?.trim().toLowerCase() || "et",

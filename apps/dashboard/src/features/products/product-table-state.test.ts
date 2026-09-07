@@ -12,8 +12,6 @@ import {
   normalizeProductStatus,
   parseProductMediaFilter,
   parseProductStatusFilter,
-  parseProductStockFilter,
-  parseProductVariantCountFilter,
 } from "./product-table-state.js";
 
 const products: MerchantProduct[] = [
@@ -156,40 +154,14 @@ describe("product table state", () => {
     );
   });
 
-  it("filters products by stock, media, variant count, collection, and category", () => {
+  it("filters products by media, collection, and category", () => {
     const catalog = [...products, multiVariantProduct];
 
-    assert.deepEqual(
-      filterProductsForTable(catalog, { query: "", status: "all", stock: "in_stock" }).map(
-        (product) => product.id,
-      ),
-      ["prod_coffee"],
-    );
-    assert.deepEqual(
-      filterProductsForTable(catalog, { query: "", status: "all", stock: "out_of_stock" }).map(
-        (product) => product.id,
-      ),
-      ["prod_roast"],
-    );
-    assert.deepEqual(
-      filterProductsForTable(catalog, { query: "", status: "all", stock: "not_tracked" }).map(
-        (product) => product.id,
-      ),
-      ["prod_tea"],
-    );
     assert.deepEqual(
       filterProductsForTable(catalog, { media: "without_media", query: "", status: "all" }).map(
         (product) => product.id,
       ),
       ["prod_tea"],
-    );
-    assert.deepEqual(
-      filterProductsForTable(catalog, {
-        query: "",
-        status: "all",
-        variantCount: "multi_variant",
-      }).map((product) => product.id),
-      ["prod_roast"],
     );
     assert.deepEqual(
       filterProductsForTable(catalog, {
@@ -225,17 +197,9 @@ describe("product table state", () => {
     assert.equal(parseProductStatusFilter("archived"), "all");
     assert.equal(parseProductStatusFilter(undefined), "all");
     assert.equal(parseProductStatusFilter(["published", "draft"]), "published");
-    assert.equal(parseProductStockFilter("in_stock"), "in_stock");
-    assert.equal(parseProductStockFilter("out_of_stock"), "out_of_stock");
-    assert.equal(parseProductStockFilter("not_tracked"), "not_tracked");
-    assert.equal(parseProductStockFilter("missing"), "all");
     assert.equal(parseProductMediaFilter("with_media"), "with_media");
     assert.equal(parseProductMediaFilter("without_media"), "without_media");
     assert.equal(parseProductMediaFilter("missing"), "all");
-    assert.equal(parseProductVariantCountFilter("no_variants"), "no_variants");
-    assert.equal(parseProductVariantCountFilter("single_variant"), "single_variant");
-    assert.equal(parseProductVariantCountFilter("multi_variant"), "multi_variant");
-    assert.equal(parseProductVariantCountFilter("missing"), "all");
   });
 
   it("derives price, media, thumbnail, and filtered counts", () => {

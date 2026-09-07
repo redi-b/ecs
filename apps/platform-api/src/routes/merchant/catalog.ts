@@ -1,6 +1,6 @@
 import type { Hono } from "hono";
-
 import type { PlatformAppOptions, PlatformAppVariables } from "../../app.js";
+import { taxonomyListFiltersSchema } from "../../commerce/taxonomy-list-filters.js";
 import {
   getJsonBody,
   getOptionalBodyString,
@@ -28,7 +28,10 @@ export function registerMerchantCatalogRoutes(
       return context.json({ error: "commerce_backend_unavailable" }, 503);
     }
 
+    const filters = taxonomyListFiltersSchema.safeParse(context.req.query());
+    if (!filters.success) return context.json({ error: "invalid_taxonomy_filter" }, 400);
     const categories = await options.listMerchantProductCategories({
+      ...filters.data,
       limit: getPaginationValue(context.req.query("limit"), 100, 100),
       offset: getPaginationValue(context.req.query("offset"), 0, 10_000),
       tenantId: merchant.result.context.tenantId,
@@ -109,7 +112,11 @@ export function registerMerchantCatalogRoutes(
       return context.json({ error: "commerce_backend_unavailable" }, 503);
     }
 
+    const filters = taxonomyListFiltersSchema.safeParse(context.req.query());
+    if (!filters.success || filters.data.parentId)
+      return context.json({ error: "invalid_taxonomy_filter" }, 400);
     const collections = await options.listMerchantProductCollections({
+      ...filters.data,
       limit: getPaginationValue(context.req.query("limit"), 100, 100),
       offset: getPaginationValue(context.req.query("offset"), 0, 10_000),
       tenantId: merchant.result.context.tenantId,
@@ -220,7 +227,8 @@ export function registerMerchantCatalogRoutes(
     if (!name) return context.json({ error: "missing_name" }, 400);
     if (!options.updateMerchantProductCategory)
       return context.json({ error: "commerce_backend_unavailable" }, 503);
-    const rankRaw = body && typeof body === "object" ? (body as { rank?: unknown }).rank : undefined;
+    const rankRaw =
+      body && typeof body === "object" ? (body as { rank?: unknown }).rank : undefined;
     const rank =
       typeof rankRaw === "number" && Number.isFinite(rankRaw)
         ? Math.max(0, Math.floor(rankRaw))
@@ -277,9 +285,7 @@ export function registerMerchantCatalogRoutes(
       salesChannelId: commerce.context.medusaSalesChannelId,
       tenantId: merchant.result.context.tenantId,
     });
-    return result.ok
-      ? context.json(result)
-      : context.json({ error: result.error }, result.status);
+    return result.ok ? context.json(result) : context.json({ error: result.error }, result.status);
   });
 
   app.post("/platform/merchant/product-collections/:collectionId/products", async (context) => {

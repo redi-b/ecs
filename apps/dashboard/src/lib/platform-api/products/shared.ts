@@ -97,6 +97,8 @@ export async function parseBatchDeleteResponse(
 }
 
 export async function fetchProductResource(options: {
+  visibility?: string | undefined;
+  parentId?: string | undefined;
   cookieHeader?: string | null | undefined;
   fetcher?: typeof fetch;
   limit?: number | undefined;

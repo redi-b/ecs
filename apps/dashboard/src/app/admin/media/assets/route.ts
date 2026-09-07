@@ -6,6 +6,9 @@ export async function GET(request: Request) {
     const url = new URL(context.request.url);
     const query = url.searchParams.get("q")?.trim();
     const mimeType = url.searchParams.get("mimeType")?.trim();
+    const orientation = url.searchParams.get("orientation")?.trim();
+    const size = url.searchParams.get("size")?.trim();
+    const sort = url.searchParams.get("sort")?.trim();
     const limit = parseInteger(url.searchParams.get("limit"), 24, 1, 100);
     const offset = parseInteger(url.searchParams.get("offset"), 0, 0, 100_000);
     const result = await getMerchantMedia(
@@ -17,8 +20,12 @@ export async function GET(request: Request) {
       {
         limit,
         offset,
+        ...(url.searchParams.get("publicOnly") === "true" ? { publicOnly: true } : {}),
         ...(query ? { query } : {}),
         ...(mimeType && mimeType !== "all" ? { mimeType } : {}),
+        ...(orientation && orientation !== "all" ? { orientation } : {}),
+        ...(size && size !== "all" ? { size } : {}),
+        ...(sort && sort !== "newest" ? { sort } : {}),
       },
     );
     return result.ok
@@ -27,12 +34,7 @@ export async function GET(request: Request) {
   });
 }
 
-function parseInteger(
-  value: string | null,
-  fallback: number,
-  min: number,
-  max: number,
-) {
+function parseInteger(value: string | null, fallback: number, min: number, max: number) {
   if (!value) return fallback;
   const parsed = Number.parseInt(value, 10);
   if (!Number.isFinite(parsed)) return fallback;

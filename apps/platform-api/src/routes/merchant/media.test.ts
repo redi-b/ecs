@@ -79,6 +79,51 @@ describe("merchant media routes", () => {
     assert.deepEqual(await response.json(), { error: "auth_required" });
   });
 
+  it("forwards validated whole-library filters and sorting", async () => {
+    let received:
+      | Parameters<NonNullable<Parameters<typeof createPlatformApp>[0]["listMediaAssets"]>>[0]
+      | undefined;
+    const app = mediaApp({
+      listMediaAssets: async (input) => {
+        received = input;
+        return { assets: [], count: 0, limit: input.limit, offset: input.offset, ok: true };
+      },
+    });
+    const response = await app.request(
+      "http://shop.example.com/platform/merchant/media?limit=12&offset=24&q=hero&mimeType=image%2Fpng&orientation=landscape&size=large&sort=name_asc",
+    );
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(received, {
+      limit: 12,
+      mimeType: "image/png",
+      offset: 24,
+      orientation: "landscape",
+      query: "hero",
+      size: "large",
+      sort: "name_asc",
+      tenantId: "tenant_1",
+    });
+  });
+
+  it("rejects unknown media filters", async () => {
+    const app = mediaApp({
+      listMediaAssets: async (input) => ({
+        assets: [],
+        count: 0,
+        limit: input.limit,
+        offset: input.offset,
+        ok: true,
+      }),
+    });
+
+    const response = await app.request(
+      "http://shop.example.com/platform/merchant/media?orientation=diagonal",
+    );
+    assert.equal(response.status, 400);
+    assert.deepEqual(await response.json(), { error: "invalid_media_filter" });
+  });
+
   it("synchronizes ordered product media inside the resolved tenant", async () => {
     let received:
       | { imageUrls: string[]; productId: string; tenantId: string; thumbnail: string | null }
@@ -114,7 +159,7 @@ describe("merchant media routes", () => {
 function mediaApp(
   mediaOptions: Pick<
     Parameters<typeof createPlatformApp>[0],
-    "createMediaUpload" | "deleteMediaAsset" | "syncProductMedia"
+    "createMediaUpload" | "deleteMediaAsset" | "listMediaAssets" | "syncProductMedia"
   >,
   authenticated = true,
 ) {

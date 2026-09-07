@@ -133,6 +133,9 @@
     "optionsLoadErrorDesc": "Could not load {labels}. You can still create a basic product and add options later."
   },
   "filter": {
+    "taxonomyError": "Couldn't load categories and collections.",
+    "categoriesError": "Couldn't load categories.",
+    "collectionsError": "Couldn't load collections.",
     "status": {
       "label": "Status",
       "all": "All statuses",
@@ -140,25 +143,11 @@
       "draft": "Draft",
       "unknown": "Unknown"
     },
-    "stock": {
-      "label": "Stock",
-      "all": "All stock",
-      "in_stock": "In stock",
-      "out_of_stock": "Out of stock",
-      "not_tracked": "Not tracked"
-    },
     "media": {
       "label": "Media",
       "all": "All media",
       "with_media": "With media",
       "without_media": "Without media"
-    },
-    "variants": {
-      "label": "Variants",
-      "all": "All variant counts",
-      "no_variants": "No variants",
-      "single_variant": "Single variant",
-      "multi_variant": "Multiple variants"
     },
     "collection": {
       "label": "Collection",

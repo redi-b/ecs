@@ -23,6 +23,14 @@
     "customerCode": "Customer enters this code"
   },
   "filter": {
+    "schedule": {
+      "label": "Schedule",
+      "all": "Any schedule",
+      "scheduled": "Starts later",
+      "current": "Within scheduled dates",
+      "expired": "Ended",
+      "unscheduled": "No scheduled dates"
+    },
     "status": {
       "all": "All statuses",
       "active": "Active",

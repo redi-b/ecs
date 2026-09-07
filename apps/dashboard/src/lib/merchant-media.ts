@@ -1,22 +1,7 @@
 import { z } from "zod";
 
 import { type PlatformRequestContext, platformFetch } from "@/lib/platform-api/client";
-
-const mediaAssetSchema = z.object({
-  accessMode: z.enum(["public", "private"]),
-  altText: z.string().nullable(),
-  byteSize: z.number(),
-  createdAt: z.string(),
-  displayName: z.string(),
-  filename: z.string(),
-  height: z.number().nullable(),
-  id: z.string(),
-  mimeType: z.string(),
-  publicUrl: z.string().nullable(),
-  status: z.enum(["pending", "uploaded", "processing", "ready", "failed", "deleted"]),
-  updatedAt: z.string(),
-  width: z.number().nullable(),
-});
+import { mediaAssetSchema } from "./media-schema";
 
 const createUploadResponseSchema = z.object({
   asset: mediaAssetSchema,
@@ -44,7 +29,16 @@ export type MediaUploadDescriptor = z.infer<typeof createUploadResponseSchema>;
 
 export async function getMerchantMedia(
   context: PlatformRequestContext,
-  input: { limit?: number; mimeType?: string; offset?: number; query?: string } = {},
+  input: {
+    publicOnly?: boolean;
+    limit?: number;
+    mimeType?: string;
+    offset?: number;
+    orientation?: string;
+    query?: string;
+    size?: string;
+    sort?: string;
+  } = {},
 ) {
   const search = new URLSearchParams({
     limit: String(input.limit ?? 24),
@@ -52,6 +46,10 @@ export async function getMerchantMedia(
   });
   if (input.query) search.set("q", input.query);
   if (input.mimeType) search.set("mimeType", input.mimeType);
+  if (input.orientation) search.set("orientation", input.orientation);
+  if (input.size) search.set("size", input.size);
+  if (input.sort) search.set("sort", input.sort);
+  if (input.publicOnly) search.set("publicOnly", "true");
   const response = await platformFetch(`/platform/merchant/media?${search}`, context);
   const data = await response.json().catch(() => null);
   if (!response.ok) return platformError(response.status, data, "media_list_failed");
