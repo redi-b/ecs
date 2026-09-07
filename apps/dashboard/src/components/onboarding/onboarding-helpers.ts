@@ -34,7 +34,10 @@ export function parseCategories(value: string | undefined) {
 
 /** Keep backend as a single string field (max ~80 in contracts). */
 export function serializeCategories(values: string[]) {
-  const joined = values.map((value) => value.trim()).filter(Boolean).join(", ");
+  const joined = values
+    .map((value) => value.trim())
+    .filter(Boolean)
+    .join(", ");
   return joined.slice(0, 80);
 }
 
@@ -43,6 +46,44 @@ export function getTemplateTags(template: StorefrontTemplateCatalogItem | null |
   return Array.isArray(tags)
     ? tags.filter((tag): tag is string => typeof tag === "string").slice(0, 4)
     : [];
+}
+
+const EDITORIAL_CATEGORIES = new Set(["Beauty & personal care", "Fashion"]);
+const CATALOG_CATEGORIES = new Set([
+  "Books & stationery",
+  "Electronics",
+  "Home & living",
+  "Services",
+  "Sports & outdoors",
+]);
+
+/** A restrained recommendation based on the two templates' actual design intent. */
+export function getRecommendedTemplateKey(
+  categories: string[],
+  templates: StorefrontTemplateCatalogItem[],
+) {
+  const preferredSlug = categories.some((category) => EDITORIAL_CATEGORIES.has(category))
+    ? "luvia"
+    : categories.some((category) => CATALOG_CATEGORIES.has(category))
+      ? "nexahub"
+      : null;
+
+  if (!preferredSlug) return null;
+  return (
+    templates.find((template) =>
+      template.version.templateKey.toLowerCase().startsWith(`${preferredSlug}@`),
+    )?.version.templateKey ?? null
+  );
+}
+
+/** Preserve a trailing hyphen while typing; canonical slugging happens on blur. */
+export function sanitizeHandleDraft(value: string) {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9-]+/g, "-")
+    .replace(/-{2,}/g, "-")
+    .replace(/^-+/, "")
+    .slice(0, 40);
 }
 
 export function getHandleReason(reason: string | undefined, t: (key: MessageKey) => string) {

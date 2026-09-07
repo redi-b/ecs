@@ -18,7 +18,7 @@ export async function POST(request: Request) {
     return failOnboarding(request, "auth_required", payload, wantsJson);
   }
 
-  if (!shopName || !handle || !templateKey) {
+  if (!shopName || !handle || !templateKey || !businessCategory || !contactPhone) {
     return failOnboarding(request, "missing_required_fields", payload, wantsJson);
   }
 
@@ -26,8 +26,8 @@ export async function POST(request: Request) {
   const createResult = await createTenantShop({
     cookieHeader,
     input: {
-      ...(businessCategory ? { businessCategory } : {}),
-      ...(contactPhone ? { contactPhone } : {}),
+      businessCategory,
+      contactPhone,
       handle,
       name: shopName,
       templateKey,
@@ -85,9 +85,7 @@ export async function POST(request: Request) {
       ok: true as const,
       redirectTo,
       deliveryPrefsApplied,
-      ...(deliveryPrefsApplied
-        ? {}
-        : { warning: "delivery_prefs_not_applied" as const }),
+      ...(deliveryPrefsApplied ? {} : { warning: "delivery_prefs_not_applied" as const }),
     });
   }
 
@@ -156,11 +154,7 @@ function failOnboarding(
 ) {
   if (wantsJson) {
     const status =
-      error === "auth_required"
-        ? 401
-        : error === "missing_required_fields"
-          ? 400
-          : 503;
+      error === "auth_required" ? 401 : error === "missing_required_fields" ? 400 : 503;
     return NextResponse.json({ error, ok: false as const }, { status });
   }
   return redirectToOnboarding(request, error, payload);

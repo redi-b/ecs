@@ -80,6 +80,7 @@ test("POST /admin/onboarding/submit provisions a shop for the signed-in account"
   body.set("handle", "addis-pantry");
   body.set("templateKey", "luvia@1");
   body.set("businessCategory", "Groceries");
+  body.set("contactPhone", "+251911000000");
 
   const response = await POST(
     new Request("http://dashboard.lvh.me/admin/onboarding/submit", {
@@ -99,6 +100,7 @@ test("POST /admin/onboarding/submit provisions a shop for the signed-in account"
   assert.equal(forwardedRequest?.headers.get("cookie"), "better-auth.session_token=session_1");
   assert.deepEqual(forwardedRequest?.body, {
     businessCategory: "Groceries",
+    contactPhone: "+251911000000",
     handle: "addis-pantry",
     name: "Addis Pantry",
     templateKey: "luvia@1",
@@ -123,4 +125,28 @@ test("POST /admin/onboarding/submit requires an existing session", async () => {
     response.headers.get("location"),
     "http://dashboard.lvh.me/admin/onboarding?error=auth_required&shopName=Addis+Pantry&handle=addis-pantry",
   );
+});
+
+test("POST /admin/onboarding/submit requires a category and contact phone", async () => {
+  const response = await POST(
+    new Request("http://dashboard.lvh.me/admin/onboarding/submit", {
+      body: JSON.stringify({
+        handle: "addis-pantry",
+        shopName: "Addis Pantry",
+        templateKey: "luvia@1",
+      }),
+      headers: {
+        accept: "application/json",
+        "content-type": "application/json",
+        cookie: "better-auth.session_token=session_1",
+      },
+      method: "POST",
+    }),
+  );
+
+  assert.equal(response.status, 400);
+  assert.deepEqual(await response.json(), {
+    error: "missing_required_fields",
+    ok: false,
+  });
 });

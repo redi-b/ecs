@@ -13,10 +13,12 @@ import {
 } from "@/components/onboarding/onboarding-form-parts";
 import {
   getHandleReason,
+  getRecommendedTemplateKey,
   type HandleState,
   mapOnboardingError,
   ONBOARDING_DRAFT_KEY,
   parseCategories,
+  sanitizeHandleDraft,
   serializeCategories,
   slugify,
 } from "@/components/onboarding/onboarding-helpers";
@@ -26,7 +28,7 @@ import { Button } from "@/components/ui/button";
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { useI18n } from "@/i18n/provider";
-import { getStorefrontHostname } from "@/lib/storefront-hosts";
+import { getStorefrontHostname, normalizeStorefrontBaseDomain } from "@/lib/storefront-hosts";
 import { cn } from "@/lib/utils";
 
 export function ShopOnboardingForm({
@@ -46,6 +48,7 @@ export function ShopOnboardingForm({
   templates: StorefrontTemplateCatalogItem[];
 }) {
   const fieldId = useId();
+  const formId = `${fieldId}-form`;
   const { t } = useI18n();
   const steps = useMemo(
     () =>
@@ -78,6 +81,7 @@ export function ShopOnboardingForm({
   const [handle, setHandle] = useState(defaultValues.handle ?? "");
   const [handleTouched, setHandleTouched] = useState(Boolean(defaultValues.handle));
   const [templateKey, setTemplateKey] = useState(templates[0]?.version.templateKey ?? "");
+  const [templateTouched, setTemplateTouched] = useState(false);
   const [businessCategories, setBusinessCategories] = useState<string[]>(() =>
     parseCategories(defaultValues.businessCategory),
   );
@@ -93,6 +97,7 @@ export function ShopOnboardingForm({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
   const businessCategory = serializeCategories(businessCategories);
+  const normalizedBaseDomain = normalizeStorefrontBaseDomain(storefrontBaseDomain);
 
   const selectedTemplate = useMemo(
     () =>
@@ -126,6 +131,7 @@ export function ShopOnboardingForm({
         templates.some((item) => item.version.templateKey === value.templateKey)
       ) {
         setTemplateKey(value.templateKey);
+        setTemplateTouched(true);
       }
     } catch {
       window.localStorage.removeItem(ONBOARDING_DRAFT_KEY);
@@ -145,6 +151,17 @@ export function ShopOnboardingForm({
     );
   }, [businessCategories, contactPhone, handle, shopName, templateKey]);
 
+  const recommendedTemplateKey = useMemo(
+    () => getRecommendedTemplateKey(businessCategories, templates),
+    [businessCategories, templates],
+  );
+
+  useEffect(() => {
+    if (!templateTouched && recommendedTemplateKey) {
+      setTemplateKey(recommendedTemplateKey);
+    }
+  }, [recommendedTemplateKey, templateTouched]);
+
   useEffect(() => {
     const normalized = slugify(handle);
 
@@ -153,8 +170,8 @@ export function ShopOnboardingForm({
       return;
     }
 
-    if (normalized !== handle) {
-      setHandle(normalized);
+    if (normalized !== handle || normalized.length < 3) {
+      setHandleState({ status: "idle", message: t("onboarding.handle.choose") });
       return;
     }
 
@@ -202,7 +219,11 @@ export function ShopOnboardingForm({
     };
   }, [handle, storefrontBaseDomain, t]);
 
-  const canContinueShop = Boolean(shopName.trim()) && handleState.status === "available";
+  const canContinueShop =
+    Boolean(shopName.trim()) &&
+    businessCategories.length > 0 &&
+    Boolean(contactPhone.trim()) &&
+    handleState.status === "available";
   const canContinueStorefront = Boolean(templateKey);
   const canContinue =
     (step === 0 && canContinueShop) || (step === 1 && canContinueStorefront) || step === 2;
@@ -228,8 +249,8 @@ export function ShopOnboardingForm({
 
     const response = await fetch("/admin/onboarding/submit", {
       body: JSON.stringify({
-        businessCategory: businessCategory || undefined,
-        contactPhone: contactPhone.trim() || undefined,
+        businessCategory,
+        contactPhone: contactPhone.trim(),
         deliveryEnabled,
         handle,
         phoneConfirmationRequired,
@@ -401,9 +422,6 @@ export function ShopOnboardingForm({
                   {current.detail}
                 </p>
               </div>
-              <Badge className="hidden shrink-0 font-medium sm:inline-flex" variant="secondary">
-                {t("onboarding.estimatedTime")}
-              </Badge>
             </div>
             <div className="mt-5 h-1 overflow-hidden rounded-full bg-muted sm:mt-6">
               <div
@@ -424,7 +442,7 @@ export function ShopOnboardingForm({
 
             <form
               className="flex flex-col gap-7"
-              id="onboarding-setup-form"
+              id={formId}
               onSubmit={(event) => void submitOnboarding(event)}
             >
               <div className={cn(step === 0 ? "grid gap-6" : "hidden")}>
@@ -450,22 +468,24 @@ export function ShopOnboardingForm({
                     {t("onboarding.shopAddress")}
                   </FieldLabel>
                   <div className="overflow-hidden rounded-[1.75rem] border border-input bg-background transition-colors focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/25">
-                    <div className="flex items-stretch">
-                      <span className="hidden items-center border-r bg-muted/40 px-4 text-sm text-muted-foreground sm:flex">
-                        https://
-                      </span>
+                    <div className="flex h-12 items-center px-4">
+                      <span className="shrink-0 text-sm text-muted-foreground">https://</span>
                       <Input
-                        className="h-12 rounded-none border-0 bg-transparent px-4 shadow-none focus-visible:ring-0"
+                        className="h-10 min-w-16 flex-1 rounded-none border-0 bg-transparent px-1 shadow-none focus-visible:ring-0"
                         id={`${fieldId}-handle`}
                         name="handle"
+                        onBlur={() => setHandle(slugify(handle))}
                         onChange={(event) => {
                           setHandleTouched(true);
-                          setHandle(event.target.value);
+                          setHandle(sanitizeHandleDraft(event.target.value));
                         }}
                         pattern="[a-z0-9][a-z0-9-]{1,38}[a-z0-9]"
                         required
                         value={handle}
                       />
+                      <span className="shrink-0 text-sm text-muted-foreground">
+                        .{normalizedBaseDomain}
+                      </span>
                     </div>
                     <div className="flex min-h-11 items-center justify-between gap-4 border-t bg-muted/20 px-4 py-2.5 text-xs sm:text-sm">
                       <span className="min-w-0 truncate font-medium tabular-nums text-foreground/90">
@@ -476,9 +496,7 @@ export function ShopOnboardingForm({
                   </div>
                   {handleState.status === "unavailable" ? (
                     <FieldError>{handleState.message}</FieldError>
-                  ) : (
-                    <FieldDescription>{handleState.message}</FieldDescription>
-                  )}
+                  ) : null}
                 </Field>
 
                 <div className="grid gap-6 sm:grid-cols-2">
@@ -507,6 +525,7 @@ export function ShopOnboardingForm({
                       name="contactPhone"
                       onChange={(event) => setContactPhone(event.target.value)}
                       placeholder="+251..."
+                      required
                       value={contactPhone}
                     />
                     <FieldDescription>{t("onboarding.contactPhoneHelp")}</FieldDescription>
@@ -560,7 +579,11 @@ export function ShopOnboardingForm({
                     <TemplateOption
                       checked={template.version.templateKey === templateKey}
                       key={template.version.templateKey}
-                      onSelect={() => setTemplateKey(template.version.templateKey)}
+                      onSelect={() => {
+                        setTemplateTouched(true);
+                        setTemplateKey(template.version.templateKey);
+                      }}
+                      recommended={template.version.templateKey === recommendedTemplateKey}
                       template={template}
                     />
                   ))}
@@ -617,34 +640,6 @@ export function ShopOnboardingForm({
                     />
                   </dl>
                 </section>
-
-                <section className="rounded-xl border border-border/90 p-6 sm:p-7">
-                  <p className="text-sm font-semibold tracking-tight">
-                    {t("onboarding.afterSetup")}
-                  </p>
-                  <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
-                    {t("onboarding.afterSetupDescription")}
-                  </p>
-                  <ul className="mt-5 grid gap-3 sm:grid-cols-2 sm:gap-x-6 sm:gap-y-3.5">
-                    {[
-                      t("onboarding.checklist.products"),
-                      t("onboarding.checklist.media"),
-                      t("onboarding.checklist.payments"),
-                      t("onboarding.checklist.fulfillment"),
-                    ].map((item) => (
-                      <li className="flex items-start gap-2.5 text-sm" key={item}>
-                        <span className="mt-0.5 grid size-5 shrink-0 place-items-center rounded-full bg-primary/10 text-primary">
-                          <AppIcons.check className="size-3" />
-                        </span>
-                        <span className="leading-snug text-foreground/90">{item}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </section>
-
-                <p className="text-xs leading-relaxed text-muted-foreground">
-                  {t("onboarding.recoverableDescription")}
-                </p>
               </div>
             </form>
 
@@ -696,7 +691,7 @@ export function ShopOnboardingForm({
                     aria-busy={isSubmitting}
                     className={step < lastStep ? "hidden" : undefined}
                     disabled={!canSubmit || isSubmitting}
-                    form="onboarding-setup-form"
+                    form={formId}
                     type="submit"
                   >
                     {isSubmitting ? (
