@@ -1,15 +1,13 @@
 "use client";
 
-import type { MerchantDashboardSummary } from "@ecs/contracts";
-import Link from "@/components/app/link";
+import type { MerchantDashboardAccess } from "@ecs/contracts";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-
 import { AppIcons } from "@/components/app/icons";
+import Link from "@/components/app/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/i18n/provider";
-import type { MessageKey } from "@/i18n/messages";
 import {
   getLaunchAssistantOpenPreference,
   isLaunchAssistantHidden,
@@ -19,151 +17,29 @@ import {
 } from "@/lib/launch-assistant-preferences";
 import { dashboardRoutes } from "@/lib/routes";
 import { cn } from "@/lib/utils";
+import { getLaunchChecklistItems, type LaunchChecklistItem } from "./launch-assistant-model";
 
-function formatCount(value: number | null | undefined) {
-  return typeof value === "number" ? value.toLocaleString() : "—";
-}
-
-/** Deep-link that opens a create dialog on the list page (`?create=`). */
-function withCreate(href: string, create: string) {
-  const url = new URL(href, "http://local.invalid");
-  url.searchParams.set("create", create);
-  return `${url.pathname}${url.search}`;
-}
-
-export type LaunchChecklistItem = {
-  id: string;
-  label: string;
-  description: string;
-  ready: boolean;
-  href: string;
-  /** Required items gate “shop is launch-ready”. Optional items do not. */
-  required: boolean;
-  current: boolean;
-};
-
-/**
- * Merchant launch path (required):
- * profile → catalog → design → publish.
- * Optional: online payments (COD already works).
- */
-export function getLaunchChecklistItems(
-  summary: MerchantDashboardSummary,
-  t: (key: MessageKey, values?: Record<string, string | number | Date>) => string,
-): LaunchChecklistItem[] {
-  const hasShopProfile = Boolean(
-    summary.tenant.name.trim() && summary.tenant.handle.trim() && summary.domain.hostname.trim(),
-  );
-  const productCount = summary.operations?.totals.products ?? 0;
-  const hasCatalog = productCount > 0;
-  const hasStorefrontDraft = Boolean(
-    summary.storefront.templateKey ?? summary.storefront.templateId,
-  );
-  const hasPublishedStorefront = summary.storefront.isPublished;
-
-  // Merchant path only — no internal “sales channel / store provisioning” steps.
-  const requiredStates = [
-    hasShopProfile,
-    hasCatalog,
-    hasStorefrontDraft,
-    hasPublishedStorefront,
-  ];
-  const nextRequiredIndex = requiredStates.findIndex((state) => !state);
-
-  const required: Omit<LaunchChecklistItem, "current">[] = [
-    {
-      id: "profile",
-      label: t("overview.launch.shopProfile"),
-      description: hasShopProfile
-        ? summary.domain.hostname
-        : t("overview.launch.shopProfileMissing"),
-      ready: hasShopProfile,
-      href: dashboardRoutes.settings,
-      required: true,
-    },
-    {
-      id: "catalog",
-      label: t("overview.launch.catalog"),
-      description: hasCatalog
-        ? t("overview.launch.catalogDesc", { count: formatCount(productCount) })
-        : t("overview.launch.catalogEmpty"),
-      ready: hasCatalog,
-      href: hasCatalog
-        ? dashboardRoutes.products
-        : withCreate(dashboardRoutes.products, "product"),
-      required: true,
-    },
-    {
-      id: "design",
-      label: t("overview.launch.storefrontDesign"),
-      description: hasStorefrontDraft
-        ? t("overview.launch.storefrontSelected")
-        : t("overview.launch.chooseStorefront"),
-      ready: hasStorefrontDraft,
-      href: hasStorefrontDraft ? dashboardRoutes.editor : `${dashboardRoutes.settings}?tab=storefront`,
-      required: true,
-    },
-    {
-      id: "publish",
-      label: t("overview.launch.publishStorefront"),
-      description: hasPublishedStorefront
-        ? t("overview.launch.customersCanAccess")
-        : t("overview.launch.reviewAndPublish"),
-      ready: hasPublishedStorefront,
-      href: `${dashboardRoutes.settings}?tab=storefront`,
-      required: true,
-    },
-  ];
-
-  const optional: Omit<LaunchChecklistItem, "current">[] = [
-    {
-      id: "fulfillment",
-      label: t("overview.launch.fulfillment"),
-      description: t("overview.launch.fulfillmentDesc"),
-      ready: hasShopProfile && hasPublishedStorefront,
-      href: `${dashboardRoutes.settings}?tab=fulfillment`,
-      required: false,
-    },
-    {
-      id: "payments",
-      label: t("overview.launch.payments"),
-      description: t("overview.launch.paymentsDesc"),
-      ready: true,
-      href: `${dashboardRoutes.settings}?tab=payments`,
-      required: false,
-    },
-  ];
-
-  const firstOptionalOpen = optional.findIndex((item) => !item.ready);
-
-  return [
-    ...required.map((item, index) => ({
-      ...item,
-      current: index === nextRequiredIndex,
-    })),
-    ...optional.map((item, index) => ({
-      ...item,
-      current: nextRequiredIndex === -1 && index === firstOptionalOpen,
-    })),
-  ];
-}
-
-export function LaunchAssistant({ summary }: { summary: MerchantDashboardSummary }) {
+export function LaunchAssistant({ access }: { access: MerchantDashboardAccess }) {
   const { t } = useI18n();
-  const items = useMemo(() => getLaunchChecklistItems(summary, t), [summary, t]);
+  const [productCount, setProductCount] = useState<number | null>(null);
+  const summary = useMemo(
+    () => (productCount === null ? null : { ...access, productCount }),
+    [access, productCount],
+  );
+  const items = useMemo(() => (summary ? getLaunchChecklistItems(summary, t) : []), [summary, t]);
   const requiredItems = items.filter((item) => item.required);
   const optionalItems = items.filter((item) => !item.required);
   const completedRequired = requiredItems.filter((item) => item.ready).length;
   const launchReady = completedRequired === requiredItems.length;
-  const liveShopHref = `//${summary.domain.hostname}`;
+  const liveShopHref = `//${access.domain.hostname}`;
 
   const [hydrated, setHydrated] = useState(false);
   const [hidden, setHidden] = useState(false);
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
-    const nextHidden = isLaunchAssistantHidden(summary.tenant.id);
-    const nextOpen = getLaunchAssistantOpenPreference(summary.tenant.id);
+    const nextHidden = isLaunchAssistantHidden(access.tenant.id);
+    const nextOpen = getLaunchAssistantOpenPreference(access.tenant.id);
 
     setHidden(nextHidden);
     // Default open when not launch-ready; stay collapsed when complete unless user opened it.
@@ -173,7 +49,7 @@ export function LaunchAssistant({ summary }: { summary: MerchantDashboardSummary
     function handlePreferenceChange(event: Event) {
       const detail = (event as CustomEvent<{ hidden?: boolean; tenantId?: string }>).detail;
 
-      if (detail?.tenantId !== summary.tenant.id || typeof detail.hidden !== "boolean") {
+      if (detail?.tenantId !== access.tenant.id || typeof detail.hidden !== "boolean") {
         return;
       }
 
@@ -181,7 +57,7 @@ export function LaunchAssistant({ summary }: { summary: MerchantDashboardSummary
       setOpen(
         detail.hidden
           ? false
-          : (getLaunchAssistantOpenPreference(summary.tenant.id) ?? !launchReady),
+          : (getLaunchAssistantOpenPreference(access.tenant.id) ?? !launchReady),
       );
     }
 
@@ -190,10 +66,36 @@ export function LaunchAssistant({ summary }: { summary: MerchantDashboardSummary
     return () => {
       window.removeEventListener(LAUNCH_ASSISTANT_PREFERENCE_EVENT, handlePreferenceChange);
     };
-  }, [launchReady, summary.tenant.id]);
+  }, [access.tenant.id, launchReady]);
+
+  useEffect(() => {
+    if (!hydrated || hidden) return;
+
+    let cancelled = false;
+
+    void fetch(`${dashboardRoutes.productListAction}?limit=1&offset=0`, {
+      credentials: "same-origin",
+    })
+      .then((response) => (response.ok ? response.json() : null))
+      .then((data: unknown) => {
+        if (cancelled) return;
+        const count =
+          data && typeof data === "object" && "count" in data
+            ? (data as { count?: unknown }).count
+            : undefined;
+        if (typeof count === "number" && count >= 0) {
+          setProductCount(count);
+        }
+      })
+      .catch(() => undefined);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [hidden, hydrated]);
 
   function dismissAssistant() {
-    setLaunchAssistantHidden(summary.tenant.id, true);
+    setLaunchAssistantHidden(access.tenant.id, true);
     setHidden(true);
     setOpen(false);
     toast(t("overview.launch.hiddenToast"), {
@@ -204,12 +106,12 @@ export function LaunchAssistant({ summary }: { summary: MerchantDashboardSummary
   function toggleOpen() {
     setOpen((value) => {
       const nextOpen = !value;
-      setLaunchAssistantOpenPreference(summary.tenant.id, nextOpen);
+      setLaunchAssistantOpenPreference(access.tenant.id, nextOpen);
       return nextOpen;
     });
   }
 
-  if (!hydrated || hidden) {
+  if (!hydrated || hidden || !summary) {
     return null;
   }
 
@@ -245,11 +147,11 @@ export function LaunchAssistant({ summary }: { summary: MerchantDashboardSummary
             type="button"
             variant="ghost"
             onClick={() => {
-              setLaunchAssistantOpenPreference(summary.tenant.id, false);
+              setLaunchAssistantOpenPreference(access.tenant.id, false);
               setOpen(false);
             }}
           >
-            ×
+            <AppIcons.close className="size-4" aria-hidden />
           </Button>
         </div>
 
@@ -341,7 +243,11 @@ function ChecklistRow({ item }: { item: LaunchChecklistItem }) {
               : "border-border bg-muted text-muted-foreground",
         )}
       >
-        {item.ready ? "✓" : item.current ? "•" : ""}
+        {item.ready ? (
+          <AppIcons.check className="size-4" aria-hidden />
+        ) : item.current ? (
+          <span className="size-1.5 rounded-full bg-current" aria-hidden />
+        ) : null}
       </span>
       <span className="min-w-0">
         <span className="block truncate font-medium">{item.label}</span>
@@ -353,11 +259,7 @@ function ChecklistRow({ item }: { item: LaunchChecklistItem }) {
           <AppIcons.arrowRight className="size-3.5 opacity-80" aria-hidden />
         </span>
       ) : (
-        <Badge
-          variant={
-            item.ready ? "secondary" : item.required ? "outline" : "outline"
-          }
-        >
+        <Badge variant={item.ready ? "secondary" : item.required ? "outline" : "outline"}>
           {item.ready
             ? t("overview.launch.done")
             : item.required

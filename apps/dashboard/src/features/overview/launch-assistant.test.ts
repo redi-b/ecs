@@ -1,0 +1,63 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+import type { MerchantDashboardAccess } from "@ecs/contracts";
+
+import { getLaunchChecklistItems } from "./launch-assistant-model.js";
+
+const access: MerchantDashboardAccess = {
+  actor: {
+    id: "user_1",
+    email: "owner@example.com",
+    name: "Owner",
+    role: "owner",
+  },
+  commerce: {
+    hasPublishableKey: true,
+    hasSalesChannel: true,
+    hasStore: true,
+  },
+  domain: {
+    id: "domain_1",
+    hostname: "shop.example.com",
+  },
+  storefront: {
+    isPublished: false,
+    publishedRevisionId: null,
+    templateId: "template_1",
+    templateKey: "nexahub",
+    templateVersion: 1,
+  },
+  tenant: {
+    id: "tenant_1",
+    name: "Shop",
+    handle: "shop",
+    status: "active",
+  },
+};
+
+const translate = (key: string) => key;
+
+test("orders the real launch path and does not invent optional completion", () => {
+  const items = getLaunchChecklistItems(
+    { ...access, productCount: 0 },
+    translate as Parameters<typeof getLaunchChecklistItems>[1],
+  );
+
+  assert.deepEqual(
+    items.map((item) => item.id),
+    ["profile", "design", "catalog", "publish", "fulfillment", "payments"],
+  );
+  assert.equal(items.find((item) => item.id === "catalog")?.current, true);
+  assert.equal(items.find((item) => item.id === "fulfillment")?.ready, false);
+  assert.equal(items.find((item) => item.id === "payments")?.ready, false);
+});
+
+test("points a configured storefront directly to the editor", () => {
+  const design = getLaunchChecklistItems(
+    { ...access, productCount: 1 },
+    translate as Parameters<typeof getLaunchChecklistItems>[1],
+  ).find((item) => item.id === "design");
+
+  assert.equal(design?.ready, true);
+  assert.equal(design?.href, "/admin/editor");
+});
