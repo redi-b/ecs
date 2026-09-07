@@ -1,6 +1,6 @@
 "use client";
 
-import { RiMenuFoldLine, RiMenuUnfoldLine } from "@remixicon/react";
+import { RiSideBarLine } from "@remixicon/react";
 import { cva, type VariantProps } from "class-variance-authority";
 import { Slot } from "radix-ui";
 import * as React from "react";
@@ -255,9 +255,7 @@ function SidebarTrigger({
   "aria-label": ariaLabel = "Toggle sidebar",
   ...props
 }: React.ComponentProps<typeof Button>) {
-  const { isMobile, openMobile, state, toggleSidebar } = useSidebar();
-  const isOpen = isMobile ? openMobile : state === "expanded";
-  const TriggerIcon = isOpen ? RiMenuFoldLine : RiMenuUnfoldLine;
+  const { toggleSidebar } = useSidebar();
 
   return (
     <Button
@@ -273,7 +271,7 @@ function SidebarTrigger({
       }}
       {...props}
     >
-      <TriggerIcon className="size-5" aria-hidden="true" />
+      <RiSideBarLine className="size-5" aria-hidden="true" />
       <span className="sr-only">{ariaLabel}</span>
     </Button>
   );
