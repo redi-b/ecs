@@ -14,6 +14,7 @@ import { SupportAccessBanner } from "@/components/app/support-access-banner";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { MediaUploadHost } from "@/features/media/media-upload-host";
+import { LaunchAssistant } from "@/features/overview/launch-assistant";
 import { getTranslations } from "@/i18n/server";
 import {
   DASHBOARD_PATH_HEADER,
@@ -122,6 +123,7 @@ export default async function AdminDashboardLayout({ children }: { children: Rea
               <AppHeader />
               <OnboardingWarningToast />
               {children}
+              <LaunchAssistant access={access.access} />
               <ActivityRegistryProvider>
                 <BackgroundTaskCenter />
                 <MediaUploadHost />

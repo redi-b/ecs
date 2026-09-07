@@ -37,7 +37,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { formatOrderReference } from "@/features/orders/order-domain";
-import { LaunchAssistant } from "@/features/overview/launch-assistant";
 import type { ChartMetric, MerchantOverviewProps } from "@/features/overview/overview-config";
 import { chartColorConfig } from "@/features/overview/overview-config";
 import {
@@ -878,7 +877,6 @@ export function MerchantOverview({ demoMode = false, summary }: MerchantOverview
         </Card>
       </div>
 
-      {demoMode ? null : <LaunchAssistant summary={summary} />}
     </section>
   );
 }
