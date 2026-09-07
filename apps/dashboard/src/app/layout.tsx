@@ -57,7 +57,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   const isAmharic = locale === "am";
   const cookieStore = await cookies();
   const themePreference: SharedTheme =
-    parseSharedThemeCookieValue(cookieStore.get(SHARED_THEME_COOKIE)?.value) ?? "system";
+    parseSharedThemeCookieValue(cookieStore.get(SHARED_THEME_COOKIE)?.value) ?? "light";
   // Only bake explicit dark into SSR class (system still resolved client-side).
   const ssrDark = themePreference === "dark";
 

@@ -102,5 +102,5 @@ export function persistSharedTheme(theme: SharedTheme) {
  * on first hit of a new subdomain when localStorage is empty).
  */
 export function getThemeBootstrapScript(): string {
-  return `(function(){try{var m=document.cookie.match(/(?:^|; )${SHARED_THEME_COOKIE}=([^;]*)/g);var t="system";if(m&&m.length){var last=m[m.length-1].split("=")[1];t=decodeURIComponent(last||"system");}if(t!=="dark"&&t!=="light"&&t!=="system")t="system";var d=t==="dark"||(t==="system"&&window.matchMedia("(prefers-color-scheme: dark)").matches);var r=document.documentElement;r.classList.toggle("dark",d);r.style.colorScheme=d?"dark":"light";}catch(e){}})();`;
+  return `(function(){try{var m=document.cookie.match(/(?:^|; )${SHARED_THEME_COOKIE}=([^;]*)/g);var t="light";if(m&&m.length){var last=m[m.length-1].split("=")[1];t=decodeURIComponent(last||"light");}if(t!=="dark"&&t!=="light"&&t!=="system")t="light";var d=t==="dark"||(t==="system"&&window.matchMedia("(prefers-color-scheme: dark)").matches);var r=document.documentElement;r.classList.toggle("dark",d);r.style.colorScheme=d?"dark":"light";}catch(e){}})();`;
 }

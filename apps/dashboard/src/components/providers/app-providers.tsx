@@ -1,8 +1,8 @@
 "use client";
 
-import type { ReactNode } from "react";
 import { NextIntlClientProvider } from "next-intl";
 import NextTopLoader from "nextjs-toploader";
+import type { ReactNode } from "react";
 
 import { QueryProvider } from "@/components/providers/query-provider";
 import { ThemeProvider } from "@/components/providers/theme-provider";
@@ -16,7 +16,7 @@ export function AppProviders({
   children,
   locale,
   messages,
-  theme = "system",
+  theme = "light",
 }: {
   children: ReactNode;
   locale: AppLocale;
@@ -26,7 +26,13 @@ export function AppProviders({
 }) {
   return (
     <NextIntlClientProvider locale={locale} messages={messages} timeZone={appTimeZone}>
-      <ThemeProvider attribute="class" defaultTheme={theme} enableSystem enableColorScheme storageKey="ecs-theme-ls">
+      <ThemeProvider
+        attribute="class"
+        defaultTheme={theme}
+        enableSystem
+        enableColorScheme
+        storageKey="ecs-theme-ls"
+      >
         <QueryProvider>
           {/*
             Shows on <Link> navigations (and history changes).

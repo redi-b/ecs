@@ -13,7 +13,10 @@ export function AppHeader({ demoMode = false }: { demoMode?: boolean }) {
   const { t } = useI18n();
   return (
     <header className="sticky top-0 z-40 flex h-14 shrink-0 items-center gap-2 border-b border-border bg-background/95 px-3 backdrop-blur-md supports-backdrop-filter:bg-background/85 sm:gap-3 sm:px-6">
-      <SidebarTrigger className="size-9 shrink-0 rounded-full" />
+      <SidebarTrigger
+        aria-label={t("common.toggleSidebar")}
+        className="size-9 shrink-0 rounded-full"
+      />
       <div
         aria-hidden="true"
         className="hidden h-5 w-px shrink-0 self-center bg-border/80 sm:block"
