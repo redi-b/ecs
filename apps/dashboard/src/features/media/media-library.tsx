@@ -45,7 +45,6 @@ export function MediaLibrary({
   initialSize = "all",
   initialSort = "newest",
   onChanged,
-  pageCount,
   totalCount,
 }: {
   assets: MediaAsset[];
@@ -56,7 +55,6 @@ export function MediaLibrary({
   initialSize?: MediaSizeFilter | undefined;
   initialSort?: MediaSort | undefined;
   onChanged: () => void;
-  pageCount: number;
   totalCount: number;
 }) {
   const { formatDate, t } = useI18n();
@@ -398,17 +396,20 @@ export function MediaLibrary({
     <div className="flex flex-col gap-3">
       <DataTableFilters
         actions={
-          <ListViewToggle
-            onChange={(next) => {
-              setView(next);
-              setSelectedIds(new Set());
-            }}
-            options={[
-              { icon: AppIcons.grid, label: t("media.gridView"), value: "grid" },
-              { icon: AppIcons.list, label: t("media.listView"), value: "list" },
-            ]}
-            value={view}
-          />
+          <>
+            <MediaSortControl value={sort} onChange={(sort) => pushServerFilters({ sort })} />
+            <ListViewToggle
+              onChange={(next) => {
+                setView(next);
+                setSelectedIds(new Set());
+              }}
+              options={[
+                { icon: AppIcons.grid, label: t("media.gridView"), value: "grid" },
+                { icon: AppIcons.list, label: t("media.listView"), value: "list" },
+              ]}
+              value={view}
+            />
+          </>
         }
         filters={filters}
         onClearAll={clearFilters}
@@ -423,7 +424,6 @@ export function MediaLibrary({
           placeholder={t("media.searchPlaceholder")}
           value={searchValue}
         />
-        <MediaSortControl value={sort} onChange={(sort) => pushServerFilters({ sort })} />
       </DataTableFilters>
       <ListResultsStatus
         filteredPageCount={filtered.length}
@@ -690,18 +690,18 @@ function AssetName({ asset, onOpen }: { asset: MediaAsset; onOpen?: () => void }
   );
 }
 
-function MediaGridSkeleton({ count = 8 }: { count?: number }) {
+function MediaGridSkeleton() {
   return (
-    <div aria-busy="true" aria-live="polite" className="flex min-w-0 flex-col" role="status">
+    <div aria-busy="true" aria-live="polite" className="flex min-w-0 flex-col">
       <div className="flex items-center gap-3 border-b border-border/80 bg-[var(--table-sticky-header)] px-4 py-2.5">
         <Skeleton className="size-4 shrink-0 rounded-[4px]" />
         <Skeleton className="h-2.5 w-20 shrink-0" />
       </div>
       <div className="grid gap-3 p-3 sm:grid-cols-2 sm:gap-3.5 sm:p-4 lg:grid-cols-3 xl:grid-cols-4">
-        {Array.from({ length: count }, (_, i) => (
+        {MEDIA_SKELETON_IDS.map((skeletonId, i) => (
           <div
             className="overflow-hidden rounded-xl border border-border/80 bg-card"
-            key={`media-skel-${i}`}
+            key={skeletonId}
           >
             <Skeleton className="aspect-[4/3] w-full rounded-none" />
             <div className="flex items-center gap-2 border-t border-border/70 bg-muted/10 p-3">
@@ -722,6 +722,17 @@ function MediaGridSkeleton({ count = 8 }: { count?: number }) {
     </div>
   );
 }
+
+const MEDIA_SKELETON_IDS = [
+  "media-skel-1",
+  "media-skel-2",
+  "media-skel-3",
+  "media-skel-4",
+  "media-skel-5",
+  "media-skel-6",
+  "media-skel-7",
+  "media-skel-8",
+];
 
 function setUrlMediaFilter(
   url: URL,

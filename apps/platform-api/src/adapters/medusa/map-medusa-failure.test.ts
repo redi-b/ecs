@@ -5,9 +5,23 @@ import {
   commerceErrorStatus,
   mapMedusaFailure,
   mapMedusaHttpFailure,
+  mapMedusaServerFailure,
 } from "./map-medusa-failure.js";
 
 describe("mapMedusaHttpFailure", () => {
+  it("lets adapters classify server failures without swallowing 4xx responses", () => {
+    assert.equal(mapMedusaServerFailure(new Response(null, { status: 422 })), undefined);
+    assert.deepEqual(mapMedusaServerFailure(new Response(null, { status: 500 })), {
+      ok: false,
+      error: "commerce_backend_error",
+      status: 502,
+    });
+    assert.deepEqual(mapMedusaServerFailure(new Response(null, { status: 503 })), {
+      ok: false,
+      error: "commerce_backend_unavailable",
+      status: 503,
+    });
+  });
   it("maps missing response to 503", () => {
     assert.deepEqual(mapMedusaHttpFailure(null), {
       ok: false,

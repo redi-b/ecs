@@ -3,6 +3,7 @@ import type {
   MerchantOrderActionResult,
   MerchantOrderDetailResult,
 } from "../../../types/index.js";
+import { mapMedusaHttpFailure, mapMedusaServerFailure } from "../map-medusa-failure.js";
 import { getAdminHeaders, missingCredentials, requestMedusa } from "./medusa-http.js";
 import { getFulfillmentItems, normalizeOrder } from "./normalize.js";
 import {
@@ -40,13 +41,8 @@ export async function getMerchantOrderForAction(
     };
   }
 
-  if (!response.ok) {
-    return {
-      ok: false,
-      error: "commerce_backend_unavailable",
-      status: 503,
-    };
-  }
+  if (!response.ok)
+    return mapMedusaHttpFailure(response) as Extract<MerchantOrderDetailResult, { ok: false }>;
 
   const data = await response.json().catch(() => undefined);
   const order = normalizeOrder(data?.order, input.salesChannelId)[0];
@@ -156,6 +152,8 @@ export async function fulfillMerchantOrder(
   }
 
   if (!response.ok) {
+    const serverFailure = mapMedusaServerFailure(response);
+    if (serverFailure) return serverFailure as Extract<MerchantOrderActionResult, { ok: false }>;
     // Surface Medusa validation (e.g. shipping profile mismatch) as not fulfillable
     // so the dashboard can show a recoverable merchant message.
     if (response.status === 400) {
@@ -165,11 +163,7 @@ export async function fulfillMerchantOrder(
         status: 409,
       };
     }
-    return {
-      ok: false,
-      error: "commerce_backend_unavailable",
-      status: 503,
-    };
+    return mapMedusaHttpFailure(response) as Extract<MerchantOrderActionResult, { ok: false }>;
   }
 
   // Fulfillment create may not embed a full order — re-fetch for fulfillments + line items.
@@ -243,6 +237,8 @@ export async function deliverMerchantOrderFulfillment(
   }
 
   if (!response.ok) {
+    const serverFailure = mapMedusaServerFailure(response);
+    if (serverFailure) return serverFailure as Extract<MerchantOrderActionResult, { ok: false }>;
     if (response.status === 400 || response.status === 422) {
       return {
         ok: false,
@@ -257,11 +253,7 @@ export async function deliverMerchantOrderFulfillment(
         status: 400,
       };
     }
-    return {
-      ok: false,
-      error: "commerce_backend_unavailable",
-      status: 503,
-    };
+    return mapMedusaHttpFailure(response) as Extract<MerchantOrderActionResult, { ok: false }>;
   }
 
   return getMerchantOrderForAction(fetcher, options, {

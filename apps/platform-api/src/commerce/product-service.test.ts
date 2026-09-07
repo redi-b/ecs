@@ -4,6 +4,24 @@ import { getProductsUrl, PRODUCT_LIST_FIELDS } from "../adapters/medusa/product/
 import { createMedusaProductService } from "./product-service.js";
 
 describe("createMedusaProductService", () => {
+  it("does not label a product query failure as a commerce outage", async () => {
+    const service = createMedusaProductService({
+      adminApiToken: "medusa_token",
+      medusaInternalUrl: "http://medusa:9000",
+      fetcher: async () =>
+        Response.json(
+          { message: "Trying to query by not existing property Product.sales_channel_id" },
+          { status: 500 },
+        ),
+    });
+    const result = await service.listMerchantProducts({
+      salesChannelId: "sc_1",
+      media: "without_media",
+      limit: 20,
+      offset: 0,
+    });
+    assert.deepEqual(result, { ok: false, error: "commerce_backend_error", status: 502 });
+  });
   it("creates a product in the resolved tenant sales channel", async () => {
     let forwardedRequest: Request | undefined;
     const service = createMedusaProductService({

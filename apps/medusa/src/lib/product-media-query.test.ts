@@ -25,6 +25,7 @@ test("media query preserves native Medusa filters and pagination", () => {
     { sales_channel_id: ["sc_1", "sc_2"] },
     { limit: 101 },
     { offset: -1 },
+    { price_list_id: ["plist_1"] },
   ]) {
     assert.equal(
       productMediaQuerySchema.safeParse({

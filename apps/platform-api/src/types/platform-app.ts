@@ -411,6 +411,7 @@ export type PlatformAppOptions = {
             ok: false;
             error:
               | "commerce_backend_unavailable"
+              | "commerce_backend_error"
               | "delivery_shipping_option_unavailable"
               | "pickup_option_sync_failed";
           }
@@ -593,12 +594,13 @@ export type PlatformAppOptions = {
             ok: false;
             error:
               | "commerce_backend_unavailable"
+              | "commerce_backend_error"
               | "commerce_credentials_invalid"
               | "commerce_credentials_missing"
               | "collection_not_found"
               | "collection_write_invalid"
               | "product_not_found";
-            status: 400 | 401 | 404 | 503;
+            status: 400 | 401 | 404 | 502 | 503;
           }
       >)
     | undefined;
@@ -609,11 +611,12 @@ export type PlatformAppOptions = {
             ok: false;
             error:
               | "commerce_backend_unavailable"
+              | "commerce_backend_error"
               | "commerce_credentials_invalid"
               | "commerce_credentials_missing"
               | "category_not_found"
               | "category_write_invalid";
-            status: 400 | 401 | 404 | 503;
+            status: 400 | 401 | 404 | 502 | 503;
           }
       >)
     | undefined;
@@ -830,7 +833,7 @@ export type PlatformAppOptions = {
         | {
             ok: false;
             error: string;
-            status: 400 | 401 | 404 | 503;
+            status: 400 | 401 | 404 | 502 | 503;
           }
       >)
     | undefined;

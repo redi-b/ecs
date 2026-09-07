@@ -69,12 +69,14 @@ export type MerchantProductsResult =
   | {
       ok: false;
       error:
+        | "commerce_backend_error"
         | "commerce_backend_unavailable"
+        | "commerce_backend_error"
         | "commerce_credentials_invalid"
         | "commerce_credentials_missing"
         | "commerce_resource_missing"
         | "product_filter_too_large";
-      status: 401 | 413 | 503;
+      status: 401 | 413 | 502 | 503;
     };
 
 export type MerchantProductDetailResult = MerchantProductWriteResult;
@@ -88,13 +90,14 @@ export type MerchantProductWriteResult =
       ok: false;
       error:
         | "commerce_backend_unavailable"
+        | "commerce_backend_error"
         | "commerce_credentials_invalid"
         | "commerce_credentials_missing"
         | "product_conflict"
         | "product_limit_reached"
         | "product_write_invalid"
         | "product_not_found";
-      status: 400 | 401 | 404 | 409 | 422 | 503;
+      status: 400 | 401 | 404 | 409 | 422 | 502 | 503;
     };
 
 export type MerchantProductCategory = {
@@ -126,9 +129,10 @@ export type MerchantProductCategoriesResult =
       ok: false;
       error:
         | "commerce_backend_unavailable"
+        | "commerce_backend_error"
         | "commerce_credentials_invalid"
         | "commerce_credentials_missing";
-      status: 401 | 503;
+      status: 401 | 502 | 503;
     };
 
 export type MerchantProductCategoryWriteResult =
@@ -140,12 +144,13 @@ export type MerchantProductCategoryWriteResult =
       ok: false;
       error:
         | "commerce_backend_unavailable"
+        | "commerce_backend_error"
         | "commerce_credentials_invalid"
         | "commerce_credentials_missing"
         | "category_conflict"
         | "category_not_found"
         | "category_write_invalid";
-      status: 400 | 401 | 404 | 409 | 422 | 503;
+      status: 400 | 401 | 404 | 409 | 422 | 502 | 503;
     };
 
 export type MerchantProductCollection = {
@@ -172,9 +177,10 @@ export type MerchantProductCollectionsResult =
       ok: false;
       error:
         | "commerce_backend_unavailable"
+        | "commerce_backend_error"
         | "commerce_credentials_invalid"
         | "commerce_credentials_missing";
-      status: 401 | 503;
+      status: 401 | 502 | 503;
     };
 
 export type MerchantProductCollectionWriteResult =
@@ -186,12 +192,13 @@ export type MerchantProductCollectionWriteResult =
       ok: false;
       error:
         | "commerce_backend_unavailable"
+        | "commerce_backend_error"
         | "commerce_credentials_invalid"
         | "commerce_credentials_missing"
         | "collection_conflict"
         | "collection_not_found"
         | "collection_write_invalid";
-      status: 400 | 401 | 404 | 409 | 422 | 503;
+      status: 400 | 401 | 404 | 409 | 422 | 502 | 503;
     };
 
 export type MerchantProductStock = {
@@ -214,6 +221,7 @@ export type MerchantProductStockResult =
       ok: false;
       error:
         | "commerce_backend_unavailable"
+        | "commerce_backend_error"
         | "commerce_credentials_invalid"
         | "commerce_credentials_missing"
         | "inventory_location_unavailable"
@@ -221,7 +229,7 @@ export type MerchantProductStockResult =
         | "product_inventory_unavailable"
         | "product_not_found"
         | "product_variant_unsupported";
-      status: 400 | 401 | 404 | 409 | 503;
+      status: 400 | 401 | 404 | 409 | 502 | 503;
     };
 
 export type MerchantProductStockUpdateResult = MerchantProductStockResult;
@@ -236,6 +244,7 @@ export type MerchantDeleteResult =
       ok: false;
       error:
         | "commerce_backend_unavailable"
+        | "commerce_backend_error"
         | "commerce_credentials_invalid"
         | "commerce_credentials_missing"
         | "product_not_found"
@@ -244,7 +253,7 @@ export type MerchantDeleteResult =
         | "category_write_invalid"
         | "collection_not_found"
         | "collection_write_invalid";
-      status: 400 | 401 | 404 | 503;
+      status: 400 | 401 | 404 | 502 | 503;
     };
 
 export type MerchantBatchDeleteResult =
@@ -257,9 +266,10 @@ export type MerchantBatchDeleteResult =
       ok: false;
       error:
         | "commerce_backend_unavailable"
+        | "commerce_backend_error"
         | "commerce_credentials_invalid"
         | "commerce_credentials_missing"
         | "product_not_found"
         | "product_write_invalid";
-      status: 400 | 401 | 404 | 503;
+      status: 400 | 401 | 404 | 502 | 503;
     };

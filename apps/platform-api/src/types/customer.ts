@@ -50,6 +50,7 @@ export type CustomerServiceError = {
   ok: false;
   error:
     | "commerce_backend_unavailable"
+    | "commerce_backend_error"
     | "commerce_credentials_invalid"
     | "customer_not_found"
     | "customer_email_conflict"
@@ -57,7 +58,7 @@ export type CustomerServiceError = {
     | "invalid_customer"
     | "invalid_customer_address"
     | "walk_in_address_forbidden";
-  status: 400 | 401 | 404 | 409 | 503;
+  status: 400 | 401 | 404 | 409 | 502 | 503;
 };
 
 export type MerchantCustomersResult =

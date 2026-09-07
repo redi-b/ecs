@@ -1,8 +1,6 @@
-import {
-  settlementToMetadata,
-  type OrderSettlementInput,
-} from "../../../lib/settlement.js";
+import { type OrderSettlementInput, settlementToMetadata } from "../../../lib/settlement.js";
 import type { MerchantOrder, MerchantOrderActionResult } from "../../../types/index.js";
+import { mapMedusaHttpFailure } from "../map-medusa-failure.js";
 import {
   deliverMerchantOrderFulfillment,
   fulfillMerchantOrder,
@@ -57,18 +55,20 @@ async function fetchRawOrder(
   });
 
   if (!response.ok) {
-    return { ok: false as const, status: response.status };
+    return mapMedusaHttpFailure(response, {
+      notFoundError: "order_not_found",
+    }) as Extract<MerchantOrderActionResult, { ok: false }>;
   }
 
   const data = await response.json().catch(() => undefined);
   const raw = isRecord(data) && isRecord(data.order) ? data.order : null;
   if (!raw) {
-    return { ok: false as const, status: 404 };
+    return { error: "order_not_found" as const, ok: false as const, status: 404 as const };
   }
 
   const channelId = getString(raw.sales_channel_id);
   if (channelId && channelId !== input.salesChannelId) {
-    return { ok: false as const, status: 404 };
+    return { error: "order_not_found" as const, ok: false as const, status: 404 as const };
   }
 
   return { ok: true as const, raw };
@@ -118,9 +118,7 @@ function orderContainsTxRef(raw: Record<string, unknown>, txRef: string) {
   if (metaRefs.includes(needle)) return true;
 
   for (const collection of getPaymentCollections(raw)) {
-    const sessions = Array.isArray(collection.payment_sessions)
-      ? collection.payment_sessions
-      : [];
+    const sessions = Array.isArray(collection.payment_sessions) ? collection.payment_sessions : [];
     for (const session of sessions) {
       if (!isRecord(session)) continue;
       const data = isRecord(session.data) ? session.data : {};
@@ -223,11 +221,7 @@ export async function updateMerchantOrderSettlement(
 
   const rawResult = await fetchRawOrder(fetcher, options, input);
   if (!rawResult.ok) {
-    return {
-      ok: false,
-      error: rawResult.status === 401 ? "commerce_credentials_invalid" : "order_not_found",
-      status: rawResult.status === 401 ? 401 : 404,
-    };
+    return rawResult;
   }
 
   const existingMeta = isRecord(rawResult.raw.metadata) ? rawResult.raw.metadata : {};
@@ -279,11 +273,7 @@ export async function markMerchantOrderPaid(
 
   const rawResult = await fetchRawOrder(fetcher, options, input);
   if (!rawResult.ok) {
-    return {
-      ok: false,
-      error: rawResult.status === 401 ? "commerce_credentials_invalid" : "order_not_found",
-      status: rawResult.status === 401 ? 401 : 404,
-    };
+    return rawResult;
   }
 
   const collectionIds = getPaymentCollectionIds(rawResult.raw);
@@ -299,8 +289,7 @@ export async function markMerchantOrderPaid(
 
   const existingMeta = isRecord(rawResult.raw.metadata) ? rawResult.raw.metadata : {};
   const paidAt = new Date().toISOString();
-  const isChapaSource =
-    input.source === "chapa_webhook" || input.source === "chapa_recheck";
+  const isChapaSource = input.source === "chapa_webhook" || input.source === "chapa_recheck";
 
   const nextMeta: Record<string, unknown> = {
     ...existingMeta,
@@ -514,7 +503,10 @@ export async function finishMerchantOrder(
   }
 
   // 4) Complete order if still open
-  if (!isCompletedOrder(current.order) || !(current.order.status ?? "").toLowerCase().includes("complete")) {
+  if (
+    !isCompletedOrder(current.order) ||
+    !(current.order.status ?? "").toLowerCase().includes("complete")
+  ) {
     const status = (current.order.status ?? "").toLowerCase();
     if (!status.includes("complete") && !status.includes("cancel")) {
       const response = await requestMedusa(

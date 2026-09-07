@@ -181,11 +181,12 @@ export function createMedusaProductService(options: {
           ok: false;
           error:
             | "commerce_backend_unavailable"
+            | "commerce_backend_error"
             | "commerce_credentials_invalid"
             | "commerce_credentials_missing"
             | "category_not_found"
             | "category_write_invalid";
-          status: 400 | 401 | 404 | 503;
+          status: 400 | 401 | 404 | 502 | 503;
         }
     > => {
       if (!options.adminApiToken?.trim()) return missingCredentials();
@@ -323,9 +324,11 @@ export function createMedusaProductService(options: {
       if (response.status === 401) {
         return { ok: false, error: "commerce_credentials_invalid", status: 401 };
       }
-      if (!response.ok) {
-        return { ok: false, error: "commerce_backend_unavailable", status: 503 };
-      }
+      if (!response.ok)
+        return mapMedusaHttpFailure(response) as Extract<
+          MerchantProductCategoriesResult,
+          { ok: false }
+        >;
       const data = await response.json().catch(() => undefined);
       const products = Array.isArray(data?.products) ? data.products.flatMap(normalizeProduct) : [];
       return {
@@ -349,12 +352,13 @@ export function createMedusaProductService(options: {
           ok: false;
           error:
             | "commerce_backend_unavailable"
+            | "commerce_backend_error"
             | "commerce_credentials_invalid"
             | "commerce_credentials_missing"
             | "collection_not_found"
             | "collection_write_invalid"
             | "product_not_found";
-          status: 400 | 401 | 404 | 503;
+          status: 400 | 401 | 404 | 502 | 503;
         }
     > => {
       if (!options.adminApiToken?.trim()) return missingCredentials();
@@ -379,6 +383,9 @@ export function createMedusaProductService(options: {
           productId,
           salesChannelId: input.salesChannelId,
         });
+        if (typeof inChannel === "object") {
+          return inChannel;
+        }
         if (!inChannel) {
           return { error: "product_not_found", ok: false, status: 404 };
         }
@@ -437,7 +444,12 @@ export function createMedusaProductService(options: {
         return { ok: false, error: "commerce_credentials_invalid", status: 401 };
       if (response.status === 404 && (await isMissingCommerceResourceResponse(response)))
         return { ok: false, error: "commerce_resource_missing", status: 503 };
-      if (!response.ok) return { ok: false, error: "commerce_backend_unavailable", status: 503 };
+      if (response.status === 404)
+        return { ok: false, error: "commerce_backend_unavailable", status: 503 };
+      if (response.status >= 500)
+        return mapMedusaHttpFailure(response) as Extract<MerchantProductsResult, { ok: false }>;
+      if (!response.ok)
+        return mapMedusaHttpFailure(response) as Extract<MerchantProductsResult, { ok: false }>;
       const data = await response.json().catch(() => undefined);
       if (!Array.isArray(data?.products) || !Number.isSafeInteger(data.count) || data.count < 0)
         return { ok: false, error: "commerce_backend_unavailable", status: 503 };
@@ -475,13 +487,15 @@ export function createMedusaProductService(options: {
 
       const data = await response.json().catch(() => undefined);
 
-      if (
-        !(await productIsInSalesChannel(fetcher, options, {
-          product: data?.product,
-          productId: input.productId,
-          salesChannelId: input.salesChannelId,
-        }))
-      ) {
+      const ownership = await productIsInSalesChannel(fetcher, options, {
+        product: data?.product,
+        productId: input.productId,
+        salesChannelId: input.salesChannelId,
+      });
+      if (typeof ownership === "object") {
+        return ownership as Extract<MerchantProductDetailResult, { ok: false }>;
+      }
+      if (!ownership) {
         return {
           ok: false,
           error: "product_not_found",
@@ -533,13 +547,11 @@ export function createMedusaProductService(options: {
         };
       }
 
-      if (!response.ok) {
-        return {
-          ok: false,
-          error: "commerce_backend_unavailable",
-          status: 503,
-        };
-      }
+      if (!response.ok)
+        return mapMedusaHttpFailure(response) as Extract<
+          MerchantProductCollectionsResult,
+          { ok: false }
+        >;
 
       const data = await response.json().catch(() => undefined);
       const categories = Array.isArray(data?.product_categories)
@@ -591,13 +603,11 @@ export function createMedusaProductService(options: {
         };
       }
 
-      if (!response.ok) {
-        return {
-          ok: false,
-          error: "commerce_backend_unavailable",
-          status: 503,
-        };
-      }
+      if (!response.ok)
+        return mapMedusaHttpFailure(response) as Extract<
+          MerchantProductCategoriesResult,
+          { ok: false }
+        >;
 
       const data = await response.json().catch(() => undefined);
       const collections = Array.isArray(data?.collections)
@@ -854,13 +864,15 @@ export function createMedusaProductService(options: {
 
       const retrieveData = await retrieveResponse.json().catch(() => undefined);
 
-      if (
-        !(await productIsInSalesChannel(fetcher, options, {
-          product: retrieveData?.product,
-          productId: input.productId,
-          salesChannelId: input.salesChannelId,
-        }))
-      ) {
+      const ownership = await productIsInSalesChannel(fetcher, options, {
+        product: retrieveData?.product,
+        productId: input.productId,
+        salesChannelId: input.salesChannelId,
+      });
+      if (typeof ownership === "object") {
+        return ownership as Extract<MerchantProductWriteResult, { ok: false }>;
+      }
+      if (!ownership) {
         return {
           ok: false,
           error: "product_not_found",
@@ -903,13 +915,15 @@ export function createMedusaProductService(options: {
 
       const retrieveData = await retrieveResponse.json().catch(() => undefined);
 
-      if (
-        !(await productIsInSalesChannel(fetcher, options, {
-          product: retrieveData?.product,
-          productId: input.productId,
-          salesChannelId: input.salesChannelId,
-        }))
-      ) {
+      const ownership = await productIsInSalesChannel(fetcher, options, {
+        product: retrieveData?.product,
+        productId: input.productId,
+        salesChannelId: input.salesChannelId,
+      });
+      if (typeof ownership === "object") {
+        return ownership as Extract<MerchantDeleteResult, { ok: false }>;
+      }
+      if (!ownership) {
         return {
           ok: false,
           error: "product_not_found",

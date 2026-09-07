@@ -167,7 +167,6 @@ export function MediaWorkspace({
         initialSize={initialSize}
         initialSort={initialSort}
         onChanged={() => void refresh()}
-        pageCount={assets.length}
         totalCount={totalCount}
       />
     </PageShell>

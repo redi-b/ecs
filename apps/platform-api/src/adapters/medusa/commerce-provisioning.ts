@@ -22,7 +22,7 @@ export type CommerceProvisioningResult =
     }
   | {
       ok: false;
-      error: "commerce_backend_unavailable";
+      error: "commerce_backend_unavailable" | "commerce_backend_error";
     };
 
 type MedusaCommerceProvisioningClientOptions = {
@@ -69,7 +69,8 @@ export function createMedusaCommerceProvisioningClient(
       if (!response.ok) {
         return {
           ok: false,
-          error: "commerce_backend_unavailable",
+          error:
+            response.status === 503 ? "commerce_backend_unavailable" : "commerce_backend_error",
         };
       }
 

@@ -41,6 +41,20 @@ const DEFAULT_INVALID = "invalid_request";
 const DEFAULT_NOT_FOUND = "not_found";
 const DEFAULT_UNAVAILABLE = "commerce_backend_unavailable";
 
+/** Classify server failures before endpoint-specific 4xx handling. */
+export function mapMedusaServerFailure(
+  response: Response | null | undefined,
+  unavailableError = DEFAULT_UNAVAILABLE,
+): MedusaFailureResult | undefined {
+  if (!response || response.status === 503) {
+    return { ok: false, error: unavailableError, status: 503 };
+  }
+  if (response.status >= 500) {
+    return { ok: false, error: "commerce_backend_error", status: 502 };
+  }
+  return undefined;
+}
+
 export function mapMedusaHttpFailure(
   response: Response | null | undefined,
   options: MapMedusaFailureOptions = {},
@@ -50,13 +64,11 @@ export function mapMedusaHttpFailure(
   const conflictError = options.conflictError ?? invalidError;
   const unavailableError = options.unavailableError ?? DEFAULT_UNAVAILABLE;
 
-  if (!response) {
-    return { ok: false, error: unavailableError, status: 503 };
-  }
+  const serverFailure = mapMedusaServerFailure(response, unavailableError);
+  if (serverFailure) return serverFailure;
 
-  if (response.status >= 500 && response.status !== 503) {
-    return { ok: false, error: "commerce_backend_error", status: 502 };
-  }
+  // Narrowed by the server-failure classifier above.
+  if (!response) return { ok: false, error: unavailableError, status: 503 };
 
   if (response.status === 401 || response.status === 403) {
     return { ok: false, error: "commerce_credentials_invalid", status: 401 };

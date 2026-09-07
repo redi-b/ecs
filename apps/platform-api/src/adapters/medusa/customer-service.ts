@@ -8,6 +8,7 @@ import type {
   MerchantCustomerResult,
   MerchantCustomersResult,
 } from "../../types/index.js";
+import { mapMedusaHttpFailure } from "./map-medusa-failure.js";
 import { getAdminHeaders } from "./product/medusa-http.js";
 
 type Options = {
@@ -48,7 +49,8 @@ export function createMedusaCustomerService(options: Options) {
         headers: headers(),
       },
     ).catch(() => null);
-    if (!response?.ok) return null;
+    if (!response) return unavailable();
+    if (!response.ok) return await mapError(response);
     const data = await response.json().catch(() => ({}));
     if (
       !Array.isArray(data.customer_groups) ||
@@ -59,12 +61,12 @@ export function createMedusaCustomerService(options: Options) {
           typeof group?.id !== "string" || !group.id || group?.metadata?.tenant_id !== tenantId,
       )
     )
-      return null;
+      return unavailable();
     const existing = (Array.isArray(data.customer_groups) ? data.customer_groups : []).find(
       (group: { metadata?: { tenant_id?: string }; id?: string }) =>
         group?.metadata?.tenant_id === tenantId,
     );
-    if (existing?.id) return existing;
+    if (existing?.id) return { group: existing, ok: true as const };
     const created = await fetcher(`${base}/admin/customer-groups`, {
       body: JSON.stringify({
         metadata: { tenant_id: tenantId },
@@ -73,7 +75,10 @@ export function createMedusaCustomerService(options: Options) {
       headers: headers(),
       method: "POST",
     }).catch(() => null);
-    return created?.ok ? ((await created.json().catch(() => ({}))).customer_group ?? null) : null;
+    if (!created) return unavailable();
+    if (!created.ok) return await mapError(created);
+    const customerGroup = (await created.json().catch(() => ({}))).customer_group;
+    return customerGroup?.id ? { group: customerGroup, ok: true as const } : unavailable();
   }
 
   async function findByEmail(email: string): Promise<MerchantCustomer | null> {
@@ -111,11 +116,12 @@ export function createMedusaCustomerService(options: Options) {
     tenantId: string;
   }): Promise<MerchantCustomersResult> {
     const group = await tenantGroup(input.tenantId);
-    if (!group) return unavailable();
+    if (!group.ok) return group;
+    const tenantGroupRecord = group.group;
     const search = new URLSearchParams({
       // Medusa v2: expand relations with *prefix (bare +addresses often returns []).
       fields: "*addresses,*groups",
-      groups: group.id,
+      groups: tenantGroupRecord.id,
       limit: String(input.limit),
       offset: String(input.offset),
     });
@@ -127,7 +133,7 @@ export function createMedusaCustomerService(options: Options) {
     const data = await response.json().catch(() => ({}));
     const customers = (Array.isArray(data.customers) ? data.customers : [])
       .map(normalizeCustomer)
-      .map((customer: MerchantCustomer) => withoutGroup(customer, String(group.id)));
+      .map((customer: MerchantCustomer) => withoutGroup(customer, String(tenantGroupRecord.id)));
     return {
       count: Number(data.count ?? customers.length),
       customers,
@@ -215,8 +221,8 @@ export function createMedusaCustomerService(options: Options) {
     tenantId: string;
   }): Promise<MerchantCustomerResult> {
     const group = await tenantGroup(input.tenantId);
-    if (!group) return unavailable();
-    const groupId = String(group.id);
+    if (!group.ok) return group;
+    const groupId = String(group.group.id);
 
     // Always load the full customer (with addresses). Membership may be checked via
     // list filters because retrieve sometimes omits shop groups.
@@ -252,7 +258,8 @@ export function createMedusaCustomerService(options: Options) {
 
   async function createCustomer(input: CustomerInput): Promise<MerchantCustomerResult> {
     const group = await tenantGroup(input.tenantId);
-    if (!group) return unavailable();
+    if (!group.ok) return group;
+    const tenantGroupRecord = group.group;
     const email = input.email.trim().toLowerCase();
 
     // Prefer create; on global email uniqueness conflict, link into this shop instead.
@@ -264,12 +271,17 @@ export function createMedusaCustomerService(options: Options) {
 
     if (response?.ok) {
       const customer = normalizeCustomer((await response.json().catch(() => ({}))).customer);
-      const linked = await attachToGroup(String(group.id), customer.id);
+      const linked = await attachToGroup(String(tenantGroupRecord.id), customer.id);
       if (!linked.ok) return linked;
       return {
         customer: {
           ...customer,
-          groups: [{ id: String(group.id), name: String(group.name ?? "Customers") }],
+          groups: [
+            {
+              id: String(tenantGroupRecord.id),
+              name: String(tenantGroupRecord.name ?? "Customers"),
+            },
+          ],
         },
         ok: true,
       };
@@ -281,12 +293,12 @@ export function createMedusaCustomerService(options: Options) {
     const existing = await findByEmail(email);
     if (!existing) return createError;
 
-    const alreadyInShop = existing.groups.some((item) => item.id === group.id);
+    const alreadyInShop = existing.groups.some((item) => item.id === tenantGroupRecord.id);
     if (alreadyInShop) {
       return { error: "customer_email_conflict", ok: false, status: 409 };
     }
 
-    const linked = await attachToGroup(String(group.id), existing.id);
+    const linked = await attachToGroup(String(tenantGroupRecord.id), existing.id);
     if (!linked.ok) return linked;
 
     // Optionally refresh profile when linking into a new shop (never for walk-in placeholders).
@@ -306,8 +318,8 @@ export function createMedusaCustomerService(options: Options) {
       customer: {
         ...existing,
         groups: [
-          ...existing.groups.filter((item) => item.id !== group.id),
-          { id: String(group.id), name: String(group.name ?? "Customers") },
+          ...existing.groups.filter((item) => item.id !== tenantGroupRecord.id),
+          { id: String(tenantGroupRecord.id), name: String(tenantGroupRecord.name ?? "Customers") },
         ],
       },
       ok: true,
@@ -320,12 +332,13 @@ export function createMedusaCustomerService(options: Options) {
    */
   async function ensureCustomer(input: CustomerInput): Promise<MerchantCustomerResult> {
     const group = await tenantGroup(input.tenantId);
-    if (!group) return unavailable();
+    if (!group.ok) return group;
+    const tenantGroupRecord = group.group;
     const email = input.email.trim().toLowerCase();
     const isWalkIn = email.startsWith("walk-in@") || email.endsWith(".local");
 
     const existing = await findByEmail(email);
-    if (existing?.groups.some((item) => item.id === group.id)) {
+    if (existing?.groups.some((item) => item.id === tenantGroupRecord.id)) {
       // Do not overwrite walk-in (or existing) profile with the latest sale's phone/name.
       // Real-email sales may soft-update name/phone when provided.
       if (!isWalkIn && (input.firstName?.trim() || input.lastName?.trim() || input.phone?.trim())) {
@@ -346,7 +359,7 @@ export function createMedusaCustomerService(options: Options) {
     // Race: another request may have linked the same email into this shop.
     if (created.error === "customer_email_conflict") {
       const again = await findByEmail(email);
-      if (again?.groups.some((item) => item.id === group.id)) {
+      if (again?.groups.some((item) => item.id === tenantGroupRecord.id)) {
         return { customer: again, ok: true };
       }
     }
@@ -372,9 +385,9 @@ export function createMedusaCustomerService(options: Options) {
   }
   async function listGroups(input: { tenantId: string }): Promise<MerchantCustomerGroupsResult> {
     const group = await tenantGroup(input.tenantId);
-    return group
-      ? { groups: [{ id: group.id, name: group.name ?? "Customers" }], ok: true }
-      : unavailable();
+    return group.ok
+      ? { groups: [{ id: group.group.id, name: group.group.name ?? "Customers" }], ok: true }
+      : group;
   }
 
   async function createCustomerAddress(input: {
@@ -590,7 +603,7 @@ async function mapError(response: Response | null): Promise<CustomerServiceError
   if (response.status >= 400 && response.status < 500) {
     return { error: "invalid_customer", ok: false, status: 400 };
   }
-  return { error: "commerce_backend_unavailable", ok: false, status: 503 };
+  return mapMedusaHttpFailure(response) as CustomerServiceError;
 }
 
 async function mapAddressError(response: Response | null): Promise<CustomerServiceError> {
@@ -607,7 +620,7 @@ async function mapAddressError(response: Response | null): Promise<CustomerServi
   ) {
     return { error: "invalid_customer_address", ok: false, status: 400 };
   }
-  return { error: "commerce_backend_unavailable", ok: false, status: 503 };
+  return mapMedusaHttpFailure(response) as CustomerServiceError;
 }
 
 function isEmailConflict(status: number, body: unknown): boolean {
