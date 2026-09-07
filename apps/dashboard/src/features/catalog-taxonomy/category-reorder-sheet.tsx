@@ -20,7 +20,7 @@ import { CSS } from "@dnd-kit/utilities";
 import type { MerchantProductCategory } from "@ecs/contracts";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { AppIcons } from "@/components/app/icons";
@@ -70,6 +70,7 @@ export function CategoryReorderSheet({
   const [groups, setGroups] = useState<SiblingGroup[]>([]);
   const [baselineKey, setBaselineKey] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const initialized = useRef(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -77,7 +78,12 @@ export function CategoryReorderSheet({
   );
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      initialized.current = false;
+      return;
+    }
+    if (initialized.current) return;
+    initialized.current = true;
     const next = buildSiblingGroups(categories, t);
     setGroups(next);
     setBaselineKey(orderKey(next));
@@ -119,6 +125,7 @@ export function CategoryReorderSheet({
     toast.success(t("taxonomy.reorder.saved"));
     onOpenChange(false);
     await queryClient.invalidateQueries({ queryKey: ["product-categories"] });
+    await queryClient.invalidateQueries({ queryKey: ["product-taxonomy"] });
     router.refresh();
   }
 
@@ -187,7 +194,7 @@ export function CategoryReorderSheet({
               {t("common.cancel")}
             </Button>
             <Button
-              disabled={isSaving || groups.length === 0}
+              disabled={isSaving || !isDirty || groups.length === 0}
               onClick={() => void saveOrder()}
               type="button"
             >

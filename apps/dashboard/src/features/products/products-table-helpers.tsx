@@ -39,8 +39,6 @@ import {
   normalizeProductStatus,
   type ProductMediaFilter,
   type ProductStatusFilter,
-  type ProductStockFilter,
-  type ProductVariantCountFilter,
 } from "@/features/products/product-table-state";
 import type { MessageKey } from "@/i18n/messages";
 import { copyTextToClipboard } from "@/lib/clipboard";
@@ -57,8 +55,6 @@ type ProductsTableProps = {
   initialMedia?: ProductMediaFilter | undefined;
   initialQuery?: string | undefined;
   initialStatus?: ProductStatusFilter | undefined;
-  initialStock?: ProductStockFilter | undefined;
-  initialVariantCount?: ProductVariantCountFilter | undefined;
   pageSize: number;
   products: MerchantProduct[];
   tenantId?: string | undefined;
@@ -184,7 +180,7 @@ export function getProductColumns(
       id: "variants",
       accessorFn: (product) => product.variants?.length ?? 0,
       header: ({ column }) => (
-        <DataTableHeader column={column} title={t("products.filter.variants.label")} />
+        <DataTableHeader column={column} title={t("products.detail.variants")} />
       ),
       cell: ({ row }) => {
         const variantCount = row.original.variants?.length ?? 0;
@@ -201,9 +197,7 @@ export function getProductColumns(
     {
       id: "stock",
       accessorFn: (product) => getProductStockSortValue(product),
-      header: ({ column }) => (
-        <DataTableHeader column={column} title={t("products.filter.stock.label")} />
-      ),
+      header: ({ column }) => <DataTableHeader column={column} title={t("products.stock.title")} />,
       cell: ({ row }) => <ProductStockSummary product={row.original} t={t} />,
     },
     {

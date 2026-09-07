@@ -1,6 +1,20 @@
 import type { createPlatformDb } from "@ecs/db";
 import { mediaAssets, mediaUsages } from "@ecs/db";
-import { and, count, desc, eq, ilike, inArray, ne } from "drizzle-orm";
+import {
+  and,
+  asc,
+  count,
+  desc,
+  eq,
+  gt,
+  gte,
+  ilike,
+  inArray,
+  isNotNull,
+  lt,
+  ne,
+  or,
+} from "drizzle-orm";
 
 import {
   MediaStorageUnavailableError,
@@ -18,6 +32,12 @@ import type {
 
 type PlatformDb = ReturnType<typeof createPlatformDb>["db"];
 type MediaAssetRow = typeof mediaAssets.$inferSelect;
+type MediaOrientation = "landscape" | "portrait" | "square";
+type MediaSize = "small" | "medium" | "large";
+type MediaSort = "newest" | "oldest" | "name_asc" | "name_desc" | "largest" | "smallest";
+
+const smallMediaMaxBytes = 100 * 1024;
+const mediumMediaMaxBytes = 1024 * 1024;
 
 const allowedMimeTypes = new Set([
   "image/avif",
@@ -144,24 +164,63 @@ export function createMediaService(db: PlatformDb, storage: StorageAdapter) {
   }
 
   async function listMedia(input: {
+    publicOnly?: boolean | undefined;
     limit: number;
     mimeType?: string | undefined;
     offset: number;
+    orientation?: MediaOrientation | undefined;
     query?: string | undefined;
+    size?: MediaSize | undefined;
+    sort?: MediaSort | undefined;
     tenantId: string;
   }): Promise<MediaAssetListResult> {
-    const filters = [eq(mediaAssets.tenantId, input.tenantId), ne(mediaAssets.status, "deleted")];
+    const filters = [eq(mediaAssets.tenantId, input.tenantId), eq(mediaAssets.status, "ready")];
+    if (input.publicOnly)
+      filters.push(eq(mediaAssets.accessMode, "public"), isNotNull(mediaAssets.publicUrl));
     if (input.mimeType) filters.push(ilike(mediaAssets.mimeType, `${input.mimeType}%`));
-    if (input.query?.trim())
-      filters.push(ilike(mediaAssets.displayName, `%${input.query.trim()}%`));
+    if (input.query?.trim()) {
+      const query = `%${input.query.trim().replace(/[\\%_]/g, "\\$&")}%`;
+      filters.push(
+        or(
+          ilike(mediaAssets.displayName, query),
+          ilike(mediaAssets.filename, query),
+          ilike(mediaAssets.altText, query),
+        )!,
+      );
+    }
+    if (input.size === "small") filters.push(lt(mediaAssets.byteSize, smallMediaMaxBytes));
+    if (input.size === "medium") {
+      filters.push(gte(mediaAssets.byteSize, smallMediaMaxBytes));
+      filters.push(lt(mediaAssets.byteSize, mediumMediaMaxBytes));
+    }
+    if (input.size === "large") filters.push(gte(mediaAssets.byteSize, mediumMediaMaxBytes));
+    if (input.orientation === "landscape") filters.push(gt(mediaAssets.width, mediaAssets.height));
+    if (input.orientation === "portrait") filters.push(lt(mediaAssets.width, mediaAssets.height));
+    if (input.orientation === "square") filters.push(eq(mediaAssets.width, mediaAssets.height));
     const where = and(...filters);
+    const orderBy = (() => {
+      switch (input.sort) {
+        case "oldest":
+          return [asc(mediaAssets.createdAt), asc(mediaAssets.id)];
+        case "name_asc":
+          return [asc(mediaAssets.displayName), asc(mediaAssets.id)];
+        case "name_desc":
+          return [desc(mediaAssets.displayName), asc(mediaAssets.id)];
+        case "largest":
+          return [desc(mediaAssets.byteSize), asc(mediaAssets.id)];
+        case "smallest":
+          return [asc(mediaAssets.byteSize), asc(mediaAssets.id)];
+        default:
+          return [desc(mediaAssets.createdAt), asc(mediaAssets.id)];
+      }
+    })();
 
     const [rows, [total]] = await Promise.all([
       db
         .select()
         .from(mediaAssets)
         .where(where)
-        .orderBy(desc(mediaAssets.createdAt))
+        .orderBy(...orderBy)
         .limit(input.limit)
         .offset(input.offset),
       db.select({ value: count() }).from(mediaAssets).where(where),

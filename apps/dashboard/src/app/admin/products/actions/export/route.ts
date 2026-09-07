@@ -13,7 +13,13 @@ export async function GET(request: Request) {
   const path = tenantId
     ? `/platform/tenants/${encodeURIComponent(tenantId)}/products/export.csv`
     : "/platform/merchant/products/export.csv";
-  const response = await fetch(new URL(path, normalizeBaseUrl(getPlatformApiBaseUrl())), {
+  const exportUrl = new URL(path, normalizeBaseUrl(getPlatformApiBaseUrl()));
+  const query = new URL(request.url).searchParams;
+  for (const key of ["q", "status", "categoryId", "collectionId", "media"]) {
+    const value = query.get(key);
+    if (value) exportUrl.searchParams.set(key, value);
+  }
+  const response = await fetch(exportUrl, {
     cache: "no-store",
     headers: createPlatformHeaders({
       cookieHeader: cookieStore.toString(),

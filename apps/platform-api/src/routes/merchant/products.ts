@@ -1,7 +1,7 @@
 import type { Hono } from "hono";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
-
 import type { PlatformAppOptions, PlatformAppVariables } from "../../app.js";
+import { productListFiltersSchema } from "../../commerce/product-list-filters.js";
 import {
   exportProductsToCsv,
   productExportFilename,
@@ -149,21 +149,14 @@ export function registerMerchantProductRoutes(
       return context.json({ error: "commerce_backend_unavailable" }, 503);
     }
 
+    const filters = productListFiltersSchema.safeParse(context.req.query());
+    if (!filters.success) return context.json({ error: "invalid_product_filter" }, 400);
     const products = await options.listMerchantProducts({
+      ...filters.data,
       limit: getPaginationValue(context.req.query("limit"), 20, 100),
       offset: getPaginationValue(context.req.query("offset"), 0, 10_000),
       salesChannelId: commerce.context.medusaSalesChannelId,
       stockLocationId: result.context.medusaStockLocationId,
-      ...(context.req.query("q")?.trim() ? { q: context.req.query("q")!.trim() } : {}),
-      ...(context.req.query("status")?.trim()
-        ? { status: context.req.query("status")!.trim() }
-        : {}),
-      ...(context.req.query("collectionId")?.trim()
-        ? { collectionId: context.req.query("collectionId")!.trim() }
-        : {}),
-      ...(context.req.query("categoryId")?.trim()
-        ? { categoryId: context.req.query("categoryId")!.trim() }
-        : {}),
     });
 
     if (!products.ok) {
@@ -188,7 +181,10 @@ export function registerMerchantProductRoutes(
       return context.json({ error: "commerce_backend_unavailable" }, 503);
     }
 
+    const filters = productListFiltersSchema.safeParse(context.req.query());
+    if (!filters.success) return context.json({ error: "invalid_product_filter" }, 400);
     const result = await exportProductsToCsv({
+      filters: filters.data,
       listProducts: options.listMerchantProducts,
       salesChannelId: commerce.context.medusaSalesChannelId,
       stockLocationId: merchant.result.context.medusaStockLocationId,

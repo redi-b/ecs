@@ -66,6 +66,7 @@ export async function getMerchantProduct(options: {
 }
 
 export async function getMerchantProducts(options: {
+  media?: string | undefined;
   categoryId?: string | undefined;
   collectionId?: string | undefined;
   cookieHeader?: string | null | undefined;

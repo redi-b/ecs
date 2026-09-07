@@ -6,19 +6,35 @@ import {
   normalizeBaseUrl,
 } from "@/lib/platform-api/client";
 
-export async function GET() {
+export async function GET(request: Request) {
   const cookieStore = await cookies();
   const requestHeaders = await headers();
-  const response = await fetch(
-    new URL("/platform/merchant/orders/export.csv", normalizeBaseUrl(getPlatformApiBaseUrl())),
-    {
-      cache: "no-store",
-      headers: createPlatformHeaders({
-        cookieHeader: cookieStore.toString(),
-        requestHost: requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host"),
-      }),
-    },
-  ).catch(() => null);
+  const exportUrl = new URL(
+    "/platform/merchant/orders/export.csv",
+    normalizeBaseUrl(getPlatformApiBaseUrl()),
+  );
+  const query = new URL(request.url).searchParams;
+  for (const key of [
+    "q",
+    "progress",
+    "payment",
+    "method",
+    "delivery",
+    "created",
+    "createdFrom",
+    "createdTo",
+    "customerId",
+  ]) {
+    const value = query.get(key);
+    if (value) exportUrl.searchParams.set(key, value);
+  }
+  const response = await fetch(exportUrl, {
+    cache: "no-store",
+    headers: createPlatformHeaders({
+      cookieHeader: cookieStore.toString(),
+      requestHost: requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host"),
+    }),
+  }).catch(() => null);
 
   if (!response) {
     return Response.json({ error: "platform_request_failed" }, { status: 503 });

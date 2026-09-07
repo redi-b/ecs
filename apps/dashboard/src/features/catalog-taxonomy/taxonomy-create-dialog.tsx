@@ -30,10 +30,12 @@ import {
   slugifyTaxonomyHandle,
 } from "@/features/catalog-taxonomy/taxonomy-table-state";
 import { MediaImageReferenceControl } from "@/features/media/media-image-reference-control";
+import { useProductTaxonomy } from "@/features/products/use-product-taxonomy";
 import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes-guard";
 import type { MessageKey } from "@/i18n/messages";
 import { useI18n } from "@/i18n/provider";
 import { useCreateQueryOpen } from "@/lib/use-create-query-open";
+import { TaxonomyLoadNotice } from "./taxonomy-load-notice";
 
 export type TaxonomyCreatedPayload = {
   category?: MerchantProductCategory;
@@ -54,6 +56,7 @@ type TaxonomyCreateDialogProps = {
   open?: boolean;
   /** Existing categories for parent selection (category create only). */
   parentOptions?: MerchantProductCategory[];
+  tenantId?: string | null | undefined;
   queryKey: string;
   /** When false, no trigger button is rendered (use controlled open). */
   showTrigger?: boolean;
@@ -86,7 +89,7 @@ function TaxonomyCreateDialogInner({
   onCreated,
   onOpenChange,
   open: openProp,
-  parentOptions = [],
+  tenantId,
   queryKey,
   showTrigger = true,
   triggerLabel,
@@ -100,6 +103,11 @@ function TaxonomyCreateDialogInner({
   const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
   const isControlled = openProp !== undefined;
   const open = isControlled ? openProp : uncontrolledOpen;
+  const taxonomy = useProductTaxonomy({
+    enabled: open && entityLabel === "category",
+    tenantId: tenantId ?? undefined,
+  });
+  const parentOptions = taxonomy.categories;
   const [displayName, setDisplayName] = useState("");
   const [handle, setHandle] = useState("");
   const [mediaUrl, setMediaUrl] = useState("");
@@ -387,11 +395,17 @@ function TaxonomyCreateDialogInner({
                 <Field>
                   <FieldLabel>{t("taxonomy.create.parentCategory")}</FieldLabel>
                   <ParentCategoryCombobox
+                    disabled={taxonomy.categoriesPending || taxonomy.categoriesError || isSaving}
                     onChange={setParentCategoryId}
                     options={sortedParents}
                     rootLabel={t("taxonomy.create.rootCategory")}
                     searchPlaceholder={t("taxonomy.create.searchParent")}
                     value={parentCategoryId}
+                  />
+                  <TaxonomyLoadNotice
+                    pending={taxonomy.categoriesPending}
+                    error={taxonomy.categoriesError}
+                    retry={taxonomy.retry}
                   />
                 </Field>
               ) : null}

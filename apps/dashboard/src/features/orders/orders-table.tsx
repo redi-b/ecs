@@ -7,10 +7,7 @@ import { type ReactNode, useCallback, useMemo, useState, useTransition } from "r
 import { toast } from "sonner";
 
 import { DataTable } from "@/components/app/data-table";
-import {
-  type DataTableFilterDefinition,
-  DataTableFilters,
-} from "@/components/app/data-table-filters";
+import { type DataTableFilter, DataTableFilters } from "@/components/app/data-table-filters";
 import { DataTableHeader } from "@/components/app/data-table-header";
 import { AppIcons } from "@/components/app/icons";
 import { ListResultsStatus } from "@/components/app/list-results-status";
@@ -22,6 +19,7 @@ import {
   formatOrderReference,
   getOrderCustomerPhone,
   type OrderListFilterState,
+  orderListFiltersToSearchParams,
 } from "@/features/orders/order-domain";
 import {
   OrderCustomerCell,
@@ -223,18 +221,7 @@ export function OrdersTable({
       const merged: OrderListFilterState = { ...filters, ...next };
       const url = new URL(window.location.href);
 
-      const apply = (key: string, value: string, skip = "all") => {
-        if (!value || value === skip) url.searchParams.delete(key);
-        else url.searchParams.set(key, value);
-      };
-
-      apply("q", merged.q, "");
-      apply("progress", merged.progress);
-      apply("payment", merged.payment);
-      apply("method", merged.method);
-      apply("delivery", merged.delivery);
-      apply("created", merged.created);
-      url.searchParams.delete("page");
+      url.search = orderListFiltersToSearchParams(merged, url.searchParams).toString();
 
       startTransition(() => {
         router.push(`${url.pathname}?${url.searchParams.toString()}`);
@@ -253,6 +240,8 @@ export function OrdersTable({
       "method",
       "delivery",
       "created",
+      "createdFrom",
+      "createdTo",
       "customerId",
       "page",
     ]) {
@@ -263,7 +252,7 @@ export function OrdersTable({
     });
   }, [router]);
 
-  const filterDefs = useMemo<DataTableFilterDefinition[]>(
+  const filterDefs = useMemo<DataTableFilter[]>(
     () => [
       {
         id: "progress",
@@ -319,22 +308,33 @@ export function OrdersTable({
       },
       {
         id: "created",
+        kind: "date",
         label: t("orders.filter.created.label"),
-        defaultValue: "all",
-        value: filters.created,
+        value:
+          filters.createdFrom && filters.createdTo
+            ? { kind: "range", start: filters.createdFrom, end: filters.createdTo }
+            : filters.created !== "all"
+              ? { kind: "preset", preset: filters.created }
+              : null,
         options: [
-          { label: t("orders.filter.created.all"), value: "all" },
           { label: t("orders.filter.created.today"), value: "today" },
           { label: t("orders.filter.created.last_7_days"), value: "last_7_days" },
           { label: t("orders.filter.created.last_30_days"), value: "last_30_days" },
         ],
-        onChange: (value) => pushFilters({ created: value as OrderListFilterState["created"] }),
+        onChange: (value) =>
+          pushFilters({
+            created:
+              value?.kind === "preset" ? (value.preset as OrderListFilterState["created"]) : "all",
+            createdFrom: value?.kind === "range" ? value.start : "",
+            createdTo: value?.kind === "range" ? value.end : "",
+          }),
       },
     ],
     [filters, pushFilters, t],
   );
 
   const hasActiveFilters =
+    Boolean(filters.createdFrom && filters.createdTo) ||
     Boolean(customerId) ||
     Boolean(filters.q) ||
     filters.progress !== "all" ||

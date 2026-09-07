@@ -14,15 +14,13 @@ import {
 import { AppIcons } from "@/components/app/icons";
 import { ListResultsStatus } from "@/components/app/list-results-status";
 import { ListToolbarSearch } from "@/components/app/list-toolbar";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { BulkInventoryDialog } from "@/features/products/bulk-inventory-dialog";
 import {
-  filterProductsForTable,
   getProductTableCounts,
   type ProductMediaFilter,
   type ProductStatusFilter,
-  type ProductStockFilter,
-  type ProductVariantCountFilter,
 } from "@/features/products/product-table-state";
 import { useProductTaxonomy } from "@/features/products/use-product-taxonomy";
 import { copyTextToClipboard } from "@/lib/clipboard";
@@ -36,8 +34,6 @@ type ProductsTableProps = {
   initialMedia?: ProductMediaFilter | undefined;
   initialQuery?: string | undefined;
   initialStatus?: ProductStatusFilter | undefined;
-  initialStock?: ProductStockFilter | undefined;
-  initialVariantCount?: ProductVariantCountFilter | undefined;
   pageSize: number;
   products: MerchantProduct[];
   productDetailHrefBase?: string | undefined;
@@ -82,8 +78,6 @@ export function ProductsTable({
   initialMedia = "all",
   initialQuery = "",
   initialStatus = "all",
-  initialStock = "all",
-  initialVariantCount = "all",
   pageSize,
   products,
   productDetailHrefBase,
@@ -99,10 +93,8 @@ export function ProductsTable({
   const collections = taxonomy.collections;
   const [pending, startTransition] = useTransition();
   const [searchValue, setSearchValue] = useState(initialQuery);
-  // Stock / media / variants stay client-side on the current server page (phase-2 candidates).
-  const [stock, setStock] = useState<ProductStockFilter>(initialStock);
-  const [media, setMedia] = useState<ProductMediaFilter>(initialMedia);
-  const [variantCount, setVariantCount] = useState<ProductVariantCountFilter>(initialVariantCount);
+  // Stock remains page-local until its backend availability query is implemented.
+  const media = initialMedia;
   void pageSize;
 
   useEffect(() => {
@@ -233,6 +225,7 @@ export function ProductsTable({
         status: ProductStatusFilter;
         collectionId: string;
         categoryId: string;
+        media: ProductMediaFilter;
       }>,
     ) => {
       const url = new URL(window.location.href);
@@ -248,53 +241,21 @@ export function ProductsTable({
       setUrlFilter(url, "status", status, "all");
       setUrlFilter(url, "collectionId", collectionId, "all");
       setUrlFilter(url, "categoryId", categoryId, "all");
-      // Preserve client-only filters in the URL for bookmarking.
-      setUrlFilter(url, "stock", stock, "all");
-      setUrlFilter(url, "media", media, "all");
-      setUrlFilter(url, "variantCount", variantCount, "all");
+      url.searchParams.delete("stock");
+      setUrlFilter(url, "media", next.media ?? media, "all");
+      // Retired page-local variant-count filter: do not carry old bookmarks forward.
+      url.searchParams.delete("variantCount");
       url.searchParams.delete("page");
 
       startTransition(() => {
         router.push(`${url.pathname}?${url.searchParams.toString()}`);
       });
     },
-    [
-      initialCategoryId,
-      initialCollectionId,
-      initialQuery,
-      initialStatus,
-      media,
-      router,
-      stock,
-      variantCount,
-    ],
+    [initialCategoryId, initialCollectionId, initialQuery, initialStatus, media, router],
   );
 
-  const setClientFilter = useCallback((key: "stock" | "media" | "variantCount", value: string) => {
-    if (key === "stock") setStock(value as ProductStockFilter);
-    if (key === "media") setMedia(value as ProductMediaFilter);
-    if (key === "variantCount") setVariantCount(value as ProductVariantCountFilter);
-
-    if (typeof window === "undefined") return;
-    const url = new URL(window.location.href);
-    setUrlFilter(url, key, value, "all");
-    window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}`);
-  }, []);
-
-  // Server already applied q/status/collection/category — only refine the page locally.
-  const filteredProducts = useMemo(
-    () =>
-      filterProductsForTable(products, {
-        categoryId: "all",
-        collectionId: "all",
-        media,
-        query: "",
-        status: "all",
-        stock,
-        variantCount,
-      }),
-    [products, media, stock, variantCount],
-  );
+  // All exposed filters are applied by the server before pagination.
+  const filteredProducts = products;
   const counts = getProductTableCounts({
     filteredCount: filteredProducts.length,
     pageCount: products.length,
@@ -305,12 +266,11 @@ export function ProductsTable({
       media,
       query: initialQuery,
       status: initialStatus,
-      stock,
-      variantCount,
     },
   });
-  const hasClientPageFilter = stock !== "all" || media !== "all" || variantCount !== "all";
+  const hasClientPageFilter = false;
   const hasServerFilter =
+    media !== "all" ||
     Boolean(initialQuery.trim()) ||
     initialStatus !== "all" ||
     initialCollectionId !== "all" ||
@@ -327,41 +287,15 @@ export function ProductsTable({
     },
     {
       defaultValue: "all",
-      id: "stock",
-      label: t("products.filter.stock.label"),
-      onChange: (value) => setClientFilter("stock", value),
-      options: [
-        { label: t("products.filter.stock.all"), value: "all" },
-        { label: t("products.filter.stock.in_stock"), value: "in_stock" },
-        { label: t("products.filter.stock.out_of_stock"), value: "out_of_stock" },
-        { label: t("products.filter.stock.not_tracked"), value: "not_tracked" },
-      ],
-      value: stock,
-    },
-    {
-      defaultValue: "all",
       id: "media",
       label: t("products.filter.media.label"),
-      onChange: (value) => setClientFilter("media", value),
+      onChange: (value) => pushServerFilters({ media: value as ProductMediaFilter }),
       options: [
         { label: t("products.filter.media.all"), value: "all" },
         { label: t("products.filter.media.with_media"), value: "with_media" },
         { label: t("products.filter.media.without_media"), value: "without_media" },
       ],
       value: media,
-    },
-    {
-      defaultValue: "all",
-      id: "variantCount",
-      label: t("products.filter.variants.label"),
-      onChange: (value) => setClientFilter("variantCount", value),
-      options: [
-        { label: t("products.filter.variants.all"), value: "all" },
-        { label: t("products.filter.variants.no_variants"), value: "no_variants" },
-        { label: t("products.filter.variants.single_variant"), value: "single_variant" },
-        { label: t("products.filter.variants.multi_variant"), value: "multi_variant" },
-      ],
-      value: variantCount,
     },
     {
       defaultValue: "all",
@@ -396,9 +330,6 @@ export function ProductsTable({
   ];
 
   function clearFilters() {
-    setStock("all");
-    setMedia("all");
-    setVariantCount("all");
     setSearchValue("");
 
     const url = new URL(window.location.href);
@@ -434,6 +365,22 @@ export function ProductsTable({
           value={searchValue}
         />
       </DataTableFilters>
+      {taxonomy.isError ? (
+        <Alert variant="destructive">
+          <AlertDescription className="flex flex-wrap items-center justify-between gap-2">
+            {t(
+              taxonomy.errorLabels.length > 1
+                ? "products.filter.taxonomyError"
+                : taxonomy.errorLabels.includes("categories")
+                  ? "products.filter.categoriesError"
+                  : "products.filter.collectionsError",
+            )}
+            <Button type="button" variant="outline" size="sm" onClick={taxonomy.retry}>
+              {t("common.tryAgain")}
+            </Button>
+          </AlertDescription>
+        </Alert>
+      ) : null}
       <ListResultsStatus
         filteredPageCount={counts.filteredCount}
         hasClientPageFilter={hasClientPageFilter}

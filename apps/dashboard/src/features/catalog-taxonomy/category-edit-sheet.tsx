@@ -40,6 +40,7 @@ import { dashboardRoutes } from "@/lib/routes";
 type Translate = (key: MessageKey, values?: Record<string, string | number | Date>) => string;
 
 type CategoryEditSheetProps = {
+  categoriesReady?: boolean;
   category: MerchantProductCategory | null;
   categories: MerchantProductCategory[];
   onOpenChange: (open: boolean) => void;
@@ -48,6 +49,7 @@ type CategoryEditSheetProps = {
 };
 
 export function CategoryEditSheet({
+  categoriesReady = true,
   category,
   categories,
   onOpenChange,
@@ -164,6 +166,7 @@ export function CategoryEditSheet({
     toast.success(t("taxonomy.edit.categoryUpdated"));
     onOpenChange(false);
     await queryClient.invalidateQueries({ queryKey: ["product-categories"] });
+    await queryClient.invalidateQueries({ queryKey: ["product-taxonomy"] });
     router.refresh();
   }
 
@@ -254,6 +257,7 @@ export function CategoryEditSheet({
               <Field>
                 <FieldLabel>{t("taxonomy.edit.parentCategory")}</FieldLabel>
                 <ParentCategoryCombobox
+                  disabled={!categoriesReady || isSaving}
                   onChange={setParentCategoryId}
                   options={parentOptions}
                   rootLabel={t("taxonomy.edit.rootCategory")}

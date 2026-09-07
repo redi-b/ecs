@@ -17,6 +17,8 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import { useI18n } from "@/i18n/provider";
+import { parseListDateRange } from "@/lib/list-date-range";
 import type {
   StorefrontInquiry,
   StorefrontInquiryStatus,
@@ -39,12 +41,17 @@ export function InquiryInbox({
   tenantId?: string;
 }) {
   const router = useRouter();
+  const { t } = useI18n();
   const searchParams = useSearchParams();
   const [selected, setSelected] = useState<StorefrontInquiry | null>(null);
   const [updating, startTransition] = useTransition();
   const search = searchParams.get("q") ?? "";
   const status = searchParams.get("status") ?? "all";
   const type = searchParams.get("type") ?? "all";
+  const range = parseListDateRange(
+    searchParams.get("createdFrom") ?? undefined,
+    searchParams.get("createdTo") ?? undefined,
+  );
 
   function setFilter(key: string, value: string) {
     const params = new URLSearchParams(searchParams.toString());
@@ -59,6 +66,8 @@ export function InquiryInbox({
     params.delete("q");
     params.delete("status");
     params.delete("type");
+    params.delete("createdFrom");
+    params.delete("createdTo");
     params.delete("page");
     router.replace(`${dashboardRoutes.inquiries}?${params.toString()}`, { scroll: false });
   }
@@ -94,6 +103,25 @@ export function InquiryInbox({
   const toolbar = (
     <DataTableFilters
       filters={[
+        {
+          id: "created",
+          kind: "date",
+          label: t("common.receivedDate"),
+          options: [],
+          value: range ? { kind: "range", ...range } : null,
+          onChange: (value) => {
+            const params = new URLSearchParams(searchParams.toString());
+            if (value?.kind === "range") {
+              params.set("createdFrom", value.start);
+              params.set("createdTo", value.end);
+            } else {
+              params.delete("createdFrom");
+              params.delete("createdTo");
+            }
+            params.delete("page");
+            router.replace(`${dashboardRoutes.inquiries}?${params}`, { scroll: false });
+          },
+        },
         {
           defaultValue: "all",
           id: "status",

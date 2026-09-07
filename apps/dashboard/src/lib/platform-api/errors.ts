@@ -21,6 +21,8 @@ const PLATFORM_ERROR_MESSAGES: Record<string, string> = {
   shop_suspended: "This shop is currently suspended.",
   domain_misconfigured: "This shop domain is not ready yet.",
   commerce_backend_unavailable: "Commerce data is temporarily unavailable. Try again.",
+  commerce_backend_error:
+    "We could not complete this request. Try again. If it keeps failing, contact support.",
   commerce_credentials_invalid: "Commerce data is temporarily unavailable. Contact support.",
   commerce_credentials_missing: "Commerce data is temporarily unavailable. Contact support.",
   commerce_store_unavailable: "Shop commerce setup is incomplete.",
@@ -87,8 +89,7 @@ const PLATFORM_ERROR_MESSAGES: Record<string, string> = {
   chapa_tx_ref_mismatch: "Payment reference did not match this cart.",
   notifications_unavailable: "Notification settings are temporarily unavailable.",
   not_found: "That item could not be found.",
-  notification_preference_missing:
-    "Save your notification settings before sending a test.",
+  notification_preference_missing: "Save your notification settings before sending a test.",
   notification_channel_invalid: "Choose a valid notification channel.",
   telegram_not_configured: "Telegram alerts are not available for this shop right now.",
   telegram_operator_forbidden: "Only owners and managers can enable Telegram shop tools.",

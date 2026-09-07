@@ -7,6 +7,7 @@ import type {
 } from "../../types/index.js";
 import { mapMedusaFailure } from "./map-medusa-failure.js";
 import { getAdminHeaders } from "./product/medusa-http.js";
+import type { PromotionSchedule } from "./promotion-schedule.js";
 
 type Options = {
   adminApiToken?: string | undefined;
@@ -63,34 +64,57 @@ export function createMedusaPromotionService(options: Options) {
   }
 
   async function listPromotions(input: {
+    schedule?: PromotionSchedule | undefined;
+    apply?: "code" | "automatic" | undefined;
     limit: number;
+    offer?: "order" | "products" | "free_shipping" | "buyget" | "percentage" | "fixed" | undefined;
     offset: number;
     query?: string | undefined;
-    /** Main status filter; applied after tenant ownership (Medusa list is not tenant-scoped). */
+    /** Stored status, independent of campaign schedule and eligibility. */
     status?: "active" | "inactive" | "draft" | undefined;
     tenantId: string;
   }): Promise<MerchantPromotionsResult> {
     const search = new URLSearchParams({
-      fields: "+application_method,+application_method.target_rules,+application_method.buy_rules,+campaign,+rules",
-      limit: "100",
-      offset: "0",
+      tenant_id: input.tenantId,
+      limit: String(input.limit),
+      offset: String(input.offset),
     });
     if (input.query) search.set("q", input.query);
-    const response = await fetcher(`${base}/admin/promotions?${search}`, {
+    for (const key of ["status", "apply", "offer", "schedule"] as const) {
+      if (input[key]) search.set(key, input[key]);
+    }
+    const response = await fetcher(`${base}/admin/platform-promotions?${search}`, {
       headers: headers(),
     }).catch(() => null);
     if (!response?.ok) return promotionFailure(response);
-    const data = toRecord(await response.json().catch(() => ({})));
-    const all = (Array.isArray(data.promotions) ? data.promotions : [])
-      .filter((item) => isOwnedByTenant(item, input.tenantId))
-      .map(normalizePromotion)
-      .filter((item) => !input.status || item.status === input.status);
+    const data = toRecord(await response.json().catch(() => null));
+    const count = numberOrNull(data.count);
+    const ids = new Set<string>();
+    if (
+      !Array.isArray(data.promotions) ||
+      count === null ||
+      !Number.isSafeInteger(count) ||
+      count < 0 ||
+      data.promotions.length > input.limit
+    ) {
+      return { error: "commerce_backend_error", ok: false, status: 502 };
+    }
+    for (const item of data.promotions) {
+      const id = stringOrNull(toRecord(item).id);
+      if (!id || ids.has(id) || !isOwnedByTenant(item, input.tenantId)) {
+        return { error: "commerce_backend_error", ok: false, status: 502 };
+      }
+      ids.add(id);
+    }
+    if (data.promotions.length > Math.max(0, count - input.offset)) {
+      return { error: "commerce_backend_error", ok: false, status: 502 };
+    }
     return {
-      count: all.length,
+      count,
       limit: input.limit,
       offset: input.offset,
       ok: true,
-      promotions: all.slice(input.offset, input.offset + input.limit),
+      promotions: data.promotions.map(normalizePromotion),
     };
   }
 
@@ -290,9 +314,7 @@ function toUpdatePayload(input: MerchantPromotionInput) {
     application_method.allocation = allocation;
     if (allocation === "each") {
       application_method.max_quantity =
-        input.maxQuantity !== undefined && input.maxQuantity != null
-          ? input.maxQuantity
-          : 1;
+        input.maxQuantity !== undefined && input.maxQuantity != null ? input.maxQuantity : 1;
     } else if (input.maxQuantity !== undefined && input.maxQuantity != null) {
       application_method.max_quantity = input.maxQuantity;
     }
@@ -354,14 +376,12 @@ function normalizePromotion(value: unknown): MerchantPromotion {
   const buyRules = method.buy_rules;
 
   return {
-    applyToQuantity:
-      method.apply_to_quantity == null ? null : Number(method.apply_to_quantity),
+    applyToQuantity: method.apply_to_quantity == null ? null : Number(method.apply_to_quantity),
     buyMinQuantity:
       method.buy_rules_min_quantity == null ? null : Number(method.buy_rules_min_quantity),
     buyProductIds: ruleProductIds(buyRules),
     campaignBudgetLimit: budget.limit == null ? null : Number(budget.limit),
-    campaignBudgetType:
-      budget.type === "usage" || budget.type === "spend" ? budget.type : null,
+    campaignBudgetType: budget.type === "usage" || budget.type === "spend" ? budget.type : null,
     campaignName: stringOrNull(campaign.name),
     code: String(promotion.code ?? ""),
     createdAt: stringOr(promotion.created_at, new Date(0).toISOString()),
@@ -392,6 +412,10 @@ function normalizePromotion(value: unknown): MerchantPromotion {
         : Number(promotion.limit ?? promotion.usage_limit),
     value: Number(method.value ?? 0),
   };
+}
+
+function numberOrNull(value: unknown) {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
 
 function toRecord(value: unknown): Record<string, unknown> {

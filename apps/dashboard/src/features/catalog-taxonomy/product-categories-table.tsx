@@ -4,8 +4,9 @@ import type { MerchantProductCategory } from "@ecs/contracts";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState, useTransition, type ReactNode } from "react";
+import { type ReactNode, useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
+import { ConfirmDialog } from "@/components/app/confirm-dialog";
 import { DataTable } from "@/components/app/data-table";
 import {
   type DataTableFilterDefinition,
@@ -15,15 +16,14 @@ import { DataTableHeader } from "@/components/app/data-table-header";
 import { AppIcons } from "@/components/app/icons";
 import { ListResultsStatus } from "@/components/app/list-results-status";
 import {
-  listToolbarControlClassName,
   ListToolbarSearch,
   ListViewToggle,
+  listToolbarControlClassName,
 } from "@/components/app/list-toolbar";
 import { RowActionsMenu } from "@/components/app/row-actions-menu";
-import { ConfirmDialog } from "@/components/app/confirm-dialog";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Badge } from "@/components/ui/badge";
 import { CategoryEditSheet } from "@/features/catalog-taxonomy/category-edit-sheet";
 import { CategoryReorderSheet } from "@/features/catalog-taxonomy/category-reorder-sheet";
 import { CategoryTreeView } from "@/features/catalog-taxonomy/category-tree-view";
@@ -34,15 +34,16 @@ import {
   TaxonomyHandleCell,
 } from "@/features/catalog-taxonomy/taxonomy-table-cells";
 import {
-  filterCategoriesForTable,
   getCategoryDisplayName,
   getTaxonomyTableCounts,
   type TaxonomyVisibilityFilter,
 } from "@/features/catalog-taxonomy/taxonomy-table-state";
+import { useProductTaxonomy } from "@/features/products/use-product-taxonomy";
+import { useI18n } from "@/i18n/provider";
 import { copyTextToClipboard } from "@/lib/clipboard";
 import { getTenantScopedPath } from "@/lib/dashboard-tenant-context";
 import { dashboardRoutes } from "@/lib/routes";
-import { useI18n } from "@/i18n/provider";
+import { TaxonomyLoadNotice } from "./taxonomy-load-notice";
 
 async function copyToClipboard(
   value: string,
@@ -74,7 +75,9 @@ function getCategoryColumns(
       id: "select",
       header: ({ table }) => (
         <Checkbox
-          aria-label={t("taxonomy.table.selectAllAria", { entityPlural: t("taxonomy.entity.category.plural") })}
+          aria-label={t("taxonomy.table.selectAllAria", {
+            entityPlural: t("taxonomy.entity.category.plural"),
+          })}
           checked={
             table.getIsAllPageRowsSelected() ||
             (table.getIsSomePageRowsSelected() && "indeterminate")
@@ -95,20 +98,26 @@ function getCategoryColumns(
     {
       id: "name",
       accessorFn: (category) => getCategoryDisplayName(category),
-      header: ({ column }) => <DataTableHeader column={column} title={t("taxonomy.table.category")} />,
+      header: ({ column }) => (
+        <DataTableHeader column={column} title={t("taxonomy.table.category")} />
+      ),
       cell: ({ row }) => (
         <CategoryIdentityCell category={row.original} onOpen={() => onEdit(row.original)} />
       ),
     },
     {
       accessorKey: "handle",
-      header: ({ column }) => <DataTableHeader column={column} title={t("taxonomy.table.handle")} />,
+      header: ({ column }) => (
+        <DataTableHeader column={column} title={t("taxonomy.table.handle")} />
+      ),
       cell: ({ row }) => <TaxonomyHandleCell handle={row.original.handle} />,
     },
     {
       id: "parent",
       accessorFn: (category) => category.parentCategoryId ?? "",
-      header: ({ column }) => <DataTableHeader column={column} title={t("taxonomy.table.parent")} />,
+      header: ({ column }) => (
+        <DataTableHeader column={column} title={t("taxonomy.table.parent")} />
+      ),
       cell: ({ row }) => (
         <CategoryParentCell
           parentCategory={
@@ -123,7 +132,9 @@ function getCategoryColumns(
     {
       id: "visibility",
       accessorFn: (category) => category.visibility ?? "public",
-      header: ({ column }) => <DataTableHeader column={column} title={t("taxonomy.table.visibility.label")} />,
+      header: ({ column }) => (
+        <DataTableHeader column={column} title={t("taxonomy.table.visibility.label")} />
+      ),
       cell: ({ row }) => {
         const hidden = row.original.visibility === "hidden";
         return (
@@ -143,7 +154,9 @@ function getCategoryColumns(
     },
     {
       accessorKey: "updatedAt",
-      header: ({ column }) => <DataTableHeader column={column} title={t("taxonomy.table.updated")} />,
+      header: ({ column }) => (
+        <DataTableHeader column={column} title={t("taxonomy.table.updated")} />
+      ),
       cell: ({ row }) => <TaxonomyDateCell value={row.original.updatedAt} />,
     },
     {
@@ -156,27 +169,41 @@ function getCategoryColumns(
             actions={[
               {
                 icon: AppIcons.edit,
-                label: t("taxonomy.table.actions.edit", { entity: t("taxonomy.entity.category.label") }),
+                label: t("taxonomy.table.actions.edit", {
+                  entity: t("taxonomy.entity.category.label"),
+                }),
                 onSelect: () => onEdit(category),
                 type: "button",
               },
               {
                 icon: AppIcons.copy,
-                label: t("taxonomy.table.actions.copyId", { entity: t("taxonomy.entity.category.label") }),
-                onSelect: () => copyToClipboard(category.id, t("taxonomy.table.actions.copyId", { entity: t("taxonomy.entity.category.label") }), t),
+                label: t("taxonomy.table.actions.copyId", {
+                  entity: t("taxonomy.entity.category.label"),
+                }),
+                onSelect: () =>
+                  copyToClipboard(
+                    category.id,
+                    t("taxonomy.table.actions.copyId", {
+                      entity: t("taxonomy.entity.category.label"),
+                    }),
+                    t,
+                  ),
                 type: "button",
               },
               {
                 disabled: !category.handle,
                 icon: AppIcons.copy,
                 label: t("taxonomy.table.actions.copyHandle"),
-                onSelect: () => copyToClipboard(category.handle ?? "", t("taxonomy.table.handle"), t),
+                onSelect: () =>
+                  copyToClipboard(category.handle ?? "", t("taxonomy.table.handle"), t),
                 type: "button",
               },
               { id: "danger", type: "separator" },
               {
                 icon: AppIcons.trash,
-                label: t("taxonomy.table.actions.delete", { entity: t("taxonomy.entity.category.label") }),
+                label: t("taxonomy.table.actions.delete", {
+                  entity: t("taxonomy.entity.category.label"),
+                }),
                 onSelect: () => onDelete(category.id),
                 type: "button",
                 variant: "destructive",
@@ -196,6 +223,8 @@ type ProductCategoriesTableProps = {
   categories: MerchantProductCategory[];
   footer?: ReactNode;
   initialQuery?: string | undefined;
+  initialVisibility?: TaxonomyVisibilityFilter | undefined;
+  initialParentId?: string | undefined;
   pageSize: number;
   totalCount: number;
   tenantId?: string | undefined;
@@ -204,7 +233,10 @@ type ProductCategoriesTableProps = {
 function getDeletionErrorMessage(
   error: unknown,
   resource: string,
-  t: (key: import("@/i18n/messages").MessageKey, values?: Record<string, string | number | Date>) => string,
+  t: (
+    key: import("@/i18n/messages").MessageKey,
+    values?: Record<string, string | number | Date>,
+  ) => string,
 ) {
   const code = error instanceof Error ? error.message : String(error);
   if (code === "commerce_backend_unavailable") {
@@ -227,16 +259,19 @@ export function ProductCategoriesTable({
   categories,
   footer,
   initialQuery = "",
+  initialVisibility = "all",
+  initialParentId = "all",
   pageSize,
   totalCount,
   tenantId,
 }: ProductCategoriesTableProps) {
-  const { t, locale } = useI18n();
+  const { t } = useI18n();
   const router = useRouter();
   const queryClient = useQueryClient();
   const [pending, startTransition] = useTransition();
   const [searchValue, setSearchValue] = useState(initialQuery);
-  const [visibility, setVisibility] = useState<TaxonomyVisibilityFilter>("all");
+  const visibility = initialVisibility;
+  const taxonomy = useProductTaxonomy({ tenantId });
   void pageSize;
 
   useEffect(() => {
@@ -244,16 +279,20 @@ export function ProductCategoriesTable({
   }, [initialQuery]);
 
   const pushQuery = useCallback(
-    (q: string) => {
+    (q: string, nextVisibility = visibility, parentId = initialParentId) => {
       const url = new URL(window.location.href);
       if (q.trim()) url.searchParams.set("q", q.trim());
       else url.searchParams.delete("q");
+      if (nextVisibility === "all") url.searchParams.delete("visibility");
+      else url.searchParams.set("visibility", nextVisibility);
+      if (parentId === "all") url.searchParams.delete("parentId");
+      else url.searchParams.set("parentId", parentId);
       url.searchParams.delete("page");
       startTransition(() => {
         router.push(`${url.pathname}?${url.searchParams.toString()}`);
       });
     },
-    [router],
+    [router, visibility, initialParentId],
   );
 
   const [deleteCategoryId, setDeleteCategoryId] = useState<string | null>(null);
@@ -264,8 +303,9 @@ export function ProductCategoriesTable({
   const [showBatchDeleteDialog, setShowBatchDeleteDialog] = useState(false);
 
   const categoriesById = useMemo(
-    () => new Map(categories.map((category) => [category.id, category])),
-    [categories],
+    () =>
+      new Map([...taxonomy.categories, ...categories].map((category) => [category.id, category])),
+    [categories, taxonomy.categories],
   );
 
   const columns = useMemo(
@@ -295,13 +335,12 @@ export function ProductCategoriesTable({
     onSuccess: () => {
       toast.success(t("taxonomy.create.success", { entity: t("taxonomy.entity.category.label") }));
       queryClient.invalidateQueries({ queryKey: ["product-categories"] });
+      queryClient.invalidateQueries({ queryKey: ["product-taxonomy"] });
       setDeleteCategoryId(null);
       router.refresh();
     },
     onError: (error) => {
-      toast.error(
-        getDeletionErrorMessage(error, t("taxonomy.entity.category.label"), t),
-      );
+      toast.error(getDeletionErrorMessage(error, t("taxonomy.entity.category.label"), t));
     },
   });
 
@@ -322,21 +361,17 @@ export function ProductCategoriesTable({
     onSuccess: () => {
       toast.success(t("taxonomy.create.success", { entity: t("taxonomy.entity.category.plural") }));
       queryClient.invalidateQueries({ queryKey: ["product-categories"] });
+      queryClient.invalidateQueries({ queryKey: ["product-taxonomy"] });
       setSelectedCategoryIdsForDelete([]);
       setShowBatchDeleteDialog(false);
       router.refresh();
     },
     onError: (error) => {
-      toast.error(
-        getDeletionErrorMessage(error, t("taxonomy.entity.category.plural"), t),
-      );
+      toast.error(getDeletionErrorMessage(error, t("taxonomy.entity.category.plural"), t));
     },
   });
 
-  const filteredCategories = useMemo(
-    () => filterCategoriesForTable(categories, { query: "", visibility }),
-    [categories, visibility],
-  );
+  const filteredCategories = categories;
   const counts = getTaxonomyTableCounts({
     filteredCount: filteredCategories.length,
     pageCount: categories.length,
@@ -344,16 +379,32 @@ export function ProductCategoriesTable({
     totalCount,
     visibility,
   });
-  const hasServerFilter = Boolean(initialQuery.trim());
-  const hasClientPageFilter = visibility !== "all";
+  const hasServerFilter =
+    Boolean(initialQuery.trim()) || visibility !== "all" || initialParentId !== "all";
+  const hasClientPageFilter = false;
 
   const filters: DataTableFilterDefinition[] = [
+    {
+      id: "parentId",
+      label: t("taxonomy.table.directParent"),
+      defaultValue: "all",
+      value: initialParentId,
+      onChange: (value) => pushQuery(initialQuery, visibility, value),
+      options: [
+        { label: t("taxonomy.table.allParents"), value: "all" },
+        { label: t("taxonomy.create.rootCategory"), value: "root" },
+        ...taxonomy.categories.map((category) => ({
+          label: category.name ?? category.handle ?? category.id,
+          value: category.id,
+        })),
+      ],
+    },
     {
       id: "visibility",
       label: t("taxonomy.table.visibility.label"),
       defaultValue: "all",
       value: visibility,
-      onChange: (value) => setVisibility(value as TaxonomyVisibilityFilter),
+      onChange: (value) => pushQuery(initialQuery, value as TaxonomyVisibilityFilter),
       options: [
         { label: t("taxonomy.table.visibility.all"), value: "all" },
         { label: t("taxonomy.table.visibility.public"), value: "public" },
@@ -377,6 +428,7 @@ export function ProductCategoriesTable({
             />
             <Button
               aria-label={t("taxonomy.actions.reorder")}
+              disabled={taxonomy.categoriesPending || taxonomy.categoriesError}
               className={listToolbarControlClassName}
               onClick={() => setReorderOpen(true)}
               size="sm"
@@ -390,9 +442,8 @@ export function ProductCategoriesTable({
         }
         filters={filters}
         onClearAll={() => {
-          setVisibility("all");
           setSearchValue("");
-          pushQuery("");
+          pushQuery("", "all", "all");
         }}
       >
         <ListToolbarSearch
@@ -406,6 +457,11 @@ export function ProductCategoriesTable({
           value={searchValue}
         />
       </DataTableFilters>
+      <TaxonomyLoadNotice
+        pending={taxonomy.categoriesPending}
+        error={taxonomy.categoriesError}
+        retry={taxonomy.retry}
+      />
       <ListResultsStatus
         filteredPageCount={counts.filteredCount}
         hasClientPageFilter={hasClientPageFilter}
@@ -422,7 +478,8 @@ export function ProductCategoriesTable({
   return (
     <>
       <CategoryEditSheet
-        categories={categories}
+        categories={taxonomy.categories}
+        categoriesReady={!taxonomy.categoriesPending && !taxonomy.categoriesError}
         category={editingCategory}
         onOpenChange={(next) => {
           if (!next) setEditingCategory(null);
@@ -431,7 +488,7 @@ export function ProductCategoriesTable({
         tenantId={tenantId}
       />
       <CategoryReorderSheet
-        categories={categories}
+        categories={taxonomy.categories}
         onOpenChange={setReorderOpen}
         open={reorderOpen}
         tenantId={tenantId}
@@ -485,6 +542,7 @@ export function ProductCategoriesTable({
               </div>
             )}
             columns={columns}
+            enableSorting={false}
             data={filteredCategories}
             embedded
             emptyIcon={<AppIcons.tree className="size-5" aria-hidden />}
@@ -504,9 +562,7 @@ export function ProductCategoriesTable({
       <ConfirmDialog
         cancelDisabled={deleteCategoryMutation.isPending}
         confirmDisabled={deleteCategoryMutation.isPending}
-        confirmLabel={
-          deleteCategoryMutation.isPending ? t("common.deleting") : t("common.delete")
-        }
+        confirmLabel={deleteCategoryMutation.isPending ? t("common.deleting") : t("common.delete")}
         description={t("taxonomy.delete.desc", {
           name: categoryToDelete
             ? getCategoryDisplayName(categoryToDelete)

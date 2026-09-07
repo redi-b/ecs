@@ -1,4 +1,5 @@
 import type { MerchantProduct } from "@ecs/contracts";
+import type { ProductListFilters } from "../../commerce/product-list-filters.js";
 
 export const PRODUCT_CSV_SCHEMA_VERSION = "ecs-products-v2";
 const EXPORT_PAGE_SIZE = 100;
@@ -14,12 +15,14 @@ type ProductPageResult =
     }
   | { ok: false; error: string; status: number };
 
-export type ListProductsForExport = (input: {
-  limit: number;
-  offset: number;
-  salesChannelId: string;
-  stockLocationId?: string | null | undefined;
-}) => Promise<ProductPageResult>;
+export type ListProductsForExport = (
+  input: ProductListFilters & {
+    limit: number;
+    offset: number;
+    salesChannelId: string;
+    stockLocationId?: string | null | undefined;
+  },
+) => Promise<ProductPageResult>;
 
 export type ProductExportResult =
   | { ok: true; csv: string; productCount: number; rowCount: number }
@@ -120,6 +123,7 @@ export function buildProductCsv(products: MerchantProduct[]) {
 }
 
 export async function exportProductsToCsv(input: {
+  filters?: ProductListFilters;
   listProducts: ListProductsForExport;
   salesChannelId: string;
   stockLocationId?: string | null | undefined;
@@ -127,9 +131,11 @@ export async function exportProductsToCsv(input: {
   const products: MerchantProduct[] = [];
   let offset = 0;
   let expectedCount: number | null = null;
+  const seen = new Set<string>();
 
   do {
     const page = await input.listProducts({
+      ...input.filters,
       limit: EXPORT_PAGE_SIZE,
       offset,
       salesChannelId: input.salesChannelId,
@@ -140,6 +146,23 @@ export async function exportProductsToCsv(input: {
     expectedCount ??= page.count;
     if (expectedCount > MAX_PRODUCT_EXPORT_COUNT) {
       return { ok: false, error: "product_export_too_large", status: 413 };
+    }
+
+    if (
+      !Number.isSafeInteger(page.count) ||
+      page.count < 0 ||
+      page.count !== expectedCount ||
+      page.offset !== offset ||
+      page.products.length > EXPORT_PAGE_SIZE ||
+      (page.products.length === 0 && offset < expectedCount) ||
+      offset + page.products.length > expectedCount
+    ) {
+      return { ok: false, error: "export_results_changed", status: 409 };
+    }
+    for (const product of page.products) {
+      if (!product.id || seen.has(product.id))
+        return { ok: false, error: "export_results_changed", status: 409 };
+      seen.add(product.id);
     }
 
     products.push(...page.products);

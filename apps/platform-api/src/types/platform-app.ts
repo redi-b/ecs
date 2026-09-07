@@ -170,8 +170,18 @@ export type PlatformAppOptions = {
   };
   listMerchantPromotions?:
     | ((input: {
+        schedule?: "scheduled" | "current" | "expired" | "unscheduled" | undefined;
+        apply?: "code" | "automatic" | undefined;
         limit: number;
         offset: number;
+        offer?:
+          | "order"
+          | "products"
+          | "free_shipping"
+          | "buyget"
+          | "percentage"
+          | "fixed"
+          | undefined;
         query?: string | undefined;
         status?: "active" | "inactive" | "draft" | undefined;
         tenantId: string;
@@ -695,6 +705,7 @@ export type PlatformAppOptions = {
     | undefined;
   listMerchantProducts?:
     | ((input: {
+        media?: "with_media" | "without_media" | undefined;
         categoryId?: string | undefined;
         collectionId?: string | undefined;
         limit: number;
@@ -713,6 +724,8 @@ export type PlatformAppOptions = {
     | undefined;
   listMerchantProductCategories?:
     | ((input: {
+        visibility?: string | undefined;
+        parentId?: string | undefined;
         limit: number;
         offset: number;
         q?: string | undefined;
@@ -721,6 +734,7 @@ export type PlatformAppOptions = {
     | undefined;
   listMerchantProductCollections?:
     | ((input: {
+        visibility?: string | undefined;
         limit: number;
         offset: number;
         q?: string | undefined;
@@ -1287,10 +1301,14 @@ export type PlatformAppOptions = {
     | undefined;
   listMediaAssets?:
     | ((input: {
+        publicOnly?: boolean | undefined;
         limit: number;
         mimeType?: string | undefined;
         offset: number;
+        orientation?: "landscape" | "portrait" | "square" | undefined;
         query?: string | undefined;
+        size?: "small" | "medium" | "large" | undefined;
+        sort?: "newest" | "oldest" | "name_asc" | "name_desc" | "largest" | "smallest" | undefined;
         tenantId: string;
       }) => Promise<MediaAssetListResult>)
     | undefined;

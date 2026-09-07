@@ -9,8 +9,6 @@ import { ProductDataActions } from "@/features/products/product-data-actions";
 import {
   parseProductMediaFilter,
   parseProductStatusFilter,
-  parseProductStockFilter,
-  parseProductVariantCountFilter,
 } from "@/features/products/product-table-state";
 import { ProductsTable } from "@/features/products/products-table";
 import type { MessageKey } from "@/i18n/messages";
@@ -21,6 +19,7 @@ import {
   getTenantScopedPath,
 } from "@/lib/dashboard-tenant-context";
 import { getListErrorState } from "@/lib/list-error-state";
+import { listExportPath } from "@/lib/list-export-path";
 import { getMerchantProducts } from "@/lib/merchant-products";
 import { dashboardRoutes } from "@/lib/routes";
 import { parseListSearchParams } from "@/lib/url-state";
@@ -43,6 +42,7 @@ export default async function MerchantProductsPage({ searchParams }: MerchantPro
   const statusFilter = parseProductStatusFilter(listParams.status);
   const collectionFilter = getResourceFilter(resolvedSearchParams.collectionId);
   const categoryFilter = getResourceFilter(resolvedSearchParams.categoryId);
+  const mediaFilter = parseProductMediaFilter(resolvedSearchParams.media);
   // Taxonomy (categories/collections) loads client-side after paint — keeps list TTFB
   // on the product page only.
   const result = await getMerchantProducts({
@@ -56,12 +56,11 @@ export default async function MerchantProductsPage({ searchParams }: MerchantPro
     ...(statusFilter !== "all" ? { status: statusFilter } : {}),
     ...(collectionFilter !== "all" ? { collectionId: collectionFilter } : {}),
     ...(categoryFilter !== "all" ? { categoryId: categoryFilter } : {}),
+    ...(mediaFilter !== "all" ? { media: mediaFilter } : {}),
   });
   const errorState = result.ok ? null : getListErrorState("products", result.message);
-  const mediaFilter = parseProductMediaFilter(resolvedSearchParams.media);
-  const stockFilter = parseProductStockFilter(resolvedSearchParams.stock);
-  const variantCountFilter = parseProductVariantCountFilter(resolvedSearchParams.variantCount);
   const listFiltered =
+    mediaFilter !== "all" ||
     Boolean(listParams.q) ||
     statusFilter !== "all" ||
     collectionFilter !== "all" ||
@@ -92,7 +91,16 @@ export default async function MerchantProductsPage({ searchParams }: MerchantPro
             actions={
               !tenantId ? (
                 <ProductDataActions
-                  exportHref={getTenantScopedPath(dashboardRoutes.productsExportAction, tenantId)}
+                  exportHref={listExportPath(
+                    getTenantScopedPath(dashboardRoutes.productsExportAction, tenantId),
+                    {
+                      q: listParams.q,
+                      status: statusFilter,
+                      categoryId: categoryFilter,
+                      collectionId: collectionFilter,
+                      media: mediaFilter,
+                    },
+                  )}
                 />
               ) : null
             }
@@ -116,8 +124,6 @@ export default async function MerchantProductsPage({ searchParams }: MerchantPro
             initialMedia={mediaFilter}
             initialQuery={listParams.q}
             initialStatus={statusFilter}
-            initialStock={stockFilter}
-            initialVariantCount={variantCountFilter}
             pageSize={result.products.limit}
             products={result.products.products}
             tenantId={tenantId}

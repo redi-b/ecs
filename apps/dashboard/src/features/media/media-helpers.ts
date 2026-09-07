@@ -10,13 +10,7 @@ export type MediaTypeFilter =
 
 export type MediaSizeFilter = "all" | "small" | "medium" | "large";
 export type MediaOrientationFilter = "all" | "landscape" | "portrait" | "square";
-export type MediaSort =
-  | "newest"
-  | "oldest"
-  | "name_asc"
-  | "name_desc"
-  | "largest"
-  | "smallest";
+export type MediaSort = "newest" | "oldest" | "name_asc" | "name_desc" | "largest" | "smallest";
 
 export type MediaLibraryFilters = {
   orientation: MediaOrientationFilter;
@@ -25,6 +19,33 @@ export type MediaLibraryFilters = {
   sort: MediaSort;
   type: MediaTypeFilter | string;
 };
+
+export function parseMediaSize(value: string | string[] | undefined): MediaSizeFilter {
+  const candidate = Array.isArray(value) ? value[0] : value;
+  return candidate === "small" || candidate === "medium" || candidate === "large"
+    ? candidate
+    : "all";
+}
+
+export function parseMediaOrientation(
+  value: string | string[] | undefined,
+): MediaOrientationFilter {
+  const candidate = Array.isArray(value) ? value[0] : value;
+  return candidate === "landscape" || candidate === "portrait" || candidate === "square"
+    ? candidate
+    : "all";
+}
+
+export function parseMediaSort(value: string | string[] | undefined): MediaSort {
+  const candidate = Array.isArray(value) ? value[0] : value;
+  return candidate === "oldest" ||
+    candidate === "name_asc" ||
+    candidate === "name_desc" ||
+    candidate === "largest" ||
+    candidate === "smallest"
+    ? candidate
+    : "newest";
+}
 
 const SMALL_MAX = 100 * 1024;
 const MEDIUM_MAX = 1024 * 1024;
@@ -39,7 +60,9 @@ export function formatMimeLabel(mimeType: string) {
   return mimeType.replace("image/", "").toUpperCase();
 }
 
-export function getAssetOrientation(asset: MediaAsset): Exclude<MediaOrientationFilter, "all"> | null {
+export function getAssetOrientation(
+  asset: MediaAsset,
+): Exclude<MediaOrientationFilter, "all"> | null {
   if (!asset.width || !asset.height) return null;
   if (asset.width === asset.height) return "square";
   return asset.width > asset.height ? "landscape" : "portrait";

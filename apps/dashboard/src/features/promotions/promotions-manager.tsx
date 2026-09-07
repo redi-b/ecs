@@ -2,9 +2,9 @@
 
 import type { ColumnDef } from "@tanstack/react-table";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState, useTransition, type ReactNode } from "react";
+import { type ReactNode, useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
-
+import { ConfirmDialog } from "@/components/app/confirm-dialog";
 import { DataTable } from "@/components/app/data-table";
 import {
   type DataTableFilterDefinition,
@@ -15,15 +15,14 @@ import { AppIcons } from "@/components/app/icons";
 import { ListResultsStatus } from "@/components/app/list-results-status";
 import { ListToolbarSearch } from "@/components/app/list-toolbar";
 import { RowActionsMenu } from "@/components/app/row-actions-menu";
-import { ConfirmDialog } from "@/components/app/confirm-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { PromotionEditSheet } from "@/features/promotions/promotion-edit-sheet";
-import { copyTextToClipboard } from "@/lib/clipboard";
-import type { MerchantPromotion } from "@/lib/merchant-promotions";
 import type { MessageKey } from "@/i18n/messages";
 import { useI18n } from "@/i18n/provider";
+import { copyTextToClipboard } from "@/lib/clipboard";
+import type { MerchantPromotion } from "@/lib/merchant-promotions";
 import { mapPlatformErrorMessage, readPlatformErrorMessage } from "@/lib/platform-api/errors";
 
 type StatusFilter = "all" | "active" | "draft" | "inactive";
@@ -37,6 +36,7 @@ type OfferFilter =
   | "percentage"
   | "fixed";
 type ApplyFilter = "all" | "code" | "automatic";
+type ScheduleFilter = "all" | "scheduled" | "current" | "expired" | "unscheduled";
 
 type Translate = (key: MessageKey, values?: Record<string, string | number | Date>) => string;
 
@@ -74,14 +74,6 @@ function formatTarget(item: MerchantPromotion, t: Translate) {
   return t("promotions.format.order");
 }
 
-function isFreeShippingOffer(item: MerchantPromotion) {
-  return (
-    item.targetType === "shipping_methods" &&
-    item.method === "percentage" &&
-    item.value >= 100
-  );
-}
-
 /** Fixed locale so SSR and the browser always render the same string. */
 function formatScheduleDate(value: string) {
   return new Intl.DateTimeFormat("en", {
@@ -89,29 +81,6 @@ function formatScheduleDate(value: string) {
     month: "short",
     year: "numeric",
   }).format(new Date(value));
-}
-
-function matchesOfferFilter(item: MerchantPromotion, offer: OfferFilter) {
-  switch (offer) {
-    case "all":
-      return true;
-    case "buyget":
-      return item.promotionType === "buyget";
-    case "free_shipping":
-      return isFreeShippingOffer(item);
-    case "order":
-      return item.promotionType !== "buyget" && item.targetType === "order";
-    case "products":
-      return item.promotionType !== "buyget" && item.targetType === "items";
-    case "shipping":
-      return item.targetType === "shipping_methods";
-    case "percentage":
-      return item.method === "percentage" && !isFreeShippingOffer(item);
-    case "fixed":
-      return item.method === "fixed";
-    default:
-      return true;
-  }
 }
 
 function statusBadgeVariant(status: MerchantPromotion["status"]) {
@@ -123,12 +92,18 @@ function statusBadgeVariant(status: MerchantPromotion["status"]) {
 export function PromotionsManager({
   footer,
   initialQuery = "",
+  initialApply = "all",
+  initialSchedule = "all",
+  initialOffer = "all",
   initialStatus = "all",
   promotions,
   totalCount,
 }: {
   footer?: ReactNode;
   initialQuery?: string | undefined;
+  initialApply?: ApplyFilter | undefined;
+  initialSchedule?: ScheduleFilter | undefined;
+  initialOffer?: OfferFilter | undefined;
   initialStatus?: StatusFilter | undefined;
   promotions: MerchantPromotion[];
   totalCount: number;
@@ -137,9 +112,8 @@ export function PromotionsManager({
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [searchValue, setSearchValue] = useState(initialQuery);
-  // Offer / apply refine the current page. Status is server-side (main filter).
-  const [offer, setOffer] = useState<OfferFilter>("all");
-  const [apply, setApply] = useState<ApplyFilter>("all");
+  const offer = initialOffer;
+  const apply = initialApply;
   const [deleteTarget, setDeleteTarget] = useState<MerchantPromotion | null>(null);
   const [bulkDeleteTargets, setBulkDeleteTargets] = useState<MerchantPromotion[]>([]);
   const [editing, setEditing] = useState<MerchantPromotion | null>(null);
@@ -150,7 +124,13 @@ export function PromotionsManager({
   }, [initialQuery]);
 
   const pushServerFilters = useCallback(
-    (next: { q?: string; status?: StatusFilter }) => {
+    (next: {
+      schedule?: ScheduleFilter;
+      apply?: ApplyFilter;
+      offer?: OfferFilter;
+      q?: string;
+      status?: StatusFilter;
+    }) => {
       const url = new URL(window.location.href);
       const q = next.q !== undefined ? next.q : initialQuery;
       const status = next.status !== undefined ? next.status : initialStatus;
@@ -158,29 +138,43 @@ export function PromotionsManager({
       else url.searchParams.delete("q");
       if (status && status !== "all") url.searchParams.set("status", status);
       else url.searchParams.delete("status");
+      setPromotionUrlFilter(url, "apply", next.apply ?? apply);
+      setPromotionUrlFilter(url, "offer", next.offer ?? offer);
+      setPromotionUrlFilter(url, "schedule", next.schedule ?? initialSchedule);
       url.searchParams.delete("page");
       startTransition(() => {
         router.push(`${url.pathname}?${url.searchParams.toString()}`);
       });
     },
-    [initialQuery, initialStatus, router],
+    [apply, initialQuery, initialStatus, initialSchedule, offer, router],
   );
 
-  const filtered = useMemo(() => {
-    return promotions.filter((item) => {
-      const matchesOffer = offer === "all" || matchesOfferFilter(item, offer);
-      const matchesApply =
-        apply === "all" ||
-        (apply === "automatic" ? item.isAutomatic : !item.isAutomatic);
-      return matchesOffer && matchesApply;
-    });
-  }, [apply, offer, promotions]);
+  const filtered = promotions;
 
-  const hasServerFilter = Boolean(initialQuery.trim()) || initialStatus !== "all";
-  const hasClientPageFilter = offer !== "all" || apply !== "all";
-  const isFiltered = hasServerFilter || hasClientPageFilter;
+  const hasServerFilter =
+    Boolean(initialQuery.trim()) ||
+    initialStatus !== "all" ||
+    offer !== "all" ||
+    apply !== "all" ||
+    initialSchedule !== "all";
+  const hasClientPageFilter = false;
+  const isFiltered = hasServerFilter || offer !== "all" || apply !== "all";
 
   const filters: DataTableFilterDefinition[] = [
+    {
+      id: "schedule",
+      defaultValue: "all",
+      label: t("promotions.filter.schedule.label"),
+      value: initialSchedule,
+      onChange: (value) => pushServerFilters({ schedule: value as ScheduleFilter }),
+      options: [
+        { value: "all", label: t("promotions.filter.schedule.all") },
+        { value: "scheduled", label: t("promotions.filter.schedule.scheduled") },
+        { value: "current", label: t("promotions.filter.schedule.current") },
+        { value: "expired", label: t("promotions.filter.schedule.expired") },
+        { value: "unscheduled", label: t("promotions.filter.schedule.unscheduled") },
+      ],
+    },
     {
       defaultValue: "all",
       id: "status",
@@ -198,7 +192,7 @@ export function PromotionsManager({
       defaultValue: "all",
       id: "offer",
       label: t("promotions.filter.offer.label"),
-      onChange: (value) => setOffer(value as OfferFilter),
+      onChange: (value) => pushServerFilters({ offer: value as OfferFilter }),
       options: [
         { label: t("promotions.filter.offer.all"), value: "all" },
         { label: t("promotions.filter.offer.order"), value: "order" },
@@ -214,7 +208,7 @@ export function PromotionsManager({
       defaultValue: "all",
       id: "apply",
       label: t("promotions.filter.apply.how"),
-      onChange: (value) => setApply(value as ApplyFilter),
+      onChange: (value) => pushServerFilters({ apply: value as ApplyFilter }),
       options: [
         { label: t("promotions.filter.apply.methodsAll"), value: "all" },
         { label: t("promotions.filter.apply.codeRequired"), value: "code" },
@@ -254,7 +248,9 @@ export function PromotionsManager({
       return;
     }
     if (deleted > 0) {
-      toast.error(t("promotions.toast.partialDeleted", { deleted, failed: targets.length - deleted }));
+      toast.error(
+        t("promotions.toast.partialDeleted", { deleted, failed: targets.length - deleted }),
+      );
       router.refresh();
       return;
     }
@@ -273,7 +269,9 @@ export function PromotionsManager({
         id: "select",
         header: ({ table }) => (
           <Checkbox
-            aria-label={t("table.actions.selectAllVisible", { entity: t("taxonomy.entity.promotion.plural").toLowerCase() })}
+            aria-label={t("table.actions.selectAllVisible", {
+              entity: t("taxonomy.entity.promotion.plural").toLowerCase(),
+            })}
             checked={
               table.getIsAllPageRowsSelected() ||
               (table.getIsSomePageRowsSelected() && "indeterminate")
@@ -293,7 +291,9 @@ export function PromotionsManager({
       },
       {
         accessorKey: "code",
-        header: ({ column }) => <DataTableHeader column={column} title={t("promotions.table.codeHeader")} />,
+        header: ({ column }) => (
+          <DataTableHeader column={column} title={t("promotions.table.codeHeader")} />
+        ),
         cell: ({ row }) => (
           <button
             className="flex flex-col items-start text-left transition-colors hover:text-primary"
@@ -314,7 +314,9 @@ export function PromotionsManager({
       {
         id: "discount",
         accessorFn: (item) => item.value,
-        header: ({ column }) => <DataTableHeader column={column} title={t("table.headers.discount")} />,
+        header: ({ column }) => (
+          <DataTableHeader column={column} title={t("table.headers.discount")} />
+        ),
         cell: ({ row }) => (
           <div className="min-w-0">
             <p className="text-sm">{formatDiscount(row.original, t)}</p>
@@ -324,7 +326,9 @@ export function PromotionsManager({
       },
       {
         accessorKey: "status",
-        header: ({ column }) => <DataTableHeader column={column} title={t("promotions.filter.status.label")} />,
+        header: ({ column }) => (
+          <DataTableHeader column={column} title={t("promotions.filter.status.label")} />
+        ),
         cell: ({ row }) => (
           <div className="flex flex-wrap items-center gap-1.5">
             <Badge variant={statusBadgeVariant(row.original.status)}>{row.original.status}</Badge>
@@ -337,7 +341,9 @@ export function PromotionsManager({
       {
         id: "usage",
         accessorFn: (item) => item.usageCount,
-        header: ({ column }) => <DataTableHeader column={column} title={t("table.headers.usage")} />,
+        header: ({ column }) => (
+          <DataTableHeader column={column} title={t("table.headers.usage")} />
+        ),
         cell: ({ row }) => (
           <span className="text-sm text-muted-foreground">
             {row.original.usageCount}
@@ -348,7 +354,9 @@ export function PromotionsManager({
       {
         id: "schedule",
         accessorFn: (item) => item.endsAt ?? item.startsAt ?? "",
-        header: ({ column }) => <DataTableHeader column={column} title={t("table.headers.schedule")} />,
+        header: ({ column }) => (
+          <DataTableHeader column={column} title={t("table.headers.schedule")} />
+        ),
         cell: ({ row }) => {
           const item = row.original;
           if (item.endsAt) {
@@ -365,7 +373,9 @@ export function PromotionsManager({
               </span>
             );
           }
-          return <span className="text-sm text-muted-foreground">{t("promotions.schedule.none")}</span>;
+          return (
+            <span className="text-sm text-muted-foreground">{t("promotions.schedule.none")}</span>
+          );
         },
       },
       {
@@ -383,12 +393,15 @@ export function PromotionsManager({
                   type: "button",
                 },
                 ...(!item.isAutomatic
-                  ? [{
-                      icon: AppIcons.copy,
-                      label: t("promotions.action.copy"),
-                      onSelect: () => void copyToClipboard(item.code, t("promotions.table.promotionCode"), t),
-                      type: "button" as const,
-                    }]
+                  ? [
+                      {
+                        icon: AppIcons.copy,
+                        label: t("promotions.action.copy"),
+                        onSelect: () =>
+                          void copyToClipboard(item.code, t("promotions.table.promotionCode"), t),
+                        type: "button" as const,
+                      },
+                    ]
                   : []),
                 { id: "danger", type: "separator" },
                 {
@@ -415,13 +428,17 @@ export function PromotionsManager({
   return (
     <>
       <DataTable
+        enableSorting={false}
         bulkActions={(selected) => (
           <div className="flex items-center gap-2">
             <Button
               disabled={selected.every((item) => item.isAutomatic)}
               onClick={() =>
                 void copyToClipboard(
-                  selected.filter((item) => !item.isAutomatic).map((item) => item.code).join("\n"),
+                  selected
+                    .filter((item) => !item.isAutomatic)
+                    .map((item) => item.code)
+                    .join("\n"),
                   t("promotions.table.promotionCodes"),
                   t,
                 )
@@ -461,10 +478,14 @@ export function PromotionsManager({
             <DataTableFilters
               filters={filters}
               onClearAll={() => {
-                setOffer("all");
-                setApply("all");
                 setSearchValue("");
-                pushServerFilters({ q: "", status: "all" });
+                pushServerFilters({
+                  schedule: "all",
+                  apply: "all",
+                  offer: "all",
+                  q: "",
+                  status: "all",
+                });
               }}
             >
               <ListToolbarSearch
@@ -525,4 +546,9 @@ export function PromotionsManager({
       />
     </>
   );
+}
+
+function setPromotionUrlFilter(url: URL, key: "apply" | "offer" | "schedule", value: string) {
+  if (value === "all") url.searchParams.delete(key);
+  else url.searchParams.set(key, value);
 }

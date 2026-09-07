@@ -1,4 +1,6 @@
 import { formatPublicOrderReference, type MerchantOrder } from "@ecs/contracts";
+import { resolveCreatedRange } from "../../adapters/medusa/order/list-query.js";
+import type { MerchantOrderListQuery } from "../../types/merchant-order.js";
 
 const CSV_SCHEMA_VERSION = "ecs-orders-v1";
 const EXPORT_PAGE_SIZE = 100;
@@ -8,11 +10,7 @@ type OrderPageResult =
   | { ok: true; orders: MerchantOrder[]; count: number; limit: number; offset: number }
   | { ok: false; error: string; status: number };
 
-export type ListOrdersForExport = (input: {
-  limit: number;
-  offset: number;
-  salesChannelId: string;
-}) => Promise<OrderPageResult>;
+export type ListOrdersForExport = (input: MerchantOrderListQuery) => Promise<OrderPageResult>;
 
 export type OrderExportResult =
   | { ok: true; csv: string; orderCount: number; rowCount: number; schemaVersion: string }
@@ -68,15 +66,20 @@ export function buildOrderCsv(orders: MerchantOrder[]) {
 }
 
 export async function exportOrdersToCsv(input: {
+  filters?: Omit<MerchantOrderListQuery, "limit" | "offset" | "salesChannelId">;
   listOrders: ListOrdersForExport;
   salesChannelId: string;
 }): Promise<OrderExportResult> {
   const orders: MerchantOrder[] = [];
   let offset = 0;
   let expectedCount: number | null = null;
+  const seen = new Set<string>();
+  // Freeze relative dates once so pages share exactly the same time window.
+  const filters = { ...input.filters, ...resolveCreatedRange(input.filters ?? {}) };
 
   do {
     const page = await input.listOrders({
+      ...filters,
       limit: EXPORT_PAGE_SIZE,
       offset,
       salesChannelId: input.salesChannelId,
@@ -85,6 +88,22 @@ export async function exportOrdersToCsv(input: {
     expectedCount ??= page.count;
     if (expectedCount > MAX_ORDER_EXPORT_COUNT) {
       return { ok: false, error: "order_export_too_large", status: 413 };
+    }
+    if (
+      !Number.isSafeInteger(page.count) ||
+      page.count < 0 ||
+      page.count !== expectedCount ||
+      page.offset !== offset ||
+      page.orders.length > EXPORT_PAGE_SIZE ||
+      (page.orders.length === 0 && offset < expectedCount) ||
+      offset + page.orders.length > expectedCount
+    ) {
+      return { ok: false, error: "export_results_changed", status: 409 };
+    }
+    for (const order of page.orders) {
+      if (!order.id || seen.has(order.id))
+        return { ok: false, error: "export_results_changed", status: 409 };
+      seen.add(order.id);
     }
     orders.push(...page.orders);
     offset += page.orders.length;

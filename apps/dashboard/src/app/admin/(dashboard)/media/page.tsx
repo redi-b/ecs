@@ -1,6 +1,11 @@
 import { headers } from "next/headers";
 
 import { PaginationControls } from "@/components/app/list-page-controls";
+import {
+  parseMediaOrientation,
+  parseMediaSize,
+  parseMediaSort,
+} from "@/features/media/media-helpers";
 import { MediaWorkspace } from "@/features/media/media-workspace";
 import type { DashboardSearchParams } from "@/lib/dashboard-tenant-context";
 import { getMerchantMedia } from "@/lib/merchant-media";
@@ -20,6 +25,9 @@ export default async function MediaPage({ searchParams }: MediaPageProps) {
     ? resolvedSearchParams.mimeType[0]
     : resolvedSearchParams.mimeType;
   const mimeType = mimeTypeRaw?.trim() || undefined;
+  const orientation = parseMediaOrientation(resolvedSearchParams.orientation);
+  const size = parseMediaSize(resolvedSearchParams.size);
+  const sort = parseMediaSort(resolvedSearchParams.sort);
   const pageSize = hasExplicitPageSize(resolvedSearchParams)
     ? listParams.pageSize
     : DEFAULT_MEDIA_PAGE_SIZE;
@@ -36,6 +44,9 @@ export default async function MediaPage({ searchParams }: MediaPageProps) {
       offset,
       ...(listParams.q ? { query: listParams.q } : {}),
       ...(mimeType && mimeType !== "all" ? { mimeType } : {}),
+      ...(orientation !== "all" ? { orientation } : {}),
+      ...(size !== "all" ? { size } : {}),
+      ...(sort !== "newest" ? { sort } : {}),
     },
   );
 
@@ -48,7 +59,10 @@ export default async function MediaPage({ searchParams }: MediaPageProps) {
       initialAssets={assets}
       initialError={result.ok ? undefined : result.error}
       initialMimeType={mimeType && mimeType !== "all" ? mimeType : "all"}
+      initialOrientation={orientation}
       initialQuery={listParams.q}
+      initialSize={size}
+      initialSort={sort}
       page={listParams.page}
       pageSize={limit}
       totalCount={totalCount}
@@ -66,7 +80,9 @@ export default async function MediaPage({ searchParams }: MediaPageProps) {
   );
 }
 
-function hasExplicitPageSize(searchParams: NonNullable<DashboardSearchParams> | Record<string, never>) {
+function hasExplicitPageSize(
+  searchParams: NonNullable<DashboardSearchParams> | Record<string, never>,
+) {
   const value = searchParams.pageSize;
   const candidate = Array.isArray(value) ? value[0] : value;
   return Boolean(candidate?.trim());

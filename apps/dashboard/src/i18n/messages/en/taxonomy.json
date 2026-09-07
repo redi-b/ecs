@@ -65,6 +65,8 @@
     "category": "Category",
     "handle": "Handle",
     "parent": "Parent",
+    "directParent": "Direct parent",
+    "allParents": "All parents",
     "visibility": {
       "hidden": "Hidden",
       "public": "Public",

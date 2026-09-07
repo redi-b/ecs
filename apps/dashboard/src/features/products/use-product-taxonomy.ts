@@ -5,14 +5,18 @@ import { useQuery } from "@tanstack/react-query";
 
 import { getTenantScopedPath } from "@/lib/dashboard-tenant-context";
 import { dashboardRoutes } from "@/lib/routes";
+import { loadProductTaxonomy } from "./product-taxonomy-loader";
 
 export type ProductTaxonomyResult = {
+  categoriesPending: boolean;
+  categoriesError: boolean;
   categories: MerchantProductCategory[];
   collections: MerchantProductCollection[];
   errorLabels: string[];
   isError: boolean;
   isLoading: boolean;
   isPending: boolean;
+  retry: () => void;
 };
 
 /**
@@ -26,77 +30,50 @@ export function useProductTaxonomy(options: {
   const enabled = options.enabled ?? true;
   const tenantId = options.tenantId;
 
-  const query = useQuery({
+  const categoriesQuery = useQuery({
     enabled,
-    queryKey: ["product-taxonomy", tenantId ?? "host"],
-    queryFn: async () => {
-      const [categoriesResponse, collectionsResponse] = await Promise.all([
-        fetchTaxonomyList(dashboardRoutes.productCategoriesListAction, tenantId),
-        fetchTaxonomyList(dashboardRoutes.productCollectionsListAction, tenantId),
-      ]);
-
-      const errorLabels: string[] = [];
-      let categories: MerchantProductCategory[] = [];
-      let collections: MerchantProductCollection[] = [];
-
-      if (categoriesResponse.ok) {
-        categories = categoriesResponse.categories;
-      } else {
-        errorLabels.push("categories");
-      }
-
-      if (collectionsResponse.ok) {
-        collections = collectionsResponse.collections;
-      } else {
-        errorLabels.push("collections");
-      }
-
-      return { categories, collections, errorLabels };
-    },
+    queryKey: ["product-taxonomy", tenantId ?? "host", "categories"],
+    queryFn: ({ signal }) =>
+      loadProductTaxonomy(
+        new URL(
+          getTenantScopedPath(dashboardRoutes.productCategoriesListAction, tenantId),
+          window.location.origin,
+        ),
+        "categories",
+        signal,
+      ),
+    staleTime: 60_000,
+  });
+  const collectionsQuery = useQuery({
+    enabled,
+    queryKey: ["product-taxonomy", tenantId ?? "host", "collections"],
+    queryFn: ({ signal }) =>
+      loadProductTaxonomy(
+        new URL(
+          getTenantScopedPath(dashboardRoutes.productCollectionsListAction, tenantId),
+          window.location.origin,
+        ),
+        "collections",
+        signal,
+      ),
     staleTime: 60_000,
   });
 
   return {
-    categories: query.data?.categories ?? [],
-    collections: query.data?.collections ?? [],
-    errorLabels: query.data?.errorLabels ?? [],
-    isError: Boolean(query.data?.errorLabels.length) || query.isError,
-    isLoading: query.isLoading,
-    isPending: query.isPending,
-  };
-}
-
-async function fetchTaxonomyList(
-  path: string,
-  tenantId: string | undefined,
-): Promise<
-  | { ok: true; categories: MerchantProductCategory[]; collections: MerchantProductCollection[] }
-  | { ok: false }
-> {
-  const url = new URL(getTenantScopedPath(path, tenantId), window.location.origin);
-  url.searchParams.set("limit", "100");
-  url.searchParams.set("offset", "0");
-
-  const response = await fetch(url, {
-    headers: { accept: "application/json" },
-  }).catch(() => null);
-
-  if (!response?.ok) {
-    return { ok: false };
-  }
-
-  const body = (await response.json().catch(() => null)) as {
-    categories?: MerchantProductCategory[];
-    collections?: MerchantProductCollection[];
-  } | null;
-
-  if (!body || typeof body !== "object") {
-    return { ok: false };
-  }
-
-  return {
-    ok: true,
-    categories: Array.isArray(body.categories) ? body.categories : [],
-    collections: Array.isArray(body.collections) ? body.collections : [],
+    categoriesPending: categoriesQuery.isPending,
+    categoriesError: categoriesQuery.isError,
+    categories: categoriesQuery.data ?? [],
+    collections: collectionsQuery.data ?? [],
+    errorLabels: [
+      ...(categoriesQuery.isError ? ["categories"] : []),
+      ...(collectionsQuery.isError ? ["collections"] : []),
+    ],
+    isError: categoriesQuery.isError || collectionsQuery.isError,
+    isLoading: categoriesQuery.isLoading || collectionsQuery.isLoading,
+    isPending: categoriesQuery.isPending || collectionsQuery.isPending,
+    retry: () => {
+      void categoriesQuery.refetch();
+      void collectionsQuery.refetch();
+    },
   };
 }

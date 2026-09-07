@@ -1,4 +1,5 @@
 export type ProductListUrlInput = {
+  media?: "with_media" | "without_media" | undefined;
   categoryId?: string | undefined;
   collectionId?: string | undefined;
   limit: number;
@@ -72,7 +73,17 @@ export const PRODUCT_DETAIL_FIELDS = [
 ].join(",");
 
 export function getProductsUrl(medusaInternalUrl: string, input: ProductListUrlInput) {
-  const url = getProductsBaseUrl(medusaInternalUrl);
+  const url =
+    input.media || input.categoryId === "none" || input.collectionId === "none"
+      ? new URL("/admin/platform-products", normalizeBaseUrl(medusaInternalUrl))
+      : getProductsBaseUrl(medusaInternalUrl);
+  if (input.media) url.searchParams.set("media", input.media);
+  if (input.categoryId === "none") url.searchParams.set("category_missing", "true");
+  if (input.collectionId === "none") url.searchParams.set("collection_missing", "true");
+  if (input.status === "unknown") {
+    url.searchParams.append("status[]", "proposed");
+    url.searchParams.append("status[]", "rejected");
+  }
 
   url.searchParams.set("limit", String(input.limit));
   url.searchParams.set("offset", String(input.offset));
@@ -131,6 +142,30 @@ export function getProductCategoriesUrl(
 
 export function getProductCategoriesBaseUrl(medusaInternalUrl: string) {
   return new URL("/admin/product-categories", normalizeBaseUrl(medusaInternalUrl));
+}
+
+export function getTenantTaxonomyUrl(
+  medusaInternalUrl: string,
+  kind: "categories" | "collections",
+  input: {
+    tenantId: string;
+    limit: number;
+    offset: number;
+    q?: string | undefined;
+    visibility?: string | undefined;
+    parentId?: string | undefined;
+  },
+) {
+  const url = new URL("/admin/platform-taxonomy", normalizeBaseUrl(medusaInternalUrl));
+  url.searchParams.set("tenant_id", input.tenantId);
+  url.searchParams.set("kind", kind);
+  if (input.visibility && input.visibility !== "all")
+    url.searchParams.set("visibility", input.visibility);
+  if (input.parentId && input.parentId !== "all") url.searchParams.set("parent_id", input.parentId);
+  url.searchParams.set("limit", String(input.limit));
+  url.searchParams.set("offset", String(input.offset));
+  if (input.q?.trim()) url.searchParams.set("q", input.q.trim());
+  return url;
 }
 
 export function getProductCollectionsUrl(

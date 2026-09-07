@@ -8,6 +8,9 @@ import {
   hasActiveMediaFilters,
   matchesOrientationFilter,
   matchesSizeFilter,
+  parseMediaOrientation,
+  parseMediaSize,
+  parseMediaSort,
 } from "./media-helpers";
 
 function asset(partial: Partial<MediaAsset> & Pick<MediaAsset, "id" | "displayName">): MediaAsset {
@@ -32,6 +35,15 @@ describe("media helpers", () => {
     assert.equal(formatBytes(512), "512 B");
     assert.equal(formatBytes(2048), "2 KB");
     assert.equal(formatBytes(2_500_000), "2.4 MB");
+  });
+
+  it("parses URL-backed filters safely", () => {
+    assert.equal(parseMediaOrientation("portrait"), "portrait");
+    assert.equal(parseMediaOrientation("diagonal"), "all");
+    assert.equal(parseMediaSize(["large", "small"]), "large");
+    assert.equal(parseMediaSize("huge"), "all");
+    assert.equal(parseMediaSort("name_desc"), "name_desc");
+    assert.equal(parseMediaSort("random"), "newest");
   });
 
   it("filters by size and orientation", () => {

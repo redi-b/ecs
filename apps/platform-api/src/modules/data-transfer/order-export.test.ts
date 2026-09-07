@@ -86,7 +86,17 @@ describe("operational order CSV export", () => {
     const offsets: number[] = [];
     const result = await exportOrdersToCsv({
       salesChannelId: "sc_1",
-      listOrders: async ({ offset }) => {
+      filters: {
+        paymentStatus: "unpaid",
+        customerId: "customer_one",
+        createdFrom: "2026-09-01T00:00:00+03:00",
+        createdTo: "2026-09-07T23:59:59+03:00",
+      },
+      listOrders: async ({ offset, paymentStatus, customerId, createdFrom, createdTo }) => {
+        assert.equal(paymentStatus, "unpaid");
+        assert.equal(customerId, "customer_one");
+        assert.equal(createdFrom, "2026-09-01T00:00:00+03:00");
+        assert.equal(createdTo, "2026-09-07T23:59:59+03:00");
         offsets.push(offset);
         return offset === 0
           ? {
@@ -121,5 +131,20 @@ describe("operational order CSV export", () => {
       }),
     });
     assert.deepEqual(tooLarge, { ok: false, error: "order_export_too_large", status: 413 });
+  });
+  it("does not silently export missing rows", async () => {
+    assert.deepEqual(
+      await exportOrdersToCsv({
+        salesChannelId: "one",
+        listOrders: async ({ limit, offset }) => ({
+          ok: true,
+          orders: [],
+          count: 1,
+          limit,
+          offset,
+        }),
+      }),
+      { ok: false, error: "export_results_changed", status: 409 },
+    );
   });
 });

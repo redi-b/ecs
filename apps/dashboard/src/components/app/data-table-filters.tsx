@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 
 import { AppIcons } from "@/components/app/icons";
 import { listToolbarControlClassName } from "@/components/app/list-toolbar";
@@ -15,6 +15,7 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
+import { DateRangePicker, type DateRangeValue } from "@/components/ui/date-range-picker";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
@@ -25,6 +26,7 @@ export type DataTableFilterOption = {
 };
 
 export type DataTableFilterDefinition = {
+  kind?: "select";
   defaultValue: string;
   id: string;
   label: string;
@@ -33,10 +35,30 @@ export type DataTableFilterDefinition = {
   onChange: (value: string) => void;
 };
 
+export type DataTableDateFilterValue =
+  | { kind: "preset"; preset: string }
+  | { kind: "range"; start: string; end: string }
+  | null;
+
+export type DataTableDateFilterDefinition = {
+  kind: "date";
+  id: string;
+  label: string;
+  options: DataTableFilterOption[];
+  value: DataTableDateFilterValue;
+  onChange: (value: DataTableDateFilterValue) => void;
+};
+
+export type DataTableFilter = DataTableFilterDefinition | DataTableDateFilterDefinition;
+
+function isActive(filter: DataTableFilter) {
+  return filter.kind === "date" ? filter.value !== null : filter.value !== filter.defaultValue;
+}
+
 type DataTableFiltersProps = {
   actions?: ReactNode;
   children?: ReactNode;
-  filters: DataTableFilterDefinition[];
+  filters: DataTableFilter[];
   onClearAll: () => void;
 };
 
@@ -50,9 +72,15 @@ export function DataTableFilters({
   const [addFilterOpen, setAddFilterOpen] = useState(false);
   const [pendingFilterId, setPendingFilterId] = useState<string | null>(null);
   const [filterSearch, setFilterSearch] = useState("");
-  const availableFilters = filters.filter((filter) => filter.value === filter.defaultValue);
-  const activeFilters = filters.filter((filter) => filter.value !== filter.defaultValue);
-  const pendingFilter = filters.find((filter) => filter.id === pendingFilterId) ?? null;
+  const [editingDateId, setEditingDateId] = useState<string | null>(null);
+  const addFilterTrigger = useRef<HTMLButtonElement>(null);
+  const availableFilters = filters.filter((filter) => !isActive(filter));
+  const activeFilters = filters.filter(isActive);
+  const pendingFilter =
+    filters.find(
+      (filter): filter is DataTableFilterDefinition =>
+        filter.kind !== "date" && filter.id === pendingFilterId,
+    ) ?? null;
 
   function setPendingFilter(nextFilterId: string | null) {
     setFilterSearch("");
@@ -71,6 +99,7 @@ export function DataTableFilters({
         >
           <PopoverTrigger asChild>
             <Button
+              ref={addFilterTrigger}
               className={listToolbarControlClassName}
               size="sm"
               type="button"
@@ -81,6 +110,9 @@ export function DataTableFilters({
             </Button>
           </PopoverTrigger>
           <PopoverContent
+            onCloseAutoFocus={(event) => {
+              if (editingDateId) event.preventDefault();
+            }}
             align="start"
             className="w-72 overflow-hidden rounded-xl p-0 shadow-md ring-1 ring-foreground/10"
             onOpenAutoFocus={(event) => event.preventDefault()}
@@ -129,9 +161,7 @@ export function DataTableFilters({
                       <CommandGroup className="p-0">
                         {getSelectableFilterOptions(pendingFilter).map((option) => (
                           <CommandItem
-                            data-checked={
-                              pendingFilter.value === option.value ? true : undefined
-                            }
+                            data-checked={pendingFilter.value === option.value ? true : undefined}
                             key={option.value}
                             onSelect={() => {
                               pendingFilter.onChange(option.value);
@@ -152,7 +182,12 @@ export function DataTableFilters({
                         {availableFilters.map((filter) => (
                           <CommandItem
                             key={filter.id}
-                            onSelect={() => setPendingFilter(filter.id)}
+                            onSelect={() => {
+                              if (filter.kind === "date") {
+                                setEditingDateId(filter.id);
+                                setAddFilterOpen(false);
+                              } else setPendingFilter(filter.id);
+                            }}
                             value={filter.label}
                           >
                             {filter.label}
@@ -168,9 +203,26 @@ export function DataTableFilters({
         </Popover>
       ) : null}
 
-      {activeFilters.map((filter) => (
-        <DataTableAppliedFilterChip filter={filter} key={filter.id} />
-      ))}
+      {filters.map((filter) =>
+        filter.kind === "date" ? (
+          isActive(filter) || editingDateId === filter.id ? (
+            <DataTableDateFilterControl
+              key={filter.id}
+              filter={filter}
+              open={editingDateId === filter.id}
+              onOpenChange={(open) => setEditingDateId(open ? filter.id : null)}
+              onCloseAutoFocus={(event) => {
+                if (!isActive(filter)) {
+                  event.preventDefault();
+                  addFilterTrigger.current?.focus();
+                }
+              }}
+            />
+          ) : null
+        ) : isActive(filter) ? (
+          <DataTableAppliedFilterChip filter={filter} key={filter.id} />
+        ) : null,
+      )}
 
       {activeFilters.length ? (
         <Button
@@ -203,6 +255,54 @@ export function DataTableFilters({
         </div>
       ) : null}
     </div>
+  );
+}
+
+function DataTableDateFilterControl({
+  filter,
+  open,
+  onOpenChange,
+  onCloseAutoFocus,
+}: {
+  filter: DataTableDateFilterDefinition;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onCloseAutoFocus: (event: Event) => void;
+}) {
+  const { t } = useI18n();
+  const value: DateRangeValue =
+    filter.value?.kind === "range"
+      ? { start: filter.value.start, end: filter.value.end }
+      : { start: "", end: "" };
+  const preset = filter.value?.kind === "preset" ? filter.value.preset : "";
+  const presetLabel = filter.options.find((option) => option.value === preset)?.label;
+  return (
+    <DateRangePicker
+      className={cn(listToolbarControlClassName, "max-w-full sm:max-w-80")}
+      open={open}
+      onOpenChange={onOpenChange}
+      onCloseAutoFocus={onCloseAutoFocus}
+      value={value}
+      placeholder={presetLabel ? `${filter.label}: ${presetLabel}` : filter.label}
+      onChange={(range) => filter.onChange({ kind: "range", ...range })}
+      onClear={() => filter.onChange(null)}
+      presets={{
+        label: filter.label,
+        value: preset,
+        options: filter.options,
+        onChange: (next) => filter.onChange({ kind: "preset", preset: next }),
+      }}
+      labels={{
+        apply: t("overview.trading.datePicker.apply"),
+        available: t("overview.trading.datePicker.available"),
+        cancel: t("overview.trading.datePicker.cancel"),
+        chooseEnd: t("overview.trading.datePicker.chooseEnd"),
+        chooseStart: t("overview.trading.datePicker.chooseStart"),
+        clear: t("overview.trading.datePicker.clear"),
+        end: t("overview.trading.datePicker.end"),
+        start: t("overview.trading.datePicker.start"),
+      }}
+    />
   );
 }
 

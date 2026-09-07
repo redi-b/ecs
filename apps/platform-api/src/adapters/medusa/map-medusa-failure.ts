@@ -7,7 +7,8 @@
  * - 404 → notFoundError (or not_found)
  * - 409 → conflictError (or invalidError)
  * - 400/422 and other 4xx → invalidError at 400 (never collapse to 503)
- * - 5xx → 503 commerce_backend_unavailable
+ * - 503 → 503 commerce_backend_unavailable
+ * - Other 5xx → 502 commerce_backend_error
  */
 
 export type MapMedusaFailureOptions = {
@@ -17,7 +18,7 @@ export type MapMedusaFailureOptions = {
   notFoundError?: string;
   /** Error code for 409. Defaults to invalidError. */
   conflictError?: string;
-  /** Error code for network / 5xx. */
+  /** Error code for network / 503. */
   unavailableError?: string;
   /**
    * Optional body-based refinement for 4xx responses (not auth).
@@ -51,6 +52,10 @@ export function mapMedusaHttpFailure(
 
   if (!response) {
     return { ok: false, error: unavailableError, status: 503 };
+  }
+
+  if (response.status >= 500 && response.status !== 503) {
+    return { ok: false, error: "commerce_backend_error", status: 502 };
   }
 
   if (response.status === 401 || response.status === 403) {
@@ -91,8 +96,8 @@ export async function mapMedusaFailure(
     return base;
   }
 
-  // Body refinement is only useful for non-auth client/server messages.
-  if (response.status < 400) {
+  // Server failures must never be mistaken for merchant validation errors.
+  if (response.status < 400 || response.status >= 500) {
     return base;
   }
   if (response.status === 401 || response.status === 403) {
@@ -117,9 +122,7 @@ export async function mapMedusaFailure(
  * Normalize a commerce failure status for Hono `context.json`.
  * Known merchant statuses pass through; other 4xx → 400; else 503.
  */
-export function commerceErrorStatus(
-  status: number,
-): 400 | 401 | 403 | 404 | 409 | 422 | 503 {
+export function commerceErrorStatus(status: number): 400 | 401 | 403 | 404 | 409 | 422 | 502 | 503 {
   if (
     status === 400 ||
     status === 401 ||
@@ -127,6 +130,7 @@ export function commerceErrorStatus(
     status === 404 ||
     status === 409 ||
     status === 422 ||
+    status === 502 ||
     status === 503
   ) {
     return status;

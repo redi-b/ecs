@@ -10,7 +10,9 @@ import { parseOrderListFilters } from "@/features/orders/order-domain";
 import { OrdersTable } from "@/features/orders/orders-table";
 import { getTranslations } from "@/i18n/server";
 import { type DashboardSearchParams, getSelectedTenantId } from "@/lib/dashboard-tenant-context";
+import { listDateRangeToTimestamps, parseListDateRange } from "@/lib/list-date-range";
 import { getListErrorState } from "@/lib/list-error-state";
+import { listExportPath } from "@/lib/list-export-path";
 import { getMerchantOrders } from "@/lib/merchant-orders";
 import { dashboardRoutes } from "@/lib/routes";
 import { parseListSearchParams } from "@/lib/url-state";
@@ -32,7 +34,9 @@ export default async function MerchantOrdersPage({ searchParams }: MerchantOrder
   const requestHeaders = await headers();
   const offset = (listParams.page - 1) * listParams.pageSize;
 
+  const dateRange = parseListDateRange(filters.createdFrom, filters.createdTo);
   const result = await getMerchantOrders({
+    ...(dateRange ? listDateRangeToTimestamps(dateRange) : {}),
     cookieHeader: requestHeaders.get("cookie"),
     limit: listParams.pageSize,
     offset,
@@ -49,6 +53,7 @@ export default async function MerchantOrdersPage({ searchParams }: MerchantOrder
   });
   const errorState = result.ok ? null : getListErrorState("orders", result.message);
   const listFiltered =
+    Boolean(dateRange) ||
     Boolean(filters.q) ||
     Boolean(customerId) ||
     filters.progress !== "all" ||
@@ -75,7 +80,11 @@ export default async function MerchantOrdersPage({ searchParams }: MerchantOrder
                 <ExportDownloadButton
                   failedMessage={t("orders.export.failed")}
                   fallbackFilename="ecs-orders.csv"
-                  href={dashboardRoutes.ordersExportAction}
+                  href={listExportPath(dashboardRoutes.ordersExportAction, {
+                    ...filters,
+                    customerId,
+                    ...(dateRange ? listDateRangeToTimestamps(dateRange) : {}),
+                  })}
                   label={t("orders.export.label")}
                   pendingLabel={t("orders.export.pending")}
                 />

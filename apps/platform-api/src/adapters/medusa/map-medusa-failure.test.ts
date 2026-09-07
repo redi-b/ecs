@@ -92,16 +92,29 @@ describe("mapMedusaHttpFailure", () => {
     );
   });
 
-  it("maps 5xx to 503", () => {
+  it("distinguishes upstream failures from unavailable services", () => {
     assert.deepEqual(mapMedusaHttpFailure(new Response(null, { status: 502 })), {
       ok: false,
-      error: "commerce_backend_unavailable",
-      status: 503,
+      error: "commerce_backend_error",
+      status: 502,
     });
+    assert.equal(mapMedusaHttpFailure(new Response(null, { status: 500 })).status, 502);
+    assert.equal(mapMedusaHttpFailure(new Response(null, { status: 503 })).status, 503);
   });
 });
 
 describe("mapMedusaFailure", () => {
+  it("does not reinterpret an internal exception as merchant validation", async () => {
+    const result = await mapMedusaFailure(
+      Response.json({ message: "internal currency error" }, { status: 500 }),
+      {
+        refine: () => {
+          throw new Error("must not inspect internal exceptions for validation");
+        },
+      },
+    );
+    assert.deepEqual(result, { ok: false, error: "commerce_backend_error", status: 502 });
+  });
   it("refines validation messages from body", async () => {
     const response = Response.json(
       { message: "max_quantity is required when allocation is each" },
@@ -144,7 +157,7 @@ describe("commerceErrorStatus", () => {
     assert.equal(commerceErrorStatus(409), 409);
     assert.equal(commerceErrorStatus(422), 422);
     assert.equal(commerceErrorStatus(415), 400);
-    assert.equal(commerceErrorStatus(502), 503);
+    assert.equal(commerceErrorStatus(502), 502);
     assert.equal(commerceErrorStatus(200), 503);
   });
 });

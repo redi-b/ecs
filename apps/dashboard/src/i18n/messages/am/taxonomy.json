@@ -65,6 +65,8 @@
     "category": "ምድብ",
     "handle": "መለያ",
     "parent": "ወላጅ",
+    "directParent": "ቀጥተኛ ወላጅ",
+    "allParents": "ሁሉም ወላጆች",
     "visibility": {
       "hidden": "የተደበቀ",
       "public": "ለደንበኛ የሚታይ",

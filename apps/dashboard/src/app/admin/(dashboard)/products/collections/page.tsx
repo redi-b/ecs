@@ -27,6 +27,12 @@ export default async function MerchantProductCollectionsPage({
 }: MerchantProductCollectionsPageProps) {
   const resolvedSearchParams = (await searchParams) ?? {};
   const listParams = parseListSearchParams(resolvedSearchParams);
+  const visibility =
+    resolvedSearchParams.visibility === "hidden"
+      ? "hidden"
+      : resolvedSearchParams.visibility === "public"
+        ? "public"
+        : "all";
   const tenantId = getSelectedTenantId(resolvedSearchParams);
   const t = await getTranslations();
   const requestHeaders = await headers();
@@ -37,6 +43,7 @@ export default async function MerchantProductCollectionsPage({
   );
   const collectionNotice = getCollectionNotice(resolvedSearchParams.collectionStatus, t);
   const result = await getMerchantProductCollections({
+    visibility,
     cookieHeader: requestHeaders.get("cookie"),
     limit: listParams.pageSize,
     offset,
@@ -53,6 +60,7 @@ export default async function MerchantProductCollectionsPage({
         <>
           <RefreshButton />
           <TaxonomyCreateDialog
+            tenantId={tenantId}
             action={createCollectionAction}
             entityLabel="collection"
             nameKey="title"
@@ -75,11 +83,12 @@ export default async function MerchantProductCollectionsPage({
         <>
           <ListSummary
             count={result.count}
-            filtered={Boolean(listParams.q)}
+            filtered={Boolean(listParams.q) || visibility !== "all"}
             page={listParams.page}
             pageSize={result.limit}
           />
           <ProductCollectionsTable
+            initialVisibility={visibility}
             collections={result.collections}
             footer={
               <PaginationControls
