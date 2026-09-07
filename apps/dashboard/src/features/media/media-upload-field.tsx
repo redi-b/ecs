@@ -324,7 +324,10 @@ export function MediaUploadField({
       <fieldset
         aria-label={t("media.title")}
         className={cn(
-          "relative flex min-h-44 flex-col items-center justify-center gap-3 overflow-hidden rounded-2xl border border-dashed px-6 py-8 text-center transition-colors duration-200 ease-out",
+          "relative flex overflow-hidden rounded-2xl border border-dashed transition-colors duration-200 ease-out",
+          hasImages
+            ? "min-h-16 flex-col items-stretch justify-center gap-3 px-3 py-3 sm:flex-row sm:items-center sm:justify-between"
+            : "min-h-44 flex-col items-center justify-center gap-3 px-6 py-8 text-center",
           dragActive
             ? "border-primary bg-primary/5 ring-2 ring-primary/15"
             : "bg-muted/15 hover:border-foreground/20 hover:bg-muted/25",
@@ -344,14 +347,29 @@ export function MediaUploadField({
           void queueFiles(Array.from(event.dataTransfer.files));
         }}
       >
-        <span className="grid size-10 place-items-center rounded-xl border bg-background text-muted-foreground">
-          <AppIcons.upload className="size-5" />
-        </span>
-        <div className="flex max-w-md flex-col gap-1">
-          <p className="text-sm font-medium">{t("media.dropTitle")}</p>
-          <p className="text-xs text-muted-foreground">{t("media.dropDescription")}</p>
+        <div className={cn("flex items-center", hasImages ? "gap-2" : "flex-col gap-3")}>
+          <span
+            className={cn(
+              "grid shrink-0 place-items-center border bg-background text-muted-foreground",
+              hasImages ? "size-8 rounded-lg" : "size-10 rounded-xl",
+            )}
+          >
+            {hasImages ? (
+              <AppIcons.image className="size-4" />
+            ) : (
+              <AppIcons.upload className="size-5" />
+            )}
+          </span>
+          <div className={cn("flex max-w-md flex-col gap-1", hasImages || "items-center")}>
+            <p className="text-sm font-medium">
+              {hasImages ? t("media.addMore") : t("media.dropTitle")}
+            </p>
+            {hasImages ? null : (
+              <p className="text-xs text-muted-foreground">{t("media.dropDescription")}</p>
+            )}
+          </div>
         </div>
-        <div className="flex flex-wrap justify-center gap-2">
+        <div className="flex flex-wrap gap-2 sm:justify-end">
           <Button
             onClick={() => inputRef.current?.click()}
             size="sm"
@@ -407,14 +425,14 @@ export function MediaUploadField({
             Viewport breakpoints still apply inside sheets/dialogs, so avoid 4–5
             columns that shrink tiles to stamps. Two larger tiles read clearly.
           */}
-          <div className="max-h-[min(70vh,28rem)] overflow-y-auto overscroll-contain rounded-2xl border bg-muted/10 p-3 sm:max-h-[min(72vh,32rem)]">
+          <div className="max-h-[min(70vh,28rem)] overflow-x-hidden overflow-y-auto overscroll-contain rounded-2xl border bg-muted/10 p-3 sm:max-h-[min(72vh,32rem)]">
             <DndContext
               collisionDetection={closestCenter}
               onDragEnd={reorderUploaded}
               sensors={sensors}
             >
               <SortableContext items={imageUrls} strategy={rectSortingStrategy}>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-[repeat(auto-fill,minmax(7.5rem,10rem))] justify-start gap-3">
                   {imageUrls.map((url, index) => (
                     <UploadedImage
                       isCover={thumbnail === url || (!thumbnail && index === 0)}
@@ -471,7 +489,7 @@ function UploadedImage({
   return (
     <div
       className={cn(
-        "group relative overflow-hidden rounded-xl border bg-card shadow-sm transition-shadow duration-200 ease-out",
+        "group relative min-w-0 max-w-40 overflow-hidden rounded-xl border bg-card shadow-sm transition-shadow duration-200 ease-out",
         isCover && "ring-2 ring-primary/30",
         isDragging && "z-10 opacity-80 shadow-lg",
       )}
