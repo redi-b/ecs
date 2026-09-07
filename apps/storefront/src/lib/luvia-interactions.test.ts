@@ -31,3 +31,13 @@ test("product and address disclosures animate their content instead of snapping"
   assert.match(account, /const setAddressFormOpen =/);
   assert.match(account, /form\.animate/);
 });
+
+test("featured promotions autoplay without taking control from the shopper", async () => {
+  const carousel = await readTemplate("scripts/hero-carousel.ts");
+
+  assert.match(carousel, /prefers-reduced-motion: reduce/);
+  assert.match(carousel, /pointerenter.*stopAutoplay/);
+  assert.match(carousel, /focusin.*stopAutoplay/);
+  assert.match(carousel, /visibilitychange/);
+  assert.match(carousel, /canScrollNext\(\)/);
+});
