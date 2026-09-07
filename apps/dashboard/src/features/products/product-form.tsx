@@ -612,7 +612,25 @@ export function ProductForm({
                           <form.Field name="collectionId">
                             {(field) => (
                               <Field>
-                                <FieldLabel>{t("products.composer.fieldCollection")}</FieldLabel>
+                                <FieldLabel className="flex items-center gap-1.5">
+                                  {t("products.composer.fieldCollection")}
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button
+                                        aria-label={t("products.composer.collectionHelpLabel")}
+                                        className="size-5 rounded-full text-muted-foreground"
+                                        size="icon-xs"
+                                        type="button"
+                                        variant="ghost"
+                                      >
+                                        <AppIcons.question />
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent className="max-w-64">
+                                      {t("products.composer.collectionHelp")}
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </FieldLabel>
                                 <CollectionPicker
                                   collections={collections}
                                   onChange={field.handleChange}
@@ -629,12 +647,25 @@ export function ProductForm({
                         <form.Field name="categoryIds">
                           {(field) => (
                             <FieldSet>
-                              <FieldLegend variant="label">
+                              <FieldLegend className="flex items-center gap-1.5" variant="label">
                                 {t("products.composer.fieldCategories")}
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      aria-label={t("products.composer.categoriesHelpLabel")}
+                                      className="size-5 rounded-full text-muted-foreground"
+                                      size="icon-xs"
+                                      type="button"
+                                      variant="ghost"
+                                    >
+                                      <AppIcons.question />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent className="max-w-64">
+                                    {t("products.composer.categoriesHelp")}
+                                  </TooltipContent>
+                                </Tooltip>
                               </FieldLegend>
-                              <FieldDescription>
-                                {t("products.composer.categoriesHelp")}
-                              </FieldDescription>
                               <CategoryPicker
                                 categories={categories}
                                 onChange={field.handleChange}
