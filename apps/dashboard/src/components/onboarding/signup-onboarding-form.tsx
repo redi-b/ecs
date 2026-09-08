@@ -95,6 +95,7 @@ export function ShopOnboardingForm({
   });
   const [submitError, setSubmitError] = useState<string | null>(errorMessage);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSigningOut, setIsSigningOut] = useState(false);
   const businessCategory = serializeCategories(businessCategories);
   const normalizedBaseDomain = normalizeStorefrontBaseDomain(storefrontBaseDomain);
 
@@ -236,6 +237,16 @@ export function ShopOnboardingForm({
 
   function goBack() {
     setStep((value) => Math.max(0, value - 1));
+  }
+
+  async function signOut() {
+    if (isSigningOut) return;
+    setIsSigningOut(true);
+    await fetch("/admin/sign-out", {
+      headers: { accept: "application/json" },
+      method: "POST",
+    }).catch(() => null);
+    window.location.assign("/admin/sign-in");
   }
 
   async function submitOnboarding(event: React.FormEvent<HTMLFormElement>) {
@@ -410,6 +421,16 @@ export function ShopOnboardingForm({
                   {current.detail}
                 </p>
               </div>
+              <Button
+                disabled={isSigningOut}
+                onClick={() => void signOut()}
+                size="sm"
+                type="button"
+                variant="ghost"
+              >
+                {isSigningOut ? <AppIcons.loader className="animate-spin" /> : <AppIcons.logout />}
+                {isSigningOut ? t("account.signingOut") : t("account.signOut")}
+              </Button>
             </div>
             <div className="mt-5 h-1 overflow-hidden rounded-full bg-muted sm:mt-6">
               <div
