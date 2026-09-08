@@ -39,7 +39,7 @@ const translate = (key: string) => key;
 
 test("orders the real launch path and does not invent optional completion", () => {
   const items = getLaunchChecklistItems(
-    { ...access, productCount: 0 },
+    { ...access, hasVisitedEditor: false, productCount: 0 },
     translate as Parameters<typeof getLaunchChecklistItems>[1],
   );
 
@@ -47,17 +47,27 @@ test("orders the real launch path and does not invent optional completion", () =
     items.map((item) => item.id),
     ["profile", "design", "catalog", "publish", "fulfillment", "payments"],
   );
-  assert.equal(items.find((item) => item.id === "catalog")?.current, true);
+  assert.equal(items.find((item) => item.id === "design")?.current, true);
   assert.equal(items.find((item) => item.id === "fulfillment")?.ready, false);
   assert.equal(items.find((item) => item.id === "payments")?.ready, false);
 });
 
 test("points a configured storefront directly to the editor", () => {
   const design = getLaunchChecklistItems(
-    { ...access, productCount: 1 },
+    { ...access, hasVisitedEditor: true, productCount: 1 },
     translate as Parameters<typeof getLaunchChecklistItems>[1],
   ).find((item) => item.id === "design");
 
   assert.equal(design?.ready, true);
   assert.equal(design?.href, "/admin/editor");
+});
+
+test("does not complete storefront review from template selection alone", () => {
+  const design = getLaunchChecklistItems(
+    { ...access, hasVisitedEditor: false, productCount: 1 },
+    translate as Parameters<typeof getLaunchChecklistItems>[1],
+  ).find((item) => item.id === "design");
+
+  assert.equal(design?.ready, false);
+  assert.equal(design?.current, true);
 });

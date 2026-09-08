@@ -24,6 +24,7 @@ export type LaunchChecklistItem = {
 };
 
 export type LaunchAssistantData = MerchantDashboardAccess & {
+  hasVisitedEditor: boolean;
   productCount: number;
 };
 
@@ -39,7 +40,8 @@ export function getLaunchChecklistItems(
     summary.storefront.templateKey ?? summary.storefront.templateId,
   );
   const hasPublishedStorefront = summary.storefront.isPublished;
-  const requiredStates = [hasShopProfile, hasStorefrontDraft, hasCatalog, hasPublishedStorefront];
+  const hasReviewedStorefront = hasPublishedStorefront || (hasStorefrontDraft && summary.hasVisitedEditor);
+  const requiredStates = [hasShopProfile, hasReviewedStorefront, hasCatalog, hasPublishedStorefront];
   const nextRequiredIndex = requiredStates.findIndex((state) => !state);
 
   const required: Omit<LaunchChecklistItem, "current">[] = [
@@ -56,10 +58,10 @@ export function getLaunchChecklistItems(
     {
       id: "design",
       label: t("overview.launch.storefrontDesign"),
-      description: hasStorefrontDraft
+      description: hasReviewedStorefront
         ? t("overview.launch.storefrontSelected")
         : t("overview.launch.chooseStorefront"),
-      ready: hasStorefrontDraft,
+      ready: hasReviewedStorefront,
       href: hasStorefrontDraft
         ? dashboardRoutes.editor
         : `${dashboardRoutes.settings}?tab=storefront`,
@@ -82,7 +84,7 @@ export function getLaunchChecklistItems(
         ? t("overview.launch.customersCanAccess")
         : t("overview.launch.reviewAndPublish"),
       ready: hasPublishedStorefront,
-      href: `${dashboardRoutes.settings}?tab=storefront`,
+      href: dashboardRoutes.editor,
       required: true,
     },
   ];
