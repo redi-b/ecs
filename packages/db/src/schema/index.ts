@@ -13,6 +13,7 @@ export * from "./onboarding.js";
 export * from "./payment-banks.js";
 export * from "./platform-access.js";
 export * from "./product-imports.js";
+export * from "./product-option-sets.js";
 export * from "./provisioning.js";
 export * from "./receiving-accounts.js";
 export * from "./storefront.js";

@@ -45,6 +45,7 @@ import { reconcileChapaBillingPayments } from "./modules/billing/reconcile-payme
 import { createBillingService, isPlatformBillingTxRef } from "./modules/billing/service.js";
 import { createMedusaOrderService } from "./modules/commerce/order-management.js";
 import { createMedusaProductService } from "./modules/commerce/product-catalog.js";
+import { createProductOptionSetService } from "./modules/commerce/product-option-sets.js";
 import { createDataExportAuditRecorder } from "./modules/data-transfer/export-audit.js";
 import { createProductImportArtifactService } from "./modules/data-transfer/product-import-artifact.js";
 import { createProductImportExecutionService } from "./modules/data-transfer/product-import-execution.js";
@@ -366,6 +367,7 @@ const getSuperadminCommerceReview = createSuperadminCommerceReviewService({
 const receivingAccountsService = createReceivingAccountsService(platformDb.db, {
   encryptionKey: process.env.PAYMENTS_CREDENTIALS_ENCRYPTION_KEY ?? process.env.CHAPA_SECRET_KEY,
 });
+const productOptionSetService = createProductOptionSetService(platformDb.db);
 const medusaInternalUrl = process.env.MEDUSA_INTERNAL_URL ?? "http://localhost:9000";
 const storefrontInternalBaseUrl =
   process.env.STOREFRONT_INTERNAL_BASE_URL ?? "http://localhost:4321";
@@ -912,6 +914,10 @@ const app = createPlatformApp({
   listMerchantPromotions: promotionService.listPromotions,
   listMerchantCustomerGroups: customerService.listGroups,
   listMerchantProducts: productService.listMerchantProducts,
+  listMerchantProductOptionSets: productOptionSetService.list,
+  createMerchantProductOptionSet: productOptionSetService.create,
+  updateMerchantProductOptionSet: productOptionSetService.update,
+  deleteMerchantProductOptionSet: productOptionSetService.remove,
   listMerchantProductCategories: productService.listMerchantProductCategories,
   listMerchantProductCollections: productService.listMerchantProductCollections,
   listMediaAssets: mediaService.listMedia,
