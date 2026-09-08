@@ -2,6 +2,7 @@ import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { AuthShell } from "@/components/onboarding/auth-shell";
+import { OnboardingSignOutButton } from "@/components/onboarding/onboarding-sign-out-button";
 import { ShopOnboardingForm } from "@/components/onboarding/signup-onboarding-form";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { getTranslations } from "@/i18n/server";
@@ -96,6 +97,7 @@ export default async function OnboardingPage({ searchParams }: OnboardingPagePro
       brandDescription={t("onboarding.description")}
       brandTitle={t("onboarding.title")}
       layout="setup"
+      toolbar={<OnboardingSignOutButton />}
     >
       {!templatesResult.ok ? (
         <Alert className="mb-6" variant="destructive">

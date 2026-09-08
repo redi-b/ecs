@@ -66,7 +66,7 @@ export const appRoutes: AppRoute[] = [
       },
       {
         id: "product-options",
-        title: "Saved options",
+        title: "Product options",
         href: dashboardRoutes.productOptions,
         icon: AppIcons.tag,
         section: "commerce",

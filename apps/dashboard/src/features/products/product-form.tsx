@@ -13,6 +13,7 @@ import {
   DialogStepRail,
   getDialogStepStatus,
 } from "@/components/app/dialog-step-rail";
+import { HelpTip } from "@/components/app/help-tip";
 import { AppIcons } from "@/components/app/icons";
 import { UnsavedChangesDialog } from "@/components/app/unsaved-changes-dialog";
 import { Badge } from "@/components/ui/badge";
@@ -658,22 +659,10 @@ export function ProductForm({
                               <Field>
                                 <FieldLabel className="flex items-center gap-1.5">
                                   {t("products.composer.fieldCollection")}
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <Button
-                                        aria-label={t("products.composer.collectionHelpLabel")}
-                                        className="size-5 rounded-full text-muted-foreground"
-                                        size="icon-xs"
-                                        type="button"
-                                        variant="ghost"
-                                      >
-                                        <AppIcons.question />
-                                      </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent className="max-w-64">
-                                      {t("products.composer.collectionHelp")}
-                                    </TooltipContent>
-                                  </Tooltip>
+                                  <HelpTip
+                                    label={t("products.composer.collectionHelpLabel")}
+                                    summary={t("products.composer.collectionHelp")}
+                                  />
                                 </FieldLabel>
                                 <CollectionPicker
                                   collections={collections}
@@ -693,22 +682,10 @@ export function ProductForm({
                             <FieldSet>
                               <FieldLegend className="flex items-center gap-1.5" variant="label">
                                 {t("products.composer.fieldCategories")}
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Button
-                                      aria-label={t("products.composer.categoriesHelpLabel")}
-                                      className="size-5 rounded-full text-muted-foreground"
-                                      size="icon-xs"
-                                      type="button"
-                                      variant="ghost"
-                                    >
-                                      <AppIcons.question />
-                                    </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent className="max-w-64">
-                                    {t("products.composer.categoriesHelp")}
-                                  </TooltipContent>
-                                </Tooltip>
+                                <HelpTip
+                                  label={t("products.composer.categoriesHelpLabel")}
+                                  summary={t("products.composer.categoriesHelp")}
+                                />
                               </FieldLegend>
                               <CategoryPicker
                                 categories={categories}

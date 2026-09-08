@@ -95,7 +95,6 @@ export function ShopOnboardingForm({
   });
   const [submitError, setSubmitError] = useState<string | null>(errorMessage);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSigningOut, setIsSigningOut] = useState(false);
   const businessCategory = serializeCategories(businessCategories);
   const normalizedBaseDomain = normalizeStorefrontBaseDomain(storefrontBaseDomain);
 
@@ -237,16 +236,6 @@ export function ShopOnboardingForm({
 
   function goBack() {
     setStep((value) => Math.max(0, value - 1));
-  }
-
-  async function signOut() {
-    if (isSigningOut) return;
-    setIsSigningOut(true);
-    await fetch("/admin/sign-out", {
-      headers: { accept: "application/json" },
-      method: "POST",
-    }).catch(() => null);
-    window.location.assign("/admin/sign-in");
   }
 
   async function submitOnboarding(event: React.FormEvent<HTMLFormElement>) {
@@ -406,31 +395,19 @@ export function ShopOnboardingForm({
       <div className="min-w-0">
         <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
           <div className="border-b px-4 py-5 sm:px-8 sm:py-7">
-            <div className="flex flex-wrap items-start justify-between gap-3 sm:gap-4">
-              <div className="min-w-0 max-w-xl">
-                <p className="text-xs font-medium text-muted-foreground">
-                  {t("onboarding.stepOf", {
-                    current: String(step + 1),
-                    total: String(steps.length),
-                  })}
-                </p>
-                <h2 className="mt-2 text-lg font-semibold tracking-tight sm:text-[1.35rem]">
-                  {current.title}
-                </h2>
-                <p className="mt-2 text-sm leading-relaxed text-pretty text-muted-foreground">
-                  {current.detail}
-                </p>
-              </div>
-              <Button
-                disabled={isSigningOut}
-                onClick={() => void signOut()}
-                size="sm"
-                type="button"
-                variant="ghost"
-              >
-                {isSigningOut ? <AppIcons.loader className="animate-spin" /> : <AppIcons.logout />}
-                {isSigningOut ? t("account.signingOut") : t("account.signOut")}
-              </Button>
+            <div className="max-w-xl">
+              <p className="text-xs font-medium text-muted-foreground">
+                {t("onboarding.stepOf", {
+                  current: String(step + 1),
+                  total: String(steps.length),
+                })}
+              </p>
+              <h2 className="mt-2 text-lg font-semibold tracking-tight sm:text-[1.35rem]">
+                {current.title}
+              </h2>
+              <p className="mt-2 text-sm leading-relaxed text-pretty text-muted-foreground">
+                {current.detail}
+              </p>
             </div>
             <div className="mt-5 h-1 overflow-hidden rounded-full bg-muted sm:mt-6">
               <div
