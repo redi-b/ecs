@@ -4,6 +4,7 @@ import {
   closestCenter,
   DndContext,
   type DragEndEvent,
+  type Modifier,
   KeyboardSensor,
   PointerSensor,
   useSensor,
@@ -33,6 +34,21 @@ import { createMediaUploadId } from "./media-upload-id";
 
 const acceptedTypes = new Set(["image/avif", "image/gif", "image/jpeg", "image/png", "image/webp"]);
 const maxByteSize = 15 * 1024 * 1024;
+
+const keepDragInsideGallery: Modifier = ({ containerNodeRect, draggingNodeRect, transform }) => {
+  if (!containerNodeRect || !draggingNodeRect) return transform;
+  return {
+    ...transform,
+    x: Math.min(
+      Math.max(transform.x, containerNodeRect.left - draggingNodeRect.left),
+      containerNodeRect.right - draggingNodeRect.right,
+    ),
+    y: Math.min(
+      Math.max(transform.y, containerNodeRect.top - draggingNodeRect.top),
+      containerNodeRect.bottom - draggingNodeRect.bottom,
+    ),
+  };
+};
 
 type PendingUpload = {
   error: string | null;
@@ -393,6 +409,7 @@ export function MediaUploadField({
           className="sr-only"
           multiple
           onChange={(event) => {
+            event.stopPropagation();
             void queueFiles(Array.from(event.target.files ?? []));
             event.target.value = "";
           }}
@@ -428,6 +445,7 @@ export function MediaUploadField({
           <div className="max-h-[min(70vh,28rem)] min-w-0 max-w-full overflow-auto overscroll-contain rounded-2xl border bg-muted/10 p-3 sm:max-h-[min(72vh,32rem)]">
             <DndContext
               collisionDetection={closestCenter}
+              modifiers={[keepDragInsideGallery]}
               onDragEnd={reorderUploaded}
               sensors={sensors}
             >
