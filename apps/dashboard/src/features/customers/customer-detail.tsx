@@ -28,7 +28,7 @@ import {
   getPaymentStatusLabel,
 } from "@/features/orders/order-domain";
 import { useI18n } from "@/i18n/provider";
-import { isWalkInCustomerEmail } from "@/lib/customer-identity";
+import { getDisplayCustomerEmail, isWalkInCustomerEmail } from "@/lib/customer-identity";
 import type { MerchantCustomer } from "@/lib/merchant-customers";
 import { dashboardRoutes } from "@/lib/routes";
 import { cn } from "@/lib/utils";
@@ -45,7 +45,7 @@ function customerInitials(customer: MerchantCustomer) {
   const last = customer.lastName?.trim()?.[0];
   if (first && last) return `${first}${last}`.toUpperCase();
   if (first) return first.toUpperCase();
-  const emailLead = customer.email.trim()[0];
+  const emailLead = getDisplayCustomerEmail(customer.email)?.[0];
   return (emailLead ?? "?").toUpperCase();
 }
 
@@ -86,6 +86,7 @@ export function CustomerDetail({
   );
   const ordersHref = `${dashboardRoutes.orders}?customerId=${encodeURIComponent(customer.id)}`;
   const isWalkIn = isWalkInCustomerEmail(customer.email);
+  const displayEmail = getDisplayCustomerEmail(customer.email);
   const addressCount = customer.addresses.length;
   const contactDefaults = {
     firstName: customer.firstName,
@@ -101,7 +102,7 @@ export function CustomerDetail({
         : t("customers.orders.count", { count: ordersTotalCount });
 
   const metaParts: Array<{ key: string; node: ReactNode }> = [];
-  if (customer.phone) {
+  if (customer.phone && displayEmail) {
     metaParts.push({
       key: "phone",
       node: (
@@ -129,12 +130,21 @@ export function CustomerDetail({
             </div>
             <div className="min-w-0 space-y-1">
               <div className="flex flex-wrap items-center gap-2">
-                <a
-                  className="truncate text-sm font-medium hover:underline"
-                  href={`mailto:${customer.email}`}
-                >
-                  {customer.email}
-                </a>
+                {displayEmail ? (
+                  <a
+                    className="truncate text-sm font-medium hover:underline"
+                    href={`mailto:${displayEmail}`}
+                  >
+                    {displayEmail}
+                  </a>
+                ) : customer.phone ? (
+                  <a
+                    className="truncate text-sm font-medium hover:underline"
+                    href={`tel:${customer.phone}`}
+                  >
+                    {customer.phone}
+                  </a>
+                ) : null}
                 {groups.map((group) => (
                   <Badge key={group.id} className="font-normal" variant="secondary">
                     {group.name}

@@ -24,7 +24,8 @@
     "createErrorTitle": "Customer could not be created",
     "firstName": "First name",
     "lastName": "Last name",
-    "emailDesc": "Used for receipts and account recovery.",
+    "emailDesc": "Optional. Used for receipts when available.",
+    "phoneDesc": "Primary contact for orders, delivery, and customer lookup.",
     "companyPlaceholder": "Optional",
     "error": {
       "invalid": "Check the email and other fields, then try again.",
@@ -37,7 +38,7 @@
       "fallbackEdit": "Customer could not be updated. Try again.",
       "fallbackCreate": "Customer could not be created. Try again."
     },
-    "enterEmail": "Enter an email address.",
+    "enterPhone": "Enter a customer phone number.",
     "toastUpdated": "Customer updated.",
     "toastCreated": "Customer created.",
     "saveChanges": "Save changes",

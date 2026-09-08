@@ -9,7 +9,6 @@ import {
   getDialogStepStatus,
 } from "@/components/app/dialog-step-rail";
 import { AppIcons } from "@/components/app/icons";
-import Link from "@/components/app/link";
 import { SearchableCombobox } from "@/components/app/searchable-combobox";
 import { UnsavedChangesDialog } from "@/components/app/unsaved-changes-dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -25,7 +24,6 @@ import {
 } from "@/components/ui/dialog";
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import {
   ProductCatalogPickerDialog,
@@ -34,6 +32,7 @@ import {
 } from "@/features/products/product-catalog-picker-dialog";
 import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes-guard";
 import { useI18n } from "@/i18n/provider";
+import { getDisplayCustomerEmail } from "@/lib/customer-identity";
 import { mapPlatformErrorMessage } from "@/lib/platform-api/errors";
 import { dashboardRoutes } from "@/lib/routes";
 import { useCreateQueryOpen } from "@/lib/use-create-query-open";
@@ -253,7 +252,7 @@ function ManualOrderCreateDialogInner() {
             email: customer.email,
             firstName: customer.firstName ?? null,
             id: customer.id,
-            label: name ? `${name} · ${customer.email}` : customer.email,
+            label: [name, customer.phone].filter(Boolean).join(" · ") || customer.email,
             lastName: customer.lastName ?? null,
             phone: customer.phone ?? null,
           };
@@ -388,8 +387,7 @@ function ManualOrderCreateDialogInner() {
     if (customerMode === "existing") {
       return Boolean(customerId);
     }
-    const email = customerEmail.trim().toLowerCase();
-    return email.includes("@") && email.length >= 5;
+    return customerPhone.replace(/\D/g, "").length >= 8;
   }
 
   function canContinueFromItems() {
@@ -575,7 +573,7 @@ function ManualOrderCreateDialogInner() {
     setError(null);
 
     const payload = {
-      customerEmail: customerEmail.trim().toLowerCase(),
+      customerEmail: customerEmail.trim().toLowerCase() || null,
       customerFirstName: customerFirstName.trim() || null,
       customerId: customerMode === "existing" ? customerId : null,
       customerLastName: customerLastName.trim() || null,
@@ -744,16 +742,17 @@ function ManualOrderCreateDialogInner() {
                   ) : (
                     <section className="grid gap-4 sm:grid-cols-2">
                       <Field className="sm:col-span-2">
-                        <FieldLabel htmlFor="mo-email">{t("orders.create.email")}</FieldLabel>
+                        <FieldLabel htmlFor="mo-cp">{t("orders.create.phone")}</FieldLabel>
                         <Input
-                          autoComplete="email"
-                          id="mo-email"
-                          onChange={(event) => setCustomerEmail(event.target.value)}
-                          placeholder={t("orders.create.emailPlaceholder")}
-                          type="email"
-                          value={customerEmail}
+                          autoComplete="tel"
+                          id="mo-cp"
+                          onChange={(event) => setCustomerPhone(event.target.value)}
+                          placeholder={t("orders.create.phonePlaceholder")}
+                          required
+                          type="tel"
+                          value={customerPhone}
                         />
-                        <FieldDescription>{t("orders.create.emailDesc")}</FieldDescription>
+                        <FieldDescription>{t("orders.create.phoneDesc")}</FieldDescription>
                       </Field>
                       <Field>
                         <FieldLabel htmlFor="mo-cf">{t("orders.create.firstName")}</FieldLabel>
@@ -772,13 +771,16 @@ function ManualOrderCreateDialogInner() {
                         />
                       </Field>
                       <Field className="sm:col-span-2">
-                        <FieldLabel htmlFor="mo-cp">{t("orders.create.phone")}</FieldLabel>
+                        <FieldLabel htmlFor="mo-email">{t("orders.create.email")}</FieldLabel>
                         <Input
-                          id="mo-cp"
-                          onChange={(event) => setCustomerPhone(event.target.value)}
-                          placeholder={t("orders.create.phonePlaceholder")}
-                          value={customerPhone}
+                          autoComplete="email"
+                          id="mo-email"
+                          onChange={(event) => setCustomerEmail(event.target.value)}
+                          placeholder={t("orders.create.emailPlaceholder")}
+                          type="email"
+                          value={customerEmail}
                         />
+                        <FieldDescription>{t("orders.create.emailDesc")}</FieldDescription>
                       </Field>
                     </section>
                   )}
@@ -891,8 +893,16 @@ function ManualOrderCreateDialogInner() {
                       <dl className="space-y-1.5 text-sm">
                         <div className="flex justify-between gap-3">
                           <dt className="text-muted-foreground">{t("orders.create.customer")}</dt>
-                          <dd className="truncate font-medium">{customerEmail || "—"}</dd>
+                          <dd className="truncate font-medium">{customerPhone || "—"}</dd>
                         </div>
+                        {getDisplayCustomerEmail(customerEmail) ? (
+                          <div className="flex justify-between gap-3">
+                            <dt className="text-muted-foreground">{t("orders.create.email")}</dt>
+                            <dd className="truncate font-medium">
+                              {getDisplayCustomerEmail(customerEmail)}
+                            </dd>
+                          </div>
+                        ) : null}
                         <div className="flex justify-between gap-3">
                           <dt className="text-muted-foreground">{t("orders.create.items")}</dt>
                           <dd className="font-medium">

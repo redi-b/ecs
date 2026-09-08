@@ -1,5 +1,9 @@
 import { z } from "zod";
 import type { PlatformAppOptions } from "../../app.js";
+import {
+  getOperationalCustomerEmail,
+  normalizeOperationalPhone,
+} from "../../commerce/customer-identity.js";
 import { getPaginationValue } from "../shared.js";
 import type { MerchantRouteApp, MerchantRouteHelpers } from "./context.js";
 
@@ -9,6 +13,11 @@ const customerSchema = z.object({
   firstName: z.string().trim().max(80).nullish(),
   lastName: z.string().trim().max(80).nullish(),
   phone: z.string().trim().max(40).nullish(),
+});
+
+const createCustomerSchema = customerSchema.extend({
+  email: z.string().trim().email().nullish(),
+  phone: z.string().trim().min(8).max(40),
 });
 
 const addressSchema = z.object({
@@ -59,12 +68,22 @@ export function registerMerchantCustomerRoutes(
   app.post("/platform/merchant/customers", async (context) => {
     const merchant = await helpers.getAuthorizedMerchantContext(context);
     if (!merchant.ok) return merchant.response;
-    const parsed = customerSchema.safeParse(await context.req.json().catch(() => null));
+    const parsed = createCustomerSchema.safeParse(await context.req.json().catch(() => null));
     if (!parsed.success) return context.json({ error: "invalid_customer" }, 400);
     if (!options.createMerchantCustomer)
       return context.json({ error: "commerce_backend_unavailable" }, 503);
+    const phone = normalizeOperationalPhone(parsed.data.phone);
+    if (!phone) return context.json({ error: "invalid_customer" }, 400);
+    const email = getOperationalCustomerEmail({
+      email: parsed.data.email,
+      phone,
+      tenantId: merchant.result.context.tenantId,
+    });
+    if (!email) return context.json({ error: "invalid_customer" }, 400);
     const result = await options.createMerchantCustomer({
       ...parsed.data,
+      email,
+      phone: `+${phone}`,
       tenantId: merchant.result.context.tenantId,
     });
     return result.ok
@@ -74,13 +93,23 @@ export function registerMerchantCustomerRoutes(
   app.post("/platform/merchant/customers/:customerId", async (context) => {
     const merchant = await helpers.getAuthorizedMerchantContext(context);
     if (!merchant.ok) return merchant.response;
-    const parsed = customerSchema.safeParse(await context.req.json().catch(() => null));
+    const parsed = createCustomerSchema.safeParse(await context.req.json().catch(() => null));
     if (!parsed.success) return context.json({ error: "invalid_customer" }, 400);
     if (!options.updateMerchantCustomer)
       return context.json({ error: "commerce_backend_unavailable" }, 503);
+    const phone = normalizeOperationalPhone(parsed.data.phone);
+    if (!phone) return context.json({ error: "invalid_customer" }, 400);
+    const email = getOperationalCustomerEmail({
+      email: parsed.data.email,
+      phone,
+      tenantId: merchant.result.context.tenantId,
+    });
+    if (!email) return context.json({ error: "invalid_customer" }, 400);
     const result = await options.updateMerchantCustomer({
       ...parsed.data,
       customerId: context.req.param("customerId"),
+      email,
+      phone: `+${phone}`,
       tenantId: merchant.result.context.tenantId,
     });
     return result.ok ? context.json(result) : context.json({ error: result.error }, result.status);

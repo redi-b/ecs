@@ -19,13 +19,19 @@ import { CustomerFormDialog } from "@/features/customers/customer-form-dialog";
 import type { MessageKey } from "@/i18n/messages";
 import { useI18n } from "@/i18n/provider";
 import { copyTextToClipboard } from "@/lib/clipboard";
+import { getDisplayCustomerEmail } from "@/lib/customer-identity";
 import { listEntityLinkClassName } from "@/lib/list-entity-link";
 import type { MerchantCustomer } from "@/lib/merchant-customers";
 import { dashboardRoutes } from "@/lib/routes";
 import { cn } from "@/lib/utils";
 
 function customerDisplayName(customer: MerchantCustomer) {
-  return [customer.firstName, customer.lastName].filter(Boolean).join(" ") || customer.email;
+  return (
+    [customer.firstName, customer.lastName].filter(Boolean).join(" ") ||
+    customer.phone ||
+    getDisplayCustomerEmail(customer.email) ||
+    "Customer"
+  );
 }
 
 type Translate = (key: MessageKey, values?: Record<string, string | number | Date>) => string;
@@ -121,18 +127,22 @@ export function CustomersTable({
               >
                 {customerDisplayName(row.original)}
               </Link>
-              <p className="truncate text-xs text-muted-foreground">{row.original.email}</p>
+              {row.original.phone ? (
+                <p className="truncate text-xs text-muted-foreground">{row.original.phone}</p>
+              ) : null}
             </div>
           );
         },
       },
       {
-        accessorKey: "phone",
+        accessorKey: "email",
         header: ({ column }) => (
-          <DataTableHeader column={column} title={t("customers.detail.phone")} />
+          <DataTableHeader column={column} title={t("customers.detail.email")} />
         ),
         cell: ({ row }) => (
-          <span className="text-sm text-muted-foreground">{row.original.phone || "—"}</span>
+          <span className="text-sm text-muted-foreground">
+            {getDisplayCustomerEmail(row.original.email) || "—"}
+          </span>
         ),
       },
       {
@@ -200,18 +210,19 @@ export function CustomersTable({
                 },
                 { id: "copy", type: "separator" },
                 {
-                  icon: AppIcons.copy,
-                  label: t("table.actions.copyEmail"),
-                  onSelect: () =>
-                    void copyToClipboard(customer.email, t("customers.detail.email"), t),
-                  type: "button",
-                },
-                {
                   disabled: !customer.phone,
                   icon: AppIcons.copy,
                   label: t("table.actions.copyPhone"),
                   onSelect: () =>
                     void copyToClipboard(customer.phone ?? "", t("customers.detail.phone"), t),
+                  type: "button",
+                },
+                {
+                  disabled: !getDisplayCustomerEmail(customer.email),
+                  icon: AppIcons.copy,
+                  label: t("table.actions.copyEmail"),
+                  onSelect: () =>
+                    void copyToClipboard(customer.email, t("customers.detail.email"), t),
                   type: "button",
                 },
               ]}
@@ -232,21 +243,6 @@ export function CustomersTable({
         bulkActions={(selectedCustomers) => (
           <div className="flex items-center gap-2">
             <Button
-              onClick={() =>
-                void copyToClipboard(
-                  selectedCustomers.map((customer) => customer.email).join("\n"),
-                  t("customers.table.emails"),
-                  t,
-                )
-              }
-              size="sm"
-              type="button"
-              variant="outline"
-            >
-              <AppIcons.copy data-icon="inline-start" />
-              {t("customers.table.copyEmails")}
-            </Button>
-            <Button
               disabled={!selectedCustomers.some((customer) => customer.phone)}
               onClick={() =>
                 void copyToClipboard(
@@ -264,6 +260,27 @@ export function CustomersTable({
             >
               <AppIcons.copy data-icon="inline-start" />
               {t("customers.table.copyPhones")}
+            </Button>
+            <Button
+              disabled={
+                !selectedCustomers.some((customer) => getDisplayCustomerEmail(customer.email))
+              }
+              onClick={() =>
+                void copyToClipboard(
+                  selectedCustomers
+                    .map((customer) => getDisplayCustomerEmail(customer.email))
+                    .filter((email): email is string => Boolean(email))
+                    .join("\n"),
+                  t("customers.table.emails"),
+                  t,
+                )
+              }
+              size="sm"
+              type="button"
+              variant="outline"
+            >
+              <AppIcons.copy data-icon="inline-start" />
+              {t("customers.table.copyEmails")}
             </Button>
           </div>
         )}

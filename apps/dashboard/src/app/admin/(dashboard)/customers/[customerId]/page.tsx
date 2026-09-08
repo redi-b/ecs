@@ -8,6 +8,7 @@ import { RefreshButton } from "@/components/app/refresh-button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { CustomerDetail, CustomerDetailPageActions } from "@/features/customers/customer-detail";
 import { getTranslations } from "@/i18n/server";
+import { getDisplayCustomerEmail } from "@/lib/customer-identity";
 import { getListErrorState } from "@/lib/list-error-state";
 import { getMerchantCustomer } from "@/lib/merchant-customers";
 import { getMerchantOrders } from "@/lib/merchant-orders";
@@ -46,7 +47,11 @@ export default async function CustomerDetailPage({
   }
 
   const customer = result.customer;
-  const name = [customer.firstName, customer.lastName].filter(Boolean).join(" ") || customer.email;
+  const name =
+    [customer.firstName, customer.lastName].filter(Boolean).join(" ") ||
+    customer.phone ||
+    getDisplayCustomerEmail(customer.email) ||
+    t("table.headers.customer");
   const ordersResult = await getMerchantOrders({
     ...requestContext,
     customerId: customer.id,

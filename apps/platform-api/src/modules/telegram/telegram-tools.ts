@@ -9,6 +9,11 @@ import type {
   MerchantProductStockUpdateResult,
 } from "../../types/index.js";
 import type { ManualOrderResult } from "../../adapters/medusa/manual-order-service.js";
+import {
+  getOperationalCustomerEmail,
+  isSyntheticCustomerEmail,
+  normalizeOperationalPhone,
+} from "../../commerce/customer-identity.js";
 import { formatMoneyAmount, formatOrderRef } from "../notifications/renderer.js";
 import {
   answerTelegramCallbackQuery,
@@ -149,16 +154,6 @@ function asRecord(value: unknown): Record<string, unknown> | null {
   return null;
 }
 
-/** One shared offline customer email per shop when the operator chooses Walk-in. */
-function walkInEmail(tenantHandle: string | null): string {
-  const handle =
-    (tenantHandle ?? "shop")
-      .toLowerCase()
-      .replace(/[^a-z0-9-]+/g, "-")
-      .replace(/^-+|-+$/g, "") || "shop";
-  return `walk-in@${handle}.local`;
-}
-
 function isValidCustomerEmail(value: string): boolean {
   const email = value.trim().toLowerCase();
   if (email.length < 5 || email.length > 120) return false;
@@ -167,14 +162,14 @@ function isValidCustomerEmail(value: string): boolean {
 }
 
 function isWalkInEmail(email: string): boolean {
-  return /^walk-in@/i.test(email.trim()) && email.trim().toLowerCase().endsWith(".local");
+  return isSyntheticCustomerEmail(email);
 }
 
 /**
  * Medusa needs an email on the order/customer record.
  * - Real email: find-or-create that customer; store name + phone on the profile.
- * - Walk-in: one stable offline customer per shop. Name/phone stay on the *order*
- *   only so the Customers list does not thrash with every counter sale.
+ * - No email: one stable offline customer per shop and phone, so repeat sales
+ *   remain discoverable without exposing the internal placeholder address.
  */
 async function ensureSaleCustomer(
   deps: TelegramToolsDeps,
@@ -187,22 +182,20 @@ async function ensureSaleCustomer(
   },
 ): Promise<{ email: string; customerId?: string }> {
   const email = input.email.trim().toLowerCase();
+  const phone = normalizeOperationalPhone(input.phone);
   if (!deps.ensureMerchantCustomer) {
     return { email };
   }
 
-  const walkIn = isWalkInEmail(email);
   const ensured = await deps.ensureMerchantCustomer({
     tenantId: input.tenantId,
     email,
-    // Shared walk-in profile stays generic; per-sale phone/name go on the order.
-    phone: walkIn ? null : input.phone,
-    firstName: walkIn
-      ? "Walk-in"
-      : input.firstName && !/^customer$/i.test(input.firstName)
+    phone: phone ? `+${phone}` : input.phone,
+    firstName:
+      input.firstName && !/^customer$/i.test(input.firstName)
         ? input.firstName
         : null,
-    lastName: walkIn ? null : input.lastName || null,
+    lastName: input.lastName || null,
   });
   if (ensured.ok) {
     return { email: ensured.customer.email || email, customerId: ensured.customer.id };
@@ -1369,7 +1362,11 @@ export async function handleTelegramToolsCallback(
       chatId,
       telegramUserId,
       dialog,
-      email: walkInEmail(ctx.tenantHandle),
+      email:
+        getOperationalCustomerEmail({
+          phone: dialog.customerPhone,
+          tenantId: dialog.tenantId,
+        }) ?? "",
     });
     return { handled: true, reason: "walkin" };
   }

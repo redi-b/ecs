@@ -32,6 +32,7 @@ import {
 import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes-guard";
 import type { MessageKey } from "@/i18n/messages";
 import { useI18n } from "@/i18n/provider";
+import { isSyntheticCustomerEmail } from "@/lib/customer-identity";
 import type { MerchantCustomer } from "@/lib/merchant-customers";
 
 /**
@@ -87,15 +88,17 @@ export function CustomerFormDialog({
 
     const payload = {
       companyName: String(formData.get("companyName") ?? "").trim() || null,
-      email: String(formData.get("email") ?? "").trim(),
+      email:
+        String(formData.get("email") ?? "").trim() ||
+        (customer && isSyntheticCustomerEmail(customer.email) ? customer.email : null),
       firstName: String(formData.get("firstName") ?? "").trim() || null,
       lastName: String(formData.get("lastName") ?? "").trim() || null,
       phone: String(formData.get("phone") ?? "").trim() || null,
     };
 
-    if (!payload.email) {
+    if (!payload.phone) {
       setSaving(false);
-      setError(t("customers.detail.enterEmail"));
+      setError(t("customers.detail.enterPhone"));
       return;
     }
 
@@ -163,19 +166,6 @@ export function CustomerFormDialog({
         />
       </Field>
       <Field className="sm:col-span-2">
-        <FieldLabel htmlFor={`${id}-email`}>{t("customers.detail.email")}</FieldLabel>
-        <Input
-          autoComplete="email"
-          defaultValue={customer?.email ?? ""}
-          id={`${id}-email`}
-          name="email"
-          placeholder={t("customers.detail.emailPlaceholder")}
-          required
-          type="email"
-        />
-        <FieldDescription>{t("customers.detail.emailDesc")}</FieldDescription>
-      </Field>
-      <Field>
         <FieldLabel htmlFor={`${id}-phone`}>{t("customers.detail.phone")}</FieldLabel>
         <Input
           autoComplete="tel"
@@ -183,7 +173,22 @@ export function CustomerFormDialog({
           id={`${id}-phone`}
           name="phone"
           placeholder={t("customers.detail.phonePlaceholder")}
+          required
+          type="tel"
         />
+        <FieldDescription>{t("customers.detail.phoneDesc")}</FieldDescription>
+      </Field>
+      <Field className="sm:col-span-2">
+        <FieldLabel htmlFor={`${id}-email`}>{t("customers.detail.email")}</FieldLabel>
+        <Input
+          autoComplete="email"
+          defaultValue={customer && !isSyntheticCustomerEmail(customer.email) ? customer.email : ""}
+          id={`${id}-email`}
+          name="email"
+          placeholder={t("customers.detail.emailPlaceholder")}
+          type="email"
+        />
+        <FieldDescription>{t("customers.detail.emailDesc")}</FieldDescription>
       </Field>
       <Field>
         <FieldLabel htmlFor={`${id}-company`}>{t("customers.detail.company")}</FieldLabel>

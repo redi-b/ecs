@@ -302,8 +302,7 @@ export function createMedusaCustomerService(options: Options) {
     if (!linked.ok) return linked;
 
     // Optionally refresh profile when linking into a new shop (never for walk-in placeholders).
-    const emailKey = email;
-    const walkIn = emailKey.startsWith("walk-in@") || emailKey.endsWith(".local");
+    const walkIn = isWalkInCustomerEmail(email);
     if (!walkIn && (input.firstName || input.lastName || input.phone || input.companyName)) {
       await fetcher(`${base}/admin/customers/${encodeURIComponent(existing.id)}`, {
         body: JSON.stringify(toPayload(input)),
@@ -335,7 +334,7 @@ export function createMedusaCustomerService(options: Options) {
     if (!group.ok) return group;
     const tenantGroupRecord = group.group;
     const email = input.email.trim().toLowerCase();
-    const isWalkIn = email.startsWith("walk-in@") || email.endsWith(".local");
+    const isWalkIn = isWalkInCustomerEmail(email);
 
     const existing = await findByEmail(email);
     if (existing?.groups.some((item) => item.id === tenantGroupRecord.id)) {
@@ -556,8 +555,7 @@ function isWalkInCustomerEmail(email: string | null | undefined): boolean {
   return (
     e.startsWith("walk-in@") ||
     e.endsWith("@orders.local") ||
-    e.startsWith("telegram+") ||
-    e.endsWith(".local")
+    e.startsWith("telegram+")
   );
 }
 
