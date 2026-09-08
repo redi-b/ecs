@@ -58,6 +58,7 @@ const COMMON_PRODUCT_COLOR_OPTIONS = COMMON_PRODUCT_COLORS.map(([label, value]) 
   value,
   keywords: `${label} ${value}`,
 }));
+const MAX_PRODUCT_VARIANTS = 100;
 
 function ProductColorPopover({
   label,
@@ -385,6 +386,14 @@ export function ProductOptionsBuilder({
   }
 
   function addSavedOption(optionSet: SavedProductOptionSet) {
+    const existingCombinations = options.reduce(
+      (total, option) => total * Math.max(option.values.length, 1),
+      1,
+    );
+    if (existingCombinations * optionSet.values.length > MAX_PRODUCT_VARIANTS) {
+      toast.error(t("products.validation.variantLimit", { count: MAX_PRODUCT_VARIANTS }));
+      return;
+    }
     onChange([
       ...options,
       {
@@ -423,18 +432,34 @@ export function ProductOptionsBuilder({
       return;
     }
 
+    const otherCombinations = options.reduce(
+      (total, candidate, candidateIndex) =>
+        candidateIndex === index ? total : total * Math.max(candidate.values.length, 1),
+      1,
+    );
+    const availableSlots = Math.max(
+      0,
+      Math.floor(MAX_PRODUCT_VARIANTS / otherCombinations) - option.values.length,
+    );
+    const uniqueValues = values.filter(
+      (label, valueIndex) =>
+        values.findIndex(
+          (candidate) => candidate.toLocaleLowerCase() === label.toLocaleLowerCase(),
+        ) === valueIndex &&
+        !option.values.some(
+          (value) => value.label.toLocaleLowerCase() === label.toLocaleLowerCase(),
+        ),
+    );
+    const acceptedValues = uniqueValues.slice(0, availableSlots);
+    if (acceptedValues.length < uniqueValues.length) {
+      toast.error(t("products.validation.variantLimit", { count: MAX_PRODUCT_VARIANTS }));
+    }
+
     updateOption(index, {
       ...option,
       values: [
         ...option.values,
-        ...values
-          .filter(
-            (label) =>
-              !option.values.some(
-                (value) => value.label.toLocaleLowerCase() === label.toLocaleLowerCase(),
-              ),
-          )
-          .map((label) => ({ key: createClientId("value"), label })),
+        ...acceptedValues.map((label) => ({ key: createClientId("value"), label })),
       ],
     });
     setDraftValues((current) => ({ ...current, [index]: "" }));
@@ -477,6 +502,15 @@ export function ProductOptionsBuilder({
     const option = options[index];
     if (!option) return;
     if (option.values.some((item) => item.label.toLowerCase() === label.toLowerCase())) return;
+    const otherCombinations = options.reduce(
+      (total, candidate, candidateIndex) =>
+        candidateIndex === index ? total : total * Math.max(candidate.values.length, 1),
+      1,
+    );
+    if ((option.values.length + 1) * otherCombinations > MAX_PRODUCT_VARIANTS) {
+      toast.error(t("products.validation.variantLimit", { count: MAX_PRODUCT_VARIANTS }));
+      return;
+    }
     updateOption(index, {
       ...option,
       values: [

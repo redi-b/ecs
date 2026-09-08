@@ -498,6 +498,7 @@
     "optionNamesUnique": "ለእያንዳንዱ አማራጭ የተለየ ስም ይጠቀሙ።",
     "optionValuesUnique": "ከ{option} የተደጋገሙ እሴቶችን ያስወግዱ።",
     "variantRequired": "ቢያንስ አንድ ለሽያጭ የተዘጋጀ አማራጭ ያስቀሩ።",
+    "variantLimit": "ይህን ምርት እስከ {count} አማራጮች ያቆዩ።",
     "variantReserved": "የተያዘ ክምችት ያለው አማራጭ ሊወገድ አይችልም።",
     "reviewFields": "የምርት መስኮቹን ይመልከቱ እና እንደገና ይሞክሩ።",
     "handleConflict": "ይህ መለያ ሌላ ምርት ሊጠቀምበት ይችላል። መለያውን ቀይረው እንደገና ይሞክሩ።",

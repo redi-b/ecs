@@ -498,6 +498,7 @@
     "optionNamesUnique": "Use a different name for each option.",
     "optionValuesUnique": "Remove duplicate values from {option}.",
     "variantRequired": "Keep at least one sellable variant.",
+    "variantLimit": "Keep this product to {count} variants or fewer.",
     "variantReserved": "A variant with reserved stock cannot be removed.",
     "reviewFields": "Review the product fields and try again.",
     "handleConflict": "A product with this handle may already exist. Change the handle and try again.",
