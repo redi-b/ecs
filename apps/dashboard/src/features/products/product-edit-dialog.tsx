@@ -13,6 +13,14 @@ import { AppIcons } from "@/components/app/icons";
 import { UnsavedChangesDialog } from "@/components/app/unsaved-changes-dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { RichTextEditor } from "@/components/ui/rich-text-editor";
@@ -40,8 +48,7 @@ import {
   NO_COLLECTION_VALUE,
 } from "@/features/products/product-form-fields";
 import {
-  ProductOptionsBuilder,
-  VariantMatrixTable,
+  ProductOptionsWorkspace,
 } from "@/features/products/product-form-sections";
 import {
   getProductDefaultValues,
@@ -300,10 +307,18 @@ export function ProductMediaEditButton({ action, product }: ProductEditSheetBase
 
 export function ProductOptionsEditButton({ action, product }: ProductEditSheetBaseProps) {
   const { t } = useI18n();
+  const router = useRouter();
   const [values, setValues] = useState<ProductFormValues>(() => ({
     ...getProductDefaultValues(product),
     hasVariants: true,
   }));
+  const [open, setOpen] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [dirty, setDirty] = useState(false);
+  const { leaveDialogOpen, requestLeave, confirmLeave, cancelLeave } = useUnsavedChangesGuard(
+    dirty && open,
+  );
   const removedVariants = getRemovedExistingVariants(values);
 
   function reset() {
@@ -312,62 +327,130 @@ export function ProductOptionsEditButton({ action, product }: ProductEditSheetBa
 
   function update(next: Partial<ProductFormValues>) {
     setValues((current) => ({ ...current, ...next }));
+    setDirty(true);
+  }
+
+  function requestClose() {
+    requestLeave(() => setOpen(false));
+  }
+
+  async function submitEdit() {
+    let payload: Record<string, unknown>;
+    try {
+      const productPayload = getProductPayload(values, { includeOptions: true }, t);
+      payload = { options: productPayload.options, variants: productPayload.variants };
+    } catch (submitError) {
+      setError(submitError instanceof Error ? submitError.message : t("products.edit.formError"));
+      return;
+    }
+
+    setIsSaving(true);
+    setError(null);
+    const response = await fetch(action, {
+      body: JSON.stringify(payload),
+      headers: { accept: "application/json", "content-type": "application/json" },
+      method: "POST",
+    }).catch(() => null);
+    const data = (await response?.json().catch(() => ({}))) as { error?: string };
+    setIsSaving(false);
+    if (!response?.ok) {
+      setError(getProductEditErrorMessage(data.error, t));
+      return;
+    }
+    toast.success(t("products.edit.toastSaved"));
+    setDirty(false);
+    setOpen(false);
+    router.refresh();
   }
 
   return (
-    <ProductEditSheet
-      action={action}
-      buildPayload={() => {
-        const payload = getProductPayload(values, { includeOptions: true }, t);
-        return { options: payload.options, variants: payload.variants };
-      }}
-      contentClassName="sm:max-w-5xl"
-      description={t("products.edit.optionsDesc")}
-      onOpen={reset}
-      title={t("products.detail.editOptions")}
-      triggerLabel={t("products.detail.editOptions")}
-      triggerVariant="button"
-    >
-      <ProductOptionsBuilder
-        onChange={(options) => update({ options })}
-        options={values.options}
-      />
-      <VariantMatrixTable
-            onApplyDefaults={() => {
-              update({
-                variantOverrides: Object.fromEntries(
-                  getVariantRows(values).map((row) => [
-                    row.key,
-                    {
-                      ...values.variantOverrides[row.key],
-                      priceAmount: values.priceAmount,
-                      stockedQuantity: values.initialStock,
-                    },
-                  ]),
-                ),
-              });
+    <>
+      <Button
+        onClick={() => {
+          reset();
+          setError(null);
+          setDirty(false);
+          setOpen(true);
+        }}
+        size="sm"
+        type="button"
+        variant="outline"
+      >
+        <AppIcons.edit data-icon="inline-start" />
+        {t("products.detail.editOptions")}
+      </Button>
+      <Dialog onOpenChange={(nextOpen) => (nextOpen ? setOpen(true) : requestClose())} open={open}>
+        <DialogContent className="flex max-h-[min(92dvh,56rem)] max-w-[calc(100%-1rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-5xl">
+          <DialogHeader className="border-b px-4 py-4 pr-12 sm:px-5">
+            <DialogTitle>{t("products.detail.editOptions")}</DialogTitle>
+            <DialogDescription>{t("products.edit.optionsDesc")}</DialogDescription>
+          </DialogHeader>
+          <form
+            className="flex min-h-0 flex-1 flex-col"
+            onSubmit={(event) => {
+              event.preventDefault();
+              void submitEdit();
             }}
-            onOverrideChange={(key, override) =>
-              update({
-                variantOverrides: {
-                  ...values.variantOverrides,
-                  [key]: { ...values.variantOverrides[key], ...override },
-                },
-              })
-            }
-            rows={getVariantRows(values)}
-            values={values.variantOverrides}
-      />
-
-      {removedVariants.length ? (
-        <Alert>
-          <AlertTitle>{t("products.edit.variantRemovalTitle")}</AlertTitle>
-          <AlertDescription>
-            {t("products.edit.variantRemovalDesc", { count: removedVariants.length })}
-          </AlertDescription>
-        </Alert>
-      ) : null}
-    </ProductEditSheet>
+          >
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4 sm:p-5">
+              <div className="grid gap-4">
+                {error ? (
+                  <Alert variant="destructive">
+                    <AlertTitle>{t("products.edit.toastError")}</AlertTitle>
+                    <AlertDescription>{error}</AlertDescription>
+                  </Alert>
+                ) : null}
+                <ProductOptionsWorkspace
+                  onApplyDefaults={() => {
+                    update({
+                      variantOverrides: Object.fromEntries(
+                        getVariantRows(values).map((row) => [
+                          row.key,
+                          {
+                            ...values.variantOverrides[row.key],
+                            priceAmount: values.priceAmount,
+                            stockedQuantity: values.initialStock,
+                          },
+                        ]),
+                      ),
+                    });
+                  }}
+                  onOptionsChange={(options) => update({ options })}
+                  onOverrideChange={(key, override) =>
+                    update({
+                      variantOverrides: {
+                        ...values.variantOverrides,
+                        [key]: { ...values.variantOverrides[key], ...override },
+                      },
+                    })
+                  }
+                  options={values.options}
+                  rows={getVariantRows(values)}
+                  values={values.variantOverrides}
+                />
+                {removedVariants.length ? (
+                  <Alert>
+                    <AlertTitle>{t("products.edit.variantRemovalTitle")}</AlertTitle>
+                    <AlertDescription>
+                      {t("products.edit.variantRemovalDesc", { count: removedVariants.length })}
+                    </AlertDescription>
+                  </Alert>
+                ) : null}
+              </div>
+            </div>
+            <DialogFooter className="m-0 rounded-none px-4 py-3 sm:px-5">
+              <Button disabled={isSaving} onClick={requestClose} type="button" variant="outline">
+                {t("common.cancel")}
+              </Button>
+              <Button disabled={isSaving} type="submit">
+                {isSaving ? t("products.edit.saving") : t("products.edit.saveChanges")}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+      <UnsavedChangesDialog onLeave={confirmLeave} onStay={cancelLeave} open={leaveDialogOpen} />
+    </>
   );
 }
 

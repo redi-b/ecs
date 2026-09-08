@@ -49,9 +49,8 @@ import {
   hasFieldError,
 } from "@/features/products/product-form-fields";
 import {
-  ProductOptionsBuilder,
+  ProductOptionsWorkspace,
   ProductReviewSummary,
-  VariantMatrixTable,
 } from "@/features/products/product-form-sections";
 import {
   getDefaultSkuPrefix,
@@ -845,42 +844,39 @@ export function ProductForm({
                               <>
                                 <form.Field name="options">
                                   {(field) => (
-                                    <ProductOptionsBuilder
-                                      onChange={field.handleChange}
+                                    <ProductOptionsWorkspace
+                                      onApplyDefaults={() => {
+                                        const rows = getVariantRows(values);
+                                        form.setFieldValue(
+                                          "variantOverrides",
+                                          Object.fromEntries(
+                                            rows.map((row) => [
+                                              row.key,
+                                              {
+                                                ...values.variantOverrides[row.key],
+                                                priceAmount: values.priceAmount,
+                                                stockedQuantity: values.initialStock,
+                                              },
+                                            ]),
+                                          ),
+                                        );
+                                      }}
+                                      onOptionsChange={field.handleChange}
+                                      onOverrideChange={(key, override) => {
+                                        form.setFieldValue("variantOverrides", {
+                                          ...values.variantOverrides,
+                                          [key]: {
+                                            ...values.variantOverrides[key],
+                                            ...override,
+                                          },
+                                        });
+                                      }}
                                       options={field.state.value}
+                                      rows={getVariantRows(values)}
+                                      values={values.variantOverrides}
                                     />
                                   )}
                                 </form.Field>
-
-                                <VariantMatrixTable
-                                  onApplyDefaults={() => {
-                                    const rows = getVariantRows(values);
-                                    form.setFieldValue(
-                                      "variantOverrides",
-                                      Object.fromEntries(
-                                        rows.map((row) => [
-                                          row.key,
-                                          {
-                                            ...values.variantOverrides[row.key],
-                                            priceAmount: values.priceAmount,
-                                            stockedQuantity: values.initialStock,
-                                          },
-                                        ]),
-                                      ),
-                                    );
-                                  }}
-                                  onOverrideChange={(key, override) => {
-                                    form.setFieldValue("variantOverrides", {
-                                      ...values.variantOverrides,
-                                      [key]: {
-                                        ...values.variantOverrides[key],
-                                        ...override,
-                                      },
-                                    });
-                                  }}
-                                  rows={getVariantRows(values)}
-                                  values={values.variantOverrides}
-                                />
                               </>
                             ) : null
                           }
