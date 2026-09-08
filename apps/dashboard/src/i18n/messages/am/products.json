@@ -502,7 +502,16 @@
     "loadFailed": "የተቀመጡ አማራጮችን መጫን አልተቻለም።",
     "deleteTitle": "የተቀመጠው አማራጭ ይሰረዝ?",
     "deleteDescription": "ያሉ ምርቶች አማራጮቻቸውን ይይዛሉ። ይህ የሚሰርዘው እንደገና የሚጠቀሙበትን ቅጂ ብቻ ነው።",
-    "deleteAria": "{name}ን ሰርዝ"
+    "deleteAria": "{name}ን ሰርዝ",
+    "loadFailedTitle": "የምርት አማራጮችን መጫን አልተቻለም",
+    "actionsAria": "የ{name} ድርጊቶች",
+    "columnOption": "አማራጭ",
+    "columnValues": "እሴቶች",
+    "columnCount": "የእሴት ብዛት",
+    "searchLabel": "የምርት አማራጮችን ፈልግ",
+    "searchPlaceholder": "አማራጭ ወይም እሴት ፈልግ",
+    "filteredEmptyTitle": "የሚዛመድ የምርት አማራጭ የለም",
+    "filteredEmptyDescription": "ሌላ ፍለጋ ይሞክሩ።"
   },
   "validation": {
     "handleChecking": "መለያውን በማረጋገጥ ላይ…",
