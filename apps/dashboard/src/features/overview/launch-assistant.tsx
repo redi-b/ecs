@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { useI18n } from "@/i18n/provider";
 import {
   getLaunchAssistantOpenPreference,
+  hasVisitedStorefrontEditor,
   isLaunchAssistantHidden,
   LAUNCH_ASSISTANT_PREFERENCE_EVENT,
   setLaunchAssistantHidden,
@@ -22,9 +23,10 @@ import { getLaunchChecklistItems, type LaunchChecklistItem } from "./launch-assi
 export function LaunchAssistant({ access }: { access: MerchantDashboardAccess }) {
   const { t } = useI18n();
   const [productCount, setProductCount] = useState<number | null>(null);
+  const [hasVisitedEditor, setHasVisitedEditor] = useState(false);
   const summary = useMemo(
-    () => (productCount === null ? null : { ...access, productCount }),
-    [access, productCount],
+    () => (productCount === null ? null : { ...access, hasVisitedEditor, productCount }),
+    [access, hasVisitedEditor, productCount],
   );
   const items = useMemo(() => (summary ? getLaunchChecklistItems(summary, t) : []), [summary, t]);
   const requiredItems = items.filter((item) => item.required);
@@ -40,6 +42,7 @@ export function LaunchAssistant({ access }: { access: MerchantDashboardAccess })
   useEffect(() => {
     const nextHidden = isLaunchAssistantHidden(access.tenant.id);
     const nextOpen = getLaunchAssistantOpenPreference(access.tenant.id);
+    setHasVisitedEditor(hasVisitedStorefrontEditor(access.tenant.id));
 
     setHidden(nextHidden);
     // Default open when not launch-ready; stay collapsed when complete unless user opened it.

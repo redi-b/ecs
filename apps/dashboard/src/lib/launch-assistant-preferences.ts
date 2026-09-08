@@ -8,6 +8,18 @@ export function getLaunchAssistantOpenStorageKey(tenantId: string) {
   return `ecs-launch-assistant-open:${tenantId}`;
 }
 
+export function getLaunchAssistantEditorVisitedStorageKey(tenantId: string) {
+  return `ecs-launch-assistant-editor-visited:${tenantId}`;
+}
+
+export function hasVisitedStorefrontEditor(tenantId: string) {
+  return window.localStorage.getItem(getLaunchAssistantEditorVisitedStorageKey(tenantId)) === "true";
+}
+
+export function markStorefrontEditorVisited(tenantId: string) {
+  window.localStorage.setItem(getLaunchAssistantEditorVisitedStorageKey(tenantId), "true");
+}
+
 export function isLaunchAssistantHidden(tenantId: string) {
   return window.localStorage.getItem(getLaunchAssistantStorageKey(tenantId)) === "true";
 }

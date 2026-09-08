@@ -13,6 +13,7 @@ import {
 } from "@/features/storefront-editor/editor-config";
 import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes-guard";
 import { useI18n } from "@/i18n/provider";
+import { markStorefrontEditorVisited } from "@/lib/launch-assistant-preferences";
 import { cn } from "@/lib/utils";
 import {
   buildDraftPayload,
@@ -62,6 +63,10 @@ export function StorefrontVisualEditor({
   const pendingHistoryDataRef = useRef<EditorData | null>(null);
   const historyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const skipHistoryRef = useRef(false);
+
+  useEffect(() => {
+    markStorefrontEditorVisited(draft.tenantId);
+  }, [draft.tenantId]);
 
   useEffect(() => {
     if (!isFullscreen) {

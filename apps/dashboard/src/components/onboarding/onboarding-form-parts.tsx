@@ -4,6 +4,7 @@ import type { StorefrontTemplateCatalogItem } from "@ecs/contracts";
 import { useMemo } from "react";
 
 import { AppIcons } from "@/components/app/icons";
+import { HelpTip } from "@/components/app/help-tip";
 import { MultiSearchableCombobox } from "@/components/app/searchable-combobox";
 import {
   BUSINESS_CATEGORY_OPTIONS,
@@ -56,7 +57,7 @@ export function CategoryCombobox({
   );
 }
 
-export function HandleStatus({ status }: { status: HandleState["status"] }) {
+export function HandleStatus({ message, status }: { message?: string; status: HandleState["status"] }) {
   const { t } = useI18n();
   if (status === "checking") {
     return (
@@ -73,8 +74,8 @@ export function HandleStatus({ status }: { status: HandleState["status"] }) {
   }
   if (status === "unavailable") {
     return (
-      <span className="shrink-0 font-medium text-destructive">
-        {t("onboarding.handle.unavailableShort")}
+      <span className="min-w-0 truncate font-medium text-destructive">
+        {message ?? t("onboarding.handle.unavailableShort")}
       </span>
     );
   }
@@ -111,9 +112,9 @@ export function PreferenceToggle({
 }) {
   return (
     <div className="flex items-start justify-between gap-3 rounded-lg border px-3 py-3">
-      <div className="min-w-0">
+      <div className="flex min-w-0 items-center gap-1.5">
         <p className="text-sm font-medium">{label}</p>
-        <p className="mt-0.5 text-xs text-muted-foreground">{description}</p>
+        <HelpTip summary={description} />
       </div>
       <Switch checked={checked} onCheckedChange={onCheckedChange} />
     </div>

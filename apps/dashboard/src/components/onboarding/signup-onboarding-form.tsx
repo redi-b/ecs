@@ -25,7 +25,7 @@ import {
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
+import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { useI18n } from "@/i18n/provider";
 import { getStorefrontHostname, normalizeStorefrontBaseDomain } from "@/lib/storefront-hosts";
@@ -95,7 +95,6 @@ export function ShopOnboardingForm({
   });
   const [submitError, setSubmitError] = useState<string | null>(errorMessage);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSigningOut, setIsSigningOut] = useState(false);
   const businessCategory = serializeCategories(businessCategories);
   const normalizedBaseDomain = normalizeStorefrontBaseDomain(storefrontBaseDomain);
 
@@ -291,17 +290,6 @@ export function ShopOnboardingForm({
     window.location.assign(data.redirectTo);
   }
 
-  async function signOutToOtherAccount() {
-    if (isSigningOut || isSubmitting) return;
-    setIsSigningOut(true);
-    const response = await fetch("/admin/sign-out", {
-      headers: { accept: "application/json" },
-      method: "POST",
-    }).catch(() => null);
-    const data = (await response?.json().catch(() => null)) as { redirectTo?: string } | null;
-    window.location.assign(data?.redirectTo ?? "/admin/sign-in");
-  }
-
   return (
     <div className="grid gap-5 sm:gap-8 lg:grid-cols-[14rem_minmax(0,1fr)] lg:gap-12">
       <nav aria-label={t("onboarding.stepsLabel")} className="lg:sticky lg:top-8 lg:self-start">
@@ -491,12 +479,9 @@ export function ShopOnboardingForm({
                       <span className="min-w-0 truncate font-medium tabular-nums text-foreground/90">
                         {previewHostname}
                       </span>
-                      <HandleStatus status={handleState.status} />
+                      <HandleStatus message={handleState.message} status={handleState.status} />
                     </div>
                   </div>
-                  {handleState.status === "unavailable" ? (
-                    <FieldError>{handleState.message}</FieldError>
-                  ) : null}
                 </Field>
 
                 <div className="grid gap-6 sm:grid-cols-2">
@@ -649,22 +634,6 @@ export function ShopOnboardingForm({
                 Desktop: row with secondary left / primary right.
               */}
               <div className="flex w-full flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-between">
-                <Button
-                  className="w-full justify-center text-muted-foreground hover:text-foreground sm:w-auto sm:justify-start sm:px-0"
-                  disabled={isSigningOut || isSubmitting}
-                  onClick={() => void signOutToOtherAccount()}
-                  type="button"
-                  variant="link"
-                >
-                  {isSigningOut ? (
-                    <>
-                      <AppIcons.loader className="animate-spin" data-icon="inline-start" />
-                      {t("account.signingOut")}
-                    </>
-                  ) : (
-                    t("onboarding.otherAccount")
-                  )}
-                </Button>
                 <div className="flex w-full flex-col-reverse gap-2 sm:w-auto sm:flex-row sm:[&>button]:w-auto [&>button]:w-full">
                   <Button
                     disabled={step === 0 || isSubmitting}
