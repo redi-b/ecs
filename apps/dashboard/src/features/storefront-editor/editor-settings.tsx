@@ -55,7 +55,7 @@ export {
   MediaImageSourceActions as EditorImageSourceActions,
 };
 
-export function StorefrontSettingsPanel({ onSelectPath, selectedPath, templateKey }: { onSelectPath: (path: string | null) => void; selectedPath: string | null; templateKey: string }) {
+export function StorefrontSettingsPanel({ contained = false, onSelectPath, selectedPath, templateKey }: { contained?: boolean; onSelectPath: (path: string | null) => void; selectedPath: string | null; templateKey: string }) {
   const { t } = useI18n();
   const data = useStorefrontEditor((api) => api.appState.data);
   const dispatch = useStorefrontEditor((api) => api.dispatch);
@@ -133,7 +133,7 @@ export function StorefrontSettingsPanel({ onSelectPath, selectedPath, templateKe
   };
 
   return (
-    <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain" ref={scrollRef}>
+    <div className={cn("min-h-0 flex-1", contained && "overflow-y-auto overscroll-contain")} ref={scrollRef}>
       <div className="sticky top-0 z-10 flex items-center gap-2 border-b border-border/80 bg-background/95 p-3 backdrop-blur-sm sm:px-4">
         <Popover onOpenChange={setSectionNavigatorOpen} open={sectionNavigatorOpen}>
           <PopoverTrigger asChild>
@@ -192,7 +192,7 @@ export function StorefrontSettingsPanel({ onSelectPath, selectedPath, templateKe
                 className={cn(
                   "rounded-2xl transition-shadow",
                   selectedPath === sectionSettingsPath(section)
-                    && "ring-2 ring-primary/45 ring-offset-2 ring-offset-background",
+                    && "bg-primary/[0.06] ring-1 ring-primary/30",
                 )}
                 data-editor-settings-path={sectionSettingsPath(section)}
                 key={section.id}
@@ -256,7 +256,7 @@ export function StorefrontSettingsPanel({ onSelectPath, selectedPath, templateKe
               className={cn(
                 "min-w-0 overflow-hidden rounded-2xl border border-border/80 bg-card shadow-[0_1px_2px_color-mix(in_oklch,var(--foreground)_4%,transparent)] transition-opacity",
                 !sectionVisible && "opacity-70",
-                selectedPath === sectionPath && "ring-2 ring-primary/45 ring-offset-2 ring-offset-background",
+                selectedPath === sectionPath && "bg-primary/[0.06] ring-1 ring-primary/30",
               )}
               data-editor-settings-path={sectionPath}
             >
@@ -320,7 +320,7 @@ export function StorefrontSettingsPanel({ onSelectPath, selectedPath, templateKe
                     const showHelp = Boolean(helpText) && field.kind !== "products";
 
                     return (
-                      <Field className={cn("-ml-3 min-w-0 gap-2.5 border-l-2 border-transparent py-1 pl-3 transition-[border-color,background-color] duration-150", (selectedPath === field.path || selectedPath?.startsWith(`${field.path}.`)) && "border-primary/60 bg-primary/[0.035]")} data-editor-settings-path={field.path} key={field.path} onClickCapture={() => onSelectPath(field.path)} onFocusCapture={(event) => onSelectPath((event.target as Element).closest<HTMLElement>("[data-editor-settings-path]")?.dataset.editorSettingsPath ?? field.path)}>
+                      <Field className={cn("min-w-0 gap-2.5 rounded-xl px-3 py-2 transition-[background-color,box-shadow] duration-150", (selectedPath === field.path || selectedPath?.startsWith(`${field.path}.`)) && "bg-primary/[0.055] ring-1 ring-primary/25")} data-editor-settings-path={field.path} key={field.path} onClickCapture={() => onSelectPath(field.path)} onFocusCapture={(event) => onSelectPath((event.target as Element).closest<HTMLElement>("[data-editor-settings-path]")?.dataset.editorSettingsPath ?? field.path)}>
                         {field.kind === "boolean" ? null : (
                           <FieldLabel className="text-sm font-medium" htmlFor={nativeControlId(field)}>{field.label}</FieldLabel>
                         )}
