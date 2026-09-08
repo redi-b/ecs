@@ -271,7 +271,7 @@ function SidebarTrigger({
       }}
       {...props}
     >
-      <RiSideBarLine className="size-5" aria-hidden="true" />
+      <RiSideBarLine className="size-4" aria-hidden="true" />
       <span className="sr-only">{ariaLabel}</span>
     </Button>
   );

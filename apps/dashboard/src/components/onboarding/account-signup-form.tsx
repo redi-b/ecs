@@ -31,9 +31,11 @@ export function AccountSignUpForm({
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+  const [isConfirmPasswordVisible, setIsConfirmPasswordVisible] = useState(false);
   const [errorMessage, setErrorMessage] = useState(initialErrorMessage);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const PasswordIcon = isPasswordVisible ? AppIcons.eyeOff : AppIcons.eye;
+  const ConfirmPasswordIcon = isConfirmPasswordVisible ? AppIcons.eyeOff : AppIcons.eye;
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -155,9 +157,19 @@ export function AccountSignUpForm({
               name="confirmPassword"
               onChange={(event) => setConfirmPassword(event.target.value)}
               required
-              type={isPasswordVisible ? "text" : "password"}
+              type={isConfirmPasswordVisible ? "text" : "password"}
               value={confirmPassword}
             />
+            <InputGroupAddon align="inline-end">
+              <InputGroupButton
+                aria-label={isConfirmPasswordVisible ? t("auth.hidePassword") : t("auth.showPassword")}
+                disabled={isSubmitting}
+                onClick={() => setIsConfirmPasswordVisible((value) => !value)}
+                size="icon-xs"
+              >
+                <ConfirmPasswordIcon />
+              </InputGroupButton>
+            </InputGroupAddon>
           </InputGroup>
         </Field>
         {errorMessage ? (
