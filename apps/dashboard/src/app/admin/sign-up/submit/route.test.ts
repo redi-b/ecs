@@ -56,10 +56,10 @@ test("POST /admin/sign-up/submit creates an account and redirects to onboarding"
   body.set("confirmPassword", "password1234");
 
   const response = await POST(
-    new Request("http://dashboard.lvh.me/admin/sign-up/submit", {
+    new Request("http://app.lvh.me/admin/sign-up/submit", {
       body,
       headers: {
-        "x-forwarded-host": "dashboard.lvh.me",
+        "x-forwarded-host": "app.lvh.me",
         "x-forwarded-proto": "http",
       },
       method: "POST",
@@ -67,19 +67,19 @@ test("POST /admin/sign-up/submit creates an account and redirects to onboarding"
   );
 
   assert.equal(response.status, 303);
-  assert.equal(response.headers.get("location"), "http://dashboard.lvh.me/admin/onboarding");
+  assert.equal(response.headers.get("location"), "http://app.lvh.me/admin/onboarding");
   assert.equal(
     response.headers.get("set-cookie"),
     "better-auth.session_token=session_1; HttpOnly; SameSite=Lax; Domain=.lvh.me; Path=/",
   );
   assert.equal(forwardedRequest?.url, "http://platform.test/platform/auth/sign-up/email");
   assert.deepEqual(forwardedRequest?.body, {
-    callbackURL: "http://dashboard.lvh.me/admin/sign-in?verified=1",
+    callbackURL: "http://app.lvh.me/admin/sign-in?verified=1",
     email: "mahi@example.com",
     name: "Mahi Bekele",
     password: "password1234",
   });
-  assert.equal(forwardedRequest?.headers.get("origin"), "http://dashboard.lvh.me");
+  assert.equal(forwardedRequest?.headers.get("origin"), "http://app.lvh.me");
 });
 
 test("POST /admin/sign-up/submit asks the user to verify email when verification is required", async () => {
@@ -93,7 +93,7 @@ test("POST /admin/sign-up/submit asks the user to verify email when verification
     });
 
   const response = await POST(
-    new Request("http://dashboard.lvh.me/admin/sign-up/submit", {
+    new Request("http://app.lvh.me/admin/sign-up/submit", {
       body: JSON.stringify({
         confirmPassword: "password1234",
         email: "mahi@example.com",
@@ -108,7 +108,7 @@ test("POST /admin/sign-up/submit asks the user to verify email when verification
   assert.equal(response.status, 200);
   assert.deepEqual(await response.json(), {
     ok: true,
-    redirectTo: "http://dashboard.lvh.me/admin/sign-up/check-email",
+    redirectTo: "http://app.lvh.me/admin/sign-up/check-email",
   });
 });
 
@@ -130,7 +130,7 @@ test("POST /admin/sign-up/submit redirects back when platform auth does not retu
   body.set("confirmPassword", "password1234");
 
   const response = await POST(
-    new Request("http://dashboard.lvh.me/admin/sign-up/submit", {
+    new Request("http://app.lvh.me/admin/sign-up/submit", {
       body,
       method: "POST",
     }),
@@ -139,7 +139,7 @@ test("POST /admin/sign-up/submit redirects back when platform auth does not retu
   assert.equal(response.status, 303);
   assert.equal(
     response.headers.get("location"),
-    "http://dashboard.lvh.me/admin/sign-up?error=auth_session_missing&ownerName=Mahi+Bekele&email=mahi%40example.com",
+    "http://app.lvh.me/admin/sign-up?error=auth_session_missing&ownerName=Mahi+Bekele&email=mahi%40example.com",
   );
 });
 
@@ -152,7 +152,7 @@ test("POST /admin/sign-up/submit rejects mismatched passwords before account cre
   };
 
   const response = await POST(
-    new Request("http://dashboard.lvh.me/admin/sign-up/submit", {
+    new Request("http://app.lvh.me/admin/sign-up/submit", {
       body: JSON.stringify({
         confirmPassword: "different-password",
         email: "mahi@example.com",

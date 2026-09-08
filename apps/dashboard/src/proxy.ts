@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 
 import { DASHBOARD_PATH_HEADER } from "@/lib/dashboard-auth";
+import { getDashboardPublicUrl, isLegacyCentralDashboardHost } from "@/lib/dashboard-hosts";
 
 const excludedAdminPrefixes = [
   "/admin/onboarding",
@@ -12,6 +13,21 @@ const excludedAdminPrefixes = [
 
 export function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
+
+  if (
+    isLegacyCentralDashboardHost(
+      request.headers.get("x-forwarded-host") ??
+        request.headers.get("host") ??
+        request.nextUrl.host,
+    )
+  ) {
+    const canonical = getDashboardPublicUrl();
+    const redirectUrl = request.nextUrl.clone();
+    redirectUrl.protocol = canonical.protocol;
+    redirectUrl.hostname = canonical.hostname;
+    redirectUrl.port = canonical.port;
+    return NextResponse.redirect(redirectUrl, 308);
+  }
 
   if (!isAdminPath(pathname) || isExcludedAdminPath(pathname)) {
     return NextResponse.next();
@@ -38,5 +54,5 @@ function isExcludedAdminPath(pathname: string) {
 }
 
 export const config = {
-  matcher: ["/admin/:path*"],
+  matcher: ["/:path*"],
 };

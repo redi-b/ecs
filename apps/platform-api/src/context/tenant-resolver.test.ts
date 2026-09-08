@@ -30,7 +30,7 @@ function resolverFor(record?: TenantDomainRecord) {
   return resolveTenantFromHost({
     host: "Abebe.lvh.me:443",
     platformBaseDomain: "lvh.me",
-    systemHosts: ["api.lvh.me", "dashboard.lvh.me"],
+    systemHosts: ["api.lvh.me", "app.lvh.me", "dashboard.lvh.me"],
     findDomainByHostname: async (hostname) => (hostname === record?.hostname ? record : undefined),
   });
 }
@@ -57,7 +57,7 @@ describe("resolveTenantFromHost", () => {
     const result = await resolveTenantFromHost({
       host: "api.lvh.me",
       platformBaseDomain: "lvh.me",
-      systemHosts: ["api.lvh.me", "dashboard.lvh.me"],
+      systemHosts: ["api.lvh.me", "app.lvh.me", "dashboard.lvh.me"],
       findDomainByHostname: async () => activePublishedRecord,
     });
 

@@ -72,7 +72,7 @@ Alternatively, `pnpm dev` starts infrastructure, applies migrations, writes requ
 Development uses `lvh.me`, which resolves to localhost:
 
 - Platform API: `http://api.lvh.me`
-- Dashboard: `http://dashboard.lvh.me`
+- Dashboard: `http://app.lvh.me` (`http://dashboard.lvh.me` redirects here)
 - Operations: `http://ops.lvh.me`
 - Demo storefront: `http://bole-style.lvh.me`
 - Demo merchant dashboard: `http://bole-style.lvh.me/admin`

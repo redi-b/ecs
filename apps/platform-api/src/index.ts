@@ -663,6 +663,7 @@ const auth = createPlatformAuth({
   secret: process.env.BETTER_AUTH_SECRET ?? "development-ecs-auth-secret-change-before-production",
   trustedOrigins: parseTrustedOrigins(process.env.BETTER_AUTH_TRUSTED_ORIGINS) ?? [
     "http://api.lvh.me",
+    "http://app.lvh.me",
     "http://dashboard.lvh.me",
     // Tenant dashboards (shop subdomains) call /platform/auth from the browser origin.
     "http://*.lvh.me",

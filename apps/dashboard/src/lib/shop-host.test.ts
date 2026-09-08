@@ -1,17 +1,13 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import {
-  getCentralDashboardUrl,
-  sessionCanAccessShopHost,
-  validateShopHost,
-} from "./shop-host.js";
+import { getCentralDashboardUrl, sessionCanAccessShopHost, validateShopHost } from "./shop-host.js";
 
 describe("validateShopHost", () => {
   it("allows central dashboard host without probing", async () => {
-    process.env.DASHBOARD_PUBLIC_BASE_URL = "http://dashboard.lvh.me";
+    process.env.DASHBOARD_PUBLIC_BASE_URL = "http://app.lvh.me";
     const result = await validateShopHost({
-      forwardedHost: "dashboard.lvh.me",
+      forwardedHost: "app.lvh.me",
       fetcher: async () => {
         throw new Error("should not probe central host");
       },
@@ -77,10 +73,7 @@ describe("sessionCanAccessShopHost", () => {
 
 describe("getCentralDashboardUrl", () => {
   it("builds an absolute central URL", () => {
-    process.env.DASHBOARD_PUBLIC_BASE_URL = "https://dashboard.example.com";
-    assert.equal(
-      getCentralDashboardUrl("/admin/sign-in"),
-      "https://dashboard.example.com/admin/sign-in",
-    );
+    process.env.DASHBOARD_PUBLIC_BASE_URL = "https://app.example.com";
+    assert.equal(getCentralDashboardUrl("/admin/sign-in"), "https://app.example.com/admin/sign-in");
   });
 });

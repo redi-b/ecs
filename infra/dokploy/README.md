@@ -7,7 +7,7 @@ This stack is intended for a Dokploy Compose service. GitHub Actions builds the 
 Set `BASE_DOMAIN` to the delegated application domain, for example `ecs.example.com`. A DNS record for `*.ecs.example.com` covers hosts such as:
 
 - `api.ecs.example.com` for the platform API
-- `dashboard.ecs.example.com` for the merchant dashboard
+- `app.ecs.example.com` for the merchant dashboard (`dashboard` redirects here)
 - `media.ecs.example.com` for public media object URLs (MinIO)
 - `<shop>.ecs.example.com` for tenant storefronts
 
@@ -25,10 +25,10 @@ After deploy, spot-check:
 
 ```sh
 # Should include max-age=31536000 (and usually immutable)
-curl -sI "https://dashboard.${BASE_DOMAIN}/_next/static/chunks/webpack-*.js" | grep -i cache-control
+curl -sI "https://app.${BASE_DOMAIN}/_next/static/chunks/webpack-*.js" | grep -i cache-control
 
 # Document must not be year-cached
-curl -sI "https://dashboard.${BASE_DOMAIN}/admin" | grep -i cache-control
+curl -sI "https://app.${BASE_DOMAIN}/admin" | grep -i cache-control
 ```
 
 Public media (`media.${BASE_DOMAIN}`) gets a one-week cache with stale-while-revalidate for product thumbs.

@@ -22,7 +22,7 @@ const validEnvironment = () => ({
   MEDIA_S3_SECRET_ACCESS_KEY: secret("media"),
   MEDIA_S3_ENDPOINT: "https://media.ecs.acme.test",
   MEDIA_S3_PUBLIC_BASE_URL: "https://media.ecs.acme.test/ecs-media",
-  MEDIA_S3_CORS_ALLOW_ORIGIN: "https://dashboard.ecs.acme.test",
+  MEDIA_S3_CORS_ALLOW_ORIGIN: "https://app.ecs.acme.test",
   EMAIL_PROVIDER: "resend",
   RESEND_API_KEY: secret("resend"),
   EMAIL_FROM: "alerts@ecs.acme.test",

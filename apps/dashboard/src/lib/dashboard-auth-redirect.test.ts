@@ -13,7 +13,7 @@ describe("getAuthenticatedDashboardRedirect", () => {
   it("returns null without a session cookie", async () => {
     const redirect = await getAuthenticatedDashboardRedirect({
       platformApiBaseUrl: "http://platform.local",
-      requestHost: "dashboard.lvh.me",
+      requestHost: "app.lvh.me",
     });
 
     assert.equal(redirect, null);
@@ -40,7 +40,7 @@ describe("getAuthenticatedDashboardRedirect", () => {
     const redirect = await getAuthenticatedDashboardRedirect({
       cookieHeader: "better-auth.session_token=session_1",
       platformApiBaseUrl: "http://platform.local",
-      requestHost: "dashboard.lvh.me",
+      requestHost: "app.lvh.me",
     });
 
     assert.equal(redirect, "http://addis-pantry.lvh.me/admin");
@@ -57,7 +57,7 @@ describe("getAuthenticatedDashboardRedirect", () => {
     const redirect = await getAuthenticatedDashboardRedirect({
       cookieHeader: "better-auth.session_token=operator_session",
       platformApiBaseUrl: "http://platform.local",
-      requestHost: "dashboard.lvh.me",
+      requestHost: "app.lvh.me",
     });
 
     assert.equal(redirect, "http://ops.lvh.me");

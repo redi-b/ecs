@@ -48,8 +48,10 @@ module.exports = defineConfig({
       | "shared",
     http: {
       storeCors: process.env.STORE_CORS || "http://*.lvh.me,http://localhost:4321",
-      adminCors: process.env.ADMIN_CORS || "http://dashboard.lvh.me,http://localhost:3001",
-      authCors: process.env.AUTH_CORS || "http://dashboard.lvh.me,http://localhost:3001",
+      adminCors:
+        process.env.ADMIN_CORS || "http://app.lvh.me,http://dashboard.lvh.me,http://localhost:3001",
+      authCors:
+        process.env.AUTH_CORS || "http://app.lvh.me,http://dashboard.lvh.me,http://localhost:3001",
       jwtSecret: process.env.JWT_SECRET || "development-jwt-secret",
       cookieSecret: process.env.COOKIE_SECRET || "development-cookie-secret",
     },

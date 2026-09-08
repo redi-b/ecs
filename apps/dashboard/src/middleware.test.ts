@@ -6,6 +6,28 @@ import { DASHBOARD_PATH_HEADER } from "./lib/dashboard-auth.js";
 import { proxy } from "./proxy.js";
 
 describe("dashboard proxy", () => {
+  it("permanently redirects the legacy dashboard host to the canonical app host", () => {
+    const previousCanonical = process.env.DASHBOARD_PUBLIC_BASE_URL;
+    const previousLegacy = process.env.DASHBOARD_LEGACY_PUBLIC_BASE_URL;
+    process.env.DASHBOARD_PUBLIC_BASE_URL = "https://app.example.com";
+    process.env.DASHBOARD_LEGACY_PUBLIC_BASE_URL = "https://dashboard.example.com";
+    try {
+      const request = new NextRequest("https://dashboard.example.com/admin/products?page=2");
+      const response = proxy(request);
+
+      assert.equal(response.status, 308);
+      assert.equal(
+        response.headers.get("location"),
+        "https://app.example.com/admin/products?page=2",
+      );
+    } finally {
+      if (previousCanonical === undefined) delete process.env.DASHBOARD_PUBLIC_BASE_URL;
+      else process.env.DASHBOARD_PUBLIC_BASE_URL = previousCanonical;
+      if (previousLegacy === undefined) delete process.env.DASHBOARD_LEGACY_PUBLIC_BASE_URL;
+      else process.env.DASHBOARD_LEGACY_PUBLIC_BASE_URL = previousLegacy;
+    }
+  });
+
   it("adds the dashboard path header for protected admin pages", () => {
     const request = new NextRequest("http://abebe.lvh.me/admin/products?page=2");
     const response = proxy(request);

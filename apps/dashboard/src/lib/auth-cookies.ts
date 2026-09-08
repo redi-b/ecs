@@ -47,7 +47,7 @@ function getSharedCookieDomain() {
     return value.startsWith(".") ? value : `.${value}`;
   }
 
-  const dashboardUrl = process.env.DASHBOARD_PUBLIC_BASE_URL ?? "http://dashboard.lvh.me";
+  const dashboardUrl = process.env.DASHBOARD_PUBLIC_BASE_URL ?? "http://app.lvh.me";
 
   try {
     const hostname = new URL(dashboardUrl).hostname.toLowerCase();
