@@ -40,7 +40,7 @@ test("GET /admin/onboarding/handle checks shop handle availability through the P
   };
 
   const response = await GET(
-    new Request("http://dashboard.lvh.me/admin/onboarding/handle?handle=addis-pantry"),
+    new Request("http://app.lvh.me/admin/onboarding/handle?handle=addis-pantry"),
   );
 
   assert.equal(response.status, 200);

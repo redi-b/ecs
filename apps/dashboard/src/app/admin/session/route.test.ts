@@ -66,7 +66,7 @@ test("POST /admin/session signs in through the Better Auth email endpoint and fo
         "user-agent":
           "Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148 Safari/604.1",
         "x-forwarded-for": "203.0.113.50",
-        "x-forwarded-host": "dashboard.lvh.me",
+        "x-forwarded-host": "app.lvh.me",
         "x-forwarded-proto": "http",
       },
       method: "POST",
@@ -74,7 +74,7 @@ test("POST /admin/session signs in through the Better Auth email endpoint and fo
   );
 
   assert.equal(response.status, 303);
-  assert.equal(response.headers.get("location"), "http://dashboard.lvh.me/admin/products");
+  assert.equal(response.headers.get("location"), "http://app.lvh.me/admin/products");
   assert.equal(
     response.headers.get("set-cookie"),
     "better-auth.session_token=session_1; HttpOnly; SameSite=Lax; Domain=.lvh.me; Path=/",
@@ -85,8 +85,8 @@ test("POST /admin/session signs in through the Better Auth email endpoint and fo
     password: "password1234",
     rememberMe: true,
   });
-  assert.equal(forwardedRequest?.headers.get("origin"), "http://dashboard.lvh.me");
-  assert.equal(forwardedRequest?.headers.get("x-forwarded-host"), "dashboard.lvh.me");
+  assert.equal(forwardedRequest?.headers.get("origin"), "http://app.lvh.me");
+  assert.equal(forwardedRequest?.headers.get("x-forwarded-host"), "app.lvh.me");
   assert.equal(forwardedRequest?.headers.get("x-forwarded-proto"), "http");
   assert.equal(forwardedRequest?.headers.get("x-forwarded-for"), "203.0.113.50");
   assert.equal(forwardedRequest?.headers.get("x-real-ip"), "203.0.113.50");
@@ -188,10 +188,10 @@ test("POST /admin/session routes central dashboard sign-in to the user's primary
   body.set("next", "/admin");
 
   const response = await POST(
-    new Request("http://dashboard.lvh.me/admin/session", {
+    new Request("http://app.lvh.me/admin/session", {
       body,
       headers: {
-        "x-forwarded-host": "dashboard.lvh.me",
+        "x-forwarded-host": "app.lvh.me",
         "x-forwarded-proto": "http",
       },
       method: "POST",
@@ -244,10 +244,10 @@ test("POST /admin/session keeps Operations accounts out of merchant onboarding",
   body.set("next", "/admin");
 
   const response = await POST(
-    new Request("http://dashboard.lvh.me/admin/session", {
+    new Request("http://app.lvh.me/admin/session", {
       body,
       headers: {
-        "x-forwarded-host": "dashboard.lvh.me",
+        "x-forwarded-host": "app.lvh.me",
         "x-forwarded-proto": "http",
       },
       method: "POST",
@@ -257,7 +257,7 @@ test("POST /admin/session keeps Operations accounts out of merchant onboarding",
   assert.equal(response.status, 303);
   assert.equal(
     response.headers.get("location"),
-    "http://dashboard.lvh.me/admin/sign-in?error=invalid_credentials&next=%2Fadmin",
+    "http://app.lvh.me/admin/sign-in?error=invalid_credentials&next=%2Fadmin",
   );
   assert.equal(response.headers.get("set-cookie"), null);
   assert.deepEqual(requestedUrls, [

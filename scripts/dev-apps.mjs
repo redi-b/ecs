@@ -85,7 +85,7 @@ blank();
 box([
   "Local endpoints",
   "  API         http://api.lvh.me  (localhost:3000)",
-  "  Dashboard   http://dashboard.lvh.me/admin",
+  "  Dashboard   http://app.lvh.me/admin",
   "  Operations  http://ops.lvh.me",
   "  Storefront  http://<handle>.lvh.me",
   "  Medusa      http://localhost:9000",

@@ -30,12 +30,13 @@ x-platform-environment: &platform-environment
   STOREFRONT_CACHE_PURGE_SECRET: ${STOREFRONT_CACHE_PURGE_SECRET:?set STOREFRONT_CACHE_PURGE_SECRET}
   STOREFRONT_PREVIEW_SECRET: ${STOREFRONT_PREVIEW_SECRET:?set STOREFRONT_PREVIEW_SECRET}
   STOREFRONT_INTERNAL_BASE_URL: http://storefront:4321
-  DASHBOARD_PUBLIC_BASE_URL: https://dashboard.${BASE_DOMAIN}
+  DASHBOARD_PUBLIC_BASE_URL: https://app.${BASE_DOMAIN}
+  DASHBOARD_LEGACY_PUBLIC_BASE_URL: https://dashboard.${BASE_DOMAIN}
   BETTER_AUTH_URL: https://api.${BASE_DOMAIN}
   BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?set BETTER_AUTH_SECRET}
   BETTER_AUTH_COOKIE_DOMAIN: .${BASE_DOMAIN}
   BETTER_AUTH_COOKIE_PREFIX: ${BETTER_AUTH_COOKIE_PREFIX:-ecs}
-  BETTER_AUTH_TRUSTED_ORIGINS: https://dashboard.${BASE_DOMAIN},https://ops.${BASE_DOMAIN},https://*.${BASE_DOMAIN}
+  BETTER_AUTH_TRUSTED_ORIGINS: https://app.${BASE_DOMAIN},https://dashboard.${BASE_DOMAIN},https://ops.${BASE_DOMAIN},https://*.${BASE_DOMAIN}
   AUTH_REQUIRE_EMAIL_VERIFICATION: "true"
   MEDIA_STORAGE_PROVIDER: s3
   # Public S3 endpoint for browser presigned uploads (Caddy/Traefik → seaweedfs:8333).
@@ -72,8 +73,8 @@ x-medusa-environment: &medusa-environment
   DATABASE_SSL: ${MEDUSA_DATABASE_SSL:-false}
   REDIS_URL: redis://redis:6379
   STORE_CORS: https://*.${BASE_DOMAIN}
-  ADMIN_CORS: https://dashboard.${BASE_DOMAIN}
-  AUTH_CORS: https://dashboard.${BASE_DOMAIN}
+  ADMIN_CORS: https://app.${BASE_DOMAIN},https://dashboard.${BASE_DOMAIN}
+  AUTH_CORS: https://app.${BASE_DOMAIN},https://dashboard.${BASE_DOMAIN}
   JWT_SECRET: ${MEDUSA_JWT_SECRET:?set MEDUSA_JWT_SECRET}
   COOKIE_SECRET: ${MEDUSA_COOKIE_SECRET:?set MEDUSA_COOKIE_SECRET}
   PLATFORM_INTERNAL_API_TOKEN: ${PLATFORM_INTERNAL_API_TOKEN}
@@ -134,7 +135,7 @@ services:
       MEDIA_S3_ACCESS_KEY_ID: ${MEDIA_S3_ACCESS_KEY_ID:-ecs}
       MEDIA_S3_SECRET_ACCESS_KEY: ${MEDIA_S3_SECRET_ACCESS_KEY:?set MEDIA_S3_SECRET_ACCESS_KEY}
       # Browser uploads come from the dashboard origin; allow it for preflight.
-      MEDIA_S3_CORS_ALLOW_ORIGIN: ${MEDIA_S3_CORS_ALLOW_ORIGIN:-https://dashboard.${BASE_DOMAIN}}
+      MEDIA_S3_CORS_ALLOW_ORIGIN: ${MEDIA_S3_CORS_ALLOW_ORIGIN:-https://app.${BASE_DOMAIN}}
     volumes:
       - seaweed-data:/data
       - ./seaweedfs/entrypoint.sh:/seaweedfs-entrypoint.sh:ro
@@ -257,7 +258,8 @@ services:
       NODE_ENV: production
       PORT: "3001"
       PLATFORM_API_BASE_URL: http://platform-api:3000
-      DASHBOARD_PUBLIC_BASE_URL: https://dashboard.${BASE_DOMAIN}
+      DASHBOARD_PUBLIC_BASE_URL: https://app.${BASE_DOMAIN}
+      DASHBOARD_LEGACY_PUBLIC_BASE_URL: https://dashboard.${BASE_DOMAIN}
       SUPERADMIN_PUBLIC_BASE_URL: ${SUPERADMIN_PUBLIC_BASE_URL:-https://ops.${BASE_DOMAIN}}
       STOREFRONT_DEMO_HOST: ${STOREFRONT_DEMO_HOST:-demo.${BASE_DOMAIN}}
       DASHBOARD_AUTH_COOKIE_DOMAIN: .${BASE_DOMAIN}
@@ -327,7 +329,7 @@ services:
       STOREFRONT_CACHE_PURGE_SECRET: ${STOREFRONT_CACHE_PURGE_SECRET:?set STOREFRONT_CACHE_PURGE_SECRET}
       STOREFRONT_PUBLIC_BASE_DOMAIN: ${BASE_DOMAIN}
       STOREFRONT_DEMO_HOST: ${STOREFRONT_DEMO_HOST:-demo.${BASE_DOMAIN}}
-      STOREFRONT_EDITOR_ORIGIN: https://dashboard.${BASE_DOMAIN}
+      STOREFRONT_EDITOR_ORIGIN: https://app.${BASE_DOMAIN}
       MEDIA_S3_PUBLIC_BASE_URL: ${MEDIA_S3_PUBLIC_BASE_URL:-https://media.${BASE_DOMAIN}/${MEDIA_S3_BUCKET:-ecs-media}}
     tmpfs:
       - /tmp:size=64m,mode=1777
@@ -392,7 +394,7 @@ services:
       - traefik.http.routers.ecs-caddy-https.service=ecs-caddy
       # Explicit platform and approved beta hosts receive normal HTTP-01 certs.
       # Keep beta hosts bounded here; arbitrary managed shops require wildcard DNS-01.
-      - traefik.http.routers.ecs-caddy-demo-certs.rule=Host(`dashboard.${BASE_DOMAIN}`) || Host(`ops.${BASE_DOMAIN}`) || Host(`api.${BASE_DOMAIN}`) || Host(`shop.${BASE_DOMAIN}`) || Host(`media.${BASE_DOMAIN}`) || Host(`addistech.${BASE_DOMAIN}`) || Host(`bole-style.${BASE_DOMAIN}`)
+      - traefik.http.routers.ecs-caddy-demo-certs.rule=Host(`app.${BASE_DOMAIN}`) || Host(`dashboard.${BASE_DOMAIN}`) || Host(`ops.${BASE_DOMAIN}`) || Host(`api.${BASE_DOMAIN}`) || Host(`shop.${BASE_DOMAIN}`) || Host(`media.${BASE_DOMAIN}`) || Host(`addistech.${BASE_DOMAIN}`) || Host(`bole-style.${BASE_DOMAIN}`)
       - traefik.http.routers.ecs-caddy-demo-certs.entrypoints=websecure
       - traefik.http.routers.ecs-caddy-demo-certs.priority=100
       - traefik.http.routers.ecs-caddy-demo-certs.tls=true

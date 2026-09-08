@@ -8,9 +8,10 @@ describe("getSystemHosts", () => {
     assert.deepEqual(
       getSystemHosts({
         PLATFORM_PUBLIC_BASE_URL: "http://api.lvh.me",
-        DASHBOARD_PUBLIC_BASE_URL: "http://dashboard.lvh.me",
+        DASHBOARD_PUBLIC_BASE_URL: "http://app.lvh.me",
+        DASHBOARD_LEGACY_PUBLIC_BASE_URL: "http://dashboard.lvh.me",
       }),
-      ["api.lvh.me", "dashboard.lvh.me"],
+      ["api.lvh.me", "app.lvh.me", "dashboard.lvh.me"],
     );
   });
 

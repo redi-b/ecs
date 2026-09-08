@@ -83,11 +83,11 @@ test("POST /admin/onboarding/submit provisions a shop for the signed-in account"
   body.set("contactPhone", "+251911000000");
 
   const response = await POST(
-    new Request("http://dashboard.lvh.me/admin/onboarding/submit", {
+    new Request("http://app.lvh.me/admin/onboarding/submit", {
       body,
       headers: {
         cookie: "better-auth.session_token=session_1",
-        "x-forwarded-host": "dashboard.lvh.me",
+        "x-forwarded-host": "app.lvh.me",
         "x-forwarded-proto": "http",
       },
       method: "POST",
@@ -114,7 +114,7 @@ test("POST /admin/onboarding/submit requires an existing session", async () => {
   body.set("templateKey", "luvia@1");
 
   const response = await POST(
-    new Request("http://dashboard.lvh.me/admin/onboarding/submit", {
+    new Request("http://app.lvh.me/admin/onboarding/submit", {
       body,
       method: "POST",
     }),
@@ -123,13 +123,13 @@ test("POST /admin/onboarding/submit requires an existing session", async () => {
   assert.equal(response.status, 303);
   assert.equal(
     response.headers.get("location"),
-    "http://dashboard.lvh.me/admin/onboarding?error=auth_required&shopName=Addis+Pantry&handle=addis-pantry",
+    "http://app.lvh.me/admin/onboarding?error=auth_required&shopName=Addis+Pantry&handle=addis-pantry",
   );
 });
 
 test("POST /admin/onboarding/submit requires a category and contact phone", async () => {
   const response = await POST(
-    new Request("http://dashboard.lvh.me/admin/onboarding/submit", {
+    new Request("http://app.lvh.me/admin/onboarding/submit", {
       body: JSON.stringify({
         handle: "addis-pantry",
         shopName: "Addis Pantry",

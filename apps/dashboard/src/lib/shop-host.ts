@@ -24,7 +24,9 @@ export async function validateShopHost(options: {
   }
 
   const fetcher = options.fetcher ?? fetch;
-  const base = normalizeBaseUrl(options.platformApiBaseUrl ?? process.env.PLATFORM_API_BASE_URL ?? "http://localhost:3000");
+  const base = normalizeBaseUrl(
+    options.platformApiBaseUrl ?? process.env.PLATFORM_API_BASE_URL ?? "http://localhost:3000",
+  );
 
   const response = await fetcher(new URL("/platform/merchant/host", base), {
     cache: "no-store",
@@ -89,7 +91,9 @@ export async function sessionCanAccessShopHost(options: {
   }
 
   const fetcher = options.fetcher ?? fetch;
-  const base = normalizeBaseUrl(options.platformApiBaseUrl ?? process.env.PLATFORM_API_BASE_URL ?? "http://localhost:3000");
+  const base = normalizeBaseUrl(
+    options.platformApiBaseUrl ?? process.env.PLATFORM_API_BASE_URL ?? "http://localhost:3000",
+  );
 
   const response = await fetcher(new URL("/platform/merchant/dashboard/access", base), {
     cache: "no-store",
@@ -105,7 +109,7 @@ export async function sessionCanAccessShopHost(options: {
 
 /** Absolute URL for the central merchant dashboard (sign-in / home). */
 export function getCentralDashboardUrl(path = "/admin/sign-in") {
-  const base = process.env.DASHBOARD_PUBLIC_BASE_URL ?? "http://dashboard.lvh.me";
+  const base = process.env.DASHBOARD_PUBLIC_BASE_URL ?? "http://app.lvh.me";
   const normalized = base.endsWith("/") ? base : `${base}/`;
   const relative = path.startsWith("/") ? path.slice(1) : path;
   return new URL(relative, normalized).toString();

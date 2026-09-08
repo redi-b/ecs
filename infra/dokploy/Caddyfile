@@ -28,7 +28,10 @@
 		reverse_proxy ecs-platform-api:3000
 	}
 
-	@dashboard host dashboard.{$BASE_DOMAIN}
+	@legacy_dashboard host dashboard.{$BASE_DOMAIN}
+	redir @legacy_dashboard https://app.{$BASE_DOMAIN}{uri} permanent
+
+	@dashboard host app.{$BASE_DOMAIN}
 	handle @dashboard {
 		@next_static path /_next/static/*
 		handle @next_static {

@@ -11,8 +11,12 @@ http://api.lvh.me {
 	reverse_proxy host.docker.internal:3000
 }
 
-http://dashboard.lvh.me {
+http://app.lvh.me {
 	reverse_proxy host.docker.internal:3001
+}
+
+http://dashboard.lvh.me {
+	redir http://app.lvh.me{uri} permanent
 }
 
 http://ops.lvh.me {

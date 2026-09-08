@@ -11,7 +11,7 @@ export default async function DashboardHome() {
     redirect("/admin");
   }
 
-  const dashboardUrl = `https://${requestHost ?? "dashboard.lvh.me"}/admin`;
+  const dashboardUrl = `https://${requestHost ?? "app.lvh.me"}/admin`;
 
   return (
     <main className="dashboard-shell">

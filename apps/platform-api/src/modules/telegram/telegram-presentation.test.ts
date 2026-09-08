@@ -96,17 +96,23 @@ describe("telegram-presentation", () => {
 
   it("resolveDashboardAdminBase prefers shop host", () => {
     assert.equal(
-      resolveDashboardAdminBase({ primaryHostname: "shop.lvh.me", fallbackBaseUrl: "http://dashboard.lvh.me" }),
+      resolveDashboardAdminBase({
+        primaryHostname: "shop.lvh.me",
+        fallbackBaseUrl: "http://app.lvh.me",
+      }),
       "http://shop.lvh.me/admin",
     );
     assert.equal(
-      resolveDashboardAdminBase({ primaryHostname: null, fallbackBaseUrl: "http://dashboard.lvh.me" }),
-      "http://dashboard.lvh.me/admin",
+      resolveDashboardAdminBase({ primaryHostname: null, fallbackBaseUrl: "http://app.lvh.me" }),
+      "http://app.lvh.me/admin",
     );
   });
 
   it("adminUrl and htmlLink", () => {
-    assert.equal(adminUrl("http://x/admin", "/settings?tab=telegram"), "http://x/admin/settings?tab=telegram");
+    assert.equal(
+      adminUrl("http://x/admin", "/settings?tab=telegram"),
+      "http://x/admin/settings?tab=telegram",
+    );
     assert.ok(htmlLink("https://example.com", "Go").includes("href="));
   });
 

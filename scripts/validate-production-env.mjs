@@ -157,7 +157,7 @@ export function validateProductionEnvironment(environment) {
     );
     const expected = {
       MEDIA_S3_ENDPOINT: `https://media.${baseDomain}`,
-      MEDIA_S3_CORS_ALLOW_ORIGIN: `https://dashboard.${baseDomain}`,
+      MEDIA_S3_CORS_ALLOW_ORIGIN: `https://app.${baseDomain}`,
     };
     for (const [key, value] of Object.entries(expected)) {
       expect(errors, environment[key] === value, `${key} must be ${value}`);

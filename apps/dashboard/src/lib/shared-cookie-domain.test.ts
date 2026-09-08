@@ -18,7 +18,7 @@ describe("getSharedParentCookieDomain", () => {
     assert.equal(
       getSharedParentCookieDomain({
         authCookieDomain: null,
-        dashboardPublicBaseUrl: "https://dashboard.ecs.eclipticcreative.com",
+        dashboardPublicBaseUrl: "https://app.ecs.eclipticcreative.com",
         hostname: "bole-style.ecs.eclipticcreative.com",
       }),
       ".ecs.eclipticcreative.com",
