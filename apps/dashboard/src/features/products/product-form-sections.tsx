@@ -340,6 +340,7 @@ export function ProductOptionsBuilder({
       optionSetId,
     }: {
       option: ProductOptionDraft;
+      optionIndex: number;
       optionSetId?: string | undefined;
     }) => {
       const actionUrl = optionSetId
@@ -350,10 +351,28 @@ export function ProductOptionsBuilder({
         headers: { accept: "application/json", "content-type": "application/json" },
         method: "POST",
       });
-      const data = (await response.json().catch(() => ({}))) as { error?: string };
+      const data = (await response.json().catch(() => ({}))) as {
+        error?: string;
+        optionSet?: SavedProductOptionSet;
+      };
       if (!response.ok) throw new Error(data.error ?? "option_set_save_failed");
+      return data.optionSet;
     },
-    onSuccess: async (_data, variables) => {
+    onSuccess: async (savedOptionSet, variables) => {
+      const savedOptionSetId = savedOptionSet?.id ?? variables.optionSetId;
+      if (savedOptionSetId) {
+        onChange(
+          options.map((option, optionIndex) =>
+            optionIndex === variables.optionIndex
+              ? {
+                  ...option,
+                  savedOptionSetId,
+                  savedOptionSnapshot: getSavedOptionSnapshot(variables.option),
+                }
+              : option,
+          ),
+        );
+      }
       await queryClient.invalidateQueries({ queryKey: ["product-option-sets", tenantId] });
       toast.success(
         t(
@@ -402,6 +421,7 @@ export function ProductOptionsBuilder({
       {
         key: createClientId("option"),
         savedOptionSetId: optionSet.id,
+        savedOptionSnapshot: getSavedOptionSnapshot(optionSet),
         title: optionSet.title,
         values: optionSet.values.map((value) => ({
           key: createClientId("value"),
@@ -735,11 +755,15 @@ export function ProductOptionsBuilder({
               <div className="flex justify-end gap-1 md:mt-6">
                 <Button
                   disabled={
-                    !option.title.trim() || !option.values.length || saveOptionSet.isPending
+                    !option.title.trim() ||
+                    !option.values.length ||
+                    saveOptionSet.isPending ||
+                    isSavedOptionUnchanged(option)
                   }
                   onClick={() =>
                     saveOptionSet.mutate({
                       option,
+                      optionIndex: index,
                       optionSetId: option.savedOptionSetId,
                     })
                   }
@@ -747,7 +771,11 @@ export function ProductOptionsBuilder({
                   type="button"
                   variant="ghost"
                 >
-                  {t("products.formReview.saveForReuse")}
+                  {isSavedOptionUnchanged(option)
+                    ? t("products.formReview.savedForReuse")
+                    : option.savedOptionSetId
+                      ? t("products.formReview.updateSavedOption")
+                      : t("products.formReview.saveForReuse")}
                 </Button>
                 <Button
                   aria-label={t("products.formReview.removeOptionAria", { option: option.title })}
@@ -785,6 +813,23 @@ type SavedProductOptionSet = {
   title: string;
   values: Array<ProductOptionDraft["values"][number]>;
 };
+
+function getSavedOptionSnapshot(option: Pick<ProductOptionDraft, "title" | "values">) {
+  return JSON.stringify({
+    title: option.title.trim(),
+    values: option.values.map((value) => ({
+      label: value.label.trim(),
+      swatch: value.swatch?.value?.toLowerCase() ?? null,
+    })),
+  });
+}
+
+function isSavedOptionUnchanged(option: ProductOptionDraft) {
+  return (
+    Boolean(option.savedOptionSetId) &&
+    option.savedOptionSnapshot === getSavedOptionSnapshot(option)
+  );
+}
 
 function SuggestedOptionValues({
   existing,
