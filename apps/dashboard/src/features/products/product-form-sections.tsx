@@ -641,10 +641,10 @@ export function ProductOptionsBuilder({
       </div>
 
       {options.length ? (
-        <div className="divide-y rounded-xl border bg-background">
+        <div className="flex max-h-[28rem] flex-col gap-3 overflow-y-auto overscroll-contain pr-1">
           {options.map((option, index) => (
             <div
-              className="grid gap-3 p-3 md:grid-cols-[11rem_minmax(0,1fr)_auto] md:items-start"
+              className="grid gap-3 rounded-xl border bg-background p-3 md:grid-cols-[12rem_minmax(0,1fr)]"
               key={option.id ?? option.key ?? index}
             >
               <Field>
@@ -752,7 +752,7 @@ export function ProductOptionsBuilder({
                 ) : null}
               </Field>
 
-              <div className="flex justify-end gap-1 md:mt-6">
+              <div className="flex flex-wrap items-center justify-end gap-2 md:col-span-2">
                 <Button
                   disabled={
                     !option.title.trim() ||
@@ -769,7 +769,7 @@ export function ProductOptionsBuilder({
                   }
                   size="sm"
                   type="button"
-                  variant="ghost"
+                  variant="outline"
                 >
                   {isSavedOptionUnchanged(option)
                     ? t("products.formReview.savedForReuse")
@@ -784,7 +784,7 @@ export function ProductOptionsBuilder({
                   }
                   size="icon-sm"
                   type="button"
-                  variant="ghost"
+                  variant="destructive"
                 >
                   <AppIcons.trash />
                 </Button>
