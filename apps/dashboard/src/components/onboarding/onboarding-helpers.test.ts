@@ -5,8 +5,8 @@ import type { StorefrontTemplateCatalogItem } from "@ecs/contracts";
 import { getRecommendedTemplateKey, sanitizeHandleDraft, slugify } from "./onboarding-helpers.js";
 
 const templates = [
-  { version: { templateKey: "luvia@1" } },
-  { version: { templateKey: "nexahub@1" } },
+  { tags: ["category:Beauty & personal care", "category:Fashion"], version: { templateKey: "luvia@1" } },
+  { tags: ["category:Electronics", "category:Home & living"], version: { templateKey: "nexahub@1" } },
 ] as StorefrontTemplateCatalogItem[];
 
 test("preserves a trailing handle hyphen while the merchant is typing", () => {

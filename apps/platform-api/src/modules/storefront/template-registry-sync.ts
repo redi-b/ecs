@@ -9,6 +9,11 @@ type PlatformDatabase = ReturnType<typeof createPlatformDb>["db"];
 export async function syncStorefrontTemplateRegistry(db: PlatformDatabase) {
   for (const [sortOrder, template] of storefrontTemplates.entries()) {
     const status = template.availability === "selectable" ? "active" : "deprecated";
+    const tags = [
+      "default",
+      "built-in",
+      ...template.recommendedCategories.map((category) => `category:${category}`),
+    ];
     const [templateRow] = await db
       .insert(storefrontTemplateRows)
       .values({
@@ -17,7 +22,7 @@ export async function syncStorefrontTemplateRegistry(db: PlatformDatabase) {
         name: template.name,
         description: template.description,
         status,
-        tags: ["default", "built-in"],
+        tags,
         sortOrder,
       })
       .onConflictDoUpdate({
@@ -29,7 +34,7 @@ export async function syncStorefrontTemplateRegistry(db: PlatformDatabase) {
           name: template.name,
           description: template.description,
           status,
-          tags: ["default", "built-in"],
+          tags,
           sortOrder,
           updatedAt: new Date(),
         },
