@@ -17,6 +17,7 @@ export type ProductFormProps = {
   action: string;
   categories: MerchantProductCategory[];
   collections: MerchantProductCollection[];
+  initialStep?: ComposerStep["id"] | undefined;
   notice?: ReactNode;
   onClose?: (() => void) | undefined;
   open?: boolean | undefined;
@@ -41,7 +42,10 @@ export type ProductFormValues = {
   variantOverrides: Record<
     string,
     {
+      enabled?: boolean | undefined;
+      id?: string | undefined;
       priceAmount?: string | undefined;
+      reservedQuantity?: number | undefined;
       sku?: string | undefined;
       stockedQuantity?: string | undefined;
     }
@@ -68,8 +72,7 @@ export const PRODUCT_STEPS: ComposerStep[] = [
 export const productPayloadSchema = createProductPayloadSchema((key) => {
   const fallback: Record<string, string> = {
     "products.validation.titleRequired": "Enter a product title.",
-    "products.validation.imageUrlFull":
-      "Use full image URLs that start with http:// or https://.",
+    "products.validation.imageUrlFull": "Use full image URLs that start with http:// or https://.",
     "products.validation.priceNonNegative": "Price cannot be negative.",
     "products.validation.optionNameRequired": "Enter an option name.",
     "products.validation.optionValueRequired": "Enter at least one option value.",
@@ -84,9 +87,7 @@ export function createProductPayloadSchema(t: Translate) {
     description: z.string().trim().nullable(),
     handle: z.string().trim().nullable(),
     thumbnail: z.string().trim().nullable(),
-    imageUrls: z
-      .array(z.string().trim().url(t("products.validation.imageUrlFull")))
-      .optional(),
+    imageUrls: z.array(z.string().trim().url(t("products.validation.imageUrlFull"))).optional(),
     status: z.enum(["draft", "published"]),
     priceAmount: z.number().int().nonnegative(t("products.validation.priceNonNegative")),
     currencyCode: z.literal("etb"),
@@ -115,14 +116,12 @@ export function createProductPayloadSchema(t: Translate) {
     variants: z
       .array(
         z.object({
+          id: z.string().trim().min(1).optional(),
           optionValues: z.record(z.string().min(1), z.string().min(1)),
           sku: z.string().trim().nullable(),
           priceAmount: z.number().int().nonnegative(t("products.validation.priceNonNegative")),
           currencyCode: z.literal("etb"),
-          stockedQuantity: z
-            .number()
-            .int()
-            .nonnegative(t("products.validation.stockNonNegative")),
+          stockedQuantity: z.number().int().nonnegative(t("products.validation.stockNonNegative")),
         }),
       )
       .optional(),

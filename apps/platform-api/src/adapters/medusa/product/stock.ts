@@ -24,7 +24,7 @@ import {
   getInventoryItemUrl,
   getProductInventoryUrl,
 } from "./urls.js";
-import { getBoolean, getNumber, getString, isRecord } from "./values.js";
+import { getString, isRecord } from "./values.js";
 
 export async function getProductInventoryContext(
   fetcher: typeof fetch,
@@ -379,7 +379,9 @@ export async function initializeProductStockLevels(
 ) {
   const response = await requestMedusa(
     fetcher,
-    getProductInventoryUrl(options.medusaInternalUrl, input.productId),
+    getProductInventoryUrl(options.medusaInternalUrl, input.productId, {
+      includeOptionValues: true,
+    }),
     {
       headers: getAdminHeaders(options.adminApiToken ?? ""),
     },
@@ -400,22 +402,58 @@ export async function initializeProductStockLevels(
       ? data.product.variants.filter(isRecord)
       : [];
   const results = await Promise.all(
-    variants.map((variant, index) => {
+    variants.map((variant) => {
       const inventoryItemId = getVariantInventoryItemId(variant);
+      const requestedVariant =
+        findRequestedVariant(variant, input.variants) ??
+        (input.variants?.length ? undefined : { stockedQuantity: 0 });
 
-      if (!inventoryItemId) {
+      if (!inventoryItemId || !requestedVariant) {
         return Promise.resolve(false);
       }
 
       return writeInventoryItemStockLevel(fetcher, options, {
         inventoryItemId,
         stockLocationId: input.stockLocationId,
-        stockedQuantity: input.variants?.[index]?.stockedQuantity ?? 0,
+        stockedQuantity: requestedVariant.stockedQuantity ?? 0,
       }).then((levelResponse) => levelResponse.ok);
     }),
   );
 
   return results.some(Boolean);
+}
+
+export function findRequestedVariant(
+  variant: Record<string, unknown>,
+  requested: ProductVariantWriteInput[] | undefined,
+) {
+  if (!requested?.length) return undefined;
+  const variantId = getString(variant.id);
+  const byId = variantId ? requested.find((candidate) => candidate.id === variantId) : undefined;
+  if (byId) return byId;
+
+  const actualOptions = getVariantOptionValueRecord(variant.options);
+  return requested.find(
+    (candidate) =>
+      Object.keys(candidate.optionValues).length === Object.keys(actualOptions).length &&
+      Object.entries(candidate.optionValues).every(
+        ([title, value]) => actualOptions[title] === value,
+      ),
+  );
+}
+
+function getVariantOptionValueRecord(value: unknown) {
+  if (!Array.isArray(value)) return {};
+
+  return Object.fromEntries(
+    value.flatMap((entry) => {
+      if (!isRecord(entry)) return [];
+      const option = isRecord(entry.option) ? entry.option : undefined;
+      const title = getString(option?.title);
+      const label = getString(entry.value);
+      return title && label ? [[title, label]] : [];
+    }),
+  );
 }
 
 export function getStockWriteError(response: Response): MerchantProductStockUpdateResult {

@@ -39,6 +39,14 @@ export default async function MerchantProductEditPage({
 }: MerchantProductEditPageProps) {
   const t = await getTranslations();
   const [{ productId }, resolvedSearchParams] = await Promise.all([params, searchParams]);
+  const requestedStep = resolvedSearchParams?.step;
+  const initialStep =
+    requestedStep === "details" ||
+    requestedStep === "organize" ||
+    requestedStep === "variants" ||
+    requestedStep === "review"
+      ? requestedStep
+      : "details";
   const tenantId = getSelectedTenantId(resolvedSearchParams ?? {});
   const cookieStore = await cookies();
   const requestHeaders = await headers();
@@ -99,6 +107,7 @@ export default async function MerchantProductEditPage({
               )}
               categories={categoriesResult.ok ? categoriesResult.categories : []}
               collections={collectionsResult.ok ? collectionsResult.collections : []}
+              initialStep={initialStep}
               product={productResult.product}
               returnHref={getTenantScopedPath(
                 dashboardRoutes.productDetail(productResult.product.id),

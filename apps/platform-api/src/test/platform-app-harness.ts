@@ -300,6 +300,7 @@ export function appWithResolution(
     getMerchantProduct?: (input: {
       productId: string;
       salesChannelId: string;
+      stockLocationId?: string | null | undefined;
     }) => Promise<MerchantProductDetailResult>;
     mutateMerchantOrder?: (input: {
       action: MerchantOrderAction;

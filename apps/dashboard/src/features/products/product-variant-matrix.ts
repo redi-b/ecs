@@ -1,11 +1,13 @@
 export type ProductOptionDraft = {
   id?: string | undefined;
+  key?: string | undefined;
   title: string;
   values: ProductOptionValueDraft[];
 };
 
 export type ProductOptionValueDraft = {
   id?: string | undefined;
+  key?: string | undefined;
   label: string;
   swatch?: { kind: "color"; value: string } | null | undefined;
 };
@@ -18,16 +20,22 @@ export type VariantDefaults = {
 };
 
 export type VariantOverride = {
+  enabled?: boolean | undefined;
+  id?: string | undefined;
   priceAmount?: number | undefined;
+  reservedQuantity?: number | undefined;
   sku?: string | undefined;
   stockedQuantity?: number | undefined;
 };
 
 export type VariantMatrixRow = {
   currencyCode: string;
+  enabled: boolean;
+  id?: string | undefined;
   key: string;
   optionValues: Record<string, string>;
   priceAmount: number;
+  reservedQuantity: number;
   sku: string;
   stockedQuantity: number;
 };
@@ -39,6 +47,23 @@ export function getVariantMatrixKey(optionValues: Record<string, string>) {
     .join("|");
 }
 
+/** Draft identity survives label edits and option reordering when Medusa IDs are available. */
+export function getVariantDraftKey(
+  selections: Array<{
+    option: Pick<ProductOptionDraft, "id" | "key" | "title">;
+    value: Pick<ProductOptionValueDraft, "id" | "key" | "label">;
+  }>,
+) {
+  return selections
+    .map(({ option, value }): [string, string] => [
+      option.id ?? option.key ?? `title:${option.title.trim().toLocaleLowerCase()}`,
+      value.id ?? value.key ?? `label:${value.label.trim().toLocaleLowerCase()}`,
+    ])
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([option, value]) => `${option}:${value}`)
+    .join("|");
+}
+
 export function buildVariantMatrix(input: {
   defaults: VariantDefaults;
   options: ProductOptionDraft[];
@@ -46,8 +71,11 @@ export function buildVariantMatrix(input: {
 }): VariantMatrixRow[] {
   const options = input.options
     .map((option) => ({
+      option,
       title: option.title.trim(),
-      values: option.values.map((value) => value.label.trim()).filter(Boolean),
+      values: option.values
+        .map((value) => ({ value, label: value.label.trim() }))
+        .filter(({ label }) => Boolean(label)),
     }))
     .filter((option) => option.title && option.values.length);
 
@@ -58,28 +86,41 @@ export function buildVariantMatrix(input: {
     return [
       {
         currencyCode: input.defaults.currencyCode,
+        enabled: override?.enabled ?? true,
+        ...(override?.id ? { id: override.id } : {}),
         key,
         optionValues: {},
         priceAmount: override?.priceAmount ?? input.defaults.priceAmount,
+        reservedQuantity: override?.reservedQuantity ?? 0,
         sku: override?.sku ?? input.defaults.skuPrefix.trim(),
         stockedQuantity: override?.stockedQuantity ?? input.defaults.stockedQuantity,
       },
     ];
   }
 
-  const combinations = options.reduce<Array<Record<string, string>>>(
+  const combinations = options.reduce<
+    Array<
+      Array<{
+        label: string;
+        option: ProductOptionDraft;
+        title: string;
+        value: ProductOptionValueDraft;
+      }>
+    >
+  >(
     (rows, option) =>
       rows.flatMap((row) =>
-        option.values.map((value) => ({
+        option.values.map(({ value, label }) => [
           ...row,
-          [option.title]: value,
-        })),
+          { option: option.option, value, title: option.title, label },
+        ]),
       ),
-    [{}],
+    [[]],
   );
 
-  return combinations.map((optionValues) => {
-    const key = getVariantMatrixKey(optionValues);
+  return combinations.map((combination) => {
+    const optionValues = Object.fromEntries(combination.map(({ title, label }) => [title, label]));
+    const key = getVariantDraftKey(combination);
     const override = input.overrides.get(key);
     const skuSuffix = Object.values(optionValues)
       .map((value) => value.toUpperCase().replace(/[^A-Z0-9]+/g, "-"))
@@ -88,9 +129,12 @@ export function buildVariantMatrix(input: {
 
     return {
       currencyCode: input.defaults.currencyCode,
+      enabled: override?.enabled ?? true,
+      ...(override?.id ? { id: override.id } : {}),
       key,
       optionValues,
       priceAmount: override?.priceAmount ?? input.defaults.priceAmount,
+      reservedQuantity: override?.reservedQuantity ?? 0,
       sku: override?.sku ?? [skuPrefix, skuSuffix].filter(Boolean).join("-"),
       stockedQuantity: override?.stockedQuantity ?? input.defaults.stockedQuantity,
     };

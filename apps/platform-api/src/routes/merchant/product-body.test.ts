@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { getOptionalBodyProductOptions } from "./product-body.js";
+import { getOptionalBodyProductOptions, getOptionalBodyProductVariants } from "./product-body.js";
 
 test("product options accept legacy labels and structured swatches", () => {
   assert.deepEqual(
@@ -27,6 +27,31 @@ test("product options accept legacy labels and structured swatches", () => {
           { id: "optval_cream", label: "Cream", swatch: { kind: "color", value: "#ffddee" } },
           { label: "Natural", swatch: null },
         ],
+      },
+    ],
+  );
+});
+
+test("product variants preserve existing IDs", () => {
+  assert.deepEqual(
+    getOptionalBodyProductVariants({
+      variants: [
+        {
+          id: " variant_1 ",
+          optionValues: { Size: " M " },
+          priceAmount: 1200,
+          currencyCode: " ETB ",
+          stockedQuantity: 4,
+        },
+      ],
+    }),
+    [
+      {
+        id: "variant_1",
+        optionValues: { Size: "M" },
+        priceAmount: 1200,
+        currencyCode: "etb",
+        stockedQuantity: 4,
       },
     ],
   );

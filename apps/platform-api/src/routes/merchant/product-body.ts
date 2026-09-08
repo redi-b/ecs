@@ -30,7 +30,7 @@ export function getOptionalBodyProductOptions(body: unknown) {
           const label = getTrimmedString((value as { label?: unknown }).label);
           if (!label) return [];
           const valueId = getTrimmedString((value as { id?: unknown }).id);
-          const hasSwatch = Object.prototype.hasOwnProperty.call(value, "swatch");
+          const hasSwatch = Object.hasOwn(value, "swatch");
           const swatch = getColorSwatch((value as { swatch?: unknown }).swatch);
 
           return [
@@ -90,6 +90,7 @@ export function getOptionalBodyProductVariants(body: unknown) {
     const optionValues = getProductVariantOptionValues(
       (variant as { optionValues?: unknown }).optionValues,
     );
+    const id = getTrimmedString((variant as { id?: unknown }).id);
     const priceAmount = (variant as { priceAmount?: unknown }).priceAmount;
     const currencyCode =
       typeof (variant as { currencyCode?: unknown }).currencyCode === "string"
@@ -113,6 +114,7 @@ export function getOptionalBodyProductVariants(body: unknown) {
     return [
       {
         currencyCode,
+        ...(id ? { id } : {}),
         optionValues,
         priceAmount,
         ...(sku ? { sku } : {}),

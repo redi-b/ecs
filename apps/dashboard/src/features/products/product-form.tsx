@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import type { z } from "zod";
+import { ConfirmDialog } from "@/components/app/confirm-dialog";
 import {
   DialogStepPanel,
   DialogStepRail,
@@ -61,6 +62,7 @@ import {
   getProductMutationError,
   getProductPayload,
   getProductSuccessPath,
+  getRemovedExistingVariants,
   getVariantRows,
   isInitialHandleLocked,
   ProductMutationError,
@@ -74,12 +76,12 @@ import type { ComposerStep, ProductFormProps } from "@/features/products/product
 import { PRODUCT_STEPS, type productPayloadSchema } from "@/features/products/product-form-types";
 import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes-guard";
 import { useI18n } from "@/i18n/provider";
-import { cn } from "@/lib/utils";
 
 export function ProductForm({
   action,
   categories,
   collections,
+  initialStep = "details",
   notice,
   onClose,
   open = true,
@@ -90,11 +92,15 @@ export function ProductForm({
   const { t } = useI18n();
   const router = useRouter();
   const queryClient = useQueryClient();
-  const [activeStep, setActiveStep] = useState<ComposerStep["id"]>("details");
+  const [activeStep, setActiveStep] = useState<ComposerStep["id"]>(initialStep);
   const [completedSteps, setCompletedSteps] = useState<ComposerStep["id"][]>([]);
   const [isHandleLocked, setIsHandleLocked] = useState(isInitialHandleLocked(product));
   const [actionError, setActionError] = useState<string | null>(null);
   const [suggestedHandle, setSuggestedHandle] = useState<string | null>(null);
+  const [pendingRemoval, setPendingRemoval] = useState<{
+    count: number;
+    payload: z.infer<typeof productPayloadSchema>;
+  } | null>(null);
   const defaultValues = useMemo(() => getProductDefaultValues(product), [product]);
   const steps = useMemo<ComposerStep[]>(
     () => [
@@ -128,20 +134,16 @@ export function ProductForm({
         setActionError(null);
         setSuggestedHandle(null);
         const payload = getProductPayload(value, { includeOptions: true }, t);
+        const removedVariants = product ? getRemovedExistingVariants(value) : [];
 
-        await submitMutation.mutateAsync(payload);
+        if (removedVariants.length) {
+          setPendingRemoval({ count: removedVariants.length, payload });
+          return;
+        }
+
+        await savePayload(payload);
       } catch (error) {
-        const message = getErrorMessage(error, t);
-
-        if (error instanceof ProductMutationError && error.step) {
-          setActiveStep(error.step);
-        }
-
-        if (error instanceof ProductMutationError && error.code === "product_conflict") {
-          setSuggestedHandle(suggestAvailableProductHandle(form.state.values.handle));
-        }
-
-        setActionError(message);
+        handleSaveError(error);
       }
     },
   });
@@ -199,6 +201,28 @@ export function ProductForm({
   const { leaveDialogOpen, requestLeave, confirmLeave, cancelLeave } = useUnsavedChangesGuard(
     isDirty && open,
   );
+
+  async function savePayload(payload: z.infer<typeof productPayloadSchema>) {
+    try {
+      await submitMutation.mutateAsync(payload);
+    } catch (error) {
+      handleSaveError(error);
+    }
+  }
+
+  function handleSaveError(error: unknown) {
+    const message = getErrorMessage(error, t);
+
+    if (error instanceof ProductMutationError && error.step) {
+      setActiveStep(error.step);
+    }
+
+    if (error instanceof ProductMutationError && error.code === "product_conflict") {
+      setSuggestedHandle(suggestAvailableProductHandle(form.state.values.handle));
+    }
+
+    setActionError(message);
+  }
 
   function closeComposer() {
     requestLeave(() => {
@@ -367,7 +391,7 @@ export function ProductForm({
                 ariaLabel={t("products.composer.stepsAria")}
                 className="min-w-0 border-b lg:border-b-0"
                 currentId={activeStep}
-                getStatus={(step, index) => {
+                getStatus={(_step, index) => {
                   const currentIndex = PRODUCT_STEPS.findIndex((s) => s.id === activeStep);
                   const completedIndexes = completedSteps
                     .map((id) => PRODUCT_STEPS.findIndex((s) => s.id === id))
@@ -800,49 +824,61 @@ export function ProductForm({
                           </div>
                         </div>
 
-                        {!product ? (
-                          <form.Field name="hasVariants">
-                            {(field) => (
-                              <div className="flex items-start justify-between gap-4 rounded-2xl border bg-muted/20 p-4">
-                                <div className="max-w-2xl">
-                                  <h3 className="text-sm font-medium">
-                                    {t("products.composer.hasVariantsTitle")}
-                                  </h3>
-                                  <p className="mt-1 text-sm text-muted-foreground">
-                                    {t("products.composer.hasVariantsDesc")}
-                                  </p>
-                                </div>
-                                <Switch
-                                  aria-label={t("products.composer.enableVariantsAria")}
-                                  checked={field.state.value}
-                                  onCheckedChange={(checked) => {
-                                    field.handleChange(checked);
-                                    if (!checked) {
-                                      form.setFieldValue("variantOverrides", {});
-                                    }
-                                  }}
-                                />
+                        <form.Field name="hasVariants">
+                          {(field) => (
+                            <div className="flex items-start justify-between gap-4 rounded-2xl border bg-muted/20 p-4">
+                              <div className="max-w-2xl">
+                                <h3 className="text-sm font-medium">
+                                  {t("products.composer.hasVariantsTitle")}
+                                </h3>
+                                <p className="mt-1 text-sm text-muted-foreground">
+                                  {t("products.composer.hasVariantsDesc")}
+                                </p>
                               </div>
-                            )}
-                          </form.Field>
-                        ) : null}
+                              <Switch
+                                aria-label={t("products.composer.enableVariantsAria")}
+                                checked={field.state.value}
+                                onCheckedChange={(checked) => {
+                                  field.handleChange(checked);
+                                  if (!checked && !product) {
+                                    form.setFieldValue("variantOverrides", {});
+                                  }
+                                }}
+                              />
+                            </div>
+                          )}
+                        </form.Field>
 
                         <form.Subscribe selector={(state) => state.values}>
                           {(values) =>
                             values.hasVariants ? (
                               <>
-                                {!product ? (
-                                  <form.Field name="options">
-                                    {(field) => (
-                                      <ProductOptionsBuilder
-                                        onChange={field.handleChange}
-                                        options={field.state.value}
-                                      />
-                                    )}
-                                  </form.Field>
-                                ) : null}
+                                <form.Field name="options">
+                                  {(field) => (
+                                    <ProductOptionsBuilder
+                                      onChange={field.handleChange}
+                                      options={field.state.value}
+                                    />
+                                  )}
+                                </form.Field>
 
                                 <VariantMatrixTable
+                                  onApplyDefaults={() => {
+                                    const rows = getVariantRows(values);
+                                    form.setFieldValue(
+                                      "variantOverrides",
+                                      Object.fromEntries(
+                                        rows.map((row) => [
+                                          row.key,
+                                          {
+                                            ...values.variantOverrides[row.key],
+                                            priceAmount: values.priceAmount,
+                                            stockedQuantity: values.initialStock,
+                                          },
+                                        ]),
+                                      ),
+                                    );
+                                  }}
                                   onOverrideChange={(key, override) => {
                                     form.setFieldValue("variantOverrides", {
                                       ...values.variantOverrides,
@@ -937,6 +973,22 @@ export function ProductForm({
       </Dialog>
 
       <UnsavedChangesDialog onLeave={confirmLeave} onStay={cancelLeave} open={leaveDialogOpen} />
+      <ConfirmDialog
+        confirmLabel={t("products.formReview.confirmVariantRemoval")}
+        description={t("products.formReview.confirmVariantRemovalDesc", {
+          count: pendingRemoval?.count ?? 0,
+        })}
+        onConfirm={() => {
+          const payload = pendingRemoval?.payload;
+          setPendingRemoval(null);
+          if (payload) void savePayload(payload);
+        }}
+        onOpenChange={(nextOpen) => {
+          if (!nextOpen) setPendingRemoval(null);
+        }}
+        open={Boolean(pendingRemoval)}
+        title={t("products.formReview.confirmVariantRemovalTitle")}
+      />
     </>
   );
 }

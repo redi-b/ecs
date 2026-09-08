@@ -334,6 +334,7 @@ export function registerMerchantProductRoutes(
     const product = await options.getMerchantProduct({
       productId: context.req.param("productId"),
       salesChannelId: commerce.context.medusaSalesChannelId,
+      stockLocationId: commerce.context.medusaStockLocationId,
     });
 
     if (!product.ok) {
@@ -660,6 +661,7 @@ export function registerMerchantProductRoutes(
 
     const body = await getJsonBody(context.req.raw);
     const productOptions = getOptionalBodyProductOptions(body);
+    const productVariants = getOptionalBodyProductVariants(body);
     const product = await options.updateMerchantProduct({
       productId: context.req.param("productId"),
       title: getOptionalBodyString(body, "title"),
@@ -669,7 +671,12 @@ export function registerMerchantProductRoutes(
       categoryIds: getOptionalBodyStringArray(body, "categoryIds"),
       imageUrls: getOptionalBodyStringArray(body, "imageUrls"),
       ...(productOptions ? { options: productOptions } : {}),
+      ...(productVariants ? { variants: productVariants } : {}),
+      regionId: commerce.context.medusaRegionId,
       status: getOptionalBodyString(body, "status"),
+      ...(result.context.medusaStockLocationId
+        ? { stockLocationId: result.context.medusaStockLocationId }
+        : {}),
       thumbnail: getOptionalBodyString(body, "thumbnail"),
       salesChannelId: commerce.context.medusaSalesChannelId,
     });
