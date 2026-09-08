@@ -73,6 +73,7 @@ import {
   validateTitle,
 } from "@/features/products/product-form-state";
 import type { ComposerStep, ProductFormProps } from "@/features/products/product-form-types";
+import { useProductHandleAvailability } from "@/features/products/use-product-handle-availability";
 import { PRODUCT_STEPS, type productPayloadSchema } from "@/features/products/product-form-types";
 import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes-guard";
 import { useI18n } from "@/i18n/provider";
@@ -131,6 +132,9 @@ export function ProductForm({
     defaultValues,
     onSubmit: async ({ value }) => {
       try {
+        if (handleAvailability === "taken") {
+          throw new ProductMutationError(t("products.validation.handleTaken"), "details");
+        }
         setActionError(null);
         setSuggestedHandle(null);
         const payload = getProductPayload(value, { includeOptions: true }, t);
@@ -146,6 +150,13 @@ export function ProductForm({
         handleSaveError(error);
       }
     },
+  });
+  const currentHandle = useStore(form.store, (state) => state.values.handle);
+  const handleAvailability = useProductHandleAvailability({
+    action,
+    currentHandle: product?.handle,
+    handle: currentHandle,
+    productId: product?.id,
   });
   const submitMutation = useMutation({
     mutationFn: async (payload: z.infer<typeof productPayloadSchema>) => {
@@ -467,7 +478,7 @@ export function ProductForm({
 
                           <form.Field name="handle">
                             {(field) => (
-                              <Field>
+                              <Field data-invalid={handleAvailability === "taken" || undefined}>
                                 <FieldLabel htmlFor={field.name}>
                                   {t("products.composer.fieldHandle")}
                                 </FieldLabel>
@@ -543,10 +554,18 @@ export function ProductForm({
                                     </Tooltip>
                                   </InputGroupAddon>
                                 </InputGroup>
-                                <FieldDescription>
-                                  {isHandleLocked
-                                    ? t("products.composer.autoHandle")
-                                    : t("products.composer.customHandle")}
+                                <FieldDescription
+                                  className={handleAvailability === "taken" ? "text-destructive" : undefined}
+                                >
+                                  {handleAvailability === "checking"
+                                    ? t("products.validation.handleChecking")
+                                    : handleAvailability === "available"
+                                      ? t("products.validation.handleAvailable")
+                                      : handleAvailability === "taken"
+                                        ? t("products.validation.handleTaken")
+                                        : isHandleLocked
+                                          ? t("products.composer.autoHandle")
+                                          : t("products.composer.customHandle")}
                                 </FieldDescription>
                               </Field>
                             )}
