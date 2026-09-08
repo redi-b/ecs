@@ -11,6 +11,7 @@ import {
   deliverMerchantOrderFulfillment,
   fulfillMerchantOrder,
   getMerchantOrderForAction,
+  shipMerchantOrderFulfillment,
 } from "./actions.js";
 import { applyOrderListPostFilters, needsPostFilter } from "./list-query.js";
 import { getAdminHeaders, missingCredentials, requestMedusa } from "./medusa-http.js";
@@ -166,7 +167,6 @@ export function createMedusaOrderService(options: {
     },
 
     finishMerchantOrder: async (input: {
-      markPaid?: boolean | undefined;
       orderId: string;
       salesChannelId: string;
       stockLocationId?: string | undefined;
@@ -180,7 +180,6 @@ export function createMedusaOrderService(options: {
     mutateMerchantOrder: async (input: {
       action: MerchantOrderAction;
       fulfillmentId?: string | undefined;
-      markPaid?: boolean | undefined;
       orderId: string;
       salesChannelId: string;
       shippingOptionId?: string | undefined;
@@ -205,12 +204,10 @@ export function createMedusaOrderService(options: {
 
       if (input.action === "finish") {
         return finishMerchantOrder(fetcher, options, {
-          markPaid: input.markPaid,
           orderId: input.orderId,
           salesChannelId: input.salesChannelId,
           shippingOptionId: input.shippingOptionId,
           stockLocationId: input.stockLocationId,
-          settlement: input.settlement,
         });
       }
 
@@ -229,6 +226,19 @@ export function createMedusaOrderService(options: {
         return existing;
       }
 
+      if (input.action === "cancel") {
+        const status = existing.order.status?.toLowerCase() ?? "";
+        const fulfillment = existing.order.fulfillmentStatus?.toLowerCase() ?? "";
+        const payment = existing.order.paymentStatus?.toLowerCase() ?? "";
+        if (status.includes("cancel")) return existing;
+        if (status.includes("complete") || fulfillment.includes("deliver")) {
+          return { ok: false, error: "order_not_cancelable", status: 409 };
+        }
+        if (payment.includes("captur") || payment === "paid") {
+          return { ok: false, error: "order_refund_required", status: 409 };
+        }
+      }
+
       if (input.action === "fulfill") {
         return fulfillMerchantOrder(fetcher, options, {
           order: existing.order,
@@ -241,6 +251,13 @@ export function createMedusaOrderService(options: {
 
       if (input.action === "deliver") {
         return deliverMerchantOrderFulfillment(fetcher, options, {
+          ...input,
+          order: existing.order,
+        });
+      }
+
+      if (input.action === "ship") {
+        return shipMerchantOrderFulfillment(fetcher, options, {
           ...input,
           order: existing.order,
         });

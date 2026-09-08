@@ -7,6 +7,7 @@ export type MerchantOrderAction =
   | "complete"
   | "deliver"
   | "fulfill"
+  | "ship"
   | "mark-paid"
   | "recheck-payment"
   | "finish";
@@ -174,7 +175,6 @@ export async function mutateMerchantOrder(options: {
   cookieHeader?: string | null | undefined;
   fetcher?: typeof fetch;
   fulfillmentId?: string | null | undefined;
-  markPaid?: boolean | undefined;
   orderId: string;
   platformApiBaseUrl: string;
   requestHost?: string | null | undefined;
@@ -183,13 +183,7 @@ export async function mutateMerchantOrder(options: {
 }): Promise<MerchantOrderActionResult> {
   const fetcher = options.fetcher ?? fetch;
   const body: Record<string, unknown> = {};
-  if (options.action === "finish" && options.markPaid) {
-    body.markPaid = true;
-    if (options.settlement) {
-      Object.assign(body, options.settlement);
-    }
-  }
-  if (options.action === "deliver" && options.fulfillmentId) {
+  if ((options.action === "deliver" || options.action === "ship") && options.fulfillmentId) {
     body.fulfillmentId = options.fulfillmentId;
   }
   if (options.action === "mark-paid" && options.settlement) {
@@ -303,8 +297,8 @@ function getOrderActionUrl(options: {
     ? `/platform/tenants/${encodeURIComponent(tenantId)}/orders/${encodedOrderId}`
     : `/platform/merchant/orders/${encodedOrderId}`;
   const path =
-    options.action === "deliver"
-      ? `${basePath}/fulfillments/${encodeURIComponent(options.fulfillmentId ?? "")}/deliver`
+    options.action === "deliver" || options.action === "ship"
+      ? `${basePath}/fulfillments/${encodeURIComponent(options.fulfillmentId ?? "")}/${options.action}`
       : `${basePath}/${options.action}`;
 
   return new URL(path, normalizeBaseUrl(options.platformApiBaseUrl));

@@ -177,17 +177,12 @@ describe("getMerchantOrder", () => {
 });
 
 describe("mutateMerchantOrder", () => {
-  it("forwards the merchant-selected settlement when finishing and marking paid", async () => {
+  it("keeps payment separate when completing remaining fulfillment steps", async () => {
     let forwardedRequest: Request | undefined;
     const result = await mutateMerchantOrder({
       action: "finish",
-      markPaid: true,
       orderId: "order_1",
       platformApiBaseUrl: "http://platform.local",
-      settlement: {
-        settlementMethod: "telebirr",
-        reference: "TX-100",
-      },
       fetcher: async (input, init) => {
         forwardedRequest = new Request(input, init);
         return Response.json({
@@ -208,11 +203,7 @@ describe("mutateMerchantOrder", () => {
     });
 
     assert.equal(result.ok, true);
-    assert.deepEqual(await forwardedRequest?.json(), {
-      markPaid: true,
-      settlementMethod: "telebirr",
-      reference: "TX-100",
-    });
+    assert.deepEqual(await forwardedRequest?.json(), {});
   });
 
   it("forwards fulfill actions through the selected tenant route", async () => {
@@ -302,5 +293,29 @@ describe("mutateMerchantOrder", () => {
       "http://platform.local/platform/merchant/orders/order_1/fulfillments/ful_1/deliver",
     );
     assert.equal(forwardedRequest?.headers.get("x-forwarded-host"), "abebe.lvh.me");
+  });
+
+  it("forwards shipment actions with fulfillment id through the selected tenant route", async () => {
+    let forwardedRequest: Request | undefined;
+    const result = await mutateMerchantOrder({
+      action: "ship",
+      fulfillmentId: "ful_1",
+      platformApiBaseUrl: "http://platform.local",
+      tenantId: "tenant_1",
+      orderId: "order_1",
+      fetcher: async (input, init) => {
+        forwardedRequest = new Request(input, init);
+        return Response.json({
+          order: {
+            id: "order_1", displayId: 1001, email: "customer@example.com", status: "pending",
+            paymentStatus: "captured", fulfillmentStatus: "shipped", currencyCode: "etb",
+            total: 1250, createdAt: "2026-01-01T00:00:00.000Z", updatedAt: "2026-01-02T00:00:00.000Z",
+          },
+        });
+      },
+    });
+
+    assert.equal(result.ok, true);
+    assert.equal(forwardedRequest?.url, "http://platform.local/platform/tenants/tenant_1/orders/order_1/fulfillments/ful_1/ship");
   });
 });

@@ -31,6 +31,7 @@ import {
   getOrderCustomerName,
   getOrderCustomerPhone,
   getOrderProgress,
+  getOrderWorkflowStage,
   getPaymentLabel,
   getPaymentStatusLabel,
 } from "@/features/orders/order-domain";
@@ -74,7 +75,7 @@ function buildActivity(order: MerchantOrder, t: Translate) {
 
   for (const fulfillment of order.fulfillments ?? []) {
     if (fulfillment.shippedAt) {
-      events.push({ at: fulfillment.shippedAt, label: t("orders.detail.activityReady") });
+      events.push({ at: fulfillment.shippedAt, label: t("orders.detail.activityOutForDelivery") });
     }
     if (fulfillment.deliveredAt) {
       events.push({ at: fulfillment.deliveredAt, label: t("orders.detail.activityHanded") });
@@ -114,8 +115,10 @@ export async function OrderDetail({
   const customerPhone = getOrderCustomerPhone(order);
   const items = order.items ?? [];
   const progress = getOrderProgress(order);
+  const workflow = getOrderWorkflowStage(order);
+  const delivery = getDeliveryLabel(order);
   const steps =
-    progress === "canceled"
+    workflow === "canceled"
       ? [
           {
             id: "canceled",
@@ -125,25 +128,32 @@ export async function OrderDetail({
             muted: true,
           },
         ]
-      : [
+      : delivery === "delivery"
+        ? [
           {
             id: "new",
             label: t("orders.detail.stepNew"),
             done: true,
-            current: progress === "new",
+            current: workflow === "new",
           },
           {
-            id: "ready",
-            label: t("orders.detail.stepReady"),
-            done: progress === "ready" || progress === "completed",
-            current: progress === "ready",
+            id: "preparing",
+            label: t("orders.detail.stepPreparing"),
+            done: workflow === "preparing" || workflow === "out_for_delivery" || workflow === "completed",
+            current: workflow === "preparing",
           },
           {
-            id: "completed",
-            label: t("orders.detail.stepCompleted"),
-            done: progress === "completed",
-            current: progress === "completed",
+            id: "out_for_delivery",
+            label: t("orders.detail.stepOutForDelivery"),
+            done: workflow === "out_for_delivery" || workflow === "completed",
+            current: workflow === "out_for_delivery",
           },
+          { id: "completed", label: t("orders.detail.stepDelivered"), done: workflow === "completed", current: workflow === "completed" },
+        ]
+        : [
+          { id: "new", label: t("orders.detail.stepNew"), done: true, current: workflow === "new" },
+          { id: "ready", label: t("orders.detail.stepReadyForPickup"), done: workflow === "ready_for_pickup" || workflow === "ready" || workflow === "completed", current: workflow === "ready_for_pickup" || workflow === "ready" },
+          { id: "completed", label: delivery === "pickup" ? t("orders.detail.stepPickedUp") : t("orders.detail.stepCompleted"), done: workflow === "completed", current: workflow === "completed" },
         ];
 
   const activity = buildActivity(order, t);

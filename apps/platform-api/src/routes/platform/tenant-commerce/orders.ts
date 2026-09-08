@@ -6,6 +6,7 @@ import type {
 } from "../../../app.js";
 import { parseMerchantOrderListQuery } from "../../../adapters/medusa/order/list-query.js";
 import { buildPaymentPaidPayload } from "../../../modules/notifications/order-payload.js";
+import { parseOrderSettlementInput } from "../../../lib/order-settlement-input.js";
 import { getPaginationValue } from "../../shared.js";
 
 export function registerPlatformTenantOrdersRoutes(
@@ -136,7 +137,7 @@ export function registerPlatformTenantOrdersRoutes(
       return context.json({ error: "order_not_found" }, 404);
     }
 
-    if (action === "deliver" && !fulfillmentId) {
+    if ((action === "deliver" || action === "ship") && !fulfillmentId) {
       return context.json({ error: "order_fulfillment_not_found" }, 404);
     }
 
@@ -153,9 +154,15 @@ export function registerPlatformTenantOrdersRoutes(
       return context.json({ error: "inventory_location_unavailable" }, 503);
     }
 
+    const body = (await context.req.json().catch(() => ({}))) as Record<string, unknown>;
+    const settlement = action === "mark-paid" ? parseOrderSettlementInput(body) : undefined;
+    if (action === "mark-paid" && !settlement) {
+      return context.json({ error: "settlement_method_required" }, 400);
+    }
+
     const order = await options.mutateMerchantOrder({
       action,
-      ...(action === "deliver" ? { fulfillmentId } : {}),
+      ...(action === "deliver" || action === "ship" ? { fulfillmentId } : {}),
       orderId,
       salesChannelId: commerce.context.medusaSalesChannelId,
       ...(action === "fulfill" || action === "finish"
@@ -164,6 +171,7 @@ export function registerPlatformTenantOrdersRoutes(
             shippingOptionId: commerce.context.medusaShippingOptionId ?? undefined,
           }
         : {}),
+      ...(settlement ? { settlement, source: "dashboard" as const } : {}),
     });
 
     if (!order.ok) {
@@ -202,6 +210,11 @@ export function registerPlatformTenantOrdersRoutes(
     (context) => mutateSelectedTenantOrder(context, "deliver"),
   );
 
+  app.post(
+    "/platform/tenants/:tenantId/orders/:orderId/fulfillments/:fulfillmentId/ship",
+    (context) => mutateSelectedTenantOrder(context, "ship"),
+  );
+
   app.post("/platform/tenants/:tenantId/orders/:orderId/mark-paid", (context) =>
     mutateSelectedTenantOrder(context, "mark-paid"),
   );
@@ -222,7 +235,6 @@ export function registerPlatformTenantOrdersRoutes(
       return context.json({ error: "order_not_found" }, 404);
     }
 
-    const body = (await context.req.json().catch(() => ({}))) as { markPaid?: unknown };
     const commerce = await options.getTenantCommerceContext({
       tenantId,
       userId: session.user.id,
@@ -233,7 +245,6 @@ export function registerPlatformTenantOrdersRoutes(
 
     const order = await options.mutateMerchantOrder({
       action: "finish",
-      markPaid: body.markPaid === true,
       orderId,
       salesChannelId: commerce.context.medusaSalesChannelId,
       stockLocationId: commerce.context.medusaStockLocationId ?? undefined,

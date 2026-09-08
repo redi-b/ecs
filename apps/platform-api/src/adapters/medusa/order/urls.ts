@@ -186,6 +186,18 @@ export function getOrderFulfillmentDeliveryUrl(
   );
 }
 
+export function getOrderFulfillmentShipmentUrl(
+  medusaInternalUrl: string,
+  input: { fulfillmentId: string; orderId: string },
+) {
+  return new URL(
+    `/admin/orders/${encodeURIComponent(input.orderId)}/fulfillments/${encodeURIComponent(
+      input.fulfillmentId,
+    )}/shipments`,
+    normalizeBaseUrl(medusaInternalUrl),
+  );
+}
+
 export function getOrderActionUrl(
   medusaInternalUrl: string,
   input: { action: "cancel" | "complete"; orderId: string },
