@@ -113,7 +113,15 @@ export function validateProductVariantConfiguration(values: ProductFormValues, t
     }
   }
 
-  if (!getVariantRows(values).some((row) => row.enabled)) {
+  const rows = getVariantRows(values);
+  if (rows.length > 100) {
+    throw new ProductMutationError(
+      t("products.validation.variantLimit", { count: 100 }),
+      "variants",
+    );
+  }
+
+  if (!rows.some((row) => row.enabled)) {
     throw new ProductMutationError(t("products.validation.variantRequired"), "variants");
   }
 

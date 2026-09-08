@@ -150,4 +150,32 @@ describe("product variant edit state", () => {
       /products\.validation\.variantReserved/,
     );
   });
+
+  it("rejects option combinations above the supported variant limit", () => {
+    const values = getProductDefaultValues(undefined);
+    values.hasVariants = true;
+    values.options = [
+      {
+        key: "option-a",
+        title: "Size",
+        values: Array.from({ length: 11 }, (_, index) => ({
+          key: `size-${index}`,
+          label: `Size ${index + 1}`,
+        })),
+      },
+      {
+        key: "option-b",
+        title: "Color",
+        values: Array.from({ length: 10 }, (_, index) => ({
+          key: `color-${index}`,
+          label: `Color ${index + 1}`,
+        })),
+      },
+    ];
+
+    assert.throws(
+      () => validateProductVariantConfiguration(values, t as never),
+      /products\.validation\.variantLimit/,
+    );
+  });
 });
