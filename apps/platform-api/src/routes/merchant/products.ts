@@ -705,4 +705,95 @@ export function registerMerchantProductRoutes(
     if (!result.ok) return context.json({ error: result.error }, result.status);
     return context.json(result);
   });
+
+  app.get("/platform/merchant/product-option-sets", async (context) => {
+    const merchant = await getAuthorizedMerchantContext(context);
+    if (!merchant.ok) return merchant.response;
+    if (!options.listMerchantProductOptionSets) {
+      return context.json({ error: "product_option_sets_unavailable" }, 500);
+    }
+    const result = await options.listMerchantProductOptionSets({
+      tenantId: merchant.result.context.tenantId,
+    });
+    return context.json({ optionSets: result.optionSets });
+  });
+
+  app.post("/platform/merchant/product-option-sets", async (context) => {
+    const merchant = await getAuthorizedMerchantContext(context);
+    if (!merchant.ok) return merchant.response;
+    if (!options.createMerchantProductOptionSet) {
+      return context.json({ error: "product_option_sets_unavailable" }, 500);
+    }
+    const body = await getJsonBody(context.req.raw);
+    const title = getRequiredBodyString(body, "title");
+    const values = getProductOptionSetValues(body);
+    if (!title || !values) return context.json({ error: "invalid_product_option_set" }, 400);
+    const result = await options.createMerchantProductOptionSet({
+      tenantId: merchant.result.context.tenantId,
+      title,
+      values,
+    });
+    if (!result.ok) return context.json({ error: result.error }, result.status);
+    return context.json({ optionSet: result.optionSet }, 201);
+  });
+
+  app.post("/platform/merchant/product-option-sets/:optionSetId", async (context) => {
+    const merchant = await getAuthorizedMerchantContext(context);
+    if (!merchant.ok) return merchant.response;
+    if (!options.updateMerchantProductOptionSet) {
+      return context.json({ error: "product_option_sets_unavailable" }, 500);
+    }
+    const body = await getJsonBody(context.req.raw);
+    const title = getRequiredBodyString(body, "title");
+    const values = getProductOptionSetValues(body);
+    if (!title || !values) return context.json({ error: "invalid_product_option_set" }, 400);
+    const result = await options.updateMerchantProductOptionSet({
+      tenantId: merchant.result.context.tenantId,
+      optionSetId: context.req.param("optionSetId"),
+      title,
+      values,
+    });
+    if (!result.ok) return context.json({ error: result.error }, result.status);
+    return context.json({ optionSet: result.optionSet });
+  });
+
+  app.delete("/platform/merchant/product-option-sets/:optionSetId", async (context) => {
+    const merchant = await getAuthorizedMerchantContext(context);
+    if (!merchant.ok) return merchant.response;
+    if (!options.deleteMerchantProductOptionSet) {
+      return context.json({ error: "product_option_sets_unavailable" }, 500);
+    }
+    const result = await options.deleteMerchantProductOptionSet({
+      tenantId: merchant.result.context.tenantId,
+      optionSetId: context.req.param("optionSetId"),
+    });
+    if (!result.ok) return context.json({ error: result.error }, result.status);
+    return context.json({ ok: true });
+  });
+}
+
+function getProductOptionSetValues(body: Record<string, unknown>) {
+  if (!Array.isArray(body.values)) return null;
+  return body.values.flatMap((entry) => {
+    if (!entry || typeof entry !== "object") return [];
+    const value = entry as Record<string, unknown>;
+    if (typeof value.label !== "string") return [];
+    const swatch = value.swatch;
+    return [
+      {
+        label: value.label,
+        ...(swatch &&
+        typeof swatch === "object" &&
+        (swatch as Record<string, unknown>).kind === "color" &&
+        typeof (swatch as Record<string, unknown>).value === "string"
+          ? {
+              swatch: {
+                kind: "color" as const,
+                value: (swatch as Record<string, unknown>).value as string,
+              },
+            }
+          : {}),
+      },
+    ];
+  });
 }

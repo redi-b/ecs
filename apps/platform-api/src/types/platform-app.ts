@@ -719,6 +719,18 @@ export type PlatformAppOptions = {
         stockLocationId?: string | null | undefined;
       }) => Promise<MerchantProductsResult>)
     | undefined;
+  listMerchantProductOptionSets?: ReturnType<
+    typeof import("../modules/commerce/product-option-sets.js").createProductOptionSetService
+  >["list"];
+  createMerchantProductOptionSet?: ReturnType<
+    typeof import("../modules/commerce/product-option-sets.js").createProductOptionSetService
+  >["create"];
+  updateMerchantProductOptionSet?: ReturnType<
+    typeof import("../modules/commerce/product-option-sets.js").createProductOptionSetService
+  >["update"];
+  deleteMerchantProductOptionSet?: ReturnType<
+    typeof import("../modules/commerce/product-option-sets.js").createProductOptionSetService
+  >["remove"];
   getMerchantProduct?:
     | ((input: {
         productId: string;
