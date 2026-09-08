@@ -1,5 +1,6 @@
 import { formatPublicOrderReference } from "@ecs/contracts";
 import type { PlatformAppOptions } from "../../app.js";
+import { isSyntheticCustomerEmail } from "../../commerce/customer-identity.js";
 import { getPaginationValue } from "../shared.js";
 import type { MerchantRouteApp, MerchantRouteHelpers } from "./context.js";
 
@@ -149,11 +150,13 @@ export function registerMerchantSearchRoutes(
             if (!result.ok) return [] as SearchHit[];
             return result.customers.map((customer) => {
               const name = [customer.firstName, customer.lastName].filter(Boolean).join(" ").trim();
+              const phone = customer.phone?.trim() || null;
+              const email = isSyntheticCustomerEmail(customer.email) ? null : customer.email;
               return {
                 id: customer.id,
                 type: "customer",
-                label: name || customer.email,
-                description: name ? customer.email : customer.phone || null,
+                label: name || phone || email || "Customer",
+                description: name ? phone || email : email,
                 status: null,
               };
             });

@@ -1,6 +1,10 @@
 import { z } from "zod";
 
 import type { PlatformAppOptions } from "../../app.js";
+import {
+  getOperationalCustomerEmail,
+  normalizeOperationalPhone,
+} from "../../commerce/customer-identity.js";
 import type { MerchantRouteApp, MerchantRouteHelpers } from "./context.js";
 
 const addressSchema = z.object({
@@ -16,11 +20,11 @@ const addressSchema = z.object({
 });
 
 const createSchema = z.object({
-  customerEmail: z.string().email(),
+  customerEmail: z.string().trim().email().nullish(),
   customerFirstName: z.string().trim().max(80).nullish(),
   customerId: z.string().min(1).nullish(),
   customerLastName: z.string().trim().max(80).nullish(),
-  customerPhone: z.string().trim().max(40).nullish(),
+  customerPhone: z.string().trim().min(8).max(40).nullish(),
   items: z
     .array(
       z.object({
@@ -65,14 +69,26 @@ export function registerMerchantManualOrderRoutes(
         }
       : null;
 
+    const normalizedPhone = normalizeOperationalPhone(
+      parsed.data.customerPhone ?? shippingAddress?.phone,
+    );
+    if (!parsed.data.customerId && !normalizedPhone) {
+      return context.json({ error: "invalid_manual_order" }, 400);
+    }
+    const customerEmail = getOperationalCustomerEmail({
+      email: parsed.data.customerEmail,
+      phone: normalizedPhone,
+      tenantId: merchant.result.context.tenantId,
+    });
+    if (!customerEmail) return context.json({ error: "invalid_manual_order" }, 400);
+
     let customerId = parsed.data.customerId ?? null;
     if (!customerId && options.ensureMerchantCustomer) {
       const ensured = await options.ensureMerchantCustomer({
-        email: parsed.data.customerEmail,
-        firstName:
-          parsed.data.customerFirstName ?? shippingAddress?.firstName ?? null,
+        email: customerEmail,
+        firstName: parsed.data.customerFirstName ?? shippingAddress?.firstName ?? null,
         lastName: parsed.data.customerLastName ?? shippingAddress?.lastName ?? null,
-        phone: parsed.data.customerPhone ?? shippingAddress?.phone ?? null,
+        phone: normalizedPhone ? `+${normalizedPhone}` : null,
         tenantId: merchant.result.context.tenantId,
       });
       if (ensured.ok) {
@@ -82,7 +98,7 @@ export function registerMerchantManualOrderRoutes(
     }
 
     const result = await options.createMerchantManualOrder({
-      customerEmail: parsed.data.customerEmail,
+      customerEmail,
       customerId,
       items: parsed.data.items,
       note: parsed.data.note ?? null,

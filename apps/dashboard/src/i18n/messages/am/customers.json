@@ -24,7 +24,8 @@
     "createErrorTitle": "ደንበኛውን መመዝገብ አልተቻለም",
     "firstName": "የመጀመሪያ ስም",
     "lastName": "የአባት ስም",
-    "emailDesc": "ለደረሰኞች እና ለመለያ መልሶ ማግኛ ያገለግላል።",
+    "emailDesc": "አማራጭ። ካለ ደረሰኝ ለመላክ ያገለግላል።",
+    "phoneDesc": "ለትዕዛዝ፣ ለድርሰት እና ደንበኛን ለመፈለግ ዋና መገኛ።",
     "companyPlaceholder": "ከተፈለገ ብቻ",
     "error": {
       "invalid": "ኢሜይሉን እና ሌሎች ቦታዎችን አረጋግጠው እንደገና ይሞክሩ።",
@@ -37,7 +38,7 @@
       "fallbackEdit": "የደንበኛ መረጃን ማዘመን አልተቻለም። እንደገና ይሞክሩ።",
       "fallbackCreate": "ደንበኛውን መፍጠር አልተቻለም። እንደገና ይሞክሩ።"
     },
-    "enterEmail": "ኢሜይል አድራሻ ያስገቡ።",
+    "enterPhone": "የደንበኛውን ስልክ ቁጥር ያስገቡ።",
     "toastUpdated": "ለውጦቹ ተቀይረዋል።",
     "toastCreated": "ደንበኛው ተመዝግቧል።",
     "saveChanges": "ለውጦቹን አስቀምጥ",
