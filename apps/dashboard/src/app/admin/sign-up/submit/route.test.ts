@@ -5,6 +5,7 @@ import { POST } from "./route.js";
 
 const originalFetch = globalThis.fetch;
 const originalPlatformApiBaseUrl = process.env.PLATFORM_API_BASE_URL;
+const originalRequireEmailVerification = process.env.AUTH_REQUIRE_EMAIL_VERIFICATION;
 
 afterEach(() => {
   globalThis.fetch = originalFetch;
@@ -13,6 +14,11 @@ afterEach(() => {
     delete process.env.PLATFORM_API_BASE_URL;
   } else {
     process.env.PLATFORM_API_BASE_URL = originalPlatformApiBaseUrl;
+  }
+  if (originalRequireEmailVerification === undefined) {
+    delete process.env.AUTH_REQUIRE_EMAIL_VERIFICATION;
+  } else {
+    process.env.AUTH_REQUIRE_EMAIL_VERIFICATION = originalRequireEmailVerification;
   }
 });
 
@@ -68,11 +74,42 @@ test("POST /admin/sign-up/submit creates an account and redirects to onboarding"
   );
   assert.equal(forwardedRequest?.url, "http://platform.test/platform/auth/sign-up/email");
   assert.deepEqual(forwardedRequest?.body, {
+    callbackURL: "http://dashboard.lvh.me/admin/sign-in?verified=1",
     email: "mahi@example.com",
     name: "Mahi Bekele",
     password: "password1234",
   });
   assert.equal(forwardedRequest?.headers.get("origin"), "http://dashboard.lvh.me");
+});
+
+test("POST /admin/sign-up/submit asks the user to verify email when verification is required", async () => {
+  process.env.PLATFORM_API_BASE_URL = "http://platform.test";
+  process.env.AUTH_REQUIRE_EMAIL_VERIFICATION = "true";
+
+  globalThis.fetch = async () =>
+    new Response(JSON.stringify({ user: { id: "user_1" } }), {
+      headers: { "content-type": "application/json" },
+      status: 200,
+    });
+
+  const response = await POST(
+    new Request("http://dashboard.lvh.me/admin/sign-up/submit", {
+      body: JSON.stringify({
+        confirmPassword: "password1234",
+        email: "mahi@example.com",
+        ownerName: "Mahi Bekele",
+        password: "password1234",
+      }),
+      headers: { accept: "application/json", "content-type": "application/json" },
+      method: "POST",
+    }),
+  );
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), {
+    ok: true,
+    redirectTo: "http://dashboard.lvh.me/admin/sign-up/check-email",
+  });
 });
 
 test("POST /admin/sign-up/submit redirects back when platform auth does not return a session cookie", async () => {

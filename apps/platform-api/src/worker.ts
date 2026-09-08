@@ -10,7 +10,6 @@ import { loadPlatformApiEnvFiles } from "./config/env.js";
 import { createAnalyticsCommerceRollupHandler } from "./jobs/handlers/analytics-commerce-rollup.js";
 import { createBillingLifecycleHandler } from "./jobs/handlers/billing-lifecycle.js";
 import { createBillingPaymentReconcileHandler } from "./jobs/handlers/billing-payment-reconcile.js";
-import { createProductCapacityWriter } from "./modules/billing/product-capacity.js";
 import { createNotificationsDeliverHandler } from "./jobs/handlers/notifications-deliver.js";
 import {
   createProductImportApplyHandler,
@@ -25,18 +24,16 @@ import {
   parseBillingIntervalMs,
   registerBillingRepeatableJobs,
 } from "./jobs/schedule-billing-jobs.js";
-import {
-  createResendEmailNotificationProvider,
-  isEmailDeliveryConfigured,
-} from "./modules/notifications/providers/email-provider.js";
+import { createProductCapacityWriter } from "./modules/billing/product-capacity.js";
+import { createEmailNotificationProviderFromEnv } from "./modules/notifications/providers/email-provider-factory.js";
 import { createLogNotificationProvider } from "./modules/notifications/providers/log-provider.js";
 import { createProviderRegistry } from "./modules/notifications/providers/registry.js";
 import { createTelegramNotificationProvider } from "./modules/notifications/providers/telegram-provider.js";
 import { createCodeNotificationRenderer } from "./modules/notifications/renderer.js";
 import { createNotificationService } from "./modules/notifications/service.js";
-import { createResolveTenantIdByMedusaSalesChannel } from "./modules/tenants/resolve-by-medusa-sales-channel.js";
 import { resolveTelegramCallbackSecret } from "./modules/telegram/telegram-actions.js";
 import { createTelegramOperatorService } from "./modules/telegram/telegram-operator.js";
+import { createResolveTenantIdByMedusaSalesChannel } from "./modules/tenants/resolve-by-medusa-sales-channel.js";
 
 loadPlatformApiEnvFiles();
 
@@ -124,16 +121,17 @@ const telegramOperatorService =
     : null;
 const telegramCallbackSecret = resolveTelegramCallbackSecret();
 
-const resendApiKey = process.env.RESEND_API_KEY?.trim() || "";
 const emailFrom = process.env.EMAIL_FROM?.trim() || "";
-const emailProvider = isEmailDeliveryConfigured(process.env)
-  ? createResendEmailNotificationProvider({ apiKey: resendApiKey, from: emailFrom })
-  : logProvider("email");
+const emailProviderResolution = createEmailNotificationProviderFromEnv(process.env);
+const emailProvider = emailProviderResolution.provider ?? logProvider("email");
 
-if (isEmailDeliveryConfigured(process.env)) {
-  logger.info({ from: emailFrom }, "Email notification provider enabled (Resend)");
+if (emailProviderResolution.configured) {
+  logger.info(
+    { from: emailFrom, provider: emailProviderResolution.name },
+    "Email notification provider enabled",
+  );
 } else {
-  logger.warn("RESEND_API_KEY/EMAIL_FROM not set; email deliveries use log provider");
+  logger.warn("No email provider configured; email deliveries use the log provider");
 }
 
 const notificationProviders = createProviderRegistry([emailProvider, telegramProvider]);

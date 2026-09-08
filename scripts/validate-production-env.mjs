@@ -175,13 +175,19 @@ export function validateProductionEnvironment(environment) {
     );
   }
 
-  const hasEmailKey = Boolean(environment.RESEND_API_KEY);
-  const hasEmailSender = Boolean(environment.EMAIL_FROM);
+  const emailProvider = environment.EMAIL_PROVIDER?.trim().toLowerCase();
+  expect(errors, Boolean(emailProvider), "EMAIL_PROVIDER must select an email adapter");
   expect(
     errors,
-    hasEmailKey === hasEmailSender,
-    "RESEND_API_KEY and EMAIL_FROM must be configured together",
+    environment.AUTH_REQUIRE_EMAIL_VERIFICATION === "true",
+    "AUTH_REQUIRE_EMAIL_VERIFICATION must be true in production",
   );
+  if (emailProvider === "resend") {
+    expect(errors, Boolean(environment.RESEND_API_KEY), "RESEND_API_KEY is required for Resend");
+    expect(errors, Boolean(environment.EMAIL_FROM), "EMAIL_FROM is required for Resend");
+  } else if (emailProvider) {
+    expect(errors, false, `EMAIL_PROVIDER=${emailProvider} has no installed adapter`);
+  }
   const hasTelegramToken = Boolean(environment.TELEGRAM_BOT_TOKEN);
   const hasTelegramUsername = Boolean(environment.TELEGRAM_BOT_USERNAME);
   expect(

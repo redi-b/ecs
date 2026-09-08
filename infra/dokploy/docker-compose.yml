@@ -36,6 +36,7 @@ x-platform-environment: &platform-environment
   BETTER_AUTH_COOKIE_DOMAIN: .${BASE_DOMAIN}
   BETTER_AUTH_COOKIE_PREFIX: ${BETTER_AUTH_COOKIE_PREFIX:-ecs}
   BETTER_AUTH_TRUSTED_ORIGINS: https://dashboard.${BASE_DOMAIN},https://ops.${BASE_DOMAIN},https://*.${BASE_DOMAIN}
+  AUTH_REQUIRE_EMAIL_VERIFICATION: "true"
   MEDIA_STORAGE_PROVIDER: s3
   # Public S3 endpoint for browser presigned uploads (Caddy/Traefik → seaweedfs:8333).
   MEDIA_S3_ENDPOINT: ${MEDIA_S3_ENDPOINT:-https://media.${BASE_DOMAIN}}
@@ -52,6 +53,7 @@ x-platform-environment: &platform-environment
   TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
   TELEGRAM_BOT_USERNAME: ${TELEGRAM_BOT_USERNAME:-}
   TELEGRAM_WEBHOOK_SECRET: ${TELEGRAM_WEBHOOK_SECRET:-}
+  EMAIL_PROVIDER: ${EMAIL_PROVIDER:?set EMAIL_PROVIDER}
   RESEND_API_KEY: ${RESEND_API_KEY:-}
   EMAIL_FROM: ${EMAIL_FROM:-}
   # Chapa (commerce + platform subscription billing).
@@ -261,6 +263,7 @@ services:
       DASHBOARD_AUTH_COOKIE_DOMAIN: .${BASE_DOMAIN}
       # Must match platform-api BETTER_AUTH_COOKIE_PREFIX (session clear / current session).
       BETTER_AUTH_COOKIE_PREFIX: ${BETTER_AUTH_COOKIE_PREFIX:-ecs}
+      AUTH_REQUIRE_EMAIL_VERIFICATION: "true"
       STOREFRONT_PUBLIC_BASE_DOMAIN: ${BASE_DOMAIN}
       MERCHANT_SUPPORT_URL: ${MERCHANT_SUPPORT_URL:-}
       MERCHANT_SUPPORT_EMAIL: ${MERCHANT_SUPPORT_EMAIL:-}
