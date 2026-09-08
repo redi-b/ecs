@@ -5,6 +5,7 @@ import {
   deliverMerchantOrderFulfillment,
   fulfillMerchantOrder,
   getMerchantOrderForAction,
+  shipMerchantOrderFulfillment,
 } from "./actions.js";
 import { getAdminHeaders, requestMedusa } from "./medusa-http.js";
 import { getFulfillmentItems, normalizeOrder } from "./normalize.js";
@@ -239,7 +240,7 @@ export async function updateMerchantOrderSettlement(
 }
 
 /**
- * Mark an order as paid (COD operator action or Chapa override).
+ * Mark an order as paid (manual operator settlement or verified Chapa callback/recheck).
  * Prefers Medusa payment-collection mark-as-paid; falls back to metadata override.
  * Settlement (how money arrived) is required for dashboard/telegram; Chapa auto-sets method.
  */
@@ -261,6 +262,14 @@ export async function markMerchantOrderPaid(
 
   if (isPaidStatus(existing.order.paymentStatus)) {
     return existing;
+  }
+
+  if (input.source === "dashboard" && existing.order.paymentMethod === "chapa") {
+    return {
+      ok: false,
+      error: "order_action_invalid",
+      status: 400,
+    };
   }
 
   if (isCanceledOrder(existing.order)) {
@@ -430,12 +439,10 @@ export async function finishMerchantOrder(
   fetcher: Fetcher,
   options: MedusaOptions,
   input: {
-    markPaid?: boolean | undefined;
     orderId: string;
     salesChannelId: string;
     shippingOptionId?: string | undefined;
     stockLocationId?: string | undefined;
-    settlement?: OrderSettlementInput | null | undefined;
   },
 ): Promise<MerchantOrderActionResult> {
   let current = await getMerchantOrderForAction(fetcher, options, input);
@@ -468,7 +475,25 @@ export async function finishMerchantOrder(
     }
   }
 
-  // 2) Deliver open fulfillments if not completed
+  // 2) Delivery orders must create a shipment before delivery. Pickup skips this.
+  const deliveryChoice = current.order.delivery?.choice?.trim().toLowerCase() ?? "";
+  const isPickup = deliveryChoice.includes("pickup") || deliveryChoice.includes("collect");
+  if (!isPickup && deliveryChoice.includes("deliver")) {
+    for (const fulfillment of (current.order.fulfillments ?? []).filter(
+      (item) => !item.shippedAt && !item.deliveredAt && !item.canceledAt,
+    )) {
+      const shipped = await shipMerchantOrderFulfillment(fetcher, options, {
+        fulfillmentId: fulfillment.id,
+        order: current.order,
+        orderId: input.orderId,
+        salesChannelId: input.salesChannelId,
+      });
+      if (!shipped.ok) return shipped;
+      current = shipped;
+    }
+  }
+
+  // 3) Deliver or hand over open fulfillments if not completed.
   if (!isCompletedOrder(current.order)) {
     const openFulfillments = (current.order.fulfillments ?? []).filter(
       (fulfillment) => !fulfillment.deliveredAt && !fulfillment.canceledAt,
@@ -488,21 +513,7 @@ export async function finishMerchantOrder(
     }
   }
 
-  // 3) Optional mark paid (COD) — default settlement cash when finish bundles paid
-  if (input.markPaid && !isPaidStatus(current.order.paymentStatus)) {
-    const paid = await markMerchantOrderPaid(fetcher, options, {
-      orderId: input.orderId,
-      salesChannelId: input.salesChannelId,
-      source: "dashboard",
-      settlement: input.settlement ?? { method: "cash" },
-    });
-    if (!paid.ok) {
-      return paid;
-    }
-    current = paid;
-  }
-
-  // 4) Complete order if still open
+  // 4) Complete order if still open. Payment always remains separate.
   if (
     !isCompletedOrder(current.order) ||
     !(current.order.status ?? "").toLowerCase().includes("complete")

@@ -6,6 +6,7 @@ const ORDER_ACTIONS = new Set<MerchantOrderAction>([
   "complete",
   "deliver",
   "fulfill",
+  "ship",
   "mark-paid",
   "recheck-payment",
   "finish",
@@ -18,7 +19,6 @@ export async function POST(request: Request, { params }: { params: Promise<{ ord
     const body = (await context.request.json().catch(() => ({}))) as {
       action?: unknown;
       fulfillmentId?: unknown;
-      markPaid?: unknown;
       settlementMethod?: unknown;
       bankCode?: unknown;
       bankName?: unknown;
@@ -38,7 +38,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ ord
       };
     }
 
-    if (action === "deliver" && typeof body.fulfillmentId !== "string") {
+    if ((action === "deliver" || action === "ship") && typeof body.fulfillmentId !== "string") {
       return {
         ok: false,
         message: "order_fulfillment_not_found",
@@ -74,7 +74,6 @@ export async function POST(request: Request, { params }: { params: Promise<{ ord
       action: action as MerchantOrderAction,
       cookieHeader: context.cookieHeader,
       fulfillmentId: typeof body.fulfillmentId === "string" ? body.fulfillmentId : undefined,
-      markPaid: body.markPaid === true,
       orderId,
       platformApiBaseUrl: context.platformApiBaseUrl,
       requestHost: context.requestHost,

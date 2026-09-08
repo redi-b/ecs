@@ -9,6 +9,7 @@ import { getFulfillmentItems, normalizeOrder } from "./normalize.js";
 import {
   getOrderActionUrl,
   getOrderFulfillmentDeliveryUrl,
+  getOrderFulfillmentShipmentUrl,
   getOrderFulfillmentUrl,
   getOrderUrl,
 } from "./urls.js";
@@ -59,6 +60,64 @@ export async function getMerchantOrderForAction(
     ok: true,
     order,
   };
+}
+
+export async function shipMerchantOrderFulfillment(
+  fetcher: typeof fetch,
+  options: { adminApiToken?: string | undefined; medusaInternalUrl: string },
+  input: {
+    fulfillmentId?: string | undefined;
+    order: MerchantOrder;
+    orderId: string;
+    salesChannelId: string;
+  },
+): Promise<MerchantOrderActionResult> {
+  const fulfillmentId = input.fulfillmentId?.trim();
+  const fulfillment = input.order.fulfillments?.find((item) => item.id === fulfillmentId);
+
+  if (!fulfillmentId || !fulfillment) {
+    return { ok: false, error: "order_fulfillment_not_found", status: 404 };
+  }
+  const deliveryChoice = input.order.delivery?.choice?.trim().toLowerCase() ?? "";
+  if (deliveryChoice.includes("pickup") || deliveryChoice.includes("collect")) {
+    return { ok: false, error: "order_action_invalid", status: 400 };
+  }
+  if (fulfillment.shippedAt || fulfillment.deliveredAt) {
+    return { ok: true, order: input.order };
+  }
+
+  const response = await requestMedusa(
+    fetcher,
+    getOrderFulfillmentShipmentUrl(options.medusaInternalUrl, {
+      fulfillmentId,
+      orderId: input.orderId,
+    }),
+    {
+      body: JSON.stringify({ labels: [] }),
+      headers: getAdminHeaders(options.adminApiToken ?? ""),
+      method: "POST",
+    },
+  );
+
+  if (response.status === 401) {
+    return { ok: false, error: "commerce_credentials_invalid", status: 401 };
+  }
+  if (response.status === 404) {
+    return { ok: false, error: "order_fulfillment_not_found", status: 404 };
+  }
+  if (!response.ok) {
+    const serverFailure = mapMedusaServerFailure(response);
+    if (serverFailure) return serverFailure as Extract<MerchantOrderActionResult, { ok: false }>;
+    if (response.status === 400 || response.status === 409 || response.status === 422) {
+      return { ok: false, error: "order_not_fulfillable", status: 409 };
+    }
+    return mapMedusaHttpFailure(response) as Extract<MerchantOrderActionResult, { ok: false }>;
+  }
+
+  return getMerchantOrderForAction(fetcher, options, {
+    orderId: input.orderId,
+    salesChannelId: input.salesChannelId,
+  });
 }
 
 export async function fulfillMerchantOrder(
@@ -197,6 +256,16 @@ export async function deliverMerchantOrderFulfillment(
       error: "order_fulfillment_not_found",
       status: 404,
     };
+  }
+
+  const fulfillment = input.order.fulfillments?.find((item) => item.id === fulfillmentId);
+  if (fulfillment?.deliveredAt) {
+    return { ok: true, order: input.order };
+  }
+  const deliveryChoice = input.order.delivery?.choice?.trim().toLowerCase() ?? "";
+  const isPickup = deliveryChoice.includes("pickup") || deliveryChoice.includes("collect");
+  if (!isPickup && deliveryChoice && !fulfillment?.shippedAt) {
+    return { ok: false, error: "order_not_fulfillable", status: 409 };
   }
 
   const response = await requestMedusa(

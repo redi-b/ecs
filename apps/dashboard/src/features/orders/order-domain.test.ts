@@ -7,6 +7,7 @@ import {
   formatOrderReference,
   getNextAction,
   getOrderProgress,
+  getOrderWorkflowStage,
   getPaymentLabel,
   getRemainingFinishSteps,
 } from "./order-domain";
@@ -25,6 +26,10 @@ function order(partial: Partial<MerchantOrder>): MerchantOrder {
     updatedAt: "2026-07-01T00:00:00.000Z",
     ...partial,
   };
+}
+
+function delivery(choice: string) {
+  return { choice, customerName: null, customerPhone: null, landmark: null, notes: null };
 }
 
 describe("order-domain", () => {
@@ -46,7 +51,7 @@ describe("order-domain", () => {
 
     const completed = order({ status: "completed", fulfillmentStatus: "delivered" });
     assert.equal(getOrderProgress(completed), "completed");
-    assert.equal(getNextAction(completed).type, "mark_paid");
+    assert.equal(getNextAction(completed).type, "none");
 
     const paidDone = order({
       status: "completed",
@@ -55,6 +60,32 @@ describe("order-domain", () => {
       paymentMethod: "cod",
     });
     assert.equal(getNextAction(paidDone).type, "none");
+  });
+
+  it("uses simple delivery and pickup workflows", () => {
+    const deliveryOrder = order({ delivery: delivery("delivery") });
+    assert.equal(getOrderWorkflowStage(deliveryOrder), "new");
+    assert.equal(getNextAction(deliveryOrder).type, "start_preparing");
+
+    const preparing = order({
+      delivery: delivery("delivery"),
+      fulfillmentStatus: "fulfilled",
+    });
+    assert.equal(getOrderWorkflowStage(preparing), "preparing");
+    assert.equal(getNextAction(preparing).type, "mark_out_for_delivery");
+
+    const shipping = order({
+      delivery: delivery("delivery"),
+      fulfillmentStatus: "shipped",
+    });
+    assert.equal(getOrderWorkflowStage(shipping), "out_for_delivery");
+    assert.equal(getNextAction(shipping).type, "mark_delivered");
+
+    const pickup = order({ delivery: delivery("pickup") });
+    assert.equal(getNextAction(pickup).type, "mark_ready_for_pickup");
+    const pickupReady = order({ delivery: delivery("pickup"), fulfillmentStatus: "fulfilled" });
+    assert.equal(getOrderWorkflowStage(pickupReady), "ready_for_pickup");
+    assert.equal(getNextAction(pickupReady).type, "mark_picked_up");
   });
 
   it("lists finish steps for open COD orders", () => {

@@ -266,7 +266,7 @@ export function DetailStepTrack({
   }, [currentStepId]);
 
   return (
-    <ol className="flex w-full max-w-lg items-start">
+    <ol className="flex w-full items-start">
       {steps.map((step, index) => {
         const isLast = index === steps.length - 1;
         const complete = step.done && !step.current && !step.muted;

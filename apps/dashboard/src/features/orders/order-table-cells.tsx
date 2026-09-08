@@ -16,8 +16,8 @@ import {
   getOrderCustomerPhone,
   getOrderCustomerRealName,
   getOrderItemsSummary,
-  getOrderProgress,
-  getOrderProgressLabel,
+  getOrderWorkflowLabel,
+  getOrderWorkflowStage,
   getPaymentLabel,
   getPaymentStatusLabel,
 } from "@/features/orders/order-domain";
@@ -139,20 +139,20 @@ export function OrderPaymentCell({ order }: { order: MerchantOrder }) {
 
 export function OrderProgressBadge({ order }: { order: MerchantOrder }) {
   const { t } = useI18n();
-  const progress = getOrderProgress(order);
+  const progress = getOrderWorkflowStage(order);
   const variant =
     progress === "completed"
       ? "success"
       : progress === "new"
         ? "info"
-        : progress === "ready"
+        : progress === "preparing" || progress === "ready_for_pickup" || progress === "out_for_delivery" || progress === "ready"
           ? "secondary"
           : progress === "canceled"
             ? "outline"
             : "secondary";
   return (
     <Badge variant={variant} className="font-normal">
-      {getOrderProgressLabel(progress, t)}
+      {getOrderWorkflowLabel(progress, t)}
     </Badge>
   );
 }

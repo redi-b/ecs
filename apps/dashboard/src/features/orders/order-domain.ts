@@ -9,13 +9,50 @@ export type OrderPaymentLabel = "unpaid" | "paid" | "failed";
 export type OrderMethodLabel = "cod" | "chapa" | "unknown";
 export type OrderDeliveryLabel = "delivery" | "pickup" | "unknown";
 
-export type OrderNextActionType = "mark_ready" | "mark_completed" | "mark_paid" | "none";
+export type OrderWorkflowStage =
+  | "new"
+  | "preparing"
+  | "out_for_delivery"
+  | "ready_for_pickup"
+  | "ready"
+  | "completed"
+  | "canceled";
+
+export type OrderNextActionType =
+  | "start_preparing"
+  | "mark_out_for_delivery"
+  | "mark_ready_for_pickup"
+  | "mark_delivered"
+  | "mark_picked_up"
+  | "mark_ready"
+  | "mark_completed"
+  | "none";
 
 export type OrderNextAction = {
   type: OrderNextActionType;
   label: string;
   description: string;
 };
+
+export function getOrderWorkflowStage(order: MerchantOrder): OrderWorkflowStage {
+  const status = normalize(order.status);
+  const fulfillment = normalize(order.fulfillmentStatus);
+  const delivery = getDeliveryLabel(order);
+
+  if (status.includes("cancel")) return "canceled";
+  if (status.includes("complete") || fulfillment.includes("deliver")) return "completed";
+  if (fulfillment.includes("ship")) return delivery === "delivery" ? "out_for_delivery" : "ready";
+
+  const hasFulfillment =
+    fulfillment === "fulfilled" ||
+    fulfillment === "partially_fulfilled" ||
+    (order.fulfillments ?? []).some((item) => !item.canceledAt);
+
+  if (!hasFulfillment) return "new";
+  if (delivery === "pickup") return "ready_for_pickup";
+  if (delivery === "delivery") return "preparing";
+  return "ready";
+}
 
 export type OrderFinishStep = {
   id: string;
@@ -98,6 +135,24 @@ export function getOrderProgressLabel(progress: OrderProgress, t?: Translate) {
     case "canceled":
       return t ? t("orders.labels.progressCanceled") : "Canceled";
   }
+}
+
+export function getOrderWorkflowLabel(stage: OrderWorkflowStage, t?: Translate) {
+  const fallback: Record<OrderWorkflowStage, string> = {
+    new: "New", preparing: "Preparing", out_for_delivery: "Out for delivery",
+    ready_for_pickup: "Ready for pickup", ready: "In progress", completed: "Completed", canceled: "Canceled",
+  };
+  if (!t) return fallback[stage];
+  const keys: Record<OrderWorkflowStage, MessageKey> = {
+    new: "orders.labels.progressNew",
+    preparing: "orders.labels.progressPreparing",
+    out_for_delivery: "orders.labels.progressOutForDelivery",
+    ready_for_pickup: "orders.labels.progressReadyForPickup",
+    ready: "orders.labels.progressInProgress",
+    completed: "orders.labels.progressCompleted",
+    canceled: "orders.labels.progressCanceled",
+  };
+  return t(keys[stage]);
 }
 
 export function getPaymentLabel(order: MerchantOrder): OrderPaymentLabel {
@@ -280,11 +335,10 @@ export function getOrderItemsSummary(order: MerchantOrder, t?: Translate) {
 }
 
 export function getNextAction(order: MerchantOrder): OrderNextAction {
-  const progress = getOrderProgress(order);
-  const payment = getPaymentLabel(order);
-  const method = getMethodLabel(order);
+  const stage = getOrderWorkflowStage(order);
+  const delivery = getDeliveryLabel(order);
 
-  if (progress === "canceled") {
+  if (stage === "canceled") {
     return {
       type: "none",
       label: "No action",
@@ -292,28 +346,50 @@ export function getNextAction(order: MerchantOrder): OrderNextAction {
     };
   }
 
-  if (progress === "new") {
+  if (stage === "new") {
+    if (delivery === "pickup") {
+      return {
+        type: "mark_ready_for_pickup",
+        label: "Mark ready for pickup",
+        description: "Confirm this order has been prepared for the customer.",
+      };
+    }
     return {
-      type: "mark_ready",
-      label: "Mark ready",
-      description: "Pack the items so they are ready for delivery or pickup.",
+      type: delivery === "delivery" ? "start_preparing" : "mark_ready",
+      label: delivery === "delivery" ? "Start preparing" : "Mark ready",
+      description: "Confirm the items are being prepared for this order.",
     };
   }
 
-  if (progress === "ready") {
+  if (stage === "preparing") {
+    return {
+      type: "mark_out_for_delivery",
+      label: "Mark out for delivery",
+      description: "Confirm the prepared order has left for delivery.",
+    };
+  }
+
+  if (stage === "out_for_delivery") {
+    return {
+      type: "mark_delivered",
+      label: "Mark delivered",
+      description: "Confirm the customer received this order.",
+    };
+  }
+
+  if (stage === "ready_for_pickup") {
+    return {
+      type: "mark_picked_up",
+      label: "Mark picked up",
+      description: "Confirm the customer collected this order.",
+    };
+  }
+
+  if (stage === "ready") {
     return {
       type: "mark_completed",
       label: "Mark completed",
-      description: "Customer has the order (delivered or picked up).",
-    };
-  }
-
-  // completed — unpaid COD (or unknown method treated as local cash)
-  if (payment === "unpaid" && (method === "cod" || method === "unknown")) {
-    return {
-      type: "mark_paid",
-      label: "Mark as paid",
-      description: "Record that you received the cash for this order.",
+      description: "Confirm the customer received this order.",
     };
   }
 
@@ -356,7 +432,7 @@ export function getRemainingFinishSteps(
 export function canMarkPaid(order: MerchantOrder) {
   const progress = getOrderProgress(order);
   const payment = getPaymentLabel(order);
-  return progress !== "canceled" && payment === "unpaid";
+  return progress !== "canceled" && payment === "unpaid" && getMethodLabel(order) !== "chapa";
 }
 
 export function canRecheckPayment(order: MerchantOrder) {

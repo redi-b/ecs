@@ -154,7 +154,9 @@ export type MerchantOrderDetailResult =
         | "order_action_invalid"
         | "order_fulfillment_not_found"
         | "order_not_found"
-        | "order_not_fulfillable";
+        | "order_not_fulfillable"
+        | "order_not_cancelable"
+        | "order_refund_required";
       status: 400 | 401 | 404 | 409 | 502 | 503;
     };
 
@@ -163,6 +165,7 @@ export type MerchantOrderAction =
   | "complete"
   | "deliver"
   | "fulfill"
+  | "ship"
   | "mark-paid"
   | "recheck-payment"
   | "finish";
@@ -172,7 +175,6 @@ export type MerchantOrderActionResult = MerchantOrderDetailResult;
 export type MerchantOrderMutateInput = {
   action: MerchantOrderAction;
   fulfillmentId?: string | undefined;
-  markPaid?: boolean | undefined;
   orderId: string;
   salesChannelId: string;
   shippingOptionId?: string | undefined;

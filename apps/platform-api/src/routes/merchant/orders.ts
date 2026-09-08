@@ -2,7 +2,8 @@ import type { Context, Hono } from "hono";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 import { parseMerchantOrderListQuery } from "../../adapters/medusa/order/list-query.js";
 import type { MerchantOrderAction, PlatformAppOptions, PlatformAppVariables } from "../../app.js";
-import { type OrderSettlementInput, parseSettlementMethod } from "../../lib/settlement.js";
+import type { OrderSettlementInput } from "../../lib/settlement.js";
+import { parseOrderSettlementInput } from "../../lib/order-settlement-input.js";
 import {
   exportOrdersToCsv,
   orderExportFilename,
@@ -14,37 +15,7 @@ import {
 import { getPaginationValue, getRequestHost, storeErrorStatus } from "../shared.js";
 import type { MerchantRouteHelpers } from "./context.js";
 
-function parseSettlementBody(body: Record<string, unknown>): OrderSettlementInput | null {
-  const method = parseSettlementMethod(
-    body.settlementMethod ??
-      body.method ??
-      (body.settlement as { method?: unknown } | undefined)?.method,
-  );
-  if (!method) return null;
-
-  const settlementObj =
-    typeof body.settlement === "object" && body.settlement !== null
-      ? (body.settlement as Record<string, unknown>)
-      : {};
-
-  const str = (key: string) => {
-    const fromRoot = body[key];
-    const fromNested = settlementObj[key];
-    const value = fromRoot ?? fromNested;
-    return typeof value === "string" && value.trim() ? value.trim() : undefined;
-  };
-
-  return {
-    method,
-    bankCode: str("bankCode") ?? str("settlementBankCode"),
-    bankName: str("bankName") ?? str("settlementBankName"),
-    accountLast4: str("accountLast4") ?? str("settlementAccountLast4"),
-    accountLabel: str("accountLabel") ?? str("settlementAccountLabel"),
-    receivingAccountId: str("receivingAccountId") ?? str("settlementReceivingAccountId"),
-    reference: str("reference") ?? str("settlementReference") ?? str("paymentReference"),
-    note: str("note") ?? str("settlementNote"),
-  };
-}
+const parseSettlementBody = parseOrderSettlementInput;
 
 export function registerMerchantOrderRoutes(
   app: Hono<{ Variables: PlatformAppVariables }>,
@@ -262,13 +233,13 @@ export function registerMerchantOrderRoutes(
       return context.json({ error: "order_not_found" }, 404);
     }
 
-    if (action === "deliver" && !fulfillmentId) {
+    if ((action === "deliver" || action === "ship") && !fulfillmentId) {
       return context.json({ error: "order_fulfillment_not_found" }, 404);
     }
 
     const body = (await context.req.json().catch(() => ({}))) as Record<string, unknown>;
     let settlement: OrderSettlementInput | undefined;
-    if (action === "mark-paid" || (action === "finish" && body.markPaid === true)) {
+    if (action === "mark-paid") {
       const parsed = parseSettlementBody(body);
       if (!parsed) {
         return context.json({ error: "settlement_method_required" }, 400);
@@ -278,7 +249,7 @@ export function registerMerchantOrderRoutes(
 
     const order = await options.mutateMerchantOrder({
       action,
-      ...(action === "deliver" ? { fulfillmentId } : {}),
+      ...(action === "deliver" || action === "ship" ? { fulfillmentId } : {}),
       orderId,
       salesChannelId: commerce.context.medusaSalesChannelId,
       ...(action === "fulfill" || action === "finish"
@@ -342,6 +313,10 @@ export function registerMerchantOrderRoutes(
     mutateResolvedMerchantOrder(context, "deliver"),
   );
 
+  app.post("/platform/merchant/orders/:orderId/fulfillments/:fulfillmentId/ship", (context) =>
+    mutateResolvedMerchantOrder(context, "ship"),
+  );
+
   app.post("/platform/merchant/orders/:orderId/mark-paid", (context) =>
     mutateResolvedMerchantOrder(context, "mark-paid"),
   );
@@ -383,13 +358,6 @@ export function registerMerchantOrderRoutes(
       return merchant.response;
     }
 
-    const body = (await context.req.json().catch(() => ({}))) as Record<string, unknown>;
-    const markPaid = body.markPaid === true;
-    const finishSettlement = markPaid ? parseSettlementBody(body) : undefined;
-    if (markPaid && !finishSettlement) {
-      return context.json({ error: "settlement_method_required" }, 400);
-    }
-
     const commerce = getResolvedCommerce(merchant.result.context, {
       requireStockLocation: true,
     });
@@ -407,25 +375,14 @@ export function registerMerchantOrderRoutes(
 
       const order = await options.mutateMerchantOrder({
         action: "finish",
-        markPaid,
         orderId,
         salesChannelId: loose.context.medusaSalesChannelId,
         stockLocationId: loose.context.medusaStockLocationId ?? undefined,
         shippingOptionId: merchant.result.context.medusaShippingOptionId ?? undefined,
-        ...(finishSettlement ? { settlement: finishSettlement } : {}),
       });
 
       if (!order.ok) {
         return context.json({ error: order.error }, order.status);
-      }
-      if (markPaid && options.recordNotificationEvent) {
-        void options
-          .recordNotificationEvent({
-            tenantId: merchant.result.context.tenantId,
-            eventType: "payment.paid",
-            payload: buildPaymentPaidPayload(order.order, "dashboard_finish_mark_paid"),
-          })
-          .catch(() => undefined);
       }
       return context.json({ order: order.order });
     }
@@ -437,26 +394,14 @@ export function registerMerchantOrderRoutes(
 
     const order = await options.mutateMerchantOrder({
       action: "finish",
-      markPaid,
       orderId,
       salesChannelId: commerce.context.medusaSalesChannelId,
       stockLocationId: commerce.context.medusaStockLocationId ?? undefined,
       shippingOptionId: merchant.result.context.medusaShippingOptionId ?? undefined,
-      ...(finishSettlement ? { settlement: finishSettlement } : {}),
     });
 
     if (!order.ok) {
       return context.json({ error: order.error }, order.status);
-    }
-
-    if (markPaid && options.recordNotificationEvent) {
-      void options
-        .recordNotificationEvent({
-          tenantId: merchant.result.context.tenantId,
-          eventType: "payment.paid",
-          payload: buildPaymentPaidPayload(order.order, "dashboard_finish_mark_paid"),
-        })
-        .catch(() => undefined);
     }
 
     return context.json({ order: order.order });
