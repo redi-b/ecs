@@ -137,12 +137,6 @@ export async function OrderDetail({
             current: workflow === "new",
           },
           {
-            id: "preparing",
-            label: t("orders.detail.stepPreparing"),
-            done: workflow === "preparing" || workflow === "out_for_delivery" || workflow === "completed",
-            current: workflow === "preparing",
-          },
-          {
             id: "out_for_delivery",
             label: t("orders.detail.stepOutForDelivery"),
             done: workflow === "out_for_delivery" || workflow === "completed",

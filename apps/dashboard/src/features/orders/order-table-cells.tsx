@@ -145,7 +145,7 @@ export function OrderProgressBadge({ order }: { order: MerchantOrder }) {
       ? "success"
       : progress === "new"
         ? "info"
-        : progress === "preparing" || progress === "ready_for_pickup" || progress === "out_for_delivery" || progress === "ready"
+        : progress === "ready_for_pickup" || progress === "out_for_delivery" || progress === "ready"
           ? "secondary"
           : progress === "canceled"
             ? "outline"

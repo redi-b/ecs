@@ -65,14 +65,14 @@ describe("order-domain", () => {
   it("uses simple delivery and pickup workflows", () => {
     const deliveryOrder = order({ delivery: delivery("delivery") });
     assert.equal(getOrderWorkflowStage(deliveryOrder), "new");
-    assert.equal(getNextAction(deliveryOrder).type, "start_preparing");
+    assert.equal(getNextAction(deliveryOrder).type, "mark_out_for_delivery");
 
-    const preparing = order({
+    const fulfilled = order({
       delivery: delivery("delivery"),
       fulfillmentStatus: "fulfilled",
     });
-    assert.equal(getOrderWorkflowStage(preparing), "preparing");
-    assert.equal(getNextAction(preparing).type, "mark_out_for_delivery");
+    assert.equal(getOrderWorkflowStage(fulfilled), "new");
+    assert.equal(getNextAction(fulfilled).type, "mark_out_for_delivery");
 
     const shipping = order({
       delivery: delivery("delivery"),
