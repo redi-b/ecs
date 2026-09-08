@@ -28,6 +28,7 @@ import { Field, FieldDescription, FieldLabel, FieldLegend, FieldSet } from "@/co
 import { Input } from "@/components/ui/input";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
 import { RichTextEditor } from "@/components/ui/rich-text-editor";
+import { SegmentedControl } from "@/components/ui/segmented-control";
 import {
   Select,
   SelectContent,
@@ -37,7 +38,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { Switch } from "@/components/ui/switch";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { MediaUploadField } from "@/features/media/media-upload-field";
 import {
@@ -50,7 +50,6 @@ import {
 import {
   ProductOptionsBuilder,
   ProductReviewSummary,
-  SimpleProductStockPreview,
   VariantMatrixTable,
 } from "@/features/products/product-form-sections";
 import {
@@ -73,8 +72,8 @@ import {
   validateTitle,
 } from "@/features/products/product-form-state";
 import type { ComposerStep, ProductFormProps } from "@/features/products/product-form-types";
-import { useProductHandleAvailability } from "@/features/products/use-product-handle-availability";
 import { PRODUCT_STEPS, type productPayloadSchema } from "@/features/products/product-form-types";
+import { useProductHandleAvailability } from "@/features/products/use-product-handle-availability";
 import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes-guard";
 import { useI18n } from "@/i18n/provider";
 
@@ -555,7 +554,9 @@ export function ProductForm({
                                   </InputGroupAddon>
                                 </InputGroup>
                                 <FieldDescription
-                                  className={handleAvailability === "taken" ? "text-destructive" : undefined}
+                                  className={
+                                    handleAvailability === "taken" ? "text-destructive" : undefined
+                                  }
                                 >
                                   {handleAvailability === "checking"
                                     ? t("products.validation.handleChecking")
@@ -727,16 +728,43 @@ export function ProductForm({
                       <section className="flex flex-col gap-5">
                         <ComposerSection title={t("products.composer.pricingTitle")} />
 
+                        <form.Field name="hasVariants">
+                          {(field) => (
+                            <Field className="max-w-xl">
+                              <FieldLabel>{t("products.composer.hasVariantsTitle")}</FieldLabel>
+                              <SegmentedControl
+                                active="muted"
+                                ariaLabel={t("products.composer.enableVariantsAria")}
+                                onChange={(value) => {
+                                  const hasVariants = value === "choices";
+                                  field.handleChange(hasVariants);
+                                  if (!hasVariants && !product) {
+                                    form.setFieldValue("variantOverrides", {});
+                                  }
+                                }}
+                                options={[
+                                  {
+                                    id: "single",
+                                    label: t("products.composer.singleProductChoice"),
+                                  },
+                                  {
+                                    id: "choices",
+                                    label: t("products.composer.variantProductChoice"),
+                                  },
+                                ]}
+                                value={field.state.value ? "choices" : "single"}
+                              />
+                            </Field>
+                          )}
+                        </form.Field>
+
                         <div className="rounded-2xl border bg-background p-4">
-                          <div className="mb-4 flex flex-col gap-1">
+                          <div className="mb-4">
                             <h3 className="text-sm font-medium">
                               {t("products.composer.defaultSellingTitle")}
                             </h3>
-                            <p className="text-sm text-muted-foreground">
-                              {t("products.composer.defaultSellingDesc")}
-                            </p>
                           </div>
-                          <div className="grid gap-4 md:grid-cols-4">
+                          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                             <form.Field
                               name="priceAmount"
                               validators={{
@@ -804,57 +832,35 @@ export function ProductForm({
                               )}
                             </form.Field>
 
-                            <form.Field name="skuPrefix">
-                              {(field) => (
-                                <Field>
-                                  <FieldLabel htmlFor={field.name}>
-                                    {t("products.composer.fieldSkuPrefix")}
-                                  </FieldLabel>
-                                  <Input
-                                    id={field.name}
-                                    name={field.name}
-                                    onBlur={field.handleBlur}
-                                    onChange={(event) => field.handleChange(event.target.value)}
-                                    placeholder="TEE"
-                                    value={field.state.value}
-                                  />
-                                </Field>
-                              )}
-                            </form.Field>
-
-                            <Field>
-                              <FieldLabel>{t("products.composer.fieldCurrency")}</FieldLabel>
-                              <div className="flex h-9 items-center rounded-full border border-border bg-muted/35 px-3 text-sm font-medium text-muted-foreground">
-                                ETB
-                              </div>
-                            </Field>
+                            <form.Subscribe selector={(state) => state.values.hasVariants}>
+                              {(hasVariants) =>
+                                !hasVariants ? (
+                                  <form.Field name="skuPrefix">
+                                    {(field) => (
+                                      <Field>
+                                        <FieldLabel htmlFor={field.name}>
+                                          {t("products.composer.fieldSkuOptional")}
+                                        </FieldLabel>
+                                        <Input
+                                          id={field.name}
+                                          name={field.name}
+                                          onBlur={field.handleBlur}
+                                          onChange={(event) =>
+                                            field.handleChange(event.target.value)
+                                          }
+                                          placeholder={t(
+                                            "products.composer.skuOptionalPlaceholder",
+                                          )}
+                                          value={field.state.value}
+                                        />
+                                      </Field>
+                                    )}
+                                  </form.Field>
+                                ) : null
+                              }
+                            </form.Subscribe>
                           </div>
                         </div>
-
-                        <form.Field name="hasVariants">
-                          {(field) => (
-                            <div className="flex items-start justify-between gap-4 rounded-2xl border bg-muted/20 p-4">
-                              <div className="max-w-2xl">
-                                <h3 className="text-sm font-medium">
-                                  {t("products.composer.hasVariantsTitle")}
-                                </h3>
-                                <p className="mt-1 text-sm text-muted-foreground">
-                                  {t("products.composer.hasVariantsDesc")}
-                                </p>
-                              </div>
-                              <Switch
-                                aria-label={t("products.composer.enableVariantsAria")}
-                                checked={field.state.value}
-                                onCheckedChange={(checked) => {
-                                  field.handleChange(checked);
-                                  if (!checked && !product) {
-                                    form.setFieldValue("variantOverrides", {});
-                                  }
-                                }}
-                              />
-                            </div>
-                          )}
-                        </form.Field>
 
                         <form.Subscribe selector={(state) => state.values}>
                           {(values) =>
@@ -899,9 +905,7 @@ export function ProductForm({
                                   values={values.variantOverrides}
                                 />
                               </>
-                            ) : (
-                              <SimpleProductStockPreview values={values} />
-                            )
+                            ) : null
                           }
                         </form.Subscribe>
                       </section>

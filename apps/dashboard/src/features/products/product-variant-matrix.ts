@@ -135,7 +135,7 @@ export function buildVariantMatrix(input: {
       optionValues,
       priceAmount: override?.priceAmount ?? input.defaults.priceAmount,
       reservedQuantity: override?.reservedQuantity ?? 0,
-      sku: override?.sku ?? [skuPrefix, skuSuffix].filter(Boolean).join("-"),
+      sku: override?.sku ?? (skuPrefix ? `${skuPrefix}-${skuSuffix}` : ""),
       stockedQuantity: override?.stockedQuantity ?? input.defaults.stockedQuantity,
     };
   });
