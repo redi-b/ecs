@@ -48,32 +48,20 @@ export function getTemplateTags(template: StorefrontTemplateCatalogItem | null |
     : [];
 }
 
-const EDITORIAL_CATEGORIES = new Set(["Beauty & personal care", "Fashion"]);
-const CATALOG_CATEGORIES = new Set([
-  "Books & stationery",
-  "Electronics",
-  "Home & living",
-  "Services",
-  "Sports & outdoors",
-]);
-
-/** A restrained recommendation based on the two templates' actual design intent. */
+/** Match categories declared by each template; template names do not drive recommendations. */
 export function getRecommendedTemplateKey(
   categories: string[],
   templates: StorefrontTemplateCatalogItem[],
 ) {
-  const preferredSlug = categories.some((category) => EDITORIAL_CATEGORIES.has(category))
-    ? "luvia"
-    : categories.some((category) => CATALOG_CATEGORIES.has(category))
-      ? "nexahub"
-      : null;
+  const selected = new Set(categories.map((category) => category.toLocaleLowerCase()));
+  if (!selected.size) return null;
 
-  if (!preferredSlug) return null;
-  return (
-    templates.find((template) =>
-      template.version.templateKey.toLowerCase().startsWith(`${preferredSlug}@`),
-    )?.version.templateKey ?? null
-  );
+  return templates.find((template) =>
+    getTemplateTags(template).some((tag) => {
+      const category = tag.startsWith("category:") ? tag.slice("category:".length) : "";
+      return selected.has(category.toLocaleLowerCase());
+    }),
+  )?.version.templateKey ?? null;
 }
 
 /** Preserve a trailing hyphen while typing; canonical slugging happens on blur. */
