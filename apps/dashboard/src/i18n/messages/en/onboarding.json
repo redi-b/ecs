@@ -65,6 +65,8 @@
   "noStorefrontsDescription": "Shop setup needs an active storefront template.",
   "createShop": "Create shop",
   "creatingShop": "Creating shop…",
+  "signOutTitle": "Sign out?",
+  "signOutDescription": "Your onboarding progress on this account will be kept.",
   "whatNext": "What happens next",
   "whatNextDescription": "We create the workspace and storefront starter.",
   "workspace": "Shop workspace",

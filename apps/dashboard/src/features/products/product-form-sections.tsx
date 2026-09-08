@@ -662,7 +662,7 @@ export function ProductOptionsBuilder({
 
               <Field>
                 <FieldLabel>{t("products.formReview.values")}</FieldLabel>
-                <div className="flex max-h-36 min-h-9 flex-wrap items-center gap-1.5 overflow-y-auto overscroll-contain rounded-xl border bg-muted/15 px-2 py-1.5">
+                <div className="flex max-h-36 min-h-8 flex-wrap items-center gap-1.5 overflow-y-auto overscroll-contain rounded-[1rem] border bg-muted/15 px-2 py-1">
                   {option.values.map((value, valueIndex) => (
                     <span
                       className="inline-flex h-7 items-center rounded-full bg-secondary text-xs font-medium text-secondary-foreground"
@@ -707,8 +707,15 @@ export function ProductOptionsBuilder({
                         if (event.key === "Enter" || event.key === ",") {
                           event.preventDefault();
                           addValues(index, draftValues[index] ?? "");
+                        } else if (
+                          event.key === "Backspace" &&
+                          !(draftValues[index] ?? "") &&
+                          option.values.length
+                        ) {
+                          removeValue(index, option.values.length - 1);
                         }
                       }}
+                      onBlur={() => addValues(index, draftValues[index] ?? "")}
                       onPaste={(event) => {
                         const pastedText = event.clipboardData.getData("text");
 

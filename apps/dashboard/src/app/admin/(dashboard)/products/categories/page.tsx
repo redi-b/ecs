@@ -1,5 +1,6 @@
 import { headers } from "next/headers";
 import { ListSetupState } from "@/components/app/list-error-state";
+import { HelpTip } from "@/components/app/help-tip";
 import { ListSummary, PaginationControls } from "@/components/app/list-page-controls";
 import { PageShell } from "@/components/app/page-shell";
 import { RefreshButton } from "@/components/app/refresh-button";
@@ -76,6 +77,12 @@ export default async function MerchantProductCategoriesPage({
             triggerLabel={t("categories.actions.new")}
           />
         </>
+      }
+      meta={
+        <HelpTip
+          label={t("categories.helpLabel")}
+          summary={t("categories.description")}
+        />
       }
       title={t("categories.title")}
     >

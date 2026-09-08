@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/app/confirm-dialog";
 import { DataTable } from "@/components/app/data-table";
 import { DataTableHeader } from "@/components/app/data-table-header";
+import { HelpTip } from "@/components/app/help-tip";
 import { AppIcons } from "@/components/app/icons";
 import { ListSummary } from "@/components/app/list-page-controls";
 import { ListToolbarSearch } from "@/components/app/list-toolbar";
@@ -116,7 +117,7 @@ export function SavedProductOptionsManager({ tenantId }: { tenantId: string | nu
         ),
         cell: ({ row }) => (
           <button
-            className="font-medium text-foreground hover:underline"
+            className="font-medium text-foreground transition-colors hover:text-primary focus-visible:text-primary focus-visible:outline-none"
             onClick={() => setEditing(cloneForEditing(row.original))}
             type="button"
           >
@@ -197,7 +198,12 @@ export function SavedProductOptionsManager({ tenantId }: { tenantId: string | nu
           {t("products.savedOptions.newAction")}
         </Button>
       }
-      description={t("products.savedOptions.pageDescription")}
+      meta={
+        <HelpTip
+          label={t("products.savedOptions.helpLabel")}
+          summary={t("products.savedOptions.pageDescription")}
+        />
+      }
       title={t("products.savedOptions.pageTitle")}
     >
       {query.isError ? (
@@ -316,7 +322,7 @@ function SavedOptionEditDialog({
           </Field>
           <Field>
             <FieldLabel>{t("products.formReview.values")}</FieldLabel>
-            <div className="flex min-h-10 flex-wrap items-center gap-1.5 rounded-xl border p-2">
+            <div className="flex min-h-8 flex-wrap items-center gap-1.5 rounded-[1rem] border px-2 py-1">
               {option.values.map((value, index) => (
                 <span
                   className="inline-flex items-center rounded-full bg-secondary text-xs"
@@ -361,8 +367,15 @@ function SavedOptionEditDialog({
                     if (event.key === "Enter" || event.key === ",") {
                       event.preventDefault();
                       addValue(draftValue);
+                    } else if (
+                      event.key === "Backspace" &&
+                      !draftValue &&
+                      currentOption.values.length
+                    ) {
+                      update({ values: currentOption.values.slice(0, -1) });
                     }
                   }}
+                  onBlur={() => addValue(draftValue)}
                   onPaste={(event) => {
                     const labels = event.clipboardData
                       .getData("text")

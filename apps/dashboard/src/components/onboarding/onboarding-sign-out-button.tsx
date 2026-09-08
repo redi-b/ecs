@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import { AppIcons } from "@/components/app/icons";
+import { ConfirmDialog } from "@/components/app/confirm-dialog";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/i18n/provider";
 
@@ -21,24 +22,31 @@ export function OnboardingSignOutButton() {
   }
 
   return (
-    <Button
-      aria-busy={isSigningOut}
-      aria-label={isSigningOut ? t("account.signingOut") : t("account.signOut")}
-      className="rounded-full px-2.5 sm:px-3"
-      disabled={isSigningOut}
-      onClick={() => void signOut()}
-      size="sm"
-      type="button"
-      variant="ghost"
-    >
-      {isSigningOut ? (
-        <AppIcons.loader className="animate-spin" />
-      ) : (
-        <AppIcons.logout data-icon="inline-start" />
-      )}
-      <span className="hidden sm:inline">
-        {isSigningOut ? t("account.signingOut") : t("account.signOut")}
-      </span>
-    </Button>
+    <ConfirmDialog
+      cancelDisabled={isSigningOut}
+      confirmDisabled={isSigningOut}
+      confirmLabel={isSigningOut ? t("account.signingOut") : t("account.signOut")}
+      description={t("onboarding.signOutDescription")}
+      icon="logout"
+      onConfirm={() => void signOut()}
+      title={t("onboarding.signOutTitle")}
+      trigger={
+        <Button
+          aria-busy={isSigningOut}
+          aria-label={isSigningOut ? t("account.signingOut") : t("account.signOut")}
+          className="rounded-full text-destructive hover:bg-destructive/10 hover:text-destructive"
+          disabled={isSigningOut}
+          size="icon-sm"
+          type="button"
+          variant="ghost"
+        >
+          {isSigningOut ? (
+            <AppIcons.loader className="animate-spin" />
+          ) : (
+            <AppIcons.logout />
+          )}
+        </Button>
+      }
+    />
   );
 }
