@@ -34,3 +34,34 @@ export async function POST(
     return { ok: true, data };
   });
 }
+
+export async function DELETE(
+  request: Request,
+  { params }: { params: Promise<{ optionSetId: string }> },
+) {
+  return withMerchantAction(request, async (context) => {
+    const { optionSetId } = await params;
+    const path = context.tenantId
+      ? `/platform/tenants/${encodeURIComponent(context.tenantId)}/product-option-sets/${encodeURIComponent(optionSetId)}`
+      : `/platform/merchant/product-option-sets/${encodeURIComponent(optionSetId)}`;
+    const response = await fetch(new URL(path, normalizeBaseUrl(context.platformApiBaseUrl)), {
+      cache: "no-store",
+      headers: {
+        accept: "application/json",
+        cookie: context.cookieHeader,
+        ...(context.requestHost ? { "x-forwarded-host": context.requestHost } : {}),
+      },
+      method: "DELETE",
+    }).catch(() => null);
+    if (!response) return { ok: false, message: "platform_request_failed", status: 503 };
+    const data = (await response.json().catch(() => ({}))) as Record<string, unknown>;
+    if (!response.ok) {
+      return {
+        ok: false,
+        message: typeof data.error === "string" ? data.error : "option_set_request_failed",
+        status: response.status,
+      };
+    }
+    return { ok: true, data };
+  });
+}

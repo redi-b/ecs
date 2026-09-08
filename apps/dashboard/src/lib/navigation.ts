@@ -64,6 +64,14 @@ export const appRoutes: AppRoute[] = [
         section: "commerce",
         keywords: ["catalog", "taxonomy", "collections"],
       },
+      {
+        id: "product-options",
+        title: "Saved options",
+        href: dashboardRoutes.productOptions,
+        icon: AppIcons.tag,
+        section: "commerce",
+        keywords: ["variants", "size", "color", "options"],
+      },
     ],
   },
   {

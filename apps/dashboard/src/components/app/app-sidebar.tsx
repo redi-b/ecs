@@ -56,6 +56,8 @@ function isProductListActive(pathname: string) {
     pathname.startsWith(`${dashboardRoutes.productCategories}/`) ||
     pathname === dashboardRoutes.productCollections ||
     pathname.startsWith(`${dashboardRoutes.productCollections}/`) ||
+    pathname === dashboardRoutes.productOptions ||
+    pathname.startsWith(`${dashboardRoutes.productOptions}/`) ||
     pathname.startsWith(`${dashboardRoutes.products}/actions/`)
   ) {
     return false;

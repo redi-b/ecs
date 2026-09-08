@@ -21,6 +21,9 @@ export function getDashboardBreadcrumbTrail(
   const productCollectionsRoute = productsRoute?.children?.find(
     (route) => route.href === dashboardRoutes.productCollections,
   );
+  const productOptionsRoute = productsRoute?.children?.find(
+    (route) => route.href === dashboardRoutes.productOptions,
+  );
 
   if (productsRoute && productCategoriesRoute) {
     if (pathname === dashboardRoutes.productCategories) {
@@ -56,6 +59,10 @@ export function getDashboardBreadcrumbTrail(
         },
       ];
     }
+  }
+
+  if (productsRoute && productOptionsRoute && pathname === dashboardRoutes.productOptions) {
+    return [toBreadcrumb(productsRoute), toBreadcrumb(productOptionsRoute)];
   }
 
   if (

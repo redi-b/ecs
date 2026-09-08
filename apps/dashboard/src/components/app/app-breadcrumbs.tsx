@@ -12,12 +12,12 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
-import type { MessageKey } from "@/i18n/messages";
-import { useI18n } from "@/i18n/provider";
 import {
   getDashboardPathFromDemo,
   getDemoPathFromDashboard,
 } from "@/features/demo/dashboard-demo-routes";
+import type { MessageKey } from "@/i18n/messages";
+import { useI18n } from "@/i18n/provider";
 import { type DashboardBreadcrumb, getDashboardBreadcrumbTrail } from "@/lib/dashboard-breadcrumbs";
 import { dashboardRoutes } from "@/lib/routes";
 
@@ -27,6 +27,7 @@ const BREADCRUMB_TITLE_KEYS: Record<string, MessageKey> = {
   "products-list": "nav.productsList",
   "product-categories": "nav.productCategories",
   "product-collections": "nav.productCollections",
+  "product-options": "nav.productOptions",
   orders: "nav.orders",
   customers: "nav.customers",
   inquiries: "nav.inquiries",

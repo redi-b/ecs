@@ -11,6 +11,7 @@ export const dashboardRoutes = {
   productCollections: "/admin/products/collections",
   productCollectionsListAction: "/admin/products/collections/actions/list",
   productCollectionsNew: "/admin/products/collections/new",
+  productOptions: "/admin/products/options",
   productCollectionCreateAction: "/admin/product-collections/actions/create",
   productDetail: (productId: string) => `/admin/products/${encodeURIComponent(productId)}`,
   productEdit: (productId: string) => `/admin/products/${encodeURIComponent(productId)}/edit`,
