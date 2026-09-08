@@ -38,11 +38,11 @@ import {
 } from "./modules/analytics/analytics-service.js";
 import { createDashboardMetricsService } from "./modules/analytics/dashboard-metrics-service.js";
 import { createInsightsRefreshService } from "./modules/analytics/refresh-service.js";
-import { reconcileChapaBillingPayments } from "./modules/billing/reconcile-payments.js";
 import { createPlanAdministrationService } from "./modules/billing/plan-administration.js";
 import { createProductCapacityWriter } from "./modules/billing/product-capacity.js";
-import { createBillingService, isPlatformBillingTxRef } from "./modules/billing/service.js";
 import { createBillingProviderEventInbox } from "./modules/billing/provider-event-inbox.js";
+import { reconcileChapaBillingPayments } from "./modules/billing/reconcile-payments.js";
+import { createBillingService, isPlatformBillingTxRef } from "./modules/billing/service.js";
 import { createMedusaOrderService } from "./modules/commerce/order-management.js";
 import { createMedusaProductService } from "./modules/commerce/product-catalog.js";
 import { createDataExportAuditRecorder } from "./modules/data-transfer/export-audit.js";
@@ -52,7 +52,7 @@ import { createDeliverySettingsService } from "./modules/delivery/service.js";
 import { createDomainManagementService } from "./modules/domains/service.js";
 import { createEntitlementService } from "./modules/entitlements/service.js";
 import { createMediaService } from "./modules/media/index.js";
-import { isEmailDeliveryConfigured } from "./modules/notifications/providers/email-provider.js";
+import { createEmailNotificationProviderFromEnv } from "./modules/notifications/providers/email-provider-factory.js";
 import { createNotificationService } from "./modules/notifications/service.js";
 import { createTenantOnboardingService } from "./modules/onboarding/service.js";
 import { createPaymentOnboardingService } from "./modules/payments/payment-onboarding-service.js";
@@ -309,13 +309,20 @@ if (telegramConnectService.isConfigured()) {
   logger.warn("TELEGRAM_BOT_TOKEN/USERNAME not set; Telegram connect stays unavailable.");
 }
 
-const emailDeliveryConfigured = isEmailDeliveryConfigured(process.env);
+const emailProviderResolution = createEmailNotificationProviderFromEnv(process.env);
+const emailDeliveryConfigured = emailProviderResolution.configured;
+const requireEmailVerification = process.env.AUTH_REQUIRE_EMAIL_VERIFICATION === "true";
+const authEmailProvider = emailProviderResolution.provider;
+if (requireEmailVerification && !authEmailProvider) {
+  throw new Error("AUTH_REQUIRE_EMAIL_VERIFICATION requires a configured EMAIL_PROVIDER");
+}
 if (emailDeliveryConfigured) {
-  logger.info({ from: process.env.EMAIL_FROM?.trim() }, "Email delivery configured (Resend).");
-} else {
-  logger.warn(
-    "RESEND_API_KEY/EMAIL_FROM not set; email delivery stays unavailable in the dashboard.",
+  logger.info(
+    { from: process.env.EMAIL_FROM?.trim(), provider: emailProviderResolution.name },
+    "Email delivery configured.",
   );
+} else {
+  logger.warn("No email provider configured; email delivery stays unavailable in the dashboard.");
 }
 
 const notificationChannelAvailability = {
@@ -651,6 +658,8 @@ const auth = createPlatformAuth({
   // Brand cookies as ecs.* unless overridden (see @ecs/config getAuthCookiePrefix).
   cookiePrefix: process.env.BETTER_AUTH_COOKIE_PREFIX,
   db: platformDb.db,
+  ...(authEmailProvider ? { emailProvider: authEmailProvider } : {}),
+  requireEmailVerification,
   secret: process.env.BETTER_AUTH_SECRET ?? "development-ecs-auth-secret-change-before-production",
   trustedOrigins: parseTrustedOrigins(process.env.BETTER_AUTH_TRUSTED_ORIGINS) ?? [
     "http://api.lvh.me",

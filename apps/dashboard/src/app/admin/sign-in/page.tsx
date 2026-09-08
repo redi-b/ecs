@@ -13,7 +13,7 @@ import { getCentralDashboardUrl, type ShopHostValidation, validateShopHost } fro
 export default async function AdminSignInPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ error?: string; next?: string }>;
+  searchParams?: Promise<{ error?: string; next?: string; verified?: string }>;
 }) {
   const params = await searchParams;
   const t = await getTranslations();
@@ -72,6 +72,11 @@ export default async function AdminSignInPage({
           <h1 className="type-page-title sm:text-[1.35rem]">{t("auth.signIn")}</h1>
           {shopName ? <p className="type-meta mt-1.5">{shopName}</p> : null}
         </div>
+        {params?.verified === "1" ? (
+          <p className="mb-5 rounded-lg border border-success/30 bg-success/8 px-3 py-2 text-sm text-success">
+            {t("auth.emailVerified")}
+          </p>
+        ) : null}
         <SignInForm errorMessage={errorMessage} nextPath={nextPath} />
         {isCentralAccess ? (
           <p className="mt-7 border-t border-border/80 pt-6 text-center text-sm text-muted-foreground">

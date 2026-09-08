@@ -34,6 +34,7 @@ export async function POST(request: Request) {
   }
 
   const signUpResult = await signUpWithPlatformAuth({
+    callbackURL: new URL("/admin/sign-in?verified=1", getRequestOrigin(request)).toString(),
     email,
     forwardedHost: getForwardedHost(request),
     forwardedProto: getForwardedProto(request),
@@ -46,6 +47,15 @@ export async function POST(request: Request) {
   }
 
   if (signUpResult.cookies.length === 0) {
+    if (process.env.AUTH_REQUIRE_EMAIL_VERIFICATION === "true") {
+      const redirectTo = new URL(
+        "/admin/sign-up/check-email",
+        getRequestOrigin(request),
+      ).toString();
+      return wantsJson
+        ? NextResponse.json({ ok: true as const, redirectTo })
+        : NextResponse.redirect(redirectTo, { status: 303 });
+    }
     return failSignUp(request, "auth_session_missing", payload, wantsJson);
   }
 
@@ -117,6 +127,7 @@ function failSignUp(
 }
 
 async function signUpWithPlatformAuth(input: {
+  callbackURL: string;
   email: string;
   forwardedHost: string;
   forwardedProto: string;
@@ -126,6 +137,7 @@ async function signUpWithPlatformAuth(input: {
   const response = await fetch(new URL("/platform/auth/sign-up/email", getPlatformBaseUrl()), {
     body: JSON.stringify({
       email: input.email,
+      callbackURL: input.callbackURL,
       name: input.name,
       password: input.password,
     }),

@@ -7,5 +7,11 @@
     "passwordShort": "Use at least 8 characters for the password.",
     "passwordMismatch": "Passwords do not match.",
     "failed": "Signup could not be completed."
+  },
+  "verification": {
+    "title": "Check your email",
+    "description": "We sent a verification link to the email address you used to create your account.",
+    "help": "Open the link to verify your email, then sign in to finish setting up your shop.",
+    "backToSignIn": "Back to sign in"
   }
 }

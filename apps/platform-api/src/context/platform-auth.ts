@@ -3,6 +3,7 @@ import type { createPlatformDb } from "@ecs/db";
 import * as schema from "@ecs/db";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import type { NotificationProvider } from "../modules/notifications/providers/types.js";
 
 type PlatformDb = ReturnType<typeof createPlatformDb>["db"];
 
@@ -12,10 +13,14 @@ export function createPlatformAuth(options: {
   /** Better Auth cookie prefix. Defaults to env / `ecs`. */
   cookiePrefix?: string | undefined;
   db: PlatformDb;
+  emailProvider?: NotificationProvider | undefined;
+  requireEmailVerification?: boolean | undefined;
   secret: string;
   trustedOrigins?: string[] | undefined;
   useSecureCookies?: boolean | undefined;
 }) {
+  const emailProvider = options.emailProvider;
+
   return betterAuth({
     advanced: getPlatformAuthCookieOptions(options),
     basePath: "/platform/auth",
@@ -32,7 +37,33 @@ export function createPlatformAuth(options: {
     }),
     emailAndPassword: {
       enabled: true,
+      requireEmailVerification: options.requireEmailVerification ?? false,
     },
+    ...(emailProvider
+      ? {
+          emailVerification: {
+            autoSignInAfterVerification: false,
+            sendOnSignIn: true,
+            sendOnSignUp: true,
+            sendVerificationEmail: async ({
+              url,
+              user,
+            }: {
+              url: string;
+              user: { email: string };
+            }) => {
+              await emailProvider.send({
+                body: `Verify your email address to finish creating your ECS account:\n\n${url}\n\nIf you did not create this account, you can ignore this email.`,
+                channel: "email",
+                eventType: "account.email_verification",
+                recipient: user.email,
+                subject: "Verify your ECS email address",
+                tenantId: "platform",
+              });
+            },
+          },
+        }
+      : {}),
     secret: options.secret,
     ...(options.trustedOrigins?.length ? { trustedOrigins: options.trustedOrigins } : {}),
     user: {
