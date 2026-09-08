@@ -1,7 +1,7 @@
 "use client";
 
 import { Tooltip as TooltipPrimitive } from "radix-ui";
-import type * as React from "react";
+import * as React from "react";
 
 import { cn } from "@/lib/utils";
 
@@ -18,12 +18,76 @@ function TooltipProvider({
   );
 }
 
-function Tooltip({ ...props }: React.ComponentProps<typeof TooltipPrimitive.Root>) {
-  return <TooltipPrimitive.Root data-slot="tooltip" {...props} />;
+type TouchTooltipContextValue = {
+  open: () => void;
+};
+
+const TouchTooltipContext = React.createContext<TouchTooltipContextValue | null>(null);
+
+function Tooltip({ defaultOpen, onOpenChange, open: controlledOpen, ...props }: React.ComponentProps<typeof TooltipPrimitive.Root>) {
+  const [uncontrolledOpen, setUncontrolledOpen] = React.useState(defaultOpen ?? false);
+  const open = controlledOpen ?? uncontrolledOpen;
+  const setOpen = React.useCallback((next: boolean) => {
+    if (controlledOpen === undefined) setUncontrolledOpen(next);
+    onOpenChange?.(next);
+  }, [controlledOpen, onOpenChange]);
+
+  const touch = React.useMemo(() => ({ open: () => setOpen(true) }), [setOpen]);
+
+  return (
+    <TouchTooltipContext.Provider value={touch}>
+      <TooltipPrimitive.Root data-slot="tooltip" onOpenChange={setOpen} open={open} {...props} />
+    </TouchTooltipContext.Provider>
+  );
 }
 
-function TooltipTrigger({ ...props }: React.ComponentProps<typeof TooltipPrimitive.Trigger>) {
-  return <TooltipPrimitive.Trigger data-slot="tooltip-trigger" {...props} />;
+function TooltipTrigger({ onClickCapture, onPointerCancel, onPointerDown, onPointerMove, onPointerUp, ...props }: React.ComponentProps<typeof TooltipPrimitive.Trigger>) {
+  const touch = React.useContext(TouchTooltipContext);
+  const timerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longPressedRef = React.useRef(false);
+
+  const clearTimer = React.useCallback(() => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = null;
+  }, []);
+
+  React.useEffect(() => clearTimer, [clearTimer]);
+
+  return (
+    <TooltipPrimitive.Trigger
+      data-slot="tooltip-trigger"
+      onClickCapture={(event) => {
+        onClickCapture?.(event);
+        if (!longPressedRef.current) return;
+        event.preventDefault();
+        event.stopPropagation();
+        longPressedRef.current = false;
+      }}
+      onPointerCancel={(event) => {
+        onPointerCancel?.(event);
+        clearTimer();
+      }}
+      onPointerDown={(event) => {
+        onPointerDown?.(event);
+        if (event.pointerType !== "touch" || event.defaultPrevented) return;
+        clearTimer();
+        longPressedRef.current = false;
+        timerRef.current = setTimeout(() => {
+          longPressedRef.current = true;
+          touch?.open();
+        }, 500);
+      }}
+      onPointerMove={(event) => {
+        onPointerMove?.(event);
+        if (event.pointerType === "touch") clearTimer();
+      }}
+      onPointerUp={(event) => {
+        onPointerUp?.(event);
+        clearTimer();
+      }}
+      {...props}
+    />
+  );
 }
 
 function TooltipContent({
