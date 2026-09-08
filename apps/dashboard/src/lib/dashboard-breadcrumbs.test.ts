@@ -30,7 +30,7 @@ describe("getDashboardBreadcrumbTrail", () => {
         ["All products", "/admin/products"],
         ["Categories", "/admin/products/categories"],
         ["Collections", "/admin/products/collections"],
-        ["Saved options", "/admin/products/options"],
+        ["Product options", "/admin/products/options"],
       ],
     );
   });
@@ -107,7 +107,7 @@ describe("getDashboardBreadcrumbTrail", () => {
   it("labels saved options as a nested products breadcrumb", () => {
     assert.deepEqual(getDashboardBreadcrumbTrail(dashboardRoutes.productOptions), [
       { href: "/admin/products", id: "products", title: "Products" },
-      { href: "/admin/products/options", id: "product-options", title: "Saved options" },
+      { href: "/admin/products/options", id: "product-options", title: "Product options" },
     ]);
   });
 
