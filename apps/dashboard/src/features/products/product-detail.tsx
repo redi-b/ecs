@@ -217,6 +217,21 @@ export function ProductDetail({ action, product, readOnly = false, tenantId }: P
           </DetailSection>
 
           <DetailSection
+            action={
+              readOnly ? null : (
+                <Button asChild size="sm" variant="outline">
+                  <Link
+                    href={`${getTenantScopedPath(
+                      dashboardRoutes.productEdit(product.id),
+                      tenantId,
+                    )}${tenantId ? "&" : "?"}step=variants`}
+                  >
+                    <AppIcons.edit data-icon="inline-start" />
+                    {t("products.detail.editOptions")}
+                  </Link>
+                </Button>
+              )
+            }
             meta={t("products.detail.variantsCount", { count: product.variants?.length ?? 0 })}
             title={t("products.detail.optionsTitle")}
           >

@@ -723,6 +723,7 @@ export type PlatformAppOptions = {
     | ((input: {
         productId: string;
         salesChannelId: string;
+        stockLocationId?: string | null | undefined;
       }) => Promise<MerchantProductDetailResult>)
     | undefined;
   listMerchantProductCategories?:

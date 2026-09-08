@@ -186,6 +186,7 @@ export const platformErrorSchema = z.object({
 export type PlatformError = z.infer<typeof platformErrorSchema>;
 
 export const merchantProductVariantWriteSchema = z.object({
+  id: z.string().min(1).optional(),
   optionValues: z.record(z.string().min(1), z.string().min(1)),
   sku: z.string().min(1).nullable().optional(),
   priceAmount: z.number().nonnegative(),

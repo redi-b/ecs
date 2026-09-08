@@ -397,6 +397,7 @@ describe("createMedusaProductService", () => {
               variants: [
                 {
                   id: "variant_1",
+                  options: [{ value: "Default", option: { title: "Default" } }],
                   inventory_items: [{ inventory_item_id: "iitem_1" }],
                 },
               ],
@@ -423,7 +424,7 @@ describe("createMedusaProductService", () => {
       forwardedRequests.map((request) => `${request.method} ${request.url}`),
       [
         "POST http://medusa:9000/admin/products",
-        "GET http://medusa:9000/admin/products/prod_1?fields=id%2Csales_channels.id%2Cvariants.id%2Cvariants.inventory_items.inventory_item_id",
+        "GET http://medusa:9000/admin/products/prod_1?fields=id%2Csales_channels.id%2Cvariants.id%2Cvariants.options.value%2Cvariants.options.option.title%2Cvariants.inventory_items.inventory_item_id",
         "POST http://medusa:9000/admin/inventory-items/iitem_1/location-levels/sloc_1",
       ],
     );
@@ -458,6 +459,7 @@ describe("createMedusaProductService", () => {
               variants: [
                 {
                   id: "variant_1",
+                  options: [{ value: "Small", option: { title: "Size" } }],
                   inventory_items: [{ inventory_item_id: "iitem_1" }],
                 },
               ],
@@ -501,7 +503,7 @@ describe("createMedusaProductService", () => {
       forwardedRequests.map((request) => `${request.method} ${request.url}`),
       [
         "POST http://medusa:9000/admin/products",
-        "GET http://medusa:9000/admin/products/prod_1?fields=id%2Csales_channels.id%2Cvariants.id%2Cvariants.inventory_items.inventory_item_id",
+        "GET http://medusa:9000/admin/products/prod_1?fields=id%2Csales_channels.id%2Cvariants.id%2Cvariants.options.value%2Cvariants.options.option.title%2Cvariants.inventory_items.inventory_item_id",
         "POST http://medusa:9000/admin/inventory-items/iitem_1/location-levels/sloc_1",
         "POST http://medusa:9000/admin/inventory-items/iitem_1/location-levels",
       ],
@@ -676,6 +678,67 @@ describe("createMedusaProductService", () => {
         createdAt: "2026-01-01T00:00:00.000Z",
         updatedAt: "2026-01-02T00:00:00.000Z",
       },
+    });
+  });
+
+  it("hydrates product detail variants with merchant-location stock", async () => {
+    const service = createMedusaProductService({
+      adminApiToken: "medusa_token",
+      medusaInternalUrl: "http://medusa:9000",
+      fetcher: async (input, init) => {
+        const request = new Request(input, init);
+
+        if (request.url.includes("/admin/inventory-items/")) {
+          return Response.json({
+            inventory_item: {
+              id: "iitem_1",
+              location_levels: [
+                {
+                  location_id: "sloc_1",
+                  stocked_quantity: 12,
+                  reserved_quantity: 2,
+                  incoming_quantity: 0,
+                  available_quantity: 10,
+                },
+              ],
+            },
+          });
+        }
+
+        return Response.json({
+          product: {
+            id: "prod_1",
+            title: "Coffee",
+            handle: "coffee",
+            status: "draft",
+            sales_channels: [{ id: "sc_1" }],
+            variants: [
+              {
+                id: "variant_1",
+                title: "Default",
+                inventory_items: [{ inventory_item_id: "iitem_1" }],
+                prices: [{ amount: 350, currency_code: "etb" }],
+              },
+            ],
+            created_at: "2026-01-01T00:00:00.000Z",
+            updated_at: "2026-01-02T00:00:00.000Z",
+          },
+        });
+      },
+    });
+
+    const result = await service.getMerchantProduct({
+      productId: "prod_1",
+      salesChannelId: "sc_1",
+      stockLocationId: "sloc_1",
+    });
+
+    assert.deepEqual(result.ok ? result.product.variants?.[0]?.stock : null, {
+      locationId: "sloc_1",
+      stockedQuantity: 12,
+      reservedQuantity: 2,
+      incomingQuantity: 0,
+      availableQuantity: 10,
     });
   });
 

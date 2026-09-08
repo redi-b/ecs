@@ -80,3 +80,33 @@ test("an option-only product update never synthesizes or rewrites variants", () 
   assert.deepEqual(body.options, [{ title: "Color", values: ["Black"] }]);
   assert.equal(body.variants, undefined);
 });
+
+test("preserves existing variant IDs in product updates", () => {
+  const body = getProductWriteBody({
+    productId: "prod_1",
+    salesChannelId: "sc_1",
+    regionId: "reg_1",
+    options: [{ id: "opt_size", title: "Size", values: [{ label: "M" }] }],
+    variants: [
+      {
+        id: "variant_1",
+        optionValues: { Size: "M" },
+        sku: "TEE-M",
+        priceAmount: 1200,
+        currencyCode: "etb",
+        stockedQuantity: 4,
+      },
+    ],
+  });
+
+  assert.deepEqual(body.variants, [
+    {
+      id: "variant_1",
+      title: "M",
+      sku: "TEE-M",
+      manage_inventory: true,
+      options: { Size: "M" },
+      prices: [{ amount: 1200, currency_code: "etb", rules: { region_id: "reg_1" } }],
+    },
+  ]);
+});

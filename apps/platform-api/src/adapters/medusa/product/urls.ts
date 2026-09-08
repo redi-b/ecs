@@ -196,12 +196,18 @@ export function getProductUrl(medusaInternalUrl: string, productId: string) {
   );
 }
 
-export function getProductInventoryUrl(medusaInternalUrl: string, productId: string) {
+export function getProductInventoryUrl(
+  medusaInternalUrl: string,
+  productId: string,
+  options: { includeOptionValues?: boolean | undefined } = {},
+) {
   const url = getProductUrl(medusaInternalUrl, productId);
 
   url.searchParams.set(
     "fields",
-    "id,sales_channels.id,variants.id,variants.inventory_items.inventory_item_id",
+    options.includeOptionValues
+      ? "id,sales_channels.id,variants.id,variants.options.value,variants.options.option.title,variants.inventory_items.inventory_item_id"
+      : "id,sales_channels.id,variants.id,variants.inventory_items.inventory_item_id",
   );
 
   return url;

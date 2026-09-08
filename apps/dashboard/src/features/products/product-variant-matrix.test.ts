@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { buildVariantMatrix, getVariantMatrixKey } from "./product-variant-matrix";
+import { buildVariantMatrix } from "./product-variant-matrix";
 
 describe("product variant matrix", () => {
   it("builds variants from multiple option groups", () => {
@@ -35,7 +35,37 @@ describe("product variant matrix", () => {
   });
 
   it("preserves row overrides by stable option key", () => {
-    const key = getVariantMatrixKey({ Size: "M", Color: "Black" });
+    const options = [
+      {
+        id: "opt_size",
+        title: "Size",
+        values: [
+          { id: "optval_s", label: "S" },
+          { id: "optval_m", label: "M" },
+        ],
+      },
+      {
+        id: "opt_color",
+        title: "Color",
+        values: [{ id: "optval_black", label: "Black" }],
+      },
+    ];
+    const initialRows = buildVariantMatrix({
+      defaults: {
+        currencyCode: "usd",
+        priceAmount: 25,
+        stockedQuantity: 5,
+        skuPrefix: "TEE",
+      },
+      options,
+      overrides: new Map(),
+    });
+    const key = initialRows.find((row) => row.optionValues.Size === "M")?.key;
+    assert.ok(key);
+    const colorOption = options[1];
+    const sizeOption = options[0];
+    assert.ok(colorOption);
+    assert.ok(sizeOption);
     const rows = buildVariantMatrix({
       defaults: {
         currencyCode: "usd",
@@ -43,10 +73,17 @@ describe("product variant matrix", () => {
         stockedQuantity: 5,
         skuPrefix: "TEE",
       },
-      options: [
-        { title: "Size", values: [{ label: "S" }, { label: "M" }] },
-        { title: "Color", values: [{ label: "Black" }] },
-      ],
+      options: [colorOption, sizeOption].map((option) =>
+        option.id === "opt_size"
+          ? {
+              ...option,
+              title: "Fit",
+              values: option.values.map((value) =>
+                value.id === "optval_m" ? { ...value, label: "Medium" } : value,
+              ),
+            }
+          : option,
+      ),
       overrides: new Map([
         [
           key,
@@ -64,5 +101,26 @@ describe("product variant matrix", () => {
     assert.equal(overridden?.priceAmount, 31);
     assert.equal(overridden?.stockedQuantity, 9);
     assert.equal(overridden?.sku, "CUSTOM");
+  });
+
+  it("carries persisted identity and disabled state into generated rows", () => {
+    const options = [{ id: "opt_size", title: "Size", values: [{ id: "optval_s", label: "S" }] }];
+    const initial = buildVariantMatrix({
+      defaults: { currencyCode: "etb", priceAmount: 100, stockedQuantity: 2, skuPrefix: "TEE" },
+      options,
+      overrides: new Map(),
+    });
+    const key = initial[0]?.key;
+    assert.ok(key);
+
+    const [row] = buildVariantMatrix({
+      defaults: { currencyCode: "etb", priceAmount: 100, stockedQuantity: 2, skuPrefix: "TEE" },
+      options,
+      overrides: new Map([[key, { enabled: false, id: "variant_1", reservedQuantity: 3 }]]),
+    });
+
+    assert.equal(row?.enabled, false);
+    assert.equal(row?.id, "variant_1");
+    assert.equal(row?.reservedQuantity, 3);
   });
 });

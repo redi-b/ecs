@@ -362,6 +362,7 @@ describe("platform app merchant and tenant catalog", () => {
     assert.deepEqual(productInput, {
       productId: "prod_1",
       salesChannelId: "channel_1",
+      stockLocationId: "sloc_1",
     });
     assert.deepEqual(await response.json(), {
       product: {
@@ -2070,7 +2071,9 @@ describe("platform app merchant and tenant catalog", () => {
       collectionId: "pcol_1",
       categoryIds: ["pcat_1", "pcat_2"],
       imageUrls: ["https://cdn.test/coffee-2.jpg"],
+      regionId: "reg_1",
       status: "published",
+      stockLocationId: "sloc_1",
       thumbnail: null,
       salesChannelId: "channel_1",
     });
@@ -2184,6 +2187,7 @@ describe("platform app merchant and tenant catalog", () => {
       collectionId: "pcol_1",
       categoryIds: ["pcat_1", "pcat_2"],
       imageUrls: ["https://cdn.test/coffee-2.jpg"],
+      regionId: "reg_1",
       status: "published",
       thumbnail: null,
       salesChannelId: "channel_1",

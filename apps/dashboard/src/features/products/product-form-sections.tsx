@@ -4,12 +4,14 @@ import { useState } from "react";
 import { AppIcons } from "@/components/app/icons";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   formatEtbAmount,
+  getRemovedExistingVariants,
   getVariantRows,
   normalizeProductOptions,
   parseWholeNumber,
@@ -244,10 +246,17 @@ export function ProductReviewSummary({ values }: { values: ProductFormValues }) 
   const { t } = useI18n();
   const rows = getVariantRows(values);
   const normalizedOptions = normalizeProductOptions(values.options);
-  const totalStock = rows.reduce((total, row) => total + row.stockedQuantity, 0);
-  const prices = rows.map((row) => row.priceAmount);
+  const enabledRows = rows.filter((row) => row.enabled);
+  const removedVariants = getRemovedExistingVariants(values);
+  const totalStock = enabledRows.reduce((total, row) => total + row.stockedQuantity, 0);
+  const prices = enabledRows.map((row) => row.priceAmount);
   const minPrice = Math.min(...prices);
   const maxPrice = Math.max(...prices);
+  const priceSummary = prices.length
+    ? minPrice === maxPrice
+      ? `ETB ${minPrice}`
+      : `ETB ${minPrice} to ${maxPrice}`
+    : "—";
   const overriddenRows = rows.filter((row) => values.variantOverrides[row.key]).length;
 
   return (
@@ -263,17 +272,25 @@ export function ProductReviewSummary({ values }: { values: ProductFormValues }) 
         />
         <VariantMatrixMetric
           label={t("products.formReview.sellableRows")}
-          value={String(rows.length)}
+          value={String(enabledRows.length)}
         />
-        <VariantMatrixMetric
-          label={t("products.formReview.price")}
-          value={minPrice === maxPrice ? `ETB ${minPrice}` : `ETB ${minPrice} to ${maxPrice}`}
-        />
+        <VariantMatrixMetric label={t("products.formReview.price")} value={priceSummary} />
         <VariantMatrixMetric
           label={t("products.formReview.initialStock")}
           value={String(totalStock)}
         />
       </div>
+
+      {removedVariants.length ? (
+        <div className="rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm">
+          <p className="font-medium text-destructive">
+            {t("products.formReview.removedVariants", { count: removedVariants.length })}
+          </p>
+          <p className="mt-1 text-muted-foreground">
+            {t("products.formReview.removedVariantsHelp")}
+          </p>
+        </div>
+      ) : null}
 
       <div className="rounded-2xl border bg-background p-4">
         <h3 className="text-sm font-medium">{t("products.formReview.whatWillBeSaved")}</h3>
@@ -349,7 +366,7 @@ export function ProductOptionsBuilder({
   const [draftValues, setDraftValues] = useState<Record<number, string>>({});
 
   function addOption(title = "") {
-    onChange([...options, { title, values: [] }]);
+    onChange([...options, { key: `option:${crypto.randomUUID()}`, title, values: [] }]);
   }
 
   function updateOption(index: number, nextOption: ProductOptionDraft) {
@@ -386,7 +403,7 @@ export function ProductOptionsBuilder({
                 (value) => value.label.toLocaleLowerCase() === label.toLocaleLowerCase(),
               ),
           )
-          .map((label) => ({ label })),
+          .map((label) => ({ key: `value:${crypto.randomUUID()}`, label })),
       ],
     });
     setDraftValues((current) => ({ ...current, [index]: "" }));
@@ -412,7 +429,14 @@ export function ProductOptionsBuilder({
       ...option,
       values: option.values.map((value, index) =>
         index === valueIndex
-          ? { ...value, label, swatch: { kind: "color" as const, value: color.toLowerCase() } }
+          ? {
+              ...value,
+              // Medusa updates option values by label, not value ID. Keep our client key
+              // stable, but let the presentation hook resolve the newly labelled value.
+              id: undefined,
+              label,
+              swatch: { kind: "color" as const, value: color.toLowerCase() },
+            }
           : value,
       ),
     });
@@ -424,7 +448,14 @@ export function ProductOptionsBuilder({
     if (option.values.some((item) => item.label.toLowerCase() === label.toLowerCase())) return;
     updateOption(index, {
       ...option,
-      values: [...option.values, { label, swatch: { kind: "color", value: color.toLowerCase() } }],
+      values: [
+        ...option.values,
+        {
+          key: `value:${crypto.randomUUID()}`,
+          label,
+          swatch: { kind: "color", value: color.toLowerCase() },
+        },
+      ],
     });
   }
 
@@ -432,6 +463,7 @@ export function ProductOptionsBuilder({
     t("products.formReview.placeholderSize"),
     t("products.formReview.placeholderColor"),
     t("products.formReview.placeholderMaterial"),
+    t("products.formReview.placeholderStyle"),
   ];
 
   return (
@@ -451,10 +483,7 @@ export function ProductOptionsBuilder({
           {options.map((option, index) => (
             <div
               className="rounded-xl border bg-background p-4"
-              key={
-                // biome-ignore lint/suspicious/noArrayIndexKey: option order is the draft identity until the product is submitted.
-                index
-              }
+              key={option.id ?? option.key ?? index}
             >
               <div className="grid gap-4 md:grid-cols-[14rem_minmax(0,1fr)_auto] md:items-start">
                 <Field>
@@ -592,13 +621,16 @@ function isColorOptionTitle(title: string) {
 }
 
 export function VariantMatrixTable({
+  onApplyDefaults,
   onOverrideChange,
   rows,
   values,
 }: {
+  onApplyDefaults: () => void;
   onOverrideChange: (
     key: string,
     override: {
+      enabled?: boolean | undefined;
       priceAmount?: string | undefined;
       sku?: string | undefined;
       stockedQuantity?: string | undefined;
@@ -608,16 +640,24 @@ export function VariantMatrixTable({
   values: ProductFormValues["variantOverrides"];
 }) {
   const { t } = useI18n();
-  const totalStock = rows.reduce((total, row) => total + row.stockedQuantity, 0);
-  const prices = rows.map((row) => row.priceAmount);
+  const enabledRows = rows.filter((row) => row.enabled);
+  const totalStock = enabledRows.reduce((total, row) => total + row.stockedQuantity, 0);
+  const prices = enabledRows.map((row) => row.priceAmount);
   const minPrice = Math.min(...prices);
   const maxPrice = Math.max(...prices);
-  const priceSummary = minPrice === maxPrice ? `ETB ${minPrice}` : `ETB ${minPrice} to ${maxPrice}`;
+  const priceSummary = prices.length
+    ? minPrice === maxPrice
+      ? `ETB ${minPrice}`
+      : `ETB ${minPrice} to ${maxPrice}`
+    : "—";
 
   return (
     <div className="flex flex-col gap-4">
       <div className="grid gap-3 md:grid-cols-3">
-        <VariantMatrixMetric label={t("products.formReview.options")} value={String(rows.length)} />
+        <VariantMatrixMetric
+          label={t("products.formReview.sellableRows")}
+          value={`${enabledRows.length} / ${rows.length}`}
+        />
         <VariantMatrixMetric
           label={t("products.formReview.totalStocked")}
           value={String(totalStock)}
@@ -626,9 +666,14 @@ export function VariantMatrixTable({
       </div>
 
       <div className="overflow-hidden rounded-2xl border bg-background">
-        <div className="flex flex-col gap-1 border-b bg-muted/30 px-4 py-3">
-          <h3 className="text-sm font-medium">{t("products.formReview.matrixTitle")}</h3>
-          <p className="text-sm text-muted-foreground">{t("products.formReview.matrixDesc")}</p>
+        <div className="flex flex-col gap-3 border-b bg-muted/30 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h3 className="text-sm font-medium">{t("products.formReview.matrixTitle")}</h3>
+            <p className="text-sm text-muted-foreground">{t("products.formReview.matrixDesc")}</p>
+          </div>
+          <Button onClick={onApplyDefaults} size="sm" type="button" variant="outline">
+            {t("products.formReview.applyDefaults")}
+          </Button>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[56rem] text-sm">
@@ -653,11 +698,30 @@ export function VariantMatrixTable({
                 const override = values[row.key] ?? {};
 
                 return (
-                  <tr className="border-t align-top" key={row.key}>
+                  <tr
+                    className={
+                      row.enabled
+                        ? "border-t align-top"
+                        : "border-t bg-muted/20 align-top opacity-65"
+                    }
+                    key={row.key}
+                  >
                     <td className="px-4 py-3">
-                      <div className="mb-2 font-medium">
-                        {Object.values(row.optionValues).join(" / ") ||
-                          t("products.formReview.defaultVariant")}
+                      <div className="mb-2 flex items-center gap-2 font-medium">
+                        <Checkbox
+                          aria-label={t("products.formReview.toggleVariantAria", {
+                            variant: Object.values(row.optionValues).join(" / "),
+                          })}
+                          checked={row.enabled}
+                          disabled={row.reservedQuantity > 0}
+                          onCheckedChange={(checked) =>
+                            onOverrideChange(row.key, { enabled: checked === true })
+                          }
+                        />
+                        <span>
+                          {Object.values(row.optionValues).join(" / ") ||
+                            t("products.formReview.defaultVariant")}
+                        </span>
                       </div>
                       <div className="flex flex-wrap gap-1.5">
                         {Object.entries(row.optionValues).length ? (
@@ -681,6 +745,7 @@ export function VariantMatrixTable({
                       <Input
                         aria-label={t("products.formReview.skuAria", { key: row.key })}
                         className="h-9"
+                        disabled={!row.enabled}
                         onChange={(event) => onOverrideChange(row.key, { sku: event.target.value })}
                         value={override.sku ?? row.sku}
                       />
@@ -690,6 +755,7 @@ export function VariantMatrixTable({
                         <InputGroupAddon>ETB</InputGroupAddon>
                         <InputGroupInput
                           aria-label={t("products.formReview.priceAria", { key: row.key })}
+                          disabled={!row.enabled}
                           inputMode="numeric"
                           min="0"
                           onChange={(event) =>
@@ -704,6 +770,7 @@ export function VariantMatrixTable({
                       <Input
                         aria-label={t("products.formReview.stockAria", { key: row.key })}
                         className="h-9"
+                        disabled={!row.enabled}
                         inputMode="numeric"
                         min="0"
                         onChange={(event) =>

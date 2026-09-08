@@ -468,6 +468,7 @@ export function createMedusaProductService(options: {
     getMerchantProduct: async (input: {
       productId: string;
       salesChannelId: string;
+      stockLocationId?: string | null | undefined;
     }): Promise<MerchantProductDetailResult> => {
       if (!options.adminApiToken?.trim()) {
         return missingCredentials();
@@ -513,9 +514,18 @@ export function createMedusaProductService(options: {
         };
       }
 
+      const hydratedProduct = input.stockLocationId?.trim()
+        ? ((
+            await hydrateProductsWithStock(fetcher, options, {
+              products: [product],
+              stockLocationId: input.stockLocationId,
+            })
+          )[0] ?? product)
+        : product;
+
       return {
         ok: true,
-        product,
+        product: hydratedProduct,
       };
     },
 
@@ -889,8 +899,20 @@ export function createMedusaProductService(options: {
           method: "POST",
         },
       );
+      const result = await parseProductWriteResponse(updateResponse);
 
-      return parseProductWriteResponse(updateResponse);
+      if (!result.ok || !input.stockLocationId?.trim() || !input.variants?.length) {
+        return result;
+      }
+
+      await initializeProductStockLevels(fetcher, options, {
+        productId: result.product.id,
+        salesChannelId: input.salesChannelId,
+        stockLocationId: input.stockLocationId,
+        variants: input.variants,
+      });
+
+      return result;
     },
 
     deleteMerchantProduct: async (input: {

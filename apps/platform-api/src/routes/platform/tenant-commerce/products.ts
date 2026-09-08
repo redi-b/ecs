@@ -125,6 +125,9 @@ export function registerPlatformTenantProductsRoutes(
     const product = await options.getMerchantProduct({
       productId: context.req.param("productId"),
       salesChannelId: commerce.context.medusaSalesChannelId,
+      ...(commerce.context.medusaStockLocationId
+        ? { stockLocationId: commerce.context.medusaStockLocationId }
+        : {}),
     });
 
     if (!product.ok) {
@@ -245,6 +248,7 @@ export function registerPlatformTenantProductsRoutes(
     const body = await getJsonBody(context.req.raw);
     const title = getRequiredBodyString(body, "title");
     const productOptions = getOptionalBodyProductOptions(body);
+    const productVariants = getOptionalBodyProductVariants(body);
 
     if (!title) {
       return context.json({ error: "missing_title" }, 400);
@@ -258,6 +262,7 @@ export function registerPlatformTenantProductsRoutes(
       categoryIds: getOptionalBodyStringArray(body, "categoryIds"),
       imageUrls: getOptionalBodyStringArray(body, "imageUrls"),
       ...(productOptions ? { options: productOptions } : {}),
+      ...(productVariants ? { variants: productVariants } : {}),
       priceAmount: getOptionalBodyNumber(body, "priceAmount"),
       currencyCode: getOptionalBodyString(body, "currencyCode") ?? "etb",
       regionId: commerce.context.medusaRegionId,
@@ -329,6 +334,8 @@ export function registerPlatformTenantProductsRoutes(
     }
 
     const body = await getJsonBody(context.req.raw);
+    const productOptions = getOptionalBodyProductOptions(body);
+    const productVariants = getOptionalBodyProductVariants(body);
     const product = await options.updateMerchantProduct({
       productId: context.req.param("productId"),
       title: getOptionalBodyString(body, "title"),
@@ -337,7 +344,13 @@ export function registerPlatformTenantProductsRoutes(
       collectionId: getOptionalBodyString(body, "collectionId"),
       categoryIds: getOptionalBodyStringArray(body, "categoryIds"),
       imageUrls: getOptionalBodyStringArray(body, "imageUrls"),
+      ...(productOptions ? { options: productOptions } : {}),
+      ...(productVariants ? { variants: productVariants } : {}),
+      regionId: commerce.context.medusaRegionId,
       status: getOptionalBodyString(body, "status"),
+      ...(commerce.context.medusaStockLocationId
+        ? { stockLocationId: commerce.context.medusaStockLocationId }
+        : {}),
       thumbnail: getOptionalBodyString(body, "thumbnail"),
       salesChannelId: commerce.context.medusaSalesChannelId,
     });

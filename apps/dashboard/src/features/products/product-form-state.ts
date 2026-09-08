@@ -7,11 +7,8 @@ import {
   createProductPayloadSchema,
   type ProductFormValues,
 } from "@/features/products/product-form-types";
-import type {
-  ProductOptionDraft,
-  VariantMatrixRow,
-} from "@/features/products/product-variant-matrix";
-import { buildVariantMatrix } from "@/features/products/product-variant-matrix";
+import type { ProductOptionDraft } from "@/features/products/product-variant-matrix";
+import { buildVariantMatrix, getVariantDraftKey } from "@/features/products/product-variant-matrix";
 import type { MessageKey } from "@/i18n/messages";
 
 type Translate = (key: MessageKey, values?: Record<string, string | number | Date>) => string;
@@ -21,6 +18,8 @@ export function getProductDefaultValues(product: MerchantProduct | undefined): P
   const title = product?.title ?? "";
   const generatedHandle = slugifyProductHandle(title);
   const initialOptions = getInitialProductOptions(product);
+  const initialOverrides = getInitialVariantOverrides(product, initialOptions);
+  const simpleVariant = initialOptions.length ? undefined : product?.variants?.[0];
 
   return {
     title,
@@ -35,10 +34,10 @@ export function getProductDefaultValues(product: MerchantProduct | undefined): P
     priceAmount: firstPrice?.amount === undefined ? "" : String(firstPrice.amount),
     currencyCode: "etb",
     hasVariants: Boolean(product && initialOptions.length),
-    initialStock: "0",
+    initialStock: String(simpleVariant?.stock?.stockedQuantity ?? 0),
     options: initialOptions,
-    skuPrefix: getDefaultSkuPrefix(product?.handle ?? title),
-    variantOverrides: {},
+    skuPrefix: simpleVariant?.sku ?? getDefaultSkuPrefix(product?.handle ?? title),
+    variantOverrides: initialOverrides,
     collectionId: product?.collectionId ?? NO_COLLECTION_VALUE,
     categoryIds: product?.categoryIds ?? [],
   };
@@ -49,6 +48,7 @@ export function getProductPayload(
   options: { includeOptions: boolean },
   t: Translate,
 ) {
+  validateProductVariantConfiguration(values, t);
   const priceError = validatePriceAmount(values.priceAmount, t);
   if (priceError) {
     throw new Error(priceError);
@@ -82,6 +82,44 @@ export function getProductPayload(
   }
 
   return parsed.data;
+}
+
+export function validateProductVariantConfiguration(values: ProductFormValues, t: Translate) {
+  if (!values.hasVariants) return;
+  const options = normalizeProductOptions(values.options);
+
+  if (!options.length) {
+    throw new ProductMutationError(t("products.validation.optionRequired"), "variants");
+  }
+
+  const optionNames = new Set<string>();
+  for (const option of options) {
+    const optionName = option.title.toLocaleLowerCase();
+    if (optionNames.has(optionName)) {
+      throw new ProductMutationError(t("products.validation.optionNamesUnique"), "variants");
+    }
+    optionNames.add(optionName);
+
+    const valueNames = new Set<string>();
+    for (const value of option.values) {
+      const valueName = value.label.toLocaleLowerCase();
+      if (valueNames.has(valueName)) {
+        throw new ProductMutationError(
+          t("products.validation.optionValuesUnique", { option: option.title }),
+          "variants",
+        );
+      }
+      valueNames.add(valueName);
+    }
+  }
+
+  if (!getVariantRows(values).some((row) => row.enabled)) {
+    throw new ProductMutationError(t("products.validation.variantRequired"), "variants");
+  }
+
+  if (getRemovedExistingVariants(values).some((variant) => variant.reservedQuantity > 0)) {
+    throw new ProductMutationError(t("products.validation.variantReserved"), "variants");
+  }
 }
 
 export function getProductSuccessPath(action: string, productId: string, isEdit: boolean) {
@@ -170,6 +208,7 @@ export function getProductVariantsPayload(values: ProductFormValues) {
   if (!values.hasVariants) {
     return [
       {
+        ...(values.variantOverrides.default?.id ? { id: values.variantOverrides.default.id } : {}),
         optionValues: { Default: "Default" },
         sku: values.skuPrefix.trim() ? values.skuPrefix.trim() : null,
         priceAmount: parseWholeNumber(values.priceAmount) ?? 0,
@@ -179,13 +218,16 @@ export function getProductVariantsPayload(values: ProductFormValues) {
     ];
   }
 
-  return getVariantRows(values).map((row) => ({
-    optionValues: row.optionValues,
-    sku: row.sku.trim() ? row.sku.trim() : null,
-    priceAmount: row.priceAmount,
-    currencyCode: row.currencyCode,
-    stockedQuantity: row.stockedQuantity,
-  }));
+  return getVariantRows(values)
+    .filter((row) => row.enabled)
+    .map((row) => ({
+      ...(row.id ? { id: row.id } : {}),
+      optionValues: row.optionValues,
+      sku: row.sku.trim() ? row.sku.trim() : null,
+      priceAmount: row.priceAmount,
+      currencyCode: row.currencyCode,
+      stockedQuantity: row.stockedQuantity,
+    }));
 }
 
 export function getVariantRows(values: ProductFormValues) {
@@ -206,12 +248,17 @@ export function getVariantOverrideMap(values: ProductFormValues["variantOverride
     Object.entries(values).map(([key, override]) => [
       key,
       {
+        ...(override.enabled !== undefined ? { enabled: override.enabled } : {}),
+        ...(override.id?.trim() ? { id: override.id.trim() } : {}),
         ...(override.priceAmount?.trim()
           ? { priceAmount: parseWholeNumber(override.priceAmount) }
           : {}),
         ...(override.sku?.trim() ? { sku: override.sku.trim() } : {}),
         ...(override.stockedQuantity?.trim()
           ? { stockedQuantity: parseWholeNumber(override.stockedQuantity) }
+          : {}),
+        ...(override.reservedQuantity !== undefined
+          ? { reservedQuantity: override.reservedQuantity }
           : {}),
       },
     ]),
@@ -222,10 +269,12 @@ export function normalizeProductOptions(options: ProductOptionDraft[]) {
   return options
     .map((option) => ({
       ...(option.id ? { id: option.id } : {}),
+      ...(option.key ? { key: option.key } : {}),
       title: option.title.trim(),
       values: option.values
         .map((value) => ({
           ...(value.id ? { id: value.id } : {}),
+          ...(value.key ? { key: value.key } : {}),
           label: value.label.trim(),
           ...(value.swatch !== undefined ? { swatch: value.swatch } : {}),
         }))
@@ -381,9 +430,13 @@ export function getInitialProductOptions(
       .filter((option) => option.title !== "Default")
       .map((option) => ({
         ...(option.id ? { id: option.id } : {}),
+        key: option.id ?? `option:${option.title.toLocaleLowerCase()}`,
         title: option.title,
-        values: option.values.map((value) => ({
+        values: option.values.map((value, valueIndex) => ({
           ...(value.id ? { id: value.id } : {}),
+          key:
+            value.id ??
+            `value:${option.title.toLocaleLowerCase()}:${value.label.toLocaleLowerCase()}:${valueIndex}`,
           label: value.label,
           ...(value.swatch
             ? { swatch: { kind: "color" as const, value: value.swatch.value } }
@@ -406,10 +459,70 @@ export function getInitialProductOptions(
     }
   }
 
-  return Array.from(options, ([title, values]) => ({
+  return Array.from(options, ([title, values], optionIndex) => ({
+    key: `option:${title.toLocaleLowerCase()}:${optionIndex}`,
     title,
-    values: Array.from(values, (label) => ({ label })),
+    values: Array.from(values, (label, valueIndex) => ({
+      key: `value:${title.toLocaleLowerCase()}:${label.toLocaleLowerCase()}:${valueIndex}`,
+      label,
+    })),
   }));
+}
+
+export function getInitialVariantOverrides(
+  product: MerchantProduct | undefined,
+  options: ProductOptionDraft[],
+): ProductFormValues["variantOverrides"] {
+  const overrides: ProductFormValues["variantOverrides"] = {};
+
+  for (const variant of product?.variants ?? []) {
+    const optionValues = Object.fromEntries(
+      (variant.optionValues ?? []).flatMap((entry) =>
+        entry.optionTitle && entry.value ? [[entry.optionTitle, entry.value]] : [],
+      ),
+    );
+    const selections = options.flatMap((option) => {
+      const label = optionValues[option.title];
+      const value = option.values.find((candidate) => candidate.label === label);
+      return value ? [{ option, value }] : [];
+    });
+    const key =
+      selections.length === options.length
+        ? getVariantDraftKey(selections)
+        : options.length
+          ? `unmatched:${variant.id}`
+          : "default";
+    const price =
+      variant.prices.find((candidate) => candidate.currencyCode?.toLocaleLowerCase() === "etb") ??
+      variant.prices[0];
+
+    overrides[key] = {
+      enabled: true,
+      id: variant.id,
+      ...(price?.amount !== null && price?.amount !== undefined
+        ? { priceAmount: String(price.amount) }
+        : {}),
+      reservedQuantity: variant.stock?.reservedQuantity ?? 0,
+      ...(variant.sku ? { sku: variant.sku } : {}),
+      stockedQuantity: String(variant.stock?.stockedQuantity ?? 0),
+    };
+  }
+
+  return overrides;
+}
+
+export function getRemovedExistingVariants(values: ProductFormValues) {
+  const retainedIds = new Set(
+    getVariantRows(values)
+      .filter((row) => row.enabled && row.id)
+      .map((row) => row.id),
+  );
+
+  return Object.entries(values.variantOverrides).flatMap(([key, override]) =>
+    override.id && !retainedIds.has(override.id)
+      ? [{ id: override.id, key, reservedQuantity: override.reservedQuantity ?? 0 }]
+      : [],
+  );
 }
 
 export function slugifyProductHandle(value: string) {
