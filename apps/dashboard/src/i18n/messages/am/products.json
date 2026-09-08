@@ -376,6 +376,7 @@
     "noOptionsYetShort": "መጠን፣ ቀለም ወይም ሌላ ምርጫ ይጨምሩ።",
     "addNamed": "{title} ጨምር",
     "matrixTitle": "ዋጋ እና ክምችት",
+    "workspaceViewAria": "የምርት አማራጭ ማዋቀሪያ",
     "generatedCount": "{count} ቫሪያንቶች",
     "matrixDesc": "ለእያንዳንዱ ቫሪያንት ዋጋና ክምችት ያስገቡ።",
     "colVariant": "አማራጭ",

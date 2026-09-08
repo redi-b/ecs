@@ -376,6 +376,7 @@
     "noOptionsYetShort": "Add size, color, or another choice.",
     "addNamed": "Add {title}",
     "matrixTitle": "Prices and stock",
+    "workspaceViewAria": "Product option setup",
     "generatedCount": "{count} variants",
     "matrixDesc": "Set the price and stock for each variant.",
     "colVariant": "Variant",

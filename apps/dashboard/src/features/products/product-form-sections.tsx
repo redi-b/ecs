@@ -13,6 +13,7 @@ import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { SegmentedControl } from "@/components/ui/segmented-control";
 import {
   getRemovedExistingVariants,
   getVariantRows,
@@ -1079,6 +1080,60 @@ export function VariantMatrixTable({
           </table>
         </div>
       </div>
+    </div>
+  );
+}
+
+export function ProductOptionsWorkspace({
+  onApplyDefaults,
+  onOptionsChange,
+  onOverrideChange,
+  options,
+  rows,
+  values,
+}: {
+  onApplyDefaults: () => void;
+  onOptionsChange: (options: ProductOptionDraft[]) => void;
+  onOverrideChange: (
+    key: string,
+    override: {
+      enabled?: boolean | undefined;
+      priceAmount?: string | undefined;
+      sku?: string | undefined;
+      stockedQuantity?: string | undefined;
+    },
+  ) => void;
+  options: ProductOptionDraft[];
+  rows: VariantMatrixRow[];
+  values: ProductFormValues["variantOverrides"];
+}) {
+  const { t } = useI18n();
+  const [view, setView] = useState<"options" | "variants">("options");
+
+  return (
+    <div className="flex min-h-0 flex-col gap-4">
+      <SegmentedControl
+        active="muted"
+        ariaLabel={t("products.formReview.workspaceViewAria")}
+        className="w-full sm:w-fit"
+        fullWidth
+        onChange={setView}
+        options={[
+          { id: "options", label: t("products.formReview.optionsTitle") },
+          { id: "variants", label: t("products.formReview.matrixTitle") },
+        ]}
+        value={view}
+      />
+      {view === "options" ? (
+        <ProductOptionsBuilder onChange={onOptionsChange} options={options} />
+      ) : (
+        <VariantMatrixTable
+          onApplyDefaults={onApplyDefaults}
+          onOverrideChange={onOverrideChange}
+          rows={rows}
+          values={values}
+        />
+      )}
     </div>
   );
 }
