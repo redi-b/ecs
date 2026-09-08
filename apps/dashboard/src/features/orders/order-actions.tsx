@@ -6,7 +6,6 @@ import { useMutation } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { HelpTip } from "@/components/app/help-tip";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
@@ -31,7 +30,6 @@ function mapActionError(message: string, t: Translate) {
 
 function nextActionCopy(type: OrderNextActionType, t: Translate) {
   const values: Record<OrderNextActionType, { label: MessageKey; description: MessageKey }> = {
-    start_preparing: { label: "orders.actions.startPreparing", description: "orders.actions.startPreparingDesc" },
     mark_out_for_delivery: { label: "orders.actions.markOutForDelivery", description: "orders.actions.markOutForDeliveryDesc" },
     mark_ready_for_pickup: { label: "orders.actions.markReadyForPickup", description: "orders.actions.markReadyForPickupDesc" },
     mark_delivered: { label: "orders.actions.markDelivered", description: "orders.actions.markDeliveredDesc" },
@@ -51,10 +49,16 @@ async function postOrderAction(actionUrl: string, body: Record<string, unknown>)
 }
 
 async function advanceOrder(actionUrl: string, current: MerchantOrder, type: OrderNextActionType) {
-  if (["start_preparing", "mark_ready_for_pickup", "mark_ready"].includes(type)) return postOrderAction(actionUrl, { action: "fulfill" });
+  if (["mark_ready_for_pickup", "mark_ready"].includes(type)) return postOrderAction(actionUrl, { action: "fulfill" });
   if (type === "mark_out_for_delivery") {
     let updated = current;
-    for (const item of (current.fulfillments ?? []).filter((value) => !value.shippedAt && !value.deliveredAt && !value.canceledAt)) {
+    const openFulfillments = () => (updated.fulfillments ?? []).filter(
+      (value) => !value.shippedAt && !value.deliveredAt && !value.canceledAt,
+    );
+    if (!openFulfillments().length) {
+      updated = await postOrderAction(actionUrl, { action: "fulfill" });
+    }
+    for (const item of openFulfillments()) {
       updated = await postOrderAction(actionUrl, { action: "ship", fulfillmentId: item.id });
     }
     return updated;
@@ -110,7 +114,7 @@ export function OrderActions({ action, order, variant = "card" }: { action: stri
   const canceled = (order.status ?? "").toLowerCase().includes("cancel");
   const showCancel = !canceled && (next.type !== "none" || showMarkPaid);
   const hasMenu = next.type !== "none" || showMarkPaid || showRecheck || showCancel;
-  const menu = hasMenu ? <DropdownMenu><DropdownMenuTrigger asChild><Button aria-label={t("orders.actions.moreActions")} disabled={mutation.isPending} size="icon" type="button" variant="outline"><RiMore2Fill className="size-4" /></Button></DropdownMenuTrigger><DropdownMenuContent align="end">
+  const menu = hasMenu ? <DropdownMenu><DropdownMenuTrigger asChild><Button aria-label={t("orders.actions.moreActions")} disabled={mutation.isPending} size="icon" type="button" variant="outline"><RiMore2Fill className="size-4" /></Button></DropdownMenuTrigger><DropdownMenuContent align="end" className="w-56">
     {next.type !== "none" ? <DropdownMenuItem onSelect={() => setPending({ kind: "complete_remaining" })}>{t("orders.actions.completeAll")}</DropdownMenuItem> : null}
     {showMarkPaid ? <DropdownMenuItem onSelect={() => setMarkPaidOpen(true)}>{t("orders.actions.markPaid")}</DropdownMenuItem> : null}
     {showRecheck ? <DropdownMenuItem onSelect={() => setPending({ kind: "recheck" })}>{t("orders.actions.recheckPayment")}</DropdownMenuItem> : null}
@@ -123,7 +127,7 @@ export function OrderActions({ action, order, variant = "card" }: { action: stri
     {actionError ? <Alert variant="destructive"><AlertTitle>{t("orders.actions.updateFailedTitle")}</AlertTitle><AlertDescription>{actionError}</AlertDescription></Alert> : null}
     <div className={variant === "header" ? "flex items-center gap-2" : "flex h-full min-h-[11rem] flex-col gap-3"}>
       {next.type !== "none" ? <div className={variant === "card" ? "flex flex-1 flex-col gap-4 rounded-xl bg-primary/[0.07] p-4 ring-1 ring-primary/20" : "contents"}>
-        {variant === "card" ? <div className="flex items-start justify-between gap-2"><div className="space-y-1.5"><p className="text-xs font-medium text-primary">{t("orders.actions.next")}</p><p className="text-base font-semibold">{copy.label}</p><p className="text-sm leading-relaxed text-muted-foreground">{copy.description}</p></div><HelpTip summary={copy.description} title={copy.label} /></div> : null}
+        {variant === "card" ? <div className="space-y-1.5"><p className="text-xs font-medium text-primary">{t("orders.actions.next")}</p><p className="text-base font-semibold">{copy.label}</p><p className="text-sm leading-relaxed text-muted-foreground">{copy.description}</p></div> : null}
         <div className={variant === "card" ? "mt-auto flex items-center gap-2" : "contents"}><Button className={variant === "card" ? "flex-1" : undefined} disabled={mutation.isPending || markPaidMutation.isPending} onClick={() => setPending({ kind: "next", type: next.type })}>{copy.label}</Button>{menu}</div>
       </div> : <div className="ml-auto">{menu}</div>}
     </div>

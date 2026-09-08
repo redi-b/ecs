@@ -11,7 +11,6 @@ export type OrderDeliveryLabel = "delivery" | "pickup" | "unknown";
 
 export type OrderWorkflowStage =
   | "new"
-  | "preparing"
   | "out_for_delivery"
   | "ready_for_pickup"
   | "ready"
@@ -19,7 +18,6 @@ export type OrderWorkflowStage =
   | "canceled";
 
 export type OrderNextActionType =
-  | "start_preparing"
   | "mark_out_for_delivery"
   | "mark_ready_for_pickup"
   | "mark_delivered"
@@ -50,7 +48,7 @@ export function getOrderWorkflowStage(order: MerchantOrder): OrderWorkflowStage 
 
   if (!hasFulfillment) return "new";
   if (delivery === "pickup") return "ready_for_pickup";
-  if (delivery === "delivery") return "preparing";
+  if (delivery === "delivery") return "new";
   return "ready";
 }
 
@@ -139,13 +137,12 @@ export function getOrderProgressLabel(progress: OrderProgress, t?: Translate) {
 
 export function getOrderWorkflowLabel(stage: OrderWorkflowStage, t?: Translate) {
   const fallback: Record<OrderWorkflowStage, string> = {
-    new: "New", preparing: "Preparing", out_for_delivery: "Out for delivery",
+    new: "New", out_for_delivery: "Out for delivery",
     ready_for_pickup: "Ready for pickup", ready: "In progress", completed: "Completed", canceled: "Canceled",
   };
   if (!t) return fallback[stage];
   const keys: Record<OrderWorkflowStage, MessageKey> = {
     new: "orders.labels.progressNew",
-    preparing: "orders.labels.progressPreparing",
     out_for_delivery: "orders.labels.progressOutForDelivery",
     ready_for_pickup: "orders.labels.progressReadyForPickup",
     ready: "orders.labels.progressInProgress",
@@ -355,17 +352,11 @@ export function getNextAction(order: MerchantOrder): OrderNextAction {
       };
     }
     return {
-      type: delivery === "delivery" ? "start_preparing" : "mark_ready",
-      label: delivery === "delivery" ? "Start preparing" : "Mark ready",
-      description: "Confirm the items are being prepared for this order.",
-    };
-  }
-
-  if (stage === "preparing") {
-    return {
-      type: "mark_out_for_delivery",
-      label: "Mark out for delivery",
-      description: "Confirm the prepared order has left for delivery.",
+      type: delivery === "delivery" ? "mark_out_for_delivery" : "mark_ready",
+      label: delivery === "delivery" ? "Mark out for delivery" : "Mark ready",
+      description: delivery === "delivery"
+        ? "Confirm this order has left for delivery."
+        : "Confirm the items are ready for this order.",
     };
   }
 
