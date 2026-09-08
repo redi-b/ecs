@@ -556,9 +556,6 @@ export function ShopOnboardingForm({
 
               <div className={cn(step === 1 ? "grid gap-5" : "hidden")}>
                 <input name="templateKey" type="hidden" value={templateKey} />
-                <p className="text-sm leading-relaxed text-muted-foreground">
-                  {t("onboarding.templateHelp")}
-                </p>
                 <div className="grid gap-4">
                   {templates.map((template) => (
                     <TemplateOption
