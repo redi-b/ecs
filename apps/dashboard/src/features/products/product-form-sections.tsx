@@ -23,6 +23,7 @@ import type {
 } from "@/features/products/product-variant-matrix";
 import { ColorPickerField } from "@/features/storefront-editor/editor-theme";
 import { useI18n } from "@/i18n/provider";
+import { createClientId } from "@/lib/client-id";
 
 const COMMON_PRODUCT_COLORS = [
   ["Black", "#111111"],
@@ -366,7 +367,7 @@ export function ProductOptionsBuilder({
   const [draftValues, setDraftValues] = useState<Record<number, string>>({});
 
   function addOption(title = "") {
-    onChange([...options, { key: `option:${crypto.randomUUID()}`, title, values: [] }]);
+    onChange([...options, { key: createClientId("option"), title, values: [] }]);
   }
 
   function updateOption(index: number, nextOption: ProductOptionDraft) {
@@ -403,7 +404,7 @@ export function ProductOptionsBuilder({
                 (value) => value.label.toLocaleLowerCase() === label.toLocaleLowerCase(),
               ),
           )
-          .map((label) => ({ key: `value:${crypto.randomUUID()}`, label })),
+          .map((label) => ({ key: createClientId("value"), label })),
       ],
     });
     setDraftValues((current) => ({ ...current, [index]: "" }));
@@ -451,7 +452,7 @@ export function ProductOptionsBuilder({
       values: [
         ...option.values,
         {
-          key: `value:${crypto.randomUUID()}`,
+          key: createClientId("value"),
           label,
           swatch: { kind: "color", value: color.toLowerCase() },
         },

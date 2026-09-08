@@ -320,7 +320,7 @@ export function MediaUploadField({
   }));
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex min-w-0 max-w-full flex-col gap-4" data-media-upload-scope>
       <fieldset
         aria-label={t("media.title")}
         className={cn(
@@ -425,14 +425,14 @@ export function MediaUploadField({
             Viewport breakpoints still apply inside sheets/dialogs, so avoid 4–5
             columns that shrink tiles to stamps. Two larger tiles read clearly.
           */}
-          <div className="max-h-[min(70vh,28rem)] overflow-x-hidden overflow-y-auto overscroll-contain rounded-2xl border bg-muted/10 p-3 sm:max-h-[min(72vh,32rem)]">
+          <div className="max-h-[min(70vh,28rem)] min-w-0 max-w-full overflow-auto overscroll-contain rounded-2xl border bg-muted/10 p-3 sm:max-h-[min(72vh,32rem)]">
             <DndContext
               collisionDetection={closestCenter}
               onDragEnd={reorderUploaded}
               sensors={sensors}
             >
               <SortableContext items={imageUrls} strategy={rectSortingStrategy}>
-                <div className="grid grid-cols-[repeat(auto-fill,minmax(7.5rem,10rem))] justify-start gap-3">
+                <div className="grid min-w-0 max-w-full grid-cols-[repeat(auto-fill,minmax(min(7.5rem,100%),10rem))] justify-start gap-3">
                   {imageUrls.map((url, index) => (
                     <UploadedImage
                       isCover={thumbnail === url || (!thumbnail && index === 0)}
@@ -489,7 +489,7 @@ function UploadedImage({
   return (
     <div
       className={cn(
-        "group relative min-w-0 max-w-40 overflow-hidden rounded-xl border bg-card shadow-sm transition-shadow duration-200 ease-out",
+        "group relative w-full min-w-0 max-w-40 overflow-hidden rounded-xl border bg-card shadow-sm transition-shadow duration-200 ease-out",
         isCover && "ring-2 ring-primary/30",
         isDragging && "z-10 opacity-80 shadow-lg",
       )}
@@ -530,7 +530,7 @@ function UploadedImage({
               {...attributes}
               {...listeners}
             >
-              <AppIcons.arrowUpDown />
+              <AppIcons.drag />
             </Button>
           </TooltipTrigger>
           <TooltipContent>{t("media.dragToReorder")}</TooltipContent>

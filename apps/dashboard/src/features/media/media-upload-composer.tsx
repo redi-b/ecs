@@ -181,6 +181,11 @@ export function MediaUploadComposer({
     };
     const drop = (event: DragEvent) => {
       if (!hasFiles(event)) return;
+      if (event.target instanceof Element && event.target.closest("[data-media-upload-scope]")) {
+        dragDepth.current = 0;
+        setDragging(false);
+        return;
+      }
       event.preventDefault();
       dragDepth.current = 0;
       setDragging(false);

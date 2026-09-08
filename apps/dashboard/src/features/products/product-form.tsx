@@ -803,24 +803,12 @@ export function ProductForm({
                               )}
                             </form.Field>
 
-                            <form.Field name="currencyCode">
-                              {(field) => (
-                                <Field data-disabled>
-                                  <FieldLabel htmlFor={field.name}>
-                                    {t("products.composer.fieldCurrency")}
-                                  </FieldLabel>
-                                  <Input
-                                    id={field.name}
-                                    name={field.name}
-                                    readOnly
-                                    value={field.state.value.toUpperCase()}
-                                  />
-                                  <FieldDescription>
-                                    {t("products.composer.currencyHelp")}
-                                  </FieldDescription>
-                                </Field>
-                              )}
-                            </form.Field>
+                            <Field>
+                              <FieldLabel>{t("products.composer.fieldCurrency")}</FieldLabel>
+                              <div className="flex h-9 items-center rounded-full border border-border bg-muted/35 px-3 text-sm font-medium text-muted-foreground">
+                                ETB
+                              </div>
+                            </Field>
                           </div>
                         </div>
 
