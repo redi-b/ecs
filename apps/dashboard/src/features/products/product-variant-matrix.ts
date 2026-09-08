@@ -2,6 +2,7 @@ export type ProductOptionDraft = {
   id?: string | undefined;
   key?: string | undefined;
   savedOptionSetId?: string | undefined;
+  savedOptionSnapshot?: string | undefined;
   title: string;
   values: ProductOptionValueDraft[];
 };
