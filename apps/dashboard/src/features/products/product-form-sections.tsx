@@ -1,6 +1,8 @@
 "use client";
 
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
+import { toast } from "sonner";
 import { AppIcons } from "@/components/app/icons";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,11 +12,9 @@ import { Input } from "@/components/ui/input";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
-  formatEtbAmount,
   getRemovedExistingVariants,
   getVariantRows,
   normalizeProductOptions,
-  parseWholeNumber,
 } from "@/features/products/product-form-state";
 import type { ProductFormValues } from "@/features/products/product-form-types";
 import type {
@@ -223,26 +223,6 @@ function ProductColorPopover({
   );
 }
 
-export function SimpleProductStockPreview({ values }: { values: ProductFormValues }) {
-  const { t } = useI18n();
-  return (
-    <div className="grid gap-3 md:grid-cols-3">
-      <VariantMatrixMetric
-        label={t("products.formReview.productType")}
-        value={t("products.formReview.simpleProduct")}
-      />
-      <VariantMatrixMetric
-        label={t("products.formReview.price")}
-        value={formatEtbAmount(values.priceAmount, t)}
-      />
-      <VariantMatrixMetric
-        label={t("products.formReview.initialStock")}
-        value={String(parseWholeNumber(values.initialStock) ?? 0)}
-      />
-    </div>
-  );
-}
-
 export function ProductReviewSummary({ values }: { values: ProductFormValues }) {
   const { t } = useI18n();
   const rows = getVariantRows(values);
@@ -258,30 +238,47 @@ export function ProductReviewSummary({ values }: { values: ProductFormValues }) 
       ? `ETB ${minPrice}`
       : `ETB ${minPrice} to ${maxPrice}`
     : "—";
-  const overriddenRows = rows.filter((row) => values.variantOverrides[row.key]).length;
+  const reviewRows = [
+    {
+      label: t("products.formReview.title"),
+      value: values.title.trim() || t("products.formReview.untitledProduct"),
+    },
+    {
+      label: t("products.formReview.status"),
+      value:
+        values.status === "published"
+          ? t("products.formReview.published")
+          : t("products.formReview.draft"),
+    },
+    {
+      label: t("products.formReview.price"),
+      value: priceSummary,
+    },
+    {
+      label: t("products.formReview.initialStock"),
+      value: String(totalStock),
+    },
+    ...(values.hasVariants
+      ? [
+          {
+            label: t("products.formReview.options"),
+            value: normalizedOptions
+              .map(
+                (option) =>
+                  `${option.title}: ${option.values.map((value) => value.label).join(", ")}`,
+              )
+              .join(" · "),
+          },
+          {
+            label: t("products.formReview.sellableRows"),
+            value: String(enabledRows.length),
+          },
+        ]
+      : []),
+  ];
 
   return (
     <div className="grid gap-4">
-      <div className="grid gap-3 md:grid-cols-4">
-        <VariantMatrixMetric
-          label={t("products.formReview.productType")}
-          value={
-            values.hasVariants
-              ? t("products.formReview.variantProduct")
-              : t("products.formReview.simpleProduct")
-          }
-        />
-        <VariantMatrixMetric
-          label={t("products.formReview.sellableRows")}
-          value={String(enabledRows.length)}
-        />
-        <VariantMatrixMetric label={t("products.formReview.price")} value={priceSummary} />
-        <VariantMatrixMetric
-          label={t("products.formReview.initialStock")}
-          value={String(totalStock)}
-        />
-      </div>
-
       {removedVariants.length ? (
         <div className="rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm">
           <p className="font-medium text-destructive">
@@ -293,65 +290,14 @@ export function ProductReviewSummary({ values }: { values: ProductFormValues }) 
         </div>
       ) : null}
 
-      <div className="rounded-2xl border bg-background p-4">
-        <h3 className="text-sm font-medium">{t("products.formReview.whatWillBeSaved")}</h3>
-        <div className="mt-3 grid gap-3 text-sm md:grid-cols-2">
-          <ReviewLine
-            label={t("products.formReview.title")}
-            value={values.title.trim() || t("products.formReview.untitledProduct")}
-          />
-          <ReviewLine
-            label={t("products.formReview.status")}
-            value={
-              values.status === "published"
-                ? t("products.formReview.published")
-                : t("products.formReview.draft")
-            }
-          />
-          <ReviewLine
-            label={t("products.formReview.handle")}
-            value={
-              values.handle.trim() ? `/${values.handle.trim()}` : t("products.formReview.noHandle")
-            }
-          />
-          <ReviewLine
-            label={t("products.formReview.skuPrefix")}
-            value={values.skuPrefix.trim() || t("products.formReview.noSkuPrefix")}
-          />
-          <ReviewLine
-            label={t("products.formReview.options")}
-            value={
-              values.hasVariants && normalizedOptions.length
-                ? normalizedOptions
-                    .map(
-                      (option) =>
-                        `${option.title}: ${option.values.map((value) => value.label).join(", ")}`,
-                    )
-                    .join(" | ")
-                : t("products.formReview.noShopperOptions")
-            }
-          />
-          <ReviewLine
-            label={t("products.formReview.overrides")}
-            value={
-              values.hasVariants
-                ? overriddenRows === 1
-                  ? t("products.formReview.rowCustomizedOne")
-                  : t("products.formReview.rowsCustomized", { count: overriddenRows })
-                : t("products.formReview.notApplicable")
-            }
-          />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-export function ReviewLine({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-lg border bg-muted/20 px-3 py-2">
-      <div className="text-xs text-muted-foreground">{label}</div>
-      <div className="mt-1 break-words font-medium">{value}</div>
+      <dl className="divide-y rounded-xl border bg-background">
+        {reviewRows.map((row) => (
+          <div className="grid gap-1 px-4 py-3 sm:grid-cols-[10rem_minmax(0,1fr)]" key={row.label}>
+            <dt className="text-sm text-muted-foreground">{row.label}</dt>
+            <dd className="break-words text-sm font-medium">{row.value}</dd>
+          </div>
+        ))}
+      </dl>
     </div>
   );
 }
@@ -364,10 +310,73 @@ export function ProductOptionsBuilder({
   options: ProductOptionDraft[];
 }) {
   const { t } = useI18n();
+  const queryClient = useQueryClient();
   const [draftValues, setDraftValues] = useState<Record<number, string>>({});
+  const [addMenuOpen, setAddMenuOpen] = useState(false);
+  const optionSetsQuery = useQuery({
+    queryKey: ["product-option-sets"],
+    queryFn: async () => {
+      const response = await fetch("/admin/products/actions/option-sets", {
+        headers: { accept: "application/json" },
+      });
+      if (!response.ok) throw new Error("option_sets_unavailable");
+      return (await response.json()) as { optionSets: SavedProductOptionSet[] };
+    },
+    staleTime: 60_000,
+  });
+  const saveOptionSet = useMutation({
+    mutationFn: async (option: ProductOptionDraft) => {
+      const response = await fetch("/admin/products/actions/option-sets", {
+        body: JSON.stringify({ title: option.title, values: option.values }),
+        headers: { accept: "application/json", "content-type": "application/json" },
+        method: "POST",
+      });
+      const data = (await response.json().catch(() => ({}))) as { error?: string };
+      if (!response.ok) throw new Error(data.error ?? "option_set_save_failed");
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["product-option-sets"] });
+      toast.success(t("products.formReview.savedOptionCreated"));
+    },
+    onError: (error) => {
+      toast.error(
+        error instanceof Error && error.message === "product_option_set_title_taken"
+          ? t("products.formReview.savedOptionExists")
+          : t("products.formReview.savedOptionFailed"),
+      );
+    },
+  });
 
   function addOption(title = "") {
-    onChange([...options, { key: createClientId("option"), title, values: [] }]);
+    if (title && options.some((option) => option.title.toLowerCase() === title.toLowerCase())) {
+      setAddMenuOpen(false);
+      return;
+    }
+    onChange([
+      ...options,
+      {
+        key: createClientId("option"),
+        title,
+        values: [],
+      },
+    ]);
+    setAddMenuOpen(false);
+  }
+
+  function addSavedOption(optionSet: SavedProductOptionSet) {
+    onChange([
+      ...options,
+      {
+        key: createClientId("option"),
+        title: optionSet.title,
+        values: optionSet.values.map((value) => ({
+          key: createClientId("value"),
+          label: value.label,
+          ...(value.swatch ? { swatch: value.swatch } : {}),
+        })),
+      },
+    ]);
+    setAddMenuOpen(false);
   }
 
   function updateOption(index: number, nextOption: ProductOptionDraft) {
@@ -468,151 +477,255 @@ export function ProductOptionsBuilder({
   ];
 
   return (
-    <div className="flex flex-col gap-4 rounded-2xl border bg-muted/20 p-4">
-      <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-        <div className="max-w-2xl">
-          <h3 className="text-sm font-medium">{t("products.formReview.optionsTitle")}</h3>
-          <p className="text-sm text-muted-foreground">{t("products.formReview.optionsDesc")}</p>
-        </div>
-        <Button onClick={() => addOption()} size="sm" type="button" variant="outline">
-          {t("products.formReview.addOption")}
-        </Button>
+    <div className="flex flex-col gap-3">
+      <div className="flex items-center justify-between gap-3">
+        <h3 className="text-sm font-medium">{t("products.formReview.optionsTitle")}</h3>
+        <Popover onOpenChange={setAddMenuOpen} open={addMenuOpen}>
+          <PopoverTrigger asChild>
+            <Button size="sm" type="button" variant="outline">
+              {t("products.formReview.addOption")}
+              <AppIcons.arrowDown data-icon="inline-end" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent align="end" className="w-72 p-1.5">
+            <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
+              {t("products.formReview.chooseOptionType")}
+            </div>
+            {presetOptions.map((preset) => (
+              <button
+                className="flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-left text-sm hover:bg-accent disabled:cursor-not-allowed disabled:opacity-45"
+                disabled={options.some(
+                  (option) => option.title.toLowerCase() === preset.toLowerCase(),
+                )}
+                key={preset}
+                onClick={() => addOption(preset)}
+                type="button"
+              >
+                <span>{preset}</span>
+              </button>
+            ))}
+            {optionSetsQuery.data?.optionSets.length ? (
+              <>
+                <div className="my-1 border-t" />
+                <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
+                  {t("products.formReview.savedOptions")}
+                </div>
+                {optionSetsQuery.data.optionSets.map((optionSet) => (
+                  <button
+                    className="flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-left text-sm hover:bg-accent disabled:cursor-not-allowed disabled:opacity-45"
+                    disabled={options.some(
+                      (option) => option.title.toLowerCase() === optionSet.title.toLowerCase(),
+                    )}
+                    key={optionSet.id}
+                    onClick={() => addSavedOption(optionSet)}
+                    type="button"
+                  >
+                    <span>{optionSet.title}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {t("products.formReview.valuesCount", { count: optionSet.values.length })}
+                    </span>
+                  </button>
+                ))}
+              </>
+            ) : null}
+            <div className="my-1 border-t" />
+            <button
+              className="w-full rounded-lg px-2.5 py-2 text-left text-sm hover:bg-accent"
+              onClick={() => addOption()}
+              type="button"
+            >
+              {t("products.formReview.customOption")}
+            </button>
+          </PopoverContent>
+        </Popover>
       </div>
 
       {options.length ? (
-        <div className="flex flex-col gap-3">
+        <div className="divide-y rounded-xl border bg-background">
           {options.map((option, index) => (
             <div
-              className="rounded-xl border bg-background p-4"
+              className="grid gap-3 p-3 md:grid-cols-[11rem_minmax(0,1fr)_auto] md:items-start"
               key={option.id ?? option.key ?? index}
             >
-              <div className="grid gap-4 md:grid-cols-[14rem_minmax(0,1fr)_auto] md:items-start">
-                <Field>
-                  <FieldLabel>{t("products.formReview.optionName")}</FieldLabel>
-                  <Input
-                    onChange={(event) =>
-                      updateOption(index, { ...option, title: event.target.value })
-                    }
-                    placeholder={
-                      index === 0
-                        ? t("products.formReview.placeholderSize")
-                        : t("products.formReview.placeholderColor")
-                    }
-                    value={option.title}
-                  />
-                </Field>
+              <Field>
+                <FieldLabel>{t("products.formReview.optionName")}</FieldLabel>
+                <Input
+                  autoFocus={!option.title}
+                  onChange={(event) =>
+                    updateOption(index, { ...option, title: event.target.value })
+                  }
+                  placeholder={t("products.formReview.customOptionPlaceholder")}
+                  value={option.title}
+                />
+              </Field>
 
-                <Field>
-                  <FieldLabel>{t("products.formReview.values")}</FieldLabel>
-                  <div className="flex max-h-36 min-h-11 flex-wrap items-center gap-2 overflow-y-auto overscroll-contain rounded-full border bg-muted/20 px-2 py-1.5">
-                    {option.values.map((value, valueIndex) => (
-                      <span
-                        className="inline-flex h-8 items-center rounded-full bg-secondary text-xs font-medium text-secondary-foreground"
-                        key={value.id ?? `${value.label}-${valueIndex}`}
-                      >
-                        {isColorOptionTitle(option.title) ? (
-                          <ProductColorPopover
-                            label={value.label}
-                            onSave={(label, color) =>
-                              updateColorValue(index, valueIndex, label, color)
-                            }
-                            value={value.swatch?.value ?? "#808080"}
-                          />
-                        ) : (
-                          <span className="px-2">{value.label}</span>
-                        )}
-                        <button
-                          aria-label={t("products.formReview.removeValueAria", {
-                            value: value.label,
-                          })}
-                          className="mr-1 grid size-6 shrink-0 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-background hover:text-foreground"
-                          onClick={() => removeValue(index, valueIndex)}
-                          type="button"
-                        >
-                          <AppIcons.close className="size-3" />
-                        </button>
-                      </span>
-                    ))}
-                    {!isColorOptionTitle(option.title) ? (
-                      <input
-                        aria-label={t("products.formReview.addValueAria", {
-                          option: option.title || t("products.formReview.optionFallback"),
+              <Field>
+                <FieldLabel>{t("products.formReview.values")}</FieldLabel>
+                <div className="flex max-h-36 min-h-9 flex-wrap items-center gap-1.5 overflow-y-auto overscroll-contain rounded-xl border bg-muted/15 px-2 py-1.5">
+                  {option.values.map((value, valueIndex) => (
+                    <span
+                      className="inline-flex h-7 items-center rounded-full bg-secondary text-xs font-medium text-secondary-foreground"
+                      key={value.id ?? `${value.label}-${valueIndex}`}
+                    >
+                      {isColorOptionTitle(option.title) ? (
+                        <ProductColorPopover
+                          label={value.label}
+                          onSave={(label, color) =>
+                            updateColorValue(index, valueIndex, label, color)
+                          }
+                          value={value.swatch?.value ?? "#808080"}
+                        />
+                      ) : (
+                        <span className="px-2">{value.label}</span>
+                      )}
+                      <button
+                        aria-label={t("products.formReview.removeValueAria", {
+                          value: value.label,
                         })}
-                        className="min-w-32 flex-1 bg-transparent px-1 py-1 text-sm outline-none placeholder:text-muted-foreground"
-                        onChange={(event) =>
-                          setDraftValues((current) => ({
-                            ...current,
-                            [index]: event.target.value,
-                          }))
+                        className="mr-1 grid size-6 shrink-0 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-background hover:text-foreground"
+                        onClick={() => removeValue(index, valueIndex)}
+                        type="button"
+                      >
+                        <AppIcons.close className="size-3" />
+                      </button>
+                    </span>
+                  ))}
+                  {!isColorOptionTitle(option.title) ? (
+                    <input
+                      aria-label={t("products.formReview.addValueAria", {
+                        option: option.title || t("products.formReview.optionFallback"),
+                      })}
+                      className="min-w-32 flex-1 bg-transparent px-1 py-1 text-sm outline-none placeholder:text-muted-foreground"
+                      onChange={(event) =>
+                        setDraftValues((current) => ({
+                          ...current,
+                          [index]: event.target.value,
+                        }))
+                      }
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter" || event.key === ",") {
+                          event.preventDefault();
+                          addValues(index, draftValues[index] ?? "");
                         }
-                        onKeyDown={(event) => {
-                          if (event.key === "Enter" || event.key === ",") {
-                            event.preventDefault();
-                            addValues(index, draftValues[index] ?? "");
-                          }
-                        }}
-                        onPaste={(event) => {
-                          const pastedText = event.clipboardData.getData("text");
+                      }}
+                      onPaste={(event) => {
+                        const pastedText = event.clipboardData.getData("text");
 
-                          if (/[\n,]/.test(pastedText)) {
-                            event.preventDefault();
-                            addValues(index, pastedText);
-                          }
-                        }}
-                        placeholder={
-                          option.values.length
-                            ? t("products.formReview.addAnotherValue")
-                            : option.title.trim()
-                              ? `Add ${option.title.toLowerCase()} values`
-                              : t("products.formReview.valuePlaceholder")
+                        if (/[\n,]/.test(pastedText)) {
+                          event.preventDefault();
+                          addValues(index, pastedText);
                         }
-                        value={draftValues[index] ?? ""}
-                      />
-                    ) : (
-                      <ProductColorPopover
-                        onSave={(label, color) => addColorValue(index, label, color)}
-                      />
-                    )}
-                  </div>
-                  <FieldDescription>{t("products.formReview.valuesHelp")}</FieldDescription>
-                </Field>
+                      }}
+                      placeholder={
+                        option.values.length
+                          ? t("products.formReview.addAnotherValue")
+                          : option.title.trim()
+                            ? `Add ${option.title.toLowerCase()} values`
+                            : t("products.formReview.valuePlaceholder")
+                      }
+                      value={draftValues[index] ?? ""}
+                    />
+                  ) : (
+                    <ProductColorPopover
+                      onSave={(label, color) => addColorValue(index, label, color)}
+                    />
+                  )}
+                </div>
+                <FieldDescription>{t("products.formReview.valuesHelpShort")}</FieldDescription>
+                {!isColorOptionTitle(option.title) ? (
+                  <SuggestedOptionValues
+                    existing={option.values.map((value) => value.label)}
+                    onAdd={(label) => addValues(index, label)}
+                    suggestions={
+                      option.title.toLowerCase() ===
+                      t("products.formReview.placeholderSize").toLowerCase()
+                        ? ["Small", "Medium", "Large", "XL"]
+                        : option.title.toLowerCase() ===
+                            t("products.formReview.placeholderMaterial").toLowerCase()
+                          ? ["Cotton", "Leather", "Polyester"]
+                          : option.title.toLowerCase() ===
+                              t("products.formReview.placeholderStyle").toLowerCase()
+                            ? ["Regular", "Slim", "Oversized"]
+                            : []
+                    }
+                  />
+                ) : null}
+              </Field>
 
+              <div className="flex justify-end gap-1 md:mt-6">
                 <Button
-                  className="md:mt-6"
+                  disabled={
+                    !option.title.trim() || !option.values.length || saveOptionSet.isPending
+                  }
+                  onClick={() => saveOptionSet.mutate(option)}
+                  size="sm"
+                  type="button"
+                  variant="ghost"
+                >
+                  {t("products.formReview.saveForReuse")}
+                </Button>
+                <Button
+                  aria-label={t("products.formReview.removeOptionAria", { option: option.title })}
                   onClick={() =>
                     onChange(options.filter((_, optionIndex) => optionIndex !== index))
                   }
-                  size="sm"
+                  size="icon-sm"
                   type="button"
-                  variant="outline"
+                  variant="ghost"
                 >
-                  {t("products.formReview.remove")}
+                  <AppIcons.trash />
                 </Button>
               </div>
             </div>
           ))}
         </div>
       ) : (
-        <div className="rounded-xl border border-dashed bg-background px-4 py-5">
+        <button
+          className="rounded-xl border border-dashed bg-background px-4 py-5 text-left hover:bg-muted/20"
+          onClick={() => setAddMenuOpen(true)}
+          type="button"
+        >
           <p className="text-sm font-medium">{t("products.formReview.noOptionsYet")}</p>
           <p className="mt-1 text-sm text-muted-foreground">
-            {t("products.formReview.noOptionsYetDesc")}
+            {t("products.formReview.noOptionsYetShort")}
           </p>
-          <div className="mt-4 flex flex-wrap gap-2">
-            {presetOptions.map((title) => (
-              <Button
-                key={title}
-                onClick={() => addOption(title)}
-                size="sm"
-                type="button"
-                variant="outline"
-              >
-                {t("products.formReview.addNamed", { title })}
-              </Button>
-            ))}
-          </div>
-        </div>
+        </button>
       )}
+    </div>
+  );
+}
+
+type SavedProductOptionSet = {
+  id: string;
+  title: string;
+  values: Array<ProductOptionDraft["values"][number]>;
+};
+
+function SuggestedOptionValues({
+  existing,
+  onAdd,
+  suggestions,
+}: {
+  existing: string[];
+  onAdd: (value: string) => void;
+  suggestions: string[];
+}) {
+  const remaining = suggestions.filter(
+    (suggestion) => !existing.some((value) => value.toLowerCase() === suggestion.toLowerCase()),
+  );
+  if (!remaining.length) return null;
+  return (
+    <div className="flex flex-wrap gap-1.5 pt-1">
+      {remaining.map((suggestion) => (
+        <button
+          className="rounded-full border px-2 py-1 text-xs text-muted-foreground hover:bg-accent hover:text-foreground"
+          key={suggestion}
+          onClick={() => onAdd(suggestion)}
+          type="button"
+        >
+          + {suggestion}
+        </button>
+      ))}
     </div>
   );
 }
@@ -641,43 +754,91 @@ export function VariantMatrixTable({
   values: ProductFormValues["variantOverrides"];
 }) {
   const { t } = useI18n();
-  const enabledRows = rows.filter((row) => row.enabled);
-  const totalStock = enabledRows.reduce((total, row) => total + row.stockedQuantity, 0);
-  const prices = enabledRows.map((row) => row.priceAmount);
-  const minPrice = Math.min(...prices);
-  const maxPrice = Math.max(...prices);
-  const priceSummary = prices.length
-    ? minPrice === maxPrice
-      ? `ETB ${minPrice}`
-      : `ETB ${minPrice} to ${maxPrice}`
-    : "—";
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="grid gap-3 md:grid-cols-3">
-        <VariantMatrixMetric
-          label={t("products.formReview.sellableRows")}
-          value={`${enabledRows.length} / ${rows.length}`}
-        />
-        <VariantMatrixMetric
-          label={t("products.formReview.totalStocked")}
-          value={String(totalStock)}
-        />
-        <VariantMatrixMetric label={t("products.formReview.priceRange")} value={priceSummary} />
-      </div>
-
+    <div className="flex flex-col gap-3">
       <div className="overflow-hidden rounded-2xl border bg-background">
         <div className="flex flex-col gap-3 border-b bg-muted/30 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h3 className="text-sm font-medium">{t("products.formReview.matrixTitle")}</h3>
-            <p className="text-sm text-muted-foreground">{t("products.formReview.matrixDesc")}</p>
+            <p className="text-sm text-muted-foreground">
+              {t("products.formReview.generatedCount", { count: rows.length })}
+            </p>
           </div>
           <Button onClick={onApplyDefaults} size="sm" type="button" variant="outline">
             {t("products.formReview.applyDefaults")}
           </Button>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[56rem] text-sm">
+        <div className="divide-y md:hidden">
+          {rows.map((row) => {
+            const override = values[row.key] ?? {};
+            const name =
+              Object.values(row.optionValues).join(" / ") ||
+              t("products.formReview.defaultVariant");
+
+            return (
+              <details className="group px-3 py-2.5" key={row.key}>
+                <summary className="flex cursor-pointer list-none items-center gap-2">
+                  <Checkbox
+                    aria-label={t("products.formReview.toggleVariantAria", { variant: name })}
+                    checked={row.enabled}
+                    disabled={row.reservedQuantity > 0}
+                    onClick={(event) => event.stopPropagation()}
+                    onCheckedChange={(checked) =>
+                      onOverrideChange(row.key, { enabled: checked === true })
+                    }
+                  />
+                  <span className="min-w-0 flex-1 truncate text-sm font-medium">{name}</span>
+                  <span className="text-xs text-muted-foreground">
+                    ETB {override.priceAmount ?? row.priceAmount}
+                  </span>
+                  <AppIcons.arrowDown className="size-4 text-muted-foreground transition-transform group-open:rotate-180" />
+                </summary>
+                <div className="grid gap-3 pt-3 sm:grid-cols-2">
+                  <Field>
+                    <FieldLabel>{t("products.formReview.colPrice")}</FieldLabel>
+                    <InputGroup>
+                      <InputGroupAddon>ETB</InputGroupAddon>
+                      <InputGroupInput
+                        disabled={!row.enabled}
+                        inputMode="numeric"
+                        min="0"
+                        onChange={(event) =>
+                          onOverrideChange(row.key, { priceAmount: event.target.value })
+                        }
+                        type="text"
+                        value={override.priceAmount ?? String(row.priceAmount)}
+                      />
+                    </InputGroup>
+                  </Field>
+                  <Field>
+                    <FieldLabel>{t("products.formReview.colStock")}</FieldLabel>
+                    <Input
+                      disabled={!row.enabled}
+                      inputMode="numeric"
+                      min="0"
+                      onChange={(event) =>
+                        onOverrideChange(row.key, { stockedQuantity: event.target.value })
+                      }
+                      type="text"
+                      value={override.stockedQuantity ?? String(row.stockedQuantity)}
+                    />
+                  </Field>
+                  <Field className="sm:col-span-2">
+                    <FieldLabel>{t("products.composer.fieldSkuOptional")}</FieldLabel>
+                    <Input
+                      disabled={!row.enabled}
+                      onChange={(event) => onOverrideChange(row.key, { sku: event.target.value })}
+                      value={override.sku ?? row.sku}
+                    />
+                  </Field>
+                </div>
+              </details>
+            );
+          })}
+        </div>
+        <div className="hidden overflow-x-auto md:block">
+          <table className="w-full min-w-[46rem] text-sm">
             <thead className="bg-muted/40 text-muted-foreground">
               <tr>
                 <th className="px-4 py-3 text-left font-medium">
@@ -788,15 +949,6 @@ export function VariantMatrixTable({
           </table>
         </div>
       </div>
-    </div>
-  );
-}
-
-export function VariantMatrixMetric({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-xl border bg-background px-4 py-3">
-      <div className="text-xs text-muted-foreground">{label}</div>
-      <div className="mt-1 truncate text-sm font-medium">{value}</div>
     </div>
   );
 }

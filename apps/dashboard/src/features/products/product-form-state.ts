@@ -36,7 +36,7 @@ export function getProductDefaultValues(product: MerchantProduct | undefined): P
     hasVariants: Boolean(product && initialOptions.length),
     initialStock: String(simpleVariant?.stock?.stockedQuantity ?? 0),
     options: initialOptions,
-    skuPrefix: simpleVariant?.sku ?? getDefaultSkuPrefix(product?.handle ?? title),
+    skuPrefix: product ? (simpleVariant?.sku ?? getDefaultSkuPrefix(product.handle ?? title)) : "",
     variantOverrides: initialOverrides,
     collectionId: product?.collectionId ?? NO_COLLECTION_VALUE,
     categoryIds: product?.categoryIds ?? [],
