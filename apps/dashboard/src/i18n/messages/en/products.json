@@ -296,6 +296,9 @@
     "mediaTitle": "Edit product media",
     "mediaTrigger": "Edit",
     "mediaDesc": "Upload images, pick from your library, set a cover, and reorder the gallery.",
+    "optionsDesc": "Update shopper choices and the variants they create.",
+    "variantRemovalTitle": "Variants will be removed",
+    "variantRemovalDesc": "Saving will remove {count} variants that are no longer represented by these options.",
     "title": "Title",
     "handle": "Handle",
     "description": "Description",
@@ -457,6 +460,9 @@
     "leave": "Leave"
   },
   "validation": {
+    "handleChecking": "Checking handle…",
+    "handleAvailable": "This handle is available.",
+    "handleTaken": "This handle is already used by another product.",
     "titleRequired": "Enter a product title.",
     "priceRequired": "Enter a price.",
     "priceNumbersOnly": "Use numbers only.",

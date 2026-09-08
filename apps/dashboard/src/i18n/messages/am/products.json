@@ -296,6 +296,9 @@
     "mediaTitle": "የምርት ሚዲያን አስተካክል",
     "mediaTrigger": "አስተካክል",
     "mediaDesc": "ምስሎችን ይጫኑ፣ ከማከማቻ ይምረጡ፣ ሽፋን ያዘጋጁ እና ማዕከለ-ሥዕላትን እንደገና ያስተካክሉ።",
+    "optionsDesc": "የገዢ ምርጫዎችን እና የሚፈጥሯቸውን አማራጮች ያዘምኑ።",
+    "variantRemovalTitle": "አንዳንድ አማራጮች ይወገዳሉ",
+    "variantRemovalDesc": "ማስቀመጥ ከእነዚህ ምርጫዎች ጋር የማይዛመዱ {count} አማራጮችን ያስወግዳል።",
     "title": "ርዕስ",
     "handle": "መለያ",
     "description": "ማብራሪያ",
@@ -457,6 +460,9 @@
     "leave": "ውጣ"
   },
   "validation": {
+    "handleChecking": "መለያውን በማረጋገጥ ላይ…",
+    "handleAvailable": "ይህ መለያ ይገኛል።",
+    "handleTaken": "ይህ መለያ በሌላ ምርት ጥቅም ላይ ውሏል።",
     "titleRequired": "የምርት ርዕስ ያስገቡ።",
     "priceRequired": "ዋጋ ያስገቡ።",
     "priceNumbersOnly": "ቁጥሮችን ብቻ ይጠቀሙ።",

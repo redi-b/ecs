@@ -39,6 +39,18 @@ import {
   CollectionPicker,
   NO_COLLECTION_VALUE,
 } from "@/features/products/product-form-fields";
+import {
+  ProductOptionsBuilder,
+  VariantMatrixTable,
+} from "@/features/products/product-form-sections";
+import {
+  getProductDefaultValues,
+  getProductPayload,
+  getRemovedExistingVariants,
+  getVariantRows,
+} from "@/features/products/product-form-state";
+import type { ProductFormValues } from "@/features/products/product-form-types";
+import { useProductHandleAvailability } from "@/features/products/use-product-handle-availability";
 import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes-guard";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
@@ -80,6 +92,12 @@ export function ProductDetailsEditButton({
     status: normalizeProductStatus(product.status),
     title: product.title ?? "",
   }));
+  const handleAvailability = useProductHandleAvailability({
+    action,
+    currentHandle: product.handle,
+    handle: values.handle,
+    productId: product.id,
+  });
 
   return (
     <ProductEditSheet
@@ -89,6 +107,9 @@ export function ProductDetailsEditButton({
 
         if (!title) {
           throw new Error(t("products.edit.titleRequired"));
+        }
+        if (handleAvailability === "taken") {
+          throw new Error(t("products.validation.handleTaken"));
         }
 
         return {
@@ -111,7 +132,7 @@ export function ProductDetailsEditButton({
       triggerLabel={t("products.edit.detailsTrigger")}
       triggerVariant={triggerVariant}
     >
-      <Field>
+      <Field data-invalid={handleAvailability === "taken" || undefined}>
         <FieldLabel htmlFor={`${detailsId}-title`}>{t("products.edit.title")}</FieldLabel>
         <Input
           id={`${detailsId}-title`}
@@ -127,7 +148,15 @@ export function ProductDetailsEditButton({
           onChange={(event) => setValues((current) => ({ ...current, handle: event.target.value }))}
           value={values.handle}
         />
-        <FieldDescription>{t("products.edit.handleHelp")}</FieldDescription>
+        <FieldDescription className={handleAvailability === "taken" ? "text-destructive" : undefined}>
+          {handleAvailability === "checking"
+            ? t("products.validation.handleChecking")
+            : handleAvailability === "available"
+              ? t("products.validation.handleAvailable")
+              : handleAvailability === "taken"
+                ? t("products.validation.handleTaken")
+                : t("products.edit.handleHelp")}
+        </FieldDescription>
       </Field>
       <Field>
         <FieldLabel>{t("products.edit.status")}</FieldLabel>
@@ -265,6 +294,79 @@ export function ProductMediaEditButton({ action, product }: ProductEditSheetBase
         onThumbnailChange={(url) => setValues((current) => ({ ...current, thumbnail: url }))}
         thumbnail={values.thumbnail}
       />
+    </ProductEditSheet>
+  );
+}
+
+export function ProductOptionsEditButton({ action, product }: ProductEditSheetBaseProps) {
+  const { t } = useI18n();
+  const [values, setValues] = useState<ProductFormValues>(() => ({
+    ...getProductDefaultValues(product),
+    hasVariants: true,
+  }));
+  const removedVariants = getRemovedExistingVariants(values);
+
+  function reset() {
+    setValues({ ...getProductDefaultValues(product), hasVariants: true });
+  }
+
+  function update(next: Partial<ProductFormValues>) {
+    setValues((current) => ({ ...current, ...next }));
+  }
+
+  return (
+    <ProductEditSheet
+      action={action}
+      buildPayload={() => {
+        const payload = getProductPayload(values, { includeOptions: true }, t);
+        return { options: payload.options, variants: payload.variants };
+      }}
+      contentClassName="sm:max-w-5xl"
+      description={t("products.edit.optionsDesc")}
+      onOpen={reset}
+      title={t("products.detail.editOptions")}
+      triggerLabel={t("products.detail.editOptions")}
+      triggerVariant="button"
+    >
+      <ProductOptionsBuilder
+        onChange={(options) => update({ options })}
+        options={values.options}
+      />
+      <VariantMatrixTable
+            onApplyDefaults={() => {
+              update({
+                variantOverrides: Object.fromEntries(
+                  getVariantRows(values).map((row) => [
+                    row.key,
+                    {
+                      ...values.variantOverrides[row.key],
+                      priceAmount: values.priceAmount,
+                      stockedQuantity: values.initialStock,
+                    },
+                  ]),
+                ),
+              });
+            }}
+            onOverrideChange={(key, override) =>
+              update({
+                variantOverrides: {
+                  ...values.variantOverrides,
+                  [key]: { ...values.variantOverrides[key], ...override },
+                },
+              })
+            }
+            rows={getVariantRows(values)}
+            values={values.variantOverrides}
+      />
+
+      {removedVariants.length ? (
+        <Alert>
+          <AlertTitle>{t("products.edit.variantRemovalTitle")}</AlertTitle>
+          <AlertDescription>
+            {t("products.edit.variantRemovalDesc", { count: removedVariants.length })}
+          </AlertDescription>
+        </Alert>
+      ) : null}
     </ProductEditSheet>
   );
 }

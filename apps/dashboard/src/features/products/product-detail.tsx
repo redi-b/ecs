@@ -1,6 +1,6 @@
 "use client";
 
-import { productDescriptionToText } from "@ecs/content";
+import { productDescriptionToText, sanitizeProductDescription } from "@ecs/content";
 import type {
   MerchantProduct,
   MerchantProductCategory,
@@ -27,6 +27,7 @@ import { MediaPreviewLightbox } from "@/features/media/media-lightbox";
 import {
   ProductDetailsEditButton,
   ProductMediaEditButton,
+  ProductOptionsEditButton,
   ProductOrganizationEditButton,
 } from "@/features/products/product-edit-dialog";
 import { useProductTaxonomy } from "@/features/products/use-product-taxonomy";
@@ -91,12 +92,9 @@ export function ProductDetail({ action, product, readOnly = false, tenantId }: P
     setLightboxIndex(index >= 0 ? index : 0);
   }
 
-  const description = productDescriptionToText(product.description);
-  const descriptionLong = description.length > DESCRIPTION_PREVIEW_CHARS;
-  const descriptionText =
-    !descriptionLong || descriptionExpanded
-      ? description
-      : `${description.slice(0, DESCRIPTION_PREVIEW_CHARS).trimEnd()}…`;
+  const descriptionText = productDescriptionToText(product.description);
+  const descriptionHtml = sanitizeProductDescription(product.description);
+  const descriptionLong = descriptionText.length > DESCRIPTION_PREVIEW_CHARS;
 
   return (
     <div className="flex flex-col gap-4 sm:gap-5">
@@ -142,9 +140,22 @@ export function ProductDetail({ action, product, readOnly = false, tenantId }: P
             <p className="text-xs font-medium text-muted-foreground">
               {t("products.detail.description")}
             </p>
-            <p className="mt-1.5 max-w-3xl whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">
-              {descriptionText || t("products.detail.noDescription")}
-            </p>
+            {descriptionHtml ? (
+              <div
+                className={cn(
+                  "mt-1.5 max-w-3xl overflow-hidden text-sm leading-relaxed text-muted-foreground",
+                  "[&_a]:font-medium [&_a]:text-primary [&_a]:underline [&_a]:underline-offset-2",
+                  "[&_blockquote]:my-3 [&_blockquote]:border-l [&_blockquote]:pl-3 [&_h1]:my-3 [&_h1]:text-xl [&_h1]:font-semibold [&_h2]:my-3 [&_h2]:text-lg [&_h2]:font-semibold [&_h3]:my-2 [&_h3]:font-semibold",
+                  "[&_img]:my-3 [&_img]:max-h-80 [&_img]:max-w-full [&_img]:rounded-lg [&_img]:object-contain [&_li]:my-1 [&_ol]:my-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:my-2 [&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-5",
+                  descriptionLong && !descriptionExpanded && "max-h-28",
+                )}
+                dangerouslySetInnerHTML={{ __html: descriptionHtml }}
+              />
+            ) : (
+              <p className="mt-1.5 text-sm text-muted-foreground">
+                {t("products.detail.noDescription")}
+              </p>
+            )}
             {descriptionLong ? (
               <Button
                 className="mt-1.5 h-auto px-0 text-xs"
@@ -219,17 +230,7 @@ export function ProductDetail({ action, product, readOnly = false, tenantId }: P
           <DetailSection
             action={
               readOnly ? null : (
-                <Button asChild size="sm" variant="outline">
-                  <Link
-                    href={`${getTenantScopedPath(
-                      dashboardRoutes.productEdit(product.id),
-                      tenantId,
-                    )}${tenantId ? "&" : "?"}step=variants`}
-                  >
-                    <AppIcons.edit data-icon="inline-start" />
-                    {t("products.detail.editOptions")}
-                  </Link>
-                </Button>
+                <ProductOptionsEditButton action={action} product={product} />
               )
             }
             meta={t("products.detail.variantsCount", { count: product.variants?.length ?? 0 })}
