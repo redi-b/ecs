@@ -1,6 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 import { AppIcons } from "@/components/app/icons";
@@ -311,12 +312,17 @@ export function ProductOptionsBuilder({
 }) {
   const { t } = useI18n();
   const queryClient = useQueryClient();
+  const searchParams = useSearchParams();
+  const tenantId = searchParams.get("tenantId")?.trim() || null;
+  const optionSetsUrl = tenantId
+    ? `/admin/products/actions/option-sets?tenantId=${encodeURIComponent(tenantId)}`
+    : "/admin/products/actions/option-sets";
   const [draftValues, setDraftValues] = useState<Record<number, string>>({});
   const [addMenuOpen, setAddMenuOpen] = useState(false);
   const optionSetsQuery = useQuery({
-    queryKey: ["product-option-sets"],
+    queryKey: ["product-option-sets", tenantId],
     queryFn: async () => {
-      const response = await fetch("/admin/products/actions/option-sets", {
+      const response = await fetch(optionSetsUrl, {
         headers: { accept: "application/json" },
       });
       if (!response.ok) throw new Error("option_sets_unavailable");
@@ -325,8 +331,17 @@ export function ProductOptionsBuilder({
     staleTime: 60_000,
   });
   const saveOptionSet = useMutation({
-    mutationFn: async (option: ProductOptionDraft) => {
-      const response = await fetch("/admin/products/actions/option-sets", {
+    mutationFn: async ({
+      option,
+      optionSetId,
+    }: {
+      option: ProductOptionDraft;
+      optionSetId?: string | undefined;
+    }) => {
+      const actionUrl = optionSetId
+        ? `/admin/products/actions/option-sets/${encodeURIComponent(optionSetId)}${tenantId ? `?tenantId=${encodeURIComponent(tenantId)}` : ""}`
+        : optionSetsUrl;
+      const response = await fetch(actionUrl, {
         body: JSON.stringify({ title: option.title, values: option.values }),
         headers: { accept: "application/json", "content-type": "application/json" },
         method: "POST",
@@ -334,9 +349,15 @@ export function ProductOptionsBuilder({
       const data = (await response.json().catch(() => ({}))) as { error?: string };
       if (!response.ok) throw new Error(data.error ?? "option_set_save_failed");
     },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["product-option-sets"] });
-      toast.success(t("products.formReview.savedOptionCreated"));
+    onSuccess: async (_data, variables) => {
+      await queryClient.invalidateQueries({ queryKey: ["product-option-sets", tenantId] });
+      toast.success(
+        t(
+          variables.optionSetId
+            ? "products.formReview.savedOptionUpdated"
+            : "products.formReview.savedOptionCreated",
+        ),
+      );
     },
     onError: (error) => {
       toast.error(
@@ -528,6 +549,20 @@ export function ProductOptionsBuilder({
                 ))}
               </>
             ) : null}
+            {optionSetsQuery.isPending ? (
+              <div className="px-2.5 py-2 text-xs text-muted-foreground">
+                {t("products.formReview.loadingSavedOptions")}
+              </div>
+            ) : null}
+            {optionSetsQuery.isError ? (
+              <button
+                className="w-full rounded-lg px-2.5 py-2 text-left text-xs text-muted-foreground hover:bg-accent hover:text-foreground"
+                onClick={() => void optionSetsQuery.refetch()}
+                type="button"
+              >
+                {t("products.formReview.retrySavedOptions")}
+              </button>
+            ) : null}
             <div className="my-1 border-t" />
             <button
               className="w-full rounded-lg px-2.5 py-2 text-left text-sm hover:bg-accent"
@@ -657,7 +692,15 @@ export function ProductOptionsBuilder({
                   disabled={
                     !option.title.trim() || !option.values.length || saveOptionSet.isPending
                   }
-                  onClick={() => saveOptionSet.mutate(option)}
+                  onClick={() =>
+                    saveOptionSet.mutate({
+                      option,
+                      optionSetId: optionSetsQuery.data?.optionSets.find(
+                        (optionSet) =>
+                          optionSet.title.toLowerCase() === option.title.trim().toLowerCase(),
+                      )?.id,
+                    })
+                  }
                   size="sm"
                   type="button"
                   variant="ghost"

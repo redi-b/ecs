@@ -1,6 +1,6 @@
 import type { createPlatformDb, ProductOptionSetValue } from "@ecs/db";
 import { productOptionSets } from "@ecs/db";
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, ilike, ne } from "drizzle-orm";
 
 type PlatformDb = ReturnType<typeof createPlatformDb>["db"];
 
@@ -57,6 +57,23 @@ export function createProductOptionSetService(db: PlatformDb) {
       if (!title || values.length === 0) {
         return { ok: false as const, error: "invalid_product_option_set", status: 400 as const };
       }
+      const [duplicate] = await db
+        .select({ id: productOptionSets.id })
+        .from(productOptionSets)
+        .where(
+          and(
+            eq(productOptionSets.tenantId, input.tenantId),
+            ilike(productOptionSets.title, title),
+          ),
+        )
+        .limit(1);
+      if (duplicate) {
+        return {
+          ok: false as const,
+          error: "product_option_set_title_taken",
+          status: 409 as const,
+        };
+      }
       try {
         const [row] = await db
           .insert(productOptionSets)
@@ -89,6 +106,24 @@ export function createProductOptionSetService(db: PlatformDb) {
       const values = normalizeProductOptionSetValues(input.values);
       if (!title || values.length === 0) {
         return { ok: false as const, error: "invalid_product_option_set", status: 400 as const };
+      }
+      const [duplicate] = await db
+        .select({ id: productOptionSets.id })
+        .from(productOptionSets)
+        .where(
+          and(
+            eq(productOptionSets.tenantId, input.tenantId),
+            ilike(productOptionSets.title, title),
+            ne(productOptionSets.id, input.optionSetId),
+          ),
+        )
+        .limit(1);
+      if (duplicate) {
+        return {
+          ok: false as const,
+          error: "product_option_set_title_taken",
+          status: 409 as const,
+        };
       }
       try {
         const [row] = await db

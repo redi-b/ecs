@@ -10,6 +10,7 @@ import {
   getOptionalBodyProductOptions,
   getOptionalBodyProductVariants,
 } from "../../merchant/product-body.js";
+import { getProductOptionSetValues } from "../../merchant/product-option-set-body.js";
 import {
   getJsonBody,
   getOptionalBodyNumber,
@@ -384,5 +385,74 @@ export function registerPlatformTenantProductsRoutes(
     });
     if (!result.ok) return context.json({ error: result.error }, result.status);
     return context.json(result);
+  });
+
+  app.get("/platform/tenants/:tenantId/product-option-sets", async (context) => {
+    if (!options.getTenantCommerceContext || !options.listMerchantProductOptionSets) {
+      return context.json({ error: "product_option_sets_unavailable" }, 500);
+    }
+    const session = await options.getSession?.(context.req.raw.headers);
+    if (!session) return context.json({ error: "auth_required" }, 401);
+    const tenantId = context.req.param("tenantId");
+    const authorization = await options.getTenantCommerceContext({
+      tenantId,
+      userId: session.user.id,
+    });
+    if (!authorization.ok) {
+      return context.json({ error: authorization.error }, authorization.status);
+    }
+    const result = await options.listMerchantProductOptionSets({ tenantId });
+    return context.json({ optionSets: result.optionSets });
+  });
+
+  app.post("/platform/tenants/:tenantId/product-option-sets", async (context) => {
+    if (!options.getTenantCommerceContext || !options.createMerchantProductOptionSet) {
+      return context.json({ error: "product_option_sets_unavailable" }, 500);
+    }
+    const session = await options.getSession?.(context.req.raw.headers);
+    if (!session) return context.json({ error: "auth_required" }, 401);
+    const tenantId = context.req.param("tenantId");
+    const authorization = await options.getTenantCommerceContext({
+      tenantId,
+      userId: session.user.id,
+    });
+    if (!authorization.ok) {
+      return context.json({ error: authorization.error }, authorization.status);
+    }
+    const body = await getJsonBody(context.req.raw);
+    const title = getRequiredBodyString(body, "title");
+    const values = getProductOptionSetValues(body);
+    if (!title || !values) return context.json({ error: "invalid_product_option_set" }, 400);
+    const result = await options.createMerchantProductOptionSet({ tenantId, title, values });
+    if (!result.ok) return context.json({ error: result.error }, result.status);
+    return context.json({ optionSet: result.optionSet }, 201);
+  });
+
+  app.post("/platform/tenants/:tenantId/product-option-sets/:optionSetId", async (context) => {
+    if (!options.getTenantCommerceContext || !options.updateMerchantProductOptionSet) {
+      return context.json({ error: "product_option_sets_unavailable" }, 500);
+    }
+    const session = await options.getSession?.(context.req.raw.headers);
+    if (!session) return context.json({ error: "auth_required" }, 401);
+    const tenantId = context.req.param("tenantId");
+    const authorization = await options.getTenantCommerceContext({
+      tenantId,
+      userId: session.user.id,
+    });
+    if (!authorization.ok) {
+      return context.json({ error: authorization.error }, authorization.status);
+    }
+    const body = await getJsonBody(context.req.raw);
+    const title = getRequiredBodyString(body, "title");
+    const values = getProductOptionSetValues(body);
+    if (!title || !values) return context.json({ error: "invalid_product_option_set" }, 400);
+    const result = await options.updateMerchantProductOptionSet({
+      tenantId,
+      optionSetId: context.req.param("optionSetId"),
+      title,
+      values,
+    });
+    if (!result.ok) return context.json({ error: result.error }, result.status);
+    return context.json({ optionSet: result.optionSet });
   });
 }
