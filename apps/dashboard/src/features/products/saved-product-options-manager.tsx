@@ -1,10 +1,19 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import type { ColumnDef } from "@tanstack/react-table";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/app/confirm-dialog";
+import { DataTable } from "@/components/app/data-table";
+import { DataTableHeader } from "@/components/app/data-table-header";
 import { AppIcons } from "@/components/app/icons";
+import { ListSummary } from "@/components/app/list-page-controls";
+import { ListToolbarSearch } from "@/components/app/list-toolbar";
+import { PageShell } from "@/components/app/page-shell";
+import { RowActionsMenu } from "@/components/app/row-actions-menu";
+import { Alert, AlertAction, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
@@ -23,6 +32,7 @@ export function SavedProductOptionsManager({ tenantId }: { tenantId: string | nu
   const url = getTenantScopedPath("/admin/products/actions/option-sets", tenantId);
   const [editing, setEditing] = useState<SavedOptionDraft | null>(null);
   const [pendingDelete, setPendingDelete] = useState<SavedOption | null>(null);
+  const [search, setSearch] = useState("");
   const query = useQuery({
     queryKey: ["product-option-sets", tenantId],
     queryFn: async () => {
@@ -77,95 +87,158 @@ export function SavedProductOptionsManager({ tenantId }: { tenantId: string | nu
     onError: () => toast.error(t("products.savedOptions.deleteFailed")),
   });
 
-  if (query.isPending) {
-    return <div className="h-48 animate-pulse rounded-2xl border bg-muted/20" />;
-  }
-  if (query.isError) {
-    return (
-      <div className="flex min-h-48 flex-col items-center justify-center gap-3 rounded-2xl border px-5 text-center">
-        <p className="text-sm text-muted-foreground">{t("products.savedOptions.loadFailed")}</p>
-        <Button onClick={() => void query.refetch()} size="sm" variant="outline">
-          {t("common.tryAgain")}
-        </Button>
-      </div>
-    );
-  }
-  const options = query.data.optionSets;
   const startCreating = () => setEditing({ id: "", isNew: true, title: "", values: [] });
+  const options = query.data?.optionSets ?? [];
+  const normalizedSearch = search.trim().toLowerCase();
+  const filteredOptions = useMemo(
+    () =>
+      normalizedSearch
+        ? options.filter(
+            (option) =>
+              option.title.toLowerCase().includes(normalizedSearch) ||
+              option.values.some((value) => value.label.toLowerCase().includes(normalizedSearch)),
+          )
+        : options,
+    [normalizedSearch, options],
+  );
+  const cloneForEditing = (option: SavedOption): SavedOptionDraft => ({
+    ...option,
+    values: option.values.map((value) =>
+      value.swatch ? { ...value, swatch: { ...value.swatch } } : { label: value.label },
+    ),
+  });
+  const columns = useMemo<ColumnDef<SavedOption>[]>(
+    () => [
+      {
+        accessorKey: "title",
+        header: ({ column }) => (
+          <DataTableHeader column={column} title={t("products.savedOptions.columnOption")} />
+        ),
+        cell: ({ row }) => (
+          <button
+            className="font-medium text-foreground hover:underline"
+            onClick={() => setEditing(cloneForEditing(row.original))}
+            type="button"
+          >
+            {row.original.title}
+          </button>
+        ),
+      },
+      {
+        id: "values",
+        header: t("products.savedOptions.columnValues"),
+        cell: ({ row }) => {
+          const visibleValues = row.original.values.slice(0, 4);
+          const remaining = row.original.values.length - visibleValues.length;
+          return (
+            <div className="flex min-w-52 flex-wrap items-center gap-1.5">
+              {visibleValues.map((value) => (
+                <Badge className="gap-1.5 font-normal" key={value.label} variant="secondary">
+                  {value.swatch ? (
+                    <span
+                      aria-hidden="true"
+                      className="size-2.5 rounded-full border border-border"
+                      style={{ backgroundColor: value.swatch.value }}
+                    />
+                  ) : null}
+                  {value.label}
+                </Badge>
+              ))}
+              {remaining > 0 ? (
+                <span className="text-xs text-muted-foreground">+{remaining}</span>
+              ) : null}
+            </div>
+          );
+        },
+      },
+      {
+        id: "valueCount",
+        header: t("products.savedOptions.columnCount"),
+        cell: ({ row }) => (
+          <span className="tabular-nums text-muted-foreground">{row.original.values.length}</span>
+        ),
+      },
+      {
+        id: "actions",
+        enableSorting: false,
+        cell: ({ row }) => (
+          <div className="flex justify-end">
+            <RowActionsMenu
+              actions={[
+                {
+                  icon: AppIcons.edit,
+                  label: t("common.edit"),
+                  onSelect: () => setEditing(cloneForEditing(row.original)),
+                  type: "button",
+                },
+                { id: "delete", type: "separator" },
+                {
+                  icon: AppIcons.trash,
+                  label: t("common.delete"),
+                  onSelect: () => setPendingDelete(row.original),
+                  type: "button",
+                  variant: "destructive",
+                },
+              ]}
+              label={t("products.savedOptions.actionsAria", { name: row.original.title })}
+            />
+          </div>
+        ),
+      },
+    ],
+    [t],
+  );
+
   return (
-    <>
-      <div className="mb-3 flex items-center justify-between gap-3">
-        <p className="text-sm text-muted-foreground">
-          {t("products.savedOptions.count", { count: options.length })}
-        </p>
-        <Button onClick={startCreating} size="sm">
+    <PageShell
+      actions={
+        <Button onClick={startCreating}>
           <AppIcons.add data-icon="inline-start" />
           {t("products.savedOptions.newAction")}
         </Button>
-      </div>
-      {options.length ? (
-        <div className="divide-y overflow-hidden rounded-2xl border bg-background">
-          {options.map((option) => (
-            <div className="flex items-center gap-3 px-4 py-3" key={option.id}>
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium">{option.title}</p>
-                <div className="mt-1 flex flex-wrap gap-1.5">
-                  {option.values.map((value) => (
-                    <span
-                      className="inline-flex items-center gap-1.5 rounded-full bg-secondary px-2 py-1 text-xs"
-                      key={value.label}
-                    >
-                      {value.swatch ? (
-                        <span
-                          className="size-2.5 rounded-full border"
-                          style={{ backgroundColor: value.swatch.value }}
-                        />
-                      ) : null}
-                      {value.label}
-                    </span>
-                  ))}
-                </div>
-              </div>
-              <Button
-                onClick={() =>
-                  setEditing({
-                    ...option,
-                    values: option.values.map((value) =>
-                      value.swatch
-                        ? { ...value, swatch: { ...value.swatch } }
-                        : { label: value.label },
-                    ),
-                  })
-                }
-                size="sm"
-                variant="ghost"
-              >
-                <AppIcons.edit data-icon="inline-start" />
-                {t("common.edit")}
-              </Button>
-              <Button
-                aria-label={t("products.savedOptions.deleteAria", { name: option.title })}
-                onClick={() => setPendingDelete(option)}
-                size="icon-sm"
-                variant="ghost"
-              >
-                <AppIcons.trash />
-              </Button>
-            </div>
-          ))}
-        </div>
+      }
+      description={t("products.savedOptions.pageDescription")}
+      title={t("products.savedOptions.pageTitle")}
+    >
+      {query.isError ? (
+        <Alert variant="destructive">
+          <AppIcons.error />
+          <AlertTitle>{t("products.savedOptions.loadFailedTitle")}</AlertTitle>
+          <AlertDescription>{t("products.savedOptions.loadFailed")}</AlertDescription>
+          <AlertAction>
+            <Button onClick={() => void query.refetch()} size="sm" variant="outline">
+              {t("common.tryAgain")}
+            </Button>
+          </AlertAction>
+        </Alert>
       ) : (
-        <div className="flex min-h-52 flex-col items-center justify-center rounded-2xl border border-dashed px-5 text-center">
-          <AppIcons.tag className="mb-3 size-5 text-muted-foreground" />
-          <p className="text-sm font-medium">{t("products.savedOptions.emptyTitle")}</p>
-          <p className="mt-1 max-w-sm text-sm text-muted-foreground">
-            {t("products.savedOptions.emptyDescription")}
-          </p>
-          <Button className="mt-4" onClick={startCreating} size="sm">
-            <AppIcons.add data-icon="inline-start" />
-            {t("products.savedOptions.newAction")}
-          </Button>
-        </div>
+        <>
+          {!query.isPending ? (
+            <ListSummary count={filteredOptions.length} filtered={Boolean(normalizedSearch)} />
+          ) : null}
+          <DataTable
+            columns={columns}
+            data={filteredOptions}
+            emptyIcon={<AppIcons.tag />}
+            emptyMessage={t("products.savedOptions.emptyDescription")}
+            emptyTitle={t("products.savedOptions.emptyTitle")}
+            filteredEmptyMessage={t("products.savedOptions.filteredEmptyDescription")}
+            filteredEmptyTitle={t("products.savedOptions.filteredEmptyTitle")}
+            getRowId={(option) => option.id}
+            isFiltered={Boolean(normalizedSearch)}
+            isLoading={query.isPending}
+            pageSize={20}
+            toolbar={
+              <ListToolbarSearch
+                clearLabel={t("common.clearSearch")}
+                label={t("products.savedOptions.searchLabel")}
+                onChange={setSearch}
+                placeholder={t("products.savedOptions.searchPlaceholder")}
+                value={search}
+              />
+            }
+          />
+        </>
       )}
       <SavedOptionEditDialog
         key={editing ? (editing.isNew ? "new" : editing.id) : "closed"}
@@ -185,7 +258,7 @@ export function SavedProductOptionsManager({ tenantId }: { tenantId: string | nu
         open={Boolean(pendingDelete)}
         title={t("products.savedOptions.deleteTitle")}
       />
-    </>
+    </PageShell>
   );
 }
 
