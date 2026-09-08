@@ -11,6 +11,7 @@ import {
   RiEyeOffLine,
   RiFullscreenExitLine,
   RiFullscreenLine,
+  RiMore2Line,
   RiPauseLine,
   RiResetLeftLine,
   RiRocketLine,
@@ -21,6 +22,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { ConfirmDialog } from "@/components/app/confirm-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -115,14 +117,16 @@ export function StorefrontEditorActions({
 }) {
   const { t } = useI18n();
   const [hasMounted, setHasMounted] = useState(false);
+  const [resetOpen, setResetOpen] = useState(false);
+  const [pauseOpen, setPauseOpen] = useState(false);
 
   useEffect(() => {
     setHasMounted(true);
   }, []);
 
   return (
-    <div className="flex w-full min-w-0 flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center sm:justify-end sm:gap-2">
-      <div className="flex flex-wrap items-center gap-0.5 sm:gap-2">
+    <div className="flex w-full min-w-0 items-center gap-1.5 sm:justify-end sm:gap-2">
+      <div className="flex shrink-0 items-center gap-0.5">
         <ToolbarIconButton
           disabled={hasMounted ? !canUndo : undefined}
           label={t("editor.actions.undo")}
@@ -137,52 +141,15 @@ export function StorefrontEditorActions({
         >
           <RiArrowGoForwardLine />
         </ToolbarIconButton>
-        <Separator className="mx-0.5 hidden h-5 sm:mx-1 sm:block" orientation="vertical" />
-        <ToolbarIconButton
-          label={showEditHints ? t("editor.actions.hideOutlines") : t("editor.actions.showOutlines")}
-          onClick={onToggleEditHints}
-          pressed={showEditHints}
-        >
-          {showEditHints ? <RiEyeLine /> : <RiEyeOffLine />}
+        <Separator className="mx-0.5 h-5" orientation="vertical" />
+        <ToolbarIconButton label={isFullscreen ? t("editor.actions.exitFullscreen") : t("editor.actions.fullscreen")} onClick={onToggleFullscreen}>
+          {isFullscreen ? <RiFullscreenExitLine /> : <RiFullscreenLine />}
         </ToolbarIconButton>
-        <span className="hidden sm:inline-flex">
-          <ToolbarIconButton
-            label={isFullscreen ? t("editor.actions.exitFullscreen") : t("editor.actions.fullscreen")}
-            onClick={onToggleFullscreen}
-          >
-            {isFullscreen ? <RiFullscreenExitLine /> : <RiFullscreenLine />}
-          </ToolbarIconButton>
-        </span>
-        <ToolbarIconButton asChild label={t("editor.actions.openLive")}>
-          <a href={editorMeta.liveStorefrontUrl} rel="noreferrer" target="_blank">
-            <RiExternalLinkLine />
-          </a>
-        </ToolbarIconButton>
-        <ConfirmDialog
-          confirmLabel={t("editor.actions.resetConfirm")}
-          description={t("editor.actions.resetDescription")}
-          eyebrow={t("common.confirm.dangerEyebrow")}
-          icon="question"
-          onConfirm={onReset}
-          title={t("editor.actions.resetTitle")}
-          tone="default"
-          trigger={
-            <Button
-              aria-label={t("editor.actions.resetEditor")}
-              size="icon-sm"
-              title={t("editor.actions.resetEditor")}
-              type="button"
-              variant="ghost"
-            >
-              <RiResetLeftLine />
-              <span className="sr-only">{t("editor.actions.resetEditor")}</span>
-            </Button>
-          }
-        />
       </div>
-      <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:justify-end">
+      <div className="ml-auto flex min-w-0 items-center gap-1.5 sm:ml-0 sm:gap-2">
         <Button
-          className="min-w-0"
+          aria-label={t("editor.actions.saveDraft")}
+          className="min-w-0 px-2.5 sm:px-3"
           disabled={isPending}
           onClick={onSave}
           size="sm"
@@ -190,45 +157,31 @@ export function StorefrontEditorActions({
           variant="outline"
         >
           <RiSave3Line data-icon="inline-start" />
-          {t("editor.actions.saveDraft")}
+          <span className="hidden sm:inline">{t("editor.actions.saveDraft")}</span>
         </Button>
-        {isLive && onUnpublish ? (
-          <ConfirmDialog
-            cancelDisabled={isPending}
-            confirmDisabled={isPending}
-            confirmLabel={t("editor.actions.pauseConfirm")}
-            description={t("editor.actions.pauseDescription")}
-            eyebrow={t("common.confirm.dangerEyebrow")}
-            icon="warning"
-            onConfirm={() => onUnpublish()}
-            title={t("editor.actions.pauseTitle")}
-            trigger={
-              <Button
-                className="min-w-0"
-                disabled={isPending}
-                size="sm"
-                type="button"
-                variant="destructive"
-              >
-                <RiPauseLine data-icon="inline-start" />
-                {t("editor.actions.pauseShop")}
-              </Button>
-            }
-          />
-        ) : (
-          <span className="hidden sm:block" />
-        )}
         <Button
-          className={cn("min-w-0", isLive && onUnpublish ? "col-span-2 sm:col-span-1" : "col-span-2 sm:col-span-1")}
+          aria-label={t("editor.actions.publish")}
+          className="min-w-0 px-2.5 sm:px-3"
           disabled={isPending}
           onClick={onPublish}
           size="sm"
           type="button"
         >
           <RiRocketLine data-icon="inline-start" />
-          {t("editor.actions.publish")}
+          <span className="hidden sm:inline">{t("editor.actions.publish")}</span>
         </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild><Button aria-label={t("editor.actions.more")} size="icon-sm" type="button" variant="outline"><RiMore2Line /></Button></DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuItem onSelect={onToggleEditHints}>{showEditHints ? <RiEyeOffLine /> : <RiEyeLine />}{showEditHints ? t("editor.actions.hideOutlines") : t("editor.actions.showOutlines")}</DropdownMenuItem>
+            <DropdownMenuItem asChild><a href={editorMeta.liveStorefrontUrl} rel="noreferrer" target="_blank"><RiExternalLinkLine />{t("editor.actions.openLive")}</a></DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => setResetOpen(true)}><RiResetLeftLine />{t("editor.actions.resetEditor")}</DropdownMenuItem>
+            {isLive && onUnpublish ? <><DropdownMenuSeparator /><DropdownMenuItem variant="destructive" onSelect={() => setPauseOpen(true)}><RiPauseLine />{t("editor.actions.pauseShop")}</DropdownMenuItem></> : null}
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
+      <ConfirmDialog confirmLabel={t("editor.actions.resetConfirm")} description={t("editor.actions.resetDescription")} icon="question" onConfirm={() => { setResetOpen(false); onReset(); }} onOpenChange={setResetOpen} open={resetOpen} title={t("editor.actions.resetTitle")} tone="default" />
+      {onUnpublish ? <ConfirmDialog cancelDisabled={isPending} confirmDisabled={isPending} confirmLabel={t("editor.actions.pauseConfirm")} description={t("editor.actions.pauseDescription")} icon="warning" onConfirm={() => { setPauseOpen(false); onUnpublish(); }} onOpenChange={setPauseOpen} open={pauseOpen} title={t("editor.actions.pauseTitle")} /> : null}
     </div>
   );
 }
@@ -352,11 +305,11 @@ export function StorefrontEditorShell({
   return (
     <div
       className={cn(
-        "storefront-editor-chrome flex h-full min-h-0 min-w-0 flex-col overflow-hidden rounded-2xl border border-border/80 bg-background shadow-[0_1px_2px_color-mix(in_oklch,var(--foreground)_4%,transparent)]",
-        isFullscreen && "h-dvh",
+        "storefront-editor-chrome flex min-h-0 min-w-0 flex-col rounded-2xl border border-border/80 bg-background shadow-[0_1px_2px_color-mix(in_oklch,var(--foreground)_4%,transparent)]",
+        isFullscreen ? "h-dvh overflow-hidden" : "overflow-visible",
       )}
     >
-      <div className="flex shrink-0 flex-col gap-2.5 border-b border-border/80 bg-muted/20 px-3 py-3 sm:gap-3 sm:px-4">
+      <div className="sticky top-0 z-20 flex shrink-0 flex-col gap-2.5 border-b border-border/80 bg-background px-3 py-3 sm:gap-3 sm:px-4">
         <div className="flex min-w-0 items-start gap-2.5 sm:gap-3">
           <div className="grid size-9 shrink-0 place-items-center rounded-xl border border-border/80 bg-background shadow-sm sm:size-10">
             <RiEditLine className="text-muted-foreground" aria-hidden />
@@ -408,15 +361,15 @@ export function StorefrontEditorShell({
 
       <div
         className={cn(
-          "grid min-h-0 flex-1 grid-rows-[minmax(0,1fr)] overflow-hidden bg-muted/20 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,24rem)]",
-          isFullscreen && "lg:min-h-[calc(100dvh-7.5rem)]",
+          "grid min-h-0 bg-muted/20 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,24rem)]",
+          isFullscreen ? "flex-1 grid-rows-[minmax(0,1fr)] overflow-hidden" : "items-start overflow-visible",
         )}
         data-edit-hints={showEditHints ? "on" : "off"}
       >
         <div
           className={cn(
-            "min-h-0 min-w-0 overflow-hidden p-3 sm:p-5",
-            isFullscreen && "h-full",
+            "min-h-0 min-w-0 p-3 sm:p-5",
+            isFullscreen ? "h-full overflow-hidden" : "h-[clamp(34rem,72dvh,52rem)] overflow-hidden lg:sticky lg:top-20",
             mobilePanel !== "preview" && "max-lg:hidden",
           )}
         >
@@ -446,7 +399,8 @@ export function StorefrontEditorShell({
         </div>
         <aside
           className={cn(
-            "flex h-full min-h-0 flex-col overflow-hidden border-t border-border/80 bg-background",
+            "flex min-h-0 flex-col border-t border-border/80 bg-background",
+            isFullscreen ? "h-full overflow-hidden" : "h-auto overflow-visible",
             "lg:border-l lg:border-t-0",
             mobilePanel !== "settings" && "max-lg:hidden",
           )}
@@ -466,7 +420,7 @@ export function StorefrontEditorShell({
               </Button>
             </div>
           </div>
-          <StorefrontSettingsPanel onSelectPath={(path) => {
+          <StorefrontSettingsPanel contained={isFullscreen} onSelectPath={(path) => {
             setSelectedPath(path);
             if (!path) return;
             const sectionPage = manifest?.sections.find((section) => section.fields.some((field) => path === field.path || path.startsWith(`${field.path}.`)))?.previewPage;
