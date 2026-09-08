@@ -1,6 +1,7 @@
 {
   "title": "Product categories",
-  "description": "Review merchant-scoped product categories from the catalog taxonomy.",
+  "description": "Categories help shoppers browse by product type. A category can also sit inside another category.",
+  "helpLabel": "About product categories",
   "notice": {
     "created": {
       "title": "Category created",

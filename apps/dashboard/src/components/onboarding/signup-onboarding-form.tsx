@@ -628,46 +628,40 @@ export function ShopOnboardingForm({
                 Mobile: primary full-width on top (col-reverse), secondary under.
                 Desktop: row with secondary left / primary right.
               */}
-              <div className="flex w-full flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex w-full flex-col-reverse gap-2 sm:w-auto sm:flex-row sm:[&>button]:w-auto [&>button]:w-full">
-                  <Button
-                    disabled={step === 0 || isSubmitting}
-                    onClick={goBack}
-                    type="button"
-                    variant="outline"
-                  >
-                    {t("common.back")}
-                  </Button>
-                  {/*
-                    Keep Continue and Create mounted separately. Swapping
-                    type=button → type=submit on the same node causes the
-                    browser to submit on the click that advances the step.
-                  */}
-                  <Button
-                    className={step >= lastStep ? "hidden" : undefined}
-                    disabled={!canContinue || isSubmitting}
-                    onClick={goNext}
-                    type="button"
-                  >
-                    {t("common.continue")}
-                  </Button>
-                  <Button
-                    aria-busy={isSubmitting}
-                    className={step < lastStep ? "hidden" : undefined}
-                    disabled={!canSubmit || isSubmitting}
-                    form={formId}
-                    type="submit"
-                  >
-                    {isSubmitting ? (
-                      <>
-                        <AppIcons.loader className="animate-spin" data-icon="inline-start" />
-                        {t("onboarding.creatingShop")}
-                      </>
-                    ) : (
-                      t("onboarding.createShop")
-                    )}
-                  </Button>
-                </div>
+              <div className="flex w-full flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-between [&>button]:w-full sm:[&>button]:w-auto">
+                <Button
+                  disabled={step === 0 || isSubmitting}
+                  onClick={goBack}
+                  type="button"
+                  variant="outline"
+                >
+                  {t("common.back")}
+                </Button>
+                {/* Keep Continue and Create as separate nodes to avoid accidental submit. */}
+                <Button
+                  className={step >= lastStep ? "hidden" : undefined}
+                  disabled={!canContinue || isSubmitting}
+                  onClick={goNext}
+                  type="button"
+                >
+                  {t("common.continue")}
+                </Button>
+                <Button
+                  aria-busy={isSubmitting}
+                  className={step < lastStep ? "hidden" : undefined}
+                  disabled={!canSubmit || isSubmitting}
+                  form={formId}
+                  type="submit"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <AppIcons.loader className="animate-spin" data-icon="inline-start" />
+                      {t("onboarding.creatingShop")}
+                    </>
+                  ) : (
+                    t("onboarding.createShop")
+                  )}
+                </Button>
               </div>
             </div>
           </div>

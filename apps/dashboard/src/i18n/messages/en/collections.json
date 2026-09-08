@@ -1,6 +1,7 @@
 {
   "title": "Product collections",
-  "description": "Review merchant-scoped product collections from the catalog taxonomy.",
+  "description": "Collections group related products for a theme, season, or promotion.",
+  "helpLabel": "About product collections",
   "notice": {
     "created": {
       "title": "Collection created",

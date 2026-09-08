@@ -486,6 +486,7 @@
   "savedOptions": {
     "pageTitle": "የምርት አማራጮች",
     "pageDescription": "የተለመዱ ምርጫዎችን በብዙ ምርቶች ላይ ይጠቀሙ።",
+    "helpLabel": "ስለ ምርት አማራጮች",
     "emptyTitle": "የምርት አማራጭ የለም",
     "emptyDescription": "ምርት ሲፈጥሩ ወይም ሲያስተካክሉ አማራጭን ለወደፊት ያስቀምጡ።",
     "count": "የምርት አማራጮች፦ {count}",
