@@ -455,4 +455,26 @@ export function registerPlatformTenantProductsRoutes(
     if (!result.ok) return context.json({ error: result.error }, result.status);
     return context.json({ optionSet: result.optionSet });
   });
+
+  app.delete("/platform/tenants/:tenantId/product-option-sets/:optionSetId", async (context) => {
+    if (!options.getTenantCommerceContext || !options.deleteMerchantProductOptionSet) {
+      return context.json({ error: "product_option_sets_unavailable" }, 500);
+    }
+    const session = await options.getSession?.(context.req.raw.headers);
+    if (!session) return context.json({ error: "auth_required" }, 401);
+    const tenantId = context.req.param("tenantId");
+    const authorization = await options.getTenantCommerceContext({
+      tenantId,
+      userId: session.user.id,
+    });
+    if (!authorization.ok) {
+      return context.json({ error: authorization.error }, authorization.status);
+    }
+    const result = await options.deleteMerchantProductOptionSet({
+      tenantId,
+      optionSetId: context.req.param("optionSetId"),
+    });
+    if (!result.ok) return context.json({ error: result.error }, result.status);
+    return context.json({ ok: true });
+  });
 }

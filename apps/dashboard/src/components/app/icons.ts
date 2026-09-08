@@ -1,4 +1,5 @@
 import {
+  RiAddLine,
   RiAndroidLine,
   RiAppleLine,
   RiArrowDownSLine,
@@ -18,6 +19,7 @@ import {
   RiDownload2Line,
   RiDraggable,
   RiEdgeLine,
+  RiEqualizerLine,
   RiErrorWarningLine,
   RiExternalLinkLine,
   RiEyeCloseLine,
@@ -47,7 +49,6 @@ import {
   RiPaintBrushLine,
   RiPencilLine,
   RiPriceTag3Line,
-  RiEqualizerLine,
   RiQuestionLine,
   RiRefreshLine,
   RiSafariLine,
@@ -68,6 +69,7 @@ import {
 } from "@remixicon/react";
 
 export const AppIcons = {
+  add: RiAddLine,
   android: RiAndroidLine,
   apple: RiAppleLine,
   arrowDown: RiArrowDownSLine,

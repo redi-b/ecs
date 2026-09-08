@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 import { AppIcons } from "@/components/app/icons";
+import Link from "@/components/app/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -25,6 +26,8 @@ import type {
 import { ColorPickerField } from "@/features/storefront-editor/editor-theme";
 import { useI18n } from "@/i18n/provider";
 import { createClientId } from "@/lib/client-id";
+import { getTenantScopedPath } from "@/lib/dashboard-tenant-context";
+import { dashboardRoutes } from "@/lib/routes";
 
 const COMMON_PRODUCT_COLORS = [
   ["Black", "#111111"],
@@ -60,7 +63,7 @@ const COMMON_PRODUCT_COLOR_OPTIONS = COMMON_PRODUCT_COLORS.map(([label, value]) 
 }));
 const MAX_PRODUCT_VARIANTS = 100;
 
-function ProductColorPopover({
+export function ProductColorPopover({
   label,
   onSave,
   value,
@@ -398,6 +401,7 @@ export function ProductOptionsBuilder({
       ...options,
       {
         key: createClientId("option"),
+        savedOptionSetId: optionSet.id,
         title: optionSet.title,
         values: optionSet.values.map((value) => ({
           key: createClientId("value"),
@@ -605,6 +609,13 @@ export function ProductOptionsBuilder({
             >
               {t("products.formReview.customOption")}
             </button>
+            <div className="my-1 border-t" />
+            <Button asChild className="w-full justify-start" size="sm" variant="ghost">
+              <Link href={getTenantScopedPath(dashboardRoutes.productOptions, tenantId)}>
+                <AppIcons.settings data-icon="inline-start" />
+                {t("products.formReview.manageSavedOptions")}
+              </Link>
+            </Button>
           </PopoverContent>
         </Popover>
       </div>
@@ -729,10 +740,7 @@ export function ProductOptionsBuilder({
                   onClick={() =>
                     saveOptionSet.mutate({
                       option,
-                      optionSetId: optionSetsQuery.data?.optionSets.find(
-                        (optionSet) =>
-                          optionSet.title.toLowerCase() === option.title.trim().toLowerCase(),
-                      )?.id,
+                      optionSetId: option.savedOptionSetId,
                     })
                   }
                   size="sm"
