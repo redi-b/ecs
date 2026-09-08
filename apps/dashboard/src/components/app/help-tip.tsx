@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 
 import { AppIcons } from "@/components/app/icons";
 import { Button } from "@/components/ui/button";
@@ -43,9 +43,30 @@ export function HelpTip({
   const resolvedLabel = label ?? t("common.moreInfo");
   const Icon = AppIcons.question;
   const body = children ?? summary;
+  const [open, setOpen] = useState(false);
+  const hoverCloseTimer = useRef<number | null>(null);
+
+  function cancelHoverClose() {
+    if (hoverCloseTimer.current) window.clearTimeout(hoverCloseTimer.current);
+    hoverCloseTimer.current = null;
+  }
+
+  function openFromHover(event: React.PointerEvent) {
+    if (event.pointerType !== "mouse") return;
+    cancelHoverClose();
+    setOpen(true);
+  }
+
+  function closeFromHover(event: React.PointerEvent) {
+    if (event.pointerType !== "mouse") return;
+    cancelHoverClose();
+    hoverCloseTimer.current = window.setTimeout(() => setOpen(false), 100);
+  }
+
+  useEffect(() => () => cancelHoverClose(), []);
 
   return (
-    <Popover>
+    <Popover onOpenChange={setOpen} open={open}>
       <PopoverTrigger asChild>
         <Button
           aria-label={resolvedLabel}
@@ -56,6 +77,8 @@ export function HelpTip({
           size="icon"
           type="button"
           variant="ghost"
+          onPointerEnter={openFromHover}
+          onPointerLeave={closeFromHover}
         >
           <Icon className="size-3.5" />
         </Button>
@@ -70,6 +93,9 @@ export function HelpTip({
         )}
         side="bottom"
         sideOffset={6}
+        collisionPadding={12}
+        onPointerEnter={openFromHover}
+        onPointerLeave={closeFromHover}
       >
         {rich ? (
           <div className="min-w-0">
