@@ -435,7 +435,7 @@ export function ProductCategoriesTable({
               type="button"
               variant="outline"
             >
-              <AppIcons.arrowUpDown data-icon="inline-start" />
+              <AppIcons.drag data-icon="inline-start" />
               <span className="hidden sm:inline">{t("taxonomy.actions.reorder")}</span>
             </Button>
           </>
