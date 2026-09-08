@@ -1454,7 +1454,8 @@ describe("platform app merchant dashboard and orders", () => {
     });
   });
 
-  it("requires a settlement method when finishing and marking paid", async () => {
+  it("keeps payment separate when finishing fulfillment", async () => {
+    let receivedAction: MerchantOrderAction | undefined;
     const app = appWithResolution(
       {
         ok: true,
@@ -1477,8 +1478,23 @@ describe("platform app merchant dashboard and orders", () => {
             name: "Abebe Owner",
           },
         }),
-        mutateMerchantOrder: async () => {
-          throw new Error("finish mutation must not run without settlement");
+        mutateMerchantOrder: async (input) => {
+          receivedAction = input.action;
+          return {
+            ok: true,
+            order: {
+              id: "order_1",
+              displayId: 1001,
+              email: "customer@example.com",
+              status: "completed",
+              paymentStatus: "not_paid",
+              fulfillmentStatus: "delivered",
+              currencyCode: "etb",
+              total: 1250,
+              createdAt: "2026-01-01T00:00:00.000Z",
+              updatedAt: "2026-01-02T00:00:00.000Z",
+            },
+          };
         },
       },
     );
@@ -1492,8 +1508,8 @@ describe("platform app merchant dashboard and orders", () => {
       method: "POST",
     });
 
-    assert.equal(response.status, 400);
-    assert.deepEqual(await response.json(), { error: "settlement_method_required" });
+    assert.equal(response.status, 200);
+    assert.equal(receivedAction, "finish");
   });
 
   it("fulfills merchant orders from the resolved tenant stock location", async () => {
