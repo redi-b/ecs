@@ -10,7 +10,6 @@
   },
   "actions": {
     "openSettings": "Open storefront settings",
-    "more": "More editor actions",
     "undo": "Undo",
     "redo": "Redo",
     "hideOutlines": "Hide editable outlines",

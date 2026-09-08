@@ -55,7 +55,7 @@ export {
   MediaImageSourceActions as EditorImageSourceActions,
 };
 
-export function StorefrontSettingsPanel({ contained = false, onSelectPath, selectedPath, templateKey }: { contained?: boolean; onSelectPath: (path: string | null) => void; selectedPath: string | null; templateKey: string }) {
+export function StorefrontSettingsPanel({ onSelectPath, selectedPath, templateKey }: { onSelectPath: (path: string | null) => void; selectedPath: string | null; templateKey: string }) {
   const { t } = useI18n();
   const data = useStorefrontEditor((api) => api.appState.data);
   const dispatch = useStorefrontEditor((api) => api.dispatch);
@@ -133,7 +133,7 @@ export function StorefrontSettingsPanel({ contained = false, onSelectPath, selec
   };
 
   return (
-    <div className={cn("min-h-0 flex-1", contained && "overflow-y-auto overscroll-contain")} ref={scrollRef}>
+    <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain" ref={scrollRef}>
       <div className="sticky top-0 z-10 flex items-center gap-2 border-b border-border/80 bg-background/95 p-3 backdrop-blur-sm sm:px-4">
         <Popover onOpenChange={setSectionNavigatorOpen} open={sectionNavigatorOpen}>
           <PopoverTrigger asChild>

@@ -299,8 +299,7 @@ export function StorefrontVisualEditor({
   return (
     <div
       className={cn(
-        "storefront-editor-runtime min-h-0 w-full transition-all duration-300 ease-out",
-        !isFullscreen && "min-h-[36rem]",
+        "storefront-editor-runtime h-full min-h-0 w-full flex-none transition-all duration-300 ease-out",
         // Keep the editor chrome on the configured Ethiopic UI face in Amharic.
         locale === "am" && "storefront-editor-runtime--am",
         isFullscreen &&
