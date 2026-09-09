@@ -6,19 +6,11 @@ import { useRouter } from "next/navigation";
 import { useId, useState } from "react";
 import { toast } from "sonner";
 
+import { OperationsActionDialog } from "@/components/operations-action-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import { DialogClose } from "@/components/ui/dialog";
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -215,56 +207,14 @@ function InvoiceAction({
   }
 
   return (
-    <Dialog onOpenChange={setOpen} open={open}>
-      <DialogTrigger asChild>
-        <Button size="sm" variant={paid ? "default" : "destructive-outline"}>
-          {paid ? <Banknote aria-hidden /> : null}
-          {paid ? "Confirm payment" : "Void invoice"}
-        </Button>
-      </DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{paid ? "Confirm this payment?" : "Void this invoice?"}</DialogTitle>
-          <DialogDescription>
-            {paid
-              ? "This marks the invoice paid and activates or extends the merchant’s subscription period. Confirm the external payment evidence first."
-              : "This permanently closes the pending invoice without activating the related plan period."}
-          </DialogDescription>
-        </DialogHeader>
-        <div className="rounded-xl border bg-muted/35 p-4">
-          <p className="text-xs text-muted-foreground">Invoice total</p>
-          <p className="mt-1 font-semibold tabular-nums">
-            {formatMoney(invoice.amount, invoice.currency)}
-          </p>
-        </div>
-        {paid ? (
-          <Field>
-            <FieldLabel htmlFor={referenceId}>Payment reference</FieldLabel>
-            <Input
-              id={referenceId}
-              onChange={(event) => setReference(event.target.value)}
-              placeholder="Bank receipt or transfer reference"
-              value={reference}
-            />
-            <FieldDescription>
-              Use the reference from the verified external payment.
-            </FieldDescription>
-          </Field>
-        ) : null}
-        <Field>
-          <FieldLabel htmlFor={reasonId}>Reason</FieldLabel>
-          <Textarea
-            id={reasonId}
-            onChange={(event) => setReason(event.target.value)}
-            placeholder={
-              paid ? "How was this payment verified?" : "Why should this invoice be closed?"
-            }
-            rows={3}
-            value={reason}
-          />
-          <FieldDescription>Saved with the invoice decision.</FieldDescription>
-        </Field>
-        <DialogFooter>
+    <OperationsActionDialog
+      description={
+        paid
+          ? "Marks the invoice paid and updates the subscription period. Confirm the external payment first."
+          : "Closes the pending invoice without activating its plan period."
+      }
+      footer={
+        <>
           <DialogClose asChild>
             <Button disabled={busy} variant="outline">
               Cancel
@@ -277,9 +227,50 @@ function InvoiceAction({
           >
             {busy ? "Saving decision…" : paid ? "Confirm payment" : "Void invoice"}
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </>
+      }
+      onOpenChange={setOpen}
+      open={open}
+      title={paid ? "Confirm this payment?" : "Void this invoice?"}
+      trigger={
+        <Button size="sm" variant={paid ? "default" : "destructive-outline"}>
+          {paid ? <Banknote aria-hidden /> : null}
+          {paid ? "Confirm payment" : "Void invoice"}
+        </Button>
+      }
+    >
+      <div className="rounded-xl border bg-muted/35 p-4">
+        <p className="text-xs text-muted-foreground">Invoice total</p>
+        <p className="mt-1 font-semibold tabular-nums">
+          {formatMoney(invoice.amount, invoice.currency)}
+        </p>
+      </div>
+      {paid ? (
+        <Field>
+          <FieldLabel htmlFor={referenceId}>Payment reference</FieldLabel>
+          <Input
+            id={referenceId}
+            onChange={(event) => setReference(event.target.value)}
+            placeholder="Bank receipt or transfer reference"
+            value={reference}
+          />
+          <FieldDescription>Use the reference from the verified external payment.</FieldDescription>
+        </Field>
+      ) : null}
+      <Field>
+        <FieldLabel htmlFor={reasonId}>Reason</FieldLabel>
+        <Textarea
+          id={reasonId}
+          onChange={(event) => setReason(event.target.value)}
+          placeholder={
+            paid ? "How was this payment verified?" : "Why should this invoice be closed?"
+          }
+          rows={3}
+          value={reason}
+        />
+        <FieldDescription>Saved with the invoice decision.</FieldDescription>
+      </Field>
+    </OperationsActionDialog>
   );
 }
 
@@ -335,52 +326,10 @@ function PaymentReviewAction({
   }
 
   return (
-    <Dialog onOpenChange={setOpen} open={open}>
-      <DialogTrigger asChild>
-        <Button
-          size="sm"
-          variant={
-            status === "rejected"
-              ? "destructive-outline"
-              : status === "approved"
-                ? "default"
-                : "outline"
-          }
-        >
-          {label}
-        </Button>
-      </DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>
-            {label} {formatProvider(payment.provider)} setup?
-          </DialogTitle>
-          <DialogDescription>{paymentImpact(status)}</DialogDescription>
-        </DialogHeader>
-        {status === "approved" ? (
-          <Field>
-            <FieldLabel htmlFor={accountId}>Provider account reference</FieldLabel>
-            <Input
-              id={accountId}
-              onChange={(event) => setAccountRef(event.target.value)}
-              placeholder="Optional provider account reference"
-              value={accountRef}
-            />
-            <FieldDescription>Do not enter secret credentials.</FieldDescription>
-          </Field>
-        ) : null}
-        <Field>
-          <FieldLabel htmlFor={reasonId}>Reason</FieldLabel>
-          <Textarea
-            id={reasonId}
-            onChange={(event) => setReason(event.target.value)}
-            placeholder="Record the evidence and decision…"
-            rows={4}
-            value={reason}
-          />
-          <FieldDescription>Saved with the review result.</FieldDescription>
-        </Field>
-        <DialogFooter>
+    <OperationsActionDialog
+      description={paymentImpact(status)}
+      footer={
+        <>
           <DialogClose asChild>
             <Button disabled={busy} variant="outline">
               Cancel
@@ -393,9 +342,50 @@ function PaymentReviewAction({
           >
             {busy ? "Saving review…" : label}
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </>
+      }
+      onOpenChange={setOpen}
+      open={open}
+      title={`${label} ${formatProvider(payment.provider)} setup?`}
+      trigger={
+        <Button
+          size="sm"
+          variant={
+            status === "rejected"
+              ? "destructive-outline"
+              : status === "approved"
+                ? "default"
+                : "outline"
+          }
+        >
+          {label}
+        </Button>
+      }
+    >
+      {status === "approved" ? (
+        <Field>
+          <FieldLabel htmlFor={accountId}>Provider account reference</FieldLabel>
+          <Input
+            id={accountId}
+            onChange={(event) => setAccountRef(event.target.value)}
+            placeholder="Optional provider account reference"
+            value={accountRef}
+          />
+          <FieldDescription>Do not enter secret credentials.</FieldDescription>
+        </Field>
+      ) : null}
+      <Field>
+        <FieldLabel htmlFor={reasonId}>Reason</FieldLabel>
+        <Textarea
+          id={reasonId}
+          onChange={(event) => setReason(event.target.value)}
+          placeholder="Record the evidence and decision…"
+          rows={4}
+          value={reason}
+        />
+        <FieldDescription>Saved with the review result.</FieldDescription>
+      </Field>
+    </OperationsActionDialog>
   );
 }
 

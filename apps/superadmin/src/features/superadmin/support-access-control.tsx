@@ -6,19 +6,11 @@ import { useRouter } from "next/navigation";
 import { useId, useState } from "react";
 import { toast } from "sonner";
 
+import { OperationsActionDialog } from "@/components/operations-action-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import { DialogClose } from "@/components/ui/dialog";
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -45,6 +37,7 @@ export function SupportAccessControl({
   const [reason, setReason] = useState("");
   const [expiresAt, setExpiresAt] = useState("");
   const [busy, setBusy] = useState(false);
+  const [grantOpen, setGrantOpen] = useState(false);
   const active = grants.filter(
     (grant) => !grant.revokedAt && new Date(grant.expiresAt).getTime() > Date.now(),
   );
@@ -68,6 +61,7 @@ export function SupportAccessControl({
       }
       setExpiresAt("");
       setReason("");
+      setGrantOpen(false);
       toast.success("Temporary support access granted.");
       router.refresh();
     } finally {
@@ -110,39 +104,63 @@ export function SupportAccessControl({
         ) : null}
         {canManage ? (
           <>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Field data-invalid={Boolean(expiryError) || undefined}>
-                <FieldLabel htmlFor={`support-access-expiry-${tenantId}`}>Access ends</FieldLabel>
-                <Input
-                  aria-invalid={Boolean(expiryError) || undefined}
-                  id={`support-access-expiry-${tenantId}`}
-                  max={toLocalDateTime(new Date(Date.now() + MAX_ACCESS_MS))}
-                  min={toLocalDateTime(new Date(Date.now() + MIN_INPUT_ACCESS_MS))}
-                  onChange={(event) => setExpiresAt(event.target.value)}
-                  type="datetime-local"
-                  value={expiresAt}
-                />
-                {expiryError ? <FieldError>{expiryError}</FieldError> : null}
-                <FieldDescription>Permanent access is not available.</FieldDescription>
-              </Field>
-              <Field>
-                <FieldLabel htmlFor={`support-access-reason-${tenantId}`}>Reason</FieldLabel>
-                <Input
-                  id={`support-access-reason-${tenantId}`}
-                  onChange={(event) => setReason(event.target.value)}
-                  placeholder="Investigating support case ECS-…"
-                  value={reason}
-                />
-                <FieldDescription>Do not include customer details or credentials.</FieldDescription>
-              </Field>
-            </div>
-            <Button
-              disabled={busy || !expiresAt || Boolean(expiryError) || reason.trim().length < 10}
-              onClick={() => void grantAccess()}
-              type="button"
-            >
-              {busy ? "Granting access…" : "Grant my temporary access"}
+            <Button onClick={() => setGrantOpen(true)} type="button">
+              Grant temporary access
             </Button>
+            <OperationsActionDialog
+              description="Your actions remain attributed to you, and the merchant sees a support banner."
+              footer={
+                <>
+                  <DialogClose asChild>
+                    <Button disabled={busy} variant="outline">
+                      Cancel
+                    </Button>
+                  </DialogClose>
+                  <Button
+                    disabled={
+                      busy || !expiresAt || Boolean(expiryError) || reason.trim().length < 10
+                    }
+                    onClick={() => void grantAccess()}
+                  >
+                    {busy ? "Granting access…" : "Grant access"}
+                  </Button>
+                </>
+              }
+              onOpenChange={setGrantOpen}
+              open={grantOpen}
+              title="Grant temporary dashboard access"
+            >
+              <div className="grid gap-4">
+                <Field data-invalid={Boolean(expiryError) || undefined}>
+                  <FieldLabel htmlFor={`support-access-expiry-${tenantId}`}>Access ends</FieldLabel>
+                  <Input
+                    aria-invalid={Boolean(expiryError) || undefined}
+                    id={`support-access-expiry-${tenantId}`}
+                    max={toLocalDateTime(new Date(Date.now() + MAX_ACCESS_MS))}
+                    min={toLocalDateTime(new Date(Date.now() + MIN_INPUT_ACCESS_MS))}
+                    onChange={(event) => setExpiresAt(event.target.value)}
+                    type="datetime-local"
+                    value={expiresAt}
+                  />
+                  {expiryError ? <FieldError>{expiryError}</FieldError> : null}
+                  <FieldDescription>
+                    Choose between 15 minutes and 8 hours from now.
+                  </FieldDescription>
+                </Field>
+                <Field>
+                  <FieldLabel htmlFor={`support-access-reason-${tenantId}`}>Reason</FieldLabel>
+                  <Input
+                    id={`support-access-reason-${tenantId}`}
+                    onChange={(event) => setReason(event.target.value)}
+                    placeholder="Investigating support case ECS-…"
+                    value={reason}
+                  />
+                  <FieldDescription>
+                    Do not include customer details or credentials.
+                  </FieldDescription>
+                </Field>
+              </div>
+            </OperationsActionDialog>
           </>
         ) : null}
 
@@ -218,32 +236,10 @@ function RevokeAccessAction({
   }
 
   return (
-    <Dialog onOpenChange={setOpen} open={open}>
-      <DialogTrigger asChild>
-        <Button size="sm" variant="destructive-outline">
-          Revoke access
-        </Button>
-      </DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Revoke support access?</DialogTitle>
-          <DialogDescription>
-            This operator will immediately lose merchant dashboard access that currently ends{" "}
-            {new Date(expiresAt).toLocaleString()}.
-          </DialogDescription>
-        </DialogHeader>
-        <Field>
-          <FieldLabel htmlFor={reasonId}>Reason</FieldLabel>
-          <Textarea
-            id={reasonId}
-            onChange={(event) => setReason(event.target.value)}
-            placeholder="Why is this access ending early?"
-            rows={3}
-            value={reason}
-          />
-          <FieldDescription>Saved with the revocation record.</FieldDescription>
-        </Field>
-        <DialogFooter>
+    <OperationsActionDialog
+      description={`This operator will immediately lose access that currently ends ${new Date(expiresAt).toLocaleString()}.`}
+      footer={
+        <>
           <DialogClose asChild>
             <Button disabled={busy} variant="outline">
               Keep access
@@ -256,9 +252,29 @@ function RevokeAccessAction({
           >
             {busy ? "Revoking access…" : "Revoke access"}
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </>
+      }
+      onOpenChange={setOpen}
+      open={open}
+      title="Revoke support access?"
+      trigger={
+        <Button size="sm" variant="destructive-outline">
+          Revoke access
+        </Button>
+      }
+    >
+      <Field>
+        <FieldLabel htmlFor={reasonId}>Reason</FieldLabel>
+        <Textarea
+          id={reasonId}
+          onChange={(event) => setReason(event.target.value)}
+          placeholder="Why is this access ending early?"
+          rows={3}
+          value={reason}
+        />
+        <FieldDescription>Saved with the revocation record.</FieldDescription>
+      </Field>
+    </OperationsActionDialog>
   );
 }
 
