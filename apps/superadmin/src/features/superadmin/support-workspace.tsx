@@ -70,11 +70,11 @@ export function SupportWorkspace({
   }
 
   return (
-    <section className="overflow-hidden rounded-2xl border bg-card shadow-xs">
+    <section className="overflow-hidden rounded-xl border bg-card">
       <header className="border-b px-5 py-4">
         <h2 className="text-base font-semibold">Support history</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Internal notes and a redacted audit timeline. Notes are never shown to the merchant.
+          Internal notes and recorded support activity
         </p>
       </header>
       <div className="flex flex-col gap-6 p-5">
