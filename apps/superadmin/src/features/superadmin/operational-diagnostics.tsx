@@ -1,5 +1,6 @@
 import type { SuperadminDiagnostics } from "@ecs/contracts";
 import { CheckCircle2, CircleAlert } from "lucide-react";
+import { OperationsListShell } from "@/components/operations-list-shell";
 import { Badge } from "@/components/ui/badge";
 
 export function OperationalDiagnostics({ diagnostics }: { diagnostics: SuperadminDiagnostics }) {
@@ -21,22 +22,18 @@ export function OperationalDiagnostics({ diagnostics }: { diagnostics: Superadmi
     .slice(0, 8);
 
   return (
-    <section className="overflow-hidden rounded-2xl border bg-card shadow-xs">
-      <header className="flex items-start justify-between gap-3 border-b px-5 py-4">
-        <div>
-          <h2 className="text-base font-semibold">Processing history</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Recent media, task, and notification activity for this merchant.
-          </p>
-        </div>
+    <OperationsListShell
+      toolbar={<h2 className="font-semibold">Processing history</h2>}
+      status={
         <Badge variant={failures.length || diagnostics.media.failed ? "warning" : "success"}>
           {failures.length + diagnostics.media.failed
             ? `${failures.length + diagnostics.media.failed} to review`
             : "Clear"}
         </Badge>
-      </header>
-      <div className="flex flex-col gap-5 p-5">
-        <dl className="grid overflow-hidden rounded-xl border sm:grid-cols-3 sm:divide-x">
+      }
+    >
+      <div className="flex flex-col gap-5 p-4 sm:p-5">
+        <dl className="grid overflow-hidden rounded-lg border sm:grid-cols-3 sm:divide-x">
           <Metric label="Media ready" value={diagnostics.media.ready} />
           <Metric label="Media pending" value={diagnostics.media.pending} />
           <Metric label="Media failed" value={diagnostics.media.failed} />
@@ -50,7 +47,7 @@ export function OperationalDiagnostics({ diagnostics }: { diagnostics: Superadmi
               />
               Recent issues
             </div>
-            <ul className="divide-y rounded-xl border">
+            <ul className="divide-y rounded-lg border">
               {failures.map((failure) => (
                 <li
                   className="flex flex-wrap items-center justify-between gap-3 px-4 py-3"
@@ -68,7 +65,7 @@ export function OperationalDiagnostics({ diagnostics }: { diagnostics: Superadmi
             </ul>
           </div>
         ) : (
-          <div className="flex items-center gap-3 rounded-xl border px-4 py-3">
+          <div className="flex items-center gap-3 rounded-lg border px-4 py-3">
             <CheckCircle2 aria-hidden className="size-4 text-success" />
             <p className="text-sm text-muted-foreground">
               No recent task or notification issues need review.
@@ -76,7 +73,7 @@ export function OperationalDiagnostics({ diagnostics }: { diagnostics: Superadmi
           </div>
         )}
       </div>
-    </section>
+    </OperationsListShell>
   );
 }
 

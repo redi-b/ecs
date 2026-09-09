@@ -1,14 +1,14 @@
 "use client";
 
 import type { SuperadminCommerceReview } from "@ecs/contracts";
-import { Banknote, CreditCard, FileCheck2 } from "lucide-react";
+import { Banknote, FileCheck2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useId, useState } from "react";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogClose,
@@ -43,9 +43,6 @@ export function CommerceReviewWorkspace({
             <div className="flex items-start justify-between gap-3">
               <div>
                 <CardTitle>Billing</CardTitle>
-                <CardDescription className="mt-1">
-                  Current plan and invoice decisions for this merchant.
-                </CardDescription>
               </div>
               <Badge variant="outline">{formatStatus(review.billing.subscriptionStatus)}</Badge>
             </div>
@@ -111,23 +108,15 @@ export function CommerceReviewWorkspace({
         <Card>
           <CardHeader className="border-b">
             <CardTitle>Payment setup</CardTitle>
-            <CardDescription className="mt-1">
-              Review merchant requests to accept online payments.
-            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3 pt-5">
             {review.paymentOnboarding.length ? (
               review.paymentOnboarding.map((payment) => (
                 <div className="rounded-xl border p-4" key={payment.id}>
                   <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div className="flex items-center gap-3">
-                      <span className="grid size-9 place-items-center rounded-xl bg-primary/10 text-primary">
-                        <CreditCard aria-hidden className="size-4" />
-                      </span>
-                      <div>
-                        <p className="font-medium">{formatProvider(payment.provider)}</p>
-                        <p className="text-xs text-muted-foreground">Online payment provider</p>
-                      </div>
+                    <div>
+                      <p className="font-medium">{formatProvider(payment.provider)}</p>
+                      <p className="text-xs text-muted-foreground">Payment provider</p>
                     </div>
                     <Badge variant={paymentStatusVariant(payment.status)}>
                       {formatPaymentStatus(payment.status)}

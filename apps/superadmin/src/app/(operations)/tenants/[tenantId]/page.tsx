@@ -1,22 +1,23 @@
 import type { SuperadminOperationalSummary } from "@ecs/contracts";
-import { CircleAlert, ExternalLink, Store } from "lucide-react";
+import { ExternalLink, Store } from "lucide-react";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
+import { OperationsListShell } from "@/components/operations-list-shell";
+import { OperationsStatusBadge } from "@/components/operations-status-badge";
 import { OperatorReadError } from "@/components/operator-read-error";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { WorkspaceNavigation } from "@/components/workspace-navigation";
 import { CommerceReviewWorkspace } from "@/features/superadmin/commerce-review-workspace";
 import { OperationalDiagnostics } from "@/features/superadmin/operational-diagnostics";
+import { SubscriptionPlanControl } from "@/features/superadmin/subscription-plan-control";
 import { SupportAccessControl } from "@/features/superadmin/support-access-control";
 import { SupportWorkspace } from "@/features/superadmin/support-workspace";
-import { SubscriptionPlanControl } from "@/features/superadmin/subscription-plan-control";
 import { TenantStatusControl } from "@/features/superadmin/tenant-status-control";
 import { getOpsAccess } from "@/lib/ops-access";
-import { getSuperadminCommerceReview } from "@/lib/platform-api/superadmin/commerce-review";
 import { getOperatorPlanCatalog } from "@/lib/platform-api/superadmin/billing";
+import { getSuperadminCommerceReview } from "@/lib/platform-api/superadmin/commerce-review";
 import { getSuperadminDiagnostics } from "@/lib/platform-api/superadmin/diagnostics";
 import { getSuperadminOperationalSummary } from "@/lib/platform-api/superadmin/operations";
 import { getSuperadminSupportHistory } from "@/lib/platform-api/superadmin/support";
@@ -124,15 +125,13 @@ export default async function MerchantWorkspacePage({
       <header>
         <div className="flex flex-wrap items-start justify-between gap-5">
           <div className="flex min-w-0 items-start gap-4">
-            <span className="grid size-12 shrink-0 place-items-center rounded-xl bg-muted text-foreground ring-1 ring-border">
-              <Store aria-hidden className="size-5" />
-            </span>
+            <Store aria-hidden className="mt-1 size-5 shrink-0 text-muted-foreground" />
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
                 <h1 className="truncate text-2xl font-semibold tracking-[-0.03em]">
                   {tenant.name}
                 </h1>
-                <Badge variant={statusVariant(tenant.status)}>{formatStatus(tenant.status)}</Badge>
+                <OperationsStatusBadge status={tenant.status} />
               </div>
               <p className="mt-1 text-sm text-muted-foreground">@{tenant.handle}</p>
               {tenant.ownerEmail ? (
@@ -141,11 +140,6 @@ export default async function MerchantWorkspacePage({
               <p className="mt-3 text-sm text-muted-foreground">
                 {tenant.primaryDomainHostname ?? "No storefront address assigned"}
               </p>
-              {operations?.ok && !operations.summary.readiness.ready ? (
-                <p className="mt-2 flex items-center gap-1.5 text-sm font-medium text-warning-foreground dark:text-warning">
-                  <CircleAlert aria-hidden className="size-4" /> Setup needs attention
-                </p>
-              ) : null}
             </div>
           </div>
           {tenant.primaryDomainHostname ? (
@@ -156,7 +150,7 @@ export default async function MerchantWorkspacePage({
             </Button>
           ) : null}
         </div>
-        <dl className="mt-6 grid gap-x-8 gap-y-4 border-y py-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+        <dl className="mt-5 grid gap-x-8 gap-y-4 rounded-xl border bg-card p-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
           <Detail
             label="Plan"
             value={
@@ -291,55 +285,47 @@ export default async function MerchantWorkspacePage({
 }
 
 function OperationalHealth({ summary }: { summary: SuperadminOperationalSummary }) {
+  const checks = [
+    ["Merchant", summary.readiness.tenantReady],
+    ["Storefront address", summary.readiness.domainReady],
+    ["Commerce", summary.readiness.commerceReady],
+    ["Storefront", summary.readiness.storefrontReady],
+    ["Shop setup", summary.readiness.provisioningReady],
+  ] as const;
   return (
-    <section className="flex flex-col gap-5">
-      {!summary.readiness.ready ? (
-        <Alert>
-          <CircleAlert aria-hidden />
-          <AlertTitle>Setup needs attention</AlertTitle>
-          <AlertDescription>
-            Review {formatReadinessGaps(summary.readiness.missing)} before this merchant is treated
-            as fully ready.
-          </AlertDescription>
-        </Alert>
-      ) : null}
-      <div className="overflow-hidden rounded-2xl border bg-card shadow-xs">
-        <div className="flex items-start justify-between gap-3 border-b px-5 py-4">
-          <div>
-            <h2 className="text-base font-semibold">Operational readiness</h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Current state of the merchant’s core setup.
+    <OperationsListShell
+      status={
+        <Badge variant={summary.readiness.ready ? "success" : "warning"}>
+          {summary.readiness.ready ? "Ready" : "Needs attention"}
+        </Badge>
+      }
+      toolbar={
+        <div>
+          <h2 className="font-semibold">Operational readiness</h2>
+          {!summary.readiness.ready ? (
+            <p className="text-sm text-muted-foreground">
+              Review {formatReadinessGaps(summary.readiness.missing)}.
             </p>
-          </div>
-          <Badge variant={summary.readiness.ready ? "success" : "warning"}>
-            {summary.readiness.ready ? "Ready" : "Needs attention"}
-          </Badge>
+          ) : null}
         </div>
-        <div className="flex flex-col gap-5 p-5">
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-            <Health label="Merchant" ready={summary.readiness.tenantReady} />
-            <Health label="Storefront address" ready={summary.readiness.domainReady} />
-            <Health label="Commerce" ready={summary.readiness.commerceReady} />
-            <Health label="Storefront" ready={summary.readiness.storefrontReady} />
-            <Health label="Shop setup" ready={summary.readiness.provisioningReady} />
+      }
+    >
+      <div className="divide-y">
+        {checks.map(([label, ready]) => (
+          <div className="flex items-center justify-between gap-3 px-4 py-3 sm:px-5" key={label}>
+            <span className="text-sm">{label}</span>
+            <Badge variant={ready ? "success" : "warning"}>{ready ? "Ready" : "Check"}</Badge>
           </div>
-          <dl className="grid gap-5 border-t pt-5 sm:grid-cols-3">
+        ))}
+        <div className="p-4 sm:p-5">
+          <dl className="grid gap-4 sm:grid-cols-3">
             <Detail label="Open invoices" value={String(summary.billing.pendingInvoiceCount)} />
             <Detail label="Storefront addresses" value={String(summary.domains.total)} />
             <Detail label="Payment reviews" value={String(summary.payments.pendingReview)} />
           </dl>
         </div>
       </div>
-    </section>
-  );
-}
-
-function Health({ label, ready }: { label: string; ready: boolean }) {
-  return (
-    <div className="flex items-center justify-between rounded-xl border px-3 py-3 text-sm">
-      <span>{label}</span>
-      <Badge variant={ready ? "success" : "warning"}>{ready ? "Ready" : "Check"}</Badge>
-    </div>
+    </OperationsListShell>
   );
 }
 
@@ -354,16 +340,6 @@ function Detail({ label, value, mono = false }: { label: string; value: string; 
   );
 }
 
-function statusVariant(status: string): "destructive" | "outline" | "success" | "warning" {
-  if (status === "active") return "success";
-  if (status === "suspended" || status === "cancelled") return "destructive";
-  if (status === "draft") return "warning";
-  return "outline";
-}
-
-function formatStatus(value: string) {
-  return value.charAt(0).toUpperCase() + value.slice(1).replaceAll("_", " ");
-}
 function formatReadinessGaps(values: string[]) {
   if (!values.length) return "the incomplete setup items";
   const labels = values.map((value) => {
