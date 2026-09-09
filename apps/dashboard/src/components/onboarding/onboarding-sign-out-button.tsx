@@ -14,11 +14,12 @@ export function OnboardingSignOutButton() {
   async function signOut() {
     if (isSigningOut) return;
     setIsSigningOut(true);
-    await fetch("/admin/sign-out", {
+    const response = await fetch("/admin/sign-out", {
       headers: { accept: "application/json" },
       method: "POST",
     }).catch(() => null);
-    window.location.assign("/admin/sign-in");
+    const data = (await response?.json().catch(() => null)) as { redirectTo?: string } | null;
+    window.location.assign(data?.redirectTo ?? "/admin/sign-in");
   }
 
   return (
