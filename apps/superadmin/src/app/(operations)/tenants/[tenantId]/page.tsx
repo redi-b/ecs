@@ -332,7 +332,7 @@ function OperationalHealth({ summary }: { summary: SuperadminOperationalSummary 
 function Detail({ label, value, mono = false }: { label: string; value: string; mono?: boolean }) {
   return (
     <div>
-      <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</dt>
+      <dt className="text-xs font-medium text-muted-foreground">{label}</dt>
       <dd className={cn("mt-1 break-words text-sm font-medium", mono && "font-mono text-xs")}>
         {value}
       </dd>

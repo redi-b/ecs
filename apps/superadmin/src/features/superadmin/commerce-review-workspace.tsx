@@ -402,7 +402,7 @@ async function postReview(path: string, body: Record<string, string>) {
 function Summary({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</dt>
+      <dt className="text-xs font-medium text-muted-foreground">{label}</dt>
       <dd className="mt-1 text-sm font-medium">{value}</dd>
     </div>
   );

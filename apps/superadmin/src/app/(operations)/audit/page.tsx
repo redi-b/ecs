@@ -1,4 +1,4 @@
-import { FileClock, Search, SlidersHorizontal, X } from "lucide-react";
+import { ChevronRight, FileClock, Search, SlidersHorizontal, X } from "lucide-react";
 import { headers } from "next/headers";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -19,6 +19,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import { formatAuditAction } from "@/lib/format-audit-action";
 import { getOperatorAudit } from "@/lib/platform-api/superadmin/console";
 
@@ -78,72 +86,80 @@ export default async function AuditPage({
           </Button>
         ))}
       </nav>
-      <form className="rounded-xl border bg-card p-4" method="get">
-        {category ? <input name="category" type="hidden" value={category} /> : null}
-        <div className="mb-4 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <SlidersHorizontal aria-hidden className="size-4 text-primary" />
-            <h2 className="text-sm font-semibold">Find recorded activity</h2>
-          </div>
+      <details
+        className="group rounded-xl border bg-card"
+        open={hasAuditFilters(filters) || undefined}
+      >
+        <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-3 text-sm font-medium marker:hidden">
+          <SlidersHorizontal aria-hidden className="size-4" /> Filters
           {hasAuditFilters(filters) ? (
-            <Button asChild size="sm" variant="ghost">
-              <Link href={createAuditHref(category, {}, 1)}>
-                <X data-icon="inline-start" /> Clear filters
-              </Link>
-            </Button>
+            <Badge variant="secondary">{Object.values(filters).filter(Boolean).length}</Badge>
           ) : null}
-        </div>
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <FilterField
-            label="Merchant"
-            name="merchant"
-            placeholder="Name or handle"
-            value={filters.merchant}
-          />
-          <FilterField
-            label="Operator"
-            name="actor"
-            placeholder="Name or email"
-            value={filters.actor}
-          />
-          <FilterField
-            label="Action"
-            name="action"
-            placeholder="For example, support access"
-            value={filters.action}
-          />
-          <FilterField
-            label="Resource"
-            name="resource"
-            placeholder="Type or reference"
-            value={filters.resource}
-          />
-          <div className="flex flex-col gap-2">
-            <Label>Outcome</Label>
-            <Select defaultValue={filters.outcome ?? "all"} name="outcome">
-              <SelectTrigger aria-label="Outcome" className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  <SelectItem value="all">Any outcome</SelectItem>
-                  <SelectItem value="accepted">Accepted</SelectItem>
-                  <SelectItem value="completed">Completed</SelectItem>
-                  <SelectItem value="failed">Failed</SelectItem>
-                  <SelectItem value="unknown">Outcome unavailable</SelectItem>
-                </SelectGroup>
-              </SelectContent>
-            </Select>
+        </summary>
+        <form className="border-t p-4" method="get">
+          {category ? <input name="category" type="hidden" value={category} /> : null}
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <h2 className="text-sm font-semibold">Find recorded activity</h2>
+            {hasAuditFilters(filters) ? (
+              <Button asChild size="sm" variant="ghost">
+                <Link href={createAuditHref(category, {}, 1)}>
+                  <X data-icon="inline-start" /> Clear filters
+                </Link>
+              </Button>
+            ) : null}
           </div>
-          <FilterField label="From" name="from" type="date" value={filters.from} />
-          <FilterField label="To" name="to" type="date" value={filters.to} />
-          <div className="flex items-end">
-            <Button className="w-full" type="submit">
-              <Search data-icon="inline-start" /> Apply filters
-            </Button>
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <FilterField
+              label="Merchant"
+              name="merchant"
+              placeholder="Name or handle"
+              value={filters.merchant}
+            />
+            <FilterField
+              label="Operator"
+              name="actor"
+              placeholder="Name or email"
+              value={filters.actor}
+            />
+            <FilterField
+              label="Action"
+              name="action"
+              placeholder="For example, support access"
+              value={filters.action}
+            />
+            <FilterField
+              label="Resource"
+              name="resource"
+              placeholder="Type or reference"
+              value={filters.resource}
+            />
+            <div className="flex flex-col gap-2">
+              <Label>Outcome</Label>
+              <Select defaultValue={filters.outcome ?? "all"} name="outcome">
+                <SelectTrigger aria-label="Outcome" className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectItem value="all">Any outcome</SelectItem>
+                    <SelectItem value="accepted">Accepted</SelectItem>
+                    <SelectItem value="completed">Completed</SelectItem>
+                    <SelectItem value="failed">Failed</SelectItem>
+                    <SelectItem value="unknown">Outcome unavailable</SelectItem>
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </div>
+            <FilterField label="From" name="from" type="date" value={filters.from} />
+            <FilterField label="To" name="to" type="date" value={filters.to} />
+            <div className="flex items-end">
+              <Button className="w-full" type="submit">
+                <Search data-icon="inline-start" /> Apply filters
+              </Button>
+            </div>
           </div>
-        </div>
-      </form>
+        </form>
+      </details>
       {!result.ok ? (
         <OperatorReadError
           resource="Audit history"
@@ -153,59 +169,85 @@ export default async function AuditPage({
       ) : result.data.events.length ? (
         <>
           <OperationsListShell status={`${result.data.count} events`}>
-            <div className="grid grid-cols-[1fr_auto] gap-4 border-b bg-muted/25 px-5 py-3 text-xs font-medium text-muted-foreground lg:grid-cols-[1.2fr_1fr_1fr_12rem]">
+            <div className="grid grid-cols-[1fr_auto] gap-4 border-b bg-muted/25 px-5 py-3 text-xs font-medium text-muted-foreground lg:grid-cols-[1.2fr_1fr_1fr_12rem_auto]">
               <span>Change</span>
               <span className="hidden lg:block">Operator</span>
               <span className="hidden lg:block">Merchant</span>
               <span>Time</span>
+              <span className="hidden w-4 lg:block" />
             </div>
             {result.data.events.map((event) => (
-              <div
-                className="grid grid-cols-[1fr_auto] items-center gap-4 border-b px-5 py-4 last:border-0 lg:grid-cols-[1.2fr_1fr_1fr_12rem]"
-                key={event.id}
-              >
-                <div>
-                  <p className="text-sm font-medium">{formatAuditAction(event.action)}</p>
-                  <div className="mt-1 flex flex-wrap gap-2">
-                    <Badge variant={getOutcomeVariant(event.outcome)}>
-                      {formatOutcome(event.outcome)}
-                    </Badge>
-                    <Badge variant="outline">{formatTarget(event.targetType)}</Badge>
-                  </div>
-                  {event.targetId ? (
-                    <p
-                      className="mt-1 max-w-72 truncate font-mono text-[11px] text-muted-foreground"
-                      title={event.targetId}
-                    >
-                      {event.targetId}
-                    </p>
-                  ) : null}
-                  <p
-                    className="mt-1 max-w-72 truncate font-mono text-[11px] text-muted-foreground"
-                    title={event.correlationId}
+              <Sheet key={event.id}>
+                <SheetTrigger asChild>
+                  <button
+                    className="grid w-full grid-cols-[1fr_auto] items-center gap-4 border-b px-5 py-4 text-left transition-colors last:border-0 hover:bg-muted/35 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-inset focus-visible:ring-ring/40 lg:grid-cols-[1.2fr_1fr_1fr_12rem_auto]"
+                    type="button"
                   >
-                    Reference {event.correlationId}
-                  </p>
-                </div>
-                <p className="hidden truncate text-sm text-muted-foreground lg:block">
-                  {event.actor?.name ?? "System"}
-                </p>
-                <div className="hidden min-w-0 lg:block">
+                    <div>
+                      <p className="text-sm font-medium">{formatAuditAction(event.action)}</p>
+                      <div className="mt-1 flex flex-wrap gap-2">
+                        <Badge variant={getOutcomeVariant(event.outcome)}>
+                          {formatOutcome(event.outcome)}
+                        </Badge>
+                        <Badge variant="outline">{formatTarget(event.targetType)}</Badge>
+                      </div>
+                    </div>
+                    <p className="hidden truncate text-sm text-muted-foreground lg:block">
+                      {event.actor?.name ?? "System"}
+                    </p>
+                    <div className="hidden min-w-0 lg:block">
+                      {event.merchant ? (
+                        <span className="truncate text-sm font-medium">{event.merchant.name}</span>
+                      ) : (
+                        <span className="text-sm text-muted-foreground">Platform</span>
+                      )}
+                    </div>
+                    <time className="text-xs text-muted-foreground" dateTime={event.createdAt}>
+                      {formatDate(event.createdAt)}
+                    </time>
+                    <ChevronRight
+                      aria-hidden
+                      className="hidden size-4 text-muted-foreground lg:block"
+                    />
+                  </button>
+                </SheetTrigger>
+                <SheetContent className="w-full sm:max-w-md">
+                  <SheetHeader className="border-b pe-12">
+                    <SheetTitle>{formatAuditAction(event.action)}</SheetTitle>
+                    <SheetDescription>{formatDate(event.createdAt)}</SheetDescription>
+                  </SheetHeader>
+                  <dl className="divide-y overflow-y-auto">
+                    <AuditDetail label="Outcome" value={formatOutcome(event.outcome)} />
+                    <AuditDetail
+                      label="Operator"
+                      value={event.actor ? `${event.actor.name} · ${event.actor.email}` : "System"}
+                    />
+                    <AuditDetail
+                      label="Merchant"
+                      value={
+                        event.merchant
+                          ? `${event.merchant.name} · @${event.merchant.handle}`
+                          : "Platform"
+                      }
+                    />
+                    <AuditDetail label="Resource" value={formatTarget(event.targetType)} />
+                    <AuditDetail
+                      label="Resource reference"
+                      value={event.targetId ?? "Not recorded"}
+                      mono
+                    />
+                    <AuditDetail label="Event reference" value={event.id} mono />
+                    <AuditDetail label="Correlation reference" value={event.correlationId} mono />
+                  </dl>
                   {event.merchant ? (
-                    <Link
-                      className="truncate text-sm font-medium hover:text-primary"
-                      href={`/tenants/${event.merchant.id}`}
-                    >
-                      {event.merchant.name}
-                    </Link>
-                  ) : (
-                    <span className="text-sm text-muted-foreground">Platform</span>
-                  )}
-                </div>
-                <time className="text-xs text-muted-foreground" dateTime={event.createdAt}>
-                  {formatDate(event.createdAt)}
-                </time>
-              </div>
+                    <div className="border-t p-4">
+                      <Button asChild className="w-full" variant="outline">
+                        <Link href={`/tenants/${event.merchant.id}`}>Open merchant</Link>
+                      </Button>
+                    </div>
+                  ) : null}
+                </SheetContent>
+              </Sheet>
             ))}
           </OperationsListShell>
           <OperationsPagination
@@ -230,6 +272,17 @@ export default async function AuditPage({
           }
         />
       )}
+    </div>
+  );
+}
+
+function AuditDetail({ label, mono, value }: { label: string; mono?: boolean; value: string }) {
+  return (
+    <div className="px-4 py-3">
+      <dt className="text-xs text-muted-foreground">{label}</dt>
+      <dd className={mono ? "mt-1 break-all font-mono text-xs" : "mt-1 break-words text-sm"}>
+        {value}
+      </dd>
     </div>
   );
 }

@@ -97,7 +97,7 @@ function formatFailure(value: string) {
 function Metric({ label, value }: { label: string; value: number }) {
   return (
     <div className="px-4 py-3">
-      <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</dt>
+      <dt className="text-xs font-medium text-muted-foreground">{label}</dt>
       <dd className="mt-1 text-xl font-semibold tabular-nums">{value}</dd>
     </div>
   );
