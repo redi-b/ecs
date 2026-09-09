@@ -6,11 +6,7 @@ import Link from "@/components/app/link";
 import { AppIcons } from "@/components/app/icons";
 import { ListToolbarSearch } from "@/components/app/list-toolbar";
 import { Button } from "@/components/ui/button";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   Dialog,
   DialogContent,
@@ -28,6 +24,7 @@ import {
 } from "@/components/ui/empty";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useI18n } from "@/i18n/provider";
+import { rankFuzzyItems } from "@/lib/fuzzy-search";
 import { dashboardRoutes } from "@/lib/routes";
 import { cn } from "@/lib/utils";
 
@@ -146,18 +143,19 @@ export function ProductCatalogPickerDialog({
   }, [open, selectedIdsProp]);
 
   const filtered = useMemo(() => {
-    const needle = query.trim().toLowerCase();
-    if (!needle) return catalogProducts;
-    return catalogProducts.filter((product) => {
-      if (product.searchText.toLowerCase().includes(needle)) return true;
-      return (product.variants ?? []).some((variant) =>
-        [variant.title, variant.sku, variant.id, ...Object.values(variant.options ?? {})]
-          .filter(Boolean)
-          .join(" ")
-          .toLowerCase()
-          .includes(needle),
-      );
-    });
+    return rankFuzzyItems(catalogProducts, query, (product) =>
+      [
+        product.searchText,
+        ...(product.variants ?? []).flatMap((variant) => [
+          variant.title,
+          variant.sku,
+          variant.id,
+          ...Object.values(variant.options ?? {}),
+        ]),
+      ]
+        .filter(Boolean)
+        .join(" "),
+    );
   }, [catalogProducts, query]);
 
   const pageItems = filtered.slice(0, visibleCount);
@@ -352,7 +350,8 @@ export function ProductCatalogPickerDialog({
                             isSelected
                               ? "border-primary/45 bg-primary/[0.06] shadow-sm ring-2 ring-primary/12"
                               : "hover:border-foreground/15 hover:bg-muted/20",
-                            oos && "cursor-not-allowed opacity-55 hover:border-border hover:bg-card",
+                            oos &&
+                              "cursor-not-allowed opacity-55 hover:border-border hover:bg-card",
                           )}
                           disabled={oos}
                           onClick={() => {
@@ -519,9 +518,7 @@ export function ProductCatalogPickerDialog({
                   type="button"
                   variant="outline"
                 >
-                  {loadingMore
-                    ? t("common.loadingProducts")
-                    : t("products.catalogPicker.loadMore")}
+                  {loadingMore ? t("common.loadingProducts") : t("products.catalogPicker.loadMore")}
                 </Button>
               </div>
             ) : null}

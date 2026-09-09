@@ -21,6 +21,7 @@ import {
 } from "@/features/catalog-taxonomy/taxonomy-table-state";
 import { useI18n } from "@/i18n/provider";
 import { listEntityActionClassName } from "@/lib/list-entity-link";
+import { fuzzyMatches } from "@/lib/fuzzy-search";
 import { cn } from "@/lib/utils";
 
 type CategoryTreeViewProps = {
@@ -43,7 +44,6 @@ export function CategoryTreeView({
   const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set());
 
   const visibleRows = useMemo(() => {
-    const q = query.trim().toLowerCase();
     return rows.filter((node) => {
       // Hide descendants of collapsed ancestors.
       let parentId = node.category.parentCategoryId;
@@ -53,10 +53,9 @@ export function CategoryTreeView({
         parentId = parent?.parentCategoryId ?? null;
       }
 
-      if (!q) return true;
-      return (
-        getCategoryDisplayName(node.category).toLowerCase().includes(q) ||
-        (node.category.handle?.toLowerCase().includes(q) ?? false)
+      return fuzzyMatches(
+        [getCategoryDisplayName(node.category), node.category.handle].filter(Boolean).join(" "),
+        query,
       );
     });
   }, [categories, collapsed, query, rows]);
@@ -119,9 +118,7 @@ export function CategoryTreeView({
     return list;
   }
 
-  return (
-    <div className="overflow-hidden rounded-[1.35rem] border bg-card/95">{list}</div>
-  );
+  return <div className="overflow-hidden rounded-[1.35rem] border bg-card/95">{list}</div>;
 }
 
 function TreeRow({
@@ -150,9 +147,7 @@ function TreeRow({
         {hasChildren ? (
           <button
             aria-expanded={!collapsed}
-            aria-label={
-              collapsed ? t("taxonomy.tree.expand") : t("taxonomy.tree.collapse")
-            }
+            aria-label={collapsed ? t("taxonomy.tree.expand") : t("taxonomy.tree.collapse")}
             className="grid size-7 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
             onClick={onToggle}
             type="button"
@@ -180,9 +175,7 @@ function TreeRow({
         </div>
       </div>
       <Badge variant={hidden ? "secondary" : "outline"}>
-        {hidden
-          ? t("taxonomy.table.visibility.hidden")
-          : t("taxonomy.table.visibility.public")}
+        {hidden ? t("taxonomy.table.visibility.hidden") : t("taxonomy.table.visibility.public")}
       </Badge>
       <span className="w-8 shrink-0 text-right text-xs tabular-nums text-muted-foreground">
         {node.category.rank ?? 0}

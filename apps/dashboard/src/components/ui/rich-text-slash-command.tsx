@@ -21,6 +21,7 @@ import {
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
 
 import { applyNestedOverlaySession, type NestedOverlaySession } from "@/lib/nested-overlay";
+import { rankFuzzyItems } from "@/lib/fuzzy-search";
 import { cn } from "@/lib/utils";
 
 type SlashCommandItem = {
@@ -179,9 +180,7 @@ const suggestion: Omit<SuggestionOptions<SlashCommandItem, SlashCommandItem>, "e
   startOfLine: false,
   allowSpaces: true,
   items: ({ query }) =>
-    COMMANDS.filter((item) =>
-      `${item.title} ${item.description}`.toLowerCase().includes(query.trim().toLowerCase()),
-    ),
+    rankFuzzyItems(COMMANDS, query, (item) => `${item.title} ${item.description}`),
   command: ({ editor, range, props }) => props.run({ editor, range }),
   render: () => {
     let component: ReactRenderer<SlashCommandListRef> | null = null;

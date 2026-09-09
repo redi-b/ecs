@@ -29,6 +29,7 @@ import { ColorPickerField } from "@/features/storefront-editor/editor-theme";
 import { useI18n } from "@/i18n/provider";
 import { createClientId } from "@/lib/client-id";
 import { getTenantScopedPath } from "@/lib/dashboard-tenant-context";
+import { rankFuzzyItems } from "@/lib/fuzzy-search";
 import { dashboardRoutes } from "@/lib/routes";
 
 const COMMON_PRODUCT_COLORS = [
@@ -79,9 +80,7 @@ export function ProductColorPopover({
   const [query, setQuery] = useState("");
   const [customLabel, setCustomLabel] = useState(label ?? "");
   const [customValue, setCustomValue] = useState(value ?? "#808080");
-  const filtered = COMMON_PRODUCT_COLOR_OPTIONS.filter((item) =>
-    item.keywords.toLowerCase().includes(query.trim().toLowerCase()),
-  );
+  const filtered = rankFuzzyItems(COMMON_PRODUCT_COLOR_OPTIONS, query, (item) => item.keywords);
 
   function close() {
     setOpen(false);

@@ -20,6 +20,7 @@ import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes-guard";
 import type { MessageKey } from "@/i18n/messages";
 import { useI18n } from "@/i18n/provider";
 import { getTenantScopedPath } from "@/lib/dashboard-tenant-context";
+import { rankFuzzyItems } from "@/lib/fuzzy-search";
 import { dashboardRoutes } from "@/lib/routes";
 
 type Translate = (key: MessageKey, values?: Record<string, string | number | Date>) => string;
@@ -116,8 +117,7 @@ export function SingleVariantStockPanel({
       router.refresh();
     },
     onError: (error) => {
-      const message =
-        error instanceof Error ? error.message : t("products.stock.couldNotUpdate");
+      const message = error instanceof Error ? error.message : t("products.stock.couldNotUpdate");
 
       setActionError(message);
     },
@@ -134,70 +134,68 @@ export function SingleVariantStockPanel({
 
   return (
     <>
-    <DetailSection
-      meta={<StockStateBadge availableQuantity={getAvailableQuantity(stock)} />}
-      title={t("products.stock.title")}
-    >
-      <p className="-mt-1 text-sm text-muted-foreground">{t("products.stock.locationDescription")}</p>
-      <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
-        <DetailMetric
-          label={t("products.stock.available")}
-          value={formatQuantity(stock.availableQuantity, t)}
-        />
-        <DetailMetric
-          label={t("products.stock.stocked")}
-          value={formatQuantity(stock.stockedQuantity, t)}
-        />
-        <DetailMetric
-          label={t("products.stock.reserved")}
-          value={formatQuantity(stock.reservedQuantity, t)}
-        />
-        <DetailMetric
-          label={t("products.stock.incoming")}
-          value={formatQuantity(stock.incomingQuantity, t)}
-        />
-      </div>
-
-      <form
-        className="rounded-xl bg-muted/25 p-4 ring-1 ring-foreground/[0.06]"
-        onSubmit={(event) => {
-          event.preventDefault();
-          mutation.mutate();
-        }}
+      <DetailSection
+        meta={<StockStateBadge availableQuantity={getAvailableQuantity(stock)} />}
+        title={t("products.stock.title")}
       >
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          <Field className="max-w-xs flex-1">
-            <FieldLabel htmlFor={stockedQuantityInputId}>
-              {t("products.stock.setStockedQuantity")}
-            </FieldLabel>
-            <Input
-              id={stockedQuantityInputId}
-              min="0"
-              onChange={(event) => setStockedQuantity(event.target.value)}
-              step="1"
-              type="number"
-              value={stockedQuantity}
-            />
-            <FieldDescription>{t("products.stock.reservedHelp")}</FieldDescription>
-          </Field>
-          <Button disabled={mutation.isPending} type="submit">
-            {mutation.isPending ? t("products.stock.saving") : t("products.stock.saveStock")}
-          </Button>
+        <p className="-mt-1 text-sm text-muted-foreground">
+          {t("products.stock.locationDescription")}
+        </p>
+        <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
+          <DetailMetric
+            label={t("products.stock.available")}
+            value={formatQuantity(stock.availableQuantity, t)}
+          />
+          <DetailMetric
+            label={t("products.stock.stocked")}
+            value={formatQuantity(stock.stockedQuantity, t)}
+          />
+          <DetailMetric
+            label={t("products.stock.reserved")}
+            value={formatQuantity(stock.reservedQuantity, t)}
+          />
+          <DetailMetric
+            label={t("products.stock.incoming")}
+            value={formatQuantity(stock.incomingQuantity, t)}
+          />
         </div>
-      </form>
 
-      {actionError ? (
-        <Alert variant="destructive">
-          <AlertTitle>{t("products.stock.updateFailedTitle")}</AlertTitle>
-          <AlertDescription>{actionError}</AlertDescription>
-        </Alert>
-      ) : null}
-    </DetailSection>
-    <UnsavedChangesDialog
-      onLeave={confirmLeave}
-      onStay={cancelLeave}
-      open={leaveDialogOpen}
-    />
+        <form
+          className="rounded-xl bg-muted/25 p-4 ring-1 ring-foreground/[0.06]"
+          onSubmit={(event) => {
+            event.preventDefault();
+            mutation.mutate();
+          }}
+        >
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <Field className="max-w-xs flex-1">
+              <FieldLabel htmlFor={stockedQuantityInputId}>
+                {t("products.stock.setStockedQuantity")}
+              </FieldLabel>
+              <Input
+                id={stockedQuantityInputId}
+                min="0"
+                onChange={(event) => setStockedQuantity(event.target.value)}
+                step="1"
+                type="number"
+                value={stockedQuantity}
+              />
+              <FieldDescription>{t("products.stock.reservedHelp")}</FieldDescription>
+            </Field>
+            <Button disabled={mutation.isPending} type="submit">
+              {mutation.isPending ? t("products.stock.saving") : t("products.stock.saveStock")}
+            </Button>
+          </div>
+        </form>
+
+        {actionError ? (
+          <Alert variant="destructive">
+            <AlertTitle>{t("products.stock.updateFailedTitle")}</AlertTitle>
+            <AlertDescription>{actionError}</AlertDescription>
+          </Alert>
+        ) : null}
+      </DetailSection>
+      <UnsavedChangesDialog onLeave={confirmLeave} onStay={cancelLeave} open={leaveDialogOpen} />
     </>
   );
 }
@@ -231,13 +229,7 @@ export function VariantStockPanel({
   const totalStocked = stocks.reduce((total, stock) => total + (stock.stockedQuantity ?? 0), 0);
   const [query, setQuery] = useState("");
   const filteredVariants = useMemo(() => {
-    const needle = query.trim().toLowerCase();
-
-    if (!needle) {
-      return variants;
-    }
-
-    return variants.filter((variant) =>
+    return rankFuzzyItems(variants, query, (variant) =>
       [
         variant.id,
         variant.title,
@@ -246,7 +238,7 @@ export function VariantStockPanel({
         ...(variant.optionValues ?? []).flatMap((option) => [option.optionTitle, option.value]),
       ]
         .filter(Boolean)
-        .some((value) => String(value).toLowerCase().includes(needle)),
+        .join(" "),
     );
   }, [query, t, variants]);
   const columns = useMemo(() => getVariantInventoryColumns(t), [t]);
@@ -262,8 +254,7 @@ export function VariantStockPanel({
       return current !== baseline;
     });
   }, [stockByVariantId, stockedQuantityByVariantId, variants]);
-  const { leaveDialogOpen, confirmLeave, cancelLeave } =
-    useUnsavedChangesGuard(multiStockDirty);
+  const { leaveDialogOpen, confirmLeave, cancelLeave } = useUnsavedChangesGuard(multiStockDirty);
 
   useEffect(() => {
     let cancelled = false;
@@ -375,8 +366,7 @@ export function VariantStockPanel({
       router.refresh();
     },
     onError: (error, variantId) => {
-      const message =
-        error instanceof Error ? error.message : t("products.stock.couldNotUpdate");
+      const message = error instanceof Error ? error.message : t("products.stock.couldNotUpdate");
 
       setErrorByVariantId((current) => ({
         ...current,
@@ -412,69 +402,67 @@ export function VariantStockPanel({
 
   return (
     <>
-    <DetailSection
-      meta={
-        <div className="flex flex-wrap items-center gap-1.5">
-          <Badge variant="secondary">
-            {t("products.stock.variantsCount", { count: variants.length })}
-          </Badge>
-          <StockStateBadge availableQuantity={totalAvailable} />
-        </div>
-      }
-      title={t("products.stock.variantTitle")}
-    >
-      <p className="-mt-1 text-sm text-muted-foreground">{t("products.stock.variantDescription")}</p>
-      <div className="grid gap-2.5 sm:grid-cols-3">
-        <DetailMetric
-          label={t("products.stock.available")}
-          value={isLoading ? t("products.stock.loading") : String(totalAvailable)}
-        />
-        <DetailMetric
-          label={t("products.stock.stocked")}
-          value={isLoading ? t("products.stock.loading") : String(totalStocked)}
-        />
-        <DetailMetric
-          label={t("products.stock.reserved")}
-          value={isLoading ? t("products.stock.loading") : String(totalReserved)}
-        />
-      </div>
-
-      <DataTable
-        columns={columns}
-        data={rows}
-        emptyMessage={t("products.stock.emptyMatchMessage")}
-        emptyTitle={t("products.stock.emptyMatchTitle")}
-        getRowId={(row) => row.variant.id}
-        isFiltered={Boolean(query.trim())}
-        pageSize={8}
-        toolbar={
-          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-            <div>
-              <h3 className="text-sm font-medium">{t("products.stock.inventoryHeading")}</h3>
-              <p className="text-sm text-muted-foreground">{t("products.stock.inventoryHelp")}</p>
-            </div>
-            <div className="relative md:w-72">
-              <AppIcons.search
-                className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
-                data-icon="inline-start"
-              />
-              <Input
-                aria-label={t("products.stock.searchAria")}
-                className="h-9 pl-9"
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder={t("products.stock.searchPlaceholder")}
-                value={query}
-              />
-            </div>
+      <DetailSection
+        meta={
+          <div className="flex flex-wrap items-center gap-1.5">
+            <Badge variant="secondary">
+              {t("products.stock.variantsCount", { count: variants.length })}
+            </Badge>
+            <StockStateBadge availableQuantity={totalAvailable} />
           </div>
         }
-      />
-    </DetailSection>
-    <UnsavedChangesDialog
-      onLeave={confirmLeave}
-      onStay={cancelLeave}
-      open={leaveDialogOpen}
-    />
+        title={t("products.stock.variantTitle")}
+      >
+        <p className="-mt-1 text-sm text-muted-foreground">
+          {t("products.stock.variantDescription")}
+        </p>
+        <div className="grid gap-2.5 sm:grid-cols-3">
+          <DetailMetric
+            label={t("products.stock.available")}
+            value={isLoading ? t("products.stock.loading") : String(totalAvailable)}
+          />
+          <DetailMetric
+            label={t("products.stock.stocked")}
+            value={isLoading ? t("products.stock.loading") : String(totalStocked)}
+          />
+          <DetailMetric
+            label={t("products.stock.reserved")}
+            value={isLoading ? t("products.stock.loading") : String(totalReserved)}
+          />
+        </div>
+
+        <DataTable
+          columns={columns}
+          data={rows}
+          emptyMessage={t("products.stock.emptyMatchMessage")}
+          emptyTitle={t("products.stock.emptyMatchTitle")}
+          getRowId={(row) => row.variant.id}
+          isFiltered={Boolean(query.trim())}
+          pageSize={8}
+          toolbar={
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <div>
+                <h3 className="text-sm font-medium">{t("products.stock.inventoryHeading")}</h3>
+                <p className="text-sm text-muted-foreground">{t("products.stock.inventoryHelp")}</p>
+              </div>
+              <div className="relative md:w-72">
+                <AppIcons.search
+                  className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
+                  data-icon="inline-start"
+                />
+                <Input
+                  aria-label={t("products.stock.searchAria")}
+                  className="h-9 pl-9"
+                  onChange={(event) => setQuery(event.target.value)}
+                  placeholder={t("products.stock.searchPlaceholder")}
+                  value={query}
+                />
+              </div>
+            </div>
+          }
+        />
+      </DetailSection>
+      <UnsavedChangesDialog onLeave={confirmLeave} onStay={cancelLeave} open={leaveDialogOpen} />
     </>
   );
 }
