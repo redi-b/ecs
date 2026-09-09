@@ -339,6 +339,7 @@
     "priceRange": "የዋጋ ክልል",
     "defaultVariant": "መደበኛ አማራጭ",
     "addAnotherValue": "ሌላ እሴት ጨምር",
+    "addValue": "ጨምር",
     "valuePlaceholder": "ትንሽ፣ መካከለኛ፣ ትልቅ",
     "optionsTitle": "የምርት አማራጮች",
     "optionsDesc": "ደንበኞች የሚመርጡባቸውን ባህሪያት ይጨምሩ። እያንዳንዱ እሴት ጥምረት አንድ አማራጭ ይሆናል።",

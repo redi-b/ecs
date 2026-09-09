@@ -339,6 +339,7 @@
     "priceRange": "Price range",
     "defaultVariant": "Default variant",
     "addAnotherValue": "Add another value",
+    "addValue": "Add",
     "valuePlaceholder": "Small, Medium, Large",
     "optionsTitle": "Product options",
     "optionsDesc": "Add the attributes shoppers choose from. Each value combination becomes a variant.",
