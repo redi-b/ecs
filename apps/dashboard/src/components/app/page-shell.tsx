@@ -4,6 +4,8 @@ import { cn } from "@/lib/utils";
 
 type PageShellProps = {
   title: string;
+  /** Compact control that explains or qualifies the page title. */
+  titleAccessory?: ReactNode;
   description?: string;
   children: ReactNode;
   actions?: ReactNode;
@@ -26,6 +28,7 @@ type PageShellProps = {
  */
 export function PageShell({
   title,
+  titleAccessory,
   description,
   children,
   actions,
@@ -50,7 +53,10 @@ export function PageShell({
         <header className="flex flex-col gap-3 border-b border-border/80 pb-5 sm:pb-6 md:flex-row md:items-start md:justify-between md:gap-6">
           <div className="flex min-w-0 max-w-3xl flex-col gap-1.5">
             {eyebrow ? <p className="type-eyebrow">{eyebrow}</p> : null}
-            <h1 className="type-page-title text-pretty">{title}</h1>
+            <div className="flex min-w-0 items-center gap-1.5">
+              <h1 className="type-page-title min-w-0 text-pretty">{title}</h1>
+              {titleAccessory ? <div className="shrink-0">{titleAccessory}</div> : null}
+            </div>
             {description ? <p className="type-meta max-w-2xl text-pretty">{description}</p> : null}
             {meta ? <div className="mt-1 flex flex-wrap items-center gap-2">{meta}</div> : null}
           </div>

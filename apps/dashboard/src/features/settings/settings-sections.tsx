@@ -148,6 +148,7 @@ export function StorefrontTemplateOption({
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [choiceOpen, setChoiceOpen] = useState(false);
+  const [draftChoice, setDraftChoice] = useState<"clean" | "resume">("resume");
   const selected = isStorefrontTemplateSelected(currentTemplateKey, template.version.templateKey);
   const published = publishedTemplateKey === template.version.templateKey;
   const palette = templatePreviewPalette();
@@ -265,6 +266,7 @@ export function StorefrontTemplateOption({
             disabled={pending}
             onClick={() => {
               if (hasSavedDraft) {
+                setDraftChoice("resume");
                 setChoiceOpen(true);
                 return;
               }
@@ -296,33 +298,45 @@ export function StorefrontTemplateOption({
             </DialogTitle>
             <DialogDescription>{t("settings.storefront.switchDescription")}</DialogDescription>
           </DialogHeader>
-          <div className="grid gap-3 py-2">
-            <button
-              className="rounded-xl border border-primary/35 bg-primary/[0.04] p-4 text-left transition-colors hover:bg-primary/[0.07] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              disabled={pending}
-              onClick={() => void selectTemplate("resume")}
-              type="button"
-            >
-              <span className="block text-sm font-semibold">
-                {t("settings.storefront.continueDraft")}
+          <div className="grid gap-3 py-2" role="radiogroup">
+            <label className="cursor-pointer">
+              <input
+                checked={draftChoice === "resume"}
+                className="peer sr-only"
+                disabled={pending}
+                name={`template-choice-${template.version.templateKey}`}
+                onChange={() => setDraftChoice("resume")}
+                type="radio"
+                value="resume"
+              />
+              <span className="block rounded-xl border p-4 text-left transition-colors hover:bg-muted/40 peer-checked:border-primary/45 peer-checked:bg-primary/[0.04] peer-focus-visible:ring-2 peer-focus-visible:ring-ring">
+                <span className="block text-sm font-semibold">
+                  {t("settings.storefront.continueDraft")}
+                </span>
+                <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">
+                  {t("settings.storefront.continueDraftDescription")}
+                </span>
               </span>
-              <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">
-                {t("settings.storefront.continueDraftDescription")}
+            </label>
+            <label className="cursor-pointer">
+              <input
+                checked={draftChoice === "clean"}
+                className="peer sr-only"
+                disabled={pending}
+                name={`template-choice-${template.version.templateKey}`}
+                onChange={() => setDraftChoice("clean")}
+                type="radio"
+                value="clean"
+              />
+              <span className="block rounded-xl border p-4 text-left transition-colors hover:bg-muted/40 peer-checked:border-primary/45 peer-checked:bg-primary/[0.04] peer-focus-visible:ring-2 peer-focus-visible:ring-ring">
+                <span className="block text-sm font-semibold">
+                  {t("settings.storefront.startClean")}
+                </span>
+                <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">
+                  {t("settings.storefront.startCleanDescription")}
+                </span>
               </span>
-            </button>
-            <button
-              className="rounded-xl border p-4 text-left transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              disabled={pending}
-              onClick={() => void selectTemplate("clean")}
-              type="button"
-            >
-              <span className="block text-sm font-semibold">
-                {t("settings.storefront.startClean")}
-              </span>
-              <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">
-                {t("settings.storefront.startCleanDescription")}
-              </span>
-            </button>
+            </label>
           </div>
           <DialogFooter>
             <Button
@@ -332,6 +346,20 @@ export function StorefrontTemplateOption({
               variant="outline"
             >
               {t("common.cancel")}
+            </Button>
+            <Button
+              disabled={pending}
+              onClick={() => void selectTemplate(draftChoice)}
+              type="button"
+            >
+              {pending ? (
+                <>
+                  <Loader2Icon className="size-4 animate-spin" data-icon="inline-start" />
+                  {t("settings.storefront.selecting")}
+                </>
+              ) : (
+                t("common.continue")
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -199,7 +199,7 @@ export function SavedProductOptionsManager({ tenantId }: { tenantId: string | nu
           {t("products.savedOptions.newAction")}
         </Button>
       }
-      meta={
+      titleAccessory={
         <HelpTip
           label={t("products.savedOptions.helpLabel")}
           summary={t("products.savedOptions.pageDescription")}

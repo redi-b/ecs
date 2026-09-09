@@ -465,7 +465,7 @@
     "collectionHelpLabel": "About collections",
     "collectionHelp": "Collections group products you want to feature together, such as New arrivals or Holiday offers. A product can be in one collection.",
     "categoriesHelpLabel": "About categories",
-    "categoriesHelp": "Categories help shoppers browse by product type, such as Shoes or Coffee. Select every category that fits.",
+    "categoriesHelp": "Categories help shoppers browse by product type, such as Clothing, Shoes, or Skin care. Select every category that fits.",
     "defaultSellingTitle": "Default selling settings",
     "defaultSellingDesc": "These values apply to the product. When variants are enabled, they become the defaults for every generated row.",
     "fieldPrice": "Price",
