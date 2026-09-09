@@ -14,6 +14,8 @@ import {
 } from "lucide-react";
 import { headers } from "next/headers";
 import type { ReactNode } from "react";
+import { OperationsListShell } from "@/components/operations-list-shell";
+import { OperationsPageHeader } from "@/components/operations-page-header";
 import { OperatorReadError } from "@/components/operator-read-error";
 import { RefreshPageButton } from "@/components/refresh-page-button";
 import { Badge } from "@/components/ui/badge";
@@ -30,19 +32,12 @@ export default async function HealthPage() {
   }).catch(() => ({ ok: false as const, message: "operator_health_unavailable", status: 503 }));
 
   return (
-    <div className="space-y-7">
-      <header className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">
-            Platform status
-          </p>
-          <h1 className="mt-2 text-3xl font-semibold tracking-[-0.035em]">Health</h1>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-            Review queue delays, recent delivery failures, and merchant account status.
-          </p>
-        </div>
-        <RefreshPageButton />
-      </header>
+    <div className="flex flex-col gap-6">
+      <OperationsPageHeader
+        title="Health"
+        description="Review failures, delays, and service availability."
+        actions={<RefreshPageButton />}
+      />
       {!result.ok ? (
         <OperatorReadError
           resource="Health data"
@@ -51,12 +46,10 @@ export default async function HealthPage() {
         />
       ) : (
         <>
-          <div className="flex items-center gap-3 rounded-2xl border bg-card p-5 shadow-xs">
+          <div className="flex items-center gap-3 rounded-xl border bg-card p-4">
             <span
               className={
-                result.data.status === "clear"
-                  ? "grid size-10 place-items-center rounded-xl bg-success/12 text-success"
-                  : "grid size-10 place-items-center rounded-xl bg-warning/15 text-warning-foreground"
+                result.data.status === "clear" ? "text-success" : "text-warning-foreground"
               }
             >
               {result.data.status === "clear" ? (
@@ -79,7 +72,7 @@ export default async function HealthPage() {
               {result.data.status === "clear" ? "Clear" : "Attention"}
             </Badge>
           </div>
-          <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             <HealthCard
               icon={Layers3}
               title="Background work"
@@ -143,21 +136,22 @@ export default async function HealthPage() {
               <Metric label="Cancelled" value={result.data.merchants.cancelled} />
             </HealthCard>
           </div>
-          <Card>
-            <CardHeader className="border-b">
-              <CardTitle>Service availability</CardTitle>
-              <CardDescription>
-                Bounded checks made when this page was refreshed. Configuration-only states are not
-                presented as successful checks.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="divide-y p-0">
+          <OperationsListShell
+            status="Checked on refresh"
+            toolbar={
+              <div>
+                <h2 className="font-semibold">Service availability</h2>
+                <p className="text-sm text-muted-foreground">Current dependency checks</p>
+              </div>
+            }
+          >
+            <div className="divide-y">
               {result.data.dependencies.map((dependency) => {
                 const presentation = dependencyPresentation(dependency.id);
                 const Icon = presentation.icon;
                 return (
                   <div className="flex flex-wrap items-center gap-4 px-5 py-4" key={dependency.id}>
-                    <span className="grid size-9 place-items-center rounded-xl bg-muted text-muted-foreground">
+                    <span className="text-muted-foreground">
                       <Icon aria-hidden className="size-4" />
                     </span>
                     <div className="min-w-0 flex-1">
@@ -182,8 +176,8 @@ export default async function HealthPage() {
                   </div>
                 );
               })}
-            </CardContent>
-          </Card>
+            </div>
+          </OperationsListShell>
           <div className="grid items-start gap-5 xl:grid-cols-2">
             <EvidenceCard
               empty="No background work has been recorded."

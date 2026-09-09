@@ -2,17 +2,13 @@ import { FileClock, Search, SlidersHorizontal, X } from "lucide-react";
 import { headers } from "next/headers";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { OperationsDataState } from "@/components/operations-data-state";
+import { OperationsListShell } from "@/components/operations-list-shell";
+import { OperationsPageHeader } from "@/components/operations-page-header";
 import { OperationsPagination } from "@/components/operations-pagination";
 import { OperatorReadError } from "@/components/operator-read-error";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Empty,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@/components/ui/empty";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -51,17 +47,15 @@ export default async function AuditPage({
     redirect(createAuditHref(category, filters, Math.ceil(result.data.count / limit)));
   }
   return (
-    <div className="space-y-7">
-      <header>
-        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">
-          Accountability
-        </p>
-        <h1 className="mt-2 text-3xl font-semibold tracking-[-0.035em]">Audit</h1>
-        <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-          Recorded platform and merchant changes, in newest-first order.
-        </p>
-      </header>
-      <nav aria-label="Filter audit activity type" className="flex flex-wrap gap-2">
+    <div className="flex flex-col gap-6">
+      <OperationsPageHeader
+        title="Audit"
+        description="Review recorded platform and merchant changes."
+      />
+      <nav
+        aria-label="Filter audit activity type"
+        className="flex flex-wrap gap-1 rounded-lg border bg-muted/30 p-1"
+      >
         {[
           [undefined, "All activity"],
           ["merchant", "Merchant accounts"],
@@ -73,7 +67,7 @@ export default async function AuditPage({
             asChild
             key={value ?? "all"}
             size="sm"
-            variant={category === value ? "secondary" : "outline"}
+            variant={category === value ? "secondary" : "ghost"}
           >
             <Link
               aria-current={category === value ? "page" : undefined}
@@ -84,7 +78,7 @@ export default async function AuditPage({
           </Button>
         ))}
       </nav>
-      <form className="rounded-2xl border bg-card p-4 shadow-xs" method="get">
+      <form className="rounded-xl border bg-card p-4" method="get">
         {category ? <input name="category" type="hidden" value={category} /> : null}
         <div className="mb-4 flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
@@ -158,8 +152,8 @@ export default async function AuditPage({
         />
       ) : result.data.events.length ? (
         <>
-          <div className="overflow-hidden rounded-2xl border bg-card shadow-xs">
-            <div className="grid grid-cols-[1fr_auto] gap-4 border-b bg-muted/35 px-5 py-3 text-xs font-medium uppercase tracking-wide text-muted-foreground lg:grid-cols-[1.2fr_1fr_1fr_12rem]">
+          <OperationsListShell status={`${result.data.count} events`}>
+            <div className="grid grid-cols-[1fr_auto] gap-4 border-b bg-muted/25 px-5 py-3 text-xs font-medium text-muted-foreground lg:grid-cols-[1.2fr_1fr_1fr_12rem]">
               <span>Change</span>
               <span className="hidden lg:block">Operator</span>
               <span className="hidden lg:block">Merchant</span>
@@ -213,33 +207,28 @@ export default async function AuditPage({
                 </time>
               </div>
             ))}
-          </div>
+          </OperationsListShell>
           <OperationsPagination
             basePath="/audit"
             count={result.data.count}
             page={page}
             pageSize={limit}
+            resourceLabel="audit events"
             searchParams={{ category, ...filters }}
           />
         </>
       ) : (
-        <Empty className="rounded-2xl border bg-card py-16">
-          <EmptyHeader>
-            <EmptyMedia variant="icon">
-              <FileClock />
-            </EmptyMedia>
-            <EmptyTitle>
-              {category || hasAuditFilters(filters)
-                ? "No matching activity"
-                : "No audit activity yet"}
-            </EmptyTitle>
-            <EmptyDescription>
-              {category || hasAuditFilters(filters)
-                ? "No recorded changes match the selected filters."
-                : "Recorded platform changes will appear here."}
-            </EmptyDescription>
-          </EmptyHeader>
-        </Empty>
+        <OperationsDataState
+          icon={FileClock}
+          title={
+            category || hasAuditFilters(filters) ? "No matching activity" : "No audit activity yet"
+          }
+          description={
+            category || hasAuditFilters(filters)
+              ? "No recorded changes match the selected filters."
+              : "Recorded platform changes will appear here."
+          }
+        />
       )}
     </div>
   );
