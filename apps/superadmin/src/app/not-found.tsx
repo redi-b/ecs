@@ -1,35 +1,14 @@
-import { MapPinOff } from "lucide-react";
 import Link from "next/link";
 
+import { OperationsDataState } from "@/components/operations-data-state";
 import { Button } from "@/components/ui/button";
-import {
-  Empty,
-  EmptyContent,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@/components/ui/empty";
 
 export default function NotFound() {
   return (
     <main className="grid min-h-dvh place-items-center bg-background p-6">
-      <Empty className="w-full max-w-xl rounded-2xl border bg-card py-16 shadow-xs">
-        <EmptyHeader>
-          <EmptyMedia variant="icon">
-            <MapPinOff />
-          </EmptyMedia>
-          <EmptyTitle>Page not found</EmptyTitle>
-          <EmptyDescription>
-            This page does not exist or you do not have access to it.
-          </EmptyDescription>
-        </EmptyHeader>
-        <EmptyContent>
-          <Button asChild>
+      <OperationsDataState className="w-full max-w-xl" description="The page does not exist, or your account cannot open it." title="Page not found" action={<Button asChild>
             <Link href="/">Open ECS Operations</Link>
-          </Button>
-        </EmptyContent>
-      </Empty>
+          </Button>} />
     </main>
   );
 }

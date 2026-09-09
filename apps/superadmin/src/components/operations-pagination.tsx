@@ -14,6 +14,7 @@ export function OperationsPagination({
   onPageChange,
   basePath,
   searchParams,
+  resourceLabel = "items",
 }: {
   count: number;
   page: number;
@@ -22,6 +23,7 @@ export function OperationsPagination({
   onPageChange?: (page: number) => void;
   basePath?: string;
   searchParams?: Record<string, string | undefined>;
+  resourceLabel?: string;
 }) {
   const router = useRouter();
   const pages = Math.max(1, Math.ceil(count / pageSize));
@@ -44,7 +46,7 @@ export function OperationsPagination({
       <p className="text-sm tabular-nums text-muted-foreground">
         {count
           ? `${from.toLocaleString()}–${to.toLocaleString()} of ${count.toLocaleString()}`
-          : "0 merchants"}
+          : `0 ${resourceLabel}`}
       </p>
       <nav aria-label={`Page ${current} of ${pages}`} className="flex items-center gap-1.5">
         <Button
@@ -56,7 +58,7 @@ export function OperationsPagination({
         >
           <ChevronLeft />
         </Button>
-        <div className="flex items-center gap-0.5 rounded-full border bg-muted/30 p-0.5">
+        <div className="flex items-center gap-0.5 rounded-lg border bg-muted/30 p-0.5">
           {items.map((item, index) =>
             item === "…" ? (
               <span
@@ -70,7 +72,7 @@ export function OperationsPagination({
                 aria-current={item === current ? "page" : undefined}
                 aria-label={`Page ${item}`}
                 className={cn(
-                  "grid size-8 place-items-center rounded-full text-sm font-medium tabular-nums transition-[color,background-color,box-shadow,transform] duration-200 ease-[var(--ease-operations)] focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/40",
+                  "grid size-8 place-items-center rounded-md text-sm font-medium tabular-nums transition-colors focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/40",
                   item === current
                     ? "bg-foreground text-background shadow-sm"
                     : "text-muted-foreground hover:bg-background hover:text-foreground",

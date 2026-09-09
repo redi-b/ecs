@@ -58,11 +58,11 @@ export default function GlobalError({
           button {
             background: var(--failure-primary);
             border: 0;
-            border-radius: 999px;
+            border-radius: 10px;
             color: var(--failure-primary-fg);
             cursor: pointer;
             font-size: 14px;
-            font-weight: 700;
+            font-weight: 600;
             min-height: 40px;
             padding: 11px 18px;
           }

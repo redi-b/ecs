@@ -150,14 +150,9 @@ export function OperationsShell({
                   tooltip="ECS Operations"
                 >
                   <Link href="/">
-                    <span className="grid size-8 shrink-0 place-items-center rounded-full border border-sidebar-border bg-sidebar text-primary">
-                      <ShieldCheck aria-hidden />
-                    </span>
+                    <ShieldCheck aria-hidden className="size-5 shrink-0 text-primary" />
                     <span className="grid min-w-0 flex-1 text-left leading-tight">
                       <span className="truncate text-sm font-semibold">ECS Operations</span>
-                      <span className="truncate text-xs text-sidebar-foreground/60">
-                        Platform workspace
-                      </span>
                     </span>
                   </Link>
                 </SidebarMenuButton>
