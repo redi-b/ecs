@@ -3,6 +3,10 @@
 import { useEffect, useState } from "react";
 
 export type ProductHandleAvailability = "idle" | "checking" | "available" | "taken" | "error";
+export type ProductHandleAvailabilityResult = {
+  status: ProductHandleAvailability;
+  suggestedHandle: string | null;
+};
 
 export function useProductHandleAvailability({
   action,
@@ -16,15 +20,18 @@ export function useProductHandleAvailability({
   productId?: string | undefined;
 }) {
   const [status, setStatus] = useState<ProductHandleAvailability>("idle");
+  const [suggestedHandle, setSuggestedHandle] = useState<string | null>(null);
 
   useEffect(() => {
     const normalized = handle.trim().toLowerCase();
     if (!normalized || normalized === currentHandle?.trim().toLowerCase()) {
       setStatus("idle");
+      setSuggestedHandle(null);
       return;
     }
 
     setStatus("checking");
+    setSuggestedHandle(null);
     const controller = new AbortController();
     const timeout = window.setTimeout(async () => {
       const endpoint = new URL("/admin/products/actions/handle", window.location.origin);
@@ -38,11 +45,16 @@ export function useProductHandleAvailability({
         signal: controller.signal,
       }).catch(() => null);
       if (!response) {
-        setStatus("error");
+        if (!controller.signal.aborted) setStatus("error");
         return;
       }
-      const data = (await response.json().catch(() => ({}))) as { available?: boolean };
+      const data = (await response.json().catch(() => ({}))) as {
+        available?: boolean;
+        suggestedHandle?: string;
+      };
+      if (controller.signal.aborted) return;
       setStatus(response.ok ? (data.available ? "available" : "taken") : "error");
+      setSuggestedHandle(response.ok && !data.available ? data.suggestedHandle ?? null : null);
     }, 350);
 
     return () => {
@@ -51,5 +63,5 @@ export function useProductHandleAvailability({
     };
   }, [action, currentHandle, handle, productId]);
 
-  return status;
+  return { status, suggestedHandle } satisfies ProductHandleAvailabilityResult;
 }

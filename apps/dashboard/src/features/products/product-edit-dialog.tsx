@@ -6,7 +6,7 @@ import type {
   MerchantProductCollection,
 } from "@ecs/contracts";
 import { useRouter } from "next/navigation";
-import { type ReactNode, useId, useMemo, useState } from "react";
+import { type ReactNode, useEffect, useId, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { AppIcons } from "@/components/app/icons";
@@ -99,12 +99,18 @@ export function ProductDetailsEditButton({
     status: normalizeProductStatus(product.status),
     title: product.title ?? "",
   }));
+  const [adjustedHandle, setAdjustedHandle] = useState<string | null>(null);
   const handleAvailability = useProductHandleAvailability({
     action,
     currentHandle: product.handle,
     handle: values.handle,
     productId: product.id,
   });
+  useEffect(() => {
+    if (handleAvailability.status !== "taken" || !handleAvailability.suggestedHandle) return;
+    setValues((current) => ({ ...current, handle: handleAvailability.suggestedHandle ?? current.handle }));
+    setAdjustedHandle(handleAvailability.suggestedHandle);
+  }, [handleAvailability.status, handleAvailability.suggestedHandle]);
 
   return (
     <ProductEditSheet
@@ -115,10 +121,6 @@ export function ProductDetailsEditButton({
         if (!title) {
           throw new Error(t("products.edit.titleRequired"));
         }
-        if (handleAvailability === "taken") {
-          throw new Error(t("products.validation.handleTaken"));
-        }
-
         return {
           title,
           description: values.description.trim() || null,
@@ -127,19 +129,20 @@ export function ProductDetailsEditButton({
         };
       }}
       description={t("products.edit.detailsDesc")}
-      onOpen={() =>
+      onOpen={() => {
+        setAdjustedHandle(null);
         setValues({
           description: product.description ?? "",
           handle: product.handle ?? "",
           status: normalizeProductStatus(product.status),
           title: product.title ?? "",
-        })
-      }
+        });
+      }}
       title={t("products.edit.detailsTitle")}
       triggerLabel={t("products.edit.detailsTrigger")}
       triggerVariant={triggerVariant}
     >
-      <Field data-invalid={handleAvailability === "taken" || undefined}>
+      <Field>
         <FieldLabel htmlFor={`${detailsId}-title`}>{t("products.edit.title")}</FieldLabel>
         <Input
           id={`${detailsId}-title`}
@@ -152,17 +155,16 @@ export function ProductDetailsEditButton({
         <FieldLabel htmlFor={`${detailsId}-handle`}>{t("products.edit.handle")}</FieldLabel>
         <Input
           id={`${detailsId}-handle`}
-          onChange={(event) => setValues((current) => ({ ...current, handle: event.target.value }))}
+          onChange={(event) => {
+            setAdjustedHandle(null);
+            setValues((current) => ({ ...current, handle: event.target.value }));
+          }}
           value={values.handle}
         />
-        <FieldDescription className={handleAvailability === "taken" ? "text-destructive" : undefined}>
-          {handleAvailability === "checking"
-            ? t("products.validation.handleChecking")
-            : handleAvailability === "available"
-              ? t("products.validation.handleAvailable")
-              : handleAvailability === "taken"
-                ? t("products.validation.handleTaken")
-                : t("products.edit.handleHelp")}
+        <FieldDescription>
+          {adjustedHandle
+            ? t("products.validation.handleAdjusted", { handle: adjustedHandle })
+            : t("products.edit.handleHelp")}
         </FieldDescription>
       </Field>
       <Field>

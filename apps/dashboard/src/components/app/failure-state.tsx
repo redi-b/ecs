@@ -6,13 +6,13 @@ import { useTransition } from "react";
 import Link from "@/components/app/link";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
+import { cn } from "@/lib/utils";
 
 export function FailureState({
   actionHref,
   actionLabel,
   code,
   description,
-  eyebrow,
   onRetry,
   retryingLabel,
   title,
@@ -21,7 +21,6 @@ export function FailureState({
   actionLabel: string;
   code?: string;
   description: string;
-  eyebrow: string;
   onRetry?: () => void;
   retryingLabel?: string;
   title: string;
@@ -32,11 +31,8 @@ export function FailureState({
     <main className="min-h-dvh bg-background px-5 py-8 text-foreground sm:px-8">
       <section className="mx-auto flex min-h-[calc(100dvh-4rem)] w-full max-w-xl items-center">
         <div>
-          <p className="text-sm font-medium text-primary">
-            {eyebrow}
-            {code ? ` / ${code}` : ""}
-          </p>
-          <h1 className="mt-3 text-balance text-3xl font-semibold tracking-[-0.035em] sm:text-5xl">
+          {code ? <p className="text-sm font-medium text-muted-foreground">{code}</p> : null}
+          <h1 className={cn("text-balance text-3xl font-semibold tracking-[-0.035em] sm:text-5xl", code && "mt-3")}>
             {title}
           </h1>
           <p className="mt-4 max-w-lg text-pretty text-sm leading-7 text-muted-foreground sm:text-base">

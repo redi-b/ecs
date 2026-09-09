@@ -1,6 +1,7 @@
 import { isDeepStrictEqual } from "node:util";
 import type { createPlatformDb } from "@ecs/db";
 import {
+  platformAssets,
   auditLogs,
   storefrontTemplates as dbStorefrontTemplates,
   storefrontConfigs,
@@ -349,7 +350,10 @@ export function createStorefrontTemplateService(db: PlatformDb) {
           slug: dbStorefrontTemplates.slug,
           name: dbStorefrontTemplates.name,
           description: dbStorefrontTemplates.description,
-          previewAssetId: dbStorefrontTemplates.previewAssetId,
+          previewAssetId: storefrontTemplateVersions.previewAssetId,
+          previewAltText: storefrontTemplateVersions.previewAltText,
+          previewUrl: platformAssets.publicUrl,
+          demoUrl: storefrontTemplateVersions.demoUrl,
           tags: dbStorefrontTemplates.tags,
           minimumPlanId: dbStorefrontTemplates.minimumPlanId,
           versionId: storefrontTemplateVersions.id,
@@ -361,6 +365,13 @@ export function createStorefrontTemplateService(db: PlatformDb) {
         .innerJoin(
           dbStorefrontTemplates,
           eq(storefrontTemplateVersions.templateId, dbStorefrontTemplates.id),
+        )
+        .leftJoin(
+          platformAssets,
+          and(
+            eq(storefrontTemplateVersions.previewAssetId, platformAssets.id),
+            eq(platformAssets.status, "ready"),
+          ),
         )
         .where(
           and(
@@ -375,7 +386,6 @@ export function createStorefrontTemplateService(db: PlatformDb) {
         slug: row.slug,
         name: row.name,
         description: row.description,
-        previewAssetId: row.previewAssetId,
         tags: row.tags,
         minimumPlanId: row.minimumPlanId,
         version: {
@@ -383,6 +393,10 @@ export function createStorefrontTemplateService(db: PlatformDb) {
           version: row.version,
           templateKey: row.templateKey,
           previewData: row.previewData,
+          previewAssetId: row.previewAssetId,
+          previewAltText: row.previewAltText,
+          previewUrl: row.previewUrl,
+          demoUrl: row.demoUrl,
         },
       }));
     },

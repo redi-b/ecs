@@ -6,6 +6,7 @@ import { useMemo } from "react";
 import { AppIcons } from "@/components/app/icons";
 import { HelpTip } from "@/components/app/help-tip";
 import { MultiSearchableCombobox } from "@/components/app/searchable-combobox";
+import { StorefrontTemplatePreview } from "@/components/storefront/storefront-template-preview";
 import {
   BUSINESS_CATEGORY_OPTIONS,
   getTemplateTags,
@@ -136,21 +137,27 @@ export function TemplateOption({
   const tags = getTemplateTags(template);
 
   return (
-    <button
+    <div
       className={cn(
         "flex w-full gap-5 rounded-xl border p-4 text-left transition-colors outline-none sm:p-5",
-        "focus-visible:ring-2 focus-visible:ring-ring/40",
         checked
           ? "border-primary/50 bg-primary/[0.04] ring-1 ring-primary/25"
           : "border-border bg-background hover:border-ring/40 hover:bg-muted/20",
       )}
-      onClick={onSelect}
-      type="button"
     >
       <div className="w-[7.75rem] shrink-0 sm:w-40">
-        <StorefrontPreview compact template={template} />
+        <StorefrontTemplatePreview
+          compact
+          demoLabel={t("common.viewDemo")}
+          previewLabel={t("common.preview")}
+          template={template}
+        />
       </div>
-      <div className="flex min-w-0 flex-1 flex-col justify-center gap-1 py-0.5">
+      <button
+        className="flex min-w-0 flex-1 flex-col justify-center gap-1 rounded-lg py-0.5 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+        onClick={onSelect}
+        type="button"
+      >
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
@@ -185,47 +192,7 @@ export function TemplateOption({
             ))}
           </div>
         ) : null}
-      </div>
-    </button>
-  );
-}
-
-export function StorefrontPreview({
-  compact,
-  template,
-}: {
-  compact?: boolean;
-  template: StorefrontTemplateCatalogItem | null;
-}) {
-  return (
-    <div
-      className={cn(
-        "relative overflow-hidden rounded-lg border bg-muted/40",
-        compact ? "aspect-[4/3]" : "aspect-[16/10]",
-      )}
-    >
-      <div className="absolute inset-x-2.5 top-2.5 flex items-center gap-1">
-        <span className="size-1.5 rounded-full bg-foreground/12" />
-        <span className="size-1.5 rounded-full bg-foreground/12" />
-        <span className="size-1.5 rounded-full bg-foreground/12" />
-        <span className="ml-1 h-1.5 flex-1 rounded-full bg-foreground/8" />
-      </div>
-      <div className="absolute inset-x-2.5 bottom-2.5 top-8 grid grid-cols-[1.2fr_0.8fr] gap-1.5">
-        <div className="flex flex-col justify-end rounded-md bg-background/95 p-2.5 shadow-sm">
-          <span className="block h-1.5 w-12 rounded-full bg-foreground/20" />
-          <span className="mt-1.5 block h-1.5 w-16 rounded-full bg-muted-foreground/15" />
-          <span className="mt-2.5 block h-4 w-12 rounded-md bg-primary/70" />
-        </div>
-        <div className="grid gap-1.5">
-          <span className="rounded-md bg-background/70" />
-          <span className="rounded-md bg-background/50" />
-        </div>
-      </div>
-      {!compact ? (
-        <span className="absolute left-2.5 top-8 rounded-md bg-background/95 px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
-          {template?.slug ?? "storefront"}
-        </span>
-      ) : null}
+      </button>
     </div>
   );
 }

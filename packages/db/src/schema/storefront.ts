@@ -1,6 +1,7 @@
 import { integer, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 
 import { templateStatus } from "./enums.js";
+import { platformAssets } from "./platform-assets.js";
 import { tenants } from "./tenants.js";
 
 export const storefrontTemplates = pgTable("storefront_templates", {
@@ -28,6 +29,9 @@ export const storefrontTemplateVersions = pgTable("storefront_template_versions"
   defaultData: jsonb("default_data").notNull(),
   defaultThemeTokens: jsonb("default_theme_tokens").notNull(),
   previewData: jsonb("preview_data").notNull().default({}),
+  previewAssetId: uuid("preview_asset_id").references(() => platformAssets.id),
+  previewAltText: text("preview_alt_text"),
+  demoUrl: text("demo_url"),
   componentRegistryVersion: text("component_registry_version").notNull(),
   sourceHash: text("source_hash").notNull(),
   status: templateStatus("status").notNull().default("draft"),

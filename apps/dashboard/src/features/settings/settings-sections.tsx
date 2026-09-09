@@ -7,6 +7,7 @@ import { type ReactNode, useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
+import { StorefrontTemplatePreview } from "@/components/storefront/storefront-template-preview";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -151,7 +152,6 @@ export function StorefrontTemplateOption({
   const [draftChoice, setDraftChoice] = useState<"clean" | "resume">("resume");
   const selected = isStorefrontTemplateSelected(currentTemplateKey, template.version.templateKey);
   const published = publishedTemplateKey === template.version.templateKey;
-  const palette = templatePreviewPalette();
 
   async function selectTemplate(mode: "clean" | "resume") {
     if (selected || pending) return;
@@ -209,21 +209,12 @@ export function StorefrontTemplateOption({
           : "border-border hover:border-primary/30",
       )}
     >
-      <div
-        aria-hidden
-        className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg border"
-        style={{
-          borderColor: "color-mix(in srgb, currentColor 8%, transparent)",
-          backgroundColor: palette.bg,
-        }}
-      >
-        <div
-          className="absolute inset-x-2 bottom-2 h-1.5 rounded-full opacity-90"
-          style={{ backgroundColor: palette.primary }}
-        />
-        <div
-          className="absolute left-2 top-2 size-2.5 rounded-full"
-          style={{ backgroundColor: palette.accent ?? palette.primary }}
+      <div className="w-24 shrink-0 sm:w-32">
+        <StorefrontTemplatePreview
+          compact
+          demoLabel={t("common.viewDemo")}
+          previewLabel={t("common.preview")}
+          template={template}
         />
       </div>
 
@@ -366,13 +357,4 @@ export function StorefrontTemplateOption({
       </Dialog>
     </div>
   );
-}
-
-function templatePreviewPalette() {
-  return {
-    bg: "#f6f1ea",
-    muted: "#ebe4d8",
-    primary: "#0f3d2e",
-    accent: "#0f3d2e",
-  };
 }

@@ -26,4 +26,11 @@ describe("overview chart ranges", () => {
       "2026-05-12",
     ]);
   });
+
+  it("returns the complete available series for all time", () => {
+    assert.deepEqual(getPresetRange(rows, "all"), {
+      start: rows[0]!.date,
+      end: rows.at(-1)!.date,
+    });
+  });
 });

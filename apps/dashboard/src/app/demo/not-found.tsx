@@ -10,7 +10,6 @@ export default async function DemoNotFound() {
       actionLabel={t("common.errors.notFoundAction")}
       code="404"
       description={t("common.errors.notFoundDescription")}
-      eyebrow={t("common.errors.notFoundEyebrow")}
       title={t("common.errors.notFoundTitle")}
     />
   );

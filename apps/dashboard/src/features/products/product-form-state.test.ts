@@ -75,6 +75,13 @@ describe("product handle conflict suggestions", () => {
     assert.equal(suggestAvailableProductHandle("coffee-beans-2"), "coffee-beans-3");
   });
 
+  it("skips suffixes that are already in use", () => {
+    assert.equal(
+      suggestAvailableProductHandle("coffee-beans", ["coffee-beans-2", "coffee-beans-3"]),
+      "coffee-beans-4",
+    );
+  });
+
   it("provides a valid fallback when the handle is empty", () => {
     assert.equal(suggestAvailableProductHandle(""), "product-2");
   });

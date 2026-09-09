@@ -329,14 +329,14 @@ export class ProductMutationError extends Error {
   }
 }
 
-export function suggestAvailableProductHandle(handle: string) {
+export function suggestAvailableProductHandle(handle: string, usedHandles: Iterable<string> = []) {
   const normalized = slugifyProductHandle(handle) || "product";
   const numbered = normalized.match(/^(.*?)-(\d+)$/);
-
-  if (!numbered) return `${normalized}-2`;
-
-  const base = numbered[1] || "product";
-  return `${base}-${Number.parseInt(numbered[2] ?? "1", 10) + 1}`;
+  const base = numbered?.[1] || normalized;
+  let suffix = numbered ? Number.parseInt(numbered[2] ?? "1", 10) + 1 : 2;
+  const used = new Set(Array.from(usedHandles, (value) => value.trim().toLowerCase()));
+  while (used.has(`${base}-${suffix}`)) suffix += 1;
+  return `${base}-${suffix}`;
 }
 
 export function getProductMutationError(error: string | undefined, status: number, t: Translate) {

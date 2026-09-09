@@ -1,4 +1,4 @@
-export type OverviewRangePreset = "7d" | "30d" | "90d" | "custom";
+export type OverviewRangePreset = "7d" | "30d" | "90d" | "all" | "custom";
 
 type DatedRow = { date: string };
 
@@ -13,6 +13,7 @@ export function getPresetRange(
 ) {
   const bounds = getSeriesBounds(rows);
   if (!bounds) return null;
+  if (preset === "all") return bounds;
   const days = Number.parseInt(preset, 10);
   const end = parseDay(bounds.end);
   const start = new Date(end);

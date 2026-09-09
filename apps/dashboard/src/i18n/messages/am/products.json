@@ -520,6 +520,7 @@
     "handleChecking": "መለያውን በማረጋገጥ ላይ…",
     "handleAvailable": "ይህ መለያ ይገኛል።",
     "handleTaken": "ይህ መለያ በሌላ ምርት ጥቅም ላይ ውሏል።",
+    "handleAdjusted": "ቀድሞ ጥቅም ላይ ስለዋለ {handle} ተብሎ ተቀይሯል።",
     "titleRequired": "የምርት ርዕስ ያስገቡ።",
     "priceRequired": "ዋጋ ያስገቡ።",
     "priceNumbersOnly": "ቁጥሮችን ብቻ ይጠቀሙ።",

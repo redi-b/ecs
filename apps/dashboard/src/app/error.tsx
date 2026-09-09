@@ -22,7 +22,6 @@ export default function AppError({
     <FailureState
       actionLabel={t("common.tryAgain")}
       description={t("common.errors.unavailableDescription")}
-      eyebrow={t("common.errors.unavailableEyebrow")}
       onRetry={reset}
       retryingLabel={t("common.errors.retrying")}
       title={t("common.errors.unavailableTitle")}

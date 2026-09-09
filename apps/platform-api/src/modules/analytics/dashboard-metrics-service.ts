@@ -65,12 +65,15 @@ export function createDashboardMetricsService(
   const now = options?.now ?? (() => new Date());
   const staleAfterMs = options?.staleAfterMs ?? 12 * 60 * 60 * 1000;
   return async function getDashboardMetrics(input: {
-    days: number;
+    days: number | null;
     tenantId: string;
   }): Promise<DashboardMetricsResult> {
-    const from = new Date();
-    from.setUTCDate(from.getUTCDate() - Math.max(input.days - 1, 0));
-    const fromDate = from.toISOString().slice(0, 10);
+    const fromDate = input.days === null ? null : getRangeStartDate(input.days);
+    const metricFilters = [
+      eq(dailyMetrics.tenantId, input.tenantId),
+      inArray(dailyMetrics.metricKey, registeredMetricKeys),
+    ];
+    if (fromDate) metricFilters.push(gte(dailyMetrics.date, fromDate));
 
     const [rows, checkpoints] = await Promise.all([
       db
@@ -83,13 +86,7 @@ export function createDashboardMetricsService(
           value: dailyMetrics.value,
         })
         .from(dailyMetrics)
-        .where(
-          and(
-            eq(dailyMetrics.tenantId, input.tenantId),
-            gte(dailyMetrics.date, fromDate),
-            inArray(dailyMetrics.metricKey, registeredMetricKeys),
-          ),
-        ),
+        .where(and(...metricFilters)),
       db
         .select({
           lastSuccessfulAt: metricRollupCheckpoints.lastSuccessfulAt,
@@ -113,6 +110,12 @@ export function createDashboardMetricsService(
       classifyDashboardMetricQuality(checkpoints[0], { now: now(), staleAfterMs }),
     );
   };
+}
+
+function getRangeStartDate(days: number) {
+  const from = new Date();
+  from.setUTCDate(from.getUTCDate() - Math.max(days - 1, 0));
+  return from.toISOString().slice(0, 10);
 }
 
 export function aggregateDashboardMetricRows(

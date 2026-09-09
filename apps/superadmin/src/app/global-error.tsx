@@ -49,14 +49,6 @@ export default function GlobalError({
             padding: 24px;
           }
           main { max-width: 480px; width: 100%; }
-          .failure-eyebrow {
-            color: var(--failure-primary);
-            font-size: 12px;
-            font-weight: 700;
-            letter-spacing: 0.14em;
-            margin: 0 0 16px;
-            text-transform: uppercase;
-          }
           h1 { font-size: 32px; letter-spacing: -0.04em; margin: 0; }
           .failure-description {
             color: var(--failure-muted);
@@ -80,11 +72,9 @@ export default function GlobalError({
       </head>
       <body>
         <main>
-          <p className="failure-eyebrow">ECS Operations</p>
           <h1>This workspace could not be opened</h1>
           <p className="failure-description">
-            Your access and any work already completed are unchanged. Try opening the workspace
-            again.
+            Try opening Operations again. Your saved work is not affected.
           </p>
           <button onClick={reset} type="button">
             Try again

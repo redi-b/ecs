@@ -4,7 +4,7 @@ import type { MerchantProduct } from "@ecs/contracts";
 import { useForm, useStore } from "@tanstack/react-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import type { z } from "zod";
 import { ConfirmDialog } from "@/components/app/confirm-dialog";
@@ -97,6 +97,7 @@ export function ProductForm({
   const [isHandleLocked, setIsHandleLocked] = useState(isInitialHandleLocked(product));
   const [actionError, setActionError] = useState<string | null>(null);
   const [suggestedHandle, setSuggestedHandle] = useState<string | null>(null);
+  const [adjustedHandle, setAdjustedHandle] = useState<string | null>(null);
   const [pendingRemoval, setPendingRemoval] = useState<{
     count: number;
     payload: z.infer<typeof productPayloadSchema>;
@@ -131,9 +132,6 @@ export function ProductForm({
     defaultValues,
     onSubmit: async ({ value }) => {
       try {
-        if (handleAvailability === "taken") {
-          throw new ProductMutationError(t("products.validation.handleTaken"), "details");
-        }
         setActionError(null);
         setSuggestedHandle(null);
         const payload = getProductPayload(value, { includeOptions: true }, t);
@@ -157,6 +155,11 @@ export function ProductForm({
     handle: currentHandle,
     productId: product?.id,
   });
+  useEffect(() => {
+    if (handleAvailability.status !== "taken" || !handleAvailability.suggestedHandle) return;
+    form.setFieldValue("handle", handleAvailability.suggestedHandle);
+    setAdjustedHandle(handleAvailability.suggestedHandle);
+  }, [form, handleAvailability.status, handleAvailability.suggestedHandle]);
   const submitMutation = useMutation({
     mutationFn: async (payload: z.infer<typeof productPayloadSchema>) => {
       const response = await fetch(action, {
@@ -321,6 +324,7 @@ export function ProductForm({
       !product && (!currentSkuPrefix || currentSkuPrefix === getDefaultSkuPrefix(currentTitle));
 
     form.setFieldValue("title", nextTitle);
+    setAdjustedHandle(null);
 
     if (isHandleLocked) {
       form.setFieldValue("handle", slugifyProductHandle(nextTitle));
@@ -335,6 +339,7 @@ export function ProductForm({
     const nextHandle = slugifyProductHandle(form.state.values.title);
 
     form.setFieldValue("handle", nextHandle);
+    setAdjustedHandle(null);
     if (!product && !form.state.values.skuPrefix.trim()) {
       form.setFieldValue("skuPrefix", getDefaultSkuPrefix(nextHandle));
     }
@@ -477,7 +482,7 @@ export function ProductForm({
 
                           <form.Field name="handle">
                             {(field) => (
-                              <Field data-invalid={handleAvailability === "taken" || undefined}>
+                              <Field>
                                 <FieldLabel htmlFor={field.name}>
                                   {t("products.composer.fieldHandle")}
                                 </FieldLabel>
@@ -488,6 +493,7 @@ export function ProductForm({
                                     onBlur={field.handleBlur}
                                     onChange={(event) => {
                                       const nextHandle = slugifyProductHandle(event.target.value);
+                                      setAdjustedHandle(null);
                                       const currentSkuPrefix = form.state.values.skuPrefix.trim();
                                       const shouldUpdateSkuPrefix =
                                         !product &&
@@ -553,20 +559,12 @@ export function ProductForm({
                                     </Tooltip>
                                   </InputGroupAddon>
                                 </InputGroup>
-                                <FieldDescription
-                                  className={
-                                    handleAvailability === "taken" ? "text-destructive" : undefined
-                                  }
-                                >
-                                  {handleAvailability === "checking"
-                                    ? t("products.validation.handleChecking")
-                                    : handleAvailability === "available"
-                                      ? t("products.validation.handleAvailable")
-                                      : handleAvailability === "taken"
-                                        ? t("products.validation.handleTaken")
-                                        : isHandleLocked
-                                          ? t("products.composer.autoHandle")
-                                          : t("products.composer.customHandle")}
+                                <FieldDescription>
+                                  {adjustedHandle
+                                    ? t("products.validation.handleAdjusted", { handle: adjustedHandle })
+                                    : isHandleLocked
+                                      ? t("products.composer.autoHandle")
+                                      : t("products.composer.customHandle")}
                                 </FieldDescription>
                               </Field>
                             )}

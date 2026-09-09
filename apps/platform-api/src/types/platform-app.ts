@@ -102,6 +102,18 @@ import type {
 } from "./tenant.js";
 
 export type PlatformAppOptions = {
+  listPlatformStorefrontTemplates?: ReturnType<
+    typeof import("../modules/storefront/platform-template-assets.js").createPlatformTemplateAssetService
+  >["listTemplates"];
+  createPlatformTemplatePreviewUpload?: ReturnType<
+    typeof import("../modules/storefront/platform-template-assets.js").createPlatformTemplateAssetService
+  >["createUpload"];
+  completePlatformTemplatePreviewUpload?: ReturnType<
+    typeof import("../modules/storefront/platform-template-assets.js").createPlatformTemplateAssetService
+  >["completeUpload"];
+  updatePlatformStorefrontTemplate?: ReturnType<
+    typeof import("../modules/storefront/platform-template-assets.js").createPlatformTemplateAssetService
+  >["updateTemplatePresentation"];
   createReviewedProductImportArtifact?: ReturnType<
     typeof import("../modules/data-transfer/product-import-artifact.js").createProductImportArtifactService
   >["createReviewedArtifact"];
@@ -319,7 +331,7 @@ export type PlatformAppOptions = {
       }>)
     | undefined;
   getDashboardMetrics?:
-    | ((input: { days: number; tenantId: string }) => Promise<DashboardMetricsResult>)
+    | ((input: { days: number | null; tenantId: string }) => Promise<DashboardMetricsResult>)
     | undefined;
   requestInsightsRefresh?:
     | ((input: { tenantId: string }) => Promise<{

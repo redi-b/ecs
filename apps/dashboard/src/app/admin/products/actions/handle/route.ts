@@ -1,5 +1,6 @@
 import { getMerchantProducts } from "@/lib/merchant-products";
 import { withMerchantAction } from "@/lib/platform-api/action-route";
+import { suggestAvailableProductHandle } from "@/features/products/product-form-state";
 
 export async function GET(request: Request) {
   return withMerchantAction(request, async (context) => {
@@ -11,7 +12,7 @@ export async function GET(request: Request) {
 
     const result = await getMerchantProducts({
       cookieHeader: context.cookieHeader,
-      limit: 20,
+      limit: 100,
       offset: 0,
       platformApiBaseUrl: context.platformApiBaseUrl,
       q: handle,
@@ -23,9 +24,16 @@ export async function GET(request: Request) {
       return { ok: false, message: result.message, status: result.status };
     }
 
-    const conflict = result.products.products.some(
-      (product) => product.id !== excludeId && product.handle?.toLowerCase() === handle,
+    const usedHandles = new Set(
+      result.products.products.flatMap((product) =>
+        product.id !== excludeId && product.handle ? [product.handle.toLowerCase()] : [],
+      ),
     );
-    return { ok: true, data: { available: !conflict } };
+    if (!usedHandles.has(handle)) return { ok: true, data: { available: true } };
+
+    return {
+      ok: true,
+      data: { available: false, suggestedHandle: suggestAvailableProductHandle(handle, usedHandles) },
+    };
   });
 }
