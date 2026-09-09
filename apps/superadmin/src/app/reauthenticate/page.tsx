@@ -1,4 +1,4 @@
-import { ArrowLeft, ShieldCheck } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
@@ -21,16 +21,12 @@ export default async function ReauthenticatePage({
   if (!access.ok) redirect(`/sign-in?error=session_expired`);
 
   return (
-    <main className="relative grid min-h-dvh place-items-center bg-muted/35 px-5 py-16">
+    <main className="relative grid min-h-dvh place-items-center bg-background px-5 py-16">
       <div className="absolute right-5 top-5">
         <ThemeMenu />
       </div>
-      <section className="operations-enter w-full max-w-md rounded-2xl border bg-card p-7 text-card-foreground shadow-sm sm:p-9">
-        <span className="grid size-11 place-items-center rounded-xl bg-primary text-primary-foreground">
-          <ShieldCheck aria-hidden />
-        </span>
-        <p className="mt-7 text-sm font-medium text-primary">Security check</p>
-        <h1 className="mt-2 text-2xl font-semibold tracking-[-0.025em]">Confirm it’s you</h1>
+      <section className="operations-enter w-full max-w-md rounded-xl border bg-card p-6 text-card-foreground sm:p-8">
+        <h1 className="text-2xl font-semibold tracking-tight">Confirm it’s you</h1>
         <p className="mt-3 text-sm leading-6 text-muted-foreground">
           Enter your password to continue with this protected action. You’re signed in as{" "}
           <span className="font-medium text-foreground">{access.operator.email}</span>.
