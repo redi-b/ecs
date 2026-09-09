@@ -1,5 +1,5 @@
 import { headers } from "next/headers";
-
+import { OperationsPageHeader } from "@/components/operations-page-header";
 import { OperatorReadError } from "@/components/operator-read-error";
 import { PlanCatalogWorkspace } from "@/features/superadmin/plan-catalog-workspace";
 import { getOperatorPlanCatalog } from "@/lib/platform-api/superadmin/billing";
@@ -14,14 +14,11 @@ export default async function PlansPage() {
   }).catch(() => ({ ok: false as const, message: "billing_plans_unavailable", status: 503 }));
 
   return (
-    <div className="flex flex-col gap-7">
-      <header>
-        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">Billing</p>
-        <h1 className="mt-2 text-3xl font-semibold tracking-[-0.035em]">Plans</h1>
-        <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-          Prepare commercial terms, review their impact, and publish immutable plan versions.
-        </p>
-      </header>
+    <div className="flex flex-col gap-6">
+      <OperationsPageHeader
+        title="Plans"
+        description="Review published terms and prepare plan changes."
+      />
       {!result.ok ? (
         <OperatorReadError
           resource="Billing plans"
