@@ -207,12 +207,12 @@ export function DetailRow({ label, value }: { label: string; value: string }) {
 }
 
 export function formatNumber(value: number | null | undefined, locale = "en") {
-  return typeof value === "number" ? value.toLocaleString(locale) : "—";
+  return typeof value === "number" ? value.toLocaleString(locale) : "N/A";
 }
 
 export function formatMoney(value: number | null | undefined, currencyCode: string, locale = "en") {
   if (typeof value !== "number") {
-    return "—";
+    return "N/A";
   }
 
   return new Intl.NumberFormat(locale, {

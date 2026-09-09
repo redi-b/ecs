@@ -127,6 +127,6 @@
     "newestProduct": "Newest product",
     "selectedCount": "{count} products selected in settings.",
     "selectedCountOne": "1 product selected in settings.",
-    "noManualPick": "No manual pick — live shop shows newest products."
+    "noManualPick": "No manual selection. The live shop shows the newest products."
   }
 }

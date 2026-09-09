@@ -185,21 +185,21 @@ export function DateRangePicker({
               active={activeEndpoint === "start"}
               label={labels.start}
               onClick={() => chooseEndpoint("start")}
-              value={draftStart ? format(draftStart, "PP") : "—"}
+              value={draftStart ? format(draftStart, "PP") : "Not set"}
             />
             <EndpointButton
               active={activeEndpoint === "end"}
               label={labels.end}
               onClick={() => chooseEndpoint("end")}
-              value={draftEnd ? format(draftEnd, "PP") : "—"}
+              value={draftEnd ? format(draftEnd, "PP") : "Not set"}
             />
           </div>
           <div className="mt-2 flex items-center justify-between gap-3 px-1 text-xs text-muted-foreground">
             <span>{activeEndpoint === "start" ? labels.chooseStart : labels.chooseEnd}</span>
             {minDate || maxDate ? (
               <span>
-                {labels.available}: {minDate ? format(minDate, "PP") : "—"} –{" "}
-                {maxDate ? format(maxDate, "PP") : "—"}
+                {labels.available}: {minDate ? format(minDate, "PP") : "Not set"} –{" "}
+                {maxDate ? format(maxDate, "PP") : "Not set"}
               </span>
             ) : null}
           </div>

@@ -127,6 +127,6 @@
     "newestProduct": "አዲስ ምርት",
     "selectedCount": "በቅንብሮች {count} ምርቶች ተመርጠዋል።",
     "selectedCountOne": "በቅንብሮች 1 ምርት ተመርጧል።",
-    "noManualPick": "በእጅ ምርጫ የለም — ቀጥታ መደብሩ አዲስ ምርቶችን ያሳያል።"
+    "noManualPick": "በእጅ ምርጫ የለም። ቀጥታ መደብሩ አዲስ ምርቶችን ያሳያል።"
   }
 }

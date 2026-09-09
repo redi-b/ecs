@@ -313,7 +313,7 @@ function StorefrontVisitsMetric({
         </Button>
       }
       label={t("insights.metrics.visits")}
-      value={typeof value === "number" ? formatNumber(value) : "—"}
+      value={typeof value === "number" ? formatNumber(value) : "N/A"}
     />
   );
 }
@@ -360,7 +360,7 @@ export function selectRecentSeries<T extends { date: string }>(series: T[], days
 }
 
 function formatMoney(value: number | null | undefined, currency: string, locale: string) {
-  if (typeof value !== "number") return "—";
+  if (typeof value !== "number") return "N/A";
   return new Intl.NumberFormat(locale, {
     currency,
     maximumFractionDigits: 0,
@@ -369,7 +369,7 @@ function formatMoney(value: number | null | undefined, currency: string, locale:
 }
 
 function formatNumber(value: number | null | undefined, locale: string) {
-  return typeof value === "number" ? new Intl.NumberFormat(locale).format(value) : "—";
+  return typeof value === "number" ? new Intl.NumberFormat(locale).format(value) : "N/A";
 }
 
 function shortDate(value: string, locale: string) {

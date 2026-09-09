@@ -50,7 +50,7 @@ export function DetailHeroStat({
   value: ReactNode;
   className?: string;
 }) {
-  if (value == null || value === "" || value === "—") return null;
+  if (value == null || value === "" || value === "\u2014") return null;
   return (
     <div className={cn("min-w-0 space-y-1", className)}>
       <p className="text-xs font-medium text-muted-foreground">{label}</p>
@@ -118,7 +118,7 @@ type DetailFieldProps = {
 
 /** Quiet label-over-value cell — no nested bordered box. */
 export function DetailField({ label, value, className }: DetailFieldProps) {
-  if (value == null || value === "" || value === "—") return null;
+  if (value == null || value === "" || value === "\u2014") return null;
   return (
     <div className={cn("min-w-0 space-y-0.5", className)}>
       <p className="text-xs text-muted-foreground">{label}</p>

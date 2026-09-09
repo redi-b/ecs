@@ -38,7 +38,7 @@ export function AppProviders({
             Shows on <Link> navigations (and history changes).
             Programmatic router.push/replace (filters, settings tabs) does not
             start the bar unless we later switch those call sites to
-            nextjs-toploader/app useRouter — then we can skip same-path updates.
+            nextjs-toploader/app useRouter, then we can skip same-path updates.
           */}
           <NextTopLoader
             color="var(--primary)"

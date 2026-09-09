@@ -167,7 +167,7 @@ export function CustomerDetail({
           <div className="grid grid-cols-2 gap-2 sm:min-w-[13rem] sm:shrink-0">
             <DetailMetric
               label={t("customers.orders.title")}
-              value={loadOrdersFailed ? "—" : String(ordersTotalCount)}
+              value={loadOrdersFailed ? "N/A" : String(ordersTotalCount)}
             />
             <DetailMetric label={t("customers.detail.addresses")} value={String(addressCount)} />
           </div>

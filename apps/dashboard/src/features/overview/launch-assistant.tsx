@@ -180,13 +180,13 @@ export function LaunchAssistant({ access }: { access: MerchantDashboardAccess })
         ) : null}
 
         <div className="flex max-h-[min(360px,50dvh)] flex-col gap-2 overflow-y-auto p-3">
-          <p className="px-1 text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
+          <p className="px-1 text-xs font-medium text-muted-foreground">
             {t("overview.launch.requiredSection")}
           </p>
           {requiredItems.map((item) => (
             <ChecklistRow item={item} key={item.id} />
           ))}
-          <p className="mt-2 px-1 text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
+          <p className="mt-2 px-1 text-xs font-medium text-muted-foreground">
             {t("overview.launch.optionalSection")}
           </p>
           {optionalItems.map((item) => (

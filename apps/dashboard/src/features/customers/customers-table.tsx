@@ -141,7 +141,7 @@ export function CustomersTable({
         ),
         cell: ({ row }) => (
           <span className="text-sm text-muted-foreground">
-            {getDisplayCustomerEmail(row.original.email) || "—"}
+            {getDisplayCustomerEmail(row.original.email) || "N/A"}
           </span>
         ),
       },
@@ -154,7 +154,7 @@ export function CustomersTable({
         cell: ({ row }) => {
           const count = row.original.addresses.length;
           if (!count) {
-            return <span className="text-sm text-muted-foreground">—</span>;
+            return <span className="text-sm text-muted-foreground">N/A</span>;
           }
           const hasDefault = row.original.addresses.some(
             (address) => address.isDefaultBilling || address.isDefaultShipping,

@@ -243,7 +243,7 @@ export function ProductReviewSummary({ values }: { values: ProductFormValues }) 
     ? minPrice === maxPrice
       ? `ETB ${minPrice}`
       : `ETB ${minPrice} to ${maxPrice}`
-    : "—";
+    : "N/A";
   const reviewRows = [
     {
       label: t("products.formReview.title"),

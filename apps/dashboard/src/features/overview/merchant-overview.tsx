@@ -444,19 +444,12 @@ export function MerchantOverview({ demoMode = false, summary }: MerchantOverview
         <Card className="flex flex-col" size="sm">
           <CardHeader className="shrink-0 border-b pb-3">
             <CardTitle>{t("overview.storefrontActivity.title")}</CardTitle>
-            <div className="col-start-2 row-start-1 flex items-center gap-3 self-start justify-self-end">
+            <div className="col-start-2 row-start-1 self-start justify-self-end">
               <span className="text-xs text-muted-foreground">
                 {analytics
                   ? t("overview.storefrontActivity.range", { count: analytics.range.days })
                   : null}
               </span>
-              <Link
-                className="text-xs font-medium text-primary underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-ring"
-                href={previewHref(dashboardRoutes.insights)}
-                prefetch={false}
-              >
-                {t("overview.storefrontActivity.viewInsights")}
-              </Link>
             </div>
           </CardHeader>
           <CardContent className="flex flex-1 flex-col gap-3 pt-3">
@@ -502,6 +495,15 @@ export function MerchantOverview({ demoMode = false, summary }: MerchantOverview
                 </p>
               </div>
             )}
+            <div className="flex justify-end border-t pt-2.5">
+              <Link
+                className="text-xs font-medium text-primary underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-ring"
+                href={previewHref(dashboardRoutes.insights)}
+                prefetch={false}
+              >
+                {t("overview.storefrontActivity.viewInsights")}
+              </Link>
+            </div>
           </CardContent>
         </Card>
       </div>

@@ -1,6 +1,6 @@
 {
   "title": "Promotions & discounts",
-  "description": "Create intentional discounts with clear schedules and redemption safeguards.",
+  "description": "Create and manage discounts.",
   "error": {
     "loadTitle": "Promotions could not be loaded",
     "loadDescription": "The promotions list is temporarily unavailable. Refresh and try again."

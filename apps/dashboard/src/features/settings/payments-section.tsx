@@ -225,7 +225,7 @@ export function PaymentsSection({
       </Card>
 
       {/*
-        Online payments — nested cards for offer + connect form.
+        Online payments: nested cards for offer and connect form.
         Setup steps + support copy live in a rich HelpTip (not repeated under the title).
       */}
       <Card size="sm">

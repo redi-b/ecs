@@ -335,7 +335,7 @@ export function getOrderPaymentLabel(order: MerchantOrder) {
   const status = (order.status ?? "").toLowerCase();
   const payment = (order.paymentStatus ?? "").toLowerCase();
 
-  if (status.includes("cancel")) return "—";
+  if (status.includes("cancel")) return "N/A";
   if (["captured", "paid"].includes(payment)) return "Paid";
   if (payment.includes("refund")) return "Refunded";
   if (status === "completed") return "Settled";

@@ -893,7 +893,7 @@ function ManualOrderCreateDialogInner() {
                       <dl className="space-y-1.5 text-sm">
                         <div className="flex justify-between gap-3">
                           <dt className="text-muted-foreground">{t("orders.create.customer")}</dt>
-                          <dd className="truncate font-medium">{customerPhone || "—"}</dd>
+                          <dd className="truncate font-medium">{customerPhone || "N/A"}</dd>
                         </div>
                         {getDisplayCustomerEmail(customerEmail) ? (
                           <div className="flex justify-between gap-3">

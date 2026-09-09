@@ -1,6 +1,6 @@
 {
   "title": "Customers",
-  "description": "Understand buyers, maintain contact details, and support repeat customers.",
+  "description": "View customers, contact details, and order history.",
   "error": {
     "loadTitle": "Customers could not be loaded",
     "loadDescription": "The customers list is temporarily unavailable. Refresh and try again."
