@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { getSharedAuthCookie, getSharedAuthCookieClears } from "@/lib/auth-cookies";
 import { requestWantsJson } from "@/lib/request-wants-json";
+import { getCentralDashboardUrl } from "@/lib/shop-host";
 
 export async function POST(request: Request) {
   const wantsJson = requestWantsJson(request);
@@ -10,7 +11,7 @@ export async function POST(request: Request) {
     forwardedHost: request.headers.get("x-forwarded-host") ?? request.headers.get("host") ?? "",
     forwardedProto: request.headers.get("x-forwarded-proto") ?? "http",
   });
-  const redirectTo = getRedirectUrl("/admin/sign-in", request).toString();
+  const redirectTo = getCentralDashboardUrl("/admin/sign-in");
 
   const response = wantsJson
     ? NextResponse.json({ ok: true as const, redirectTo })
@@ -25,22 +26,6 @@ export async function POST(request: Request) {
   }
 
   return response;
-}
-
-function getRedirectUrl(path: string, request: Request) {
-  return new URL(path, getRequestOrigin(request));
-}
-
-function getRequestOrigin(request: Request) {
-  const forwardedHost = request.headers.get("x-forwarded-host");
-
-  if (!forwardedHost) {
-    return new URL(request.url).origin;
-  }
-
-  const forwardedProto = request.headers.get("x-forwarded-proto") ?? "http";
-
-  return `${forwardedProto}://${forwardedHost}`;
 }
 
 function normalizeBaseUrl(value: string) {

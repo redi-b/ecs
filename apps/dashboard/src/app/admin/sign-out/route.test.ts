@@ -5,6 +5,7 @@ import { POST } from "./route.js";
 
 const originalFetch = globalThis.fetch;
 const originalPlatformApiBaseUrl = process.env.PLATFORM_API_BASE_URL;
+const originalDashboardPublicBaseUrl = process.env.DASHBOARD_PUBLIC_BASE_URL;
 
 afterEach(() => {
   globalThis.fetch = originalFetch;
@@ -14,10 +15,17 @@ afterEach(() => {
   } else {
     process.env.PLATFORM_API_BASE_URL = originalPlatformApiBaseUrl;
   }
+
+  if (originalDashboardPublicBaseUrl === undefined) {
+    delete process.env.DASHBOARD_PUBLIC_BASE_URL;
+  } else {
+    process.env.DASHBOARD_PUBLIC_BASE_URL = originalDashboardPublicBaseUrl;
+  }
 });
 
 test("POST /admin/sign-out signs out through Platform auth and forwards clearing cookies", async () => {
   process.env.PLATFORM_API_BASE_URL = "http://platform.test";
+  process.env.DASHBOARD_PUBLIC_BASE_URL = "http://app.lvh.me";
 
   let forwardedRequest:
     | {
@@ -57,7 +65,7 @@ test("POST /admin/sign-out signs out through Platform auth and forwards clearing
   );
 
   assert.equal(response.status, 303);
-  assert.equal(response.headers.get("location"), "http://abebe.lvh.me/admin/sign-in");
+  assert.equal(response.headers.get("location"), "http://app.lvh.me/admin/sign-in");
   const setCookie = response.headers.get("set-cookie") ?? "";
 
   // Active brand prefix (default ecs) + legacy better-auth for migration clears.
